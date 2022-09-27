@@ -58,10 +58,14 @@
 //
 // Another thing done in this phase is signal strength handling.
 // Currently they are only supported in assignments and gates parsed as assignments (see verilog.y)
-// and only in case when the strongest assignment has RHS marked as non-tristate. It is the case
-// when they can be statically resolved.
-// If the RHS is equal to z, that assignment has to be skipped. Since the value may be not known at
-// verilation time, cases with tristates on RHS can't be handled statically.
+// when any of the cases occurs:
+// - it is possible to statically resolve all drivers,
+// - all assignments that passed the static resolution have symmetric strengths (the same strength
+// is related to both 0 and 1 values).
+//
+// It is possible to statically resolve all drivers when the strongest assignment has RHS marked as
+// non-tristate. If the RHS is equal to z, that assignment has to be skipped. Since the value may
+// be not known at verilation time, cases with tristates on RHS can't be handled statically.
 //
 // Static resolution is split into 2 parts.
 // First part can be done before tristate propagation. It is about removing assignments that are
@@ -85,7 +89,26 @@
 // - The assignment with non-tristate RHS with the greatest weaker strength has to be found.
 // - Then all not stronger assignments can be removed.
 //
-// All assignments that are stronger than the strongest with non-tristate RHS are left as they are.
+// All assignments that are stronger than the strongest with non-tristate RHS are then tried to be
+// handled dynamically. Currently it is supported only on assignments with symmetric strengths.
+// In this case, the exact value of the RHS doesn't matter. It only matters if it equals z or not.
+// Such assignments are handled by changing the values to z of these bits that are overwritten by
+// stronger assignments. Then all assignments can be aggregated as they would have equal strengths
+// (by | on them and their __en expressions). To change the value to z, the RHS should be & with
+// negation of __en expression of stronger assignments. Changing RHS's __en expression is not
+// needed, because it will be then aggregated with __en expression of stronger assignments using |,
+// so & with the negation can be safely skipped.
+// So the values of overwritten bits are actually changed to 0, which doesn't affect stronger
+// assignments, because | operation was used.
+//
+// Dynamic handling is implemented in the following way:
+// - group the assignments by their strengths,
+// - handle assignments of the same strength by aggregating values with |
+// - assign results to var__strength and var__strength__en variables
+// - aggregate the results:
+// orp = orp | (var__strength & ~enp)
+// enp = enp | var__strength__en,
+// where orp is aggregated value and enp is aggregated __en value.
 //
 // There is a possible problem with equally strong assignments, because multiple assignments with
 // the same strength, but different values should result in x value, but these values are
@@ -384,8 +407,15 @@ class TristateVisitor final : public TristateBaseVisitor {
     const VNUser5InUse m_inuser5;
 
     // TYPES
-    using RefVec = std::vector<AstVarRef*>;
-    using VarMap = std::unordered_map<AstVar*, RefVec*>;
+    struct RefStrength {
+        AstVarRef* m_varrefp;
+        VStrength m_strength;
+        RefStrength(AstVarRef* varrefp, VStrength strength)
+            : m_varrefp{varrefp}
+            , m_strength{strength} {}
+    };
+    using RefStrengthVec = std::vector<RefStrength>;
+    using VarMap = std::unordered_map<AstVar*, RefStrengthVec*>;
     using Assigns = std::vector<AstAssignW*>;
     using VarToAssignsMap = std::map<AstVar*, Assigns>;
     enum : uint8_t {
@@ -403,6 +433,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     VarToAssignsMap m_assigns;  // Assigns in current module
     int m_unique = 0;
     bool m_alhs = false;  // On LHS of assignment
+    VStrength m_currentStrength = VStrength::STRONG;  // Current strength of assignment,
+                                                      // Used only on LHS of assignment
     const AstNode* m_logicp = nullptr;  // Current logic being built
     TristateGraph m_tgraph;  // Logic graph
 
@@ -485,11 +517,11 @@ class TristateVisitor final : public TristateBaseVisitor {
         const auto it = m_lhsmap.find(key);
         UINFO(9, "    mapInsertLhsVarRef " << nodep << endl);
         if (it == m_lhsmap.end()) {  // Not found
-            RefVec* const refsp = new RefVec;
-            refsp->push_back(nodep);
+            RefStrengthVec* const refsp = new RefStrengthVec;
+            refsp->push_back(RefStrength{nodep, m_currentStrength});
             m_lhsmap.emplace(key, refsp);
         } else {
-            it->second->push_back(nodep);
+            it->second->push_back(RefStrength{nodep, m_currentStrength});
         }
     }
 
@@ -567,7 +599,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             nextit = it;
             ++nextit;
             AstVar* const invarp = it->first;
-            const RefVec* const refsp = it->second;
+            RefStrengthVec* refsp = it->second;
             // Figure out if this var needs tristate expanded.
             if (m_tgraph.isTristate(invarp)) {
                 insertTristatesSignal(nodep, invarp, refsp);
@@ -580,8 +612,64 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
-    void insertTristatesSignal(AstNodeModule* nodep, AstVar* const invarp,
-                               const RefVec* const refsp) {
+    void aggregateTriSameStrength(AstNodeModule* nodep, AstVar* const varp, AstVar* const envarp,
+                                  RefStrengthVec::iterator beginStrength,
+                                  RefStrengthVec::iterator endStrength) {
+        // For each driver seperate variables (normal and __en) are created and initialized with
+        // values. In case of normal variable, the original expression is reused. Their values are
+        // aggregated using | to form one expression, which are assigned to varp end envarp.
+        AstNode* orp = nullptr;
+        AstNode* enp = nullptr;
+
+        for (auto it = beginStrength; it != endStrength; it++) {
+            AstVarRef* refp = it->m_varrefp;
+            const int w = varp->width();
+
+            // create the new lhs driver for this var
+            AstVar* const newLhsp = new AstVar{varp->fileline(), VVarType::MODULETEMP,
+                                               varp->name() + "__out" + cvtToStr(m_unique),
+                                               VFlagBitPacked{}, w};  // 2-state ok; sep enable
+            UINFO(9, "       newout " << newLhsp << endl);
+            nodep->addStmtsp(newLhsp);
+            refp->varp(newLhsp);  // assign the new var to the varref
+            refp->name(newLhsp->name());
+
+            // create a new var for this drivers enable signal
+            AstVar* const newEnLhsp = new AstVar{varp->fileline(), VVarType::MODULETEMP,
+                                                 varp->name() + "__en" + cvtToStr(m_unique++),
+                                                 VFlagBitPacked{}, w};  // 2-state ok
+            UINFO(9, "       newenlhsp " << newEnLhsp << endl);
+            nodep->addStmtsp(newEnLhsp);
+
+            AstNode* const enLhspAssignp = new AstAssignW{
+                refp->fileline(), new AstVarRef{refp->fileline(), newEnLhsp, VAccess::WRITE},
+                getEnp(refp)};
+            UINFO(9, "       newenlhspAssignp " << enLhspAssignp << endl);
+            nodep->addStmtsp(enLhspAssignp);
+
+            // now append this driver to the driver logic.
+            AstNode* const ref1p = new AstVarRef{refp->fileline(), newLhsp, VAccess::READ};
+            AstNode* const ref2p = new AstVarRef{refp->fileline(), newEnLhsp, VAccess::READ};
+            AstNode* const andp = new AstAnd{refp->fileline(), ref1p, ref2p};
+
+            // or this to the others
+            orp = (!orp) ? andp : new AstOr{refp->fileline(), orp, andp};
+
+            AstNode* const ref3p = new AstVarRef{refp->fileline(), newEnLhsp, VAccess::READ};
+            enp = (!enp) ? ref3p : new AstOr{ref3p->fileline(), enp, ref3p};
+        }
+        AstNode* const assp = new AstAssignW{
+            varp->fileline(), new AstVarRef{varp->fileline(), varp, VAccess::WRITE}, orp};
+        UINFO(9, "       newassp " << assp << endl);
+        nodep->addStmtsp(assp);
+
+        AstNode* const enAssp = new AstAssignW{
+            envarp->fileline(), new AstVarRef{envarp->fileline(), envarp, VAccess::WRITE}, enp};
+        UINFO(9, "       newenassp " << enAssp << endl);
+        nodep->addStmtsp(enAssp);
+    }
+
+    void insertTristatesSignal(AstNodeModule* nodep, AstVar* const invarp, RefStrengthVec* refsp) {
         UINFO(8, "  TRISTATE EXPANDING:" << invarp << endl);
         ++m_statTriSigs;
         m_tgraph.didProcess(invarp);
@@ -615,74 +703,101 @@ class TristateVisitor final : public TristateBaseVisitor {
 
         AstNode* orp = nullptr;
         AstNode* enp = nullptr;
-        AstNode* undrivenp = nullptr;
+        const int w = lhsp->width();
 
-        // loop through the lhs drivers to build the driver resolution logic
-        for (auto refp : *refsp) {
-            const int w = lhsp->width();
+        std::sort(refsp->begin(), refsp->end(),
+                  [](RefStrength a, RefStrength b) { return a.m_strength > b.m_strength; });
 
-            // create the new lhs driver for this var
-            AstVar* const newlhsp = new AstVar(lhsp->fileline(), VVarType::MODULETEMP,
-                                               lhsp->name() + "__out" + cvtToStr(m_unique),
-                                               VFlagBitPacked(), w);  // 2-state ok; sep enable
-            UINFO(9, "       newout " << newlhsp << endl);
-            nodep->addStmtsp(newlhsp);
-            refp->varp(newlhsp);  // assign the new var to the varref
-            refp->name(newlhsp->name());
+        auto beginStrength = refsp->begin();
+        while (beginStrength != refsp->end()) {
+            auto endStrength = beginStrength + 1;
+            while (endStrength != refsp->end()
+                   && endStrength->m_strength == beginStrength->m_strength)
+                endStrength++;
 
-            // create a new var for this drivers enable signal
-            AstVar* const newenp = new AstVar(lhsp->fileline(), VVarType::MODULETEMP,
-                                              lhsp->name() + "__en" + cvtToStr(m_unique++),
-                                              VFlagBitPacked(), w);  // 2-state ok
-            UINFO(9, "       newenp " << newenp << endl);
-            nodep->addStmtsp(newenp);
+            FileLine* const fl = beginStrength->m_varrefp->fileline();
+            const string strengthVarName = lhsp->name() + "__" + beginStrength->m_strength.ascii();
 
-            AstNode* const enassp = new AstAssignW(
-                refp->fileline(), new AstVarRef(refp->fileline(), newenp, VAccess::WRITE),
-                getEnp(refp));
-            UINFO(9, "       newass " << enassp << endl);
-            nodep->addStmtsp(enassp);
+            // var__strength variable
+            AstVar* varStrengthp = new AstVar{fl, VVarType::MODULETEMP, strengthVarName,
+                                              VFlagBitPacked{}, w};  // 2-state ok; sep enable;
+            UINFO(9, "       newstrength " << varStrengthp << endl);
+            nodep->addStmtsp(varStrengthp);
 
-            // now append this driver to the driver logic.
-            AstNode* const ref1p = new AstVarRef(refp->fileline(), newlhsp, VAccess::READ);
-            AstNode* const ref2p = new AstVarRef(refp->fileline(), newenp, VAccess::READ);
-            AstNode* const andp = new AstAnd(refp->fileline(), ref1p, ref2p);
+            // var__strength__en variable
+            AstVar* enVarStrengthp = new AstVar{fl, VVarType::MODULETEMP, strengthVarName + "__en",
+                                                VFlagBitPacked{}, w};  // 2-state ok;
+            UINFO(9, "       newenstrength " << enVarStrengthp << endl);
+            nodep->addStmtsp(enVarStrengthp);
 
-            // or this to the others
-            orp = (!orp) ? andp : new AstOr(refp->fileline(), orp, andp);
+            aggregateTriSameStrength(nodep, varStrengthp, enVarStrengthp, beginStrength,
+                                     endStrength);
 
-            if (envarp) {
-                AstNode* const ref3p = new AstVarRef(refp->fileline(), newenp, VAccess::READ);
-                enp = (!enp) ? ref3p : new AstOr(ref3p->fileline(), enp, ref3p);
+            AstNode* exprCurrentStrengthp;
+            if (enp) {
+                // If weaker driver should be overwritten by a stronger, replace its value with z
+                exprCurrentStrengthp
+                    = new AstAnd{fl, new AstVarRef{fl, varStrengthp, VAccess::READ},
+                                 new AstNot{fl, enp->cloneTree(false)}};
+            } else {
+                exprCurrentStrengthp = new AstVarRef{fl, varStrengthp, VAccess::READ};
             }
-            AstNode* const tmp = new AstNot(
-                newenp->fileline(), new AstVarRef(newenp->fileline(), newenp, VAccess::READ));
-            undrivenp = ((!undrivenp) ? tmp : new AstAnd(refp->fileline(), tmp, undrivenp));
+            orp = (!orp) ? exprCurrentStrengthp : new AstOr{fl, orp, exprCurrentStrengthp};
+
+            AstNode* enVarStrengthRefp = new AstVarRef{fl, enVarStrengthp, VAccess::READ};
+
+            enp = (!enp) ? enVarStrengthRefp : new AstOr{fl, enp, enVarStrengthRefp};
+
+            beginStrength = endStrength;
         }
-        if (!undrivenp) {  // No drivers on the bus
-            undrivenp = newAllZerosOrOnes(invarp, true);
-        }
+
         if (!outvarp) {
             // This is the final pre-forced resolution of the tristate, so we apply
             // the pull direction to any undriven pins.
             const AstPull* const pullp = static_cast<AstPull*>(lhsp->user3p());
             bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
+
+            AstNode* undrivenp;
+            if (envarp) {
+                undrivenp = new AstNot{envarp->fileline(),
+                                       new AstVarRef{envarp->fileline(), envarp, VAccess::READ}};
+            } else {
+                if (enp) {
+                    undrivenp = new AstNot{enp->fileline(), enp};
+                } else {
+                    undrivenp = newAllZerosOrOnes(invarp, true);
+                }
+            }
+
             undrivenp
                 = new AstAnd{invarp->fileline(), undrivenp, newAllZerosOrOnes(invarp, pull1)};
-            orp = new AstOr(invarp->fileline(), orp, undrivenp);
-        } else {
-            VL_DO_DANGLING(undrivenp->deleteTree(), undrivenp);
+            orp = new AstOr{invarp->fileline(), orp, undrivenp};
         }
+
         if (envarp) {
-            nodep->addStmtsp(new AstAssignW(
-                enp->fileline(), new AstVarRef(envarp->fileline(), envarp, VAccess::WRITE), enp));
+            AstAssignW* const enAssp = new AstAssignW{
+                enp->fileline(), new AstVarRef{envarp->fileline(), envarp, VAccess::WRITE}, enp};
+            if (debug() >= 9) enAssp->dumpTree(cout, "enAssp: ");
+            nodep->addStmtsp(enAssp);
         }
+
         // __out (child) or <in> (parent) = drive-value expression
-        AstNode* const assp = new AstAssignW(
-            lhsp->fileline(), new AstVarRef(lhsp->fileline(), lhsp, VAccess::WRITE), orp);
+        AstNode* const assp = new AstAssignW{
+            lhsp->fileline(), new AstVarRef{lhsp->fileline(), lhsp, VAccess::WRITE}, orp};
         assp->user2(U2_BOTH);  // Don't process further; already resolved
         if (debug() >= 9) assp->dumpTree(cout, "-lhsp-eqn: ");
         nodep->addStmtsp(assp);
+    }
+
+    bool isOnlyAssignmentIsToLhsVar(AstAssignW* const nodep) {
+        if (AstVarRef* const varRefp = VN_CAST(nodep->lhsp(), VarRef)) {
+            auto foundIt = m_assigns.find(varRefp->varp());
+            if (foundIt != m_assigns.end()) {
+                auto const& assignsToVar = foundIt->second;
+                if (assignsToVar.size() == 1 && assignsToVar[0] == nodep) return true;
+            }
+        }
+        return false;
     }
 
     void addToAssignmentList(AstAssignW* nodep) {
@@ -1109,7 +1224,26 @@ class TristateVisitor final : public TristateBaseVisitor {
                 m_tgraph.didProcess(nodep);
             }
             m_alhs = true;  // And user1p() will indicate tristate equation, if any
+            if (AstAssignW* const assignWp = VN_CAST(nodep, AssignW)) {
+                if (AstStrengthSpec* const specp = assignWp->strengthSpecp()) {
+                    if (specp->strength0() != specp->strength1()) {
+                        // Unequal strengths are not a problem if the assignment is the only
+                        // assignment to its variable. Unfortunately, m_assigns map stores only
+                        // assignments to var. Selects are not inserted, so they may be handled
+                        // improperly
+                        if (!isOnlyAssignmentIsToLhsVar(assignWp)) {
+                            assignWp->v3warn(
+                                E_UNSUPPORTED,
+                                "Unsupported: Unable to resolve unequal strength specifier");
+                        }
+                    } else {
+                        m_currentStrength = specp->strength0();
+                    }
+                }
+            }
             iterateAndNextNull(nodep->lhsp());
+            // back to default strength
+            m_currentStrength = VStrength::STRONG;
             m_alhs = false;
         }
     }
