@@ -468,7 +468,11 @@ V3Hash DfgVertex::hash(HashCache& cache) const {
     V3Hash& result = pair.first->second;
     if (pair.second) {
         result += selfHash();
-        forEachSource([&result, &cache](const DfgVertex& src) { result += src.hash(cache); });
+        // Variables are defined by themselves, so there is no need to hash the sources. This
+        // enables sound hashing of graphs circular only through variables, which we rely on.
+        if (!is<DfgVar>()) {
+            forEachSource([&result, &cache](const DfgVertex& src) { result += src.hash(cache); });
+        }
     }
     return result;
 }
@@ -503,9 +507,8 @@ void DfgVar::accept(DfgVisitor& visitor) { visitor.visit(this); }
 
 bool DfgVar::selfEquals(const DfgVertex& that) const {
     if (const DfgVar* otherp = that.cast<DfgVar>()) {
-        UASSERT_OBJ(varp() != otherp->varp() || this == otherp, this,
+        UASSERT_OBJ(varp() != otherp->varp(), this,
                     "There should only be one DfgVar for a given AstVar");
-        return this == otherp;
     }
     return false;
 }
