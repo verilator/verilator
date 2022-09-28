@@ -84,6 +84,7 @@ module t;
         logic y;
         task do_assign;
             y = #10 x;
+            `WRITE_VERBOSE(("Did assignment with delay\n"));
         endtask
     endclass
 
@@ -121,7 +122,10 @@ module t;
         if ($time != 80) $stop;
         if (event_trig_count != 2) $stop;
         if (dAsgn.y != 1) $stop;
-        $write("*-* All Finished *-*\n");
+        // Test if the object is deleted before do_assign finishes:
+        fork dAsgn.do_assign; join_none
+        #5 dAsgn = null;
+        #15 $write("*-* All Finished *-*\n");
         $finish;
     end
 
@@ -162,5 +166,5 @@ module t;
         if (fc.done != 4 || $time != 70) $stop;
     end
 
-    initial #81 $stop; // timeout
+    initial #101 $stop; // timeout
 endmodule

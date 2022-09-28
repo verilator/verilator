@@ -393,6 +393,8 @@ private:
         }
         if (nodep->user2() && !nodep->isCoroutine()) {  // If first marked as suspendable
             nodep->rtnType("VlCoroutine");
+            // If in a class, create a shared pointer to 'this'
+            if (m_classp) nodep->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;\n"});
             // Revisit dependent nodes if needed
             for (V3GraphEdge* edgep = vxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                 auto* const depVxp = static_cast<DependencyVertex*>(edgep->fromp());

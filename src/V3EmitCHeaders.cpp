@@ -256,9 +256,11 @@ class EmitCHeader final : public EmitCConstInit {
         puts("\nclass ");
         puts(prefixNameProtect(modp));
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
+            puts(" : public ");
             if (classp->extendsp()) {
-                puts(" : public ");
                 puts(prefixNameProtect(classp->extendsp()->classp()));
+            } else {
+                puts("VlClass");
             }
         } else {
             puts(" final : public VerilatedModule");

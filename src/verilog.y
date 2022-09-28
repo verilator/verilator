@@ -6202,7 +6202,8 @@ classFront<classp>:             // IEEE: part of class_declaration
                         { $$ = new AstClass($2, *$4);
                           $$->isVirtual($1);
                           $$->lifetime($3);
-                          SYMP->pushNew($<classp>$); }
+                          SYMP->pushNew($<classp>$);
+                          v3Global.setHasClasses(); }
         //                      // IEEE: part of interface_class_declaration
         |       yINTERFACE yCLASS lifetimeE idAny/*class_identifier*/
                         { $$ = new AstClass($2, *$4);

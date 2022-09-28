@@ -419,7 +419,7 @@ public:
     }
     void visit(AstCNew* nodep) override {
         bool comma = false;
-        puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");
+        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", ");
         puts("vlSymsp");  // TODO make this part of argsp, and eliminate when unnecessary
         if (nodep->argsp()) comma = true;
         for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
@@ -1054,7 +1054,7 @@ public:
         puts(")");
     }
     void visit(AstNewCopy* nodep) override {
-        puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");
+        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", ");
         puts("*");  // i.e. make into a reference
         iterateAndNextNull(nodep->rhsp());
         puts(")");

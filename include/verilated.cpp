@@ -3095,3 +3095,18 @@ void VerilatedAssertOneThread::fatal_different() VL_MT_SAFE {
 #endif
 
 //===========================================================================
+// VlDeleter:: Methods
+
+void VlDeleter::deleteAll() {
+    while (true) {
+        VerilatedLockGuard lock{m_mutex};
+        if (m_newGarbage.empty()) break;
+        VerilatedLockGuard deleteLock{m_deleteMutex};
+        std::swap(m_newGarbage, m_toDelete);
+        lock.unlock();  // So destuctors can enqueue new objects
+        for (VlClass* const objp : m_toDelete) delete objp;
+        m_toDelete.clear();
+    }
+}
+
+//===========================================================================

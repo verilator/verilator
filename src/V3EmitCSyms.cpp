@@ -446,6 +446,7 @@ void EmitCSyms::emitSymHdr() {
              "  ///< Used by trace routines when tracing multiple models\n");
     }
     if (v3Global.hasEvents()) puts("std::vector<VlEvent*> __Vm_triggeredEvents;\n");
+    if (v3Global.hasClasses()) puts("VlDeleter __Vm_deleter;\n");
     puts("bool __Vm_didInit = false;\n");
 
     if (v3Global.opt.mtasks()) {
