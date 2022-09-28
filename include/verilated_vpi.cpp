@@ -96,7 +96,7 @@ public:
         *(reinterpret_cast<uint32_t*>(newp)) = activeMagic();
         return newp + 8;
     }
-    static void operator delete(void* obj, size_t /*size*/)VL_MT_SAFE {
+    static void operator delete(void* obj, size_t /*size*/) VL_MT_SAFE {
         uint8_t* const oldp = (static_cast<uint8_t*>(obj)) - 8;
         if (VL_UNLIKELY(*(reinterpret_cast<uint32_t*>(oldp)) != activeMagic())) {
             VL_FATAL_MT(__FILE__, __LINE__, "",

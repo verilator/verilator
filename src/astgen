@@ -12,6 +12,7 @@ import textwrap
 
 
 class Node:
+
     def __init__(self, name, superClass, file, lineno):
         self._name = name
         self._superClass = superClass
@@ -180,6 +181,7 @@ Stages = {}
 
 
 class Cpt:
+
     def __init__(self):
         self.did_out_tree = False
         self.in_filename = ""

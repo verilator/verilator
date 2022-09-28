@@ -23,12 +23,12 @@
 #endif
 // clang-format on
 #include "V3Ast.h"
-#include "V3Global.h"
 #include "V3Config.h"
+#include "V3Global.h"
 #include "V3ParseImp.h"  // Defines YYTYPE; before including bison header
 
-#include <cstdlib>
 #include <cstdarg>
+#include <cstdlib>
 #include <stack>
 
 #define YYERROR_VERBOSE 1  // For prior to Bison 3.6

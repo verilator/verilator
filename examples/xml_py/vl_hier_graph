@@ -14,12 +14,13 @@ import xml.etree.ElementTree as ET
 
 
 class VlHierGraph:
+
     def __init__(
-        self,
-        verilator_args,  # presently all verilator options are passed-thru
-        # ideally this script would check against options mentioned in help
+            self,
+            verilator_args,  # presently all verilator options are passed-thru
+            # ideally this script would check against options mentioned in help
         debug=0,
-        output_filename='graph.dot'):  # output filename
+            output_filename='graph.dot'):  # output filename
         self.debug = debug
         self.next_vertex_number = 0
         self.name_to_number = {}
