@@ -364,7 +364,11 @@ private:
                 // Simple 1-D array, use existing V3EmitC runtime loop rather than unrolling
                 // This will put "(index)" at end of signal name for us
                 if (m_traVscp->dtypep()->skipRefToEnump()->isString()) {
-                    addIgnore("Unsupported: strings");
+                    if (v3Global.opt.traceStrings()) {
+                        addTraceDecl(VNumRange{}, 0);
+                    } else {
+                        addIgnore("Disabled: strings");
+                    }
                 } else {
                     addTraceDecl(nodep->declRange(), 0);
                 }
@@ -456,7 +460,7 @@ private:
                 if (v3Global.opt.traceStrings()) {
                     addTraceDecl(VNumRange{}, 0);
                 } else {
-                    addIgnore("Unsupported: strings");
+                    addIgnore("Disabled: strings");
                 }
             } else {
                 addTraceDecl(VNumRange{}, 0);
