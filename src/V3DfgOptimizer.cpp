@@ -264,27 +264,43 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
 
         // Build the DFG of this module
         const std::unique_ptr<DfgGraph> dfg{V3DfgPasses::astToDfg(*modp, ctx)};
-        if (dumpDfg() >= 9) dfg->dumpDotFilePrefixed(ctx.prefix() + "whole-input");
+        if (dumpDfg() >= 8) dfg->dumpDotFilePrefixed(ctx.prefix() + "whole-input");
 
-        // Split the DFG into independent components
-        const std::vector<std::unique_ptr<DfgGraph>>& components = dfg->splitIntoComponents();
+        // Extract the cyclic sub-graphs. We do this because a lot of the optimizations assume a
+        // DAG, and large, mostly acyclic graphs could not be optimized due to the presence of
+        // small cycles.
+        const std::vector<std::unique_ptr<DfgGraph>>& cyclicComponents
+            = dfg->extractCyclicComponents("cyclic");
 
-        // For each component
-        for (auto& component : components) {
+        // Split the remaining acyclic DFG into [weakly] connected components
+        const std::vector<std::unique_ptr<DfgGraph>>& acyclicComponents
+            = dfg->splitIntoComponents("acyclic");
+
+        // Quick sanity check
+        UASSERT_OBJ(dfg->size() == 0, nodep, "DfgGraph should have become empty");
+
+        // For each cyclic component
+        for (auto& component : cyclicComponents) {
+            if (dumpDfg() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
+            // TODO: Apply optimizations safe for cyclic graphs
+            // Add back under the main DFG (we will convert everything back in one go)
+            dfg->addGraph(*component);
+        }
+
+        // For each acyclic component
+        for (auto& component : acyclicComponents) {
+            if (dumpDfg() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
             // Reverse topologically sort the component
             const bool acyclic = component->sortTopologically(/* reverse: */ true);
-            // Optimize the component (iff it is not cyclic)
-            if (VL_LIKELY(acyclic)) {
-                V3DfgPasses::optimize(*component, ctx);
-            } else if (dumpDfg() >= 7) {
-                component->dumpDotFilePrefixed(ctx.prefix() + "cyclic");
-            }
-            // Add back under the main DFG (we will convert back in one go)
+            UASSERT_OBJ(acyclic, nodep, "Supposedly acyclic graph is cyclic");
+            // Optimize the component
+            V3DfgPasses::optimize(*component, ctx);
+            // Add back under the main DFG (we will convert everything back in one go)
             dfg->addGraph(*component);
         }
 
         // Convert back to Ast
-        if (dumpDfg() >= 9) dfg->dumpDotFilePrefixed(ctx.prefix() + "whole-optimized");
+        if (dumpDfg() >= 8) dfg->dumpDotFilePrefixed(ctx.prefix() + "whole-optimized");
         AstModule* const resultModp = V3DfgPasses::dfgToAst(*dfg, ctx);
         UASSERT_OBJ(resultModp == modp, modp, "Should be the same module");
     }

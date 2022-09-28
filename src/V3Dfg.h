@@ -83,19 +83,15 @@ public:
     VL_UNCOPYABLE(DfgGraph);
 
     // METHODS
-private:
+public:
     // Add DfgVertex to this graph (assumes not yet contained).
     inline void addVertex(DfgVertex& vtx);
     // Remove DfgVertex form this graph (assumes it is contained).
     inline void removeVertex(DfgVertex& vtx);
-
-public:
     // Number of vertices in this graph
     size_t size() const { return m_size; }
-
     // Parent module
     AstModule* modulep() const { return m_modulep; }
-
     // Name of this graph
     const string& name() const { return m_name; }
 
@@ -126,10 +122,20 @@ public:
 
     // Split this graph into individual components (unique sub-graphs with no edges between them).
     // Leaves 'this' graph empty.
-    std::vector<std::unique_ptr<DfgGraph>> splitIntoComponents();
+    std::vector<std::unique_ptr<DfgGraph>> splitIntoComponents(std::string label);
 
-    // Apply the given function to all vertices in the graph. The function return value indicates
-    // that a change has been made to the graph. Repeat until no changes reported.
+    // Extract cyclic sub-graphs from 'this' graph. Cyclic sub-graphs are those that contain at
+    // least one strongly connected component (SCC) plus any other vertices that feed or sink from
+    // the SCCs, up to a variable boundary. This means that the returned graphs are guaranteed to
+    // be cyclic, but they are not guaranteed to be strongly connected (however, they are always
+    // at least weakly connected). Trivial SCCs that are acyclic (i.e.: vertices that are not part
+    // of a cycle) are left in 'this' graph. This means that at the end 'this' graph is guaranteed
+    // to be a DAG (acyclic). 'this' will not necessarily be a connected graph at the end, even if
+    // it was originally connected.
+    std::vector<std::unique_ptr<DfgGraph>> extractCyclicComponents(std::string label);
+
+    // Apply the given function to all vertices in the graph. The function return value
+    // indicates that a change has been made to the graph. Repeat until no changes reported.
     void runToFixedPoint(std::function<bool(DfgVertex&)> f);
 
     // Dump graph in Graphviz format into the given stream 'os'. 'label' is added to the name of
@@ -653,6 +659,26 @@ public:
         DfgVertexVariadic::resetSources();
     }
 
+    // Remove undriven sources
+    void packSources() {
+        // Grab and reset the driver data
+        std::vector<DriverData> driverData{std::move(m_driverData)};
+
+        // Grab and unlink the sources
+        std::vector<DfgVertex*> sources{arity()};
+        forEachSourceEdge([&](DfgEdge& edge, size_t idx) {
+            sources[idx] = edge.sourcep();
+            edge.unlinkSource();
+        });
+        DfgVertexVariadic::resetSources();
+
+        // Add back the driven sources
+        for (size_t i = 0; i < sources.size(); ++i) {
+            if (!sources[i]) continue;
+            addDriver(driverData[i].first, driverData[i].second, sources[i]);
+        }
+    }
+
     FileLine* driverFileLine(size_t idx) const { return m_driverData[idx].first; }
     uint32_t driverLsb(size_t idx) const { return m_driverData[idx].second; }
 
@@ -690,6 +716,26 @@ public:
     void resetSources() {
         m_driverData.clear();
         DfgVertexVariadic::resetSources();
+    }
+
+    // Remove undriven sources
+    void packSources() {
+        // Grab and reset the driver data
+        std::vector<DriverData> driverData{std::move(m_driverData)};
+
+        // Grab and unlink the sources
+        std::vector<DfgVertex*> sources{arity()};
+        forEachSourceEdge([&](DfgEdge& edge, size_t idx) {
+            sources[idx] = edge.sourcep();
+            edge.unlinkSource();
+        });
+        DfgVertexVariadic::resetSources();
+
+        // Add back the driven sources
+        for (size_t i = 0; i < sources.size(); ++i) {
+            if (!sources[i]) continue;
+            addDriver(driverData[i].first, driverData[i].second, sources[i]);
+        }
     }
 
     FileLine* driverFileLine(size_t idx) const { return m_driverData[idx].first; }
