@@ -741,7 +741,7 @@ void V3Options::notify() {
 
     if (!outFormatOk() && v3Global.opt.main()) ccSet();  // --main implies --cc if not provided
     if (!outFormatOk() && !cdc() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !xmlOnly()) {
-        v3fatal("verilator: Need --cc, --sc, --cdc, --dpi-hdr-only, --lint-only, "
+        v3fatal("verilator: Need --binary, --cc, --sc, --cdc, --dpi-hdr-only, --lint-only, "
                 "--xml-only or --E option");
     }
 
@@ -1015,6 +1015,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-bbox-unsup", CbOnOff, [this](bool flag) {
         m_bboxUnsup = flag;
         FileLine::globalWarnOff(V3ErrorCode::E_UNSUPPORTED, true);
+    });
+    DECL_OPTION("-binary", CbCall, [this]() {
+        m_build = true;
+        m_exe = true;
+        m_main = true;
     });
     DECL_OPTION("-build", Set, &m_build);
     DECL_OPTION("-build-dep-bin", Set, &m_buildDepBin);

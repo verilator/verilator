@@ -107,6 +107,7 @@ SUBDIRS = docs src test_regress \
 	examples/cmake_tracing_c \
 	examples/cmake_tracing_sc \
 	examples/cmake_protect_lib \
+	examples/make_hello_binary \
 	examples/make_hello_c \
 	examples/make_hello_sc \
 	examples/make_tracing_c \
@@ -243,6 +244,7 @@ installdata:
 	; for p in $(VL_INST_INC_SRCDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
 	done
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_hello_binary
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_hello_c
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_hello_sc
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_tracing_c
@@ -278,6 +280,7 @@ uninstall:
 	-rmdir $(DESTDIR)$(pkgdatadir)/include/gtkwave
 	-rmdir $(DESTDIR)$(pkgdatadir)/include/vltstd
 	-rmdir $(DESTDIR)$(pkgdatadir)/include
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_hello_binary
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_hello_c
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_hello_sc
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_tracing_c

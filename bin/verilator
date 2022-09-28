@@ -244,6 +244,7 @@ Verilator - Translate and simulate SystemVerilog code using C++/SystemC
 
     verilator --help
     verilator --version
+    verilator --binary -j 0 [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
     verilator --cc [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
     verilator --sc [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
     verilator --lint-only -Wall [source_files.v]...
@@ -282,6 +283,7 @@ detailed descriptions of these arguments.
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
+    --binary                    Build model binary
     --build                     Build model executable/library after Verilation
     --build-dep-bin <filename>  Override build dependency Verilator binary
     --build-jobs <jobs>         Parallelism for --build

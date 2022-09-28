@@ -10,6 +10,8 @@ See the ``examples/`` directory that is part of the distribution, and
 is installed (in a OS-specific place, often in e.g.
 ``/usr/local/share/verilator/examples``).  These examples include:
 
+examples/make_hello_binary
+   Example GNU-make simple Verilog->binary conversion
 examples/make_hello_c
    Example GNU-make simple Verilog->C++ conversion
 examples/make_hello_sc

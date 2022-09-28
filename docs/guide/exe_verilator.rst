@@ -115,6 +115,13 @@ Summary:
 
    Using this argument will likely cause incorrect simulation.
 
+.. option:: --binary
+
+   Create a Verilated simulator binary.  Alias for :vlopt:`--main`
+   :vlopt:`--exe` :vlopt:`--build`.
+
+   See also :vlopt:`-j`.
+
 .. option:: --build
 
    After generating the SystemC/C++ code, Verilator will invoke the
@@ -779,6 +786,8 @@ Summary:
    and :vlopt:`--build`.
 
    Implies :vlopt:`--cc` if no other output mode was provided.
+
+   See also :vlopt:`--binary`.
 
 .. option:: --max-num-width <value>
 

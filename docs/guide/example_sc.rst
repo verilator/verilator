@@ -43,7 +43,7 @@ Now we run Verilator on our little example:
 
 .. code-block:: bash
 
-     verilator -Wall --sc --exe sc_main.cpp our.v
+     verilator --sc --exe -Wall sc_main.cpp our.v
 
 This example does not use --build, therefore we need to explicitly compile
 it:
