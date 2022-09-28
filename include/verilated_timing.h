@@ -76,22 +76,22 @@ public:
     // Construct
     VlCoroutineHandle(std::coroutine_handle<> coro = nullptr, const char* filename = nullptr,
                       int linenum = 0)
-        : m_coro {
-        coro
-    }
+        : m_coro{coro}
 #ifdef VL_DEBUG
-    , m_filename{filename}, m_linenum { linenum }
+        , m_filename{filename}
+        , m_linenum{linenum}
 #endif
-    {}
+    {
+    }
     // Move the handle, leaving a nullptr
     VlCoroutineHandle(VlCoroutineHandle&& moved)
-        : m_coro {
-        std::exchange(moved.m_coro, nullptr)
-    }
+        : m_coro{std::exchange(moved.m_coro, nullptr)}
 #ifdef VL_DEBUG
-    , m_filename{moved.m_filename}, m_linenum { moved.m_linenum }
+        , m_filename{moved.m_filename}
+        , m_linenum{moved.m_linenum}
 #endif
-    {}
+    {
+    }
     // Destroy if the handle isn't null
     ~VlCoroutineHandle() {
         // Usually these coroutines should get resumed; we only need to clean up if we destroy a
