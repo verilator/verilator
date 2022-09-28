@@ -19,7 +19,7 @@ Verilator 5.001 devel
   clocks are now simulated correctly (#3278, #3384). [Geza Lore, Shunyao CAD]
 * Support timing controls (delays, event controls in any location, wait
   statements) and forks. See docs for details. [Krzysztof Bieganski, Antmicro Ltd]
-* Add --binary option as alias of --main --exe --build (#3625).
+* Add --binary option as alias of --main --exe --build --timing (#3625).
 
 
 Verilator 4.227 devel

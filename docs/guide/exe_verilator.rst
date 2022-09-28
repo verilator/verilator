@@ -118,7 +118,7 @@ Summary:
 .. option:: --binary
 
    Create a Verilated simulator binary.  Alias for :vlopt:`--main`
-   :vlopt:`--exe` :vlopt:`--build`.
+   :vlopt:`--exe` :vlopt:`--build` :vlopt:`--timing`.
 
    See also :vlopt:`-j`.
 

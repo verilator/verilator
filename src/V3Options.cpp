@@ -1020,6 +1020,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_build = true;
         m_exe = true;
         m_main = true;
+        if (m_timing.isDefault()) m_timing = VOptionBool::OPT_TRUE;
     });
     DECL_OPTION("-build", Set, &m_build);
     DECL_OPTION("-build-dep-bin", Set, &m_buildDepBin);
