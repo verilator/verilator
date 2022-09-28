@@ -193,9 +193,9 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
                 continue;
             case VerilatedTraceOffloadCommand::CHG_BIG_STRING:
                 VL_TRACE_OFFLOAD_DEBUG("Command CHG_BIG_STRING" << top);
-                traceBufp->chgStringRaw(oldp, *reinterpret_cast<const char*const*>(readp), top);
+                traceBufp->chgStringRaw(oldp, *reinterpret_cast<const char* const*>(readp), top);
                 readp += 2;
-                delete[] * reinterpret_cast<const char*const*>(readp);
+                delete[] * reinterpret_cast<const char* const*>(readp);
                 continue;
 
                 //===
