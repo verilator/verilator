@@ -1398,6 +1398,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         if (m_traceThreads == 0) m_traceThreads = 1;
     });
     DECL_OPTION("-trace-max-array", Set, &m_traceMaxArray);
+    DECL_OPTION("-trace-max-string", Set, &m_traceMaxString);
     DECL_OPTION("-trace-max-width", Set, &m_traceMaxWidth);
     DECL_OPTION("-trace-params", OnOff, &m_traceParams);
     DECL_OPTION("-trace-structs", OnOff, &m_traceStructs);

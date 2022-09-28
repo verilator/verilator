@@ -313,6 +313,7 @@ private:
     int         m_traceDepth = 0;   // main switch: --trace-depth
     TraceFormat m_traceFormat;  // main switch: --trace or --trace-fst
     int         m_traceMaxArray = 32;  // main switch: --trace-max-array
+    int         m_traceMaxString = 64; // main switch: --trace-max-string
     int         m_traceMaxWidth = 256; // main switch: --trace-max-width
     int         m_traceThreads = 0; // main switch: --trace-threads
     int         m_unrollCount = 64;  // main switch: --unroll-count
@@ -523,6 +524,7 @@ public:
     int traceDepth() const { return m_traceDepth; }
     TraceFormat traceFormat() const { return m_traceFormat; }
     int traceMaxArray() const { return m_traceMaxArray; }
+    int traceMaxString() const { return m_traceMaxString; }
     int traceMaxWidth() const { return m_traceMaxWidth; }
     int traceThreads() const { return m_traceThreads; }
     bool useTraceOffload() const { return trace() && traceFormat().fst() && traceThreads() > 1; }

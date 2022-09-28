@@ -1260,6 +1260,15 @@ Summary:
    traced.  Defaults to 32, as tracing large arrays may greatly slow traced
    simulations.
 
+.. option:: --trace-max-string *length*
+
+   Rarely needed. Specify the maximum length of string to be dumped before
+   truncation. Defaults to 63, as tracing large strings may bloat memory
+   and file size. Larger strings aren't typically useful in wave viewers.
+   
+   Note that VCD tracing has its own limit that may be lower than this one
+   for particular strings.
+
 .. option:: --trace-max-width *width*
 
    Rarely needed.  Specify the maximum bit width of a signal that may be
