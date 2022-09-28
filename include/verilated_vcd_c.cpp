@@ -776,7 +776,6 @@ void VerilatedVcdBuffer::emitDouble(uint32_t code, double newval) {
     finishLine(code, wp);
 }
 
-VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitStringRaw(uint32_t code, const char* newval, int size) {
     char* wp = m_writep;
 

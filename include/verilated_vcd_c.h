@@ -218,7 +218,7 @@ class VerilatedVcdBuffer VL_NOT_FINAL {
     VL_ATTR_ALWINLINE void emitQData(uint32_t code, QData newval, int bits);
     VL_ATTR_ALWINLINE void emitWData(uint32_t code, const WData* newvalp, int bits);
     VL_ATTR_ALWINLINE void emitDouble(uint32_t code, double newval);
-    VL_ATTR_ALWINLINE void emitStringRaw(uint32_t code, const char* newval, int bytes);
+    void emitStringRaw(uint32_t code, const char* newval, int bytes);
 };
 
 //=============================================================================
