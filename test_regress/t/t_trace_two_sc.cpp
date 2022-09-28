@@ -21,6 +21,7 @@
 
 // General headers
 #include "verilated.h"
+
 #include "systemc.h"
 
 VM_PREFIX* ap;
