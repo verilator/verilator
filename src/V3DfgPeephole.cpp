@@ -610,9 +610,7 @@ class V3DfgPeephole final : public DfgVisitor {
             if (DfgConst* const rhsConstp = rhsp->cast<DfgConst>()) {
                 APPLYING(REPLACE_EQ_OF_CONST_AND_CONST) {
                     DfgConst* const replacementp = makeZero(vtxp->fileline(), 1);
-                    if (lhsConstp->constp()->sameTree(rhsConstp->constp())) {
-                        replacementp->num().setLong(1);
-                    }
+                    replacementp->num().opEq(lhsConstp->num(), rhsConstp->num());
                     vtxp->replaceWith(replacementp);
                     return;
                 }
