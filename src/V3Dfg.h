@@ -485,6 +485,12 @@ public:
     }
 
     template <size_t Index>
+    const DfgEdge* sourceEdge() const {
+        static_assert(Index < Arity, "Source index out of range");
+        return &m_srcs[Index];
+    }
+
+    template <size_t Index>
     DfgVertex* source() const {
         static_assert(Index < Arity, "Source index out of range");
         return m_srcs[Index].sourcep();

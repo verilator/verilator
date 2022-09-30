@@ -42,6 +42,7 @@ close $wrFile;
 compile(
     verilator_flags2 => ["--stats", "--build", "--exe",
                          "-Mdir", "$Self->{obj_dir}/obj_opt", "--prefix", "Vopt",
+                         "--dump-dfg", # To fill code coverage
                          "-CFLAGS \"-I .. -I ../obj_ref\"",
                          "../obj_ref/Vref__ALL.a",
                          "../../t/$Self->{name}.cpp"],

@@ -540,12 +540,18 @@ void DfgGraph::runToFixedPoint(std::function<bool(DfgVertex&)> f) {
 
 static const string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) + '"'; }
 
+static bool isSimpleSel(const DfgSel* vtxp) {
+    const DfgConst* const lp = vtxp->lsbp()->cast<DfgConst>();
+    const DfgConst* const wp = vtxp->widthp()->cast<DfgConst>();
+    return lp && wp && !lp->hasMultipleSinks() && !wp->hasMultipleSinks();
+}
+
 // Dump one DfgVertex in Graphviz format
 static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
-    os << toDotId(vtx);
 
     if (const DfgVarPacked* const varVtxp = vtx.cast<DfgVarPacked>()) {
         AstVar* const varp = varVtxp->varp();
+        os << toDotId(vtx);
         os << " [label=\"" << varp->name() << "\nW" << varVtxp->width() << " / F"
            << varVtxp->fanout() << '"';
 
@@ -570,7 +576,9 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
 
     if (const DfgVarArray* const arrVtxp = vtx.cast<DfgVarArray>()) {
         AstVar* const varp = arrVtxp->varp();
-        os << " [label=\"" << varp->name() << "[]\"";
+        const int elements = VN_AS(arrVtxp->dtypep(), UnpackArrayDType)->elementsConst();
+        os << toDotId(vtx);
+        os << " [label=\"" << varp->name() << "[" << elements << "]\"";
         if (varp->direction() == VDirection::INPUT) {
             os << ", shape=box3d, style=filled, fillcolor=chartreuse2";  // Green
         } else if (varp->direction() == VDirection::OUTPUT) {
@@ -591,18 +599,18 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     }
 
     if (const DfgConst* const constVtxp = vtx.cast<DfgConst>()) {
+        const bool feedsSimpleSel = !constVtxp->findSink<DfgVertex>([](const DfgVertex& v) {  //
+            return !v.is<DfgSel>() || !isSimpleSel(v.as<DfgSel>());
+        });
+        if (feedsSimpleSel) return;  // Will draw it in the sel node as it is very common
+
         const V3Number& num = constVtxp->constp()->num();
+
+        os << toDotId(vtx);
         os << " [label=\"";
         if (num.width() <= 32 && !num.isSigned()) {
-            const bool feedsSel = !constVtxp->findSink<DfgVertex>([](const DfgVertex& vtx) {  //
-                return !vtx.is<DfgSel>() && !vtx.is<DfgArraySel>();
-            });
-            if (feedsSel) {
-                os << num.toUInt();
-            } else {
-                os << constVtxp->width() << "'d" << num.toUInt() << "\n";
-                os << constVtxp->width() << "'h" << std::hex << num.toUInt() << std::dec;
-            }
+            os << constVtxp->width() << "'d" << num.toUInt() << "\n";
+            os << constVtxp->width() << "'h" << std::hex << num.toUInt() << std::dec;
         } else {
             os << num.ascii();
         }
@@ -612,6 +620,24 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         return;
     }
 
+    if (const DfgSel* const selVtxp = vtx.cast<DfgSel>()) {
+        if (isSimpleSel(selVtxp)) {
+            const uint32_t lsb = selVtxp->lsbp()->as<DfgConst>()->toU32();
+            const uint32_t msb = lsb + selVtxp->width() - 1;
+            os << toDotId(vtx);
+            os << " [label=\"SEL\n_[" << msb << ":" << lsb << "]\nW" << vtx.width() << " / F"
+               << vtx.fanout() << '"';
+            if (vtx.hasMultipleSinks()) {
+                os << ", shape=doublecircle";
+            } else {
+                os << ", shape=circle";
+            }
+            os << "]" << endl;
+            return;
+        }
+    }
+
+    os << toDotId(vtx);
     os << " [label=\"" << vtx.typeName() << "\nW" << vtx.width() << " / F" << vtx.fanout() << '"';
     if (vtx.hasMultipleSinks()) {
         os << ", shape=doublecircle";
@@ -631,6 +657,16 @@ static void dumpDotEdge(std::ostream& os, const DfgEdge& edge, const string& hea
 // Dump one DfgVertex and all of its source DfgEdges in Graphviz format
 static void dumpDotVertexAndSourceEdges(std::ostream& os, const DfgVertex& vtx) {
     dumpDotVertex(os, vtx);
+
+    if (const DfgSel* const selVtxp = vtx.cast<const DfgSel>()) {
+        if (isSimpleSel(selVtxp)) {
+            UASSERT_OBJ(selVtxp->sourceEdge<0>()->sourcep() == selVtxp->fromp(), selVtxp,
+                        "Operand ordering changed");
+            dumpDotEdge(os, *selVtxp->sourceEdge<0>(), "");
+            return;
+        }
+    }
+
     vtx.forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {  //
         if (edge.sourcep()) {
             string headLabel;
