@@ -110,8 +110,7 @@ class AstToDfgVisitor final : public VNVisitor {
             // Note DfgVertexLValue vertices are not added to m_uncommittedVertices, because we
             // want to hold onto them via AstVar::user1p, and the AstVar might be referenced via
             // multiple AstVarRef instances, so we will never revert a DfgVertexLValue once
-            // created. This means we can end up with DfgVertexLValue vertices in the graph which
-            // have no connections at all (which is fine for later processing).
+            // created. We will delete unconnected variable vertices at the end.
             if (VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 DfgVarArray* const vtxp = new DfgVarArray{*m_dfgp, varp};
                 varp->user1p();
@@ -264,6 +263,13 @@ class AstToDfgVisitor final : public VNVisitor {
     // Canonicalize packed variables
     void canonicalizePacked() {
         for (DfgVarPacked* const varp : m_varPackedps) {
+            // Delete variables with no sinks nor sources (this can happen due to reverting
+            // uncommitted vertices, which does not remove variables)
+            if (!varp->hasSinks() && varp->arity() == 0) {
+                VL_DO_DANGLING(varp->unlinkDelete(*m_dfgp), varp);
+                continue;
+            }
+
             // Gather (and unlink) all drivers
             struct Driver {
                 FileLine* flp;
@@ -324,6 +330,17 @@ class AstToDfgVisitor final : public VNVisitor {
             for (const Driver& driver : drivers) {
                 if (!driver.vtxp) break;  // Stop at end of cmpacted list
                 varp->addDriver(driver.flp, driver.lsb, driver.vtxp);
+            }
+        }
+    }
+
+    // Canonicalize array variables
+    void canonicalizeArray() {
+        for (DfgVarArray* const varp : m_varArrayps) {
+            // Delete variables with no sinks nor sources (this can happen due to reverting
+            // uncommitted vertices, which does not remove variables)
+            if (!varp->hasSinks() && varp->arity() == 0) {
+                VL_DO_DANGLING(varp->unlinkDelete(*m_dfgp), varp);
             }
         }
     }
@@ -406,6 +423,7 @@ class AstToDfgVisitor final : public VNVisitor {
 
         // Canonicalize variables
         canonicalizePacked();
+        canonicalizeArray();
     }
 
 public:

@@ -410,12 +410,18 @@ class ExtractCyclicComponents final {
     static void packSources(DfgGraph& dfg) {
         // Remove undriven variable sources
         dfg.forEachVertex([&](DfgVertex& vtx) {
-            if (DfgVarPacked* const vtxp = vtx.cast<DfgVarPacked>()) {
-                vtxp->packSources();
+            if (DfgVarPacked* const varp = vtx.cast<DfgVarPacked>()) {
+                varp->packSources();
+                if (!varp->hasSinks() && varp->arity() == 0) {
+                    VL_DO_DANGLING(varp->unlinkDelete(dfg), varp);
+                }
                 return;
             }
-            if (DfgVarArray* const vtxp = vtx.cast<DfgVarArray>()) {
-                vtxp->packSources();
+            if (DfgVarArray* const varp = vtx.cast<DfgVarArray>()) {
+                varp->packSources();
+                if (!varp->hasSinks() && varp->arity() == 0) {
+                    VL_DO_DANGLING(varp->unlinkDelete(dfg), varp);
+                }
                 return;
             }
         });
