@@ -62,6 +62,24 @@ V3DfgPeepholeContext::~V3DfgPeepholeContext() {
 #undef OPTIMIZATION_EMIT_STATS
 }
 
+// clang-format off
+template <typename T_Reduction>
+struct ReductionToBitwiseImpl {};
+template <> struct ReductionToBitwiseImpl<DfgRedAnd> { using type = DfgAnd; };
+template <> struct ReductionToBitwiseImpl<DfgRedOr>  { using type = DfgOr;  };
+template <> struct ReductionToBitwiseImpl<DfgRedXor> { using type = DfgXor; };
+template <typename T_Reductoin>
+using ReductionToBitwise = typename ReductionToBitwiseImpl<T_Reductoin>::type;
+
+template <typename T_Bitwise>
+struct BitwiseToReductionImpl {};
+template <> struct BitwiseToReductionImpl<DfgAnd> { using type = DfgRedAnd; };
+template <> struct BitwiseToReductionImpl<DfgOr>  { using type = DfgRedOr;  };
+template <> struct BitwiseToReductionImpl<DfgXor> { using type = DfgRedXor; };
+template <typename T_Reductoin>
+using BitwiseToReduction = typename BitwiseToReductionImpl<T_Reductoin>::type;
+// clang-format on
+
 class V3DfgPeephole final : public DfgVisitor {
 
     // STATE
@@ -129,6 +147,22 @@ class V3DfgPeephole final : public DfgVisitor {
                     vtxp->rhsp(lhsp);
                     return;
                 }
+            }
+        }
+    }
+
+    // Transformations that apply to all associative binary vertices
+    void associativeBinary(DfgVertexWithArity<2>* vtxp) {
+        DfgVertex* const lhsp = vtxp->lhsp();
+
+        // Make associative trees right leaning (for better CSE opportunities)
+        if (lhsp->type() == vtxp->type() && !lhsp->hasMultipleSinks()) {
+            DfgVertexWithArity<2>* const lBinp = static_cast<DfgVertexWithArity<2>*>(lhsp);
+            APPLYING(RIGHT_LEANING_ASSOC) {
+                vtxp->replaceWith(lBinp);
+                vtxp->lhsp(lBinp->rhsp());
+                lBinp->rhsp(vtxp);
+                return;
             }
         }
     }
@@ -226,33 +260,56 @@ class V3DfgPeephole final : public DfgVisitor {
         return false;
     }
 
-    template <typename Vertex>
-    void optimizeReduction(Vertex* vtxp) {
-        static_assert(std::is_same<Vertex, DfgRedAnd>::value
-                          || std::is_same<Vertex, DfgRedOr>::value
-                          || std::is_same<Vertex, DfgRedXor>::value,
-                      "Invalid 'Vertex' type for this method");
+    template <typename Bitwise>
+    bool tryPushBitwiseOpThroughReductions(Bitwise* vtxp) {
+        using Reduction = BitwiseToReduction<Bitwise>;
+
+        if (Reduction* const lRedp = vtxp->lhsp()->template cast<Reduction>()) {
+            if (Reduction* const rRedp = vtxp->rhsp()->template cast<Reduction>()) {
+                DfgVertex* const lSrcp = lRedp->srcp();
+                DfgVertex* const rSrcp = rRedp->srcp();
+                if (lSrcp->dtypep() == rSrcp->dtypep()) {
+                    APPLYING(PUSH_BITWISE_THROUGH_REDUCTION) {
+                        FileLine* const flp = vtxp->fileline();
+                        Bitwise* const bwp = new Bitwise{m_dfg, flp, lSrcp->dtypep()};
+                        bwp->lhsp(lSrcp);
+                        bwp->rhsp(rSrcp);
+                        Reduction* const redp = new Reduction{m_dfg, flp, m_bitDType};
+                        redp->srcp(bwp);
+                        vtxp->replaceWith(redp);
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    template <typename Reduction>
+    void optimizeReduction(Reduction* vtxp) {
+        using Bitwise = ReductionToBitwise<Reduction>;
 
         DfgVertex* const srcp = vtxp->srcp();
+        FileLine* const flp = vtxp->fileline();
 
-        // Reduction of 1-bit value -- Currently unreachable as V3Const can remove these, but
-        // in the future they will be created during this optimization.
-        if (srcp->width() == 1) {  // LCOV_EXCL_START
+        // Reduction of 1-bit value
+        if (srcp->width() == 1) {
             APPLYING(REMOVE_WIDTH_ONE_REDUCTION) {
                 vtxp->replaceWith(srcp);
                 return;
             }
-        }  // LCOV_EXCL_STOP
+        }
 
         if (DfgCond* const condp = srcp->cast<DfgCond>()) {
             if (condp->thenp()->is<DfgConst>() || condp->elsep()->is<DfgConst>()) {
                 APPLYING(PUSH_REDUCTION_THROUGH_COND_WITH_CONST_BRANCH) {
                     // The new 'then' vertex
-                    Vertex* const newThenp = new Vertex{m_dfg, vtxp->fileline(), m_bitDType};
+                    Reduction* const newThenp = new Reduction{m_dfg, flp, m_bitDType};
                     newThenp->srcp(condp->thenp());
 
                     // The new 'else' vertex
-                    Vertex* const newElsep = new Vertex{m_dfg, vtxp->fileline(), m_bitDType};
+                    Reduction* const newElsep = new Reduction{m_dfg, flp, m_bitDType};
                     newElsep->srcp(condp->elsep());
 
                     // The replacement Cond vertex
@@ -268,12 +325,33 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
+        if (DfgConcat* const concatp = srcp->cast<DfgConcat>()) {
+            APPLYING(PUSH_REDUCTION_THROUGH_CONCAT) {
+                // Reduce the parts of the concatenation
+                Reduction* const lReducep = new Reduction{m_dfg, concatp->fileline(), m_bitDType};
+                lReducep->srcp(concatp->lhsp());
+                Reduction* const rReducep = new Reduction{m_dfg, concatp->fileline(), m_bitDType};
+                rReducep->srcp(concatp->rhsp());
+
+                // Bitwise reduce the results
+                DfgVertexWithArity<2>* const replacementp = new Bitwise{m_dfg, flp, m_bitDType};
+                replacementp->lhsp(lReducep);
+                replacementp->rhsp(rReducep);
+                vtxp->replaceWith(replacementp);
+
+                // Optimize the new reductions
+                optimizeReduction(lReducep);
+                optimizeReduction(rReducep);
+                return;
+            }
+        }
+
         if (DfgConst* const constp = srcp->cast<DfgConst>()) {
             APPLYING(REPLACE_REDUCTION_OF_CONST) {
-                DfgConst* const replacementp = makeZero(vtxp->fileline(), 1);
-                if (std::is_same<Vertex, DfgRedAnd>::value) {
+                DfgConst* const replacementp = makeZero(flp, 1);
+                if VL_CONSTEXPR_CXX17 (std::is_same<Reduction, DfgRedAnd>::value) {
                     replacementp->num().opRedAnd(constp->num());
-                } else if (std::is_same<Vertex, DfgRedOr>::value) {
+                } else if VL_CONSTEXPR_CXX17 (std::is_same<Reduction, DfgRedOr>::value) {
                     replacementp->num().opRedOr(constp->num());
                 } else {
                     replacementp->num().opRedXor(constp->num());
@@ -304,8 +382,9 @@ class V3DfgPeephole final : public DfgVisitor {
 
         FileLine* const flp = vtxp->fileline();
 
-        // Convert Extend into Concat with zeros. This simplifies other patterns as they only need
-        // to handle Concat, which is more generic, and don't need special cases for Extend.
+        // Convert Extend into Concat with zeros. This simplifies other patterns as they only
+        // need to handle Concat, which is more generic, and don't need special cases for
+        // Extend.
         APPLYING(REPLACE_EXTEND) {
             DfgConcat* const replacementp = new DfgConcat{m_dfg, flp, vtxp->dtypep()};
             replacementp->lhsp(makeZero(flp, extension));
@@ -354,6 +433,17 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
+        // Not of Eq
+        if (DfgEq* const eqp = vtxp->srcp()->cast<DfgEq>()) {
+            APPLYING(REPLACE_NOT_EQ) {
+                DfgNeq* const replacementp = new DfgNeq{m_dfg, eqp->fileline(), vtxp->dtypep()};
+                replacementp->lhsp(eqp->lhsp());
+                replacementp->rhsp(eqp->rhsp());
+                vtxp->replaceWith(replacementp);
+                return;
+            }
+        }
+
         // Not of Neq
         if (DfgNeq* const neqp = vtxp->srcp()->cast<DfgNeq>()) {
             APPLYING(REPLACE_NOT_NEQ) {
@@ -381,22 +471,38 @@ class V3DfgPeephole final : public DfgVisitor {
         UASSERT_OBJ(vtxp->width() == vtxp->rhsp()->width(), vtxp, "Mismatched RHS width");
 
         commutativeBinary(vtxp);
+        associativeBinary(vtxp);
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
-
         FileLine* const flp = vtxp->fileline();
 
         // Bubble pushing
-        if (lhsp->is<DfgNot>() && rhsp->is<DfgNot>()) {
-            APPLYING(REPLACE_AND_OF_NOT_AND_NOT) {
-                DfgOr* const orp = new DfgOr{m_dfg, flp, vtxp->dtypep()};
-                orp->lhsp(lhsp->as<DfgNot>()->srcp());
-                orp->rhsp(rhsp->as<DfgNot>()->srcp());
-                DfgNot* const notp = new DfgNot{m_dfg, flp, vtxp->dtypep()};
-                notp->srcp(orp);
-                vtxp->replaceWith(notp);
-                return;
+        if (DfgNot* const lhsNotp = lhsp->cast<DfgNot>()) {
+            if (DfgNot* const rhsNotp = rhsp->cast<DfgNot>()) {
+                APPLYING(REPLACE_AND_OF_NOT_AND_NOT) {
+                    DfgOr* const orp = new DfgOr{m_dfg, flp, vtxp->dtypep()};
+                    orp->lhsp(lhsNotp->srcp());
+                    orp->rhsp(rhsNotp->srcp());
+                    DfgNot* const notp = new DfgNot{m_dfg, flp, vtxp->dtypep()};
+                    notp->srcp(orp);
+                    vtxp->replaceWith(notp);
+                    return;
+                }
+            }
+            if (DfgNeq* const rhsNeqp = rhsp->cast<DfgNeq>()) {
+                APPLYING(REPLACE_AND_OF_NOT_AND_NEQ) {
+                    DfgOr* const orp = new DfgOr{m_dfg, flp, vtxp->dtypep()};
+                    orp->lhsp(lhsNotp->srcp());
+                    DfgEq* const newRhsp = new DfgEq{m_dfg, rhsp->fileline(), rhsp->dtypep()};
+                    newRhsp->lhsp(rhsNeqp->lhsp());
+                    newRhsp->rhsp(rhsNeqp->rhsp());
+                    orp->rhsp(newRhsp);
+                    DfgNot* const notp = new DfgNot{m_dfg, flp, vtxp->dtypep()};
+                    notp->srcp(orp);
+                    vtxp->replaceWith(notp);
+                    return;
+                }
             }
         }
 
@@ -429,6 +535,8 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
+        if (tryPushBitwiseOpThroughReductions(vtxp)) return;
+
         if (DfgNot* const lhsNotp = lhsp->cast<DfgNot>()) {
             // ~A & A is all zeroes
             if (lhsNotp->srcp() == rhsp) {
@@ -446,10 +554,10 @@ class V3DfgPeephole final : public DfgVisitor {
         UASSERT_OBJ(vtxp->width() == vtxp->rhsp()->width(), vtxp, "Mismatched RHS width");
 
         commutativeBinary(vtxp);
+        associativeBinary(vtxp);
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
-
         FileLine* const flp = vtxp->fileline();
 
         // Bubble pushing
@@ -537,6 +645,8 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
+        if (tryPushBitwiseOpThroughReductions(vtxp)) return;
+
         if (DfgNot* const lhsNotp = lhsp->cast<DfgNot>()) {
             // ~A | A is all ones
             if (lhsNotp->srcp() == rhsp) {
@@ -555,15 +665,42 @@ class V3DfgPeephole final : public DfgVisitor {
         UASSERT_OBJ(vtxp->width() == vtxp->rhsp()->width(), vtxp, "Mismatched RHS width");
 
         commutativeBinary(vtxp);
+        associativeBinary(vtxp);
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
+        FileLine* const flp = vtxp->fileline();
 
-        if (DfgConst* const lhsConstp = lhsp->cast<DfgConst>()) {
-            if (DfgConcat* const rhsConcatp = rhsp->cast<DfgConcat>()) {
-                if (tryPushBitwiseOpThroughConcat(vtxp, lhsConstp, rhsConcatp)) return;
+        if (DfgConst* const lConstp = lhsp->cast<DfgConst>()) {
+            if (lConstp->isZero()) {
+                APPLYING(REMOVE_XOR_WITH_ZERO) {
+                    vtxp->replaceWith(rhsp);
+                    return;
+                }
+            }
+            if (lConstp->isOnes()) {
+                APPLYING(REPLACE_XOR_WITH_ONES) {
+                    DfgNot* const replacementp = new DfgNot{m_dfg, flp, vtxp->dtypep()};
+                    replacementp->srcp(rhsp);
+                    vtxp->replaceWith(replacementp);
+                    return;
+                }
+            }
+            if (DfgConcat* const rConcatp = rhsp->cast<DfgConcat>()) {
+                tryPushBitwiseOpThroughConcat(vtxp, lConstp, rConcatp);
+                return;
+            }
+            if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
+                APPLYING(REPLACE_XOR_OF_CONST_AND_CONST) {
+                    DfgConst* const replacementp = makeZero(flp, vtxp->width());
+                    replacementp->num().opXor(lConstp->num(), rConstp->num());
+                    vtxp->replaceWith(replacementp);
+                    return;
+                }
             }
         }
+
+        if (tryPushBitwiseOpThroughReductions(vtxp)) return;
     }
 
     void visit(DfgAdd* vtxp) override {
@@ -571,6 +708,7 @@ class V3DfgPeephole final : public DfgVisitor {
         UASSERT_OBJ(vtxp->width() == vtxp->rhsp()->width(), vtxp, "Mismatched RHS width");
 
         commutativeBinary(vtxp);
+        associativeBinary(vtxp);
     }
 
     void visit(DfgSub* vtxp) override {
@@ -808,13 +946,31 @@ class V3DfgPeephole final : public DfgVisitor {
     void visit(DfgRedXor* vtxp) override { optimizeReduction(vtxp); }
 
     void visit(DfgConcat* vtxp) override {
+        UASSERT_OBJ(vtxp->width() == vtxp->lhsp()->width() + vtxp->rhsp()->width(), vtxp,
+                    "Incorrect Concat width: " << vtxp->width() << " != " << vtxp->lhsp()->width()
+                                               << " + " << vtxp->rhsp()->width());
+
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
-        UASSERT_OBJ(vtxp->width() == lhsp->width() + rhsp->width(), vtxp,
-                    "Incorrect Concat width: " << vtxp->width() << " != " << lhsp->width() << " + "
-                                               << rhsp->width());
 
         FileLine* const flp = vtxp->fileline();
+
+        // Make concat trees right leaning (for better CSE opportunities)
+        if (DfgConcat* const lConcatp = lhsp->cast<DfgConcat>()) {
+            if (!lConcatp->hasMultipleSinks()) {
+                APPLYING(RIGHT_LEANING_CONCAT) {
+                    const uint32_t topWidth = lConcatp->rhsp()->width() + rhsp->width();
+                    DfgConcat* const topp = new DfgConcat{m_dfg, flp, dtypeForWidth(topWidth)};
+                    DfgConcat* const botp = new DfgConcat{m_dfg, flp, vtxp->dtypep()};
+                    topp->rhsp(rhsp);
+                    topp->lhsp(lConcatp->rhsp());
+                    botp->rhsp(topp);
+                    botp->lhsp(lConcatp->lhsp());
+                    vtxp->replaceWith(botp);
+                    return;
+                }
+            }
+        }
 
         {
             const auto joinConsts
@@ -1057,6 +1213,49 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
+        if (vtxp->width() > 1) {
+            // 'cond ? a + 1 : a' -> 'a + cond'
+            if (DfgAdd* const thenAddp = thenp->cast<DfgAdd>()) {
+                if (DfgConst* const constp = thenAddp->lhsp()->cast<DfgConst>()) {
+                    if (constp->toI32() == 1) {
+                        if (thenAddp->rhsp() == elsep) {
+                            APPLYING(REPLACE_COND_INC) {
+                                DfgConcat* const extp = new DfgConcat{m_dfg, flp, vtxp->dtypep()};
+                                extp->rhsp(condp);
+                                extp->lhsp(makeZero(flp, vtxp->width() - 1));
+                                FileLine* const thenFlp = thenAddp->fileline();
+                                DfgAdd* const addp = new DfgAdd{m_dfg, thenFlp, vtxp->dtypep()};
+                                addp->lhsp(thenAddp->rhsp());
+                                addp->rhsp(extp);
+                                vtxp->replaceWith(addp);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            // 'cond ? a - 1 : a' -> 'a - cond'
+            if (DfgSub* const thenSubp = thenp->cast<DfgSub>()) {
+                if (DfgConst* const constp = thenSubp->rhsp()->cast<DfgConst>()) {
+                    if (constp->toI32() == 1) {
+                        if (thenSubp->lhsp() == elsep) {
+                            APPLYING(REPLACE_COND_DEC) {
+                                DfgConcat* const extp = new DfgConcat{m_dfg, flp, vtxp->dtypep()};
+                                extp->rhsp(condp);
+                                extp->lhsp(makeZero(flp, vtxp->width() - 1));
+                                FileLine* const thenFlp = thenSubp->fileline();
+                                DfgSub* const subp = new DfgSub{m_dfg, thenFlp, vtxp->dtypep()};
+                                subp->lhsp(thenSubp->lhsp());
+                                subp->rhsp(extp);
+                                vtxp->replaceWith(subp);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (vtxp->width() == 1) {
             AstNodeDType* const dtypep = vtxp->dtypep();
             if (thenp->isZero()) {  // a ? 0 : b becomes ~a & b
@@ -1097,6 +1296,20 @@ class V3DfgPeephole final : public DfgVisitor {
                     repalcementp->rhsp(thenp);
                     vtxp->replaceWith(repalcementp);
                     return;
+                }
+            }
+        }
+    }
+
+    void visit(DfgArraySel* vtxp) override {
+        if (DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>()) {
+            if (DfgVarArray* const varp = vtxp->fromp()->cast<DfgVarArray>()) {
+                const uint32_t idx = idxp->toU32();
+                if (DfgVertex* const driverp = varp->driverAt(idx)) {
+                    APPLYING(INLINE_ARRAYSEL) {
+                        vtxp->replaceWith(driverp);
+                        return;
+                    }
                 }
             }
         }

@@ -39,6 +39,7 @@
 #include "V3Hasher.h"
 #include "V3List.h"
 
+#include <algorithm>
 #include <array>
 #include <functional>
 #include <type_traits>
@@ -275,6 +276,8 @@ public:
     FileLine* fileline() const { return m_filelinep; }
     // The data type of the result of the nodes
     AstNodeDType* dtypep() const { return m_dtypep; }
+    // The type of this vertex
+    DfgType type() const { return m_type; }
 
     // Width of result
     uint32_t width() const {
@@ -365,7 +368,7 @@ public:
 
     // Returns first source edge which satisfies the given predicate 'p', or nullptr if no such
     // sink vertex exists
-    inline DfgEdge* findSourceEdge(std::function<bool(const DfgEdge&, size_t)> p);
+    inline const DfgEdge* findSourceEdge(std::function<bool(const DfgEdge&, size_t)> p) const;
 
     // Returns first sink vertex of type 'Vertex' which satisfies the given predicate 'p',
     // or nullptr if no such sink vertex exists
@@ -747,6 +750,13 @@ public:
     FileLine* driverFileLine(size_t idx) const { return m_driverData[idx].first; }
     uint32_t driverIndex(size_t idx) const { return m_driverData[idx].second; }
 
+    DfgVertex* driverAt(size_t idx) const {
+        const DfgEdge* const edgep = findSourceEdge([=](const DfgEdge&, size_t i) {  //
+            return driverIndex(i) == idx;
+        });
+        return edgep ? edgep->sourcep() : nullptr;
+    }
+
     const string srcName(size_t idx) const override { return cvtToStr(driverIndex(idx)); }
 };
 
@@ -897,12 +907,12 @@ void DfgVertex::forEachSinkEdge(std::function<void(const DfgEdge&)> f) const {
     }
 }
 
-DfgEdge* DfgVertex::findSourceEdge(std::function<bool(const DfgEdge&, size_t)> p) {
+const DfgEdge* DfgVertex::findSourceEdge(std::function<bool(const DfgEdge&, size_t)> p) const {
     const auto pair = sourceEdges();
-    DfgEdge* const edgesp = pair.first;
+    const DfgEdge* const edgesp = pair.first;
     const size_t arity = pair.second;
     for (size_t i = 0; i < arity; ++i) {
-        DfgEdge& edge = edgesp[i];
+        const DfgEdge& edge = edgesp[i];
         if (p(edge, i)) return &edge;
     }
     return nullptr;

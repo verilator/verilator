@@ -13,6 +13,12 @@
 #include <Vref.h>
 #include <iostream>
 
+void rngUpdate(uint64_t& x) {
+    x ^= x << 13;
+    x ^= x >> 7;
+    x ^= x << 17;
+}
+
 int main(int, char**) {
     // Create contexts
     VerilatedContext ctx;
@@ -21,17 +27,28 @@ int main(int, char**) {
     Vref ref{&ctx};
     Vopt opt{&ctx};
 
-    ref.clk = 0;
-    opt.clk = 0;
+    uint64_t rand_a = 0x5aef0c8dd70a4497;
+    uint64_t rand_b = 0xf0c0a8dd75ae4497;
 
-    while (!ctx.gotFinish()) {
+    for (size_t n = 0; n < 200000; ++n) {
+        // Update rngs
+        rngUpdate(rand_a);
+        rngUpdate(rand_b);
+
+        // Assign inputs
+        ref.rand_a = opt.rand_a = rand_a;
+        ref.rand_b = opt.rand_b = rand_b;
+
+        // Evaluate both models
         ref.eval();
         opt.eval();
+
+        // Check equivalence
 #include "checks.h"
+
         // increment time
         ctx.timeInc(1);
-
-        ref.clk = !ref.clk;
-        opt.clk = !opt.clk;
     }
+
+    std::cout << "*-* All Finished *-*\n";
 }
