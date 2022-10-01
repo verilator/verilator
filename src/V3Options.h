@@ -490,6 +490,7 @@ public:
     bool vpi() const { return m_vpi; }
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool xmlOnly() const { return m_xmlOnly; }
+    bool topIfacesSupported() const { return lintOnly() && !hierarchical(); }
 
     int buildJobs() const { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }

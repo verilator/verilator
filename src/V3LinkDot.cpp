@@ -308,6 +308,19 @@ public:
         if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
         return symp;
     }
+    VSymEnt* insertTopIface(AstCell* nodep, const string& scopename) {
+        VSymEnt* const symp = new VSymEnt{&m_syms, nodep};
+        UINFO(9,
+              "      INSERTtopiface se" << cvtToHex(symp) << "  " << scopename << " " << nodep << endl);
+        symp->parentp(rootEntp());  // Needed so backward search can find name of top module
+        symp->fallbackp(dunitEntp());  // Needed so can find $unit stuff
+        nodep->user1p(symp);
+        if (nodep->modp()) nodep->modp()->user1p(symp);
+        checkDuplicate(rootEntp(), nodep, nodep->origName());
+        rootEntp()->insert(nodep->origName(), symp);
+        if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
+        return symp;
+    }
     VSymEnt* insertCell(VSymEnt* abovep, VSymEnt* modSymp, AstCell* nodep,
                         const string& scopename) {
         UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
@@ -764,8 +777,46 @@ class LinkDotFindVisitor final : public VNVisitor {
              modp = VN_AS(modp->nextp(), NodeModule)) {
             UINFO(8, "Top Module: " << modp << endl);
             m_scope = "TOP";
+
+            if (m_statep->forPrearray() && v3Global.opt.topIfacesSupported()) {
+                for (AstNode* subnodep = modp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
+                    if (AstVar* const varp = VN_CAST(subnodep, Var)) {
+                        if (varp->isIfaceRef()) {
+                            const AstNodeDType* const subtypep = varp->subDTypep();
+                            const AstIfaceRefDType* ifacerefp = nullptr;
+                            if (VN_IS(subtypep, IfaceRefDType)) {
+                                ifacerefp = VN_AS(varp->subDTypep(), IfaceRefDType);
+                            }
+                            else if (VN_IS(subtypep, BracketArrayDType)) {
+                                const AstBracketArrayDType* const arrp = VN_AS(subtypep, BracketArrayDType);
+                                const AstNodeDType* const arrsubtypep = arrp->subDTypep();
+                                if (VN_IS(arrsubtypep, IfaceRefDType)) {
+                                    ifacerefp = VN_AS(arrsubtypep, IfaceRefDType);
+                                }
+                            }
+                            else if (VN_IS(subtypep, UnpackArrayDType)) {
+                                const AstUnpackArrayDType* const arrp = VN_AS(subtypep, UnpackArrayDType);
+                                const AstNodeDType* const arrsubtypep = arrp->subDTypep();
+                                if (VN_IS(arrsubtypep, IfaceRefDType)) {
+                                    ifacerefp = VN_AS(arrsubtypep, IfaceRefDType);
+                                }
+                            }
+
+                            if (ifacerefp && !ifacerefp->cellp()) {
+                                // A dummy cell to keep the top level interface alive and correctly optimized for default parameter values
+                                AstCell* ifacecellp = new AstCell{nodep->fileline(), nodep->fileline(), modp->name() + "__02E" + varp->name(), ifacerefp->ifaceName(), nullptr, nullptr, nullptr};
+                                ifacecellp->modp(ifacerefp->ifacep());
+                                m_curSymp = m_modSymp = m_statep->insertTopIface(ifacecellp, m_scope);
+                                { iterate(ifacecellp); }
+                            }
+                        }
+                    }
+                }
+            }
+
             m_curSymp = m_modSymp = m_statep->insertTopCell(modp, m_scope);
             { iterate(modp); }
+
             m_scope = "";
             m_curSymp = m_modSymp = nullptr;
         }

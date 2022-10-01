@@ -281,7 +281,7 @@ private:
                                                  nodep->valuep()->unlinkFrBack()));
             }
         }
-        if (nodep->isIfaceRef() && !nodep->isIfaceParent()) {
+        if (nodep->isIfaceRef() && !nodep->isIfaceParent() && !v3Global.opt.topIfacesSupported()) {
             // Only AstIfaceRefDType's at this point correspond to ports;
             // haven't made additional ones for interconnect yet, so assert is simple
             // What breaks later is we don't have a Scope/Cell representing

@@ -423,10 +423,45 @@ private:
         }
     }
 
+    void preserveTopIfaces(AstNetlist* rootp) {
+        for (AstNodeModule* modp = rootp->modulesp(); modp && modp->level() <= 2;
+            modp = VN_AS(modp->nextp(), NodeModule)) {
+            for (AstNode* subnodep = modp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
+                if (AstVar* const varp = VN_CAST(subnodep, Var)) {
+                    if (varp->isIfaceRef()) {
+                        const AstNodeDType* const subtypep = varp->subDTypep();
+                        const AstIfaceRefDType* ifacerefp = nullptr;
+                        if (VN_IS(subtypep, IfaceRefDType)) {
+                            ifacerefp = VN_AS(varp->subDTypep(), IfaceRefDType);
+                        }
+                        else if (VN_IS(subtypep, BracketArrayDType)) {
+                            const AstBracketArrayDType* const arrp = VN_AS(subtypep, BracketArrayDType);
+                            const AstNodeDType* const arrsubtypep = arrp->subDTypep();
+                            if (VN_IS(arrsubtypep, IfaceRefDType)) {
+                                ifacerefp = VN_AS(arrsubtypep, IfaceRefDType);
+                            }
+                        }
+                        else if (VN_IS(subtypep, UnpackArrayDType)) {
+                            const AstUnpackArrayDType* const arrp = VN_AS(subtypep, UnpackArrayDType);
+                            const AstNodeDType* const arrsubtypep = arrp->subDTypep();
+                            if (VN_IS(arrsubtypep, IfaceRefDType)) {
+                                ifacerefp = VN_AS(arrsubtypep, IfaceRefDType);
+                            }
+                        }
+
+                        if (ifacerefp && !ifacerefp->cellp() && (ifacerefp->ifacep()->user1() == 0)) {
+                            ifacerefp->ifacep()->user1(1);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 public:
     // CONSTRUCTORS
     DeadVisitor(AstNetlist* nodep, bool elimUserVars, bool elimDTypes, bool elimScopes,
-                bool elimCells)
+                bool elimCells, bool elimTopIfaces)
         : m_elimUserVars{elimUserVars}
         , m_elimDTypes{elimDTypes}
         , m_elimCells{elimCells} {
@@ -442,6 +477,7 @@ public:
         if (elimCells) deadCheckCells();
         deadCheckClasses();
         // Modules after vars, because might be vars we delete inside a mod we delete
+        if (!elimTopIfaces) preserveTopIfaces(nodep);
         deadCheckMod();
 
         // We may have removed some datatypes, cleanup
@@ -455,30 +491,30 @@ public:
 
 void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DeadVisitor{nodep, false, false, false, false}; }  // Destruct before checking
+    { DeadVisitor{nodep, false, false, false, false, !v3Global.opt.topIfacesSupported()}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTree() >= 6);
 }
 
 void V3Dead::deadifyDTypes(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DeadVisitor{nodep, false, true, false, false}; }  // Destruct before checking
+    { DeadVisitor{nodep, false, true, false, false, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadDtypes", 0, dumpTree() >= 3);
 }
 
 void V3Dead::deadifyDTypesScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DeadVisitor{nodep, false, true, true, false}; }  // Destruct before checking
+    { DeadVisitor{nodep, false, true, true, false, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadDtypesScoped", 0, dumpTree() >= 3);
 }
 
 void V3Dead::deadifyAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DeadVisitor{nodep, true, true, false, true}; }  // Destruct before checking
+    { DeadVisitor{nodep, true, true, false, true, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAll", 0, dumpTree() >= 3);
 }
 
 void V3Dead::deadifyAllScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { DeadVisitor{nodep, true, true, true, true}; }  // Destruct before checking
+    { DeadVisitor{nodep, true, true, true, true, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAllScoped", 0, dumpTree() >= 3);
 }
