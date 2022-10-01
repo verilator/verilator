@@ -310,8 +310,8 @@ public:
     }
     VSymEnt* insertTopIface(AstCell* nodep, const string& scopename) {
         VSymEnt* const symp = new VSymEnt{&m_syms, nodep};
-        UINFO(9,
-              "      INSERTtopiface se" << cvtToHex(symp) << "  " << scopename << " " << nodep << endl);
+        UINFO(9, "      INSERTtopiface se" << cvtToHex(symp) << "  " << scopename << " " << nodep
+                                           << endl);
         symp->parentp(rootEntp());  // Needed so backward search can find name of top module
         symp->fallbackp(dunitEntp());  // Needed so can find $unit stuff
         nodep->user1p(symp);
@@ -786,16 +786,16 @@ class LinkDotFindVisitor final : public VNVisitor {
                             const AstIfaceRefDType* ifacerefp = nullptr;
                             if (VN_IS(subtypep, IfaceRefDType)) {
                                 ifacerefp = VN_AS(varp->subDTypep(), IfaceRefDType);
-                            }
-                            else if (VN_IS(subtypep, BracketArrayDType)) {
-                                const AstBracketArrayDType* const arrp = VN_AS(subtypep, BracketArrayDType);
+                            } else if (VN_IS(subtypep, BracketArrayDType)) {
+                                const AstBracketArrayDType* const arrp
+                                    = VN_AS(subtypep, BracketArrayDType);
                                 const AstNodeDType* const arrsubtypep = arrp->subDTypep();
                                 if (VN_IS(arrsubtypep, IfaceRefDType)) {
                                     ifacerefp = VN_AS(arrsubtypep, IfaceRefDType);
                                 }
-                            }
-                            else if (VN_IS(subtypep, UnpackArrayDType)) {
-                                const AstUnpackArrayDType* const arrp = VN_AS(subtypep, UnpackArrayDType);
+                            } else if (VN_IS(subtypep, UnpackArrayDType)) {
+                                const AstUnpackArrayDType* const arrp
+                                    = VN_AS(subtypep, UnpackArrayDType);
                                 const AstNodeDType* const arrsubtypep = arrp->subDTypep();
                                 if (VN_IS(arrsubtypep, IfaceRefDType)) {
                                     ifacerefp = VN_AS(arrsubtypep, IfaceRefDType);
@@ -803,10 +803,19 @@ class LinkDotFindVisitor final : public VNVisitor {
                             }
 
                             if (ifacerefp && !ifacerefp->cellp()) {
-                                // A dummy cell to keep the top level interface alive and correctly optimized for default parameter values
-                                AstCell* ifacecellp = new AstCell{nodep->fileline(), nodep->fileline(), modp->name() + "__02E" + varp->name(), ifacerefp->ifaceName(), nullptr, nullptr, nullptr};
+                                // A dummy cell to keep the top level interface alive and correctly
+                                // optimized for default parameter values
+                                AstCell* ifacecellp
+                                    = new AstCell{nodep->fileline(),
+                                                  nodep->fileline(),
+                                                  modp->name() + "__02E" + varp->name(),
+                                                  ifacerefp->ifaceName(),
+                                                  nullptr,
+                                                  nullptr,
+                                                  nullptr};
                                 ifacecellp->modp(ifacerefp->ifacep());
-                                m_curSymp = m_modSymp = m_statep->insertTopIface(ifacecellp, m_scope);
+                                m_curSymp = m_modSymp
+                                    = m_statep->insertTopIface(ifacecellp, m_scope);
                                 { iterate(ifacecellp); }
                             }
                         }
