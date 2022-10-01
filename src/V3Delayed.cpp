@@ -109,6 +109,11 @@ private:
 
     // METHODS
 
+    const AstNode* containingAssignment(const AstNode* nodep) {
+        while (nodep && !VN_IS(nodep, NodeAssign)) nodep = nodep->backp();
+        return nodep;
+    }
+
     void markVarUsage(AstNodeVarRef* nodep, bool blocking) {
         // Ignore if warning is disabled on this reference (used by V3Force).
         if (nodep->fileline()->warnIsOff(V3ErrorCode::BLKANDNBLK)) return;
@@ -122,8 +127,10 @@ private:
         } else {
             const bool last_was_blocking = lastrefp->user5();
             if (last_was_blocking != blocking) {
-                const AstNode* const nonblockingp = blocking ? nodep : lastrefp;
-                const AstNode* const blockingp = blocking ? lastrefp : nodep;
+                const AstNode* nonblockingp = blocking ? nodep : lastrefp;
+                if (const AstNode* np = containingAssignment(nonblockingp)) nonblockingp = np;
+                const AstNode* blockingp = blocking ? lastrefp : nodep;
+                if (const AstNode* np = containingAssignment(blockingp)) blockingp = np;
                 vscp->v3warn(
                     BLKANDNBLK,
                     "Unsupported: Blocked and non-blocking assignments to same variable: "
