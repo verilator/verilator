@@ -1137,6 +1137,16 @@ Similarly the ``NETLIST`` has a list of modules referred to by its
 ``op1p()`` pointer.
 
 
+.tree.dot Output
+----------------
+
+``*.tree.dot`` files are dumps of the AST Tree in `Graphviz
+<https://www.graphviz.org>`__ dot format. This can be used to
+visualize the AST Tree. The vertices correspond to ``AstNode``
+instances, and the edges represent the pointers (``op1p``,
+ ``op2p``, etc) between the nodes.
+
+
 Debugging with GDB
 ------------------
 

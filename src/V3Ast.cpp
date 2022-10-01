@@ -1141,6 +1141,46 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, boo
     }
 }
 
+static void drawChildren(std::ostream& os, const AstNode* thisp, const AstNode* childp, const std::string& childName) {
+    if (childp) {
+        os << "\tn" << cvtToHex(thisp) << " -> n" << cvtToHex(childp) << " ["
+           << "label=\"" << childName << "\" color=red];\n";
+        for (const AstNode* nodep = childp; nodep; nodep = nodep->nextp()) {
+            nodep->dumpTreeDot(os);
+            if (nodep->nextp()) {
+                os << "\tn" << cvtToHex(nodep) << " -> n" << cvtToHex(nodep->nextp()) << " ["
+                   << "label=\"next\" color=red];\n";
+                os << "\t{rank=same; n" << cvtToHex(nodep) << ", n" << cvtToHex(nodep->nextp())
+                   << "}\n";
+            }
+        }
+    }
+}
+
+void AstNode::dumpTreeDot(std::ostream& os) const {
+    os << "\tn" << cvtToHex(this) << "\t["
+       << "label=\"" << typeName() << "\\n" <<name()
+       << "\"];\n";
+    drawChildren(os, this, m_op1p, "op1");
+    drawChildren(os, this, m_op2p, "op2");
+    drawChildren(os, this, m_op3p, "op3");
+    drawChildren(os, this, m_op4p, "op4");
+}
+
+void AstNode::dumpTreeDotFile(const string& filename, bool append, bool doDump) {
+    if (doDump) {
+        UINFO(2, "Dumping " << filename << endl);
+        const std::unique_ptr<std::ofstream> treedotp{V3File::new_ofstream(filename, append)};
+        if (treedotp->fail()) v3fatal("Can't write " << filename);
+        *treedotp << "digraph vTree{\n";
+        *treedotp << "\tgraph\t[label=\"" << filename + ".dot"  << "\",\n";
+        *treedotp << "\t\t labelloc=t, labeljust=l,\n";
+        *treedotp << "\t\t //size=\"7.5,10\",\n" << "];\n";
+        dumpTreeDot(*treedotp);
+        *treedotp << "}\n";
+    }
+}
+
 void AstNode::v3errorEndFatal(std::ostringstream& str) const {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE
