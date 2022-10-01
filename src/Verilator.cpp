@@ -103,6 +103,8 @@
 
 #include <ctime>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 V3Global v3Global;
 
 static void reportStatsIfEnabled() {
@@ -563,7 +565,7 @@ static void verilate(const string& argString) {
     UINFO(1, "Option --verilate: Start Verilation\n");
 
     // Can we skip doing everything if times are ok?
-    V3File::addSrcDepend(v3Global.opt.bin());
+    V3File::addSrcDepend(v3Global.opt.buildDepBin());
     if (v3Global.opt.skipIdentical().isTrue()
         && V3File::checkTimes(v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
                                   + "__verFiles.dat",
@@ -607,7 +609,7 @@ static void verilate(const string& argString) {
     }
 
     // Final steps
-    V3Global::dumpCheckGlobalTree("final", 990, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("final", 990, dumpTree() >= 3);
 
     V3Error::abortIfErrors();
 
@@ -663,11 +665,7 @@ static string buildMakeCmd(const string& makefile, const string& target) {
     cmd << v3Global.opt.getenvMAKE();
     cmd << " -C " << v3Global.opt.makeDir();
     cmd << " -f " << makefile;
-    if (jobs == 0) {
-        cmd << " -j";
-    } else if (jobs > 1) {
-        cmd << " -j " << jobs;
-    }
+    if (jobs > 0) cmd << " -j " << jobs;
     for (const string& flag : makeFlags) cmd << ' ' << flag;
     if (!target.empty()) cmd << ' ' << target;
 
@@ -718,9 +716,9 @@ int main(int argc, char** argv, char** /*env*/) {
     V3PreShell::boot();
 
     // Command option parsing
-    v3Global.opt.bin(argv[0]);
+    v3Global.opt.buildDepBin(argv[0]);
     const string argString = V3Options::argString(argc - 1, argv + 1);
-    v3Global.opt.parseOpts(new FileLine(FileLine::commandLineFilename()), argc - 1, argv + 1);
+    v3Global.opt.parseOpts(new FileLine{FileLine::commandLineFilename()}, argc - 1, argv + 1);
 
     // Validate settings (aka Boost.Program_options)
     v3Global.opt.notify();

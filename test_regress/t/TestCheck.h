@@ -34,7 +34,7 @@ static const bool verbose = false;
 
 #define TEST_CHECK_EQ(got, exp) TEST_CHECK(got, exp, ((got) == (exp)));
 #define TEST_CHECK_NE(got, exp) TEST_CHECK(got, exp, ((got) != (exp)));
-#define TEST_CHECK_CSTR(got, exp) TEST_CHECK(got, exp, 0 == strcmp((got), (exp)));
+#define TEST_CHECK_CSTR(got, exp) TEST_CHECK(got, exp, 0 == std::strcmp((got), (exp)));
 
 #define TEST_CHECK_HEX_EQ(got, exp) \
     do { \

@@ -143,7 +143,7 @@ public:
     ~VPreStream() { lexStreamDepthAdd(-1); }
 
 private:
-    void lexStreamDepthAdd(int delta);
+    inline void lexStreamDepthAdd(int delta);
 };
 
 //======================================================================
@@ -225,9 +225,8 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
     // Called by VPreStream
     void streamDepthAdd(int delta) { m_streamDepth += delta; }
     int streamDepth() const { return m_streamDepth; }
-    /// Utility
-    static int debug();
-    static void debug(int level);
+    // Utility
+    static void setYYDebug(bool on);
     static string cleanDbgStrg(const string& in);
 
 private:
@@ -237,6 +236,6 @@ private:
     void scanSwitchStream(VPreStream* streamp);
 };
 
-inline void VPreStream::lexStreamDepthAdd(int delta) { m_lexp->streamDepthAdd(delta); }
+void VPreStream::lexStreamDepthAdd(int delta) { m_lexp->streamDepthAdd(delta); }
 
 #endif  // Guard

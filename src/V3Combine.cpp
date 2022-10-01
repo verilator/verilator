@@ -33,6 +33,8 @@
 #include <list>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 class CombineVisitor final : VNVisitor {
     // NODE STATE
     // AstNodeModule::user1()   List of AstCFuncs in this module (via m_cfuncs)
@@ -57,7 +59,6 @@ class CombineVisitor final : VNVisitor {
     VDouble0 m_cfuncsCombined;  // Statistic tracking
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void removeEmptyFunctions(std::list<AstCFunc*>& funcps) {
         for (funcit_t it = funcps.begin(), nit; it != funcps.end(); it = nit) {
@@ -180,32 +181,32 @@ class CombineVisitor final : VNVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) override {
+    void visit(AstNetlist* nodep) override {
         // Gather functions and references
         iterateChildrenConst(nodep);
         // Combine functions
         process(nodep);
     }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         UASSERT_OBJ(!m_modp, nodep, "Should not nest");
         m_modp = nodep;
         iterateChildrenConst(nodep);
         m_modp = nullptr;
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         iterateChildrenConst(nodep);
         if (nodep->dontCombine()) return;
         auto& coll = nodep->slow() ? m_cfuncs(m_modp).m_slow : m_cfuncs(m_modp).m_fast;
         coll.emplace_back(nodep);
     }
-    virtual void visit(AstCCall* nodep) override {
+    void visit(AstCCall* nodep) override {
         iterateChildrenConst(nodep);
         AstCFunc* const funcp = nodep->funcp();
         if (funcp->dontCombine()) return;
         m_callSites(funcp).emplace_back(nodep);
     }
 
-    virtual void visit(AstAddrOfCFunc* nodep) override {
+    void visit(AstAddrOfCFunc* nodep) override {
         iterateChildrenConst(nodep);
         if (nodep->funcp()->dontCombine()) return;
         // LCOV_EXCL_START
@@ -217,7 +218,7 @@ class CombineVisitor final : VNVisitor {
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
     // CONSTRUCTORS
     explicit CombineVisitor(AstNetlist* nodep) { iterate(nodep); }
@@ -235,5 +236,5 @@ public:
 void V3Combine::combineAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     CombineVisitor::apply(nodep);
-    V3Global::dumpCheckGlobalTree("combine", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("combine", 0, dumpTree() >= 3);
 }

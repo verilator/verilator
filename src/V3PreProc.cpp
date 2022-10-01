@@ -33,6 +33,8 @@
 #include <stack>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //======================================================================
 // Build in LEX script
 
@@ -111,8 +113,6 @@ public:
     // TYPES
     using DefinesMap = std::map<const std::string, VDefine>;
     using StrList = VInFilter::StrList;
-
-    // debug() -> see V3PreShellImp::debug; use --debugi-V3PreShell
 
     // Defines list
     DefinesMap m_defines;  ///< Map of defines
@@ -250,19 +250,16 @@ public:
     void candidateDefines(VSpellCheck* spellerp) override;
 
     // METHODS, callbacks
-    virtual void comment(const string& text) override;  // Comment detected (if keepComments==2)
-    virtual void include(const string& filename) override;  // Request a include file be processed
-    virtual void undef(const string& name) override;
+    void comment(const string& text) override;  // Comment detected (if keepComments==2)
+    void include(const string& filename) override;  // Request a include file be processed
+    void undef(const string& name) override;
     virtual void undefineall();
-    virtual void define(FileLine* fl, const string& name, const string& value,
-                        const string& params, bool cmdline) override;
-    virtual string removeDefines(const string& text) override;  // Remove defines in a text string
+    void define(FileLine* fl, const string& name, const string& value, const string& params,
+                bool cmdline) override;
+    string removeDefines(const string& text) override;  // Remove defines in a text string
 
     // CONSTRUCTORS
-    V3PreProcImp() {
-        m_debug = 0;
-        m_states.push(ps_TOP);
-    }
+    V3PreProcImp() { m_states.push(ps_TOP); }
     void configure(FileLine* filelinep) {
         // configure() separate from constructor to avoid calling abstract functions
         m_preprocp = this;  // Silly, but to make code more similar to Verilog-Perl
@@ -273,7 +270,6 @@ public:
         m_lexp->m_keepComments = keepComments();
         m_lexp->m_keepWhitespace = keepWhitespace();
         m_lexp->m_pedantic = pedantic();
-        debug(debug());  // Set lexer debug via V3PreProc::debug() method
     }
     ~V3PreProcImp() override {
         if (m_lexp) VL_DO_CLEAR(delete m_lexp, m_lexp = nullptr);
@@ -395,7 +391,7 @@ string V3PreProcImp::commentCleanup(const string& text) {
 }
 
 bool V3PreProcImp::commentTokenMatch(string& cmdr, const char* strg) {
-    int len = strlen(strg);
+    int len = std::strlen(strg);
     if (VString::startsWith(cmdr, strg) && (cmdr[len] == '\0' || isspace(cmdr[len]))) {
         if (isspace(cmdr[len])) len++;
         cmdr = cmdr.substr(len);
@@ -425,27 +421,27 @@ void V3PreProcImp::comment(const string& text) {
     bool synth = false;
     bool vlcomment = false;
     if ((cp[0] == 'v' || cp[0] == 'V') && VString::startsWith(cp + 1, "erilator")) {
-        cp += strlen("verilator");
+        cp += std::strlen("verilator");
         if (*cp == '_') {
             fileline()->v3error("Extra underscore in meta-comment;"
                                 " use /*verilator {...}*/ not /*verilator_{...}*/");
         }
         vlcomment = true;
     } else if (VString::startsWith(cp, "synopsys")) {
-        cp += strlen("synopsys");
+        cp += std::strlen("synopsys");
         synth = true;
         if (*cp == '_') {
             fileline()->v3error("Extra underscore in meta-comment;"
                                 " use /*synopsys {...}*/ not /*synopsys_{...}*/");
         }
     } else if (VString::startsWith(cp, "cadence")) {
-        cp += strlen("cadence");
+        cp += std::strlen("cadence");
         synth = true;
     } else if (VString::startsWith(cp, "pragma")) {
-        cp += strlen("pragma");
+        cp += std::strlen("pragma");
         synth = true;
     } else if (VString::startsWith(cp, "ambit synthesis")) {
-        cp += strlen("ambit synthesis");
+        cp += std::strlen("ambit synthesis");
         synth = true;
     } else {
         return;
@@ -478,7 +474,7 @@ void V3PreProcImp::comment(const string& text) {
         string::size_type pos;
         if ((pos = cmd.find("public_flat_rw")) != string::npos) {
             // "/*verilator public_flat_rw @(foo) */" -> "/*verilator public_flat_rw*/ @(foo)"
-            cmd = cmd.substr(pos + strlen("public_flat_rw"));
+            cmd = cmd.substr(pos + std::strlen("public_flat_rw"));
             while (isspace(cmd[0])) cmd = cmd.substr(1);
             if (!printed) insertUnreadback("/*verilator public_flat_rw*/ " + cmd + " /**/");
         } else {
@@ -489,12 +485,6 @@ void V3PreProcImp::comment(const string& text) {
 
 //*************************************************************************
 // VPreProc Methods.
-
-void V3PreProc::debug(int level) {
-    m_debug = level;
-    V3PreProcImp* idatap = static_cast<V3PreProcImp*>(this);
-    if (idatap->m_lexp) idatap->m_lexp->debug(debug() >= 5 ? debug() : 0);
-}
 
 FileLine* V3PreProc::fileline() {
     const V3PreProcImp* idatap = static_cast<V3PreProcImp*>(this);
@@ -777,6 +767,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
 void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filename) {
     // Open a new file, possibly overriding the current one which is active.
     if (m_incError) return;
+    m_lexp->setYYDebug(debug() >= 5);
     V3File::addSrcDepend(filename);
 
     // Read a list<string> with the whole file.
@@ -1593,7 +1584,7 @@ string V3PreProcImp::getline() {
     if (isEof()) return "";
     const char* rtnp;
     bool gotEof = false;
-    while (nullptr == (rtnp = strchr(m_lineChars.c_str(), '\n')) && !gotEof) {
+    while (nullptr == (rtnp = std::strchr(m_lineChars.c_str(), '\n')) && !gotEof) {
         string buf;
         const int tok = getFinalToken(buf /*ref*/);
         if (debug() >= 5) {

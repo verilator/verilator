@@ -19,6 +19,10 @@ set -x
 
 cd $(dirname "$0")/..
 
+# Avoid occasional cpan failures "Issued certificate has expired."
+export PERL_LWP_SSL_VERIFY_HOSTNAME=0
+echo "check_certificate = off" >> ~/.wgetrc
+
 fatal() {
   echo "ERROR: $(basename "$0"): $1" >&2; exit 1;
 }

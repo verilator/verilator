@@ -45,8 +45,7 @@ class VlThreadPool;
 
 //=============================================================================
 // Return high-precision counter for profiling, or 0x0 if not available
-VL_ATTR_ALWINLINE
-inline QData VL_CPU_TICK() {
+VL_ATTR_ALWINLINE QData VL_CPU_TICK() {
     uint64_t val;
     VL_GET_CPU_TICK(val);
     return val;
@@ -171,9 +170,9 @@ public:
     // METHODS
 
     // Is profiling enabled
-    inline bool enabled() const { return m_enabled; }
+    bool enabled() const { return m_enabled; }
     // Append a trace record to the trace buffer of the current thread
-    static inline VlExecutionRecord& addRecord() {
+    static VlExecutionRecord& addRecord() {
         t_trace.emplace_back();
         return t_trace.back();
     }

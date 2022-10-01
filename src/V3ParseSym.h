@@ -55,6 +55,9 @@ public:
 
 private:
     // METHODS
+
+    VL_DEFINE_DEBUG_FUNCTIONS;
+
     static VSymEnt* getTable(AstNode* nodep) {
         UASSERT_OBJ(nodep->user4p(), nodep, "Current symtable not found");
         return nodep->user4u().toSymEnt();
@@ -115,7 +118,7 @@ public:
         if (VL_UNCOVERABLE(symCurrentp()->nodep() != nodep)) {  // LCOV_EXCL_START
             if (debug()) {
                 showUpward();
-                dump(cout, "-mism: ");
+                dumpSelf(cout, "-mism: ");
             }
             nodep->v3fatalSrc("Symbols suggest ending " << symCurrentp()->nodep()->prettyTypeName()
                                                         << " but parser thinks ending "
@@ -133,7 +136,7 @@ public:
         }
         UINFO(1, "ParseSym Current: " << symCurrentp()->nodep() << endl);
     }  // LCOV_EXCL_STOP
-    void dump(std::ostream& os, const string& indent = "") { m_syms.dump(os, indent); }
+    void dumpSelf(std::ostream& os, const string& indent = "") { m_syms.dumpSelf(os, indent); }
     AstNode* findEntUpward(const string& name) const {
         // Lookup the given string as an identifier, return type of the id, scanning upward
         VSymEnt* const foundp = symCurrentp()->findIdFallback(name);

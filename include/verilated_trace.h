@@ -318,8 +318,8 @@ protected:
     void flushBase();
 
 #ifdef VL_THREADED
-    inline bool offload() const { return m_offload; }
-    inline bool parallel() const { return m_parallel; }
+    bool offload() const { return m_offload; }
+    bool parallel() const { return m_parallel; }
 #else
     static constexpr bool offload() { return false; }
     static constexpr bool parallel() { return false; }
@@ -425,7 +425,7 @@ public:
     // duck-typed void emitWData(uint32_t code, const WData* newvalp, int bits) = 0;
     // duck-typed void emitDouble(uint32_t code, double newval) = 0;
 
-    VL_ATTR_ALWINLINE inline uint32_t* oldp(uint32_t code) { return m_sigs_oldvalp + code; }
+    VL_ATTR_ALWINLINE uint32_t* oldp(uint32_t code) { return m_sigs_oldvalp + code; }
 
     // Write to previous value buffer value and emit trace entry.
     void fullBit(uint32_t* oldp, CData newval);
@@ -441,27 +441,27 @@ public:
     // thread and are called chg*Impl
 
     // Check previous dumped value of signal. If changed, then emit trace entry
-    VL_ATTR_ALWINLINE inline void chgBit(uint32_t* oldp, CData newval) {
+    VL_ATTR_ALWINLINE void chgBit(uint32_t* oldp, CData newval) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullBit(oldp, newval);
     }
-    VL_ATTR_ALWINLINE inline void chgCData(uint32_t* oldp, CData newval, int bits) {
+    VL_ATTR_ALWINLINE void chgCData(uint32_t* oldp, CData newval, int bits) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullCData(oldp, newval, bits);
     }
-    VL_ATTR_ALWINLINE inline void chgSData(uint32_t* oldp, SData newval, int bits) {
+    VL_ATTR_ALWINLINE void chgSData(uint32_t* oldp, SData newval, int bits) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullSData(oldp, newval, bits);
     }
-    VL_ATTR_ALWINLINE inline void chgIData(uint32_t* oldp, IData newval, int bits) {
+    VL_ATTR_ALWINLINE void chgIData(uint32_t* oldp, IData newval, int bits) {
         const uint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullIData(oldp, newval, bits);
     }
-    VL_ATTR_ALWINLINE inline void chgQData(uint32_t* oldp, QData newval, int bits) {
+    VL_ATTR_ALWINLINE void chgQData(uint32_t* oldp, QData newval, int bits) {
         const uint64_t diff = *reinterpret_cast<QData*>(oldp) ^ newval;
         if (VL_UNLIKELY(diff)) fullQData(oldp, newval, bits);
     }
-    VL_ATTR_ALWINLINE inline void chgWData(uint32_t* oldp, const WData* newvalp, int bits) {
+    VL_ATTR_ALWINLINE void chgWData(uint32_t* oldp, const WData* newvalp, int bits) {
         for (int i = 0; i < (bits + 31) / 32; ++i) {
             if (VL_UNLIKELY(oldp[i] ^ newvalp[i])) {
                 fullWData(oldp, newvalp, bits);
@@ -469,7 +469,7 @@ public:
             }
         }
     }
-    VL_ATTR_ALWINLINE inline void chgDouble(uint32_t* oldp, double newval) {
+    VL_ATTR_ALWINLINE void chgDouble(uint32_t* oldp, double newval) {
         // cppcheck-suppress invalidPointerCast
         if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) fullDouble(oldp, newval);
     }
@@ -498,48 +498,48 @@ public:
     // Hot path internal interface to Verilator generated code
 
     // Offloaded tracing. Just dump everything in the offload buffer
-    inline void chgBit(uint32_t code, CData newval) {
+    void chgBit(uint32_t code, CData newval) {
         m_offloadBufferWritep[0] = VerilatedTraceOffloadCommand::CHG_BIT_0 | newval;
         m_offloadBufferWritep[1] = code;
         m_offloadBufferWritep += 2;
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
-    inline void chgCData(uint32_t code, CData newval, int bits) {
+    void chgCData(uint32_t code, CData newval, int bits) {
         m_offloadBufferWritep[0] = (bits << 4) | VerilatedTraceOffloadCommand::CHG_CDATA;
         m_offloadBufferWritep[1] = code;
         m_offloadBufferWritep[2] = newval;
         m_offloadBufferWritep += 3;
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
-    inline void chgSData(uint32_t code, SData newval, int bits) {
+    void chgSData(uint32_t code, SData newval, int bits) {
         m_offloadBufferWritep[0] = (bits << 4) | VerilatedTraceOffloadCommand::CHG_SDATA;
         m_offloadBufferWritep[1] = code;
         m_offloadBufferWritep[2] = newval;
         m_offloadBufferWritep += 3;
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
-    inline void chgIData(uint32_t code, IData newval, int bits) {
+    void chgIData(uint32_t code, IData newval, int bits) {
         m_offloadBufferWritep[0] = (bits << 4) | VerilatedTraceOffloadCommand::CHG_IDATA;
         m_offloadBufferWritep[1] = code;
         m_offloadBufferWritep[2] = newval;
         m_offloadBufferWritep += 3;
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
-    inline void chgQData(uint32_t code, QData newval, int bits) {
+    void chgQData(uint32_t code, QData newval, int bits) {
         m_offloadBufferWritep[0] = (bits << 4) | VerilatedTraceOffloadCommand::CHG_QDATA;
         m_offloadBufferWritep[1] = code;
         *reinterpret_cast<QData*>(m_offloadBufferWritep + 2) = newval;
         m_offloadBufferWritep += 4;
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
-    inline void chgWData(uint32_t code, const WData* newvalp, int bits) {
+    void chgWData(uint32_t code, const WData* newvalp, int bits) {
         m_offloadBufferWritep[0] = (bits << 4) | VerilatedTraceOffloadCommand::CHG_WDATA;
         m_offloadBufferWritep[1] = code;
         m_offloadBufferWritep += 2;
         for (int i = 0; i < (bits + 31) / 32; ++i) { *m_offloadBufferWritep++ = newvalp[i]; }
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
-    inline void chgDouble(uint32_t code, double newval) {
+    void chgDouble(uint32_t code, double newval) {
         m_offloadBufferWritep[0] = VerilatedTraceOffloadCommand::CHG_DOUBLE;
         m_offloadBufferWritep[1] = code;
         // cppcheck-suppress invalidPointerCast

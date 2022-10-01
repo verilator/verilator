@@ -53,11 +53,7 @@ class VSymEnt final {
     bool m_exported;  // Allow importing
     bool m_imported;  // Was imported
 #ifdef VL_DEBUG
-    static int debug() {
-        static int level = -1;
-        if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel("V3LinkDot.cpp");
-        return level;
-    }
+    VL_DEFINE_DEBUG_FUNCTIONS;
 #else
     static constexpr int debug() { return 0; }  // NOT runtime, too hot of a function
 #endif
@@ -88,7 +84,7 @@ public:
             }
         }
     }
-    void dump(std::ostream& os, const string& indent = "", int numLevels = 1) const {
+    void dumpSelf(std::ostream& os, const string& indent = "", int numLevels = 1) const {
         VSymConstMap doneSyms;
         dumpIterate(os, doneSyms, indent, numLevels, "TOP");
     }
@@ -127,7 +123,7 @@ public:
                                      << "  " << entp->nodep() << endl);
         if (name != "" && m_idNameMap.find(name) != m_idNameMap.end()) {
             if (!V3Error::errorCount()) {  // Else may have just reported warning
-                if (debug() >= 9 || V3Error::debugDefault()) dump(cout, "- err-dump: ", 1);
+                if (debug() >= 9 || V3Error::debugDefault()) dumpSelf(cout, "- err-dump: ", 1);
                 entp->nodep()->v3fatalSrc("Inserting two symbols with same name: " << name);
             }
         } else {
@@ -272,7 +268,7 @@ public:
         if (scopes == "") scopes = "<no instances found>";
         std::cerr << V3Error::warnMore() << "... Known scopes under '" << prettyName
                   << "': " << scopes << endl;
-        if (debug()) dump(std::cerr, "       KnownScope: ", 1);
+        if (debug()) dumpSelf(std::cerr, "       KnownScope: ", 1);
     }
 };
 
@@ -291,6 +287,8 @@ class VSymGraph final {
     // CONSTRUCTORS
     VL_UNCOPYABLE(VSymGraph);
 
+    VL_DEFINE_DEBUG_FUNCTIONS;
+
 public:
     explicit VSymGraph(AstNetlist* nodep) { m_symRootp = new VSymEnt(this, nodep); }
     ~VSymGraph() {
@@ -300,7 +298,7 @@ public:
     // METHODS
     VSymEnt* rootp() const { return m_symRootp; }
     // Debug
-    void dump(std::ostream& os, const string& indent = "") {
+    void dumpSelf(std::ostream& os, const string& indent = "") {
         VSymConstMap doneSyms;
         os << "SymEnt Dump:\n";
         m_symRootp->dumpIterate(os, doneSyms, indent, 9999, "$root");
@@ -316,12 +314,12 @@ public:
         }
     }
     void dumpFilePrefixed(const string& nameComment) {
-        if (v3Global.opt.dumpTree()) {
+        if (dumpTree()) {
             const string filename = v3Global.debugFilename(nameComment) + ".txt";
             UINFO(2, "Dumping " << filename << endl);
             const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
             if (logp->fail()) v3fatal("Can't write " << filename);
-            dump(*logp, "");
+            dumpSelf(*logp, "");
         }
     }
 

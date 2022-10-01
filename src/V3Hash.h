@@ -26,7 +26,7 @@
 class V3Hash final {
     uint32_t m_value;  // The 32-bit hash value.
 
-    inline static uint32_t combine(uint32_t a, uint32_t b) {
+    static uint32_t combine(uint32_t a, uint32_t b) {
         return a ^ (b + 0x9e3779b9 + (a << 6) + (a >> 2));
     }
 

@@ -87,6 +87,8 @@
 #include <queue>
 #include <set>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 namespace {
 
 //######################################################################
@@ -455,7 +457,6 @@ private:
     StmtPropertiesAllocator* m_stmtPropertiesp = nullptr;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // Function that processes a whole sub-tree
     void process(AstNode* nodep) {
@@ -565,7 +566,7 @@ private:
             return false;
         }
         if (const AstNodeCond* const condp = VN_CAST(nodep, NodeCond)) {
-            return yieldsOneOrZero(condp->expr1p()) && yieldsOneOrZero(condp->expr2p());
+            return yieldsOneOrZero(condp->thenp()) && yieldsOneOrZero(condp->elsep());
         }
         if (const AstCCast* const castp = VN_CAST(nodep, CCast)) {
             // Cast never sign extends
@@ -593,7 +594,7 @@ private:
             return new AstConst{rhsp->fileline(), AstConst::BitTrue{}, condTrue};
         } else if (const AstNodeCond* const condp = extractCondFromRhs(rhsp)) {
             AstNode* const resp
-                = condTrue ? condp->expr1p()->unlinkFrBack() : condp->expr2p()->unlinkFrBack();
+                = condTrue ? condp->thenp()->unlinkFrBack() : condp->elsep()->unlinkFrBack();
             if (condp == rhsp) return resp;
             if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
                 UASSERT_OBJ(andp->rhsp() == condp, rhsp, "Should not try to fold this");
@@ -676,7 +677,7 @@ private:
                     // Construct the new RHSs and add to branches
                     thenp->rhsp(foldAndUnlink(rhsp, true));
                     elsep->rhsp(foldAndUnlink(rhsp, false));
-                    resultp->addIfsp(thenp);
+                    resultp->addThensp(thenp);
                     resultp->addElsesp(elsep);
                     // Cleanup
                     VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
@@ -684,8 +685,8 @@ private:
                     AstNodeIf* const ifp = VN_AS(currp, NodeIf);
                     UASSERT_OBJ(ifp, currp, "Must be AstNodeIf");
                     // Move branch contents under new if
-                    if (AstNode* const listp = ifp->ifsp()) {
-                        resultp->addIfsp(listp->unlinkFrBackWithNext());
+                    if (AstNode* const listp = ifp->thensp()) {
+                        resultp->addThensp(listp->unlinkFrBackWithNext());
                     }
                     if (AstNode* const listp = ifp->elsesp()) {
                         resultp->addElsesp(listp->unlinkFrBackWithNext());
@@ -695,7 +696,7 @@ private:
                 }
             } while (nextp);
             // Merge the branches of the resulting AstIf after re-analysis
-            if (resultp->ifsp()) m_workQueuep->push(resultp->ifsp());
+            if (resultp->thensp()) m_workQueuep->push(resultp->thensp());
             if (resultp->elsesp()) m_workQueuep->push(resultp->elsesp());
         } else if (AstNodeIf* const ifp = VN_CAST(m_mgFirstp, NodeIf)) {
             // There was nothing to merge this AstNodeIf with, so try to merge its branches.
@@ -711,7 +712,7 @@ private:
         AstNode::user2ClearTree();
         // Merge recursively within the branches of an un-merged AstNodeIF
         if (recursivep) {
-            iterateAndNextNull(recursivep->ifsp());
+            iterateAndNextNull(recursivep->thensp());
             iterateAndNextNull(recursivep->elsesp());
             // Close a pending merge to ensure merge state is
             // reset as expected at the end of this function
@@ -823,7 +824,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         if (AstNode* const condp = (*m_stmtPropertiesp)(nodep).m_condp) {
             // Check if mergeable
             if (!checkOrMakeMergeable(nodep)) return;
@@ -836,11 +837,11 @@ private:
         }
     }
 
-    virtual void visit(AstNodeIf* nodep) override {
+    void visit(AstNodeIf* nodep) override {
         // Check if mergeable
         if (!checkOrMakeMergeable(nodep)) {
             // If not mergeable, try to merge the branches
-            iterateAndNextNull(nodep->ifsp());
+            iterateAndNextNull(nodep->thensp());
             iterateAndNextNull(nodep->elsesp());
             return;
         }
@@ -850,25 +851,25 @@ private:
         addToList(nodep, nodep->condp());
     }
 
-    virtual void visit(AstNodeStmt* nodep) override {
+    void visit(AstNodeStmt* nodep) override {
         if (m_mgFirstp && addIfHelpfulElseEndMerge(nodep)) return;
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         // Merge function body
         if (nodep->stmtsp()) process(nodep->stmtsp());
     }
 
     // For speed, only iterate what is necessary.
-    virtual void visit(AstNetlist* nodep) override { iterateAndNextNull(nodep->modulesp()); }
-    virtual void visit(AstNodeModule* nodep) override { iterateAndNextNull(nodep->stmtsp()); }
-    virtual void visit(AstNode* nodep) override {}
+    void visit(AstNetlist* nodep) override { iterateAndNextNull(nodep->modulesp()); }
+    void visit(AstNodeModule* nodep) override { iterateAndNextNull(nodep->stmtsp()); }
+    void visit(AstNode* nodep) override {}
 
 public:
     // CONSTRUCTORS
     explicit MergeCondVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~MergeCondVisitor() override {
+    ~MergeCondVisitor() override {
         V3Stats::addStat("Optimizations, MergeCond merges", m_statMerges);
         V3Stats::addStat("Optimizations, MergeCond merged items", m_statMergedItems);
         V3Stats::addStat("Optimizations, MergeCond longest merge", m_statLongestList);
@@ -883,5 +884,5 @@ public:
 void V3MergeCond::mergeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { MergeCondVisitor{nodep}; }
-    V3Global::dumpCheckGlobalTree("merge_cond", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("merge_cond", 0, dumpTree() >= 6);
 }

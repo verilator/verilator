@@ -206,7 +206,7 @@ public:
     V3OutFile(V3OutFile&&) = delete;
     V3OutFile& operator=(V3OutFile&&) = delete;
 
-    virtual ~V3OutFile() override;
+    ~V3OutFile() override;
     void putsForceIncs();
 
 private:
@@ -216,15 +216,15 @@ private:
     }
 
     // CALLBACKS
-    virtual void putcOutput(char chr) override {
+    void putcOutput(char chr) override {
         m_bufferp->at(m_usedBytes++) = chr;
         if (VL_UNLIKELY(m_usedBytes >= WRITE_BUFFER_SIZE_BYTES)) writeBlock();
     }
-    virtual void putsOutput(const char* str) override {
+    void putsOutput(const char* str) override {
         std::size_t len = strlen(str);
         std::size_t availableBytes = WRITE_BUFFER_SIZE_BYTES - m_usedBytes;
         while (VL_UNLIKELY(len >= availableBytes)) {
-            memcpy(m_bufferp->data() + m_usedBytes, str, availableBytes);
+            std::memcpy(m_bufferp->data() + m_usedBytes, str, availableBytes);
             m_usedBytes = WRITE_BUFFER_SIZE_BYTES;
             writeBlock();
             str += availableBytes;
@@ -232,7 +232,7 @@ private:
             availableBytes = WRITE_BUFFER_SIZE_BYTES;
         }
         if (len > 0) {
-            memcpy(m_bufferp->data() + m_usedBytes, str, len);
+            std::memcpy(m_bufferp->data() + m_usedBytes, str, len);
             m_usedBytes += len;
         }
     }
@@ -246,7 +246,7 @@ public:
         : V3OutFile{filename, V3OutFormatter::LA_C} {
         resetPrivate();
     }
-    virtual ~V3OutCFile() override = default;
+    ~V3OutCFile() override = default;
     virtual void putsHeader() { puts("// Verilated -*- C++ -*-\n"); }
     virtual void putsIntTopInclude() { putsForceIncs(); }
     virtual void putsGuard();
@@ -270,9 +270,9 @@ class V3OutScFile final : public V3OutCFile {
 public:
     explicit V3OutScFile(const string& filename)
         : V3OutCFile{filename} {}
-    virtual ~V3OutScFile() override = default;
-    virtual void putsHeader() override { puts("// Verilated -*- SystemC -*-\n"); }
-    virtual void putsIntTopInclude() override {
+    ~V3OutScFile() override = default;
+    void putsHeader() override { puts("// Verilated -*- SystemC -*-\n"); }
+    void putsIntTopInclude() override {
         putsForceIncs();
         puts("#include \"systemc.h\"\n");
         puts("#include \"verilated_sc.h\"\n");
@@ -283,7 +283,7 @@ class V3OutVFile final : public V3OutFile {
 public:
     explicit V3OutVFile(const string& filename)
         : V3OutFile{filename, V3OutFormatter::LA_VERILOG} {}
-    virtual ~V3OutVFile() override = default;
+    ~V3OutVFile() override = default;
     virtual void putsHeader() { puts("// Verilated -*- Verilog -*-\n"); }
 };
 
@@ -293,7 +293,7 @@ public:
         : V3OutFile{filename, V3OutFormatter::LA_XML} {
         blockIndent(2);
     }
-    virtual ~V3OutXmlFile() override = default;
+    ~V3OutXmlFile() override = default;
     virtual void putsHeader() { puts("<?xml version=\"1.0\" ?>\n"); }
 };
 
@@ -301,7 +301,7 @@ class V3OutMkFile final : public V3OutFile {
 public:
     explicit V3OutMkFile(const string& filename)
         : V3OutFile{filename, V3OutFormatter::LA_MK} {}
-    virtual ~V3OutMkFile() override = default;
+    ~V3OutMkFile() override = default;
     virtual void putsHeader() { puts("# Verilated -*- Makefile -*-\n"); }
     // No automatic indentation yet.
     void puts(const char* strg) { putsNoTracking(strg); }

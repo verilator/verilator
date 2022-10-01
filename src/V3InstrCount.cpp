@@ -24,6 +24,8 @@
 
 #include <iomanip>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 /// Estimate the instruction cost for executing all logic within and below
 /// a given AST node. Note this estimates the number of instructions we'll
 /// execute, not the number we'll generate. That is, for conditionals,
@@ -75,7 +77,7 @@ public:
         , m_osp{osp} {
         if (nodep) iterate(nodep);
     }
-    virtual ~InstrCountVisitor() override = default;
+    ~InstrCountVisitor() override = default;
 
     // METHODS
     uint32_t instrCount() const { return m_instrCount; }
@@ -117,7 +119,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeSel* nodep) override {
+    void visit(AstNodeSel* nodep) override {
         // This covers both AstArraySel and AstWordSel
         //
         // If some vector is a bazillion dwords long, and we're selecting 1
@@ -128,7 +130,7 @@ private:
         const VisitBase vb{this, nodep};
         iterateAndNextNull(nodep->bitp());
     }
-    virtual void visit(AstSel* nodep) override {
+    void visit(AstSel* nodep) override {
         // Similar to AstNodeSel above, a small select into a large vector
         // is not expensive. Count the cost of the AstSel itself (scales with
         // its width) and the cost of the lsbp() and widthp() nodes, but not
@@ -137,13 +139,13 @@ private:
         iterateAndNextNull(nodep->lsbp());
         iterateAndNextNull(nodep->widthp());
     }
-    virtual void visit(AstSliceSel* nodep) override {  // LCOV_EXCL_LINE
+    void visit(AstSliceSel* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("AstSliceSel unhandled");
     }
-    virtual void visit(AstMemberSel* nodep) override {  // LCOV_EXCL_LINE
+    void visit(AstMemberSel* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("AstMemberSel unhandled");
     }
-    virtual void visit(AstConcat* nodep) override {
+    void visit(AstConcat* nodep) override {
         // Nop.
         //
         // Ignore concat. The problem with counting concat is that when we
@@ -163,14 +165,14 @@ private:
         // the widths of the operands (ignored here).
         markCost(nodep);
     }
-    virtual void visit(AstNodeIf* nodep) override {
+    void visit(AstNodeIf* nodep) override {
         const VisitBase vb{this, nodep};
         iterateAndNextNull(nodep->condp());
         const uint32_t savedCount = m_instrCount;
 
         UINFO(8, "ifsp:\n");
         m_instrCount = 0;
-        iterateAndNextNull(nodep->ifsp());
+        iterateAndNextNull(nodep->thensp());
         uint32_t ifCount = m_instrCount;
         if (nodep->branchPred().unlikely()) ifCount = 0;
 
@@ -185,10 +187,10 @@ private:
             if (nodep->elsesp()) nodep->elsesp()->user4(0);  // Don't dump it
         } else {
             m_instrCount = savedCount + elseCount;
-            if (nodep->ifsp()) nodep->ifsp()->user4(0);  // Don't dump it
+            if (nodep->thensp()) nodep->thensp()->user4(0);  // Don't dump it
         }
     }
-    virtual void visit(AstNodeCond* nodep) override {
+    void visit(AstNodeCond* nodep) override {
         // Just like if/else above, the ternary operator only evaluates
         // one of the two expressions, so only count the max.
         const VisitBase vb{this, nodep};
@@ -197,23 +199,23 @@ private:
 
         UINFO(8, "?\n");
         m_instrCount = 0;
-        iterateAndNextNull(nodep->expr1p());
+        iterateAndNextNull(nodep->thenp());
         const uint32_t ifCount = m_instrCount;
 
         UINFO(8, ":\n");
         m_instrCount = 0;
-        iterateAndNextNull(nodep->expr2p());
+        iterateAndNextNull(nodep->elsep());
         const uint32_t elseCount = m_instrCount;
 
         if (ifCount < elseCount) {
             m_instrCount = savedCount + elseCount;
-            if (nodep->expr1p()) nodep->expr1p()->user4(0);  // Don't dump it
+            if (nodep->thenp()) nodep->thenp()->user4(0);  // Don't dump it
         } else {
             m_instrCount = savedCount + ifCount;
-            if (nodep->expr2p()) nodep->expr2p()->user4(0);  // Don't dump it
+            if (nodep->elsep()) nodep->elsep()->user4(0);  // Don't dump it
         }
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         // You'd think that the OrderLogicVertex's would be disjoint trees
         // of stuff in the AST, but it isn't so: V3Order makes an
         // OrderLogicVertex for each ACTIVE, and then also makes an
@@ -229,14 +231,14 @@ private:
         markCost(nodep);
         UASSERT_OBJ(nodep == m_startNodep, nodep, "Multiple actives, or not start node");
     }
-    virtual void visit(AstNodeCCall* nodep) override {
+    void visit(AstNodeCCall* nodep) override {
         const VisitBase vb{this, nodep};
         iterateChildren(nodep);
         m_tracingCall = true;
         iterate(nodep->funcp());
         UASSERT_OBJ(!m_tracingCall, nodep, "visit(AstCFunc) should have cleared m_tracingCall.");
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         // Don't count a CFunc other than by tracing a call or counting it
         // from the root
         UASSERT_OBJ(m_tracingCall || nodep == m_startNodep, nodep,
@@ -249,12 +251,11 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         const VisitBase vb{this, nodep};
         iterateChildren(nodep);
     }
 
-    VL_DEBUG_FUNC;  // Declare debug()
     VL_UNCOPYABLE(InstrCountVisitor);
 };
 
@@ -276,12 +277,12 @@ public:
         UASSERT_OBJ(osp, nodep, "Don't call if not dumping");
         if (nodep) iterate(nodep);
     }
-    virtual ~InstrCountDumpVisitor() override = default;
+    ~InstrCountDumpVisitor() override = default;
 
 private:
     // METHODS
     string indent() const { return string(m_depth, ':') + " "; }
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         ++m_depth;
         if (unsigned costPlus1 = nodep->user4()) {
             *m_osp << "  " << indent() << "cost " << std::setw(6) << std::left << (costPlus1 - 1)
@@ -290,7 +291,7 @@ private:
         }
         --m_depth;
     }
-    VL_DEBUG_FUNC;  // Declare debug()
+
     VL_UNCOPYABLE(InstrCountDumpVisitor);
 };
 

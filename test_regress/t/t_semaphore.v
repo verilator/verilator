@@ -13,8 +13,9 @@
 //  endclass
 
 module t(/*AUTOARG*/);
-   //From UVM:
+   // From UVM:
    semaphore s;
+   semaphore s2;
    int       msg;
 
    initial begin
@@ -30,6 +31,7 @@ module t(/*AUTOARG*/);
       s.put(2);
       if (s.try_get(2) <= 0) $stop;
 
+`ifndef VERILATOR
       fork
          begin
             #10;  // So later then get() starts below
@@ -42,6 +44,10 @@ module t(/*AUTOARG*/);
             s.get();
          end
       join
+`endif
+
+      s2 = new;
+      if (s2.try_get() != 0) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

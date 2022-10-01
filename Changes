@@ -8,6 +8,31 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
+Verilator 4.228 2022-10-01
+==========================
+
+**Announcement:**
+
+* The next release is anticipated primere Verilator Version 5.  Please
+  consider beta-testing the github 'develop-v5' branch, which will soon
+  merge into the github 'master' branch (#3383).
+
+**Minor:**
+
+* Support some IEEE signal strengths (#3601) (#3629). [Ryszard Rozak/Antmicro]
+* Add --main to generate main() C++ (previously was experimental only).
+* Add --build-jobs, and rework arguments for -j (#3623). [Kamil Rakoczy]
+* Rename --bin to --build-dep-bin.
+* Rename debug flags --dumpi-tree, --dumpi-graph, etc. [Geza Lore]
+* Fix thread saftey in SystemC VL_ASSIGN_SBW/WSB (#3494) (#3513). [Mladen Slijepcevic]
+* Fix crash in gate optimization of circular logic (#3543). [Bill Flynn]
+* Fix arguments in non-static method call (#3547) (#3582). [Gustav Svensk]
+* Fix default --mod-prefix when --prefix is repeated (#3603). [Geza Lore]
+* Fix calling trace() after open() segfault (#3610) (#3627). [Yu-Sheng Lin]
+* Fix typedef'ed class conversion to boolean (#3616). [Aleksander Kiryk]
+* Fix Verilation speed when disabled warnings (#3632). [Kamil Rakoczy/Antmicro]
+
+
 Verilator 4.226 2022-08-31
 ==========================
 
@@ -20,12 +45,13 @@ Verilator 4.226 2022-08-31
 * Support $test$plusargs(expr) (#3489).
 * Rename trace rolloverSize() (#3570).
 * Improve Verilation speed with --threads on large designs. [Geza Lore]
+* Improve Verilation memory by reducing V3Number (#3521). [Mariusz Glebocki/Antmicro]
 * Fix struct pattern assignment (#2328) (#3517). [Mostafa Gamal]
 * Fix public combo propagation issues (#2905). [Todd Strader]
 * Fix incorrect tristate logic (#3399) [shareefj, Vighnesh Iyer]
 * Fix incorrect bit op tree optimization (#3470). [algrobman]
 * Fix bisonpre for MSYS2 (#3471).
-* Fix max memory usage (#3483). [Kamil Rakoczy]
+* Fix max memory usage (#3483). [Kamil Rakoczy/Antmicro]
 * Fix empty string arguments to display (#3484). [Grulfen]
 * Fix table misoptimizing away display (#3488). [Stefan Post]
 * Fix unique_ptr memory header for MinGW64 (#3493).
@@ -36,7 +62,7 @@ Verilator 4.226 2022-08-31
 * Fix segfault exporting non-existant package (#3535).
 * Fix void-cast queue pop_front or pop_back (#3542) (#3364). [Drew Ranck]
 * Fix case statement comparing string literal (#3544). [Gustav Svensk]
-* Fix === with some tristate constants (#3551). [Ryszard Rozak]
+* Fix === with some tristate constants (#3551). [Ryszard Rozak/Antmicro]
 * Fix converting subclasses to string (#3552). [Arkadiusz Kozdra/Antmicro]
 * Fix --hierarchical with order-based pin connections (#3583) (#3585). [Kelin9298]
 

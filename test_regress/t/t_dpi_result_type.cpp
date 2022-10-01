@@ -303,9 +303,9 @@ void check_exports() {
 #endif
     if (e_chandle()) stop();
     if ((n % 2) == 0) {
-        if (strcmp(e_string(), "Hello") != 0) stop();
+        if (std::strcmp(e_string(), "Hello") != 0) stop();
     } else {
-        if (strcmp(e_string(), "World") != 0) stop();
+        if (std::strcmp(e_string(), "World") != 0) stop();
     }
     if (e_bit() != (n % 2)) stop();
     if (e_logic() != !(n % 2)) stop();
@@ -327,9 +327,9 @@ void check_exports() {
 #endif
     if (e_chandle_t()) stop();
     if ((n % 2) == 0) {
-        if (strcmp(e_string_t(), "Hello") != 0) stop();
+        if (std::strcmp(e_string_t(), "Hello") != 0) stop();
     } else {
-        if (strcmp(e_string_t(), "World") != 0) stop();
+        if (std::strcmp(e_string_t(), "World") != 0) stop();
     }
     if (e_bit_t() != (n % 2)) stop();
     if (e_logic_t() != !(n % 2)) stop();

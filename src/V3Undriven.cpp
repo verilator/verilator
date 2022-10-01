@@ -30,10 +30,13 @@
 
 #include "V3Ast.h"
 #include "V3Global.h"
+#include "V3Stats.h"
 #include "V3String.h"
 
 #include <algorithm>
 #include <vector>
+
+VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 // Class for every variable we may process
@@ -45,8 +48,6 @@ class UndrivenVarEntry final {
     std::vector<bool> m_bitFlags;  // Used/Driven on each subbit
 
     enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAGS_PER_BIT = 2 };
-
-    VL_DEBUG_FUNC;  // Declare debug()
 
 public:
     // CONSTRUCTORS
@@ -256,7 +257,6 @@ private:
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     UndrivenVarEntry* getEntryp(AstVar* nodep, int which_user) {
         if (!(which_user == 1 ? nodep->user1p() : nodep->user2p())) {
@@ -293,7 +293,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
             // For assigns and non-combo always, do just usr==1, to look
             // for module-wide undriven etc.
@@ -314,15 +314,15 @@ private:
         // Discover variables used in bit definitions, etc
         iterateChildren(nodep);
     }
-    virtual void visit(AstArraySel* nodep) override {
+    void visit(AstArraySel* nodep) override {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
         iterateChildren(nodep);
     }
-    virtual void visit(AstSliceSel* nodep) override {
+    void visit(AstSliceSel* nodep) override {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
         iterateChildren(nodep);
     }
-    virtual void visit(AstSel* nodep) override {
+    void visit(AstSel* nodep) override {
         AstNodeVarRef* const varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
         AstConst* const constp = VN_CAST(nodep->lsbp(), Const);
         if (varrefp && constp && !constp->num().isFourState()) {
@@ -346,7 +346,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstNodeVarRef* nodep) override {
+    void visit(AstNodeVarRef* nodep) override {
         // Any variable
         if (nodep->access().isWriteOrRW()
             && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
@@ -387,7 +387,7 @@ private:
     }
 
     // Don't know what black boxed calls do, assume in+out
-    virtual void visit(AstSysIgnore* nodep) override {
+    void visit(AstSysIgnore* nodep) override {
         VL_RESTORER(m_inBBox);
         {
             m_inBBox = true;
@@ -395,28 +395,28 @@ private:
         }
     }
 
-    virtual void visit(AstAssign* nodep) override {
+    void visit(AstAssign* nodep) override {
         VL_RESTORER(m_inProcAssign);
         {
             m_inProcAssign = true;
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstAssignDly* nodep) override {
+    void visit(AstAssignDly* nodep) override {
         VL_RESTORER(m_inProcAssign);
         {
             m_inProcAssign = true;
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstAssignW* nodep) override {
+    void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_inContAssign);
         {
             m_inContAssign = true;
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstAlways* nodep) override {
+    void visit(AstAlways* nodep) override {
         VL_RESTORER(m_alwaysCombp);
         {
             AstNode::user2ClearTree();
@@ -431,37 +431,37 @@ private:
         }
     }
 
-    virtual void visit(AstNodeFTask* nodep) override {
+    void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_taskp);
         {
             m_taskp = nodep;
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstPin* nodep) override {
+    void visit(AstPin* nodep) override {
         VL_RESTORER(m_inInoutPin);
         m_inInoutPin = nodep->modVarp()->isInoutish();
         iterateChildren(nodep);
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os
-    virtual void visit(AstPrimitive*) override {}
+    void visit(AstPrimitive*) override {}
 
     // Coverage artifacts etc shouldn't count as a sink
-    virtual void visit(AstCoverDecl*) override {}
-    virtual void visit(AstCoverInc*) override {}
-    virtual void visit(AstCoverToggle*) override {}
-    virtual void visit(AstTraceDecl*) override {}
-    virtual void visit(AstTraceInc*) override {}
+    void visit(AstCoverDecl*) override {}
+    void visit(AstCoverInc*) override {}
+    void visit(AstCoverToggle*) override {}
+    void visit(AstTraceDecl*) override {}
+    void visit(AstTraceInc*) override {}
 
     // iterate
-    virtual void visit(AstConst* nodep) override {}
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstConst* nodep) override {}
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit UndrivenVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~UndrivenVisitor() override {
+    ~UndrivenVisitor() override {
         for (UndrivenVarEntry* ip : m_entryps[1]) ip->reportViolations();
         for (int usr = 1; usr < 3; ++usr) {
             for (UndrivenVarEntry* ip : m_entryps[usr]) delete ip;
@@ -475,4 +475,5 @@ public:
 void V3Undriven::undrivenAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { UndrivenVisitor{nodep}; }
+    if (v3Global.opt.stats()) V3Stats::statsStage("undriven");
 }

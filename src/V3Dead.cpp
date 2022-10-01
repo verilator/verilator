@@ -44,6 +44,8 @@
 #include <map>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Dead state, as a visitor of each AstNode
 
@@ -78,7 +80,6 @@ private:
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void checkAll(AstNode* nodep) {
         if (nodep != nodep->dtypep()) {  // NodeDTypes reference themselves
@@ -102,7 +103,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         if (m_modp) m_modp->user1Inc();  // e.g. Class under Package
         VL_RESTORER(m_modp);
         {
@@ -120,12 +121,12 @@ private:
             }
         }
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->scopep()) nodep->scopep()->user1Inc();
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->aboveScopep()) nodep->aboveScopep()->user1Inc();
@@ -136,14 +137,14 @@ private:
             m_scopesp.push_back(nodep);
         }
     }
-    virtual void visit(AstCell* nodep) override {
+    void visit(AstCell* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
         m_cellsp.push_back(nodep);
         nodep->modp()->user1Inc();
     }
 
-    virtual void visit(AstNodeVarRef* nodep) override {
+    void visit(AstNodeVarRef* nodep) override {
         // Note NodeAssign skips calling this in some cases
         iterateChildren(nodep);
         checkAll(nodep);
@@ -155,7 +156,7 @@ private:
         if (nodep->varp()) nodep->varp()->user1Inc();
         if (nodep->classOrPackagep()) nodep->classOrPackagep()->user1Inc();
     }
-    virtual void visit(AstNodeFTaskRef* nodep) override {
+    void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->classOrPackagep()) {
@@ -166,11 +167,11 @@ private:
             }
         }
     }
-    virtual void visit(AstMethodCall* nodep) override {
+    void visit(AstMethodCall* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
     }
-    virtual void visit(AstRefDType* nodep) override {
+    void visit(AstRefDType* nodep) override {
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
@@ -184,7 +185,7 @@ private:
             }
         }
     }
-    virtual void visit(AstClassRefDType* nodep) override {
+    void visit(AstClassRefDType* nodep) override {
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
@@ -197,12 +198,12 @@ private:
         }
         if (nodep->classp()) nodep->classp()->user1Inc();
     }
-    virtual void visit(AstNodeDType* nodep) override {
+    void visit(AstNodeDType* nodep) override {
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
     }
-    virtual void visit(AstEnumItemRef* nodep) override {
+    void visit(AstEnumItemRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->classOrPackagep()) {
@@ -214,13 +215,13 @@ private:
         }
         checkAll(nodep);
     }
-    virtual void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberSel* nodep) override {
         iterateChildren(nodep);
         if (nodep->varp()) nodep->varp()->user1Inc();
         if (nodep->fromp()->dtypep()) nodep->fromp()->dtypep()->user1Inc();  // classref
         checkAll(nodep);
     }
-    virtual void visit(AstModport* nodep) override {
+    void visit(AstModport* nodep) override {
         iterateChildren(nodep);
         if (m_elimCells) {
             if (!nodep->varsp()) {
@@ -230,14 +231,14 @@ private:
         }
         checkAll(nodep);
     }
-    virtual void visit(AstSelLoopVars* nodep) override {
+    void visit(AstSelLoopVars* nodep) override {
         // Var under a SelLoopVars means we haven't called V3Width to remove them yet
         VL_RESTORER(m_selloopvarsp);
         m_selloopvarsp = nodep;
         iterateChildren(nodep);
         checkAll(nodep);
     }
-    virtual void visit(AstTypedef* nodep) override {
+    void visit(AstTypedef* nodep) override {
         iterateChildren(nodep);
         if (m_elimCells && !nodep->attrPublic()) {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -248,20 +249,20 @@ private:
         // Normal modules may disappear, e.g. if they are parameterized then removed
         if (nodep->attrPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
     }
-    virtual void visit(AstVarScope* nodep) override {
+    void visit(AstVarScope* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->scopep()) nodep->scopep()->user1Inc();
         if (mightElimVar(nodep->varp())) m_vscsp.push_back(nodep);
     }
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->isSigPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
         if (m_selloopvarsp) nodep->user1Inc();
         if (mightElimVar(nodep)) m_varsp.push_back(nodep);
     }
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         // See if simple assignments to variables may be eliminated because
         // that variable is never used.
         // Similar code in V3Life
@@ -284,7 +285,7 @@ private:
     }
 
     //-----
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         if (nodep->isOutputter()) m_sideEffect = true;
         iterateChildren(nodep);
         checkAll(nodep);
@@ -446,7 +447,7 @@ public:
         // We may have removed some datatypes, cleanup
         nodep->typeTablep()->repairCache();
     }
-    virtual ~DeadVisitor() override = default;
+    ~DeadVisitor() override = default;
 };
 
 //######################################################################
@@ -455,30 +456,29 @@ public:
 void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DeadVisitor{nodep, false, false, false, false}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("deadModules", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTree() >= 6);
 }
 
 void V3Dead::deadifyDTypes(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DeadVisitor{nodep, false, true, false, false}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("deadDtypes", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("deadDtypes", 0, dumpTree() >= 3);
 }
 
 void V3Dead::deadifyDTypesScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DeadVisitor{nodep, false, true, true, false}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("deadDtypesScoped", 0,
-                                  v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("deadDtypesScoped", 0, dumpTree() >= 3);
 }
 
 void V3Dead::deadifyAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DeadVisitor{nodep, true, true, false, true}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("deadAll", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("deadAll", 0, dumpTree() >= 3);
 }
 
 void V3Dead::deadifyAllScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DeadVisitor{nodep, true, true, true, true}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("deadAllScoped", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("deadAllScoped", 0, dumpTree() >= 3);
 }

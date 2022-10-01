@@ -47,6 +47,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Cast state, as a visitor of each AstNode
 
@@ -60,7 +62,6 @@ private:
     // STATE
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void insertCast(AstNode* nodep, int needsize) {  // We'll insert ABOVE passed node
         UINFO(4, "  NeedCast " << nodep << endl);
@@ -111,25 +112,25 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeUniop* nodep) override {
+    void visit(AstNodeUniop* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1());
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
     }
-    virtual void visit(AstNodeBiop* nodep) override {
+    void visit(AstNodeBiop* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1() | nodep->rhsp()->user1());
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         if (nodep->sizeMattersRhs()) ensureCast(nodep->rhsp());
     }
-    virtual void visit(AstNodeTriop* nodep) override {
+    void visit(AstNodeTriop* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1() | nodep->rhsp()->user1() | nodep->thsp()->user1());
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         if (nodep->sizeMattersRhs()) ensureCast(nodep->rhsp());
         if (nodep->sizeMattersThs()) ensureCast(nodep->thsp());
     }
-    virtual void visit(AstNodeQuadop* nodep) override {
+    void visit(AstNodeQuadop* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1() | nodep->rhsp()->user1() | nodep->thsp()->user1()
                      | nodep->fhsp()->user1());
@@ -138,12 +139,12 @@ private:
         if (nodep->sizeMattersThs()) ensureCast(nodep->thsp());
         if (nodep->sizeMattersFhs()) ensureCast(nodep->fhsp());
     }
-    virtual void visit(AstCCast* nodep) override {
+    void visit(AstCCast* nodep) override {
         iterateChildren(nodep);
         ensureLower32Cast(nodep);
         nodep->user1(1);
     }
-    virtual void visit(AstNegate* nodep) override {
+    void visit(AstNegate* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1());
         if (nodep->lhsp()->widthMin() == 1) {
@@ -155,7 +156,7 @@ private:
             ensureCast(nodep->lhsp());
         }
     }
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         const AstNode* const backp = nodep->backp();
         if (nodep->access().isReadOnly() && !VN_IS(backp, CCast) && VN_IS(backp, NodeMath)
             && !VN_IS(backp, ArraySel) && !VN_IS(backp, RedXor) && backp->width()
@@ -166,7 +167,7 @@ private:
         }
         nodep->user1(1);
     }
-    virtual void visit(AstConst* nodep) override {
+    void visit(AstConst* nodep) override {
         // Constants are of unknown size if smaller than 33 bits, because
         // we're too lazy to wrap every constant in the universe in
         // ((IData)#).
@@ -174,29 +175,29 @@ private:
     }
 
     // Null dereference protection
-    virtual void visit(AstNullCheck* nodep) override {
+    void visit(AstNullCheck* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1());
     }
-    virtual void visit(AstCMethodCall* nodep) override {
+    void visit(AstCMethodCall* nodep) override {
         iterateChildren(nodep);
         ensureNullChecked(nodep->fromp());
     }
-    virtual void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberSel* nodep) override {
         iterateChildren(nodep);
         ensureNullChecked(nodep->fromp());
     }
 
     // NOPs
-    virtual void visit(AstVar*) override {}
+    void visit(AstVar*) override {}
 
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit CastVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~CastVisitor() override = default;
+    ~CastVisitor() override = default;
 };
 
 //######################################################################
@@ -205,5 +206,5 @@ public:
 void V3Cast::castAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { CastVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("cast", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("cast", 0, dumpTree() >= 3);
 }

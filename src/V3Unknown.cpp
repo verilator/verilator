@@ -41,6 +41,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class UnknownVisitor final : public VNVisitor {
@@ -64,7 +66,6 @@ private:
     V3UniqueNames m_xrandNames;  // For generating unique temporary variable names
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void replaceBoundLvalue(AstNode* nodep, AstNode* condp) {
         // Spec says a out-of-range LHS SEL results in a NOP.
@@ -120,7 +121,7 @@ private:
         } else {
             AstVar* const varp
                 = new AstVar(fl, VVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep());
-            m_modp->addStmtp(varp);
+            m_modp->addStmtsp(varp);
             AstNode* const abovep = prep->backp();  // Grab above point before we replace 'prep'
             prep->replaceWith(new AstVarRef(fl, varp, VAccess::WRITE));
             AstIf* const newp = new AstIf(
@@ -138,7 +139,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         VL_RESTORER(m_modp);
         VL_RESTORER(m_constXCvt);
@@ -153,30 +154,30 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstAssignDly* nodep) override {
+    void visit(AstAssignDly* nodep) override {
         VL_RESTORER(m_assigndlyp);
         {
             m_assigndlyp = nodep;
             VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
         }
     }
-    virtual void visit(AstAssignW* nodep) override {
+    void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_assignwp);
         {
             m_assignwp = nodep;
             VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
         }
     }
-    virtual void visit(AstCaseItem* nodep) override {
+    void visit(AstCaseItem* nodep) override {
         VL_RESTORER(m_constXCvt);
         {
             m_constXCvt = false;  // Avoid losing the X's in casex
             iterateAndNextNull(nodep->condsp());
             m_constXCvt = true;
-            iterateAndNextNull(nodep->bodysp());
+            iterateAndNextNull(nodep->stmtsp());
         }
     }
-    virtual void visit(AstNodeDType* nodep) override {
+    void visit(AstNodeDType* nodep) override {
         VL_RESTORER(m_constXCvt);
         {
             m_constXCvt = false;  // Avoid losing the X's in casex
@@ -255,11 +256,11 @@ private:
         }
     }
 
-    virtual void visit(AstEqCase* nodep) override { visitEqNeqCase(nodep); }
-    virtual void visit(AstNeqCase* nodep) override { visitEqNeqCase(nodep); }
-    virtual void visit(AstEqWild* nodep) override { visitEqNeqWild(nodep); }
-    virtual void visit(AstNeqWild* nodep) override { visitEqNeqWild(nodep); }
-    virtual void visit(AstIsUnknown* nodep) override {
+    void visit(AstEqCase* nodep) override { visitEqNeqCase(nodep); }
+    void visit(AstNeqCase* nodep) override { visitEqNeqCase(nodep); }
+    void visit(AstEqWild* nodep) override { visitEqNeqWild(nodep); }
+    void visit(AstNeqWild* nodep) override { visitEqNeqWild(nodep); }
+    void visit(AstIsUnknown* nodep) override {
         iterateChildren(nodep);
         // Ahh, we're two state, so this is easy
         UINFO(4, " ISUNKNOWN->0 " << nodep << endl);
@@ -267,7 +268,7 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstCountBits* nodep) override {
+    void visit(AstCountBits* nodep) override {
         // Ahh, we're two state, so this is easy
         std::array<bool, 3> dropop;
         dropop[0] = VN_IS(nodep->rhsp(), Const) && VN_AS(nodep->rhsp(), Const)->num().isAnyX();
@@ -303,7 +304,7 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstConst* nodep) override {
+    void visit(AstConst* nodep) override {
         if (m_constXCvt && nodep->num().isFourState()) {
             UINFO(4, " CONST4 " << nodep << endl);
             if (debug() >= 9) nodep->dumpTree(cout, "  Const_old: ");
@@ -331,8 +332,8 @@ private:
                 // We use the special XTEMP type so it doesn't break pure functions
                 UASSERT_OBJ(m_modp, nodep, "X number not under module");
                 AstVar* const newvarp
-                    = new AstVar(nodep->fileline(), VVarType::XTEMP, m_xrandNames.get(nodep),
-                                 VFlagLogicPacked(), nodep->width());
+                    = new AstVar{nodep->fileline(), VVarType::XTEMP, m_xrandNames.get(nodep),
+                                 VFlagLogicPacked{}, nodep->width()};
                 newvarp->lifetime(VLifetime::STATIC);
                 ++m_statUnkVars;
                 VNRelinker replaceHandle;
@@ -353,9 +354,9 @@ private:
                 // Add inits in front of other statement.
                 // In the future, we should stuff the initp into the module's constructor.
                 AstNode* const afterp = m_modp->stmtsp()->unlinkFrBackWithNext();
-                m_modp->addStmtp(newvarp);
-                m_modp->addStmtp(newinitp);
-                m_modp->addStmtp(afterp);
+                m_modp->addStmtsp(newvarp);
+                m_modp->addStmtsp(newinitp);
+                m_modp->addStmtsp(afterp);
                 if (debug() >= 9) newref1p->dumpTree(cout, "     _new: ");
                 if (debug() >= 9) newvarp->dumpTree(cout, "     _new: ");
                 if (debug() >= 9) newinitp->dumpTree(cout, "     _new: ");
@@ -364,7 +365,7 @@ private:
         }
     }
 
-    virtual void visit(AstSel* nodep) override {
+    void visit(AstSel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             // Guard against reading/writing past end of bit vector array
@@ -411,7 +412,7 @@ private:
     // visit(AstSliceSel) not needed as its bounds are constant and checked
     // in V3Width.
 
-    virtual void visit(AstArraySel* nodep) override {
+    void visit(AstArraySel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             if (debug() == 9) nodep->dumpTree(cout, "-in: ");
@@ -454,7 +455,7 @@ private:
                 nodep->unlinkFrBack(&replaceHandle);
                 V3Number xnum(nodep, nodep->width());
                 if (nodep->isString()) {
-                    xnum = V3Number(V3Number::String(), nodep, "");
+                    xnum = V3Number{V3Number::String{}, nodep, ""};
                 } else {
                     xnum.setAllBitsX();
                 }
@@ -482,7 +483,7 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -491,7 +492,7 @@ public:
         , m_xrandNames{"__Vxrand"} {
         iterate(nodep);
     }
-    virtual ~UnknownVisitor() override {  //
+    ~UnknownVisitor() override {  //
         V3Stats::addStat("Unknowns, variables created", m_statUnkVars);
     }
 };
@@ -502,5 +503,5 @@ public:
 void V3Unknown::unknownAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { UnknownVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("unknown", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("unknown", 0, dumpTree() >= 3);
 }

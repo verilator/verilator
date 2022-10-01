@@ -28,6 +28,8 @@
 #include <iomanip>
 #include <memory>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //======================================================================
 // Statics
 
@@ -165,22 +167,22 @@ string AstNode::prettyName(const string& namein) {
             continue;
         }
         if (pos[0] == '_' && pos[1] == '_') {  // Short-circuit
-            if (0 == strncmp(pos, "__BRA__", 7)) {
+            if (0 == std::strncmp(pos, "__BRA__", 7)) {
                 pretty += "[";
                 pos += 7;
                 continue;
             }
-            if (0 == strncmp(pos, "__KET__", 7)) {
+            if (0 == std::strncmp(pos, "__KET__", 7)) {
                 pretty += "]";
                 pos += 7;
                 continue;
             }
-            if (0 == strncmp(pos, "__DOT__", 7)) {
+            if (0 == std::strncmp(pos, "__DOT__", 7)) {
                 pretty += ".";
                 pos += 7;
                 continue;
             }
-            if (0 == strncmp(pos, "__PVT__", 7)) {
+            if (0 == std::strncmp(pos, "__PVT__", 7)) {
                 pretty += "";
                 pos += 7;
                 continue;
@@ -212,8 +214,7 @@ string AstNode::prettyTypeName() const {
 //######################################################################
 // Insertion
 
-inline void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int lineno,
-                                     bool next){
+void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int lineno, bool next) {
 #ifdef VL_DEBUG
 // Called on all major tree changers.
 // Only for use for those really nasty bugs relating to internals
@@ -234,7 +235,8 @@ inline void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, i
 #endif
 }
 
-AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
+template <>
+AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp) {
     // Add to m_nextp, returns this
     UDEBUGONLY(UASSERT_OBJ(newp, nodep, "Null item passed to addNext"););
     debugTreeChange(nodep, "-addNextThs: ", __LINE__, false);
@@ -270,11 +272,6 @@ AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
     }
     debugTreeChange(nodep, "-addNextOut:", __LINE__, true);
     return nodep;
-}
-
-AstNode* AstNode::addNextNull(AstNode* nodep, AstNode* newp) {
-    if (!newp) return nodep;
-    return addNext(nodep, newp);
 }
 
 void AstNode::addNextHere(AstNode* newp) {
@@ -925,7 +922,7 @@ AstNode* AstNode::iterateSubtreeReturnEdits(VNVisitor& v) {
     } else if (!nodep->backp()) {
         // Calling on standalone tree; insert a shim node so we can keep
         // track, then delete it on completion
-        AstBegin* const tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
+        AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nodep};
         {
             VL_DO_DANGLING(tempp->stmtsp()->accept(v),
                            nodep);  // nodep to null as may be replaced
@@ -1004,43 +1001,12 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 //======================================================================
 // Debugging
 
-void AstNode::checkTreeIter(AstNode* backp) {
+void AstNode::checkTreeIter(const AstNode* backp) const {
     // private: Check a tree and children
     UASSERT_OBJ(backp == this->backp(), this, "Back node inconsistent");
-    if (VN_IS(this, NodeTermop) || VN_IS(this, NodeVarRef)) {
-        // Termops have a short-circuited iterateChildren, so check usage
-        UASSERT_OBJ(!(op1p() || op2p() || op3p() || op4p()), this,
-                    "Terminal operation with non-terminals");
-    }
-    if (m_op1p) m_op1p->checkTreeIterList(this);
-    if (m_op2p) m_op2p->checkTreeIterList(this);
-    if (m_op3p) m_op3p->checkTreeIterList(this);
-    if (m_op4p) m_op4p->checkTreeIterList(this);
-}
-
-void AstNode::checkTreeIterList(AstNode* backp) {
-    // private: Check a (possible) list of nodes, this is always the head of the list
-    // Audited to make sure this is never nullptr
-    AstNode* const headp = this;
-    const AstNode* tailp = this;
-    for (AstNode* nodep = headp; nodep; nodep = nodep->nextp()) {
-        nodep->checkTreeIter(backp);
-        UASSERT_OBJ(headp == this || !nextp(), this,
-                    "Headtailp should be null in middle of lists");
-        tailp = nodep;
-        backp = nodep;
-    }
-    UASSERT_OBJ(headp->m_headtailp == tailp, headp, "Tail in headtailp is inconsistent");
-    UASSERT_OBJ(tailp->m_headtailp == headp, tailp, "Head in headtailp is inconsistent");
-}
-
-void AstNode::checkTree() {
-    if (!debug()) return;
-    if (this->backp()) {
-        // Linked tree- check only the passed node
-        this->checkTreeIter(this->backp());
-    } else {
-        this->checkTreeIterList(this->backp());
+    switch (this->type()) {
+#include "V3Ast__gen_op_checks.h"
+    default: VL_UNREACHABLE;  // LCOV_EXCL_LINE
     }
 }
 
@@ -1156,7 +1122,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, boo
             if (logsp->fail()) v3fatal("Can't write " << filename);
             *logsp << "Verilator Tree Dump (format 0x3900) from <e" << std::dec << editCountLast();
             *logsp << "> to <e" << std::dec << editCountGbl() << ">\n";
-            if (editCountGbl() == editCountLast() && !(v3Global.opt.dumpTree() >= 9)) {
+            if (editCountGbl() == editCountLast() && ::dumpTree() < 9) {
                 *logsp << '\n';
                 *logsp << "No changes since last dump!\n";
             } else {
@@ -1166,7 +1132,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, boo
         }
     }
     if (doDump && v3Global.opt.debugEmitV()) V3EmitV::debugEmitV(filename + ".v");
-    if (doCheck && (v3Global.opt.debugCheck() || v3Global.opt.dumpTree())) {
+    if (doCheck && (v3Global.opt.debugCheck() || ::dumpTree())) {
         // Error check
         checkTree();
         // Broken isn't part of check tree because it can munge iterp's
@@ -1217,7 +1183,11 @@ void AstNode::v3errorEnd(std::ostringstream& str) const {
             const_cast<AstNode*>(this)->dump(nsstr);
             nsstr << endl;
         }
-        m_fileline->v3errorEnd(nsstr, instanceStr());
+        // Don't look for instance name when warning is disabled.
+        // In case of large number of warnings, this can
+        // take significant amount of time
+        m_fileline->v3errorEnd(nsstr,
+                               m_fileline->warnIsOff(V3Error::errorCode()) ? "" : instanceStr());
     }
 }
 

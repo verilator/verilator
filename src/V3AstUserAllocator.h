@@ -35,7 +35,7 @@ class AstUserAllocatorBase VL_NOT_FINAL {
 private:
     std::vector<T_Data*> m_allocated;
 
-    inline T_Data* getUserp(const T_Node* nodep) const {
+    T_Data* getUserp(const T_Node* nodep) const {
         if VL_CONSTEXPR_CXX17 (T_UserN == 1) {
             const VNUser user = nodep->user1u();
             return user.to<T_Data*>();
@@ -54,17 +54,17 @@ private:
         }
     }
 
-    inline void setUserp(T_Node* nodep, T_Data* userp) const {
+    void setUserp(T_Node* nodep, T_Data* userp) const {
         if VL_CONSTEXPR_CXX17 (T_UserN == 1) {
-            nodep->user1u(VNUser(userp));
+            nodep->user1u(VNUser{userp});
         } else if VL_CONSTEXPR_CXX17 (T_UserN == 2) {
-            nodep->user2u(VNUser(userp));
+            nodep->user2u(VNUser{userp});
         } else if VL_CONSTEXPR_CXX17 (T_UserN == 3) {
-            nodep->user3u(VNUser(userp));
+            nodep->user3u(VNUser{userp});
         } else if VL_CONSTEXPR_CXX17 (T_UserN == 4) {
-            nodep->user4u(VNUser(userp));
+            nodep->user4u(VNUser{userp});
         } else {
-            nodep->user5u(VNUser(userp));
+            nodep->user5u(VNUser{userp});
         }
     }
 

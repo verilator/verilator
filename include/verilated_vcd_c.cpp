@@ -632,10 +632,10 @@ void VerilatedVcd::commitTraceBuffer(VerilatedVcd::Buffer* bufp) {
 //=============================================================================
 // Trace rendering primitives
 
-static inline void
-VerilatedVcdCCopyAndAppendNewLine(char* writep, const char* suffixp) VL_ATTR_NO_SANITIZE_ALIGN;
+static void VerilatedVcdCCopyAndAppendNewLine(char* writep,
+                                              const char* suffixp) VL_ATTR_NO_SANITIZE_ALIGN;
 
-static inline void VerilatedVcdCCopyAndAppendNewLine(char* writep, const char* suffixp) {
+static void VerilatedVcdCCopyAndAppendNewLine(char* writep, const char* suffixp) {
     // Copy the whole suffix (this avoid having hard to predict branches which
     // helps a lot). Note: The maximum length of the suffix is
     // VL_TRACE_MAX_VCD_CODE_SIZE + 2 == 7, but we unroll this here for speed.

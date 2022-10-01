@@ -45,6 +45,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 #define CASE_OVERLAP_WIDTH 16  // Maximum width we can check for overlaps in
 #define CASE_BARF 999999  // Magic width when non-constant
 #define CASE_ENCODER_GROUP_DEPTH 8  // Levels of priority to be ORed together in top IF tree
@@ -57,9 +59,8 @@ private:
         = nullptr;  // Under a CASE value node, if so the relevant case statement
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
-    virtual void visit(AstNodeCase* nodep) override {
+    void visit(AstNodeCase* nodep) override {
         if (VN_IS(nodep, Case) && VN_AS(nodep, Case)->casex()) {
             nodep->v3warn(CASEX, "Suggest casez (with ?'s) in place of casex (with X's)");
         }
@@ -86,7 +87,7 @@ private:
             m_caseExprp = nullptr;
         }
     }
-    virtual void visit(AstConst* nodep) override {
+    void visit(AstConst* nodep) override {
         // See also neverItem
         if (m_caseExprp && nodep->num().isFourState()) {
             if (VN_IS(m_caseExprp, GenCase)) {
@@ -107,12 +108,12 @@ private:
             }
         }
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit CaseLintVisitor(AstNodeCase* nodep) { iterate(nodep); }
-    virtual ~CaseLintVisitor() override = default;
+    ~CaseLintVisitor() override = default;
 };
 
 //######################################################################
@@ -138,7 +139,6 @@ private:
     std::array<AstNode*, 1 << CASE_OVERLAP_WIDTH> m_valueItem;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     bool isCaseTreeFast(AstCase* nodep) {
         int width = 0;
@@ -245,7 +245,7 @@ private:
         // Convert valueItem from AstCaseItem* to the expression
         // Not done earlier, as we may now have a nullptr because it's just a ";" NOP branch
         for (uint32_t i = 0; i < numCases; ++i) {
-            m_valueItem[i] = VN_AS(m_valueItem[i], CaseItem)->bodysp();
+            m_valueItem[i] = VN_AS(m_valueItem[i], CaseItem)->stmtsp();
         }
         return true;  // All is fine
     }
@@ -346,7 +346,7 @@ private:
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             if (!itemp->condsp()) {
                 // Default clause.  Just make true, we'll optimize it away later
-                itemp->condsp(new AstConst(itemp->fileline(), AstConst::BitTrue()));
+                itemp->addCondsp(new AstConst(itemp->fileline(), AstConst::BitTrue()));
                 hadDefault = true;
             } else {
                 // Expressioned clause
@@ -397,7 +397,7 @@ private:
                     }
                 }
                 // Replace expression in tree
-                itemp->condsp(ifexprp);
+                itemp->addCondsp(ifexprp);
             }
         }
         VL_DO_DANGLING(cexprp->deleteTree(), cexprp);
@@ -420,7 +420,7 @@ private:
         AstIf* itemnextp = nullptr;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
-            AstNode* const istmtsp = itemp->bodysp();  // Maybe null -- no action.
+            AstNode* const istmtsp = itemp->stmtsp();  // Maybe null -- no action.
             if (istmtsp) istmtsp->unlinkFrBackWithNext();
             // Expressioned clause
             AstNode* const ifexprp = itemp->condsp()->unlinkFrBack();
@@ -452,7 +452,7 @@ private:
                 if (itemnextp) {
                     itemnextp->addElsesp(newp);
                 } else {
-                    groupnextp->addIfsp(newp);  // First in a new group
+                    groupnextp->addThensp(newp);  // First in a new group
                 }
                 itemnextp = newp;
             }
@@ -493,7 +493,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstCase* nodep) override {
+    void visit(AstCase* nodep) override {
         V3Case::caseLint(nodep);
         iterateChildren(nodep);
         if (debug() >= 9) nodep->dumpTree(cout, " case_old: ");
@@ -510,7 +510,7 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         if (VN_IS(nodep, Always)) m_alwaysp = nodep;
         iterateChildren(nodep);
     }
@@ -521,7 +521,7 @@ public:
         for (auto& itr : m_valueItem) itr = nullptr;
         iterate(nodep);
     }
-    virtual ~CaseVisitor() override {
+    ~CaseVisitor() override {
         V3Stats::addStat("Optimizations, Cases parallelized", m_statCaseFast);
         V3Stats::addStat("Optimizations, Cases complex", m_statCaseSlow);
     }
@@ -533,7 +533,7 @@ public:
 void V3Case::caseAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { CaseVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("case", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("case", 0, dumpTree() >= 3);
 }
 void V3Case::caseLint(AstNodeCase* nodep) {
     UINFO(4, __FUNCTION__ << ": " << endl);

@@ -48,6 +48,7 @@ exclude_line_regexp(r'\bNUM_ASSERT')
 exclude_line_regexp(r'\bERROR_RSVD_WORD')
 exclude_line_regexp(r'\bV3ERROR_NA')
 exclude_line_regexp(r'\bUINFO\b')
+exclude_line_regexp(r'\bVL_DEFINE_DEBUG_FUNCTIONS\b')
 
 # Exclude for branch coverage only
 exclude_branch_regexp(r'\bdebug\(\)')

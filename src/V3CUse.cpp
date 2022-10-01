@@ -32,6 +32,8 @@
 
 #include <set>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 // Visit within a module all nodes and data types they reference, finding
@@ -51,13 +53,13 @@ class CUseVisitor final : public VNVisitor {
     void addNewUse(AstNode* nodep, VUseType useType, const string& name) {
         if (m_didUse.emplace(useType, name).second) {
             AstCUse* const newp = new AstCUse{nodep->fileline(), useType, name};
-            m_modp->addStmtp(newp);
+            m_modp->addStmtsp(newp);
             UINFO(8, "Insert " << newp << endl);
         }
     }
 
     // VISITORS
-    virtual void visit(AstClassRefDType* nodep) override {
+    void visit(AstClassRefDType* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         if (!m_impOnly) addNewUse(nodep, VUseType::INT_FWD_CLASS, nodep->classp()->name());
         // Need to include extends() when we implement, but no need for pointers to know
@@ -67,17 +69,17 @@ class CUseVisitor final : public VNVisitor {
             iterateChildren(nodep->classp());  // This also gets all extend classes
         }
     }
-    virtual void visit(AstNodeDType* nodep) override {
+    void visit(AstNodeDType* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         if (nodep->virtRefDTypep()) iterate(nodep->virtRefDTypep());
         if (nodep->virtRefDType2p()) iterate(nodep->virtRefDType2p());
     }
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         if (nodep->dtypep() && !nodep->dtypep()->user1()) iterate(nodep->dtypep());
         iterateChildren(nodep);
     }
-    virtual void visit(AstCell* nodep) override {
+    void visit(AstCell* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         // Currently no IMP_INCLUDE because we include __Syms which has them all
         addNewUse(nodep, VUseType::INT_FWD_CLASS, nodep->modp()->name());
@@ -90,7 +92,7 @@ public:
         : m_modp(modp) {
         iterate(modp);
     }
-    virtual ~CUseVisitor() override = default;
+    ~CUseVisitor() override = default;
     VL_UNCOPYABLE(CUseVisitor);
 };
 
@@ -106,5 +108,5 @@ void V3CUse::cUseAll() {
         // for each output file and put under that
         CUseVisitor{modp};
     }
-    V3Global::dumpCheckGlobalTree("cuse", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("cuse", 0, dumpTree() >= 3);
 }

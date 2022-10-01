@@ -15,7 +15,7 @@ top_filename("t/t_debug_emitv.v");
 lint(
     # We also have dump-tree turned on, so hit a lot of AstNode*::dump() functions
     # Likewise XML
-    v_flags => ["--lint-only --dump-treei 9 --dump-tree-addrids"],
+    v_flags => ["--lint-only --dumpi-tree 9 --dump-tree-addrids"],
     );
 
 ok(1);

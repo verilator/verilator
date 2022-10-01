@@ -34,6 +34,8 @@
 #include <algorithm>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Establish mtask variable sort order in mtasks mode
 
@@ -51,15 +53,15 @@ public:
     }
     ~VarTspSorter() override = default;
     // METHODS
-    virtual bool operator<(const TspStateBase& other) const override {
-        return operator<(dynamic_cast<const VarTspSorter&>(other));
+    bool operator<(const TspStateBase& other) const override {
+        return operator<(static_cast<const VarTspSorter&>(other));
     }
     bool operator<(const VarTspSorter& other) const { return m_serial < other.m_serial; }
     const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
-    virtual int cost(const TspStateBase* otherp) const override {
-        return cost(dynamic_cast<const VarTspSorter*>(otherp));
+    int cost(const TspStateBase* otherp) const override {
+        return cost(static_cast<const VarTspSorter*>(otherp));
     }
-    virtual int cost(const VarTspSorter* otherp) const {
+    int cost(const VarTspSorter* otherp) const {
         int cost = diffs(m_mtaskIds, otherp->m_mtaskIds);
         cost += diffs(otherp->m_mtaskIds, m_mtaskIds);
         return cost;
@@ -186,9 +188,9 @@ class VariableOrder final {
             for (; it != varps.cend(); ++it) firstp->addNext(*it);
             if (AstNode* const stmtsp = modp->stmtsp()) {
                 stmtsp->unlinkFrBackWithNext();
-                firstp->addNext(stmtsp);
+                AstNode::addNext<AstNode, AstNode>(firstp, stmtsp);
             }
-            modp->addStmtp(firstp);
+            modp->addStmtsp(firstp);
         }
     }
 
@@ -205,5 +207,5 @@ void V3VariableOrder::orderAll() {
          modp = VN_AS(modp->nextp(), NodeModule)) {
         VariableOrder::processModule(modp);
     }
-    V3Global::dumpCheckGlobalTree("variableorder", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("variableorder", 0, dumpTree() >= 3);
 }

@@ -34,6 +34,8 @@
 #include <cmath>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Table class functions
 
@@ -59,12 +61,12 @@ class TableSimulateVisitor final : public SimulateVisitor {
 
 public:
     ///< Call other-this function on all new var references
-    virtual void varRefCb(AstVarRef* nodep) override;
+    void varRefCb(AstVarRef* nodep) override;
 
     // CONSTRUCTORS
     explicit TableSimulateVisitor(TableVisitor* cbthis)
         : m_cbthis{cbthis} {}
-    virtual ~TableSimulateVisitor() override = default;
+    ~TableSimulateVisitor() override = default;
 };
 
 //######################################################################
@@ -169,7 +171,6 @@ private:
     std::vector<TableOutputVar> m_outVarps;  // Output variable list
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
 public:
     void simulateVarRefCb(AstVarRef* nodep) {
@@ -253,9 +254,9 @@ private:
         AstVar* const indexVarp
             = new AstVar{fl, VVarType::BLOCKTEMP, "__Vtableidx" + cvtToStr(m_modTables),
                          VFlagBitPacked{}, static_cast<int>(m_inWidthBits)};
-        m_modp->addStmtp(indexVarp);
+        m_modp->addStmtsp(indexVarp);
         AstVarScope* const indexVscp = new AstVarScope{indexVarp->fileline(), m_scopep, indexVarp};
-        m_scopep->addVarp(indexVscp);
+        m_scopep->addVarsp(indexVscp);
 
         // The 'output assigned' table builder
         TableBuilder outputAssignedTableBuilder{fl};
@@ -274,8 +275,8 @@ private:
 
         // Link it in.
         // Keep sensitivity list, but delete all else
-        nodep->bodysp()->unlinkFrBackWithNext()->deleteTree();
-        nodep->addStmtp(stmtsp);
+        nodep->stmtsp()->unlinkFrBackWithNext()->deleteTree();
+        nodep->addStmtsp(stmtsp);
         if (debug() >= 6) nodep->dumpTree(cout, "  table_new: ");
     }
 
@@ -298,8 +299,8 @@ private:
             uint32_t shift = 0;
             for (AstVarScope* invscp : m_inVarps) {
                 // LSB is first variable, so extract it that way
-                const AstConst cnst(invscp->fileline(), AstConst::WidthedValue(), invscp->width(),
-                                    VL_MASK_I(invscp->width()) & (inValue >> shift));
+                const AstConst cnst{invscp->fileline(), AstConst::WidthedValue{}, invscp->width(),
+                                    VL_MASK_I(invscp->width()) & (inValue >> shift)};
                 simvis.newValue(invscp, &cnst);
                 shift += invscp->width();
                 // We are using 32 bit arithmetic, because there's no way the input table can be
@@ -379,8 +380,8 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modTables);
         {
@@ -389,20 +390,20 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);
         m_scopep = nodep;
         iterateChildren(nodep);
         m_scopep = nullptr;
     }
-    virtual void visit(AstAlways* nodep) override {
+    void visit(AstAlways* nodep) override {
         UINFO(4, "  ALWAYS  " << nodep << endl);
         if (treeTest(nodep)) {
             // Well, then, I'll be a memory hog.
             replaceWithTable(nodep);
         }
     }
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         // It's nearly impossible to have a large enough assign to make this worthwhile
         // For now we won't bother.
         // Accelerated: no iterate
@@ -411,7 +412,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit TableVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~TableVisitor() override {  //
+    ~TableVisitor() override {  //
         V3Stats::addStat("Optimizations, Tables created", m_statTablesCre);
     }
 };
@@ -430,5 +431,5 @@ void TableSimulateVisitor::varRefCb(AstVarRef* nodep) {
 void V3Table::tableAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { TableVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("table", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("table", 0, dumpTree() >= 3);
 }

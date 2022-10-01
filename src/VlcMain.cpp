@@ -23,14 +23,18 @@
 
 #include "verilatedos.h"
 
-// Cheat for speed and compile .cpp files into one object
+// Cheat for speed and compile .cpp files into one object TODO: Reconsider
 #define V3ERROR_NO_GLOBAL_
+#include "V3Error.h"
+static int debug() { return V3Error::debugDefault(); }
 #include "V3Error.cpp"
 #include "V3String.cpp"
 #define V3OPTION_PARSER_NO_VOPTION_BOOL
+// clang-format off
 #include "V3OptionParser.cpp"
 #include "V3Os.cpp"
 #include "VlcTop.cpp"
+// clanf-format on
 
 #include "VlcOptions.h"
 #include "VlcTop.h"

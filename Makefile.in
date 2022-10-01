@@ -346,13 +346,13 @@ analyzer-include:
 
 format: clang-format yapf format-pl-exec
 
-CLANGFORMAT = clang-format-11
+CLANGFORMAT = clang-format-14
 CLANGFORMAT_FLAGS = -i
 CLANGFORMAT_FILES = $(CPPCHECK_CPP) $(CPPCHECK_H) $(CPPCHECK_YL) test_regress/t/*.c* test_regress/t/*.h
 
 clang-format:
-	@$(CLANGFORMAT) --version | egrep 11.0 > /dev/null \
-		|| echo "*** You are not using clang-format 11.0, indents may differ from master's ***"
+	@$(CLANGFORMAT) --version | egrep 14.0 > /dev/null \
+		|| echo "*** You are not using clang-format-14, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
 PY_PROGRAMS = \
@@ -391,10 +391,10 @@ yapf:
 FLAKE8 = flake8
 FLAKE8_FLAGS = \
 	--extend-exclude=fastcov.py \
-	--ignore=E123,E129,E251,E501,W503,W504,E701
+	--ignore=E123,E129,E251,E402,E501,W503,W504,E701
 
 PYLINT = pylint
-PYLINT_FLAGS = --disable=R0801
+PYLINT_FLAGS = --score=n --disable=R0801
 
 lint-py:
 	-$(FLAKE8) $(FLAKE8_FLAGS) $(PY_PROGRAMS)

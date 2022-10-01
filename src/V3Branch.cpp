@@ -33,6 +33,8 @@
 
 #include <map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Branch state, as a visitor of each AstNode
 
@@ -49,7 +51,6 @@ private:
     std::vector<AstCFunc*> m_cfuncsp;  // List of all tasks
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void reset() {
         m_likely = false;
@@ -63,14 +64,14 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeIf* nodep) override {
+    void visit(AstNodeIf* nodep) override {
         UINFO(4, " IF: " << nodep << endl);
         VL_RESTORER(m_likely);
         VL_RESTORER(m_unlikely);
         {
             // Do if
             reset();
-            iterateAndNextNull(nodep->ifsp());
+            iterateAndNextNull(nodep->thensp());
             const int ifLikely = m_likely;
             const int ifUnlikely = m_unlikely;
             // Do else
@@ -87,17 +88,17 @@ private:
             }  // else leave unknown
         }
     }
-    virtual void visit(AstNodeCCall* nodep) override {
+    void visit(AstNodeCCall* nodep) override {
         checkUnlikely(nodep);
         nodep->funcp()->user1Inc();
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         checkUnlikely(nodep);
         m_cfuncsp.push_back(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         checkUnlikely(nodep);
         iterateChildren(nodep);
     }
@@ -116,7 +117,7 @@ public:
         iterateChildren(nodep);
         calc_tasks();
     }
-    virtual ~BranchVisitor() override = default;
+    ~BranchVisitor() override = default;
 };
 
 //######################################################################

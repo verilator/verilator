@@ -37,6 +37,8 @@
 #include <memory>
 #include <type_traits>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Utilities
 
@@ -350,7 +352,6 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
     std::vector<std::unique_ptr<VarInfo>> m_varInfos;  // VarInfo for each variable, [0] is nullptr
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     bool isAndTree() const { return VN_IS(m_rootp, And); }
     bool isOrTree() const { return VN_IS(m_rootp, Or); }
@@ -417,14 +418,12 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstNode* nodep) override {
-        CONST_BITOP_SET_FAILED("Hit unexpected op", nodep);
-    }
-    virtual void visit(AstCCast* nodep) override {
+    void visit(AstNode* nodep) override { CONST_BITOP_SET_FAILED("Hit unexpected op", nodep); }
+    void visit(AstCCast* nodep) override {
         iterateChildren(nodep);
         if (m_leafp) m_leafp->updateBitRange(nodep);
     }
-    virtual void visit(AstShiftR* nodep) override {
+    void visit(AstShiftR* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
         AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
         CONST_BITOP_RETURN_IF(!constp, nodep->rhsp());
@@ -434,7 +433,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         m_leafp->updateBitRange(nodep);
         m_lsb -= constp->toUInt();
     }
-    virtual void visit(AstNot* nodep) override {
+    void visit(AstNot* nodep) override {
         CONST_BITOP_RETURN_IF(nodep->widthMin() != 1, nodep);
         AstNode* lhsp = nodep->lhsp();
         AstCCast* const castp = VN_CAST(lhsp, CCast);
@@ -449,7 +448,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         if (!isXorTree()) m_polarity = !m_polarity;
         if (m_leafp && castp) m_leafp->updateBitRange(castp);
     }
-    virtual void visit(AstWordSel* nodep) override {
+    void visit(AstWordSel* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
         AstConst* const constp = VN_CAST(nodep->bitp(), Const);
         CONST_BITOP_RETURN_IF(!constp, nodep->rhsp());
@@ -457,17 +456,17 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         m_leafp->wordIdx(constp->toSInt());
         iterate(nodep->fromp());
     }
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
         m_leafp->setLeaf(nodep);
         m_leafp->polarity(m_polarity);
     }
-    virtual void visit(AstConst* nodep) override {
+    void visit(AstConst* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
         m_leafp->setLeaf(nodep);
     }
 
-    virtual void visit(AstRedXor* nodep) override {
+    void visit(AstRedXor* nodep) override {
         Restorer restorer{*this};
         CONST_BITOP_RETURN_IF(!VN_IS(m_rootp, Xor), nodep);
         AstNode* lhsp = nodep->lhsp();
@@ -514,7 +513,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         }
     }
 
-    virtual void visit(AstNodeBiop* nodep) override {
+    void visit(AstNodeBiop* nodep) override {
         if (VN_IS(nodep, And) && isConst(nodep->lhsp(), 1)) {  // 1 & _
             // Always reach past a plain making AND
             Restorer restorer{*this};
@@ -895,7 +894,6 @@ private:
     V3UniqueNames m_concswapNames;  // For generating unique temporary variable names
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     bool operandConst(AstNode* nodep) { return VN_IS(nodep, Const); }
     bool operandAsvConst(const AstNode* nodep) {
@@ -1044,20 +1042,19 @@ private:
         // as high as possible, which is usally the right choice, except for this.
         AstNodeCond* const condp = VN_CAST(nodep->rhsp(), NodeCond);
         if (!condp) return false;
-        if (!VN_IS(condp->expr1p(), Const) && !VN_IS(condp->expr2p(), Const)) return false;
+        if (!VN_IS(condp->thenp(), Const) && !VN_IS(condp->elsep(), Const)) return false;
         AstConst* const maskp = VN_CAST(nodep->lhsp(), Const);
         if (!maskp) return false;
         UINFO(4, "AND(CONSTm, CONDcond(c, i, e))->CONDcond(c, AND(m,i), AND(m, e)) " << nodep
                                                                                      << endl);
-        AstNodeCond* const newp = static_cast<AstNodeCond*>(
-            condp->cloneType(condp->condp()->unlinkFrBack(),
-                             new AstAnd(nodep->fileline(), maskp->cloneTree(false),
-                                        condp->expr1p()->unlinkFrBack()),
-                             new AstAnd(nodep->fileline(), maskp->cloneTree(false),
-                                        condp->expr2p()->unlinkFrBack())));
+        AstNodeCond* const newp = static_cast<AstNodeCond*>(condp->cloneType(
+            condp->condp()->unlinkFrBack(),
+            new AstAnd(nodep->fileline(), maskp->cloneTree(false), condp->thenp()->unlinkFrBack()),
+            new AstAnd(nodep->fileline(), maskp->cloneTree(false),
+                       condp->elsep()->unlinkFrBack())));
         newp->dtypeFrom(nodep);
-        newp->expr1p()->dtypeFrom(nodep);  // As And might have been to change widths
-        newp->expr2p()->dtypeFrom(nodep);
+        newp->thenp()->dtypeFrom(nodep);  // As And might have been to change widths
+        newp->elsep()->dtypeFrom(nodep);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         return true;
@@ -1445,19 +1442,19 @@ private:
         }
     }
     bool ifSameAssign(const AstNodeIf* nodep) {
-        const AstNodeAssign* const ifp = VN_CAST(nodep->ifsp(), NodeAssign);
-        const AstNodeAssign* const elsep = VN_CAST(nodep->elsesp(), NodeAssign);
-        if (!ifp || ifp->nextp()) return false;  // Must be SINGLE statement
-        if (!elsep || elsep->nextp()) return false;
-        if (ifp->type() != elsep->type()) return false;  // Can't mix an assigndly and an assign
-        if (!ifp->lhsp()->sameGateTree(elsep->lhsp())) return false;
-        if (!ifp->rhsp()->gateTree()) return false;
-        if (!elsep->rhsp()->gateTree()) return false;
+        const AstNodeAssign* const thensp = VN_CAST(nodep->thensp(), NodeAssign);
+        const AstNodeAssign* const elsesp = VN_CAST(nodep->elsesp(), NodeAssign);
+        if (!thensp || thensp->nextp()) return false;  // Must be SINGLE statement
+        if (!elsesp || elsesp->nextp()) return false;
+        if (thensp->type() != elsesp->type()) return false;  // Can't mix an assigndly with assign
+        if (!thensp->lhsp()->sameGateTree(elsesp->lhsp())) return false;
+        if (!thensp->rhsp()->gateTree()) return false;
+        if (!elsesp->rhsp()->gateTree()) return false;
         return true;
     }
     bool operandIfIf(const AstNodeIf* nodep) {
         if (nodep->elsesp()) return false;
-        const AstNodeIf* const lowerIfp = VN_CAST(nodep->ifsp(), NodeIf);
+        const AstNodeIf* const lowerIfp = VN_CAST(nodep->thensp(), NodeIf);
         if (!lowerIfp || lowerIfp->nextp()) return false;
         if (nodep->type() != lowerIfp->type()) return false;
         if (afterComment(lowerIfp->elsesp())) return false;
@@ -2079,7 +2076,7 @@ private:
             AstSel* const sel2p = new AstSel(conp->fileline(), rhs2p, lsb2, msb2 - lsb2 + 1);
             // Make new assigns of same flavor as old one
             //*** Not cloneTree; just one node.
-            AstNode* newp = nullptr;
+            AstNodeAssign* newp = nullptr;
             if (!need_temp) {
                 AstNodeAssign* const asn1ap = VN_AS(nodep->cloneType(lc1p, sel1p), NodeAssign);
                 AstNodeAssign* const asn2ap = VN_AS(nodep->cloneType(lc2p, sel2p), NodeAssign);
@@ -2099,8 +2096,8 @@ private:
                 AstVar* const temp2p
                     = new AstVar(sel2p->fileline(), VVarType::BLOCKTEMP,
                                  m_concswapNames.get(sel2p), VFlagLogicPacked(), msb2 - lsb2 + 1);
-                m_modp->addStmtp(temp1p);
-                m_modp->addStmtp(temp2p);
+                m_modp->addStmtsp(temp1p);
+                m_modp->addStmtsp(temp2p);
                 AstNodeAssign* const asn1ap
                     = VN_AS(nodep->cloneType(
                                 new AstVarRef(sel1p->fileline(), temp1p, VAccess::WRITE), sel1p),
@@ -2252,11 +2249,11 @@ private:
     //----------------------------------------
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) override {
+    void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.  That's faster
         iterateChildrenBackwards(nodep);
     }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;
@@ -2264,7 +2261,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         // No ASSIGNW removals under funcs, we've long eliminated INITIALs
         // (We should perhaps rename the assignw's to just assigns)
         VL_RESTORER(m_wremove);
@@ -2273,7 +2270,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         // No ASSIGNW removals under scope, we've long eliminated INITIALs
         VL_RESTORER(m_wremove);
         VL_RESTORER(m_scopep);
@@ -2370,17 +2367,17 @@ private:
     }
 
     // Special cases
-    virtual void visit(AstConst*) override {}  // Already constant
+    void visit(AstConst*) override {}  // Already constant
 
-    virtual void visit(AstCell* nodep) override {
+    void visit(AstCell* nodep) override {
         if (m_params) {
             iterateAndNextNull(nodep->paramsp());
         } else {
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstClassOrPackageRef* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstPin* nodep) override { iterateChildren(nodep); }
+    void visit(AstClassOrPackageRef* nodep) override { iterateChildren(nodep); }
+    void visit(AstPin* nodep) override { iterateChildren(nodep); }
 
     void replaceLogEq(AstLogEq* nodep) {
         // LOGEQ(a,b) => AstLogAnd{AstLogOr{AstLogNot{a},b},AstLogOr{AstLogNot{b},a}}
@@ -2562,7 +2559,7 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    virtual void visit(AstAttrOf* nodep) override {
+    void visit(AstAttrOf* nodep) override {
         VL_RESTORER(m_attrp);
         {
             m_attrp = nodep;
@@ -2570,7 +2567,7 @@ private:
         }
     }
 
-    virtual void visit(AstArraySel* nodep) override {
+    void visit(AstArraySel* nodep) override {
         iterateAndNextNull(nodep->bitp());
         if (VN_IS(nodep->bitp(), Const)
             && VN_IS(nodep->fromp(), VarRef)
@@ -2596,7 +2593,7 @@ private:
         }
         m_selp = nullptr;
     }
-    virtual void visit(AstNodeVarRef* nodep) override {
+    void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);
         UASSERT_OBJ(nodep->varp(), nodep, "Not linked");
         bool did = false;
@@ -2650,7 +2647,7 @@ private:
                            << nodep->varp()->prettyNameQ());
         }
     }
-    virtual void visit(AstEnumItemRef* nodep) override {
+    void visit(AstEnumItemRef* nodep) override {
         iterateChildren(nodep);
         UASSERT_OBJ(nodep->itemp(), nodep, "Not linked");
         bool did = false;
@@ -2675,7 +2672,7 @@ private:
         }
     }
 
-    // virtual void visit(AstCvtPackString* nodep) override {
+    //  void visit(AstCvtPackString* nodep) override {
     // Not constant propagated (for today) because AstNodeMath::isOpaque is set
     // Someday if lower is constant, convert to quoted "string".
 
@@ -2683,7 +2680,7 @@ private:
         // Only one if it's not in a list
         return (!nodep->nextp() && nodep->backp()->nextp() != nodep);
     }
-    virtual void visit(AstSenItem* nodep) override {
+    void visit(AstSenItem* nodep) override {
         iterateChildren(nodep);
         if (m_doNConst
             && (VN_IS(nodep->sensp(), Const) || VN_IS(nodep->sensp(), EnumItemRef)
@@ -2750,7 +2747,7 @@ private:
         }
     };
 
-    virtual void visit(AstSenTree* nodep) override {
+    void visit(AstSenTree* nodep) override {
         iterateChildren(nodep);
         if (m_doExpensive) {
             // cout<<endl; nodep->dumpTree(cout, "ssin: ");
@@ -2834,17 +2831,17 @@ private:
 
     //-----
     // Zero elimination
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         iterateChildren(nodep);
         if (m_doNConst && replaceNodeAssign(nodep)) return;
     }
-    virtual void visit(AstAssignAlias* nodep) override {
+    void visit(AstAssignAlias* nodep) override {
         // Don't perform any optimizations, keep the alias around
     }
-    virtual void visit(AstAssignVarScope* nodep) override {
+    void visit(AstAssignVarScope* nodep) override {
         // Don't perform any optimizations, the node won't be linked yet
     }
-    virtual void visit(AstAssignW* nodep) override {
+    void visit(AstAssignW* nodep) override {
         iterateChildren(nodep);
         if (m_doNConst && replaceNodeAssign(nodep)) return;
         AstNodeVarRef* const varrefp = VN_CAST(
@@ -2853,6 +2850,7 @@ private:
         if (m_wremove && !m_params && m_doNConst && m_modp && operandConst(nodep->rhsp())
             && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
             && varrefp  // Don't do messes with BITREFs/ARRAYREFs
+            && !varrefp->varp()->hasStrengthAssignment()  // Strengths are resolved in V3Tristate
             && !varrefp->varp()->valuep()  // Not already constified
             && !varrefp->varScopep()) {  // Not scoped (or each scope may have different initial
                                          // value)
@@ -2863,14 +2861,14 @@ private:
             varrefp->unlinkFrBack();
             AstInitial* const newinitp = new AstInitial(
                 nodep->fileline(), new AstAssign(nodep->fileline(), varrefp, exprp));
-            m_modp->addStmtp(newinitp);
+            m_modp->addStmtsp(newinitp);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             // Set the initial value right in the variable so we can constant propagate
             AstNode* const initvaluep = exprp->cloneTree(false);
             varrefp->varp()->valuep(initvaluep);
         }
     }
-    virtual void visit(AstRelease* nodep) override {
+    void visit(AstRelease* nodep) override {
         if (AstConcat* const concatp = VN_CAST(nodep->lhsp(), Concat)) {
             FileLine* const flp = nodep->fileline();
             AstRelease* const newLp = new AstRelease{flp, concatp->lhsp()->unlinkFrBack()};
@@ -2883,7 +2881,7 @@ private:
         }
     }
 
-    virtual void visit(AstNodeIf* nodep) override {
+    void visit(AstNodeIf* nodep) override {
         iterateChildren(nodep);
         if (m_doNConst) {
             if (const AstConst* const constp = VN_CAST(nodep->condp(), Const)) {
@@ -2893,7 +2891,7 @@ private:
                     keepp = nodep->elsesp();
                 } else if (!m_doV || constp->isNeqZero()) {  // Might be X in Verilog
                     UINFO(4, "IF(!0,{x},{any}) => {x}: " << nodep << endl);
-                    keepp = nodep->ifsp();
+                    keepp = nodep->thensp();
                 } else {
                     UINFO(4, "IF condition is X, retaining: " << nodep << endl);
                     return;
@@ -2905,7 +2903,7 @@ private:
                     nodep->unlinkFrBack();
                 }
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            } else if (!afterComment(nodep->ifsp()) && !afterComment(nodep->elsesp())) {
+            } else if (!afterComment(nodep->thensp()) && !afterComment(nodep->elsesp())) {
                 if (!isTreePureRecurse(nodep->condp())) {
                     // Condition has side effect - leave - perhaps in
                     // future simplify to remove all but side effect terms
@@ -2913,27 +2911,27 @@ private:
                     // Empty block, remove it
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                 }
-            } else if (!afterComment(nodep->ifsp())) {
+            } else if (!afterComment(nodep->thensp())) {
                 UINFO(4, "IF({x}) nullptr {...} => IF(NOT{x}}: " << nodep << endl);
                 AstNode* const condp = nodep->condp();
                 AstNode* const elsesp = nodep->elsesp();
                 condp->unlinkFrBackWithNext();
                 elsesp->unlinkFrBackWithNext();
-                if (nodep->ifsp()) {  // Must have been comment
-                    nodep->ifsp()->unlinkFrBackWithNext()->deleteTree();
+                if (nodep->thensp()) {  // Must have been comment
+                    nodep->thensp()->unlinkFrBackWithNext()->deleteTree();
                 }
                 nodep->condp(new AstLogNot(condp->fileline(),
                                            condp));  // LogNot, as C++ optimization also possible
-                nodep->addIfsp(elsesp);
+                nodep->addThensp(elsesp);
             } else if (((VN_IS(nodep->condp(), Not) && nodep->condp()->width() == 1)
                         || VN_IS(nodep->condp(), LogNot))
-                       && nodep->ifsp() && nodep->elsesp()) {
+                       && nodep->thensp() && nodep->elsesp()) {
                 UINFO(4, "IF(NOT {x})  => IF(x) swapped if/else" << nodep << endl);
                 AstNode* const condp
                     = VN_AS(nodep->condp(), NodeUniop)->lhsp()->unlinkFrBackWithNext();
-                AstNode* const ifsp = nodep->ifsp()->unlinkFrBackWithNext();
+                AstNode* const thensp = nodep->thensp()->unlinkFrBackWithNext();
                 AstNode* const elsesp = nodep->elsesp()->unlinkFrBackWithNext();
-                AstIf* const ifp = new AstIf(nodep->fileline(), condp, elsesp, ifsp);
+                AstIf* const ifp = new AstIf(nodep->fileline(), condp, elsesp, thensp);
                 ifp->branchPred(nodep->branchPred().invert());
                 nodep->replaceWith(ifp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -2941,25 +2939,25 @@ private:
                 UINFO(
                     4,
                     "IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})\n");
-                AstNodeAssign* const ifp = VN_AS(nodep->ifsp(), NodeAssign);
-                AstNodeAssign* const elsep = VN_AS(nodep->elsesp(), NodeAssign);
-                ifp->unlinkFrBack();
+                AstNodeAssign* const thensp = VN_AS(nodep->thensp(), NodeAssign);
+                AstNodeAssign* const elsesp = VN_AS(nodep->elsesp(), NodeAssign);
+                thensp->unlinkFrBack();
                 AstNode* const condp = nodep->condp()->unlinkFrBack();
-                AstNode* const truep = ifp->rhsp()->unlinkFrBack();
-                AstNode* const falsep = elsep->rhsp()->unlinkFrBack();
-                ifp->rhsp(new AstCond(truep->fileline(), condp, truep, falsep));
-                nodep->replaceWith(ifp);
+                AstNode* const truep = thensp->rhsp()->unlinkFrBack();
+                AstNode* const falsep = elsesp->rhsp()->unlinkFrBack();
+                thensp->rhsp(new AstCond(truep->fileline(), condp, truep, falsep));
+                nodep->replaceWith(thensp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             } else if (false  // Disabled, as vpm assertions are faster
                               // without due to short-circuiting
                        && operandIfIf(nodep)) {
                 UINFO(9, "IF({a}) IF({b}) => IF({a} && {b})" << endl);
-                AstNodeIf* const lowerIfp = VN_AS(nodep->ifsp(), NodeIf);
+                AstNodeIf* const lowerIfp = VN_AS(nodep->thensp(), NodeIf);
                 AstNode* const condp = nodep->condp()->unlinkFrBack();
-                AstNode* const lowerIfsp = lowerIfp->ifsp()->unlinkFrBackWithNext();
+                AstNode* const lowerThensp = lowerIfp->thensp()->unlinkFrBackWithNext();
                 AstNode* const lowerCondp = lowerIfp->condp()->unlinkFrBackWithNext();
                 nodep->condp(new AstLogAnd(lowerIfp->fileline(), condp, lowerCondp));
-                lowerIfp->replaceWith(lowerIfsp);
+                lowerIfp->replaceWith(lowerThensp);
                 VL_DO_DANGLING(lowerIfp->deleteTree(), lowerIfp);
             } else if (operandBoolShift(nodep->condp())) {
                 replaceBoolShift(nodep->condp());
@@ -2967,7 +2965,7 @@ private:
         }
     }
 
-    virtual void visit(AstDisplay* nodep) override {
+    void visit(AstDisplay* nodep) override {
         // DISPLAY(SFORMAT(text1)),DISPLAY(SFORMAT(text2)) -> DISPLAY(SFORMAT(text1+text2))
         iterateChildren(nodep);
         if (stmtDisplayDisplay(nodep)) return;
@@ -3016,12 +3014,14 @@ private:
         pformatp->text(pformatp->text() + nformatp->text());
         if (!prevp->addNewline() && nodep->addNewline()) pformatp->text(pformatp->text() + "\n");
         if (nformatp->exprsp()) pformatp->addExprsp(nformatp->exprsp()->unlinkFrBackWithNext());
-        if (nformatp->scopeNamep())
-            pformatp->scopeNamep(nformatp->scopeNamep()->unlinkFrBackWithNext());
+        if (AstScopeName* const scopeNamep = nformatp->scopeNamep()) {
+            scopeNamep->unlinkFrBackWithNext();
+            pformatp->scopeNamep(scopeNamep);
+        }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         return true;
     }
-    virtual void visit(AstSFormatF* nodep) override {
+    void visit(AstSFormatF* nodep) override {
         // Substitute constants into displays.  The main point of this is to
         // simplify assertion methodologies which call functions with display's.
         // This eliminates a pile of wide temps, and makes the C a whole lot more readable.
@@ -3088,17 +3088,17 @@ private:
         }
     }
 
-    virtual void visit(AstFuncRef* nodep) override {
+    void visit(AstFuncRef* nodep) override {
         iterateChildren(nodep);
         if (m_params) {  // Only parameters force us to do constant function call propagation
             replaceWithSimulation(nodep);
         }
     }
-    virtual void visit(AstArg* nodep) override {
+    void visit(AstArg* nodep) override {
         // replaceWithSimulation on the Arg's parent FuncRef replaces these
         iterateChildren(nodep);
     }
-    virtual void visit(AstWhile* nodep) override {
+    void visit(AstWhile* nodep) override {
         const bool oldHasJumpDelay = m_hasJumpDelay;
         m_hasJumpDelay = false;
         { iterateChildren(nodep); }
@@ -3124,22 +3124,22 @@ private:
             }
         }
     }
-    virtual void visit(AstInitArray* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstInitItem* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstUnbounded* nodep) override { iterateChildren(nodep); }
+    void visit(AstInitArray* nodep) override { iterateChildren(nodep); }
+    void visit(AstInitItem* nodep) override { iterateChildren(nodep); }
+    void visit(AstUnbounded* nodep) override { iterateChildren(nodep); }
     // These are converted by V3Param.  Don't constify as we don't want the
     // from() VARREF to disappear, if any.
     // If output of a presel didn't get consted, chances are V3Param didn't visit properly
-    virtual void visit(AstNodePreSel*) override {}
+    void visit(AstNodePreSel*) override {}
 
     // Ignored, can eliminate early
-    virtual void visit(AstSysIgnore* nodep) override {
+    void visit(AstSysIgnore* nodep) override {
         iterateChildren(nodep);
         if (m_doNConst) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
     // Simplify
-    virtual void visit(AstBasicDType* nodep) override {
+    void visit(AstBasicDType* nodep) override {
         iterateChildren(nodep);
         nodep->cvtRangeConst();
     }
@@ -3147,11 +3147,11 @@ private:
     //-----
     // Jump elimination
 
-    virtual void visit(AstDelay* nodep) override {
+    void visit(AstDelay* nodep) override {
         iterateChildren(nodep);
         m_hasJumpDelay = true;
     }
-    virtual void visit(AstJumpGo* nodep) override {
+    void visit(AstJumpGo* nodep) override {
         iterateChildren(nodep);
         // Jump to label where label immediately follows label is not useful
         if (nodep->labelp() == VN_CAST(nodep->nextp(), JumpLabel)) {
@@ -3182,7 +3182,7 @@ private:
         m_hasJumpDelay = true;
     }
 
-    virtual void visit(AstJumpBlock* nodep) override {
+    void visit(AstJumpBlock* nodep) override {
         // Because JumpLabels disable many optimizations,
         // remove JumpLabels that are not pointed to by any AstJumpGos
         // Note this assumes all AstJumpGos are underneath the given label; V3Broken asserts this
@@ -3301,19 +3301,19 @@ private:
     TREEOPC("AstAnd   {$lhsp.isOne, matchRedundantClean(nodep)}", "DONE")  // 1 & (a == b) -> (IData)(a == b)
     // Trinary ops
     // Note V3Case::Sel requires Cond to always be conditionally executed in C to prevent core dump!
-    TREEOP ("AstNodeCond{$condp.isZero,       $expr1p, $expr2p}", "replaceWChild(nodep,$expr2p)");
-    TREEOP ("AstNodeCond{$condp.isNeqZero,    $expr1p, $expr2p}", "replaceWChild(nodep,$expr1p)");
-    TREEOPA("AstNodeCond{$condp.isZero,       $expr1p.castConst, $expr2p.castConst}", "replaceWChild(nodep,$expr2p)");
-    TREEOPA("AstNodeCond{$condp.isNeqZero,    $expr1p.castConst, $expr2p.castConst}", "replaceWChild(nodep,$expr1p)");
-    TREEOP ("AstNodeCond{$condp, operandsSame($expr1p,,$expr2p)}","replaceWChild(nodep,$expr1p)");
+    TREEOP ("AstNodeCond{$condp.isZero,       $thenp, $elsep}", "replaceWChild(nodep,$elsep)");
+    TREEOP ("AstNodeCond{$condp.isNeqZero,    $thenp, $elsep}", "replaceWChild(nodep,$thenp)");
+    TREEOPA("AstNodeCond{$condp.isZero,       $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$elsep)");
+    TREEOPA("AstNodeCond{$condp.isNeqZero,    $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$thenp)");
+    TREEOP ("AstNodeCond{$condp, operandsSame($thenp,,$elsep)}","replaceWChild(nodep,$thenp)");
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstCond {$lhsp.isZero}",           "replaceWIteratedThs(nodep)");
     TREEOPS("AstCond {$lhsp.isNeqZero}",        "replaceWIteratedRhs(nodep)");
-    TREEOP ("AstCond{$condp.castNot,       $expr1p, $expr2p}", "AstCond{$condp->op1p(), $expr2p, $expr1p}");
-    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isAllOnes, $expr2p}", "AstLogOr {$condp, $expr2p}");  // a?1:b == a||b
-    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p,    $expr2p.isZero}", "AstLogAnd{$condp, $expr1p}");  // a?b:0 == a&&b
-    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p, $expr2p.isAllOnes}", "AstLogOr {AstNot{$condp}, $expr1p}");  // a?b:1 == ~a||b
-    TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isZero,    $expr2p}", "AstLogAnd{AstNot{$condp}, $expr2p}");  // a?0:b == ~a&&b
+    TREEOP ("AstCond{$condp.castNot,       $thenp, $elsep}", "AstCond{$condp->op1p(), $elsep, $thenp}");
+    TREEOP ("AstNodeCond{$condp.width1, $thenp.width1,   $thenp.isAllOnes, $elsep}", "AstLogOr {$condp, $elsep}");  // a?1:b == a||b
+    TREEOP ("AstNodeCond{$condp.width1, $thenp.width1,   $thenp,    $elsep.isZero}", "AstLogAnd{$condp, $thenp}");  // a?b:0 == a&&b
+    TREEOP ("AstNodeCond{$condp.width1, $thenp.width1,   $thenp, $elsep.isAllOnes}", "AstLogOr {AstNot{$condp}, $thenp}");  // a?b:1 == ~a||b
+    TREEOP ("AstNodeCond{$condp.width1, $thenp.width1,   $thenp.isZero,    $elsep}", "AstLogAnd{AstNot{$condp}, $elsep}");  // a?0:b == ~a&&b
     TREEOP ("AstNodeCond{!$condp.width1, operandBoolShift(nodep->condp())}", "replaceBoolShift(nodep->condp())");
     // Prefer constants on left, since that often needs a shift, it lets
     // constant red remove the shift
@@ -3536,7 +3536,7 @@ private:
     // Note we can't convert EqCase/NeqCase to Eq/Neq here because that would break 3'b1x1==3'b101
 
     //-----
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         // Default: Just iterate
         if (m_required) {
             if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)) {
@@ -3583,7 +3583,7 @@ public:
         }
         // clang-format on
     }
-    virtual ~ConstVisitor() override {
+    ~ConstVisitor() override {
         if (m_doCpp) {
             if (m_globalPass) {
                 V3Stats::addStat("Optimizations, Const bit op reduction", m_statBitOpReduction);
@@ -3664,7 +3664,7 @@ void V3Const::constifyAllLint(AstNetlist* nodep) {
         ConstVisitor visitor{ConstVisitor::PROC_V_WARN, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("const", 0, dumpTree() >= 3);
 }
 
 void V3Const::constifyCpp(AstNetlist* nodep) {
@@ -3673,7 +3673,7 @@ void V3Const::constifyCpp(AstNetlist* nodep) {
         ConstVisitor visitor{ConstVisitor::PROC_CPP, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("const_cpp", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("const_cpp", 0, dumpTree() >= 3);
 }
 
 AstNode* V3Const::constifyEdit(AstNode* nodep) {
@@ -3697,7 +3697,7 @@ void V3Const::constifyAllLive(AstNetlist* nodep) {
         ConstVisitor visitor{ConstVisitor::PROC_LIVE, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("const", 0, dumpTree() >= 3);
 }
 
 void V3Const::constifyAll(AstNetlist* nodep) {
@@ -3707,7 +3707,7 @@ void V3Const::constifyAll(AstNetlist* nodep) {
         ConstVisitor visitor{ConstVisitor::PROC_V_EXPENSIVE, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("const", 0, dumpTree() >= 3);
 }
 
 AstNode* V3Const::constifyExpensiveEdit(AstNode* nodep) {

@@ -28,6 +28,8 @@
 #include "V3Global.h"
 #include "V3LanguageWords.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Name state, as a visitor of each AstNode
 
@@ -44,8 +46,6 @@ private:
     const AstNodeModule* m_modp = nullptr;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     void rename(AstNode* nodep, bool addPvt) {
         if (!nodep->user1()) {  // Not already done
             if (addPvt) {
@@ -68,7 +68,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;
@@ -76,44 +76,44 @@ private:
         }
     }
     // Add __PVT__ to names of local signals
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         // Don't iterate... Don't need temps for RANGES under the Var.
         rename(nodep,
                ((!m_modp || !m_modp->isTop()) && !nodep->isSigPublic()
                 && !nodep->isFuncLocal()  // Isn't exposed, and would mess up dpi import wrappers
                 && !nodep->isTemp()));  // Don't bother to rename internal signals
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         if (!nodep->user1()) {
             iterateChildren(nodep);
             rename(nodep, false);
         }
     }
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         if (nodep->varp()) {
             iterate(nodep->varp());
             nodep->name(nodep->varp()->name());
         }
     }
-    virtual void visit(AstCell* nodep) override {
+    void visit(AstCell* nodep) override {
         if (!nodep->user1()) {
             rename(nodep, (!nodep->modp()->modPublic() && !VN_IS(nodep->modp(), ClassPackage)));
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstMemberDType* nodep) override {
+    void visit(AstMemberDType* nodep) override {
         if (!nodep->user1()) {
             rename(nodep, false);
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberSel* nodep) override {
         if (!nodep->user1()) {
             rename(nodep, false);
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         if (!nodep->user1SetOnce()) {
             if (nodep->aboveScopep()) iterate(nodep->aboveScopep());
             if (nodep->aboveCellp()) iterate(nodep->aboveCellp());
@@ -130,12 +130,12 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit NameVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~NameVisitor() override = default;
+    ~NameVisitor() override = default;
 };
 
 //######################################################################
@@ -144,5 +144,5 @@ public:
 void V3Name::nameAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { NameVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("name", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("name", 0, dumpTree() >= 6);
 }

@@ -126,7 +126,7 @@ bom             [\357\273\277]
                           if (LEXP->m_protBytes > 0) {
                               LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "multiple `pragma protected encoding sections");
                           }
-                          res = sscanf(yytext + strlen("encoding"), " = (enctype = \"%15[A-Za-z0-9]\", line_length = %d, bytes = %d)", &enctype[0], &LEXP->m_protLength, &LEXP->m_protBytes);
+                          res = sscanf(yytext + std::strlen("encoding"), " = (enctype = \"%15[A-Za-z0-9]\", line_length = %d, bytes = %d)", &enctype[0], &LEXP->m_protLength, &LEXP->m_protBytes);
                           if (res == 0)
                               LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "`pragma protected encoding must have an \"enctype\" field");
                           LEXP->m_encType = !VL_STRCASECMP(enctype, "uuencode") ? Enctype::UUENCODE :
@@ -242,7 +242,7 @@ bom             [\357\273\277]
 <INITIAL,STRIFY>"`__LINE__"     { FL_FWDC;
                           static char buf[25];
                           VL_SNPRINTF(buf, 25, "%d", LEXP->curFilelinep()->lastLineno());
-                          yytext = buf; yyleng = strlen(yytext);
+                          yytext = buf; yyleng = std::strlen(yytext);
                           return VP_TEXT; }
 
         /* Pass-through strings */
@@ -462,11 +462,8 @@ void V3PreLex::pushStateIncFilename() {
     yymore();
 }
 
-void V3PreLex::debug(int level) {
-    yy_flex_debug = level;  // Use --debugi-V3PreShell, if level<5 this level is 0
-}
-int V3PreLex::debug() {
-    return yy_flex_debug; }
+void V3PreLex::setYYDebug(bool on) {
+    yy_flex_debug = static_cast<int>(on); }
 
 int V3PreLex::lex() {
     V3PreLex::s_currentLexp = this;  // Tell parser where to get/put data

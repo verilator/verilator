@@ -28,13 +28,13 @@ private:
 public:
     TestSimulator() {
         vpi_get_vlog_info(&m_info);
-        if (0 == strcmp(m_info.product, "Verilator")) {
+        if (0 == std::strcmp(m_info.product, "Verilator")) {
             m_simulators.verilator = true;
-        } else if (0 == strcmp(m_info.product, "Verilator")) {
+        } else if (0 == std::strcmp(m_info.product, "Verilator")) {
             m_simulators.icarus = true;
         } else if (0
                    == strncmp(m_info.product, "Chronologic Simulation VCS",
-                              strlen("Chronologic Simulation VCS"))) {
+                              std::strlen("Chronologic Simulation VCS"))) {
             m_simulators.vcs = true;
         } else {
             printf("%%Warning: %s:%d: Unknown simulator in TestSimulator.h: %s\n", __FILE__,

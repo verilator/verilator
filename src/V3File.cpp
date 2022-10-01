@@ -56,6 +56,8 @@
 #endif
 // clang-format on
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 // If change this code, run a test with the below size set very small
 // #define INFILTER_IPC_BUFSIZ 16
 constexpr int INFILTER_IPC_BUFSIZ = (64 * 1024);  // For debug, try this as a small number
@@ -94,7 +96,7 @@ class V3FileDependImp final {
                 const string fn = filename();
                 const int err = stat(fn.c_str(), &m_stat);
                 if (err != 0) {
-                    memset(&m_stat, 0, sizeof(m_stat));
+                    std::memset(&m_stat, 0, sizeof(m_stat));
                     m_stat.st_mtime = 1;
                     m_exists = false;
                     // Not an error... This can occur due to `line directives in the .vpp files
@@ -146,7 +148,7 @@ V3FileDependImp dependImp;  // Depend implementation class
 //######################################################################
 // V3FileDependImp
 
-inline void V3FileDependImp::writeDepend(const string& filename) {
+void V3FileDependImp::writeDepend(const string& filename) {
     const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
     if (ofp->fail()) v3fatal("Can't write " << filename);
 
@@ -154,7 +156,7 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
         if (i.target()) *ofp << i.filename() << " ";
     }
     *ofp << " : ";
-    *ofp << v3Global.opt.bin();
+    *ofp << v3Global.opt.buildDepBin();
     *ofp << " ";
 
     for (const DependFile& i : m_filenameList) {
@@ -171,7 +173,7 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
     }
 }
 
-inline std::vector<string> V3FileDependImp::getAllDeps() const {
+std::vector<string> V3FileDependImp::getAllDeps() const {
     std::vector<string> r;
     for (const auto& itr : m_filenameList) {
         if (!itr.target() && itr.exists()) r.push_back(itr.filename());
@@ -179,7 +181,7 @@ inline std::vector<string> V3FileDependImp::getAllDeps() const {
     return r;
 }
 
-inline void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn) {
+void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn) {
     const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
     if (ofp->fail()) v3fatal("Can't write " << filename);
 
@@ -214,7 +216,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
     }
 }
 
-inline bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn) {
+bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn) {
     const std::unique_ptr<std::ifstream> ifp{V3File::new_ifstream_nodepend(filename)};
     if (ifp->fail()) {
         UINFO(2, "   --check-times failed: no input " << filename << endl);
@@ -346,7 +348,6 @@ class VInFilterImp final {
 
 private:
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     bool readContents(const string& filename, StrList& outl) {
         if (m_pid) {
@@ -389,7 +390,7 @@ private:
         if (!m_pidExited && waitpid(m_pid, &m_pidStatus, hang ? 0 : WNOHANG)) {
             UINFO(1, "--pipe-filter: Exited, status "
                          << m_pidStatus << " exit=" << WEXITSTATUS(m_pidStatus) << " err"
-                         << strerror(errno) << endl);
+                         << std::strerror(errno) << endl);
             m_readEof = true;
             m_pidExited = true;
         }
@@ -495,7 +496,7 @@ private:
         constexpr int P_WR = 1;
 
         if (pipe(fd_stdin) != 0 || pipe(fd_stdout) != 0) {
-            v3fatal("--pipe-filter: Can't pipe: " << strerror(errno));
+            v3fatal("--pipe-filter: Can't pipe: " << std::strerror(errno));
         }
         if (fd_stdin[P_RD] <= 2 || fd_stdin[P_WR] <= 2 || fd_stdout[P_RD] <= 2
             || fd_stdout[P_WR] <= 2) {
@@ -507,7 +508,7 @@ private:
         UINFO(1, "--pipe-filter: /bin/sh -c " << command << endl);
 
         const pid_t pid = fork();
-        if (pid < 0) v3fatal("--pipe-filter: fork failed: " << strerror(errno));
+        if (pid < 0) v3fatal("--pipe-filter: fork failed: " << std::strerror(errno));
         if (pid == 0) {  // Child
             UINFO(6, "In child\n");
             close(fd_stdin[P_WR]);
@@ -518,7 +519,7 @@ private:
 
             execl("/bin/sh", "sh", "-c", command.c_str(), static_cast<char*>(nullptr));
             // Don't use v3fatal, we don't share the common structures any more
-            fprintf(stderr, "--pipe-filter: exec failed: %s\n", strerror(errno));
+            fprintf(stderr, "--pipe-filter: exec failed: %s\n", std::strerror(errno));
             _exit(1);
         } else {  // Parent
             UINFO(6, "In parent, child pid " << pid << " stdin " << fd_stdin[P_WR] << "->"

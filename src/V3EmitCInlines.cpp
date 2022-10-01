@@ -24,6 +24,8 @@
 
 #include <map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class EmitCInlines final : EmitCBaseVisitor {
@@ -32,18 +34,18 @@ class EmitCInlines final : EmitCBaseVisitor {
     // METHODS
 
     // VISITORS
-    virtual void visit(AstCNew* nodep) override {
+    void visit(AstCNew* nodep) override {
         if (v3Global.opt.savable())
             v3warn(E_UNSUPPORTED, "Unsupported: --savable with dynamic new");
         iterateChildren(nodep);
     }
-    virtual void visit(AstDumpCtl* nodep) override {
+    void visit(AstDumpCtl* nodep) override {
         if (v3Global.opt.trace()) v3Global.needTraceDumper(true);
         iterateChildren(nodep);
     }
 
     //---------------------------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     explicit EmitCInlines(AstNetlist* nodep) { iterate(nodep); }

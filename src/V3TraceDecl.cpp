@@ -37,6 +37,8 @@
 #include <limits>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Utility class to emit path adjustments
 
@@ -133,7 +135,6 @@ private:
     VDouble0 m_statIgnSigs;  // Statistic tracking
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     const char* vscIgnoreTrace(const AstVarScope* nodep) {
         // Return true if this shouldn't be traced
@@ -162,7 +163,7 @@ private:
         funcp->isStatic(false);
         funcp->isLoose(true);
         funcp->slow(true);
-        topScopep->addActivep(funcp);
+        topScopep->addBlocksp(funcp);
         return funcp;
     }
 
@@ -241,7 +242,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         UASSERT_OBJ(!m_currScopep, nodep, "Should not nest");
         UASSERT_OBJ(m_subFuncps.empty(), nodep, "Should not nest");
         UASSERT_OBJ(m_signals.empty(), nodep, "Should not nest");
@@ -280,11 +281,7 @@ private:
                 addIgnore(ignoreReasonp);
             } else {
                 ++m_statSigs;
-                if (AstNode* const valuep = m_traVscp->valuep()) {
-                    m_traValuep = valuep->cloneTree(false);
-                } else {
-                    m_traValuep = new AstVarRef{m_traVscp->fileline(), m_traVscp, VAccess::READ};
-                }
+                m_traValuep = new AstVarRef{m_traVscp->fileline(), m_traVscp, VAccess::READ};
                 // Recurse into data type of the signal. The visit methods will add AstTraceDecls.
                 iterate(m_traVscp->varp()->dtypep()->skipRefToEnump());
                 // Cleanup
@@ -307,8 +304,8 @@ private:
             scopeName = scopeName.substr(0, lastDot + 1);
             const size_t scopeLen = scopeName.length();
 
-            UASSERT_OBJ(cellp->intfRefp(), cellp, "Interface without tracing reference");
-            for (AstIntfRef *irp = cellp->intfRefp(), *nextIrp; irp; irp = nextIrp) {
+            UASSERT_OBJ(cellp->intfRefsp(), cellp, "Interface without tracing reference");
+            for (AstIntfRef *irp = cellp->intfRefsp(), *nextIrp; irp; irp = nextIrp) {
                 nextIrp = VN_AS(irp->nextp(), IntfRef);
 
                 const string irpName = irp->prettyName();
@@ -334,7 +331,7 @@ private:
             m_scopeSubFuncps.emplace(scopeName, std::move(m_subFuncps));
         }
     }
-    virtual void visit(AstVarScope* nodep) override {
+    void visit(AstVarScope* nodep) override {
         UASSERT_OBJ(m_currScopep, nodep, "AstVarScope not under AstScope");
 
         // Prefilter - things that get added to m_vscps will either get traced or get a comment as
@@ -349,13 +346,13 @@ private:
     }
 
     // VISITORS - Data types when tracing
-    virtual void visit(AstConstDType* nodep) override {
+    void visit(AstConstDType* nodep) override {
         if (m_traVscp) iterate(nodep->subDTypep()->skipRefToEnump());
     }
-    virtual void visit(AstRefDType* nodep) override {
+    void visit(AstRefDType* nodep) override {
         if (m_traVscp) iterate(nodep->subDTypep()->skipRefToEnump());
     }
-    virtual void visit(AstUnpackArrayDType* nodep) override {
+    void visit(AstUnpackArrayDType* nodep) override {
         // Note more specific dtypes above
         if (m_traVscp) {
             if (static_cast<int>(nodep->arrayUnpackedElements()) > v3Global.opt.traceMaxArray()) {
@@ -390,13 +387,13 @@ private:
             }
         }
     }
-    virtual void visit(AstPackArrayDType* nodep) override {
+    void visit(AstPackArrayDType* nodep) override {
         if (m_traVscp) {
             if (!v3Global.opt.traceStructs()) {
                 // Everything downstream is packed, so deal with as one trace unit.
                 // This may not be the nicest for user presentation, but is
                 // a much faster way to trace
-                addTraceDecl(VNumRange(), nodep->width());
+                addTraceDecl(VNumRange{}, nodep->width());
             } else {
                 FileLine* const flp = nodep->fileline();
                 AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
@@ -416,13 +413,13 @@ private:
             }
         }
     }
-    virtual void visit(AstNodeUOrStructDType* nodep) override {
+    void visit(AstNodeUOrStructDType* nodep) override {
         if (m_traVscp) {
             if (nodep->packed() && !v3Global.opt.traceStructs()) {
                 // Everything downstream is packed, so deal with as one trace unit
                 // This may not be the nicest for user presentation, but is
                 // a much faster way to trace
-                addTraceDecl(VNumRange(), nodep->width());
+                addTraceDecl(VNumRange{}, nodep->width());
             } else if (!nodep->packed()) {
                 addIgnore("Unsupported: Unpacked struct/union");
             } else {
@@ -453,24 +450,24 @@ private:
             }
         }
     }
-    virtual void visit(AstBasicDType* nodep) override {
+    void visit(AstBasicDType* nodep) override {
         if (m_traVscp) {
             if (nodep->isString()) {
                 addIgnore("Unsupported: strings");
             } else {
-                addTraceDecl(VNumRange(), 0);
+                addTraceDecl(VNumRange{}, 0);
             }
         }
     }
-    virtual void visit(AstEnumDType* nodep) override { iterate(nodep->skipRefp()); }
-    virtual void visit(AstNodeDType*) override {
+    void visit(AstEnumDType* nodep) override { iterate(nodep->skipRefp()); }
+    void visit(AstNodeDType*) override {
         // Note more specific dtypes above
         if (!m_traVscp) return;
         addIgnore("Unsupported: data type");
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -517,7 +514,7 @@ public:
         AstCFunc* const topFuncp = m_topFuncps.front();
         topFuncp->name("trace_init_top");
     }
-    virtual ~TraceDeclVisitor() override {
+    ~TraceDeclVisitor() override {
         V3Stats::addStat("Tracing, Traced signals", m_statSigs);
         V3Stats::addStat("Tracing, Ignored signals", m_statIgnSigs);
     }
@@ -529,5 +526,5 @@ public:
 void V3TraceDecl::traceDeclAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { TraceDeclVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("tracedecl", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("tracedecl", 0, dumpTree() >= 3);
 }

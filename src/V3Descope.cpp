@@ -33,6 +33,8 @@
 
 #include <map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 
 class DescopeVisitor final : public VNVisitor {
@@ -53,7 +55,6 @@ private:
     FuncMmap m_modFuncs;  // Name of public functions added
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     static bool modIsSingleton(AstNodeModule* modp) {
         // True iff there's exactly one instance of this module in the design (including top).
@@ -139,14 +140,14 @@ private:
                     UINFO(6,
                           "  at " << newfuncp->argTypes() << " und " << funcp->argTypes() << endl);
                     funcp->declPrivate(true);
-                    AstNode* argsp = nullptr;
+                    AstVarRef* argsp = nullptr;
                     for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
                         if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
-                                AstNode* const newp = new AstVarRef(
+                                AstVarRef* const newp = new AstVarRef(
                                     portp->fileline(), portp,
                                     portp->isWritable() ? VAccess::WRITE : VAccess::READ);
-                                argsp = argsp ? argsp->addNextNull(newp) : newp;
+                                argsp = AstNode::addNext(argsp, newp);
                             }
                         }
                     }
@@ -185,11 +186,11 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) override {
+    void visit(AstNetlist* nodep) override {
         nodep->dpiExportTriggerp(nullptr);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;
@@ -199,17 +200,17 @@ private:
             makePublicFuncWrappers();
         }
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         m_scopep = nodep;
         iterateChildren(nodep);
         m_scopep = nullptr;
     }
-    virtual void visit(AstVarScope* nodep) override {
+    void visit(AstVarScope* nodep) override {
         // Delete the varscope when we're finished
         nodep->unlinkFrBack();
         pushDeletep(nodep);
     }
-    virtual void visit(AstNodeVarRef* nodep) override {
+    void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);
         if (!nodep->varScopep()) {
             UASSERT_OBJ(nodep->varp()->isFuncLocal(), nodep,
@@ -233,7 +234,7 @@ private:
         nodep->varScopep(nullptr);
         UINFO(9, "  refout " << nodep << " selfPtr=" << nodep->selfPointer() << endl);
     }
-    virtual void visit(AstCCall* nodep) override {
+    void visit(AstCCall* nodep) override {
         // UINFO(9, "       " << nodep << endl);
         iterateChildren(nodep);
         // Convert the hierch name
@@ -243,9 +244,9 @@ private:
         // Can't do this, as we may have more calls later
         // nodep->funcp()->scopep(nullptr);
     }
-    virtual void visit(AstCMethodCall* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstCNew* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCMethodCall* nodep) override { iterateChildren(nodep); }
+    void visit(AstCNew* nodep) override { iterateChildren(nodep); }
+    void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_funcp);
         if (!nodep->user1()) {
             // Static functions should have been moved under the corresponding AstClassPackage
@@ -257,7 +258,7 @@ private:
             // If it's under a scope, move it up to the top
             if (m_scopep) {
                 nodep->unlinkFrBack();
-                m_modp->addStmtp(nodep);
+                m_modp->addStmtsp(nodep);
 
                 if (nodep->funcPublic()) {
                     // There may be multiple public functions by the same name;
@@ -268,13 +269,13 @@ private:
             }
         }
     }
-    virtual void visit(AstVar*) override {}
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstVar*) override {}
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit DescopeVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~DescopeVisitor() override = default;
+    ~DescopeVisitor() override = default;
 };
 
 //######################################################################
@@ -283,5 +284,5 @@ public:
 void V3Descope::descopeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DescopeVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("descope", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("descope", 0, dumpTree() >= 3);
 }

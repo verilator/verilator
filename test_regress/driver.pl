@@ -235,7 +235,7 @@ sub parameter {
     elsif ($param =~ /\.pl/) {
         push @opt_tests, $param;
     }
-    elsif ($param =~ /^-?(-debugi|-dump-treei)/) {
+    elsif ($param =~ /^-?(-debugi|-dumpi)/) {
         push @Opt_Driver_Verilator_Flags, $param;
         $_Parameter_Next_Level = $param;
     }
@@ -1845,7 +1845,7 @@ sub _make_main {
 
     if ($self->{savable}) {
         $fh->print("    const char* save_time_strp = contextp->commandArgsPlusMatch(\"save_time=\");\n");
-        $fh->print("    unsigned int save_time = !save_time_strp[0] ? 0 : atoi(save_time_strp+strlen(\"+save_time=\"));\n");
+        $fh->print("    unsigned int save_time = !save_time_strp[0] ? 0 : std::atoi(save_time_strp + std::strlen(\"+save_time=\"));\n");
         $fh->print("    const char* save_restore_strp = contextp->commandArgsPlusMatch(\"save_restore=\");\n");
         $fh->print("    unsigned int save_restore = !save_restore_strp[0] ? 0 : 1;\n");
     }

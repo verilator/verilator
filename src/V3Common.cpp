@@ -29,6 +29,8 @@
 #include "V3EmitCBase.h"
 #include "V3Global.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Common component builders
 
@@ -43,7 +45,7 @@ static void makeVlToString(AstClass* nodep) {
     AstNode* const exprp = new AstCMath{nodep->fileline(), "obj ? obj->to_string() : \"null\"", 0};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
-    nodep->addStmtp(funcp);
+    nodep->addStmtsp(funcp);
 }
 static void makeToString(AstClass* nodep) {
     AstCFunc* const funcp = new AstCFunc{nodep->fileline(), "to_string", nullptr, "std::string"};
@@ -54,7 +56,7 @@ static void makeToString(AstClass* nodep) {
         = new AstCMath{nodep->fileline(), R"(std::string{"'{"} + to_string_middle() + "}")", 0};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
-    nodep->addStmtp(funcp);
+    nodep->addStmtsp(funcp);
 }
 static void makeToStringMiddle(AstClass* nodep) {
     AstCFunc* const funcp
@@ -96,7 +98,7 @@ static void makeToStringMiddle(AstClass* nodep) {
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
     }
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "return out;\n"});
-    nodep->addStmtp(funcp);
+    nodep->addStmtsp(funcp);
 }
 
 //######################################################################
@@ -117,5 +119,5 @@ void V3Common::commonAll() {
             makeToStringMiddle(classp);
         }
     }
-    V3Global::dumpCheckGlobalTree("common", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("common", 0, dumpTree() >= 3);
 }

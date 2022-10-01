@@ -27,6 +27,8 @@
 #include <map>
 #include <unordered_map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Stats dumping
 
@@ -44,6 +46,7 @@ class StatsReport final {
         os << "Information:\n";
         os << "  " << V3Options::version() << '\n';
         os << "  Arguments: " << v3Global.opt.allArgsString() << '\n';
+        os << "  Build jobs: " << v3Global.opt.buildJobs() << '\n';
         os << '\n';
     }
 

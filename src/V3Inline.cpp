@@ -40,6 +40,8 @@
 #include <unordered_set>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 // CONFIG
 static const int INLINE_MODS_SMALLER = 100;  // If a mod is < this # nodes, can always inline it
 
@@ -95,7 +97,6 @@ private:
     std::unordered_map<AstNodeModule*, LocalInstanceMap> m_instances;
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
     void cantInline(const char* reason, bool hard) {
         if (hard) {
             if (m_modp->user2() != CIL_NOTHARD) {
@@ -112,7 +113,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         UASSERT_OBJ(!m_modp, nodep, "Unsupported: Nested modules");
         m_modp = nodep;
         m_allMods.push_back(nodep);
@@ -130,19 +131,19 @@ private:
         iterateChildren(nodep);
         m_modp = nullptr;
     }
-    virtual void visit(AstClass* nodep) override {
+    void visit(AstClass* nodep) override {
         // TODO allow inlining of modules that have classes
         // (Probably wait for new inliner scheme)
         cantInline("class", true);
         iterateChildren(nodep);
     }
-    virtual void visit(AstCell* nodep) override {
+    void visit(AstCell* nodep) override {
         m_moduleState(nodep->modp()).m_cellRefs++;
         m_moduleState(m_modp).m_childCells.push_back(nodep);
         m_instances[m_modp][nodep->modp()]++;
         iterateChildren(nodep);
     }
-    virtual void visit(AstPragma* nodep) override {
+    void visit(AstPragma* nodep) override {
         if (nodep->pragType() == VPragmaType::INLINE_MODULE) {
             if (!m_modp) {
                 nodep->v3error("Inline pragma not under a module");  // LCOV_EXCL_LINE
@@ -162,28 +163,28 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
-    virtual void visit(AstVarXRef* nodep) override {
+    void visit(AstVarXRef* nodep) override {
         // Remove link. V3LinkDot will reestablish it after inlining.
         nodep->varp(nullptr);
     }
-    virtual void visit(AstNodeFTaskRef* nodep) override {
+    void visit(AstNodeFTaskRef* nodep) override {
         // Remove link. V3LinkDot will reestablish it after inlining.
         // MethodCalls not currently supported by inliner, so keep linked
         if (!nodep->classOrPackagep() && !VN_IS(nodep, MethodCall)) nodep->taskp(nullptr);
         iterateChildren(nodep);
     }
-    virtual void visit(AstAlways* nodep) override {
+    void visit(AstAlways* nodep) override {
         m_modp->user4Inc();  // statement count
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         // Don't count assignments, as they'll likely flatten out
         // Still need to iterate though to nullify VarXRefs
         const int oldcnt = m_modp->user4();
         iterateChildren(nodep);
         m_modp->user4(oldcnt);
     }
-    virtual void visit(AstNetlist* nodep) override {
+    void visit(AstNetlist* nodep) override {
         // Build ModuleState, user2, and user4 for all modules.
         // Also build m_allMods and m_instances.
         iterateChildren(nodep);
@@ -226,7 +227,7 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         if (m_modp) m_modp->user4Inc();  // Inc statement count
         iterateChildren(nodep);
     }
@@ -237,7 +238,7 @@ public:
         : m_moduleState{moduleState} {
         iterate(nodep);
     }
-    virtual ~InlineMarkVisitor() override {
+    ~InlineMarkVisitor() override {
         V3Stats::addStat("Optimizations, Inline unsupported", m_statUnsup);
     }
 };
@@ -256,11 +257,8 @@ private:
     AstNodeModule* const m_modp;  // Current module
     const AstCell* const m_cellp;  // Cell being cloned
 
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     // VISITORS
-    virtual void visit(AstCellInline* nodep) override {
+    void visit(AstCellInline* nodep) override {
         // Inlined cell under the inline cell, need to move to avoid conflicts
         nodep->unlinkFrBack();
         m_modp->addInlinesp(nodep);
@@ -270,20 +268,20 @@ private:
         // Do CellInlines under this, but don't move them
         iterateChildren(nodep);
     }
-    virtual void visit(AstCell* nodep) override {
+    void visit(AstCell* nodep) override {
         // Cell under the inline cell, need to rename to avoid conflicts
         nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
         iterateChildren(nodep);
     }
-    virtual void visit(AstClass* nodep) override {
+    void visit(AstClass* nodep) override {
         nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
         iterateChildren(nodep);
     }
-    virtual void visit(AstModule* nodep) override {
+    void visit(AstModule* nodep) override {
         m_renamedInterfaces.clear();
         iterateChildren(nodep);
     }
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         if (nodep->user2p()) {
             // Make an assignment, so we'll trace it properly
             // user2p is either a const or a var.
@@ -294,15 +292,15 @@ private:
             UASSERT_OBJ(exprconstp || exprvarrefp, nodep,
                         "Unknown interconnect type; pinReconnectSimple should have cleared up");
             if (exprconstp) {
-                m_modp->addStmtp(new AstAssignW(flp, new AstVarRef(flp, nodep, VAccess::WRITE),
-                                                exprconstp->cloneTree(false)));
+                m_modp->addStmtsp(new AstAssignW(flp, new AstVarRef(flp, nodep, VAccess::WRITE),
+                                                 exprconstp->cloneTree(false)));
             } else if (nodep->user3()) {
                 // Public variable at the lower module end - we need to make sure we propagate
                 // the logic changes up and down; if we aliased, we might
                 // remove the change detection on the output variable.
                 UINFO(9, "public pin assign: " << exprvarrefp << endl);
                 UASSERT_OBJ(!nodep->isNonOutput(), nodep, "Outputs only - inputs use AssignAlias");
-                m_modp->addStmtp(
+                m_modp->addStmtsp(
                     new AstAssignW(flp, new AstVarRef(flp, exprvarrefp->varp(), VAccess::WRITE),
                                    new AstVarRef(flp, nodep, VAccess::READ)));
             } else if (nodep->isSigPublic() && VN_IS(nodep->dtypep(), UnpackArrayDType)) {
@@ -310,11 +308,11 @@ private:
                 // instead of aliased, because otherwise it will pass V3Slice and invalid
                 // code will be emitted.
                 UINFO(9, "assign to public and unpacked: " << nodep << endl);
-                m_modp->addStmtp(
+                m_modp->addStmtsp(
                     new AstAssignW{flp, new AstVarRef{flp, nodep, VAccess::WRITE},
                                    new AstVarRef{flp, exprvarrefp->varp(), VAccess::READ}});
             } else if (nodep->isIfaceRef()) {
-                m_modp->addStmtp(
+                m_modp->addStmtsp(
                     new AstAssignVarScope(flp, new AstVarRef(flp, nodep, VAccess::WRITE),
                                           new AstVarRef(flp, exprvarrefp->varp(), VAccess::READ)));
                 FileLine* const flbp = exprvarrefp->varp()->fileline();
@@ -323,7 +321,7 @@ private:
             } else {
                 // Do to inlining child's variable now within the same
                 // module, so a AstVarRef not AstVarXRef below
-                m_modp->addStmtp(
+                m_modp->addStmtsp(
                     new AstAssignAlias(flp, new AstVarRef(flp, nodep, VAccess::WRITE),
                                        new AstVarRef(flp, exprvarrefp->varp(), VAccess::READ)));
                 FileLine* const flbp = exprvarrefp->varp()->fileline();
@@ -360,17 +358,17 @@ private:
         if (debug() >= 9) nodep->dumpTree(cout, "varchanged:");
         if (debug() >= 9 && nodep->valuep()) nodep->valuep()->dumpTree(cout, "varchangei:");
     }
-    virtual void visit(AstNodeFTask* nodep) override {
+    void visit(AstNodeFTask* nodep) override {
         // Function under the inline cell, need to rename to avoid conflicts
         nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
         iterateChildren(nodep);
     }
-    virtual void visit(AstTypedef* nodep) override {
+    void visit(AstTypedef* nodep) override {
         // Typedef under the inline cell, need to rename to avoid conflicts
         nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
         iterateChildren(nodep);
     }
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         if (nodep->varp()->user2p()  // It's being converted to an alias.
             && !nodep->varp()->user3()
             // Don't constant propagate aliases (we just made)
@@ -388,7 +386,7 @@ private:
         }
         nodep->name(nodep->varp()->name());
     }
-    virtual void visit(AstVarXRef* nodep) override {
+    void visit(AstVarXRef* nodep) override {
         // Track what scope it was originally under so V3LinkDot can resolve it
         nodep->inlinedDots(VString::dot(m_cellp->name(), ".", nodep->inlinedDots()));
         for (string tryname = nodep->dotted(); true;) {
@@ -406,7 +404,7 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeFTaskRef* nodep) override {
+    void visit(AstNodeFTaskRef* nodep) override {
         // Track what scope it was originally under so V3LinkDot can resolve it
         nodep->inlinedDots(VString::dot(m_cellp->name(), ".", nodep->inlinedDots()));
         if (m_renamedInterfaces.count(nodep->dotted())) {
@@ -417,30 +415,30 @@ private:
     }
 
     // Not needed, as V3LinkDot doesn't care about typedefs
-    // virtual void visit(AstRefDType* nodep) override {}
+    //  void visit(AstRefDType* nodep) override {}
 
-    virtual void visit(AstScopeName* nodep) override {
+    void visit(AstScopeName* nodep) override {
         // If there's a %m in the display text, we add a special node that will contain the name()
         // Similar code in V3Begin
         // To keep correct visual order, must add before other Text's
-        AstNode* afterp = nodep->scopeAttrp();
+        AstText* afterp = nodep->scopeAttrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->scopeAttrp(
+        nodep->addScopeAttrp(
             new AstText{nodep->fileline(), std::string{"__DOT__"} + m_cellp->name()});
-        if (afterp) nodep->scopeAttrp(afterp);
+        if (afterp) nodep->addScopeAttrp(afterp);
         afterp = nodep->scopeEntrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->scopeEntrp(
+        nodep->addScopeEntrp(
             new AstText{nodep->fileline(), std::string{"__DOT__"} + m_cellp->name()});
-        if (afterp) nodep->scopeEntrp(afterp);
+        if (afterp) nodep->addScopeEntrp(afterp);
         iterateChildren(nodep);
     }
-    virtual void visit(AstCoverDecl* nodep) override {
+    void visit(AstCoverDecl* nodep) override {
         // Fix path in coverage statements
         nodep->hier(VString::dot(m_cellp->prettyName(), ".", nodep->hier()));
         iterateChildren(nodep);
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -449,7 +447,7 @@ public:
         , m_cellp{cellp} {
         iterate(cloneModp);
     }
-    virtual ~InlineRelinkVisitor() override = default;
+    ~InlineRelinkVisitor() override = default;
 };
 
 //######################################################################
@@ -478,8 +476,6 @@ private:
     VDouble0 m_statCells;  // Statistic tracking
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     void inlineCell(AstCell* nodep) {
         UINFO(5, " Inline CELL   " << nodep << endl);
 
@@ -566,7 +562,7 @@ private:
         // Move statements under the module we are inlining into
         if (AstNode* const stmtsp = newmodp->stmtsp()) {
             stmtsp->unlinkFrBackWithNext();
-            m_modp->addStmtp(stmtsp);
+            m_modp->addStmtsp(stmtsp);
         }
         // Clear any leftover ports, etc
         VL_DO_DANGLING(newmodp->deleteTree(), newmodp);
@@ -576,13 +572,13 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) override {
+    void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.  Required!
         iterateAndNextConstNullBackwards(nodep->modulesp());
         // Clean up AstIfaceRefDType references
         iterateChildren(nodep->typeTablep());
     }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         UASSERT_OBJ(!m_modp, nodep, "Unsupported: Nested modules");
         m_modp = nodep;
         // Iterate the stored cells directly to reduce traversal
@@ -592,7 +588,7 @@ private:
         m_moduleState(nodep).m_childCells.clear();
         m_modp = nullptr;
     }
-    virtual void visit(AstIfaceRefDType* nodep) override {
+    void visit(AstIfaceRefDType* nodep) override {
         if (nodep->user5()) {
             // The cell has been removed so let's make sure we don't leave a reference to it
             // This dtype may still be in use by the AstAssignVarScope created earlier
@@ -602,15 +598,15 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstCell* nodep) override {  // LCOV_EXCL_START
+    void visit(AstCell* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatal("Traversal should have been short circuited");
     }
-    virtual void visit(AstNodeStmt* nodep) override {
+    void visit(AstNodeStmt* nodep) override {
         nodep->v3fatal("Traversal should have been short circuited");
     }  // LCOV_EXCL_STOP
-    virtual void visit(AstNodeFile*) override {}  // Accelerate
-    virtual void visit(AstNodeDType*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeFile*) override {}  // Accelerate
+    void visit(AstNodeDType*) override {}  // Accelerate
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -618,7 +614,7 @@ public:
         : m_moduleState{moduleState} {
         iterate(nodep);
     }
-    virtual ~InlineVisitor() override {
+    ~InlineVisitor() override {
         V3Stats::addStat("Optimizations, Inlined instances", m_statCells);
     }
 };
@@ -635,12 +631,9 @@ private:
 
     string m_scope;  // Scope name
 
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     // VISITORS
-    virtual void visit(AstNetlist* nodep) override { iterateChildren(nodep->topModulep()); }
-    virtual void visit(AstCell* nodep) override {
+    void visit(AstNetlist* nodep) override { iterateChildren(nodep->topModulep()); }
+    void visit(AstCell* nodep) override {
         VL_RESTORER(m_scope);
         if (m_scope.empty()) {
             m_scope = nodep->name();
@@ -649,7 +642,7 @@ private:
         }
 
         if (VN_IS(nodep->modp(), Iface)) {
-            nodep->addIntfRefp(new AstIntfRef{nodep->fileline(), m_scope});
+            nodep->addIntfRefsp(new AstIntfRef{nodep->fileline(), m_scope});
         }
         {
             AstNodeModule* const modp = nodep->modp();
@@ -666,14 +659,14 @@ private:
                 if ((cellp = VN_CAST(fromVarp->user1p(), Cell)) || (cellp = irdtp->cellp())) {
                     varp->user1p(cellp);
                     const string alias = m_scope + "__DOT__" + pinp->name();
-                    cellp->addIntfRefp(new AstIntfRef(pinp->fileline(), alias));
+                    cellp->addIntfRefsp(new AstIntfRef(pinp->fileline(), alias));
                 }
             }
 
             iterateChildren(modp);
         }
     }
-    virtual void visit(AstAssignVarScope* nodep) override {
+    void visit(AstAssignVarScope* nodep) override {
         // Reference
         const AstVarRef* const reflp = VN_CAST(nodep->lhsp(), VarRef);
         // What the reference refers to
@@ -695,17 +688,17 @@ private:
         string alias;
         if (!m_scope.empty()) alias = m_scope + "__DOT__";
         alias += varlp->name();
-        cellp->addIntfRefp(new AstIntfRef(varlp->fileline(), alias));
+        cellp->addIntfRefsp(new AstIntfRef(varlp->fileline(), alias));
     }
     //--------------------
-    virtual void visit(AstNodeMath*) override {}  // Accelerate
-    virtual void visit(AstNodeStmt*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeStmt*) override {}  // Accelerate
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit InlineIntfRefVisitor(AstNode* nodep) { iterate(nodep); }
-    virtual ~InlineIntfRefVisitor() override = default;
+    ~InlineIntfRefVisitor() override = default;
 };
 
 //######################################################################
@@ -734,5 +727,5 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
     }
 
     { InlineIntfRefVisitor{nodep}; }
-    V3Global::dumpCheckGlobalTree("inline", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("inline", 0, dumpTree() >= 3);
 }

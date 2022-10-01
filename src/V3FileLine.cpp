@@ -31,12 +31,15 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <limits>
 #include <unordered_set>
+
+VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 // FileLineSingleton class functions
 
-string FileLineSingleton::filenameLetters(int fileno) {
+string FileLineSingleton::filenameLetters(fileNameIdx_t fileno) {
     constexpr int size
         = 1 + (64 / 4);  // Each letter retires more than 4 bits of a > 64 bit number
     char out[size];
@@ -58,14 +61,18 @@ string FileLineSingleton::filenameLetters(int fileno) {
 
 //! We associate a language with each source file, so we also set the default
 //! for this.
-int FileLineSingleton::nameToNumber(const string& filename) {
-    const auto it = vlstd::as_const(m_namemap).find(filename);
-    if (VL_LIKELY(it != m_namemap.end())) return it->second;
-    const int num = m_names.size();
-    m_names.push_back(filename);
-    m_languages.push_back(V3LangCode::mostRecent());
-    m_namemap.emplace(filename, num);
-    return num;
+FileLineSingleton::fileNameIdx_t FileLineSingleton::nameToNumber(const string& filename) {
+    const auto pair = m_namemap.emplace(filename, 0);
+    fileNameIdx_t& idx = pair.first->second;
+    if (pair.second) {
+        const size_t nextIdx = m_names.size();
+        UASSERT(nextIdx <= std::numeric_limits<fileNameIdx_t>::max(),
+                "Too many input files (" + cvtToStr(nextIdx) + "+).");
+        idx = static_cast<fileNameIdx_t>(nextIdx);
+        m_names.push_back(filename);
+        m_languages.push_back(V3LangCode::mostRecent());
+    }
+    return idx;
 }
 
 //! Support XML output
@@ -80,14 +87,46 @@ void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
     os << "</files>\n";
 }
 
-//######################################################################
-// VFileContents class functions
-
-int VFileContent::debug() {
-    static int level = -1;
-    if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-    return level;
+FileLineSingleton::msgEnSetIdx_t FileLineSingleton::addMsgEnBitSet(const MsgEnBitSet& bitSet) {
+    const auto pair = m_internedMsgEnIdxs.emplace(bitSet, 0);
+    msgEnSetIdx_t& idx = pair.first->second;
+    if (pair.second) {
+        const size_t nextIdx = m_internedMsgEns.size();
+        UASSERT(nextIdx <= std::numeric_limits<msgEnSetIdx_t>::max(),
+                "Too many unique message enable sets (" + cvtToStr(nextIdx) + "+).");
+        idx = static_cast<msgEnSetIdx_t>(nextIdx);
+        m_internedMsgEns.push_back(bitSet);
+    }
+    return idx;
 }
+
+FileLineSingleton::msgEnSetIdx_t FileLineSingleton::defaultMsgEnIndex() {
+    MsgEnBitSet msgEnBitSet;
+    for (int i = V3ErrorCode::EC_MIN; i < V3ErrorCode::_ENUM_MAX; ++i) {
+        msgEnBitSet.set(i, !V3ErrorCode{i}.defaultsOff());
+    }
+    return addMsgEnBitSet(msgEnBitSet);
+}
+
+FileLineSingleton::msgEnSetIdx_t FileLineSingleton::msgEnSetBit(msgEnSetIdx_t setIdx,
+                                                                size_t bitIdx, bool value) {
+    if (msgEn(setIdx).test(bitIdx) == value) return setIdx;
+    MsgEnBitSet msgEnBitSet{msgEn(setIdx)};
+    msgEnBitSet.set(bitIdx, value);
+    return addMsgEnBitSet(msgEnBitSet);
+}
+
+FileLineSingleton::msgEnSetIdx_t FileLineSingleton::msgEnAnd(msgEnSetIdx_t lhsIdx,
+                                                             msgEnSetIdx_t rhsIdx) {
+    MsgEnBitSet msgEnBitSet{msgEn(lhsIdx)};
+    msgEnBitSet &= msgEn(rhsIdx);
+    if (msgEnBitSet == msgEn(lhsIdx)) return lhsIdx;
+    if (msgEnBitSet == msgEn(rhsIdx)) return rhsIdx;
+    return addMsgEnBitSet(msgEnBitSet);
+}
+
+// ######################################################################
+//  VFileContents class functions
 
 void VFileContent::pushText(const string& text) {
     if (m_lines.size() == 0) {
@@ -140,22 +179,17 @@ std::ostream& operator<<(std::ostream& os, VFileContent* contentp) {
     return os;
 }
 
-//######################################################################
-// FileLine class functions
+// ######################################################################
+//  FileLine class functions
 
-// Sort of a singleton
-FileLine::FileLine(FileLine::EmptySecret) {
-    m_filenameno = singleton().nameToNumber(FileLine::builtInFilename());
-
-    m_warnOn = 0;
-    for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        const V3ErrorCode code = V3ErrorCode(codei);
-        warnOff(code, code.defaultsOff());
-    }
+FileLine::~FileLine() {
+    if (m_contentp) VL_DO_DANGLING(m_contentp->refDec(), m_contentp);
 }
 
 void FileLine::newContent() {
-    m_contentp = std::make_shared<VFileContent>();
+    if (m_contentp) VL_DO_DANGLING(m_contentp->refDec(), m_contentp);
+    m_contentp = new VFileContent;
+    m_contentp->refInc();
     m_contentLineno = 1;
 }
 
@@ -185,7 +219,7 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     const char* const ln = textp;
     while (*textp && !isspace(*textp)) textp++;
     if (isdigit(*ln)) {
-        lineno(atoi(ln));
+        lineno(std::atoi(ln));
     } else {
         fail = true;
     }
@@ -207,7 +241,7 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     // Grab level
     while (*textp && (isspace(*textp) || *textp == '"')) textp++;
     if (isdigit(*textp)) {
-        enterExitRef = atoi(textp);
+        enterExitRef = std::atoi(textp);
         if (enterExitRef >= 3) fail = true;
     } else {
         enterExitRef = 0;
@@ -309,35 +343,27 @@ bool FileLine::warnOff(const string& msg, bool flag) {
 
 void FileLine::warnLintOff(bool flag) {
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        const V3ErrorCode code = V3ErrorCode(codei);
+        const V3ErrorCode code{codei};
         if (code.lintError()) warnOff(code, flag);
     }
 }
 
 void FileLine::warnStyleOff(bool flag) {
     for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        const V3ErrorCode code = V3ErrorCode(codei);
+        const V3ErrorCode code{codei};
         if (code.styleError()) warnOff(code, flag);
     }
 }
 
 bool FileLine::warnIsOff(V3ErrorCode code) const {
-    if (!m_warnOn.test(code)) return true;
-    if (!defaultFileLine().m_warnOn.test(code)) return true;  // Global overrides local
+    if (!msgEn().test(code)) return true;
+    if (!defaultFileLine().msgEn().test(code)) return true;  // Global overrides local
     // UNOPTFLAT implies UNOPT
-    if (code == V3ErrorCode::UNOPT && !m_warnOn.test(V3ErrorCode::UNOPTFLAT)) return true;
-    if ((code.lintError() || code.styleError()) && !m_warnOn.test(V3ErrorCode::I_LINT)) {
+    if (code == V3ErrorCode::UNOPT && !msgEn().test(V3ErrorCode::UNOPTFLAT)) return true;
+    if ((code.lintError() || code.styleError()) && !msgEn().test(V3ErrorCode::I_LINT)) {
         return true;
     }
     return false;
-}
-
-void FileLine::modifyStateInherit(const FileLine* fromp) {
-    // Any warnings that are off in "from", become off in "this".
-    for (int codei = V3ErrorCode::EC_MIN; codei < V3ErrorCode::_ENUM_MAX; codei++) {
-        const V3ErrorCode code = V3ErrorCode(codei);
-        if (fromp->warnIsOff(code)) warnOff(code, true);
-    }
 }
 
 void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra) {

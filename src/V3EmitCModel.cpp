@@ -26,6 +26,8 @@
 #include <functional>
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 class EmitCModel final : public EmitCFunc {
     // TYPES
     using CFuncVector = std::vector<const AstCFunc*>;
@@ -34,8 +36,6 @@ class EmitCModel final : public EmitCFunc {
     V3UniqueNames m_uniqueNames;  // For generating unique file names
 
     // METHODS
-    VL_DEBUG_FUNC;
-
     CFuncVector findFuncps(std::function<bool(const AstCFunc*)> cb) {
         CFuncVector funcps;
         for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
@@ -190,7 +190,7 @@ class EmitCModel final : public EmitCFunc {
                  + "C* tfp, int levels, int options = 0);\n");
             if (optSystemC()) {
                 puts("/// SC tracing; avoid overloaded virtual function lint warning\n");
-                puts("virtual void trace(sc_trace_file* tfp) const override { "
+                puts("void trace(sc_trace_file* tfp) const override { "
                      "::sc_core::sc_module::trace(tfp); }\n");
             }
         }
@@ -552,6 +552,11 @@ class EmitCModel final : public EmitCFunc {
                     "elaboration.\");\n");
             puts(/**/ "}");
         }
+        puts(/**/ "if (tfp->isOpen()) {\n");
+        puts(/****/ "vl_fatal(__FILE__, __LINE__, __FILE__,\"'" + topClassName()
+             + +"::trace()' shall not be called after '" + v3Global.opt.traceClassBase()
+             + "C::open()'.\");\n");
+        puts(/**/ "}\n");
         puts(/**/ "if (false && levels && options) {}  // Prevent unused\n");
         puts(/**/ "tfp->spTrace()->addModel(this);\n");
         puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
@@ -565,7 +570,7 @@ class EmitCModel final : public EmitCFunc {
                 // Some hackery to locate handle__V for trace_init_task
                 // Considered a pragma on the handle, but that still doesn't help us attach it here
                 string handle = funcp->name();
-                const size_t wr_len = strlen("__Vdpiimwrap_");
+                const size_t wr_len = std::strlen("__Vdpiimwrap_");
                 UASSERT_OBJ(handle.substr(0, wr_len) == "__Vdpiimwrap_", funcp,
                             "Strange trace_init_task function name");
                 handle = "vlSymsp->TOP." + handle.substr(wr_len);

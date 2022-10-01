@@ -100,7 +100,7 @@ int main(int argc, char** argv, char** env) {
 #endif
 
             // Clear out the data
-            memset(varData, 0, (varBits + 7) / 8);
+            std::memset(varData, 0, (varBits + 7) / 8);
         }
     }
 

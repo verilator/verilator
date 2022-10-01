@@ -17,9 +17,14 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-// Limited V3 headers here - this is a base class for Vlc etc
-#include "V3Error.h"
 #include "V3String.h"
+
+#include "V3Error.h"
+
+#ifndef V3ERROR_NO_GLOBAL_
+#include "V3Global.h"
+VL_DEFINE_DEBUG_FUNCTIONS;
+#endif
 
 #include <algorithm>
 
@@ -31,7 +36,7 @@ std::map<string, string> VName::s_dehashMap;
 // Wildcard
 
 // Double procedures, inlined, unrolls loop much better
-inline bool VString::wildmatchi(const char* s, const char* p) {
+bool VString::wildmatchi(const char* s, const char* p) {
     for (; *p; s++, p++) {
         if (*p != '*') {
             if (((*s) != (*p)) && *p != '?') return false;
@@ -150,7 +155,7 @@ double VString::parseDouble(const string& str, bool* successp) {
     char* endp = strgp;
     const double d = strtod(strgp, &endp);
     const size_t parsed_len = endp - strgp;
-    if (parsed_len != strlen(strgp)) {
+    if (parsed_len != std::strlen(strgp)) {
         if (successp) *successp = false;
     }
     VL_DO_DANGLING(delete[] strgp, strgp);
@@ -193,13 +198,11 @@ static const uint32_t sha256K[]
        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
        0xc67178f2};
 
-static inline uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) VL_ATTR_ALWINLINE;
-static inline uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) {
-    return lhs >> rhs | lhs << (32 - rhs);
-}
+VL_ATTR_ALWINLINE
+static uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) { return lhs >> rhs | lhs << (32 - rhs); }
 
-static inline void sha256Block(uint32_t* h, const uint32_t* chunk) VL_ATTR_ALWINLINE;
-static inline void sha256Block(uint32_t* h, const uint32_t* chunk) {
+VL_ATTR_ALWINLINE
+static void sha256Block(uint32_t* h, const uint32_t* chunk) {
     uint32_t ah[8];
     const uint32_t* p = chunk;
 
@@ -402,7 +405,7 @@ void VHashSha256::selfTest() {
 
 string VName::dehash(const string& in) {
     static const char VHSH[] = "__Vhsh";
-    static const size_t DOT_LEN = strlen("__DOT__");
+    static const size_t DOT_LEN = std::strlen("__DOT__");
     std::string dehashed;
 
     // Need to split 'in' into components separated by __DOT__, 'last_dot_pos'

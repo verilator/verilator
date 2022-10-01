@@ -34,6 +34,8 @@
 
 #include <vector>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // LocalizeVisitor
 
@@ -62,8 +64,6 @@ private:
     std::vector<AstVarScope*> m_varScopeps;  // List of variables to consider for localization
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     bool isOptimizable(AstVarScope* nodep) {
         return !nodep->user1() ||  // Not marked as not optimizable, or ...
                (nodep->varp()->varType() == VVarType::BLOCKTEMP
@@ -123,12 +123,12 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) override {
+    void visit(AstNetlist* nodep) override {
         iterateChildrenConst(nodep);
         moveVarScopes();
     }
 
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         UINFO(4, "  CFUNC " << nodep << endl);
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_nodeDepth);
@@ -140,12 +140,12 @@ private:
         }
     }
 
-    virtual void visit(AstCCall* nodep) override {
+    void visit(AstCCall* nodep) override {
         m_cfuncp->user1(true);  // Mark caller as not a leaf function
         iterateChildrenConst(nodep);
     }
 
-    virtual void visit(AstNodeAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         // Analyze RHS first so "a = a + 1" is detected as a read before write
         iterate(nodep->rhsp());
         // For now we only consider an assignment that is directly under the function, (in
@@ -163,7 +163,7 @@ private:
         iterate(nodep->lhsp());
     }
 
-    virtual void visit(AstVarScope* nodep) override {
+    void visit(AstVarScope* nodep) override {
         if (!nodep->varp()->isPrimaryIO()  // Not an IO the user wants to interact with
             && !nodep->varp()->isSigPublic()  // Not something the user wants to interact with
             && !nodep->varp()->isFuncLocal()  // Not already a function local (e.g.: argument)
@@ -177,7 +177,7 @@ private:
         // No iterate; Don't want varrefs under it (e.g.: in child dtype?)
     }
 
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         UASSERT_OBJ(m_cfuncp, nodep, "AstVarRef not under function");
 
         AstVarScope* const varScopep = nodep->varScopep();
@@ -201,7 +201,7 @@ private:
         // No iterate; Don't want varrefs under it  (e.g.: in child dtype?)
     }
 
-    virtual void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {
         ++m_nodeDepth;
         iterateChildrenConst(nodep);
         --m_nodeDepth;
@@ -210,7 +210,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit LocalizeVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~LocalizeVisitor() override {
+    ~LocalizeVisitor() override {
         V3Stats::addStat("Optimizations, Vars localized", m_statLocVars);
     }
 };
@@ -221,5 +221,5 @@ public:
 void V3Localize::localizeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { LocalizeVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("localize", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("localize", 0, dumpTree() >= 6);
 }

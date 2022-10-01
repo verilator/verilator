@@ -54,14 +54,14 @@ public:
         //          // an array dimension or loop bound.
     };
     enum en m_e;
-    inline GraphWay()
+    GraphWay()
         : m_e{FORWARD} {}
     // cppcheck-suppress noExplicitConstructor
-    inline constexpr GraphWay(en _e)
+    constexpr GraphWay(en _e)
         : m_e{_e} {}
-    explicit inline constexpr GraphWay(int _e)
+    explicit constexpr GraphWay(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {"FORWARD", "REVERSE"};
         return names[m_e];
@@ -71,9 +71,9 @@ public:
     constexpr bool forward() const { return m_e == FORWARD; }
     constexpr bool reverse() const { return m_e != FORWARD; }
 };
-inline bool operator==(const GraphWay& lhs, const GraphWay& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const GraphWay& lhs, GraphWay::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(GraphWay::en lhs, const GraphWay& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const GraphWay& lhs, const GraphWay& rhs) { return lhs.m_e == rhs.m_e; }
+constexpr bool operator==(const GraphWay& lhs, GraphWay::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(GraphWay::en lhs, const GraphWay& rhs) { return lhs == rhs.m_e; }
 
 //============================================================================
 
@@ -81,7 +81,6 @@ class V3Graph VL_NOT_FINAL {
 private:
     // MEMBERS
     V3List<V3GraphVertex*> m_vertices;  // All vertices
-    static int s_debug;
 
 protected:
     friend class V3GraphVertex;
@@ -92,12 +91,10 @@ protected:
     void dumpEdge(std::ostream& os, V3GraphVertex* vertexp, V3GraphEdge* edgep);
     void verticesUnlink() { m_vertices.reset(); }
     // ACCESSORS
-    static int debug();
 
 public:
     V3Graph();
     virtual ~V3Graph();
-    static void debug(int level) { s_debug = level; }
     virtual string dotRankDir() const { return "TB"; }  // rankdir for dot plotting
 
     // METHODS

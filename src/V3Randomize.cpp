@@ -31,6 +31,8 @@
 
 #include "V3Ast.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Visitor that marks classes needing a randomize() method
 
@@ -47,8 +49,6 @@ private:
     BaseToDerivedMap m_baseToDerivedMap;  // Mapping from base classes to classes that extend them
 
     // METHODS
-    VL_DEBUG_FUNC;
-
     void markMembers(AstClass* nodep) {
         for (auto* classp = nodep; classp;
              classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr) {
@@ -82,7 +82,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstClass* nodep) override {
+    void visit(AstClass* nodep) override {
         iterateChildren(nodep);
         if (nodep->extendsp()) {
             // Save pointer to derived class
@@ -90,7 +90,7 @@ private:
             m_baseToDerivedMap[basep].insert(nodep);
         }
     }
-    virtual void visit(AstMethodCall* nodep) override {
+    void visit(AstMethodCall* nodep) override {
         iterateChildren(nodep);
         if (nodep->name() != "randomize") return;
         if (const AstClassRefDType* const classRefp
@@ -100,7 +100,7 @@ private:
             markMembers(classp);
         }
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -108,7 +108,7 @@ public:
         iterate(nodep);
         markAllDerived();
     }
-    virtual ~RandomizeMarkVisitor() override = default;
+    ~RandomizeMarkVisitor() override = default;
 };
 
 //######################################################################
@@ -127,8 +127,6 @@ private:
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
 
     // METHODS
-    VL_DEBUG_FUNC;
-
     AstVar* enumValueTabp(AstEnumDType* nodep) {
         if (nodep->user2p()) return VN_AS(nodep->user2p(), Var);
         UINFO(9, "Construct Venumvaltab " << nodep << endl);
@@ -144,7 +142,7 @@ private:
         varp->isStatic(true);
         varp->valuep(initp);
         // Add to root, as don't know module we are in, and aids later structure sharing
-        v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(varp);
+        v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(varp);
         UASSERT_OBJ(nodep->itemsp(), nodep, "Enum without items");
         for (AstEnumItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), EnumItem)) {
@@ -199,7 +197,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstClass* nodep) override {
+    void visit(AstClass* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
         UINFO(9, "Define randomize() for " << nodep << endl);
@@ -241,12 +239,12 @@ private:
         }
         nodep->user1(false);
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit RandomizeVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~RandomizeVisitor() override = default;
+    ~RandomizeVisitor() override = default;
 };
 
 //######################################################################
@@ -258,7 +256,7 @@ void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
         const RandomizeMarkVisitor markVisitor{nodep};
         RandomizeVisitor{nodep};
     }
-    V3Global::dumpCheckGlobalTree("randomize", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("randomize", 0, dumpTree() >= 3);
 }
 
 AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep) {

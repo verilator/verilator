@@ -32,6 +32,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Inst state, as a visitor of each AstNode
 
@@ -45,11 +47,8 @@ private:
     // STATE
     AstCell* m_cellp = nullptr;  // Current cell
 
-    // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     // VISITORS
-    virtual void visit(AstCell* nodep) override {
+    void visit(AstCell* nodep) override {
         UINFO(4, "  CELL   " << nodep << endl);
         m_cellp = nodep;
         // VV*****  We reset user1p() on each cell!!!
@@ -57,7 +56,7 @@ private:
         iterateChildren(nodep);
         m_cellp = nullptr;
     }
-    virtual void visit(AstPin* nodep) override {
+    void visit(AstPin* nodep) override {
         // PIN(p,expr) -> ASSIGNW(VARXREF(p),expr)    (if sub's input)
         //            or  ASSIGNW(expr,VARXREF(p))    (if sub's output)
         UINFO(4, "   PIN  " << nodep << endl);
@@ -116,7 +115,7 @@ private:
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
-    virtual void visit(AstUdpTable* nodep) override {
+    void visit(AstUdpTable* nodep) override {
         if (!v3Global.opt.bboxUnsup()) {
             // If we support primitives, update V3Undriven to remove special case
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Verilog 1995 UDP Tables. "
@@ -125,17 +124,17 @@ private:
     }
 
     // Save some time
-    virtual void visit(AstNodeMath*) override {}
-    virtual void visit(AstNodeAssign*) override {}
-    virtual void visit(AstAlways*) override {}
+    void visit(AstNodeMath*) override {}
+    void visit(AstNodeAssign*) override {}
+    void visit(AstAlways*) override {}
 
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit InstVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~InstVisitor() override = default;
+    ~InstVisitor() override = default;
 };
 
 //######################################################################
@@ -146,18 +145,16 @@ private:
     // STATE
     std::map<const std::string, AstVar*> m_modVarNameMap;  // Per module, name of cloned variables
 
-    VL_DEBUG_FUNC;  // Declare debug()
-
     // VISITORS
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         if (VN_IS(nodep->dtypep(), IfaceRefDType)) {
             UINFO(8, "   dm-1-VAR    " << nodep << endl);
             insert(nodep);
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeMath*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // METHODS
@@ -181,7 +178,7 @@ public:
 
     // CONSTRUCTORS
     InstDeModVarVisitor() = default;
-    virtual ~InstDeModVarVisitor() override = default;
+    ~InstDeModVarVisitor() override = default;
     void main(AstNodeModule* nodep) {
         UINFO(8, "  dmMODULE    " << nodep << endl);
         m_modVarNameMap.clear();
@@ -200,10 +197,8 @@ private:
     int m_instSelNum = 0;  // Current instantiation count 0..N-1
     InstDeModVarVisitor m_deModVars;  // State of variables for current cell module
 
-    VL_DEBUG_FUNC;  // Declare debug()
-
     // VISITORS
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         if (VN_IS(nodep->dtypep(), UnpackArrayDType)
             && VN_IS(VN_AS(nodep->dtypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType)) {
             UINFO(8, "   dv-vec-VAR    " << nodep << endl);
@@ -239,7 +234,7 @@ private:
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstCell* nodep) override {
+    void visit(AstCell* nodep) override {
         UINFO(4, "  CELL   " << nodep << endl);
         // Find submodule vars
         UASSERT_OBJ(nodep->modp(), nodep, "Unlinked");
@@ -316,7 +311,7 @@ private:
         }
     }
 
-    virtual void visit(AstPin* nodep) override {
+    void visit(AstPin* nodep) override {
         // Any non-direct pins need reconnection with a part-select
         if (!nodep->exprp()) return;  // No-connect
         if (m_cellRangep) {
@@ -478,13 +473,13 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNodeMath*) override {}  // Accelerate
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit InstDeVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~InstDeVisitor() override = default;
+    ~InstDeVisitor() override = default;
 };
 
 //######################################################################
@@ -492,7 +487,6 @@ public:
 
 class InstStatic final {
 private:
-    VL_DEBUG_FUNC;  // Declare debug()
     InstStatic() = default;  // Static class
 
     static AstNode* extendOrSel(FileLine* fl, AstNode* rhsp, AstNode* cmpWidthp) {
@@ -622,11 +616,11 @@ void V3Inst::checkOutputShort(AstPin* nodep) {
 void V3Inst::instAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { InstVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("inst", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("inst", 0, dumpTree() >= 3);
 }
 
 void V3Inst::dearrayAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { InstDeVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("dearray", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    V3Global::dumpCheckGlobalTree("dearray", 0, dumpTree() >= 6);
 }

@@ -37,6 +37,8 @@
 
 #include <algorithm>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Convert every WRITE AstVarRef to a READ ref
 
@@ -88,7 +90,6 @@ private:
     AstMTaskBody* m_mtaskBodyp = nullptr;  // Current mtask body
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     AstVarScope* getCreateLastClk(AstVarScope* vscp) {
         if (vscp->user1p()) return static_cast<AstVarScope*>(vscp->user1p());
@@ -100,12 +101,12 @@ private:
         const string newvarname
             = (string("__Vclklast__") + vscp->scopep()->nameDotless() + "__" + varp->name());
         AstVar* const newvarp = new AstVar(vscp->fileline(), VVarType::MODULETEMP, newvarname,
-                                           VFlagLogicPacked(), 1);
+                                           VFlagLogicPacked{}, 1);
         newvarp->noReset(true);  // Reset by below assign
-        m_modp->addStmtp(newvarp);
+        m_modp->addStmtsp(newvarp);
         AstVarScope* const newvscp = new AstVarScope(vscp->fileline(), m_scopep, newvarp);
         vscp->user1p(newvscp);
-        m_scopep->addVarp(newvscp);
+        m_scopep->addVarsp(newvscp);
         // Add init
         AstNode* fromp = new AstVarRef(newvarp->fileline(), vscp, VAccess::READ);
         if (v3Global.opt.xInitialEdge()) fromp = new AstNot(fromp->fileline(), fromp);
@@ -202,7 +203,7 @@ private:
         funcp->slow(slow);
         funcp->isConst(false);
         funcp->declPrivate(true);
-        m_topScopep->scopep()->addActivep(funcp);
+        m_topScopep->scopep()->addBlocksp(funcp);
         return funcp;
     }
     void splitCheck(AstCFunc* ofuncp) {
@@ -229,7 +230,7 @@ private:
                 funcp->isStatic(false);
                 funcp->isLoose(true);
                 funcp->slow(ofuncp->slow());
-                m_topScopep->scopep()->addActivep(funcp);
+                m_topScopep->scopep()->addBlocksp(funcp);
                 //
                 AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
                 ofuncp->addStmtsp(callp);
@@ -242,7 +243,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) override {
+    void visit(AstTopScope* nodep) override {
         UINFO(4, " TOPSCOPE   " << nodep << endl);
         m_topScopep = nodep;
         m_scopep = nodep->scopep();
@@ -277,7 +278,7 @@ private:
         m_topScopep = nullptr;
         m_scopep = nullptr;
     }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         // UINFO(4, " MOD   " << nodep << endl);
         VL_RESTORER(m_modp);
         {
@@ -285,7 +286,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstScope* nodep) override {
         // UINFO(4, " SCOPE   " << nodep << endl);
         m_scopep = nodep;
         iterateChildren(nodep);
@@ -296,14 +297,14 @@ private:
         }
         m_scopep = nullptr;
     }
-    virtual void visit(AstNodeProcedure* nodep) override {
-        if (AstNode* const stmtsp = nodep->bodysp()) {
+    void visit(AstNodeProcedure* nodep) override {
+        if (AstNode* const stmtsp = nodep->stmtsp()) {
             stmtsp->unlinkFrBackWithNext();
             nodep->addNextHere(stmtsp);
         }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
-    virtual void visit(AstCoverToggle* nodep) override {
+    void visit(AstCoverToggle* nodep) override {
         // nodep->dumpTree(cout, "ct:");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
@@ -316,11 +317,11 @@ private:
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
-        newp->addIfsp(new AstAssign(nodep->fileline(), changeWrp, origp->cloneTree(false)));
+        newp->addThensp(new AstAssign(nodep->fileline(), changeWrp, origp->cloneTree(false)));
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
         // Link to global function
         if (nodep->isFinal()) {
@@ -329,7 +330,7 @@ private:
             m_finalFuncp->addStmtsp(callp);
         }
     }
-    virtual void visit(AstSenTree* nodep) override {
+    void visit(AstSenTree* nodep) override {
         // Delete it later; Actives still pointing to it
         nodep->unlinkFrBack();
         pushDeletep(nodep);
@@ -343,7 +344,7 @@ private:
     void addToInitial(AstNode* stmtsp) {
         m_initFuncp->addStmtsp(stmtsp);  // add to top level function
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         // Careful if adding variables here, ACTIVES can be under other ACTIVES
         // Need to save and restore any member state in AstUntilStable block
         if (!m_topScopep || !nodep->stmtsp()) {
@@ -367,7 +368,7 @@ private:
                     m_mtaskBodyp->addStmtsp(m_lastIfp);
                 }
                 // Move statements to if
-                m_lastIfp->addIfsp(stmtsp);
+                m_lastIfp->addThensp(stmtsp);
             } else if (nodep->hasInitial() || nodep->hasSettle()) {
                 nodep->v3fatalSrc("MTask should not include initial/settle logic.");
             } else {
@@ -393,7 +394,7 @@ private:
                     addToEvalLoop(m_lastIfp);
                 }
                 // Move statements to if
-                m_lastIfp->addIfsp(stmtsp);
+                m_lastIfp->addThensp(stmtsp);
             } else if (nodep->hasInitial()) {
                 // Don't need to: clearLastSen();, as we're adding it to different cfunc
                 // Move statements to function
@@ -411,7 +412,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
-    virtual void visit(AstExecGraph* nodep) override {
+    void visit(AstExecGraph* nodep) override {
         VL_RESTORER(m_mtaskBodyp);
         for (m_mtaskBodyp = nodep->mTaskBodiesp(); m_mtaskBodyp;
              m_mtaskBodyp = VN_AS(m_mtaskBodyp->nextp(), MTaskBody)) {
@@ -427,7 +428,7 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -437,7 +438,7 @@ public:
         // easily without iterating through the tree.
         nodep->evalp(m_evalFuncp);
     }
-    virtual ~ClockVisitor() override = default;
+    ~ClockVisitor() override = default;
 };
 
 //######################################################################
@@ -446,5 +447,5 @@ public:
 void V3Clock::clockAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ClockVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("clock", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("clock", 0, dumpTree() >= 3);
 }

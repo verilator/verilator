@@ -27,6 +27,8 @@
 #include <string>
 #include <unordered_map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Resolve wildcards in files, modules, ftasks or variables
 
@@ -193,11 +195,11 @@ public:
             const VPragmaType type
                 = m_inlineValue ? VPragmaType::INLINE_MODULE : VPragmaType::NO_INLINE_MODULE;
             AstNode* const nodep = new AstPragma(modp->fileline(), type);
-            modp->addStmtp(nodep);
+            modp->addStmtsp(nodep);
         }
         for (const auto& itr : m_modPragmas) {
             AstNode* const nodep = new AstPragma{modp->fileline(), itr};
-            modp->addStmtp(nodep);
+            modp->addStmtsp(nodep);
         }
     }
 
@@ -309,7 +311,7 @@ public:
         if (lineMatch(lineno, VPragmaType::FULL_CASE)) nodep->fullPragma(true);
         if (lineMatch(lineno, VPragmaType::PARALLEL_CASE)) nodep->parallelPragma(true);
     }
-    inline void applyIgnores(FileLine* filelinep) {
+    void applyIgnores(FileLine* filelinep) {
         // HOT routine, called each parsed token line of this filename
         if (m_lastIgnore.lineno != filelinep->lineno()) {
             // UINFO(9, "   ApplyIgnores for " << filelinep->ascii() << endl);

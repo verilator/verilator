@@ -10,11 +10,11 @@ on:
 
 jobs:
   format:
-    runs-on: ubuntu-20.04
-    name: Ubuntu 20.04 | format
+    runs-on: ubuntu-22.04
+    name: Ubuntu 22.04 | format
     env:
       CI_OS_NAME: linux
-      CI_RUNS_ON: ubuntu-20.04
+      CI_RUNS_ON: ubuntu-22.04
       CI_COMMIT: ${{ github.sha }}
       CI_M32: 0
     steps:
@@ -27,14 +27,14 @@ jobs:
           CI_BUILD_STAGE_NAME: build
         run: |
           bash ci/ci-install.bash &&
-          sudo apt-get install clang-format-11 yapf3 &&
+          sudo apt-get install clang-format-14 yapf3 &&
           git config --global user.email "action@example.com" &&
           git config --global user.name "github action"
       - name: Format code
         run: |
           autoconf &&
           ./configure &&
-          make -j 2 format CLANGFORMAT=clang-format-11 &&
+          make -j 2 format CLANGFORMAT=clang-format-14 &&
           git status
       - name: Push
         run: |

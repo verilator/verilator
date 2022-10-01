@@ -356,7 +356,7 @@ public:  // But only for verilated*.cpp
             }
         }
     }
-    inline FILE* fdToFp(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
+    FILE* fdToFp(IData fdi) VL_MT_SAFE_EXCLUDES(m_fdMutex) {
         const VerilatedLockGuard lock{m_fdMutex};
         const VerilatedFpList fdlist = fdToFpList(fdi);
         if (VL_UNLIKELY(fdlist.size() != 1)) return nullptr;
@@ -466,7 +466,7 @@ public:
     // There's often many more scopes than userdata's and thus having a ~48byte
     // per map overhead * N scopes would take much more space and cache thrashing.
     // As scopep's are pointers, this implicitly handles multiple Context's
-    static inline void userInsert(const void* scopep, void* userKey, void* userData) VL_MT_SAFE {
+    static void userInsert(const void* scopep, void* userKey, void* userData) VL_MT_SAFE {
         const VerilatedLockGuard lock{s().m_userMapMutex};
         const auto it = s().m_userMap.find(std::make_pair(scopep, userKey));
         if (it != s().m_userMap.end()) {
@@ -475,7 +475,7 @@ public:
             s().m_userMap.emplace(std::make_pair(scopep, userKey), userData);
         }
     }
-    static inline void* userFind(const void* scopep, void* userKey) VL_MT_SAFE {
+    static void* userFind(const void* scopep, void* userKey) VL_MT_SAFE {
         const VerilatedLockGuard lock{s().m_userMapMutex};
         const auto& it = vlstd::as_const(s().m_userMap).find(std::make_pair(scopep, userKey));
         if (VL_UNLIKELY(it == s().m_userMap.end())) return nullptr;

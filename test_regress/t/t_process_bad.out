@@ -1,0 +1,10 @@
+%Error: t/t_process.v:22:4: Can't find typedef: 'process'
+   22 |    process p;
+      |    ^~~~~~~
+%Error-UNSUPPORTED: t/t_process.v:26:20: Unsupported: 'process'
+   26 |       p = process::self();
+      |                    ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Internal Error: t/t_process.v:26:11: ../V3LinkDot.cpp:#: Bad package link
+   26 |       p = process::self();
+      |           ^~~~~~~

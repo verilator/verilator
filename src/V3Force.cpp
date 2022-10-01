@@ -46,6 +46,8 @@
 #include "V3Error.h"
 #include "V3Global.h"
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 //######################################################################
 // Convert force/release statements and signals marked 'forceable'
 
@@ -109,7 +111,7 @@ class ForceConvertVisitor final : public VNVisitor {
                     new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Initial{}}}};
                 activep->sensesStorep(activep->sensesp());
                 activep->addStmtsp(new AstInitial{flp, assignp});
-                vscp->scopep()->addActivep(activep);
+                vscp->scopep()->addBlocksp(activep);
             }
 
             {  // Add the combinational override
@@ -127,7 +129,7 @@ class ForceConvertVisitor final : public VNVisitor {
                                     new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}}};
                 activep->sensesStorep(activep->sensesp());
                 activep->addStmtsp(new AstAssignW{flp, lhsp, rhsp});
-                vscp->scopep()->addActivep(activep);
+                vscp->scopep()->addBlocksp(activep);
             }
         }
     };
@@ -305,5 +307,5 @@ void V3Force::forceAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     if (!v3Global.hasForceableSignals()) return;
     ForceConvertVisitor::apply(nodep);
-    V3Global::dumpCheckGlobalTree("force", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("force", 0, dumpTree() >= 3);
 }

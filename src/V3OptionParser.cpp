@@ -39,12 +39,12 @@ struct V3OptionParser::Impl {
     class ActionBase VL_NOT_FINAL : public ActionIfs {
         bool m_undocumented = false;  // This option is not documented
     public:
-        virtual bool isValueNeeded() const override final { return MODE == en::VALUE; }
-        virtual bool isFOnOffAllowed() const override final { return MODE == en::FONOFF; }
-        virtual bool isOnOffAllowed() const override final { return MODE == en::ONOFF; }
-        virtual bool isPartialMatchAllowed() const override final { return ALLOW_PARTIAL_MATCH; }
-        virtual bool isUndocumented() const override { return m_undocumented; }
-        virtual void undocumented() override { m_undocumented = true; }
+        bool isValueNeeded() const override final { return MODE == en::VALUE; }
+        bool isFOnOffAllowed() const override final { return MODE == en::FONOFF; }
+        bool isOnOffAllowed() const override final { return MODE == en::ONOFF; }
+        bool isPartialMatchAllowed() const override final { return ALLOW_PARTIAL_MATCH; }
+        bool isUndocumented() const override { return m_undocumented; }
+        void undocumented() override { m_undocumented = true; }
     };
 
     // Actual action classes
@@ -78,7 +78,7 @@ struct V3OptionParser::Impl {
     public: \
         explicit className(type* valp) \
             : m_valp(valp) {} \
-        virtual void exec(const char* optp, const char* argp) override { body; } \
+        void exec(const char* optp, const char* argp) override { body; } \
     }
 
 V3OPTION_PARSER_DEF_ACT_CLASS(ActionSet, bool, *m_valp = true, en::NONE);
@@ -104,7 +104,7 @@ V3OPTION_PARSER_DEF_ACT_CLASS(ActionOnOff, VOptionBool, m_valp->setTrueOrFalse(!
         using CbType = std::function<funcType>; \
         explicit className(CbType cb) \
             : m_cb(std::move(cb)) {} \
-        virtual void exec(const char* optp, const char* argp) override { body; } \
+        void exec(const char* optp, const char* argp) override { body; } \
     }
 
 V3OPTION_PARSER_DEF_ACT_CB_CLASS(ActionCbCall, void(void), m_cb(), en::NONE);
@@ -130,8 +130,8 @@ V3OptionParser::ActionIfs* V3OptionParser::find(const char* optp) {
     for (auto&& act : m_pimpl->m_options) {
         if (act.second->isFOnOffAllowed()) {  // Find starts with "-fno"
             if (const char* const nop
-                = VString::startsWith(optp, "-fno-") ? (optp + strlen("-fno-")) : nullptr) {
-                if (act.first.substr(strlen("-f"), std::string::npos)
+                = VString::startsWith(optp, "-fno-") ? (optp + std::strlen("-fno-")) : nullptr) {
+                if (act.first.substr(std::strlen("-f"), std::string::npos)
                     == nop) {  // [-f]opt = [-fno-]opt
                     return act.second.get();
                 }
@@ -139,7 +139,7 @@ V3OptionParser::ActionIfs* V3OptionParser::find(const char* optp) {
         }
         if (act.second->isOnOffAllowed()) {  // Find starts with "-no"
             if (const char* const nop
-                = VString::startsWith(optp, "-no") ? (optp + strlen("-no")) : nullptr) {
+                = VString::startsWith(optp, "-no") ? (optp + std::strlen("-no")) : nullptr) {
                 if (act.first == nop || act.first == (std::string{"-"} + nop)) {
                     return act.second.get();
                 }
@@ -206,7 +206,7 @@ void V3OptionParser::finalize() {
         m_pimpl->m_spellCheck.pushCandidate(opt.first);
         if (opt.second->isFOnOffAllowed()) {
             m_pimpl->m_spellCheck.pushCandidate(
-                "-fno-" + opt.first.substr(strlen("-f"), std::string::npos));
+                "-fno-" + opt.first.substr(std::strlen("-f"), std::string::npos));
         }
         if (opt.second->isOnOffAllowed()) m_pimpl->m_spellCheck.pushCandidate("-no" + opt.first);
     }

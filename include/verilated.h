@@ -274,7 +274,7 @@ protected:
 public:
     /// Returns the VerilatedContext this model is instantiated under
     /// Used to get to e.g. simulation time via contextp()->time()
-    inline VerilatedContext* contextp() const { return &m_context; }
+    VerilatedContext* contextp() const { return &m_context; }
     /// Returns the hierarchical name of this module instance.
     virtual const char* hierName() const = 0;
     /// Returns the name of this model (the name of the generated model class).
@@ -457,9 +457,9 @@ public:
     VerilatedCovContext* coveragep() VL_MT_SAFE;
     /// Set debug level
     /// Debug is currently global, but for forward compatibility have a per-context method
-    static void debug(int val) VL_MT_SAFE;
+    static inline void debug(int val) VL_MT_SAFE;
     /// Return debug level
-    static int debug() VL_MT_SAFE;
+    static inline int debug() VL_MT_SAFE;
     /// Set current number of errors/assertions
     void errorCount(int val) VL_MT_SAFE;
     /// Increment current number of errors/assertions
@@ -521,7 +521,7 @@ public:
     ///
     /// * Else, time comes from the legacy 'double sc_time_stamp()' which
     /// must be a function defined by the user's wrapper.
-    uint64_t time() const VL_MT_SAFE;
+    inline uint64_t time() const VL_MT_SAFE;
     /// Set current simulation time. See time() for side effect details
     void time(uint64_t value) VL_MT_SAFE { m_s.m_time = value; }
     /// Advance current simulation time. See time() for side effect details
@@ -652,13 +652,13 @@ public:  // But internals only - called from VerilatedModule's
     const char* name() const { return m_namep; }
     const char* identifier() const { return m_identifierp; }
     int8_t timeunit() const { return m_timeunit; }
-    inline VerilatedSyms* symsp() const { return m_symsp; }
+    VerilatedSyms* symsp() const { return m_symsp; }
     VerilatedVar* varFind(const char* namep) const VL_MT_SAFE_POSTINIT;
     VerilatedVarNameMap* varsp() const VL_MT_SAFE_POSTINIT { return m_varsp; }
     void scopeDump() const;
     void* exportFindError(int funcnum) const;
     static void* exportFindNullError(int funcnum) VL_MT_SAFE;
-    static inline void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE {
+    static void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE {
         if (VL_UNLIKELY(!scopep)) return exportFindNullError(funcnum);
         if (VL_LIKELY(funcnum < scopep->m_funcnumMax)) {
             // m_callbacksp must be declared, as Max'es are > 0
@@ -727,7 +727,7 @@ public:
     /// Return debug level
     /// When multithreaded this may not immediately react to another thread
     /// changing the level (no mutex)
-    static inline int debug() VL_MT_SAFE { return s_debug; }
+    static int debug() VL_MT_SAFE { return s_debug; }
 #else
     /// Return constant 0 debug level, so C++'s optimizer rips up
     static constexpr int debug() VL_PURE { return 0; }
@@ -933,8 +933,8 @@ private:
 #endif
 };
 
-inline void VerilatedContext::debug(int val) VL_MT_SAFE { Verilated::debug(val); }
-inline int VerilatedContext::debug() VL_MT_SAFE { return Verilated::debug(); }
+void VerilatedContext::debug(int val) VL_MT_SAFE { Verilated::debug(val); }
+int VerilatedContext::debug() VL_MT_SAFE { return Verilated::debug(); }
 
 //=========================================================================
 // Data Types

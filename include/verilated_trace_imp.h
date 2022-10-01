@@ -551,15 +551,15 @@ template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runOffloadedCallbacks(
     const std::vector<CallbackRecord>& cbVec) {
     // Fall back on sequential execution
-    for (const CallbackRecord& cbr : cbVec) {
 #ifdef VL_THREADED
+    for (const CallbackRecord& cbr : cbVec) {
         Buffer* traceBufferp = getTraceBuffer();
         cbr.m_dumpOffloadCb(cbr.m_userp, static_cast<OffloadBuffer*>(traceBufferp));
         commitTraceBuffer(traceBufferp);
-#else
-        VL_FATAL_MT(__FILE__, __LINE__, "", "Unreachable");
-#endif
     }
+#else
+    if (!cbVec.empty()) VL_FATAL_MT(__FILE__, __LINE__, "", "Unreachable");
+#endif
 }
 
 template <>
@@ -586,7 +586,9 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
         if (!preChangeDump()) return;
     }
 
+#ifdef VL_THREADED
     uint32_t* bufferp = nullptr;
+#endif
     if (offload()) {
 #ifdef VL_THREADED
         // Currently only incremental dumps run on the worker thread
