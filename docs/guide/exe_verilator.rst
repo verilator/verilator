@@ -382,6 +382,12 @@ Summary:
    <--dump-tree>` may be useful if the dump files are large and not
    desired.
 
+.. option:: --dump-tree-dot
+
+   Rarely needed.  Enable dumping Ast .tree.dot debug files in Graphviz
+   Dot format. This option implies :vlopt:`--dump-tree`, unless
+   :vlopt:`--dumpi-tree` was passed explicitly.
+
 .. option:: --dump-tree-addrids
 
    Rarely needed - for developer use.  Replace AST node addresses with

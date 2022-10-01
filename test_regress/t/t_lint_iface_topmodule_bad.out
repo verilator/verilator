@@ -1,0 +1,5 @@
+%Error: t/t_lint_iface_topmodule_bad.v:8:23: Parameter without initial value is never given value (IEEE 1800-2017 6.20.1): 'DW'
+                                           : ... In instance t
+    8 |     parameter integer DW
+      |                       ^~
+%Error: Exiting due to

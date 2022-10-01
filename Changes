@@ -13,7 +13,7 @@ Verilator 5.001 devel
 
 **Major:**
 
-* This is a major new release, currently only in alpha testing.
+* This is a major new release.
 * Fully support the Active and NBA scheduling regions as defined by the
   SystemVerilog standard (IEEE 1800-2017 chapter 4). This means all generated
   clocks are now simulated correctly (#3278, #3384). [Geza Lore, Shunyao CAD]
@@ -22,7 +22,7 @@ Verilator 5.001 devel
 * Add --binary option as alias of --main --exe --build --timing (#3625).
 
 
-Verilator 4.227 devel
+Verilator 4.228 2022-10-01
 ==========================
 
 **Announcement:**
@@ -33,14 +33,18 @@ Verilator 4.227 devel
 
 **Minor:**
 
-* Support IEEE constant signal strengths (#3601). [Ryszard Rozak/Antmicro]
+* Support some IEEE signal strengths (#3601) (#3629). [Ryszard Rozak/Antmicro]
 * Add --main to generate main() C++ (previously was experimental only).
+* Add --build-jobs, and rework arguments for -j (#3623). [Kamil Rakoczy]
 * Rename --bin to --build-dep-bin.
+* Rename debug flags --dumpi-tree, --dumpi-graph, etc. [Geza Lore]
 * Fix thread saftey in SystemC VL_ASSIGN_SBW/WSB (#3494) (#3513). [Mladen Slijepcevic]
 * Fix crash in gate optimization of circular logic (#3543). [Bill Flynn]
 * Fix arguments in non-static method call (#3547) (#3582). [Gustav Svensk]
 * Fix default --mod-prefix when --prefix is repeated (#3603). [Geza Lore]
+* Fix calling trace() after open() segfault (#3610) (#3627). [Yu-Sheng Lin]
 * Fix typedef'ed class conversion to boolean (#3616). [Aleksander Kiryk]
+* Fix Verilation speed when disabled warnings (#3632). [Kamil Rakoczy/Antmicro]
 
 
 Verilator 4.226 2022-08-31
@@ -55,6 +59,7 @@ Verilator 4.226 2022-08-31
 * Support $test$plusargs(expr) (#3489).
 * Rename trace rolloverSize() (#3570).
 * Improve Verilation speed with --threads on large designs. [Geza Lore]
+* Improve Verilation memory by reducing V3Number (#3521). [Mariusz Glebocki/Antmicro]
 * Fix struct pattern assignment (#2328) (#3517). [Mostafa Gamal]
 * Fix public combo propagation issues (#2905). [Todd Strader]
 * Fix incorrect tristate logic (#3399) [shareefj, Vighnesh Iyer]

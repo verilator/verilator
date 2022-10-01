@@ -82,7 +82,7 @@ int sc_main(int argc, char* argv[]) {
 
     // You must do one evaluation before enabling waves, in order to allow
     // SystemC to interconnect everything for testing.
-    sc_start(1, SC_NS);
+    sc_start(SC_ZERO_TIME);
 
 #if VM_TRACE
     // If verilator was invoked with --trace argument,

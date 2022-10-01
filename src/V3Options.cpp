@@ -828,6 +828,11 @@ void V3Options::notify() {
 
     // Mark options as available
     m_available = true;
+
+    // --dump-tree-dot will turn on tree dumping.
+    if (!m_dumpLevel.count("tree") && m_dumpLevel.count("tree-dot")) {
+        m_dumpLevel["tree"] = m_dumpLevel["tree-dot"];
+    }
 }
 
 //######################################################################
