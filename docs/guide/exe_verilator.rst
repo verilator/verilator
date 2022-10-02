@@ -421,8 +421,8 @@ Summary:
 
    Rarely needed - for developer use. Set the dumping level in the
    specified Verilator source file to the specified value (e.g.
-   :vlopt:`--dumpi-V3Order 9`).  Level 0 disables dumps and is equivalent
-   to :vlopt:`--no-dump-<srcfile>`.  Level 9 enables dumping of everything.
+   `--dumpi-V3Order 9`).  Level 0 disables dumps and is equivalent to
+   `--no-dump-<srcfile>`.  Level 9 enables dumping of everything.
 
 .. option:: -E
 

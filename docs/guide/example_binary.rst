@@ -1,10 +1,10 @@
 .. Copyright 2003-2022 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-.. _Example C++ Execution:
+.. _Example Create-Binary Execution:
 
-Example C++ Execution
-=====================
+Example Create-Binary Execution
+===============================
 
 We'll compile this SystemC example into a Verilated simulation binary.  For
 an example that discusses the next level of detail see :ref:`Example C++
@@ -36,7 +36,7 @@ Breaking this command down:
 #. :vlopt:`--binary` telling Verilator to do everything needed to create a
    simulation executable.
 
-#. :vlopt:`-j` `0' to Verilate using use as many CPU threads as the machine
+#. :vlopt:`-j` `0` to Verilate using use as many CPU threads as the machine
    has.
 
 #. :vlopt:`-Wall` so Verilator has stronger lint warnings

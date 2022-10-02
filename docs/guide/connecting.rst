@@ -451,6 +451,7 @@ the user should call:
    * :code:`designp->nextTimeSlot()`, which returns the simulation time of the
      next delayed event. This method can only be called if
      :code:`designp->nextTimeSlot()` returned :code:`true`.
+
 Call :code:`eventsPending()` to check if you should continue with the
 simulation, and then :code:`nextTimeSlot()` to move simulation time forward.
 :vlopt:`--main` can be used with :vlopt:`--timing` to generate a basic example

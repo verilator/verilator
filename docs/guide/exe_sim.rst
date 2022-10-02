@@ -72,7 +72,7 @@ Summary:
 
 .. option:: +verilator+prof+threads+window+<value>
 
-   Deprecated. Alias for :vlopt:`+verilator+prof+exec+window+\<filename\>`
+   Deprecated. Alias for :vlopt:`+verilator+prof+exec+window+\<value\>`
 
 .. option:: +verilator+prof+vlt+file+<filename>
 
