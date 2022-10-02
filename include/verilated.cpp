@@ -2836,7 +2836,7 @@ const char* Verilated::productVersion() VL_PURE { return VERILATOR_VERSION; }
 void Verilated::nullPointerError(const char* filename, int linenum) VL_MT_SAFE {
     // Slowpath - Called only on error
     VL_FATAL_MT(filename, linenum, "", "Null pointer dereferenced");
-    VL_UNREACHABLE
+    VL_UNREACHABLE;
 }
 
 void Verilated::overWidthError(const char* signame) VL_MT_SAFE {
@@ -2844,7 +2844,7 @@ void Verilated::overWidthError(const char* signame) VL_MT_SAFE {
     const std::string msg = (std::string{"Testbench C set input '"} + signame
                              + "' to value that overflows what the signal's width can fit");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
-    VL_UNREACHABLE
+    VL_UNREACHABLE;
 }
 
 void Verilated::mkdir(const char* dirname) VL_MT_UNSAFE {

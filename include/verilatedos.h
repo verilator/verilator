@@ -69,9 +69,9 @@
 #  define VL_EXCLUDES(x) __attribute__((locks_excluded(x)))
 #  define VL_SCOPED_CAPABILITY __attribute__((scoped_lockable))
 # endif
-# define VL_LIKELY(x) __builtin_expect(!!(x), 1)
-# define VL_UNLIKELY(x) __builtin_expect(!!(x), 0)
-# define VL_UNREACHABLE __builtin_unreachable();
+# define VL_LIKELY(x) __builtin_expect(!!(x), 1)  // Prefer over C++20 [[likely]]
+# define VL_UNLIKELY(x) __builtin_expect(!!(x), 0)  // Prefer over C++20 [[unlikely]]
+# define VL_UNREACHABLE __builtin_unreachable()  // C++23 std::unreachable()
 # define VL_PREFETCH_RD(p) __builtin_prefetch((p), 0)
 # define VL_PREFETCH_RW(p) __builtin_prefetch((p), 1)
 #endif

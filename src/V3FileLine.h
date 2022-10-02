@@ -307,7 +307,7 @@ public:
     void v3errorEndFatal(std::ostringstream& str) VL_ATTR_NORETURN {
         v3errorEnd(str);
         assert(0);  // LCOV_EXCL_LINE
-        VL_UNREACHABLE
+        VL_UNREACHABLE;
     }
     /// When building an error, prefix for printing continuation lines
     /// e.g. information referring to the same FileLine as before
