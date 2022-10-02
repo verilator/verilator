@@ -161,7 +161,7 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum, fstVar
                            int lsb) {
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
-    const bool enabled = Super::declCode(code, name, bits, false);
+    const bool enabled = Super::declCode(code, name, bits, false, (vartype == FST_VT_GEN_STRING));
     if (!enabled) return;
 
     std::string nameasstr = namePrefix() + name;
@@ -246,7 +246,7 @@ void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum, fst
 void VerilatedFst::declString(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                               fstVarType vartype, bool array, int arraynum) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, false,
-            (VL_LEN_FAST_TRACED_STRING + 1) * 8, 0);
+            sizeof(std::string) * 8, 0);
 }
 
 //=============================================================================

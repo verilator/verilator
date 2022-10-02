@@ -2371,6 +2371,10 @@ void VerilatedContext::randReset(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_randReset = val;
 }
+void VerilatedContext::maxStringTrace(int val) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_s.m_maxStringTrace = val;
+}
 void VerilatedContext::timeunit(int value) VL_MT_SAFE {
     if (value < 0) value = -value;  // Stored as 0..15
     const VerilatedLockGuard lock{m_mutex};

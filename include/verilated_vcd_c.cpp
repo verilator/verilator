@@ -473,10 +473,10 @@ void VerilatedVcd::dumpHeader() {
 }
 
 void VerilatedVcd::declare(uint32_t code, const char* name, const char* wirep, bool array,
-                           int arraynum, bool tri, bool bussed, int msb, int lsb) {
+                           int arraynum, bool tri, bool bussed, int msb, int lsb, bool str) {
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
-    const bool enabled = Super::declCode(code, name, bits, tri);
+    const bool enabled = Super::declCode(code, name, bits, tri, str);
 
     if (m_suffixes.size() <= nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE) {
         m_suffixes.resize(nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE * 2, 0);
@@ -551,26 +551,26 @@ void VerilatedVcd::declare(uint32_t code, const char* name, const char* wirep, b
 }
 
 void VerilatedVcd::declBit(uint32_t code, const char* name, bool array, int arraynum) {
-    declare(code, name, "wire", array, arraynum, false, false, 0, 0);
+    declare(code, name, "wire", array, arraynum, false, false, 0, 0, false);
 }
 void VerilatedVcd::declBus(uint32_t code, const char* name, bool array, int arraynum, int msb,
                            int lsb) {
-    declare(code, name, "wire", array, arraynum, false, true, msb, lsb);
+    declare(code, name, "wire", array, arraynum, false, true, msb, lsb, false);
 }
 void VerilatedVcd::declQuad(uint32_t code, const char* name, bool array, int arraynum, int msb,
                             int lsb) {
-    declare(code, name, "wire", array, arraynum, false, true, msb, lsb);
+    declare(code, name, "wire", array, arraynum, false, true, msb, lsb, false);
 }
 void VerilatedVcd::declArray(uint32_t code, const char* name, bool array, int arraynum, int msb,
                              int lsb) {
-    declare(code, name, "wire", array, arraynum, false, true, msb, lsb);
+    declare(code, name, "wire", array, arraynum, false, true, msb, lsb, false);
 }
 void VerilatedVcd::declDouble(uint32_t code, const char* name, bool array, int arraynum) {
-    declare(code, name, "real", array, arraynum, false, false, 63, 0);
+    declare(code, name, "real", array, arraynum, false, false, 63, 0, false);
 }
 void VerilatedVcd::declString(uint32_t code, const char* name, bool array, int arraynum) {
     declare(code, name, "string", array, arraynum, false, false,
-            (VL_LEN_FAST_TRACED_STRING + 1) * 8, 0);
+            sizeof(std::string) * 8, 0, true);
 }
 
 //=============================================================================

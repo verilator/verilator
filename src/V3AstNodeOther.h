@@ -3517,9 +3517,7 @@ public:
         , m_bitRange{bitRange}
         , m_arrayRange{arrayRange}
         , m_codeInc(((arrayRange.ranged() ? arrayRange.elements() : 1)
-                     * (valuep->isString() ? ((VL_LEN_FAST_TRACED_STRING + 1)
-                                              / 4)  // strings get a small buffer to dedup
-                                                    // (different from actual storage size)
+                     * (valuep->isString() ? (sizeof(std::string) / 4)
                                            : valuep->dtypep()->widthWords())
                      * (VL_EDATASIZE / 32)))  // A code is always 32-bits
         , m_varType{varp->varType()}

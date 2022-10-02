@@ -188,11 +188,6 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
                 continue;
             case VerilatedTraceOffloadCommand::CHG_STRING:
                 VL_TRACE_OFFLOAD_DEBUG("Command CHG_STRING" << top);
-                traceBufp->chgStringRaw(oldp, reinterpret_cast<const char*>(readp), top);
-                readp += ((top + 3) >> 2);
-                continue;
-            case VerilatedTraceOffloadCommand::CHG_BIG_STRING:
-                VL_TRACE_OFFLOAD_DEBUG("Command CHG_BIG_STRING" << top);
                 traceBufp->chgStringRaw(oldp, *reinterpret_cast<const char* const*>(readp), top);
                 readp += 2;
                 delete[] * reinterpret_cast<const char* const*>(readp);
@@ -320,6 +315,9 @@ VerilatedTrace<VL_SUB_T, VL_BUF_T>::VerilatedTrace() {
 
 template <>
 VerilatedTrace<VL_SUB_T, VL_BUF_T>::~VerilatedTrace() {
+    for (uint32_t stringcode : m_sigs_stringCodes) {
+        reinterpret_cast<std::string*>(m_sigs_oldvalp + stringcode)->~basic_string();
+    }
     if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = nullptr);
     if (m_sigs_enabledp) VL_DO_CLEAR(delete[] m_sigs_enabledp, m_sigs_enabledp = nullptr);
     Verilated::removeFlushCb(VerilatedTrace<VL_SUB_T, VL_BUF_T>::onFlush, this);
@@ -340,6 +338,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     m_numSignals = 0;
     m_maxBits = 0;
     m_sigs_enabledVec.clear();
+    std::vector<uint32_t> oldStringCodes = m_sigs_stringCodes;
+    m_sigs_stringCodes.clear();
 
     // Call all initialize callbacks, which will:
     // - Call decl* for each signal (these eventually call ::declCode)
@@ -353,10 +353,22 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     "Reopening trace file with different number of signals");
     }
+    if (m_sigs_stringCodes != oldStringCodes) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "Reopening trace file with different signals!");
+    }
 
     // Now that we know the number of codes, allocate space for the buffer
     // holding previous signal values.
     if (!m_sigs_oldvalp) m_sigs_oldvalp = new uint32_t[nextCode()];
+
+    // Initialize non-trivial values (strings)
+    if (oldStringCodes.empty())
+    {
+        for (uint32_t stringcode : m_sigs_stringCodes) {
+            new(m_sigs_oldvalp + stringcode) std::string();
+        }
+    }
 
     // Apply enables
     if (m_sigs_enabledp) VL_DO_CLEAR(delete[] m_sigs_enabledp, m_sigs_enabledp = nullptr);
@@ -397,7 +409,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
 
 template <>
 bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const char* namep, uint32_t bits,
-                                                  bool tri) {
+                                                  bool tri, bool str) {
     if (VL_UNCOVERABLE(!code)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: internal trace problem, code 0 is illegal");
     }
@@ -433,7 +445,7 @@ bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const char* nam
     int codesNeeded = VL_WORDS_I(bits);
     if (tri) codesNeeded *= 2;
     m_nextCode = std::max(m_nextCode, code + codesNeeded);
-    ++m_numSignals;
+    if (str) m_sigs_stringCodes.push_back(code);
     m_maxBits = std::max(m_maxBits, bits);
     return enabled;
 }
@@ -711,6 +723,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addModel(VerilatedModel* modelp)
         VL_FATAL_MT(__FILE__, __LINE__, "", "Cannot use parallel tracing with offloading");
     }  // LCOV_EXCL_STOP
 
+    m_maxStringTrace = contextp->maxStringTrace();
+
     // Configure format specific sub class
     configure(*(configp.get()));
 }
@@ -856,7 +870,8 @@ template <>
 VerilatedTraceBuffer<VL_BUF_T>::VerilatedTraceBuffer(Trace& owner)
     : VL_BUF_T{owner}
     , m_sigs_oldvalp{owner.m_sigs_oldvalp}
-    , m_sigs_enabledp{owner.m_sigs_enabledp} {}
+    , m_sigs_enabledp{owner.m_sigs_enabledp}
+    , m_maxStringTrace(owner.m_maxStringTrace) {}
 
 // These functions must write the new value back into the old value store,
 // and subsequently call the format specific emit* implementations. Note
@@ -923,15 +938,10 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullDouble(uint32_t* oldp, double newval) {
 template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullStringRaw(uint32_t* oldp, const char* newval, int bytes) {
     const uint32_t code = oldp - m_sigs_oldvalp;
-    if (bytes > VL_LEN_FAST_TRACED_STRING) {
-        *reinterpret_cast<char*>(oldp) = 0xFF;
-    } else {
-        *reinterpret_cast<char*>(oldp) = bytes;
-        std::memcpy(reinterpret_cast<char*>(oldp) + 1, newval, bytes);
-    }
+    std::string* oldvalp = reinterpret_cast<std::string*>(oldp);
+    oldvalp->assign(newval, bytes);
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
-    // cppcheck-suppress invalidPointerCast
-    emitStringRaw(code, newval, bytes);
+    emitStringRaw(code, newval, std::min(bytes, m_maxStringTrace));
 }
 
 #ifdef VL_THREADED

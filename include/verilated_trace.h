@@ -111,7 +111,6 @@ public:
         CHG_WDATA = 0x6,
         CHG_DOUBLE = 0x8,
         CHG_STRING = 0x9,
-        CHG_BIG_STRING = 0xa,
         // TODO: full..
         TIME_CHANGE = 0xc,
         TRACE_BUFFER = 0xd,
@@ -190,6 +189,7 @@ private:
 
     bool m_offload = false;  // Use the offload thread (ignored if !VL_THREADED)
     bool m_parallel = false;  // Use parallel tracing (ignored if !VL_THREADED)
+    int  m_maxStringTrace = 0; // Max length to emit strings for
 
 #ifdef VL_THREADED
     struct ParallelWorkerData {
@@ -218,6 +218,7 @@ protected:
     EData* m_sigs_enabledp = nullptr;  // Bit vector of enabled codes (nullptr = all on)
 private:
     std::vector<bool> m_sigs_enabledVec;  // Staging for m_sigs_enabledp
+    std::vector<uint32_t> m_sigs_stringCodes;  // The values at these indices are std::strings
     std::vector<CallbackRecord> m_initCbs;  // Routines to initialize tracing
     std::vector<CallbackRecord> m_fullCbs;  // Routines to perform full dump
     std::vector<CallbackRecord> m_fullOffloadCbs;  // Routines to perform offloaded full dump
@@ -307,7 +308,7 @@ protected:
     void traceInit() VL_MT_UNSAFE;
 
     // Declare new signal and return true if enabled
-    bool declCode(uint32_t code, const char* namep, uint32_t bits, bool tri);
+    bool declCode(uint32_t code, const char* namep, uint32_t bits, bool tri, bool str);
 
     // Is this an escape?
     bool isScopeEscape(char c) { return std::isspace(c) || c == m_scopeEscape; }
@@ -326,6 +327,7 @@ protected:
     static constexpr bool offload() { return false; }
     static constexpr bool parallel() { return false; }
 #endif
+    int maxStringTrace() { return m_maxStringTrace; }
 
     //=========================================================================
     // Virtual functions to be provided by the format specific implementation
@@ -405,6 +407,7 @@ protected:
 
     uint32_t* const m_sigs_oldvalp;  // Previous value store
     EData* const m_sigs_enabledp;  // Bit vector of enabled codes (nullptr = all on)
+    int m_maxStringTrace;
 
     explicit VerilatedTraceBuffer(Trace& owner);
     ~VerilatedTraceBuffer() override = default;
@@ -482,10 +485,8 @@ public:
     }
     VL_ATTR_ALWINLINE void chgStringRaw(uint32_t* oldp, const char* newval, int bytes) {
         // cppcheck-suppress invalidPointerCast
-        int oldsize = *reinterpret_cast<char*>(oldp);
-        const char* oldstr = reinterpret_cast<char*>(oldp) + 1;
-        if (VL_UNLIKELY((oldsize > VL_LEN_FAST_TRACED_STRING) || (oldsize != bytes)
-                        || (std::memcmp(newval, oldstr, bytes)))) {
+        std::string* oldvalp = *reinterpret_cast<std::string*>(oldp);
+        if (VL_UNLIKELY(oldvalp->compare(0, oldvalp->size(), newval, bytes) == 0)) {
             fullStringRaw(oldp, newval, bytes);
         }
     }
@@ -567,24 +568,15 @@ public:
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
     void chgStringRaw(uint32_t code, char* newval, int bytes) {
-        if (bytes > VL_LEN_FAST_TRACED_STRING) {
-            // For big strings, make a temporary allocation
-            VL_DEBUG_IF(assert(bytes >= 0x1000000););  // 16MB is enough for anybody
-            m_offloadBufferWritep[0] = (bytes << 4) | VerilatedTraceOffloadCommand::CHG_BIG_STRING;
-            m_offloadBufferWritep[1] = code;
-            char* indirectstringbufp = new char[bytes];
-            // cppcheck-suppress invalidPointerCast
-            *reinterpret_cast<const char**>(m_offloadBufferWritep + 2) = indirectstringbufp;
-            std::memcpy(indirectstringbufp, newval, bytes);
-            m_offloadBufferWritep += 4;
-        } else {
-            // For smallish strings, write inline
-            int stringSizeDw = (bytes + 3) >> 2;  // Bytes to DW, rounded up.
-            m_offloadBufferWritep[0] = (bytes << 4) | VerilatedTraceOffloadCommand::CHG_STRING;
-            m_offloadBufferWritep[1] = code;
-            std::memcpy(m_offloadBufferWritep + 2, newval, bytes);
-            m_offloadBufferWritep += stringSizeDw + 2;
-        }
+        // For big strings, make a temporary allocation
+        VL_DEBUG_IF(assert(bytes >= 0x1000000););  // 16MB is enough for anybody
+        m_offloadBufferWritep[0] = (bytes << 4) | VerilatedTraceOffloadCommand::CHG_STRING;
+        m_offloadBufferWritep[1] = code;
+        char* indirectstringbufp = new char[bytes];
+        // cppcheck-suppress invalidPointerCast
+        *reinterpret_cast<const char**>(m_offloadBufferWritep + 2) = indirectstringbufp;
+        std::memcpy(indirectstringbufp, newval, bytes);
+        m_offloadBufferWritep += 4;
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
 };

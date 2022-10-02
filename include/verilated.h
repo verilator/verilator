@@ -366,6 +366,7 @@ protected:
         int m_timeFormatUnits = UNITS_NONE;  // $timeformat units
         int m_timeFormatPrecision = 0;  // $timeformat number of decimal places
         int m_timeFormatWidth = 20;  // $timeformat character width
+        int m_maxStringTrace = 127; // Max string size to have in dumps
         // CONSTRUCTORS
         Serialized();
         ~Serialized() = default;
@@ -497,6 +498,10 @@ public:
     void randSeed(int val) VL_MT_SAFE;
     /// Set default random seed, 0 = seed it automatically
     int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }
+    /// Return max traced string length
+    void maxStringTrace(int val) VL_MT_SAFE;
+    /// Set max traced string length
+    int maxStringTrace() const VL_MT_SAFE { return m_s.m_maxStringTrace; }
 
     // Time handling
     /// Returns current simulation time.

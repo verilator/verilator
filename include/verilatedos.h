@@ -405,11 +405,6 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_VALUE_STRING_MAX_WORDS 64  ///< Max size in words of String conversion operation
 #define VL_VALUE_STRING_MAX_CHARS (VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE / VL_BYTESIZE)
 
-// Traced strings above this size may be inefficient as they cannot be deduped.
-// Must be <=254, but larger sizes bloat memory proportional to the number of
-// traceable strings.
-#define VL_LEN_FAST_TRACED_STRING 63
-
 //=========================================================================
 // Base macros
 

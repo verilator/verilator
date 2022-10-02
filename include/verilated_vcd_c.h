@@ -88,7 +88,7 @@ private:
     void printQuad(uint64_t n);
     void printTime(uint64_t timeui);
     void declare(uint32_t code, const char* name, const char* wirep, bool array, int arraynum,
-                 bool tri, bool bussed, int msb, int lsb);
+                 bool tri, bool bussed, int msb, int lsb, bool str);
 
     void dumpHeader();
 

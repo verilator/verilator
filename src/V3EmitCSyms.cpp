@@ -778,6 +778,13 @@ void EmitCSyms::emitSymImp() {
         }
     }
 
+    puts("// Configure max string length\n");
+    if (!v3Global.rootp()->timeunit().isNone()) {
+        puts("_vm_contextp__->maxStringTrace(");
+        puts(cvtToStr(v3Global.opt.traceMaxString()));
+        puts(");\n");
+    }
+
     puts("// Configure time unit / time precision\n");
     if (!v3Global.rootp()->timeunit().isNone()) {
         puts("_vm_contextp__->timeunit(");
