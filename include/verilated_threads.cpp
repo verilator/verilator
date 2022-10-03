@@ -58,7 +58,7 @@ VlWorkerThread::~VlWorkerThread() {
     m_cthread.join();
 }
 
-static void shutdownTask(void*, bool) {
+static void shutdownTask(void*, bool) {  // LCOV_EXCL_LINE
     // Deliberately empty, we use the address of this function as a magic number
 }
 

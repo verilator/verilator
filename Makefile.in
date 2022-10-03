@@ -329,8 +329,7 @@ CLANGTIDY_FLAGS = -config='' \
 	-header-filter='.*' \
 	-checks='-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-init-variables,-cppcoreguidelines-avoid-goto,-modernize-avoid-c-arrays,-readability-magic-numbers,-readability-simplify-boolean-expr,-cppcoreguidelines-macro-usage' \
 
-CLANGTIDY_DEP = $(subst .h,.h.tidy,$(CPPCHECK_H)) \
-	$(subst .cpp,.cpp.tidy,$(CPPCHECK_CPP))
+CLANGTIDY_DEP = $(subst .cpp,.cpp.tidy,$(CPPCHECK_CPP))
 CLANGTIDY_DEFS = -DVL_DEBUG=1 -DVL_THREADED=1 -DVL_CPPCHECK=1
 
 clang-tidy: $(CLANGTIDY_DEP)

@@ -964,6 +964,7 @@ def write_op_checks(filename):
                                     backp = tailp = opp;
                                     opp = {next};
                                 }} while (opp);
+                                if (headp && tailp) {{}}  // Prevent unused
                                 UASSERT_OBJ(headp->m_headtailp == tailp, headp, "Tail in headtailp is inconsistent");
                                 UASSERT_OBJ(tailp->m_headtailp == headp, tailp, "Head in headtailp is inconsistent");
                             }}
