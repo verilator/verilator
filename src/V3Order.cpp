@@ -208,7 +208,7 @@ class OrderBuildVisitor final : public VNVisitor {
                     "AstSenTrees should have been made global in V3ActiveTop");
         UASSERT_OBJ(m_scopep, nodep, "AstActive not under AstScope");
         UASSERT_OBJ(!m_logicVxp, nodep, "AstActive under logic");
-        UASSERT_OBJ(!m_inClocked && !m_domainp & !m_hybridp, nodep, "Should not nest");
+        UASSERT_OBJ(!m_inClocked && !m_domainp && !m_hybridp, nodep, "Should not nest");
 
         // This is the original sensitivity of the block (i.e.: not the ref into the TRIGGERVEC)
 

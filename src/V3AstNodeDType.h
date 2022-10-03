@@ -97,7 +97,7 @@ public:
         m_widthMin = widthMin;
     }
     // For backward compatibility inherit width and signing from the subDType/base type
-    void widthFromSub(AstNodeDType* nodep) {
+    void widthFromSub(const AstNodeDType* nodep) {
         m_width = nodep->m_width;
         m_widthMin = nodep->m_widthMin;
         m_numeric = nodep->m_numeric;

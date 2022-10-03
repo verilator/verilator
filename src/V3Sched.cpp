@@ -97,7 +97,7 @@ AstAssign* setVar(AstVarScope* vscp, uint32_t val) {
     return new AstAssign{flp, refp, valp};
 };
 
-void remapSensitivities(LogicByScope& lbs,
+void remapSensitivities(const LogicByScope& lbs,
                         std::unordered_map<const AstSenTree*, AstSenTree*> senTreeMap) {
     for (const auto& pair : lbs) {
         AstActive* const activep = pair.second;

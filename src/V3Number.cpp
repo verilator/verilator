@@ -76,7 +76,7 @@ constexpr int MAX_SPRINTF_DOUBLE_SIZE
 //======================================================================
 // Errors
 
-void V3Number::v3errorEnd(std::ostringstream& str) const {
+void V3Number::v3errorEnd(const std::ostringstream& str) const {
     std::ostringstream nsstr;
     nsstr << str.str();
     if (m_nodep) {
@@ -88,7 +88,7 @@ void V3Number::v3errorEnd(std::ostringstream& str) const {
     }
 }
 
-void V3Number::v3errorEndFatal(std::ostringstream& str) const {
+void V3Number::v3errorEndFatal(const std::ostringstream& str) const {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE;

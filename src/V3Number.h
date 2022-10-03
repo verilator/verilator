@@ -541,8 +541,8 @@ private:
     string displayed(const string& vformat) const { return displayed(m_fileline, vformat); }
 
 public:
-    void v3errorEnd(std::ostringstream& sstr) const;
-    void v3errorEndFatal(std::ostringstream& sstr) const VL_ATTR_NORETURN;
+    void v3errorEnd(const std::ostringstream& sstr) const;
+    void v3errorEndFatal(const std::ostringstream& sstr) const VL_ATTR_NORETURN;
     void width(int width, bool sized = true) {
         m_data.m_sized = sized;
         m_data.resize(width);

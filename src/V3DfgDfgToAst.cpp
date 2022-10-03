@@ -89,21 +89,21 @@ AstShiftRS* makeNode<AstShiftRS, AstNodeMath*, AstNodeMath*>(  //
 // LCOV_EXCL_START
 template <>
 AstCCast* makeNode<AstCCast, AstNodeMath*>(const DfgCCast* vtxp, AstNodeMath*) {
-    vtxp->v3fatal("not implemented");
+    vtxp->v3fatalSrc("not implemented");
 }
 template <>
 AstAtoN* makeNode<AstAtoN, AstNodeMath*>(const DfgAtoN* vtxp, AstNodeMath*) {
-    vtxp->v3fatal("not implemented");
+    vtxp->v3fatalSrc("not implemented");
 }
 template <>
 AstCompareNN* makeNode<AstCompareNN, AstNodeMath*, AstNodeMath*>(const DfgCompareNN* vtxp,
                                                                  AstNodeMath*, AstNodeMath*) {
-    vtxp->v3fatal("not implemented");
+    vtxp->v3fatalSrc("not implemented");
 }
 template <>
 AstSliceSel* makeNode<AstSliceSel, AstNodeMath*, AstNodeMath*, AstNodeMath*>(
     const DfgSliceSel* vtxp, AstNodeMath*, AstNodeMath*, AstNodeMath*) {
-    vtxp->v3fatal("not implemented");
+    vtxp->v3fatalSrc("not implemented");
 }
 // LCOV_EXCL_STOP
 

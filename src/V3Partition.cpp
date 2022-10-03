@@ -928,7 +928,7 @@ class PartPropagateCp final {
 
 public:
     // CONSTRUCTORS
-    PartPropagateCp(bool slowAsserts)
+    explicit PartPropagateCp(bool slowAsserts)
         : m_slowAsserts{slowAsserts} {}
 
     // METHODS

@@ -33,7 +33,7 @@ class V3DfgCseContext final {
 
 public:
     VDouble0 m_eliminated;  // Number of common sub-expressions eliminated
-    V3DfgCseContext(const std::string& label)
+    explicit V3DfgCseContext(const std::string& label)
         : m_label{label} {}
     ~V3DfgCseContext();
 };
@@ -43,7 +43,7 @@ class DfgRemoveVarsContext final {
 
 public:
     VDouble0 m_removed;  // Number of redundant variables removed
-    DfgRemoveVarsContext(const std::string& label)
+    explicit DfgRemoveVarsContext(const std::string& label)
         : m_label{label} {}
     ~DfgRemoveVarsContext();
 };
@@ -73,7 +73,7 @@ public:
     V3DfgCseContext m_cseContext1{m_label + " 2nd"};
     V3DfgPeepholeContext m_peepholeContext{m_label};
     DfgRemoveVarsContext m_removeVarsContext{m_label};
-    V3DfgOptimizationContext(const std::string& label);
+    explicit V3DfgOptimizationContext(const std::string& label);
     ~V3DfgOptimizationContext();
 
     const std::string& prefix() const { return m_prefix; }

@@ -2324,7 +2324,7 @@ template <typename T_Arg, bool Default>
 bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep,
                             const std::function<bool(T_Arg*)>& p) {
     // Implementation similar to foreach, but abort traversal as soon as result is determined.
-    if (!p) {
+    if (VL_UNCOVERABLE(!p)) {
         nodep->v3fatal("AstNode::foreach called with unbound function");  // LCOV_EXCL_LINE
     } else {
         using T_Arg_NonConst = typename std::remove_const<T_Arg>::type;

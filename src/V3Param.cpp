@@ -915,9 +915,9 @@ class ParamVisitor final : public VNVisitor {
             // Process interface cells, then non-interface cells, which may reference an interface
             // cell.
             while (!m_cellps.empty()) {
-                const auto itm = m_cellps.cbegin();
-                AstNode* const cellp = itm->second;
-                m_cellps.erase(itm);
+                const auto itim = m_cellps.cbegin();
+                AstNode* const cellp = itim->second;
+                m_cellps.erase(itim);
 
                 AstNodeModule* srcModp = nullptr;
                 if (const auto* modCellp = VN_CAST(cellp, Cell)) {

@@ -132,7 +132,7 @@ struct V3DfgPeepholeContext final {
     // Count of applications for each optimization (for statistics)
     VDouble0 m_count[VDfgPeepholePattern::_ENUM_END];
 
-    V3DfgPeepholeContext(const std::string& label);
+    explicit V3DfgPeepholeContext(const std::string& label);
     ~V3DfgPeepholeContext();
 };
 

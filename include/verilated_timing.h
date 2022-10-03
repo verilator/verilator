@@ -137,7 +137,7 @@ class VlDelayScheduler final {
 
 public:
     // CONSTRUCTORS
-    VlDelayScheduler(VerilatedContext& context)
+    explicit VlDelayScheduler(VerilatedContext& context)
         : m_context{context} {}
     // METHODS
     // Resume coroutines waiting for the current simulation time
@@ -329,8 +329,8 @@ public:
 
     // CONSTRUCTORS
     // Construct
-    VlCoroutine(VlPromise* p)
-        : m_promisep{p} {
+    VlCoroutine(VlPromise* promisep)
+        : m_promisep{promisep} {
         m_promisep->m_corop = this;
     }
     // Move. Update the pointers each time the return object is moved

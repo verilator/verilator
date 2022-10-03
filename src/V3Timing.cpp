@@ -105,7 +105,7 @@ private:
     AstScope* m_scopep = nullptr;  // Current scope
     AstActive* m_activep = nullptr;  // Current active
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Fork we're under
-    double m_timescaleFactor;  // Factor to scale delays by
+    double m_timescaleFactor = 1.0;  // Factor to scale delays by
 
     // Unique names
     V3UniqueNames m_contAssignVarNames{"__VassignWtmp__"};  // Names for temp AssignW vars

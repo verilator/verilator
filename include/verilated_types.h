@@ -109,7 +109,7 @@ public:
 
     // Set elements of 'this' to 'a & !b' element-wise
     void andNot(const VlTriggerVec<T_size>& a, const VlTriggerVec<T_size>& b) {
-        for (size_t i = 0; i < m_flags.size(); ++i) m_flags[i] = a.m_flags[i] & !b.m_flags[i];
+        for (size_t i = 0; i < m_flags.size(); ++i) m_flags[i] = a.m_flags[i] && !b.m_flags[i];
     }
 };
 
@@ -1104,14 +1104,17 @@ public:
         m_objp->m_deleter = &deleter;
         refCountInc();
     }
+    // cppcheck-suppress noExplicitConstructor
     VlClassRef(T_Class* objp)
         : m_objp{objp} {
         refCountInc();
     }
+    // cppcheck-suppress noExplicitConstructor
     VlClassRef(const VlClassRef& copied)
         : m_objp{copied.m_objp} {
         refCountInc();
     }
+    // cppcheck-suppress noExplicitConstructor
     VlClassRef(VlClassRef&& moved)
         : m_objp{vlstd::exchange(moved.m_objp, nullptr)} {}
     ~VlClassRef() { refCountDec(); }
