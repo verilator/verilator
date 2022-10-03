@@ -37,7 +37,7 @@ void VlCoroutineHandle::resume() {
 
 #ifdef VL_DEBUG
 void VlCoroutineHandle::dump() {
-    VL_DEBUG_IF(VL_PRINTF("Process waiting at %s:%d\n", m_filename, m_linenum););
+    VL_PRINTF("Process waiting at %s:%d\n", m_fileline.filename(), m_fileline.lineno());
 }
 #endif
 
@@ -46,15 +46,14 @@ void VlCoroutineHandle::dump() {
 
 #ifdef VL_DEBUG
 void VlDelayScheduler::VlDelayedCoroutine::dump() {
-    VL_DEBUG_IF(VL_DBG_MSGF("             Awaiting time %lu: ", m_timestep););
+    VL_DBG_MSGF("             Awaiting time %lu: ", m_timestep);
     m_handle.dump();
 }
 #endif
 
 void VlDelayScheduler::resume() {
 #ifdef VL_DEBUG
-    dump();
-    VL_DEBUG_IF(VL_DBG_MSGF("         Resuming delayed processes\n"););
+    VL_DEBUG_IF(dump(); VL_DBG_MSGF("         Resuming delayed processes\n"););
 #endif
     while (awaitingCurrentTime()) {
         if (m_queue.front().m_timestep != m_context.time()) {
@@ -80,9 +79,9 @@ uint64_t VlDelayScheduler::nextTimeSlot() {
 #ifdef VL_DEBUG
 void VlDelayScheduler::dump() {
     if (m_queue.empty()) {
-        VL_DEBUG_IF(VL_DBG_MSGF("         No delayed processes:\n"););
+        VL_DBG_MSGF("         No delayed processes:\n");
     } else {
-        VL_DEBUG_IF(VL_DBG_MSGF("         Delayed processes:\n"););
+        VL_DBG_MSGF("         Delayed processes:\n");
         for (auto& susp : m_queue) susp.dump();
     }
 }
@@ -93,8 +92,8 @@ void VlDelayScheduler::dump() {
 
 void VlTriggerScheduler::resume(const char* eventDescription) {
 #ifdef VL_DEBUG
-    dump(eventDescription);
-    VL_DEBUG_IF(VL_DBG_MSGF("         Resuming processes waiting for %s\n", eventDescription););
+    VL_DEBUG_IF(dump(eventDescription);
+                VL_DBG_MSGF("         Resuming processes waiting for %s\n", eventDescription););
 #endif
     for (auto& susp : m_ready) susp.resume();
     m_ready.clear();
@@ -122,24 +121,20 @@ void VlTriggerScheduler::commit(const char* eventDescription) {
 #ifdef VL_DEBUG
 void VlTriggerScheduler::dump(const char* eventDescription) {
     if (m_ready.empty()) {
-        VL_DEBUG_IF(
-            VL_DBG_MSGF("         No ready processes waiting for %s\n", eventDescription););
+        VL_DBG_MSGF("         No ready processes waiting for %s\n", eventDescription);
     } else {
-        VL_DEBUG_IF(for (auto& susp
-                         : m_ready) {
+        for (auto& susp : m_ready) {
             VL_DBG_MSGF("         Ready processes waiting for %s:\n", eventDescription);
             VL_DBG_MSGF("           - ");
             susp.dump();
-        });
+        }
     }
     if (!m_uncommitted.empty()) {
-        VL_DEBUG_IF(
-            VL_DBG_MSGF("         Uncommitted processes waiting for %s:\n", eventDescription);
-            for (auto& susp
-                 : m_uncommitted) {
-                VL_DBG_MSGF("           - ");
-                susp.dump();
-            });
+        VL_DBG_MSGF("         Uncommitted processes waiting for %s:\n", eventDescription);
+        for (auto& susp : m_uncommitted) {
+            VL_DBG_MSGF("           - ");
+            susp.dump();
+        }
     }
 }
 #endif
@@ -147,9 +142,8 @@ void VlTriggerScheduler::dump(const char* eventDescription) {
 //======================================================================
 // VlForkSync:: Methods
 
-void VlForkSync::done(const char* filename, int linenum) {
-    VL_DEBUG_IF(
-        VL_DBG_MSGF("             Process forked at %s:%d finished\n", filename, linenum););
+void VlForkSync::done(const char* filename, int lineno) {
+    VL_DEBUG_IF(VL_DBG_MSGF("             Process forked at %s:%d finished\n", filename, lineno););
     if (m_join->m_counter > 0) m_join->m_counter--;
     if (m_join->m_counter == 0) m_join->m_susp.resume();
 }

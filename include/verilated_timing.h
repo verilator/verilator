@@ -57,6 +57,36 @@
 // clang-format on
 
 //=============================================================================
+// VlFileLine stores a SystemVerilog source code location. Used in VlCoroutineHandle for debugging
+// purposes.
+
+class VlFileLine final {
+    // MEMBERS
+#ifdef VL_DEBUG
+    const char* m_filename = nullptr;
+    int m_lineno = 0;
+#endif
+
+public:
+    // CONSTRUCTORS
+    // Construct
+    VlFileLine() = default;
+    VlFileLine(const char* filename, int lineno)
+#ifdef VL_DEBUG
+        : m_filename{filename}
+        , m_lineno{lineno}
+#endif
+    {
+    }
+
+    // METHODS
+#ifdef VL_DEBUG
+    const char* filename() const { return m_filename; }
+    int lineno() const { return m_lineno; }
+#endif
+};
+
+//=============================================================================
 // VlCoroutineHandle is a non-copyable (but movable) coroutine handle. On resume, the handle is
 // cleared, as we assume that either the coroutine has finished and deleted itself, or, if it got
 // suspended, another VlCoroutineHandle was created to manage it.
@@ -66,32 +96,20 @@ class VlCoroutineHandle final {
 
     // MEMBERS
     std::coroutine_handle<> m_coro;  // The wrapped coroutine handle
-#ifdef VL_DEBUG
-    const char* m_filename;
-    int m_linenum;
-#endif
+    VlFileLine m_fileline;
 
 public:
     // CONSTRUCTORS
     // Construct
-    VlCoroutineHandle(std::coroutine_handle<> coro = nullptr, const char* filename = nullptr,
-                      int linenum = 0)
+    VlCoroutineHandle()
+        : m_coro{nullptr} {}
+    VlCoroutineHandle(std::coroutine_handle<> coro, VlFileLine fileline)
         : m_coro{coro}
-#ifdef VL_DEBUG
-        , m_filename{filename}
-        , m_linenum{linenum}
-#endif
-    {
-    }
+        , m_fileline{fileline} {}
     // Move the handle, leaving a nullptr
     VlCoroutineHandle(VlCoroutineHandle&& moved)
         : m_coro{std::exchange(moved.m_coro, nullptr)}
-#ifdef VL_DEBUG
-        , m_filename{moved.m_filename}
-        , m_linenum{moved.m_linenum}
-#endif
-    {
-    }
+        , m_fileline{moved.m_fileline} {}
     // Destroy if the handle isn't null
     ~VlCoroutineHandle() {
         // Usually these coroutines should get resumed; we only need to clean up if we destroy a
@@ -155,31 +173,21 @@ public:
     void dump();
 #endif
     // Used by coroutines for co_awaiting a certain simulation time
-    auto delay(uint64_t delay, const char* filename, int linenum) {
+    auto delay(uint64_t delay, const char* filename, int lineno) {
         struct Awaitable {
             VlDelayedCoroutineQueue& queue;
             uint64_t delay;
-#ifdef VL_DEBUG
-            const char* filename;
-            int linenum;
-#endif
+            VlFileLine fileline;
+
             bool await_ready() { return false; }  // Always suspend
             void await_suspend(std::coroutine_handle<> coro) {
-#ifdef VL_DEBUG
-                queue.push_back({delay, VlCoroutineHandle{coro, filename, linenum}});
-#else
-                queue.push_back({delay, coro});
-#endif
+                queue.push_back({delay, VlCoroutineHandle{coro, fileline}});
                 // Move last element to the proper place in the max-heap
                 std::push_heap(queue.begin(), queue.end());
             }
             void await_resume() {}
         };
-#ifdef VL_DEBUG
-        return Awaitable{m_queue, m_context.time() + delay, filename, linenum};
-#else
-        return Awaitable{m_queue, m_context.time() + delay};
-#endif
+        return Awaitable{m_queue, m_context.time() + delay, VlFileLine{filename, lineno}};
     }
 };
 
@@ -212,30 +220,20 @@ public:
     void dump(const char* eventDescription);
 #endif
     // Used by coroutines for co_awaiting a certain trigger
-    auto trigger(const char* eventDescription, const char* filename, int linenum) {
+    auto trigger(const char* eventDescription, const char* filename, int lineno) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Suspending process waiting for %s at %s:%d\n",
-                                eventDescription, filename, linenum););
+                                eventDescription, filename, lineno););
         struct Awaitable {
             VlCoroutineVec& suspended;  // Coros waiting on trigger
-#ifdef VL_DEBUG
-            const char* filename;
-            int linenum;
-#endif
+            VlFileLine fileline;
+
             bool await_ready() { return false; }  // Always suspend
             void await_suspend(std::coroutine_handle<> coro) {
-#ifdef VL_DEBUG
-                suspended.emplace_back(coro, filename, linenum);
-#else
-                suspended.emplace_back(coro);
-#endif
+                suspended.emplace_back(coro, fileline);
             }
             void await_resume() {}
         };
-#ifdef VL_DEBUG
-        return Awaitable{m_uncommitted, filename, linenum};
-#else
-        return Awaitable{m_uncommitted};
-#endif
+        return Awaitable{m_uncommitted, VlFileLine{filename, lineno}};
     }
 };
 
@@ -278,19 +276,21 @@ public:
     void init(size_t count) { m_join.reset(new VlJoin{count, {}}); }
     // Called whenever any of the forked processes finishes. If the join counter reaches 0, the
     // main process gets resumed
-    void done(const char* filename, int linenum);
+    void done(const char* filename, int lineno);
     // Used by coroutines for co_awaiting a join
-    auto join(const char* filename, int linenum) {
+    auto join(const char* filename, int lineno) {
         assert(m_join);
         VL_DEBUG_IF(
-            VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, linenum););
+            VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, lineno););
         struct Awaitable {
             const std::shared_ptr<VlJoin> join;  // Join to await on
+            VlFileLine fileline;
+
             bool await_ready() { return join->m_counter == 0; }  // Suspend if join still exists
-            void await_suspend(std::coroutine_handle<> coro) { join->m_susp = coro; }
+            void await_suspend(std::coroutine_handle<> coro) { join->m_susp = {coro, fileline}; }
             void await_resume() {}
         };
-        return Awaitable{m_join};
+        return Awaitable{m_join, VlFileLine{filename, lineno}};
     }
 };
 
