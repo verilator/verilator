@@ -1,0 +1,29 @@
+%Error: t/t_interface_virtual_bad.v:29:12: Operator ASSIGN expected 'PBus' interface on Assign RHS but 'q8__Viftop' is a different interface ('QBus').
+                                         : ... In instance t
+   29 |       v8 = q8;   
+      |            ^~
+%Error: t/t_interface_virtual_bad.v:33:12: Operator ASSIGN expected no interface modport on Assign RHS but got 'phy' modport.
+                                         : ... In instance t
+   33 |       v8 = v8_phy;   
+      |            ^~~~~~
+%Error: t/t_interface_virtual_bad.v:35:17: Operator ASSIGN expected non-interface on Assign RHS but 'p8__Viftop' is an interface.
+                                         : ... In instance t
+   35 |       data = p8.phy;   
+      |                 ^~~
+%Error: t/t_interface_virtual_bad.v:36:14: Operator ASSIGN expected non-interface on Assign RHS but 'v8_phy__Viftop' is an interface.
+                                         : ... In instance t
+   36 |       data = v8_phy;   
+      |              ^~~~~~
+%Error: t/t_interface_virtual_bad.v:37:14: Operator ASSIGN expected non-interface on Assign RHS but 'v8__Viftop' is an interface.
+                                         : ... In instance t
+   37 |       data = v8;   
+      |              ^~
+%Error: t/t_interface_virtual_bad.v:38:14: Operator ASSIGN expected non-interface on Assign RHS but 'p8__Viftop' is an interface.
+                                         : ... In instance t
+   38 |       data = p8;   
+      |              ^~
+%Error: t/t_interface_virtual_bad.v:39:12: Operator ASSIGN expected 'PBus' interface on Assign RHS but 'data' is not an interface.
+                                         : ... In instance t
+   39 |       v8 = data;   
+      |            ^~~~
+%Error: Exiting due to

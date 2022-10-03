@@ -6046,6 +6046,31 @@ private:
                 underp->v3error(ucfirst(nodep->prettyOperatorName())
                                 << " expected non-interface on " << side << " but '"
                                 << underp->name() << "' is an interface.");
+            } else if (const AstIfaceRefDType* expIfaceRefp = VN_CAST(expDTypep, IfaceRefDType)) {
+                const AstIfaceRefDType* underIfaceRefp = VN_CAST(underp->dtypep(), IfaceRefDType);
+                if (!underIfaceRefp) {
+                    underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                    << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
+                                    << " interface on " << side << " but " << underp->prettyNameQ()
+                                    << " is not an interface.");
+                } else if (expIfaceRefp->ifaceViaCellp() != underIfaceRefp->ifaceViaCellp()) {
+                    underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                    << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
+                                    << " interface on " << side << " but '" << underp->name()
+                                    << "' is a different interface ("
+                                    << underIfaceRefp->ifaceViaCellp()->prettyNameQ() << ").");
+                } else if (underIfaceRefp->modportp()
+                           && expIfaceRefp->modportp() != underIfaceRefp->modportp()) {
+                    underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                    << " expected "
+                                    << (expIfaceRefp->modportp()
+                                            ? expIfaceRefp->modportp()->prettyNameQ()
+                                            : "no")
+                                    << " interface modport on " << side << " but got "
+                                    << underIfaceRefp->modportp()->prettyNameQ() << " modport.");
+                } else {
+                    underp = userIterateSubtreeReturnEdits(underp, WidthVP(expDTypep, FINAL).p());
+                }
             } else {
                 // Hope it just works out (perhaps a cast will deal with it)
                 underp = userIterateSubtreeReturnEdits(underp, WidthVP(expDTypep, FINAL).p());
