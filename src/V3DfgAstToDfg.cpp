@@ -41,8 +41,8 @@ namespace {
 
 // Create a DfgVertex out of a AstNodeMath. For most AstNodeMath subtypes, this can be done
 // automatically. For the few special cases, we provide specializations below
-template <typename Vertex>
-Vertex* makeVertex(const AstForDfg<Vertex>* nodep, DfgGraph& dfg) {
+template <typename Vertex, typename Node>
+Vertex* makeVertex(const Node* nodep, DfgGraph& dfg) {
     return new Vertex{dfg, nodep->fileline(), DfgVertex::dtypeFor(nodep)};
 }
 
@@ -51,22 +51,22 @@ Vertex* makeVertex(const AstForDfg<Vertex>* nodep, DfgGraph& dfg) {
 // LCOV_EXCL_START
 // AstCCast changes width, but should not exists where DFG optimization is currently invoked
 template <>
-DfgCCast* makeVertex<DfgCCast>(const AstCCast*, DfgGraph&) {
+DfgCCast* makeVertex<DfgCCast, AstCCast>(const AstCCast*, DfgGraph&) {
     return nullptr;
 }
 // Unhandled in DfgToAst, but also operates on strings which we don't optimize anyway
 template <>
-DfgAtoN* makeVertex<DfgAtoN>(const AstAtoN*, DfgGraph&) {
+DfgAtoN* makeVertex<DfgAtoN, AstAtoN>(const AstAtoN*, DfgGraph&) {
     return nullptr;
 }
 // Unhandled in DfgToAst, but also operates on strings which we don't optimize anyway
 template <>
-DfgCompareNN* makeVertex<DfgCompareNN>(const AstCompareNN*, DfgGraph&) {
+DfgCompareNN* makeVertex<DfgCompareNN, AstCompareNN>(const AstCompareNN*, DfgGraph&) {
     return nullptr;
 }
 // Unhandled in DfgToAst, but also operates on unpacked arrays which we don't optimize anyway
 template <>
-DfgSliceSel* makeVertex<DfgSliceSel>(const AstSliceSel*, DfgGraph&) {
+DfgSliceSel* makeVertex<DfgSliceSel, AstSliceSel>(const AstSliceSel*, DfgGraph&) {
     return nullptr;
 }
 // LCOV_EXCL_STOP
@@ -105,11 +105,11 @@ class AstToDfgVisitor final : public VNVisitor {
         m_uncommittedVertices.clear();
     }
 
-    DfgVertexLValue* getNet(AstVar* varp) {
+    DfgVertexVar* getNet(AstVar* varp) {
         if (!varp->user1p()) {
-            // Note DfgVertexLValue vertices are not added to m_uncommittedVertices, because we
+            // Note DfgVertexVar vertices are not added to m_uncommittedVertices, because we
             // want to hold onto them via AstVar::user1p, and the AstVar might be referenced via
-            // multiple AstVarRef instances, so we will never revert a DfgVertexLValue once
+            // multiple AstVarRef instances, so we will never revert a DfgVertexVar once
             // created. We will delete unconnected variable vertices at the end.
             if (VN_IS(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 DfgVarArray* const vtxp = new DfgVarArray{*m_dfgp, varp};
@@ -122,7 +122,7 @@ class AstToDfgVisitor final : public VNVisitor {
                 varp->user1p(vtxp);
             }
         }
-        return varp->user1u().to<DfgVertexLValue*>();
+        return varp->user1u().to<DfgVertexVar*>();
     }
 
     DfgVertex* getVertex(AstNode* nodep) {

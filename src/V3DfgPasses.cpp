@@ -154,7 +154,7 @@ void V3DfgPasses::removeVars(DfgGraph& dfg, DfgRemoveVarsContext& ctx) {
 void V3DfgPasses::removeUnused(DfgGraph& dfg) {
     const auto processVertex = [&](DfgVertex& vtx) {
         // Keep variables
-        if (vtx.is<DfgVarPacked>() || vtx.is<DfgVarArray>()) return false;
+        if (vtx.is<DfgVertexVar>()) return false;
         // Keep if it has sinks
         if (vtx.hasSinks()) return false;
         // Unlink and delete vertex

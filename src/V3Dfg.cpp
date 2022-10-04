@@ -208,8 +208,7 @@ class ExtractCyclicComponents final {
     // The extracted cyclic components
     std::vector<std::unique_ptr<DfgGraph>> m_components;
     // Map from 'variable vertex' -> 'component index' -> 'clone in that component'
-    std::unordered_map<const DfgVertexLValue*, std::unordered_map<size_t, DfgVertexLValue*>>
-        m_clones;
+    std::unordered_map<const DfgVertexVar*, std::unordered_map<size_t, DfgVertexVar*>> m_clones;
 
     // METHODS
 
@@ -285,7 +284,7 @@ class ExtractCyclicComponents final {
 
     void visitMergeSCCs(const DfgVertex& vtx, size_t targetComponent) {
         // We stop at variable boundaries, which is where we will split the graphs
-        if (vtx.is<DfgVarPacked>() || vtx.is<DfgVarArray>()) return;
+        if (vtx.is<DfgVertexVar>()) return;
 
         // Mark visited/move on if already visited
         if (!m_merged.insert(&vtx).second) return;
@@ -312,9 +311,9 @@ class ExtractCyclicComponents final {
     // Methods for extraction
 
     // Retrieve clone of vertex in the given component
-    DfgVertexLValue& getClone(DfgVertexLValue& vtx, size_t component) {
+    DfgVertexVar& getClone(DfgVertexVar& vtx, size_t component) {
         UASSERT_OBJ(m_state.at(&vtx).component != component, &vtx, "Vertex is in that component");
-        DfgVertexLValue*& clonep = m_clones[&vtx][component];
+        DfgVertexVar*& clonep = m_clones[&vtx][component];
         if (!clonep) {
             DfgGraph& dfg = component == 0 ? m_dfg : *m_components[component - 1];
             if (DfgVarPacked* const pVtxp = vtx.cast<DfgVarPacked>()) {
@@ -322,7 +321,7 @@ class ExtractCyclicComponents final {
             } else if (DfgVarArray* const aVtxp = vtx.cast<DfgVarArray>()) {
                 clonep = new DfgVarArray{dfg, aVtxp->varp()};
             }
-            UASSERT_OBJ(clonep, &vtx, "Unhandled 'DfgVertexLValue' sub-type");
+            UASSERT_OBJ(clonep, &vtx, "Unhandled 'DfgVertexVar' sub-type");
             if (VL_UNLIKELY(m_doExpensiveChecks)) {
                 // Assign component number of clone for later checks
                 m_state
@@ -338,30 +337,30 @@ class ExtractCyclicComponents final {
         return *clonep;
     }
 
-    // Fix up non-variable sources of a DfgVertexLValue that are in a different component,
+    // Fix up non-variable sources of a DfgVertexVar that are in a different component,
     // using the provided 'relink' callback
     template <typename T_Vertex>
     void fixSources(T_Vertex& vtx, std::function<void(T_Vertex&, DfgVertex&, size_t)> relink) {
-        static_assert(std::is_base_of<DfgVertexLValue, T_Vertex>::value,
-                      "'Vertex' must be a 'DfgVertexLValue'");
+        static_assert(std::is_base_of<DfgVertexVar, T_Vertex>::value,
+                      "'Vertex' must be a 'DfgVertexVar'");
         const size_t component = m_state.at(&vtx).component;
         vtx.forEachSourceEdge([&](DfgEdge& edge, size_t idx) {
             DfgVertex& source = *edge.sourcep();
-            // DfgVertexLValue sources are fixed up by `fixSinks` on those sources
-            if (source.is<DfgVarPacked>() || source.is<DfgVarArray>()) return;
+            // DfgVertexVar sources are fixed up by `fixSinks` on those sources
+            if (source.is<DfgVertexVar>()) return;
             const size_t sourceComponent = m_state.at(&source).component;
             // Same component is OK
             if (sourceComponent == component) return;
             // Unlink the source edge (source is reconnected by 'relink'
             edge.unlinkSource();
             // Apply the fixup
-            DfgVertexLValue& clone = getClone(vtx, sourceComponent);
+            DfgVertexVar& clone = getClone(vtx, sourceComponent);
             relink(*(clone.as<T_Vertex>()), source, idx);
         });
     }
 
     // Fix up sinks of given variable vertex that are in a different component
-    void fixSinks(DfgVertexLValue& vtx) {
+    void fixSinks(DfgVertexVar& vtx) {
         const size_t component = m_state.at(&vtx).component;
         vtx.forEachSinkEdge([&](DfgEdge& edge) {
             const size_t sinkComponent = m_state.at(edge.sinkp()).component;
@@ -400,7 +399,7 @@ class ExtractCyclicComponents final {
             vtx.forEachSourceEdge([&](DfgEdge& edge, size_t) {
                 DfgVertex& source = *edge.sourcep();
                 // OK to cross at variables
-                if (source.is<DfgVarPacked>() || source.is<DfgVarArray>()) return;
+                if (source.is<DfgVertexVar>()) return;
                 UASSERT_OBJ(component == m_state.at(&source).component, &vtx,
                             "Component crossing edge without variable involvement");
             });
@@ -670,9 +669,7 @@ static void dumpDotVertexAndSourceEdges(std::ostream& os, const DfgVertex& vtx) 
     vtx.forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {  //
         if (edge.sourcep()) {
             string headLabel;
-            if (vtx.arity() > 1 || vtx.is<DfgVarPacked>() || vtx.is<DfgVarArray>()) {
-                headLabel = vtx.srcName(idx);
-            }
+            if (vtx.arity() > 1 || vtx.is<DfgVertexVar>()) headLabel = vtx.srcName(idx);
             dumpDotEdge(os, edge, headLabel);
         }
     });
@@ -843,7 +840,7 @@ void DfgEdge::relinkSource(DfgVertex* newSourcep) {
 // DfgVertex
 //------------------------------------------------------------------------------
 
-DfgVertex::DfgVertex(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep, DfgType type)
+DfgVertex::DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep)
     : m_filelinep{flp}
     , m_dtypep{dtypep}
     , m_type{type} {
@@ -897,7 +894,7 @@ V3Hash DfgVertex::hash(HashCache& cache) const {
         result += selfHash();
         // Variables are defined by themselves, so there is no need to hash the sources. This
         // enables sound hashing of graphs circular only through variables, which we rely on.
-        if (!is<DfgVarPacked>() && !is<DfgVarArray>()) {
+        if (!is<DfgVertexVar>()) {
             forEachSource([&result, &cache](const DfgVertex& src) { result += src.hash(cache); });
         }
     }
@@ -930,7 +927,6 @@ void DfgVertex::replaceWith(DfgVertex* newSorucep) {
 //------------------------------------------------------------------------------
 
 // DfgVarPacked ----------
-void DfgVarPacked::accept(DfgVisitor& visitor) { visitor.visit(this); }
 
 bool DfgVarPacked::selfEquals(const DfgVertex& that) const {
     if (const DfgVarPacked* otherp = that.cast<DfgVarPacked>()) {
@@ -943,7 +939,6 @@ bool DfgVarPacked::selfEquals(const DfgVertex& that) const {
 V3Hash DfgVarPacked::selfHash() const { return V3Hasher::uncachedHash(varp()); }
 
 // DfgVarPacked ----------
-void DfgVarArray::accept(DfgVisitor& visitor) { visitor.visit(this); }
 
 bool DfgVarArray::selfEquals(const DfgVertex& that) const {
     if (const DfgVarArray* otherp = that.cast<DfgVarArray>()) {
@@ -956,7 +951,6 @@ bool DfgVarArray::selfEquals(const DfgVertex& that) const {
 V3Hash DfgVarArray::selfHash() const { return V3Hasher::uncachedHash(varp()); }
 
 // DfgConst ----------
-void DfgConst::accept(DfgVisitor& visitor) { visitor.visit(this); }
 
 bool DfgConst::selfEquals(const DfgVertex& that) const {
     if (const DfgConst* otherp = that.cast<DfgConst>()) {
@@ -971,12 +965,4 @@ V3Hash DfgConst::selfHash() const { return V3Hasher::uncachedHash(m_constp); }
 // DfgVisitor
 //------------------------------------------------------------------------------
 
-void DfgVisitor::visit(DfgVarPacked* vtxp) { visit(static_cast<DfgVertex*>(vtxp)); }
-void DfgVisitor::visit(DfgVarArray* vtxp) { visit(static_cast<DfgVertex*>(vtxp)); }
-void DfgVisitor::visit(DfgConst* vtxp) { visit(static_cast<DfgVertex*>(vtxp)); }
-
-//------------------------------------------------------------------------------
-// 'astgen' generated definitions
-//------------------------------------------------------------------------------
-
-#include "V3Dfg__gen_definitions.h"
+#include "V3Dfg__gen_visitor_defns.h"  // From ./astgen

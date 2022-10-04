@@ -42,8 +42,8 @@ namespace {
 
 // Create an AstNodeMath out of a DfgVertex. For most AstNodeMath subtypes, this can be done
 // automatically. For the few special cases, we provide specializations below
-template <typename Node, typename... Ops>
-Node* makeNode(const DfgForAst<Node>* vtxp, Ops... ops) {
+template <typename Node, typename Vertex, typename... Ops>
+Node* makeNode(const Vertex* vtxp, Ops... ops) {
     Node* const nodep = new Node{vtxp->fileline(), ops...};
     UASSERT_OBJ(nodep->width() == static_cast<int>(vtxp->width()), vtxp,
                 "Incorrect width in AstNode created from DfgVertex "
@@ -55,31 +55,31 @@ Node* makeNode(const DfgForAst<Node>* vtxp, Ops... ops) {
 // Vertices needing special conversion
 
 template <>
-AstExtend* makeNode<AstExtend, AstNodeMath*>(  //
+AstExtend* makeNode<AstExtend, DfgExtend, AstNodeMath*>(  //
     const DfgExtend* vtxp, AstNodeMath* op1) {
     return new AstExtend{vtxp->fileline(), op1, static_cast<int>(vtxp->width())};
 }
 
 template <>
-AstExtendS* makeNode<AstExtendS, AstNodeMath*>(  //
+AstExtendS* makeNode<AstExtendS, DfgExtendS, AstNodeMath*>(  //
     const DfgExtendS* vtxp, AstNodeMath* op1) {
     return new AstExtendS{vtxp->fileline(), op1, static_cast<int>(vtxp->width())};
 }
 
 template <>
-AstShiftL* makeNode<AstShiftL, AstNodeMath*, AstNodeMath*>(  //
+AstShiftL* makeNode<AstShiftL, DfgShiftL, AstNodeMath*, AstNodeMath*>(  //
     const DfgShiftL* vtxp, AstNodeMath* op1, AstNodeMath* op2) {
     return new AstShiftL{vtxp->fileline(), op1, op2, static_cast<int>(vtxp->width())};
 }
 
 template <>
-AstShiftR* makeNode<AstShiftR, AstNodeMath*, AstNodeMath*>(  //
+AstShiftR* makeNode<AstShiftR, DfgShiftR, AstNodeMath*, AstNodeMath*>(  //
     const DfgShiftR* vtxp, AstNodeMath* op1, AstNodeMath* op2) {
     return new AstShiftR{vtxp->fileline(), op1, op2, static_cast<int>(vtxp->width())};
 }
 
 template <>
-AstShiftRS* makeNode<AstShiftRS, AstNodeMath*, AstNodeMath*>(  //
+AstShiftRS* makeNode<AstShiftRS, DfgShiftRS, AstNodeMath*, AstNodeMath*>(  //
     const DfgShiftRS* vtxp, AstNodeMath* op1, AstNodeMath* op2) {
     return new AstShiftRS{vtxp->fileline(), op1, op2, static_cast<int>(vtxp->width())};
 }
@@ -88,20 +88,21 @@ AstShiftRS* makeNode<AstShiftRS, AstNodeMath*, AstNodeMath*>(  //
 // Currently unhandled nodes - see corresponding AstToDfg functions
 // LCOV_EXCL_START
 template <>
-AstCCast* makeNode<AstCCast, AstNodeMath*>(const DfgCCast* vtxp, AstNodeMath*) {
+AstCCast* makeNode<AstCCast, DfgCCast, AstNodeMath*>(const DfgCCast* vtxp, AstNodeMath*) {
     vtxp->v3fatalSrc("not implemented");
 }
 template <>
-AstAtoN* makeNode<AstAtoN, AstNodeMath*>(const DfgAtoN* vtxp, AstNodeMath*) {
+AstAtoN* makeNode<AstAtoN, DfgAtoN, AstNodeMath*>(const DfgAtoN* vtxp, AstNodeMath*) {
     vtxp->v3fatalSrc("not implemented");
 }
 template <>
-AstCompareNN* makeNode<AstCompareNN, AstNodeMath*, AstNodeMath*>(const DfgCompareNN* vtxp,
+AstCompareNN*
+makeNode<AstCompareNN, DfgCompareNN, AstNodeMath*, AstNodeMath*>(const DfgCompareNN* vtxp,
                                                                  AstNodeMath*, AstNodeMath*) {
     vtxp->v3fatalSrc("not implemented");
 }
 template <>
-AstSliceSel* makeNode<AstSliceSel, AstNodeMath*, AstNodeMath*, AstNodeMath*>(
+AstSliceSel* makeNode<AstSliceSel, DfgSliceSel, AstNodeMath*, AstNodeMath*, AstNodeMath*>(
     const DfgSliceSel* vtxp, AstNodeMath*, AstNodeMath*, AstNodeMath*) {
     vtxp->v3fatalSrc("not implemented");
 }
@@ -215,8 +216,7 @@ class DfgToAstVisitor final : DfgVisitor {
         // Inline vertices that drive only a single node, or are special
         if (!vtx.hasMultipleSinks()) return true;
         if (vtx.is<DfgConst>()) return true;
-        if (vtx.is<DfgVarPacked>()) return true;
-        if (vtx.is<DfgVarArray>()) return true;
+        if (vtx.is<DfgVertexVar>()) return true;
         if (const DfgArraySel* const selp = vtx.cast<DfgArraySel>()) {
             return selp->bitp()->is<DfgConst>();
         }

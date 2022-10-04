@@ -115,7 +115,7 @@ class V3DfgPeephole final : public DfgVisitor {
     DfgConst* makeZero(FileLine* flp, uint32_t width) { return makeConst(flp, width, 0); }
 
     // Transformations that apply to all commutative binary vertices
-    void commutativeBinary(DfgVertexWithArity<2>* vtxp) {
+    void commutativeBinary(DfgVertexBinary* vtxp) {
         DfgVertex* const lhsp = vtxp->source<0>();
         DfgVertex* const rhsp = vtxp->source<1>();
         // Ensure Const is on left-hand side to simplify other patterns
@@ -138,9 +138,9 @@ class V3DfgPeephole final : public DfgVisitor {
         }
         // If both sides are variable references, order the side in some defined way. This allows
         // CSE to later merge 'a op b' with 'b op a'.
-        if (lhsp->is<DfgVarPacked>() && rhsp->is<DfgVarPacked>()) {
-            AstVar* const lVarp = lhsp->as<DfgVarPacked>()->varp();
-            AstVar* const rVarp = rhsp->as<DfgVarPacked>()->varp();
+        if (lhsp->is<DfgVertexVar>() && rhsp->is<DfgVertexVar>()) {
+            AstVar* const lVarp = lhsp->as<DfgVertexVar>()->varp();
+            AstVar* const rVarp = rhsp->as<DfgVertexVar>()->varp();
             if (lVarp->name() > rVarp->name()) {
                 APPLYING(SWAP_VAR_IN_COMMUTATIVE_BINARY) {
                     vtxp->lhsp(rhsp);
@@ -152,12 +152,12 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     // Transformations that apply to all associative binary vertices
-    void associativeBinary(DfgVertexWithArity<2>* vtxp) {
+    void associativeBinary(DfgVertexBinary* vtxp) {
         DfgVertex* const lhsp = vtxp->lhsp();
 
         // Make associative trees right leaning (for better CSE opportunities)
         if (lhsp->type() == vtxp->type() && !lhsp->hasMultipleSinks()) {
-            DfgVertexWithArity<2>* const lBinp = static_cast<DfgVertexWithArity<2>*>(lhsp);
+            DfgVertexBinary* const lBinp = lhsp->as<DfgVertexBinary>();
             APPLYING(RIGHT_LEANING_ASSOC) {
                 vtxp->replaceWith(lBinp);
                 vtxp->lhsp(lBinp->rhsp());
@@ -242,7 +242,7 @@ class V3DfgPeephole final : public DfgVisitor {
                 newRhsp->rhsp(concatp->rhsp());
 
                 // The replacement Vertex
-                DfgVertexWithArity<2>* const replacementp
+                DfgVertexBinary* const replacementp
                     = std::is_same<Vertex, DfgEq>::value
                           ? new DfgAnd{m_dfg, concatp->fileline(), m_bitDType}
                           : nullptr;
@@ -334,7 +334,7 @@ class V3DfgPeephole final : public DfgVisitor {
                 rReducep->srcp(concatp->rhsp());
 
                 // Bitwise reduce the results
-                DfgVertexWithArity<2>* const replacementp = new Bitwise{m_dfg, flp, m_bitDType};
+                Bitwise* const replacementp = new Bitwise{m_dfg, flp, m_bitDType};
                 replacementp->lhsp(lReducep);
                 replacementp->rhsp(rReducep);
                 vtxp->replaceWith(replacementp);
@@ -362,7 +362,7 @@ class V3DfgPeephole final : public DfgVisitor {
         }
     }
 
-    void optimizeShiftRHS(DfgVertexWithArity<2>* vtxp) {
+    void optimizeShiftRHS(DfgVertexBinary* vtxp) {
         if (const DfgConcat* const concatp = vtxp->rhsp()->cast<DfgConcat>()) {
             if (concatp->lhsp()->isZero()) {  // Drop redundant zero extension
                 APPLYING(REMOVE_REDUNDANT_ZEXT_ON_RHS_OF_SHIFT) {  //
@@ -1330,12 +1330,12 @@ class V3DfgPeephole final : public DfgVisitor {
 
     // Process one vertex. Return true if graph changed
     bool processVertex(DfgVertex& vtx) {
-        // Keep DfgVertexLValue vertices in this pass. We will remove them later if they become
+        // Keep DfgVertexVar vertices in this pass. We will remove them later if they become
         // redundant. We want to keep the original variables for non-var vertices that drive
         // multiple sinks (otherwise we would need to introduce a temporary, but it is better for
         // debugging to keep the original variable name, if one is available), so we can't remove
         // redundant variables here.
-        const bool keep = vtx.is<DfgVarPacked>() || vtx.is<DfgVarArray>();
+        const bool keep = vtx.is<DfgVertexVar>();
 
         // If it has no sinks (unused), we can remove it
         if (!keep && !vtx.hasSinks()) {

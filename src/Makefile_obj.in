@@ -289,6 +289,7 @@ NON_STANDALONE_HEADERS = \
 	V3AstNodeDType.h  \
 	V3AstNodeMath.h  \
 	V3AstNodeOther.h  \
+	V3DfgVertices.h  \
 	V3WidthCommit.h  \
 
 AST_DEFS := \
@@ -296,10 +297,19 @@ AST_DEFS := \
   V3AstNodeMath.h \
   V3AstNodeOther.h \
 
+DFG_DEFS := \
+  V3DfgVertices.h
+
+#### astgen common flags
+
+ASTGENFLAGS = -I $(srcdir)
+ASTGENFLAGS += $(foreach f,$(AST_DEFS),--astdef $f)
+ASTGENFLAGS += $(foreach f,$(DFG_DEFS),--dfgdef $f)
+
 #### Linking
 
 ifeq ($(VL_VLCOV),)
-PREDEP_H = V3Ast__gen_classes.h
+PREDEP_H = V3Ast__gen_forward_class_decls.h
 OBJS += $(RAW_OBJS) $(NC_OBJS)
 else
 PREDEP_H =
@@ -318,8 +328,8 @@ V3Number_test: V3Number_test.o
 
 #### Modules
 
-%__gen.cpp:	%.cpp $(ASTGEN) $(AST_DEFS)
-	$(PYTHON3) $(ASTGEN) -I $(srcdir) $(foreach f,$(AST_DEFS),--astdef $f) $*.cpp
+%__gen.cpp:	%.cpp $(ASTGEN) $(AST_DEFS) $(DFG_DEFS)
+	$(PYTHON3) $(ASTGEN) $(ASTGENFLAGS) $*.cpp
 
 %.o:	%.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
@@ -341,7 +351,7 @@ V3PreProc.o:	V3PreProc.cpp V3PreLex.yy.cpp
 #### Generated files
 
 # Target rule called before parallel build to make generated files
-serial:: V3Ast__gen_classes.h V3ParseBison.c
+serial:: V3Ast__gen_forward_class_decls.h V3ParseBison.c
 
 serial_vlcov:: vlcovgen.d
 
@@ -349,8 +359,8 @@ vlcovgen.d: $(VLCOVGEN) $(srcdir)/../include/verilated_cov_key.h
 	$(PYTHON3) $(VLCOVGEN) --srcdir $(srcdir)
 	touch $@
 
-V3Ast__gen_classes.h : $(ASTGEN) $(AST_DEFS)
-	$(PYTHON3) $(ASTGEN) -I $(srcdir) $(foreach f,$(AST_DEFS),--astdef $f) --classes
+V3Ast__gen_forward_class_decls.h: $(ASTGEN) $(AST_DEFS) $(DFG_DEFS)
+	$(PYTHON3) $(ASTGEN) $(ASTGENFLAGS) --classes
 
 V3ParseBison.h: V3ParseBison.c
 
