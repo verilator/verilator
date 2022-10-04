@@ -501,6 +501,12 @@ Summary:
 
 .. option:: -fno-const
 
+.. options: -fno-const-before-dfg
+
+   Do not apply any global expression folding prior to the DFG pass. This
+   option is solely for the purpose of DFG testing and should not be used
+   otherwise.
+
 .. option:: -fno-const-bit-op-tree
 
 .. option:: -fno-dedup

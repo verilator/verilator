@@ -1132,6 +1132,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-fcase", FOnOff, &m_fCase);
     DECL_OPTION("-fcombine", FOnOff, &m_fCombine);
     DECL_OPTION("-fconst", FOnOff, &m_fConst);
+    DECL_OPTION("-fconst-before-dfg", FOnOff, &m_fConstBeforeDfg);
     DECL_OPTION("-fconst-bit-op-tree", FOnOff, &m_fConstBitOpTree);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
     DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) {

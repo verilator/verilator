@@ -67,6 +67,7 @@ compile(
 compile(
     verilator_flags2 => ["--stats", "--build", "--exe", "+incdir+$Self->{obj_dir}",
                          "-Mdir", "$Self->{obj_dir}/obj_opt", "--prefix", "Vopt",
+                         "-fno-const-before-dfg", # Otherwise V3Const makes testing painful
                          "--dump-dfg", # To fill code coverage
                          "-CFLAGS \"-I .. -I ../obj_ref\"",
                          "../obj_ref/Vref__ALL.a",

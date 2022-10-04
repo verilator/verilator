@@ -349,6 +349,7 @@ private:
     bool m_fCase;        // main switch: -fno-case: case tree conversion
     bool m_fCombine;     // main switch: -fno-combine: common icode packing
     bool m_fConst;       // main switch: -fno-const: constant folding
+    bool m_fConstBeforeDfg = true;  // main switch: -fno-const-before-dfg for testing only!
     bool m_fConstBitOpTree;  // main switch: -fno-const-bit-op-tree constant bit op tree
     bool m_fDedupe;      // main switch: -fno-dedupe: logic deduplication
     bool m_fDfgPeephole = true; // main switch: -fno-dfg-peephole
@@ -598,6 +599,7 @@ public:
     bool fCase() const { return m_fCase; }
     bool fCombine() const { return m_fCombine; }
     bool fConst() const { return m_fConst; }
+    bool fConstBeforeDfg() const { return m_fConstBeforeDfg; }
     bool fConstBitOpTree() const { return m_fConstBitOpTree; }
     bool fDedupe() const { return m_fDedupe; }
     bool fDfgPeephole() const { return m_fDfgPeephole; }

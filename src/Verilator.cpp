@@ -189,7 +189,7 @@ static void process() {
 
     // Push constants, but only true constants preserving liveness
     // so V3Undriven sees variables to be eliminated, ie "if (0 && foo) ..."
-    V3Const::constifyAllLive(v3Global.rootp());
+    if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAllLive(v3Global.rootp());
 
     // Signal based lint checks, no change to structures
     // Must be before first constification pass drops dead code
@@ -209,7 +209,7 @@ static void process() {
     }
 
     // Propagate constants into expressions
-    V3Const::constifyAllLint(v3Global.rootp());
+    if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAllLint(v3Global.rootp());
 
     if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Split packed variables into multiple pieces to resolve UNOPTFLAT.

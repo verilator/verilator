@@ -78,6 +78,58 @@ template <> struct BitwiseToReductionImpl<DfgOr>  { using type = DfgRedOr;  };
 template <> struct BitwiseToReductionImpl<DfgXor> { using type = DfgRedXor; };
 template <typename T_Reductoin>
 using BitwiseToReduction = typename BitwiseToReductionImpl<T_Reductoin>::type;
+
+namespace {
+template<typename Vertex> void foldOp(V3Number& out, const V3Number& src);
+template <> void foldOp<DfgCLog2>      (V3Number& out, const V3Number& src) { out.opCLog2(src); }
+template <> void foldOp<DfgCountOnes>  (V3Number& out, const V3Number& src) { out.opCountOnes(src); }
+template <> void foldOp<DfgExtend>     (V3Number& out, const V3Number& src) { out.opAssign(src); }
+template <> void foldOp<DfgExtendS>    (V3Number& out, const V3Number& src) { out.opExtendS(src, src.width()); }
+template <> void foldOp<DfgLogNot>     (V3Number& out, const V3Number& src) { out.opLogNot(src); }
+template <> void foldOp<DfgNegate>     (V3Number& out, const V3Number& src) { out.opNegate(src); }
+template <> void foldOp<DfgNot>        (V3Number& out, const V3Number& src) { out.opNot(src); }
+template <> void foldOp<DfgOneHot>     (V3Number& out, const V3Number& src) { out.opOneHot(src); }
+template <> void foldOp<DfgOneHot0>    (V3Number& out, const V3Number& src) { out.opOneHot0(src); }
+template <> void foldOp<DfgRedAnd>     (V3Number& out, const V3Number& src) { out.opRedAnd(src); }
+template <> void foldOp<DfgRedOr>      (V3Number& out, const V3Number& src) { out.opRedOr(src); }
+template <> void foldOp<DfgRedXor>     (V3Number& out, const V3Number& src) { out.opRedXor(src); }
+
+template<typename Vertex> void foldOp(V3Number& out, const V3Number& lhs, const V3Number& rhs);
+template <> void foldOp<DfgAdd>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAdd(lhs, rhs); }
+template <> void foldOp<DfgAnd>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAnd(lhs, rhs); }
+template <> void foldOp<DfgConcat>     (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opConcat(lhs, rhs); }
+template <> void foldOp<DfgDiv>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDiv(lhs, rhs); }
+template <> void foldOp<DfgDivS>       (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDivS(lhs, rhs); }
+template <> void foldOp<DfgEq>         (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opEq(lhs, rhs); }
+template <> void foldOp<DfgGt>         (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGt(lhs, rhs); }
+template <> void foldOp<DfgGtS>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGtS(lhs, rhs); }
+template <> void foldOp<DfgGte>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGte(lhs, rhs); }
+template <> void foldOp<DfgGteS>       (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGteS(lhs, rhs); }
+template <> void foldOp<DfgLogAnd>     (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogAnd(lhs, rhs); }
+template <> void foldOp<DfgLogEq>      (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogEq(lhs, rhs); }
+template <> void foldOp<DfgLogIf>      (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogIf(lhs, rhs); }
+template <> void foldOp<DfgLogOr>      (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogOr(lhs, rhs); }
+template <> void foldOp<DfgLt>         (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLt(lhs, rhs); }
+template <> void foldOp<DfgLtS>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLtS(lhs, rhs); }
+template <> void foldOp<DfgLte>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLte(lhs, rhs); }
+template <> void foldOp<DfgLteS>       (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLtS(lhs, rhs); }
+template <> void foldOp<DfgModDiv>     (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDiv(lhs, rhs); }
+template <> void foldOp<DfgModDivS>    (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDivS(lhs, rhs); }
+template <> void foldOp<DfgMul>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMul(lhs, rhs); }
+template <> void foldOp<DfgMulS>       (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMulS(lhs, rhs); }
+template <> void foldOp<DfgNeq>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opNeq(lhs, rhs); }
+template <> void foldOp<DfgOr>         (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opOr(lhs, rhs); }
+template <> void foldOp<DfgPow>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPow(lhs, rhs); }
+template <> void foldOp<DfgPowSS>      (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowSS(lhs, rhs); }
+template <> void foldOp<DfgPowSU>      (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowSU(lhs, rhs); }
+template <> void foldOp<DfgPowUS>      (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowUS(lhs, rhs); }
+template <> void foldOp<DfgReplicate>  (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opRepl(lhs, rhs); }
+template <> void foldOp<DfgShiftL>     (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftL(lhs, rhs); }
+template <> void foldOp<DfgShiftR>     (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftR(lhs, rhs); }
+template <> void foldOp<DfgShiftRS>    (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opShiftRS(lhs, rhs, lhs.width()); }
+template <> void foldOp<DfgSub>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opSub(lhs, rhs); }
+template <> void foldOp<DfgXor>        (V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opXor(lhs, rhs); }
+}
 // clang-format on
 
 class V3DfgPeephole final : public DfgVisitor {
@@ -113,6 +165,40 @@ class V3DfgPeephole final : public DfgVisitor {
 
     // Create a new DfgConst vertex with the given width and value zero
     DfgConst* makeZero(FileLine* flp, uint32_t width) { return makeConst(flp, width, 0); }
+
+    // Constant fold unary vertex, return true if folded
+    template <typename Vertex>
+    bool foldUnary(Vertex* vtxp) {
+        static_assert(std::is_base_of<DfgVertexUnary, Vertex>::value, "Must invoke on unary");
+        static_assert(std::is_final<Vertex>::value, "Must invoke on final class");
+        if (DfgConst* const srcp = vtxp->srcp()->template cast<DfgConst>()) {
+            APPLYING(FOLD_UNARY) {
+                DfgConst* const resultp = makeZero(vtxp->fileline(), vtxp->width());
+                foldOp<Vertex>(resultp->num(), srcp->num());
+                vtxp->replaceWith(resultp);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Constant fold binary vertex, return true if folded
+    template <typename Vertex>
+    bool foldBinary(Vertex* vtxp) {
+        static_assert(std::is_base_of<DfgVertexBinary, Vertex>::value, "Must invoke on binary");
+        static_assert(std::is_final<Vertex>::value, "Must invoke on final class");
+        if (DfgConst* const lhsp = vtxp->lhsp()->template cast<DfgConst>()) {
+            if (DfgConst* const rhsp = vtxp->rhsp()->template cast<DfgConst>()) {
+                APPLYING(FOLD_BINARY) {
+                    DfgConst* const resultp = makeZero(vtxp->fileline(), vtxp->width());
+                    foldOp<Vertex>(resultp->num(), lhsp->num(), rhsp->num());
+                    vtxp->replaceWith(resultp);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     // Transformations that apply to all commutative binary vertices
     void commutativeBinary(DfgVertexBinary* vtxp) {
@@ -291,6 +377,8 @@ class V3DfgPeephole final : public DfgVisitor {
     void optimizeReduction(Reduction* vtxp) {
         using Bitwise = ReductionToBitwise<Reduction>;
 
+        if (foldUnary(vtxp)) return;
+
         DfgVertex* const srcp = vtxp->srcp();
         FileLine* const flp = vtxp->fileline();
 
@@ -348,21 +436,6 @@ class V3DfgPeephole final : public DfgVisitor {
                 }
             }
         }
-
-        if (DfgConst* const constp = srcp->cast<DfgConst>()) {
-            APPLYING(REPLACE_REDUCTION_OF_CONST) {
-                DfgConst* const replacementp = makeZero(flp, 1);
-                if VL_CONSTEXPR_CXX17 (std::is_same<Reduction, DfgRedAnd>::value) {
-                    replacementp->num().opRedAnd(constp->num());
-                } else if VL_CONSTEXPR_CXX17 (std::is_same<Reduction, DfgRedOr>::value) {
-                    replacementp->num().opRedOr(constp->num());
-                } else {
-                    replacementp->num().opRedXor(constp->num());
-                }
-                vtxp->replaceWith(replacementp);
-                return;
-            }
-        }
     }
 
     void optimizeShiftRHS(DfgVertexBinary* vtxp) {
@@ -379,26 +452,57 @@ class V3DfgPeephole final : public DfgVisitor {
 
     void visit(DfgVertex*) override {}
 
+    //=========================================================================
+    //  DfgVertexUnary
+    //=========================================================================
+
+    void visit(DfgCLog2* vtxp) override {
+        if (foldUnary(vtxp)) return;
+    }
+
+    void visit(DfgCountOnes* vtxp) override {
+        if (foldUnary(vtxp)) return;
+    }
+
     void visit(DfgExtend* vtxp) override {
-        const uint32_t extension = vtxp->width() - vtxp->srcp()->width();
-        UASSERT_OBJ(extension > 0, vtxp, "Useless Extend");
+        UASSERT_OBJ(vtxp->width() > vtxp->srcp()->width(), vtxp, "Invalid zero extend");
 
-        FileLine* const flp = vtxp->fileline();
+        if (foldUnary(vtxp)) return;
 
-        // Convert Extend into Concat with zeros. This simplifies other patterns as they only
+        // Convert all Extend into Concat with zeros. This simplifies other patterns as they only
         // need to handle Concat, which is more generic, and don't need special cases for
         // Extend.
         APPLYING(REPLACE_EXTEND) {
+            FileLine* const flp = vtxp->fileline();
             DfgConcat* const replacementp = new DfgConcat{m_dfg, flp, vtxp->dtypep()};
-            replacementp->lhsp(makeZero(flp, extension));
+            replacementp->lhsp(makeZero(flp, vtxp->width() - vtxp->srcp()->width()));
             replacementp->rhsp(vtxp->srcp());
             vtxp->replaceWith(replacementp);
         }
     }
 
+    void visit(DfgExtendS* vtxp) override {
+        UASSERT_OBJ(vtxp->width() > vtxp->srcp()->width(), vtxp, "Invalid sign extend");
+
+        if (foldUnary(vtxp)) return;
+    }
+
+    void visit(DfgLogNot* vtxp) override {
+        UASSERT_OBJ(vtxp->width() == 1, vtxp, "Incorrect width");
+
+        if (foldUnary(vtxp)) return;
+    }
+
+    void visit(DfgNegate* vtxp) override {
+        UASSERT_OBJ(vtxp->width() == vtxp->srcp()->width(), vtxp, "Mismatched width");
+
+        if (foldUnary(vtxp)) return;
+    }
+
     void visit(DfgNot* vtxp) override {
-        UASSERT_OBJ(vtxp->width() == vtxp->srcp()->width(), vtxp,
-                    "Mismatched width: " << vtxp->width() << " != " << vtxp->srcp()->width());
+        UASSERT_OBJ(vtxp->width() == vtxp->srcp()->width(), vtxp, "Mismatched width");
+
+        if (foldUnary(vtxp)) return;
 
         // Not of Cond
         if (DfgCond* const condp = vtxp->srcp()->cast<DfgCond>()) {
@@ -460,21 +564,31 @@ class V3DfgPeephole final : public DfgVisitor {
                 }
             }
         }
-
-        // Not of Const
-        if (DfgConst* const constp = vtxp->srcp()->cast<DfgConst>()) {
-            APPLYING(REPLACE_NOT_OF_CONST) {
-                DfgConst* const replacementp = makeZero(vtxp->fileline(), vtxp->width());
-                replacementp->num().opNot(constp->num());
-                vtxp->replaceWith(replacementp);
-                return;
-            }
-        }
     }
+
+    void visit(DfgOneHot* vtxp) override {
+        if (foldUnary(vtxp)) return;
+    }
+
+    void visit(DfgOneHot0* vtxp) override {
+        if (foldUnary(vtxp)) return;
+    }
+
+    void visit(DfgRedOr* vtxp) override { optimizeReduction(vtxp); }
+
+    void visit(DfgRedAnd* vtxp) override { optimizeReduction(vtxp); }
+
+    void visit(DfgRedXor* vtxp) override { optimizeReduction(vtxp); }
+
+    //=========================================================================
+    //  DfgVertexBinary - bitwise
+    //=========================================================================
 
     void visit(DfgAnd* vtxp) override {
         UASSERT_OBJ(vtxp->width() == vtxp->lhsp()->width(), vtxp, "Mismatched LHS width");
         UASSERT_OBJ(vtxp->width() == vtxp->rhsp()->width(), vtxp, "Mismatched RHS width");
+
+        if (foldBinary(vtxp)) return;
 
         commutativeBinary(vtxp);
         associativeBinary(vtxp);
@@ -515,15 +629,6 @@ class V3DfgPeephole final : public DfgVisitor {
         }
 
         if (DfgConst* const lhsConstp = lhsp->cast<DfgConst>()) {
-            if (DfgConst* const rhsConstp = rhsp->cast<DfgConst>()) {
-                APPLYING(REPLACE_AND_OF_CONST_AND_CONST) {
-                    DfgConst* const replacementp = makeZero(flp, vtxp->width());
-                    replacementp->num().opAnd(lhsConstp->num(), rhsConstp->num());
-                    vtxp->replaceWith(replacementp);
-                    return;
-                }
-            }
-
             if (lhsConstp->isZero()) {
                 APPLYING(REPLACE_AND_WITH_ZERO) {
                     vtxp->replaceWith(lhsConstp);
@@ -560,6 +665,8 @@ class V3DfgPeephole final : public DfgVisitor {
     void visit(DfgOr* vtxp) override {
         UASSERT_OBJ(vtxp->width() == vtxp->lhsp()->width(), vtxp, "Mismatched LHS width");
         UASSERT_OBJ(vtxp->width() == vtxp->rhsp()->width(), vtxp, "Mismatched RHS width");
+
+        if (foldBinary(vtxp)) return;
 
         commutativeBinary(vtxp);
         associativeBinary(vtxp);
@@ -627,15 +734,6 @@ class V3DfgPeephole final : public DfgVisitor {
         }
 
         if (DfgConst* const lhsConstp = lhsp->cast<DfgConst>()) {
-            if (DfgConst* const rhsConstp = rhsp->cast<DfgConst>()) {
-                APPLYING(REPLACE_OR_OF_CONST_AND_CONST) {
-                    DfgConst* const replacementp = makeZero(flp, vtxp->width());
-                    replacementp->num().opOr(lhsConstp->num(), rhsConstp->num());
-                    vtxp->replaceWith(replacementp);
-                    return;
-                }
-            }
-
             if (lhsConstp->isZero()) {
                 APPLYING(REMOVE_OR_WITH_ZERO) {
                     vtxp->replaceWith(rhsp);
@@ -674,6 +772,8 @@ class V3DfgPeephole final : public DfgVisitor {
         UASSERT_OBJ(vtxp->width() == vtxp->lhsp()->width(), vtxp, "Mismatched LHS width");
         UASSERT_OBJ(vtxp->width() == vtxp->rhsp()->width(), vtxp, "Mismatched RHS width");
 
+        if (foldBinary(vtxp)) return;
+
         commutativeBinary(vtxp);
         associativeBinary(vtxp);
 
@@ -700,266 +800,44 @@ class V3DfgPeephole final : public DfgVisitor {
                 tryPushBitwiseOpThroughConcat(vtxp, lConstp, rConcatp);
                 return;
             }
-            if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
-                APPLYING(REPLACE_XOR_OF_CONST_AND_CONST) {
-                    DfgConst* const replacementp = makeZero(flp, vtxp->width());
-                    replacementp->num().opXor(lConstp->num(), rConstp->num());
-                    vtxp->replaceWith(replacementp);
-                    return;
-                }
-            }
         }
 
         if (tryPushBitwiseOpThroughReductions(vtxp)) return;
     }
 
+    //=========================================================================
+    //  DfgVertexBinary - other
+    //=========================================================================
+
     void visit(DfgAdd* vtxp) override {
         UASSERT_OBJ(vtxp->width() == vtxp->lhsp()->width(), vtxp, "Mismatched LHS width");
         UASSERT_OBJ(vtxp->width() == vtxp->rhsp()->width(), vtxp, "Mismatched RHS width");
+
+        if (foldBinary(vtxp)) return;
 
         commutativeBinary(vtxp);
         associativeBinary(vtxp);
     }
 
-    void visit(DfgSub* vtxp) override {
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
-        UASSERT_OBJ(lhsp->width() == rhsp->width(), vtxp, "Width mismatch");
-        UASSERT_OBJ(lhsp->width() == vtxp->width(), vtxp, "Width mismatch");
-        if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
-            if (rConstp->isZero()) {
-                APPLYING(REMOVE_SUB_ZERO) {
-                    vtxp->replaceWith(lhsp);
-                    return;
-                }
-            }
-            if (vtxp->width() == 1 && rConstp->toU32() == 1) {
-                APPLYING(REPLACE_SUB_WITH_NOT) {
-                    DfgNot* const replacementp = new DfgNot{m_dfg, vtxp->fileline(), m_bitDType};
-                    replacementp->srcp(lhsp);
-                    vtxp->replaceWith(replacementp);
-                    return;
-                }
-            }
-        }
-    }
-
-    void visit(DfgShiftL* vtxp) override { optimizeShiftRHS(vtxp); }
-    void visit(DfgShiftR* vtxp) override { optimizeShiftRHS(vtxp); }
-    void visit(DfgShiftRS* vtxp) override { optimizeShiftRHS(vtxp); }
-
-    void visit(DfgEq* vtxp) override {
-        commutativeBinary(vtxp);
-
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
-
-        if (DfgConst* const lhsConstp = lhsp->cast<DfgConst>()) {
-            if (DfgConst* const rhsConstp = rhsp->cast<DfgConst>()) {
-                APPLYING(REPLACE_EQ_OF_CONST_AND_CONST) {
-                    DfgConst* const replacementp = makeZero(vtxp->fileline(), 1);
-                    replacementp->num().opEq(lhsConstp->num(), rhsConstp->num());
-                    vtxp->replaceWith(replacementp);
-                    return;
-                }
-            }
-
-            if (DfgConcat* const rhsConcatp = rhsp->cast<DfgConcat>()) {
-                if (tryPushCompareOpThroughConcat(vtxp, lhsConstp, rhsConcatp)) return;
-            }
-        }
-    }
-
-    void visit(DfgSel* vtxp) override {
-        DfgVertex* const fromp = vtxp->fromp();
-        DfgConst* const lsbp = vtxp->lsbp()->cast<DfgConst>();
-        DfgConst* const widthp = vtxp->widthp()->cast<DfgConst>();
-        if (!lsbp || !widthp) return;
-
-        FileLine* const flp = vtxp->fileline();
-
-        UASSERT_OBJ(lsbp->toI32() >= 0, vtxp, "Negative LSB in Sel");
-
-        const uint32_t lsb = lsbp->toU32();
-        const uint32_t width = widthp->toU32();
-        const uint32_t msb = lsb + width - 1;
-
-        UASSERT_OBJ(width == vtxp->width(), vtxp, "Incorrect Sel width");
-
-        // Full width select, replace with the source.
-        if (fromp->width() == width) {
-            UASSERT_OBJ(lsb == 0, fromp, "OOPS");
-            APPLYING(REMOVE_FULL_WIDTH_SEL) {
-                vtxp->replaceWith(fromp);
-                return;
-            }
-        }
-
-        // Sel from Concat
-        if (DfgConcat* const concatp = fromp->cast<DfgConcat>()) {
-            DfgVertex* const lhsp = concatp->lhsp();
-            DfgVertex* const rhsp = concatp->rhsp();
-
-            if (msb < rhsp->width()) {
-                // If the select is entirely from rhs, then replace with sel from rhs
-                APPLYING(REMOVE_SEL_FROM_RHS_OF_CONCAT) {  //
-                    vtxp->fromp(rhsp);
-                }
-            } else if (lsb >= rhsp->width()) {
-                // If the select is entirely from the lhs, then replace with sel from lhs
-                APPLYING(REMOVE_SEL_FROM_LHS_OF_CONCAT) {
-                    vtxp->fromp(lhsp);
-                    vtxp->lsbp(makeI32(flp, lsb - rhsp->width()));
-                }
-            } else if (lsb == 0 || msb == concatp->width() - 1  //
-                       || lhsp->is<DfgConst>() || rhsp->is<DfgConst>()  //
-                       || !concatp->hasMultipleSinks()) {
-                // If the select straddles both sides, but at least one of the sides is wholly
-                // selected, or at least one of the sides is a Const, or this concat has no other
-                // use, then push the Sel past the Concat
-                APPLYING(PUSH_SEL_THROUGH_CONCAT) {
-                    const uint32_t rSelWidth = rhsp->width() - lsb;
-                    const uint32_t lSelWidth = width - rSelWidth;
-
-                    // The new Lhs vertex
-                    DfgSel* const newLhsp = new DfgSel{m_dfg, flp, dtypeForWidth(lSelWidth)};
-                    newLhsp->fromp(lhsp);
-                    newLhsp->lsbp(makeI32(lsbp->fileline(), 0));
-                    newLhsp->widthp(makeI32(widthp->fileline(), lSelWidth));
-
-                    // The new Rhs vertex
-                    DfgSel* const newRhsp = new DfgSel{m_dfg, flp, dtypeForWidth(rSelWidth)};
-                    newRhsp->fromp(rhsp);
-                    newRhsp->lsbp(makeI32(lsbp->fileline(), lsb));
-                    newRhsp->widthp(makeI32(widthp->fileline(), rSelWidth));
-
-                    // The replacement Concat vertex
-                    DfgConcat* const newConcat
-                        = new DfgConcat{m_dfg, concatp->fileline(), vtxp->dtypep()};
-                    newConcat->lhsp(newLhsp);
-                    newConcat->rhsp(newRhsp);
-
-                    // Replace this vertex
-                    vtxp->replaceWith(newConcat);
-                    return;
-                }
-            }
-        }
-
-        if (DfgReplicate* const repp = fromp->cast<DfgReplicate>()) {
-            // If the Sel is wholly into the source of the Replicate, push the Sel through the
-            // Replicate and apply it directly to the source of the Replicate.
-            const uint32_t srcWidth = repp->srcp()->width();
-            if (width <= srcWidth) {
-                const uint32_t newLsb = lsb % srcWidth;
-                if (newLsb + width <= srcWidth) {
-                    APPLYING(PUSH_SEL_THROUGH_REPLICATE) {
-                        vtxp->fromp(repp->srcp());
-                        vtxp->lsbp(makeI32(flp, newLsb));
+    void visit(DfgArraySel* vtxp) override {
+        if (DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>()) {
+            if (DfgVarArray* const varp = vtxp->fromp()->cast<DfgVarArray>()) {
+                const uint32_t idx = idxp->toU32();
+                if (DfgVertex* const driverp = varp->driverAt(idx)) {
+                    APPLYING(INLINE_ARRAYSEL) {
+                        vtxp->replaceWith(driverp);
+                        return;
                     }
                 }
             }
         }
-
-        // Sel from Not
-        if (DfgNot* const notp = fromp->cast<DfgNot>()) {
-            // Replace "Sel from Not" with "Not of Sel"
-            if (!notp->hasMultipleSinks()) {
-                UASSERT_OBJ(notp->srcp()->width() == notp->width(), notp, "Mismatched widths");
-                APPLYING(PUSH_SEL_THROUGH_NOT) {
-                    // Make Sel select from source of Not
-                    vtxp->fromp(notp->srcp());
-                    // Add Not after Sel
-                    DfgNot* const replacementp
-                        = new DfgNot{m_dfg, notp->fileline(), vtxp->dtypep()};
-                    vtxp->replaceWith(replacementp);
-                    replacementp->srcp(vtxp);
-                }
-            }
-        }
-
-        // Sel from Sel
-        if (DfgSel* const selp = fromp->cast<DfgSel>()) {
-            UASSERT_OBJ(widthp->toU32() <= selp->width(), vtxp, "Out of bound Sel");
-            if (DfgConst* const sourceLsbp = selp->lsbp()->cast<DfgConst>()) {
-                UASSERT_OBJ(sourceLsbp->toI32() >= 0, selp, "negative");
-                UASSERT_OBJ(selp->widthp()->as<DfgConst>()->toU32() >= widthp->toU32(), selp,
-                            "negative");
-                APPLYING(REPLACE_SEL_FROM_SEL) {
-                    // Make this Sel select from the source of the source Sel
-                    vtxp->fromp(selp->fromp());
-                    // Adjust LSB
-                    vtxp->lsbp(makeI32(flp, lsb + sourceLsbp->toU32()));
-                }
-            }
-        }
-
-        // Sel from Cond
-        if (DfgCond* const condp = fromp->cast<DfgCond>()) {
-            // If at least one of the branches are a constant, push the select past the cond
-            if (condp->thenp()->is<DfgConst>() || condp->elsep()->is<DfgConst>()) {
-                APPLYING(PUSH_SEL_THROUGH_COND) {
-                    // The new 'then' vertex
-                    DfgSel* const newThenp = new DfgSel{m_dfg, flp, vtxp->dtypep()};
-                    newThenp->fromp(condp->thenp());
-                    newThenp->lsbp(makeI32(lsbp->fileline(), lsb));
-                    newThenp->widthp(makeI32(widthp->fileline(), width));
-
-                    // The new 'else' vertex
-                    DfgSel* const newElsep = new DfgSel{m_dfg, flp, vtxp->dtypep()};
-                    newElsep->fromp(condp->elsep());
-                    newElsep->lsbp(makeI32(lsbp->fileline(), lsb));
-                    newElsep->widthp(makeI32(widthp->fileline(), width));
-
-                    // The replacement Cond vertex
-                    DfgCond* const newCondp
-                        = new DfgCond{m_dfg, condp->fileline(), vtxp->dtypep()};
-                    newCondp->condp(condp->condp());
-                    newCondp->thenp(newThenp);
-                    newCondp->elsep(newElsep);
-
-                    // Replace this vertex
-                    vtxp->replaceWith(newCondp);
-                    return;
-                }
-            }
-        }
-
-        // Sel from ShiftL
-        if (DfgShiftL* const shiftLp = fromp->cast<DfgShiftL>()) {
-            // If selecting bottom bits of left shift, push the Sel before the shift
-            if (lsb == 0) {
-                UASSERT_OBJ(shiftLp->lhsp()->width() >= width, vtxp, "input of shift narrow");
-                APPLYING(PUSH_SEL_THROUGH_SHIFTL) {
-                    vtxp->fromp(shiftLp->lhsp());
-                    DfgShiftL* const newShiftLp
-                        = new DfgShiftL{m_dfg, shiftLp->fileline(), vtxp->dtypep()};
-                    vtxp->replaceWith(newShiftLp);
-                    newShiftLp->lhsp(vtxp);
-                    newShiftLp->rhsp(shiftLp->rhsp());
-                }
-            }
-        }
-
-        // Sel from Const
-        if (DfgConst* const constp = fromp->cast<DfgConst>()) {
-            APPLYING(REPLACE_SEL_FROM_CONST) {
-                DfgConst* const replacementp = makeZero(flp, width);
-                replacementp->num().opSel(constp->num(), msb, lsb);
-                vtxp->replaceWith(replacementp);
-                return;
-            }
-        }
     }
-
-    void visit(DfgRedOr* vtxp) override { optimizeReduction(vtxp); }
-    void visit(DfgRedAnd* vtxp) override { optimizeReduction(vtxp); }
-    void visit(DfgRedXor* vtxp) override { optimizeReduction(vtxp); }
 
     void visit(DfgConcat* vtxp) override {
         UASSERT_OBJ(vtxp->width() == vtxp->lhsp()->width() + vtxp->rhsp()->width(), vtxp,
-                    "Incorrect Concat width: " << vtxp->width() << " != " << vtxp->lhsp()->width()
-                                               << " + " << vtxp->rhsp()->width());
+                    "Inconsisend Concat");
+
+        if (foldBinary(vtxp)) return;
 
         DfgVertex* const lhsp = vtxp->lhsp();
         DfgVertex* const rhsp = vtxp->rhsp();
@@ -994,13 +872,6 @@ class V3DfgPeephole final : public DfgVisitor {
 
             DfgConst* const lConstp = lhsp->cast<DfgConst>();
             DfgConst* const rConstp = rhsp->cast<DfgConst>();
-
-            if (lConstp && rConstp) {
-                APPLYING(REPLACE_CONCAT_OF_CONSTS) {
-                    vtxp->replaceWith(joinConsts(lConstp, rConstp, flp));
-                    return;
-                }
-            }
 
             if (lConstp) {
                 if (DfgConcat* const rConcatp = rhsp->cast<DfgConcat>()) {
@@ -1162,16 +1033,370 @@ class V3DfgPeephole final : public DfgVisitor {
         }
     }
 
+    void visit(DfgDiv* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgDivS* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgEq* vtxp) override {
+        if (foldBinary(vtxp)) return;
+
+        commutativeBinary(vtxp);
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+
+        if (DfgConst* const lhsConstp = lhsp->cast<DfgConst>()) {
+            if (DfgConcat* const rhsConcatp = rhsp->cast<DfgConcat>()) {
+                if (tryPushCompareOpThroughConcat(vtxp, lhsConstp, rhsConcatp)) return;
+            }
+        }
+    }
+
+    void visit(DfgGt* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgGtS* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgGte* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgGteS* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgLogAnd* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgLogEq* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgLogIf* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgLogOr* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgLt* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgLtS* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgLte* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgLteS* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgModDiv* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgModDivS* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgMul* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgMulS* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgNeq* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgPow* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgPowSS* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgPowSU* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgPowUS* vtxp) override {
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgReplicate* vtxp) override {
+        if (vtxp->width() == vtxp->srcp()->width()) {
+            APPLYING(REMOVE_REPLICATE_ONCE) {
+                vtxp->replaceWith(vtxp->srcp());
+                return;
+            }
+        }
+
+        if (foldBinary(vtxp)) return;
+    }
+
+    void visit(DfgShiftL* vtxp) override {
+        UASSERT_OBJ(vtxp->width() == vtxp->lhsp()->width(), vtxp, "Mismatched width");
+
+        if (foldBinary(vtxp)) return;
+
+        optimizeShiftRHS(vtxp);
+    }
+
+    void visit(DfgShiftR* vtxp) override {
+        UASSERT_OBJ(vtxp->width() == vtxp->lhsp()->width(), vtxp, "Mismatched width");
+
+        if (foldBinary(vtxp)) return;
+
+        optimizeShiftRHS(vtxp);
+    }
+
+    void visit(DfgShiftRS* vtxp) override {
+        UASSERT_OBJ(vtxp->width() == vtxp->lhsp()->width(), vtxp, "Mismatched width");
+
+        if (foldBinary(vtxp)) return;
+
+        optimizeShiftRHS(vtxp);
+    }
+
+    void visit(DfgSub* vtxp) override {
+        UASSERT_OBJ(vtxp->width() == vtxp->lhsp()->width(), vtxp, "Mismatched LHS width");
+        UASSERT_OBJ(vtxp->width() == vtxp->rhsp()->width(), vtxp, "Mismatched RHS width");
+
+        if (foldBinary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+
+        if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
+            if (rConstp->isZero()) {
+                APPLYING(REMOVE_SUB_ZERO) {
+                    vtxp->replaceWith(lhsp);
+                    return;
+                }
+            }
+            if (vtxp->width() == 1 && rConstp->toU32() == 1) {
+                APPLYING(REPLACE_SUB_WITH_NOT) {
+                    DfgNot* const replacementp = new DfgNot{m_dfg, vtxp->fileline(), m_bitDType};
+                    replacementp->srcp(lhsp);
+                    vtxp->replaceWith(replacementp);
+                    return;
+                }
+            }
+        }
+    }
+
+    //=========================================================================
+    //  DfgVertexTernary
+    //=========================================================================
+
+    void visit(DfgSel* vtxp) override {
+        DfgVertex* const fromp = vtxp->fromp();
+        DfgConst* const lsbp = vtxp->lsbp()->cast<DfgConst>();
+        DfgConst* const widthp = vtxp->widthp()->cast<DfgConst>();
+        if (!lsbp || !widthp) return;
+
+        FileLine* const flp = vtxp->fileline();
+
+        UASSERT_OBJ(lsbp->toI32() >= 0, vtxp, "Negative LSB in Sel");
+
+        const uint32_t lsb = lsbp->toU32();
+        const uint32_t width = widthp->toU32();
+        const uint32_t msb = lsb + width - 1;
+
+        UASSERT_OBJ(width == vtxp->width(), vtxp, "Incorrect Sel width");
+
+        if (DfgConst* const constp = fromp->cast<DfgConst>()) {
+            APPLYING(FOLD_SEL) {
+                DfgConst* const replacementp = makeZero(flp, width);
+                replacementp->num().opSel(constp->num(), msb, lsb);
+                vtxp->replaceWith(replacementp);
+                return;
+            }
+        }
+
+        // Full width select, replace with the source.
+        if (fromp->width() == width) {
+            UASSERT_OBJ(lsb == 0, fromp, "OOPS");
+            APPLYING(REMOVE_FULL_WIDTH_SEL) {
+                vtxp->replaceWith(fromp);
+                return;
+            }
+        }
+
+        // Sel from Concat
+        if (DfgConcat* const concatp = fromp->cast<DfgConcat>()) {
+            DfgVertex* const lhsp = concatp->lhsp();
+            DfgVertex* const rhsp = concatp->rhsp();
+
+            if (msb < rhsp->width()) {
+                // If the select is entirely from rhs, then replace with sel from rhs
+                APPLYING(REMOVE_SEL_FROM_RHS_OF_CONCAT) {  //
+                    vtxp->fromp(rhsp);
+                }
+            } else if (lsb >= rhsp->width()) {
+                // If the select is entirely from the lhs, then replace with sel from lhs
+                APPLYING(REMOVE_SEL_FROM_LHS_OF_CONCAT) {
+                    vtxp->fromp(lhsp);
+                    vtxp->lsbp(makeI32(flp, lsb - rhsp->width()));
+                }
+            } else if (lsb == 0 || msb == concatp->width() - 1  //
+                       || lhsp->is<DfgConst>() || rhsp->is<DfgConst>()  //
+                       || !concatp->hasMultipleSinks()) {
+                // If the select straddles both sides, but at least one of the sides is wholly
+                // selected, or at least one of the sides is a Const, or this concat has no other
+                // use, then push the Sel past the Concat
+                APPLYING(PUSH_SEL_THROUGH_CONCAT) {
+                    const uint32_t rSelWidth = rhsp->width() - lsb;
+                    const uint32_t lSelWidth = width - rSelWidth;
+
+                    // The new Lhs vertex
+                    DfgSel* const newLhsp = new DfgSel{m_dfg, flp, dtypeForWidth(lSelWidth)};
+                    newLhsp->fromp(lhsp);
+                    newLhsp->lsbp(makeI32(lsbp->fileline(), 0));
+                    newLhsp->widthp(makeI32(widthp->fileline(), lSelWidth));
+
+                    // The new Rhs vertex
+                    DfgSel* const newRhsp = new DfgSel{m_dfg, flp, dtypeForWidth(rSelWidth)};
+                    newRhsp->fromp(rhsp);
+                    newRhsp->lsbp(makeI32(lsbp->fileline(), lsb));
+                    newRhsp->widthp(makeI32(widthp->fileline(), rSelWidth));
+
+                    // The replacement Concat vertex
+                    DfgConcat* const newConcat
+                        = new DfgConcat{m_dfg, concatp->fileline(), vtxp->dtypep()};
+                    newConcat->lhsp(newLhsp);
+                    newConcat->rhsp(newRhsp);
+
+                    // Replace this vertex
+                    vtxp->replaceWith(newConcat);
+                    return;
+                }
+            }
+        }
+
+        if (DfgReplicate* const repp = fromp->cast<DfgReplicate>()) {
+            // If the Sel is wholly into the source of the Replicate, push the Sel through the
+            // Replicate and apply it directly to the source of the Replicate.
+            const uint32_t srcWidth = repp->srcp()->width();
+            if (width <= srcWidth) {
+                const uint32_t newLsb = lsb % srcWidth;
+                if (newLsb + width <= srcWidth) {
+                    APPLYING(PUSH_SEL_THROUGH_REPLICATE) {
+                        vtxp->fromp(repp->srcp());
+                        vtxp->lsbp(makeI32(flp, newLsb));
+                    }
+                }
+            }
+        }
+
+        // Sel from Not
+        if (DfgNot* const notp = fromp->cast<DfgNot>()) {
+            // Replace "Sel from Not" with "Not of Sel"
+            if (!notp->hasMultipleSinks()) {
+                UASSERT_OBJ(notp->srcp()->width() == notp->width(), notp, "Mismatched widths");
+                APPLYING(PUSH_SEL_THROUGH_NOT) {
+                    // Make Sel select from source of Not
+                    vtxp->fromp(notp->srcp());
+                    // Add Not after Sel
+                    DfgNot* const replacementp
+                        = new DfgNot{m_dfg, notp->fileline(), vtxp->dtypep()};
+                    vtxp->replaceWith(replacementp);
+                    replacementp->srcp(vtxp);
+                }
+            }
+        }
+
+        // Sel from Sel
+        if (DfgSel* const selp = fromp->cast<DfgSel>()) {
+            UASSERT_OBJ(widthp->toU32() <= selp->width(), vtxp, "Out of bound Sel");
+            if (DfgConst* const sourceLsbp = selp->lsbp()->cast<DfgConst>()) {
+                UASSERT_OBJ(sourceLsbp->toI32() >= 0, selp, "negative");
+                UASSERT_OBJ(selp->widthp()->as<DfgConst>()->toU32() >= widthp->toU32(), selp,
+                            "negative");
+                APPLYING(REPLACE_SEL_FROM_SEL) {
+                    // Make this Sel select from the source of the source Sel
+                    vtxp->fromp(selp->fromp());
+                    // Adjust LSB
+                    vtxp->lsbp(makeI32(flp, lsb + sourceLsbp->toU32()));
+                }
+            }
+        }
+
+        // Sel from Cond
+        if (DfgCond* const condp = fromp->cast<DfgCond>()) {
+            // If at least one of the branches are a constant, push the select past the cond
+            if (condp->thenp()->is<DfgConst>() || condp->elsep()->is<DfgConst>()) {
+                APPLYING(PUSH_SEL_THROUGH_COND) {
+                    // The new 'then' vertex
+                    DfgSel* const newThenp = new DfgSel{m_dfg, flp, vtxp->dtypep()};
+                    newThenp->fromp(condp->thenp());
+                    newThenp->lsbp(makeI32(lsbp->fileline(), lsb));
+                    newThenp->widthp(makeI32(widthp->fileline(), width));
+
+                    // The new 'else' vertex
+                    DfgSel* const newElsep = new DfgSel{m_dfg, flp, vtxp->dtypep()};
+                    newElsep->fromp(condp->elsep());
+                    newElsep->lsbp(makeI32(lsbp->fileline(), lsb));
+                    newElsep->widthp(makeI32(widthp->fileline(), width));
+
+                    // The replacement Cond vertex
+                    DfgCond* const newCondp
+                        = new DfgCond{m_dfg, condp->fileline(), vtxp->dtypep()};
+                    newCondp->condp(condp->condp());
+                    newCondp->thenp(newThenp);
+                    newCondp->elsep(newElsep);
+
+                    // Replace this vertex
+                    vtxp->replaceWith(newCondp);
+                    return;
+                }
+            }
+        }
+
+        // Sel from ShiftL
+        if (DfgShiftL* const shiftLp = fromp->cast<DfgShiftL>()) {
+            // If selecting bottom bits of left shift, push the Sel before the shift
+            if (lsb == 0) {
+                UASSERT_OBJ(shiftLp->lhsp()->width() >= width, vtxp, "input of shift narrow");
+                APPLYING(PUSH_SEL_THROUGH_SHIFTL) {
+                    vtxp->fromp(shiftLp->lhsp());
+                    DfgShiftL* const newShiftLp
+                        = new DfgShiftL{m_dfg, shiftLp->fileline(), vtxp->dtypep()};
+                    vtxp->replaceWith(newShiftLp);
+                    newShiftLp->lhsp(vtxp);
+                    newShiftLp->rhsp(shiftLp->rhsp());
+                }
+            }
+        }
+    }
+
     void visit(DfgCond* vtxp) override {
+        UASSERT_OBJ(vtxp->width() == vtxp->thenp()->width(), vtxp, "Width mismatch");
+        UASSERT_OBJ(vtxp->width() == vtxp->elsep()->width(), vtxp, "Width mismatch");
+
         DfgVertex* const condp = vtxp->condp();
         DfgVertex* const thenp = vtxp->thenp();
         DfgVertex* const elsep = vtxp->elsep();
-        UASSERT_OBJ(vtxp->width() == thenp->width(), vtxp, "Width mismatch");
-        UASSERT_OBJ(vtxp->width() == elsep->width(), vtxp, "Width mismatch");
+        FileLine* const flp = vtxp->fileline();
 
         if (condp->width() != 1) return;
-
-        FileLine* const flp = vtxp->fileline();
 
         if (condp->isOnes()) {
             APPLYING(REMOVE_COND_WITH_TRUE_CONDITION) {
@@ -1319,19 +1544,9 @@ class V3DfgPeephole final : public DfgVisitor {
         }
     }
 
-    void visit(DfgArraySel* vtxp) override {
-        if (DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>()) {
-            if (DfgVarArray* const varp = vtxp->fromp()->cast<DfgVarArray>()) {
-                const uint32_t idx = idxp->toU32();
-                if (DfgVertex* const driverp = varp->driverAt(idx)) {
-                    APPLYING(INLINE_ARRAYSEL) {
-                        vtxp->replaceWith(driverp);
-                        return;
-                    }
-                }
-            }
-        }
-    }
+    //=========================================================================
+    //  DfgVertexVar
+    //=========================================================================
 
     void visit(DfgVarPacked* vtxp) override {
         // Inline variables fully driven by the logic represented by the DFG
