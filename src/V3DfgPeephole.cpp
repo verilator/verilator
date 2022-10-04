@@ -268,7 +268,8 @@ class V3DfgPeephole final : public DfgVisitor {
             if (Reduction* const rRedp = vtxp->rhsp()->template cast<Reduction>()) {
                 DfgVertex* const lSrcp = lRedp->srcp();
                 DfgVertex* const rSrcp = rRedp->srcp();
-                if (lSrcp->dtypep() == rSrcp->dtypep()) {
+                if (lSrcp->dtypep() == rSrcp->dtypep() && lSrcp->width() <= 64
+                    && !lSrcp->hasMultipleSinks() && !rSrcp->hasMultipleSinks()) {
                     APPLYING(PUSH_BITWISE_THROUGH_REDUCTION) {
                         FileLine* const flp = vtxp->fileline();
                         Bitwise* const bwp = new Bitwise{m_dfg, flp, lSrcp->dtypep()};
@@ -326,23 +327,25 @@ class V3DfgPeephole final : public DfgVisitor {
         }
 
         if (DfgConcat* const concatp = srcp->cast<DfgConcat>()) {
-            APPLYING(PUSH_REDUCTION_THROUGH_CONCAT) {
-                // Reduce the parts of the concatenation
-                Reduction* const lReducep = new Reduction{m_dfg, concatp->fileline(), m_bitDType};
-                lReducep->srcp(concatp->lhsp());
-                Reduction* const rReducep = new Reduction{m_dfg, concatp->fileline(), m_bitDType};
-                rReducep->srcp(concatp->rhsp());
+            if (!concatp->hasMultipleSinks()) {
+                APPLYING(PUSH_REDUCTION_THROUGH_CONCAT) {
+                    // Reduce the parts of the concatenation
+                    Reduction* const lRedp = new Reduction{m_dfg, srcp->fileline(), m_bitDType};
+                    lRedp->srcp(concatp->lhsp());
+                    Reduction* const rRedp = new Reduction{m_dfg, srcp->fileline(), m_bitDType};
+                    rRedp->srcp(concatp->rhsp());
 
-                // Bitwise reduce the results
-                Bitwise* const replacementp = new Bitwise{m_dfg, flp, m_bitDType};
-                replacementp->lhsp(lReducep);
-                replacementp->rhsp(rReducep);
-                vtxp->replaceWith(replacementp);
+                    // Bitwise reduce the results
+                    Bitwise* const replacementp = new Bitwise{m_dfg, flp, m_bitDType};
+                    replacementp->lhsp(lRedp);
+                    replacementp->rhsp(rRedp);
+                    vtxp->replaceWith(replacementp);
 
-                // Optimize the new reductions
-                optimizeReduction(lReducep);
-                optimizeReduction(rReducep);
-                return;
+                    // Optimize the new reductions
+                    optimizeReduction(lRedp);
+                    optimizeReduction(rRedp);
+                    return;
+                }
             }
         }
 
@@ -433,25 +436,28 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
-        // Not of Eq
-        if (DfgEq* const eqp = vtxp->srcp()->cast<DfgEq>()) {
-            APPLYING(REPLACE_NOT_EQ) {
-                DfgNeq* const replacementp = new DfgNeq{m_dfg, eqp->fileline(), vtxp->dtypep()};
-                replacementp->lhsp(eqp->lhsp());
-                replacementp->rhsp(eqp->rhsp());
-                vtxp->replaceWith(replacementp);
-                return;
+        if (!vtxp->srcp()->hasMultipleSinks()) {
+            // Not of Eq
+            if (DfgEq* const eqp = vtxp->srcp()->cast<DfgEq>()) {
+                APPLYING(REPLACE_NOT_EQ) {
+                    DfgNeq* const replacementp
+                        = new DfgNeq{m_dfg, eqp->fileline(), vtxp->dtypep()};
+                    replacementp->lhsp(eqp->lhsp());
+                    replacementp->rhsp(eqp->rhsp());
+                    vtxp->replaceWith(replacementp);
+                    return;
+                }
             }
-        }
 
-        // Not of Neq
-        if (DfgNeq* const neqp = vtxp->srcp()->cast<DfgNeq>()) {
-            APPLYING(REPLACE_NOT_NEQ) {
-                DfgEq* const replacementp = new DfgEq{m_dfg, neqp->fileline(), vtxp->dtypep()};
-                replacementp->lhsp(neqp->lhsp());
-                replacementp->rhsp(neqp->rhsp());
-                vtxp->replaceWith(replacementp);
-                return;
+            // Not of Neq
+            if (DfgNeq* const neqp = vtxp->srcp()->cast<DfgNeq>()) {
+                APPLYING(REPLACE_NOT_NEQ) {
+                    DfgEq* const replacementp = new DfgEq{m_dfg, neqp->fileline(), vtxp->dtypep()};
+                    replacementp->lhsp(neqp->lhsp());
+                    replacementp->rhsp(neqp->rhsp());
+                    vtxp->replaceWith(replacementp);
+                    return;
+                }
             }
         }
 
@@ -478,30 +484,32 @@ class V3DfgPeephole final : public DfgVisitor {
         FileLine* const flp = vtxp->fileline();
 
         // Bubble pushing
-        if (DfgNot* const lhsNotp = lhsp->cast<DfgNot>()) {
-            if (DfgNot* const rhsNotp = rhsp->cast<DfgNot>()) {
-                APPLYING(REPLACE_AND_OF_NOT_AND_NOT) {
-                    DfgOr* const orp = new DfgOr{m_dfg, flp, vtxp->dtypep()};
-                    orp->lhsp(lhsNotp->srcp());
-                    orp->rhsp(rhsNotp->srcp());
-                    DfgNot* const notp = new DfgNot{m_dfg, flp, vtxp->dtypep()};
-                    notp->srcp(orp);
-                    vtxp->replaceWith(notp);
-                    return;
+        if (!vtxp->hasMultipleSinks() && !lhsp->hasMultipleSinks() && !rhsp->hasMultipleSinks()) {
+            if (DfgNot* const lhsNotp = lhsp->cast<DfgNot>()) {
+                if (DfgNot* const rhsNotp = rhsp->cast<DfgNot>()) {
+                    APPLYING(REPLACE_AND_OF_NOT_AND_NOT) {
+                        DfgOr* const orp = new DfgOr{m_dfg, flp, vtxp->dtypep()};
+                        orp->lhsp(lhsNotp->srcp());
+                        orp->rhsp(rhsNotp->srcp());
+                        DfgNot* const notp = new DfgNot{m_dfg, flp, vtxp->dtypep()};
+                        notp->srcp(orp);
+                        vtxp->replaceWith(notp);
+                        return;
+                    }
                 }
-            }
-            if (DfgNeq* const rhsNeqp = rhsp->cast<DfgNeq>()) {
-                APPLYING(REPLACE_AND_OF_NOT_AND_NEQ) {
-                    DfgOr* const orp = new DfgOr{m_dfg, flp, vtxp->dtypep()};
-                    orp->lhsp(lhsNotp->srcp());
-                    DfgEq* const newRhsp = new DfgEq{m_dfg, rhsp->fileline(), rhsp->dtypep()};
-                    newRhsp->lhsp(rhsNeqp->lhsp());
-                    newRhsp->rhsp(rhsNeqp->rhsp());
-                    orp->rhsp(newRhsp);
-                    DfgNot* const notp = new DfgNot{m_dfg, flp, vtxp->dtypep()};
-                    notp->srcp(orp);
-                    vtxp->replaceWith(notp);
-                    return;
+                if (DfgNeq* const rhsNeqp = rhsp->cast<DfgNeq>()) {
+                    APPLYING(REPLACE_AND_OF_NOT_AND_NEQ) {
+                        DfgOr* const orp = new DfgOr{m_dfg, flp, vtxp->dtypep()};
+                        orp->lhsp(lhsNotp->srcp());
+                        DfgEq* const newRhsp = new DfgEq{m_dfg, rhsp->fileline(), rhsp->dtypep()};
+                        newRhsp->lhsp(rhsNeqp->lhsp());
+                        newRhsp->rhsp(rhsNeqp->rhsp());
+                        orp->rhsp(newRhsp);
+                        DfgNot* const notp = new DfgNot{m_dfg, flp, vtxp->dtypep()};
+                        notp->srcp(orp);
+                        vtxp->replaceWith(notp);
+                        return;
+                    }
                 }
             }
         }
@@ -561,30 +569,32 @@ class V3DfgPeephole final : public DfgVisitor {
         FileLine* const flp = vtxp->fileline();
 
         // Bubble pushing
-        if (DfgNot* const lhsNotp = lhsp->cast<DfgNot>()) {
-            if (DfgNot* const rhsNotp = rhsp->cast<DfgNot>()) {
-                APPLYING(REPLACE_OR_OF_NOT_AND_NOT) {
-                    DfgAnd* const andp = new DfgAnd{m_dfg, flp, vtxp->dtypep()};
-                    andp->lhsp(lhsNotp->srcp());
-                    andp->rhsp(rhsNotp->srcp());
-                    DfgNot* const notp = new DfgNot{m_dfg, flp, vtxp->dtypep()};
-                    notp->srcp(andp);
-                    vtxp->replaceWith(notp);
-                    return;
+        if (!vtxp->hasMultipleSinks() && !lhsp->hasMultipleSinks() && !rhsp->hasMultipleSinks()) {
+            if (DfgNot* const lhsNotp = lhsp->cast<DfgNot>()) {
+                if (DfgNot* const rhsNotp = rhsp->cast<DfgNot>()) {
+                    APPLYING(REPLACE_OR_OF_NOT_AND_NOT) {
+                        DfgAnd* const andp = new DfgAnd{m_dfg, flp, vtxp->dtypep()};
+                        andp->lhsp(lhsNotp->srcp());
+                        andp->rhsp(rhsNotp->srcp());
+                        DfgNot* const notp = new DfgNot{m_dfg, flp, vtxp->dtypep()};
+                        notp->srcp(andp);
+                        vtxp->replaceWith(notp);
+                        return;
+                    }
                 }
-            }
-            if (DfgNeq* const rhsNeqp = rhsp->cast<DfgNeq>()) {
-                APPLYING(REPLACE_OR_OF_NOT_AND_NEQ) {
-                    DfgAnd* const andp = new DfgAnd{m_dfg, flp, vtxp->dtypep()};
-                    andp->lhsp(lhsNotp->srcp());
-                    DfgEq* const newRhsp = new DfgEq{m_dfg, rhsp->fileline(), rhsp->dtypep()};
-                    newRhsp->lhsp(rhsNeqp->lhsp());
-                    newRhsp->rhsp(rhsNeqp->rhsp());
-                    andp->rhsp(newRhsp);
-                    DfgNot* const notp = new DfgNot{m_dfg, flp, vtxp->dtypep()};
-                    notp->srcp(andp);
-                    vtxp->replaceWith(notp);
-                    return;
+                if (DfgNeq* const rhsNeqp = rhsp->cast<DfgNeq>()) {
+                    APPLYING(REPLACE_OR_OF_NOT_AND_NEQ) {
+                        DfgAnd* const andp = new DfgAnd{m_dfg, flp, vtxp->dtypep()};
+                        andp->lhsp(lhsNotp->srcp());
+                        DfgEq* const newRhsp = new DfgEq{m_dfg, rhsp->fileline(), rhsp->dtypep()};
+                        newRhsp->lhsp(rhsNeqp->lhsp());
+                        newRhsp->rhsp(rhsNeqp->rhsp());
+                        andp->rhsp(newRhsp);
+                        DfgNot* const notp = new DfgNot{m_dfg, flp, vtxp->dtypep()};
+                        notp->srcp(andp);
+                        vtxp->replaceWith(notp);
+                        return;
+                    }
                 }
             }
         }
@@ -802,10 +812,11 @@ class V3DfgPeephole final : public DfgVisitor {
                     vtxp->lsbp(makeI32(flp, lsb - rhsp->width()));
                 }
             } else if (lsb == 0 || msb == concatp->width() - 1  //
-                       || lhsp->is<DfgConst>() || rhsp->is<DfgConst>()) {
+                       || lhsp->is<DfgConst>() || rhsp->is<DfgConst>()  //
+                       || !concatp->hasMultipleSinks()) {
                 // If the select straddles both sides, but at least one of the sides is wholly
-                // selected, or at least one of the sides is a Const, then push the Sel past
-                // the Concat
+                // selected, or at least one of the sides is a Const, or this concat has no other
+                // use, then push the Sel past the Concat
                 APPLYING(PUSH_SEL_THROUGH_CONCAT) {
                     const uint32_t rSelWidth = rhsp->width() - lsb;
                     const uint32_t lSelWidth = width - rSelWidth;
@@ -1071,7 +1082,7 @@ class V3DfgPeephole final : public DfgVisitor {
         {
             DfgNot* const lNot = lhsp->cast<DfgNot>();
             DfgNot* const rNot = rhsp->cast<DfgNot>();
-            if (lNot && rNot) {
+            if (lNot && rNot && !lNot->hasMultipleSinks() && !rNot->hasMultipleSinks()) {
                 APPLYING(PUSH_CONCAT_THROUGH_NOTS) {
                     vtxp->lhsp(lNot->srcp());
                     vtxp->rhsp(rNot->srcp());
@@ -1177,38 +1188,45 @@ class V3DfgPeephole final : public DfgVisitor {
         }
 
         if (DfgNot* const condNotp = condp->cast<DfgNot>()) {
-            APPLYING(SWAP_COND_WITH_NOT_CONDITION) {
-                vtxp->condp(condNotp->srcp());
-                vtxp->thenp(elsep);
-                vtxp->elsep(thenp);
-                visit(vtxp);
-                return;
+            if (!condp->hasMultipleSinks() || condNotp->hasMultipleSinks()) {
+                APPLYING(SWAP_COND_WITH_NOT_CONDITION) {
+                    vtxp->condp(condNotp->srcp());
+                    vtxp->thenp(elsep);
+                    vtxp->elsep(thenp);
+                    visit(vtxp);
+                    return;
+                }
             }
         }
 
         if (DfgNeq* const condNeqp = condp->cast<DfgNeq>()) {
-            APPLYING(SWAP_COND_WITH_NEQ_CONDITION) {
-                DfgEq* const newCondp = new DfgEq{m_dfg, condp->fileline(), condp->dtypep()};
-                newCondp->lhsp(condNeqp->lhsp());
-                newCondp->rhsp(condNeqp->rhsp());
-                vtxp->condp(newCondp);
-                vtxp->thenp(elsep);
-                vtxp->elsep(thenp);
-                visit(vtxp);
-                return;
+            if (!condp->hasMultipleSinks()) {
+                APPLYING(SWAP_COND_WITH_NEQ_CONDITION) {
+                    DfgEq* const newCondp = new DfgEq{m_dfg, condp->fileline(), condp->dtypep()};
+                    newCondp->lhsp(condNeqp->lhsp());
+                    newCondp->rhsp(condNeqp->rhsp());
+                    vtxp->condp(newCondp);
+                    vtxp->thenp(elsep);
+                    vtxp->elsep(thenp);
+                    visit(vtxp);
+                    return;
+                }
             }
         }
 
         if (DfgNot* const thenNotp = thenp->cast<DfgNot>()) {
             if (DfgNot* const elseNotp = elsep->cast<DfgNot>()) {
-                APPLYING(PULL_NOTS_THROUGH_COND) {
-                    DfgNot* const replacementp
-                        = new DfgNot{m_dfg, thenp->fileline(), vtxp->dtypep()};
-                    vtxp->thenp(thenNotp->srcp());
-                    vtxp->elsep(elseNotp->srcp());
-                    vtxp->replaceWith(replacementp);
-                    replacementp->srcp(vtxp);
-                    return;
+                if ((!thenp->hasMultipleSinks() || thenNotp->hasMultipleSinks())
+                    && (!elsep->hasMultipleSinks() || elsep->hasMultipleSinks())) {
+                    APPLYING(PULL_NOTS_THROUGH_COND) {
+                        DfgNot* const replacementp
+                            = new DfgNot{m_dfg, thenp->fileline(), vtxp->dtypep()};
+                        vtxp->thenp(thenNotp->srcp());
+                        vtxp->elsep(elseNotp->srcp());
+                        vtxp->replaceWith(replacementp);
+                        replacementp->srcp(vtxp);
+                        return;
+                    }
                 }
             }
         }
