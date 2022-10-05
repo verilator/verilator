@@ -415,12 +415,12 @@ class V3DfgPeephole final : public DfgVisitor {
         }
 
         if (DfgConcat* const concatp = srcp->cast<DfgConcat>()) {
-            if (!concatp->hasMultipleSinks()) {
+            if (concatp->lhsp()->is<DfgConst>() || concatp->rhsp()->is<DfgConst>()) {
                 APPLYING(PUSH_REDUCTION_THROUGH_CONCAT) {
                     // Reduce the parts of the concatenation
-                    Reduction* const lRedp = new Reduction{m_dfg, srcp->fileline(), m_bitDType};
+                    Reduction* const lRedp = new Reduction{m_dfg, concatp->fileline(), m_bitDType};
                     lRedp->srcp(concatp->lhsp());
-                    Reduction* const rRedp = new Reduction{m_dfg, srcp->fileline(), m_bitDType};
+                    Reduction* const rRedp = new Reduction{m_dfg, concatp->fileline(), m_bitDType};
                     rRedp->srcp(concatp->rhsp());
 
                     // Bitwise reduce the results
@@ -429,9 +429,10 @@ class V3DfgPeephole final : public DfgVisitor {
                     replacementp->rhsp(rRedp);
                     vtxp->replaceWith(replacementp);
 
-                    // Optimize the new reductions
+                    // Optimize the new terms
                     optimizeReduction(lRedp);
                     optimizeReduction(rRedp);
+                    iterate(replacementp);
                     return;
                 }
             }

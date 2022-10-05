@@ -149,12 +149,12 @@ module t (
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_AND, (&(rand_a + 64'd105)) & (&(rand_b + 64'd108)));
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_OR,  (|(rand_a + 64'd106)) | (|(rand_b + 64'd109)));
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_XOR, (^(rand_a + 64'd107)) ^ (^(rand_b + 64'd110)));
-   `signal(PUSH_REDUCTION_THROUGH_CONCAT_AND, &{(rand_a + 64'd102), rand_b});
-   `signal(PUSH_REDUCTION_THROUGH_CONCAT_OR,  |{(rand_a + 64'd103), rand_b});
-   `signal(PUSH_REDUCTION_THROUGH_CONCAT_XOR, ^{(rand_a + 64'd104), rand_b});
-   `signal(REMOVE_WIDTH_ONE_REDUCTION_AND, &{randbit_a ^ rand_a[0], rand_b});
-   `signal(REMOVE_WIDTH_ONE_REDUCTION_OR,  |{randbit_a ^ rand_a[1], rand_b});
-   `signal(REMOVE_WIDTH_ONE_REDUCTION_XOR, ^{randbit_a ^ rand_a[2], rand_b});
+   `signal(PUSH_REDUCTION_THROUGH_CONCAT_AND, &{1'd1, rand_b});
+   `signal(PUSH_REDUCTION_THROUGH_CONCAT_OR,  |{1'd1, rand_b});
+   `signal(PUSH_REDUCTION_THROUGH_CONCAT_XOR, ^{1'd1, rand_b});
+   `signal(REMOVE_WIDTH_ONE_REDUCTION_AND, &rand_a[0]);
+   `signal(REMOVE_WIDTH_ONE_REDUCTION_OR,  |rand_a[0]);
+   `signal(REMOVE_WIDTH_ONE_REDUCTION_XOR, ^rand_a[0]);
    `signal(REMOVE_XOR_WITH_ZERO, 64'd0 ^ rand_a);
    `signal(REMOVE_XOR_WITH_ONES, -64'd1 ^ rand_a);
    `signal(REPLACE_COND_DEC, randbit_a ? rand_b - 64'b1 : rand_b);
