@@ -4,6 +4,8 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+`define STRINGIFY(x) `"x`"
+
 module clkgen(output bit clk);
    initial begin
       #(8.0:5:3) clk = 1;  // Middle is default
@@ -38,4 +40,11 @@ module t(/*AUTOARG*/);
          $finish;
       end
    end
+
+`ifdef TEST_TRACING
+   initial begin
+     $dumpfile({`STRINGIFY(`TEST_OBJ_DIR),"/simx.vcd"});
+     $dumpvars;
+   end
+`endif
 endmodule
