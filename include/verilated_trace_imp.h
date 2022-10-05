@@ -189,8 +189,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
             case VerilatedTraceOffloadCommand::CHG_STRING:
                 VL_TRACE_OFFLOAD_DEBUG("Command CHG_STRING" << top);
                 traceBufp->chgStringRaw(oldp, *reinterpret_cast<const char* const*>(readp), top);
-                readp += 2;
                 delete[] * reinterpret_cast<const char* const*>(readp);
+                readp += 2;
                 continue;
 
                 //===
@@ -353,7 +353,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     "Reopening trace file with different number of signals");
     }
-    if (m_sigs_stringCodes != oldStringCodes) {
+    if (!oldStringCodes.empty() && m_sigs_stringCodes != oldStringCodes) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     "Reopening trace file with different signals!");
     }
@@ -445,6 +445,7 @@ bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const char* nam
     int codesNeeded = VL_WORDS_I(bits);
     if (tri) codesNeeded *= 2;
     m_nextCode = std::max(m_nextCode, code + codesNeeded);
+    ++m_numSignals;
     if (str) m_sigs_stringCodes.push_back(code);
     m_maxBits = std::max(m_maxBits, bits);
     return enabled;

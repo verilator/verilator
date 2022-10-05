@@ -1642,6 +1642,7 @@ public:
         return v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH ? widthMin() : width();
     }
     int widthWords() const { return VL_WORDS_I(width()); }
+    int traceWidthWords() const { return isString() ? (sizeof(std::string) / 4) : VL_WORDS_I(width()); }
     bool isQuad() const { return (width() > VL_IDATASIZE && width() <= VL_QUADSIZE); }
     bool isWide() const { return (width() > VL_QUADSIZE); }
     inline bool isDouble() const;

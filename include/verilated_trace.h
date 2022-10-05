@@ -485,7 +485,7 @@ public:
     }
     VL_ATTR_ALWINLINE void chgStringRaw(uint32_t* oldp, const char* newval, int bytes) {
         // cppcheck-suppress invalidPointerCast
-        std::string* oldvalp = *reinterpret_cast<std::string*>(oldp);
+        std::string* oldvalp = reinterpret_cast<std::string*>(oldp);
         if (VL_UNLIKELY(oldvalp->compare(0, oldvalp->size(), newval, bytes) == 0)) {
             fullStringRaw(oldp, newval, bytes);
         }

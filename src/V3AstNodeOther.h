@@ -3517,8 +3517,7 @@ public:
         , m_bitRange{bitRange}
         , m_arrayRange{arrayRange}
         , m_codeInc(((arrayRange.ranged() ? arrayRange.elements() : 1)
-                     * (valuep->isString() ? (sizeof(std::string) / 4)
-                                           : valuep->dtypep()->widthWords())
+                     * valuep->dtypep()->traceWidthWords()
                      * (VL_EDATASIZE / 32)))  // A code is always 32-bits
         , m_varType{varp->varType()}
         , m_declKwd{varp->declKwd()}

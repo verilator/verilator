@@ -637,7 +637,7 @@ class EmitCTrace final : EmitCFunc {
         }
 
         puts("(c+" + cvtToStr(nodep->code()));
-        if (nodep->arrayRange().ranged()) puts("+i*" + cvtToStr(nodep->widthWords()));
+        if (nodep->arrayRange().ranged()) puts("+i*" + cvtToStr(nodep->traceWidthWords()));
         puts(",");
         putsQuoted(VIdProtect::protectWordsIf(nodep->showname(), nodep->protect()));
         // Direction
@@ -783,7 +783,7 @@ class EmitCTrace final : EmitCFunc {
             emitWidth = false;
         }
 
-        const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
+        const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->traceWidthWords());
         const uint32_t code = nodep->declp()->code() + offset;
         puts(v3Global.opt.useTraceOffload() && !nodep->full() ? "(base+" : "(oldp+");
         puts(cvtToStr(code - nodep->baseCode()));
