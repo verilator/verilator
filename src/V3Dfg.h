@@ -226,7 +226,7 @@ class DfgVertex VL_NOT_FINAL {
 protected:
     DfgEdge* m_sinksp = nullptr;  // List of sinks of this vertex
     FileLine* const m_filelinep;  // Source location
-    AstNodeDType* m_dtypep = nullptr;  // Data type of the result of this vertex
+    AstNodeDType* m_dtypep;  // Data type of the result of this vertex - mutable for efficiency
     const VDfgType m_type;
 
     // CONSTRUCTOR
@@ -297,6 +297,7 @@ public:
     FileLine* fileline() const { return m_filelinep; }
     // The data type of the result of the nodes
     AstNodeDType* dtypep() const { return m_dtypep; }
+    void dtypep(AstNodeDType* nodep) { m_dtypep = nodep; }
     // The type of this vertex
     VDfgType type() const { return m_type; }
 
