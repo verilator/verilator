@@ -439,22 +439,20 @@ class EmitCModel final : public EmitCFunc {
             puts("}\n");
         }
 
-        if (v3Global.usesTiming()) {
-            putSectionDelimiter("Events and timing");
-            if (auto* const delaySchedp = v3Global.rootp()->delaySchedulerp()) {
-                puts("bool " + topClassName() + "::eventsPending() { return !vlSymsp->TOP.");
-                puts(delaySchedp->nameProtect());
-                puts(".empty(); }\n\n");
-                puts("uint64_t " + topClassName() + "::nextTimeSlot() { return vlSymsp->TOP.");
-                puts(delaySchedp->nameProtect());
-                puts(".nextTimeSlot(); }\n");
-            } else {
-                puts("bool " + topClassName() + "::eventsPending() { return false; }\n\n");
-                puts("uint64_t " + topClassName() + "::nextTimeSlot() {\n");
-                puts("VL_FATAL_MT(__FILE__, __LINE__, \"\", \"%Error: No delays in the "
-                     "design\");\n");
-                puts("return 0;\n}\n");
-            }
+        putSectionDelimiter("Events and timing");
+        if (auto* const delaySchedp = v3Global.rootp()->delaySchedulerp()) {
+            puts("bool " + topClassName() + "::eventsPending() { return !vlSymsp->TOP.");
+            puts(delaySchedp->nameProtect());
+            puts(".empty(); }\n\n");
+            puts("uint64_t " + topClassName() + "::nextTimeSlot() { return vlSymsp->TOP.");
+            puts(delaySchedp->nameProtect());
+            puts(".nextTimeSlot(); }\n");
+        } else {
+            puts("bool " + topClassName() + "::eventsPending() { return false; }\n\n");
+            puts("uint64_t " + topClassName() + "::nextTimeSlot() {\n");
+            puts("VL_FATAL_MT(__FILE__, __LINE__, \"\", \"%Error: No delays in the "
+                 "design\");\n");
+            puts("return 0;\n}\n");
         }
 
         putSectionDelimiter("Utilities");
