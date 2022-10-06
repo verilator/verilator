@@ -15,6 +15,8 @@
 -V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__5
 -V{t#,#}             Awaiting join of fork at: t/t_timing_fork_join.v:13
 -V{t#,#}+    Vt_timing_debug2___024root___eval_initial__TOP__1
+-V{t#,#}+    Vt_timing_debug2___024root___eval_initial__TOP__2
+-V{t#,#}             Awaiting join of fork at: t/t_timing_fork_join.v:83
 -V{t#,#}+    Vt_timing_debug2___024root___eval_settle
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
