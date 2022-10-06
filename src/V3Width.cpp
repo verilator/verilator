@@ -4894,8 +4894,14 @@ private:
             m_funcp = VN_AS(nodep, Func);
             UASSERT_OBJ(m_funcp, nodep, "FTask with function variable, but isn't a function");
             nodep->dtypeFrom(nodep->fvarp());  // Which will get it from fvarp()->dtypep()
+        } else if (VN_IS(nodep, Property)) {
+            nodep->dtypeSetBit();
         }
-        userIterateChildren(nodep, nullptr);
+        WidthVP* vup = nullptr;
+        if (VN_IS(nodep, Property))
+            vup = WidthVP(SELF, BOTH).p();
+        userIterateChildren(nodep, vup);
+
         nodep->didWidth(true);
         nodep->doingWidth(false);
         m_funcp = nullptr;
