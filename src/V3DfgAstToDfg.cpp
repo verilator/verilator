@@ -187,15 +187,12 @@ class AstToDfgVisitor final : public VNVisitor {
         if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
             AstNode* const lhsp = concatp->lhsp();
             AstNode* const rhsp = concatp->rhsp();
-            const uint32_t lWidth = lhsp->width();
-            const uint32_t rWidth = rhsp->width();
 
             {
                 FileLine* const lFlp = lhsp->fileline();
                 DfgSel* const lVtxp = new DfgSel{*m_dfgp, lFlp, DfgVertex::dtypeFor(lhsp)};
                 lVtxp->fromp(vtxp);
-                lVtxp->lsbp(new DfgConst{*m_dfgp, new AstConst{lFlp, rWidth}});
-                lVtxp->widthp(new DfgConst{*m_dfgp, new AstConst{lFlp, lWidth}});
+                lVtxp->lsb(rhsp->width());
                 if (!convertAssignment(flp, lhsp, lVtxp)) return false;
             }
 
@@ -203,8 +200,7 @@ class AstToDfgVisitor final : public VNVisitor {
                 FileLine* const rFlp = rhsp->fileline();
                 DfgSel* const rVtxp = new DfgSel{*m_dfgp, rFlp, DfgVertex::dtypeFor(rhsp)};
                 rVtxp->fromp(vtxp);
-                rVtxp->lsbp(new DfgConst{*m_dfgp, new AstConst{rFlp, 0u}});
-                rVtxp->widthp(new DfgConst{*m_dfgp, new AstConst{rFlp, rWidth}});
+                rVtxp->lsb(0);
                 return convertAssignment(flp, rhsp, rVtxp);
             }
         }
@@ -463,6 +459,36 @@ class AstToDfgVisitor final : public VNVisitor {
         UASSERT_OBJ(!nodep->user1p(), nodep, "Already has Dfg vertex");
         if (unhandled(nodep)) return;
         DfgVertex* const vtxp = new DfgConst{*m_dfgp, nodep->cloneTree(false)};
+        m_uncommittedVertices.push_back(vtxp);
+        nodep->user1p(vtxp);
+    }
+
+    void visit(AstSel* nodep) override {
+        UASSERT_OBJ(!nodep->user1p(), nodep, "Already has Dfg vertex");
+        if (unhandled(nodep)) return;
+        if (!VN_IS(nodep->widthp(), Const)) {  // This should never be taken, but paranoia
+            m_foundUnhandled = true;
+            ++m_ctx.m_nonRepNode;
+            return;
+        }
+        iterate(nodep->fromp());
+        if (m_foundUnhandled) return;
+
+        FileLine* const flp = nodep->fileline();
+        DfgVertex* vtxp = nullptr;
+        if (AstConst* const constp = VN_CAST(nodep->lsbp(), Const)) {
+            DfgSel* const selp = new DfgSel{*m_dfgp, flp, DfgVertex::dtypeFor(nodep)};
+            selp->fromp(nodep->fromp()->user1u().to<DfgVertex*>());
+            selp->lsb(constp->toUInt());
+            vtxp = selp;
+        } else {
+            iterate(nodep->lsbp());
+            if (m_foundUnhandled) return;
+            DfgMux* const muxp = new DfgMux{*m_dfgp, flp, DfgVertex::dtypeFor(nodep)};
+            muxp->fromp(nodep->fromp()->user1u().to<DfgVertex*>());
+            muxp->lsbp(nodep->lsbp()->user1u().to<DfgVertex*>());
+            vtxp = muxp;
+        }
         m_uncommittedVertices.push_back(vtxp);
         nodep->user1p(vtxp);
     }

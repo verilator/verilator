@@ -682,6 +682,170 @@ class V3DfgPeephole final : public DfgVisitor {
 
     void visit(DfgRedXor* vtxp) override { optimizeReduction(vtxp); }
 
+    void visit(DfgSel* vtxp) override {
+        DfgVertex* const fromp = vtxp->fromp();
+
+        FileLine* const flp = vtxp->fileline();
+
+        const uint32_t lsb = vtxp->lsb();
+        const uint32_t width = vtxp->width();
+        const uint32_t msb = lsb + width - 1;
+
+        if (DfgConst* const constp = fromp->cast<DfgConst>()) {
+            APPLYING(FOLD_SEL) {
+                DfgConst* const replacementp = makeZero(flp, width);
+                replacementp->num().opSel(constp->num(), msb, lsb);
+                vtxp->replaceWith(replacementp);
+                return;
+            }
+        }
+
+        // Full width select, replace with the source.
+        if (fromp->width() == width) {
+            UASSERT_OBJ(lsb == 0, fromp, "OOPS");
+            APPLYING(REMOVE_FULL_WIDTH_SEL) {
+                vtxp->replaceWith(fromp);
+                return;
+            }
+        }
+
+        // Sel from Concat
+        if (DfgConcat* const concatp = fromp->cast<DfgConcat>()) {
+            DfgVertex* const lhsp = concatp->lhsp();
+            DfgVertex* const rhsp = concatp->rhsp();
+
+            if (msb < rhsp->width()) {
+                // If the select is entirely from rhs, then replace with sel from rhs
+                APPLYING(REMOVE_SEL_FROM_RHS_OF_CONCAT) {  //
+                    vtxp->fromp(rhsp);
+                }
+            } else if (lsb >= rhsp->width()) {
+                // If the select is entirely from the lhs, then replace with sel from lhs
+                APPLYING(REMOVE_SEL_FROM_LHS_OF_CONCAT) {
+                    vtxp->fromp(lhsp);
+                    vtxp->lsb(lsb - rhsp->width());
+                }
+            } else if (lsb == 0 || msb == concatp->width() - 1  //
+                       || lhsp->is<DfgConst>() || rhsp->is<DfgConst>()  //
+                       || !concatp->hasMultipleSinks()) {
+                // If the select straddles both sides, but at least one of the sides is wholly
+                // selected, or at least one of the sides is a Const, or this concat has no other
+                // use, then push the Sel past the Concat
+                APPLYING(PUSH_SEL_THROUGH_CONCAT) {
+                    const uint32_t rSelWidth = rhsp->width() - lsb;
+                    const uint32_t lSelWidth = width - rSelWidth;
+
+                    // The new Lhs vertex
+                    DfgSel* const newLhsp = new DfgSel{m_dfg, flp, dtypeForWidth(lSelWidth)};
+                    newLhsp->fromp(lhsp);
+                    newLhsp->lsb(0);
+
+                    // The new Rhs vertex
+                    DfgSel* const newRhsp = new DfgSel{m_dfg, flp, dtypeForWidth(rSelWidth)};
+                    newRhsp->fromp(rhsp);
+                    newRhsp->lsb(lsb);
+
+                    // The replacement Concat vertex
+                    DfgConcat* const newConcat
+                        = new DfgConcat{m_dfg, concatp->fileline(), vtxp->dtypep()};
+                    newConcat->lhsp(newLhsp);
+                    newConcat->rhsp(newRhsp);
+
+                    // Replace this vertex
+                    vtxp->replaceWith(newConcat);
+                    return;
+                }
+            }
+        }
+
+        if (DfgReplicate* const repp = fromp->cast<DfgReplicate>()) {
+            // If the Sel is wholly into the source of the Replicate, push the Sel through the
+            // Replicate and apply it directly to the source of the Replicate.
+            const uint32_t srcWidth = repp->srcp()->width();
+            if (width <= srcWidth) {
+                const uint32_t newLsb = lsb % srcWidth;
+                if (newLsb + width <= srcWidth) {
+                    APPLYING(PUSH_SEL_THROUGH_REPLICATE) {
+                        vtxp->fromp(repp->srcp());
+                        vtxp->lsb(newLsb);
+                    }
+                }
+            }
+        }
+
+        // Sel from Not
+        if (DfgNot* const notp = fromp->cast<DfgNot>()) {
+            // Replace "Sel from Not" with "Not of Sel"
+            if (!notp->hasMultipleSinks()) {
+                UASSERT_OBJ(notp->srcp()->dtypep() == notp->dtypep(), notp, "Mismatched widths");
+                APPLYING(PUSH_SEL_THROUGH_NOT) {
+                    // Make Sel select from source of Not
+                    vtxp->fromp(notp->srcp());
+                    // Add Not after Sel
+                    DfgNot* const replacementp
+                        = new DfgNot{m_dfg, notp->fileline(), vtxp->dtypep()};
+                    vtxp->replaceWith(replacementp);
+                    replacementp->srcp(vtxp);
+                }
+            }
+        }
+
+        // Sel from Sel
+        if (DfgSel* const selp = fromp->cast<DfgSel>()) {
+            APPLYING(REPLACE_SEL_FROM_SEL) {
+                // Make this Sel select from the source of the source Sel
+                vtxp->fromp(selp->fromp());
+                // Adjust LSB
+                vtxp->lsb(lsb + selp->lsb());
+            }
+        }
+
+        // Sel from Cond
+        if (DfgCond* const condp = fromp->cast<DfgCond>()) {
+            // If at least one of the branches are a constant, push the select past the cond
+            if (condp->thenp()->is<DfgConst>() || condp->elsep()->is<DfgConst>()) {
+                APPLYING(PUSH_SEL_THROUGH_COND) {
+                    // The new 'then' vertex
+                    DfgSel* const newThenp = new DfgSel{m_dfg, flp, vtxp->dtypep()};
+                    newThenp->fromp(condp->thenp());
+                    newThenp->lsb(lsb);
+
+                    // The new 'else' vertex
+                    DfgSel* const newElsep = new DfgSel{m_dfg, flp, vtxp->dtypep()};
+                    newElsep->fromp(condp->elsep());
+                    newElsep->lsb(lsb);
+
+                    // The replacement Cond vertex
+                    DfgCond* const newCondp
+                        = new DfgCond{m_dfg, condp->fileline(), vtxp->dtypep()};
+                    newCondp->condp(condp->condp());
+                    newCondp->thenp(newThenp);
+                    newCondp->elsep(newElsep);
+
+                    // Replace this vertex
+                    vtxp->replaceWith(newCondp);
+                    return;
+                }
+            }
+        }
+
+        // Sel from ShiftL
+        if (DfgShiftL* const shiftLp = fromp->cast<DfgShiftL>()) {
+            // If selecting bottom bits of left shift, push the Sel before the shift
+            if (lsb == 0) {
+                UASSERT_OBJ(shiftLp->lhsp()->width() >= width, vtxp, "input of shift narrow");
+                APPLYING(PUSH_SEL_THROUGH_SHIFTL) {
+                    vtxp->fromp(shiftLp->lhsp());
+                    DfgShiftL* const newShiftLp
+                        = new DfgShiftL{m_dfg, shiftLp->fileline(), vtxp->dtypep()};
+                    vtxp->replaceWith(newShiftLp);
+                    newShiftLp->lhsp(vtxp);
+                    newShiftLp->rhsp(shiftLp->rhsp());
+                }
+            }
+        }
+    }
+
     //=========================================================================
     //  DfgVertexBinary - bitwise
     //=========================================================================
@@ -945,20 +1109,14 @@ class V3DfgPeephole final : public DfgVisitor {
         if (lhsp->isZero()) {
             DfgConst* const lConstp = lhsp->as<DfgConst>();
             if (DfgSel* const rSelp = rhsp->cast<DfgSel>()) {
-                if (DfgConst* const rSelLsbConstp = rSelp->lsbp()->cast<DfgConst>()) {
-                    if (vtxp->dtypep() == rSelp->fromp()->dtypep()
-                        && rSelLsbConstp->toU32() == lConstp->width()) {
-                        const uint32_t rSelWidth = rSelp->widthp()->as<DfgConst>()->toU32();
-                        UASSERT_OBJ(lConstp->width() + rSelWidth == vtxp->width(), vtxp,
-                                    "Inconsistent");
-                        APPLYING(REPLACE_CONCAT_ZERO_AND_SEL_TOP_WITH_SHIFTR) {
-                            DfgShiftR* const replacementp
-                                = new DfgShiftR{m_dfg, flp, vtxp->dtypep()};
-                            replacementp->lhsp(rSelp->fromp());
-                            replacementp->rhsp(makeI32(flp, lConstp->width()));
-                            vtxp->replaceWith(replacementp);
-                            return;
-                        }
+                if (vtxp->dtypep() == rSelp->fromp()->dtypep()
+                    && rSelp->lsb() == lConstp->width()) {
+                    APPLYING(REPLACE_CONCAT_ZERO_AND_SEL_TOP_WITH_SHIFTR) {
+                        DfgShiftR* const replacementp = new DfgShiftR{m_dfg, flp, vtxp->dtypep()};
+                        replacementp->lhsp(rSelp->fromp());
+                        replacementp->rhsp(makeI32(flp, lConstp->width()));
+                        vtxp->replaceWith(replacementp);
+                        return;
                     }
                 }
             }
@@ -967,20 +1125,13 @@ class V3DfgPeephole final : public DfgVisitor {
         if (rhsp->isZero()) {
             DfgConst* const rConstp = rhsp->as<DfgConst>();
             if (DfgSel* const lSelp = lhsp->cast<DfgSel>()) {
-                if (DfgConst* const lSelLsbConstp = lSelp->lsbp()->cast<DfgConst>()) {
-                    if (vtxp->dtypep() == lSelp->fromp()->dtypep()
-                        && lSelLsbConstp->toU32() == 0) {
-                        const uint32_t lSelWidth = lSelp->widthp()->as<DfgConst>()->toU32();
-                        UASSERT_OBJ(lSelWidth + rConstp->width() == vtxp->width(), vtxp,
-                                    "Inconsistent");
-                        APPLYING(REPLACE_CONCAT_SEL_BOTTOM_AND_ZERO_WITH_SHIFTL) {
-                            DfgShiftL* const replacementp
-                                = new DfgShiftL{m_dfg, flp, vtxp->dtypep()};
-                            replacementp->lhsp(lSelp->fromp());
-                            replacementp->rhsp(makeI32(flp, rConstp->width()));
-                            vtxp->replaceWith(replacementp);
-                            return;
-                        }
+                if (vtxp->dtypep() == lSelp->fromp()->dtypep() && lSelp->lsb() == 0) {
+                    APPLYING(REPLACE_CONCAT_SEL_BOTTOM_AND_ZERO_WITH_SHIFTL) {
+                        DfgShiftL* const replacementp = new DfgShiftL{m_dfg, flp, vtxp->dtypep()};
+                        replacementp->lhsp(lSelp->fromp());
+                        replacementp->rhsp(makeI32(flp, rConstp->width()));
+                        vtxp->replaceWith(replacementp);
+                        return;
                     }
                 }
             }
@@ -1003,22 +1154,14 @@ class V3DfgPeephole final : public DfgVisitor {
 
         {
             const auto joinSels = [this](DfgSel* lSelp, DfgSel* rSelp, FileLine* flp) -> DfgSel* {
-                DfgConst* const lLsbp = lSelp->lsbp()->cast<DfgConst>();
-                DfgConst* const lWidthp = lSelp->widthp()->cast<DfgConst>();
-                DfgConst* const rLsbp = rSelp->lsbp()->cast<DfgConst>();
-                DfgConst* const rWidthp = rSelp->widthp()->cast<DfgConst>();
-                if (lLsbp && lWidthp && rLsbp && rWidthp) {
-                    if (lSelp->fromp()->equals(*rSelp->fromp())) {
-                        if (lLsbp->toU32() == rLsbp->toU32() + rWidthp->toU32()) {
-                            // Two consecutive Sels, make a single Sel.
-                            const uint32_t width = lWidthp->toU32() + rWidthp->toU32();
-                            AstNodeDType* const dtypep = dtypeForWidth(width);
-                            DfgSel* const joinedSelp = new DfgSel{m_dfg, flp, dtypep};
-                            joinedSelp->fromp(rSelp->fromp());
-                            joinedSelp->lsbp(rSelp->lsbp());
-                            joinedSelp->widthp(makeI32(flp, width));
-                            return joinedSelp;
-                        }
+                if (lSelp->fromp()->equals(*rSelp->fromp())) {
+                    if (lSelp->lsb() == rSelp->lsb() + rSelp->width()) {
+                        // Two consecutive Sels, make a single Sel.
+                        const uint32_t width = lSelp->width() + rSelp->width();
+                        DfgSel* const joinedSelp = new DfgSel{m_dfg, flp, dtypeForWidth(width)};
+                        joinedSelp->fromp(rSelp->fromp());
+                        joinedSelp->lsb(rSelp->lsb());
+                        return joinedSelp;
                     }
                 }
                 return nullptr;
@@ -1251,187 +1394,6 @@ class V3DfgPeephole final : public DfgVisitor {
     //=========================================================================
     //  DfgVertexTernary
     //=========================================================================
-
-    void visit(DfgSel* vtxp) override {
-        DfgVertex* const fromp = vtxp->fromp();
-        DfgConst* const lsbp = vtxp->lsbp()->cast<DfgConst>();
-        DfgConst* const widthp = vtxp->widthp()->cast<DfgConst>();
-        if (!lsbp || !widthp) return;
-
-        FileLine* const flp = vtxp->fileline();
-
-        UASSERT_OBJ(lsbp->toI32() >= 0, vtxp, "Negative LSB in Sel");
-
-        const uint32_t lsb = lsbp->toU32();
-        const uint32_t width = widthp->toU32();
-        const uint32_t msb = lsb + width - 1;
-
-        UASSERT_OBJ(width == vtxp->width(), vtxp, "Incorrect Sel width");
-
-        if (DfgConst* const constp = fromp->cast<DfgConst>()) {
-            APPLYING(FOLD_SEL) {
-                DfgConst* const replacementp = makeZero(flp, width);
-                replacementp->num().opSel(constp->num(), msb, lsb);
-                vtxp->replaceWith(replacementp);
-                return;
-            }
-        }
-
-        // Full width select, replace with the source.
-        if (fromp->width() == width) {
-            UASSERT_OBJ(lsb == 0, fromp, "OOPS");
-            APPLYING(REMOVE_FULL_WIDTH_SEL) {
-                vtxp->replaceWith(fromp);
-                return;
-            }
-        }
-
-        // Sel from Concat
-        if (DfgConcat* const concatp = fromp->cast<DfgConcat>()) {
-            DfgVertex* const lhsp = concatp->lhsp();
-            DfgVertex* const rhsp = concatp->rhsp();
-
-            if (msb < rhsp->width()) {
-                // If the select is entirely from rhs, then replace with sel from rhs
-                APPLYING(REMOVE_SEL_FROM_RHS_OF_CONCAT) {  //
-                    vtxp->fromp(rhsp);
-                }
-            } else if (lsb >= rhsp->width()) {
-                // If the select is entirely from the lhs, then replace with sel from lhs
-                APPLYING(REMOVE_SEL_FROM_LHS_OF_CONCAT) {
-                    vtxp->fromp(lhsp);
-                    vtxp->lsbp(makeI32(flp, lsb - rhsp->width()));
-                }
-            } else if (lsb == 0 || msb == concatp->width() - 1  //
-                       || lhsp->is<DfgConst>() || rhsp->is<DfgConst>()  //
-                       || !concatp->hasMultipleSinks()) {
-                // If the select straddles both sides, but at least one of the sides is wholly
-                // selected, or at least one of the sides is a Const, or this concat has no other
-                // use, then push the Sel past the Concat
-                APPLYING(PUSH_SEL_THROUGH_CONCAT) {
-                    const uint32_t rSelWidth = rhsp->width() - lsb;
-                    const uint32_t lSelWidth = width - rSelWidth;
-
-                    // The new Lhs vertex
-                    DfgSel* const newLhsp = new DfgSel{m_dfg, flp, dtypeForWidth(lSelWidth)};
-                    newLhsp->fromp(lhsp);
-                    newLhsp->lsbp(makeI32(lsbp->fileline(), 0));
-                    newLhsp->widthp(makeI32(widthp->fileline(), lSelWidth));
-
-                    // The new Rhs vertex
-                    DfgSel* const newRhsp = new DfgSel{m_dfg, flp, dtypeForWidth(rSelWidth)};
-                    newRhsp->fromp(rhsp);
-                    newRhsp->lsbp(makeI32(lsbp->fileline(), lsb));
-                    newRhsp->widthp(makeI32(widthp->fileline(), rSelWidth));
-
-                    // The replacement Concat vertex
-                    DfgConcat* const newConcat
-                        = new DfgConcat{m_dfg, concatp->fileline(), vtxp->dtypep()};
-                    newConcat->lhsp(newLhsp);
-                    newConcat->rhsp(newRhsp);
-
-                    // Replace this vertex
-                    vtxp->replaceWith(newConcat);
-                    return;
-                }
-            }
-        }
-
-        if (DfgReplicate* const repp = fromp->cast<DfgReplicate>()) {
-            // If the Sel is wholly into the source of the Replicate, push the Sel through the
-            // Replicate and apply it directly to the source of the Replicate.
-            const uint32_t srcWidth = repp->srcp()->width();
-            if (width <= srcWidth) {
-                const uint32_t newLsb = lsb % srcWidth;
-                if (newLsb + width <= srcWidth) {
-                    APPLYING(PUSH_SEL_THROUGH_REPLICATE) {
-                        vtxp->fromp(repp->srcp());
-                        vtxp->lsbp(makeI32(flp, newLsb));
-                    }
-                }
-            }
-        }
-
-        // Sel from Not
-        if (DfgNot* const notp = fromp->cast<DfgNot>()) {
-            // Replace "Sel from Not" with "Not of Sel"
-            if (!notp->hasMultipleSinks()) {
-                UASSERT_OBJ(notp->srcp()->dtypep() == notp->dtypep(), notp, "Mismatched widths");
-                APPLYING(PUSH_SEL_THROUGH_NOT) {
-                    // Make Sel select from source of Not
-                    vtxp->fromp(notp->srcp());
-                    // Add Not after Sel
-                    DfgNot* const replacementp
-                        = new DfgNot{m_dfg, notp->fileline(), vtxp->dtypep()};
-                    vtxp->replaceWith(replacementp);
-                    replacementp->srcp(vtxp);
-                }
-            }
-        }
-
-        // Sel from Sel
-        if (DfgSel* const selp = fromp->cast<DfgSel>()) {
-            UASSERT_OBJ(widthp->toU32() <= selp->width(), vtxp, "Out of bound Sel");
-            if (DfgConst* const sourceLsbp = selp->lsbp()->cast<DfgConst>()) {
-                UASSERT_OBJ(sourceLsbp->toI32() >= 0, selp, "negative");
-                UASSERT_OBJ(selp->widthp()->as<DfgConst>()->toU32() >= widthp->toU32(), selp,
-                            "negative");
-                APPLYING(REPLACE_SEL_FROM_SEL) {
-                    // Make this Sel select from the source of the source Sel
-                    vtxp->fromp(selp->fromp());
-                    // Adjust LSB
-                    vtxp->lsbp(makeI32(flp, lsb + sourceLsbp->toU32()));
-                }
-            }
-        }
-
-        // Sel from Cond
-        if (DfgCond* const condp = fromp->cast<DfgCond>()) {
-            // If at least one of the branches are a constant, push the select past the cond
-            if (condp->thenp()->is<DfgConst>() || condp->elsep()->is<DfgConst>()) {
-                APPLYING(PUSH_SEL_THROUGH_COND) {
-                    // The new 'then' vertex
-                    DfgSel* const newThenp = new DfgSel{m_dfg, flp, vtxp->dtypep()};
-                    newThenp->fromp(condp->thenp());
-                    newThenp->lsbp(makeI32(lsbp->fileline(), lsb));
-                    newThenp->widthp(makeI32(widthp->fileline(), width));
-
-                    // The new 'else' vertex
-                    DfgSel* const newElsep = new DfgSel{m_dfg, flp, vtxp->dtypep()};
-                    newElsep->fromp(condp->elsep());
-                    newElsep->lsbp(makeI32(lsbp->fileline(), lsb));
-                    newElsep->widthp(makeI32(widthp->fileline(), width));
-
-                    // The replacement Cond vertex
-                    DfgCond* const newCondp
-                        = new DfgCond{m_dfg, condp->fileline(), vtxp->dtypep()};
-                    newCondp->condp(condp->condp());
-                    newCondp->thenp(newThenp);
-                    newCondp->elsep(newElsep);
-
-                    // Replace this vertex
-                    vtxp->replaceWith(newCondp);
-                    return;
-                }
-            }
-        }
-
-        // Sel from ShiftL
-        if (DfgShiftL* const shiftLp = fromp->cast<DfgShiftL>()) {
-            // If selecting bottom bits of left shift, push the Sel before the shift
-            if (lsb == 0) {
-                UASSERT_OBJ(shiftLp->lhsp()->width() >= width, vtxp, "input of shift narrow");
-                APPLYING(PUSH_SEL_THROUGH_SHIFTL) {
-                    vtxp->fromp(shiftLp->lhsp());
-                    DfgShiftL* const newShiftLp
-                        = new DfgShiftL{m_dfg, shiftLp->fileline(), vtxp->dtypep()};
-                    vtxp->replaceWith(newShiftLp);
-                    newShiftLp->lhsp(vtxp);
-                    newShiftLp->rhsp(shiftLp->rhsp());
-                }
-            }
-        }
-    }
 
     void visit(DfgCond* vtxp) override {
         UASSERT_OBJ(vtxp->dtypep() == vtxp->thenp()->dtypep(), vtxp, "Width mismatch");

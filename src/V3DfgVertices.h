@@ -109,6 +109,47 @@ public:
     }  // LCOV_EXCL_STOP
 };
 
+// === DfgVertexBinary ===
+class DfgMux final : public DfgVertexBinary {
+    // AstSel is ternary, but the 'widthp' is always constant and is hence redundant, and
+    // 'lsbp' is very often constant. As AstSel is fairly common, we special case as a DfgSel for
+    // the constant 'lsbp', and as 'DfgMux` for the non-constant 'lsbp'.
+public:
+    DfgMux(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
+        : DfgVertexBinary{dfg, dfgType(), flp, dtypep} {}
+    ASTGEN_MEMBERS_DfgMux;
+
+    DfgVertex* fromp() const { return source<0>(); }
+    void fromp(DfgVertex* vtxp) { relinkSource<0>(vtxp); }
+    DfgVertex* lsbp() const { return source<1>(); }
+    void lsbp(DfgVertex* vtxp) { relinkSource<1>(vtxp); }
+
+    const string srcName(size_t idx) const override { return idx ? "lsbp" : "fromp"; }
+};
+
+// === DfgVertexUnary ===
+class DfgSel final : public DfgVertexUnary {
+    // AstSel is ternary, but the 'widthp' is always constant and is hence redundant, and
+    // 'lsbp' is very often constant. As AstSel is fairly common, we special case as a DfgSel for
+    // the constant 'lsbp', and as 'DfgMux` for the non-constant 'lsbp'.
+    uint32_t m_lsb = 0;  // The LSB index
+
+    bool selfEquals(const DfgVertex& that) const override;
+    V3Hash selfHash() const override;
+
+public:
+    DfgSel(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
+        : DfgVertexUnary{dfg, dfgType(), flp, dtypep} {}
+    ASTGEN_MEMBERS_DfgSel;
+
+    DfgVertex* fromp() const { return source<0>(); }
+    void fromp(DfgVertex* vtxp) { relinkSource<0>(vtxp); }
+    uint32_t lsb() const { return m_lsb; }
+    void lsb(uint32_t value) { m_lsb = value; }
+
+    const string srcName(size_t) const override { return "fromp"; }
+};
+
 // === DfgVertexVar ===
 class DfgVarArray final : public DfgVertexVar {
     friend class DfgVertex;

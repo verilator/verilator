@@ -539,12 +539,6 @@ void DfgGraph::runToFixedPoint(std::function<bool(DfgVertex&)> f) {
 
 static const string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) + '"'; }
 
-static bool isSimpleSel(const DfgSel* vtxp) {
-    const DfgConst* const lp = vtxp->lsbp()->cast<DfgConst>();
-    const DfgConst* const wp = vtxp->widthp()->cast<DfgConst>();
-    return lp && wp && !lp->hasMultipleSinks() && !wp->hasMultipleSinks();
-}
-
 // Dump one DfgVertex in Graphviz format
 static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
 
@@ -598,11 +592,6 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     }
 
     if (const DfgConst* const constVtxp = vtx.cast<DfgConst>()) {
-        const bool feedsSimpleSel = !constVtxp->findSink<DfgVertex>([](const DfgVertex& v) {  //
-            return !v.is<DfgSel>() || !isSimpleSel(v.as<DfgSel>());
-        });
-        if (feedsSimpleSel) return;  // Will draw it in the sel node as it is very common
-
         const V3Number& num = constVtxp->constp()->num();
 
         os << toDotId(vtx);
@@ -620,20 +609,18 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     }
 
     if (const DfgSel* const selVtxp = vtx.cast<DfgSel>()) {
-        if (isSimpleSel(selVtxp)) {
-            const uint32_t lsb = selVtxp->lsbp()->as<DfgConst>()->toU32();
-            const uint32_t msb = lsb + selVtxp->width() - 1;
-            os << toDotId(vtx);
-            os << " [label=\"SEL\n_[" << msb << ":" << lsb << "]\nW" << vtx.width() << " / F"
-               << vtx.fanout() << '"';
-            if (vtx.hasMultipleSinks()) {
-                os << ", shape=doublecircle";
-            } else {
-                os << ", shape=circle";
-            }
-            os << "]" << endl;
-            return;
+        const uint32_t lsb = selVtxp->lsb();
+        const uint32_t msb = lsb + selVtxp->width() - 1;
+        os << toDotId(vtx);
+        os << " [label=\"SEL\n_[" << msb << ":" << lsb << "]\nW" << vtx.width() << " / F"
+           << vtx.fanout() << '"';
+        if (vtx.hasMultipleSinks()) {
+            os << ", shape=doublecircle";
+        } else {
+            os << ", shape=circle";
         }
+        os << "]" << endl;
+        return;
     }
 
     os << toDotId(vtx);
@@ -656,16 +643,6 @@ static void dumpDotEdge(std::ostream& os, const DfgEdge& edge, const string& hea
 // Dump one DfgVertex and all of its source DfgEdges in Graphviz format
 static void dumpDotVertexAndSourceEdges(std::ostream& os, const DfgVertex& vtx) {
     dumpDotVertex(os, vtx);
-
-    if (const DfgSel* const selVtxp = vtx.cast<const DfgSel>()) {
-        if (isSimpleSel(selVtxp)) {
-            UASSERT_OBJ(selVtxp->sourceEdge<0>()->sourcep() == selVtxp->fromp(), selVtxp,
-                        "Operand ordering changed");
-            dumpDotEdge(os, *selVtxp->sourceEdge<0>(), "");
-            return;
-        }
-    }
-
     vtx.forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {  //
         if (edge.sourcep()) {
             string headLabel;
@@ -852,14 +829,14 @@ DfgVertex::~DfgVertex() {
     if (VN_IS(m_dtypep, UnpackArrayDType)) VL_DO_DANGLING(delete m_dtypep, m_dtypep);
 }
 
-bool DfgVertex::selfEquals(const DfgVertex& that) const {
-    return this->m_type == that.m_type && this->dtypep() == that.dtypep();
-}
+bool DfgVertex::selfEquals(const DfgVertex& that) const { return true; }
 
-V3Hash DfgVertex::selfHash() const { return V3Hash{m_type} + width(); }
+V3Hash DfgVertex::selfHash() const { return V3Hash{}; }
 
 bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
     if (this == &that) return true;
+    if (this->type() != that.type()) return false;
+    if (this->dtypep() != that.dtypep()) return false;
     if (!this->selfEquals(that)) return false;
 
     const auto key = (this < &that) ? EqualsCache::key_type{this, &that}  //
@@ -893,6 +870,8 @@ V3Hash DfgVertex::hash() {
     V3Hash& result = user<V3Hash>();
     if (!result.value()) {
         V3Hash hash;
+        hash += m_type;
+        hash += width();
         hash += selfHash();
         // Variables are defined by themselves, so there is no need to hash the sources. This
         // enables sound hashing of graphs circular only through variables, which we rely on.
@@ -933,13 +912,25 @@ void DfgVertex::replaceWith(DfgVertex* newSorucep) {
 // Vertex classes
 //------------------------------------------------------------------------------
 
+// DfgConst ----------
+
+bool DfgConst::selfEquals(const DfgVertex& that) const {
+    return constp()->sameTree(that.as<DfgConst>()->constp());
+}
+
+V3Hash DfgConst::selfHash() const { return m_constp->num().toHash(); }
+
+// DfgSel ----------
+
+bool DfgSel::selfEquals(const DfgVertex& that) const { return lsb() == that.as<DfgSel>()->lsb(); }
+
+V3Hash DfgSel::selfHash() const { return V3Hash{lsb()}; }
+
 // DfgVertexVar ----------
 
 bool DfgVertexVar::selfEquals(const DfgVertex& that) const {
-    if (const DfgVertexVar* otherp = that.cast<DfgVertexVar>()) {
-        UASSERT_OBJ(varp() != otherp->varp(), this,
-                    "There should only be one DfgVarPacked for a given AstVar");
-    }
+    UASSERT_OBJ(varp() != that.as<DfgVertexVar>()->varp(), this,
+                "There should only be one DfgVarPacked for a given AstVar");
     return false;
 }
 
@@ -949,17 +940,6 @@ V3Hash DfgVertexVar::selfHash() const {
     hash += m_varp->varType();
     return hash;
 }
-
-// DfgConst ----------
-
-bool DfgConst::selfEquals(const DfgVertex& that) const {
-    if (const DfgConst* otherp = that.cast<DfgConst>()) {
-        return constp()->sameTree(otherp->constp());
-    }
-    return false;
-}
-
-V3Hash DfgConst::selfHash() const { return m_constp->num().toHash(); }
 
 //------------------------------------------------------------------------------
 // DfgVisitor
