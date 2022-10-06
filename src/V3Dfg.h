@@ -365,8 +365,8 @@ public:
 
     // Width of result
     uint32_t width() const {
-        // Everything supported is packed now, so we can just do this:
-        UASSERT_OBJ(VN_IS(dtypep(), BasicDType), this, "'width()' called on unpacked value");
+        // This is a hot enough function that this is an expensive check, so in debug build only.
+        UDEBUGONLY(UASSERT_OBJ(VN_IS(dtypep(), BasicDType), this, "non-packed has no 'width()'"););
         return dtypep()->width();
     }
 
