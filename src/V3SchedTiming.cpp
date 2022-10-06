@@ -323,8 +323,10 @@ void transformForks(AstNetlist* const netlistp) {
             iterateChildrenConst(nodep);  // Const, so we don't iterate the calls twice
             // Replace self with the function calls (no co_await, as we don't want the main
             // process to suspend whenever any of the children do)
-            nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            // V3Dead could have removed all statements from the fork, so guard against it
+            AstNode* const stmtsp = nodep->stmtsp();
+            if (stmtsp) nodep->addNextHere(stmtsp->unlinkFrBackWithNext());
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         void visit(AstBegin* nodep) override {
             UASSERT_OBJ(m_forkp, nodep, "Begin outside of a fork");

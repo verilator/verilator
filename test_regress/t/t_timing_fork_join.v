@@ -77,4 +77,8 @@ module t;
       $finish;
     end
     initial #100 $stop; // timeout
+
+    // Test optimized-out fork statements:
+    reg a;
+    initial fork a = 1; join
 endmodule
