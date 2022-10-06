@@ -232,8 +232,8 @@ private:
     }
     void visit(AstProperty* nodep) override {
         // The body will be visited when will be substituted in place of property reference
-        // (AstFuncRef) At this point we can unlink it from AST
-        nodep->unlinkFrBack();
+        // (AstFuncRef)
+        // This node will be deleted in V3Assert (all references will be substituted then)
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

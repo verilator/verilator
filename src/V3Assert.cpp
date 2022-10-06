@@ -495,6 +495,11 @@ private:
             iterateChildren(nodep);
         }
     }
+    void visit(AstProperty* nodep) override {
+        // Property references were already (in V3AssertPre) substituted by the bodies of the
+        // referenced properties. This node is not needed anymore.
+        nodep->unlinkFrBack()->deleteTree();
+    }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
