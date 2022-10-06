@@ -36,7 +36,6 @@
 #include "V3Ast.h"
 #include "V3Error.h"
 #include "V3Hash.h"
-#include "V3Hasher.h"
 #include "V3List.h"
 
 #include "V3Dfg__gen_forward_class_decls.h"  // From ./astgen
@@ -44,6 +43,7 @@
 #include <algorithm>
 #include <array>
 #include <functional>
+#include <new>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
@@ -94,9 +94,36 @@ inline std::ostream& operator<<(std::ostream& os, const VDfgType& t) { return os
 class DfgGraph final {
     friend class DfgVertex;
 
+    // TYPES
+
+    // RAII handle for DfgVertex user data
+    class UserDataInUse final {
+        DfgGraph* m_graphp;  // The referenced graph
+
+    public:
+        UserDataInUse(DfgGraph* graphp)
+            : m_graphp{graphp} {}
+        VL_UNCOPYABLE(UserDataInUse);
+        UserDataInUse(UserDataInUse&& that) {
+            UASSERT(that.m_graphp, "Moving from empty");
+            m_graphp = vlstd::exchange(that.m_graphp, nullptr);
+        }
+        UserDataInUse& operator=(UserDataInUse&& that) {
+            UASSERT(that.m_graphp, "Moving from empty");
+            m_graphp = vlstd::exchange(that.m_graphp, nullptr);
+            return *this;
+        }
+
+        ~UserDataInUse() {
+            if (m_graphp) m_graphp->m_userCurrent = 0;
+        }
+    };
+
     // MEMBERS
-    size_t m_size = 0;  // Number of vertices in the graph
     V3List<DfgVertex*> m_vertices;  // The vertices in the graph
+    size_t m_size = 0;  // Number of vertices in the graph
+    uint32_t m_userCurrent = 0;  // Vertex user data generation number currently in use
+    uint32_t m_userCnt = 0;  // Vertex user data generation counter
     // Parent of the graph (i.e.: the module containing the logic represented by this graph).
     AstModule* const m_modulep;
     const string m_name;  // Name of graph (for debugging)
@@ -119,6 +146,19 @@ public:
     AstModule* modulep() const { return m_modulep; }
     // Name of this graph
     const string& name() const { return m_name; }
+
+    // Reset Vertex user data
+    UserDataInUse userDataInUse() {
+        UASSERT(!m_userCurrent, "Conflicting use of DfgVertex user data");
+        ++m_userCnt;
+        UASSERT(m_userCnt, "'m_userCnt' overflow");
+        m_userCurrent = m_userCnt;
+        return UserDataInUse{this};
+    }
+
+    // Access to vertex list for faster iteration in important contexts
+    DfgVertex* verticesBegin() const { return m_vertices.begin(); }
+    DfgVertex* verticesRbegin() const { return m_vertices.rbegin(); }
 
     // Calls given function 'f' for each vertex in the graph. It is safe to manipulate any vertices
     // in the graph, or to delete/unlink the vertex passed to 'f' during iteration. It is however
@@ -221,13 +261,18 @@ class DfgVertex VL_NOT_FINAL {
     friend class DfgEdge;
     friend class DfgVisitor;
 
+    using UserDataStorage = void*;  // Storage allocated for user data
+
     // STATE
     V3ListEnt<DfgVertex*> m_verticesEnt;  // V3List handle of this vertex, kept under the DfgGraph
 protected:
     DfgEdge* m_sinksp = nullptr;  // List of sinks of this vertex
     FileLine* const m_filelinep;  // Source location
     AstNodeDType* m_dtypep;  // Data type of the result of this vertex - mutable for efficiency
-    const VDfgType m_type;
+    DfgGraph* m_graphp;  // The containing DfgGraph
+    const VDfgType m_type;  // Vertex type tag
+    uint32_t m_userCnt = 0;  // User data generation number
+    UserDataStorage m_userDataStorage;  // User data storage
 
     // CONSTRUCTOR
     DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep);
@@ -301,6 +346,23 @@ public:
     // The type of this vertex
     VDfgType type() const { return m_type; }
 
+    template <typename T>
+    T& user() {
+        static_assert(sizeof(T) <= sizeof(UserDataStorage),
+                      "Size of user data type 'T' is too large for allocated storage");
+        static_assert(alignof(T) <= alignof(UserDataStorage),
+                      "Alignment of user data type 'T' is larger than allocated storage");
+        T* const storagep = reinterpret_cast<T*>(&m_userDataStorage);
+        const uint32_t userCurrent = m_graphp->m_userCurrent;
+        UDEBUGONLY(UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving"););
+        if (m_userCnt != userCurrent) {
+            m_userCnt = userCurrent;
+            VL_ATTR_UNUSED T* const resultp = new (storagep) T{};
+            UDEBUGONLY(UASSERT_OBJ(resultp == storagep, this, "Something is odd"););
+        }
+        return *storagep;
+    }
+
     // Width of result
     uint32_t width() const {
         // Everything supported is packed now, so we can just do this:
@@ -309,7 +371,7 @@ public:
     }
 
     // Cache type for 'equals' below
-    using EqualsCache = std::unordered_map<std::pair<const DfgVertex*, const DfgVertex*>, bool>;
+    using EqualsCache = std::unordered_map<std::pair<const DfgVertex*, const DfgVertex*>, uint8_t>;
 
     // Vertex equality (based on this vertex and all upstream vertices feeding into this vertex).
     // Returns true, if the vertices can be substituted for each other without changing the
@@ -324,19 +386,9 @@ public:
         return equals(that, cache);
     }
 
-    // Cache type for 'hash' below
-    using HashCache = std::unordered_map<const DfgVertex*, V3Hash>;
-
     // Hash of vertex (depends on this vertex and all upstream vertices feeding into this vertex).
-    // The 'cache' argument is used to store results to avoid repeat evaluations, but it requires
-    // that the upstream sources of the vertex do not change between invocations.
-    V3Hash hash(HashCache& cache) const;
-
-    // Uncached version of 'hash'
-    V3Hash hash() const {
-        HashCache cache;  // Still cache recursive calls within this invocation
-        return hash(cache);
-    }
+    // Uses user data for caching hashes
+    V3Hash hash();
 
     // Source edges of this vertex
     virtual std::pair<DfgEdge*, size_t> sourceEdges() = 0;
@@ -361,6 +413,10 @@ public:
 
     // Relink all sinks to be driven from the given new source
     void replaceWith(DfgVertex* newSourcep);
+
+    // Access to vertex list for faster iteration in important contexts
+    DfgVertex* verticesNext() const { return m_verticesEnt.nextp(); }
+    DfgVertex* verticesPrev() const { return m_verticesEnt.prevp(); }
 
     // Calls given function 'f' for each source vertex of this vertex
     // Unconnected source edges are not iterated.
@@ -488,11 +544,13 @@ public:
 void DfgGraph::addVertex(DfgVertex& vtx) {
     ++m_size;
     vtx.m_verticesEnt.pushBack(m_vertices, &vtx);
+    vtx.m_graphp = this;
 }
 
 void DfgGraph::removeVertex(DfgVertex& vtx) {
     --m_size;
     vtx.m_verticesEnt.unlink(m_vertices, &vtx);
+    vtx.m_graphp = nullptr;
 }
 
 void DfgGraph::forEachVertex(std::function<void(DfgVertex&)> f) {

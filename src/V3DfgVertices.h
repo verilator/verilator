@@ -43,6 +43,9 @@ class DfgVertexVar VL_NOT_FINAL : public DfgVertexVariadic {
     bool m_hasModRefs = false;  // This AstVar is referenced outside the DFG, but in the module
     bool m_hasExtRefs = false;  // This AstVar is referenced from outside the module
 
+    bool selfEquals(const DfgVertex& that) const final;
+    V3Hash selfHash() const final;
+
 public:
     DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp, uint32_t initialCapacity)
         : DfgVertexVariadic{dfg, type, varp->fileline(), dtypeFor(varp), initialCapacity}
@@ -115,9 +118,6 @@ class DfgVarArray final : public DfgVertexVar {
 
     std::vector<DriverData> m_driverData;  // Additional data associate with each driver
 
-    bool selfEquals(const DfgVertex& that) const override;
-    V3Hash selfHash() const override;
-
 public:
     DfgVarArray(DfgGraph& dfg, AstVar* varp)
         : DfgVertexVar{dfg, dfgType(), varp, 4u} {
@@ -176,9 +176,6 @@ class DfgVarPacked final : public DfgVertexVar {
     using DriverData = std::pair<FileLine*, uint32_t>;
 
     std::vector<DriverData> m_driverData;  // Additional data associate with each driver
-
-    bool selfEquals(const DfgVertex& that) const override;
-    V3Hash selfHash() const override;
 
 public:
     DfgVarPacked(DfgGraph& dfg, AstVar* varp)

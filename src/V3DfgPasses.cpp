@@ -77,28 +77,36 @@ V3DfgOptimizationContext::~V3DfgOptimizationContext() {
 
 // Common subexpression elimination
 void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
-    DfgVertex::HashCache hashCache;
     DfgVertex::EqualsCache equalsCache;
-    std::unordered_multimap<V3Hash, DfgVertex*> verticesWithEqualHashes;
+    std::unordered_map<V3Hash, std::vector<DfgVertex*>> verticesWithEqualHashes;
+    verticesWithEqualHashes.reserve(dfg.size());
+
+    // Used by DfgVertex::hash
+    const auto userDataInUse = dfg.userDataInUse();
 
     // In reverse, as the graph is sometimes in reverse topological order already
-    dfg.forEachVertexInReverse([&](DfgVertex& vtx) {
+    for (DfgVertex *vtxp = dfg.verticesRbegin(), *nextp; vtxp; vtxp = nextp) {
+        nextp = vtxp->verticesPrev();
+        if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
+
         // Don't merge constants
-        if (vtx.is<DfgConst>()) return;
+        if (vtxp->is<DfgConst>()) continue;
+
         // For everything else...
-        const V3Hash hash = vtx.hash(hashCache);
-        auto pair = verticesWithEqualHashes.equal_range(hash);
-        for (auto it = pair.first, end = pair.second; it != end; ++it) {
-            DfgVertex* const candidatep = it->second;
-            if (candidatep->equals(vtx, equalsCache)) {
+        std::vector<DfgVertex*>& vec = verticesWithEqualHashes[vtxp->hash()];
+        bool replaced = false;
+        for (DfgVertex* const candidatep : vec) {
+            if (candidatep->equals(*vtxp, equalsCache)) {
                 ++ctx.m_eliminated;
-                vtx.replaceWith(candidatep);
-                vtx.unlinkDelete(dfg);
-                return;
+                vtxp->replaceWith(candidatep);
+                vtxp->unlinkDelete(dfg);
+                replaced = true;
+                break;
             }
         }
-        verticesWithEqualHashes.emplace(hash, &vtx);
-    });
+        if (replaced) continue;
+        vec.push_back(vtxp);
+    }
 }
 
 void V3DfgPasses::removeVars(DfgGraph& dfg, DfgRemoveVarsContext& ctx) {

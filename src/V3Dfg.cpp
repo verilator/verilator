@@ -864,9 +864,10 @@ bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
 
     const auto key = (this < &that) ? EqualsCache::key_type{this, &that}  //
                                     : EqualsCache::key_type{&that, this};
-    const auto pair = cache.emplace(key, true);
-    bool& result = pair.first->second;
-    if (pair.second) {
+    // Note: the recursive invocation can cause a re-hash of the cache which invalidates iterators
+    uint8_t result = cache[key];
+    if (!result) {
+        result = 2;  // Assume equals
         auto thisPair = this->sourceEdges();
         const DfgEdge* const thisSrcEdgesp = thisPair.first;
         const size_t thisArity = thisPair.second;
@@ -879,24 +880,30 @@ bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
             const DfgVertex* const thatSrcVtxp = thatSrcEdgesp[i].m_sourcep;
             if (thisSrcVtxp == thatSrcVtxp) continue;
             if (!thisSrcVtxp || !thatSrcVtxp || !thisSrcVtxp->equals(*thatSrcVtxp, cache)) {
-                result = false;
+                result = 1;  // Mark not equal
                 break;
             }
         }
+        cache[key] = result;
     }
-    return result;
+    return result >> 1;
 }
 
-V3Hash DfgVertex::hash(HashCache& cache) const {
-    const auto pair = cache.emplace(this, V3Hash{});
-    V3Hash& result = pair.first->second;
-    if (pair.second) {
-        result += selfHash();
+V3Hash DfgVertex::hash() {
+    V3Hash& result = user<V3Hash>();
+    if (!result.value()) {
+        V3Hash hash;
+        hash += selfHash();
         // Variables are defined by themselves, so there is no need to hash the sources. This
         // enables sound hashing of graphs circular only through variables, which we rely on.
         if (!is<DfgVertexVar>()) {
-            forEachSource([&result, &cache](const DfgVertex& src) { result += src.hash(cache); });
+            const auto pair = sourceEdges();
+            const DfgEdge* const edgesp = pair.first;
+            const size_t arity = pair.second;
+            // Sources must always be connected in well-formed graphs
+            for (size_t i = 0; i < arity; ++i) hash += edgesp[i].m_sourcep->hash();
         }
+        result = hash;
     }
     return result;
 }
@@ -926,29 +933,22 @@ void DfgVertex::replaceWith(DfgVertex* newSorucep) {
 // Vertex classes
 //------------------------------------------------------------------------------
 
-// DfgVarPacked ----------
+// DfgVertexVar ----------
 
-bool DfgVarPacked::selfEquals(const DfgVertex& that) const {
-    if (const DfgVarPacked* otherp = that.cast<DfgVarPacked>()) {
+bool DfgVertexVar::selfEquals(const DfgVertex& that) const {
+    if (const DfgVertexVar* otherp = that.cast<DfgVertexVar>()) {
         UASSERT_OBJ(varp() != otherp->varp(), this,
                     "There should only be one DfgVarPacked for a given AstVar");
     }
     return false;
 }
 
-V3Hash DfgVarPacked::selfHash() const { return V3Hasher::uncachedHash(varp()); }
-
-// DfgVarPacked ----------
-
-bool DfgVarArray::selfEquals(const DfgVertex& that) const {
-    if (const DfgVarArray* otherp = that.cast<DfgVarArray>()) {
-        UASSERT_OBJ(varp() != otherp->varp(), this,
-                    "There should only be one DfgVarArray for a given AstVar");
-    }
-    return false;
+V3Hash DfgVertexVar::selfHash() const {
+    V3Hash hash;
+    hash += m_varp->name();
+    hash += m_varp->varType();
+    return hash;
 }
-
-V3Hash DfgVarArray::selfHash() const { return V3Hasher::uncachedHash(varp()); }
 
 // DfgConst ----------
 
@@ -959,7 +959,7 @@ bool DfgConst::selfEquals(const DfgVertex& that) const {
     return false;
 }
 
-V3Hash DfgConst::selfHash() const { return V3Hasher::uncachedHash(m_constp); }
+V3Hash DfgConst::selfHash() const { return m_constp->num().toHash(); }
 
 //------------------------------------------------------------------------------
 // DfgVisitor

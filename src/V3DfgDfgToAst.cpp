@@ -126,7 +126,6 @@ class DfgToAstVisitor final : DfgVisitor {
     // Map from an AstVar, to the canonical AstVar that can be substituted for that AstVar
     std::unordered_map<AstVar*, AstVar*> m_canonVars;
     V3UniqueNames m_tmpNames{"_VdfgTmp"};  // For generating temporary names
-    DfgVertex::HashCache m_hashCache;  // For caching hashes
 
     // METHODS
 
@@ -167,7 +166,7 @@ class DfgToAstVisitor final : DfgVisitor {
 
     // Given a DfgVertex, return an AstVar that will hold the value of the given DfgVertex once we
     // are done with converting this Dfg into Ast form.
-    AstVar* getResultVar(const DfgVertex* vtxp) {
+    AstVar* getResultVar(DfgVertex* vtxp) {
         const auto pair = m_resultVars.emplace(vtxp, nullptr);
         AstVar*& varp = pair.first->second;
         if (pair.second) {
@@ -187,7 +186,7 @@ class DfgToAstVisitor final : DfgVisitor {
             } else {
                 // No DfgVarPacked driven fully by this node. Create a temporary.
                 // TODO: should we reuse parts when the AstVar is used as an rvalue?
-                const string name = m_tmpNames.get(vtxp->hash(m_hashCache).toString());
+                const string name = m_tmpNames.get(vtxp->hash().toString());
                 // Note: It is ok for these temporary variables to be always unsigned. They are
                 // read only by other expressions within the graph and all expressions interpret
                 // their operands based on the expression type, not the operand type.
@@ -330,6 +329,10 @@ class DfgToAstVisitor final : DfgVisitor {
     explicit DfgToAstVisitor(DfgGraph& dfg, V3DfgOptimizationContext& ctx)
         : m_modp{dfg.modulep()}
         , m_ctx{ctx} {
+
+        // Used by DfgVertex::hash
+        const auto userDataInUse = dfg.userDataInUse();
+
         // We can eliminate some variables completely
         std::vector<AstVar*> redundantVarps;
 
