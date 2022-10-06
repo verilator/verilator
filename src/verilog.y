@@ -5397,25 +5397,25 @@ elseStmtBlock<nodep>:   // Part of concurrent_assertion_statement
 property_declaration<nodeFTaskp>:  // ==IEEE: property_declaration
                 property_declarationFront property_port_listE ';' property_declarationBody
                         yENDPROPERTY endLabelE
-{   $$ = $1;
-    $$->addStmtsp($2);
-    $$->addStmtsp($4);
-    SYMP->popScope($$);
-    GRAMMARP->endLabel($<fl>6, $$, $6);}
+                        {   $$ = $1;
+                            $$->addStmtsp($2);
+                            $$->addStmtsp($4);
+                            SYMP->popScope($$);
+                            GRAMMARP->endLabel($<fl>6, $$, $6); }
         ;
 
 property_declarationFront<nodeFTaskp>:  // IEEE: part of property_declaration
                 yPROPERTY idAny/*property_identifier*/
-{ $$ = new AstProperty{$1, *$2, nullptr}; SYMP->pushNewUnderNodeOrCurrent($$, nullptr);}
+                        { $$ = new AstProperty{$1, *$2, nullptr}; SYMP->pushNewUnderNodeOrCurrent($$, nullptr); }
         ;
 
 property_port_listE<nodep>:  // IEEE: [ ( [ property_port_list ] ) ]
-                /* empty */                             { $$ = nullptr; }
-|       '(' property_port_list ')' { $$ = $2; }
+                /* empty */                       { $$ = nullptr; }
+        |       '(' property_port_list ')'        { $$ = $2; }
         ;
 
 property_port_list<nodep>:  // ==IEEE: property_port_list
-                property_port_item                      { $$ = $1; }
+                property_port_item                              { $$ = $1; }
         |       property_port_list ',' property_port_item       { $$ = addNextNull($1, $3); }
         ;
 
@@ -5426,7 +5426,7 @@ property_port_item<nodep>:  // IEEE: property_port_item/sequence_port_item
 //UNSUP //                      //           id {variable_dimension} [ '=' property_actual_arg ]
 //UNSUP //                      // seq IEEE: [ yLOCAL [ sequence_lvar_port_direction ] ] sequence_formal_type
 //UNSUP //                      //           id {variable_dimension} [ '=' sequence_actual_arg ]
-property_port_itemFront property_port_itemAssignment { $$ = $2; }
+                property_port_itemFront property_port_itemAssignment { $$ = $2; }
         ;
 
 property_port_itemFront: // IEEE: part of property_port_item/sequence_port_item
@@ -5436,19 +5436,19 @@ property_port_itemFront: // IEEE: part of property_port_item/sequence_port_item
 //         |       property_port_itemDirE yVAR data_type           { VARDTYPE($3); }
 //         |       property_port_itemDirE yVAR implicit_typeE      { VARDTYPE($3); }
 //         |       property_port_itemDirE signingE rangeList       { VARDTYPE(SPACED($2,$3)); }
-| property_port_itemDirE implicit_typeE             { VARDTYPE($2); }
+//         |       property_port_itemDirE implicit_typeE           { VARDTYPE($2); }
         ;
 
 property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequence_port_item/checker_port_direction
-id variable_dimensionListE         { $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
+                id variable_dimensionListE         { $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
 //UNSUP |       portSig variable_dimensionListE '=' property_actual_arg
 //UNSUP                 { VARDONE($<fl>1, $1, $2, $4); PINNUMINC(); }
         ;
 
 property_port_itemDirE:
 /* empty */                             { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
-|       yLOCAL__ETC                             { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
-|       yLOCAL__ETC yINPUT              { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
+        |       yLOCAL__ETC             { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
+        |       yLOCAL__ETC yINPUT      { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
         ;
 
 property_declarationBody<nodep>:  // IEEE: part of property_declaration

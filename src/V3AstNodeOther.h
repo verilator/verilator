@@ -1612,20 +1612,6 @@ public:
         return true;
     }  // Used under Cover, which expects a bool child
 };
-// class AstProperty final : public AstNode {
-// private:
-//     string m_name;
-//     // A property declaration
-//     // @astgen op1 := portsp : List[AstNode]
-//     // @astgen op2 := propSpecp : AstPropClocked
-// public:
-//     AstProperty(FileLine* fl, const string& name)
-//         : ASTGEN_SUPER_Property(fl)
-//         , m_name(name) {}
-//     ASTGEN_MEMBERS_Property;
-//     string name() const override { return m_name; }
-//     string verilogKwd() const override { return "property"; }
-// };
 class AstPull final : public AstNode {
     // @astgen op1 := lhsp : AstNode
 

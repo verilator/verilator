@@ -106,7 +106,6 @@ private:
         iterateAndNextNull(nodep->stmtsp());
         m_seniAlwaysp = nullptr;
     }
-
     void visit(AstNodeCoverOrAssert* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         clearAssertInfo();
