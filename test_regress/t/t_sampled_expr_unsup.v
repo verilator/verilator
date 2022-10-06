@@ -10,26 +10,12 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer cyc;
+   int a = 0;
 
-   Test1 t1(clk);
+   function int f(output int a);
+       a = 1;
+       return a;
+   endfunction
 
-   always @(posedge clk) begin
-      cyc <= cyc + 1;
-
-      if (cyc >= 10) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
-endmodule
-
-module Test1(
-   clk
-   );
-
-   input clk;
-   reg [3:0] a = 0;
-
-   assert property (@(posedge clk) a++ >= 0);
+   assert property (@(posedge clk) f(a) >= 0);
 endmodule

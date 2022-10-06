@@ -22,4 +22,6 @@ module t (/*AUTOARG*/
 
       pos = array[0][0]++;
    end
+
+   assert property (@(posedge clk) a++ >= 0);
 endmodule
