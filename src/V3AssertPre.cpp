@@ -24,6 +24,7 @@
 
 #include "V3Ast.h"
 #include "V3Global.h"
+#include "V3Task.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -67,6 +68,23 @@ private:
         m_senip = nullptr;
         m_disablep = nullptr;
     }
+    AstNode* getCopyPropertyExprp(const AstProperty* const propp) {
+        // The only statements possible in AstProperty are AstPropClocked (body)
+        // and AstVar (arguments).
+        AstNode* propExprp = propp->stmtsp();
+        while (VN_IS(propExprp, Var)) propExprp = propExprp->nextp();
+        return propExprp->cloneTree(false);
+    }
+    void replaceVarRefsWithExpr(AstNode* const nodep, const AstVar* varp, AstNode* const exprp) {
+        if (!nodep) return;
+        if (const AstVarRef* varrefp = VN_CAST(nodep, VarRef)) {
+            if (varp == varrefp->varp()) nodep->replaceWith(exprp);
+        }
+        replaceVarRefsWithExpr(nodep->op1p(), varp, exprp);
+        replaceVarRefsWithExpr(nodep->op2p(), varp, exprp);
+        replaceVarRefsWithExpr(nodep->op3p(), varp, exprp);
+        replaceVarRefsWithExpr(nodep->op4p(), varp, exprp);
+    }
 
     // VISITORS
     //========== Statements
@@ -92,6 +110,29 @@ private:
     void visit(AstNodeCoverOrAssert* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         clearAssertInfo();
+        // Check if the expression is a reference of property
+        if (AstSampled* sampledp = VN_CAST(nodep->propp(), Sampled)) {
+            if (AstPropClocked* assertPropp = VN_CAST(sampledp->exprp(), PropClocked)) {
+                if (AstFuncRef* funcrefp = VN_CAST(assertPropp->propp(), FuncRef)) {
+                    if (AstProperty* propp = VN_CAST(funcrefp->taskp(), Property)) {
+                        AstNode* propExprp = getCopyPropertyExprp(propp);
+                        // Substitute formal arguments with actual arguments
+                        const V3TaskConnects tconnects
+                            = V3Task::taskConnects(funcrefp, propp->stmtsp());
+                        for (const auto& tconnect : tconnects) {
+                            const AstVar* const portp = tconnect.first;
+                            AstArg* const argp = tconnect.second;
+                            AstNode* pinp = argp->exprp()->unlinkFrBack();
+                            replaceVarRefsWithExpr(propExprp, portp, pinp);
+                        }
+                        // Now substitute property reference with expression with substituted port
+                        // refs
+                        assertPropp->replaceWith(propExprp);
+                    }
+                }
+            }
+        }
+
         // Find Clocking's buried under nodep->exprsp
         iterateChildren(nodep);
         if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep));
@@ -188,6 +229,11 @@ private:
         iterateChildren(nodep);
         // Reset defaults
         m_seniDefaultp = nullptr;
+    }
+    void visit(AstProperty* nodep) override {
+        // The body will be visited when will be substituted in place of property reference
+        // (AstFuncRef) At this point we can unlink it from AST
+        nodep->unlinkFrBack();
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
