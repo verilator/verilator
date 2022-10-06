@@ -4898,8 +4898,7 @@ private:
             nodep->dtypeSetBit();
         }
         WidthVP* vup = nullptr;
-        if (VN_IS(nodep, Property))
-            vup = WidthVP(SELF, BOTH).p();
+        if (VN_IS(nodep, Property)) vup = WidthVP(SELF, BOTH).p();
         userIterateChildren(nodep, vup);
 
         nodep->didWidth(true);
