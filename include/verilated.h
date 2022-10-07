@@ -116,6 +116,10 @@ using WData = EData;        ///< Data representing >64 packed bits (used as poin
 //    N     = std::string;  // No typedef needed; Verilator uses string
 // clang-format on
 
+// Literal operators for creating constants of specific types
+VL_ATTR_ALWINLINE IData operator"" _I(unsigned long long value) { return value; }
+VL_ATTR_ALWINLINE QData operator"" _Q(unsigned long long value) { return value; }
+
 using WDataInP = const WData*;  ///< 'bit' of >64 packed bits as array input to a function
 using WDataOutP = WData*;  ///< 'bit' of >64 packed bits as array output from a function
 

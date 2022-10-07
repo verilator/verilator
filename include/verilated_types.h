@@ -1145,6 +1145,12 @@ public:
         m_objp = vlstd::exchange(moved.m_objp, nullptr);
         return *this;
     }
+    // Assign with nullptr
+    VlClassRef& operator=(std::nullptr_t) {
+        refCountDec();
+        m_objp = nullptr;
+        return *this;
+    }
     // Dynamic caster
     template <typename T_OtherClass>
     VlClassRef<T_OtherClass> dynamicCast() const {

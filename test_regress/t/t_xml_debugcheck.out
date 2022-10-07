@@ -687,9 +687,7 @@
         </assignpre>
         <assigndly loc="d,61,11,61,13" dtype_id="4">
           <add loc="d,61,18,61,19" dtype_id="4">
-            <ccast loc="d,61,20,61,21" dtype_id="13">
-              <const loc="d,61,20,61,21" name="32&apos;sh1" dtype_id="7"/>
-            </ccast>
+            <const loc="d,61,20,61,21" name="32&apos;sh1" dtype_id="7"/>
             <varref loc="d,61,14,61,17" name="t.cyc" dtype_id="4"/>
           </add>
           <varref loc="d,61,7,61,10" name="__Vdly__t.cyc" dtype_id="4"/>
@@ -1568,9 +1566,7 @@
                     </if>
                     <assign loc="d,10,8,10,9" dtype_id="5">
                       <add loc="d,10,8,10,9" dtype_id="5">
-                        <ccast loc="d,10,8,10,9" dtype_id="13">
-                          <const loc="d,10,8,10,9" name="32&apos;h1" dtype_id="13"/>
-                        </ccast>
+                        <const loc="d,10,8,10,9" name="32&apos;h1" dtype_id="13"/>
                         <varref loc="d,10,8,10,9" name="__VactIterCount" dtype_id="5"/>
                       </add>
                       <varref loc="d,10,8,10,9" name="__VactIterCount" dtype_id="5"/>
@@ -1615,9 +1611,7 @@
                 </if>
                 <assign loc="d,10,8,10,9" dtype_id="5">
                   <add loc="d,10,8,10,9" dtype_id="5">
-                    <ccast loc="d,10,8,10,9" dtype_id="13">
-                      <const loc="d,10,8,10,9" name="32&apos;h1" dtype_id="13"/>
-                    </ccast>
+                    <const loc="d,10,8,10,9" name="32&apos;h1" dtype_id="13"/>
                     <varref loc="d,10,8,10,9" name="__VnbaIterCount" dtype_id="5"/>
                   </add>
                   <varref loc="d,10,8,10,9" name="__VnbaIterCount" dtype_id="5"/>

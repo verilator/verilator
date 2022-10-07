@@ -169,12 +169,7 @@ private:
         }
         nodep->user1(1);
     }
-    void visit(AstConst* nodep) override {
-        // Constants are of unknown size if smaller than 33 bits, because
-        // we're too lazy to wrap every constant in the universe in
-        // ((IData)#).
-        nodep->user1(nodep->isQuad() || nodep->isWide());
-    }
+    void visit(AstConst* nodep) override { nodep->user1(1); }
 
     // Null dereference protection
     void visit(AstNullCheck* nodep) override {

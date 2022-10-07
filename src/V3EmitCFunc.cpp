@@ -559,24 +559,28 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
             // is a real number
             ofp()->printf("%.17e", nodep->num().toDouble());
         }
+    } else if (nodep->toUQuad() == 0ULL) {
+        if (AstNodeAssign* const assignp = VN_CAST(nodep->backp(), NodeAssign)) {
+            if (VN_IS(assignp->lhsp()->dtypep(), ClassRefDType)) {
+                puts("nullptr");
+                return;
+            }
+        }
+        puts(nodep->isQuad() ? "0_Q" : "0_I");
     } else if (nodep->isQuad()) {
         const uint64_t num = nodep->toUQuad();
         if (num < 10) {
-            ofp()->printf("%" PRIu64 "ULL", num);
+            ofp()->printf("%" PRIu64 "_Q", num);
         } else {
-            ofp()->printf("0x%" PRIx64 "ULL", num);
+            ofp()->printf("0x%" PRIx64 "_Q", num);
         }
     } else {
         const uint32_t num = nodep->toUInt();
-        // Only 32 bits - llx + long long here just to appease CPP format warning
         if (num < 10) {
-            puts(cvtToStr(num));
+            ofp()->printf("%" PRIu32 "_I", num);
         } else {
-            ofp()->printf("0x%" PRIx64, static_cast<uint64_t>(num));
+            ofp()->printf("0x%" PRIx32 "_I", num);
         }
-        // If signed, we'll do our own functions
-        // But must be here, or <= comparisons etc may end up signed
-        puts("U");
     }
 }
 
