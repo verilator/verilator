@@ -1544,34 +1544,12 @@ class V3DfgPeephole final : public DfgVisitor {
         }
     }
 
-    //=========================================================================
-    //  DfgVertexVar
-    //=========================================================================
-
-    void visit(DfgVarPacked* vtxp) override {
-        // Inline variables fully driven by the logic represented by the DFG
-        if (vtxp->hasSinks() && vtxp->isDrivenFullyByDfg()) {
-            APPLYING(INLINE_VAR) {
-                // Make consumers of the DfgVar consume the driver directly
-                DfgVertex* const driverp = vtxp->source(0);
-                vtxp->forEachSinkEdge([=](DfgEdge& edge) { edge.relinkSource(driverp); });
-            }
-        }
-    }
-
 #undef APPLYING
 
     // Process one vertex. Return true if graph changed
     void processVertex(DfgVertex* vtxp) {
-        // Keep DfgVertexVar vertices in this pass. We will remove them later if they become
-        // redundant. We want to keep the original variables for non-var vertices that drive
-        // multiple sinks (otherwise we would need to introduce a temporary, but it is better for
-        // debugging to keep the original variable name, if one is available), so we can't remove
-        // redundant variables here.
-        const bool keep = vtxp->is<DfgVertexVar>();
-
         // If it has no sinks (unused), we can remove it
-        if (!keep && !vtxp->hasSinks()) {
+        if (!vtxp->hasSinks()) {
             vtxp->unlinkDelete(m_dfg);
             m_changed = true;
             return;
@@ -1581,7 +1559,7 @@ class V3DfgPeephole final : public DfgVisitor {
         iterate(vtxp);
 
         // If it became unused, we can remove it
-        if (!keep && !vtxp->hasSinks()) {
+        if (!vtxp->hasSinks()) {
             UASSERT_OBJ(m_changed, vtxp, "'m_changed' must be set if node became unused");
             vtxp->unlinkDelete(m_dfg);
         }
@@ -1594,15 +1572,9 @@ class V3DfgPeephole final : public DfgVisitor {
         while (true) {
             // Do one pass over the graph in the forward direction.
             m_changed = false;
-            for (DfgVertex *vtxp = m_dfg.verticesBegin(), *nextp; vtxp; vtxp = nextp) {
+            for (DfgVertex *vtxp = m_dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
                 nextp = vtxp->verticesNext();
                 if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
-                // Special case DfgConst as it's common and the is nothing we can do about them.
-                // No need to set 'm_changed' when deleting it as it influences nothing else.
-                if (vtxp->is<DfgConst>()) {
-                    if (!vtxp->hasSinks()) vtxp->unlinkDelete(m_dfg);
-                    continue;
-                }
                 processVertex(vtxp);
             }
             if (!m_changed) break;
@@ -1610,15 +1582,9 @@ class V3DfgPeephole final : public DfgVisitor {
             // Do another pass in the opposite direction. Alternating directions reduces
             // the pathological complexity with left/right leaning trees.
             m_changed = false;
-            for (DfgVertex *vtxp = m_dfg.verticesRbegin(), *nextp; vtxp; vtxp = nextp) {
+            for (DfgVertex *vtxp = m_dfg.opVerticesRbeginp(), *nextp; vtxp; vtxp = nextp) {
                 nextp = vtxp->verticesPrev();
                 if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
-                // Special case DfgConst as it's common and the is nothing we can do about them.
-                // No need to set 'm_changed' when deleting it as it influences nothing else.
-                if (vtxp->is<DfgConst>()) {
-                    if (!vtxp->hasSinks()) vtxp->unlinkDelete(m_dfg);
-                    continue;
-                }
                 processVertex(vtxp);
             }
             if (!m_changed) break;

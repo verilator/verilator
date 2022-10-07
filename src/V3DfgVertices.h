@@ -52,6 +52,15 @@ public:
         , m_varp{varp} {}
     ASTGEN_MEMBERS_DfgVertexVar;
 
+    DfgVertexVar* verticesNext() const {
+        return static_cast<DfgVertexVar*>(DfgVertex::verticesNext());
+    }
+    DfgVertexVar* verticesPrev() const {
+        return static_cast<DfgVertexVar*>(DfgVertex::verticesPrev());
+    }
+
+    bool isDrivenByDfg() const { return arity() > 0; }
+
     AstVar* varp() const { return m_varp; }
     bool hasModRefs() const { return m_hasModRefs; }
     void setHasModRefs() { m_hasModRefs = true; }
@@ -92,6 +101,9 @@ public:
         : DfgVertex{dfg, dfgType(), flp, dtypeForWidth(width)}
         , m_num{flp, static_cast<int>(width), value} {}
     ASTGEN_MEMBERS_DfgConst;
+
+    DfgConst* verticesNext() const { return static_cast<DfgConst*>(DfgVertex::verticesNext()); }
+    DfgConst* verticesPrev() const { return static_cast<DfgConst*>(DfgVertex::verticesPrev()); }
 
     V3Number& num() { return m_num; }
     const V3Number& num() const { return m_num; }
@@ -167,8 +179,6 @@ public:
     }
     ASTGEN_MEMBERS_DfgVarArray;
 
-    bool isDrivenByDfg() const { return arity() > 0; }
-
     void addDriver(FileLine* flp, uint32_t index, DfgVertex* vtxp) {
         m_driverData.emplace_back(flp, index);
         DfgVertexVariadic::addSource()->relinkSource(vtxp);
@@ -224,7 +234,6 @@ public:
         : DfgVertexVar{dfg, dfgType(), varp, 1u} {}
     ASTGEN_MEMBERS_DfgVarPacked;
 
-    bool isDrivenByDfg() const { return arity() > 0; }
     bool isDrivenFullyByDfg() const { return arity() == 1 && source(0)->dtypep() == dtypep(); }
 
     void addDriver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp) {

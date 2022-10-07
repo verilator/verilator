@@ -355,6 +355,7 @@ class DfgToAstVisitor final : DfgVisitor {
     explicit DfgToAstVisitor(DfgGraph& dfg, V3DfgOptimizationContext& ctx)
         : m_modp{dfg.modulep()}
         , m_ctx{ctx} {
+        // Convert the graph back to combinational assignments
 
         // Used by DfgVertex::hash
         const auto userDataInUse = dfg.userDataInUse();
@@ -362,14 +363,15 @@ class DfgToAstVisitor final : DfgVisitor {
         // We can eliminate some variables completely
         std::vector<AstVar*> redundantVarps;
 
-        // Convert vertices back to assignments
-        dfg.forEachVertex([&](DfgVertex& vtx) {
+        // First render variable assignments
+        for (DfgVertexVar *vtxp = dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+            nextp = vtxp->verticesNext();
+
+            // If there is no driver (this vertex is an input to the graph), then nothing to do.
+            if (!vtxp->isDrivenByDfg()) continue;
+
             // Render packed variable assignments
-            if (const DfgVarPacked* const dfgVarp = vtx.cast<DfgVarPacked>()) {
-                // DfgVarPacked instances (these might be driving the given AstVar variable)
-                // If there is no driver (i.e.: this DfgVarPacked is an input to the Dfg), then
-                // nothing to do
-                if (!dfgVarp->isDrivenByDfg()) return;
+            if (const DfgVarPacked* const dfgVarp = vtxp->cast<DfgVarPacked>()) {
                 // The driver of this DfgVarPacked might drive multiple variables. Only emit one
                 // assignment from the driver to an arbitrarily chosen canonical variable, and
                 // assign the other variables from that canonical variable
@@ -386,36 +388,40 @@ class DfgToAstVisitor final : DfgVisitor {
                     redundantVarps.push_back(dfgVarp->varp());
                     ++m_ctx.m_replacedVars;
                 }
-                return;
+                // Done
+                continue;
             }
 
             // Render array variable assignments
-            if (const DfgVarArray* dfgVarp = vtx.cast<DfgVarArray>()) {
-                // If there is no driver, then there is nothing to do
-                if (!dfgVarp->isDrivenByDfg()) return;
+            if (const DfgVarArray* dfgVarp = vtxp->cast<DfgVarArray>()) {
                 // We don't canonicalize arrays, so just render the drivers
                 convertArrayDiver(dfgVarp);
-                //
-                return;
+                // Done
+                continue;
             }
+        }
 
-            // If the vertex is known to be inlined, then nothing else to do
-            if (inlineVertex(vtx)) return;
+        // Constants are always inlined, so we only need to iterate proper operations
+        for (DfgVertex *vtxp = dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+            nextp = vtxp->verticesNext();
+
+            // If the vertex is known to be inlined, then there is nothing to do
+            if (inlineVertex(*vtxp)) continue;
 
             // Check if this uses a temporary, vs one of the vars rendered above
-            AstVar* const resultVarp = getResultVar(&vtx);
+            AstVar* const resultVarp = getResultVar(vtxp);
             if (resultVarp->user1()) {
                 // We introduced a temporary for this DfgVertex
                 ++m_ctx.m_intermediateVars;
-                FileLine* const flp = vtx.fileline();
+                FileLine* const flp = vtxp->fileline();
                 // Just render the logic
-                AstNodeMath* const rhsp = convertDfgVertexToAstNodeMath(&vtx);
-                // The lhs is a temporary
+                AstNodeMath* const rhsp = convertDfgVertexToAstNodeMath(vtxp);
+                // The lhs is the temporary
                 AstNodeMath* const lhsp = new AstVarRef{flp, resultVarp, VAccess::WRITE};
                 // Add assignment of the value to the variable
                 addResultEquation(flp, lhsp, rhsp);
             }
-        });
+        }
 
         // Remap all references to point to the canonical variables, if one exists
         VNDeleter deleter;

@@ -120,7 +120,15 @@ class DfgGraph final {
     };
 
     // MEMBERS
-    V3List<DfgVertex*> m_vertices;  // The vertices in the graph
+
+    // Variables and constants make up a significant proportion of vertices (40-50% was observed
+    // in large designs), and they can often be treated specially in algorithms, which in turn
+    // enables significant verilation performance gains, so we keep these in separate lists for
+    // direct access.
+    V3List<DfgVertex*> m_varVertices;  // The variable vertices in the graph
+    V3List<DfgVertex*> m_constVertices;  // The constant vertices in the graph
+    V3List<DfgVertex*> m_opVertices;  // The operation vertices in the graph
+
     size_t m_size = 0;  // Number of vertices in the graph
     uint32_t m_userCurrent = 0;  // Vertex user data generation number currently in use
     uint32_t m_userCnt = 0;  // Vertex user data generation counter
@@ -156,9 +164,13 @@ public:
         return UserDataInUse{this};
     }
 
-    // Access to vertex list for faster iteration in important contexts
-    DfgVertex* verticesBegin() const { return m_vertices.begin(); }
-    DfgVertex* verticesRbegin() const { return m_vertices.rbegin(); }
+    // Access to vertex lists for faster iteration in important contexts
+    inline DfgVertexVar* varVerticesBeginp() const;
+    inline DfgVertexVar* varVerticesRbeginp() const;
+    inline DfgConst* constVerticesBeginp() const;
+    inline DfgConst* constVerticesRbeginp() const;
+    inline DfgVertex* opVerticesBeginp() const;
+    inline DfgVertex* opVerticesRbeginp() const;
 
     // Calls given function 'f' for each vertex in the graph. It is safe to manipulate any vertices
     // in the graph, or to delete/unlink the vertex passed to 'f' during iteration. It is however
@@ -167,14 +179,6 @@ public:
 
     // 'const' variant of 'forEachVertex'. No mutation allowed.
     inline void forEachVertex(std::function<void(const DfgVertex&)> f) const;
-
-    // Same as 'forEachVertex' but iterates in reverse order.
-    inline void forEachVertexInReverse(std::function<void(DfgVertex&)> f);
-
-    // Returns first vertex of type 'Vertex' that satisfies the given predicate 'p',
-    // or nullptr if no such vertex exists in the graph.
-    template <typename Vertex>
-    inline Vertex* findVertex(std::function<bool(const Vertex&)> p) const;
 
     // Add contents of other graph to this graph. Leaves other graph empty.
     void addGraph(DfgGraph& other);
@@ -192,10 +196,6 @@ public:
     // to be a DAG (acyclic). 'this' will not necessarily be a connected graph at the end, even if
     // it was originally connected.
     std::vector<std::unique_ptr<DfgGraph>> extractCyclicComponents(std::string label);
-
-    // Apply the given function to all vertices in the graph. The function return value
-    // indicates that a change has been made to the graph. Repeat until no changes reported.
-    void runToFixedPoint(std::function<bool(DfgVertex&)> f);
 
     // Dump graph in Graphviz format into the given stream 'os'. 'label' is added to the name of
     // the graph which is included in the output.
@@ -537,46 +537,53 @@ public:
 
 void DfgGraph::addVertex(DfgVertex& vtx) {
     ++m_size;
-    vtx.m_verticesEnt.pushBack(m_vertices, &vtx);
+    if (vtx.is<DfgConst>()) {
+        vtx.m_verticesEnt.pushBack(m_constVertices, &vtx);
+    } else if (vtx.is<DfgVertexVar>()) {
+        vtx.m_verticesEnt.pushBack(m_varVertices, &vtx);
+    } else {
+        vtx.m_verticesEnt.pushBack(m_opVertices, &vtx);
+    }
     vtx.m_graphp = this;
 }
 
 void DfgGraph::removeVertex(DfgVertex& vtx) {
     --m_size;
-    vtx.m_verticesEnt.unlink(m_vertices, &vtx);
+    if (vtx.is<DfgConst>()) {
+        vtx.m_verticesEnt.unlink(m_constVertices, &vtx);
+    } else if (vtx.is<DfgVertexVar>()) {
+        vtx.m_verticesEnt.unlink(m_varVertices, &vtx);
+    } else {
+        vtx.m_verticesEnt.unlink(m_opVertices, &vtx);
+    }
     vtx.m_graphp = nullptr;
 }
 
 void DfgGraph::forEachVertex(std::function<void(DfgVertex&)> f) {
-    for (DfgVertex *vtxp = m_vertices.begin(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->m_verticesEnt.nextp();
+    for (DfgVertex *vtxp = m_varVertices.begin(), *nextp; vtxp; vtxp = nextp) {
+        nextp = vtxp->verticesNext();
+        f(*vtxp);
+    }
+    for (DfgVertex *vtxp = m_constVertices.begin(), *nextp; vtxp; vtxp = nextp) {
+        nextp = vtxp->verticesNext();
+        f(*vtxp);
+    }
+    for (DfgVertex *vtxp = m_opVertices.begin(), *nextp; vtxp; vtxp = nextp) {
+        nextp = vtxp->verticesNext();
         f(*vtxp);
     }
 }
 
 void DfgGraph::forEachVertex(std::function<void(const DfgVertex&)> f) const {
-    for (const DfgVertex* vtxp = m_vertices.begin(); vtxp; vtxp = vtxp->m_verticesEnt.nextp()) {
+    for (const DfgVertex* vtxp = m_varVertices.begin(); vtxp; vtxp = vtxp->verticesNext()) {
         f(*vtxp);
     }
-}
-
-void DfgGraph::forEachVertexInReverse(std::function<void(DfgVertex&)> f) {
-    for (DfgVertex *vtxp = m_vertices.rbegin(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->m_verticesEnt.prevp();
+    for (const DfgVertex* vtxp = m_constVertices.begin(); vtxp; vtxp = vtxp->verticesNext()) {
         f(*vtxp);
     }
-}
-
-template <typename Vertex>
-Vertex* DfgGraph::findVertex(std::function<bool(const Vertex&)> p) const {
-    static_assert(std::is_base_of<DfgVertex, Vertex>::value,
-                  "'Vertex' must be subclass of 'DfgVertex'");
-    for (DfgVertex* vtxp = m_vertices.begin(); vtxp; vtxp = vtxp->m_verticesEnt.nextp()) {
-        if (Vertex* const vvtxp = vtxp->cast<Vertex>()) {
-            if (p(*vvtxp)) return vvtxp;
-        }
+    for (const DfgVertex* vtxp = m_opVertices.begin(); vtxp; vtxp = vtxp->verticesNext()) {
+        f(*vtxp);
     }
-    return nullptr;
 }
 
 void DfgVertex::forEachSource(std::function<void(const DfgVertex&)> f) const {
@@ -830,6 +837,21 @@ public:
 
 // The rest of the DfgVertex subclasses are generated by 'astgen' from AstNodeMath nodes
 #include "V3Dfg__gen_auto_classes.h"
+
+DfgVertexVar* DfgGraph::varVerticesBeginp() const {
+    return static_cast<DfgVertexVar*>(m_varVertices.begin());
+}
+DfgVertexVar* DfgGraph::varVerticesRbeginp() const {
+    return static_cast<DfgVertexVar*>(m_varVertices.rbegin());
+}
+DfgConst* DfgGraph::constVerticesBeginp() const {
+    return static_cast<DfgConst*>(m_constVertices.begin());
+}
+DfgConst* DfgGraph::constVerticesRbeginp() const {
+    return static_cast<DfgConst*>(m_constVertices.rbegin());
+}
+DfgVertex* DfgGraph::opVerticesBeginp() const { return m_opVertices.begin(); }
+DfgVertex* DfgGraph::opVerticesRbeginp() const { return m_opVertices.rbegin(); }
 
 bool DfgVertex::isZero() const {
     if (const DfgConst* const constp = cast<DfgConst>()) return constp->isZero();
