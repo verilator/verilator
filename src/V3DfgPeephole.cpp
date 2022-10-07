@@ -154,17 +154,11 @@ class V3DfgPeephole final : public DfgVisitor {
     // Shorthand
     static AstNodeDType* dtypeForWidth(uint32_t width) { return DfgVertex::dtypeForWidth(width); }
 
-    // Create a new DfgConst vertex with the given width and value
-    DfgConst* makeConst(FileLine* flp, uint32_t width, uint32_t value) {
-        const int widthInt = static_cast<int>(width);
-        return new DfgConst{m_dfg, new AstConst{flp, AstConst::WidthedValue{}, widthInt, value}};
-    }
+    // Create a 32-bit DfgConst vertex
+    DfgConst* makeI32(FileLine* flp, uint32_t val) { return new DfgConst{m_dfg, flp, 32, val}; }
 
-    // Create a new 32-bit DfgConst vertex
-    DfgConst* makeI32(FileLine* flp, uint32_t value) { return makeConst(flp, 32, value); }
-
-    // Create a new DfgConst vertex with the given width and value zero
-    DfgConst* makeZero(FileLine* flp, uint32_t width) { return makeConst(flp, width, 0); }
+    // Create a DfgConst vertex with the given width and value zero
+    DfgConst* makeZero(FileLine* flp, uint32_t width) { return new DfgConst{m_dfg, flp, width}; }
 
     // Constant fold unary vertex, return true if folded
     template <typename Vertex>

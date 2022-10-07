@@ -458,7 +458,7 @@ class AstToDfgVisitor final : public VNVisitor {
     void visit(AstConst* nodep) override {
         UASSERT_OBJ(!nodep->user1p(), nodep, "Already has Dfg vertex");
         if (unhandled(nodep)) return;
-        DfgVertex* const vtxp = new DfgConst{*m_dfgp, nodep->cloneTree(false)};
+        DfgVertex* const vtxp = new DfgConst{*m_dfgp, nodep->fileline(), nodep->num()};
         m_uncommittedVertices.push_back(vtxp);
         nodep->user1p(vtxp);
     }

@@ -79,21 +79,22 @@ class DfgConst final : public DfgVertex {
     friend class DfgVertex;
     friend class DfgVisitor;
 
-    AstConst* const m_constp;  // The AstConst associated with this vertex (owned by this vertex)
+    V3Number m_num;  // Constant value
 
     bool selfEquals(const DfgVertex& that) const override;
     V3Hash selfHash() const override;
 
 public:
-    DfgConst(DfgGraph& dfg, AstConst* constp)
-        : DfgVertex{dfg, dfgType(), constp->fileline(), dtypeFor(constp)}
-        , m_constp{constp} {}
+    DfgConst(DfgGraph& dfg, FileLine* flp, const V3Number& num)
+        : DfgVertex{dfg, dfgType(), flp, dtypeForWidth(num.width())}
+        , m_num{num} {}
+    DfgConst(DfgGraph& dfg, FileLine* flp, uint32_t width, uint32_t value = 0)
+        : DfgVertex{dfg, dfgType(), flp, dtypeForWidth(width)}
+        , m_num{flp, static_cast<int>(width), value} {}
     ASTGEN_MEMBERS_DfgConst;
 
-    ~DfgConst() override { VL_DO_DANGLING(m_constp->deleteTree(), m_constp); }
-
-    AstConst* constp() const { return m_constp; }
-    V3Number& num() const { return m_constp->num(); }
+    V3Number& num() { return m_num; }
+    const V3Number& num() const { return m_num; }
 
     uint32_t toU32() const { return num().toUInt(); }
     int32_t toI32() const { return num().toSInt(); }

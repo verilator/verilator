@@ -329,7 +329,7 @@ class DfgToAstVisitor final : DfgVisitor {
     }
 
     void visit(DfgConst* vtxp) override {  //
-        m_resultp = vtxp->constp()->cloneTree(false);
+        m_resultp = new AstConst{vtxp->fileline(), vtxp->num()};
     }
 
     void visit(DfgSel* vtxp) override {

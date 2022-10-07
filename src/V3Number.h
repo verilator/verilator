@@ -472,6 +472,12 @@ public:
         m_data.num()[0].m_value = value;
         opCleanThis();
     }
+    V3Number(FileLine* flp, int width, uint32_t value) {
+        init(nullptr, width, true);
+        m_fileline = flp;
+        m_data.num()[0].m_value = value;
+        opCleanThis();
+    }
     // Create from a verilog 32'hxxxx number.
     V3Number(AstNode* nodep, const char* sourcep) { create(nodep, sourcep); }
     V3Number(FileLine* flp, const char* sourcep) { create(flp, sourcep); }

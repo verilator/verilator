@@ -592,7 +592,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     }
 
     if (const DfgConst* const constVtxp = vtx.cast<DfgConst>()) {
-        const V3Number& num = constVtxp->constp()->num();
+        const V3Number& num = constVtxp->num();
 
         os << toDotId(vtx);
         os << " [label=\"";
@@ -915,10 +915,10 @@ void DfgVertex::replaceWith(DfgVertex* newSorucep) {
 // DfgConst ----------
 
 bool DfgConst::selfEquals(const DfgVertex& that) const {
-    return constp()->sameTree(that.as<DfgConst>()->constp());
+    return num().isCaseEq(that.as<DfgConst>()->num());
 }
 
-V3Hash DfgConst::selfHash() const { return m_constp->num().toHash(); }
+V3Hash DfgConst::selfHash() const { return num().toHash(); }
 
 // DfgSel ----------
 
@@ -930,7 +930,7 @@ V3Hash DfgSel::selfHash() const { return V3Hash{lsb()}; }
 
 bool DfgVertexVar::selfEquals(const DfgVertex& that) const {
     UASSERT_OBJ(varp() != that.as<DfgVertexVar>()->varp(), this,
-                "There should only be one DfgVarPacked for a given AstVar");
+                "There should only be one DfgVertexVar for a given AstVar");
     return false;
 }
 
