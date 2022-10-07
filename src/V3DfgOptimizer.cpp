@@ -290,9 +290,6 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
         // For each acyclic component
         for (auto& component : acyclicComponents) {
             if (dumpDfg() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
-            // Reverse topologically sort the component
-            const bool acyclic = component->sortTopologically(/* reverse: */ true);
-            UASSERT_OBJ(acyclic, nodep, "Supposedly acyclic graph is cyclic");
             // Optimize the component
             V3DfgPasses::optimize(*component, ctx);
             // Add back under the main DFG (we will convert everything back in one go)

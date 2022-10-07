@@ -179,12 +179,6 @@ public:
     // Add contents of other graph to this graph. Leaves other graph empty.
     void addGraph(DfgGraph& other);
 
-    // Topologically sort the list of vertices in this graph (such that 'forEachVertex' will
-    // iterate in topological order), or reverse topologically if the passed boolean argument is
-    // true. Returns true on success (the graph is acyclic and a topological order exists), false
-    // if the graph is cyclic. If the graph is cyclic, the vertex ordering is not modified.
-    bool sortTopologically(bool reverse = false);
-
     // Split this graph into individual components (unique sub-graphs with no edges between them).
     // Leaves 'this' graph empty.
     std::vector<std::unique_ptr<DfgGraph>> splitIntoComponents(std::string label);
