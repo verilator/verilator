@@ -124,10 +124,8 @@ V3Number::V3Number(AstNode* nodep, const AstNodeDType* nodedtypep) {
     }
 }
 
-void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl) {
-    init(nodep, 0);
+void V3Number::create(const char* sourcep) {
     m_data.setLogic();
-    m_fileline = fl;
     const char* value_startp = sourcep;
     for (const char* cp = sourcep; *cp; cp++) {
         if (*cp == '\'') {
@@ -369,7 +367,7 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
     // m_value[0]);
 }
 
-void V3Number::setNames(AstNode* nodep) {
+void V3Number::nodep(AstNode* nodep) {
     m_nodep = nodep;
     if (!nodep) return;
     m_fileline = nodep->fileline();

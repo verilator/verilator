@@ -232,8 +232,8 @@ public:
         m_stringps.push_back(strp);
         return strp;
     }
-    V3Number* newNumber(FileLine* fl, const char* text) {
-        V3Number* nump = new V3Number(V3Number::FileLined(), fl, text);
+    V3Number* newNumber(FileLine* flp, const char* text) {
+        V3Number* nump = new V3Number(flp, text);
         m_numberps.push_back(nump);
         return nump;
     }
