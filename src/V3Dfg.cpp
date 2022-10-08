@@ -40,10 +40,22 @@ DfgGraph::~DfgGraph() {
 }
 
 void DfgGraph::addGraph(DfgGraph& other) {
-    other.forEachVertex([&](DfgVertex& vtx) {
-        other.removeVertex(vtx);
-        this->addVertex(vtx);
-    });
+    m_size += other.m_size;
+    other.m_size = 0;
+
+    const auto moveVertexList = [this](V3List<DfgVertex*>& src, V3List<DfgVertex*>& dst) {
+        if (DfgVertex* vtxp = src.begin()) {
+            vtxp->m_verticesEnt.moveAppend(src, dst, vtxp);
+            do {
+                vtxp->m_graphp = this;
+                vtxp = vtxp->verticesNext();
+            } while (vtxp);
+        }
+    };
+
+    moveVertexList(other.m_varVertices, m_varVertices);
+    moveVertexList(other.m_constVertices, m_constVertices);
+    moveVertexList(other.m_opVertices, m_opVertices);
 }
 
 std::vector<std::unique_ptr<DfgGraph>> DfgGraph::splitIntoComponents(std::string label) {

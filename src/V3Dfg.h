@@ -536,6 +536,7 @@ public:
 //------------------------------------------------------------------------------
 
 void DfgGraph::addVertex(DfgVertex& vtx) {
+    // Note: changes here need to be replicated in DfgGraph::addGraph
     ++m_size;
     if (vtx.is<DfgConst>()) {
         vtx.m_verticesEnt.pushBack(m_constVertices, &vtx);
@@ -548,6 +549,7 @@ void DfgGraph::addVertex(DfgVertex& vtx) {
 }
 
 void DfgGraph::removeVertex(DfgVertex& vtx) {
+    // Note: changes here need to be replicated in DfgGraph::addGraph
     --m_size;
     if (vtx.is<DfgConst>()) {
         vtx.m_verticesEnt.unlink(m_constVertices, &vtx);
