@@ -665,6 +665,8 @@ class EmitCTrace final : EmitCFunc {
                 } else {
                     fstvt = "FST_VT_VCD_REAL";
                 }
+            } else if (nodep->isString()){
+                fstvt = "FST_VT_GEN_STRING";
             }
             // clang-format off
             else if (vartype == VVarType::GPARAM) {  fstvt = "FST_VT_VCD_PARAMETER"; }
@@ -684,7 +686,6 @@ class EmitCTrace final : EmitCFunc {
             else if (kwd == VBasicDTypeKwd::SHORTINT) { fstvt = "FST_VT_SV_SHORTINT"; }
             else if (kwd == VBasicDTypeKwd::LONGINT) {  fstvt = "FST_VT_SV_LONGINT"; }
             else if (kwd == VBasicDTypeKwd::BYTE) {     fstvt = "FST_VT_SV_BYTE"; }
-            else if (kwd == VBasicDTypeKwd::STRING) {   fstvt = "FST_VT_GEN_STRING"; }
             else { fstvt = "FST_VT_SV_BIT"; }
             // clang-format on
             //
