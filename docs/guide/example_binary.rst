@@ -6,7 +6,7 @@
 Example Create-Binary Execution
 ===============================
 
-We'll compile this SystemC example into a Verilated simulation binary.  For
+We'll compile this SystemVerilog example into a Verilated simulation binary.  For
 an example that discusses the next level of detail see :ref:`Example C++
 Execution`.
 
