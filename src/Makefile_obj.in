@@ -182,6 +182,7 @@ RAW_OBJS = \
 	V3Descope.o \
 	V3Dfg.o \
 	V3DfgAstToDfg.o \
+	V3DfgDecomposition.o \
 	V3DfgDfgToAst.o \
 	V3DfgOptimizer.o \
 	V3DfgPasses.o \

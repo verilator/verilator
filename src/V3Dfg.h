@@ -184,6 +184,7 @@ public:
     void addGraph(DfgGraph& other);
 
     // Split this graph into individual components (unique sub-graphs with no edges between them).
+    // Also removes any vertices that are not weakly connected to any variable.
     // Leaves 'this' graph empty.
     std::vector<std::unique_ptr<DfgGraph>> splitIntoComponents(std::string label);
 
@@ -340,6 +341,7 @@ public:
     // The type of this vertex
     VDfgType type() const { return m_type; }
 
+    // Retrieve user data, constructing it fresh on first try.
     template <typename T>
     T& user() {
         static_assert(sizeof(T) <= sizeof(UserDataStorage),
@@ -354,6 +356,22 @@ public:
             VL_ATTR_UNUSED T* const resultp = new (storagep) T{};
             UDEBUGONLY(UASSERT_OBJ(resultp == storagep, this, "Something is odd"););
         }
+        return *storagep;
+    }
+
+    // Retrieve user data, must be current.
+    template <typename T>
+    T& getUser() {
+        static_assert(sizeof(T) <= sizeof(UserDataStorage),
+                      "Size of user data type 'T' is too large for allocated storage");
+        static_assert(alignof(T) <= alignof(UserDataStorage),
+                      "Alignment of user data type 'T' is larger than allocated storage");
+        T* const storagep = reinterpret_cast<T*>(&m_userDataStorage);
+#if VL_DEBUG
+        const uint32_t userCurrent = m_graphp->m_userCurrent;
+        UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving");
+        UASSERT_OBJ(m_userCnt == userCurrent, this, "DfgVertex user data is stale");
+#endif
         return *storagep;
     }
 
@@ -411,6 +429,10 @@ public:
     // Access to vertex list for faster iteration in important contexts
     DfgVertex* verticesNext() const { return m_verticesEnt.nextp(); }
     DfgVertex* verticesPrev() const { return m_verticesEnt.prevp(); }
+
+    // Calls given function 'f' for each source vertex of this vertex
+    // Unconnected source edges are not iterated.
+    inline void forEachSource(std::function<void(DfgVertex&)> f);
 
     // Calls given function 'f' for each source vertex of this vertex
     // Unconnected source edges are not iterated.
@@ -545,6 +567,7 @@ void DfgGraph::addVertex(DfgVertex& vtx) {
     } else {
         vtx.m_verticesEnt.pushBack(m_opVertices, &vtx);
     }
+    vtx.m_userCnt = 0;
     vtx.m_graphp = this;
 }
 
@@ -558,6 +581,7 @@ void DfgGraph::removeVertex(DfgVertex& vtx) {
     } else {
         vtx.m_verticesEnt.unlink(m_opVertices, &vtx);
     }
+    vtx.m_userCnt = 0;
     vtx.m_graphp = nullptr;
 }
 
@@ -585,6 +609,15 @@ void DfgGraph::forEachVertex(std::function<void(const DfgVertex&)> f) const {
     }
     for (const DfgVertex* vtxp = m_opVertices.begin(); vtxp; vtxp = vtxp->verticesNext()) {
         f(*vtxp);
+    }
+}
+
+void DfgVertex::forEachSource(std::function<void(DfgVertex&)> f) {
+    const auto pair = sourceEdges();
+    const DfgEdge* const edgesp = pair.first;
+    const size_t arity = pair.second;
+    for (size_t i = 0; i < arity; ++i) {
+        if (DfgVertex* const sourcep = edgesp[i].m_sourcep) f(*sourcep);
     }
 }
 
