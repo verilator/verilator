@@ -572,11 +572,8 @@ public:
         VL_DEBUG_IF(assert(bytes >= 0x1000000););  // 16MB is enough for anybody
         m_offloadBufferWritep[0] = (bytes << 4) | VerilatedTraceOffloadCommand::CHG_STRING;
         m_offloadBufferWritep[1] = code;
-        char* indirectstringbufp = new char[bytes];
-        // cppcheck-suppress invalidPointerCast
-        *reinterpret_cast<const char**>(m_offloadBufferWritep + 2) = indirectstringbufp;
-        std::memcpy(indirectstringbufp, newval, bytes);
-        m_offloadBufferWritep += 4;
+        std::string* sdata = new(m_offloadBufferWritep + 2) std::string(newval, bytes);
+        m_offloadBufferWritep += 2 + sizeof(std::string);
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
 };

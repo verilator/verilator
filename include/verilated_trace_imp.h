@@ -187,11 +187,14 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
                 readp += 2;
                 continue;
             case VerilatedTraceOffloadCommand::CHG_STRING:
-                VL_TRACE_OFFLOAD_DEBUG("Command CHG_STRING" << top);
-                traceBufp->chgStringRaw(oldp, *reinterpret_cast<const char* const*>(readp), top);
-                delete[] * reinterpret_cast<const char* const*>(readp);
-                readp += 2;
-                continue;
+                {
+                    VL_TRACE_OFFLOAD_DEBUG("Command CHG_STRING" << top);
+                    const std::string* stringp = reinterpret_cast<const std::string*>(readp);
+                    traceBufp->chgStringRaw(oldp, stringp->data(), top);
+                    stringp->~basic_string();
+                    readp += sizeof(std::string);
+                    continue;
+                }
 
                 //===
                 // Rare commands
