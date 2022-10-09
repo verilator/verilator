@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <climits>
 #include <cmath>
 #include <cstdarg>
 #include <cstdio>
@@ -366,7 +367,7 @@ protected:
         int m_timeFormatUnits = UNITS_NONE;  // $timeformat units
         int m_timeFormatPrecision = 0;  // $timeformat number of decimal places
         int m_timeFormatWidth = 20;  // $timeformat character width
-        int m_maxStringTrace = 127; // Max string size to have in dumps
+        int m_maxStringTrace = INT_MAX; // Max string size to have in dumps
         // CONSTRUCTORS
         Serialized();
         ~Serialized() = default;

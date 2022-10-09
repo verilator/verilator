@@ -2373,7 +2373,11 @@ void VerilatedContext::randReset(int val) VL_MT_SAFE {
 }
 void VerilatedContext::maxStringTrace(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
-    m_s.m_maxStringTrace = val;
+    if (val == 0) {
+        m_s.m_maxStringTrace = INT_MAX;
+    } else {
+        m_s.m_maxStringTrace = val;
+    }
 }
 void VerilatedContext::timeunit(int value) VL_MT_SAFE {
     if (value < 0) value = -value;  // Stored as 0..15
