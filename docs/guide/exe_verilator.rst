@@ -1263,7 +1263,7 @@ Summary:
 .. option:: --trace-max-string *length*
 
    Rarely needed. Specify the maximum length of string to be dumped before
-   truncation. Defaults to 63, as tracing large strings may bloat memory
+   truncation. Defaults to 64, as tracing large strings may bloat memory
    and file size. Larger strings aren't typically useful in wave viewers.
 
    Note that VCD tracing has its own limit that may be lower than this one
