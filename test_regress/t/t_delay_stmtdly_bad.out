@@ -1,25 +1,25 @@
-%Warning-ASSIGNDLY: t/t_delay.v:24:13: Ignoring timing control on this assignment/primitive due to --no-timing
+%Warning-ASSIGNDLY: t/t_delay.v:24:11: Ignoring timing control on this assignment/primitive due to --no-timing
                                      : ... In instance t
    24 |    assign #(1.2000000000000000) dly1 = dly0 + 32'h1;
-      |             ^~~~~~~~~~~~~~~~~~
+      |           ^
                     ... For warning description see https://verilator.org/warn/ASSIGNDLY?v=latest
                     ... Use "/* verilator lint_off ASSIGNDLY */" and lint_on around source to disable this message.
-%Warning-ASSIGNDLY: t/t_delay.v:29:19: Ignoring timing control on this assignment/primitive due to --no-timing
+%Warning-ASSIGNDLY: t/t_delay.v:29:18: Ignoring timing control on this assignment/primitive due to --no-timing
                                      : ... In instance t
    29 |          dly0 <= #0 32'h11;
-      |                   ^
-%Warning-ASSIGNDLY: t/t_delay.v:32:19: Ignoring timing control on this assignment/primitive due to --no-timing
+      |                  ^
+%Warning-ASSIGNDLY: t/t_delay.v:32:18: Ignoring timing control on this assignment/primitive due to --no-timing
                                      : ... In instance t
    32 |          dly0 <= #0.12 dly0 + 32'h12;
-      |                   ^~~~
-%Warning-ASSIGNDLY: t/t_delay.v:40:26: Ignoring timing control on this assignment/primitive due to --no-timing
+      |                  ^
+%Warning-ASSIGNDLY: t/t_delay.v:40:18: Ignoring timing control on this assignment/primitive due to --no-timing
                                      : ... In instance t
    40 |          dly0 <= #(dly_s.dly) 32'h55;
-      |                          ^~~
-%Warning-STMTDLY: t/t_delay.v:45:11: Ignoring delay on this statement due to --no-timing
+      |                  ^
+%Warning-STMTDLY: t/t_delay.v:45:10: Ignoring delay on this statement due to --no-timing
                                    : ... In instance t
    45 |          #100 $finish;
-      |           ^~~
+      |          ^
 %Warning-UNUSED: t/t_delay.v:22:12: Signal is not used: 'dly_s'
                                   : ... In instance t
    22 |    dly_s_t dly_s;

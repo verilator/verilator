@@ -135,14 +135,17 @@ private:
         return nodep->user3u().to<DependencyVertex*>();
     }
     // Find net delay on the LHS of an assignment
-    AstNode* getLhsNetDelay(AstNodeAssign* nodep) const {
+    AstDelay* getLhsNetDelay(AstNodeAssign* nodep) const {
         bool foundWrite = false;
-        AstNode* delayp = nullptr;
+        AstDelay* delayp = nullptr;
         nodep->lhsp()->foreach<AstNodeVarRef>([&](const AstNodeVarRef* const refp) {
             if (!refp->access().isWriteOrRW()) return;
             UASSERT_OBJ(!foundWrite, nodep, "Should only be one variable written to on the LHS");
             foundWrite = true;
-            if (refp->varp()->delayp()) delayp = refp->varp()->delayp()->cloneTree(false);
+            if (refp->varp()->delayp()) {
+                delayp = refp->varp()->delayp();
+                delayp->unlinkFrBack();
+            }
         });
         return delayp;
     }
@@ -150,20 +153,25 @@ private:
     // assignment under it
     AstNodeStmt* factorOutTimingControl(AstNodeAssign* nodep) const {
         AstNodeStmt* stmtp = nodep;
-        AstNode* delayp = getLhsNetDelay(nodep);
+        AstDelay* delayp = getLhsNetDelay(nodep);
         FileLine* const flp = nodep->fileline();
         AstNode* const controlp = nodep->timingControlp();
         if (controlp) {
             controlp->unlinkFrBack();
-            if (!VN_IS(controlp, SenTree)) {
-                delayp = delayp ? new AstAdd{flp, delayp, controlp} : controlp;
+            if (auto* const assignDelayp = VN_CAST(controlp, Delay)) {
+                if (delayp) {
+                    delayp->lhsp(new AstAdd{flp, delayp->lhsp()->unlinkFrBack(),
+                                            assignDelayp->lhsp()->unlinkFrBack()});
+                    VL_DO_DANGLING(assignDelayp->deleteTree(), nodep);
+                } else {
+                    delayp = assignDelayp;
+                }
             }
         }
         if (delayp) {
-            auto* const delayStmtp = new AstDelay{flp, delayp, nullptr};
-            stmtp->replaceWith(delayStmtp);
-            delayStmtp->addStmtsp(stmtp);
-            stmtp = delayStmtp;
+            stmtp->replaceWith(delayp);
+            delayp->addStmtsp(stmtp);
+            stmtp = delayp;
         }
         if (auto* const sensesp = VN_CAST(controlp, SenTree)) {
             auto* const eventControlp = new AstEventControl{flp, sensesp, nullptr};
@@ -493,7 +501,6 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstNodeAssign* nodep) override {
-        iterateChildren(nodep);
         // Only process once to avoid infinite loops (due to the net delay)
         if (nodep->user1SetOnce()) return;
         AstNode* const controlp = factorOutTimingControl(nodep);
@@ -536,14 +543,14 @@ private:
         replaceWithIntermediate(nodep->rhsp(), m_intraValueNames.get(nodep));
     }
     void visit(AstAssignW* nodep) override {
-        iterateChildren(nodep);
-        auto* const netDelayp = getLhsNetDelay(nodep);
+        AstDelay* const netDelayp = getLhsNetDelay(nodep);
         if (!netDelayp && !nodep->timingControlp()) return;
         // This assignment will be converted to an always. In some cases this may generate an
-        // UNOPTFLAT, e.g.: assign #1 clk = ~clk. We create a temp var for the LHS of this assign,
-        // to disable the UNOPTFLAT warning for it.
-        // TODO: Find a way to do this without introducing this var. Perhaps make V3SchedAcyclic
-        // recognize awaits and prevent it from treating this kind of logic as cyclic
+        // UNOPTFLAT, e.g.: assign #1 clk = ~clk. We create a temp var for the LHS of this
+        // assign, to disable the UNOPTFLAT warning for it.
+        // TODO: Find a way to do this without introducing this var. Perhaps make
+        // V3SchedAcyclic recognize awaits and prevent it from treating this kind of logic as
+        // cyclic
         AstNode* const lhsp = nodep->lhsp()->unlinkFrBack();
         std::string varname;
         if (auto* const refp = VN_CAST(lhsp, VarRef)) {
@@ -631,6 +638,7 @@ private:
 
     //--------------------
     void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstVar*) override {}
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
