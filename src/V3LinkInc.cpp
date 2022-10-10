@@ -189,6 +189,7 @@ private:
     void visit(AstLogEq* nodep) override { unsupported_visit(nodep); }
     void visit(AstLogIf* nodep) override { unsupported_visit(nodep); }
     void visit(AstNodeCond* nodep) override { unsupported_visit(nodep); }
+    void visit(AstPropClocked* nodep) override { unsupported_visit(nodep); }
     void prepost_visit(AstNodeTriop* nodep) {
         // Check if we are underneath a statement
         if (!m_insStmtp) {
@@ -273,7 +274,7 @@ private:
         }
 
         // Replace the node with the temporary
-        nodep->replaceWith(new AstVarRef(varrefp->fileline(), varp, VAccess::WRITE));
+        nodep->replaceWith(new AstVarRef{varrefp->fileline(), varp, VAccess::READ});
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }
