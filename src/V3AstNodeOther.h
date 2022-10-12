@@ -2649,7 +2649,7 @@ public:
     ASTGEN_MEMBERS_AstAlwaysPost;
 };
 class AstAlwaysPostponed final : public AstNodeProcedure {
-    // Like always but postponement scheduling region
+    // Like always but Postponed scheduling region
 
 public:
     AstAlwaysPostponed(FileLine* fl, AstNode* stmtsp)

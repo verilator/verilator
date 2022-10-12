@@ -243,16 +243,21 @@ public:
     // METHODS
     AstScope* scopep() { return m_scopep; }
 
-    // Return an AstActive sensitive to the given special sensitivity class
+    // Make a new AstActive sensitive to the given special sensitivity class and return it
+    template <typename SenItemKind>
+    AstActive* makeSpecialActive(FileLine* const fl) {
+        AstSenTree* const senTreep = new AstSenTree{fl, new AstSenItem{fl, SenItemKind{}}};
+        auto* const activep = new AstActive{fl, "", senTreep};
+        activep->sensesStorep(activep->sensesp());
+        addActive(activep);
+        return activep;
+    }
+
+    // Return an AstActive sensitive to the given special sensitivity class (possibly pre-created)
     template <typename SenItemKind>
     AstActive* getSpecialActive(FileLine* fl) {
         AstActive*& cachep = getSpecialActive<SenItemKind>();
-        if (!cachep) {
-            AstSenTree* const senTreep = new AstSenTree{fl, new AstSenItem{fl, SenItemKind{}}};
-            cachep = new AstActive{fl, "", senTreep};
-            cachep->sensesStorep(cachep->sensesp());
-            addActive(cachep);
-        }
+        if (!cachep) cachep = makeSpecialActive<SenItemKind>(fl);
         return cachep;
     }
 
@@ -535,7 +540,9 @@ private:
         // Might be empty with later optimizations, so this assertion can be removed,
         // but for now it is guaranteed to be not empty.
         UASSERT_OBJ(nodep->stmtsp(), nodep, "Should not be empty");
-        visitAlways(nodep, nullptr, VAlwaysKwd::ALWAYS);
+        // Make a new active for it, needs to be the only item under the active for V3Sched
+        AstActive* const activep = m_namer.makeSpecialActive<AstSenItem::Combo>(nodep->fileline());
+        activep->addStmtsp(nodep->unlinkFrBack());
     }
     void visit(AstAlwaysPublic* nodep) override {
         visitAlways(nodep, nodep->sensesp(), VAlwaysKwd::ALWAYS);

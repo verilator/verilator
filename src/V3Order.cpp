@@ -181,7 +181,6 @@ class OrderBuildVisitor final : public VNVisitor {
     bool m_inClocked = false;  // Underneath clocked AstActive
     bool m_inPre = false;  // Underneath AstAssignPre
     bool m_inPost = false;  // Underneath AstAssignPost/AstAlwaysPost
-    bool m_inPostponed = false;  // Underneath AstAlwaysPostponed
     std::function<bool(const AstVarScope*)> m_readTriggersCombLogic;
 
     // METHODS
@@ -265,19 +264,7 @@ class OrderBuildVisitor final : public VNVisitor {
         const bool prevCon = varscp->user2() & VU_CON;
 
         // Compute whether the variable is produced (written) here
-        bool gen = false;
-        if (!prevGen && nodep->access().isWriteOrRW()) {
-            gen = true;
-            if (m_inPostponed) {
-                // IEEE 1800-2017 (4.2.9) forbids any value updates in the postponed region, but
-                // Verilator generated trigger signals for $strobe are cleared after the
-                // display is executed. This is both safe to ignore (because their single read
-                // is in the same AstAlwaysPostponed, just prior to the clear), and is
-                // necessary to ignore to avoid a circular logic (UNOPTFLAT) warning.
-                UASSERT_OBJ(prevCon, nodep, "Should have been consumed in same process");
-                gen = false;
-            }
-        }
+        bool gen = !prevGen && nodep->access().isWriteOrRW();
 
         // Compute whether the value is consumed (read) here
         bool con = false;
@@ -397,12 +384,6 @@ class OrderBuildVisitor final : public VNVisitor {
         m_inPost = true;
         iterateLogic(nodep);
         m_inPost = false;
-    }
-    void visit(AstAlwaysPostponed* nodep) override {
-        UASSERT_OBJ(!m_inPostponed, nodep, "Should not nest");
-        m_inPostponed = true;
-        iterateLogic(nodep);
-        m_inPostponed = false;
     }
     void visit(AstFinal* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("AstFinal should not need ordering");
