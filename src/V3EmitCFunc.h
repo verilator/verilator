@@ -1145,6 +1145,9 @@ public:
         } else if (VN_IS(varModp, Class) && varModp != m_modp) {
             // Superclass member reference
             puts(prefixNameProtect(varModp) + "::");
+        } else if (varp->isIfaceRef()) {
+            puts(nodep->selfPointerProtect(m_useSelfForThis));
+            return;
         } else if (!nodep->selfPointer().empty()) {
             emitDereference(nodep->selfPointerProtect(m_useSelfForThis));
         }

@@ -2523,6 +2523,20 @@ private:
                                   << foundp->warnOther() << "... Location of found object\n"
                                   << foundp->warnContextSecondary());
             }
+        } else if (AstIfaceRefDType* const adtypep = VN_CAST(fromDtp, IfaceRefDType)) {
+            if (AstNode* const foundp = memberSelIface(nodep, adtypep)) {
+                if (AstVar* const varp = VN_CAST(foundp, Var)) {
+                    nodep->dtypep(foundp->dtypep());
+                    nodep->varp(varp);
+                    varp->usedVirtIface(true);
+                    return;
+                }
+                UINFO(1, "found object " << foundp << endl);
+                nodep->v3fatalSrc("MemberSel of non-variable\n"
+                                  << nodep->warnContextPrimary() << '\n'
+                                  << foundp->warnOther() << "... Location of found object\n"
+                                  << foundp->warnContextSecondary());
+            }
         } else if (VN_IS(fromDtp, EnumDType)  //
                    || VN_IS(fromDtp, AssocArrayDType)  //
                    || VN_IS(fromDtp, WildcardArrayDType)  //
@@ -2569,6 +2583,26 @@ private:
         nodep->v3error(
             "Member " << nodep->prettyNameQ() << " not found in class "
                       << first_classp->prettyNameQ() << "\n"
+                      << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
+        return nullptr;  // Caller handles error
+    }
+    AstNode* memberSelIface(AstMemberSel* nodep, AstIfaceRefDType* adtypep) {
+        // Returns node if ok
+        // No need to width-resolve the interface, as it was done when we did the child
+        AstNodeModule* const ifacep = adtypep->ifacep();
+        UASSERT_OBJ(ifacep, nodep, "Unlinked");
+        // if (AstNode* const foundp = ifacep->findMember(nodep->name())) return foundp;
+        VSpellCheck speller;
+        for (AstNode* itemp = ifacep->stmtsp(); itemp; itemp = itemp->nextp()) {
+            if (itemp->name() == nodep->name()) return itemp;
+            if (VN_IS(itemp, Var) || VN_IS(itemp, Modport)) {
+                speller.pushCandidate(itemp->prettyName());
+            }
+        }
+        const string suggest = speller.bestCandidateMsg(nodep->prettyName());
+        nodep->v3error(
+            "Member " << nodep->prettyNameQ() << " not found in interface "
+                      << ifacep->prettyNameQ() << "\n"
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         return nullptr;  // Caller handles error
     }

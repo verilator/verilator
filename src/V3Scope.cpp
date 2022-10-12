@@ -43,6 +43,7 @@ class ScopeVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // AstVar::user1p           -> AstVarScope replacement for this variable
+    // AstCell::user2p          -> AstScope*.  The scope created inside the cell
     // AstTask::user2p          -> AstTask*.  Replacement task
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
@@ -125,6 +126,10 @@ private:
                     AstNodeModule* const modp = cellp->modp();
                     UASSERT_OBJ(modp, cellp, "Unlinked mod");
                     iterate(modp);  // Recursive call to visit(AstNodeModule)
+                    if (VN_IS(modp, Iface)) {
+                        // Remember newly created scope
+                        cellp->user2p(m_scopep);
+                    }
                 }
             }
         }
@@ -261,7 +266,13 @@ private:
     void visit(AstVar* nodep) override {
         // Make new scope variable
         if (!nodep->user1p()) {
-            AstVarScope* const varscp = new AstVarScope(nodep->fileline(), m_scopep, nodep);
+            AstScope* scopep = m_scopep;
+            if (AstIfaceRefDType* const ifacerefp = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
+                // Attach every non-virtual interface variable its inner scope
+                if (ifacerefp->cellp())
+                    scopep = VN_AS(ifacerefp->cellp()->user2p(), Scope);
+            }
+            AstVarScope* const varscp = new AstVarScope{nodep->fileline(), scopep, nodep};
             UINFO(6, "   New scope " << varscp << endl);
             if (m_aboveCellp && !m_aboveCellp->isTrace()) varscp->trace(false);
             nodep->user1p(varscp);
@@ -280,15 +291,11 @@ private:
         // VarRef needs to point to VarScope
         // Make sure variable has made user1p.
         UASSERT_OBJ(nodep->varp(), nodep, "Unlinked");
-        if (nodep->varp()->isIfaceRef()) {
-            nodep->varScopep(nullptr);
-        } else {
-            // We may have not made the variable yet, and we can't make it now as
-            // the var's referenced package etc might not be created yet.
-            // So push to a list and post-correct.
-            // No check here for nodep->classOrPackagep(), will check when walk list.
-            m_varRefScopes.emplace(nodep, m_scopep);
-        }
+        // We may have not made the variable yet, and we can't make it now as
+        // the var's referenced package etc might not be created yet.
+        // So push to a list and post-correct.
+        // No check here for nodep->classOrPackagep(), will check when walk list.
+        m_varRefScopes.emplace(nodep, m_scopep);
     }
     void visit(AstScopeName* nodep) override {
         // If there's a %m in the display text, we add a special node that will contain the name()

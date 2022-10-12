@@ -141,7 +141,7 @@ public:
     void checkRemoveAssign(const LifeMap::iterator& it) {
         const AstVar* const varp = it->first->varp();
         LifeVarEntry* const entp = &(it->second);
-        if (!varp->isSigPublic()) {
+        if (!varp->isSigPublic() && !varp->isUsedVirtIface()) {
             // Rather than track what sigs AstUCFunc/AstUCStmt may change,
             // we just don't optimize any public sigs
             // Check the var entry, and remove if appropriate
@@ -186,7 +186,7 @@ public:
         const auto it = m_map.find(nodep);
         if (it != m_map.end()) {
             if (AstConst* const constp = it->second.constNodep()) {
-                if (!varrefp->varp()->isSigPublic()) {
+                if (!varrefp->varp()->isSigPublic() && !varrefp->varp()->isUsedVirtIface()) {
                     // Aha, variable is constant; substitute in.
                     // We'll later constant propagate
                     UINFO(4, "     replaceconst: " << varrefp << endl);
