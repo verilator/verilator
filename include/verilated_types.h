@@ -1071,6 +1071,13 @@ public:
 };
 
 //===================================================================
+// Represents the null pointer. Used for setting VlClassRef to null instead of
+// via nullptr_t, to prevent the implicit conversion of 0 to nullptr.
+struct VlNull {
+    operator bool() const { return false; }
+};
+
+//===================================================================
 // Verilog class reference container
 // There are no multithreaded locks on this; the base variable must
 // be protected by other means
@@ -1098,14 +1105,16 @@ private:
 public:
     // CONSTRUCTORS
     VlClassRef() = default;
+    // Init with nullptr
+    VlClassRef(VlNull){};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         : m_objp{new T_Class{std::forward<T_Args>(args)...}} {
         m_objp->m_deleter = &deleter;
         refCountInc();
     }
-    // cppcheck-suppress noExplicitConstructor
-    VlClassRef(T_Class* objp)
+    // Explicit to avoid implicit conversion from 0
+    explicit VlClassRef(T_Class* objp)
         : m_objp{objp} {
         refCountInc();
     }
@@ -1145,10 +1154,16 @@ public:
         m_objp = vlstd::exchange(moved.m_objp, nullptr);
         return *this;
     }
+    // Assign with nullptr
+    VlClassRef& operator=(VlNull) {
+        refCountDec();
+        m_objp = nullptr;
+        return *this;
+    }
     // Dynamic caster
     template <typename T_OtherClass>
     VlClassRef<T_OtherClass> dynamicCast() const {
-        return dynamic_cast<T_OtherClass*>(m_objp);
+        return VlClassRef<T_OtherClass>{dynamic_cast<T_OtherClass*>(m_objp)};
     }
     // Dereference operators
     T_Class& operator*() const { return *m_objp; }

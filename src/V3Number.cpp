@@ -506,7 +506,6 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
             out << "'";
             if (bitIs0(0)) {
                 out << '0';
-                if (isNull()) out << "[null]";
             } else if (bitIs1(0)) {
                 out << '1';
             } else if (bitIsZ(0)) {
@@ -542,7 +541,13 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
         // Always deal with 4 bits at once.  Note no 4-state, it's above.
         out << displayed("%0h");
     }
-    if (isNull() && VL_UNCOVERABLE(!isEqZero())) out << "-%E-null-not-zero";
+    if (isNull()) {
+        if (VL_UNCOVERABLE(!isEqZero())) {
+            out << "-%E-null-not-zero";
+        } else {
+            out << " [null]";
+        }
+    }
     return out.str();
 }
 
@@ -2169,7 +2174,9 @@ V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
     // to itself; V3Simulate does this when hits "foo=foo;"
     // So no: NUM_ASSERT_OP_ARGS1(lhs);
     if (this != &lhs) {
-        if (isString()) {
+        if (VL_UNLIKELY(lhs.isNull())) {
+            m_data.m_isNull = true;
+        } else if (isString()) {
             if (VL_UNLIKELY(!lhs.isString())) {
                 // Non-compatible types, erase value.
                 m_data.str() = "";
