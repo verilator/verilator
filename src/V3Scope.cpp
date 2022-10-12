@@ -269,8 +269,7 @@ private:
             AstScope* scopep = m_scopep;
             if (AstIfaceRefDType* const ifacerefp = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
                 // Attach every non-virtual interface variable its inner scope
-                if (ifacerefp->cellp())
-                    scopep = VN_AS(ifacerefp->cellp()->user2p(), Scope);
+                if (ifacerefp->cellp()) scopep = VN_AS(ifacerefp->cellp()->user2p(), Scope);
             }
             AstVarScope* const varscp = new AstVarScope{nodep->fileline(), scopep, nodep};
             UINFO(6, "   New scope " << varscp << endl);
