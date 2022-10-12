@@ -2915,6 +2915,7 @@ private:
                                     outp = AstNode::addNext(outp, addp);
                                 }
                                 newp = new AstSysIgnore(nodep->fileline(), outp);
+                                newp->dtypep(nodep->dtypep());
                             }
                             nodep->replaceWith(newp);
                             VL_DO_DANGLING(nodep->deleteTree(), nodep);

@@ -308,11 +308,11 @@ private:
     // Widths: out width = lhs width = rhs width
     // Signed: Output signed iff LHS & RHS signed.
     // Real: Not allowed
-    void visit(AstAnd* nodep) override { visit_boolmath_and_or(nodep); }
-    void visit(AstOr* nodep) override { visit_boolmath_and_or(nodep); }
-    void visit(AstXor* nodep) override { visit_boolmath_and_or(nodep); }
+    void visit(AstAnd* nodep) override { visit_boolexpr_and_or(nodep); }
+    void visit(AstOr* nodep) override { visit_boolexpr_and_or(nodep); }
+    void visit(AstXor* nodep) override { visit_boolexpr_and_or(nodep); }
     void visit(AstBufIf1* nodep) override {
-        visit_boolmath_and_or(nodep);
+        visit_boolexpr_and_or(nodep);
     }  // Signed behavior changing in 3.814
     // Width: Max(Lhs,Rhs) sort of.
     // Real: If either side real
@@ -2856,12 +2856,12 @@ private:
             if (!nodep->pinsp()) {
                 newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           "clear"};
-                newp->makeStatement();
+                newp->dtypeSetVoid();
             } else {
                 AstNode* const index_exprp = methodCallWildcardIndexExpr(nodep, adtypep);
                 newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           "erase", index_exprp->unlinkFrBack()};
-                newp->makeStatement();
+                newp->dtypeSetVoid();
             }
         } else if (nodep->name() == "sort" || nodep->name() == "rsort"
                    || nodep->name() == "reverse" || nodep->name() == "shuffle") {
@@ -2878,14 +2878,14 @@ private:
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       "r_" + nodep->name(), withp};
             newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique") {
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name()};
             newp->dtypeFrom(adtypep);
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
                    || nodep->name() == "find_last") {
             AstWith* const withp
@@ -2896,7 +2896,7 @@ private:
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp};
             newp->dtypeFrom(adtypep);
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else {
             nodep->v3error("Unknown wildcard associative array method " << nodep->prettyNameQ());
             nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
@@ -2926,7 +2926,7 @@ private:
                                       nodep->name(),  // first/last/next/prev
                                       index_exprp->unlinkFrBack());
             newp->dtypeSetSigned32();
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "exists") {  // function int exists(input index)
             // IEEE really should have made this a "bit" return
             methodOkArguments(nodep, 1, 1);
@@ -2941,12 +2941,12 @@ private:
             if (!nodep->pinsp()) {
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           "clear");
-                newp->makeStatement();
+                newp->dtypeSetVoid();
             } else {
                 AstNode* const index_exprp = methodCallAssocIndexExpr(nodep, adtypep);
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           "erase", index_exprp->unlinkFrBack());
-                newp->makeStatement();
+                newp->dtypeSetVoid();
             }
         } else if (nodep->name() == "sort" || nodep->name() == "rsort"
                    || nodep->name() == "reverse" || nodep->name() == "shuffle") {
@@ -2962,7 +2962,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       "r_" + nodep->name(), withp);
             newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique"
                    || nodep->name() == "unique_index") {
             methodOkArguments(nodep, 0, 0);
@@ -2974,7 +2974,7 @@ private:
             } else {
                 newp->dtypeFrom(adtypep);
             }
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
                    || nodep->name() == "find_last") {
             AstWith* const withp = methodWithArgument(nodep, true, false, nodep->findBitDType(),
@@ -2984,7 +2984,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp);
             newp->dtypeFrom(adtypep);
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
                    || nodep->name() == "find_last_index") {
             AstWith* const withp = methodWithArgument(nodep, true, false, nodep->findBitDType(),
@@ -2994,7 +2994,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp);
             newp->dtypep(queueDTypeIndexedBy(adtypep->keyDTypep()));
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else {
             nodep->v3error("Unknown built-in associative array method " << nodep->prettyNameQ());
             nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
@@ -3048,7 +3048,7 @@ private:
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(), "clear");
-            newp->makeStatement();
+            newp->dtypeSetVoid();
         } else if (nodep->name() == "and" || nodep->name() == "or" || nodep->name() == "xor"
                    || nodep->name() == "sum" || nodep->name() == "product") {
             // All value return
@@ -3060,7 +3060,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       "r_" + nodep->name(), withp);
             newp->dtypeFrom(adtypep->subDTypep());
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "reverse" || nodep->name() == "shuffle"
                    || nodep->name() == "sort" || nodep->name() == "rsort") {
             AstWith* withp = nullptr;
@@ -3072,7 +3072,7 @@ private:
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp);
-            newp->makeStatement();
+            newp->dtypeSetVoid();
         } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique"
                    || nodep->name() == "unique_index") {
             methodOkArguments(nodep, 0, 0);
@@ -3084,7 +3084,7 @@ private:
             } else {
                 newp->dtypeFrom(adtypep);
             }
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
                    || nodep->name() == "find_last" || nodep->name() == "find_index") {
             AstWith* const withp
@@ -3095,7 +3095,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp);
             newp->dtypeFrom(adtypep);
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
                    || nodep->name() == "find_last_index") {
             AstWith* const withp
@@ -3106,7 +3106,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp);
             newp->dtypep(newp->findQueueIndexDType());
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported/unknown built-in dynamic array method "
                                              << nodep->prettyNameQ());
@@ -3137,18 +3137,18 @@ private:
             if (!nodep->pinsp()) {
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           "clear");
-                newp->makeStatement();
+                newp->dtypeSetVoid();
             } else {
                 AstNode* const index_exprp = methodCallQueueIndexExpr(nodep);
                 if (index_exprp->isZero()) {  // delete(0) is a pop_front
                     newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                               "pop_front");
                     newp->dtypeFrom(adtypep->subDTypep());
-                    newp->makeStatement();
+                    newp->dtypeSetVoid();
                 } else {
                     newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                               "erase", index_exprp->unlinkFrBack());
-                    newp->makeStatement();
+                    newp->dtypeSetVoid();
                 }
             }
         } else if (nodep->name() == "insert") {
@@ -3160,12 +3160,12 @@ private:
             if (index_exprp->isZero()) {  // insert(0, ...) is a push_front
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           "push_front", argp->exprp()->unlinkFrBack());
-                newp->makeStatement();
+                newp->dtypeSetVoid();
             } else {
                 newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           nodep->name(), index_exprp->unlinkFrBack());
                 newp->addPinsp(argp->exprp()->unlinkFrBack());
-                newp->makeStatement();
+                newp->dtypeSetVoid();
             }
         } else if (nodep->name() == "pop_front" || nodep->name() == "pop_back") {
             methodOkArguments(nodep, 0, 0);
@@ -3174,9 +3174,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name());
             newp->dtypeFrom(adtypep->subDTypep());
-            // Because queue methods pop_front() or pop_back() can be void cast,
-            // they use makeStatement to check if they need the c++ ";" added.
-            if (nodep->isStandaloneBodyStmt()) newp->makeStatement();
+            if (nodep->isStandaloneBodyStmt()) newp->dtypeSetVoid();
         } else if (nodep->name() == "push_back" || nodep->name() == "push_front") {
             methodOkArguments(nodep, 1, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
@@ -3184,7 +3182,7 @@ private:
             iterateCheckTyped(nodep, "push value", argp->exprp(), adtypep->subDTypep(), BOTH);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), argp->exprp()->unlinkFrBack());
-            newp->makeStatement();
+            newp->dtypeSetVoid();
         } else if (nodep->name() == "and" || nodep->name() == "or" || nodep->name() == "xor"
                    || nodep->name() == "sum" || nodep->name() == "product") {
             AstWith* const withp
@@ -3195,7 +3193,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       "r_" + nodep->name(), withp);
             newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "reverse" || nodep->name() == "shuffle"
                    || nodep->name() == "sort" || nodep->name() == "rsort") {
             AstWith* withp = nullptr;
@@ -3207,7 +3205,7 @@ private:
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp);
-            newp->makeStatement();
+            newp->dtypeSetVoid();
         } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique"
                    || nodep->name() == "unique_index") {
             methodOkArguments(nodep, 0, 0);
@@ -3219,7 +3217,7 @@ private:
             } else {
                 newp->dtypeFrom(adtypep);
             }
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
                    || nodep->name() == "find_last") {
             AstWith* const withp
@@ -3230,7 +3228,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp);
             newp->dtypeFrom(adtypep);
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
                    || nodep->name() == "find_last_index") {
             AstWith* const withp
@@ -3241,7 +3239,7 @@ private:
             newp = new AstCMethodHard(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp);
             newp->dtypep(newp->findQueueIndexDType());
-            if (!nodep->firstAbovep()) newp->makeStatement();
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported/unknown built-in queue method " << nodep->prettyNameQ());
@@ -3289,7 +3287,7 @@ private:
                     nodep->taskp(ftaskp);
                     nodep->dtypeFrom(ftaskp);
                     nodep->classOrPackagep(classp);
-                    if (VN_IS(ftaskp, Task)) nodep->makeStatement();
+                    if (VN_IS(ftaskp, Task)) nodep->dtypeSetVoid();
                     processFTaskRefArgs(nodep);
                 }
                 return;
@@ -3432,8 +3430,8 @@ private:
             AstNode* const newp = new AstAssign(
                 nodep->fileline(), fromp, new AstPutcN(nodep->fileline(), varrefp, rhsp, thsp));
             fromp->access(VAccess::WRITE);
-            nodep->replaceWith(newp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            pushDeletep(nodep->backp());
+            VL_DO_DANGLING(nodep->backp()->replaceWith(newp), nodep);
         } else if (nodep->name() == "getc") {
             methodOkArguments(nodep, 1, 1);
             AstArg* const arg0p = VN_AS(nodep->pinsp(), Arg);
@@ -4351,8 +4349,8 @@ private:
             }
             AstMethodCall* const newp = new AstMethodCall{
                 nodep->fileline(), nodep->lhsp()->unlinkFrBack(), "delete", nullptr};
-            newp->makeStatement();
-            nodep->replaceWith(newp);
+            newp->dtypeSetVoid();
+            nodep->replaceWith(newp->makeStmt());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             // Need to now convert it
             visit(newp);
@@ -4371,8 +4369,8 @@ private:
             }
             newp->didWidth(true);
             newp->protect(false);
-            newp->makeStatement();
-            nodep->replaceWith(newp);
+            newp->dtypeSetVoid();
+            nodep->replaceWith(newp->makeStmt());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             // return;
         }
@@ -4440,8 +4438,8 @@ private:
                         newFormat += "%@";
                         VNRelinker handle;
                         argp->unlinkFrBack(&handle);
-                        AstCMath* const newp
-                            = new AstCMath(nodep->fileline(), "VL_TO_STRING(", 0, true);
+                        AstCExpr* const newp
+                            = new AstCExpr(nodep->fileline(), "VL_TO_STRING(", 0, true);
                         newp->addExprsp(argp);
                         newp->addExprsp(new AstText(nodep->fileline(), ")", true));
                         newp->dtypeSetString();
@@ -5274,7 +5272,7 @@ private:
 
     //--------------------
     // Default
-    void visit(AstNodeMath* nodep) override {
+    void visit(AstNodeExpr* nodep) override {
         if (!nodep->didWidth()) {
             nodep->v3fatalSrc(
                 "Visit function missing? Widthed function missing for math node: " << nodep);
@@ -5623,7 +5621,7 @@ private:
         return nodep;  // May edit
     }
 
-    void visit_boolmath_and_or(AstNodeBiop* nodep) {
+    void visit_boolexpr_and_or(AstNodeBiop* nodep) {
         // CALLER: And, Or, Xor, ...
         // Lint widths: out width = lhs width = rhs width
         // Signed: if lhs & rhs signed
@@ -6452,8 +6450,8 @@ private:
             nodep->fileline(), fromp,
             new AstSFormatF(nodep->fileline(), format, false, argp->exprp()->unlinkFrBack()));
         fromp->access(VAccess::WRITE);
-        nodep->replaceWith(newp);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        pushDeletep(nodep->backp());
+        VL_DO_DANGLING(nodep->backp()->replaceWith(newp), newp);
     }
 
     //----------------------------------------------------------------------

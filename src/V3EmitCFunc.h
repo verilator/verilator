@@ -110,15 +110,15 @@ public:
     void reset() { m_emitted.clear(); }
 };
 
-//######################################################################
-// Emit statements and math operators
+// ######################################################################
+//  Emit statements and expressions
 
 class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
 private:
     AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
     int m_labelNum = 0;  // Next label number
     int m_splitSize = 0;  // # of cfunc nodes placed into output file
-    bool m_inUC = false;  // Inside an AstUCStmt or AstUCMath
+    bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
     bool m_emitConstInit = false;  // Emitting constant initializer
 
     // State associated with processing $display style string formatting
@@ -167,7 +167,7 @@ public:
     void displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt, bool ignore,
                     char fmtLetter);
 
-    bool emitSimpleOk(AstNodeMath* nodep);
+    bool emitSimpleOk(AstNodeExpr* nodep);
     void emitIQW(AstNode* nodep) {
         // Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g
         puts(nodep->dtypep()->charIQWN());
@@ -330,7 +330,7 @@ public:
             iterateAndNextNull(nodep->lhsp());
             puts(", ");
         } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
-                   && !VN_IS(nodep->rhsp(), CMath)  //
+                   && !VN_IS(nodep->rhsp(), CExpr)  //
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //
                    && !VN_IS(nodep->rhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), AssocSel)  //
@@ -415,7 +415,6 @@ public:
     void visit(AstCAwait* nodep) override {
         puts("co_await ");
         iterate(nodep->exprp());
-        if (nodep->isStatement()) puts(";\n");
     }
     void visit(AstCNew* nodep) override {
         bool comma = false;
@@ -446,10 +445,6 @@ public:
             comma = true;
         }
         puts(")");
-        // Some are statements some are math.
-        if (nodep->isStatement()) puts(";\n");
-        UASSERT_OBJ(!nodep->isStatement() || VN_IS(nodep->dtypep(), VoidDType), nodep,
-                    "Statement of non-void data type");
     }
     void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
     void visit(AstWith* nodep) override {
@@ -804,6 +799,10 @@ public:
         iterateAndNextNull(nodep->lhsp());
         puts(")");
     }
+    void visit(AstStmtExpr* node) override {
+        iterate(node->exprp());
+        puts(";\n");
+    }
     void visit(AstJumpBlock* nodep) override {
         nodep->labelNum(++m_labelNum);
         puts("{\n");  // Make it visually obvious label jumps outside these
@@ -931,7 +930,7 @@ public:
         putbs("");
         iterateAndNextNull(nodep->exprsp());
     }
-    void visit(AstCMath* nodep) override {
+    void visit(AstCExpr* nodep) override {
         putbs("");
         iterateAndNextNull(nodep->exprsp());
     }

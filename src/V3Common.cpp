@@ -42,7 +42,7 @@ static void makeVlToString(AstClass* nodep) {
     funcp->isConst(false);
     funcp->isStatic(false);
     funcp->protect(false);
-    AstNode* const exprp = new AstCMath{nodep->fileline(), "obj ? obj->to_string() : \"null\"", 0};
+    AstNode* const exprp = new AstCExpr{nodep->fileline(), "obj ? obj->to_string() : \"null\"", 0};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtsp(funcp);
@@ -55,7 +55,7 @@ static void makeVlToString(AstIface* nodep) {
     funcp->isConst(false);
     funcp->isStatic(false);
     funcp->protect(false);
-    AstNode* const exprp = new AstCMath{nodep->fileline(), "obj ? obj->name() : \"null\"", 0};
+    AstNode* const exprp = new AstCExpr{nodep->fileline(), "obj ? obj->name() : \"null\"", 0};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtsp(funcp);
@@ -66,7 +66,7 @@ static void makeToString(AstClass* nodep) {
     funcp->isStatic(false);
     funcp->protect(false);
     AstNode* const exprp
-        = new AstCMath{nodep->fileline(), R"(std::string{"'{"} + to_string_middle() + "}")", 0};
+        = new AstCExpr{nodep->fileline(), R"(std::string{"'{"} + to_string_middle() + "}")", 0};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtsp(funcp);

@@ -485,9 +485,8 @@ private:
                 AstIf* const ifp = new AstIf{flp, dlyRef(VAccess::READ)};
                 postp->addStmtsp(ifp);
                 AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "fire"};
-                callp->statement(true);
                 callp->dtypeSetVoid();
-                ifp->addThensp(callp);
+                ifp->addThensp(callp->makeStmt());
             }
 
             AstActive* const activep = createActive(nodep);
@@ -501,8 +500,7 @@ private:
             AstCMethodHard* const callp
                 = new AstCMethodHard{flp, nodep->operandp()->unlinkFrBack(), "fire"};
             callp->dtypeSetVoid();
-            callp->statement(true);
-            nodep->replaceWith(callp);
+            nodep->replaceWith(callp->makeStmt());
         }
         nodep->deleteTree();
     }

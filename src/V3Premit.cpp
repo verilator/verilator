@@ -46,7 +46,7 @@ constexpr int STATIC_CONST_MIN_WIDTH = 256;  // Minimum size to extract to stati
 class PremitVisitor final : public VNVisitor {
 private:
     // NODE STATE
-    //  AstNodeMath::user()     -> bool.  True if iterated already
+    //  AstNodeExpr::user()     -> bool.  True if iterated already
     //  AstShiftL::user2()      -> bool.  True if converted to conditional
     //  AstShiftR::user2()      -> bool.  True if converted to conditional
     //  *::user3()              -> Used when visiting AstNodeAssign
@@ -56,6 +56,7 @@ private:
     // STATE
     AstCFunc* m_cfuncp = nullptr;  // Current block
     AstNode* m_stmtp = nullptr;  // Current statement
+    AstCCall* m_callp = nullptr;  // Current AstCCall
     AstWhile* m_inWhilep = nullptr;  // Inside while loop, special statement additions
     AstTraceInc* m_inTracep = nullptr;  // Inside while loop, special statement additions
     bool m_assignLhs = false;  // Inside assignment lhs, don't breakup extracts
@@ -89,8 +90,7 @@ private:
                            && VN_AS(nodep->backp(), Sel)->widthp() == nodep) {
                     // AstSel::width must remain a constant
                 } else if ((nodep->firstAbovep() && VN_IS(nodep->firstAbovep(), ArraySel))
-                           || ((VN_IS(m_stmtp, CCall) || VN_IS(m_stmtp, CStmt))
-                               && VN_IS(nodep, ArraySel))) {
+                           || ((m_callp || VN_IS(m_stmtp, CStmt)) && VN_IS(nodep, ArraySel))) {
                     // ArraySel's are pointer refs, ignore
                 } else {
                     UINFO(4, "Cre Temp: " << nodep << endl);
@@ -208,10 +208,6 @@ private:
         m_stmtp = nullptr;
     }
     void visit(AstNodeStmt* nodep) override {
-        if (!nodep->isStatement()) {
-            iterateChildren(nodep);
-            return;
-        }
         UINFO(4, "  STMT  " << nodep << endl);
         startStatement(nodep);
         iterateChildren(nodep);
@@ -336,6 +332,11 @@ private:
             createDeepTemp(nodep->condp(), false);
         }
         checkNode(nodep);
+    }
+    void visit(AstCCall* nodep) override {
+        VL_RESTORER(m_callp);
+        m_callp = nodep;
+        iterateChildren(nodep);
     }
 
     // Autoflush

@@ -32,7 +32,7 @@ constexpr int VL_VALUE_STRING_MAX_WIDTH = 8192;
 //######################################################################
 // EmitCFunc
 
-bool EmitCFunc::emitSimpleOk(AstNodeMath* nodep) {
+bool EmitCFunc::emitSimpleOk(AstNodeExpr* nodep) {
     // Can we put out a simple (A + B) instead of VL_ADD_III(A,B)?
     if (nodep->emitSimpleOperator() == "") return false;
     if (nodep->isWide()) return false;
@@ -433,12 +433,7 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
         iterate(subnodep);
         comma = true;
     }
-    if (VN_IS(nodep->backp(), NodeMath) || VN_IS(nodep->backp(), CReturn)) {
-        // We should have a separate CCall for math and statement usage, but...
-        puts(")");
-    } else {
-        puts(");\n");
-    }
+    puts(")");
 }
 
 void EmitCFunc::emitDereference(const string& pointer) {

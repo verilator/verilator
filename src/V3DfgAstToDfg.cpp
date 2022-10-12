@@ -39,7 +39,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace {
 
-// Create a DfgVertex out of a AstNodeMath. For most AstNodeMath subtypes, this can be done
+// Create a DfgVertex out of a AstNodeExpr. For most AstNodeExpr subtypes, this can be done
 // automatically. For the few special cases, we provide specializations below
 template <typename Vertex, typename Node>
 Vertex* makeVertex(const Node* nodep, DfgGraph& dfg) {
@@ -132,7 +132,7 @@ class AstToDfgVisitor final : public VNVisitor {
     }
 
     // Returns true if the expression cannot (or should not) be represented by DFG
-    bool unhandled(AstNodeMath* nodep) {
+    bool unhandled(AstNodeExpr* nodep) {
         // Short-circuiting if something was already unhandled
         if (!m_foundUnhandled) {
             // Impure nodes cannot be represented

@@ -1196,7 +1196,7 @@ def write_dfg_dfg_to_ast(filename):
                 "void visit(Dfg{t}* vtxp) override {{\n".format(t=node.name))
             for i in range(node.arity):
                 fh.write(
-                    "    AstNodeMath* const op{j}p = convertSource(vtxp->source<{i}>());\n"
+                    "    AstNodeExpr* const op{j}p = convertSource(vtxp->source<{i}>());\n"
                     .format(i=i, j=i + 1))
             fh.write(
                 "    m_resultp = makeNode<Ast{t}>(vtxp".format(t=node.name))

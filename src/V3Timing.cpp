@@ -341,9 +341,8 @@ private:
         auto* const donep = new AstCMethodHard{
             beginp->fileline(), new AstVarRef{flp, forkVscp, VAccess::WRITE}, "done"};
         donep->dtypeSetVoid();
-        donep->statement(true);
         addDebugInfo(donep);
-        beginp->addStmtsp(donep);
+        beginp->addStmtsp(donep->makeStmt());
     }
     // Handle the 'join' part of a fork..join
     void makeForkJoin(AstFork* const forkp) {
@@ -364,16 +363,15 @@ private:
         auto* const initp = new AstCMethodHard{flp, new AstVarRef{flp, forkVscp, VAccess::WRITE},
                                                "init", new AstConst{flp, joinCount}};
         initp->dtypeSetVoid();
-        initp->statement(true);
-        forkp->addHereThisAsNext(initp);
+        forkp->addHereThisAsNext(initp->makeStmt());
         // Await the join at the end
         auto* const joinp
             = new AstCMethodHard{flp, new AstVarRef{flp, forkVscp, VAccess::WRITE}, "join"};
         joinp->dtypeSetVoid();
         addDebugInfo(joinp);
-        auto* const awaitp = new AstCAwait{flp, joinp};
-        awaitp->statement(true);
-        forkp->addNextHere(awaitp);
+        AstCAwait* const awaitp = new AstCAwait{flp, joinp};
+        awaitp->dtypeSetVoid();
+        forkp->addNextHere(awaitp->makeStmt());
     }
 
     // VISITORS
@@ -476,7 +474,9 @@ private:
         if (nodep->funcp()->user2()) {  // If suspendable
             VNRelinker relinker;
             nodep->unlinkFrBack(&relinker);
-            relinker.relink(new AstCAwait{nodep->fileline(), nodep});
+            AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), nodep};
+            awaitp->dtypeSetVoid();
+            relinker.relink(awaitp);
         } else {
             // Add our process/func as the CFunc's dependency as we might have to put an await here
             DependencyVertex* const procVxp = getDependencyVertex(m_procp);
@@ -515,13 +515,15 @@ private:
         delayMethodp->dtypeSetVoid();
         addDebugInfo(delayMethodp);
         // Create the co_await
-        auto* const awaitp = new AstCAwait{flp, delayMethodp, getCreateDelaySenTree()};
-        awaitp->statement(true);
+        AstCAwait* const awaitp = new AstCAwait{flp, delayMethodp, getCreateDelaySenTree()};
+        awaitp->dtypeSetVoid();
+        AstStmtExpr* const awaitStmtp = awaitp->makeStmt();
         // Relink child statements after the co_await
         if (nodep->stmtsp()) {
-            AstNode::addNext<AstNode, AstNode>(awaitp, nodep->stmtsp()->unlinkFrBackWithNext());
+            AstNode::addNext<AstNode, AstNode>(awaitStmtp,
+                                               nodep->stmtsp()->unlinkFrBackWithNext());
         }
-        nodep->replaceWith(awaitp);
+        nodep->replaceWith(awaitStmtp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstEventControl* nodep) override {
@@ -552,9 +554,9 @@ private:
             auto* const sensesp = nodep->sensesp();
             addEventDebugInfo(evalMethodp, sensesp);
             // Create the co_await
-            auto* const awaitEvalp
+            AstCAwait* const awaitEvalp
                 = new AstCAwait{flp, evalMethodp, getCreateDynamicTriggerSenTree()};
-            awaitEvalp->statement(true);
+            awaitEvalp->dtypeSetVoid();
             // Construct the sen expression for this sentree
             SenExprBuilder senExprBuilder{m_scopep};
             auto* const assignp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
@@ -568,8 +570,9 @@ private:
             }
             // Create the trigger eval loop, which will await the evaluation step and check the
             // trigger
-            auto* const loopp = new AstWhile{
-                flp, new AstLogNot{flp, new AstVarRef{flp, trigvscp, VAccess::READ}}, awaitEvalp};
+            AstWhile* const loopp = new AstWhile{
+                flp, new AstLogNot{flp, new AstVarRef{flp, trigvscp, VAccess::READ}},
+                awaitEvalp->makeStmt()};
             // Put pre updates before the trigger check and assignment
             for (AstNodeStmt* const stmtp : senExprBuilder.getAndClearPreUpdates()) {
                 loopp->addStmtsp(stmtp);
@@ -579,18 +582,18 @@ private:
             // If the post update is destructive (e.g. event vars are cleared), create an await for
             // the post update step
             if (destructivePostUpdate(sensesp)) {
-                auto* const awaitPostUpdatep = awaitEvalp->cloneTree(false);
+                AstCAwait* const awaitPostUpdatep = awaitEvalp->cloneTree(false);
                 VN_AS(awaitPostUpdatep->exprp(), CMethodHard)->name("postUpdate");
-                loopp->addStmtsp(awaitPostUpdatep);
+                loopp->addStmtsp(awaitPostUpdatep->makeStmt());
             }
             // Put the post updates at the end of the loop
             for (AstNodeStmt* const stmtp : senExprBuilder.getAndClearPostUpdates()) {
                 loopp->addStmtsp(stmtp);
             }
             // Finally, await the resumption step in 'act'
-            auto* const awaitResumep = awaitEvalp->cloneTree(false);
+            AstCAwait* const awaitResumep = awaitEvalp->cloneTree(false);
             VN_AS(awaitResumep->exprp(), CMethodHard)->name("resumption");
-            AstNode::addNext<AstNode, AstNode>(loopp, awaitResumep);
+            AstNode::addNext<AstNodeStmt, AstNodeStmt>(loopp, awaitResumep->makeStmt());
             // Replace the event control with the loop
             nodep->replaceWith(loopp);
         } else {
@@ -605,9 +608,9 @@ private:
             triggerMethodp->dtypeSetVoid();
             addEventDebugInfo(triggerMethodp, sensesp);
             // Create the co_await
-            auto* const awaitp = new AstCAwait{flp, triggerMethodp, sensesp};
-            awaitp->statement(true);
-            nodep->replaceWith(awaitp);
+            AstCAwait* const awaitp = new AstCAwait{flp, triggerMethodp, sensesp};
+            awaitp->dtypeSetVoid();
+            nodep->replaceWith(awaitp->makeStmt());
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -700,9 +703,11 @@ private:
             if (constp->isZero()) {
                 // We have to await forever instead of simply returning in case we're deep in a
                 // callstack
-                auto* const awaitp = new AstCAwait{flp, new AstCStmt{flp, "VlForever{}"}};
-                awaitp->statement(true);
-                nodep->replaceWith(awaitp);
+                AstCExpr* const foreverp = new AstCExpr{flp, "VlForever{}", 0, true};
+                foreverp->dtypeSetVoid();  // TODO: this is sloppy but harmless
+                AstCAwait* const awaitp = new AstCAwait{flp, foreverp};
+                awaitp->dtypeSetVoid();
+                nodep->replaceWith(awaitp->makeStmt());
                 if (stmtsp) VL_DO_DANGLING(stmtsp->deleteTree(), stmtsp);
             } else if (stmtsp) {
                 // Just put the statements there
@@ -760,7 +765,7 @@ private:
     }
 
     //--------------------
-    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstVar*) override {}
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

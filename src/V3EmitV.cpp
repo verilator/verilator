@@ -28,8 +28,8 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-//######################################################################
-// Emit statements and math operators
+// ######################################################################
+//  Emit statements and expressions
 
 class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     // MEMBERS
@@ -381,6 +381,10 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     }
     void visit(AstStop* nodep) override { putfs(nodep, "$stop;\n"); }
     void visit(AstFinish* nodep) override { putfs(nodep, "$finish;\n"); }
+    void visit(AstStmtExpr* nodep) override {
+        iterate(nodep->exprp());
+        puts(";\n");
+    }
     void visit(AstNodeSimpleText* nodep) override {
         if (nodep->tracking() || m_trackText) {
             puts(nodep->text());
@@ -405,8 +409,8 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         iterateAndNextConstNull(nodep->exprsp());
         puts(");\n");
     }
-    void visit(AstCMath* nodep) override {
-        putfs(nodep, "$_CMATH(");
+    void visit(AstCExpr* nodep) override {
+        putfs(nodep, "$_CEXPR(");
         iterateAndNextConstNull(nodep->exprsp());
         puts(");\n");
     }

@@ -107,16 +107,10 @@ private:
             iterateChildren(nodep);
         }
     }
-    void visit(AstNodeStmt* nodep) override {
-        if (!nodep->isStatement()) {
-            iterateChildren(nodep);
-        } else {
-            visitStmt(nodep);
-        }
-    }
+    void visit(AstNodeStmt* nodep) override { visitStmt(nodep); }
     // Operators
     void visit(AstNodeTermop* nodep) override {}
-    void visit(AstNodeMath* nodep) override {
+    void visit(AstNodeExpr* nodep) override {
         // We have some operator defines that use 2 parens, so += 2.
         {
             VL_RESTORER(m_depth);

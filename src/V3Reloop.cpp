@@ -252,7 +252,7 @@ private:
     }
     //--------------------
     void visit(AstVar*) override {}  // Accelerate
-    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:

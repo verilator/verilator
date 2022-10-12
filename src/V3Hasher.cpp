@@ -183,8 +183,8 @@ private:
     }
 
     //------------------------------------------------------------
-    // AstNodeMath
-    void visit(AstNodeMath* nodep) override {
+    // AstNodeExpr
+    void visit(AstNodeExpr* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
     void visit(AstConst* nodep) override {

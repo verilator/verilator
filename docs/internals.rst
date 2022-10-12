@@ -114,6 +114,13 @@ you are at the top of the tree.
 By convention, each function/method uses the variable ``nodep`` as a
 pointer to the ``AstNode`` currently being processed.
 
+There are notable sub-hierarchies of the ``AstNode`` sub-types, namely:
+
+1. All AST nodes representing data types derive from ``AstNodeDType``.
+
+2. All AST nodes representing expressions (i.e.: anything that stands for,
+   or evaluates to a value) derive from ``AstNodeExpr``.
+
 
 ``VNVisitor``
 ^^^^^^^^^^^^^^^
@@ -205,7 +212,7 @@ writing DFG passes easier.
 
 The ``DfgGraph`` represents combinational logic equations as a graph of
 ``DfgVertex`` vertices. Each sub-class of ``DfgVertex`` corresponds to an
-expression (a sub-class of ``AstNodeMath``), a constanat, or a variable
+expression (a sub-class of ``AstNodeExpr``), a constanat, or a variable
 reference. LValues and RValues referencing the same storage location are
 represented by the same ``DfgVertex``. Consumers of such vertices read as the
 LValue, writers of such vertices write the RValue. The bulk of the final
@@ -1117,7 +1124,7 @@ will be used as the base name of the generated operand accessors, and
 
 
 An example of the full syntax of the directive is
-``@astgen op1 := lhsp : AstNodeMath``.
+``@astgen op1 := lhsp : AstNodeExpr``.
 
 ``astnode`` generates accessors for the child nodes based on these directives.
 For non-list children, the names of the getter and setter both are that of the

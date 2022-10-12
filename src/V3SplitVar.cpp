@@ -405,7 +405,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     VarSet m_foundTargetVar;
     UnpackRefMap m_refs;
     AstNodeModule* m_modp = nullptr;
-    // AstNodeStmt, AstCell, AstNodeFTaskRef, or AstAlways(Public) for sensitivity
+    // AstNodeStmt, AstCell, or AstAlways(Public) for sensitivity
     AstNode* m_contextp = nullptr;
     const AstNodeFTask* m_inFTask = nullptr;
     size_t m_numSplit = 0;
@@ -492,38 +492,34 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         }
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        VL_RESTORER(m_contextp);
-        {
-            m_contextp = nodep;
-            const AstNodeFTask* const ftaskp = nodep->taskp();
-            UASSERT_OBJ(ftaskp, nodep, "Unlinked");
-            // Iterate arguments of a function/task.
-            for (AstNode *argp = nodep->pinsp(), *paramp = ftaskp->stmtsp(); argp;
-                 argp = argp->nextp(), paramp = paramp ? paramp->nextp() : nullptr) {
-                const char* reason = nullptr;
-                const AstVar* vparamp = nullptr;
-                while (paramp) {
-                    vparamp = VN_CAST(paramp, Var);
-                    if (vparamp && vparamp->isIO()) {
-                        reason = cannotSplitVarDirectionReason(vparamp->direction());
-                        break;
-                    }
-                    paramp = paramp->nextp();
-                    vparamp = nullptr;
+        const AstNodeFTask* const ftaskp = nodep->taskp();
+        UASSERT_OBJ(ftaskp, nodep, "Unlinked");
+        // Iterate arguments of a function/task.
+        for (AstNode *argp = nodep->pinsp(), *paramp = ftaskp->stmtsp(); argp;
+             argp = argp->nextp(), paramp = paramp ? paramp->nextp() : nullptr) {
+            const char* reason = nullptr;
+            const AstVar* vparamp = nullptr;
+            while (paramp) {
+                vparamp = VN_CAST(paramp, Var);
+                if (vparamp && vparamp->isIO()) {
+                    reason = cannotSplitVarDirectionReason(vparamp->direction());
+                    break;
                 }
-                if (!reason && !vparamp) {
-                    reason = "the number of argument to the task/function mismatches";
-                }
-                m_foundTargetVar.clear();
-                iterate(argp);
-                if (reason) {
-                    for (AstVar* const varp : m_foundTargetVar) {
-                        warnNoSplit(varp, argp, reason);
-                        m_refs.remove(varp);
-                    }
-                }
-                m_foundTargetVar.clear();
+                paramp = paramp->nextp();
+                vparamp = nullptr;
             }
+            if (!reason && !vparamp) {
+                reason = "the number of argument to the task/function mismatches";
+            }
+            m_foundTargetVar.clear();
+            iterate(argp);
+            if (reason) {
+                for (AstVar* const varp : m_foundTargetVar) {
+                    warnNoSplit(varp, argp, reason);
+                    m_refs.remove(varp);
+                }
+            }
+            m_foundTargetVar.clear();
         }
     }
     void visit(AstPin* nodep) override {
@@ -605,12 +601,6 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             iterateChildren(nodep);
         }
     }
-    AstNode* toInsertPoint(AstNode* insertp) {
-        if (const AstNodeStmt* const stmtp = VN_CAST(insertp, NodeStmt)) {
-            if (!stmtp->isStatement()) insertp = stmtp->backp();
-        }
-        return insertp;
-    }
     AstVarRef* createTempVar(AstNode* context, AstNode* nodep, AstUnpackArrayDType* dtypep,
                              const std::string& name_prefix, std::vector<AstVar*>& vars,
                              int start_idx, bool lvalue, bool /*ftask*/) {
@@ -640,7 +630,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             if (!lvalue) std::swap(lhsp, rhsp);
             AstNode* newassignp;
             if (use_simple_assign) {
-                AstNode* const insertp = toInsertPoint(context);
+                AstNode* const insertp = context;
                 newassignp = new AstAssign{fl, lhsp, rhsp};
                 if (lvalue) {
                     // If varp is LHS, this assignment must appear after the original
@@ -662,7 +652,6 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     }
     void connectPort(AstVar* varp, std::vector<AstVar*>& vars, AstNode* insertp) {
         UASSERT_OBJ(varp->isIO(), varp, "must be port");
-        insertp = insertp ? toInsertPoint(insertp) : nullptr;
         const bool lvalue = varp->direction().isWritable();
         FileLine* const fl = varp->fileline();
         for (size_t i = 0; i < vars.size(); ++i) {
@@ -1055,9 +1044,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     static void connectPortAndVar(const std::vector<SplitNewVar>& vars, AstVar* portp,
                                   AstNode* insertp) {
         for (; insertp; insertp = insertp->backp()) {
-            if (const AstNodeStmt* const stmtp = VN_CAST(insertp, NodeStmt)) {
-                if (stmtp->isStatement()) break;
-            }
+            if (VN_IS(insertp, NodeStmt)) break;
         }
         const bool in = portp->isReadOnly();
         FileLine* const fl = portp->fileline();

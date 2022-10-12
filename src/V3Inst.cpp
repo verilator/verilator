@@ -124,7 +124,7 @@ private:
     }
 
     // Save some time
-    void visit(AstNodeMath*) override {}
+    void visit(AstNodeExpr*) override {}
     void visit(AstNodeAssign*) override {}
     void visit(AstAlways*) override {}
 
@@ -153,7 +153,7 @@ private:
         }
         iterateChildren(nodep);
     }
-    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
@@ -473,7 +473,7 @@ private:
     }
 
     //--------------------
-    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:

@@ -141,8 +141,8 @@ AstCStmt::AstCStmt(FileLine* fl, const string& textStmt)
     addExprsp(new AstText{fl, textStmt, true});
 }
 
-AstCMath::AstCMath(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut)
-    : ASTGEN_SUPER_CMath(fl)
+AstCExpr::AstCExpr(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut)
+    : ASTGEN_SUPER_CExpr(fl)
     , m_cleanOut{cleanOut}
     , m_pure{true} {
     addExprsp(new AstText{fl, textStmt, true});
@@ -179,5 +179,7 @@ AstVarXRef::AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, const V
     , m_dotted{dotted} {
     dtypeFrom(varp);
 }
+
+AstStmtExpr* AstNodeExpr::makeStmt() { return new AstStmtExpr{fileline(), this}; }
 
 #endif  // Guard

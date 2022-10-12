@@ -828,10 +828,6 @@ private:
 
     void visit(AstNodeStmt* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
-        if (!nodep->isStatement()) {
-            iterateChildren(nodep);
-            return;
-        }
         m_stmtp = nodep;
         iterateChildren(nodep);
         m_stmtp = nullptr;

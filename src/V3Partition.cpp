@@ -3186,8 +3186,9 @@ static void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
         } else {
             // The last will run on the main thread.
             AstCCall* const callp = new AstCCall(fl, funcp);
+            callp->dtypeSetVoid();
             callp->argTypes("vlSelf, vlSymsp->__Vm_even_cycle__" + tag);
-            execGraphp->addStmtsp(callp);
+            execGraphp->addStmtsp(callp->makeStmt());
             addStrStmt("Verilated::mtaskId(0);\n");
         }
     }

@@ -552,10 +552,12 @@ private:
             cnewpr = cnewp;
         } else if (const AstMethodCall* const mrefp = VN_CAST(refp, MethodCall)) {
             ccallp = new AstCMethodCall(refp->fileline(), mrefp->fromp()->unlinkFrBack(), cfuncp);
-            beginp->addNext(ccallp);
+            ccallp->dtypeSetVoid();
+            beginp->addNext(ccallp->makeStmt());
         } else {
             ccallp = new AstCCall(refp->fileline(), cfuncp);
-            beginp->addNext(ccallp);
+            ccallp->dtypeSetVoid();
+            beginp->addNext(ccallp->makeStmt());
         }
 
         // Convert complicated outputs to temp signals
@@ -617,7 +619,7 @@ private:
             UASSERT_OBJ(snp, refp, "Missing scoping context");
             ccallp->addArgsp(snp);
             // __Vfilenamep
-            ccallp->addArgsp(new AstCMath(refp->fileline(),
+            ccallp->addArgsp(new AstCExpr(refp->fileline(),
                                           "\"" + refp->fileline()->filename() + "\"", 64, true));
             // __Vlineno
             ccallp->addArgsp(new AstConst(refp->fileline(), refp->fileline()->lineno()));
@@ -701,7 +703,7 @@ private:
         string frstmt;
         string ket;
         const bool useSetWSvlv = TaskDpiUtils::dpiToInternalFrStmt(portp, frName, frstmt, ket);
-        // Use a AstCMath, as we want V3Clean to mask off bits that don't make sense.
+        // Use a AstCExpr, as we want V3Clean to mask off bits that don't make sense.
         int cwidth = VL_IDATASIZE;
         if (!useSetWSvlv && portp->basicp()) {
             if (portp->basicp()->keyword().isBitLogic()) {
@@ -743,7 +745,7 @@ private:
                 }
                 from += ket;
                 AstNode* const rhsp = new AstSel(
-                    portp->fileline(), new AstCMath(portp->fileline(), from, cwidth, false), 0,
+                    portp->fileline(), new AstCExpr(portp->fileline(), from, cwidth, false), 0,
                     portp->width());
                 stmtp = new AstAssign(portp->fileline(), srcp, rhsp);
             }
@@ -1039,8 +1041,9 @@ private:
                 cfuncp->addStmtsp(new AstText(nodep->fileline(), stmt, /* tracking: */ true));
             }
             AstCCall* const callp = new AstCCall(nodep->fileline(), dpiFuncp);
+            callp->dtypeSetVoid();
             callp->argTypes(args);
-            cfuncp->addStmtsp(callp);
+            cfuncp->addStmtsp(callp->makeStmt());
         }
 
         // Convert output/inout arguments back to internal type
@@ -1401,30 +1404,26 @@ private:
             beginp = createInlinedFTask(nodep, namePrefix, outvscp);
         }
         // Replace the ref
-        AstNode* visitp = nullptr;
+        AstNode* const visitp = insertBeforeStmt(nodep, beginp);
+
         if (VN_IS(nodep, New)) {
-            UASSERT_OBJ(!nodep->isStatement(), nodep, "new is non-stmt");
             UASSERT_OBJ(cnewp, nodep, "didn't create cnew for new");
             nodep->replaceWith(cnewp);
-            visitp = insertBeforeStmt(nodep, beginp);
-        } else if (!nodep->isStatement()) {
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else if (!VN_IS(nodep->backp(), StmtExpr)) {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep, "func reference to non-function");
             AstVarRef* const outrefp = new AstVarRef(nodep->fileline(), outvscp, VAccess::READ);
             nodep->replaceWith(outrefp);
-            // Insert new statements
-            visitp = insertBeforeStmt(nodep, beginp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
             if (nodep->taskp()->isFunction()) {
                 nodep->v3warn(
                     IGNOREDRETURN,
                     "Ignoring return value of non-void function (IEEE 1800-2017 13.4.1)");
             }
-            // outvscp maybe non-nullptr if calling a function in a taskref,
-            // but if so we want to ignore the function result
-            nodep->replaceWith(beginp);
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
-        // Cleanup
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
         UINFO(4, "  FTask REF Done.\n");
         // Visit nodes that normal iteration won't find
         if (visitp) iterateAndNextNull(visitp);
@@ -1519,13 +1518,16 @@ private:
             "For statements should have been converted to while statements in V3Begin.cpp");
     }
     void visit(AstNodeStmt* nodep) override {
-        if (!nodep->isStatement()) {
-            iterateChildren(nodep);
-            return;
-        }
         m_insMode = IM_BEFORE;
         m_insStmtp = nodep;
         iterateChildren(nodep);
+        m_insStmtp = nullptr;  // Next thing should be new statement
+    }
+    void visit(AstStmtExpr* nodep) override {
+        m_insMode = IM_BEFORE;
+        m_insStmtp = nodep;
+        iterateChildren(nodep);
+        if (!nodep->exprp()) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void visit(AstSenItem* nodep) override {

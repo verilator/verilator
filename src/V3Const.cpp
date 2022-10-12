@@ -2602,6 +2602,10 @@ private:
         }
         m_selp = nullptr;
     }
+    void visit(AstCAwait* nodep) override {
+        m_hasJumpDelay = true;
+        iterateChildren(nodep);
+    }
     void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);
         UASSERT_OBJ(nodep->varp(), nodep, "Not linked");
@@ -2682,7 +2686,7 @@ private:
     }
 
     //  void visit(AstCvtPackString* nodep) override {
-    // Not constant propagated (for today) because AstNodeMath::isOpaque is set
+    // Not constant propagated (for today) because AstNodeExpr::isOpaque is set
     // Someday if lower is constant, convert to quoted "string".
 
     bool onlySenItemInSenTree(AstSenItem* nodep) {
@@ -3166,6 +3170,11 @@ private:
         if (m_doNConst) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
+    void visit(AstStmtExpr* nodep) override {
+        iterateChildren(nodep);
+        if (!nodep->exprp()) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
+
     // Simplify
     void visit(AstBasicDType* nodep) override {
         iterateChildren(nodep);
@@ -3232,6 +3241,7 @@ private:
     //-----
     // clang-format off
     TREE_SKIP_VISIT("ArraySel");
+    TREE_SKIP_VISIT("CAwait");
 
     //-----
     //  "AstNODETYPE {             # bracket not paren

@@ -1085,6 +1085,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
+//  Blank lines for type insertion
 
 %start source_text
 
@@ -2689,7 +2690,7 @@ genvar_iteration<nodep>:        // ==IEEE: genvar_iteration
         |       varRefBase yP_SRIGHTEQ  expr            { $$ = new AstAssign($2,$1,new AstShiftR ($2,$1->cloneTree(true),$3)); }
         |       varRefBase yP_SSRIGHTEQ expr            { $$ = new AstAssign($2,$1,new AstShiftRS($2,$1->cloneTree(true),$3)); }
         //                      // inc_or_dec_operator
-        // When support ++ as a real AST type, maybe AstWhile::precondsp() becomes generic AstNodeMathStmt?
+        // When support ++ as a real AST type, maybe AstWhile::precondsp() becomes generic AstNodeExprStmt?
         |       yP_PLUSPLUS   varRefBase
                         { $$ = new AstAssign{$1, $2, new AstAdd{$1, $2->cloneTree(true),
                                                                 new AstConst{$1, AstConst::StringToParse{}, "'b1"}}}; }
@@ -3284,23 +3285,27 @@ statement_item<nodep>:          // IEEE: statement_item
                         { $$ = $4;
                           FileLine* const newfl = new FileLine{$$->fileline()};
                           newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
-                          $$->fileline(newfl); }
+                          $$->fileline(newfl);
+                          if (AstNodeExpr* const exprp = VN_CAST($$, NodeExpr)) $$ = exprp->makeStmt(); }
         |       yVOID yP_TICK '(' expr '.' task_subroutine_callNoMethod ')' ';'
                         { $$ = new AstDot{$5, false, $4, $6};
                           FileLine* const newfl = new FileLine{$6->fileline()};
                           newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
-                          $6->fileline(newfl); }
+                          $6->fileline(newfl);
+                          if (AstNodeExpr* const exprp = VN_CAST($$, NodeExpr)) $$ = exprp->makeStmt(); }
         //                      // Expr included here to resolve our not knowing what is a method call
         //                      // Expr here must result in a subroutine_call
-        |       task_subroutine_callNoMethod ';'        { $$ = $1; }
+        |       task_subroutine_callNoMethod ';'
+                        { $$ = $1;
+                          if (AstNodeExpr* const exprp = VN_CAST($$, NodeExpr)) $$ = exprp->makeStmt(); }
         //UNSUP fexpr '.' array_methodNoRoot ';'        { UNSUP }
-        |       fexpr '.' task_subroutine_callNoMethod ';'      { $$ = new AstDot($<fl>2, false, $1, $3); }
+        |       fexpr '.' task_subroutine_callNoMethod ';'      { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
         //UNSUP fexprScope ';'                          { UNSUP }
         //                      // Not here in IEEE; from class_constructor_declaration
         //                      // Because we've joined class_constructor_declaration into generic functions
         //                      // Way over-permissive;
         //                      // IEEE: [ ySUPER '.' yNEW [ '(' list_of_arguments ')' ] ';' ]
-        |       fexpr '.' class_new ';'                 { $$ = new AstDot($<fl>2, false, $1, $3); }
+        |       fexpr '.' class_new ';'                 { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
         //
         |       statementVerilatorPragmas               { $$ = $1; }
         //
@@ -3426,7 +3431,7 @@ foperator_assignment<nodep>:    // IEEE: operator_assignment (for first part of 
         //UNSUP BISONPRE_COPY(operator_assignment,{s/~f~/f/g})  // {copied}
         ;
 
-inc_or_dec_expression<nodep>:   // ==IEEE: inc_or_dec_expression
+inc_or_dec_expression<nodeExprp>:   // ==IEEE: inc_or_dec_expression
         //                      // Need fexprScope instead of variable_lvalue to prevent conflict
                 ~l~exprScope yP_PLUSPLUS
                         { $<fl>$ = $<fl>1; $$ = new AstPostAdd{$2, new AstConst{$2, AstConst::StringToParse(), "'b1"}, $1, $1->cloneTree(true)}; }
@@ -3439,7 +3444,7 @@ inc_or_dec_expression<nodep>:   // ==IEEE: inc_or_dec_expression
                         { $<fl>$ = $<fl>1; $$ = new AstPreSub{$1, new AstConst{$1, AstConst::StringToParse(), "'b1"}, $2, $2->cloneTree(true)}; }
         ;
 
-finc_or_dec_expression<nodep>:  // ==IEEE: inc_or_dec_expression
+finc_or_dec_expression<nodeExprp>:  // ==IEEE: inc_or_dec_expression
                 BISONPRE_COPY(inc_or_dec_expression,{s/~l~/f/g})        // {copied}
         ;
 
@@ -3684,14 +3689,14 @@ loop_variables<nodep>:          // IEEE: loop_variables
 //************************************************
 // Functions/tasks
 
-taskRef<nodep>:                 // IEEE: part of tf_call
+taskRef<nodeExprp>:            // IEEE: part of tf_call
                 id                              { $$ = new AstTaskRef($<fl>1,*$1,nullptr); }
         |       id '(' list_of_argumentsE ')'   { $$ = new AstTaskRef($<fl>1,*$1,$3); }
         |       packageClassScope id '(' list_of_argumentsE ')'
                         { $$ = AstDot::newIfPkg($<fl>2, $1, new AstTaskRef($<fl>2, *$2, $4)); }
         ;
 
-funcRef<nodep>:                 // IEEE: part of tf_call
+funcRef<nodeExprp>:             // IEEE: part of tf_call
         //                      // package_scope/hierarchical_... is part of expr, so just need ID
         //                      //      making-a                id-is-a
         //                      //      -----------------       ------------------
@@ -3713,9 +3718,9 @@ task_subroutine_callNoMethod<nodep>:    // function_subroutine_callNoMethod (as 
         //                      // IEEE: tf_call
                 taskRef                                 { $$ = $1; }
         //                      // funcref below not task ref to avoid conflict, must later handle either
-        |       funcRef yWITH__PAREN '(' expr ')'       { $$ = new AstWithParse($2, true, $1, $4); }
+        |       funcRef yWITH__PAREN '(' expr ')'       { $$ = new AstWithParse{$2, $1, $4}; }
         //                      // can call as method and yWITH without parenthesis
-        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse($2, true, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
+        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1, nullptr}, $4}; }
         |       system_t_call                           { $$ = $1; }
         //                      // IEEE: method_call requires a "." so is in expr
         //                      // IEEE: ['std::'] not needed, as normal std package resolution will find it
@@ -3725,12 +3730,12 @@ task_subroutine_callNoMethod<nodep>:    // function_subroutine_callNoMethod (as 
         //UNSUP funcRef yWITH__CUR constraint_block     { }
         ;
 
-function_subroutine_callNoMethod<nodep>:        // IEEE: function_subroutine_call (as function)
+function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine_call (as function)
         //                      // IEEE: tf_call
                 funcRef                                 { $$ = $1; }
-        |       funcRef yWITH__PAREN '(' expr ')'       { $$ = new AstWithParse($2, false, $1, $4); }
+        |       funcRef yWITH__PAREN '(' expr ')'       { $$ = new AstWithParse{$2, $1, $4}; }
         //                      // can call as method and yWITH without parenthesis
-        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse($2, false, new AstFuncRef($<fl>1, *$1, nullptr), $4); }
+        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1, nullptr}, $4}; }
         |       system_f_call                           { $$ = $1; }
         //                      // IEEE: method_call requires a "." so is in expr
         //                      // IEEE: ['std::'] not needed, as normal std package resolution will find it
@@ -3739,7 +3744,7 @@ function_subroutine_callNoMethod<nodep>:        // IEEE: function_subroutine_cal
         //                      // Note yNULL is already part of expressions, so they come for free
         |       funcRef yWITH__CUR constraint_block
                         { $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with' constraint"); }
-        |       funcRef yWITH__CUR '{' '}'              { $$ = new AstWithParse($2, false, $1, nullptr); }
+        |       funcRef yWITH__CUR '{' '}'              { $$ = new AstWithParse{$2, $1, nullptr}; }
         ;
 
 system_t_call<nodep>:           // IEEE: system_tf_call (as task)
@@ -3872,7 +3877,7 @@ system_t_call<nodep>:           // IEEE: system_tf_call (as task)
         |       system_f_call_or_t                      { $$ = new AstSysFuncAsTask($<fl>1, $1); }
         ;
 
-system_f_call<nodep>:           // IEEE: system_tf_call (as func)
+system_f_call<nodeExprp>:           // IEEE: system_tf_call (as func)
                 yaD_PLI systemDpiArgsE                  { $$ = new AstFuncRef($<fl>1, *$1, $2); VN_CAST($$, FuncRef)->pli(true); }
         //
         |       yD_C '(' cStrList ')'                   { $$ = (v3Global.opt.ignc() ? nullptr : new AstUCFunc($1,$3)); }
@@ -3887,7 +3892,7 @@ systemDpiArgsE<nodep>:          // IEEE: part of system_if_call for aruments of 
         |       '(' exprList ')'                        { $$ = GRAMMARP->argWrapList($2); }
         ;
 
-system_f_call_or_t<nodep>:      // IEEE: part of system_tf_call (can be task or func)
+system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task or func)
                 yD_ACOS '(' expr ')'                    { $$ = new AstAcosD($1,$3); }
         |       yD_ACOSH '(' expr ')'                   { $$ = new AstAcoshD($1,$3); }
         |       yD_ASIN '(' expr ')'                    { $$ = new AstAsinD($1,$3); }
@@ -4276,9 +4281,9 @@ array_methodNoRoot<nodeFTaskRefp>:
 array_methodWith<nodep>:
                 array_methodNoRoot parenE               { $$ = $1; }
         |       array_methodNoRoot parenE yWITH__PAREN '(' expr ')'
-                        { $$ = new AstWithParse($3, false, $1, $5); }
+                        { $$ = new AstWithParse{$3, $1, $5}; }
         |       array_methodNoRoot '(' expr ')' yWITH__PAREN '(' expr ')'
-                        { $$ = new AstWithParse($5, false, $1, $7); $1->addPinsp(new AstArg($<fl>3, "", $3)); }
+                        { $$ = new AstWithParse{$5, $1, $7}; $1->addPinsp(new AstArg($<fl>3, "", $3)); }
         ;
 
 dpi_import_export<nodep>:       // ==IEEE: dpi_import_export
@@ -4350,11 +4355,11 @@ exprOrDataTypeEqE<nodep>:       // IEEE: optional '=' expression (part of param_
         |       '=' exprOrDataType                      { $$ = $2; }
         ;
 
-constExpr<nodep>:
+constExpr<nodeExprp>:
                 expr                                    { $$ = $1; }
         ;
 
-expr<nodep>:                    // IEEE: part of expression/constant_expression/primary
+expr<nodeExprp>:                // IEEE: part of expression/constant_expression/primary
         // *SEE BELOW*          // IEEE: primary/constant_primary
         //
         //                      // IEEE: unary_operator primary
@@ -4522,7 +4527,7 @@ expr<nodep>:                    // IEEE: part of expression/constant_expression/
         |       ~l~expr yDIST '{' dist_list '}'         { $$ = $1; BBUNSUP($2, "Unsupported: dist"); }
         ;
 
-fexpr<nodep>:                   // For use as first part of statement (disambiguates <=)
+fexpr<nodeExprp>:                   // For use as first part of statement (disambiguates <=)
                 BISONPRE_COPY(expr,{s/~l~/f/g; s/~r~/f/g; s/~f__IGNORE~/__IGNORE/g;})   // {copied}
         ;
 
@@ -4555,11 +4560,11 @@ fexpr<nodep>:                   // For use as first part of statement (disambigu
 //UNSUP |       '(' event_expression ':' expr ':' expr ')'      { $<fl>$ = $<fl>1; $$ = "(...)"; }
 //UNSUP ;
 
-exprNoStr<nodep>:               // expression with string removed
+exprNoStr<nodeExprp>:               // expression with string removed
                 BISONPRE_COPY(expr,{s/~noStr__IGNORE~/Ignore/g;})       // {copied}
         ;
 
-exprOkLvalue<nodep>:            // expression that's also OK to use as a variable_lvalue
+exprOkLvalue<nodeExprp>:            // expression that's also OK to use as a variable_lvalue
                 ~l~exprScope                            { $$ = $1; }
         //                      // IEEE: concatenation/constant_concatenation
         //                      // Replicate(1) required as otherwise "{a}" would not be self-determined
@@ -4581,7 +4586,7 @@ exprOkLvalue<nodep>:            // expression that's also OK to use as a variabl
         |       streaming_concatenation                 { $$ = $1; }
         ;
 
-fexprOkLvalue<nodep>:           // exprOkLValue, For use as first part of statement (disambiguates <=)
+fexprOkLvalue<nodeExprp>:           // exprOkLValue, For use as first part of statement (disambiguates <=)
                 BISONPRE_COPY(exprOkLvalue,{s/~l~/f/g}) // {copied}
         ;
 
@@ -4601,11 +4606,11 @@ fexprOkLvalue<nodep>:           // exprOkLValue, For use as first part of statem
 //UNSUP         BISONPRE_COPY(exprOkLvalue,{s/~l~/pev_/g})      // {copied}
 //UNSUP ;
 
-fexprLvalue<nodep>:             // For use as first part of statement (disambiguates <=)
+fexprLvalue<nodeExprp>:             // For use as first part of statement (disambiguates <=)
                 fexprOkLvalue                           { $<fl>$ = $<fl>1; $$ = $1; }
         ;
 
-exprScope<nodep>:               // scope and variable for use to inside an expression
+exprScope<nodeExprp>:               // scope and variable for use to inside an expression
         //                      // Here we've split method_call_root | implicit_class_handle | class_scope | package_scope
         //                      // from the object being called and let expr's "." deal with resolving it.
         //                      // (note method_call_root was simplified to require a primary in 1800-2009)
@@ -4624,7 +4629,7 @@ exprScope<nodep>:               // scope and variable for use to inside an expre
         |       ySUPER                                  { $$ = new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "super"); }
         ;
 
-fexprScope<nodep>:              // exprScope, For use as first part of statement (disambiguates <=)
+fexprScope<nodeExprp>:              // exprScope, For use as first part of statement (disambiguates <=)
                 BISONPRE_COPY(exprScope,{s/~l~/f/g})    // {copied}
         ;
 
@@ -4656,23 +4661,23 @@ cStrList<nodep>:
         |       exprStrText ',' cStrList                { $$ = $1->addNext($3); }
         ;
 
-cateList<nodep>:
+cateList<nodeExprp>:
         //                      // Not just 'expr' to prevent conflict via stream_concOrExprOrType
                 stream_expression                       { $$ = $1; }
         |       cateList ',' stream_expression          { $$ = new AstConcat($2,$1,$3); }
         ;
 
-exprListE<nodep>:
+exprListE<nodeExprp>:
                 /* empty */                             { $$ = nullptr; }
         |       exprList                                { $$ = $1; }
         ;
 
-exprList<nodep>:
+exprList<nodeExprp>:
                 expr                                    { $$ = $1; }
         |       exprList ',' expr                       { $$ = $1->addNext($3); }
         ;
 
-exprDispList<nodep>:            // exprList for within $display
+exprDispList<nodeExprp>:            // exprList for within $display
                 expr                                    { $$ = $1; }
         |       exprDispList ',' expr                   { $$ = $1->addNext($3); }
         //                      // ,, creates a space in $display
@@ -4735,7 +4740,7 @@ argsDotted<nodep>:              // IEEE: part of list_of_arguments
 //UNSUP |       '.' idAny '(' pev_expr ')'              { $$ = new AstArg($<fl>2, *$2, $4); }
 //UNSUP ;
 
-streaming_concatenation<nodep>: // ==IEEE: streaming_concatenation
+streaming_concatenation<nodeExprp>: // ==IEEE: streaming_concatenation
         //                      // Need to disambiguate {<< expr-{ ... expr-} stream_concat }
         //                      // From                 {<< stream-{ ... stream-} }
         //                      // Likewise simple_type's idScoped from constExpr's idScope
@@ -4758,7 +4763,7 @@ stream_concatenation<nodep>:    // ==IEEE: stream_concatenation
                 '{' cateList '}'                        { $$ = $2; }
         ;
 
-stream_expression<nodep>:       // ==IEEE: stream_expression
+stream_expression<nodeExprp>:   // ==IEEE: stream_expression
         //                      // IEEE: array_range_expression expanded below
                 expr                                    { $$ = $1; }
         //UNSUP expr yWITH__BRA '[' expr ']'            { UNSUP }
@@ -5077,7 +5082,7 @@ idSVKwd<strp>:                  // Warn about non-forward compatible Verilog 200
                         { static string s = "final"; $$ = &s; ERRSVKWD($1,*$$); $<fl>$ = $<fl>1; }
         ;
 
-variable_lvalue<nodep>:         // IEEE: variable_lvalue or net_lvalue
+variable_lvalue<nodeExprp>:         // IEEE: variable_lvalue or net_lvalue
         //                      // Note many variable_lvalue's must use exprOkLvalue when arbitrary expressions may also exist
                 idClassSel                              { $$ = $1; }
         |       '{' variable_lvalueConcList '}'         { $$ = $2; }
@@ -5089,7 +5094,7 @@ variable_lvalue<nodep>:         // IEEE: variable_lvalue or net_lvalue
         |       streaming_concatenation                 { $$ = $1; }
         ;
 
-variable_lvalueConcList<nodep>: // IEEE: part of variable_lvalue: '{' variable_lvalue { ',' variable_lvalue } '}'
+variable_lvalueConcList<nodeExprp>: // IEEE: part of variable_lvalue: '{' variable_lvalue { ',' variable_lvalue } '}'
                 variable_lvalue                                 { $$ = $1; }
         |       variable_lvalueConcList ',' variable_lvalue     { $$ = new AstConcat($2,$1,$3); }
         ;
@@ -5100,7 +5105,7 @@ variable_lvalueConcList<nodep>: // IEEE: part of variable_lvalue: '{' variable_l
 //UNSUP ;
 
 // VarRef to dotted, and/or arrayed, and/or bit-ranged variable
-idClassSel<nodep>:                      // Misc Ref to dotted, and/or arrayed, and/or bit-ranged variable
+idClassSel<nodeExprp>:                      // Misc Ref to dotted, and/or arrayed, and/or bit-ranged variable
                 idDotted                                { $$ = $1; }
         //                      // IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
         |       yTHIS '.' idDotted
@@ -5124,7 +5129,7 @@ idClassSelForeach<nodep>:
         |       packageClassScope idDottedForeach       { $$ = new AstDot($<fl>2, true, $1, $2); }
         ;
 
-idDotted<nodep>:
+idDotted<nodeExprp>:
                 yD_ROOT '.' idDottedMore
                         { $$ = new AstDot($2, false, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "$root"), $3); }
         |       idDottedMore                            { $$ = $1; }
@@ -5136,7 +5141,7 @@ idDottedForeach<nodep>:
         |       idDottedMoreForeach                     { $$ = $1; }
         ;
 
-idDottedMore<nodep>:
+idDottedMore<nodeExprp>:
                 idArrayed                               { $$ = $1; }
         |       idDottedMore '.' idArrayed              { $$ = new AstDot($2, false, $1, $3); }
         ;
@@ -5151,7 +5156,7 @@ idDottedMoreForeach<nodep>:
 // we'll assume so and cleanup later.
 // id below includes:
 //       enum_identifier
-idArrayed<nodep>:               // IEEE: id + select
+idArrayed<nodeExprp>:               // IEEE: id + select
                 id
                         { $$ = new AstParseRef($<fl>1, VParseRefExp::PX_TEXT, *$1, nullptr, nullptr); }
         //                      // IEEE: id + part_select_range/constant_part_select_range
@@ -5174,9 +5179,9 @@ idArrayedForeach<nodep>:        // IEEE: id + select (under foreach expression)
         //                      // IEEE: loop_variables (under foreach expression)
         //                      // To avoid conflicts we allow expr as first element, must post-check
         |       idArrayed '[' expr ',' loop_variables ']'
-                        { $3 = addNextNull($3, $5); $$ = new AstSelLoopVars($2, $1, $3); }
+                        { $$ = new AstSelLoopVars{$2, $1, addNextNull(static_cast<AstNode*>($3), $5)}; }
         |       idArrayed '[' ',' loop_variables ']'
-                        { $4 = addNextNull(static_cast<AstNode*>(new AstEmpty{$3}), $4); $$ = new AstSelLoopVars($2, $1, $4); }
+                        { $$ = new AstSelLoopVars{$2, $1, addNextNull(static_cast<AstNode*>(new AstEmpty{$3}), $4)}; }
         ;
 
 // VarRef without any dots or vectorizaion
@@ -5195,7 +5200,7 @@ str<strp>:                      // yaSTRING but with \{escapes} need decoded
                 yaSTRING                                { $$ = PARSEP->newString(GRAMMARP->deQuote($<fl>1,*$1)); }
         ;
 
-strAsInt<nodep>:
+strAsInt<nodeExprp>:
                 yaSTRING
                         { if ($1->empty()) {
                               // else "" is not representable as number as is width 0
@@ -5208,7 +5213,7 @@ strAsInt<nodep>:
                         }
         ;
 
-strAsIntIgnore<nodep>:          // strAsInt, but never matches for when expr shouldn't parse strings
+strAsIntIgnore<nodeExprp>:          // strAsInt, but never matches for when expr shouldn't parse strings
                 yaSTRING__IGNORE                        { $$ = nullptr; yyerror("Impossible token"); }
         ;
 
@@ -6563,7 +6568,7 @@ constraintStaticE<cbool>:  // IEEE: part of extern_constraint_declaration
 //**********************************************************************
 // Constants
 
-timeNumAdjusted<nodep>:         // Time constant, adjusted to module's time units/precision
+timeNumAdjusted<nodeExprp>:         // Time constant, adjusted to module's time units/precision
                 yaTIMENUM
                         { $$ = new AstTimeImport($<fl>1, new AstConst($<fl>1, AstConst::RealDouble(), $1)); }
         ;

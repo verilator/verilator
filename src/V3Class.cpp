@@ -166,7 +166,7 @@ private:
         }
     }
 
-    void visit(AstNodeMath* nodep) override {}  // Short circuit
+    void visit(AstNodeExpr* nodep) override {}  // Short circuit
     void visit(AstNodeStmt* nodep) override {}  // Short circuit
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

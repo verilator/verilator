@@ -148,7 +148,8 @@ module Vt_debug_emitv_t;
                             other = f(i);
                             $display("stmt %~ %~", 
                                      iother, other);
-                            t()end
+                            t();
+                        end
                         i = (i + 'h1);
                     end
                 end
@@ -189,7 +190,8 @@ module Vt_debug_emitv_t;
             cyc <= (cyc + 'sh1);
             r <= (r + 0.01);
             fo = cyc;
-            sub.inc(fosum)sum = sub.f(sum);
+            sub.inc(fosum);
+            sum = sub.f(sum);
             $display("[%0t] sum = %~", $timesum, sum);
             $display("a?= %d", ($c('sh1) ? $c('sh14)
                                  : $c('sh1e)));

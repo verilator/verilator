@@ -112,13 +112,14 @@ public:
             rootFuncp->name(m_basename);
             for (AstCFunc* const funcp : m_newFunctions) {
                 AstCCall* const callp = new AstCCall{m_modp->fileline(), funcp};
+                callp->dtypeSetVoid();
                 if (m_type.isClass()) {
                     callp->argTypes("vlSymsp");
                 } else {
                     if (m_type.isCoverage()) callp->argTypes("first");
                     callp->selfPointer("this");
                 }
-                rootFuncp->addStmtsp(callp);
+                rootFuncp->addStmtsp(callp->makeStmt());
             }
         }
     }

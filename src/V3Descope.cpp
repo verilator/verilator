@@ -152,15 +152,20 @@ private:
                         }
                     }
 
-                    AstNode* const returnp = new AstCReturn(
-                        funcp->fileline(), new AstCCall(funcp->fileline(), funcp, argsp));
+                    AstCCall* const callp = new AstCCall{funcp->fileline(), funcp, argsp};
+                    if (AstNodeDType* const dtypep = funcp->dtypep()) {
+                        callp->dtypep(dtypep);
+                    } else {
+                        callp->dtypeSetVoid();
+                    }
+                    AstNode* const returnp = new AstCReturn{funcp->fileline(), callp};
 
                     if (moreOfSame) {
                         AstIf* const ifp = new AstIf(
                             funcp->fileline(),
                             new AstEq(
-                                funcp->fileline(), new AstCMath(funcp->fileline(), "this", 64),
-                                new AstCMath(funcp->fileline(),
+                                funcp->fileline(), new AstCExpr(funcp->fileline(), "this", 64),
+                                new AstCExpr(funcp->fileline(),
                                              string("&(") + funcp->scopep()->nameVlSym() + ")",
                                              64)),
                             returnp);

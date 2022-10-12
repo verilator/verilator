@@ -60,6 +60,8 @@ void AstNodeFTaskRef::cloneRelink() {
     }
 }
 
+bool AstNodeFTaskRef::isGateOptimizable() const { return m_taskp && m_taskp->isGateOptimizable(); }
+
 const char* AstNodeVarRef::broken() const {
     BROKEN_RTN(m_varp && !m_varp->brokeExists());
     BROKEN_RTN(m_varScopep && !m_varScopep->brokeExists());
@@ -123,7 +125,7 @@ const char* AstNodeUOrStructDType::broken() const {
 void AstNodeStmt::dump(std::ostream& str) const { this->AstNode::dump(str); }
 
 void AstNodeCCall::dump(std::ostream& str) const {
-    this->AstNodeStmt::dump(str);
+    this->AstNodeExpr::dump(str);
     if (funcp()) {
         str << " " << funcp()->name() << " => ";
         funcp()->dump(str);
@@ -1376,8 +1378,8 @@ string AstBasicDType::prettyDTypeName() const {
     return os.str();
 }
 
-void AstNodeMath::dump(std::ostream& str) const { this->AstNode::dump(str); }
-void AstNodeUniop::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
+void AstNodeExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstNodeUniop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
 
 void AstCCast::dump(std::ostream& str) const {
     this->AstNodeUniop::dump(str);
@@ -1504,7 +1506,7 @@ void AstDisplay::dump(std::ostream& str) const {
     // str << " " << displayType().ascii();
 }
 void AstEnumItemRef::dump(std::ostream& str) const {
-    this->AstNodeMath::dump(str);
+    this->AstNodeExpr::dump(str);
     str << " -> ";
     if (itemp()) {
         itemp()->dump(str);
@@ -1615,11 +1617,11 @@ void AstJumpLabel::dump(std::ostream& str) const {
     }
 }
 void AstLogOr::dump(std::ostream& str) const {
-    this->AstNodeMath::dump(str);
+    this->AstNodeExpr::dump(str);
     if (sideEffect()) str << " [SIDE]";
 }
 void AstMemberSel::dump(std::ostream& str) const {
-    this->AstNodeMath::dump(str);
+    this->AstNodeExpr::dump(str);
     str << " -> ";
     if (varp()) {
         varp()->dump(str);
@@ -1636,7 +1638,6 @@ const char* AstMemberSel::broken() const {
 }
 void AstMethodCall::dump(std::ostream& str) const {
     this->AstNodeFTaskRef::dump(str);
-    if (isStatement()) str << " [STMT]";
     str << " -> ";
     if (taskp()) {
         taskp()->dump(str);
@@ -1705,7 +1706,7 @@ void AstPrintTimeScale::dump(std::ostream& str) const {
     str << " " << timeunit();
 }
 
-void AstNodeTermop::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
+void AstNodeTermop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
 void AstTime::dump(std::ostream& str) const {
     this->AstNodeTermop::dump(str);
     str << " " << timeunit();
@@ -1908,10 +1909,10 @@ void AstPackageImport::cloneRelink() {
     if (m_packagep && m_packagep->clonep()) m_packagep = m_packagep->clonep();
 }
 void AstPatMember::dump(std::ostream& str) const {
-    this->AstNodeMath::dump(str);
+    this->AstNodeExpr::dump(str);
     if (isDefault()) str << " [DEFAULT]";
 }
-void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
+void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
 void AstSel::dump(std::ostream& str) const {
     this->AstNodeTriop::dump(str);
     if (declRange().ranged()) {
@@ -2018,7 +2019,7 @@ void AstVarScope::dump(std::ostream& str) const {
     }
 }
 void AstNodeVarRef::dump(std::ostream& str) const {
-    this->AstNodeMath::dump(str);
+    this->AstNodeExpr::dump(str);
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
     str << " " << access().arrow() << " ";
 }
@@ -2086,7 +2087,7 @@ void AstScope::dump(std::ostream& str) const {
     str << " [modp=" << reinterpret_cast<const void*>(modp()) << "]";
 }
 void AstScopeName::dump(std::ostream& str) const {
-    this->AstNodeMath::dump(str);
+    this->AstNodeExpr::dump(str);
     if (dpiExport()) str << " [DPIEX]";
     if (forFormat()) str << " [FMT]";
 }
@@ -2145,7 +2146,7 @@ void AstActive::cloneRelink() {
     if (m_sensesp->clonep()) m_sensesp = m_sensesp->clonep();
 }
 void AstNodeFTaskRef::dump(std::ostream& str) const {
-    this->AstNodeStmt::dump(str);
+    this->AstNodeExpr::dump(str);
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
     str << " -> ";
     if (dotted() != "") str << ".=" << dotted() << " ";
@@ -2248,8 +2249,15 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isVirtual()) str << " [VIRT]";
     if (isCoroutine()) str << " [CORO]";
 }
+const char* AstCAwait::broken() const {
+    BROKEN_RTN(m_sensesp && !m_sensesp->brokeExists());
+    return nullptr;
+}
+void AstCAwait::cloneRelink() {
+    if (m_sensesp && m_sensesp->clonep()) m_sensesp = m_sensesp->clonep();
+}
 void AstCAwait::dump(std::ostream& str) const {
-    this->AstNodeStmt::dump(str);
+    this->AstNodeUniop::dump(str);
     if (sensesp()) {
         str << " => ";
         sensesp()->dump(str);
@@ -2265,7 +2273,7 @@ int AstCMethodHard::instrCount() const {
             return INSTR_COUNT_LD;
         }
     }
-    return AstNodeStmt::instrCount();
+    return 0;
 }
 const char* AstCFunc::broken() const {
     BROKEN_RTN((m_scopep && !m_scopep->brokeExists()));

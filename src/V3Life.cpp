@@ -441,7 +441,7 @@ private:
         m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         iterateChildren(nodep);
     }
-    void visit(AstCMath* nodep) override {
+    void visit(AstCExpr* nodep) override {
         m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         iterateChildren(nodep);
     }
@@ -494,7 +494,7 @@ private:
     }
     void visit(AstVar*) override {}  // Accelerate
     void visit(AstNodeStmt*) override {}  // Accelerate
-    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:

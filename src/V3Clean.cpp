@@ -16,7 +16,7 @@
 // V3Clean's Transformations:
 //
 // Each module:
-//      For each math operator, if it requires a clean operand,
+//      For each expression, if it requires a clean operand,
 //      and the operand is dirty, insert a CLEAN node.
 //      Resize operands to C++ 32/64/wide types.
 //      Copy all width() values to widthMin() so RANGE, etc can still see orig widths
@@ -207,7 +207,7 @@ private:
         operandQuadop(nodep);
         setClean(nodep, nodep->cleanOut());
     }
-    void visit(AstNodeMath* nodep) override {
+    void visit(AstNodeExpr* nodep) override {
         iterateChildren(nodep);
         computeCppWidth(nodep);
         setClean(nodep, nodep->cleanOut());

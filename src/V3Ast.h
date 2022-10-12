@@ -2218,11 +2218,11 @@ void AstNode::addPrev(AstNode* newp) {
 // Specializations of AstNode::mayBeUnder
 template <>
 inline bool AstNode::mayBeUnder<AstCell>(const AstNode* nodep) {
-    return !VN_IS(nodep, NodeStmt) && !VN_IS(nodep, NodeMath);
+    return !VN_IS(nodep, NodeStmt) && !VN_IS(nodep, NodeExpr);
 }
 template <>
 inline bool AstNode::mayBeUnder<AstNodeAssign>(const AstNode* nodep) {
-    return !VN_IS(nodep, NodeMath);
+    return !VN_IS(nodep, NodeExpr);
 }
 template <>
 inline bool AstNode::mayBeUnder<AstVarScope>(const AstNode* nodep) {
@@ -2230,7 +2230,7 @@ inline bool AstNode::mayBeUnder<AstVarScope>(const AstNode* nodep) {
     if (VN_IS(nodep, Var)) return false;
     if (VN_IS(nodep, Active)) return false;
     if (VN_IS(nodep, NodeStmt)) return false;
-    if (VN_IS(nodep, NodeMath)) return false;
+    if (VN_IS(nodep, NodeExpr)) return false;
     return true;
 }
 template <>
@@ -2512,7 +2512,7 @@ AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
 
 // AstNode subclasses
 #include "V3AstNodeDType.h"
-#include "V3AstNodeMath.h"
+#include "V3AstNodeExpr.h"
 #include "V3AstNodeOther.h"
 
 // Inline function definitions need to go last

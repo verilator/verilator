@@ -75,7 +75,9 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
             m_resumeFuncp->addStmtsp(activep);
         }
     }
-    return new AstCCall{m_resumeFuncp->fileline(), m_resumeFuncp};
+    AstCCall* const callp = new AstCCall{m_resumeFuncp->fileline(), m_resumeFuncp};
+    callp->dtypeSetVoid();
+    return callp;
 }
 
 //============================================================================
@@ -85,7 +87,7 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
     if (!m_commitFuncp) {
         for (auto& p : m_lbs) {
             AstActive* const activep = p.second;
-            auto* const resumep = VN_AS(activep->stmtsp(), CMethodHard);
+            auto* const resumep = VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard);
             UASSERT_OBJ(!resumep->nextp(), resumep, "Should be the only statement here");
             AstVarScope* const schedulerp = VN_AS(resumep->fromp(), VarRef)->varScopep();
             UASSERT_OBJ(schedulerp->dtypep()->basicp()->isDelayScheduler()
@@ -117,15 +119,16 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
             auto* const commitp = new AstCMethodHard{
                 flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, "commit"};
             if (resumep->pinsp()) commitp->addPinsp(resumep->pinsp()->cloneTree(false));
-            commitp->statement(true);
             commitp->dtypeSetVoid();
-            newactp->addStmtsp(commitp);
+            newactp->addStmtsp(commitp->makeStmt());
             m_commitFuncp->addStmtsp(newactp);
         }
         // We still haven't created a commit function (no trigger schedulers), return null
         if (!m_commitFuncp) return nullptr;
     }
-    return new AstCCall{m_commitFuncp->fileline(), m_commitFuncp};
+    AstCCall* const callp = new AstCCall{m_commitFuncp->fileline(), m_commitFuncp};
+    callp->dtypeSetVoid();
+    return callp;
 }
 
 //============================================================================
@@ -161,18 +164,17 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
             // Create a resume() call on the timing scheduler
             auto* const resumep = new AstCMethodHard{
                 flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, "resume"};
-            resumep->statement(true);
             resumep->dtypeSetVoid();
             if (schedulerp->dtypep()->basicp()->isTriggerScheduler()) {
                 if (methodp->pinsp()) resumep->addPinsp(methodp->pinsp()->cloneTree(false));
             } else if (schedulerp->dtypep()->basicp()->isDynamicTriggerScheduler()) {
                 auto* const postp = resumep->cloneTree(false);
                 postp->name("doPostUpdates");
-                m_postUpdatesr = AstNode::addNext(m_postUpdatesr, postp);
+                m_postUpdatesr = AstNode::addNext(m_postUpdatesr, postp->makeStmt());
             }
             // Put it in an active and put that in the global resume function
             auto* const activep = new AstActive{flp, "_timing", sensesp};
-            activep->addStmtsp(resumep);
+            activep->addStmtsp(resumep->makeStmt());
             m_lbs.emplace_back(m_scopeTopp, activep);
         }
 
@@ -216,7 +218,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
         }
 
         //--------------------
-        void visit(AstNodeMath*) override {}  // Accelerate
+        void visit(AstNodeExpr*) override {}  // Accelerate
         void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     public:
@@ -278,10 +280,12 @@ void transformForks(AstNetlist* const netlistp) {
                     // If it's fork..join, we can refer to variables from the parent process
                     if (!m_funcp->user1SetOnce()) {  // Only do this once per function
                         // Move all locals to the heap before the fork
-                        auto* const awaitp = new AstCAwait{
-                            m_forkp->fileline(), new AstCStmt{m_forkp->fileline(), "VlNow{}"}};
-                        awaitp->statement(true);
-                        m_forkp->addHereThisAsNext(awaitp);
+                        AstCExpr* const nowp
+                            = new AstCExpr{m_forkp->fileline(), "VlNow{}", 0, true};
+                        nowp->dtypeSetVoid();  // TODO: this is sloppy but harmless
+                        AstCAwait* const awaitp = new AstCAwait{m_forkp->fileline(), nowp};
+                        awaitp->dtypeSetVoid();
+                        m_forkp->addHereThisAsNext(awaitp->makeStmt());
                     }
                 } else {
                     refp->v3warn(E_UNSUPPORTED, "Unsupported: variable local to a forking process "
@@ -353,8 +357,9 @@ void transformForks(AstNetlist* const netlistp) {
                 newfuncp->isConst(m_funcp->isConst());
                 newfuncp->declPrivate(true);
                 // Replace the begin with a call to the newly created function
-                auto* const callp = new AstCCall{flp, newfuncp};
-                nodep->replaceWith(callp);
+                AstCCall* const callp = new AstCCall{flp, newfuncp};
+                callp->dtypeSetVoid();
+                nodep->replaceWith(callp->makeStmt());
                 // If we're in a class, add a vlSymsp arg
                 if (m_inClass) {
                     newfuncp->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;\n"});
@@ -376,7 +381,7 @@ void transformForks(AstNetlist* const netlistp) {
         }
 
         //--------------------
-        void visit(AstNodeMath*) override {}  // Accelerate
+        void visit(AstNodeExpr*) override {}  // Accelerate
         void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     public:

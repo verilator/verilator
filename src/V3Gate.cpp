@@ -185,8 +185,8 @@ public:
     }
 };
 
-//######################################################################
-// Is this a simple math expression with a single input and single output?
+// ######################################################################
+//  Is this a simple expression with a single input and single output?
 
 class GateOkVisitor final : public VNVisitor {
 private:
@@ -801,7 +801,7 @@ private:
         // comparing AstActive nodes, which are very likely not to compare equals (and for the
         // purposes of V3Gate, we probably only care about them either being identical instances,
         // or having the same sensitivities anyway, so if this becomes a problem, it can be
-        // improved which should also speed things up), and AstNodeMath for if conditions, which
+        // improved which should also speed things up), and AstNodeExpr for if conditions, which
         // are hopefully small, and to be safe they should probably be only considered same when
         // identical instances (otherwise if writing the condition between 2 ifs don't really
         // merge).

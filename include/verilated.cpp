@@ -395,7 +395,7 @@ void _vl_debug_print_w(int lbits, const WDataInP iwp) VL_MT_SAFE {
 }
 
 //===========================================================================
-// Slow math
+// Slow expressions
 
 WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WDataInP rwp,
                        bool is_modulus) VL_MT_SAFE {

@@ -105,7 +105,7 @@ private:
                  // This allows syntax errors and such to be detected normally.
                  (v3Global.opt.assertOn()
                       ? static_cast<AstNode*>(
-                          new AstCMath{fl, "vlSymsp->_vm_contextp__->assertOn()", 1})
+                          new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1})
                       : static_cast<AstNode*>(new AstConst{fl, AstConst::BitFalse{}}))),
             nodep};
         newp->isBoundsCheck(true);  // To avoid LATCH warning

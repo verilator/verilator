@@ -288,14 +288,14 @@ VLCOV_OBJS = \
 NON_STANDALONE_HEADERS = \
 	V3AstInlines.h  \
 	V3AstNodeDType.h  \
-	V3AstNodeMath.h  \
+	V3AstNodeExpr.h  \
 	V3AstNodeOther.h  \
 	V3DfgVertices.h  \
 	V3WidthCommit.h  \
 
 AST_DEFS := \
   V3AstNodeDType.h \
-  V3AstNodeMath.h \
+  V3AstNodeExpr.h \
   V3AstNodeOther.h \
 
 DFG_DEFS := \

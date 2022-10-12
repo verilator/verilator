@@ -104,7 +104,7 @@ class ForceConvertVisitor final : public VNVisitor {
                 AstVarRef* const lhsp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
                 V3Number zero{m_enVscp, m_enVscp->width()};
                 zero.setAllBits0();
-                AstNodeMath* const rhsp = new AstConst{flp, zero};
+                AstNodeExpr* const rhsp = new AstConst{flp, zero};
                 AstAssign* const assignp = new AstAssign{flp, lhsp, rhsp};
                 AstActive* const activep = new AstActive{
                     flp, "force-init",

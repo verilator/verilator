@@ -141,8 +141,7 @@ class SenExprBuilder final {
             if (AstUnpackArrayDType* const dtypep = VN_CAST(exprp->dtypep(), UnpackArrayDType)) {
                 AstCMethodHard* const cmhp = new AstCMethodHard{flp, wrPrev(), "assign", rdCurr()};
                 cmhp->dtypeSetVoid();
-                cmhp->statement(true);
-                m_postUpdates.push_back(cmhp);
+                m_postUpdates.push_back(cmhp->makeStmt());
             } else {
                 m_postUpdates.push_back(new AstAssign{flp, wrPrev(), rdCurr()});
             }
@@ -157,7 +156,7 @@ class SenExprBuilder final {
 
         const auto currp = [=]() { return getCurr(senp); };
         const auto prevp = [=]() { return new AstVarRef{flp, getPrev(senp), VAccess::READ}; };
-        const auto lsb = [=](AstNodeMath* opp) { return new AstSel{flp, opp, 0, 1}; };
+        const auto lsb = [=](AstNodeExpr* opp) { return new AstSel{flp, opp, 0, 1}; };
 
         // All event signals should be 1-bit at this point
         switch (senItemp->edgeType()) {
@@ -188,9 +187,8 @@ class SenExprBuilder final {
 
                 // Clear 'fired' state when done
                 AstCMethodHard* const clearp = new AstCMethodHard{flp, currp(), "clearFired"};
-                ifp->addThensp(clearp);
                 clearp->dtypeSetVoid();
-                clearp->statement(true);
+                ifp->addThensp(clearp->makeStmt());
 
                 // Enqueue for clearing 'triggered' state on next eval
                 AstTextBlock* const blockp = new AstTextBlock{flp};

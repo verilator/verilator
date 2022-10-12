@@ -163,7 +163,7 @@ private:
     //  AstCFunc::user1()               // V3GraphVertex* for this node
     //  AstTraceDecl::user1()           // V3GraphVertex* for this node
     //  AstVarScope::user1()            // V3GraphVertex* for this node
-    //  AstCCall::user2()               // bool; walked next list for other ccalls
+    //  AstStmtExpr::user2()            // bool; walked next list for other ccalls
     //  Ast*::user3()                   // TraceActivityVertex* for this node
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
@@ -429,13 +429,15 @@ private:
         FileLine* const fl = insertp->fileline();
         AstAssign* const setterp = new AstAssign(fl, selectActivity(fl, code, VAccess::WRITE),
                                                  new AstConst(fl, AstConst::BitTrue()));
-        if (AstCCall* const callp = VN_CAST(insertp, CCall)) {
-            callp->addNextHere(setterp);
+        if (AstStmtExpr* const stmtp = VN_CAST(insertp, StmtExpr)) {
+            stmtp->addNextHere(setterp);
         } else if (AstCFunc* const funcp = VN_CAST(insertp, CFunc)) {
             // If there are awaits, insert the setter after each await
             if (funcp->isCoroutine() && funcp->stmtsp()) {
                 funcp->stmtsp()->foreachAndNext([&](AstCAwait* awaitp) {
-                    if (awaitp->nextp()) awaitp->addNextHere(setterp->cloneTree(false));
+                    AstNode* stmtp = awaitp->backp();
+                    while (VN_IS(stmtp, NodeExpr)) stmtp = stmtp->backp();
+                    if (stmtp->nextp()) stmtp->addNextHere(setterp->cloneTree(false));
                 });
             }
             funcp->addStmtsp(setterp);
@@ -550,8 +552,9 @@ private:
             }
             // Add call to top function
             AstCCall* const callp = new AstCCall(funcp->fileline(), funcp);
+            callp->dtypeSetVoid();
             callp->argTypes("bufp");
-            topFuncp->addStmtsp(callp);
+            topFuncp->addStmtsp(callp->makeStmt());
         }
         // Done
         UINFO(5, "  newCFunc " << funcp << endl);
@@ -822,20 +825,24 @@ private:
         if (nodep->isTop()) m_topModp = nodep;
         iterateChildren(nodep);
     }
-    void visit(AstCCall* nodep) override {
-        UINFO(8, "   CCALL " << nodep << endl);
+    void visit(AstStmtExpr* nodep) override {
         if (!m_finding && !nodep->user2()) {
-            // See if there are other calls in same statement list;
-            // If so, all funcs might share the same activity code
-            TraceActivityVertex* const activityVtxp
-                = getActivityVertexp(nodep, nodep->funcp()->slow());
-            for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
-                if (AstCCall* const ccallp = VN_CAST(nextp, CCall)) {
-                    ccallp->user2(true);  // Processed
-                    UINFO(8, "     SubCCALL " << ccallp << endl);
-                    V3GraphVertex* const ccallFuncVtxp = getCFuncVertexp(ccallp->funcp());
-                    activityVtxp->slow(ccallp->funcp()->slow());
-                    new V3GraphEdge(&m_graph, activityVtxp, ccallFuncVtxp, 1);
+            if (AstCCall* const callp = VN_CAST(nodep->exprp(), CCall)) {
+                UINFO(8, "   CCALL " << callp << endl);
+                // See if there are other calls in same statement list;
+                // If so, all funcs might share the same activity code
+                TraceActivityVertex* const activityVtxp
+                    = getActivityVertexp(nodep, callp->funcp()->slow());
+                for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
+                    if (AstStmtExpr* const stmtp = VN_CAST(nextp, StmtExpr)) {
+                        if (AstCCall* const ccallp = VN_CAST(stmtp->exprp(), CCall)) {
+                            stmtp->user2(true);  // Processed
+                            UINFO(8, "     SubCCALL " << ccallp << endl);
+                            V3GraphVertex* const ccallFuncVtxp = getCFuncVertexp(ccallp->funcp());
+                            activityVtxp->slow(ccallp->funcp()->slow());
+                            new V3GraphEdge(&m_graph, activityVtxp, ccallFuncVtxp, 1);
+                        }
+                    }
                 }
             }
         }

@@ -264,25 +264,6 @@ public:
     void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }
     VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
 };
-class AstNodePreSel VL_NOT_FINAL : public AstNode {
-    // Something that becomes an AstSel
-    // @astgen op1 := fromp : AstNode
-    // @astgen op2 := rhsp : AstNode
-    // @astgen op3 := thsp : Optional[AstNode]
-    // @astgen op4 := attrp : Optional[AstAttrOf]
-protected:
-    AstNodePreSel(VNType t, FileLine* fl, AstNode* fromp, AstNode* rhsp, AstNode* thsp)
-        : AstNode{t, fl} {
-        this->fromp(fromp);
-        this->rhsp(rhsp);
-        this->thsp(thsp);
-    }
-
-public:
-    ASTGEN_MEMBERS_AstNodePreSel;
-    // METHODS
-    bool same(const AstNode*) const override { return true; }
-};
 class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
     // @astgen op2 := stmtsp : List[AstNode] // Note: op1 is used in some sub-types only
@@ -312,18 +293,14 @@ public:
     void dump(std::ostream& str) const override;
 };
 class AstNodeStmt VL_NOT_FINAL : public AstNode {
-    // Statement -- anything that's directly under a function
-    bool m_statement;  // Really a statement (e.g. not a function with return)
+    // Procedural statement
 protected:
-    AstNodeStmt(VNType t, FileLine* fl, bool statement = true)
-        : AstNode{t, fl}
-        , m_statement{statement} {}
+    AstNodeStmt(VNType t, FileLine* fl)
+        : AstNode{t, fl} {}
 
 public:
     ASTGEN_MEMBERS_AstNodeStmt;
     // METHODS
-    bool isStatement() const { return m_statement; }  // Really a statement
-    void statement(bool flag) { m_statement = flag; }
     void addNextStmt(AstNode* newp,
                      AstNode* belowp) override;  // Stop statement searchback here
     void addBeforeStmt(AstNode* newp,
@@ -356,40 +333,6 @@ public:
     string verilogKwd() const override { return "="; }
     bool isTimingControl() const override { return timingControlp(); }
     virtual bool brokeLhsMustBeLvalue() const = 0;
-};
-class AstNodeCCall VL_NOT_FINAL : public AstNodeStmt {
-    // A call of a C++ function, perhaps a AstCFunc or perhaps globally named
-    // @astgen op2 := argsp : List[AstNode] // Note: op1 used by some sub-types only
-    //
-    // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
-    AstCFunc* m_funcp;
-    string m_argTypes;
-
-protected:
-    AstNodeCCall(VNType t, FileLine* fl, AstCFunc* funcp, AstNode* argsp = nullptr)
-        : AstNodeStmt{t, fl, true}
-        , m_funcp{funcp} {
-        addArgsp(argsp);
-    }
-
-public:
-    ASTGEN_MEMBERS_AstNodeCCall;
-    void dump(std::ostream& str = std::cout) const override;
-    void cloneRelink() override;
-    const char* broken() const override;
-    int instrCount() const override { return INSTR_COUNT_CALL; }
-    bool same(const AstNode* samep) const override {
-        const AstNodeCCall* const asamep = static_cast<const AstNodeCCall*>(samep);
-        return (funcp() == asamep->funcp() && argTypes() == asamep->argTypes());
-    }
-    bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override;
-    bool isOutputter() const override { return !isPure(); }
-    AstCFunc* funcp() const { return m_funcp; }
-    void funcp(AstCFunc* funcp) { m_funcp = funcp; }
-    void argTypes(const string& str) { m_argTypes = str; }
-    string argTypes() const { return m_argTypes; }
 };
 class AstNodeCase VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := exprp : AstNode // Condition (scurtinee) expression
@@ -430,52 +373,6 @@ public:
     void name(const string& name) override { m_name = name; }
     void dump(std::ostream& str = std::cout) const override;
     bool immediate() const { return m_immediate; }
-};
-class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeStmt {
-    // A reference to a task (or function)
-    // @astgen op1 := namep : Optional[AstNode]
-    // op2 used by some sub-types only
-    // @astgen op3 := pinsp : List[AstNode]
-    // @astgen op4 := scopeNamep : Optional[AstScopeName]
-    //
-    // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
-private:
-    AstNodeFTask* m_taskp = nullptr;  // [AfterLink] Pointer to task referenced
-    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
-    string m_name;  // Name of variable
-    string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
-    string m_inlinedDots;  // Dotted hierarchy flattened out
-    bool m_pli = false;  // Pli system call ($name)
-protected:
-    AstNodeFTaskRef(VNType t, FileLine* fl, bool statement, AstNode* namep, AstNode* pinsp)
-        : AstNodeStmt{t, fl, statement} {
-        this->namep(namep);
-        this->addPinsp(pinsp);
-    }
-    AstNodeFTaskRef(VNType t, FileLine* fl, bool statement, const string& name, AstNode* pinsp)
-        : AstNodeStmt{t, fl, statement}
-        , m_name{name} {
-        this->addPinsp(pinsp);
-    }
-
-public:
-    ASTGEN_MEMBERS_AstNodeFTaskRef;
-    const char* broken() const override;
-    void cloneRelink() override;
-    void dump(std::ostream& str = std::cout) const override;
-    string name() const override { return m_name; }  // * = Var name
-    bool isGateOptimizable() const override { return m_taskp && m_taskp->isGateOptimizable(); }
-    string dotted() const { return m_dotted; }  // * = Scope name or ""
-    string inlinedDots() const { return m_inlinedDots; }
-    void inlinedDots(const string& flag) { m_inlinedDots = flag; }
-    AstNodeFTask* taskp() const { return m_taskp; }  // [After Link] Pointer to variable
-    void taskp(AstNodeFTask* taskp) { m_taskp = taskp; }
-    void name(const string& name) override { m_name = name; }
-    void dotted(const string& name) { m_dotted = name; }
-    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
-    void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
-    bool pli() const { return m_pli; }
-    void pli(bool flag) { m_pli = flag; }
 };
 class AstNodeFor VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := initsp : List[AstNode]
@@ -634,22 +531,6 @@ public:
     string name() const override { return m_name; }  // * = Pin name, ""=go by number
     void name(const string& name) override { m_name = name; }
     bool emptyConnectNoNext() const { return !exprp() && name() == "" && !nextp(); }
-};
-class AstAttrOf final : public AstNode {
-    // Return a value of a attribute, for example a LSB or array LSB of a signal
-    // @astgen op1 := fromp : Optional[AstNode]
-    // @astgen op2 := dimp : Optional[AstNode]
-    VAttrType m_attrType;  // What sort of extraction
-public:
-    AstAttrOf(FileLine* fl, VAttrType attrtype, AstNode* fromp = nullptr, AstNode* dimp = nullptr)
-        : ASTGEN_SUPER_AttrOf(fl) {
-        this->fromp(fromp);
-        this->dimp(dimp);
-        m_attrType = attrtype;
-    }
-    ASTGEN_MEMBERS_AstAttrOf;
-    VAttrType attrType() const { return m_attrType; }
-    void dump(std::ostream& str = std::cout) const override;
 };
 class AstBind final : public AstNode {
     // Parents: MODULE
@@ -848,48 +729,6 @@ public:
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool isDefault() const { return condsp() == nullptr; }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
-};
-class AstCast final : public AstNode {
-    // Cast to appropriate data type
-    // @astgen op1 := fromp : AstNode
-    // @astgen op2 := childDTypep : Optional[AstNodeDType]
-public:
-    AstCast(FileLine* fl, AstNode* fromp, VFlagChildDType, AstNodeDType* dtp)
-        : ASTGEN_SUPER_Cast(fl) {
-        this->fromp(fromp);
-        this->childDTypep(dtp);
-        dtypeFrom(dtp);
-    }
-    AstCast(FileLine* fl, AstNode* fromp, AstNodeDType* dtp)
-        : ASTGEN_SUPER_Cast(fl) {
-        this->fromp(fromp);
-        dtypeFrom(dtp);
-    }
-    ASTGEN_MEMBERS_AstCast;
-    bool hasDType() const override { return true; }
-    virtual string emitVerilog() { return "((%d)'(%l))"; }
-    virtual bool cleanOut() const { V3ERROR_NA_RETURN(true); }
-    virtual bool cleanLhs() const { return true; }
-    virtual bool sizeMattersLhs() const { return false; }
-    AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
-};
-class AstCastParse final : public AstNode {
-    // Cast to appropriate type, where we haven't determined yet what the data type is
-    // @astgen op1 := lhsp : AstNode
-    // @astgen op2 := dtp : AstNode
-public:
-    AstCastParse(FileLine* fl, AstNode* lhsp, AstNode* dtp)
-        : ASTGEN_SUPER_CastParse(fl) {
-        this->lhsp(lhsp);
-        this->dtp(dtp);
-    }
-    ASTGEN_MEMBERS_AstCastParse;
-    virtual string emitVerilog() { return "((%d)'(%l))"; }
-    virtual string emitC() { V3ERROR_NA_RETURN(""); }
-    virtual bool cleanOut() const { V3ERROR_NA_RETURN(true); }
-    virtual bool cleanLhs() const { return true; }
-    virtual bool sizeMattersLhs() const { return false; }
 };
 class AstCastSize final : public AstNode {
     // Cast to specific size; signed/twostate inherited from lower element per IEEE
@@ -1134,28 +973,6 @@ public:
     ASTGEN_MEMBERS_AstDefParam;
     bool same(const AstNode*) const override { return true; }
     string path() const { return m_path; }
-};
-class AstDot final : public AstNode {
-    // A dot separating paths in an AstVarXRef, AstFuncRef or AstTaskRef
-    // These are eliminated in the link stage
-    // @astgen op1 := lhsp : AstNode
-    // @astgen op2 := rhsp : AstNode
-    const bool m_colon;  // Is a "::" instead of a "." (lhs must be package/class)
-public:
-    AstDot(FileLine* fl, bool colon, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER_Dot(fl)
-        , m_colon{colon} {
-        this->lhsp(lhsp);
-        this->rhsp(rhsp);
-    }
-    ASTGEN_MEMBERS_AstDot;
-    // For parser, make only if non-null package
-    static AstNode* newIfPkg(FileLine* fl, AstNode* packageOrClassp, AstNode* rhsp) {
-        if (!packageOrClassp) return rhsp;
-        return new AstDot(fl, true, packageOrClassp, rhsp);
-    }
-    void dump(std::ostream& str) const override;
-    bool colon() const { return m_colon; }
 };
 class AstDpiExport final : public AstNode {
     // We could put an AstNodeFTaskRef instead of the verilog function name,
@@ -1497,37 +1314,6 @@ public:
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
 };
-class AstParseRef final : public AstNode {
-    // A reference to a variable, function or task
-    // We don't know which at parse time due to bison constraints
-    // The link stages will replace this with AstVarRef, or AstTaskRef, etc.
-    // Parents: math|stmt
-    // @astgen op1 := lhsp : Optional[AstNode]
-    // @astgen op2 := ftaskrefp : Optional[AstNodeFTaskRef]
-
-    VParseRefExp m_expect;  // Type we think it should resolve to
-    string m_name;
-
-public:
-    AstParseRef(FileLine* fl, VParseRefExp expect, const string& name, AstNode* lhsp = nullptr,
-                AstNodeFTaskRef* ftaskrefp = nullptr)
-        : ASTGEN_SUPER_ParseRef(fl)
-        , m_expect{expect}
-        , m_name{name} {
-        this->lhsp(lhsp);
-        this->ftaskrefp(ftaskrefp);
-    }
-    ASTGEN_MEMBERS_AstParseRef;
-    void dump(std::ostream& str) const override;
-    string name() const override { return m_name; }  // * = Var name
-    bool same(const AstNode* samep) const override {
-        const AstParseRef* const asamep = static_cast<const AstParseRef*>(samep);
-        return (expect() == asamep->expect() && m_name == asamep->m_name);
-    }
-    void name(const string& name) override { m_name = name; }
-    VParseRefExp expect() const { return m_expect; }
-    void expect(VParseRefExp exp) { m_expect = exp; }
-};
 class AstPin final : public AstNode {
     // A port or parameter assignment on an instantiaton
     // @astgen op1 := exprp : Optional[AstNode] // Expression connected (nullptr if unconnected)
@@ -1628,58 +1414,6 @@ public:
         return direction() == static_cast<const AstPull*>(samep)->direction();
     }
     uint32_t direction() const { return (uint32_t)m_direction; }
-};
-class AstSFormatF final : public AstNode {
-    // Convert format to string, generally under an AstDisplay or AstSFormat
-    // Also used as "real" function for /*verilator sformat*/ functions
-    // @astgen op1 := exprsp : List[AstNode]
-    // @astgen op2 := scopeNamep : Optional[AstScopeName]
-    string m_text;
-    const bool m_hidden;  // Under display, etc
-    bool m_hasFormat;  // Has format code
-    const char m_missingArgChar;  // Format code when argument without format, 'h'/'o'/'b'
-    VTimescale m_timeunit;  // Parent module time unit
-public:
-    class NoFormat {};
-    AstSFormatF(FileLine* fl, const string& text, bool hidden, AstNode* exprsp,
-                char missingArgChar = 'd')
-        : ASTGEN_SUPER_SFormatF(fl)
-        , m_text{text}
-        , m_hidden{hidden}
-        , m_hasFormat{true}
-        , m_missingArgChar{missingArgChar} {
-        dtypeSetString();
-        addExprsp(exprsp);
-    }
-    AstSFormatF(FileLine* fl, NoFormat, AstNode* exprsp, char missingArgChar = 'd',
-                bool hidden = true)
-        : ASTGEN_SUPER_SFormatF(fl)
-        , m_text{""}
-        , m_hidden{hidden}
-        , m_hasFormat{false}
-        , m_missingArgChar{missingArgChar} {
-        dtypeSetString();
-        addExprsp(exprsp);
-    }
-    ASTGEN_MEMBERS_AstSFormatF;
-    string name() const override { return m_text; }
-    int instrCount() const override { return INSTR_COUNT_PLI; }
-    bool hasDType() const override { return true; }
-    bool same(const AstNode* samep) const override {
-        return text() == static_cast<const AstSFormatF*>(samep)->text();
-    }
-    string verilogKwd() const override { return "$sformatf"; }
-    string text() const { return m_text; }  // * = Text to display
-    void text(const string& text) { m_text = text; }
-    bool formatScopeTracking() const {  // Track scopeNamep();  Ok if false positive
-        return (name().find("%m") != string::npos || name().find("%M") != string::npos);
-    }
-    bool hidden() const { return m_hidden; }
-    void hasFormat(bool flag) { m_hasFormat = flag; }
-    bool hasFormat() const { return m_hasFormat; }
-    char missingArgChar() const { return m_missingArgChar; }
-    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
-    VTimescale timeunit() const { return m_timeunit; }
 };
 class AstScope final : public AstNode {
     // A particular usage of a cell
@@ -1951,21 +1685,6 @@ public:
     ASTGEN_MEMBERS_AstUdpTableLine;
     string name() const override { return m_text; }
     string text() const { return m_text; }
-};
-class AstUnlinkedRef final : public AstNode {
-    // As-of-yet unlinkable Ref
-    // @astgen op1 := refp : AstNode
-    // @astgen op2 := cellrefp : AstNode
-
-    string m_name;  // Var name // TODO: There is no way to access this, fix or remove
-public:
-    AstUnlinkedRef(FileLine* fl, AstNode* refp, const string& name, AstNode* cellrefp)
-        : ASTGEN_SUPER_UnlinkedRef(fl)
-        , m_name{name} {
-        this->refp(refp);
-        this->cellrefp(cellrefp);
-    }
-    ASTGEN_MEMBERS_AstUnlinkedRef;
 };
 class AstVar final : public AstNode {
     // A variable (in/out/wire/reg/param) inside a module
@@ -2593,49 +2312,6 @@ public:
     bool timescaleMatters() const override { return false; }
 };
 
-// === AstNodePreSel ===
-class AstSelBit final : public AstNodePreSel {
-    // Single bit range extraction, perhaps with non-constant selection or array selection
-    // Gets replaced during link with AstArraySel or AstSel
-public:
-    AstSelBit(FileLine* fl, AstNode* fromp, AstNode* bitp)
-        : ASTGEN_SUPER_SelBit(fl, fromp, bitp, nullptr) {
-        UASSERT_OBJ(!v3Global.assertDTypesResolved(), this,
-                    "not coded to create after dtypes resolved");
-    }
-    ASTGEN_MEMBERS_AstSelBit;
-    AstNode* bitp() const { return rhsp(); }
-};
-class AstSelExtract final : public AstNodePreSel {
-    // Range extraction, gets replaced with AstSel
-public:
-    AstSelExtract(FileLine* fl, AstNode* fromp, AstNode* msbp, AstNode* lsbp)
-        : ASTGEN_SUPER_SelExtract(fl, fromp, msbp, lsbp) {}
-    ASTGEN_MEMBERS_AstSelExtract;
-    AstNode* leftp() const { return rhsp(); }
-    AstNode* rightp() const { return thsp(); }
-};
-class AstSelMinus final : public AstNodePreSel {
-    // -: range extraction, perhaps with non-constant selection
-    // Gets replaced during link with AstSel
-public:
-    AstSelMinus(FileLine* fl, AstNode* fromp, AstNode* bitp, AstNode* widthp)
-        : ASTGEN_SUPER_SelMinus(fl, fromp, bitp, widthp) {}
-    ASTGEN_MEMBERS_AstSelMinus;
-    AstNode* bitp() const { return rhsp(); }
-    AstNode* widthp() const { return thsp(); }
-};
-class AstSelPlus final : public AstNodePreSel {
-    // +: range extraction, perhaps with non-constant selection
-    // Gets replaced during link with AstSel
-public:
-    AstSelPlus(FileLine* fl, AstNode* fromp, AstNode* bitp, AstNode* widthp)
-        : ASTGEN_SUPER_SelPlus(fl, fromp, bitp, widthp) {}
-    ASTGEN_MEMBERS_AstSelPlus;
-    AstNode* bitp() const { return rhsp(); }
-    AstNode* widthp() const { return thsp(); }
-};
-
 // === AstNodeProcedure ===
 class AstAlways final : public AstNodeProcedure {
     // @astgen op1 := sensesp : Optional[AstSenTree] // Sensitivity list iff clocked
@@ -2796,70 +2472,6 @@ public:
     bool isBrancher() const override {
         return true;  // SPECIAL: We don't process code after breaks
     }
-};
-class AstCAwait final : public AstNodeStmt {
-    // Emit C++'s co_await statement
-    // @astgen op1 := exprp : AstNode
-    AstSenTree* m_sensesp;  // Sentree related to this await
-public:
-    AstCAwait(FileLine* fl, AstNode* exprp, AstSenTree* sensesp = nullptr)
-        : ASTGEN_SUPER_CAwait(fl)
-        , m_sensesp{sensesp} {
-        this->exprp(exprp);
-    }
-    ASTGEN_MEMBERS_AstCAwait;
-    bool isTimingControl() const override { return true; }
-    const char* broken() const override {
-        BROKEN_RTN(m_sensesp && !m_sensesp->brokeExists());
-        return nullptr;
-    }
-    void cloneRelink() override {
-        if (m_sensesp && m_sensesp->clonep()) m_sensesp = m_sensesp->clonep();
-    }
-    void dump(std::ostream& str) const override;
-    AstSenTree* sensesp() const { return m_sensesp; }
-    void clearSensesp() { m_sensesp = nullptr; }
-};
-class AstCMethodHard final : public AstNodeStmt {
-    // A reference to a "C" hardcoded member task (or function)
-    // PARENTS: stmt/math
-    // Not all calls are statments vs math.  AstNodeStmt needs isStatement() to deal.
-    // @astgen op1 := fromp : AstNode // Subject of method call
-    // @astgen op2 := pinsp : List[AstNode] // Arguments
-private:
-    string m_name;  // Name of method
-    bool m_pure = false;  // Pure optimizable
-public:
-    AstCMethodHard(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name,
-                   AstNode* pinsp = nullptr)
-        : ASTGEN_SUPER_CMethodHard(fl, false)
-        , m_name{name} {
-        // TODO: this constructor is exactly the same as the other, bar the ignored tag argument
-        this->fromp(fromp);
-        this->addPinsp(pinsp);
-        dtypep(nullptr);  // V3Width will resolve
-    }
-    AstCMethodHard(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp = nullptr)
-        : ASTGEN_SUPER_CMethodHard(fl, false)
-        , m_name{name} {
-        this->fromp(fromp);
-        this->addPinsp(pinsp);
-    }
-    ASTGEN_MEMBERS_AstCMethodHard;
-    string name() const override { return m_name; }  // * = Var name
-    bool hasDType() const override { return true; }
-    void name(const string& name) override { m_name = name; }
-    bool same(const AstNode* samep) const override {
-        const AstCMethodHard* asamep = static_cast<const AstCMethodHard*>(samep);
-        return (m_name == asamep->m_name);
-    }
-    bool isPure() const override { return m_pure; }
-    void pure(bool flag) { m_pure = flag; }
-    void makeStatement() {
-        statement(true);
-        dtypeSetVoid();
-    }
-    int instrCount() const override;
 };
 class AstCReset final : public AstNodeStmt {
     // Reset variable at startup
@@ -3448,6 +3060,16 @@ public:
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
+class AstStmtExpr final : public AstNodeStmt {
+    // Expression in statement position
+    // @astgen op1 := exprp : AstNodeExpr
+public:
+    AstStmtExpr(FileLine* fl, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_StmtExpr(fl) {
+        this->exprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstStmtExpr;
+};
 class AstStop final : public AstNodeStmt {
 public:
     AstStop(FileLine* fl, bool maybe)
@@ -3477,21 +3099,6 @@ public:
     bool isOutputter() const override { return false; }
     int instrCount() const override { return 0; }
     bool same(const AstNode* /*samep*/) const override { return true; }
-};
-class AstSysIgnore final : public AstNodeStmt {
-    // @astgen op1 := exprsp : List[AstNode] // Expressions to output (???)
-public:
-    AstSysIgnore(FileLine* fl, AstNode* exprsp)
-        : ASTGEN_SUPER_SysIgnore(fl) {
-        this->addExprsp(exprsp);
-    }
-    ASTGEN_MEMBERS_AstSysIgnore;
-    string verilogKwd() const override { return "$ignored"; }
-    bool isGateOptimizable() const override { return false; }  // Though deleted before opt
-    bool isPredictOptimizable() const override { return false; }  // Though deleted before opt
-    bool isPure() const override { return false; }  // Though deleted before opt
-    bool isOutputter() const override { return true; }  // Though deleted before opt
-    int instrCount() const override { return INSTR_COUNT_PLI; }
 };
 class AstSystemT final : public AstNodeStmt {
     // $system used as task
@@ -3708,7 +3315,7 @@ class AstWith final : public AstNodeStmt {
     // Parents: funcref (similar to AstArg)
     // Children: LambdaArgRef that declares the item variable
     // Children: LambdaArgRef that declares the item.index variable
-    // Children: math (equation establishing the with)
+    // Children: expression (equation establishing the with)
     // @astgen op1 := indexArgRefp : AstLambdaArgRef
     // @astgen op2 := valueArgRefp : AstLambdaArgRef
     // @astgen op3 := exprp : AstNode
@@ -3728,23 +3335,6 @@ public:
         BROKEN_RTN(!valueArgRefp());  // varp needed to know lambda's arg dtype
         return nullptr;
     }
-};
-class AstWithParse final : public AstNodeStmt {
-    // In early parse, FUNC(index) WITH equation-using-index
-    // Replaced with AstWith
-    // Parents: math|stmt
-    // Children: funcref, math
-    // @astgen op1 := funcrefp : AstNode
-    // @astgen op2 := exprp : Optional[AstNode]
-public:
-    AstWithParse(FileLine* fl, bool stmt, AstNode* funcrefp, AstNode* exprp)
-        : ASTGEN_SUPER_WithParse(fl) {
-        statement(stmt);
-        this->funcrefp(funcrefp);
-        this->exprp(exprp);
-    }
-    ASTGEN_MEMBERS_AstWithParse;
-    bool same(const AstNode* /*samep*/) const override { return true; }
 };
 
 // === AstNodeAssign ===
@@ -3850,52 +3440,6 @@ public:
     AstAlways* convertToAlways();
 };
 
-// === AstNodeCCall ===
-class AstCCall final : public AstNodeCCall {
-    // C++ function call
-    // Parents:  Anything above a statement
-    // Children: Args to the function
-
-    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
-
-public:
-    AstCCall(FileLine* fl, AstCFunc* funcp, AstNode* argsp = nullptr)
-        : ASTGEN_SUPER_CCall(fl, funcp, argsp) {}
-    ASTGEN_MEMBERS_AstCCall;
-
-    string selfPointer() const { return m_selfPointer; }
-    void selfPointer(const string& value) { m_selfPointer = value; }
-    string selfPointerProtect(bool useSelfForThis) const;
-};
-class AstCMethodCall final : public AstNodeCCall {
-    // C++ method call
-    // Parents:  Anything above a statement
-    // @astgen op1 := fromp : AstNode
-public:
-    AstCMethodCall(FileLine* fl, AstNode* fromp, AstCFunc* funcp, AstNode* argsp = nullptr)
-        : ASTGEN_SUPER_CMethodCall(fl, funcp, argsp) {
-        this->fromp(fromp);
-    }
-    ASTGEN_MEMBERS_AstCMethodCall;
-    const char* broken() const override {
-        BROKEN_BASE_RTN(AstNodeCCall::broken());
-        BROKEN_RTN(!fromp());
-        return nullptr;
-    }
-};
-class AstCNew final : public AstNodeCCall {
-    // C++ new() call
-    // Parents:  Anything above an expression
-    // Children: Args to the function
-public:
-    AstCNew(FileLine* fl, AstCFunc* funcp, AstNode* argsp = nullptr)
-        : ASTGEN_SUPER_CNew(fl, funcp, argsp) {
-        statement(false);
-    }
-    bool hasDType() const override { return true; }
-    ASTGEN_MEMBERS_AstCNew;
-};
-
 // === AstNodeCase ===
 class AstCase final : public AstNodeCase {
     // Case statement
@@ -3977,74 +3521,6 @@ public:
     ASTGEN_MEMBERS_AstRestrict;
     AstRestrict(FileLine* fl, AstNode* propp)
         : ASTGEN_SUPER_Restrict(fl, propp, nullptr, false, "") {}
-};
-
-// === AstNodeFTaskRef ===
-class AstFuncRef final : public AstNodeFTaskRef {
-    // A reference to a function
-public:
-    AstFuncRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
-        : ASTGEN_SUPER_FuncRef(fl, false, namep, pinsp) {}
-    AstFuncRef(FileLine* fl, const string& name, AstNode* pinsp)
-        : ASTGEN_SUPER_FuncRef(fl, false, name, pinsp) {}
-    ASTGEN_MEMBERS_AstFuncRef;
-    bool hasDType() const override { return true; }
-};
-class AstMethodCall final : public AstNodeFTaskRef {
-    // A reference to a member task (or function)
-    // PARENTS: stmt/math
-    // Not all calls are statments vs math.  AstNodeStmt needs isStatement() to deal.
-    // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
-    // @astgen op2 := fromp : AstNode
-    //
-public:
-    AstMethodCall(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name,
-                  AstNode* pinsp)
-        : ASTGEN_SUPER_MethodCall(fl, false, name, pinsp) {
-        this->fromp(fromp);
-        dtypep(nullptr);  // V3Width will resolve
-    }
-    AstMethodCall(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
-        : ASTGEN_SUPER_MethodCall(fl, false, name, pinsp) {
-        this->fromp(fromp);
-    }
-    ASTGEN_MEMBERS_AstMethodCall;
-    const char* broken() const override {
-        BROKEN_BASE_RTN(AstNodeFTaskRef::broken());
-        BROKEN_RTN(!fromp());
-        return nullptr;
-    }
-    void dump(std::ostream& str) const override;
-    bool hasDType() const override { return true; }
-    void makeStatement() {
-        statement(true);
-        dtypeSetVoid();
-    }
-};
-class AstNew final : public AstNodeFTaskRef {
-    // New as constructor
-    // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
-    // Parents: math|stmt
-    // Children: varref|arraysel, math
-public:
-    AstNew(FileLine* fl, AstNode* pinsp)
-        : ASTGEN_SUPER_New(fl, false, "new", pinsp) {}
-    ASTGEN_MEMBERS_AstNew;
-    virtual bool cleanOut() const { return true; }
-    bool same(const AstNode* /*samep*/) const override { return true; }
-    bool hasDType() const override { return true; }
-    int instrCount() const override { return widthInstrs(); }
-};
-class AstTaskRef final : public AstNodeFTaskRef {
-    // A reference to a task
-public:
-    AstTaskRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
-        : ASTGEN_SUPER_TaskRef(fl, true, namep, pinsp) {
-        statement(true);
-    }
-    AstTaskRef(FileLine* fl, const string& name, AstNode* pinsp)
-        : ASTGEN_SUPER_TaskRef(fl, true, name, pinsp) {}
-    ASTGEN_MEMBERS_AstTaskRef;
 };
 
 // === AstNodeFor ===

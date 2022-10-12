@@ -2,7 +2,7 @@
    16 |       foo(bus_we_select_from[2]);   
       |                             ^
                   ... For error description see https://verilator.org/warn/TASKNSVAR?v=latest
-%Error: Internal Error: t/t_func_tasknsvar_bad.v:10:7: ../V3Broken.cpp:#: Broken link in node (or something without maybePointedTo): 'm_varp && !m_varp->brokeExists()' @ ../V3AstNodes.cpp:64
+%Error: Internal Error: t/t_func_tasknsvar_bad.v:10:7: ../V3Broken.cpp:#: Broken link in node (or something without maybePointedTo): 'm_varp && !m_varp->brokeExists()' @ ../V3AstNodes.cpp:66
    10 |       sig = '1;
       |       ^~~
                         ... See the manual at https://verilator.org/verilator_doc.html for more assistance.

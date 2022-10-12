@@ -463,7 +463,7 @@ static void process() {
         // Bits between widthMin() and width() are irrelevant, but may be non zero.
         v3Global.widthMinUsage(VWidthMinUsage::VERILOG_WIDTH);
 
-        // Make all math operations either 8, 16, 32 or 64 bits
+        // Make all expressions either 8, 16, 32 or 64 bits
         V3Clean::cleanAll(v3Global.rootp());
 
         // Move wide constants to BLOCK temps / ConstPool.

@@ -16,9 +16,9 @@
 // V3Cast's Transformations:
 //
 // Each module:
-//      For each math operator, if above operator requires 32 bits,
+//      For each expression, if above expression requires 32 bits,
 //      and this isn't, cast to 32 bits.
-//      Likewise for 64 bit operators.
+//      Likewise for 64 bit expressions.
 //
 // C++ rules:
 //      Integral promotions allow conversion to larger int.  Unsigned is only
@@ -158,7 +158,8 @@ private:
     }
     void visit(AstVarRef* nodep) override {
         const AstNode* const backp = nodep->backp();
-        if (nodep->access().isReadOnly() && !VN_IS(backp, CCast) && VN_IS(backp, NodeMath)
+        if (nodep->access().isReadOnly() && VN_IS(backp, NodeExpr) && !VN_IS(backp, CCast)
+            && !VN_IS(backp, NodeCCall) && !VN_IS(backp, CMethodHard) && !VN_IS(backp, SFormatF)
             && !VN_IS(backp, ArraySel) && !VN_IS(backp, RedXor)
             && (nodep->varp()->basicp() && !nodep->varp()->basicp()->isTriggerVec()
                 && !nodep->varp()->basicp()->isForkSync())

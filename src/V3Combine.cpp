@@ -69,7 +69,9 @@ class CombineVisitor final : VNVisitor {
             if (funcp->emptyBody()) {
                 // Delete call sites
                 for (AstCCall* const callp : m_callSites(funcp)) {
-                    VL_DO_DANGLING(callp->unlinkFrBack()->deleteTree(), callp);
+                    UASSERT_OBJ(VN_IS(callp->backp(), StmtExpr), callp,
+                                "Deleting non-statement call");
+                    VL_DO_DANGLING(callp->backp()->unlinkFrBack()->deleteTree(), callp);
                 }
                 m_callSites(funcp).clear();
                 // Remove from list

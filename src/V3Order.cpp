@@ -1242,9 +1242,10 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
             scopep->addBlocksp(newFuncpr);
             // Create top call to it
             AstCCall* const callp = new AstCCall{nodep->fileline(), newFuncpr};
+            callp->dtypeSetVoid();
             // Where will we be adding the call?
             AstActive* const newActivep = new AstActive{nodep->fileline(), name, domainp};
-            newActivep->addStmtsp(callp);
+            newActivep->addStmtsp(callp->makeStmt());
             if (!activep) {
                 activep = newActivep;
             } else {

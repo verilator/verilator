@@ -86,10 +86,6 @@ private:
         }
     }
     void visit(AstNodeStmt* nodep) override {
-        if (!nodep->isStatement()) {
-            iterateChildren(nodep);
-            return;
-        }
         UINFO(6, "     CL STMT " << nodep << endl);
         const bool oldKeep = m_keepStmt;
         {
@@ -179,8 +175,7 @@ private:
         }
     }
 
-    // Speedup; no always under math
-    void visit(AstNodeMath*) override {}
+    void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:

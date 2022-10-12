@@ -47,7 +47,7 @@ private:
 
     // METHODS
 
-    AstCFunc* createDeepFunc(AstNode* nodep) {
+    AstCFunc* createDeepFunc(AstNodeStmt* nodep) {
         VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         // Create sub function
@@ -61,12 +61,13 @@ private:
         scopep->addBlocksp(funcp);
         // Call sub function at the point where the body was removed from
         AstCCall* const callp = new AstCCall(nodep->fileline(), funcp);
+        callp->dtypeSetVoid();
         if (VN_IS(m_modp, Class)) {
             funcp->argTypes(EmitCBaseVisitor::symClassVar());
             callp->argTypes("vlSymsp");
         }
         UINFO(6, "      New " << callp << endl);
-        relinkHandle.relink(callp);
+        relinkHandle.relink(callp->makeStmt());
         // Done
         return funcp;
     }
@@ -91,10 +92,10 @@ private:
             iterateChildren(nodep);
         }
     }
-    void visitStmt(AstNodeStmt* nodep) {
+    void visit(AstStmtExpr* nodep) override {}  // Stop recursion after introducing new function
+    void visit(AstNodeStmt* nodep) override {
         m_depth++;
-        if (m_depth > v3Global.opt.compLimitBlocks()
-            && !VN_IS(nodep, NodeCCall)) {  // Already done
+        if (m_depth > v3Global.opt.compLimitBlocks()) {  // Already done
             UINFO(4, "DeepBlocks " << m_depth << " " << nodep << endl);
             const AstNode* const backp = nodep->backp();  // Only for debug
             if (debug() >= 9) backp->dumpTree(cout, "-   pre : ");
@@ -107,15 +108,8 @@ private:
         }
         m_depth--;
     }
-    void visit(AstNodeStmt* nodep) override {
-        if (!nodep->isStatement()) {
-            iterateChildren(nodep);
-        } else {
-            visitStmt(nodep);
-        }
-    }
 
-    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeExpr*) override {}  // Accelerate
     //--------------------
     void visit(AstVar*) override {}  // Don't hit varrefs under vars
     void visit(AstNode* nodep) override { iterateChildren(nodep); }

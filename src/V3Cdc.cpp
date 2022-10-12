@@ -697,7 +697,7 @@ private:
     void visit(AstAssignAlias* nodep) override { iterateNewStmt(nodep); }
     void visit(AstAssignW* nodep) override { iterateNewStmt(nodep); }
 
-    // Math that shouldn't cause us to clear hazard
+    // Expressions that shouldn't cause us to clear hazard
     void visit(AstConst*) override {}
     void visit(AstReplicate* nodep) override { iterateChildren(nodep); }
     void visit(AstConcat* nodep) override { iterateChildren(nodep); }
@@ -721,7 +721,7 @@ private:
 
     //--------------------
     // Default
-    void visit(AstNodeMath* nodep) override {
+    void visit(AstNodeExpr* nodep) override {
         setNodeHazard(nodep);
         iterateChildren(nodep);
     }

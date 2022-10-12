@@ -489,8 +489,9 @@ public:
             // Call all sub functions for this path
             for (AstCFunc* const subFuncp : item.second) {
                 AstCCall* const callp = new AstCCall{flp, subFuncp};
+                callp->dtypeSetVoid();
                 callp->argTypes("tracep");
-                addToTopFunc(callp);
+                addToTopFunc(callp->makeStmt());
             }
         }
         pathAdjustor.unwind();
@@ -503,8 +504,9 @@ public:
             AstCFunc* const topFuncp = newCFunc(flp, "");
             for (AstCFunc* funcp : m_topFuncps) {
                 AstCCall* const callp = new AstCCall{flp, funcp};
+                callp->dtypeSetVoid();
                 callp->argTypes("tracep");
-                topFuncp->addStmtsp(callp);
+                topFuncp->addStmtsp(callp->makeStmt());
             }
             m_topFuncps.clear();
             m_topFuncps.push_back(topFuncp);

@@ -691,7 +691,7 @@ private:
         cellp->addIntfRefsp(new AstIntfRef(varlp->fileline(), alias));
     }
     //--------------------
-    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNodeStmt*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

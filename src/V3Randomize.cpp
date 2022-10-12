@@ -172,7 +172,7 @@ private:
             }
             return stmtsp;
         } else {
-            AstNodeMath* valp;
+            AstNodeExpr* valp;
             if (auto* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
                                                       : varrefp->dtypep()->subDTypep(),
                                               EnumDType)) {
