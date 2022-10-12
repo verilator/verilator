@@ -494,6 +494,10 @@ V3Number& V3Number::setMask(int nbits) {
 string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
     std::ostringstream out;
 
+    if (is1Step()) {
+        out << "1step";
+        return out.str();
+    }
     if (isDouble()) {
         out.precision(17);
         if (VL_UNCOVERABLE(width() != 64)) {

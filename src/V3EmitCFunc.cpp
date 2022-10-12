@@ -660,6 +660,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
         return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
                                    suffix + ".atDefault()" + cvtarray);
+    } else if (VN_IS(dtypep, SampleQueueDType)) {
+        return "";
     } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                     "Should have swapped msb & lsb earlier.");

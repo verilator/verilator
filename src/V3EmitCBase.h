@@ -97,6 +97,7 @@ public:
         return v3Global.opt.compLimitMembers() != 0  // Enabled
                && !varp->isStatic()  // Not a static variable
                && !varp->isSc()  // Aggregates can't be anon
+               && !VN_IS(varp->dtypep()->skipRefp(), SampleQueueDType)  // Aggregates can't be anon
                && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
     }
 

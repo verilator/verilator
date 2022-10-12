@@ -740,6 +740,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     // STATE
     LinkDotState* const m_statep;  // State to pass between visitors, including symbol table
     AstNodeModule* m_classOrPackagep = nullptr;  // Current package
+    AstClocking* m_clockingp = nullptr;  // Current clocking block
     VSymEnt* m_modSymp = nullptr;  // Symbol Entry for current module
     VSymEnt* m_curSymp = nullptr;  // Symbol Entry for current table, where to lookup/insert
     string m_scope;  // Scope text
@@ -1123,6 +1124,49 @@ class LinkDotFindVisitor final : public VNVisitor {
             m_ftaskp = nullptr;
         }
     }
+    void visit(AstClocking* nodep) override {
+        VL_RESTORER(m_clockingp);
+        m_clockingp = nodep;
+        iterate(nodep->sensesp());
+        iterateAndNextNull(nodep->itemsp());
+        // If the block has no name, one cannot reference the clockvars
+        if (nodep->name().empty()) return;
+        VL_RESTORER(m_curSymp);
+        m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
+        m_curSymp->fallbackp(nullptr);
+        iterateAndNextNull(nodep->itemsp());
+    }
+    void visit(AstClockingItem* nodep) override {
+        if (nodep->varp()) {
+            if (m_curSymp->nodep() == m_clockingp) iterate(nodep->varp());
+            return;
+        }
+        std::string varname;
+        AstNodeDType* dtypep;
+        if (AstAssign* const assignp = nodep->assignp()) {
+            AstNodeExpr* const rhsp = assignp->rhsp()->unlinkFrBack();
+            dtypep = new AstRefDType{nodep->fileline(), AstRefDType::FlagTypeOfExpr{},
+                                     rhsp->cloneTree(false)};
+            nodep->exprp(rhsp);
+            varname = assignp->lhsp()->name();
+            VL_DO_DANGLING(assignp->unlinkFrBack()->deleteTree(), assignp);
+        } else {
+            AstNodeExpr* const refp = nodep->exprp();
+            const VSymEnt* foundp = m_curSymp->findIdFallback(refp->name());
+            if (!foundp || !foundp->nodep()) {
+                refp->v3error("Corresponding variable " << refp->prettyNameQ()
+                                                        << " does not exist");
+                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                return;
+            }
+            varname = refp->name();
+            dtypep = VN_AS(foundp->nodep(), Var)->childDTypep()->cloneTree(false);
+        }
+        AstVar* const newvarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP, varname,
+                                           VFlagChildDType{}, dtypep};
+        nodep->varp(newvarp);
+        iterate(nodep->exprp());
+    }
     void visit(AstVar* nodep) override {
         // Var: Remember its name for later resolution
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Var not under module?");
@@ -1150,6 +1194,10 @@ class LinkDotFindVisitor final : public VNVisitor {
                                              << cvtToHex(foundp->parentp()) << endl);
                 if (foundp->parentp() == m_curSymp  // Only when on same level
                     && !foundp->imported()) {  // and not from package
+                    if (VN_IS(m_curSymp->nodep(), Clocking)) {
+                        nodep->v3error("Multiple clockvars with the same name not allowed");
+                        return;
+                    }
                     const bool nansiBad
                         = ((findvarp->isDeclTyped() && nodep->isDeclTyped())
                            || (findvarp->isIO() && nodep->isIO()));  // e.g. !(output && output)
@@ -1946,6 +1994,7 @@ private:
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     int m_modportNum = 0;  // Uniqueify modport numbers
+    bool m_inSens = false;  // True if in senitem
 
     struct DotStates {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -2061,6 +2110,24 @@ private:
         } else {
             refp->user5p(nodep);
         }
+    }
+    VSymEnt* getCreateClockingEventSymEnt(AstClocking* clockingp) {
+        if (!clockingp->eventp()) {
+            AstVar* const eventp = new AstVar{
+                clockingp->fileline(), VVarType::MODULETEMP, clockingp->name(), VFlagChildDType{},
+                new AstBasicDType{clockingp->fileline(), VBasicDTypeKwd::EVENT}};
+            clockingp->eventp(eventp);
+            // Trigger the clocking event in Observed (IEEE 1800-2017 14.13)
+            clockingp->addNextHere(new AstAlwaysObserved{
+                clockingp->fileline(),
+                new AstSenTree{clockingp->fileline(), clockingp->sensesp()->cloneTree(false)},
+                new AstFireEvent{clockingp->fileline(),
+                                 new AstVarRef{clockingp->fileline(), eventp, VAccess::WRITE},
+                                 false}});
+            v3Global.setHasEvents();
+            eventp->user1p(new VSymEnt{m_statep->symsp(), eventp});
+        }
+        return reinterpret_cast<VSymEnt*>(clockingp->eventp()->user1p());
     }
 
     bool isParamedClassRef(const AstNode* nodep) {
@@ -2311,6 +2378,11 @@ private:
             m_ds.m_dotp = lastStates.m_dotp;
         }
     }
+    void visit(AstSenItem* nodep) override {
+        VL_RESTORER(m_inSens);
+        m_inSens = true;
+        iterateChildren(nodep);
+    }
     void visit(AstParseRef* nodep) override {
         if (nodep->user3SetOnce()) return;
         UINFO(9, "   linkPARSEREF " << m_ds.ascii() << "  n=" << nodep << endl);
@@ -2417,6 +2489,12 @@ private:
             }
             // What fell out?
             bool ok = false;
+            // Special case: waiting on clocking event
+            if (m_inSens && foundp && m_ds.m_dotPos != DP_SCOPE) {
+                if (AstClocking* const clockingp = VN_CAST(foundp->nodep(), Clocking)) {
+                    foundp = getCreateClockingEventSymEnt(clockingp);
+                }
+            }
             if (!foundp) {
             } else if (VN_IS(foundp->nodep(), Cell) || VN_IS(foundp->nodep(), Begin)
                        || VN_IS(foundp->nodep(), Netlist)  // for $root
@@ -2582,6 +2660,9 @@ private:
                     m_ds.m_dotPos = DP_MEMBER;
                     m_ds.m_dotText = "";
                 }
+            } else if (VN_IS(foundp->nodep(), Clocking)) {
+                m_ds.m_dotSymp = foundp;
+                ok = m_ds.m_dotPos == DP_SCOPE;
             }
             //
             if (!ok) {

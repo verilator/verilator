@@ -1121,6 +1121,50 @@ public:
         return false;
     }
 };
+class AstSampleQueueDType final : public AstNodeDType {
+    // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
+    AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
+public:
+    AstSampleQueueDType(FileLine* fl, AstNodeDType* dtp)
+        : ASTGEN_SUPER_SampleQueueDType(fl) {
+        refDTypep(dtp);
+        dtypep(dtp);
+    }
+    ASTGEN_MEMBERS_AstSampleQueueDType;
+    const char* broken() const override {
+        BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
+                     || (!m_refDTypep && childDTypep())));
+        return nullptr;
+    }
+    void cloneRelink() override {
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
+    }
+    bool same(const AstNode* samep) const override {
+        const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
+        if (!asamep->subDTypep()) return false;
+        return (subDTypep() == asamep->subDTypep());
+    }
+    bool similarDType(const AstNodeDType* samep) const override {
+        const AstSampleQueueDType* const asamep = static_cast<const AstSampleQueueDType*>(samep);
+        return type() == samep->type() && asamep->subDTypep()
+               && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
+    }
+    void dumpSmall(std::ostream& str) const override;
+    AstNodeDType* getChildDTypep() const override { return childDTypep(); }
+    // op1 = Range of variable
+    AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
+    AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
+    void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
+    // METHODS
+    AstBasicDType* basicp() const override { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
+    int widthAlignBytes() const override { return sizeof(std::map<std::string, std::string>); }
+    int widthTotalBytes() const override { return sizeof(std::map<std::string, std::string>); }
+    bool isCompound() const override { return true; }
+};
 class AstUnsizedArrayDType final : public AstNodeDType {
     // Unsized/open-range Array data type, ie "some_dtype var_name []"
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width

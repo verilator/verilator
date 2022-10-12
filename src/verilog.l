@@ -637,6 +637,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
 <VA5,SAX>{
   /*     Generic unsupported warnings */
+   "1step"              { FL; return ya1STEP; }
    "above"              { ERROR_RSVD_WORD("AMS"); }
    "abs"                { ERROR_RSVD_WORD("AMS"); }
    "absdelay"           { ERROR_RSVD_WORD("AMS"); }
@@ -929,8 +930,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           return yaTIMENUM;
                         }
   1step                 {
-                          FL; yylval.cdouble = 0;  // Unsupported
-                          return yaTIMENUM;
+                          return ya1STEP;
                         }
 }
 

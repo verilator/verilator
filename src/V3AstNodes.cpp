@@ -724,6 +724,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         // + 1 below as VlQueue uses 0 to mean unlimited, 1 to mean size() max is 1
         if (adtypep->boundp()) info.m_type += ", " + cvtToStr(adtypep->boundConst() + 1);
         info.m_type += ">";
+    } else if (const auto* const adtypep = VN_CAST(dtypep, SampleQueueDType)) {
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
+        info.m_type = "VlSampleQueue<" + sub.m_type + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
         info.m_type = "VlClassRef<" + EmitCBaseVisitor::prefixNameProtect(adtypep) + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, IfaceRefDType)) {
@@ -1999,6 +2002,10 @@ bool AstWildcardArrayDType::similarDType(const AstNodeDType* samep) const {
     return type() == samep->type() && asamep->subDTypep()
            && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
 }
+void AstSampleQueueDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "[*]";
+}
 void AstUnsizedArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "[]";
@@ -2319,4 +2326,9 @@ AstAlways* AstAssignW::convertToAlways() {
     AstAlways* const newp = new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, bodysp};
     replaceWith(newp);  // User expected to then deleteTree();
     return newp;
+}
+
+void AstDelay::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (isCycleDelay()) str << " [CYCLE]";
 }

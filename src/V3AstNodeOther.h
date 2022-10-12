@@ -814,17 +814,50 @@ public:
     AstClass* classp() const;  // Class being extended (after link)
 };
 class AstClocking final : public AstNode {
-    // Set default clock region
     // Parents:  MODULE
-    // @astgen op1 := sensesp : List[AstSenItem]
-    // @astgen op2 := bodysp : List[AstNode]
+    // Children: SENITEM, CLOCKING ITEMs, VARs
+    // @astgen op1 := sensesp : AstSenItem
+    // @astgen op2 := itemsp : List[AstClockingItem]
+    // @astgen op3 := varsp : List[AstVar]
+    // @astgen op4 := eventp : Optional[AstVar]
+    std::string m_name;  // Clocking block name
+    const bool m_isDefault = false;  // True if default clocking
+
 public:
-    AstClocking(FileLine* fl, AstSenItem* sensesp, AstNode* bodysp)
-        : ASTGEN_SUPER_Clocking(fl) {
-        this->addSensesp(sensesp);
-        this->addBodysp(bodysp);
+    AstClocking(FileLine* fl, const std::string& name, AstSenItem* sensesp,
+                AstClockingItem* itemsp, bool isDefault)
+        : ASTGEN_SUPER_Clocking(fl)
+        , m_isDefault{isDefault} {
+        m_name = name;
+        this->sensesp(sensesp);
+        addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstClocking;
+    std::string name() const override { return m_name; }
+    bool isDefault() const { return m_isDefault; }
+};
+class AstClockingItem final : public AstNode {
+    // Parents:  CLOCKING
+    // Children: EXPRs, ASSIGNs, VARs
+    // @astgen op1 := skewp : Optional[AstNodeExpr]
+    // @astgen op2 := exprp : Optional[AstNodeExpr]
+    // @astgen op3 := assignp : Optional[AstAssign]
+    // @astgen op4 := varp : Optional[AstVar]
+    VDirection m_direction;
+
+public:
+    AstClockingItem(FileLine* fl, VDirection direction, AstNodeExpr* skewp, AstNode* clockingDeclp)
+        : ASTGEN_SUPER_ClockingItem(fl) {
+        m_direction = direction;
+        this->skewp(skewp);
+        if (AstAssign* const assignp = VN_CAST(clockingDeclp, Assign)) {
+            this->assignp(assignp);
+        } else {
+            exprp(VN_AS(clockingDeclp, NodeExpr));
+        }
+    }
+    ASTGEN_MEMBERS_AstClockingItem;
+    VDirection direction() const { return m_direction; }
 };
 class AstConstPool final : public AstNode {
     // Container for const static data
@@ -2182,6 +2215,17 @@ public:
     void dump(std::ostream& str) const override;
     VAlwaysKwd keyword() const { return m_keyword; }
 };
+class AstAlwaysObserved final : public AstNodeProcedure {
+    // Like always but Observed scheduling region
+    // @astgen op1 := sensesp : Optional[AstSenTree] // Sensitivity list, removed in V3Active
+
+public:
+    AstAlwaysObserved(FileLine* fl, AstSenTree* sensesp, AstNode* bodysp)
+        : ASTGEN_SUPER_AlwaysObserved(fl, bodysp) {
+        this->sensesp(sensesp);
+    }
+    ASTGEN_MEMBERS_AstAlwaysObserved;
+};
 class AstAlwaysPost final : public AstNodeProcedure {
     // Like always but post assignments for memory assignment IFs
     // @astgen op1 := sensesp : Optional[AstSenTree] // Sensitivity list iff clocked
@@ -2199,6 +2243,17 @@ public:
     AstAlwaysPostponed(FileLine* fl, AstNode* stmtsp)
         : ASTGEN_SUPER_AlwaysPostponed(fl, stmtsp) {}
     ASTGEN_MEMBERS_AstAlwaysPostponed;
+};
+class AstAlwaysReactive final : public AstNodeProcedure {
+    // Like always but Reactive scheduling region
+    // @astgen op1 := sensesp : Optional[AstSenTree] // Sensitivity list, removed in V3Active
+
+public:
+    AstAlwaysReactive(FileLine* fl, AstSenTree* sensesp, AstNode* bodysp)
+        : ASTGEN_SUPER_AlwaysReactive(fl, bodysp) {
+        this->sensesp(sensesp);
+    }
+    ASTGEN_MEMBERS_AstAlwaysReactive;
 };
 class AstFinal final : public AstNodeProcedure {
 public:
@@ -2496,13 +2551,18 @@ class AstDelay final : public AstNodeStmt {
     // Delay statement
     // @astgen op1 := lhsp : AstNodeExpr // Delay value
     // @astgen op2 := stmtsp : List[AstNode] // Statements under delay
+    const bool m_isCycle;  // True if it is a cycle delay
+
 public:
-    AstDelay(FileLine* fl, AstNodeExpr* lhsp)
-        : ASTGEN_SUPER_Delay(fl) {
+    AstDelay(FileLine* fl, AstNodeExpr* lhsp, bool isCycle)
+        : ASTGEN_SUPER_Delay(fl)
+        , m_isCycle{isCycle} {
         this->lhsp(lhsp);
     }
     ASTGEN_MEMBERS_AstDelay;
+    void dump(std::ostream& str) const override;
     bool isTimingControl() const override { return true; }
+    bool isCycleDelay() const { return m_isCycle; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstDisable final : public AstNodeStmt {

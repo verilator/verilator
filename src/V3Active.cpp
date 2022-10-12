@@ -243,14 +243,19 @@ public:
     // METHODS
     AstScope* scopep() { return m_scopep; }
 
-    // Make a new AstActive sensitive to the given special sensitivity class and return it
-    template <typename SenItemKind>
-    AstActive* makeSpecialActive(FileLine* const fl) {
-        AstSenTree* const senTreep = new AstSenTree{fl, new AstSenItem{fl, SenItemKind{}}};
+    // Make a new AstActive sensitive to the given sentree and return it
+    AstActive* makeActive(FileLine* const fl, AstSenTree* const senTreep) {
         auto* const activep = new AstActive{fl, "", senTreep};
         activep->sensesStorep(activep->sensesp());
         addActive(activep);
         return activep;
+    }
+
+    // Make a new AstActive sensitive to the given special sensitivity class and return it
+    template <typename SenItemKind>
+    AstActive* makeSpecialActive(FileLine* const fl) {
+        AstSenTree* const senTreep = new AstSenTree{fl, new AstSenItem{fl, SenItemKind{}}};
+        return makeActive(fl, senTreep);
     }
 
     // Return an AstActive sensitive to the given special sensitivity class (possibly pre-created)
@@ -540,6 +545,22 @@ private:
         UASSERT_OBJ(nodep->stmtsp(), nodep, "Should not be empty");
         // Make a new active for it, needs to be the only item under the active for V3Sched
         AstActive* const activep = m_namer.makeSpecialActive<AstSenItem::Combo>(nodep->fileline());
+        activep->addStmtsp(nodep->unlinkFrBack());
+    }
+    void visit(AstAlwaysObserved* nodep) override {
+        UASSERT_OBJ(nodep->sensesp(), nodep, "Should have a sentree");
+        AstSenTree* const sensesp = nodep->sensesp();
+        sensesp->unlinkFrBack();
+        // Make a new active for it, needs to be the only item under the active for V3Sched
+        AstActive* const activep = m_namer.makeActive(nodep->fileline(), sensesp);
+        activep->addStmtsp(nodep->unlinkFrBack());
+    }
+    void visit(AstAlwaysReactive* nodep) override {
+        UASSERT_OBJ(nodep->sensesp(), nodep, "Should have a sentree");
+        AstSenTree* const sensesp = nodep->sensesp();
+        sensesp->unlinkFrBack();
+        // Make a new active for it, needs to be the only item under the active for V3Sched
+        AstActive* const activep = m_namer.makeActive(nodep->fileline(), sensesp);
         activep->addStmtsp(nodep->unlinkFrBack());
     }
     void visit(AstAlwaysPublic* nodep) override {

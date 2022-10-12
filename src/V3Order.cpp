@@ -385,6 +385,12 @@ class OrderBuildVisitor final : public VNVisitor {
         iterateLogic(nodep);
         m_inPost = false;
     }
+    void visit(AstAlwaysObserved* nodep) override {  //
+        iterateLogic(nodep);
+    }
+    void visit(AstAlwaysReactive* nodep) override {  //
+        iterateLogic(nodep);
+    }
     void visit(AstFinal* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("AstFinal should not need ordering");
     }  // LCOV_EXCL_STOP

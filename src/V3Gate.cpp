@@ -510,6 +510,7 @@ private:
     void visit(AstCFunc* nodep) override {
         iterateNewStmt(nodep, "User C Function", "User C Function");
     }
+    void visit(AstClocking* nodep) override { iterateNewStmt(nodep, nullptr, nullptr); }
     void visit(AstSenItem* nodep) override {
         m_inSenItem = true;
         if (m_logicVertexp) {  // Already under logic; presumably a SenGate
