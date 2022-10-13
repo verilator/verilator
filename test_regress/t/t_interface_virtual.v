@@ -16,12 +16,17 @@ class Cls;
    virtual PBus fa, fb;
 endclass
 
+class Clsgen#(type T = logic);
+   T x[0:3];
+endclass
+
 module t (/*AUTOARG*/);
 
    PBus ia, ib;
    virtual PBus va, vb;
    virtual PBus.phy pa, pb;
    Cls ca, cb;
+   Clsgen#(virtual PBus) gen;
 
    initial begin
       va = ia;
@@ -29,6 +34,7 @@ module t (/*AUTOARG*/);
 
       ca = new;
       cb = new;
+      gen = new;
 
       va.addr = 8'haa;
       ia.data = 8'h11;
@@ -43,14 +49,19 @@ module t (/*AUTOARG*/);
       ca.fb = ib;
       cb.fa = ib;
       cb.fb = ia;
-//      pa = va;
-//      pb = vb;
+      gen.x[0] = va;
+      gen.x[1] = vb;
 
-//      pb.addr = 8'hb0;
-//      pa.addr = 8'ha0;
+      pa = va;
+      pb = vb;
+
+      pb.addr = 8'hb0;
+      pa.addr = 8'ha0;
 
       $display("ca.fa.addr=%x", ca.fa.addr, " ca.fa.data=%x", ca.fa.data, " ca.fa.addr=%x", ca.fb.addr, " ca.fb.data=%x", ca.fb.data);
       $display("cb.fa.addr=%x", cb.fa.addr, " cb.fa.data=%x", cb.fa.data, " cb.fa.addr=%x", cb.fb.addr, " cb.fb.data=%x", cb.fb.data);
+      $display("gen.x[0].addr=%x", gen.x[0].addr, " gen.x[1].addr=%x", gen.x[1].addr);
+      $display("gen=%p", gen);
 
       $write("*-* All Finished *-*\n");
       $finish;

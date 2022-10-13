@@ -47,6 +47,19 @@ static void makeVlToString(AstClass* nodep) {
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtsp(funcp);
 }
+static void makeVlToString(AstIface* nodep) {
+    AstCFunc* const funcp
+        = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
+    funcp->argTypes("const " + EmitCBaseVisitor::prefixNameProtect(nodep) + "* obj");
+    funcp->isMethod(false);
+    funcp->isConst(false);
+    funcp->isStatic(false);
+    funcp->protect(false);
+    AstNode* const exprp = new AstCMath{nodep->fileline(), "obj ? obj->name() : \"null\"", 0};
+    exprp->dtypeSetString();
+    funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
+    nodep->addStmtsp(funcp);
+}
 static void makeToString(AstClass* nodep) {
     AstCFunc* const funcp = new AstCFunc{nodep->fileline(), "to_string", nullptr, "std::string"};
     funcp->isConst(true);
@@ -68,7 +81,7 @@ static void makeToStringMiddle(AstClass* nodep) {
     std::string comma;
     for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
         if (const auto* const varp = VN_CAST(itemp, Var)) {
-            if (!varp->isParam() && !VN_IS(itemp->dtypep(), IfaceRefDType)) {
+            if (!varp->isParam()) {
                 string stmt = "out += \"";
                 stmt += comma;
                 comma = ", ";
@@ -117,6 +130,8 @@ void V3Common::commonAll() {
             makeVlToString(classp);
             makeToString(classp);
             makeToStringMiddle(classp);
+        } else if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {
+            makeVlToString(ifacep);
         }
     }
     V3Global::dumpCheckGlobalTree("common", 0, dumpTree() >= 3);

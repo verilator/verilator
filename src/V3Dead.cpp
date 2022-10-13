@@ -198,6 +198,19 @@ private:
         }
         if (nodep->classp()) nodep->classp()->user1Inc();
     }
+    void visit(AstIfaceRefDType* nodep) override {
+        iterateChildren(nodep);
+        checkDType(nodep);
+        checkAll(nodep);
+        if (nodep->modportp()) {
+            if (m_elimCells) {
+                nodep->modportp(nullptr);
+            } else {
+                nodep->modportp()->user1Inc();
+            }
+        }
+        if (nodep->ifaceViaCellp()) nodep->ifaceViaCellp()->user1Inc();
+    }
     void visit(AstNodeDType* nodep) override {
         iterateChildren(nodep);
         checkDType(nodep);
