@@ -1273,6 +1273,22 @@ public:
     bool cleanOut() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
+class AstThisRef final : public AstNodeMath {
+    // Reference to 'this'.
+    // @astgen op1 := childDTypep : Optional[AstClassRefDType] // dtype of the node
+public:
+    explicit AstThisRef(FileLine* fl, AstClassRefDType* dtypep)
+        : ASTGEN_SUPER_ThisRef(fl) {
+        childDTypep(dtypep);
+    }
+    ASTGEN_MEMBERS_AstThisRef;
+    string emitC() override { return "this"; }
+    string emitVerilog() override { return "this"; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+    bool cleanOut() const override { return true; }
+    AstNodeDType* getChildDTypep() const override { return childDTypep(); }
+    virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+};
 class AstUCFunc final : public AstNodeMath {
     // User's $c function
     // Perhaps this should be an AstNodeListop; but there's only one list math right now

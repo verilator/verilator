@@ -2054,6 +2054,13 @@ private:
         }
         return false;
     }
+    VSymEnt* getThisClassSymp() {
+        VSymEnt* classSymp = m_ds.m_dotSymp;
+        do {
+            classSymp = classSymp->parentp();
+        } while (classSymp && !VN_IS(classSymp->nodep(), Class));
+        return classSymp;
+    }
 
     // VISITs
     void visit(AstNetlist* nodep) override {
@@ -2201,10 +2208,7 @@ private:
             m_ds.m_dotPos = DP_SCOPE;
 
             if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this") {
-                VSymEnt* classSymp = m_ds.m_dotSymp;
-                do {
-                    classSymp = classSymp->parentp();
-                } while (classSymp && !VN_IS(classSymp->nodep(), Class));
+                VSymEnt* classSymp = getThisClassSymp();
                 if (!classSymp) {
                     nodep->v3error("'this' used outside class (IEEE 1800-2017 8.11)");
                     m_ds.m_dotErr = true;
@@ -2213,10 +2217,7 @@ private:
                     UINFO(8, "     this. " << m_ds.ascii() << endl);
                 }
             } else if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "super") {
-                const VSymEnt* classSymp = m_ds.m_dotSymp;
-                do {
-                    classSymp = classSymp->parentp();
-                } while (classSymp && !VN_IS(classSymp->nodep(), Class));
+                const VSymEnt* classSymp = getThisClassSymp();
                 if (!classSymp) {
                     nodep->v3error("'super' used outside class (IEEE 1800-2017 8.15)");
                     m_ds.m_dotErr = true;
@@ -2309,6 +2310,21 @@ private:
         if (nodep->name() == "super") {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
             m_ds.m_dotErr = true;
+        }
+        if (nodep->name() == "this") {
+            iterateChildren(nodep);
+            if (m_statep->forPrimary()) return;  // The class might be parametrized somewhere
+            const VSymEnt* classSymp = getThisClassSymp();
+            if (!classSymp) {
+                nodep->v3error("'this' used outside class (IEEE 1800-2017 8.11)");
+                return;
+            }
+            const auto classp = VN_AS(classSymp->nodep(), Class);
+            const auto dtypep = new AstClassRefDType{nodep->fileline(), classp, nullptr};
+            const auto newp = new AstThisRef{nodep->fileline(), dtypep};
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
         }
         if (m_ds.m_dotPos == DP_FINAL && VN_IS(m_ds.m_unlinkedScopep, LambdaArgRef)
             && nodep->name() == "index") {
