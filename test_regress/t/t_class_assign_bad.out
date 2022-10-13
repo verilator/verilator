@@ -1,0 +1,17 @@
+%Error: t/t_class_assign_bad.v:16:9: Assign RHS expects a CLASSREFDTYPE 'Cls'
+                                   : ... In instance t
+   16 |       c = 0;
+      |         ^
+%Error: t/t_class_assign_bad.v:17:9: Assign RHS expects a CLASSREFDTYPE 'Cls'
+                                   : ... In instance t
+   17 |       c = 1;
+      |         ^
+%Error: t/t_class_assign_bad.v:18:7: Function Argument expects a CLASSREFDTYPE 'Cls'
+                                   : ... In instance t
+   18 |       t(0);
+      |       ^
+%Error: t/t_class_assign_bad.v:19:7: Function Argument expects a CLASSREFDTYPE 'Cls'
+                                   : ... In instance t
+   19 |       t(1);
+      |       ^
+%Error: Exiting due to
