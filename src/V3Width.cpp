@@ -6041,13 +6041,15 @@ private:
                 // Note the check uses the expected size, not the child's subDTypep as we want the
                 // child node's width to end up correct for the assignment (etc)
                 widthCheckSized(nodep, side, underp, expDTypep, extendRule, warnOn);
-            } else if (!VN_IS(expDTypep, IfaceRefDType)
-                       && VN_IS(underp->dtypep(), IfaceRefDType)) {
+            } else if (!VN_IS(expDTypep->skipRefp(), IfaceRefDType)
+                       && VN_IS(underp->dtypep()->skipRefp(), IfaceRefDType)) {
                 underp->v3error(ucfirst(nodep->prettyOperatorName())
                                 << " expected non-interface on " << side << " but '"
                                 << underp->name() << "' is an interface.");
-            } else if (const AstIfaceRefDType* expIfaceRefp = VN_CAST(expDTypep, IfaceRefDType)) {
-                const AstIfaceRefDType* underIfaceRefp = VN_CAST(underp->dtypep(), IfaceRefDType);
+            } else if (const AstIfaceRefDType* expIfaceRefp
+                       = VN_CAST(expDTypep->skipRefp(), IfaceRefDType)) {
+                const AstIfaceRefDType* underIfaceRefp
+                    = VN_CAST(underp->dtypep()->skipRefp(), IfaceRefDType);
                 if (!underIfaceRefp) {
                     underp->v3error(ucfirst(nodep->prettyOperatorName())
                                     << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()

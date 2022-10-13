@@ -1955,11 +1955,6 @@ data_type<nodeDTypep>:          // ==IEEE: data_type
         |       packageClassScopeE idType parameter_value_assignmentClass packed_dimensionListE
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
                           $$ = GRAMMARP->createArray(refp, $4, true); }
-        //                      // Rules overlap virtual_interface_declaration
-        |       yVIRTUAL__INTERFACE yINTERFACE data_typeVirtual
-                        { $$ = $3; }
-        |       yVIRTUAL__anyID                data_typeVirtual
-                        { $$ = $2; }
         ;
 
 data_typeBasic<nodeDTypep>:             // IEEE: part of data_type
@@ -1989,6 +1984,11 @@ data_typeNoRef<nodeDTypep>:             // ==IEEE: data_type, excluding class_ty
         //                      // IEEE: class_scope: see data_type above
         //                      // IEEE: class_type: see data_type above
         //                      // IEEE: ps_covergroup: see data_type above
+        //                      // Rules overlap virtual_interface_declaration
+        |       yVIRTUAL__INTERFACE yINTERFACE data_typeVirtual
+                        { $$ = $3; }
+        |       yVIRTUAL__anyID                data_typeVirtual
+                        { $$ = $2; }
         ;
 
 data_typeVirtual<nodeDTypep>:           // ==IEEE: data_type after yVIRTUAL [ yINTERFACE ]

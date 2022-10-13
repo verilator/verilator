@@ -12,8 +12,11 @@ interface PBus;
    modport phy(input addr, ref data);
 endinterface
 
+typedef virtual PBus vpbus_t;
+typedef vpbus_t vpbus2_t;
+
 class Cls;
-   virtual PBus fa, fb;
+   vpbus2_t fa, fb;
 endclass
 
 class Clsgen#(type T = logic);
