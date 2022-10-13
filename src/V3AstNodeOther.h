@@ -2000,9 +2000,9 @@ class AstVar final : public AstNode {
     bool m_sigUserRdPublic : 1;  // User C code accesses this signal, read only
     bool m_sigUserRWPublic : 1;  // User C code accesses this signal, read-write
     bool m_usedClock : 1;  // Signal used as a clock
-    bool m_usedVirtIface : 1;  // Signal used through a virtual interface
     bool m_usedParam : 1;  // Parameter is referenced (on link; later signals not setup)
     bool m_usedLoopIdx : 1;  // Variable subject of for unrolling
+    bool m_usedVirtIface : 1;  // Signal used through a virtual interface
     bool m_funcLocal : 1;  // Local variable for a function
     bool m_funcReturn : 1;  // Return variable for a function
     bool m_attrScBv : 1;  // User force bit vector attribute
@@ -2039,9 +2039,9 @@ class AstVar final : public AstNode {
         m_scClocked = false;
         m_scSensitive = false;
         m_usedClock = false;
-        m_usedVirtIface = false;
         m_usedParam = false;
         m_usedLoopIdx = false;
+        m_usedVirtIface = false;
         m_sigPublic = false;
         m_sigModPublic = false;
         m_sigUserRdPublic = false;
@@ -2186,9 +2186,9 @@ public:
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
     void attrSplitVar(bool flag) { m_attrSplitVar = flag; }
     void usedClock(bool flag) { m_usedClock = flag; }
-    void usedVirtIface(bool flag) { m_usedVirtIface = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
+    void usedVirtIface(bool flag) { m_usedVirtIface = flag; }
     void sigPublic(bool flag) { m_sigPublic = flag; }
     void sigModPublic(bool flag) { m_sigModPublic = flag; }
     void sigUserRdPublic(bool flag) {
@@ -2270,9 +2270,9 @@ public:
         return bdtypep && bdtypep->isBitLogic();
     }
     bool isUsedClock() const { return m_usedClock; }
-    bool isUsedVirtIface() const { return m_usedVirtIface; }
     bool isUsedParam() const { return m_usedParam; }
     bool isUsedLoopIdx() const { return m_usedLoopIdx; }
+    bool isUsedVirtIface() const { return m_usedVirtIface; }
     bool isSc() const { return m_sc; }
     bool isScQuad() const;
     bool isScBv() const;
