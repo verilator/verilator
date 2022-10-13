@@ -5807,7 +5807,7 @@ private:
     void checkClassAssign(AstNode* nodep, const char* side, AstNode* rhsp,
                           AstNodeDType* lhsDTypep) {
         if (VN_IS(lhsDTypep, ClassRefDType) && !VN_IS(rhsp->dtypep(), ClassRefDType)) {
-            if (auto* constp = VN_CAST(rhsp, Const)) {
+            if (auto* const constp = VN_CAST(rhsp, Const)) {
                 if (constp->num().isNull()) return;
             }
             nodep->v3error(side << " expects a " << lhsDTypep->prettyTypeName());
