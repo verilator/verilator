@@ -10,11 +10,11 @@
                                          : ... In instance t
    35 |       data = p8.phy;   
       |                 ^~~
-%Error: t/t_interface_virtual_bad.v:36:14: Operator ASSIGN expected non-interface on Assign RHS but 'v8_phy__Viftop' is an interface.
+%Error: t/t_interface_virtual_bad.v:36:14: Operator ASSIGN expected non-interface on Assign RHS but 'v8_phy' is an interface.
                                          : ... In instance t
    36 |       data = v8_phy;   
       |              ^~~~~~
-%Error: t/t_interface_virtual_bad.v:37:14: Operator ASSIGN expected non-interface on Assign RHS but 'v8__Viftop' is an interface.
+%Error: t/t_interface_virtual_bad.v:37:14: Operator ASSIGN expected non-interface on Assign RHS but 'v8' is an interface.
                                          : ... In instance t
    37 |       data = v8;   
       |              ^~
