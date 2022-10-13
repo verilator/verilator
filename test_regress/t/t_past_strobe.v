@@ -38,7 +38,7 @@ module Test1(
    input [3:0] a, b;
 
    always @(posedge clk) begin
-      $strobe("%0d == %0d, %0d == %0d", a, b, $past(a), $past(b));
+      if (a < 9) $strobe("%0d == %0d, %0d == %0d", a, b, $past(a), $past(b));
    end
 
 endmodule

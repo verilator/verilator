@@ -426,7 +426,7 @@ private:
                                         newMonitorNumVarRefp(nodep, VAccess::READ)}},
                 stmtsp};
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
-            AstNode* const newp = new AstAlwaysPostponed{fl, ifp};
+            AstNode* const newp = new AstAlways{fl, VAlwaysKwd::ALWAYS, nullptr, ifp};
             m_modp->addStmtsp(newp);
         } else if (nodep->displayType() == VDisplayType::DT_STROBE) {
             nodep->displayType(VDisplayType::DT_DISPLAY);

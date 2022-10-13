@@ -184,7 +184,11 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
             } else if (senTreep->hasCombo()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "combinational logic with additional sensitivities");
-                result.m_comb.emplace_back(scopep, activep);
+                if (VN_IS(activep->stmtsp(), AlwaysPostponed)) {
+                    result.m_postponed.emplace_back(scopep, activep);
+                } else {
+                    result.m_comb.emplace_back(scopep, activep);
+                }
             } else {
                 UASSERT_OBJ(senTreep->hasClocked(), activep, "What else could it be?");
                 result.m_clocked.emplace_back(scopep, activep);
@@ -265,6 +269,14 @@ AstCFunc* createInitial(AstNetlist* netlistp, const LogicClasses& logicClasses) 
     AstCFunc* const funcp = makeTopFunction(netlistp, "_eval_initial", /* slow: */ true);
     orderSequentially(funcp, logicClasses.m_initial);
     return funcp;  // Not splitting yet as it is not final
+}
+
+AstCFunc* createPostponed(AstNetlist* netlistp, const LogicClasses& logicClasses) {
+    if (logicClasses.m_postponed.empty()) return nullptr;
+    AstCFunc* const funcp = makeTopFunction(netlistp, "_eval_postponed", /* slow: */ true);
+    orderSequentially(funcp, logicClasses.m_postponed);
+    splitCheck(funcp);
+    return funcp;
 }
 
 void createFinal(AstNetlist* netlistp, const LogicClasses& logicClasses) {
@@ -738,6 +750,7 @@ void createEval(AstNetlist* netlistp,  //
                 AstVarScope* nbaTrigsp,  //
                 AstCFunc* actFuncp,  //
                 AstCFunc* nbaFuncp,  //
+                AstCFunc* postponedFuncp,  //
                 TimingKit& timingKit  //
 ) {
     FileLine* const flp = netlistp->fileline();
@@ -836,6 +849,9 @@ void createEval(AstNetlist* netlistp,  //
 
     // Add the NBA eval loop
     funcp->addStmtsp(nbaEvalLoopp);
+
+    // Add the Postponed eval call
+    if (postponedFuncp) funcp->addStmtsp(new AstCCall{flp, postponedFuncp});
 }
 
 }  // namespace
@@ -1025,9 +1041,12 @@ void schedule(AstNetlist* netlistp) {
     netlistp->evalNbap(nbaFuncp);  // Remember for V3LifePost
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-nba");
 
-    // Step 11: Bolt it all together to create the '_eval' function
+    // Step 11: Create the 'postponed' region evaluation function
+    auto* const postponedFuncp = createPostponed(netlistp, logicClasses);
+
+    // Step 12: Bolt it all together to create the '_eval' function
     createEval(netlistp, icoLoopp, actTrig, preTrigVscp, nbaTrigVscp, actFuncp, nbaFuncp,
-               timingKit);
+               postponedFuncp, timingKit);
 
     transformForks(netlistp);
 
