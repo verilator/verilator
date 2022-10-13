@@ -29,30 +29,27 @@
 
 // clang-format off
 // Some preprocessor magic to support both Clang and GCC coroutines with both libc++ and libstdc++
-#ifdef __clang__
-# if __clang_major__ < 14
-#  ifdef __GLIBCXX__ // Using stdlibc++
-#   define __cpp_impl_coroutine 1  // Clang doesn't define this, but it's needed for libstdc++
-#   include <coroutine>
-    namespace std { // Bring coroutine library into std::experimental, as Clang < 14 expects it to be there
-        namespace experimental {
-            using namespace std;
-        }
-    }
-#  else // Using libc++
-#   include <experimental/coroutine> // Clang older than 14, coroutines are under experimental
-    namespace std {
-        using namespace experimental; // Bring std::experimental into the std namespace
-    }
-#  endif
-# else // Clang >= 14
-#  if __GLIBCXX__ // Using stdlibc++
-#   define __cpp_impl_coroutine 1  // Clang doesn't define this, but it's needed for libstdc++
-#  endif
-#  include <coroutine>
+#if defined _LIBCPP_VERSION  // libc++
+# if __clang_major__ > 13  // Clang > 13 warns that coroutine types in std::experimental are deprecated
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdeprecated-experimental-coroutine"
 # endif
-#else  // Not Clang
+# include <experimental/coroutine>
+  namespace std {
+      using namespace experimental; // Bring std::experimental into the std namespace
+  }
+#else
+# if defined __clang__ && defined __GLIBCXX__
+#  define __cpp_impl_coroutine 1  // Clang doesn't define this, but it's needed for libstdc++
+# endif
 # include <coroutine>
+# if __clang_major__ < 14
+   namespace std { // Bring coroutine library into std::experimental, as Clang < 14 expects it to be there
+       namespace experimental {
+           using namespace std;
+       }
+   }
+# endif
 #endif
 // clang-format on
 
