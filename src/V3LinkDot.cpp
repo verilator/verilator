@@ -2319,9 +2319,9 @@ private:
                 nodep->v3error("'this' used outside class (IEEE 1800-2017 8.11)");
                 return;
             }
-            const auto classp = VN_AS(classSymp->nodep(), Class);
-            const auto dtypep = new AstClassRefDType{nodep->fileline(), classp, nullptr};
-            const auto newp = new AstThisRef{nodep->fileline(), dtypep};
+            AstClass* const classp = VN_AS(classSymp->nodep(), Class);
+            AstClassRefDType* const dtypep = new AstClassRefDType{nodep->fileline(), classp, nullptr};
+            AstThisRef* const newp = new AstThisRef{nodep->fileline(), dtypep};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
