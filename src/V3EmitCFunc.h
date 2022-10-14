@@ -1168,6 +1168,12 @@ public:
             emitConstant(nodep, nullptr, "");
         }
     }
+    void visit(AstThisRef* nodep) override {
+        putbs(nodep->dtypep()->cType("", false, false));
+        puts("{");
+        puts(m_useSelfForThis ? "vlSelf" : "this");
+        puts("}");
+    }
 
     //
     void visit(AstMTaskBody* nodep) override {

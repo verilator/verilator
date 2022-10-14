@@ -2465,6 +2465,10 @@ private:
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->repairCache();
     }
+    void visit(AstThisRef* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+        nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->childDTypep()));
+    }
     void visit(AstClassRefDType* nodep) override {
         if (nodep->didWidthAndSet()) return;
         // TODO this maybe eventually required to properly resolve members,
