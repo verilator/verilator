@@ -85,7 +85,7 @@ public:
     AstCase* m_caseAttrp = nullptr;  // Current case statement for attribute adding
     AstNodeDType* m_varDTypep = nullptr;  // Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
-    AstNode* m_netDelayp = nullptr;  // Pointer to delay for next signal declaration
+    AstDelay* m_netDelayp = nullptr;  // Pointer to delay for next signal declaration
     AstStrengthSpec* m_netStrengthp = nullptr;  // Pointer to strength for next net declaration
     AstNodeModule* m_modp = nullptr;  // Last module for timeunits
     bool m_pinAnsi = false;  // In ANSI port list
@@ -190,7 +190,7 @@ public:
         if (m_varDTypep) VL_DO_CLEAR(m_varDTypep->deleteTree(), m_varDTypep = nullptr);
         m_varDTypep = dtypep;
     }
-    void setNetDelay(AstNode* netDelayp) { m_netDelayp = netDelayp; }
+    void setNetDelay(AstDelay* netDelayp) { m_netDelayp = netDelayp; }
     void setNetStrength(AstStrengthSpec* netStrengthp) { m_netStrengthp = netStrengthp; }
     void pinPush() {
         m_pinStack.push(m_pinNum);
@@ -1044,6 +1044,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %nonassoc yELSE
 
 //BISONPRE_TYPES
+//  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
@@ -2736,16 +2737,20 @@ delay_or_event_controlE<nodep>:  // IEEE: delay_or_event_control plus empty
 //UNSUP        |        yREPEAT '(' expr ')' event_control        { }
         ;
 
-delay_controlE<nodep>:
+delay_controlE<delayp>:
                 /* empty */                             { $$ = nullptr; }
         |       delay_control                           { $$ = $1; }
         ;
 
-delay_control<nodep>:   //== IEEE: delay_control
-                '#' delay_value                         { $$ = $2; }
-        |       '#' '(' minTypMax ')'                   { $$ = $3; }
-        |       '#' '(' minTypMax ',' minTypMax ')'                     { $$ = $3; RISEFALLDLYUNSUP($3); DEL($5); }
-        |       '#' '(' minTypMax ',' minTypMax ',' minTypMax ')'       { $$ = $3; RISEFALLDLYUNSUP($3); DEL($5); DEL($7); }
+delay_control<delayp>:   //== IEEE: delay_control
+                '#' delay_value
+                        { $$ = new AstDelay{$<fl>1, $2}; }
+        |       '#' '(' minTypMax ')'
+                        { $$ = new AstDelay{$<fl>1, $3}; }
+        |       '#' '(' minTypMax ',' minTypMax ')'
+                        { $$ = new AstDelay{$<fl>1, $3}; RISEFALLDLYUNSUP($3); DEL($5); }
+        |       '#' '(' minTypMax ',' minTypMax ',' minTypMax ')'
+                        { $$ = new AstDelay{$<fl>1, $3}; RISEFALLDLYUNSUP($3); DEL($5); DEL($7); }
         ;
 
 delay_value<nodep>:             // ==IEEE:delay_value
@@ -2777,7 +2782,6 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
                           auto* const assignp = new AstAssignW{$3, new AstVarRef{$<fl>1, *$1, VAccess::WRITE}, $4};
                           if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
-                          if ($$->delayp()) assignp->timingControlp($$->delayp()->unlinkFrBack());  // IEEE 1800-2017 10.3.3
                           AstNode::addNext<AstNode, AstNode>($$, assignp); }
         |       netId variable_dimensionList sigAttrListE
                         { $$ = VARDONEA($<fl>1,*$1, $2, $3); }
@@ -3320,8 +3324,11 @@ statement_item<nodep>:          // IEEE: statement_item
         |       par_block                               { $$ = $1; }
         //                      // IEEE: procedural_timing_control_statement + procedural_timing_control
         |       delay_control stmtBlock                 { AstNode* nextp = nullptr;
-                                                          if ($2 && $2->nextp()) nextp = $2->nextp()->unlinkFrBackWithNext();
-                                                          $$ = new AstDelay{$1->fileline(), $1, $2};
+                                                          if ($2) {
+                                                              if ($2->nextp()) nextp = $2->nextp()->unlinkFrBackWithNext();
+                                                              $1->addStmtsp($2);
+                                                          }
+                                                          $$ = $1;
                                                           addNextNull($$, nextp); }
         |       event_control stmtBlock                 { AstNode* nextp = nullptr;
                                                           if ($2 && $2->nextp()) nextp = $2->nextp()->unlinkFrBackWithNext();
