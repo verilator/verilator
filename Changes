@@ -25,7 +25,13 @@ Verilator 5.001 devel
 
 **Minor:**
 
+* Support standalone 'this' in classes (#2594) (#3248) (#3675). [Arkadiusz Kozdra, Antmicro Ltd]
+* Support tristate select/extend (#3604). [Ryszard Rozak, Antmicro Ltd>
+* Support linting for top module interfaces (#3635). [Kanad Kanhere]
+* Add --dump-tree-dot to enable dumping Ast Tree .dot files (#3636). [Marcel Chang]
 * Add error on real edge event control.
+* Fix linker errors in user-facing timing functions (#3657). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix null access on optimized-out fork statements (#3658). [Krzysztof Bieganski, Antmicro Ltd]
 
 
 Verilator 4.228 2022-10-01
