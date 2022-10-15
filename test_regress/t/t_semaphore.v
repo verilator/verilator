@@ -19,7 +19,11 @@ module t(/*AUTOARG*/);
    int       msg;
 
    initial begin
-      s = new(4);
+      s = new(1);
+      if (s.try_get() == 0) $stop;
+      if (s.try_get() != 0) $stop;
+
+      s = new(0);
       if (s.try_get() != 0) $stop;
 
       s.put();
@@ -31,7 +35,6 @@ module t(/*AUTOARG*/);
       s.put(2);
       if (s.try_get(2) <= 0) $stop;
 
-`ifndef VERILATOR
       fork
          begin
             #10;  // So later then get() starts below
@@ -44,7 +47,6 @@ module t(/*AUTOARG*/);
             s.get();
          end
       join
-`endif
 
       s2 = new;
       if (s2.try_get() != 0) $stop;

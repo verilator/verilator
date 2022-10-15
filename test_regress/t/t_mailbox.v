@@ -32,7 +32,7 @@ module t(/*AUTOARG*/);
       if (m.num() != 1) $stop;
       if (m.try_peek(out) <= 0) $stop;
       if (out != 123) $stop;
-      if (m.num() != 0) $stop;
+      if (m.num() != 1) $stop;
       out = 0;
       if (m.try_peek(out) <= 0) $stop;
       if (out != 123) $stop;
