@@ -393,8 +393,8 @@ class EmitCImp final : EmitCFunc {
                                 UASSERT_OBJ(arrayp->hi() >= arrayp->lo(), varp,
                                             "Should have swapped msb & lsb earlier.");
                                 const string ivar = string("__Vi") + cvtToStr(vecnum);
-                                puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0));
-                                puts("; " + ivar + "<" + cvtToStr(arrayp->elementsConst()));
+                                puts("for (int __Vi" + cvtToStr(vecnum) + " = " + cvtToStr(0));
+                                puts("; " + ivar + " < " + cvtToStr(arrayp->elementsConst()));
                                 puts("; ++" + ivar + ") {\n");
                                 elementp = arrayp->subDTypep()->skipRefp();
                             }
@@ -407,8 +407,8 @@ class EmitCImp final : EmitCFunc {
                                 && !(basicp && basicp->keyword() == VBasicDTypeKwd::STRING)) {
                                 const int vecnum = vects++;
                                 const string ivar = string("__Vi") + cvtToStr(vecnum);
-                                puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0));
-                                puts("; " + ivar + "<" + cvtToStr(elementp->widthWords()));
+                                puts("for (int __Vi" + cvtToStr(vecnum) + " = " + cvtToStr(0));
+                                puts("; " + ivar + " < " + cvtToStr(elementp->widthWords()));
                                 puts("; ++" + ivar + ") {\n");
                             }
                             puts("os" + op + varp->nameProtect());

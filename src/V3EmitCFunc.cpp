@@ -627,7 +627,7 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
             }
         } else if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             if (initarp->defaultp()) {
-                puts("for (int __Vi=0; __Vi<" + cvtToStr(adtypep->elementsConst()));
+                puts("for (int __Vi = 0; __Vi < " + cvtToStr(adtypep->elementsConst()));
                 puts("; ++__Vi) {\n");
                 emitSetVarConstant(varNameProtected + "[__Vi]", VN_AS(initarp->defaultp(), Const));
                 puts("}\n");
@@ -677,7 +677,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                     "Should have swapped msb & lsb earlier.");
         const string ivar = string("__Vi") + cvtToStr(depth);
-        const string pre = ("for (int " + ivar + "=" + cvtToStr(0) + "; " + ivar + "<"
+        const string pre = ("for (int " + ivar + " = " + cvtToStr(0) + "; " + ivar + " < "
                             + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
         const string below = emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(),
                                                  depth + 1, suffix + "[" + ivar + "]");

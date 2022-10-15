@@ -240,7 +240,7 @@ public:
 
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
-        for (int i = 0; i < m_modp->level(); ++i) { puts("  "); }
+        for (int i = 0; i < m_modp->level(); ++i) puts("  ");
         puts(prefixNameProtect(m_modp));
         puts(nodep->isLoose() ? "__" : "::");
         puts(nodep->nameProtect() + "\\n\"); );\n");
