@@ -1265,7 +1265,7 @@ Summary:
    Rarely needed. Specify the maximum length of string to be dumped before
    truncation. Defaults to 64, as tracing large strings may bloat memory
    and file size. Larger strings aren't typically useful in wave viewers.
-   A limit of zero indicates no limit.
+   A limit of zero indicates no limit. See also :vlopt:`--trace-strings` option.
 
    Note that VCD tracing has its own limit that may be lower than this one
    for particular strings.
@@ -1283,7 +1283,7 @@ Summary:
 .. option:: --trace-strings
 
    Enable tracing to dump string variables. This may result in significantly
-   slower trace times and larger trace files.
+   slower trace times and larger trace files. See also :vlopt:`--trace-max-string` option.
 
 .. option:: --trace-structs
 

@@ -358,7 +358,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     }
     if (!oldStringCodes.empty() && m_sigs_stringCodes != oldStringCodes) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
-                    "Reopening trace file with different signals!");
+                    "Reopening trace file with different signals");
     }
 
     // Now that we know the number of codes, allocate space for the buffer
