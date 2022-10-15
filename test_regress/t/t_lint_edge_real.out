@@ -1,0 +1,5 @@
+%Error: t/t_lint_edge_real.v:16:22: Edge event control not legal on real type (IEEE 1800-2017 6.12.1)
+                                  : ... In instance t
+   16 |    always @ (posedge rbad) $stop;
+      |                      ^~~~
+%Error: Exiting due to

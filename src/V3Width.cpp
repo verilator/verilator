@@ -5131,6 +5131,10 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
             userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+            if (nodep->edgeType().anEdge() && nodep->sensp()->dtypep()->skipRefp()->isDouble()) {
+                nodep->sensp()->v3error(
+                    "Edge event control not legal on real type (IEEE 1800-2017 6.12.1)");
+            }
         }
     }
     void visit(AstWait* nodep) override {
