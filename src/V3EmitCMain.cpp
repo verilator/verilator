@@ -74,10 +74,6 @@ private:
              + "{contextp.get()}};\n");
         puts("\n");
 
-        puts("// Evaluate initials\n");
-        puts("topp->eval();  // Evaluate\n");
-        puts("\n");
-
         puts("// Simulate until $finish\n");
         puts("while (!contextp->gotFinish()) {\n");
         puts(/**/ "// Evaluate model\n");
