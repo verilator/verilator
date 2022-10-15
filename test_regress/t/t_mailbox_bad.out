@@ -1,6 +1,6 @@
-%Error: t/t_mailbox.v:20:4: Can't find typedef: 'mailbox'
-   20 |    mailbox #(int) m;
+%Error: t/t_mailbox_bad.v:8:4: Can't find typedef: 'mailbox'
+    8 |    mailbox #(int) m;
       |    ^~~~~~~
-%Error: Internal Error: t/t_mailbox.v:20:14: ../V3LinkDot.cpp:#: Pin not under instance?
-   20 |    mailbox #(int) m;
+%Error: Internal Error: t/t_mailbox_bad.v:8:14: ../V3LinkDot.cpp:#: Pin not under instance?
+    8 |    mailbox #(int) m;
       |              ^~~
