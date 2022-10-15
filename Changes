@@ -39,7 +39,7 @@ Verilator 4.228 2022-10-01
 
 **Minor:**
 
-* Support some IEEE signal strengths (#3601) (#3629). [Ryszard Rozak/Antmicro]
+* Support some IEEE signal strengths (#3601) (#3629). [Ryszard Rozak, Antmicro Ltd]
 * Add --main to generate main() C++ (previously was experimental only).
 * Add --build-jobs, and rework arguments for -j (#3623). [Kamil Rakoczy]
 * Rename --bin to --build-dep-bin.
@@ -50,7 +50,7 @@ Verilator 4.228 2022-10-01
 * Fix default --mod-prefix when --prefix is repeated (#3603). [Geza Lore]
 * Fix calling trace() after open() segfault (#3610) (#3627). [Yu-Sheng Lin]
 * Fix typedef'ed class conversion to boolean (#3616). [Aleksander Kiryk]
-* Fix Verilation speed when disabled warnings (#3632). [Kamil Rakoczy/Antmicro]
+* Fix Verilation speed when disabled warnings (#3632). [Kamil Rakoczy, Antmicro Ltd]
 
 
 Verilator 4.226 2022-08-31
@@ -59,19 +59,19 @@ Verilator 4.226 2022-08-31
 **Minor:**
 
 * Add --future0 and --future1 options.
-* Support class parameters (#2231) (#3541). [Arkadiusz Kozdra/Antmicro]
-* Support wildcard index associative arrays (#3501). [Arkadiusz Kozdra/Antmicro]
+* Support class parameters (#2231) (#3541). [Arkadiusz Kozdra, Antmicro Ltd]
+* Support wildcard index associative arrays (#3501). [Arkadiusz Kozdra, Antmicro Ltd]
 * Support negated properties (#3572). [Aleksander Kiryk]
 * Support $test$plusargs(expr) (#3489).
 * Rename trace rolloverSize() (#3570).
 * Improve Verilation speed with --threads on large designs. [Geza Lore]
-* Improve Verilation memory by reducing V3Number (#3521). [Mariusz Glebocki/Antmicro]
+* Improve Verilation memory by reducing V3Number (#3521). [Mariusz Glebocki, Antmicro Ltd]
 * Fix struct pattern assignment (#2328) (#3517). [Mostafa Gamal]
 * Fix public combo propagation issues (#2905). [Todd Strader]
 * Fix incorrect tristate logic (#3399) [shareefj, Vighnesh Iyer]
 * Fix incorrect bit op tree optimization (#3470). [algrobman]
 * Fix bisonpre for MSYS2 (#3471).
-* Fix max memory usage (#3483). [Kamil Rakoczy/Antmicro]
+* Fix max memory usage (#3483). [Kamil Rakoczy, Antmicro Ltd]
 * Fix empty string arguments to display (#3484). [Grulfen]
 * Fix table misoptimizing away display (#3488). [Stefan Post]
 * Fix unique_ptr memory header for MinGW64 (#3493).
@@ -82,8 +82,8 @@ Verilator 4.226 2022-08-31
 * Fix segfault exporting non-existant package (#3535).
 * Fix void-cast queue pop_front or pop_back (#3542) (#3364). [Drew Ranck]
 * Fix case statement comparing string literal (#3544). [Gustav Svensk]
-* Fix === with some tristate constants (#3551). [Ryszard Rozak/Antmicro]
-* Fix converting subclasses to string (#3552). [Arkadiusz Kozdra/Antmicro]
+* Fix === with some tristate constants (#3551). [Ryszard Rozak, Antmicro Ltd]
+* Fix converting subclasses to string (#3552). [Arkadiusz Kozdra, Antmicro Ltd]
 * Fix --hierarchical with order-based pin connections (#3583) (#3585). [Kelin9298]
 
 
@@ -105,7 +105,7 @@ Verilator 4.224 2022-06-19
 * Improve conditional merging optimization (#3125). [Geza Lore, Shunyao CAD]
 * Define VM_TRACE_VCD when tracing in VCD format. [Geza Lore, Shunyao CAD]
 * Add assert when VerilatedContext is mis-deleted (#3121). [Rupert Swarbrick]
-* Internal prep work towards timing control. [Krzysztof Bieganski/Antmicro]
+* Internal prep work towards timing control. [Krzysztof Bieganski, Antmicro Ltd]
 * Fix hang with large case statement optimization (#3405). [Mike Urbach]
 * Fix UNOPTFLAT warning from initial static var (#3406). [Kamil Rakoczy]
 * Fix compile error when enable VL_LEAK_CHECKS (#3411). [HungMingWu]
@@ -272,7 +272,7 @@ Verilator 4.212 2021-09-01
 * Fix re-evaluation of logic dependent on state set in DPI exports (#3091). [Geza Lore]
 * Support unpacked array localparams in tasks/functions (#3078). [Geza Lore]
 * Support timeunit/timeprecision in $unit.
-* Support assignment patterns as children of pins (#3041). [Krzysztof Bieganski/Antmicro]
+* Support assignment patterns as children of pins (#3041). [Krzysztof Bieganski, Antmicro Ltd]
 * Add --instr-count-dpi to tune assumed DPI import cost for multithreaded
   model scheduling. Default value changed to 200 (#3068). [Yinan Xu]
 * Output files are split based on the set of headers required
@@ -337,7 +337,7 @@ Verilator 4.204 2021-06-12
 * Prep work towards better ccache hashing/performance. [Geza Lore]
 * Fix assertion failure in bitOpTree optimization (#2891) (#2899). [Raynard Qiao]
 * Fix DPI functions not seen as vpiModule (#2893). [Todd Strader]
-* Fix bounds check in VL_SEL_IWII (#2910). [Krzysztof Bieganski/Antmicro]
+* Fix bounds check in VL_SEL_IWII (#2910). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix slowdown in elaboration (#2911). [Nathan Graybeal]
 * Fix initialization of assoc in assoc array (#2914). [myftptoyman]
 * Fix make support for gmake 3.x (#2920) (#2921). [Philipp Wagner]
@@ -452,7 +452,7 @@ Verilator 4.108 2021-01-10
 **Major:**
 
 * Many VPI changes for IEEE compatibility, which may alter behavior from previous releases.
-* Support randomize() class method and rand (#2607). [Krzysztof Bieganski/Antmicro]
+* Support randomize() class method and rand (#2607). [Krzysztof Bieganski, Antmicro Ltd]
 
 **Minor:**
 
@@ -512,7 +512,7 @@ Verilator 4.104 2020-11-14
 * Support queue and associative array 'with' statements (#2616).
 * Support queue slicing (#2326).
 * Support associative array pattern assignments and defaults.
-* Support static methods and typedefs in classes (#2615). [Krzysztof Bieganski/Antmicro]
+* Support static methods and typedefs in classes (#2615). [Krzysztof Bieganski, Antmicro Ltd]
 * Add error on typedef referencing self (#2539). [Cody Piersall]
 * With --debug, turn off address space layout randomization.
 * Fix iteration over mutating list bug in VPI (#2588). [Kaleb Barrett]
