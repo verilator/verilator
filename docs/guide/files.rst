@@ -93,7 +93,7 @@ For --cc/--sc, it creates:
    * - *{prefix}{each_verilog_module}{__n}*\ .cpp
      - Additional lower C++ files
    * - *{prefix}{each_verilog_module}{__DepSet_hash__n}*\ .cpp
-     - Additional lower C++ files (hased to reduce build times)
+     - Additional lower C++ files (hashed to reduce build times)
 
 For --hierarchy mode, it creates:
 

@@ -327,7 +327,7 @@ List Of Warnings
 
    The warning could be disabled without affecting the simulation
    result. But it was recommended to check the warning as it may have
-   degrated the performance of the Verilated model.
+   degraded the performance of the Verilated model.
 
 
 .. option:: CMPCONST

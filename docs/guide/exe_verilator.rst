@@ -522,7 +522,7 @@ Summary:
 
 .. option:: -fno-dfg-peephole-<pattern>
 
-   Disable individula DFG peephole optimizer pattern.
+   Disable individual DFG peephole optimizer pattern.
 
 .. option:: -fno-dfg-pre-inline
 

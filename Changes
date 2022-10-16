@@ -14,14 +14,20 @@ Verilator 5.001 devel
 **Major:**
 
 * This is a major new release.
-* Fully support the Active and NBA scheduling regions as defined by the
+* Require C++20 for the new --timing features. Upgrading to a C++20 or
+  newer compiler is strongly recommended.
+* Support the Active and NBA scheduling regions as defined by the
   SystemVerilog standard (IEEE 1800-2017 chapter 4). This means all generated
   clocks are now simulated correctly (#3278, #3384). [Geza Lore, Shunyao CAD]
 * Support timing controls (delays, event controls in any location, wait
-  statements) and forks. See docs for details. [Krzysztof Bieganski, Antmicro Ltd]
+  statements) and forks. [Krzysztof Bieganski, Antmicro Ltd]
+  This may require adding --timing or --no-timing. See docs for details.
 * Introduce a new combinational logic optimizer (DFG), that can yield
   significant performance improvements on some designs. [Geza Lore, Shunyao CAD]
 * Add --binary option as alias of --main --exe --build --timing (#3625).
+  For designs where C++ was only used to make a simple testbench we
+  recommend abandoning that C++, and instead letting Verilator build it
+  with --binary (or --main).
 
 **Minor:**
 
@@ -39,7 +45,7 @@ Verilator 4.228 2022-10-01
 
 **Announcement:**
 
-* The next release is anticipated primere Verilator Version 5.  Please
+* The next release is anticipated to premiere Verilator Version 5.  Please
   consider beta-testing the github 'develop-v5' branch, which will soon
   merge into the github 'master' branch (#3383).
 
@@ -50,12 +56,12 @@ Verilator 4.228 2022-10-01
 * Add --build-jobs, and rework arguments for -j (#3623). [Kamil Rakoczy]
 * Rename --bin to --build-dep-bin.
 * Rename debug flags --dumpi-tree, --dumpi-graph, etc. [Geza Lore]
-* Fix thread saftey in SystemC VL_ASSIGN_SBW/WSB (#3494) (#3513). [Mladen Slijepcevic]
+* Fix thread safety in SystemC VL_ASSIGN_SBW/WSB (#3494) (#3513). [Mladen Slijepcevic]
 * Fix crash in gate optimization of circular logic (#3543). [Bill Flynn]
 * Fix arguments in non-static method call (#3547) (#3582). [Gustav Svensk]
 * Fix default --mod-prefix when --prefix is repeated (#3603). [Geza Lore]
 * Fix calling trace() after open() segfault (#3610) (#3627). [Yu-Sheng Lin]
-* Fix typedef'ed class conversion to boolean (#3616). [Aleksander Kiryk]
+* Fix typedef'ed class conversion to Boolean (#3616). [Aleksander Kiryk]
 * Fix Verilation speed when disabled warnings (#3632). [Kamil Rakoczy, Antmicro Ltd]
 
 
@@ -79,17 +85,17 @@ Verilator 4.226 2022-08-31
 * Fix bisonpre for MSYS2 (#3471).
 * Fix max memory usage (#3483). [Kamil Rakoczy, Antmicro Ltd]
 * Fix empty string arguments to display (#3484). [Grulfen]
-* Fix table misoptimizing away display (#3488). [Stefan Post]
+* Fix table optimizing away display (#3488). [Stefan Post]
 * Fix unique_ptr memory header for MinGW64 (#3493).
-* Fix $dump systemtask with --output-split-cfuncs (#3495) (#3497). [Varun Koyyalagunta]
+* Fix $dump system task with --output-split-cfuncs (#3495) (#3497). [Varun Koyyalagunta]
 * Fix wrong bit op tree optimization (#3509). [Nathan Graybeal]
 * Fix nested default assignment for struct pattern (#3511) (#3524). [Mostafa Gamal]
 * Fix sformat string incorrectly cleared (#3515) (#3519). [Gustav Svensk]
-* Fix segfault exporting non-existant package (#3535).
+* Fix segfault exporting non-existent package (#3535).
 * Fix void-cast queue pop_front or pop_back (#3542) (#3364). [Drew Ranck]
 * Fix case statement comparing string literal (#3544). [Gustav Svensk]
 * Fix === with some tristate constants (#3551). [Ryszard Rozak, Antmicro Ltd]
-* Fix converting subclasses to string (#3552). [Arkadiusz Kozdra, Antmicro Ltd]
+* Fix converting classes to string (#3552). [Arkadiusz Kozdra, Antmicro Ltd]
 * Fix --hierarchical with order-based pin connections (#3583) (#3585). [Kelin9298]
 
 

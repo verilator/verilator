@@ -7,12 +7,14 @@ Ami
 Amir
 Anastasiadis
 Anikin
+Antmicro
 Antonin
 Antwerpen
 Arasanipalai
 Arjen
 Asciidoc
 Ashutosh
+Ast
 Atmel
 Aurelien
 Bagri
@@ -108,8 +110,10 @@ Goessling
 Gonnen
 Goorah
 Gossner
+Graphviz
 Graybeal
 Grobman
+Grulfen
 Gunter
 Guo
 Hao
@@ -131,6 +135,7 @@ Iles
 Inlines
 Inout
 Iru
+Iyer
 Iztok
 Jacko
 Jae
@@ -157,6 +162,7 @@ Karge
 Karlsson
 Katz
 Katzman
+Kelin
 Keren
 Keyi
 Kimmitt
@@ -340,6 +346,7 @@ Verilating
 Verilation
 Verilator
 Verilog
+Vighnesh
 Viktor
 Vm
 Vukobratovic
@@ -376,6 +383,7 @@ agrobman
 ahouska
 al
 ala
+algrobman
 andit
 ar
 architected
@@ -397,6 +405,7 @@ bbox
 benchmarking
 biguint
 biops
+bisonpre
 bitOpTree
 bitOpTree
 bitop
@@ -441,6 +450,7 @@ const
 constexpr
 constpool
 coredump
+coroutine
 countbits
 countones
 cout
@@ -463,6 +473,7 @@ defenv
 defname
 defparam
 demangling
+dep
 der
 dereference
 desassign
@@ -480,6 +491,7 @@ dsvf
 dtor
 dumpall
 dumpfile
+dumpi
 dumplimit
 dumpoff
 dumpon
@@ -537,6 +549,7 @@ filesystem
 filt
 flto
 flushCall
+fno
 fopen
 forceable
 foreach
@@ -600,6 +613,7 @@ inouts
 inserted
 instantiation
 instantiations
+intra
 iostream
 ish
 isunbounded
@@ -725,6 +739,7 @@ profiler
 prototyptes
 ps
 pthread
+ptr
 pulldown
 pulldowns
 pullup
@@ -750,6 +765,7 @@ reloop
 resetall
 respecified
 rodata
+rolloverSize
 rr
 rst
 runtime
@@ -764,6 +780,7 @@ seg
 setuphold
 sformat
 sformatf
+shareefj
 shortint
 shortreal
 signame
