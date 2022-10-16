@@ -1,7 +1,5 @@
 // DESCRIPTION: Verilator: Simple test of unoptflat
 //
-// Trigger the DETECTARRAY error.
-//
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2013 by Jeremy Bennett.
 // SPDX-License-Identifier: CC0-1.0
