@@ -83,6 +83,7 @@ using std::endl;
 // - If undef, not system-wide, user can set SYSTEMC_INCLUDE.
 #undef HAVE_SYSTEMC
 #undef HAVE_COROUTINES
+#undef VL_THREADED
 
 //**********************************************************************
 //**** OS and compiler specifics

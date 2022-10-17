@@ -21,8 +21,6 @@
 #ifndef VERILATOR_V3HIERBLOCK_H_
 #define VERILATOR_V3HIERBLOCK_H_
 
-#include "verilatedos.h"
-
 #include "V3Global.h"
 
 #include <map>

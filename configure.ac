@@ -549,6 +549,7 @@ if test "$_my_result" = "no" ; then
 Verilator requires a C++11 or newer compiler.]])
 
 fi
+AC_DEFINE([VL_THREADED], [1], [Defined if compiler supports C++11])
 
 # Checks for library functions.
 AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],
