@@ -332,11 +332,11 @@ std::ostream& operator<<(std::ostream& os, FileLine* fileline) {
 }
 
 bool FileLine::warnOff(const string& msg, bool flag) {
-    const char *cmsg = msg.c_str();
+    const char* cmsg = msg.c_str();
     // Backward compatibility with msg="UNUSED"
     if (V3ErrorCode::unusedMsg(cmsg)) {
         warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
-        warnOff(V3ErrorCode::UNUSEDPARAM , flag);
+        warnOff(V3ErrorCode::UNUSEDPARAM, flag);
         warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
         return true;
     }
@@ -375,9 +375,7 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
     if ((code.lintError() || code.styleError()) && !msgEn().test(V3ErrorCode::I_LINT)) {
         return true;
     }
-    if ((code.unusedError()) && !msgEn().test(V3ErrorCode::I_UNUSED)) {
-        return true;
-    }
+    if ((code.unusedError()) && !msgEn().test(V3ErrorCode::I_UNUSED)) { return true; }
     return false;
 }
 

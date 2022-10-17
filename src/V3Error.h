@@ -235,9 +235,7 @@ public:
     bool unusedError() const {
         return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
     }
-    static bool unusedMsg(const char* msgp) {
-        return 0 == VL_STRCASECMP(msgp, "UNUSED");
-    }
+    static bool unusedMsg(const char* msgp) { return 0 == VL_STRCASECMP(msgp, "UNUSED"); }
 };
 constexpr bool operator==(const V3ErrorCode& lhs, const V3ErrorCode& rhs) {
     return lhs.m_e == rhs.m_e;
