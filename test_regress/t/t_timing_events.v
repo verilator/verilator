@@ -30,3 +30,7 @@ module t;
 
    initial #21 $stop; // timeout
 endmodule
+
+`ifndef VERILATOR_TIMING
+`error "VERILATOR_TIMING should have been defined as have --timing"
+`endif

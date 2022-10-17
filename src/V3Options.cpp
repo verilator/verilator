@@ -833,6 +833,9 @@ void V3Options::notify() {
     if (!m_dumpLevel.count("tree") && m_dumpLevel.count("tree-dot")) {
         m_dumpLevel["tree"] = m_dumpLevel["tree-dot"];
     }
+
+    // Preprocessor defines based on options used
+    if (timing().isSetTrue()) V3PreShell::defineCmdLine("VERILATOR_TIMING", "1");
 }
 
 //######################################################################
