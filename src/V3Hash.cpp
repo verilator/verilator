@@ -28,7 +28,7 @@ std::ostream& operator<<(std::ostream& os, const V3Hash& rhs) {
     return os << 'h' << std::hex << std::setw(8) << std::setfill('0') << rhs.value();
 }
 
-std::string V3Hash::toString() const {
+std::string V3Hash::toString() const VL_MT_SAFE {
     std::ostringstream os;
     os << *this;
     return os.str();

@@ -1184,7 +1184,7 @@ void AstNode::dumpTreeDotFile(const string& filename, bool append, bool doDump) 
     }
 }
 
-void AstNode::v3errorEndFatal(std::ostringstream& str) const {
+void AstNode::v3errorEndFatal(std::ostringstream& str) const VL_MT_SAFE {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE;

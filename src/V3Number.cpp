@@ -76,7 +76,7 @@ constexpr int MAX_SPRINTF_DOUBLE_SIZE
 //======================================================================
 // Errors
 
-void V3Number::v3errorEnd(const std::ostringstream& str) const {
+void V3Number::v3errorEnd(const std::ostringstream& str) const VL_MT_SAFE {
     std::ostringstream nsstr;
     nsstr << str.str();
     if (m_nodep) {
@@ -88,7 +88,7 @@ void V3Number::v3errorEnd(const std::ostringstream& str) const {
     }
 }
 
-void V3Number::v3errorEndFatal(const std::ostringstream& str) const {
+void V3Number::v3errorEndFatal(const std::ostringstream& str) const VL_MT_SAFE {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE;
@@ -874,7 +874,7 @@ string V3Number::toDecimalU() const {
 //======================================================================
 // ACCESSORS - as numbers
 
-uint32_t V3Number::toUInt() const {
+uint32_t V3Number::toUInt() const VL_MT_SAFE {
     UASSERT(!isFourState(), "toUInt with 4-state " << *this);
     // We allow wide numbers that represent values <= 32 bits
     for (int i = 1; i < words(); ++i) {
@@ -912,7 +912,7 @@ int32_t V3Number::toSInt() const {
     }
 }
 
-uint64_t V3Number::toUQuad() const {
+uint64_t V3Number::toUQuad() const VL_MT_SAFE {
     UASSERT(!isFourState(), "toUQuad with 4-state " << *this);
     // We allow wide numbers that represent values <= 64 bits
     if (isDouble()) return static_cast<uint64_t>(toDouble());

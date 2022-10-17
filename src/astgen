@@ -924,7 +924,7 @@ def write_ast_macros(filename):
             Ast{t}* cloneTree(bool cloneNext) {{
                 return static_cast<Ast{t}*>(AstNode::cloneTree(cloneNext));
             }}
-            Ast{t}* clonep() const {{ return static_cast<Ast{t}*>(AstNode::clonep()); }}
+            Ast{t}* clonep() const VL_MT_SAFE {{ return static_cast<Ast{t}*>(AstNode::clonep()); }}
             Ast{t}* addNext(Ast{t}* nodep) {{ return static_cast<Ast{t}*>(AstNode::addNext(this, nodep)); }}
             ''',
                       t=node.name)
@@ -945,7 +945,7 @@ def write_ast_macros(filename):
                             "op{n}p()").format(n=n, kind=kind)
                 if monad == "List":
                     emitBlock('''\
-                    Ast{kind}* {name}() const {{ return {retrieve}; }}
+                    Ast{kind}* {name}() const VL_MT_SAFE {{ return {retrieve}; }}
                     void add{Name}(Ast{kind}* nodep) {{ addNOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     ''',
                               kind=kind,
@@ -955,7 +955,7 @@ def write_ast_macros(filename):
                               retrieve=retrieve)
                 elif monad == "Optional":
                     emitBlock('''\
-                    Ast{kind}* {name}() const {{ return {retrieve}; }}
+                    Ast{kind}* {name}() const VL_MT_SAFE {{ return {retrieve}; }}
                     void {name}(Ast{kind}* nodep) {{ setNOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     ''',
                               kind=kind,
@@ -964,7 +964,7 @@ def write_ast_macros(filename):
                               retrieve=retrieve)
                 else:
                     emitBlock('''\
-                    Ast{kind}* {name}() const {{ return {retrieve}; }}
+                    Ast{kind}* {name}() const VL_MT_SAFE {{ return {retrieve}; }}
                     void {name}(Ast{kind}* nodep) {{ setOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     ''',
                               kind=kind,

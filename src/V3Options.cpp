@@ -395,7 +395,7 @@ void V3Options::addForceInc(const string& filename) { m_forceIncs.push_back(file
 
 void V3Options::addArg(const string& arg) { m_impp->m_allArgs.push_back(arg); }
 
-string V3Options::allArgsString() const {
+string V3Options::allArgsString() const VL_MT_SAFE {
     string out;
     for (const string& i : m_impp->m_allArgs) {
         if (out != "") out += " ";
@@ -1852,29 +1852,29 @@ void V3Options::setDebugMode(int level) {
     cout << "Starting " << version() << endl;
 }
 
-unsigned V3Options::debugLevel(const string& tag) const {
+unsigned V3Options::debugLevel(const string& tag) const VL_MT_SAFE {
     const auto iter = m_debugLevel.find(tag);
     return iter != m_debugLevel.end() ? iter->second : V3Error::debugDefault();
 }
 
-unsigned V3Options::debugSrcLevel(const string& srcfile_path) const {
+unsigned V3Options::debugSrcLevel(const string& srcfile_path) const VL_MT_SAFE {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means we need to strip the filenames: ../Foo.cpp -> Foo
     return debugLevel(V3Os::filenameNonDirExt(srcfile_path));
 }
 
-unsigned V3Options::dumpLevel(const string& tag) const {
+unsigned V3Options::dumpLevel(const string& tag) const VL_MT_SAFE {
     const auto iter = m_dumpLevel.find(tag);
     return iter != m_dumpLevel.end() ? iter->second : 0;
 }
 
-unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const {
+unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means we need to strip the filenames: ../Foo.cpp -> Foo
     return dumpLevel(V3Os::filenameNonDirExt(srcfile_path));
 }
 
-bool V3Options::dumpTreeAddrids() const {
+bool V3Options::dumpTreeAddrids() const VL_MT_SAFE {
     static int level = -1;
     if (VL_UNLIKELY(level < 0)) {
         const unsigned value = dumpLevel("tree-addrids");
