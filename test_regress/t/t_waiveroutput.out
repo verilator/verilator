@@ -9,5 +9,5 @@
 
 // lint_off -rule WIDTH -file "*t/t_waiveroutput.v" -match "Operator ASSIGN expects 1 bits on the Assign RHS, but Assign RHS's CONST '2'h3' generates 2 bits."
 
-// lint_off -rule UNUSED -file "*t/t_waiveroutput.v" -match "Signal is not used: 'width_warn'"
+// lint_off -rule UNUSEDSIGNAL -file "*t/t_waiveroutput.v" -match "Signal is not used: 'width_warn'"
 

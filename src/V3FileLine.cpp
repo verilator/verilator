@@ -332,7 +332,15 @@ std::ostream& operator<<(std::ostream& os, FileLine* fileline) {
 }
 
 bool FileLine::warnOff(const string& msg, bool flag) {
-    const V3ErrorCode code(msg.c_str());
+    const char *cmsg = msg.c_str();
+    // Backward compatibility with msg="UNUSED"
+    if (V3ErrorCode::unusedMsg(cmsg)) {
+        warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
+        warnOff(V3ErrorCode::UNUSEDPARAM , flag);
+        warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
+        return true;
+    }
+    const V3ErrorCode code(cmsg);
     if (code < V3ErrorCode::EC_FIRST_WARN) {
         return false;
     } else {
@@ -355,10 +363,19 @@ void FileLine::warnStyleOff(bool flag) {
     }
 }
 
+void FileLine::warnUnusedOff(bool flag) {
+    warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
+    warnOff(V3ErrorCode::UNUSEDPARAM, flag);
+    warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
+}
+
 bool FileLine::warnIsOff(V3ErrorCode code) const {
     if (!msgEn().test(code)) return true;
     if (!defaultFileLine().msgEn().test(code)) return true;  // Global overrides local
     if ((code.lintError() || code.styleError()) && !msgEn().test(V3ErrorCode::I_LINT)) {
+        return true;
+    }
+    if ((code.unusedError()) && !msgEn().test(V3ErrorCode::I_UNUSED)) {
         return true;
     }
     return false;

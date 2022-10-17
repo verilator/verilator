@@ -332,8 +332,11 @@ public:
     }
     bool waive(V3ErrorCode code, const string& match) {
         for (const auto& itr : m_waivers) {
-            if (((itr.first == code) || (itr.first == V3ErrorCode::I_LINT))
-                && VString::wildmatch(match, itr.second)) {
+            if ( ( (itr.first == code)
+                   || (itr.first == V3ErrorCode::I_LINT)
+                   || (code.unusedError() && itr.first == V3ErrorCode::I_UNUSED)
+                 )
+                 && VString::wildmatch(match, itr.second)) {
                 return true;
             }
         }
