@@ -17,8 +17,8 @@ else {
     top_filename("t/t_timing_clkgen1.v");
 
     compile(
-        verilator_flags2 => ["--timing --trace -Wno-MINTYPMAXDLY"],
-        timing_loop => 1
+        verilator_flags2 => ["--exe --main --timing --trace -Wno-MINTYPMAXDLY -DTEST_TRACING"],
+        make_main => 0,
         );
 
     execute(
