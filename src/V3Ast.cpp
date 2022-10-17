@@ -1257,7 +1257,7 @@ void AstNode::dumpTreeDotFile(const string& filename, bool append, bool doDump) 
     }
 }
 
-void AstNode::v3errorEndFatal(std::ostringstream& str) const VL_MT_SAFE {
+void AstNode::v3errorEndFatal(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex) {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE;
@@ -1287,9 +1287,9 @@ string AstNode::instanceStr() const {
 
     return "";
 }
-void AstNode::v3errorEnd(std::ostringstream& str) const {
+void AstNode::v3errorEnd(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex) {
     if (!m_fileline) {
-        V3Error::v3errorEnd(str, instanceStr());
+        V3Error::s().v3errorEnd(str, instanceStr());
     } else {
         std::ostringstream nsstr;
         nsstr << str.str();
@@ -1302,8 +1302,8 @@ void AstNode::v3errorEnd(std::ostringstream& str) const {
         // Don't look for instance name when warning is disabled.
         // In case of large number of warnings, this can
         // take significant amount of time
-        m_fileline->v3errorEnd(nsstr,
-                               m_fileline->warnIsOff(V3Error::errorCode()) ? "" : instanceStr());
+        m_fileline->v3errorEnd(
+            nsstr, m_fileline->warnIsOff(V3Error::s().errorCode()) ? "" : instanceStr());
     }
 }
 

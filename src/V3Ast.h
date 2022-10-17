@@ -1853,12 +1853,15 @@ public:
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     // METHODS - dump and error
-    void v3errorEnd(std::ostringstream& str) const VL_MT_SAFE;
-    void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN VL_MT_SAFE;
-    string warnContextPrimary() const { return fileline()->warnContextPrimary(); }
+    void v3errorEnd(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex);
+    void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN
+        VL_REQUIRES(V3Error::s().m_mutex);
+    string warnContextPrimary() const VL_REQUIRES(V3Error::s().m_mutex) {
+        return fileline()->warnContextPrimary();
+    }
     string warnContextSecondary() const { return fileline()->warnContextSecondary(); }
-    string warnMore() const { return fileline()->warnMore(); }
-    string warnOther() const { return fileline()->warnOther(); }
+    string warnMore() const VL_REQUIRES(V3Error::s().m_mutex) { return fileline()->warnMore(); }
+    string warnOther() const VL_REQUIRES(V3Error::s().m_mutex) { return fileline()->warnOther(); }
 
     virtual void dump(std::ostream& str = std::cout) const;
     static void dumpGdb(const AstNode* nodep);  // For GDB only

@@ -314,24 +314,30 @@ public:
     void modifyWarnOff(V3ErrorCode code, bool flag) { warnOff(code, flag); }
 
     // OPERATORS
-    void v3errorEnd(std::ostringstream& str, const string& extra = "");
-    void v3errorEndFatal(std::ostringstream& str) VL_ATTR_NORETURN {
+    void v3errorEnd(std::ostringstream& str, const string& extra = "")
+        VL_REQUIRES(V3Error::s().m_mutex);
+    void v3errorEndFatal(std::ostringstream& str) VL_ATTR_NORETURN
+        VL_REQUIRES(V3Error::s().m_mutex) {
         v3errorEnd(str);
         assert(0);  // LCOV_EXCL_LINE
         VL_UNREACHABLE;
     }
     /// When building an error, prefix for printing continuation lines
     /// e.g. information referring to the same FileLine as before
-    string warnMore() const;
+    string warnMore() const VL_REQUIRES(V3Error::s().m_mutex);
     /// When building an error, prefix for printing secondary information
     /// from a different FileLine than the original error
-    string warnOther() const VL_MT_SAFE;
+    string warnOther() const VL_REQUIRES(V3Error::s().m_mutex);
+    string warnOtherStandalone() const VL_EXCLUDES(V3Error::s().m_mutex) VL_MT_UNSAFE;
     /// When building an error, current location in include etc
     /// If not used in a given error, automatically pasted at end of error
-    string warnContextPrimary() const VL_MT_SAFE { return warnContext(false); }
+    string warnContextPrimary() const VL_REQUIRES(V3Error::s().m_mutex) {
+        V3Error::s().errorContexted(true);
+        return warnContext() + warnContextParent();
+    }
     /// When building an error, additional location for additional references
     /// Simplified information vs warnContextPrimary() to make dump clearer
-    string warnContextSecondary() const VL_MT_SAFE { return warnContext(true); }
+    string warnContextSecondary() const { return warnContext(); }
     bool operator==(const FileLine& rhs) const {
         return (m_firstLineno == rhs.m_firstLineno && m_firstColumn == rhs.m_firstColumn
                 && m_lastLineno == rhs.m_lastLineno && m_lastColumn == rhs.m_lastColumn
@@ -354,7 +360,8 @@ public:
     }
 
 private:
-    string warnContext(bool secondary) const VL_MT_SAFE;
+    string warnContext() const;
+    string warnContextParent() const VL_REQUIRES(V3Error::s().m_mutex);
     const MsgEnBitSet& msgEn() const VL_MT_SAFE { return singleton().msgEn(m_msgEnIdx); }
 };
 std::ostream& operator<<(std::ostream& os, FileLine* fileline);

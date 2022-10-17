@@ -119,10 +119,12 @@ std::ostream& operator<<(std::ostream& str, const Castable& rhs) {
 }
 
 #define v3widthWarn(lhs, rhs, msg) \
-    v3errorEnd((V3Error::v3errorPrep((lhs) < (rhs)   ? V3ErrorCode::WIDTHTRUNC \
-                                     : (lhs) > (rhs) ? V3ErrorCode::WIDTHEXPAND \
-                                                     : V3ErrorCode::WIDTH), \
-                (V3Error::v3errorStr() << msg), V3Error::v3errorStr()))
+    v3errorEnd((V3Error::s().m_mutex.lock(), \
+                V3Error::s().v3errorPrep((lhs) < (rhs)   ? V3ErrorCode::WIDTHTRUNC \
+                                         : (lhs) > (rhs) ? V3ErrorCode::WIDTHEXPAND \
+                                                         : V3ErrorCode::WIDTH), \
+                (V3Error::s().v3errorStr() << msg), V3Error::s().v3errorStr())), \
+        V3Error::s().m_mutex.unlock()
 
 //######################################################################
 // Width state, as a visitor of each AstNode

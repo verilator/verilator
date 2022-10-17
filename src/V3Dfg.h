@@ -503,14 +503,19 @@ public:
     inline bool inlined() const;
 
     // Methods that allow DfgVertex to participate in error reporting/messaging
-    void v3errorEnd(std::ostringstream& str) const { m_filelinep->v3errorEnd(str); }
-    void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN {
+    void v3errorEnd(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex) {
+        m_filelinep->v3errorEnd(str);
+    }
+    void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN
+        VL_REQUIRES(V3Error::s().m_mutex) {
         m_filelinep->v3errorEndFatal(str);
     }
-    string warnContextPrimary() const { return fileline()->warnContextPrimary(); }
+    string warnContextPrimary() const VL_REQUIRES(V3Error::s().m_mutex) {
+        return fileline()->warnContextPrimary();
+    }
     string warnContextSecondary() const { return fileline()->warnContextSecondary(); }
-    string warnMore() const { return fileline()->warnMore(); }
-    string warnOther() const { return fileline()->warnOther(); }
+    string warnMore() const VL_REQUIRES(V3Error::s().m_mutex) { return fileline()->warnMore(); }
+    string warnOther() const VL_REQUIRES(V3Error::s().m_mutex) { return fileline()->warnOther(); }
 
 private:
     // For internal use only.
