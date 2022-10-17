@@ -77,6 +77,8 @@ void V3Global::readFiles() {
     if (!v3Global.opt.preprocOnly()) {
         // Resolve all modules cells refer to
         V3LinkCells::link(v3Global.rootp(), &filter, &parseSyms);
+        // Abort in case of multiple definitions
+        V3Error::abortIfErrors();
     }
 }
 
