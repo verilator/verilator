@@ -248,10 +248,7 @@ class V3DfgPeephole final : public DfgVisitor {
                         foldOp<Vertex>(constp->num(), lConstp->num(), rlConstp->num());
 
                         // Replace vertex
-                        if VL_CONSTEXPR_CXX17 (!std::is_same<DfgConcat, Vertex>::value) {
-                            rVtxp->lhsp(constp);
-                            vtxp->replaceWith(rVtxp);
-                        } else if (!rVtxp->hasMultipleSinks()) {
+                        if (!rVtxp->hasMultipleSinks()) {
                             rVtxp->lhsp(constp);
                             rVtxp->dtypep(vtxp->dtypep());
                             vtxp->replaceWith(rVtxp);
@@ -279,10 +276,7 @@ class V3DfgPeephole final : public DfgVisitor {
                         foldOp<Vertex>(constp->num(), lrConstp->num(), rConstp->num());
 
                         // Replace vertex
-                        if VL_CONSTEXPR_CXX17 (!std::is_same<DfgConcat, Vertex>::value) {
-                            lVtxp->rhsp(constp);
-                            vtxp->replaceWith(lVtxp);
-                        } else if (!lVtxp->hasMultipleSinks()) {
+                        if (!lVtxp->hasMultipleSinks()) {
                             lVtxp->rhsp(constp);
                             lVtxp->dtypep(vtxp->dtypep());
                             vtxp->replaceWith(lVtxp);
