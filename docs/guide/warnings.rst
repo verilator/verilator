@@ -1542,9 +1542,31 @@ List Of Warnings
 
 .. option:: UNUSED
 
+   Disabling/enabling UNUSED is equivalent to disabling/enabling the
+   `UNUSEDGENVAR`, `UNUSEDPARAM` and `UNUSEDSIGNAL` warnings.
+
+   Never issued since version 5.000.  Historically warned that a variable,
+   parameter, or signal was unused.
+
+.. option:: UNUSEDGENVAR
+
    .. TODO better example
 
-   Warns that the specified signal or parameter is never used/consumed.
+   Warns that the specified genvar is never used/consumed.
+
+
+.. option:: UNUSEDPARAM
+
+   .. TODO better example
+
+   Warns that the specified parameter is never used/consumed.
+
+
+.. option:: UNUSEDSIGNAL
+
+   .. TODO better example
+
+   Warns that the specified signal is never used/consumed.
    Verilator is fairly liberal in the usage calculations; making a signal
    public, a signal matching the :vlopt:`--unused-regexp` option (default
    "\*unused\*" or accessing only a single array element marks the entire

@@ -24,12 +24,12 @@
                                    : ... In instance t
    50 |          #100 $finish;
       |          ^
-%Warning-UNUSED: t/t_delay.v:23:12: Signal is not used: 'dly_s'
-                                  : ... In instance t
+%Warning-UNUSEDSIGNAL: t/t_delay.v:23:12: Signal is not used: 'dly_s'
+                                        : ... In instance t
    23 |    dly_s_t dly_s;
       |            ^~~~~
-%Warning-UNUSED: t/t_delay.v:57:13: Signal is not used: 'delay'
-                                  : ... In instance t.sub
+%Warning-UNUSEDSIGNAL: t/t_delay.v:57:13: Signal is not used: 'delay'
+                                        : ... In instance t.sub
    57 |    realtime delay = 2.3;
       |             ^~~~~
 %Warning-BLKSEQ: t/t_delay.v:43:20: Blocking assignment '=' in sequential logic process

@@ -264,6 +264,7 @@ public:
     bool warnIsOff(V3ErrorCode code) const;
     void warnLintOff(bool flag);
     void warnStyleOff(bool flag);
+    void warnUnusedOff(bool flag);
     void warnStateFrom(const FileLine& from) { m_msgEnIdx = from.m_msgEnIdx; }
     void warnResetDefault() { warnStateFrom(defaultFileLine()); }
     bool lastWarnWaived() const { return m_waive; }
@@ -284,6 +285,7 @@ public:
     static string builtInFilename() { return "<built-in>"; }
     static void globalWarnLintOff(bool flag) { defaultFileLine().warnLintOff(flag); }
     static void globalWarnStyleOff(bool flag) { defaultFileLine().warnStyleOff(flag); }
+    static void globalWarnUnusedOff(bool flag) { defaultFileLine().warnUnusedOff(flag); }
     static void globalWarnOff(V3ErrorCode code, bool flag) {
         defaultFileLine().warnOff(code, flag);
     }

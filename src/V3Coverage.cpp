@@ -128,7 +128,7 @@ private:
             AstVar* const varp = new AstVar(incp->fileline(), VVarType::MODULETEMP, trace_var_name,
                                             incp->findUInt32DType());
             varp->trace(true);
-            varp->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);
+            varp->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
             m_modp->addStmtsp(varp);
             UINFO(5, "New coverage trace: " << varp << endl);
             AstAssign* const assp = new AstAssign(
@@ -283,7 +283,7 @@ private:
                 const string newvarname = std::string{"__Vtogcov__"} + nodep->shortName();
                 AstVar* const chgVarp
                     = new AstVar(nodep->fileline(), VVarType::MODULETEMP, newvarname, nodep);
-                chgVarp->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);
+                chgVarp->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
                 m_modp->addStmtsp(chgVarp);
 
                 // Create bucket for each dimension * bit.

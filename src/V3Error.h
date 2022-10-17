@@ -51,6 +51,7 @@ public:
         I_COVERAGE,     // Coverage is on/off from /*verilator coverage_on/off*/
         I_TRACING,      // Tracing is on/off from /*verilator tracing_on/off*/
         I_LINT,         // All lint messages
+        I_UNUSED,       // Unused genvar, parameter or signal message (Backward Compatibility)
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
         I_TIMING,       // Enable timing from /*verilator timing_on/off*/
         // Error codes:
@@ -134,7 +135,9 @@ public:
         UNOPTTHREADS,   // Thread partitioner unable to fill all requested threads
         UNPACKED,       // Unsupported unpacked
         UNSIGNED,       // Comparison is constant due to unsigned arithmetic
-        UNUSED,         // No receivers
+        UNUSEDGENVAR,   // No receivers for genvar
+        UNUSEDPARAM,    // No receivers for parameters
+        UNUSEDSIGNAL,   // No receivers for signals
         USERERROR,      // Elaboration time $error
         USERFATAL,      // Elaboration time $fatal
         USERINFO,       // Elaboration time $info
@@ -164,7 +167,7 @@ public:
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
-            " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE", " I_TIMING",
+            " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_UNUSED", " I_DEF_NETTYPE_WIRE", " I_TIMING",
             // Errors
             "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
             // Warnings
@@ -185,7 +188,7 @@ public:
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
-            "UNPACKED", "UNSIGNED", "UNUSED",
+            "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDPARAM", "UNUSEDSIGNAL",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
             "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT", "ZERODLY",
             " MAX"
@@ -224,8 +227,16 @@ public:
         return (m_e == ASSIGNDLY  // More than style, but for backward compatibility
                 || m_e == BLKSEQ || m_e == DEFPARAM || m_e == DECLFILENAME || m_e == EOFNEWLINE
                 || m_e == IMPORTSTAR || m_e == INCABSPATH || m_e == PINCONNECTEMPTY
-                || m_e == PINNOCONNECT || m_e == SYNCASYNCNET || m_e == UNDRIVEN || m_e == UNUSED
+                || m_e == PINNOCONNECT || m_e == SYNCASYNCNET || m_e == UNDRIVEN
+                || m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL
                 || m_e == VARHIDDEN);
+    }
+    // Warnings that are unused only
+    bool unusedError() const {
+        return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
+    }
+    static bool unusedMsg(const char* msgp) {
+        return 0 == VL_STRCASECMP(msgp, "UNUSED");
     }
 };
 constexpr bool operator==(const V3ErrorCode& lhs, const V3ErrorCode& rhs) {

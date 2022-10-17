@@ -40,6 +40,30 @@ module sub;
    genvar     unused_gv;
    genvar     ok_gv;
 
+   // verilator lint_off UNUSEDSIGNAL
+   wire linter_sig1;
+   localparam linter_param1 = 1;
+   genvar linter_genvar1;
+   // verilator lint_on UNUSEDSIGNAL
+
+   // verilator lint_off UNUSEDPARAM
+   wire linter_sig2;
+   localparam linter_param2 = 2;
+   genvar linter_genvar2;
+   // verilator lint_on UNUSEDPARAM
+
+   // verilator lint_off UNUSEDGENVAR
+   wire linter_sig3;
+   localparam linter_param3 = 3;
+   genvar linter_genvar3;
+   // verilator lint_on UNUSEDGENVAR
+
+   // verilator lint_off UNUSED
+   wire linter_sig4;
+   localparam linter_param4 = 4;
+   genvar linter_genvar4;
+   // verilator lint_on UNUSED
+
    initial begin
       if (0 && assunu1[0] != 0 && udrb2 != 0) begin end
       if (0 && assunub2[THREE] && assunub2[1:0]!=0) begin end
