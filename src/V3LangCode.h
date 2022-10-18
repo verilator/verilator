@@ -48,7 +48,7 @@ public:
                                      "1800-2005", "1800-2009", "1800-2012", "1800-2017"};
         return names[m_e];
     }
-    static V3LangCode mostRecent() { return V3LangCode{L1800_2017}; }
+    static V3LangCode mostRecent() VL_MT_SAFE { return V3LangCode{L1800_2017}; }
     bool systemVerilog() const {
         return m_e == L1800_2005 || m_e == L1800_2009 || m_e == L1800_2012 || m_e == L1800_2017;
     }

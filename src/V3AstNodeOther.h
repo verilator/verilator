@@ -236,13 +236,13 @@ public:
     // ACCESSORS
     void name(const string& name) override { m_name = name; }
     string origName() const override { return m_origName; }
-    string someInstanceName() const { return m_someInstanceName; }
+    string someInstanceName() const VL_MT_SAFE { return m_someInstanceName; }
     void someInstanceName(const string& name) { m_someInstanceName = name; }
     bool inLibrary() const { return m_inLibrary; }
     void inLibrary(bool flag) { m_inLibrary = flag; }
     void level(int level) { m_level = level; }
-    int level() const { return m_level; }
-    bool isTop() const { return level() == 1; }
+    int level() const VL_MT_SAFE { return m_level; }
+    bool isTop() const VL_MT_SAFE { return level() == 1; }
     void modPublic(bool flag) { m_modPublic = flag; }
     bool modPublic() const { return m_modPublic; }
     void modTrace(bool flag) { m_modTrace = flag; }
@@ -574,7 +574,7 @@ public:
         const AstNodeText* asamep = static_cast<const AstNodeText*>(samep);
         return text() == asamep->text();
     }
-    const string& text() const { return m_text; }
+    const string& text() const VL_MT_SAFE { return m_text; }
     void text(const string& value) { m_text = value; }
 };
 class AstNodeSimpleText VL_NOT_FINAL : public AstNodeText {
@@ -758,7 +758,7 @@ public:
     void isConst(VBoolOrUnknown flag) { m_isConst = flag; }
     bool isStatic() const { return m_isStatic; }
     void isStatic(bool flag) { m_isStatic = flag; }
-    bool isTrace() const { return m_isTrace; }
+    bool isTrace() const VL_MT_SAFE { return m_isTrace; }
     void isTrace(bool flag) { m_isTrace = flag; }
     void cname(const string& name) { m_cname = name; }
     string cname() const { return m_cname; }
@@ -771,7 +771,7 @@ public:
     bool dontInline() const { return dontCombine() || slow() || funcPublic(); }
     bool declPrivate() const { return m_declPrivate; }
     void declPrivate(bool flag) { m_declPrivate = flag; }
-    bool slow() const { return m_slow; }
+    bool slow() const VL_MT_SAFE { return m_slow; }
     void slow(bool flag) { m_slow = flag; }
     bool funcPublic() const { return m_funcPublic; }
     void funcPublic(bool flag) { m_funcPublic = flag; }
@@ -800,11 +800,11 @@ public:
     void pure(bool flag) { m_pure = flag; }
     bool dpiContext() const { return m_dpiContext; }
     void dpiContext(bool flag) { m_dpiContext = flag; }
-    bool dpiExportDispatcher() const { return m_dpiExportDispatcher; }
+    bool dpiExportDispatcher() const VL_MT_SAFE { return m_dpiExportDispatcher; }
     void dpiExportDispatcher(bool flag) { m_dpiExportDispatcher = flag; }
     bool dpiExportImpl() const { return m_dpiExportImpl; }
     void dpiExportImpl(bool flag) { m_dpiExportImpl = flag; }
-    bool dpiImportPrototype() const { return m_dpiImportPrototype; }
+    bool dpiImportPrototype() const VL_MT_SAFE { return m_dpiImportPrototype; }
     void dpiImportPrototype(bool flag) { m_dpiImportPrototype = flag; }
     bool dpiImportWrapper() const { return m_dpiImportWrapper; }
     void dpiImportWrapper(bool flag) { m_dpiImportWrapper = flag; }
@@ -1712,9 +1712,9 @@ public:
     string nameVlSym() const { return ((string("vlSymsp->")) + nameDotless()); }
     AstNodeModule* modp() const { return m_modp; }
     //
-    AstScope* aboveScopep() const { return m_aboveScopep; }
+    AstScope* aboveScopep() const VL_MT_SAFE { return m_aboveScopep; }
     AstCell* aboveCellp() const { return m_aboveCellp; }
-    bool isTop() const { return aboveScopep() == nullptr; }  // At top of hierarchy
+    bool isTop() const VL_MT_SAFE { return aboveScopep() == nullptr; }  // At top of hierarchy
     // Create new MODULETEMP variable under this scope
     AstVarScope* createTemp(const string& name, unsigned width);
     AstVarScope* createTemp(const string& name, AstNodeDType* dtypep);
@@ -2132,18 +2132,18 @@ public:
     }
     ASTGEN_MEMBERS_AstVar;
     void dump(std::ostream& str) const override;
-    string name() const override { return m_name; }  // * = Var name
+    string name() const override VL_MT_SAFE { return m_name; }  // * = Var name
     bool hasDType() const override { return true; }
     bool maybePointedTo() const override { return true; }
     string origName() const override { return m_origName; }  // * = Original name
     void origName(const string& name) { m_origName = name; }
-    VVarType varType() const { return m_varType; }  // * = Type of variable
+    VVarType varType() const VL_MT_SAFE { return m_varType; }  // * = Type of variable
     void direction(const VDirection& flag) {
         m_direction = flag;
         if (m_direction == VDirection::INOUT) m_tristate = true;
     }
-    VDirection direction() const { return m_direction; }
-    bool isIO() const { return m_direction != VDirection::NONE; }
+    VDirection direction() const VL_MT_SAFE { return m_direction; }
+    bool isIO() const VL_MT_SAFE { return m_direction != VDirection::NONE; }
     void declDirection(const VDirection& flag) { m_declDirection = flag; }
     VDirection declDirection() const { return m_declDirection; }
     void varType(VVarType type) { m_varType = type; }
@@ -2163,17 +2163,19 @@ public:
     string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "",
-                     bool asRef = false) const;
+                     bool asRef = false) const VL_MT_SAFE;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
     void combineType(VVarType type);
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }
+    AstNodeDType* dtypeSkipRefp() const VL_MT_SAFE { return subDTypep()->skipRefp(); }
     // (Slow) recurse down to find basic data type (Note don't need virtual -
     // AstVar isn't a NodeDType)
-    AstBasicDType* basicp() const { return subDTypep()->basicp(); }
-    virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    AstBasicDType* basicp() const VL_MT_SAFE { return subDTypep()->basicp(); }
+    virtual AstNodeDType* subDTypep() const VL_MT_SAFE {
+        return dtypep() ? dtypep() : childDTypep();
+    }
     void ansi(bool flag) { m_ansi = flag; }
     void declTyped(bool flag) { m_declTyped = flag; }
     void attrClocker(VVarAttrClocker flag) { m_attrClocker = flag; }
@@ -2209,7 +2211,7 @@ public:
     void hasStrengthAssignment(bool flag) { m_hasStrengthAssignment = flag; }
     bool hasStrengthAssignment() { return m_hasStrengthAssignment; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
-    bool isDpiOpenArray() const { return m_isDpiOpenArray; }
+    bool isDpiOpenArray() const VL_MT_SAFE { return m_isDpiOpenArray; }
     bool isHideLocal() const { return m_isHideLocal; }
     void isHideLocal(bool flag) { m_isHideLocal = flag; }
     bool isHideProtected() const { return m_isHideProtected; }
@@ -2238,8 +2240,8 @@ public:
     bool isDeclTyped() const { return m_declTyped; }
     bool isInoutish() const { return m_direction.isInoutish(); }
     bool isNonOutput() const { return m_direction.isNonOutput(); }
-    bool isReadOnly() const { return m_direction.isReadOnly(); }
-    bool isWritable() const { return m_direction.isWritable(); }
+    bool isReadOnly() const VL_MT_SAFE { return m_direction.isReadOnly(); }
+    bool isWritable() const VL_MT_SAFE { return m_direction.isWritable(); }
     bool isTristate() const { return m_tristate; }
     bool isPrimaryIO() const { return m_primaryIO; }
     bool isPrimaryInish() const { return isPrimaryIO() && isNonOutput(); }
@@ -2257,7 +2259,7 @@ public:
     bool isClassMember() const { return varType() == VVarType::MEMBER; }
     bool isStatementTemp() const { return (varType() == VVarType::STMTTEMP); }
     bool isXTemp() const { return (varType() == VVarType::XTEMP); }
-    bool isParam() const {
+    bool isParam() const VL_MT_SAFE {
         return (varType() == VVarType::LPARAM || varType() == VVarType::GPARAM);
     }
     bool isGParam() const { return (varType() == VVarType::GPARAM); }
@@ -2269,7 +2271,7 @@ public:
     bool isUsedClock() const { return m_usedClock; }
     bool isUsedParam() const { return m_usedParam; }
     bool isUsedLoopIdx() const { return m_usedLoopIdx; }
-    bool isSc() const { return m_sc; }
+    bool isSc() const VL_MT_SAFE { return m_sc; }
     bool isScQuad() const;
     bool isScBv() const;
     bool isScUint() const;
@@ -2281,8 +2283,8 @@ public:
     bool isSigUserRWPublic() const { return m_sigUserRWPublic; }
     bool isTrace() const { return m_trace; }
     bool isRand() const { return m_isRand; }
-    bool isConst() const { return m_isConst; }
-    bool isStatic() const { return m_isStatic; }
+    bool isConst() const VL_MT_SAFE { return m_isConst; }
+    bool isStatic() const VL_MT_SAFE { return m_isStatic; }
     bool isLatched() const { return m_isLatched; }
     bool isFuncLocal() const { return m_funcLocal; }
     bool isFuncReturn() const { return m_funcReturn; }
@@ -2456,7 +2458,7 @@ public:
     bool source() const { return m_source; }
     void source(bool flag) { m_source = flag; }
     bool support() const { return m_support; }
-    void support(bool flag) { m_support = flag; }
+    void support(bool flag) VL_MT_SAFE { m_support = flag; }
 };
 class AstVFile final : public AstNodeFile {
     // Verilog output file
@@ -2490,7 +2492,7 @@ public:
     const char* broken() const override;
     void cloneRelink() override;
     bool timescaleMatters() const override { return false; }
-    AstClassPackage* classOrPackagep() const { return m_classOrPackagep; }
+    AstClassPackage* classOrPackagep() const VL_MT_SAFE { return m_classOrPackagep; }
     void classOrPackagep(AstClassPackage* classpackagep) { m_classOrPackagep = classpackagep; }
     AstNode* membersp() const { return stmtsp(); }
     void addMembersp(AstNode* nodep) {
@@ -2523,7 +2525,7 @@ public:
     const char* broken() const override;
     void cloneRelink() override;
     bool timescaleMatters() const override { return false; }
-    AstClass* classp() const { return m_classp; }
+    AstClass* classp() const VL_MT_SAFE { return m_classp; }
     void classp(AstClass* classp) { m_classp = classp; }
 };
 class AstIface final : public AstNodeModule {
@@ -2716,19 +2718,19 @@ public:
     inline AstRange(FileLine* fl, int left, int right);
     inline AstRange(FileLine* fl, const VNumRange& range);
     ASTGEN_MEMBERS_AstRange;
-    inline int leftConst() const;
-    inline int rightConst() const;
-    int hiConst() const {
+    inline int leftConst() const VL_MT_SAFE;
+    inline int rightConst() const VL_MT_SAFE;
+    int hiConst() const VL_MT_SAFE {
         const int l = leftConst();
         const int r = rightConst();
         return l > r ? l : r;
     }
-    int loConst() const {
+    int loConst() const VL_MT_SAFE {
         const int l = leftConst();
         const int r = rightConst();
         return l > r ? r : l;
     }
-    int elementsConst() const { return hiConst() - loConst() + 1; }
+    int elementsConst() const VL_MT_SAFE { return hiConst() - loConst() + 1; }
     bool littleEndian() const { return leftConst() < rightConst(); }
     void dump(std::ostream& str) const override;
     virtual string emitC() { V3ERROR_NA_RETURN(""); }

@@ -196,7 +196,7 @@ public:
         UASSERT(isNumber(), "`num` member accessed when data type is " << m_type);
         return isInlineNumber() ? m_inlineNumber.data() : m_dynamicNumber.data();
     }
-    const ValueAndX* num() const {
+    const ValueAndX* num() const VL_MT_SAFE {
         UASSERT(isNumber(), "`num` member accessed when data type is " << m_type);
         return isInlineNumber() ? m_inlineNumber.data() : m_dynamicNumber.data();
     }
@@ -204,13 +204,13 @@ public:
         UASSERT(isString(), "`str` member accessed when data type is " << m_type);
         return m_string;
     }
-    const std::string& str() const {
+    const std::string& str() const VL_MT_SAFE {
         UASSERT(isString(), "`str` member accessed when data type is " << m_type);
         return m_string;
     }
 
-    int width() const { return m_width; }
-    V3NumberDataType type() const { return m_type; }
+    int width() const VL_MT_SAFE { return m_width; }
+    V3NumberDataType type() const VL_MT_SAFE { return m_type; }
 
     // METHODS
     void resize(int bitsCount) {
@@ -275,19 +275,19 @@ public:
     }
 
 private:
-    static constexpr int bitsToWords(int bitsCount) { return (bitsCount + 31) / 32; }
+    static constexpr int bitsToWords(int bitsCount) VL_MT_SAFE { return (bitsCount + 31) / 32; }
 
-    bool isNumber() const {
+    bool isNumber() const VL_MT_SAFE {
         return m_type == V3NumberDataType::DOUBLE || m_type == V3NumberDataType::LOGIC;
     }
-    bool isInlineNumber() const {
+    bool isInlineNumber() const VL_MT_SAFE {
         return (m_width <= MAX_INLINE_WIDTH)
                && (m_type == V3NumberDataType::DOUBLE || m_type == V3NumberDataType::LOGIC);
     }
-    bool isDynamicNumber() const {
+    bool isDynamicNumber() const VL_MT_SAFE {
         return (m_width > MAX_INLINE_WIDTH) && (m_type == V3NumberDataType::LOGIC);
     }
-    bool isString() const { return m_type == V3NumberDataType::STRING; }
+    bool isString() const VL_MT_SAFE { return m_type == V3NumberDataType::STRING; }
 
     template <typename... Args>
     void initInlineNumber(Args&&... args) {
@@ -351,7 +351,7 @@ class V3Number final {
 
 public:
     void nodep(AstNode* nodep);
-    FileLine* fileline() const { return m_fileline; }
+    FileLine* fileline() const VL_MT_SAFE { return m_fileline; }
     V3Number& setZero();
     V3Number& setQuad(uint64_t value);
     V3Number& setLong(uint32_t value);
@@ -377,7 +377,7 @@ public:
     }
 
 private:
-    char bitIs(int bit) const {
+    char bitIs(int bit) const VL_MT_SAFE {
         if (bit >= m_data.width() || bit < 0) {
             // We never sign extend
             return '0';
@@ -403,14 +403,14 @@ private:
     }
 
 public:
-    bool bitIs0(int bit) const {
+    bool bitIs0(int bit) const VL_MT_SAFE {
         if (!isNumber()) return false;
         if (bit < 0) return false;
         if (bit >= m_data.width()) return !bitIsXZ(m_data.width() - 1);
         const ValueAndX v = m_data.num()[bit / 32];
         return ((v.m_value & (1UL << (bit & 31))) == 0 && !(v.m_valueX & (1UL << (bit & 31))));
     }
-    bool bitIs1(int bit) const {
+    bool bitIs1(int bit) const VL_MT_SAFE {
         if (!isNumber()) return false;
         if (bit < 0) return false;
         if (bit >= m_data.width()) return false;
@@ -424,21 +424,21 @@ public:
         const ValueAndX v = m_data.num()[bit / 32];
         return ((v.m_value & (1UL << (bit & 31))) && !(v.m_valueX & (1UL << (bit & 31))));
     }
-    bool bitIsX(int bit) const {
+    bool bitIsX(int bit) const VL_MT_SAFE {
         if (!isNumber()) return false;
         if (bit < 0) return false;
         if (bit >= m_data.width()) return bitIsZ(m_data.width() - 1);
         const ValueAndX v = m_data.num()[bit / 32];
         return ((v.m_value & (1UL << (bit & 31))) && (v.m_valueX & (1UL << (bit & 31))));
     }
-    bool bitIsXZ(int bit) const {
+    bool bitIsXZ(int bit) const VL_MT_SAFE {
         if (!isNumber()) return false;
         if (bit < 0) return false;
         if (bit >= m_data.width()) return bitIsXZ(m_data.width() - 1);
         const ValueAndX v = m_data.num()[bit / 32];
         return ((v.m_valueX & (1UL << (bit & 31))));
     }
-    bool bitIsZ(int bit) const {
+    bool bitIsZ(int bit) const VL_MT_SAFE {
         if (!isNumber()) return false;
         if (bit < 0) return false;
         if (bit >= m_data.width()) return bitIsZ(m_data.width() - 1);
@@ -447,17 +447,17 @@ public:
     }
 
 private:
-    uint32_t bitsValue(int lsb, int nbits) const {
+    uint32_t bitsValue(int lsb, int nbits) const VL_MT_SAFE {
         uint32_t v = 0;
         for (int bitn = 0; bitn < nbits; bitn++) { v |= (bitIs1(lsb + bitn) << bitn); }
         return v;
     }
 
-    int countX(int lsb, int nbits) const;
-    int countZ(int lsb, int nbits) const;
+    int countX(int lsb, int nbits) const VL_MT_SAFE;
+    int countZ(int lsb, int nbits) const VL_MT_SAFE;
 
-    int words() const { return ((width() + 31) / 32); }
-    uint32_t hiWordMask() const { return VL_MASK_I(width()); }
+    int words() const VL_MT_SAFE { return ((width() + 31) / 32); }
+    uint32_t hiWordMask() const VL_MT_SAFE { return VL_MASK_I(width()); }
 
     V3Number& opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool is_modulus);
 
@@ -549,8 +549,10 @@ private:
         }
     }
     static string displayPad(size_t fmtsize, char pad, bool left, const string& in);
-    string displayed(FileLine* fl, const string& vformat) const;
-    string displayed(const string& vformat) const { return displayed(m_fileline, vformat); }
+    string displayed(FileLine* fl, const string& vformat) const VL_MT_SAFE;
+    string displayed(const string& vformat) const VL_MT_SAFE {
+        return displayed(m_fileline, vformat);
+    }
 
 public:
     void v3errorEnd(const std::ostringstream& sstr) const;
@@ -569,15 +571,15 @@ public:
     V3Number& setMask(int nbits);  // IE if nbits=1, then 0b1, if 2->0b11, if 3->0b111 etc
 
     // ACCESSORS
-    string ascii(bool prefixed = true, bool cleanVerilog = false) const;
+    string ascii(bool prefixed = true, bool cleanVerilog = false) const VL_MT_SAFE;
     string displayed(AstNode* nodep, const string& vformat) const;
     static bool displayedFmtLegal(char format, bool isScan);  // Is this a valid format letter?
-    int width() const { return m_data.width(); }
+    int width() const VL_MT_SAFE { return m_data.width(); }
     int widthMin() const;  // Minimum width that can represent this number (~== log2(num)+1)
-    bool sized() const { return m_data.m_sized; }
-    bool autoExtend() const { return m_data.m_autoExtend; }
+    bool sized() const VL_MT_SAFE { return m_data.m_sized; }
+    bool autoExtend() const VL_MT_SAFE { return m_data.m_autoExtend; }
     bool isFromString() const { return m_data.m_fromString; }
-    V3NumberDataType dataType() const { return m_data.type(); }
+    V3NumberDataType dataType() const VL_MT_SAFE { return m_data.type(); }
     void dataType(V3NumberDataType newType) {
         if (dataType() == newType) return;
         UASSERT(newType != V3NumberDataType::UNINITIALIZED, "Can't set type to UNINITIALIZED.");
@@ -590,17 +592,17 @@ public:
     }
     // Only correct for parsing of numbers from strings, otherwise not used
     // (use AstConst::isSigned())
-    bool isSigned() const { return m_data.m_signed; }
+    bool isSigned() const VL_MT_SAFE { return m_data.m_signed; }
     void isSigned(bool ssigned) { m_data.m_signed = ssigned; }
-    bool isDouble() const { return dataType() == V3NumberDataType::DOUBLE; }
-    bool isString() const { return dataType() == V3NumberDataType::STRING; }
-    bool isNumber() const {
+    bool isDouble() const VL_MT_SAFE { return dataType() == V3NumberDataType::DOUBLE; }
+    bool isString() const VL_MT_SAFE { return dataType() == V3NumberDataType::STRING; }
+    bool isNumber() const VL_MT_SAFE {
         return m_data.type() == V3NumberDataType::LOGIC
                || m_data.type() == V3NumberDataType::DOUBLE;
     }
-    bool isNegative() const { return !isString() && bitIs1(width() - 1); }
-    bool isNull() const { return m_data.m_isNull; }
-    bool isFourState() const;
+    bool isNegative() const VL_MT_SAFE { return !isString() && bitIs1(width() - 1); }
+    bool isNull() const VL_MT_SAFE { return m_data.m_isNull; }
+    bool isFourState() const VL_MT_SAFE;
     bool hasZ() const {
         if (isString()) return false;
         for (int i = 0; i < words(); i++) {
@@ -609,27 +611,27 @@ public:
         }
         return false;
     }
-    bool isAllZ() const;
-    bool isAllX() const;
-    bool isEqZero() const;
+    bool isAllZ() const VL_MT_SAFE;
+    bool isAllX() const VL_MT_SAFE;
+    bool isEqZero() const VL_MT_SAFE;
     bool isNeqZero() const;
     bool isBitsZero(int msb, int lsb) const;
     bool isEqOne() const;
     bool isEqAllOnes(int optwidth = 0) const;
     bool isCaseEq(const V3Number& rhs) const;  // operator==
     bool isLtXZ(const V3Number& rhs) const;  // operator< with XZ compared
-    bool isAnyX() const;
+    bool isAnyX() const VL_MT_SAFE;
     bool isAnyXZ() const;
-    bool isAnyZ() const;
+    bool isAnyZ() const VL_MT_SAFE;
     bool isMsbXZ() const { return bitIsXZ(m_data.width() - 1); }
     uint32_t toUInt() const;
-    int32_t toSInt() const;
+    int32_t toSInt() const VL_MT_SAFE;
     uint64_t toUQuad() const;
-    int64_t toSQuad() const;
-    string toString() const;
-    string toDecimalS() const;  // return ASCII signed decimal number
-    string toDecimalU() const;  // return ASCII unsigned decimal number
-    double toDouble() const;
+    int64_t toSQuad() const VL_MT_SAFE;
+    string toString() const VL_MT_SAFE;
+    string toDecimalS() const VL_MT_SAFE;  // return ASCII signed decimal number
+    string toDecimalU() const VL_MT_SAFE;  // return ASCII unsigned decimal number
+    double toDouble() const VL_MT_SAFE;
     V3Hash toHash() const;
     uint32_t edataWord(int eword) const;
     uint8_t dataByte(int byte) const;
