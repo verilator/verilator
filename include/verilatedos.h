@@ -163,14 +163,22 @@
 // Comment tag that Function is pure (and thus also VL_MT_SAFE)
 #define VL_PURE
 // Comment tag that function is threadsafe when VL_THREADED
-#define VL_MT_SAFE
+#if defined(__clang__)
+# define VL_MT_SAFE __attribute__((annotate("MT_SAFE")))
+#else
+# define VL_MT_SAFE
+#endif
 // Comment tag that function is threadsafe when VL_THREADED, only
 // during normal operation (post-init)
 #define VL_MT_SAFE_POSTINIT
 // Attribute that function is clang threadsafe and uses given mutex
 #define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
 // Comment tag that function is not threadsafe when VL_THREADED
-#define VL_MT_UNSAFE
+#if defined(__clang__)
+# define VL_MT_UNSAFE __attribute__((annotate("MT_UNSAFE")))
+#else
+# define VL_MT_UNSAFE
+#endif
 // Comment tag that function is not threadsafe when VL_THREADED,
 // protected to make sure single-caller
 #define VL_MT_UNSAFE_ONE
