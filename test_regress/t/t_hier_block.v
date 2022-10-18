@@ -115,7 +115,7 @@ endmodule
 
 module sub1(
    input wire clk,
-   input wire [7:0] in,
+   input wire [11:4] in,  // Uses higher LSB to cover bug3539
    output wire [7:0] out); `HIER_BLOCK
 
    logic [7:0] ff;
@@ -131,7 +131,7 @@ module sub2(
 
    logic [7:0] ff;
 
-  // dpi_import_func returns (dpi_eport_func(v) -1)
+   // dpi_import_func returns (dpi_eport_func(v) -1)
    import "DPI-C" context function int dpi_import_func(int v);
    export "DPI-C" function dpi_export_func;
 

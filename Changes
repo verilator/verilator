@@ -38,6 +38,7 @@ Verilator 5.001 devel
 * Add error on real edge event control.
 * Fix linker errors in user-facing timing functions (#3657). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix null access on optimized-out fork statements (#3658). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix LSB error on --hierarchical submodules (#3539). [danbone]
 
 
 Verilator 4.228 2022-10-01

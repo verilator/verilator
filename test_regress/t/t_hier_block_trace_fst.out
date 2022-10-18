@@ -1,5 +1,5 @@
 $date
-	Tue Feb 22 23:53:34 2022
+	Tue Oct 18 17:19:55 2022
 
 $end
 $version
@@ -42,7 +42,7 @@ $upscope $end
 $upscope $end
 $scope module i_sub1 $end
 $var wire 1 ! clk $end
-$var wire 8 " in [7:0] $end
+$var wire 8 " in [11:4] $end
 $var wire 8 # out [7:0] $end
 $upscope $end
 $scope module i_sub2 $end
@@ -129,11 +129,11 @@ $upscope $end
 $upscope $end
 $scope module top.t.i_sub1 $end
 $var wire 1 > clk $end
-$var wire 8 ? in [7:0] $end
+$var wire 8 ? in [11:4] $end
 $var wire 8 @ out [7:0] $end
 $scope module sub1 $end
 $var wire 1 > clk $end
-$var wire 8 ? in [7:0] $end
+$var wire 8 ? in [11:4] $end
 $var wire 8 @ out [7:0] $end
 $var logic 8 A ff [7:0] $end
 $upscope $end
