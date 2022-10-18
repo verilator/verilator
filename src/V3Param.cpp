@@ -801,6 +801,15 @@ class ParamProcessor final {
             srcModpr = modInfop->m_modp;
         }
 
+        for (auto* stmtp = srcModpr->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (auto* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
+                if (VN_IS(dtypep->subDTypep(), VoidDType)) {
+                    nodep->v3error("Missing type parameter: " << dtypep->prettyNameQ());
+                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                }
+            }
+        }
+
         // Delete the parameters from the cell; they're not relevant any longer.
         if (paramsp) paramsp->unlinkFrBackWithNext()->deleteTree();
         return any_overrides;
@@ -822,8 +831,11 @@ class ParamProcessor final {
     }
 
     void classRefDeparam(AstClassRefDType* nodep, AstNodeModule*& srcModpr) {
-        if (nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false))
-            nodep->classp(VN_AS(srcModpr, Class));
+        if (nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false)) {
+            AstClass* const classp = VN_AS(srcModpr, Class);
+            nodep->classp(classp);
+            nodep->classOrPackagep(classp);
+        }
     }
 
 public:
