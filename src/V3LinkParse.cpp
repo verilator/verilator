@@ -50,6 +50,7 @@ private:
     using ImplTypedefMap = std::map<const std::pair<void*, std::string>, AstTypedef*>;
 
     // STATE
+    AstPackage* const m_stdPackagep;  // SystemVerilog std package
     AstVar* m_varp = nullptr;  // Variable we're under
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
     std::unordered_set<FileLine*> m_filelines;  // Filelines that have been seen
@@ -600,6 +601,11 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
+    void visit(AstClassOrPackageRef* nodep) override {
+        if (nodep->name() == "std" && !nodep->classOrPackagep()) {
+            nodep->classOrPackagep(m_stdPackagep);
+        }
+    }
 
     void visit(AstNode* nodep) override {
         // Default: Just iterate
@@ -609,7 +615,10 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LinkParseVisitor(AstNetlist* rootp) { iterate(rootp); }
+    explicit LinkParseVisitor(AstNetlist* rootp)
+        : m_stdPackagep{rootp->stdPackagep()} {
+        iterate(rootp);
+    }
     ~LinkParseVisitor() override = default;
 };
 

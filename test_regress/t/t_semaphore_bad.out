@@ -1,4 +1,5 @@
-%Error: t/t_semaphore_bad.v:8:4: Can't find typedef: 'semaphore'
-    8 |    semaphore s;
-      |    ^~~~~~~~~
+%Error: t/t_semaphore_bad.v:12:13: Class method 'bad_method' not found in class 'semaphore'
+                                 : ... In instance t
+   12 |       if (s.bad_method() != 0) $stop;
+      |             ^~~~~~~~~~
 %Error: Exiting due to

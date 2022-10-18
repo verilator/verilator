@@ -10,14 +10,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-compile(
-    fails => $Self->{vlt_all},
-    expect_filename => $Self->{golden_filename},
-    );
+if (!$Self->have_coroutines) {
+    skip("No coroutine support");
+}
+else {
+    compile(
+        verilator_flags2 => ["--exe --main --timing -Wall"],
+        make_main => 0,
+        );
 
-execute(
-    check_finished => 1,
-    ) if !$Self->{vlt_all};
+    execute(
+        check_finished => 1,
+        );
+}
 
 ok(1);
 1;

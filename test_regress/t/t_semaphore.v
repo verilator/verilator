@@ -16,11 +16,11 @@
  `define SEMAPHORE_T semaphore
 `endif
 
+// verilator lint_off DECLFILENAME
 module t(/*AUTOARG*/);
    // From UVM:
    `SEMAPHORE_T s;
    `SEMAPHORE_T s2;
-   int       msg;
 
    initial begin
       s = new(1);

@@ -10,17 +10,21 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-top_filename("t/t_mailbox.v");
+if (!$Self->have_coroutines) {
+    skip("No coroutine support");
+}
+else {
+    top_filename("t/t_mailbox.v");
 
-compile(
-    v_flags2 => ["+define+T_MAILBOX+std::mailbox"],
-    fails => $Self->{vlt_all},
-    expect_filename => $Self->{golden_filename},
-    );
+    compile(
+        verilator_flags2 => ["--exe --main --timing -Wall -DMAILBOX_T=std::mailbox"],
+        make_main => 0,
+        );
 
-execute(
-    check_finished => 1,
-    ) if !$Self->{vlt_all};
+    execute(
+        check_finished => 1,
+        );
+}
 
 ok(1);
 1;

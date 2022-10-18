@@ -532,14 +532,17 @@ void V3ParseImp::tokenPipelineSym() {
                    && (*(yylval.strp) == "mailbox"  // IEEE-standard class
                        || *(yylval.strp) == "process"  // IEEE-standard class
                        || *(yylval.strp) == "semaphore")) {  // IEEE-standard class
+            v3Global.setUsesStdPackage();
             yylval.scp = nullptr;
             if (token == yaID__LEX) token = yaID__aTYPE;
         } else {  // Not found
             yylval.scp = nullptr;
             if (token == yaID__CC) {
-                // IEEE does require this, but we may relax this as UVM breaks it, so allow bbox
-                // for today
-                if (!v3Global.opt.bboxUnsup()) {
+                if (!m_afterColonColon && *(yylval.strp) == "std") {
+                    v3Global.setUsesStdPackage();
+                } else if (!v3Global.opt.bboxUnsup()) {
+                    // IEEE does require this, but we may relax this as UVM breaks it, so allow
+                    // bbox for today
                     // We'll get a parser error eventually but might not be obvious
                     // is missing package, and this confuses people
                     static int warned = false;
@@ -554,6 +557,7 @@ void V3ParseImp::tokenPipelineSym() {
             }
         }
     }
+    m_afterColonColon = token == yP_COLONCOLON;
     yylval.token = token;
     // effectively returns yylval
 }
