@@ -603,86 +603,90 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     string str;
     const char code = tolower(pos[0]);
     switch (code) {
-    case 'b': {
-        int bit = width() - 1;
-        if (fmtsize == "0")
-            while (bit && bitIs0(bit)) bit--;
-        for (; bit >= 0; bit--) {
-            if (bitIs0(bit)) {
-                str += '0';
-            } else if (bitIs1(bit)) {
-                str += '1';
-            } else if (bitIsZ(bit)) {
-                str += 'z';
-            } else {
-                str += 'x';
-            }
-        }
-        return str;
-    }
-    case 'o': {
-        int bit = width() - 1;
-        if (fmtsize == "0")
-            while (bit && bitIs0(bit)) bit--;
-        while ((bit % 3) != 2) bit++;
-        for (; bit > 0; bit -= 3) {
-            const int numX = countX(bit - 2, 3);
-            const int numZ = countZ(bit - 2, 3);
-            if (numX == 3 || numX == width() - (bit - 2)) {
-                str += 'x';
-                continue;
-            }
-            if (numZ == 3 || numZ == width() - (bit - 2)) {
-                str += 'z';
-                continue;
-            }
-            if (numX > 0) {
-                str += 'X';
-                continue;
-            }
-            if (numZ > 0) {
-                str += 'Z';
-                continue;
-            }
-            const int v = bitsValue(bit - 2, 3);
-            str += static_cast<char>('0' + v);
-        }
-        return str;
-    }
-    case 'h':
+    case 'b':  // FALLTHRU
+    case 'o':  // FALLTHRU
+    case 'h':  // FALLTHRU
     case 'x': {
         int bit = width() - 1;
-        if (fmtsize == "0")
-            while (bit && bitIs0(bit)) bit--;
-        while ((bit % 4) != 3) bit++;
-        for (; bit > 0; bit -= 4) {
-            const int numX = countX(bit - 3, 4);
-            const int numZ = countZ(bit - 3, 4);
-            if (numX == 4 || numX == width() - (bit - 3)) {
-                str += 'x';
-                continue;
+        if (left || !fmtsize.empty()) {
+            while (bit && bitIs0(bit)) --bit;
+        }
+        switch (code) {
+        case 'b': {
+            for (; bit >= 0; --bit) {
+                if (bitIs0(bit)) {
+                    str += '0';
+                } else if (bitIs1(bit)) {
+                    str += '1';
+                } else if (bitIsZ(bit)) {
+                    str += 'z';
+                } else {
+                    str += 'x';
+                }
             }
-            if (numZ == 4 || numZ == width() - (bit - 3)) {
-                str += 'z';
-                continue;
-            }
-            if (numX > 0) {
-                str += 'X';
-                continue;
-            }
-            if (numZ > 0) {
-                str += 'Z';
-                continue;
-            }
-            const int v = bitsValue(bit - 3, 4);
-            if (v >= 10) {
-                str += static_cast<char>('a' + v - 10);
-            } else {
+            break;
+        }
+        case 'o': {
+            while ((bit % 3) != 2) ++bit;
+            for (; bit > 0; bit -= 3) {
+                const int numX = countX(bit - 2, 3);
+                const int numZ = countZ(bit - 2, 3);
+                if (numX == 3 || numX == width() - (bit - 2)) {
+                    str += 'x';
+                    continue;
+                }
+                if (numZ == 3 || numZ == width() - (bit - 2)) {
+                    str += 'z';
+                    continue;
+                }
+                if (numX > 0) {
+                    str += 'X';
+                    continue;
+                }
+                if (numZ > 0) {
+                    str += 'Z';
+                    continue;
+                }
+                const int v = bitsValue(bit - 2, 3);
                 str += static_cast<char>('0' + v);
             }
+            break;
         }
+        default: {  // h/x
+            while ((bit % 4) != 3) ++bit;
+            for (; bit > 0; bit -= 4) {
+                const int numX = countX(bit - 3, 4);
+                const int numZ = countZ(bit - 3, 4);
+                if (numX == 4 || numX == width() - (bit - 3)) {
+                    str += 'x';
+                    continue;
+                }
+                if (numZ == 4 || numZ == width() - (bit - 3)) {
+                    str += 'z';
+                    continue;
+                }
+                if (numX > 0) {
+                    str += 'X';
+                    continue;
+                }
+                if (numZ > 0) {
+                    str += 'Z';
+                    continue;
+                }
+                const int v = bitsValue(bit - 3, 4);
+                if (v >= 10) {
+                    str += static_cast<char>('a' + v - 10);
+                } else {
+                    str += static_cast<char>('0' + v);
+                }
+            }
+            break;
+        }
+        }  // switch
+        const size_t fmtsizen = static_cast<size_t>(std::atoi(fmtsize.c_str()));
+        str = displayPad(fmtsizen, (left ? ' ' : '0'), left, str);
         return str;
-    }
+    }  // case b/d/x/o
     case 'c': {
         if (width() > 8) fl->v3warn(WIDTH, "$display-like format of %c format of > 8 bit value");
         const unsigned int v = bitsValue(0, 8);
@@ -714,7 +718,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     case 't':  // Time
     case 'd': {  // Unsigned decimal
         const bool issigned = (code == '~');
-        if (fmtsize == "") {
+        if (fmtsize == "" && !left) {
             const double mantissabits = width() - (issigned ? 1 : 0);
             // To get the number of digits required, we want to compute
             // log10(2**mantissabits) and round it up. To be able to handle
@@ -753,7 +757,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
                 }
             }
         }
-        const bool zeropad = fmtsize.length() > 0 && fmtsize[0] == '0';
+        const bool zeropad = fmtsize.length() > 0 && fmtsize[0] == '0' && !left;
         // fmtsize might have changed since we parsed the %fmtsize
         const size_t fmtsizen = static_cast<size_t>(std::atoi(fmtsize.c_str()));
         str = displayPad(fmtsizen, (zeropad ? '0' : ' '), left, str);
