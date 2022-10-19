@@ -60,6 +60,7 @@ private:
     };
 
     // STATE
+    AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     int m_modIncrementsNum = 0;  // Var name counter
     InsertMode m_insMode = IM_BEFORE;  // How to insert
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
@@ -92,6 +93,11 @@ private:
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modIncrementsNum);
         m_modIncrementsNum = 0;
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
         iterateChildren(nodep);
     }
     void visit(AstWhile* nodep) override {
@@ -241,6 +247,7 @@ private:
         const string name = string("__Vincrement") + cvtToStr(++m_modIncrementsNum);
         AstVar* const varp = new AstVar(fl, VVarType::BLOCKTEMP, name, VFlagChildDType(),
                                         varrefp->varp()->subDTypep()->cloneTree(true));
+        if (m_ftaskp) varp->funcLocal(true);
 
         // Declare the variable
         insertBeforeStmt(nodep, varp);
