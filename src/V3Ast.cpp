@@ -1075,9 +1075,10 @@ void AstNode::dumpPtrs(std::ostream& os) const {
     if (user5p()) os << " user5p=" << cvtToHex(user5p());
     if (m_iterpp) {
         os << " iterpp=" << cvtToHex(m_iterpp);
-        os << "*=" << cvtToHex(*m_iterpp);
+        // This may cause address sanitizer failures as iterpp can be stale
+        // os << "*=" << cvtToHex(*m_iterpp);
     }
-    os << endl;
+    os << std::endl;
 }
 
 void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) const {
