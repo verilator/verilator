@@ -447,7 +447,7 @@ wrapper which calls these two functions.
 the user should call:
 
    * :code:`designp->eventsPending()`, which returns :code:`true` if there are
-     any delayed events penging,
+     any delayed events pending,
    * :code:`designp->nextTimeSlot()`, which returns the simulation time of the
      next delayed event. This method can only be called if
      :code:`designp->nextTimeSlot()` returned :code:`true`.

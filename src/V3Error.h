@@ -54,7 +54,6 @@ public:
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
         I_TIMING,       // Enable timing from /*verilator timing_on/off*/
         // Error codes:
-        E_DETECTARRAY,  // Error: Unsupported: Can't detect changes on arrayed variable
         E_ENCAPSULATED, // Error: local/protected violation
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
         E_UNSUPPORTED,  // Error: Unsupported (generally)
@@ -167,7 +166,7 @@ public:
             // Boolean
             " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE", " I_TIMING",
             // Errors
-            "DETECTARRAY", "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
+            "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",

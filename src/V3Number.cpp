@@ -124,10 +124,8 @@ V3Number::V3Number(AstNode* nodep, const AstNodeDType* nodedtypep) {
     }
 }
 
-void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl) {
-    init(nodep, 0);
+void V3Number::create(const char* sourcep) {
     m_data.setLogic();
-    m_fileline = fl;
     const char* value_startp = sourcep;
     for (const char* cp = sourcep; *cp; cp++) {
         if (*cp == '\'') {
@@ -369,7 +367,7 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
     // m_value[0]);
 }
 
-void V3Number::setNames(AstNode* nodep) {
+void V3Number::nodep(AstNode* nodep) {
     m_nodep = nodep;
     if (!nodep) return;
     m_fileline = nodep->fileline();
@@ -508,7 +506,6 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
             out << "'";
             if (bitIs0(0)) {
                 out << '0';
-                if (isNull()) out << "[null]";
             } else if (bitIs1(0)) {
                 out << '1';
             } else if (bitIsZ(0)) {
@@ -544,7 +541,13 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
         // Always deal with 4 bits at once.  Note no 4-state, it's above.
         out << displayed("%0h");
     }
-    if (isNull() && VL_UNCOVERABLE(!isEqZero())) out << "-%E-null-not-zero";
+    if (isNull()) {
+        if (VL_UNCOVERABLE(!isEqZero())) {
+            out << "-%E-null-not-zero";
+        } else {
+            out << " [null]";
+        }
+    }
     return out.str();
 }
 
@@ -2171,7 +2174,9 @@ V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
     // to itself; V3Simulate does this when hits "foo=foo;"
     // So no: NUM_ASSERT_OP_ARGS1(lhs);
     if (this != &lhs) {
-        if (isString()) {
+        if (VL_UNLIKELY(lhs.isNull())) {
+            m_data.m_isNull = true;
+        } else if (isString()) {
             if (VL_UNLIKELY(!lhs.isString())) {
                 // Non-compatible types, erase value.
                 m_data.str() = "";

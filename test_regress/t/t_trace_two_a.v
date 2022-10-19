@@ -32,7 +32,7 @@ module t (/*AUTOARG*/
 
 `ifdef TEST_DUMP
       $dumpfile(filename);
-      $dumpvars(0, top);
+      $dumpvars(0);  // Intentionally no ", top" for parsing coverage with just (expr)
       $dumplimit(10 * 1024 * 1024);
 `elsif TEST_DUMPPORTS
       $dumpports(top, filename);

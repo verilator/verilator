@@ -64,18 +64,14 @@ private:
         puts("int main(int argc, char** argv, char**) {\n");
         puts("// Setup context, defaults, and parse command line\n");
         puts("Verilated::debug(0);\n");
-        if (v3Global.opt.trace()) puts("Verilated::traceEverOn(true);\n");
         puts("const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};\n");
+        if (v3Global.opt.trace()) puts("contextp->traceEverOn(true);\n");
         puts("contextp->commandArgs(argc, argv);\n");
         puts("\n");
 
         puts("// Construct the Verilated model, from Vtop.h generated from Verilating\n");
         puts("const std::unique_ptr<" + topClassName() + "> topp{new " + topClassName()
              + "{contextp.get()}};\n");
-        puts("\n");
-
-        puts("// Evaluate initials\n");
-        puts("topp->eval();  // Evaluate\n");
         puts("\n");
 
         puts("// Simulate until $finish\n");

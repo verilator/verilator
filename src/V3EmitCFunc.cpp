@@ -483,7 +483,9 @@ void EmitCFunc::emitCvtWideArray(AstNode* nodep, AstNode* fromp) {
 
 void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString) {
     // Put out constant set to the specified variable, or given variable in a string
-    if (nodep->num().isFourState()) {
+    if (nodep->num().isNull()) {
+        puts("VlNull{}");
+    } else if (nodep->num().isFourState()) {
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: 4-state numbers in this context");
     } else if (nodep->num().isString()) {
         putbs("std::string{");
@@ -625,7 +627,7 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
             }
         } else if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             if (initarp->defaultp()) {
-                puts("for (int __Vi=0; __Vi<" + cvtToStr(adtypep->elementsConst()));
+                puts("for (int __Vi = 0; __Vi < " + cvtToStr(adtypep->elementsConst()));
                 puts("; ++__Vi) {\n");
                 emitSetVarConstant(varNameProtected + "[__Vi]", VN_AS(initarp->defaultp(), Const));
                 puts("}\n");
@@ -677,7 +679,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                     "Should have swapped msb & lsb earlier.");
         const string ivar = string("__Vi") + cvtToStr(depth);
-        const string pre = ("for (int " + ivar + "=" + cvtToStr(0) + "; " + ivar + "<"
+        const string pre = ("for (int " + ivar + " = " + cvtToStr(0) + "; " + ivar + " < "
                             + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
         const string below = emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(),
                                                  depth + 1, suffix + "[" + ivar + "]");

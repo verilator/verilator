@@ -15,25 +15,25 @@
                                 : ... In instance t
    20 |       wait (value == 3) if (value != 3) $stop;
       |       ^~~~
-%Warning-STMTDLY: t/t_wait.v:25:8: Ignoring delay on this statement due to --no-timing
+%Warning-STMTDLY: t/t_wait.v:25:7: Ignoring delay on this statement due to --no-timing
                                  : ... In instance t
    25 |       #10;
-      |        ^~
+      |       ^
                   ... Use "/* verilator lint_off STMTDLY */" and lint_on around source to disable this message.
-%Warning-STMTDLY: t/t_wait.v:27:8: Ignoring delay on this statement due to --no-timing
+%Warning-STMTDLY: t/t_wait.v:27:7: Ignoring delay on this statement due to --no-timing
                                  : ... In instance t
    27 |       #10;
-      |        ^~
-%Warning-STMTDLY: t/t_wait.v:29:8: Ignoring delay on this statement due to --no-timing
+      |       ^
+%Warning-STMTDLY: t/t_wait.v:29:7: Ignoring delay on this statement due to --no-timing
                                  : ... In instance t
    29 |       #10;
-      |        ^~
-%Warning-STMTDLY: t/t_wait.v:31:8: Ignoring delay on this statement due to --no-timing
+      |       ^
+%Warning-STMTDLY: t/t_wait.v:31:7: Ignoring delay on this statement due to --no-timing
                                  : ... In instance t
    31 |       #10;
-      |        ^~
-%Warning-STMTDLY: t/t_wait.v:33:8: Ignoring delay on this statement due to --no-timing
+      |       ^
+%Warning-STMTDLY: t/t_wait.v:33:7: Ignoring delay on this statement due to --no-timing
                                  : ... In instance t
    33 |       #10;
-      |        ^~
+      |       ^
 %Error: Exiting due to

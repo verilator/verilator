@@ -101,7 +101,9 @@ protected:
         const V3Number& num = nodep->num();
         UASSERT_OBJ(!num.isFourState(), nodep, "4-state value in constant pool");
         const AstNodeDType* const dtypep = nodep->dtypep();
-        if (num.isString()) {
+        if (num.isNull()) {
+            puts("VlNull{}");
+        } else if (num.isString()) {
             // Note: putsQuoted does not track indentation, so we use this instead
             puts("\"");
             puts(num.toString());

@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_semaphore_class.v:17:7: Unsupported: event controls in methods
+                                              : ... In instance $unit::semaphore_cls
+   17 |       wait (m_keys >= keyCount);
+      |       ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

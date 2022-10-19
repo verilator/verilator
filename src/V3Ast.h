@@ -297,6 +297,7 @@ public:
         };
         return clocked[m_e];
     }
+    bool anEdge() const { return m_e == ET_BOTHEDGE || m_e == ET_POSEDGE || m_e == ET_NEGEDGE; }
     VEdgeType invert() const {
         switch (m_e) {
         case ET_CHANGED: return ET_CHANGED;

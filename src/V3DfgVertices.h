@@ -43,11 +43,23 @@ class DfgVertexVar VL_NOT_FINAL : public DfgVertexVariadic {
     bool m_hasModRefs = false;  // This AstVar is referenced outside the DFG, but in the module
     bool m_hasExtRefs = false;  // This AstVar is referenced from outside the module
 
+    bool selfEquals(const DfgVertex& that) const final;
+    V3Hash selfHash() const final;
+
 public:
     DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp, uint32_t initialCapacity)
         : DfgVertexVariadic{dfg, type, varp->fileline(), dtypeFor(varp), initialCapacity}
         , m_varp{varp} {}
     ASTGEN_MEMBERS_DfgVertexVar;
+
+    DfgVertexVar* verticesNext() const {
+        return static_cast<DfgVertexVar*>(DfgVertex::verticesNext());
+    }
+    DfgVertexVar* verticesPrev() const {
+        return static_cast<DfgVertexVar*>(DfgVertex::verticesPrev());
+    }
+
+    bool isDrivenByDfg() const { return arity() > 0; }
 
     AstVar* varp() const { return m_varp; }
     bool hasModRefs() const { return m_hasModRefs; }
@@ -76,21 +88,25 @@ class DfgConst final : public DfgVertex {
     friend class DfgVertex;
     friend class DfgVisitor;
 
-    AstConst* const m_constp;  // The AstConst associated with this vertex (owned by this vertex)
+    V3Number m_num;  // Constant value
 
     bool selfEquals(const DfgVertex& that) const override;
     V3Hash selfHash() const override;
 
 public:
-    DfgConst(DfgGraph& dfg, AstConst* constp)
-        : DfgVertex{dfg, dfgType(), constp->fileline(), dtypeFor(constp)}
-        , m_constp{constp} {}
+    DfgConst(DfgGraph& dfg, FileLine* flp, const V3Number& num)
+        : DfgVertex{dfg, dfgType(), flp, dtypeForWidth(num.width())}
+        , m_num{num} {}
+    DfgConst(DfgGraph& dfg, FileLine* flp, uint32_t width, uint32_t value = 0)
+        : DfgVertex{dfg, dfgType(), flp, dtypeForWidth(width)}
+        , m_num{flp, static_cast<int>(width), value} {}
     ASTGEN_MEMBERS_DfgConst;
 
-    ~DfgConst() override { VL_DO_DANGLING(m_constp->deleteTree(), m_constp); }
+    DfgConst* verticesNext() const { return static_cast<DfgConst*>(DfgVertex::verticesNext()); }
+    DfgConst* verticesPrev() const { return static_cast<DfgConst*>(DfgVertex::verticesPrev()); }
 
-    AstConst* constp() const { return m_constp; }
-    V3Number& num() const { return m_constp->num(); }
+    V3Number& num() { return m_num; }
+    const V3Number& num() const { return m_num; }
 
     uint32_t toU32() const { return num().toUInt(); }
     int32_t toI32() const { return num().toSInt(); }
@@ -106,6 +122,47 @@ public:
     }  // LCOV_EXCL_STOP
 };
 
+// === DfgVertexBinary ===
+class DfgMux final : public DfgVertexBinary {
+    // AstSel is ternary, but the 'widthp' is always constant and is hence redundant, and
+    // 'lsbp' is very often constant. As AstSel is fairly common, we special case as a DfgSel for
+    // the constant 'lsbp', and as 'DfgMux` for the non-constant 'lsbp'.
+public:
+    DfgMux(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
+        : DfgVertexBinary{dfg, dfgType(), flp, dtypep} {}
+    ASTGEN_MEMBERS_DfgMux;
+
+    DfgVertex* fromp() const { return source<0>(); }
+    void fromp(DfgVertex* vtxp) { relinkSource<0>(vtxp); }
+    DfgVertex* lsbp() const { return source<1>(); }
+    void lsbp(DfgVertex* vtxp) { relinkSource<1>(vtxp); }
+
+    const string srcName(size_t idx) const override { return idx ? "lsbp" : "fromp"; }
+};
+
+// === DfgVertexUnary ===
+class DfgSel final : public DfgVertexUnary {
+    // AstSel is ternary, but the 'widthp' is always constant and is hence redundant, and
+    // 'lsbp' is very often constant. As AstSel is fairly common, we special case as a DfgSel for
+    // the constant 'lsbp', and as 'DfgMux` for the non-constant 'lsbp'.
+    uint32_t m_lsb = 0;  // The LSB index
+
+    bool selfEquals(const DfgVertex& that) const override;
+    V3Hash selfHash() const override;
+
+public:
+    DfgSel(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
+        : DfgVertexUnary{dfg, dfgType(), flp, dtypep} {}
+    ASTGEN_MEMBERS_DfgSel;
+
+    DfgVertex* fromp() const { return source<0>(); }
+    void fromp(DfgVertex* vtxp) { relinkSource<0>(vtxp); }
+    uint32_t lsb() const { return m_lsb; }
+    void lsb(uint32_t value) { m_lsb = value; }
+
+    const string srcName(size_t) const override { return "fromp"; }
+};
+
 // === DfgVertexVar ===
 class DfgVarArray final : public DfgVertexVar {
     friend class DfgVertex;
@@ -115,17 +172,12 @@ class DfgVarArray final : public DfgVertexVar {
 
     std::vector<DriverData> m_driverData;  // Additional data associate with each driver
 
-    bool selfEquals(const DfgVertex& that) const override;
-    V3Hash selfHash() const override;
-
 public:
     DfgVarArray(DfgGraph& dfg, AstVar* varp)
         : DfgVertexVar{dfg, dfgType(), varp, 4u} {
         UASSERT_OBJ(VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType), varp, "Non array DfgVarArray");
     }
     ASTGEN_MEMBERS_DfgVarArray;
-
-    bool isDrivenByDfg() const { return arity() > 0; }
 
     void addDriver(FileLine* flp, uint32_t index, DfgVertex* vtxp) {
         m_driverData.emplace_back(flp, index);
@@ -177,15 +229,11 @@ class DfgVarPacked final : public DfgVertexVar {
 
     std::vector<DriverData> m_driverData;  // Additional data associate with each driver
 
-    bool selfEquals(const DfgVertex& that) const override;
-    V3Hash selfHash() const override;
-
 public:
     DfgVarPacked(DfgGraph& dfg, AstVar* varp)
         : DfgVertexVar{dfg, dfgType(), varp, 1u} {}
     ASTGEN_MEMBERS_DfgVarPacked;
 
-    bool isDrivenByDfg() const { return arity() > 0; }
     bool isDrivenFullyByDfg() const { return arity() == 1 && source(0)->dtypep() == dtypep(); }
 
     void addDriver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp) {

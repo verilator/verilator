@@ -327,7 +327,7 @@ List Of Warnings
 
    The warning could be disabled without affecting the simulation
    result. But it was recommended to check the warning as it may have
-   degrated the performance of the Verilated model.
+   degraded the performance of the Verilated model.
 
 
 .. option:: CMPCONST
@@ -465,15 +465,11 @@ List Of Warnings
 
 .. option:: DETECTARRAY
 
-   .. TODO better example
+   Historical, never issued since version 3.862.
 
-   Error when Verilator tries to deal with a combinatorial loop that could
-   not be flattened, and which involves a datatype which Verilator cannot
-   handle, such as an unpacked struct or a large unpacked array. This
-   typically occurs when :vlopt:`-Wno-UNOPTFLAT <UNOPTFLAT>` has been used
-   to override an UNOPTFLAT warning (see below).
-
-   The solution is to break the loop, as described for UNOPTFLAT.
+   Was an error when Verilator tried to deal with a combinatorial loop that
+   could not be flattened, and which involves a datatype which Verilator
+   could not handle, such as an unpacked struct or a large unpacked array.
 
 
 .. option:: DIDNOTCONVERGE

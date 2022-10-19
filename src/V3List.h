@@ -119,6 +119,23 @@ public:
         }
         m_prevp = m_nextp = nullptr;
     }
+    // Remove all nodes from 'oldListr', append them to 'newListr'. 'this' must be a member of the
+    // object at 'selfp', and 'selfp' must be the head of the list in 'oldListr'.
+    void moveAppend(V3List<T>& oldListr, V3List<T>& newListr, T selfp) {
+        UASSERT(selfp == oldListr.m_headp, "Must be head of list to use 'moveAppend'");
+        const size_t offset = (size_t)(uint8_t*)(this) - (size_t)(uint8_t*)(selfp);
+        const T headp = selfp;
+        const T tailp = oldListr.m_tailp;
+        oldListr.reset();
+        if (newListr.empty()) {
+            newListr.m_headp = headp;
+            newListr.m_tailp = tailp;
+        } else {
+            baseToListEnt(newListr.m_tailp, offset)->m_nextp = headp;
+            m_prevp = newListr.m_tailp;
+            newListr.m_tailp = tailp;
+        }
+    }
 };
 
 //============================================================================

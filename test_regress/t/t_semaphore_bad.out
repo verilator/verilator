@@ -1,7 +1,4 @@
-%Error: t/t_semaphore.v:17:4: Can't find typedef: 'semaphore'
-   17 |    semaphore s;
-      |    ^~~~~~~~~
-%Error: t/t_semaphore.v:18:4: Can't find typedef: 'semaphore'
-   18 |    semaphore s2;
+%Error: t/t_semaphore_bad.v:8:4: Can't find typedef: 'semaphore'
+    8 |    semaphore s;
       |    ^~~~~~~~~
 %Error: Exiting due to

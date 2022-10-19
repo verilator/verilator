@@ -2310,7 +2310,7 @@ std::string VerilatedContext::dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMut
 std::string VerilatedContext::dumpfileCheck() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
     std::string out = dumpfile();
     if (VL_UNLIKELY(out.empty())) {
-        VL_PRINTF_MT("%%Warning: $dumpvar ignored as not proceeded by $dumpfile\n");
+        VL_PRINTF_MT("%%Warning: $dumpvar ignored as not preceded by $dumpfile\n");
         return "";
     }
     return out;

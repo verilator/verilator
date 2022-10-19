@@ -1,7 +1,7 @@
-%Warning-STMTDLY: t/t_notiming.v:12:9: Ignoring delay on this statement due to --no-timing
+%Warning-STMTDLY: t/t_notiming.v:12:8: Ignoring delay on this statement due to --no-timing
                                      : ... In instance t
    12 |        #1
-      |         ^
+      |        ^
                   ... For warning description see https://verilator.org/warn/STMTDLY?v=latest
                   ... Use "/* verilator lint_off STMTDLY */" and lint_on around source to disable this message.
 %Error-NOTIMING: t/t_notiming.v:13:8: Fork statements require --timing
@@ -22,12 +22,12 @@
                                     : ... With --no-timing, suggest have one event control statement per procedure, at the top of the procedure
    19 |        @e
       |        ^
-%Warning-STMTDLY: t/t_notiming.v:26:13: Ignoring delay on this statement due to --no-timing
+%Warning-STMTDLY: t/t_notiming.v:26:12: Ignoring delay on this statement due to --no-timing
                                       : ... In instance t
    26 |    initial #1 ->e;
-      |             ^
-%Warning-STMTDLY: t/t_notiming.v:27:13: Ignoring delay on this statement due to --no-timing
+      |            ^
+%Warning-STMTDLY: t/t_notiming.v:27:12: Ignoring delay on this statement due to --no-timing
                                       : ... In instance t
    27 |    initial #2 $stop;  
-      |             ^
+      |            ^
 %Error: Exiting due to

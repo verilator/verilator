@@ -1971,7 +1971,7 @@ class AstVar final : public AstNode {
     // A variable (in/out/wire/reg/param) inside a module
     //
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
-    // @astgen op2 := delayp : Optional[AstNode] // Net delay
+    // @astgen op2 := delayp : Optional[AstDelay] // Net delay
     // Initial value that never changes (static const), or constructor argument for
     // MTASKSTATE variables
     // @astgen op3 := valuep : Optional[AstNode]
@@ -2653,7 +2653,7 @@ public:
     ASTGEN_MEMBERS_AstAlwaysPost;
 };
 class AstAlwaysPostponed final : public AstNodeProcedure {
-    // Like always but postponement scheduling region
+    // Like always but Postponed scheduling region
 
 public:
     AstAlwaysPostponed(FileLine* fl, AstNode* stmtsp)
@@ -3027,10 +3027,9 @@ class AstDelay final : public AstNodeStmt {
     // @astgen op1 := lhsp : AstNode // Delay value
     // @astgen op2 := stmtsp : List[AstNode] // Statements under delay
 public:
-    AstDelay(FileLine* fl, AstNode* lhsp, AstNode* stmtsp)
+    AstDelay(FileLine* fl, AstNode* lhsp)
         : ASTGEN_SUPER_Delay(fl) {
         this->lhsp(lhsp);
-        this->addStmtsp(stmtsp);
     }
     ASTGEN_MEMBERS_AstDelay;
     bool isTimingControl() const override { return true; }
@@ -3830,6 +3829,12 @@ public:
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
         return new AstAssignW{fileline(), lhsp, rhsp, controlp};
+    }
+    bool isTimingControl() const override {
+        return timingControlp()
+               || lhsp()->exists<AstNodeVarRef>([](const AstNodeVarRef* const refp) {
+                      return refp->access().isWriteOrRW() && refp->varp()->delayp();
+                  });
     }
     bool brokeLhsMustBeLvalue() const override { return true; }
     AstAlways* convertToAlways();

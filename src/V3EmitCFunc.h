@@ -240,7 +240,7 @@ public:
 
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
-        for (int i = 0; i < m_modp->level(); ++i) { puts("  "); }
+        for (int i = 0; i < m_modp->level(); ++i) puts("  ");
         puts(prefixNameProtect(m_modp));
         puts(nodep->isLoose() ? "__" : "::");
         puts(nodep->nameProtect() + "\\n\"); );\n");
@@ -1170,6 +1170,12 @@ public:
         } else {
             emitConstant(nodep, nullptr, "");
         }
+    }
+    void visit(AstThisRef* nodep) override {
+        putbs(nodep->dtypep()->cType("", false, false));
+        puts("{");
+        puts(m_useSelfForThis ? "vlSelf" : "this");
+        puts("}");
     }
 
     //

@@ -21,10 +21,6 @@
 
 #include "V3File.h"
 
-#include <cctype>
-#include <type_traits>
-#include <unordered_map>
-
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //------------------------------------------------------------------------------
@@ -40,510 +36,26 @@ DfgGraph::~DfgGraph() {
 }
 
 void DfgGraph::addGraph(DfgGraph& other) {
-    other.forEachVertex([&](DfgVertex& vtx) {
-        other.removeVertex(vtx);
-        this->addVertex(vtx);
-    });
-}
+    m_size += other.m_size;
+    other.m_size = 0;
 
-bool DfgGraph::sortTopologically(bool reverse) {
-    // Vertices in reverse topological order
-    std::vector<DfgVertex*> order;
-
-    // Markings for algorithm
-    enum class Mark : uint8_t { Scheduled, OnPath, Finished };
-    std::unordered_map<DfgVertex*, Mark> marks;
-
-    // Stack of nodes in depth first search. The second element of the pair is true if the vertex
-    // is on the current DFS path, and false if it's only scheduled for visitation.
-    std::vector<std::pair<DfgVertex*, bool>> stack;
-
-    // Schedule vertex for visitation
-    const auto scheudle = [&](DfgVertex& vtx) {
-        // Nothing to do if already finished
-        if (marks.emplace(&vtx, Mark::Scheduled).first->second == Mark::Finished) return;
-        // Otherwise scheule for visitation
-        stack.emplace_back(&vtx, false);
+    const auto moveVertexList = [this](V3List<DfgVertex*>& src, V3List<DfgVertex*>& dst) {
+        if (DfgVertex* vtxp = src.begin()) {
+            vtxp->m_verticesEnt.moveAppend(src, dst, vtxp);
+            do {
+                vtxp->m_userCnt = 0;
+                vtxp->m_graphp = this;
+                vtxp = vtxp->verticesNext();
+            } while (vtxp);
+        }
     };
 
-    // For each vertex (direct loop, so we can return early)
-    for (DfgVertex* vtxp = m_vertices.begin(); vtxp; vtxp = vtxp->m_verticesEnt.nextp()) {
-        // Initiate DFS from this vertex
-        scheudle(*vtxp);
-        while (!stack.empty()) {
-            // Pick up stack top
-            const auto pair = stack.back();
-            stack.pop_back();
-            DfgVertex* const currp = pair.first;
-            const bool onPath = pair.second;
-            Mark& mark = marks.at(currp);
-
-            if (onPath) {  // Popped node on path
-                // Mark it as done
-                UASSERT_OBJ(mark == Mark::OnPath, currp, "DFS got lost");
-                mark = Mark::Finished;
-                // Add to order
-                order.push_back(currp);
-            } else {  // Otherwise node was scheduled for visitation, so visit it
-                // If already finished, then nothing to do
-                if (mark == Mark::Finished) continue;
-                // If already on path, then not a DAG
-                if (mark == Mark::OnPath) return false;
-                // Push to path and mark as such
-                mark = Mark::OnPath;
-                stack.emplace_back(currp, true);
-                // Schedule children
-                currp->forEachSink(scheudle);
-            }
-        }
-    }
-
-    // Move given vertex to end of vertex list
-    const auto reinsert = [this](DfgVertex& vtx) {
-        // Remove from current location
-        removeVertex(vtx);
-        // 'addVertex' appends to the end of the vertex list, so can do this in one loop
-        addVertex(vtx);
-    };
-
-    // Remember 'order' is in reverse topological order
-    if (!reverse) {
-        for (DfgVertex* vtxp : vlstd::reverse_view(order)) reinsert(*vtxp);
-    } else {
-        for (DfgVertex* vtxp : order) reinsert(*vtxp);
-    }
-
-    // Done
-    return true;
-}
-
-std::vector<std::unique_ptr<DfgGraph>> DfgGraph::splitIntoComponents(std::string label) {
-    size_t componentNumber = 0;
-    std::unordered_map<const DfgVertex*, unsigned> vertex2component;
-
-    forEachVertex([&](const DfgVertex& vtx) {
-        // If already assigned this vertex to a component, then continue
-        if (vertex2component.count(&vtx)) return;
-
-        // Work queue for depth first traversal starting from this vertex
-        std::vector<const DfgVertex*> queue{&vtx};
-
-        // Depth first traversal
-        while (!queue.empty()) {
-            // Pop next work item
-            const DfgVertex& item = *queue.back();
-            queue.pop_back();
-
-            // Mark vertex as belonging to current component (if it's not marked yet)
-            const bool isFirstEncounter = vertex2component.emplace(&item, componentNumber).second;
-
-            // If we have already visited this vertex during the traversal, then move on.
-            if (!isFirstEncounter) continue;
-
-            // Enqueue all sources and sinks of this vertex.
-            item.forEachSource([&](const DfgVertex& src) { queue.push_back(&src); });
-            item.forEachSink([&](const DfgVertex& dst) { queue.push_back(&dst); });
-        }
-
-        // Done with this component
-        ++componentNumber;
-    });
-
-    // Create the component graphs
-    std::vector<std::unique_ptr<DfgGraph>> results{componentNumber};
-
-    const std::string prefix{name() + (label.empty() ? "" : "-") + label + "-component-"};
-
-    for (size_t i = 0; i < componentNumber; ++i) {
-        results[i].reset(new DfgGraph{*m_modulep, prefix + cvtToStr(i)});
-    }
-
-    // Move all vertices under the corresponding component graphs
-    forEachVertex([&](DfgVertex& vtx) {
-        this->removeVertex(vtx);
-        results[vertex2component[&vtx]]->addVertex(vtx);
-    });
-
-    UASSERT(size() == 0, "'this' DfgGraph should have been emptied");
-
-    return results;
-}
-
-class ExtractCyclicComponents final {
-    static constexpr size_t UNASSIGNED = std::numeric_limits<size_t>::max();
-
-    // TYPES
-    struct VertexState {
-        size_t index;  // Used by Pearce's algorithm for detecting SCCs
-        size_t component = UNASSIGNED;  // Result component number (0 stays in input graph)
-        VertexState(size_t index)
-            : index{index} {}
-    };
-
-    // STATE
-
-    //==========================================================================
-    // Shared state
-
-    DfgGraph& m_dfg;  // The input graph
-    const std::string m_prefix;  // Component name prefix
-    std::unordered_map<const DfgVertex*, VertexState> m_state;  // Vertex state
-    size_t m_nonTrivialSCCs = 0;  // Number of non-trivial SCCs in the graph
-    const bool m_doExpensiveChecks = v3Global.opt.debugCheck();
-
-    //==========================================================================
-    // State for Pearce's algorithm for detecting SCCs
-
-    size_t m_index = 0;  // Visitation index counter
-    std::vector<DfgVertex*> m_stack;  // The stack used by the algorithm
-
-    //==========================================================================
-    // State for merging
-
-    std::unordered_set<const DfgVertex*> m_merged;  // Marks visited vertices
-
-    //==========================================================================
-    // State for extraction
-
-    // The extracted cyclic components
-    std::vector<std::unique_ptr<DfgGraph>> m_components;
-    // Map from 'variable vertex' -> 'component index' -> 'clone in that component'
-    std::unordered_map<const DfgVertexVar*, std::unordered_map<size_t, DfgVertexVar*>> m_clones;
-
-    // METHODS
-
-    //==========================================================================
-    // Methods for Pearce's algorithm to detect strongly connected components
-
-    void visitColorSCCs(DfgVertex& vtx) {
-        const auto pair = m_state.emplace(std::piecewise_construct,  //
-                                          std::forward_as_tuple(&vtx),  //
-                                          std::forward_as_tuple(m_index));
-
-        // If already visited, then nothing to do
-        if (!pair.second) return;
-
-        // Visiting node
-        const size_t rootIndex = m_index++;
-
-        vtx.forEachSink([&](DfgVertex& child) {
-            // Visit child
-            visitColorSCCs(child);
-            auto& childSatate = m_state.at(&child);
-            // If the child is not in an SCC
-            if (childSatate.component == UNASSIGNED) {
-                auto& vtxState = m_state.at(&vtx);
-                if (vtxState.index > childSatate.index) vtxState.index = childSatate.index;
-            }
-        });
-
-        auto& vtxState = m_state.at(&vtx);
-        if (vtxState.index == rootIndex) {
-            // This is the 'root' of an SCC
-
-            // A trivial SCC contains only a single vertex
-            const bool isTrivial = m_stack.empty() || m_state.at(m_stack.back()).index < rootIndex;
-            // We also need a separate component for vertices that drive themselves (which can
-            // happen for input like 'assign a = a'), as we want to extract them (they are cyclic).
-            const bool drivesSelf = vtx.findSink<DfgVertex>([&vtx](const DfgVertex& sink) {  //
-                return &vtx == &sink;
-            });
-
-            if (!isTrivial || drivesSelf) {
-                // Allocate new component
-                ++m_nonTrivialSCCs;
-                vtxState.component = m_nonTrivialSCCs;
-                while (!m_stack.empty()) {
-                    DfgVertex* const topp = m_stack.back();
-                    auto& topState = m_state.at(topp);
-                    // Only higher nodes belong to the same SCC
-                    if (topState.index < rootIndex) break;
-                    m_stack.pop_back();
-                    topState.component = m_nonTrivialSCCs;
-                }
-            } else {
-                // Trivial SCC (and does not drive itself), so acyclic. Keep it in original graph.
-                vtxState.component = 0;
-            }
-        } else {
-            // Not the root of an SCC
-            m_stack.push_back(&vtx);
-        }
-    }
-
-    void colorSCCs() {
-        // Implements Pearce's algorithm to color the strongly connected components. For reference
-        // see "An Improved Algorithm for Finding the Strongly Connected Components of a Directed
-        // Graph", David J.Pearce, 2005
-        m_state.reserve(m_dfg.size());
-        m_dfg.forEachVertex([&](DfgVertex& vtx) { visitColorSCCs(vtx); });
-    }
-
-    //==========================================================================
-    // Methods for merging
-
-    void visitMergeSCCs(const DfgVertex& vtx, size_t targetComponent) {
-        // We stop at variable boundaries, which is where we will split the graphs
-        if (vtx.is<DfgVertexVar>()) return;
-
-        // Mark visited/move on if already visited
-        if (!m_merged.insert(&vtx).second) return;
-
-        // Assign vertex to the target component
-        m_state.at(&vtx).component = targetComponent;
-
-        // Visit all neighbours
-        vtx.forEachSource([=](const DfgVertex& other) { visitMergeSCCs(other, targetComponent); });
-        vtx.forEachSink([=](const DfgVertex& other) { visitMergeSCCs(other, targetComponent); });
-    }
-
-    void mergeSCCs() {
-        // Ensure that component boundaries are always at variables, by merging SCCs
-        m_merged.reserve(m_dfg.size());
-        m_dfg.forEachVertex([this](DfgVertex& vtx) {
-            // Start DFS from each vertex that is in a non-trivial SCC, and merge everything that
-            // is reachable from it into this component.
-            if (const size_t target = m_state.at(&vtx).component) visitMergeSCCs(vtx, target);
-        });
-    }
-
-    //==========================================================================
-    // Methods for extraction
-
-    // Retrieve clone of vertex in the given component
-    DfgVertexVar& getClone(DfgVertexVar& vtx, size_t component) {
-        UASSERT_OBJ(m_state.at(&vtx).component != component, &vtx, "Vertex is in that component");
-        DfgVertexVar*& clonep = m_clones[&vtx][component];
-        if (!clonep) {
-            DfgGraph& dfg = component == 0 ? m_dfg : *m_components[component - 1];
-            if (DfgVarPacked* const pVtxp = vtx.cast<DfgVarPacked>()) {
-                clonep = new DfgVarPacked{dfg, pVtxp->varp()};
-            } else if (DfgVarArray* const aVtxp = vtx.cast<DfgVarArray>()) {
-                clonep = new DfgVarArray{dfg, aVtxp->varp()};
-            }
-            UASSERT_OBJ(clonep, &vtx, "Unhandled 'DfgVertexVar' sub-type");
-            if (VL_UNLIKELY(m_doExpensiveChecks)) {
-                // Assign component number of clone for later checks
-                m_state
-                    .emplace(std::piecewise_construct, std::forward_as_tuple(clonep),
-                             std::forward_as_tuple(0))
-                    .first->second.component
-                    = component;
-            }
-            // We need to mark both the original and the clone as having additional references
-            vtx.setHasModRefs();
-            clonep->setHasModRefs();
-        }
-        return *clonep;
-    }
-
-    // Fix up non-variable sources of a DfgVertexVar that are in a different component,
-    // using the provided 'relink' callback
-    template <typename T_Vertex>
-    void fixSources(T_Vertex& vtx, std::function<void(T_Vertex&, DfgVertex&, size_t)> relink) {
-        static_assert(std::is_base_of<DfgVertexVar, T_Vertex>::value,
-                      "'Vertex' must be a 'DfgVertexVar'");
-        const size_t component = m_state.at(&vtx).component;
-        vtx.forEachSourceEdge([&](DfgEdge& edge, size_t idx) {
-            DfgVertex& source = *edge.sourcep();
-            // DfgVertexVar sources are fixed up by `fixSinks` on those sources
-            if (source.is<DfgVertexVar>()) return;
-            const size_t sourceComponent = m_state.at(&source).component;
-            // Same component is OK
-            if (sourceComponent == component) return;
-            // Unlink the source edge (source is reconnected by 'relink'
-            edge.unlinkSource();
-            // Apply the fixup
-            DfgVertexVar& clone = getClone(vtx, sourceComponent);
-            relink(*(clone.as<T_Vertex>()), source, idx);
-        });
-    }
-
-    // Fix up sinks of given variable vertex that are in a different component
-    void fixSinks(DfgVertexVar& vtx) {
-        const size_t component = m_state.at(&vtx).component;
-        vtx.forEachSinkEdge([&](DfgEdge& edge) {
-            const size_t sinkComponent = m_state.at(edge.sinkp()).component;
-            // Same component is OK
-            if (sinkComponent == component) return;
-            // Relink the sink to read the clone
-            edge.relinkSource(&getClone(vtx, sinkComponent));
-        });
-    }
-
-    // Fix edges that cross components
-    void fixEdges(DfgVertex& vtx) {
-        if (DfgVarPacked* const vvtxp = vtx.cast<DfgVarPacked>()) {
-            fixSources<DfgVarPacked>(
-                *vvtxp, [&](DfgVarPacked& clone, DfgVertex& driver, size_t driverIdx) {
-                    clone.addDriver(vvtxp->driverFileLine(driverIdx),  //
-                                    vvtxp->driverLsb(driverIdx), &driver);
-                });
-            fixSinks(*vvtxp);
-            return;
-        }
-
-        if (DfgVarArray* const vvtxp = vtx.cast<DfgVarArray>()) {
-            fixSources<DfgVarArray>(  //
-                *vvtxp, [&](DfgVarArray& clone, DfgVertex& driver, size_t driverIdx) {
-                    clone.addDriver(vvtxp->driverFileLine(driverIdx),  //
-                                    vvtxp->driverIndex(driverIdx), &driver);
-                });
-            fixSinks(*vvtxp);
-            return;
-        }
-
-        if (VL_UNLIKELY(m_doExpensiveChecks)) {
-            // Non-variable vertex. Just check that edges do not cross components
-            const size_t component = m_state.at(&vtx).component;
-            vtx.forEachSourceEdge([&](DfgEdge& edge, size_t) {
-                DfgVertex& source = *edge.sourcep();
-                // OK to cross at variables
-                if (source.is<DfgVertexVar>()) return;
-                UASSERT_OBJ(component == m_state.at(&source).component, &vtx,
-                            "Component crossing edge without variable involvement");
-            });
-        }
-    }
-
-    static void packSources(DfgGraph& dfg) {
-        // Remove undriven variable sources
-        dfg.forEachVertex([&](DfgVertex& vtx) {
-            if (DfgVarPacked* const varp = vtx.cast<DfgVarPacked>()) {
-                varp->packSources();
-                if (!varp->hasSinks() && varp->arity() == 0) {
-                    VL_DO_DANGLING(varp->unlinkDelete(dfg), varp);
-                }
-                return;
-            }
-            if (DfgVarArray* const varp = vtx.cast<DfgVarArray>()) {
-                varp->packSources();
-                if (!varp->hasSinks() && varp->arity() == 0) {
-                    VL_DO_DANGLING(varp->unlinkDelete(dfg), varp);
-                }
-                return;
-            }
-        });
-    }
-
-    static void checkEdges(DfgGraph& dfg) {
-        // Check that each edge connects to a vertex that is within the same graph.
-        // Also check variable vertex sources are all connected.
-        std::unordered_set<const DfgVertex*> vertices{dfg.size()};
-        dfg.forEachVertex([&](const DfgVertex& vtx) { vertices.insert(&vtx); });
-        dfg.forEachVertex([&](const DfgVertex& vtx) {
-            vtx.forEachSource([&](const DfgVertex& src) {
-                UASSERT_OBJ(vertices.count(&src), &vtx, "Source vertex not in graph");
-            });
-            vtx.forEachSink([&](const DfgVertex& snk) {
-                UASSERT_OBJ(vertices.count(&snk), &snk, "Sink vertex not in graph");
-            });
-            if (const DfgVarPacked* const vtxp = vtx.cast<DfgVarPacked>()) {
-                vtxp->forEachSourceEdge([](const DfgEdge& edge, size_t) {
-                    UASSERT_OBJ(edge.sourcep(), edge.sinkp(), "Missing source on variable vertex");
-                });
-                return;
-            }
-            if (const DfgVarArray* const vtxp = vtx.cast<DfgVarArray>()) {
-                vtxp->forEachSourceEdge([](const DfgEdge& edge, size_t) {
-                    UASSERT_OBJ(edge.sourcep(), edge.sinkp(), "Missing source on variable vertex");
-                });
-                return;
-            }
-        });
-    }
-
-    void extractComponents() {
-        // If the graph was acyclic (which should be the common case), there will be no non-trivial
-        // SCCs, so we are done.
-        if (!m_nonTrivialSCCs) return;
-
-        // Allocate result graphs
-        m_components.resize(m_nonTrivialSCCs);
-        for (size_t i = 0; i < m_nonTrivialSCCs; ++i) {
-            m_components[i].reset(new DfgGraph{*m_dfg.modulep(), m_prefix + cvtToStr(i)});
-        }
-
-        // Fix up edges crossing components, and move vertices into their correct component. Note
-        // that fixing up the edges can create clones. Clones are added to the correct component,
-        // which also means that they might be added to the original DFG. Clones do not need
-        // fixing up, but also are not necessarily in the m_state map (in fact they are only there
-        // in debug mode), so we only iterate up to the original vertices. Because any new vertex
-        // is added at the end of the vertex list, we can just do this by iterating a fixed number
-        // of vertices.
-        size_t vertexCount = m_dfg.size();
-        m_dfg.forEachVertex([&](DfgVertex& vtx) {
-            if (!vertexCount) return;
-            --vertexCount;
-            // Fix up the edges crossing components
-            fixEdges(vtx);
-            // Move the vertex to the component graph (leave component 0, which is the originally
-            // acyclic sub-graph, in the original graph)
-            if (const size_t component = m_state.at(&vtx).component) {
-                m_dfg.removeVertex(vtx);
-                m_components[component - 1]->addVertex(vtx);
-            }
-        });
-
-        // Pack sources of variables to remove the now undriven inputs
-        // (cloning might have unlinked some of the inputs),
-        packSources(m_dfg);
-        for (const auto& dfgp : m_components) packSources(*dfgp);
-
-        if (VL_UNLIKELY(m_doExpensiveChecks)) {
-            // Check results for consistency
-            checkEdges(m_dfg);
-            for (const auto& dfgp : m_components) checkEdges(*dfgp);
-        }
-    }
-
-    // CONSTRUCTOR - entry point
-    explicit ExtractCyclicComponents(DfgGraph& dfg, std::string label)
-        : m_dfg{dfg}
-        , m_prefix{dfg.name() + (label.empty() ? "" : "-") + label + "-component-"} {
-        // Find all the non-trivial SCCs (and trivial cycles) in the graph
-        colorSCCs();
-        // Ensure that component boundaries are always at variables, by merging SCCs
-        mergeSCCs();
-        // Extract the components
-        extractComponents();
-    }
-
-public:
-    static std::vector<std::unique_ptr<DfgGraph>> apply(DfgGraph& dfg, const std::string& label) {
-        return std::move(ExtractCyclicComponents{dfg, label}.m_components);
-    }
-};
-
-std::vector<std::unique_ptr<DfgGraph>> DfgGraph::extractCyclicComponents(std::string label) {
-    return ExtractCyclicComponents::apply(*this, label);
-}
-
-void DfgGraph::runToFixedPoint(std::function<bool(DfgVertex&)> f) {
-    bool changed;
-    const auto apply = [&](DfgVertex& vtx) -> void {
-        if (f(vtx)) changed = true;
-    };
-    while (true) {
-        // Do one pass over the graph.
-        changed = false;
-        forEachVertex(apply);
-        if (!changed) break;
-        // Do another pass in the opposite direction. Alternating directions reduces
-        // the pathological complexity with left/right leaning trees.
-        changed = false;
-        forEachVertexInReverse(apply);
-        if (!changed) break;
-    }
+    moveVertexList(other.m_varVertices, m_varVertices);
+    moveVertexList(other.m_constVertices, m_constVertices);
+    moveVertexList(other.m_opVertices, m_opVertices);
 }
 
 static const string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) + '"'; }
-
-static bool isSimpleSel(const DfgSel* vtxp) {
-    const DfgConst* const lp = vtxp->lsbp()->cast<DfgConst>();
-    const DfgConst* const wp = vtxp->widthp()->cast<DfgConst>();
-    return lp && wp && !lp->hasMultipleSinks() && !wp->hasMultipleSinks();
-}
 
 // Dump one DfgVertex in Graphviz format
 static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
@@ -598,12 +110,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     }
 
     if (const DfgConst* const constVtxp = vtx.cast<DfgConst>()) {
-        const bool feedsSimpleSel = !constVtxp->findSink<DfgVertex>([](const DfgVertex& v) {  //
-            return !v.is<DfgSel>() || !isSimpleSel(v.as<DfgSel>());
-        });
-        if (feedsSimpleSel) return;  // Will draw it in the sel node as it is very common
-
-        const V3Number& num = constVtxp->constp()->num();
+        const V3Number& num = constVtxp->num();
 
         os << toDotId(vtx);
         os << " [label=\"";
@@ -620,20 +127,18 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     }
 
     if (const DfgSel* const selVtxp = vtx.cast<DfgSel>()) {
-        if (isSimpleSel(selVtxp)) {
-            const uint32_t lsb = selVtxp->lsbp()->as<DfgConst>()->toU32();
-            const uint32_t msb = lsb + selVtxp->width() - 1;
-            os << toDotId(vtx);
-            os << " [label=\"SEL\n_[" << msb << ":" << lsb << "]\nW" << vtx.width() << " / F"
-               << vtx.fanout() << '"';
-            if (vtx.hasMultipleSinks()) {
-                os << ", shape=doublecircle";
-            } else {
-                os << ", shape=circle";
-            }
-            os << "]" << endl;
-            return;
+        const uint32_t lsb = selVtxp->lsb();
+        const uint32_t msb = lsb + selVtxp->width() - 1;
+        os << toDotId(vtx);
+        os << " [label=\"SEL\n_[" << msb << ":" << lsb << "]\nW" << vtx.width() << " / F"
+           << vtx.fanout() << '"';
+        if (vtx.hasMultipleSinks()) {
+            os << ", shape=doublecircle";
+        } else {
+            os << ", shape=circle";
         }
+        os << "]" << endl;
+        return;
     }
 
     os << toDotId(vtx);
@@ -656,16 +161,6 @@ static void dumpDotEdge(std::ostream& os, const DfgEdge& edge, const string& hea
 // Dump one DfgVertex and all of its source DfgEdges in Graphviz format
 static void dumpDotVertexAndSourceEdges(std::ostream& os, const DfgVertex& vtx) {
     dumpDotVertex(os, vtx);
-
-    if (const DfgSel* const selVtxp = vtx.cast<const DfgSel>()) {
-        if (isSimpleSel(selVtxp)) {
-            UASSERT_OBJ(selVtxp->sourceEdge<0>()->sourcep() == selVtxp->fromp(), selVtxp,
-                        "Operand ordering changed");
-            dumpDotEdge(os, *selVtxp->sourceEdge<0>(), "");
-            return;
-        }
-    }
-
     vtx.forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {  //
         if (edge.sourcep()) {
             string headLabel;
@@ -852,21 +347,22 @@ DfgVertex::~DfgVertex() {
     if (VN_IS(m_dtypep, UnpackArrayDType)) VL_DO_DANGLING(delete m_dtypep, m_dtypep);
 }
 
-bool DfgVertex::selfEquals(const DfgVertex& that) const {
-    return this->m_type == that.m_type && this->dtypep() == that.dtypep();
-}
+bool DfgVertex::selfEquals(const DfgVertex& that) const { return true; }
 
-V3Hash DfgVertex::selfHash() const { return V3Hash{m_type} + width(); }
+V3Hash DfgVertex::selfHash() const { return V3Hash{}; }
 
 bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
     if (this == &that) return true;
+    if (this->type() != that.type()) return false;
+    if (this->dtypep() != that.dtypep()) return false;
     if (!this->selfEquals(that)) return false;
 
     const auto key = (this < &that) ? EqualsCache::key_type{this, &that}  //
                                     : EqualsCache::key_type{&that, this};
-    const auto pair = cache.emplace(key, true);
-    bool& result = pair.first->second;
-    if (pair.second) {
+    // Note: the recursive invocation can cause a re-hash of the cache which invalidates iterators
+    uint8_t result = cache[key];
+    if (!result) {
+        result = 2;  // Assume equals
         auto thisPair = this->sourceEdges();
         const DfgEdge* const thisSrcEdgesp = thisPair.first;
         const size_t thisArity = thisPair.second;
@@ -879,24 +375,32 @@ bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
             const DfgVertex* const thatSrcVtxp = thatSrcEdgesp[i].m_sourcep;
             if (thisSrcVtxp == thatSrcVtxp) continue;
             if (!thisSrcVtxp || !thatSrcVtxp || !thisSrcVtxp->equals(*thatSrcVtxp, cache)) {
-                result = false;
+                result = 1;  // Mark not equal
                 break;
             }
         }
+        cache[key] = result;
     }
-    return result;
+    return result >> 1;
 }
 
-V3Hash DfgVertex::hash(HashCache& cache) const {
-    const auto pair = cache.emplace(this, V3Hash{});
-    V3Hash& result = pair.first->second;
-    if (pair.second) {
-        result += selfHash();
+V3Hash DfgVertex::hash() {
+    V3Hash& result = user<V3Hash>();
+    if (!result.value()) {
+        V3Hash hash;
+        hash += m_type;
+        hash += width();
+        hash += selfHash();
         // Variables are defined by themselves, so there is no need to hash the sources. This
         // enables sound hashing of graphs circular only through variables, which we rely on.
         if (!is<DfgVertexVar>()) {
-            forEachSource([&result, &cache](const DfgVertex& src) { result += src.hash(cache); });
+            const auto pair = sourceEdges();
+            const DfgEdge* const edgesp = pair.first;
+            const size_t arity = pair.second;
+            // Sources must always be connected in well-formed graphs
+            for (size_t i = 0; i < arity; ++i) hash += edgesp[i].m_sourcep->hash();
         }
+        result = hash;
     }
     return result;
 }
@@ -926,40 +430,34 @@ void DfgVertex::replaceWith(DfgVertex* newSorucep) {
 // Vertex classes
 //------------------------------------------------------------------------------
 
-// DfgVarPacked ----------
-
-bool DfgVarPacked::selfEquals(const DfgVertex& that) const {
-    if (const DfgVarPacked* otherp = that.cast<DfgVarPacked>()) {
-        UASSERT_OBJ(varp() != otherp->varp(), this,
-                    "There should only be one DfgVarPacked for a given AstVar");
-    }
-    return false;
-}
-
-V3Hash DfgVarPacked::selfHash() const { return V3Hasher::uncachedHash(varp()); }
-
-// DfgVarPacked ----------
-
-bool DfgVarArray::selfEquals(const DfgVertex& that) const {
-    if (const DfgVarArray* otherp = that.cast<DfgVarArray>()) {
-        UASSERT_OBJ(varp() != otherp->varp(), this,
-                    "There should only be one DfgVarArray for a given AstVar");
-    }
-    return false;
-}
-
-V3Hash DfgVarArray::selfHash() const { return V3Hasher::uncachedHash(varp()); }
-
 // DfgConst ----------
 
 bool DfgConst::selfEquals(const DfgVertex& that) const {
-    if (const DfgConst* otherp = that.cast<DfgConst>()) {
-        return constp()->sameTree(otherp->constp());
-    }
+    return num().isCaseEq(that.as<DfgConst>()->num());
+}
+
+V3Hash DfgConst::selfHash() const { return num().toHash(); }
+
+// DfgSel ----------
+
+bool DfgSel::selfEquals(const DfgVertex& that) const { return lsb() == that.as<DfgSel>()->lsb(); }
+
+V3Hash DfgSel::selfHash() const { return V3Hash{lsb()}; }
+
+// DfgVertexVar ----------
+
+bool DfgVertexVar::selfEquals(const DfgVertex& that) const {
+    UASSERT_OBJ(varp() != that.as<DfgVertexVar>()->varp(), this,
+                "There should only be one DfgVertexVar for a given AstVar");
     return false;
 }
 
-V3Hash DfgConst::selfHash() const { return V3Hasher::uncachedHash(m_constp); }
+V3Hash DfgVertexVar::selfHash() const {
+    V3Hash hash;
+    hash += m_varp->name();
+    hash += m_varp->varType();
+    return hash;
+}
 
 //------------------------------------------------------------------------------
 // DfgVisitor

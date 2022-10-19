@@ -447,7 +447,7 @@ private:
         // read-modify-write on the C type), and the speed of the tracing code
         // is the same on largish designs.
         FileLine* const flp = m_topScopep->fileline();
-        AstNodeDType* const newScalarDtp = new AstBasicDType(flp, VFlagLogicPacked(), 1);
+        AstNodeDType* const newScalarDtp = new AstBasicDType{flp, VFlagBitPacked{}, 1};
         v3Global.rootp()->typeTablep()->addTypesp(newScalarDtp);
         AstRange* const newArange
             = new AstRange{flp, VNumRange{static_cast<int>(m_activityNumber) - 1, 0}};

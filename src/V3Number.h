@@ -338,8 +338,8 @@ class V3Number final {
 
     // MEMBERS
     V3NumberData m_data;
-    AstNode* m_nodep = nullptr;  // Parent node
-    FileLine* m_fileline = nullptr;
+    AstNode* m_nodep = nullptr;  // Parent node - for error reporting only
+    FileLine* m_fileline = nullptr;  // Source location - if no parent node is reasonable
 
     // METHODS
     V3Number& setSingleBits(char value);
@@ -350,7 +350,7 @@ class V3Number final {
     void opCleanThis(bool warnOnTruncation = false);
 
 public:
-    void nodep(AstNode* nodep) { setNames(nodep); }
+    void nodep(AstNode* nodep);
     FileLine* fileline() const { return m_fileline; }
     V3Number& setZero();
     V3Number& setQuad(uint64_t value);
@@ -472,12 +472,15 @@ public:
         m_data.num()[0].m_value = value;
         opCleanThis();
     }
-    // Create from a verilog 32'hxxxx number.
-    V3Number(AstNode* nodep, const char* sourcep) { V3NumberCreate(nodep, sourcep, nullptr); }
-    class FileLined {};  // Fileline based errors, for parsing only, otherwise pass nodep
-    V3Number(FileLined, FileLine* fl, const char* sourcep) {
-        V3NumberCreate(nullptr, sourcep, fl);
+    V3Number(FileLine* flp, int width, uint32_t value) {
+        init(nullptr, width, true);
+        m_fileline = flp;
+        m_data.num()[0].m_value = value;
+        opCleanThis();
     }
+    // Create from a verilog 32'hxxxx number.
+    V3Number(AstNode* nodep, const char* sourcep) { create(nodep, sourcep); }
+    V3Number(FileLine* flp, const char* sourcep) { create(flp, sourcep); }
     class VerilogStringLiteral {};  // For creator type-overload selection
     V3Number(VerilogStringLiteral, AstNode* nodep, const string& str);
     class String {};
@@ -518,9 +521,19 @@ public:
     ~V3Number() {}
 
 private:
-    void V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl);
+    void create(AstNode* nodep, const char* sourcep) {
+        init(nodep, 0);
+        m_fileline = nullptr;
+        create(sourcep);
+    }
+    void create(FileLine* flp, const char* sourcep) {
+        init(nullptr, 0);
+        m_fileline = flp;
+        create(sourcep);
+    }
+    void create(const char* sourcep);
     void init(AstNode* nodep, int swidth = -1, bool sized = true) {
-        setNames(nodep);
+        this->nodep(nodep);
         if (swidth >= 0) {
             if (swidth == 0) {
                 swidth = 1;
@@ -535,7 +548,6 @@ private:
             m_data.m_sized = false;
         }
     }
-    void setNames(AstNode* nodep);
     static string displayPad(size_t fmtsize, char pad, bool left, const string& in);
     string displayed(FileLine* fl, const string& vformat) const;
     string displayed(const string& vformat) const { return displayed(m_fileline, vformat); }

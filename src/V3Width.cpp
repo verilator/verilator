@@ -2465,6 +2465,10 @@ private:
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->repairCache();
     }
+    void visit(AstThisRef* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+        nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->childDTypep()));
+    }
     void visit(AstClassRefDType* nodep) override {
         if (nodep->didWidthAndSet()) return;
         // TODO this maybe eventually required to properly resolve members,
@@ -5120,6 +5124,7 @@ private:
                     // (get an ASSIGN with EXTEND on the lhs instead of rhs)
                 }
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
+                    checkClassAssign(nodep, "Function Argument", pinp, portp->dtypep());
                     userIterate(pinp, WidthVP(portp->dtypep(), FINAL).p());
                 } else {
                     iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portp->dtypep());
@@ -5160,6 +5165,10 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
             userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+            if (nodep->edgeType().anEdge() && nodep->sensp()->dtypep()->skipRefp()->isDouble()) {
+                nodep->sensp()->v3error(
+                    "Edge event control not legal on real type (IEEE 1800-2017 6.12.1)");
+            }
         }
     }
     void visit(AstWait* nodep) override {
@@ -5837,6 +5846,15 @@ private:
         return false;  // No change
     }
 
+    void checkClassAssign(AstNode* nodep, const char* side, AstNode* rhsp,
+                          AstNodeDType* lhsDTypep) {
+        if (VN_IS(lhsDTypep, ClassRefDType) && !VN_IS(rhsp->dtypep(), ClassRefDType)) {
+            if (auto* const constp = VN_CAST(rhsp, Const)) {
+                if (constp->num().isNull()) return;
+            }
+            nodep->v3error(side << " expects a " << lhsDTypep->prettyTypeName());
+        }
+    }
     static bool similarDTypeRecurse(AstNodeDType* node1p, AstNodeDType* node2p) {
         return node1p->skipRefp()->similarDType(node2p->skipRefp());
     }
@@ -5919,6 +5937,7 @@ private:
         // if (debug()) nodep->dumpTree(cout, "-checkass: ");
         UASSERT_OBJ(stage == FINAL, nodep, "Bad width call");
         // We iterate and size the RHS based on the result of RHS evaluation
+        checkClassAssign(nodep, side, rhsp, lhsDTypep);
         const bool lhsStream
             = (VN_IS(nodep, NodeAssign) && VN_IS(VN_AS(nodep, NodeAssign)->lhsp(), NodeStream));
         rhsp = iterateCheck(nodep, side, rhsp, ASSIGN, FINAL, lhsDTypep,

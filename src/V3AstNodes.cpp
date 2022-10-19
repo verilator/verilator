@@ -2245,12 +2245,13 @@ void AstCUse::dump(std::ostream& str) const {
 }
 
 AstAlways* AstAssignW::convertToAlways() {
+    const bool hasTimingControl = isTimingControl();
     AstNode* const lhs1p = lhsp()->unlinkFrBack();
     AstNode* const rhs1p = rhsp()->unlinkFrBack();
     AstNode* const controlp = timingControlp() ? timingControlp()->unlinkFrBack() : nullptr;
     FileLine* const flp = fileline();
     AstNode* bodysp = new AstAssign{flp, lhs1p, rhs1p, controlp};
-    if (controlp) {
+    if (hasTimingControl) {
         // If there's a timing control, put the assignment in a fork..join_none. This process won't
         // get marked as suspendable and thus will be scheduled normally
         auto* forkp = new AstFork{flp, "", bodysp};

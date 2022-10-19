@@ -303,9 +303,9 @@ class EmitCModel final : public EmitCFunc {
                             UASSERT_OBJ(arrayp->hi() >= arrayp->lo(), varp,
                                         "Should have swapped msb & lsb earlier.");
                             const string ivar = std::string{"__Vi"} + cvtToStr(vecnum);
-                            puts("for (int __Vi" + cvtToStr(vecnum) + "="
+                            puts("for (int __Vi" + cvtToStr(vecnum) + " = "
                                  + cvtToStr(arrayp->lo()));
-                            puts("; " + ivar + "<=" + cvtToStr(arrayp->hi()));
+                            puts("; " + ivar + " <= " + cvtToStr(arrayp->hi()));
                             puts("; ++" + ivar + ") {\n");
                         }
                         puts("sensitive << " + varp->nameProtect());

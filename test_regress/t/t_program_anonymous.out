@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_program_anonymous.v:7:1: Unsupported: Anonymous programs
+    7 | program;
+      | ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
