@@ -135,7 +135,7 @@ class DfgToAstVisitor final : DfgVisitor {
     std::unordered_map<const DfgVertex*, AstVar*> m_resultVars;
     // Map from an AstVar, to the canonical AstVar that can be substituted for that AstVar
     std::unordered_map<AstVar*, AstVar*> m_canonVars;
-    V3UniqueNames m_tmpNames{"_VdfgTmp"};  // For generating temporary names
+    V3UniqueNames m_tmpNames{"__VdfgTmp"};  // For generating temporary names
 
     // METHODS
 

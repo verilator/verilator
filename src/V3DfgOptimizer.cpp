@@ -103,7 +103,7 @@ class DataflowExtractVisitor final : public VNVisitor {
         iterateChildrenConst(nodep);
 
         // Replace candidate expressions only reading combinationally driven signals with variables
-        V3UniqueNames names{"_VdfgExtracted__"};
+        V3UniqueNames names{"__VdfgExtracted"};
         for (AstNodeModule* modp = nodep->modulesp(); modp;
              modp = VN_AS(modp->nextp(), NodeModule)) {
             // Only extract from proper modules

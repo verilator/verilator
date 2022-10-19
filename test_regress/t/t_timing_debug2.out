@@ -7,12 +7,12 @@
 -V{t#,#}+    Vt_timing_debug2___024root___eval_initial
 -V{t#,#}+    Vt_timing_debug2___024root___eval_initial__TOP__0
 -V{t#,#}             Process forked at t/t_timing_fork_join.v:14 finished
--V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__1
--V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__2
--V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__3
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__1
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__2
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__3
 [0] fork..join process 4
 -V{t#,#}             Process forked at t/t_timing_fork_join.v:18 finished
--V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__5
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__5
 -V{t#,#}             Awaiting join of fork at: t/t_timing_fork_join.v:13
 -V{t#,#}+    Vt_timing_debug2___024root___eval_initial__TOP__1
 -V{t#,#}+    Vt_timing_debug2___024root___eval_initial__TOP__2
@@ -123,9 +123,9 @@
 -V{t#,#}         Resuming delayed processes
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:16
 [16] fork in fork starts
--V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__0
--V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__1
--V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__2
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__0
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__1
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__2
 [16] fork..join process 8
 -V{t#,#}             Process forked at t/t_timing_fork_join.v:25 finished
 -V{t#,#}             Awaiting join of fork at: t/t_timing_fork_join.v:21
@@ -239,7 +239,7 @@
 -V{t#,#}         Resuming delayed processes
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:30
 [64] main process
--V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__0
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__0
 -V{t#,#}         Suspending process waiting for @([event] t.e1) at t/t_timing_fork_join.v:33
 fork..join_any process 2
 -V{t#,#}             Process forked at t/t_timing_fork_join.v:37 finished
@@ -315,8 +315,8 @@ fork..join_any process 1
 -V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:41
 -V{t#,#}         Resuming delayed processes
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:41
--V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__0
--V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__1
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__0
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__1
 -V{t#,#}         Suspending process waiting for @([event] t.e1) at t/t_timing_fork_join.v:44
 -V{t#,#}             Awaiting join of fork at: t/t_timing_fork_join.v:41
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
@@ -400,10 +400,10 @@ fork..join_any process 2
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:51
 -V{t#,#}         Resuming processes waiting for @([event] t.e1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:51
--V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__0
--V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__1
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__0
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__1
 -V{t#,#}         Suspending process waiting for @([event] t.e2) at t/t_timing_fork_join.v:62
--V{t#,#}+    Vt_timing_debug2___024root____Vfork___h########__0__2
+-V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__2
 -V{t#,#}         Suspending process waiting for @([event] t.e3) at t/t_timing_fork_join.v:68
 in main process
 -V{t#,#}         Suspending process waiting for @([event] t.e1) at t/t_timing_fork_join.v:75
