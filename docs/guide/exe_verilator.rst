@@ -741,6 +741,8 @@ Summary:
    model has a time resolution that is always compatible with the time
    precision of the upper instantiating module.
 
+   Designs compiled using this option cannot use :vlopt:`--timing` with delays.
+
    See also :vlopt:`--protect-lib`.
 
 .. option:: +libext+<ext>[+<ext>][...]
@@ -1067,6 +1069,8 @@ Summary:
    encrypted RTL (i.e. IEEE P1735).  See :file:`examples/make_protect_lib`
    in the distribution for a demonstration of how to build and use the DPI
    library.
+
+   Designs compiled using this option cannot use :vlopt:`--timing` with delays.
 
 .. option:: --public
 

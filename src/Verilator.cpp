@@ -559,6 +559,9 @@ static void process() {
 
     // Output DPI protected library files
     if (!v3Global.opt.libCreate().empty()) {
+        if (v3Global.rootp()->delaySchedulerp()) {
+            v3warn(E_UNSUPPORTED, "Unsupported: --lib-create with --timing and delays");
+        }
         V3ProtectLib::protect();
         V3EmitV::emitvFiles();
         V3EmitC::emitcFiles();

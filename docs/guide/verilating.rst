@@ -113,6 +113,8 @@ Hierarchy blocks have some limitations including:
   hierarchical model and pass up into another hierarchical model or the top
   module.
 
+* Delays are not allowed in hierarchy blocks.
+
 But, the following usage is supported:
 
 * Nested hierarchy blocks. A hierarchy block may instantiate other
