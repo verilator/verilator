@@ -936,8 +936,7 @@ class ParamVisitor final : public VNVisitor {
                     srcModp = modCellp->modp();
                 } else if (const auto* classRefp = VN_CAST(cellp, ClassOrPackageRef)) {
                     srcModp = classRefp->classOrPackagep();
-                    if (VN_IS(classRefp->classOrPackageNodep(), ParamTypeDType))
-                        continue;
+                    if (VN_IS(classRefp->classOrPackageNodep(), ParamTypeDType)) continue;
                 } else if (const auto* classRefp = VN_CAST(cellp, ClassRefDType)) {
                     srcModp = classRefp->classp();
                 } else {
