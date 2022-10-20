@@ -29,11 +29,11 @@ module a(
       trig_o <= 1'd0;
       if (trig_i) begin
          // Note: Base index via $c to prevent optimizatoin by Verilator
-         $display("0x%32x", C[$c(0*32)+:32]);
-         $display("0x%32x", C[$c(2*32)+:32]);
-         $display("0x%32x", C[$c(4*32)+:32]);
-         $display("0x%32x", C[$c(6*32)+:32]);
-         $display("0x%256x", C);
+         $display("0x%8x", C[$c(0*32)+:32]);
+         $display("0x%8x", C[$c(2*32)+:32]);
+         $display("0x%8x", C[$c(4*32)+:32]);
+         $display("0x%8x", C[$c(6*32)+:32]);
+         $display("0x%32x", C);
          trig_o <= 1'd1;
       end
    end
@@ -61,11 +61,11 @@ module b(
       trig_o <= 1'd0;
       if (trig_i) begin
          // Note: Base index via $c to prevent optimizatoin by Verilator
-         $display("0x%32x", C[$c(1*32)+:32]);
-         $display("0x%32x", C[$c(3*32)+:32]);
-         $display("0x%32x", C[$c(5*32)+:32]);
-         $display("0x%32x", C[$c(7*32)+:32]);
-         $display("0x%256x", C);
+         $display("0x%8x", C[$c(1*32)+:32]);
+         $display("0x%8x", C[$c(3*32)+:32]);
+         $display("0x%8x", C[$c(5*32)+:32]);
+         $display("0x%8x", C[$c(7*32)+:32]);
+         $display("0x%32x", C);
          trig_o <= 1'd1;
       end
    end

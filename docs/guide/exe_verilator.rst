@@ -741,6 +741,8 @@ Summary:
    model has a time resolution that is always compatible with the time
    precision of the upper instantiating module.
 
+   Designs compiled using this option cannot use :vlopt:`--timing` with delays.
+
    See also :vlopt:`--protect-lib`.
 
 .. option:: +libext+<ext>[+<ext>][...]
@@ -1067,6 +1069,8 @@ Summary:
    encrypted RTL (i.e. IEEE P1735).  See :file:`examples/make_protect_lib`
    in the distribution for a demonstration of how to build and use the DPI
    library.
+
+   Designs compiled using this option cannot use :vlopt:`--timing` with delays.
 
 .. option:: --public
 
@@ -1475,7 +1479,8 @@ Summary:
    equivalent to ``-Wno-ALWCOMBORDER -Wno-BSSPACE -Wno-CASEINCOMPLETE
    -Wno-CASEOVERLAP -Wno-CASEX -Wno-CASTCONST -Wno-CASEWITHX -Wno-CMPCONST -Wno-COLONPLUS
    -Wno-ENDLABEL -Wno-IMPLICIT -Wno-LITENDIAN -Wno-PINCONNECTEMPTY
-   -Wno-PINMISSING -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED
+   -Wno-PINMISSING -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED
+   -Wno-UNUSEDGENVAR -Wno-UNUSEDPARAM -Wno-UNUSEDSIGNAL
    -Wno-WIDTH`` plus the list shown for Wno-style.
 
    It is strongly recommended you cleanup your code rather than using this
@@ -1487,7 +1492,8 @@ Summary:
    Disable all code style related warning messages (note by default they are
    already disabled).  This is equivalent to ``-Wno-DECLFILENAME -Wno-DEFPARAM
    -Wno-EOFNEWLINE -Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY
-   -Wno-PINNOCONNECT -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNUSED
+   -Wno-PINNOCONNECT -Wno-SYNCASYNCNET -Wno-UNDRIVEN
+   -Wno-UNUSEDGENVAR -Wno-UNUSEDPARAM -Wno-UNUSEDSIGNAL
    -Wno-VARHIDDEN``.
 
 .. option:: -Wpedantic
@@ -1516,7 +1522,7 @@ Summary:
    Enable all code style related warning messages.  This is equivalent to
    ``-Wwarn ASSIGNDLY -Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-EOFNEWLINE
    -Wwarn-INCABSPATH -Wwarn-PINNOCONNECT -Wwarn-SYNCASYNCNET -Wwarn-UNDRIVEN
-   -Wwarn-UNUSED -Wwarn-VARHIDDEN``.
+   -Wwarn-UNUSEDGENVAR -Wwarn-UNUSEDPARAM -Wwarn-UNUSEDSIGNAL -Wwarn-VARHIDDEN``.
 
 .. option:: --x-assign 0
 

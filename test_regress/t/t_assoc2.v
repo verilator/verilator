@@ -16,18 +16,30 @@ module t (/*AUTOARG*/
 
    integer cyc = 0;
 
+   int     imap[int];
+
    // associative array of an associative array
    logic [31:0] a [logic [31:0]][logic [63:0]];
+
+   task disp();
+      int i = 60;
+      imap[i++] = 600;
+      imap[i++] = 601;
+      foreach (imap[k]) $display("imap[%0d] = %0d", k, imap[k]);
+   endtask
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc == 1) begin
          a[5][8] = 8;
          a[5][9] = 9;
+         imap[10] = 100;
+         imap[11] = 101;
       end
       else if (cyc == 2) begin
          `checkh(a[5][8], 8);
          `checkh(a[5][9], 9);
+         disp();
          $write("*-* All Finished *-*\n");
          $finish;
       end

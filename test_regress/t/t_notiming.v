@@ -26,3 +26,7 @@ module t;
    initial #1 ->e;
    initial #2 $stop; // timeout
 endmodule
+
+`ifdef VERILATOR_TIMING
+`error "VERILATOR_TIMING should not be defined with --no-timing"
+`endif

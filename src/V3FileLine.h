@@ -86,7 +86,9 @@ class FileLineSingleton final {
     // Return index to intersection set
     msgEnSetIdx_t msgEnAnd(msgEnSetIdx_t lhsIdx, msgEnSetIdx_t rhsIdx);
     // Retrieve interned bitset at given interned index. The returned reference is not persistent.
-    const MsgEnBitSet& msgEn(msgEnSetIdx_t idx) const { return m_internedMsgEns.at(idx); }
+    const MsgEnBitSet& msgEn(msgEnSetIdx_t idx) const VL_MT_SAFE {
+        return m_internedMsgEns.at(idx);
+    }
 };
 
 // All source lines from a file/stream, to enable errors to show sources
@@ -110,7 +112,7 @@ class VFileContent final {
 
 public:
     void pushText(const string& text);  // Add arbitrary text (need not be line-by-line)
-    string getLine(int lineno) const;
+    string getLine(int lineno) const VL_MT_SAFE;
     string ascii() const { return "ct" + cvtToStr(m_id); }
 };
 std::ostream& operator<<(std::ostream& os, VFileContent* contentp);
@@ -228,29 +230,31 @@ public:
     }
     // Advance last line/column based on given text
     void forwardToken(const char* textp, size_t size, bool trackLines = true);
-    int firstLineno() const { return m_firstLineno; }
-    int firstColumn() const { return m_firstColumn; }
-    int lastLineno() const { return m_lastLineno; }
-    int lastColumn() const { return m_lastColumn; }
+    int firstLineno() const VL_MT_SAFE { return m_firstLineno; }
+    int firstColumn() const VL_MT_SAFE { return m_firstColumn; }
+    int lastLineno() const VL_MT_SAFE { return m_lastLineno; }
+    int lastColumn() const VL_MT_SAFE { return m_lastColumn; }
     VFileContent* contentp() const { return m_contentp; }
     // If not otherwise more specific, use last lineno for errors etc,
     // as the parser errors etc generally make more sense pointing at the last parse point
-    int lineno() const { return m_lastLineno; }
-    string source() const;
-    string prettySource() const;  // Source, w/stripped unprintables and newlines
-    FileLine* parent() const { return m_parent; }
+    int lineno() const VL_MT_SAFE { return m_lastLineno; }
+    string source() const VL_MT_SAFE;
+    string prettySource() const VL_MT_SAFE;  // Source, w/stripped unprintables and newlines
+    FileLine* parent() const VL_MT_SAFE { return m_parent; }
     V3LangCode language() const { return singleton().numberToLang(filenameno()); }
     string ascii() const;
     string asciiLineCol() const;
-    int filenameno() const { return m_filenameno; }
-    string filename() const { return singleton().numberToName(filenameno()); }
-    bool filenameIsGlobal() const {
+    int filenameno() const VL_MT_SAFE { return m_filenameno; }
+    string filename() const VL_MT_SAFE { return singleton().numberToName(filenameno()); }
+    bool filenameIsGlobal() const VL_MT_SAFE {
         return (filename() == commandLineFilename() || filename() == builtInFilename());
     }
-    string filenameLetters() const { return FileLineSingleton::filenameLetters(filenameno()); }
-    string filebasename() const;
+    string filenameLetters() const VL_MT_SAFE {
+        return FileLineSingleton::filenameLetters(filenameno());
+    }
+    string filebasename() const VL_MT_SAFE;
     string filebasenameNoExt() const;
-    string firstColumnLetters() const;
+    string firstColumnLetters() const VL_MT_SAFE;
     string profileFuncname() const;
     string xmlDetailedLocation() const;
     string lineDirectiveStrg(int enterExit) const;
@@ -264,6 +268,7 @@ public:
     bool warnIsOff(V3ErrorCode code) const;
     void warnLintOff(bool flag);
     void warnStyleOff(bool flag);
+    void warnUnusedOff(bool flag);
     void warnStateFrom(const FileLine& from) { m_msgEnIdx = from.m_msgEnIdx; }
     void warnResetDefault() { warnStateFrom(defaultFileLine()); }
     bool lastWarnWaived() const { return m_waive; }
@@ -280,10 +285,11 @@ public:
 
     // METHODS - Global
     // <command-line> and <built-in> match what GCC outputs
-    static string commandLineFilename() { return "<command-line>"; }
-    static string builtInFilename() { return "<built-in>"; }
+    static string commandLineFilename() VL_MT_SAFE { return "<command-line>"; }
+    static string builtInFilename() VL_MT_SAFE { return "<built-in>"; }
     static void globalWarnLintOff(bool flag) { defaultFileLine().warnLintOff(flag); }
     static void globalWarnStyleOff(bool flag) { defaultFileLine().warnStyleOff(flag); }
+    static void globalWarnUnusedOff(bool flag) { defaultFileLine().warnUnusedOff(flag); }
     static void globalWarnOff(V3ErrorCode code, bool flag) {
         defaultFileLine().warnOff(code, flag);
     }
@@ -314,13 +320,13 @@ public:
     string warnMore() const;
     /// When building an error, prefix for printing secondary information
     /// from a different FileLine than the original error
-    string warnOther() const;
+    string warnOther() const VL_MT_SAFE;
     /// When building an error, current location in include etc
     /// If not used in a given error, automatically pasted at end of error
-    string warnContextPrimary() const { return warnContext(false); }
+    string warnContextPrimary() const VL_MT_SAFE { return warnContext(false); }
     /// When building an error, additional location for additional references
     /// Simplified information vs warnContextPrimary() to make dump clearer
-    string warnContextSecondary() const { return warnContext(true); }
+    string warnContextSecondary() const VL_MT_SAFE { return warnContext(true); }
     bool operator==(const FileLine& rhs) const {
         return (m_firstLineno == rhs.m_firstLineno && m_firstColumn == rhs.m_firstColumn
                 && m_lastLineno == rhs.m_lastLineno && m_lastColumn == rhs.m_lastColumn
@@ -343,8 +349,8 @@ public:
     }
 
 private:
-    string warnContext(bool secondary) const;
-    const MsgEnBitSet& msgEn() const { return singleton().msgEn(m_msgEnIdx); }
+    string warnContext(bool secondary) const VL_MT_SAFE;
+    const MsgEnBitSet& msgEn() const VL_MT_SAFE { return singleton().msgEn(m_msgEnIdx); }
 };
 std::ostream& operator<<(std::ostream& os, FileLine* fileline);
 

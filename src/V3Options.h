@@ -146,7 +146,7 @@ public:
         static const char* const names[] = {"VerilatedVcd", "VerilatedFst"};
         return names[m_e];
     }
-    string sourceName() const {
+    string sourceName() const VL_MT_SAFE {
         static const char* const names[] = {"verilated_vcd", "verilated_fst"};
         return names[m_e];
     }
@@ -401,10 +401,10 @@ public:
     V3Options();
     ~V3Options();
     void setDebugMode(int level);
-    unsigned debugLevel(const string& tag) const;
-    unsigned debugSrcLevel(const string& srcfile_path) const;
-    unsigned dumpLevel(const string& tag) const;
-    unsigned dumpSrcLevel(const string& srcfile_path) const;
+    unsigned debugLevel(const string& tag) const VL_MT_SAFE;
+    unsigned debugSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
+    unsigned dumpLevel(const string& tag) const VL_MT_SAFE;
+    unsigned dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
 
     // METHODS
     void addCppFile(const string& filename);
@@ -416,7 +416,7 @@ public:
     void addNoClocker(const string& signame);
     void addVFile(const string& filename);
     void addForceInc(const string& filename);
-    bool available() const { return m_available; }
+    bool available() const VL_MT_SAFE { return m_available; }
     void ccSet();
     void notify();
 
@@ -426,8 +426,8 @@ public:
     bool preprocNoLine() const { return m_preprocNoLine; }
     bool underlineZero() const { return m_underlineZero; }
     string flags() const { return m_flags; }
-    bool systemC() const { return m_systemC; }
-    bool savable() const { return m_savable; }
+    bool systemC() const VL_MT_SAFE { return m_systemC; }
+    bool savable() const VL_MT_SAFE { return m_savable; }
     bool stats() const { return m_stats; }
     bool statsVars() const { return m_statsVars; }
     bool structsPacked() const { return m_structsPacked; }
@@ -440,23 +440,25 @@ public:
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }
     bool cdc() const { return m_cdc; }
     bool cmake() const { return m_cmake; }
-    bool context() const { return m_context; }
-    bool coverage() const { return m_coverageLine || m_coverageToggle || m_coverageUser; }
+    bool context() const VL_MT_SAFE { return m_context; }
+    bool coverage() const VL_MT_SAFE {
+        return m_coverageLine || m_coverageToggle || m_coverageUser;
+    }
     bool coverageLine() const { return m_coverageLine; }
     bool coverageToggle() const { return m_coverageToggle; }
     bool coverageUnderscore() const { return m_coverageUnderscore; }
     bool coverageUser() const { return m_coverageUser; }
-    bool debugCheck() const { return m_debugCheck; }
+    bool debugCheck() const VL_MT_SAFE { return m_debugCheck; }
     bool debugCollision() const { return m_debugCollision; }
-    bool debugEmitV() const { return m_debugEmitV; }
+    bool debugEmitV() const VL_MT_SAFE { return m_debugEmitV; }
     bool debugExitParse() const { return m_debugExitParse; }
     bool debugExitUvm() const { return m_debugExitUvm; }
     bool debugLeak() const { return m_debugLeak; }
     bool debugNondeterminism() const { return m_debugNondeterminism; }
     bool debugPartition() const { return m_debugPartition; }
-    bool debugProtect() const { return m_debugProtect; }
+    bool debugProtect() const VL_MT_SAFE { return m_debugProtect; }
     bool debugSelfTest() const { return m_debugSelfTest; }
-    bool decoration() const { return m_decoration; }
+    bool decoration() const VL_MT_SAFE { return m_decoration; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpLevel.count("defines") && m_dumpLevel.at("defines"); }
     bool dumpTreeDot() const {
@@ -487,12 +489,12 @@ public:
     bool profExec() const { return m_profExec; }
     bool profPgo() const { return m_profPgo; }
     bool usesProfiler() const { return profExec() || profPgo(); }
-    bool protectIds() const { return m_protectIds; }
+    bool protectIds() const VL_MT_SAFE { return m_protectIds; }
     bool allPublic() const { return m_public; }
     bool publicFlatRW() const { return m_publicFlatRW; }
-    bool lintOnly() const { return m_lintOnly; }
+    bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
-    bool quietExit() const { return m_quietExit; }
+    bool quietExit() const VL_MT_SAFE { return m_quietExit; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
     bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi; }
@@ -500,10 +502,10 @@ public:
     bool xmlOnly() const { return m_xmlOnly; }
     bool topIfacesSupported() const { return lintOnly() && !hierarchical(); }
 
-    int buildJobs() const { return m_buildJobs; }
+    int buildJobs() const VL_MT_SAFE { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
     int coverageMaxWidth() const { return m_coverageMaxWidth; }
-    bool dumpTreeAddrids() const;
+    bool dumpTreeAddrids() const VL_MT_SAFE;
     int expandLimit() const { return m_expandLimit; }
     int gateStmts() const { return m_gateStmts; }
     int ifDepth() const { return m_ifDepth; }
@@ -518,7 +520,7 @@ public:
     int pinsBv() const { return m_pinsBv; }
     int reloopLimit() const { return m_reloopLimit; }
     VOptionBool skipIdentical() const { return m_skipIdentical; }
-    int threads() const { return m_threads; }
+    int threads() const VL_MT_SAFE { return m_threads; }
     int threadsMaxMTasks() const { return m_threadsMaxMTasks; }
     bool mtasks() const { return (m_threads > 1); }
     VTimescale timeDefaultPrec() const { return m_timeDefaultPrec; }
@@ -559,10 +561,10 @@ public:
         }
         return libName;
     }
-    string makeDir() const { return m_makeDir; }
-    string modPrefix() const { return m_modPrefix; }
+    string makeDir() const VL_MT_SAFE { return m_makeDir; }
+    string modPrefix() const VL_MT_SAFE { return m_modPrefix; }
     string pipeFilter() const { return m_pipeFilter; }
-    string prefix() const { return m_prefix; }
+    string prefix() const VL_MT_SAFE { return m_prefix; }
     // Not just called protectKey() to avoid bugs of not using protectKeyDefaulted()
     bool protectKeyProvided() const { return !m_protectKey.empty(); }
     string protectKeyDefaulted();  // Set default key if not set by user
@@ -627,24 +629,24 @@ public:
     string traceClassBase() const { return m_traceFormat.classBase(); }
     string traceClassLang() const { return m_traceFormat.classBase() + (systemC() ? "Sc" : "C"); }
     string traceSourceBase() const { return m_traceFormat.sourceName(); }
-    string traceSourceLang() const {
+    string traceSourceLang() const VL_MT_SAFE {
         return m_traceFormat.sourceName() + (systemC() ? "_sc" : "_c");
     }
 
     bool hierarchical() const { return m_hierarchical; }
     int hierChild() const { return m_hierChild; }
-    bool hierTop() const { return !m_hierChild && !m_hierBlocks.empty(); }
+    bool hierTop() const VL_MT_SAFE { return !m_hierChild && !m_hierBlocks.empty(); }
     const V3HierBlockOptSet& hierBlocks() const { return m_hierBlocks; }
     // Directory to save .tree, .dot, .dat, .vpp for hierarchical block top
     // Returns makeDir() unless top module of hierarchical verilation.
-    string hierTopDataDir() const {
+    string hierTopDataDir() const VL_MT_SAFE {
         return hierTop() ? (makeDir() + '/' + prefix() + "__hier.dir") : makeDir();
     }
 
     // METHODS (from main)
     static string version();
     static string argString(int argc, char** argv);  ///< Return list of arguments as simple string
-    string allArgsString() const;  ///< Return all passed arguments as simple string
+    string allArgsString() const VL_MT_SAFE;  ///< Return all passed arguments as simple string
     // Return options for child hierarchical blocks when forTop==false, otherwise returns args for
     // the top module.
     string allArgsStringForHierBlock(bool forTop) const;

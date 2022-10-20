@@ -36,6 +36,9 @@ Verilator 5.001 devel
 * Support linting for top module interfaces (#3635). [Kanad Kanhere]
 * Add --dump-tree-dot to enable dumping Ast Tree .dot files (#3636). [Marcel Chang]
 * Add error on real edge event control.
+* Fix LSB error on --hierarchical submodules (#3539). [danbone]
+* Fix $display of fixed-width numbers (#3565). [Iztok Jeras]
+* Fix foreach and pre/post increment in functions (#3613). [Nandu Raj]
 * Fix linker errors in user-facing timing functions (#3657). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix null access on optimized-out fork statements (#3658). [Krzysztof Bieganski, Antmicro Ltd]
 

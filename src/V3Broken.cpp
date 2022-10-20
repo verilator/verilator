@@ -51,7 +51,7 @@ static class BrokenCntGlobal {
     uint8_t m_count = MIN_VALUE;
 
 public:
-    uint8_t get() const {
+    uint8_t get() const VL_MT_SAFE {
         UASSERT(MIN_VALUE <= m_count && m_count <= MAX_VALUE, "Invalid generation number");
         return m_count;
     }

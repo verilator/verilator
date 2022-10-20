@@ -1,9 +1,0 @@
-%Error-PINNOTFOUND: t/t_class_param_bad.v:12:11: Parameter pin not found: 'PARAMBAD'
-                                               : ... Suggested alternative: 'PARAMB'
-   12 |    Cls #(.PARAMBAD(1)) c;   
-      |           ^~~~~~~~
-                    ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
-%Error-PINNOTFOUND: t/t_class_param_bad.v:13:14: Parameter pin not found: '__paramNumber2'
-   13 |    Cls #(13, 1) cd;   
-      |              ^
-%Error: Exiting due to

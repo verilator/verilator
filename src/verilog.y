@@ -2886,7 +2886,9 @@ list_of_param_assignments<varp>:        // ==IEEE: list_of_param_assignments
 
 type_assignment<varp>:          // ==IEEE: type_assignment
         //                      // note exptOrDataType being a data_type is only for yPARAMETER yTYPE
-                idAny/*new-parameter*/ sigAttrListE '=' data_type
+                idAny/*new-parameter*/ sigAttrListE
+                        { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); }
+        |       idAny/*new-parameter*/ sigAttrListE '=' data_type
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); $$->valuep($4); }
         ;
 
@@ -6641,7 +6643,9 @@ vltOffFront<errcodeen>:
         |       yVLT_TRACING_OFF                        { $$ = V3ErrorCode::I_TRACING; }
         |       yVLT_LINT_OFF                           { $$ = V3ErrorCode::I_LINT; }
         |       yVLT_LINT_OFF yVLT_D_RULE idAny
-                        { $$ = V3ErrorCode{(*$3).c_str()};
+                        { const char *codemsg = (*$3).c_str();
+                          if (V3ErrorCode::unusedMsg(codemsg)) {$$ = V3ErrorCode::I_UNUSED; }
+                          else {$$ = V3ErrorCode{codemsg}; }
                           if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
         ;
 
@@ -6651,7 +6655,9 @@ vltOnFront<errcodeen>:
         |       yVLT_TRACING_ON                         { $$ = V3ErrorCode::I_TRACING; }
         |       yVLT_LINT_ON                            { $$ = V3ErrorCode::I_LINT; }
         |       yVLT_LINT_ON yVLT_D_RULE idAny
-                        { $$ = V3ErrorCode{(*$3).c_str()};
+                        { const char *codemsg = (*$3).c_str();
+                          if (V3ErrorCode::unusedMsg(codemsg)) {$$ = V3ErrorCode::I_UNUSED; }
+                          else {$$ = V3ErrorCode{codemsg}; }
                           if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
         ;
 

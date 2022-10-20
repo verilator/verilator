@@ -405,14 +405,14 @@ class ExtractCyclicComponents final {
                 if (!varp->hasSinks() && varp->arity() == 0) {
                     VL_DO_DANGLING(varp->unlinkDelete(dfg), varp);
                 }
-                return;
+                continue;
             }
             if (DfgVarArray* const varp = vtxp->cast<DfgVarArray>()) {
                 varp->packSources();
                 if (!varp->hasSinks() && varp->arity() == 0) {
                     VL_DO_DANGLING(varp->unlinkDelete(dfg), varp);
                 }
-                return;
+                continue;
             }
         }
     }

@@ -8,25 +8,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-scenarios(simulator => 1);
+scenarios(linter => 1);
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    top_filename("t/t_timing_clkgen1.v");
-
-    compile(
-        verilator_flags2 => ["--exe --main --timing --trace -Wno-MINTYPMAXDLY -DTEST_TRACING"],
-        make_main => 0,
-        );
-
-    execute(
-        check_finished => 1,
-        );
-
-    vcd_identical($Self->trace_filename, $Self->{golden_filename});
-}
+lint(
+    fails => 1,
+    expect_filename => $Self->{golden_filename},
+    );
 
 ok(1);
 1;

@@ -597,7 +597,9 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         } else if (nodep->isRanged()) {
             puts(" [");
             puts(cvtToStr(nodep->hi()));
-            puts(":0] ");
+            puts(":");
+            puts(cvtToStr(nodep->lo()));
+            puts("] ");
         }
     }
     void visit(AstConstDType* nodep) override {

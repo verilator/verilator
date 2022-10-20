@@ -2,6 +2,6 @@
                                            : ... In instance t
                 ... For warning description see https://verilator.org/warn/WIDTH?v=latest
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
-%Warning-UNUSED: t/t_flag_context_bad.v:9:15: Signal is not used: 'foo'
-                                            : ... In instance t
+%Warning-UNUSEDSIGNAL: t/t_flag_context_bad.v:9:15: Signal is not used: 'foo'
+                                                  : ... In instance t
 %Error: Exiting due to

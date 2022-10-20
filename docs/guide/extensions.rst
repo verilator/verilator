@@ -151,6 +151,13 @@ or "`ifdef`"'s may break other tools.
    Take remaining text up to the next :option:`\`verilog` mode switch and
    treat it as Verilator configuration commands.  See :ref:`Configuration Files`.
 
+.. option:: `VERILATOR_TIMING
+
+   The VERILATOR_TIMING define is set when :vlopt:`--timing` is used to
+   allow an "\`ifdef" of code dependent on this feature.  Note this define
+   is not affected by the :option:`timing_off` configuration file option
+   nor timing metacomments.
+
 .. option:: `verilog
 
    Switch back to processing Verilog code after a

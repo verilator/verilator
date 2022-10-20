@@ -574,10 +574,10 @@ public:
     }
     ASTGEN_MEMBERS_AstConst;
     string name() const override { return num().ascii(); }  // * = Value
-    const V3Number& num() const { return m_num; }  // * = Value
+    const V3Number& num() const VL_MT_SAFE { return m_num; }  // * = Value
     V3Number& num() { return m_num; }  // * = Value
     uint32_t toUInt() const { return num().toUInt(); }
-    int32_t toSInt() const { return num().toSInt(); }
+    int32_t toSInt() const VL_MT_SAFE { return num().toSInt(); }
     uint64_t toUQuad() const { return num().toUQuad(); }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }

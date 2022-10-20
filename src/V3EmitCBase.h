@@ -54,7 +54,7 @@ public:
     V3OutCFile* m_ofp = nullptr;
     bool m_trackText = false;  // Always track AstText nodes
     // METHODS
-    V3OutCFile* ofp() const { return m_ofp; }
+    V3OutCFile* ofp() const VL_MT_SAFE { return m_ofp; }
     void puts(const string& str) { ofp()->puts(str); }
     void putbs(const string& str) { ofp()->putbs(str); }
     void putsDecoration(const string& str) {

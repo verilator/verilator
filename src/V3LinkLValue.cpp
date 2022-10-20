@@ -301,9 +301,9 @@ private:
         }
     }
     void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
         iterateChildren(nodep);
-        m_ftaskp = nullptr;
     }
     void visit(AstNodeFTaskRef* nodep) override {
         AstNode* pinp = nodep->pinsp();

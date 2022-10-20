@@ -379,7 +379,7 @@ string AstVar::verilogKwd() const {
 }
 
 string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc,
-                         bool asRef) const {
+                         bool asRef) const VL_MT_SAFE {
     UASSERT_OBJ(!forReturn, this,
                 "Internal data is never passed as return, but as first argument");
     string ostatic;
@@ -679,7 +679,7 @@ class AstNodeDType::CTypeRecursed final {
 public:
     string m_type;  // The base type, e.g.: "Foo_t"s
     string m_dims;  // Array dimensions, e.g.: "[3][2][1]"
-    string render(const string& name, bool isRef) const {
+    string render(const string& name, bool isRef) const VL_MT_SAFE {
         string out;
         out += m_type;
         if (!name.empty()) out += " ";
@@ -696,7 +696,7 @@ public:
     }
 };
 
-string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const {
+string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const VL_MT_SAFE {
     const CTypeRecursed info = cTypeRecurse(false);
     return info.render(name, isRef);
 }
@@ -830,7 +830,7 @@ int AstNodeDType::widthPow2() const {
     return 1;
 }
 
-bool AstNodeDType::isLiteralType() const {
+bool AstNodeDType::isLiteralType() const VL_MT_SAFE {
     if (const auto* const dtypep = VN_CAST(skipRefp(), BasicDType)) {
         return dtypep->keyword().isLiteralType();
     } else if (const auto* const dtypep = VN_CAST(skipRefp(), UnpackArrayDType)) {

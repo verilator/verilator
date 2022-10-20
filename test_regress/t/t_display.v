@@ -120,8 +120,14 @@ module t;
                {"a","b","c","d"}, {"a","b","c","d"});  // Avoid binary output
       // %z is tested in t_sys_sformat.v
 
-      $display("[%0t] %%D=%D %%d=%d %%01d=%01d %%06d=%06d %%6d=%6d", $time,
-               nine, nine, nine, nine, nine);
+      $display("[%0t] %%D=%D %%d=%d %%01d=%01d %%06d=%06d %%6d=%6d %%-06d=%-06d %%-6d=%-6d", $time,
+               nine, nine, nine, nine, nine, nine, nine);
+      $display("[%0t] %%X=%X %%x=%x %%01x=%01x %%06x=%06x %%6x=%6x %%-06x=%-06x %%-6x=%-6x", $time,
+               nine, nine, nine, nine, nine, nine, nine);
+      $display("[%0t] %%O=%O %%o=%o %%01o=%01o %%06o=%06o %%6o=%6o %%-06o=%-06o %%-6o=%-6o", $time,
+               nine, nine, nine, nine, nine, nine, nine);
+      $display("[%0t] %%B=%B %%b=%b %%01b=%01b %%06b=%06b %%6b=%6b %%-06b=%-06b %%-6b=%-6b", $time,
+               nine, nine, nine, nine, nine, nine, nine);
       $display("[%0t] %%t=%t %%03t=%03t %%0t=%0t", $time,
                $time, $time, $time);
       $display;
