@@ -385,7 +385,7 @@ private:
         // Blocking assignments are always OK in combinational (and initial/final) processes
         if (m_check != CT_SEQ) return;
 
-        const bool ignore = nodep->lhsp()->forall<AstVarRef>([&](const AstVarRef* refp) {
+        const bool ignore = nodep->lhsp()->forall([&](const AstVarRef* refp) {
             // Ignore reads (e.g.: index expressions)
             if (refp->access().isReadOnly()) return true;
             const AstVar* const varp = refp->varp();
@@ -500,7 +500,7 @@ private:
 
     void visitSenItems(AstNode* nodep) {
         if (v3Global.opt.timing().isSetTrue()) {
-            nodep->foreach<AstSenItem>([this](AstSenItem* senItemp) { visit(senItemp); });
+            nodep->foreach([this](AstSenItem* senItemp) { visit(senItemp); });
         }
     }
 
@@ -561,7 +561,7 @@ private:
             }
         }
 
-        nodep->sensp()->foreach<AstVarRef>([](const AstVarRef* refp) {
+        nodep->sensp()->foreach([](const AstVarRef* refp) {
             refp->varp()->usedClock(true);
             refp->varScopep()->user1(true);
         });

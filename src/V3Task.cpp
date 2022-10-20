@@ -408,7 +408,7 @@ private:
 
     // Replace varrefs with new var pointer
     void relink(AstNode* nodep) {
-        nodep->foreachAndNext<AstVarRef>([](AstVarRef* refp) {
+        nodep->foreachAndNext([](AstVarRef* refp) {
             if (refp->varp()->user2p()) {  // It's being converted to an alias.
                 AstVarScope* const newvscp = VN_AS(refp->varp()->user2p(), VarScope);
                 refp->varScopep(newvscp);
@@ -1276,7 +1276,7 @@ private:
 
             // Mark non-local variables written by the exported function
             bool writesNonLocals = false;
-            cfuncp->foreach<AstVarRef>([&writesNonLocals](AstVarRef* refp) {
+            cfuncp->foreach([&writesNonLocals](AstVarRef* refp) {
                 if (refp->access().isReadOnly()) return;  // Ignore read reference
                 AstVar* const varp = refp->varScopep()->varp();
                 // We are ignoring function locals as they should not be referenced anywhere

@@ -91,7 +91,7 @@ class AstToDfgVisitor final : public VNVisitor {
 
     // METHODS
     void markReferenced(AstNode* nodep) {
-        nodep->foreach<AstVarRef>([this](const AstVarRef* refp) {
+        nodep->foreach([this](const AstVarRef* refp) {
             // No need to (and in fact cannot) mark variables with unsupported dtypes
             if (!DfgVertex::isSupportedDType(refp->varp()->dtypep())) return;
             getNet(refp->varp())->setHasModRefs();

@@ -425,7 +425,7 @@ class DfgToAstVisitor final : DfgVisitor {
 
         // Remap all references to point to the canonical variables, if one exists
         VNDeleter deleter;
-        m_modp->foreach<AstVarRef>([&](AstVarRef* refp) {
+        m_modp->foreach([&](AstVarRef* refp) {
             // Any variable that is written outside the DFG will have itself as the canonical
             // var, so need not be replaced, furthermore, if a variable is traced, we don't
             // want to update the write ref we just created above, so we only replace read only

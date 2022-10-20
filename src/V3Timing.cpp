@@ -138,7 +138,7 @@ private:
     AstDelay* getLhsNetDelay(AstNodeAssign* nodep) const {
         bool foundWrite = false;
         AstDelay* delayp = nullptr;
-        nodep->lhsp()->foreach<AstNodeVarRef>([&](const AstNodeVarRef* const refp) {
+        nodep->lhsp()->foreach([&](const AstNodeVarRef* const refp) {
             if (!refp->access().isWriteOrRW()) return;
             UASSERT_OBJ(!foundWrite, nodep, "Should only be one variable written to on the LHS");
             foundWrite = true;
@@ -190,7 +190,7 @@ private:
     AstSenItem* varRefpsToSenItemsp(AstNode* const nodep) const {
         AstNode* senItemsp = nullptr;
         const VNUser4InUse user4InUse;
-        nodep->foreach<AstNodeVarRef>([&](AstNodeVarRef* refp) {
+        nodep->foreach([&](AstNodeVarRef* refp) {
             if (refp->access().isWriteOnly()) return;
             AstVarScope* const vscp = refp->varScopep();
             if (vscp->user4SetOnce()) return;
@@ -530,12 +530,12 @@ private:
         // we want as only the top level selects are LValues. As an example,
         // this transforms 'x[a[i]][b[j]] = y'
         // into 't1 = a[i]; t0 = b[j]; x[t1][t0] = y'.
-        nodep->lhsp()->foreach<AstSel>([&](AstSel* selp) {
+        nodep->lhsp()->foreach([&](AstSel* selp) {
             if (VN_IS(selp->lsbp(), Const)) return;
             replaceWithIntermediate(selp->lsbp(), m_intraLsbNames.get(nodep));
             // widthp should be const
         });
-        nodep->lhsp()->foreach<AstNodeSel>([&](AstNodeSel* selp) {
+        nodep->lhsp()->foreach([&](AstNodeSel* selp) {
             if (VN_IS(selp->bitp(), Const)) return;
             replaceWithIntermediate(selp->bitp(), m_intraIndexNames.get(nodep));
         });

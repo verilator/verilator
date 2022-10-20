@@ -322,7 +322,7 @@ private:
                     // And its children may now be killable too; correct counts
                     // Recurse, as cells may not be directly under the module but in a generate
                     if (!modp->dead()) {  // If was dead didn't increment user1's
-                        modp->foreach<AstCell>([](const AstCell* cellp) {  //
+                        modp->foreach([](const AstCell* cellp) {  //
                             cellp->modp()->user1Inc(-1);
                         });
                     }

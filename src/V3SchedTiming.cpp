@@ -256,7 +256,7 @@ void transformForks(AstNetlist* const netlistp) {
         // flow analysis framework which we don't have at the moment
         void remapLocals(AstCFunc* const funcp, AstCCall* const callp) {
             const VNUser2InUse user2InUse;  // AstVarScope -> AstVarScope: var to remap to
-            funcp->foreach<AstNodeVarRef>([&](AstNodeVarRef* refp) {
+            funcp->foreach([&](AstNodeVarRef* refp) {
                 AstVar* const varp = refp->varp();
                 AstBasicDType* const dtypep = varp->dtypep()->basicp();
                 // If it a fork sync or an intra-assignment variable, pass it by value

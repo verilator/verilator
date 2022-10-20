@@ -176,7 +176,7 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
             // Hybrid logic is triggered by all reads, except for reads of the explicit
             // sensitivities
             readTriggersThisLogic = [](AstVarScope* vscp) { return !vscp->user4(); };
-            senTreep->foreach<AstVarRef>([](const AstVarRef* refp) {  //
+            senTreep->foreach([](const AstVarRef* refp) {  //
                 refp->varScopep()->user4(true);
             });
         }
@@ -187,7 +187,7 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
             const VNUser2InUse user2InUse;
             const VNUser3InUse user3InUse;
 
-            nodep->foreach<AstVarRef>([&](AstVarRef* refp) {
+            nodep->foreach([&](AstVarRef* refp) {
                 AstVarScope* const vscp = refp->varScopep();
                 VarVertex* const vvtxp = getVarVertex(vscp);
 

@@ -161,10 +161,10 @@ void splitCheck(AstCFunc* ofuncp) {
 LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
     LogicClasses result;
 
-    netlistp->foreach<AstScope>([&](AstScope* scopep) {
+    netlistp->foreach([&](AstScope* scopep) {
         std::vector<AstActive*> empty;
 
-        scopep->foreach<AstActive>([&](AstActive* activep) {
+        scopep->foreach([&](AstActive* activep) {
             AstSenTree* const senTreep = activep->sensesp();
             if (!activep->stmtsp()) {
                 // Some AstActives might be empty due to previous optimizations
@@ -671,7 +671,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, SenExprBuilder& senExprBuilde
     // so we can make them sc_sensitive
     if (v3Global.opt.systemC()) {
         logic.foreachLogic([](AstNode* logicp) {
-            logicp->foreach<AstVarRef>([](AstVarRef* refp) {
+            logicp->foreach([](AstVarRef* refp) {
                 if (refp->access().isWriteOnly()) return;
                 AstVarScope* const vscp = refp->varScopep();
                 if (vscp->scopep()->isTop() && vscp->varp()->isNonOutput()) {
@@ -769,13 +769,13 @@ void createEval(AstNetlist* netlistp,  //
     AstCFunc* const nbaDumpp = actTrig.m_dumpp->cloneTree(false);
     actTrig.m_dumpp->addNextHere(nbaDumpp);
     nbaDumpp->name("_dump_triggers__nba");
-    nbaDumpp->foreach<AstVarRef>([&](AstVarRef* refp) {
+    nbaDumpp->foreach([&](AstVarRef* refp) {
         UASSERT_OBJ(refp->access().isReadOnly(), refp, "Should only read state");
         if (refp->varScopep() == actTrig.m_vscp) {
             refp->replaceWith(new AstVarRef{refp->fileline(), nbaTrigsp, VAccess::READ});
         }
     });
-    nbaDumpp->foreach<AstText>([&](AstText* textp) {  //
+    nbaDumpp->foreach([&](AstText* textp) {  //
         textp->text(VString::replaceWord(textp->text(), "act", "nba"));
     });
 
@@ -970,7 +970,7 @@ void schedule(AstNetlist* netlistp) {
               // Replace references in each mapped value with a reference to the given vscp
               for (auto& pair : newMap) {
                   pair.second = pair.second->cloneTree(false);
-                  pair.second->foreach<AstVarRef>([&](AstVarRef* refp) {
+                  pair.second->foreach([&](AstVarRef* refp) {
                       UASSERT_OBJ(refp->varScopep() == actTrigVscp, refp, "Unexpected reference");
                       UASSERT_OBJ(refp->access() == VAccess::READ, refp, "Should be read ref");
                       refp->replaceWith(new AstVarRef{refp->fileline(), vscp, VAccess::READ});

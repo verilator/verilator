@@ -434,7 +434,7 @@ private:
         } else if (AstCFunc* const funcp = VN_CAST(insertp, CFunc)) {
             // If there are awaits, insert the setter after each await
             if (funcp->isCoroutine() && funcp->stmtsp()) {
-                funcp->stmtsp()->foreachAndNext<AstCAwait>([&](AstCAwait* awaitp) {
+                funcp->stmtsp()->foreachAndNext([&](AstCAwait* awaitp) {
                     if (awaitp->nextp()) awaitp->addNextHere(setterp->cloneTree(false));
                 });
             }

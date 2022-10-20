@@ -2038,10 +2038,10 @@ private:
                 // Note only do this (need user4) when m_warn, which is
                 // done as unique visitor
                 const VNUser4InUse m_inuser4;
-                nodep->lhsp()->foreach<AstVarRef>([](const AstVarRef* nodep) {
+                nodep->lhsp()->foreach([](const AstVarRef* nodep) {
                     if (nodep->varp()) nodep->varp()->user4(1);
                 });
-                nodep->rhsp()->foreach<AstVarRef>([&need_temp](const AstVarRef* nodep) {
+                nodep->rhsp()->foreach([&need_temp](const AstVarRef* nodep) {
                     if (nodep->varp() && nodep->varp()->user4()) need_temp = true;
                 });
             }
