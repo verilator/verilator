@@ -41,7 +41,7 @@ module t (/*AUTOARG*/);
       v8 = data;  // error
       v8.grant = 1'b1;
 
-      $display("q8.grant=", p8.grant, " v8.grant=", v8.grant, v8_phy.addr);
+      $display("q8.grant=", p8.grant, " v8.grant=", v8.grant, v8_phy.addr, v8.gran);
 
       $write("*-* All Finished *-*\n");
       $finish;

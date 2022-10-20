@@ -26,4 +26,9 @@
                                          : ... In instance t
    41 |       v8 = data;   
       |            ^~~~
+%Error: t/t_interface_virtual_bad.v:44:79: Member 'gran' not found in interface 'PBus'
+                                         : ... In instance t
+                                         : ... Suggested alternative: 'grant'
+   44 |       $display("q8.grant=", p8.grant, " v8.grant=", v8.grant, v8_phy.addr, v8.gran);
+      |                                                                               ^~~~
 %Error: Exiting due to

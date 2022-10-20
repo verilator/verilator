@@ -6090,7 +6090,7 @@ private:
                                     << " interface modport on " << side << " but got "
                                     << underIfaceRefp->modportp()->prettyNameQ() << " modport.");
                 } else {
-                    underp = userIterateSubtreeReturnEdits(underp, WidthVP(expDTypep, FINAL).p());
+                    underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, FINAL}.p());
                 }
             } else {
                 // Hope it just works out (perhaps a cast will deal with it)
