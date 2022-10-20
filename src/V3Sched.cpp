@@ -507,6 +507,9 @@ const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBui
         add("#endif\n");
     }
 
+    // The debug code might leak signal names, so simply delete it when using --protect-ids
+    if (v3Global.opt.protectIds()) dumpp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
+
     return {vscp, funcp, dumpp, map};
 }
 
