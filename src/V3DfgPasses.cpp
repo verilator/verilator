@@ -134,9 +134,23 @@ void V3DfgPasses::inlineVars(DfgGraph& dfg) {
     for (DfgVertexVar *vtxp = dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
         nextp = vtxp->verticesNext();
         if (DfgVarPacked* const varp = vtxp->cast<DfgVarPacked>()) {
-            if (varp->hasSinks() && varp->isDrivenFullyByDfg()) {
+            // Don't inline SystemC variables, as SystemC types are not interchangeable with
+            // internal types, and hence the variables are not interchangeable either.
+            if (varp->hasSinks() && varp->isDrivenFullyByDfg() && !varp->varp()->isSc()) {
                 DfgVertex* const driverp = varp->source(0);
-                varp->forEachSinkEdge([=](DfgEdge& edge) { edge.relinkSource(driverp); });
+
+                // If driven from a SystemC variable, don't inline this variable
+                if (DfgVertexVar* const driverVarp = driverp->cast<DfgVarPacked>()) {
+                    if (driverVarp->varp()->isSc()) continue;
+                }
+
+                varp->forEachSinkEdge([=](DfgEdge& edge) {
+                    // If sink is a SystemC variable, don't inline that sink
+                    if (DfgVertexVar* const sinkVarp = edge.sinkp()->cast<DfgVarPacked>()) {
+                        if (sinkVarp->varp()->isSc()) return;
+                    }
+                    edge.relinkSource(driverp);
+                });
             }
         }
     }
