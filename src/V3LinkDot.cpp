@@ -2069,11 +2069,13 @@ private:
     }
 
     bool isParamedClassRef(const AstNode* nodep) {
+        // Is this a parametrized reference to a class, or a reference to class parameter
         if (const auto* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
             if (classRefp->paramsp()) return true;
             const auto* classp = classRefp->classOrPackageNodep();
             while (const auto* typedefp = VN_CAST(classp, Typedef)) classp = typedefp->subDTypep();
-            return VN_IS(classp, ClassRefDType) && VN_AS(classp, ClassRefDType)->paramsp();
+            return (VN_IS(classp, ClassRefDType) && VN_AS(classp, ClassRefDType)->paramsp())
+                   || VN_IS(classp, ParamTypeDType);
         }
         return false;
     }
@@ -2633,8 +2635,9 @@ private:
         // Class: Recurse inside or cleanup not founds
         // checkNoDot not appropriate, can be under a dot
         AstNode::user5ClearTree();
-        UASSERT_OBJ(m_statep->forPrimary() || nodep->classOrPackagep(), nodep,
-                    "ClassRef has unlinked class");
+        UASSERT_OBJ(m_statep->forPrimary() || VN_IS(nodep->classOrPackageNodep(), ParamTypeDType)
+                        || nodep->classOrPackagep(),
+                    nodep, "ClassRef has unlinked class");
         UASSERT_OBJ(m_statep->forPrimary() || !nodep->paramsp(), nodep,
                     "class reference parameter not removed by V3Param");
         VL_RESTORER(m_ds);

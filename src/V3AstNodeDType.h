@@ -912,6 +912,7 @@ public:
         dtypep(nullptr);  // V3Width will resolve
     }
     ASTGEN_MEMBERS_AstParamTypeDType;
+    void dump(std::ostream& str = std::cout) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const override { return dtypep() ? dtypep() : childDTypep(); }
     AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
