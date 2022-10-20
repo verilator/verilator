@@ -663,6 +663,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
                                    suffix + ".atDefault()" + cvtarray);
     } else if (VN_IS(dtypep, ClassRefDType)) {
         return "";  // Constructor does it
+    } else if (VN_IS(dtypep, IfaceRefDType)) {
+        return varNameProtected + suffix + " = nullptr;\n";
     } else if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
         // Access std::array as C array
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");

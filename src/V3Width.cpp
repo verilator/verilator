@@ -2527,6 +2527,20 @@ private:
                                   << foundp->warnOther() << "... Location of found object\n"
                                   << foundp->warnContextSecondary());
             }
+        } else if (AstIfaceRefDType* const adtypep = VN_CAST(fromDtp, IfaceRefDType)) {
+            if (AstNode* const foundp = memberSelIface(nodep, adtypep)) {
+                if (AstVar* const varp = VN_CAST(foundp, Var)) {
+                    nodep->dtypep(foundp->dtypep());
+                    nodep->varp(varp);
+                    varp->usedVirtIface(true);
+                    return;
+                }
+                UINFO(1, "found object " << foundp << endl);
+                nodep->v3fatalSrc("MemberSel of non-variable\n"
+                                  << nodep->warnContextPrimary() << '\n'
+                                  << foundp->warnOther() << "... Location of found object\n"
+                                  << foundp->warnContextSecondary());
+            }
         } else if (VN_IS(fromDtp, EnumDType)  //
                    || VN_IS(fromDtp, AssocArrayDType)  //
                    || VN_IS(fromDtp, WildcardArrayDType)  //
@@ -2573,6 +2587,26 @@ private:
         nodep->v3error(
             "Member " << nodep->prettyNameQ() << " not found in class "
                       << first_classp->prettyNameQ() << "\n"
+                      << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
+        return nullptr;  // Caller handles error
+    }
+    AstNode* memberSelIface(AstMemberSel* nodep, AstIfaceRefDType* adtypep) {
+        // Returns node if ok
+        // No need to width-resolve the interface, as it was done when we did the child
+        AstNodeModule* const ifacep = adtypep->ifacep();
+        UASSERT_OBJ(ifacep, nodep, "Unlinked");
+        // if (AstNode* const foundp = ifacep->findMember(nodep->name())) return foundp;
+        VSpellCheck speller;
+        for (AstNode* itemp = ifacep->stmtsp(); itemp; itemp = itemp->nextp()) {
+            if (itemp->name() == nodep->name()) return itemp;
+            if (VN_IS(itemp, Var) || VN_IS(itemp, Modport)) {
+                speller.pushCandidate(itemp->prettyName());
+            }
+        }
+        const string suggest = speller.bestCandidateMsg(nodep->prettyName());
+        nodep->v3error(
+            "Member " << nodep->prettyNameQ() << " not found in interface "
+                      << ifacep->prettyNameQ() << "\n"
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         return nullptr;  // Caller handles error
     }
@@ -6026,11 +6060,38 @@ private:
                 // Note the check uses the expected size, not the child's subDTypep as we want the
                 // child node's width to end up correct for the assignment (etc)
                 widthCheckSized(nodep, side, underp, expDTypep, extendRule, warnOn);
-            } else if (!VN_IS(expDTypep, IfaceRefDType)
-                       && VN_IS(underp->dtypep(), IfaceRefDType)) {
+            } else if (!VN_IS(expDTypep->skipRefp(), IfaceRefDType)
+                       && VN_IS(underp->dtypep()->skipRefp(), IfaceRefDType)) {
                 underp->v3error(ucfirst(nodep->prettyOperatorName())
                                 << " expected non-interface on " << side << " but '"
                                 << underp->name() << "' is an interface.");
+            } else if (const AstIfaceRefDType* expIfaceRefp
+                       = VN_CAST(expDTypep->skipRefp(), IfaceRefDType)) {
+                const AstIfaceRefDType* underIfaceRefp
+                    = VN_CAST(underp->dtypep()->skipRefp(), IfaceRefDType);
+                if (!underIfaceRefp) {
+                    underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                    << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
+                                    << " interface on " << side << " but " << underp->prettyNameQ()
+                                    << " is not an interface.");
+                } else if (expIfaceRefp->ifaceViaCellp() != underIfaceRefp->ifaceViaCellp()) {
+                    underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                    << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
+                                    << " interface on " << side << " but '" << underp->name()
+                                    << "' is a different interface ("
+                                    << underIfaceRefp->ifaceViaCellp()->prettyNameQ() << ").");
+                } else if (underIfaceRefp->modportp()
+                           && expIfaceRefp->modportp() != underIfaceRefp->modportp()) {
+                    underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                    << " expected "
+                                    << (expIfaceRefp->modportp()
+                                            ? expIfaceRefp->modportp()->prettyNameQ()
+                                            : "no")
+                                    << " interface modport on " << side << " but got "
+                                    << underIfaceRefp->modportp()->prettyNameQ() << " modport.");
+                } else {
+                    underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, FINAL}.p());
+                }
             } else {
                 // Hope it just works out (perhaps a cast will deal with it)
                 underp = userIterateSubtreeReturnEdits(underp, WidthVP(expDTypep, FINAL).p());

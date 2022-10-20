@@ -198,6 +198,19 @@ private:
         }
         if (nodep->classp()) nodep->classp()->user1Inc();
     }
+    void visit(AstIfaceRefDType* nodep) override {
+        iterateChildren(nodep);
+        checkDType(nodep);
+        checkAll(nodep);
+        if (nodep->modportp()) {
+            if (m_elimCells) {
+                nodep->modportp(nullptr);
+            } else {
+                nodep->modportp()->user1Inc();
+            }
+        }
+        if (nodep->ifaceViaCellp()) nodep->ifaceViaCellp()->user1Inc();
+    }
     void visit(AstNodeDType* nodep) override {
         iterateChildren(nodep);
         checkDType(nodep);
@@ -321,7 +334,7 @@ private:
     }
     bool mightElimVar(AstVar* nodep) const {
         if (nodep->isSigPublic()) return false;  // Can't elim publics!
-        if (nodep->isIO() || nodep->isClassMember()) return false;
+        if (nodep->isIO() || nodep->isClassMember() || nodep->isUsedVirtIface()) return false;
         if (nodep->isTemp() && !nodep->isTrace()) return true;
         return m_elimUserVars;  // Post-Trace can kill most anything
     }

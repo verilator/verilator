@@ -2606,7 +2606,7 @@ private:
                      && m_doNConst
                      && v3Global.opt.fConst()
                      // Default value, not a "known" constant for this usage
-                     && !nodep->varp()->isClassMember()
+                     && !nodep->varp()->isClassMember() && !nodep->varp()->isUsedVirtIface()
                      && !(nodep->varp()->isFuncLocal() && nodep->varp()->isNonOutput())
                      && !nodep->varp()->noSubst() && !nodep->varp()->isSigPublic())
                     || nodep->varp()->isParam())) {

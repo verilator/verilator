@@ -1,10 +1,3 @@
-%Error-UNSUPPORTED: t/t_class_unsup_bad.v:7:1: Unsupported: virtual interface
-    7 | virtual interface vi_t vi;
-      | ^~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_class_unsup_bad.v:8:1: Unsupported: virtual data type
-    8 | virtual vi_t vi2;
-      | ^~~~~~~
 %Error: t/t_class_unsup_bad.v:29:24: Syntax error: 'const'/'rand'/'randc' not allowed before function/task declaration
    29 |    const function void func_const; endfunction
       |                        ^~~~~~~~~~

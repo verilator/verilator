@@ -459,7 +459,7 @@ public:
     }
     void computeIfaceVarSyms() {
         for (VSymEnt* varSymp : m_ifaceVarSyms) {
-            const AstVar* const varp = varSymp ? VN_AS(varSymp->nodep(), Var) : nullptr;
+            AstVar* const varp = varSymp ? VN_AS(varSymp->nodep(), Var) : nullptr;
             UINFO(9, "  insAllIface se" << cvtToHex(varSymp) << " " << varp << endl);
             AstIfaceRefDType* const ifacerefp = ifaceRefFromArray(varp->subDTypep());
             UASSERT_OBJ(ifacerefp, varp, "Non-ifacerefs on list!");
@@ -475,8 +475,16 @@ public:
                     ifacerefp->v3fatalSrc("Unlinked interface");
                 }
             } else if (ifacerefp->ifaceViaCellp()->dead()) {
-                ifacerefp->v3error("Parent instance's interface is not found: "
-                                   << AstNode::prettyNameQ(ifacerefp->ifaceName()));
+                if (varp->isIfaceRef()) {
+                    ifacerefp->v3error("Parent instance's interface is not found: "
+                                       << AstNode::prettyNameQ(ifacerefp->ifaceName()));
+                } else {
+                    ifacerefp->v3warn(
+                        E_UNSUPPORTED,
+                        "Unsupported: virtual interface never assigned any actual interface");
+                    varp->dtypep(ifacerefp->findCHandleDType());
+                    VL_DO_DANGLING(ifacerefp->unlinkFrBack()->deleteTree(), ifacerefp);
+                }
                 continue;
             }
             VSymEnt* const ifaceSymp = getNodeSym(ifacerefp->ifaceViaCellp());
@@ -2420,7 +2428,7 @@ private:
                     m_ds.m_dotSymp = foundp;
                     m_ds.m_dotPos = DP_SCOPE;
                     // Upper AstDot visitor will handle it from here
-                } else if (VN_IS(foundp->nodep(), Cell) && allowVar && m_cellp) {
+                } else if (VN_IS(foundp->nodep(), Cell) && allowVar) {
                     AstCell* const cellp = VN_AS(foundp->nodep(), Cell);
                     if (VN_IS(cellp->modp(), Iface)) {
                         // Interfaces can be referenced like a variable for interconnect
@@ -2438,7 +2446,7 @@ private:
                         m_ds.m_dotPos = DP_SCOPE;
                         UINFO(9, " cell -> iface varref " << foundp->nodep() << endl);
                         AstNode* const newp
-                            = new AstVarRef(ifaceRefVarp->fileline(), ifaceRefVarp, VAccess::READ);
+                            = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
                         nodep->replaceWith(newp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     } else if (VN_IS(cellp->modp(), NotFoundModule)) {
@@ -2449,7 +2457,7 @@ private:
             } else if (AstVar* const varp = foundToVarp(foundp, nodep, VAccess::READ)) {
                 AstIfaceRefDType* const ifacerefp
                     = LinkDotState::ifaceRefFromArray(varp->subDTypep());
-                if (ifacerefp) {
+                if (ifacerefp && varp->isIfaceRef()) {
                     UASSERT_OBJ(ifacerefp->ifaceViaCellp(), ifacerefp, "Unlinked interface");
                     // Really this is a scope reference into an interface
                     UINFO(9, "varref-ifaceref " << m_ds.m_dotText << "  " << nodep << endl);
@@ -2538,9 +2546,9 @@ private:
                     m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
                     m_ds.m_dotSymp = foundp;
                     m_ds.m_dotPos = DP_SCOPE;
-                    UINFO(9, " cell -> iface varref " << foundp->nodep() << endl);
-                    AstNode* newp
-                        = new AstVarRef(ifaceRefVarp->fileline(), ifaceRefVarp, VAccess::READ);
+                    UINFO(9, " modport -> iface varref " << foundp->nodep() << endl);
+                    // We lose the modport name here, so we cannot detect mismatched modports.
+                    AstNode* newp = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
                     auto* const cellarrayrefp = VN_CAST(m_ds.m_unlinkedScopep, CellArrayRef);
                     if (cellarrayrefp) {
                         // iface[vec].modport became CellArrayRef(iface, lsb)

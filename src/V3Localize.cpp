@@ -169,6 +169,7 @@ private:
             && !nodep->varp()->isFuncLocal()  // Not already a function local (e.g.: argument)
             && !nodep->varp()->isStatic()  // Not a static variable
             && !nodep->varp()->isClassMember()  // Statically exists in design hierarchy
+            && !nodep->varp()->isUsedVirtIface()  // Not used through a virtual interface
             && !nodep->varp()->valuep()  // Does not have an initializer
         ) {
             UINFO(4, "Consider for localization: " << nodep << endl);

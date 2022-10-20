@@ -724,6 +724,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         info.m_type += ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
         info.m_type = "VlClassRef<" + EmitCBaseVisitor::prefixNameProtect(adtypep) + ">";
+    } else if (const auto* const adtypep = VN_CAST(dtypep, IfaceRefDType)) {
+        info.m_type = EmitCBaseVisitor::prefixNameProtect(adtypep->ifaceViaCellp()) + "*";
     } else if (const auto* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         if (adtypep->isCompound()) compound = true;
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound);

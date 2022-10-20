@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_interface_virtual_unused_bad.v:14:12: Unsupported: virtual interface never assigned any actual interface
+   14 |    virtual QBus q8;
+      |            ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
