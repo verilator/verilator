@@ -46,7 +46,7 @@ void VlCoroutineHandle::dump() const {
 
 #ifdef VL_DEBUG
 void VlDelayScheduler::VlDelayedCoroutine::dump() const {
-    VL_DBG_MSGF("             Awaiting time %lu: ", m_timestep);
+    VL_DBG_MSGF("             Awaiting time %" PRIu64 ": ", m_timestep);
     m_handle.dump();
 }
 #endif
