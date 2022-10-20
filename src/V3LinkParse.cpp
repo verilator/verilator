@@ -209,18 +209,16 @@ private:
         }
         if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
-            AstNodeDType* const dtypep = VN_CAST(nodep->valuep(), NodeDType);
-            if (!dtypep) {
-                nodep->v3error(
-                    "Parameter type's initial value isn't a type: " << nodep->prettyNameQ());
-                nodep->unlinkFrBack();
-            } else {
+            AstNodeDType* dtypep = VN_CAST(nodep->valuep(), NodeDType);
+            if (dtypep) {
                 dtypep->unlinkFrBack();
-                AstNode* const newp = new AstParamTypeDType(
-                    nodep->fileline(), nodep->varType(), nodep->name(), VFlagChildDType(), dtypep);
-                nodep->replaceWith(newp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            } else {
+                dtypep = new AstVoidDType{nodep->fileline()};
             }
+            AstNode* const newp = new AstParamTypeDType{nodep->fileline(), nodep->varType(),
+                                                        nodep->name(), VFlagChildDType{}, dtypep};
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
 

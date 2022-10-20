@@ -14,7 +14,7 @@ virtual class vclass #(type CTYPE_t = arg_class_t, int I = 0);
    pure virtual function void funcname(paramed_class_t #(CTYPE_t) v);
 endclass
 
-class paramed_class_t #(type TYPE = int, int I = 0);
+class paramed_class_t #(type TYPE, int I = 0);
    TYPE memb;
 endclass
 
