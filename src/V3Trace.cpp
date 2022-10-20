@@ -432,6 +432,12 @@ private:
         if (AstCCall* const callp = VN_CAST(insertp, CCall)) {
             callp->addNextHere(setterp);
         } else if (AstCFunc* const funcp = VN_CAST(insertp, CFunc)) {
+            // If there are awaits, insert the setter after each await
+            if (funcp->isCoroutine() && funcp->stmtsp()) {
+                funcp->stmtsp()->foreachAndNext<AstCAwait>([&](AstCAwait* awaitp) {
+                    if (awaitp->nextp()) awaitp->addNextHere(setterp->cloneTree(false));
+                });
+            }
             funcp->addStmtsp(setterp);
         } else {
             insertp->v3fatalSrc("Bad trace activity vertex");

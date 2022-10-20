@@ -14,10 +14,8 @@ if (!$Self->have_coroutines) {
     skip("No coroutine support");
 }
 else {
-    top_filename("t/t_timing_clkgen1.v");
-
     compile(
-        verilator_flags2 => ["--exe --main --timing --trace -Wno-MINTYPMAXDLY -DTEST_TRACING"],
+        verilator_flags2 => ["--exe --main --timing --trace -Wno-MINTYPMAXDLY"],
         make_main => 0,
         );
 
