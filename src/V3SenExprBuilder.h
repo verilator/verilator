@@ -56,7 +56,7 @@ class SenExprBuilder final {
     }
 
     static bool isSimpleExpr(const AstNode* const exprp) {
-        return exprp->forall<AstNode>([](const AstNode* const nodep) {
+        return exprp->forall([](const AstNode* const nodep) {
             return VN_IS(nodep, Const) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, Sel)
                    || VN_IS(nodep, NodeSel) || VN_IS(nodep, MemberSel)
                    || VN_IS(nodep, CMethodHard);

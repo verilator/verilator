@@ -164,7 +164,7 @@ class SchedGraphBuilder final : public VNVisitor {
                 SchedSenVertex* const vtxp = new SchedSenVertex{m_graphp, senItemp};
 
                 // Connect up the variable references
-                senItemp->sensp()->foreach<AstVarRef>([&](AstVarRef* refp) {
+                senItemp->sensp()->foreach ([&](AstVarRef* refp) {
                     new V3GraphEdge{m_graphp, getVarVertex(refp->varScopep()), vtxp, 1};
                 });
 
@@ -186,7 +186,7 @@ class SchedGraphBuilder final : public VNVisitor {
 
         // Clocked or hybrid logic has explicit sensitivity, so add edge from sensitivity vertex
         if (!m_senTreep->hasCombo()) {
-            m_senTreep->foreach<AstSenItem>([=](AstSenItem* senItemp) {
+            m_senTreep->foreach ([=](AstSenItem* senItemp) {
                 if (senItemp->isIllegal()) return;
                 UASSERT_OBJ(senItemp->isClocked() || senItemp->isHybrid(), nodep,
                             "Non-clocked SenItem under clocked SenTree");
@@ -196,7 +196,7 @@ class SchedGraphBuilder final : public VNVisitor {
         }
 
         // Add edges based on references
-        nodep->foreach<AstVarRef>([=](const AstVarRef* vrefp) {
+        nodep->foreach ([=](const AstVarRef* vrefp) {
             AstVarScope* const vscp = vrefp->varScopep();
             if (vrefp->access().isReadOrRW() && m_readTriggersThisLogic(vscp)) {
                 new V3GraphEdge{m_graphp, getVarVertex(vscp), logicVtxp, 10};
@@ -208,7 +208,7 @@ class SchedGraphBuilder final : public VNVisitor {
 
         // If the logic calls a 'context' DPI import, it might fire the DPI Export trigger
         if (m_dpiExportTriggerp) {
-            nodep->foreach<AstCCall>([=](const AstCCall* callp) {
+            nodep->foreach ([=](const AstCCall* callp) {
                 if (!callp->funcp()->dpiImportWrapper()) return;
                 if (!callp->funcp()->dpiContext()) return;
                 new V3GraphEdge{m_graphp, logicVtxp, getVarVertex(m_dpiExportTriggerp), 10};
@@ -226,7 +226,7 @@ class SchedGraphBuilder final : public VNVisitor {
         // Mark explicit sensitivities as not triggering these blocks
         if (senTreep->hasHybrid()) {
             AstNode::user2ClearTree();
-            senTreep->foreach<AstVarRef>([](const AstVarRef* refp) {  //
+            senTreep->foreach ([](const AstVarRef* refp) {  //
                 refp->varScopep()->user2(true);
             });
         }
@@ -364,7 +364,7 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
         const VNUser2InUse user2InUse;  // AstVarScope::user2() -> bool: writen in Active region
 
         const auto markVars = [](AstNode* nodep) {
-            nodep->foreach<AstNodeVarRef>([](const AstNodeVarRef* vrefp) {
+            nodep->foreach ([](const AstNodeVarRef* vrefp) {
                 AstVarScope* const vscp = vrefp->varScopep();
                 if (vrefp->access().isReadOrRW()) vscp->user1(true);
                 if (vrefp->access().isWriteOrRW()) vscp->user2(true);
@@ -386,7 +386,7 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
                 nextp = nodep->nextp();
                 if (AstAssignPre* const logicp = VN_CAST(nodep, AssignPre)) {
                     bool toActiveRegion = false;
-                    logicp->foreach<AstNodeVarRef>([&](const AstNodeVarRef* vrefp) {
+                    logicp->foreach ([&](const AstNodeVarRef* vrefp) {
                         AstVarScope* const vscp = vrefp->varScopep();
                         if (vrefp->access().isReadOnly()) {
                             // Variable only read in Pre, and is written in active region

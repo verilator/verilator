@@ -3215,7 +3215,7 @@ static void implementExecGraph(AstExecGraph* const execGraphp) {
 
 void V3Partition::finalize(AstNetlist* netlistp) {
     // Called by Verilator top stage
-    netlistp->topModulep()->foreach<AstExecGraph>([&](AstExecGraph* execGraphp) {
+    netlistp->topModulep()->foreach ([&](AstExecGraph* execGraphp) {
         // Back in V3Order, we partitioned mtasks using provisional cost
         // estimates. However, V3Order precedes some optimizations (notably
         // V3LifePost) that can change the cost of logic within each mtask.

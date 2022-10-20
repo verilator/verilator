@@ -230,7 +230,7 @@ class OrderBuildVisitor final : public VNVisitor {
             m_hybridp = nodep->sensesp();
             // Mark AstVarScopes that are explicit sensitivities
             AstNode::user3ClearTree();
-            senTreep->foreach<AstVarRef>([](const AstVarRef* refp) {  //
+            senTreep->foreach ([](const AstVarRef* refp) {  //
                 refp->varScopep()->user3(true);
             });
             m_readTriggersCombLogic = [](const AstVarScope* vscp) { return !vscp->user3(); };

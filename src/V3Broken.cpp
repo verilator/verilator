@@ -329,7 +329,7 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
 
         // Mark every node in the tree
         const uint8_t brokenCntCurrent = s_brokenCntGlobal.get();
-        nodep->foreach<AstNode>([brokenCntCurrent](AstNode* nodep) {
+        nodep->foreach ([brokenCntCurrent](AstNode* nodep) {
 #ifdef VL_LEAK_CHECKS
             UASSERT_OBJ(s_allocTable.isAllocated(nodep), nodep,
                         "AstNode is in tree, but not allocated");

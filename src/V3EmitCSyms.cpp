@@ -786,15 +786,14 @@ void EmitCSyms::emitSymImp() {
     if (v3Global.opt.profPgo()) {
         puts("// Configure profiling for PGO\n");
         if (v3Global.opt.mtasks()) {
-            v3Global.rootp()->topModulep()->foreach<AstExecGraph>(
-                [&](const AstExecGraph* execGraphp) {
-                    for (const V3GraphVertex* vxp = execGraphp->depGraphp()->verticesBeginp(); vxp;
-                         vxp = vxp->verticesNextp()) {
-                        const ExecMTask* const mtp = static_cast<const ExecMTask*>(vxp);
-                        puts("_vm_pgoProfiler.addCounter(" + cvtToStr(mtp->profilerId()) + ", \""
-                             + mtp->hashName() + "\");\n");
-                    }
-                });
+            v3Global.rootp()->topModulep()->foreach ([&](const AstExecGraph* execGraphp) {
+                for (const V3GraphVertex* vxp = execGraphp->depGraphp()->verticesBeginp(); vxp;
+                     vxp = vxp->verticesNextp()) {
+                    const ExecMTask* const mtp = static_cast<const ExecMTask*>(vxp);
+                    puts("_vm_pgoProfiler.addCounter(" + cvtToStr(mtp->profilerId()) + ", \""
+                         + mtp->hashName() + "\");\n");
+                }
+            });
         }
     }
 

@@ -513,7 +513,7 @@ private:
             newmodp = nodep->modp();
         }
         // Find cell cross-references
-        nodep->modp()->foreach<AstCell>([](AstCell* cellp) {
+        nodep->modp()->foreach ([](AstCell* cellp) {
             // clonep is nullptr when inlining the last instance, if so the use original node
             cellp->user4p(cellp->clonep() ? cellp->clonep() : cellp);
         });

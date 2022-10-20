@@ -186,10 +186,10 @@ private:
             bool noopt = false;
             {
                 const VNUser3InUse user3InUse;
-                nodep->lhsp()->foreach<AstVarRef>([](const AstVarRef* refp) {
+                nodep->lhsp()->foreach ([](const AstVarRef* refp) {
                     if (refp->access().isWriteOrRW()) refp->varp()->user3(true);
                 });
-                nodep->rhsp()->foreach<AstVarRef>([&noopt](const AstVarRef* refp) {
+                nodep->rhsp()->foreach ([&noopt](const AstVarRef* refp) {
                     if (refp->access().isReadOnly() && refp->varp()->user3()) noopt = true;
                 });
             }

@@ -140,7 +140,7 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
             const VNUser2InUse user2InUse;
             const VNUser3InUse user3InUse;
 
-            nodep->foreach<AstVarRef>([&](AstVarRef* refp) {
+            nodep->foreach ([&](AstVarRef* refp) {
                 AstVarScope* const vscp = refp->varScopep();
                 VarVertex* const vvtxp = getVarVertex(vscp);
                 // We want to cut the narrowest signals

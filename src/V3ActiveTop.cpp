@@ -47,7 +47,7 @@ class ActiveTopVisitor final : public VNVisitor {
     static bool isInitial(AstNode* nodep) {
         const VNUser1InUse user1InUse;
         // Return true if no variables that read.
-        return nodep->forall<AstVarRef>([&](const AstVarRef* refp) -> bool {
+        return nodep->forall([&](const AstVarRef* refp) -> bool {
             AstVarScope* const vscp = refp->varScopep();
             // Note: Use same heuristic as ordering does to ignore written variables
             // TODO: Use live variable analysis.

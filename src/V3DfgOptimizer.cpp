@@ -249,7 +249,7 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
     const VNUser2InUse user2InUse;
 
     // Mark cross-referenced variables
-    netlistp->foreach<AstVarXRef>([](const AstVarXRef* xrefp) { xrefp->varp()->user2(true); });
+    netlistp->foreach ([](const AstVarXRef* xrefp) { xrefp->varp()->user2(true); });
 
     V3DfgOptimizationContext ctx{label};
 

@@ -3833,10 +3833,9 @@ public:
         return new AstAssignW{fileline(), lhsp, rhsp, controlp};
     }
     bool isTimingControl() const override {
-        return timingControlp()
-               || lhsp()->exists<AstNodeVarRef>([](const AstNodeVarRef* const refp) {
-                      return refp->access().isWriteOrRW() && refp->varp()->delayp();
-                  });
+        return timingControlp() || lhsp()->exists([](const AstNodeVarRef* const refp) {
+            return refp->access().isWriteOrRW() && refp->varp()->delayp();
+        });
     }
     bool brokeLhsMustBeLvalue() const override { return true; }
     AstAlways* convertToAlways();

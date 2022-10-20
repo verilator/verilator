@@ -1022,13 +1022,13 @@ static void eliminate(AstNode* logicp,
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         // Recursively substitute the new tree
-        newp->foreach<AstNodeVarRef>(visit);
+        newp->foreach (visit);
 
         // Remove from recursion filter
         replaced.erase(vscp);
     };
 
-    logicp->foreach<AstNodeVarRef>(visit);
+    logicp->foreach (visit);
 }
 
 // ######################################################################
