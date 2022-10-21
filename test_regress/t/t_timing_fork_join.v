@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   event e1;
-   event e2;
-   event e3;
+   event event1;
+   event event2;
+   event event3;
 
    initial begin
       fork
@@ -30,49 +30,49 @@ module t;
       #32 $write("[%0t] main process\n", $time);
       fork
          begin
-            @e1;
+            @event1;
             $write("fork..join_any process 1\n");
-            ->e1;
+            ->event1;
          end
          $write("fork..join_any process 2\n");
       join_any
       $write("back in main process\n");
-      #1 ->e1;
+      #1 ->event1;
       #1 fork
       #2 $write("fork..join_any process 1\n");
          begin
-            @e1;
+            @event1;
             $write("fork..join_any process 2\n");
-            ->e1;
+            ->event1;
          end
       join_any
       $write("back in main process\n");
-      #1 ->e1;
-      @e1;
+      #1 ->event1;
+      @event1;
       // Order of triggering:
-      // p1->e2  ==>  p2->e3  ==>  p3->e3  ==>  p2->e2  ==>  p1->e3  ==>  p3->e1
+      // p1->event2  ==>  p2->event3  ==>  p3->event3  ==>  p2->event2  ==>  p1->event3  ==>  p3->event1
       fork
          begin
             #1 $write("fork..join_none process 1\n");
-            ->e2;
-            @e2 $write("fork..join_none process 1 again\n");
-            #1 ->e3;
+            ->event2;
+            @event2 $write("fork..join_none process 1 again\n");
+            #1 ->event3;
          end
          begin
-            @e2 $write("fork..join_none process 2\n");
-            #1 ->e3;
-            @e3 $write("fork..join_none process 2 again\n");
-            #1 ->e2;
+            @event2 $write("fork..join_none process 2\n");
+            #1 ->event3;
+            @event3 $write("fork..join_none process 2 again\n");
+            #1 ->event2;
          end
          begin
-            @e3 $write("fork..join_none process 3\n");
-            #1 ->e3;
-            @e3 $write("fork..join_none process 3 again\n");
-            ->e1;
+            @event3 $write("fork..join_none process 3\n");
+            #1 ->event3;
+            @event3 $write("fork..join_none process 3 again\n");
+            ->event1;
          end
       join_none
       $write("in main process\n");
-      @e1;
+      @event1;
       $write("*-* All Finished *-*\n");
       $finish;
     end

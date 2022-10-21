@@ -53,6 +53,9 @@
 #endif
 // clang-format on
 
+// Placeholder for compiling with --protect-ids
+#define VL_UNKNOWN "<unknown>"
+
 //=============================================================================
 // VlFileLineDebug stores a SystemVerilog source code location. Used in VlCoroutineHandle for
 // debugging purposes.
@@ -170,7 +173,7 @@ public:
     void dump() const;
 #endif
     // Used by coroutines for co_awaiting a certain simulation time
-    auto delay(uint64_t delay, const char* filename, int lineno) {
+    auto delay(uint64_t delay, const char* filename = VL_UNKNOWN, int lineno = 0) {
         struct Awaitable {
             VlDelayedCoroutineQueue& queue;
             uint64_t delay;
@@ -208,16 +211,17 @@ class VlTriggerScheduler final {
 public:
     // METHODS
     // Resumes all coroutines from the 'ready' stage
-    void resume(const char* eventDescription);
+    void resume(const char* eventDescription = VL_UNKNOWN);
     // Moves all coroutines from m_uncommitted to m_ready
-    void commit(const char* eventDescription);
+    void commit(const char* eventDescription = VL_UNKNOWN);
     // Are there no coroutines awaiting?
     bool empty() const { return m_ready.empty() && m_uncommitted.empty(); }
 #ifdef VL_DEBUG
     void dump(const char* eventDescription) const;
 #endif
     // Used by coroutines for co_awaiting a certain trigger
-    auto trigger(const char* eventDescription, const char* filename, int lineno) {
+    auto trigger(const char* eventDescription = VL_UNKNOWN, const char* filename = VL_UNKNOWN,
+                 int lineno = 0) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Suspending process waiting for %s at %s:%d\n",
                                 eventDescription, filename, lineno););
         struct Awaitable {
@@ -273,9 +277,9 @@ public:
     void init(size_t count) { m_join.reset(new VlJoin{count, {}}); }
     // Called whenever any of the forked processes finishes. If the join counter reaches 0, the
     // main process gets resumed
-    void done(const char* filename, int lineno);
+    void done(const char* filename = VL_UNKNOWN, int lineno = 0);
     // Used by coroutines for co_awaiting a join
-    auto join(const char* filename, int lineno) {
+    auto join(const char* filename = VL_UNKNOWN, int lineno = 0) {
         assert(m_join);
         VL_DEBUG_IF(
             VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, lineno););
