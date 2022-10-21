@@ -20,7 +20,7 @@ top_filename("t/t_gen_alw.v");
 compile(
     v_flags2 => ["--prof-exec"],
     # Checks below care about thread count, so use 2 (minimum reasonable)
-    threads => $Self->{vltmt} ? 2 : 0
+    threads => $Self->{vltmt} ? 2 : 1
     );
 
 execute(

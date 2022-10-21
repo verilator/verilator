@@ -60,6 +60,7 @@
 -V{t#,#}             Awaiting join of fork at: t/t_timing_class.v:209
 -V{t#,#}+      Vt_timing_debug2_t___eval_initial__TOP__t__7
 -V{t#,#}+    Vt_timing_debug2___024root___eval_settle
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -69,8 +70,10 @@
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @([event] t.ec.e):
 -V{t#,#}           - Process waiting at t/t_timing_class.v:80
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -107,8 +110,10 @@
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -174,8 +179,10 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:29
 -V{t#,#}         Suspending process waiting for @([event] t::EventClass.e) at t/t_timing_class.v:29
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -230,8 +237,10 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:29
 -V{t#,#}         Suspending process waiting for @([event] t::EventClass.e) at t/t_timing_class.v:29
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -305,8 +314,10 @@
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -344,8 +355,10 @@
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -401,8 +414,10 @@
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -459,10 +474,12 @@
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aForkDelayClass::~
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::~
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -490,8 +507,10 @@
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -521,8 +540,10 @@
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -549,8 +570,10 @@
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -577,9 +600,11 @@
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aAssignDelayClass::~
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -606,6 +631,7 @@
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+    Vt_timing_debug2___024root___eval_final
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aDelay40::~
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aDelayClass::~

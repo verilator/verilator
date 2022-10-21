@@ -16,7 +16,7 @@ top_filename("t/t_split_var_0.v");
 # So use 6 threads here though it's not optimal in performace wise, but ok.
 compile(
     verilator_flags2 => ['--cc --trace --stats +define+TEST_ATTRIBUTES'],
-    threads => $Self->{vltmt} ? 6 : 0
+    threads => $Self->{vltmt} ? 6 : 1
     );
 
 execute(

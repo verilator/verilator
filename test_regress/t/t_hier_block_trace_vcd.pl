@@ -22,7 +22,7 @@ compile(
                          '--trace',
                          '--no-trace-underscore',  # To avoid handle mismatches
     ],
-    threads => $Self->{vltmt} ? 6 : 0
+    threads => $Self->{vltmt} ? 6 : 1
     );
 
 execute(

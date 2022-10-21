@@ -32,6 +32,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__stl
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__stl
 -V{t#,#}         No triggers active
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -61,8 +62,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -119,8 +122,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -156,8 +161,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -188,8 +195,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -238,8 +247,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -301,8 +312,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -342,8 +355,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -373,8 +388,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -428,8 +445,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -464,8 +483,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -495,8 +516,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -544,8 +567,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -580,8 +605,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -616,8 +643,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -647,8 +676,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -696,8 +727,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -732,8 +765,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -763,8 +798,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -834,8 +871,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -866,8 +905,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -902,8 +943,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -933,8 +976,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -988,8 +1033,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1024,8 +1071,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1055,8 +1104,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1090,8 +1141,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1139,8 +1192,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1175,8 +1230,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1206,8 +1263,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1255,8 +1314,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1291,8 +1352,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1356,8 +1419,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1387,8 +1452,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1442,8 +1509,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1478,8 +1547,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1509,8 +1580,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1558,8 +1631,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1598,8 +1673,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1629,8 +1706,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1678,8 +1757,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1714,8 +1795,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1745,8 +1828,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1794,8 +1879,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1855,8 +1942,10 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
+-V{t#,#}MTask0 starting
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
@@ -1898,4 +1987,5 @@
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}End-of-eval cleanup
 -V{t#,#}+    Vt_timing_debug1___024root___eval_final

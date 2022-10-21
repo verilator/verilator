@@ -22,7 +22,7 @@ compile(
     make_main => 0,
     v_flags2 => ["--prof-exec --exe $Self->{t_dir}/$Self->{name}.cpp"],
     # Checks below care about thread count, so use 2 (minimum reasonable)
-    threads => $Self->{vltmt} ? 2 : 0,
+    threads => $Self->{vltmt} ? 2 : 1,
     make_flags => 'CPPFLAGS_ADD=-DVL_NO_LEGACY',
     );
 
