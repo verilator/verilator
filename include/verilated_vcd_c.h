@@ -65,11 +65,9 @@ private:
     using NameMap = std::map<const std::string, const std::string>;
     NameMap* m_namemapp = nullptr;  // List of names for the header
 
-#ifdef VL_THREADED
     // Vector of free trace buffers as (pointer, size) pairs.
     std::vector<std::pair<char*, size_t>> m_freeBuffers;
     size_t m_numBuffers = 0;  // Number of trace buffers allocated
-#endif
 
     void bufferResize(size_t minsize);
     void bufferFlush() VL_MT_UNSAFE_ONE;
@@ -187,7 +185,6 @@ class VerilatedVcdBuffer VL_NOT_FINAL {
     // The maximum number of bytes a single signal can emit
     const size_t m_maxSignalBytes = m_owner.m_maxSignalBytes;
 
-#ifdef VL_THREADED
     // Additional data for parallel tracing only
     char* m_bufp = nullptr;  // The beginning of the trace buffer
     size_t m_size = 0;  // The size of the buffer at m_bufp
@@ -197,7 +194,6 @@ class VerilatedVcdBuffer VL_NOT_FINAL {
         m_growp = (m_bufp + m_size) - (2 * m_maxSignalBytes);
         assert(m_growp >= m_bufp + m_maxSignalBytes);
     }
-#endif
 
     void finishLine(uint32_t code, char* writep);
 

@@ -54,11 +54,9 @@
 #include <unordered_set>
 #include <vector>
 // <iostream> avoided to reduce compile time
-#ifdef VL_THREADED
-# include <atomic>
-# include <mutex>
-# include <thread>
-#endif
+#include <atomic>
+#include <mutex>
+#include <thread>
 
 // Allow user to specify their own include file
 #ifdef VL_VERILATED_INCLUDE
@@ -149,8 +147,6 @@ enum VerilatedVarFlags {
 // Return current thread ID (or 0), not super fast, cache if needed
 extern uint32_t VL_THREAD_ID() VL_MT_SAFE;
 
-#if VL_THREADED
-
 #define VL_LOCK_SPINS 50000  /// Number of times to spin for a mutex before yielding
 
 /// Mutex, wrapped to allow -fthread_safety checks
@@ -202,34 +198,12 @@ public:
     void unlock() VL_RELEASE() VL_MT_SAFE { m_mutexr.unlock(); }
 };
 
-#else  // !VL_THREADED
-
-// Empty non-threaded mutex to avoid #ifdefs in consuming code
-class VerilatedMutex final {
-public:
-    void lock() {}  // LCOV_EXCL_LINE
-    void unlock() {}  // LCOV_EXCL_LINE
-};
-
-// Empty non-threaded lock guard to avoid #ifdefs in consuming code
-class VerilatedLockGuard final {
-    VL_UNCOPYABLE(VerilatedLockGuard);
-
-public:
-    explicit VerilatedLockGuard(VerilatedMutex&) {}
-    ~VerilatedLockGuard() = default;
-    void lock() {}  // LCOV_EXCL_LINE
-    void unlock() {}  // LCOV_EXCL_LINE
-};
-
-#endif  // VL_THREADED
-
 // Internals: Remember the calling thread at construction time, and make
 // sure later calls use same thread
 
 class VerilatedAssertOneThread final {
     // MEMBERS
-#if defined(VL_THREADED) && defined(VL_DEBUG)
+#if defined(VL_DEBUG)
     uint32_t m_threadid;  // Thread that is legal
 public:
     // CONSTRUCTORS
@@ -250,7 +224,7 @@ public:
         }
     }
     static void fatal_different() VL_MT_SAFE;
-#else  // !VL_THREADED || !VL_DEBUG
+#else  // !VL_DEBUG
 public:
     void check() {}
 #endif
@@ -343,7 +317,7 @@ class VerilatedContext VL_NOT_FINAL {
 protected:
     // MEMBERS
     // Slow path variables
-    mutable VerilatedMutex m_mutex;  // Mutex for most s_s/s_ns members, when VL_THREADED
+    mutable VerilatedMutex m_mutex;  // Mutex for most s_s/s_ns members
 
     struct Serialized {  // All these members serialized/deserialized
         // No std::strings or pointers or will serialize badly!
@@ -397,11 +371,7 @@ protected:
     // Implementation details
     const std::unique_ptr<VerilatedContextImpData> m_impdatap;
     // Number of threads to use for simulation (size of m_threadPool + 1 for main thread)
-#ifdef VL_THREADED
     unsigned m_threads = std::thread::hardware_concurrency();
-#else
-    const unsigned m_threads = 1;
-#endif
     // The thread pool shared by all models added to this context
     std::unique_ptr<VerilatedVirtualBase> m_threadPool;
     // The execution profiler shared by all models added to this context
@@ -611,9 +581,7 @@ public:  // But for internal use only
     // MEMBERS
     // Keep first so is at zero offset for fastest code
     VerilatedContext* const _vm_contextp__;  // Context for current model
-#ifdef VL_THREADED
     VerilatedEvalMsgQueue* __Vm_evalMsgQp;
-#endif
     explicit VerilatedSyms(VerilatedContext* contextp);  // Pass null for default context
     ~VerilatedSyms();
 };
@@ -700,11 +668,9 @@ class Verilated final {
 
         // Fast path
         VerilatedContext* t_contextp = nullptr;  // Thread's context
-#ifdef VL_THREADED
         uint32_t t_mtaskId = 0;  // mtask# executing on this thread
         // Messages maybe pending on thread, needs end-of-eval calls
         uint32_t t_endOfEvalReqd = 0;
-#endif
         const VerilatedScope* t_dpiScopep = nullptr;  // DPI context scope
         const char* t_dpiFilename = nullptr;  // DPI context filename
         int t_dpiLineno = 0;  // DPI context line number
@@ -911,7 +877,6 @@ public:
     static int dpiLineno() VL_MT_SAFE { return t_s.t_dpiLineno; }
     static int exportFuncNum(const char* namep) VL_MT_SAFE;
 
-#ifdef VL_THREADED
     // Internal: Set the mtaskId, called when an mtask starts
     // Per thread, so no need to be in VerilatedContext
     static void mtaskId(uint32_t id) VL_MT_SAFE { t_s.t_mtaskId = id; }
@@ -925,12 +890,9 @@ public:
     }
     // Internal: Called at end of eval loop
     static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
-#endif
 
 private:
-#ifdef VL_THREADED
     static void endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
-#endif
 };
 
 void VerilatedContext::debug(int val) VL_MT_SAFE { Verilated::debug(val); }

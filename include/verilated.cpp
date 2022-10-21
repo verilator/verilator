@@ -68,9 +68,7 @@
 # include <direct.h>  // mkdir
 #endif
 
-#ifdef VL_THREADED
-# include "verilated_threads.h"
-#endif
+#include "verilated_threads.h"
 // clang-format on
 
 #include "verilated_trace.h"
@@ -193,43 +191,27 @@ void vl_warn(const char* filename, int linenum, const char* hier, const char* ms
 // Wrapper to call certain functions via messages when multithreaded
 
 void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE {
-#ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_finish(filename, linenum, hier);
     }});
-#else
-    vl_finish(filename, linenum, hier);
-#endif
 }
 
 void VL_STOP_MT(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_SAFE {
-#ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_stop_maybe(filename, linenum, hier, maybe);
     }});
-#else
-    vl_stop_maybe(filename, linenum, hier, maybe);
-#endif
 }
 
 void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
-#ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_fatal(filename, linenum, hier, msg);
     }});
-#else
-    vl_fatal(filename, linenum, hier, msg);
-#endif
 }
 
 void VL_WARN_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
-#ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_warn(filename, linenum, hier, msg);
     }});
-#else
-    vl_warn(filename, linenum, hier, msg);
-#endif
 }
 
 //===========================================================================
@@ -252,24 +234,16 @@ std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
 }
 
 uint64_t _vl_dbg_sequence_number() VL_MT_SAFE {
-#ifdef VL_THREADED
     static std::atomic<uint64_t> sequence;
-#else
-    static uint64_t sequence = 0;
-#endif
     return ++sequence;
 }
 
 uint32_t VL_THREAD_ID() VL_MT_SAFE {
-#ifdef VL_THREADED
     // Alternative is to use std::this_thread::get_id, but that returns a
     // hard-to-read number and is very slow
     static std::atomic<uint32_t> s_nextId(0);
     static VL_THREAD_LOCAL uint32_t t_myId = ++s_nextId;
     return t_myId;
-#else
-    return 0;
-#endif
 }
 
 void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
@@ -288,7 +262,6 @@ void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
     VL_PRINTF("-V{t%u,%" PRIu64 "}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
 }
 
-#ifdef VL_THREADED
 void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap, formatp);
@@ -298,7 +271,6 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
         VL_PRINTF("%s", out.c_str());
     }});
 }
-#endif
 
 //===========================================================================
 // Random -- Mostly called at init time, so not inline.
@@ -2474,7 +2446,6 @@ void VerilatedContext::threads(unsigned n) {
             "%Error: Cannot set simulation threads after the thread pool has been created.");
     }
 
-#if VL_THREADED
     if (m_threads == n) return;  // To avoid unnecessary warnings
     m_threads = n;
     const unsigned hardwareThreadsAvailable = std::thread::hardware_concurrency();
@@ -2483,13 +2454,6 @@ void VerilatedContext::threads(unsigned n) {
                      "to %u. This will likely cause significant slowdown.\n",
                      hardwareThreadsAvailable, m_threads);
     }
-#else
-    if (n > 1) {
-        VL_PRINTF_MT("%%Warning: Verilator run-time library built without VL_THREADS. Ignoring "
-                     "call to 'VerilatedContext::threads' with argument %u.\n",
-                     n);
-    }
-#endif
 }
 
 void VerilatedContext::commandArgs(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex) {
@@ -2537,9 +2501,7 @@ void VerilatedContext::addModel(VerilatedModel* modelp) {
 
 VerilatedVirtualBase* VerilatedContext::threadPoolp() {
     if (m_threads == 1) return nullptr;
-#if VL_THREADED
     if (!m_threadPool) m_threadPool.reset(new VlThreadPool{this, m_threads - 1});
-#endif
     return m_threadPool.get();
 }
 
@@ -2701,9 +2663,7 @@ void VerilatedContext::randSeed(int val) VL_MT_SAFE {
     m_s.m_randSeed = val;
     const uint64_t newEpoch = VerilatedContextImp::s().s_randSeedEpoch + 1;
     // Obververs must see new epoch AFTER seed updated
-#ifdef VL_THREADED
     std::atomic_signal_fence(std::memory_order_release);
-#endif
     VerilatedContextImp::s().s_randSeedEpoch = newEpoch;
 }
 uint64_t VerilatedContextImp::randSeedDefault64() const VL_MT_SAFE {
@@ -2760,16 +2720,12 @@ VerilatedSyms::VerilatedSyms(VerilatedContext* contextp)
     : _vm_contextp__(contextp ? contextp : Verilated::threadContextp()) {
     VerilatedContext::checkMagic(_vm_contextp__);
     Verilated::threadContextp(_vm_contextp__);
-#ifdef VL_THREADED
     __Vm_evalMsgQp = new VerilatedEvalMsgQueue;
-#endif
 }
 
 VerilatedSyms::~VerilatedSyms() {
     VerilatedContext::checkMagic(_vm_contextp__);
-#ifdef VL_THREADED
     delete __Vm_evalMsgQp;
-#endif
 }
 
 //===========================================================================
@@ -2843,11 +2799,7 @@ void Verilated::removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
 }
 void Verilated::runFlushCallbacks() VL_MT_SAFE {
     // Flush routines may call flush, so avoid mutex deadlock
-#ifdef VL_THREADED
     static std::atomic<int> s_recursing;
-#else
-    static int s_recursing = 0;
-#endif
     if (!s_recursing++) {
         const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
         runCallbacks(VlCbStatic.s_flushCbs);
@@ -2870,11 +2822,7 @@ void Verilated::removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
     removeCb(cb, datap, VlCbStatic.s_exitCbs);
 }
 void Verilated::runExitCallbacks() VL_MT_SAFE {
-#ifdef VL_THREADED
     static std::atomic<int> s_recursing;
-#else
-    static int s_recursing = 0;
-#endif
     if (!s_recursing++) {
         const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
         runCallbacks(VlCbStatic.s_exitCbs);
@@ -2908,17 +2856,14 @@ void Verilated::mkdir(const char* dirname) VL_MT_UNSAFE {
 }
 
 void Verilated::quiesce() VL_MT_SAFE {
-#ifdef VL_THREADED
     // Wait until all threads under this evaluation are quiet
     // THREADED-TODO
-#endif
 }
 
 int Verilated::exportFuncNum(const char* namep) VL_MT_SAFE {
     return VerilatedImp::exportFind(namep);
 }
 
-#ifdef VL_THREADED
 void Verilated::endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
     VL_DEBUG_IF(VL_DBG_MSGF("End of thread mtask\n"););
     VerilatedThreadMsgQueue::flush(evalMsgQp);
@@ -2932,7 +2877,6 @@ void Verilated::endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
     VL_DEBUG_IF(VL_DBG_MSGF("End-of-eval cleanup\n"););
     evalMsgQp->process();
 }
-#endif
 
 //===========================================================================
 // VerilatedImp:: Methods
@@ -3138,7 +3082,7 @@ void VerilatedHierarchy::remove(VerilatedScope* fromp, VerilatedScope* top) {
 //===========================================================================
 // VerilatedOneThreaded:: Methods
 
-#if defined(VL_THREADED) && defined(VL_DEBUG)
+#if defined(VL_DEBUG)
 void VerilatedAssertOneThread::fatal_different() VL_MT_SAFE {
     VL_FATAL_MT(__FILE__, __LINE__, "",
                 "Routine called that is single threaded, but called from"

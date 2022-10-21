@@ -73,11 +73,7 @@ extern void VL_WARN_MT(const char* filename, int linenum, const char* hier,
 
 // clang-format off
 /// Print a string, multithread safe. Eventually VL_PRINTF will get called.
-#ifdef VL_THREADED
 extern void VL_PRINTF_MT(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
-#else
-# define VL_PRINTF_MT VL_PRINTF  // The following parens will take care of themselves
-#endif
 // clang-format on
 
 /// Print a debug message from internals with standard prefix, with printf style format
