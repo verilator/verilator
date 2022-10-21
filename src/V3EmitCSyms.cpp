@@ -295,7 +295,7 @@ class EmitCSyms final : EmitCBaseVisitor {
         if (v3Global.opt.vpi()) {
             const string type
                 = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
-            const string name = nodep->scopep()->name() + "__DOT__" + nodep->name();
+            const string name = nodep->scopep()->shortName() + "__DOT__" + nodep->name();
             const string name_dedot = AstNode::dedotName(name);
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
