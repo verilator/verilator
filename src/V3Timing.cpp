@@ -256,6 +256,19 @@ private:
         }
         return VN_AS(sensesp->user2p(), Text)->cloneTree(false);
     }
+    // Adds debug info to a hardcoded method call
+    void addDebugInfo(AstCMethodHard* const methodp) const {
+        if (v3Global.opt.protectIds()) return;
+        FileLine* const flp = methodp->fileline();
+        methodp->addPinsp(new AstText{flp, '"' + flp->filename() + '"'});
+        methodp->addPinsp(new AstText{flp, cvtToStr(flp->lineno())});
+    }
+    // Adds debug info to a trigSched.trigger() call
+    void addEventDebugInfo(AstCMethodHard* const methodp, AstSenTree* const sensesp) const {
+        if (v3Global.opt.protectIds()) return;
+        methodp->addPinsp(createEventDescription(sensesp));
+        addDebugInfo(methodp);
+    }
     // Creates the fork handle type and returns it
     AstBasicDType* getCreateForkSyncDTypep() {
         if (m_forkDtp) return m_forkDtp;
@@ -287,9 +300,7 @@ private:
             beginp->fileline(), new AstVarRef{flp, forkVscp, VAccess::WRITE}, "done"};
         donep->dtypeSetVoid();
         donep->statement(true);
-        // Add debug info
-        donep->addPinsp(new AstText{flp, '"' + flp->filename() + '"'});
-        donep->addPinsp(new AstText{flp, cvtToStr(flp->lineno())});
+        addDebugInfo(donep);
         beginp->addStmtsp(donep);
     }
     // Handle the 'join' part of a fork..join
@@ -317,9 +328,7 @@ private:
         auto* const joinp
             = new AstCMethodHard{flp, new AstVarRef{flp, forkVscp, VAccess::WRITE}, "join"};
         joinp->dtypeSetVoid();
-        // Add debug info
-        joinp->addPinsp(new AstText{flp, '"' + flp->filename() + '"'});
-        joinp->addPinsp(new AstText{flp, cvtToStr(flp->lineno())});
+        addDebugInfo(joinp);
         auto* const awaitp = new AstCAwait{flp, joinp};
         awaitp->statement(true);
         forkp->addNextHere(awaitp);
@@ -462,9 +471,7 @@ private:
         auto* const delayMethodp = new AstCMethodHard{
             flp, new AstVarRef{flp, getCreateDelayScheduler(), VAccess::WRITE}, "delay", valuep};
         delayMethodp->dtypeSetVoid();
-        // Add debug info
-        delayMethodp->addPinsp(new AstText{flp, '"' + flp->filename() + '"'});
-        delayMethodp->addPinsp(new AstText{flp, cvtToStr(flp->lineno())});
+        addDebugInfo(delayMethodp);
         // Create the co_await
         auto* const awaitp = new AstCAwait{flp, delayMethodp, getCreateDelaySenTree()};
         awaitp->statement(true);
@@ -487,9 +494,7 @@ private:
             "trigger"};
         triggerMethodp->dtypeSetVoid();
         // Add debug info
-        triggerMethodp->addPinsp(createEventDescription(sensesp));
-        triggerMethodp->addPinsp(new AstText{flp, '"' + flp->filename() + '"'});
-        triggerMethodp->addPinsp(new AstText{flp, cvtToStr(flp->lineno())});
+        addEventDebugInfo(triggerMethodp, sensesp);
         // Create the co_await
         auto* const awaitp = new AstCAwait{flp, triggerMethodp, sensesp};
         awaitp->statement(true);

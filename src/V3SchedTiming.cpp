@@ -115,7 +115,7 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
             // Create the commit call and put it in the commit function
             auto* const commitp = new AstCMethodHard{
                 flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, "commit"};
-            commitp->addPinsp(resumep->pinsp()->cloneTree(false));
+            if (resumep->pinsp()) commitp->addPinsp(resumep->pinsp()->cloneTree(false));
             commitp->statement(true);
             commitp->dtypeSetVoid();
             newactp->addStmtsp(commitp);
@@ -159,7 +159,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
             // Create a resume() call on the timing scheduler
             auto* const resumep = new AstCMethodHard{
                 flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, "resume"};
-            if (schedulerp->dtypep()->basicp()->isTriggerScheduler()) {
+            if (schedulerp->dtypep()->basicp()->isTriggerScheduler() && methodp->pinsp()) {
                 resumep->addPinsp(methodp->pinsp()->cloneTree(false));
             }
             resumep->statement(true);

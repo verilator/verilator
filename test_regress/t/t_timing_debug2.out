@@ -240,7 +240,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:30
 [64] main process
 -V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__0
--V{t#,#}         Suspending process waiting for @([event] t.e1) at t/t_timing_fork_join.v:33
+-V{t#,#}         Suspending process waiting for @([event] t.event1) at t/t_timing_fork_join.v:33
 fork..join_any process 2
 -V{t#,#}             Process forked at t/t_timing_fork_join.v:37 finished
 -V{t#,#}             Awaiting join of fork at: t/t_timing_fork_join.v:31
@@ -250,7 +250,7 @@ back in main process
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
--V{t#,#}         Committing processes waiting for @([event] t.e1):
+-V{t#,#}         Committing processes waiting for @([event] t.event1):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:33
 -V{t#,#}+    Vt_timing_debug2___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -274,23 +274,23 @@ back in main process
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
--V{t#,#}         'act' region trigger index 1 is active: @([event] t.e1)
+-V{t#,#}         'act' region trigger index 1 is active: @([event] t.event1)
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         Ready processes waiting for @([event] t.e1):
+-V{t#,#}         Ready processes waiting for @([event] t.event1):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:33
--V{t#,#}         Resuming processes waiting for @([event] t.e1)
+-V{t#,#}         Resuming processes waiting for @([event] t.event1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:33
 fork..join_any process 1
 -V{t#,#}             Process forked at t/t_timing_fork_join.v:32 finished
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
--V{t#,#}         'act' region trigger index 1 is active: @([event] t.e1)
+-V{t#,#}         'act' region trigger index 1 is active: @([event] t.event1)
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         No ready processes waiting for @([event] t.e1)
--V{t#,#}         Resuming processes waiting for @([event] t.e1)
+-V{t#,#}         No ready processes waiting for @([event] t.event1)
+-V{t#,#}         Resuming processes waiting for @([event] t.event1)
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
@@ -317,14 +317,14 @@ fork..join_any process 1
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:41
 -V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__0
 -V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__1
--V{t#,#}         Suspending process waiting for @([event] t.e1) at t/t_timing_fork_join.v:44
+-V{t#,#}         Suspending process waiting for @([event] t.event1) at t/t_timing_fork_join.v:44
 -V{t#,#}             Awaiting join of fork at: t/t_timing_fork_join.v:41
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
--V{t#,#}         Committing processes waiting for @([event] t.e1):
+-V{t#,#}         Committing processes waiting for @([event] t.event1):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:44
 -V{t#,#}+    Vt_timing_debug2___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -373,50 +373,50 @@ back in main process
 -V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:50
 -V{t#,#}         Resuming delayed processes
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:50
--V{t#,#}         Suspending process waiting for @([event] t.e1) at t/t_timing_fork_join.v:51
+-V{t#,#}         Suspending process waiting for @([event] t.event1) at t/t_timing_fork_join.v:51
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
--V{t#,#}         'act' region trigger index 1 is active: @([event] t.e1)
+-V{t#,#}         'act' region trigger index 1 is active: @([event] t.event1)
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         Ready processes waiting for @([event] t.e1):
+-V{t#,#}         Ready processes waiting for @([event] t.event1):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:44
--V{t#,#}         Uncommitted processes waiting for @([event] t.e1):
+-V{t#,#}         Uncommitted processes waiting for @([event] t.event1):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:51
--V{t#,#}         Resuming processes waiting for @([event] t.e1)
+-V{t#,#}         Resuming processes waiting for @([event] t.event1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:44
 fork..join_any process 2
 -V{t#,#}             Process forked at t/t_timing_fork_join.v:43 finished
--V{t#,#}         Committing processes waiting for @([event] t.e1):
+-V{t#,#}         Committing processes waiting for @([event] t.event1):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:51
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
--V{t#,#}         'act' region trigger index 1 is active: @([event] t.e1)
+-V{t#,#}         'act' region trigger index 1 is active: @([event] t.event1)
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         Ready processes waiting for @([event] t.e1):
+-V{t#,#}         Ready processes waiting for @([event] t.event1):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:51
--V{t#,#}         Resuming processes waiting for @([event] t.e1)
+-V{t#,#}         Resuming processes waiting for @([event] t.event1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:51
 -V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__0
 -V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__1
--V{t#,#}         Suspending process waiting for @([event] t.e2) at t/t_timing_fork_join.v:62
+-V{t#,#}         Suspending process waiting for @([event] t.event2) at t/t_timing_fork_join.v:62
 -V{t#,#}+    Vt_timing_debug2___024root____Vfork_h########__0__2
--V{t#,#}         Suspending process waiting for @([event] t.e3) at t/t_timing_fork_join.v:68
+-V{t#,#}         Suspending process waiting for @([event] t.event3) at t/t_timing_fork_join.v:68
 in main process
--V{t#,#}         Suspending process waiting for @([event] t.e1) at t/t_timing_fork_join.v:75
--V{t#,#}         Committing processes waiting for @([event] t.e1):
+-V{t#,#}         Suspending process waiting for @([event] t.event1) at t/t_timing_fork_join.v:75
+-V{t#,#}         Committing processes waiting for @([event] t.event1):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:75
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
--V{t#,#}         Committing processes waiting for @([event] t.e2):
+-V{t#,#}         Committing processes waiting for @([event] t.event2):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:62
--V{t#,#}         Committing processes waiting for @([event] t.e3):
+-V{t#,#}         Committing processes waiting for @([event] t.event3):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:68
 -V{t#,#}+    Vt_timing_debug2___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -438,21 +438,21 @@ in main process
 -V{t#,#}         Resuming delayed processes
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:56
 fork..join_none process 1
--V{t#,#}         Suspending process waiting for @([event] t.e2) at t/t_timing_fork_join.v:58
+-V{t#,#}         Suspending process waiting for @([event] t.event2) at t/t_timing_fork_join.v:58
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
--V{t#,#}         'act' region trigger index 2 is active: @([event] t.e2)
+-V{t#,#}         'act' region trigger index 2 is active: @([event] t.event2)
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         Ready processes waiting for @([event] t.e2):
+-V{t#,#}         Ready processes waiting for @([event] t.event2):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:62
--V{t#,#}         Uncommitted processes waiting for @([event] t.e2):
+-V{t#,#}         Uncommitted processes waiting for @([event] t.event2):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:58
--V{t#,#}         Resuming processes waiting for @([event] t.e2)
+-V{t#,#}         Resuming processes waiting for @([event] t.event2)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:62
 fork..join_none process 2
--V{t#,#}         Committing processes waiting for @([event] t.e2):
+-V{t#,#}         Committing processes waiting for @([event] t.event2):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:58
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -478,21 +478,21 @@ fork..join_none process 2
 -V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:63
 -V{t#,#}         Resuming delayed processes
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:63
--V{t#,#}         Suspending process waiting for @([event] t.e3) at t/t_timing_fork_join.v:64
+-V{t#,#}         Suspending process waiting for @([event] t.event3) at t/t_timing_fork_join.v:64
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
--V{t#,#}         'act' region trigger index 3 is active: @([event] t.e3)
+-V{t#,#}         'act' region trigger index 3 is active: @([event] t.event3)
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         Ready processes waiting for @([event] t.e3):
+-V{t#,#}         Ready processes waiting for @([event] t.event3):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:68
--V{t#,#}         Uncommitted processes waiting for @([event] t.e3):
+-V{t#,#}         Uncommitted processes waiting for @([event] t.event3):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:64
--V{t#,#}         Resuming processes waiting for @([event] t.e3)
+-V{t#,#}         Resuming processes waiting for @([event] t.event3)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:68
 fork..join_none process 3
--V{t#,#}         Committing processes waiting for @([event] t.e3):
+-V{t#,#}         Committing processes waiting for @([event] t.event3):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:64
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -518,21 +518,21 @@ fork..join_none process 3
 -V{t#,#}             Awaiting time 100: Process waiting at t/t_timing_fork_join.v:69
 -V{t#,#}         Resuming delayed processes
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:69
--V{t#,#}         Suspending process waiting for @([event] t.e3) at t/t_timing_fork_join.v:70
+-V{t#,#}         Suspending process waiting for @([event] t.event3) at t/t_timing_fork_join.v:70
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
--V{t#,#}         'act' region trigger index 3 is active: @([event] t.e3)
+-V{t#,#}         'act' region trigger index 3 is active: @([event] t.event3)
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         Ready processes waiting for @([event] t.e3):
+-V{t#,#}         Ready processes waiting for @([event] t.event3):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:64
--V{t#,#}         Uncommitted processes waiting for @([event] t.e3):
+-V{t#,#}         Uncommitted processes waiting for @([event] t.event3):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:70
--V{t#,#}         Resuming processes waiting for @([event] t.e3)
+-V{t#,#}         Resuming processes waiting for @([event] t.event3)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:64
 fork..join_none process 2 again
--V{t#,#}         Committing processes waiting for @([event] t.e3):
+-V{t#,#}         Committing processes waiting for @([event] t.event3):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:70
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -561,12 +561,12 @@ fork..join_none process 2 again
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
--V{t#,#}         'act' region trigger index 2 is active: @([event] t.e2)
+-V{t#,#}         'act' region trigger index 2 is active: @([event] t.event2)
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         Ready processes waiting for @([event] t.e2):
+-V{t#,#}         Ready processes waiting for @([event] t.event2):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:58
--V{t#,#}         Resuming processes waiting for @([event] t.e2)
+-V{t#,#}         Resuming processes waiting for @([event] t.event2)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:58
 fork..join_none process 1 again
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
@@ -596,23 +596,23 @@ fork..join_none process 1 again
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
--V{t#,#}         'act' region trigger index 3 is active: @([event] t.e3)
+-V{t#,#}         'act' region trigger index 3 is active: @([event] t.event3)
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         Ready processes waiting for @([event] t.e3):
+-V{t#,#}         Ready processes waiting for @([event] t.event3):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:70
--V{t#,#}         Resuming processes waiting for @([event] t.e3)
+-V{t#,#}         Resuming processes waiting for @([event] t.event3)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:70
 fork..join_none process 3 again
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
--V{t#,#}         'act' region trigger index 1 is active: @([event] t.e1)
+-V{t#,#}         'act' region trigger index 1 is active: @([event] t.event1)
 -V{t#,#}+    Vt_timing_debug2___024root___timing_commit
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
--V{t#,#}         Ready processes waiting for @([event] t.e1):
+-V{t#,#}         Ready processes waiting for @([event] t.event1):
 -V{t#,#}           - Process waiting at t/t_timing_fork_join.v:75
--V{t#,#}         Resuming processes waiting for @([event] t.e1)
+-V{t#,#}         Resuming processes waiting for @([event] t.event1)
 -V{t#,#}             Resuming: Process waiting at t/t_timing_fork_join.v:75
 *-* All Finished *-*
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
