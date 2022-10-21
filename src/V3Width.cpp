@@ -4740,12 +4740,19 @@ private:
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
             // Widthing handled as special init() case
+            bool didWidth = false;
             if (auto* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
-                if (const auto* modVarp = nodep->modVarp()) {
-                    patternp->childDTypep(modVarp->childDTypep()->cloneTree(false));
+                if (const AstVar* const modVarp = nodep->modVarp()) {
+                    // Convert BracketArrayDType
+                    userIterate(modVarp->childDTypep(),
+                                WidthVP{SELF, BOTH}.p());  // May relink pointed to node
+                    AstNodeDType* const setDtp = modVarp->childDTypep()->cloneTree(false);
+                    patternp->childDTypep(setDtp);
+                    userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
+                    didWidth = true;
                 }
             }
-            userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+            if (!didWidth) userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         } else if (!m_paramsOnly) {
             if (!nodep->modVarp()->didWidth()) {
                 // Var hasn't been widthed, so make it so.
