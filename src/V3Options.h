@@ -304,7 +304,7 @@ private:
     int         m_pinsBv = 65;       // main switch: --pins-bv
     int         m_reloopLimit = 40; // main switch: --reloop-limit
     VOptionBool m_skipIdentical;  // main switch: --skip-identical
-    int         m_threads = 0;      // main switch: --threads (0 == --no-threads)
+    int         m_threads = 1;      // main switch: --threads
     int         m_threadsMaxMTasks = 0;  // main switch: --threads-max-mtasks
     VTimescale  m_timeDefaultPrec;  // main switch: --timescale
     VTimescale  m_timeDefaultUnit;  // main switch: --timescale
