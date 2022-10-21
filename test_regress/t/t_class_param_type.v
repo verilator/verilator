@@ -21,7 +21,7 @@ endclass
 module t (/*AUTOARG*/);
 
    initial begin
-      $display("Parcls#(Cls)::get_p() = ", Parcls#(Cls)::get_p());
+      if (Parcls#(Cls)::get_p() != 20) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
