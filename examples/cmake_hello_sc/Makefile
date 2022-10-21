@@ -39,30 +39,12 @@ ifneq ($(CMAKE_GT_3_8),true)
 TARGET := oldcmake
 else
 
-# Test existence of SYSTEMC_INCLUDE and SYSTEMC_LIBDIR environment variabless
-ifneq (,$(SYSTEMC_INCLUDE))
-ifneq (,${SYSTEMC_LIBDIR})
-SYSTEMC_SET := true
-endif
-endif
-
-# Test existence of SYSTEMC_ROOT environment variable
-ifneq (SYSTEMC_SET, true)
-ifneq (,${SYSTEMC_ROOT})
-SYSTEMC_SET := true
-endif
-endif
-
-# Test existence of SYSTEMC environment variable
-ifneq (SYSTEMC_SET, true)
-ifneq (,${SYSTEMC})
-SYSTEMC_SET := true
-endif
-endif
+# Check if SC exists via a verilator call (empty if not)
+SYSTEMC_EXISTS := $(shell $(VERILATOR) --get-supported SYSTEMC)
 
 # Test whether SystemC is installed with CMake support
 # This will print a CMake error about processing arguments that can (currently) be ignored.
-ifneq (SYSTEMC_SET, true)
+ifneq (,$(SYSTEMC_EXISTS))
 FINDSC := $(shell mkdir -p build && cd build && cmake --find-package -DNAME=SystemCLanguage -DCMAKE_USE_PTHREADS_INIT=ON -DCOMPILER_ID=GNU -DLANGUAGE=CXX -DMODE=EXIST -DThreads_FOUND=ON)
 ifneq (,$(findstring SystemCLanguage found,$(FINDSC)))
 SYSTEMC_SET := true

@@ -33,7 +33,7 @@ VERILATOR = $(VERILATOR_ROOT)/bin/verilator
 endif
 
 # Check if SC exists via a verilator call (empty if not)
-SYSTEMC_EXISTS := $(shell $(VERILATOR) --getenv SYSTEMC_INCLUDE)
+SYSTEMC_EXISTS := $(shell $(VERILATOR) --get-supported SYSTEMC)
 
 ifneq ($(SYSTEMC_EXISTS),)
 default: run

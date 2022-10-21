@@ -604,6 +604,7 @@ V3LangCode V3Options::fileLanguage(const string& filename) {
 // Environment
 
 string V3Options::getenvBuiltins(const string& var) {
+    // If update below, also update V3Options::showVersion()
     if (var == "MAKE") {
         return getenvMAKE();
     } else if (var == "PERL") {
@@ -709,6 +710,17 @@ string V3Options::getenvVERILATOR_ROOT() {
     }
     if (var == "") v3fatal("$VERILATOR_ROOT needs to be in environment\n");
     return var;
+}
+
+string V3Options::getSupported(const string& var) {
+    // If update below, also update V3Options::showVersion()
+    if (var == "COROUTINES" && coroutineSupport()) {
+        return "1";
+    } else if (var == "SYSTEMC" && systemCFound()) {
+        return "1";
+    } else {
+        return "";
+    }
 }
 
 bool V3Options::systemCSystemWide() {
@@ -1177,6 +1189,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-getenv", CbVal, [](const char* valp) {
         cout << V3Options::getenvBuiltins(valp) << endl;
+        std::exit(0);
+    });
+    DECL_OPTION("-get-supported", CbVal, [](const char* valp) {
+        cout << V3Options::getSupported(valp) << endl;
         std::exit(0);
     });
 
@@ -1800,6 +1816,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT << endl;
     cout << "    SystemC system-wide = " << cvtToStr(systemCSystemWide()) << endl;
 
+    // If update below, also update V3Options::getenvBuiltins()
     cout << endl;
     cout << "Environment:\n";
     cout << "    MAKE               = " << V3Os::getenvStr("MAKE", "") << endl;
@@ -1812,10 +1829,11 @@ void V3Options::showVersion(bool verbose) {
     cout << "    VERILATOR_BIN      = " << V3Os::getenvStr("VERILATOR_BIN", "") << endl;
     cout << "    VERILATOR_ROOT     = " << V3Os::getenvStr("VERILATOR_ROOT", "") << endl;
 
+    // If update below, also update V3Options::getSupported()
     cout << endl;
-    cout << "Features (based on environment or compiled-in support):\n";
-    cout << "    SystemC found      = " << cvtToStr(systemCFound()) << endl;
-    cout << "    Coroutine support  = " << cvtToStr(coroutineSupport()) << endl;
+    cout << "Supported features (compiled-in or forced by environment):\n";
+    cout << "    COROUTINES         = " << getSupported("COROUTINES") << endl;
+    cout << "    SYSTEMC            = " << getSupported("SYSTEMC") << endl;
 }
 
 //======================================================================

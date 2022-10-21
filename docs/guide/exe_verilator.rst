@@ -648,6 +648,15 @@ Summary:
    a newline and exit immediately. This can be useful in makefiles. See
    also :vlopt:`-V`, and the various :file:`*.mk` files.
 
+.. option:: --get-supported <feature>
+
+   If the given feature is supported, print "1" and exit
+   immediately. Otherwise, print a newline and exit immediately. This can
+   be useful in makefiles. See also :vlopt:`-V`, and the various
+   :file:`*.mk` files.
+
+   Feature may be one of the following: COROUTINES, SYSTEMC.
+
 .. option:: --help
 
    Displays this message and program version and exits.

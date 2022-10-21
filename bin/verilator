@@ -335,6 +335,7 @@ detailed descriptions of these arguments.
     --gdbbt                     Run Verilator under GDB for backtrace
     --generate-key              Create random key for --protect-key
     --getenv <var>              Get environment variable with defaults
+    --get-supported <feature>   Get if feature is supported
     --help                      Display this help
     --hierarchical              Enable hierarchical Verilation
      -I<dir>                    Directory to search for includes

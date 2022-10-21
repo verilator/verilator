@@ -1476,13 +1476,13 @@ sub sc {
 sub have_sc {
     my $self = (ref $_[0] ? shift : $Self);
     return 1 if (defined $ENV{SYSTEMC} || defined $ENV{SYSTEMC_INCLUDE} || $ENV{CFG_HAVE_SYSTEMC});
-    return 1 if $self->verilator_version =~ /systemc found *= *1/i;
+    return 1 if $self->verilator_get_supported('SYSTEMC');
     return 0;
 }
 
 sub have_coroutines {
     my $self = (ref $_[0] ? shift : $Self);
-    return 1 if $self->verilator_version =~ /coroutine support *= *1/i;
+    return 1 if $self->verilator_get_supported('COROUTINES');
     return 0;
 }
 
@@ -2162,17 +2162,20 @@ sub _read_inputs_vhdl {
 #######################################################################
 # Verilator utilities
 
-our $_Verilator_Version;
-sub verilator_version {
-    # Returns verbose version, line 1 contains actual version
-    if (!defined $_Verilator_Version) {
-        my @args = ("perl", "$ENV{VERILATOR_ROOT}/bin/verilator", "-V");
+our %_Verilator_Supported;
+sub verilator_get_supported {
+    my $self = (ref $_[0] ? shift : $Self);
+    my $feature = shift;
+    # Returns if given feature is supported
+    if (!defined $_Verilator_Supported{$feature}) {
+        my @args = ("perl", "$ENV{VERILATOR_ROOT}/bin/verilator", "-get-supported", $feature);
         my $args = join(' ', @args);
-        $_Verilator_Version = `$args`;
-        $_Verilator_Version or die "can't fork: $! " . join(' ', @args);
-        chomp $_Verilator_Version;
+        my $out = `$args`;
+        $out or die "couldn't run: $! " . join(' ', @args);
+        chomp $out;
+        $_Verilator_Supported{$feature} = ($out =~ /1/ ? 1 : 0);
     }
-    return $_Verilator_Version if defined $_Verilator_Version;
+    return $_Verilator_Supported{$feature};
 }
 
 #######################################################################
