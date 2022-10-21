@@ -34,6 +34,7 @@ Verilator 5.001 devel
 * Support standalone 'this' in classes (#2594) (#3248) (#3675). [Arkadiusz Kozdra, Antmicro Ltd]
 * Support tristate select/extend (#3604). [Ryszard Rozak, Antmicro Ltd>
 * Support linting for top module interfaces (#3635). [Kanad Kanhere]
+* Support empty generate_regions (#3695). [mpb27]
 * Add --dump-tree-dot to enable dumping Ast Tree .dot files (#3636). [Marcel Chang]
 * Add --get-supported to determine what features are in Verilator.
 * Add error on real edge event control.

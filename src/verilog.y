@@ -1645,6 +1645,8 @@ program_generate_item<nodep>:           // ==IEEE: program_generate_item
                 loop_generate_construct                 { $$ = $1; }
         |       conditional_generate_construct          { $$ = $1; }
         |       generate_region                         { $$ = $1; }
+                                // not in IEEE, but presumed so can do yBEGIN ... yEND
+        |       genItemBegin                            { $$ = $1; }
         |       elaboration_system_task                 { $$ = $1; }
         ;
 
@@ -2424,6 +2426,8 @@ module_item<nodep>:             // ==IEEE: module_item
 
 non_port_module_item<nodep>:    // ==IEEE: non_port_module_item
                 generate_region                         { $$ = $1; }
+                                // not in IEEE, but presumed so can do yBEGIN ... yEND
+        |       genItemBegin                            { $$ = $1; }
         |       module_or_generate_item                 { $$ = $1; }
         |       specify_block                           { $$ = $1; }
         |       specparam_declaration                   { $$ = $1; }
