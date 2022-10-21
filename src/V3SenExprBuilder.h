@@ -42,9 +42,9 @@ class SenExprBuilder final {
                                                         // has an update statement in m_preUpdates
     std::unordered_set<VNRef<AstNode>> m_hasPostUpdate;  // Likewis for m_postUpdates
 
-    V3UniqueNames m_currNames{"__Vtrigcurr__expression"};  // For generating unique current value
-                                                           // signal names
-    V3UniqueNames m_prevNames{"__Vtrigprev__expression"};  // Likewise for previous values
+    V3UniqueNames m_currNames{"__Vtrigcurrexpr"};  // For generating unique current value
+                                                   // signal names
+    V3UniqueNames m_prevNames{"__Vtrigprevexpr"};  // Likewise for previous values
 
     static bool isSupportedDType(AstNodeDType* dtypep) {
         dtypep = dtypep->skipRefp();

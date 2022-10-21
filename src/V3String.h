@@ -116,6 +116,8 @@ public:
     static string replaceWord(const string& str, const string& from, const string& to);
     // Predicate to check if 'str' starts with 'prefix'
     static bool startsWith(const string& str, const string& prefix);
+    // Predicate to check if 'str' ends with 'suffix'
+    static bool endsWith(const string& str, const string& suffix);
 };
 
 //######################################################################

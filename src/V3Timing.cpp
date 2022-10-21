@@ -108,11 +108,11 @@ private:
     double m_timescaleFactor = 1.0;  // Factor to scale delays by
 
     // Unique names
-    V3UniqueNames m_contAssignVarNames{"__VassignWtmp__"};  // Names for temp AssignW vars
-    V3UniqueNames m_intraValueNames{"__Vintraval__"};  // Intra assign delay value var names
-    V3UniqueNames m_intraIndexNames{"__Vintraidx__"};  // Intra assign delay index var names
-    V3UniqueNames m_intraLsbNames{"__Vintralsb__"};  // Intra assign delay LSB var names
-    V3UniqueNames m_forkNames{"__Vfork__"};  // Fork name generator
+    V3UniqueNames m_contAssignVarNames{"__VassignWtmp"};  // Names for temp AssignW vars
+    V3UniqueNames m_intraValueNames{"__Vintraval"};  // Intra assign delay value var names
+    V3UniqueNames m_intraIndexNames{"__Vintraidx"};  // Intra assign delay index var names
+    V3UniqueNames m_intraLsbNames{"__Vintralsb"};  // Intra assign delay LSB var names
+    V3UniqueNames m_forkNames{"__Vfork"};  // Fork name generator
     V3UniqueNames m_trigSchedNames{"__VtrigSched"};  // Trigger scheduler name generator
 
     // DTypes
