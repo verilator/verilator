@@ -46,7 +46,7 @@ jobs:
       run: tar --posix -c -z -f ${{ env.VERILATOR_ARCHIVE }} repo
 
     - name: Upload tar archive
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         path: ${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}
         name: ${{ env.VERILATOR_ARCHIVE }}
@@ -81,7 +81,7 @@ jobs:
     steps:
 
     - name: Download tar archive
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: ${{ env.VERILATOR_ARCHIVE }}
         path: ${{ github.workspace }}
