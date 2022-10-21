@@ -36,22 +36,6 @@
 class VerilatedCovImp;
 
 //=============================================================================
-/// Conditionally compile statements only when doing coverage (when
-/// VM_COVERAGE is defined)
-
-// clang-format off
-#ifdef VM_COVERAGE
-# define VL_IF_COVER(stmts) \
-    do { stmts; } while (false)
-#else
-# define VL_IF_COVER(stmts) \
-    do { \
-        if (false) { stmts; } \
-    } while (false)
-#endif
-// clang-format on
-
-//=============================================================================
 /// Insert a item for coverage analysis.
 /// The first argument is a pointer to the count to be dumped.
 /// The remaining arguments occur in pairs: A string key, and a value.
@@ -83,8 +67,11 @@ class VerilatedCovImp;
 ///     }
 
 #define VL_COVER_INSERT(covcontextp, countp, ...) \
-    VL_IF_COVER(covcontextp->_inserti(countp); covcontextp->_insertf(__FILE__, __LINE__); \
-                covcontextp->_insertp("hier", name(), __VA_ARGS__))
+    do { \
+        covcontextp->_inserti(countp); \
+        covcontextp->_insertf(__FILE__, __LINE__); \
+        covcontextp->_insertp("hier", name(), __VA_ARGS__); \
+    } while (false)
 
 //=============================================================================
 // Convert VL_COVER_INSERT value arguments to strings, is \internal
