@@ -18,10 +18,13 @@ class Cls;
    endfunction
 endclass
 
+typedef Cls cls_t;
+typedef cls_t cls2_t;
+
 module t (/*AUTOARG*/);
 
    initial begin
-      if (Parcls#(Cls)::get_p() != 20) $stop;
+      if (Parcls#(cls2_t)::get_p() != 20) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
