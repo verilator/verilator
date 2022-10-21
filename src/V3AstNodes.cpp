@@ -1719,11 +1719,24 @@ void AstTimeImport::dump(std::ostream& str) const {
 void AstTypedef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (attrPublic()) str << " [PUBLIC]";
+    if (subDTypep()) {
+        str << " -> ";
+        subDTypep()->dump(str);
+    }
 }
 void AstNodeRange::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstRange::dump(std::ostream& str) const {
     this->AstNodeRange::dump(str);
     if (littleEndian()) str << " [LITTLE]";
+}
+void AstParamTypeDType::dump(std::ostream& str) const {
+    this->AstNodeDType::dump(str);
+    if (subDTypep()) {
+        str << " -> ";
+        subDTypep()->dump(str);
+    } else {
+        str << " -> UNLINKED";
+    }
 }
 void AstRefDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
@@ -2095,7 +2108,8 @@ void AstClassOrPackageRef::dump(std::ostream& str) const {
 }
 AstNodeModule* AstClassOrPackageRef::classOrPackagep() const {
     AstNode* foundp = m_classOrPackageNodep;
-    while (auto* const anodep = VN_CAST(foundp, Typedef)) foundp = anodep->subDTypep();
+    if (auto* const anodep = VN_CAST(foundp, Typedef)) foundp = anodep->subDTypep();
+    if (auto* const anodep = VN_CAST(foundp, NodeDType)) foundp = anodep->skipRefp();
     if (auto* const anodep = VN_CAST(foundp, ClassRefDType)) foundp = anodep->classp();
     return VN_CAST(foundp, NodeModule);
 }
