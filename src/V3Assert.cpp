@@ -98,7 +98,7 @@ private:
         // Add a internal if to check assertions are on.
         // Don't make this a AND term, as it's unlikely to need to test this.
         FileLine* const fl = nodep->fileline();
-        AstNode* const newp = new AstIf{
+        AstNodeIf* const newp = new AstIf{
             fl,
             (force ? new AstConst{fl, AstConst::BitTrue{}}
                    :  // If assertions are off, have constant propagation rip them out later
@@ -108,6 +108,7 @@ private:
                           new AstCMath{fl, "vlSymsp->_vm_contextp__->assertOn()", 1})
                       : static_cast<AstNode*>(new AstConst{fl, AstConst::BitFalse{}}))),
             nodep};
+        newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if
         return newp;
     }
@@ -164,6 +165,7 @@ private:
 
             if (bodysp && passsp) bodysp = bodysp->addNext(passsp);
             ifp = new AstIf{nodep->fileline(), propp, bodysp};
+            ifp->isBoundsCheck(true);  // To avoid LATCH warning
             bodysp = ifp;
         } else if (VN_IS(nodep, Assert) || VN_IS(nodep, AssertIntrinsic)) {
             if (nodep->immediate()) {
@@ -176,6 +178,7 @@ private:
             if (failsp) failsp = newIfAssertOn(failsp, force);
             if (!failsp) failsp = newFireAssertUnchecked(nodep, "'assert' failed.");
             ifp = new AstIf{nodep->fileline(), propp, passsp, failsp};
+            ifp->isBoundsCheck(true);  // To avoid LATCH warning
             // It's more LIKELY that we'll take the nullptr if clause
             // than the sim-killing else clause:
             ifp->branchPred(VBranchPred::BP_LIKELY);
@@ -253,6 +256,7 @@ private:
             AstIf* const checkifp
                 = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
                             newFireAssert(nodep, "'unique if' statement violated"), newifp};
+            checkifp->isBoundsCheck(true);  // To avoid LATCH warning
             checkifp->branchPred(VBranchPred::BP_UNLIKELY);
             nodep->replaceWith(checkifp);
             pushDeletep(nodep);
@@ -323,6 +327,7 @@ private:
                         nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
                         newFireAssert(nodep,
                                       "synthesis parallel_case, but multiple matches found")};
+                    ifp->isBoundsCheck(true);  // To avoid LATCH warning
                     ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     nodep->addNotParallelp(ifp);
                 }
@@ -425,6 +430,7 @@ private:
                               new AstEq{fl, new AstConst{fl, monNum},
                                         newMonitorNumVarRefp(nodep, VAccess::READ)}},
                 stmtsp};
+            ifp->isBoundsCheck(true);  // To avoid LATCH warning
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
             AstNode* const newp = new AstAlways{fl, VAlwaysKwd::ALWAYS, nullptr, ifp};
             m_modp->addStmtsp(newp);
@@ -443,6 +449,7 @@ private:
             // Add "always_comb if (__Vstrobe) begin $display(...); __Vstrobe = '0; end"
             AstNode* const stmtsp = nodep;
             AstIf* const ifp = new AstIf{fl, new AstVarRef{fl, varp, VAccess::READ}, stmtsp};
+            ifp->isBoundsCheck(true);  // To avoid LATCH warning
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
             AstNode* const newp = new AstAlwaysPostponed{fl, ifp};
             stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},

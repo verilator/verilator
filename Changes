@@ -25,7 +25,7 @@ Verilator 5.001 devel
 * Introduce a new combinational logic optimizer (DFG), that can yield
   significant performance improvements on some designs. [Geza Lore, Shunyao CAD]
 * Add --binary option as alias of --main --exe --build --timing (#3625).
-  For designs where C++ was only used to make a simple testbench we
+  For designs where C++ was only used to make a simple no-I/O testbench, we
   recommend abandoning that C++, and instead letting Verilator build it
   with --binary (or --main).
 
@@ -38,6 +38,7 @@ Verilator 5.001 devel
 * Add --dump-tree-dot to enable dumping Ast Tree .dot files (#3636). [Marcel Chang]
 * Add --get-supported to determine what features are in Verilator.
 * Add error on real edge event control.
+* Fix false LATCH warning on 'unique if' (#3088). [Rachit Nigam]
 * Fix cell assigning integer array parameters (#3299). [Michael Platzer]
 * Fix LSB error on --hierarchical submodules (#3539). [danbone]
 * Fix $display of fixed-width numbers (#3565). [Iztok Jeras]

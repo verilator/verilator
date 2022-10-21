@@ -504,7 +504,7 @@ class AstNodeIf VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op3 := elsesp : List[AstNode]
 private:
     VBranchPred m_branchPred;  // Branch prediction as taken/untaken?
-    bool m_isBoundsCheck;  // True if this if node was inserted for array bounds checking
+    bool m_isBoundsCheck;  // True if this if node is for assertion/bounds checking
 protected:
     AstNodeIf(VNType t, FileLine* fl, AstNode* condp, AstNode* thensp, AstNode* elsesp)
         : AstNodeStmt{t, fl} {
