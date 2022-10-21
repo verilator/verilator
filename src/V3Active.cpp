@@ -129,7 +129,7 @@ public:
         // Start a new if/else tracking graph
         // See NODE STATE comment in ActiveLatchCheckVisitor
         AstNode::user1ClearTree();
-        m_curVertexp = new LatchDetectGraphVertex(this, "ROOT");
+        m_curVertexp = new LatchDetectGraphVertex{this, "ROOT"};
     }
     // Clear out userp field of referenced outputs on destruction
     // (occurs at the end of each combinational always block)
@@ -165,7 +165,7 @@ public:
         } else {
             outVertexp = castVertexp(nodep->varp()->user1p());
         }
-        new V3GraphEdge(this, m_curVertexp, outVertexp, 1);
+        new V3GraphEdge{this, m_curVertexp, outVertexp, 1};
     }
     // Run latchCheckInternal on each variable assigned by the always block to see if all control
     // paths make an assignment. Detected latches are flagged in the variables AstVar
@@ -271,7 +271,7 @@ public:
 
         // No such AstActive yet, creat it, and add to map.
         AstSenTree* const newsenp = sensesp->cloneTree(false);
-        AstActive* const activep = new AstActive(fl, "sequent", newsenp);
+        AstActive* const activep = new AstActive{fl, "sequent", newsenp};
         activep->sensesStorep(activep->sensesp());
         addActive(activep);
         m_activeMap.emplace(*newsenp, activep);
@@ -556,7 +556,6 @@ private:
 
         if (const auto* const dtypep = nodep->sensp()->dtypep()) {
             if (const auto* const basicp = dtypep->basicp()) {
-
                 if (basicp->isEvent()) nodep->edgeType(VEdgeType::ET_EVENT);
             }
         }
