@@ -387,13 +387,13 @@ bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
 V3Hash DfgVertex::hash() {
     V3Hash& result = user<V3Hash>();
     if (!result.value()) {
-        V3Hash hash;
-        hash += m_type;
-        hash += width();
-        hash += selfHash();
-        // Variables are defined by themselves, so there is no need to hash the sources. This
-        // enables sound hashing of graphs circular only through variables, which we rely on.
+        V3Hash hash{selfHash()};
+        // Variables are defined by themselves, so there is no need to hash them further
+        // (especially the sources). This enables sound hashing of graphs circular only through
+        // variables, which we rely on.
         if (!is<DfgVertexVar>()) {
+            hash += m_type;
+            hash += width();  // Currently all non-variable vertices are packed, so this is safe
             const auto pair = sourceEdges();
             const DfgEdge* const edgesp = pair.first;
             const size_t arity = pair.second;
