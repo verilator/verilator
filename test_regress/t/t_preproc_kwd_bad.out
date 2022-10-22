@@ -1,0 +1,4 @@
+%Error: t/t_preproc_kwd_bad.v:8:1: `end_keywords when not inside `begin_keywords block
+    8 | `end_keywords   
+      | ^~~~~~~~~~~~~
+%Error: Exiting due to

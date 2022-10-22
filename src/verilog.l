@@ -1026,8 +1026,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`begin_keywords"[ \t]*\"1800-2012\"          { FL_FWD; yy_push_state(S12); PARSEP->lexPushKeywords(YY_START); FL_BRK; }
   "`begin_keywords"[ \t]*\"1800-2017\"          { FL_FWD; yy_push_state(S17); PARSEP->lexPushKeywords(YY_START); FL_BRK; }
   "`begin_keywords"[ \t]*\"1800[+]VAMS\"        { FL_FWD; yy_push_state(SAX); PARSEP->lexPushKeywords(YY_START); FL_BRK; }  /*Latest SV*/
-  "`end_keywords"                               { FL; yy_pop_state();
-                                                  if (!PARSEP->lexPopKeywords()) yylval.fl->v3error("`end_keywords when not inside `begin_keywords block");
+  "`end_keywords"                               { FL;
+                                                  if (!PARSEP->lexPopKeywords()) {
+                                                      yylval.fl->v3error("`end_keywords when not inside `begin_keywords block");
+                                                  } else { yy_pop_state(); }
                                                   FL_BRK; }
 
   /* Verilator */
@@ -1072,8 +1074,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* Catch all - absolutely last */
-<*>.|\n                 { FL; yylval.fl->v3error("Missing verilog.l rule: Default rule invoked in state "
-                                                 << YY_START << " '" << yytext << "'");
+<*>.|\n                 { FL; yylval.fl->v3error(  // LCOV_EXCL_LINE
+                                 "Missing verilog.l rule: Default rule invoked in state "
+                                 << YY_START << " '" << yytext << "'");
                           FL_BRK; }
 %%
 // Avoid code here as cl format misindents
