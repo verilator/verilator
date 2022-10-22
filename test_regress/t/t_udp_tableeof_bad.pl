@@ -13,7 +13,8 @@ scenarios(linter => 1);
 lint(
     verilator_flags2 => ["--lint-only --bbox-unsup"],
     fails => $Self->{vlt_all},
-    expect_filename => $Self->{golden_filename},
+    # Cannot use .out, get "$end" or "end of file" depending on bison version
+    expect => qr/EOF in 'table'/,
     );
 
 ok(1);

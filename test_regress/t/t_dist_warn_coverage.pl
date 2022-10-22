@@ -99,7 +99,6 @@ foreach my $s (
     'Syntax error parsing real: \'',
     'Syntax error: \'virtual\' not allowed before var declaration',
     'This may be because there\'s no search path specified with -I<dir>.',
-    'Thread scheduler is unable to provide requested ',
     'Unexpected connection to arrayed port',
     'Unhandled attribute type',
     'Unknown Error Code: ',
@@ -243,7 +242,10 @@ sub read_messages {
 
 sub read_outputs {
   file:
-    foreach my $filename (glob ("$root/test_regress/t/*.out $root/docs/gen/*.rst")) {
+    foreach my $filename (glob ("$root/test_regress/t/*.pl"
+                                . " $root/test_regress/t/*.out"
+                                . " $root/docs/gen/*.rst")) {
+        next if $filename =~ /t_dist_warn_coverage/;  # Avoid our own suppressions
         my $fh = IO::File->new("<$filename")
             or error("$! $filename");
         while (my $line = ($fh && $fh->getline)) {
