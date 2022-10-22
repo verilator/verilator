@@ -1,0 +1,4 @@
+%Error: t/t_foreach_nindex_bad.v:12:34: foreach loop variables exceed number of indices of array
+   12 |       foreach (array[i, j, badk, badl]);   
+      |                                  ^~~~
+%Error: Exiting due to

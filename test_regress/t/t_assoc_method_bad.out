@@ -50,4 +50,8 @@
                                    : ... In instance t
    27 |       a.shuffle;   
       |         ^~~~~~~
+%Error: t/t_assoc_method_bad.v:29:9: Unknown built-in associative array method 'bad_not_defined'
+                                   : ... In instance t
+   29 |       a.bad_not_defined();
+      |         ^~~~~~~~~~~~~~~
 %Error: Exiting due to

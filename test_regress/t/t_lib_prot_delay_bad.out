@@ -1,0 +1,3 @@
+%Error-UNSUPPORTED: Unsupported: --lib-create with --timing and delays
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

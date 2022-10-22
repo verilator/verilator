@@ -70,4 +70,8 @@
                                      : ... In instance t
    43 |       a[x] = "bad";
       |        ^
+%Error: t/t_assoc_wildcard_bad.v:45:9: Unknown wildcard associative array method 'bad_not_defined'
+                                     : ... In instance t
+   45 |       a.bad_not_defined();
+      |         ^~~~~~~~~~~~~~~
 %Error: Exiting due to

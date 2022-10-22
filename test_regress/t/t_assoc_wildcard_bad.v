@@ -41,5 +41,7 @@ module t (/*AUTOARG*/);
       a.find_last_index;  // Not legal on wildcard
 
       a[x] = "bad";
+
+      a.bad_not_defined();
    end
 endmodule

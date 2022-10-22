@@ -1,0 +1,11 @@
+%Error-UNSUPPORTED: t/t_unbounded_bad.v:9:11: Unsupported/illegal unbounded ('$') in this context.
+                                            : ... In instance t
+    9 |       if ($) $stop;
+      |           ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Warning-WIDTH: t/t_unbounded_bad.v:9:7: Logical operator IF expects 1 bit on the If, but If's UNBOUNDED generates 32 bits.
+                                       : ... In instance t
+    9 |       if ($) $stop;
+      |       ^~
+                ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
+%Error: Exiting due to

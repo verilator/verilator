@@ -10,4 +10,8 @@
                                           : ... In instance t
    17 |       s.itoa(1,2,3);   
       |         ^~~~
+%Error: t/t_string_type_methods_bad.v:18:9: Unknown built-in string method 'bad_no_such_method'
+                                          : ... In instance t
+   18 |       s.bad_no_such_method();   
+      |         ^~~~~~~~~~~~~~~~~~
 %Error: Exiting due to

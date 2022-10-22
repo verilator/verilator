@@ -1,0 +1,4 @@
+%Error: t/t_inst_2star_bad.v:9:17: Duplicate .* in an instance
+    9 |    sub sub (.*, .*);
+      |                 ^~
+%Error: Exiting due to
