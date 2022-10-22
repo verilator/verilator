@@ -58,6 +58,11 @@ ZCBieSB0aGlzIExpY2Vuc2UsCm90aGVyIHRoYW4gYW4gQXBwbGljYXRpb24gb3IgYSBDb21iaW5l
 ZCBXb3JrIGFzIG==
 
 
+`pragma protect encoding = (enctype = "BASE64", line_length = 76, bytes = 76)
+`pragma protect data_block
+aW5pdGlvbnMuCgogIEFzIHVzZWQgaGVyZWluLCAidGhpcyBMaWNlbnNlIiByZWZlcnMgdG8gdmVyTOOLONG
+
+
 `pragma protect end_protected
 
 // Should trigger unknown pragma warning, although in principle unknown pragmas should be safely ignored.

@@ -564,7 +564,7 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
     } else {
         if (attr == VAttrType::VAR_FORCEABLE) {
             if (module.empty()) {
-                fl->v3error("missing -module");
+                fl->v3error("forceable missing -module");
             } else if (!ftask.empty()) {
                 fl->v3error("Signals inside functions/tasks cannot be marked forceable");
             } else {

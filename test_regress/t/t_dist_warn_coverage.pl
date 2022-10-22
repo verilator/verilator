@@ -26,15 +26,10 @@ foreach my $s (
     # Not yet analyzed
     ' is not an in/out/inout/param/interface: ',
     ' loading non-variable',
-    '$display-like format of %c format of > 8 bit value',
     '$fopen mode should be <= 4 characters',
     '\'foreach\' loop variable expects simple variable name',
     '--coverage and --savable not supported together',
-    '--output-split-cfuncs must be >= 0: ',
-    '--output-split-ctrace must be >= 0: ',
     '--pipe-filter protocol error, unexpected: ',
-    '--reloop-limit must be >= 2: ',
-    '-j requires a non-negative integer argument, but \'',
     '/*verilator sformat*/ can only be applied to last argument of ',
     'Argument needed for string.',
     'Array initialization has too few elements, need element ',
@@ -45,13 +40,11 @@ foreach my $s (
     'Assignment pattern with too many elements',
     'Attempted parameter setting of non-parameter: Param ',
     'Attempting to extend using a non-class ',
-    'BASE64 line too long in `pragma protect key_bloock/data_block',
     'Can\'t find varpin scope of ',
     'Can\'t resolve module reference: \'',
     'Cannot mix DPI import, DPI export, class methods, and/or public ',
     'Cannot write preprocessor output: ',
     'Circular logic when ordering code (non-cutable edge loop)',
-    'Connect by position is illegal in .* connected instances',
     'Deferred assertions must use \'#0\' (IEEE 1800-2017 16.4)',
     'Define or directive not defined: `',
     'Duplicate declaration of member name: ',
@@ -62,12 +55,8 @@ foreach my $s (
     'Extern declaration\'s scope is not a defined class',
     'Format to $display-like function must have constant format string',
     'Forward typedef used as class/package does not resolve to class/package: ',
-    'Genvars may not be arrayed: ',
     'Illegal +: or -: select; type already selected, or bad dimension: ',
-    'Illegal base character: ',
     'Illegal bit or array select; type already selected, or bad dimension: ',
-    'Illegal character in decimal constant: ',
-    'Illegal character in hex constant: ',
     'Illegal range select; type already selected, or bad dimension: ',
     'In defparam, instance ',
     'Interface port ',
@@ -84,9 +73,6 @@ foreach my $s (
     'Parameter type pin value isn\'t a type: Param ',
     'Parameter type variable isn\'t a type: Param ',
     'Pattern replication value of 0 is not legal.',
-    'Real not allowed as operand to in ?== operator',
-    'Replication value isn\'t a constant.',
-    'Replication value of 0 is only legal under a concatenation (IEEE ',
     'Return with return value isn\'t underneath a function',
     'Select from non-array ',
     'Signals inside functions/tasks cannot be marked forceable',
@@ -138,7 +124,6 @@ foreach my $s (
     'Unsupported: modport export',
     'Unsupported: static cast to ',
     'Unsupported: super',
-    'Unterminated /* comment inside -f file.',
     'Width of :+ or :- is < 0: ',
     'Width of :+ or :- is huge; vector of over 1billion bits: ',
     'Width of bit extract isn\'t a constant',
@@ -146,11 +131,8 @@ foreach my $s (
     'dynamic new() not expected in this context (data type must be dynamic array)',
     'dynamic new() not expected in this context (expected under an assign)',
     'line_length must be multiple of 4 for BASE64',
-    'missing -module',
-    'missing -var',
     'new() not expected in this context',
     'no_inline not supported for tasks',
-    'of %c format of > 8 bit value',
     ) { $Suppressed{$s} = 1; }
 
 if (!-r "$root/.git") {
@@ -258,3 +240,7 @@ sub read_outputs {
     }
     print "Number of outputs = ",scalar(keys %Outputs), "\n";
 }
+
+# Local Variables:
+# compile-command:"./t_dist_warn_coverage.pl"
+# End:

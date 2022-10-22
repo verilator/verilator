@@ -5382,7 +5382,13 @@ private:
             userIterateAndNext(nodep->lhsp(), WidthVP(CONTEXT, PRELIM).p());
             userIterateAndNext(nodep->rhsp(), WidthVP(CONTEXT, PRELIM).p());
             if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
-                if (!realok) nodep->v3error("Real not allowed as operand to in ?== operator");
+                if (!realok) {
+                    nodep->v3error("Real is illegal operand to ?== operator");
+                    AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
                 if (AstNodeBiop* const newp = replaceWithDVersion(nodep)) {
                     VL_DANGLING(nodep);
                     nodep = newp;  // Process new node instead

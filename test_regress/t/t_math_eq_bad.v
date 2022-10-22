@@ -6,13 +6,11 @@
 
 module t (/*AUTOARG*/);
 
-   wire foo;
+   logic [31:0] a;
 
-   sub sub (.*, .*);
+   initial begin
+      a = 1234;
+      if (a ==? 1.0) $stop;  // Bad
+   end
 
-   sub sub (foo, .*);
-
-endmodule
-
-module sub (input foo);
 endmodule

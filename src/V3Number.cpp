@@ -269,7 +269,8 @@ void V3Number::create(const char* sourcep) {
             }
             case '_': break;
             default: {
-                v3error("Illegal character in decimal constant: " << *cp);
+                // Likely impossible as parser prevents hitting it
+                v3error("Illegal character in decimal constant: " << *cp);  // LCOV_EXCL_LINE
                 break;
             }
             }
@@ -346,11 +347,17 @@ void V3Number::create(const char* sourcep) {
                 case 'x': setBit(obit++,'x'); setBit(obit++,'x'); setBit(obit++,'x'); setBit(obit++,'x'); break;
                     // clang-format on
                 case '_': break;
-                default: v3error("Illegal character in hex constant: " << *cp);
+                default:
+                    // Likely impossible as parser prevents hitting it
+                    v3error("Illegal character in hex constant: " << *cp);  // LCOV_EXCL_LINE
+                    break;
                 }
                 break;
             }
-            default: v3error("Illegal base character: " << base);
+            default:
+                // Likely impossible as parser prevents hitting it
+                v3error("Illegal base character: " << base);  // LCOV_EXCL_LINE
+                break;
             }
         }
     }

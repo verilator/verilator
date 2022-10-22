@@ -1594,14 +1594,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             ++i;
             int val = 0;
             if (i < argc && isdigit(argv[i][0])) {
-                val = atoi(argv[i]);
-                if (val < 0) {
-                    fl->v3error("-j requires a non-negative integer argument, but '"
-                                << argv[i] << "' was passed");
-                    val = 1;  // Fall-back value, though we will exit on error.
-                } else if (val == 0) {
-                    val = std::thread::hardware_concurrency();
-                }
+                val = atoi(argv[i]);  // Can't be negative due to isdigit above
+                if (val == 0) val = std::thread::hardware_concurrency();
                 ++i;
             }
             if (m_buildJobs == -1) m_buildJobs = val;

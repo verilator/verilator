@@ -184,7 +184,8 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
         }
     }
     if (type == VVarType::GENVAR) {
-        if (arrayp) fileline->v3error("Genvars may not be arrayed: " << name);
+        // Should be impossible as the grammer blocks this, but...
+        if (arrayp) fileline->v3error("Genvars may not be arrayed: " << name);  // LCOV_EXCL_LINE
     }
 
     // Split RANGE0-RANGE1-RANGE2 into

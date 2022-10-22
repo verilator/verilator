@@ -19,4 +19,10 @@
 %Error: t/t_vlt_syntax_bad.vlt:18:1: Argument -scope only supported for tracing_on/off_off
    18 | lint_on --rule UNOPTFLAT -scope "top*" -levels 0
       | ^~~~~~~
+%Error: t/t_vlt_syntax_bad.vlt:20:1: forceable missing -module
+   20 | forceable -module "" -var "net_*"
+      | ^~~~~~~~~
+%Error: t/t_vlt_syntax_bad.vlt:22:1: missing -var
+   22 | forceable -module "top" -var ""
+      | ^~~~~~~~~
 %Error: Exiting due to

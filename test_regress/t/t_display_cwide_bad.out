@@ -1,0 +1,6 @@
+%Warning-WIDTH: t/t_display_cwide_bad.v:10:7: $display-like format of %c format of > 8 bit value
+   10 |       $display("%c", 32'h1234);   
+      |       ^~~~~~~~
+                ... For warning description see https://verilator.org/warn/WIDTH?v=latest
+                ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
+%Error: Exiting due to
