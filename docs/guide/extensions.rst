@@ -185,9 +185,7 @@ or "`ifdef`"'s may break other tools.
 
    The clock_enable attribute will cause the clock gate to be ignored in
    the scheduling algorithm, sometimes required for correct clock behavior,
-   and always improving performance.  It's also a good idea to enable the
-   :option:`IMPERFECTSCH` warning, to ensure all clock enables are properly
-   recognized.
+   and always improving performance.
 
    Same as :option:`clock_enable` configuration file option.
 
