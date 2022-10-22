@@ -363,7 +363,8 @@ public:
 //============================================================================
 // Create a TRIGGERVEC and the related TriggerKit for the given AstSenTree vector
 
-const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
+const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
+                                SenExprBuilder& senExprBuilder,
                                 const std::vector<const AstSenTree*>& senTreeps,
                                 const string& name, const ExtraTriggers& extraTriggers,
                                 bool slow = false) {
@@ -463,7 +464,10 @@ const TriggerKit createTriggers(AstNetlist* netlistp, SenExprBuilder& senExprBui
         //
         ++triggerNumber;
     }
-    // Add the update statements
+    // Add the init and update statements
+    for (AstNodeStmt* const nodep : senExprBuilder.getAndClearInits()) {
+        initFuncp->addStmtsp(nodep);
+    }
     for (AstNodeStmt* const nodep : senExprBuilder.getAndClearPostUpdates()) {
         funcp->addStmtsp(nodep);
     }
@@ -604,7 +608,7 @@ std::pair<AstVarScope*, AstNode*> makeEvalLoop(AstNetlist* netlistp, const strin
 //============================================================================
 // Order the combinational logic to create the settle loop
 
-void createSettle(AstNetlist* netlistp, SenExprBuilder& senExprBulider,
+void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilder& senExprBulider,
                   LogicClasses& logicClasses) {
     AstCFunc* const funcp = makeTopFunction(netlistp, "_eval_settle", true);
 
@@ -622,8 +626,8 @@ void createSettle(AstNetlist* netlistp, SenExprBuilder& senExprBulider,
 
     // Gather the relevant sensitivity expressions and create the trigger kit
     const auto& senTreeps = getSenTreesUsedBy({&comb, &hybrid});
-    const TriggerKit& trig
-        = createTriggers(netlistp, senExprBulider, senTreeps, "stl", extraTriggers, true);
+    const TriggerKit& trig = createTriggers(netlistp, initFuncp, senExprBulider, senTreeps, "stl",
+                                            extraTriggers, true);
 
     // Remap sensitivities (comb has none, so only do the hybrid)
     remapSensitivities(hybrid, trig.m_map);
@@ -662,8 +666,8 @@ void createSettle(AstNetlist* netlistp, SenExprBuilder& senExprBulider,
 //============================================================================
 // Order the replicated combinational logic to create the 'ico' region
 
-AstNode* createInputCombLoop(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,
-                             LogicByScope& logic) {
+AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
+                             SenExprBuilder& senExprBuilder, LogicByScope& logic) {
     // Nothing to do if no combinational logic is sensitive to top level inputs
     if (logic.empty()) return nullptr;
 
@@ -693,7 +697,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, SenExprBuilder& senExprBuilde
     // Gather the relevant sensitivity expressions and create the trigger kit
     const auto& senTreeps = getSenTreesUsedBy({&logic});
     const TriggerKit& trig
-        = createTriggers(netlistp, senExprBuilder, senTreeps, "ico", extraTriggers);
+        = createTriggers(netlistp, initFuncp, senExprBuilder, senTreeps, "ico", extraTriggers);
 
     if (dpiExportTriggerVscp) {
         trig.addDpiExportTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
@@ -904,10 +908,12 @@ void schedule(AstNetlist* netlistp) {
 
     // We pass around a single SenExprBuilder instance, as we only need one set of 'prev' variables
     // for edge/change detection in sensitivity expressions, which this keeps track of.
-    SenExprBuilder senExprBuilder{netlistp, initp};
+    AstTopScope* const topScopep = netlistp->topScopep();
+    AstScope* const scopeTopp = topScopep->scopep();
+    SenExprBuilder senExprBuilder{scopeTopp};
 
     // Step 4: Create 'settle' region that restores the combinational invariant
-    createSettle(netlistp, senExprBuilder, logicClasses);
+    createSettle(netlistp, initp, senExprBuilder, logicClasses);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-settle");
 
     // Step 5: Partition the clocked and combinational (including hybrid) logic into pre/act/nba.
@@ -932,7 +938,8 @@ void schedule(AstNetlist* netlistp) {
     }
 
     // Step 7: Create input combinational logic loop
-    AstNode* const icoLoopp = createInputCombLoop(netlistp, senExprBuilder, logicReplicas.m_ico);
+    AstNode* const icoLoopp
+        = createInputCombLoop(netlistp, initp, senExprBuilder, logicReplicas.m_ico);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-ico");
 
     // Step 8: Create the pre/act/nba triggers
@@ -949,14 +956,14 @@ void schedule(AstNetlist* netlistp) {
                                                &logicRegions.m_nba,  //
                                                &timingKit.m_lbs});
     const TriggerKit& actTrig
-        = createTriggers(netlistp, senExprBuilder, senTreeps, "act", extraTriggers);
+        = createTriggers(netlistp, initp, senExprBuilder, senTreeps, "act", extraTriggers);
+
+    // Add post updates from the timing kit
+    if (timingKit.m_postUpdates) actTrig.m_funcp->addStmtsp(timingKit.m_postUpdates);
 
     if (dpiExportTriggerVscp) {
         actTrig.addDpiExportTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
     }
-
-    AstTopScope* const topScopep = netlistp->topScopep();
-    AstScope* const scopeTopp = topScopep->scopep();
 
     AstVarScope* const actTrigVscp = actTrig.m_vscp;
     AstVarScope* const preTrigVscp = scopeTopp->createTempLike("__VpreTriggered", actTrigVscp);

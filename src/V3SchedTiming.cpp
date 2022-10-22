@@ -89,7 +89,8 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
             UASSERT_OBJ(!resumep->nextp(), resumep, "Should be the only statement here");
             AstVarScope* const schedulerp = VN_AS(resumep->fromp(), VarRef)->varScopep();
             UASSERT_OBJ(schedulerp->dtypep()->basicp()->isDelayScheduler()
-                            || schedulerp->dtypep()->basicp()->isTriggerScheduler(),
+                            || schedulerp->dtypep()->basicp()->isTriggerScheduler()
+                            || schedulerp->dtypep()->basicp()->isDynamicTriggerScheduler(),
                         schedulerp, "Unexpected type");
             if (!schedulerp->dtypep()->basicp()->isTriggerScheduler()) continue;
             // Create the global commit function only if we have trigger schedulers
@@ -143,6 +144,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
         bool m_gatherVars = false;  // Should we gather vars in m_writtenBySuspendable?
         AstScope* const m_scopeTopp;  // Scope at the top
         LogicByScope& m_lbs;  // Timing resume actives
+        AstNodeStmt*& m_postUpdatesr;  // Post updates for the trigger eval function
         // Additional var sensitivities
         std::map<const AstVarScope*, std::set<AstSenTree*>>& m_externalDomains;
         std::set<AstSenTree*> m_processDomains;  // Sentrees from the current process
@@ -159,11 +161,15 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
             // Create a resume() call on the timing scheduler
             auto* const resumep = new AstCMethodHard{
                 flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, "resume"};
-            if (schedulerp->dtypep()->basicp()->isTriggerScheduler() && methodp->pinsp()) {
-                resumep->addPinsp(methodp->pinsp()->cloneTree(false));
-            }
             resumep->statement(true);
             resumep->dtypeSetVoid();
+            if (schedulerp->dtypep()->basicp()->isTriggerScheduler()) {
+                if (methodp->pinsp()) resumep->addPinsp(methodp->pinsp()->cloneTree(false));
+            } else if (schedulerp->dtypep()->basicp()->isDynamicTriggerScheduler()) {
+                auto* const postp = resumep->cloneTree(false);
+                postp->name("doPostUpdates");
+                m_postUpdatesr = AstNode::addNext(m_postUpdatesr, postp);
+            }
             // Put it in an active and put that in the global resume function
             auto* const activep = new AstActive{flp, "_timing", sensesp};
             activep->addStmtsp(resumep);
@@ -215,19 +221,21 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
 
     public:
         // CONSTRUCTORS
-        explicit AwaitVisitor(AstNetlist* nodep, LogicByScope& lbs,
+        explicit AwaitVisitor(AstNetlist* nodep, LogicByScope& lbs, AstNodeStmt*& postUpdatesr,
                               std::map<const AstVarScope*, std::set<AstSenTree*>>& externalDomains)
             : m_scopeTopp{nodep->topScopep()->scopep()}
             , m_lbs{lbs}
+            , m_postUpdatesr{postUpdatesr}
             , m_externalDomains{externalDomains} {
             iterate(nodep);
         }
         ~AwaitVisitor() override = default;
     };
     LogicByScope lbs;
+    AstNodeStmt* postUpdates = nullptr;
     std::map<const AstVarScope*, std::set<AstSenTree*>> externalDomains;
-    AwaitVisitor{netlistp, lbs, externalDomains};
-    return {std::move(lbs), std::move(externalDomains)};
+    AwaitVisitor{netlistp, lbs, postUpdates, externalDomains};
+    return {std::move(lbs), postUpdates, std::move(externalDomains)};
 }
 
 //============================================================================

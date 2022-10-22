@@ -440,6 +440,9 @@ public:
     bool isTriggerScheduler() const VL_MT_SAFE {
         return keyword() == VBasicDTypeKwd::TRIGGER_SCHEDULER;
     }
+    bool isDynamicTriggerScheduler() const VL_MT_SAFE {
+        return keyword() == VBasicDTypeKwd::DYNAMIC_TRIGGER_SCHEDULER;
+    }
     bool isOpaque() const VL_MT_SAFE { return keyword().isOpaque(); }
     bool isString() const VL_MT_SAFE { return keyword().isString(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }

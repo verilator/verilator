@@ -239,6 +239,80 @@ public:
 };
 
 //=============================================================================
+// VlDynamicTriggerScheduler is used for cases where triggers cannot be statically referenced and
+// evaluated. Coroutines that make use of this scheduler must adhere to a certain procedure:
+//     __Vtrigger = 0;
+//     <locals and inits required for trigger eval>
+//     while (!__Vtrigger) {
+//         co_await __VdynSched.evaluation();
+//         <pre updates>;
+//         __Vtrigger = <trigger eval>;
+//         [optionally] co_await __VdynSched.postUpdate();
+//         <post updates>;
+//     }
+//    co_await __VdynSched.resumption();
+// The coroutines get resumed at trigger evaluation time, evaluate their local triggers, optionally
+// await the post update step, and if the trigger is set, await proper resumption in the 'act' eval
+// step.
+
+class VlDynamicTriggerScheduler final {
+    // TYPES
+    using VlCoroutineVec = std::vector<VlCoroutineHandle>;
+
+    // MEMBERS
+    VlCoroutineVec m_suspended;  // Suspended coroutines awaiting trigger evaluation
+    VlCoroutineVec m_evaluated;  // Coroutines currently being evaluated (for evaluate())
+    VlCoroutineVec m_triggered;  // Coroutines whose triggers were set, and are awaiting resumption
+    VlCoroutineVec m_post;  // Coroutines awaiting the post update step (only relevant for triggers
+                            // with destructive post updates, e.g. named events)
+
+    // METHODS
+    auto awaitable(VlCoroutineVec& queue, const char* filename, int lineno) {
+        struct Awaitable {
+            VlCoroutineVec& suspended;  // Coros waiting on trigger
+            VlFileLineDebug fileline;
+
+            bool await_ready() const { return false; }  // Always suspend
+            void await_suspend(std::coroutine_handle<> coro) {
+                suspended.emplace_back(coro, fileline);
+            }
+            void await_resume() const {}
+        };
+        return Awaitable{queue, VlFileLineDebug{filename, lineno}};
+    }
+
+public:
+    // Evaluates all dynamic triggers (resumed coroutines that co_await evaluation())
+    bool evaluate();
+    // Runs post updates for all dynamic triggers (resumes coroutines that co_await postUpdate())
+    void doPostUpdates();
+    // Resumes all coroutines whose triggers are set (those that co_await resumption())
+    void resume();
+#ifdef VL_DEBUG
+    void dump() const;
+#endif
+    // Used by coroutines for co_awaiting trigger evaluation
+    auto evaluation(const char* eventDescription, const char* filename, int lineno) {
+        VL_DEBUG_IF(VL_DBG_MSGF("         Suspending process waiting for %s at %s:%d\n",
+                                eventDescription, filename, lineno););
+        return awaitable(m_suspended, filename, lineno);
+    }
+    // Used by coroutines for co_awaiting the trigger post update step
+    auto postUpdate(const char* eventDescription, const char* filename, int lineno) {
+        VL_DEBUG_IF(
+            VL_DBG_MSGF("         Process waiting for %s at %s:%d awaiting the post update step\n",
+                        eventDescription, filename, lineno););
+        return awaitable(m_post, filename, lineno);
+    }
+    // Used by coroutines for co_awaiting the resumption step (in 'act' eval)
+    auto resumption(const char* eventDescription, const char* filename, int lineno) {
+        VL_DEBUG_IF(VL_DBG_MSGF("         Process waiting for %s at %s:%d awaiting resumption\n",
+                                eventDescription, filename, lineno););
+        return awaitable(m_triggered, filename, lineno);
+    }
+};
+
+//=============================================================================
 // VlNow is a helper awaitable type that always suspends, and then immediately resumes a coroutine.
 // Allows forcing the move of coroutine locals to the heap.
 

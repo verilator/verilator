@@ -15,25 +15,93 @@ module t;
     // EVENTS
     class EventClass;
         event e;
+        int trig_count;
 
-        task sleep; /* @e; */ endtask  // Unsupported
-        task wake; ->e; endtask
+        function new;
+            trig_count = 0;
+        endfunction
+
+        task inc_trig_count;
+            trig_count++;
+        endtask;
+
+        task sleep;
+            @e inc_trig_count;
+            `WRITE_VERBOSE(("Event in class triggered at time %0t!\n", $time));
+        endtask
+
+        task wake;
+            ->e;
+        endtask
+    endclass
+
+    class WaitClass;
+        int a;
+        int b;
+        logic ok;
+
+        function new;
+            a = 0;
+            b = 0;
+            ok = 0;
+        endfunction
+
+        task await;
+            wait(a == 4 && b > 16) if (a != 4 || b <= 16) $stop;
+            ok = 1;
+            `WRITE_VERBOSE(("Condition in object met at time %0t!\n", $time));
+        endtask
+    endclass
+
+    class LocalWaitClass;
+        logic ok;
+
+        function new;
+            ok = 0;
+        endfunction
+
+        task await;
+            int a = 0;
+            int b = 100;
+            fork
+                wait(a == 42 || b != 100) if (a != 42 && b == 100) $stop;
+                #10 a = 42;
+            join
+            ok = 1;
+            `WRITE_VERBOSE(("Condition with local variables met at time %0t!\n", $time));
+        endtask
     endclass
 
     EventClass ec = new;
-    int event_trig_count = 0;
+    WaitClass wc = new;
+    LocalWaitClass lc = new;
 
     initial begin
         @ec.e;
         ec.sleep;
+        if (wc.ok) $stop;
+        wc.await;
+        if (lc.ok) $stop;
+        lc.await;
     end
 
-    initial #25 ec.wake;
-    initial #50 ->ec.e;
+    initial #20 ec.wake;
+    initial #40 ->ec.e;
+    initial begin
+        wc.a = #50 4;
+        wc.b = #10 32;
+    end
 
     always @ec.e begin
-        event_trig_count++;
+        ec.inc_trig_count;
         `WRITE_VERBOSE(("Event in class triggered at time %0t!\n", $time));
+    end
+
+    initial begin
+        #80
+        if (ec.trig_count != 3) $stop;
+        if (!wc.ok) $stop;
+        if (!lc.ok) $stop;
     end
 
     // =============================================
@@ -120,7 +188,6 @@ module t;
         fork #5 dAsgn.x = 0; join_none
         dAsgn.do_assign;
         if ($time != 80) $stop;
-        if (event_trig_count != 2) $stop;
         if (dAsgn.y != 1) $stop;
         // Test if the object is deleted before do_assign finishes:
         fork dAsgn.do_assign; join_none

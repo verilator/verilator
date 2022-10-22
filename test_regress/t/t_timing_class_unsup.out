@@ -1,6 +1,0 @@
-%Error-UNSUPPORTED: t/t_timing_class_unsup.v:10:17: Unsupported: event controls in methods
-                                                  : ... In instance $unit::EventClass
-   10 |     task sleep; @e; endtask
-      |                 ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to
