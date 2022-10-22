@@ -318,7 +318,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "endmodule"           { FL; return yENDMODULE; }
   "endprimitive"        { FL; return yENDPRIMITIVE; }
   "endspecify"          { FL; return yENDSPECIFY; }
-  "endtable"            { FL; yylval.fl->v3error("Syntax error: ENDTABLE outside of TABLE"); FL_BRK; }
+  "endtable"            { FL; yylval.fl->v3error("Syntax error: 'endtable' outside of 'table'"); FL_BRK; }
   "endtask"             { FL; return yENDTASK; }
   "event"               { FL; return yEVENT; }
   "for"                 { FL; return yFOR; }
@@ -961,7 +961,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <TABLE>"endtable"       { yy_pop_state(); FL; return yENDTABLE; }
 <TABLE>"`line"{ws}+[^\n\r]*{crnl}       { FL_FWD; PARSEP->lexPpline(yytext); FL_BRK; }
 <TABLE>.                { yymore(); }
-<TABLE><<EOF>>          { FL; yylval.fl->v3error("EOF in TABLE");
+<TABLE><<EOF>>          { FL; yylval.fl->v3error("EOF in 'table'");
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
 
   /************************************************************************/
