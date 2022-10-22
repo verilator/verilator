@@ -31,10 +31,14 @@ Verilator 5.001 devel
 
 **Minor:**
 
+* Split UNUSED warning into genvar, param, and signal warnings (#3607). [Topa Topino]
 * Support standalone 'this' in classes (#2594) (#3248) (#3675). [Arkadiusz Kozdra, Antmicro Ltd]
 * Support tristate select/extend (#3604). [Ryszard Rozak, Antmicro Ltd>
 * Support linting for top module interfaces (#3635). [Kanad Kanhere]
+* Support virtual interfaces (#3654). [Arkadiusz Kozdra, Antmicro Ltd]
+* Support class type params without defaults (#3693). [Krzysztof Bieganski, Antmicro Ltd]
 * Support empty generate_regions (#3695). [mpb27]
+* Support access to constructs inside type parameters (#3702). [Arkadiusz Kozdra, Antmicro Ltd]
 * Add --dump-tree-dot to enable dumping Ast Tree .dot files (#3636). [Marcel Chang]
 * Add --get-supported to determine what features are in Verilator.
 * Add error on real edge event control.
@@ -45,7 +49,7 @@ Verilator 5.001 devel
 * Fix foreach and pre/post increment in functions (#3613). [Nandu Raj]
 * Fix linker errors in user-facing timing functions (#3657). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix null access on optimized-out fork statements (#3658). [Krzysztof Bieganski, Antmicro Ltd]
-
+* Fix VPI inline module naming mismatch (#3690) (#3694). [Jiuyang Liu]
 
 Verilator 4.228 2022-10-01
 ==========================
