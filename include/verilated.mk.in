@@ -130,18 +130,8 @@ endif
 #######################################################################
 ##### Threaded builds
 
-ifneq ($(VM_C11),0)
- ifneq ($(VM_C11),)
-  VK_C11=1
- endif
-endif
-
-ifneq ($(VM_THREADS),0)
- ifneq ($(VM_THREADS),)
-  VK_C11=1
-  VK_LIBS_THREADED=1
- endif
-endif
+VK_C11=1
+VK_LIBS_THREADED=1
 
 ifneq ($(VM_TIMING),0)
  ifneq ($(VM_TIMING),)
