@@ -69,6 +69,11 @@ public:
     // METHODS (sub command)
     /// Run system command, returns the exit code of the child process.
     static int system(const string& command);
+
+    // METHODS (segfault handler)
+    // Configure segfault signal handler for a calling thread.
+    // First call installs process-wide handler for the signal.
+    static void setupThreadSegfaultSignalHandler();
 };
 
 #endif  // Guard

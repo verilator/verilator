@@ -725,6 +725,8 @@ int main(int argc, char** argv, char** /*env*/) {
     // General initialization
     std::ios::sync_with_stdio();
 
+    V3Os::setupThreadSegfaultSignalHandler();
+
     time_t randseed;
     time(&randseed);
     srand(static_cast<int>(randseed));

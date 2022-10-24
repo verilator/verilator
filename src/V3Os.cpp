@@ -37,9 +37,11 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 #endif
 
+#include <array>
 #include <cerrno>
 #include <climits>  // PATH_MAX (especially on FreeBSD)
 #include <cstdarg>
+#include <cstdint>
 #include <dirent.h>
 #include <fstream>
 #include <memory>
@@ -69,6 +71,13 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 # include <sys/time.h>
 # include <sys/wait.h>  // Needed on FreeBSD for WIFEXITED
 # include <unistd.h>  // usleep
+#endif
+
+#if defined(__linux__)
+# include <atomic>
+# include <csignal>
+# include <fcntl.h>
+# include <sys/syscall.h>
 #endif
 // clang-format on
 
@@ -362,4 +371,230 @@ int V3Os::system(const string& command) {
         UASSERT(exit_code >= 0, "exit code must not be negative");
         return exit_code;
     }
+}
+
+//######################################################################
+// METHODS (segfault handler)
+
+#if defined(__linux__)
+class ProcMapsParser final {
+
+    int m_fd = -1;  // file descriptor
+    std::array<char, 256> m_buf = {};  // chunk of data read from the file.
+    const char* m_ccp = nullptr;  // pointer to current character.
+    const char* m_endcp = nullptr;  // pointer to a character one past the end of data in m_buf.
+
+private:
+    // Moves m_ccp to the next character. Reads next chunk of data if needed.
+    void advance() {
+        if (m_ccp != m_endcp) {
+            ++m_ccp;
+        } else {
+            const ssize_t len = read(m_fd, m_buf.data(), m_buf.size());
+            const ssize_t buf_size = static_cast<ssize_t>(m_buf.size());
+            if (len == buf_size) {
+                m_ccp = &m_buf.front();
+                m_endcp = m_ccp + (m_buf.size() - 1);
+            } else if (len > 0 && len < buf_size) {
+                m_buf[len] = '\0';
+                m_ccp = m_buf.data();
+                m_endcp = &m_buf[len];
+            } else {
+                m_buf[0] = '\0';
+                m_ccp = m_buf.data();
+                m_endcp = m_ccp;
+            }
+        }
+    }
+
+    // Moves m_cc to point at the first byte of the next line.
+    void skip_line() {
+        while (*m_ccp != '\n' && *m_ccp != '\0') { advance(); }
+        if (*m_ccp == '\n') { advance(); }
+    }
+
+    uintptr_t parseHexNumber() {
+        uintptr_t result = 0;
+
+        for (;;) {
+            if (*m_ccp >= '0' && *m_ccp <= '9') {
+                result <<= 4;
+                result |= *m_ccp - '0';
+            } else if (*m_ccp >= 'a' && *m_ccp <= 'f') {
+                result <<= 4;
+                result |= *m_ccp - 'a' + 0xA;
+            } else if (*m_ccp >= 'A' && *m_ccp <= 'F') {
+                result <<= 4;
+                result |= *m_ccp - 'A' + 0xA;
+            } else {
+                return result;
+            }
+            advance();
+        }
+    }
+
+    bool open(const char* maps_path) {
+        m_fd = ::open(maps_path, O_RDONLY | O_CLOEXEC);
+        return m_fd >= 0;
+    }
+
+    void close() {
+        if (m_fd >= 0) ::close(m_fd);
+        m_fd = -1;
+    }
+
+public:
+    ProcMapsParser() = default;
+    ~ProcMapsParser() = default;
+    ProcMapsParser(const ProcMapsParser&) = delete;
+    ProcMapsParser(ProcMapsParser&&) = delete;
+    ProcMapsParser& operator=(const ProcMapsParser&) = delete;
+    ProcMapsParser& operator=(ProcMapsParser&&) = delete;
+
+    struct MemoryRegion {
+        std::uintptr_t begin;
+        std::uintptr_t end;
+    };
+
+    // Parses "/proc/self/maps" and returns MemoryRegion containing addr_in_range.
+    // Returns {0, 0} in case of failure.
+    MemoryRegion find_address_range(std::uintptr_t addr_in_range) {
+        if (!open("/proc/self/maps")) return {0, 0};
+
+        // Syntax of every line in the maps file (simplified for our purposes):
+        //   "{BEGIN_ADDR}-{END_ADDR} .*\n"
+        // Where:
+        //   {BEGIN_ADDR}: hexadecimal address of the region start.
+        //   {END_ADDR}: hexadecimal address of the region end (exclusive).
+
+        advance();  // get the first character
+        while (*m_ccp != '\0') {
+            const std::uintptr_t begin = parseHexNumber();
+            advance();  // skip "-"
+            const std::uintptr_t end = parseHexNumber();
+            if (addr_in_range < end && begin <= addr_in_range) {
+                close();
+                return {begin, end};
+            }
+            skip_line();
+        }
+        close();
+        return {0, 0};
+    }
+};
+
+// Set when any thread started handling its own segfault. It prevents other threads which segfault
+// at the same moment from running the handler code.
+static std::atomic_flag segfaultHandlingInProgress = ATOMIC_FLAG_INIT;
+
+// `someAddressOnThreadStackIsUndetermined` must be set when this variable is being changed.
+static thread_local volatile std::uintptr_t someAddressOnThreadStack{0};
+
+// Set when `someAddressOnThreadStack` is being assigned to.
+static thread_local std::atomic_flag someAddressOnThreadStackIsUndetermined = ATOMIC_FLAG_INIT;
+
+// Restores a default handler which will be called after returning from the current handler.
+static void restoreDefaultSegfaultHandler() {
+    struct sigaction sa = {};
+    sa.sa_handler = SIG_DFL;
+    sa.sa_flags = SA_ONSTACK;
+    sigaction(SIGSEGV, &sa, nullptr);
+}
+
+extern "C" void v3SegfaultSignalHandler(int /*signo*/, siginfo_t* info, void* /*context*/) {
+    if (segfaultHandlingInProgress.test_and_set(std::memory_order_acquire)) {
+        // Other thread segfaulted too, and is already running this handler.
+        // Wait for it to print relevant error and terminate the whole process.
+        // Mutexes and similar things are not allowed in signal handlers, but sleep() is.
+        // The sleep() doesn't prevent immediate termination, so it won't delay anything.
+        for (;;) sleep(10);
+    }
+
+    if (someAddressOnThreadStackIsUndetermined.test_and_set(std::memory_order_acquire)
+        || someAddressOnThreadStack == 0) {
+        someAddressOnThreadStackIsUndetermined.clear(std::memory_order_release);
+        // Finding the stack memory region is not possible without an address from the stack.
+        return restoreDefaultSegfaultHandler();
+    }
+    // Parsing `maps` file and looking for a range containing known stack address is one of
+    // probably only two methods to reliably find the stack memory region on Linux. The other one
+    // is forking and using ptrace API to check rsp and rbp registers.
+    // Custom parser is used here because scanf is not allowed in signal handlers.
+    const auto stackRegion = ProcMapsParser().find_address_range(someAddressOnThreadStack);
+    if (stackRegion.begin == 0) {
+        // Failed to find stack region.
+        return restoreDefaultSegfaultHandler();
+    }
+    const uintptr_t pageSize = sysconf(_SC_PAGESIZE);
+    const uintptr_t faultAddr = reinterpret_cast<uintptr_t>(info->si_addr);
+
+    // A short reminder how program's stack works:
+    // - Grows down => overflow happens below the stack memory region.
+    // - Each thread has its own stack.
+    //   - Pthread's thread stack has constant size (by default equal to soft stack size limit[1]
+    //     minus TLS data size)
+    //   - Main thread's stack (its mapped memory region) grows dynamically until it reaches
+    //     size equal to soft stack size limit[1].
+    // - Stack allocations caused by local variables or calls to `alloca()` move stack pointer at
+    //   most by one page size at a time (in a loop if needed). After each such move the memory
+    //   page is "touched" (e.g. by writing its first byte). As a result, segfault caused by stack
+    //   overflow can happen no farther than one page below the stack.
+    //
+    // [1]: See `ulimit -s` and `/etc/security/limits.conf`.
+
+    // Stack on the beginning of address space probably never occurs. However, just in case
+    // of some error in the stack region search code, make sure null is never considered to be the
+    // address that caused stack overflow.
+    const auto overflowAddrRangeBegin
+        = (stackRegion.begin > pageSize) ? stackRegion.begin - pageSize : 1;
+    const auto overflowAddrRangeEnd = stackRegion.begin;
+    if (overflowAddrRangeBegin <= faultAddr && faultAddr < overflowAddrRangeEnd) {
+        static const char msg[] = "\n"
+                                  "Segmentation fault due to stack overflow.\n"
+                                  "Try increasing stack size limit using `ulimit -s` command.\n"
+                                  "\n";
+        const auto result = write(STDERR_FILENO, msg, sizeof(msg) - 1);
+        if (!result) {}  // Supress GCC's unused-result warning
+    }
+
+    return restoreDefaultSegfaultHandler();
+}
+#endif
+
+void V3Os::setupThreadSegfaultSignalHandler() {
+// Relies on /proc/self/maps; tested only on Linux.
+#if defined(__linux__)
+    // Segfault signal handler uses something between 300 and 400 bytes of the stack.
+    // MINSIGSTKSZ may not be constant (it is a function call on some systems).
+    // As a result we have to use dynamic memory below.
+    static const std::size_t signalStackSize = (MINSIGSTKSZ < 1024) ? 1024 : MINSIGSTKSZ;
+    // Stack used by all signal handlers in the current thread.
+    static const thread_local std::unique_ptr<char[]> signalStackp{new char[signalStackSize]};
+
+    stack_t altStack = {};
+    altStack.ss_sp = signalStackp.get();
+    altStack.ss_size = signalStackSize;
+    sigaltstack(&altStack, nullptr);
+
+    // `someAddressOnThreadStackIsUndetermined` is always unset here due to being thread_local.
+    if (!someAddressOnThreadStackIsUndetermined.test_and_set(std::memory_order_acquire)) {
+        // The address assigned to `someAddressOnThreadStack` doesn't really matter as long as it
+        // is an address from the thread's stack. We know that local variables are on the stack of
+        // the calling thread, so let's use `altStack` variable's address.
+        someAddressOnThreadStack = reinterpret_cast<uintptr_t>(&altStack);
+        someAddressOnThreadStackIsUndetermined.clear(std::memory_order_release);
+    }
+
+    // Indicates whether the process segfault handler has been set.
+    static std::atomic_flag segfaultHandlerSet = ATOMIC_FLAG_INIT;
+
+    if (!segfaultHandlerSet.test_and_set(std::memory_order_acquire)) {
+        struct sigaction sa = {};
+        sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
+        sa.sa_sigaction = &v3SegfaultSignalHandler;
+        if (sigaction(SIGSEGV, &sa, nullptr) < 0) {
+            segfaultHandlerSet.clear(std::memory_order_release);
+        }
+    }
+#endif
 }
