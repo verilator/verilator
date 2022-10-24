@@ -210,7 +210,7 @@ void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, bool asRef) {
             // Issue 2622.
             const bool beStatic = name.size() >= suffix.size()
                                   && name.substr(name.size() - suffix.size()) == suffix;
-            if (beStatic) puts("static VL_THREAD_LOCAL ");
+            if (beStatic) puts("static thread_local ");
         }
         puts(nodep->vlArgType(true, false, false, "", asRef));
         puts(";\n");

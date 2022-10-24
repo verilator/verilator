@@ -37,5 +37,4 @@ PREDEFINED             = \
                          "VL_NOT_FINAL=" \
                          "VL_PURE=" \
                          "VL_REQUIRES()=" \
-                         "VL_THREAD_LOCAL=" \
                          "__restrict=" \

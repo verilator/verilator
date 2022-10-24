@@ -662,7 +662,7 @@ class Verilated final {
     static VerilatedContext* s_lastContextp;  // Last context constructed/attached
 
     // Not covered by mutex, as per-thread
-    static VL_THREAD_LOCAL struct ThreadLocal {
+    static thread_local struct ThreadLocal {
         // No non-POD objects here due to this:
         // Internal note: Globals may multi-construct, see verilated.cpp top.
 

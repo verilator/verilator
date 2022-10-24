@@ -27,7 +27,7 @@
 //
 // verilated.o may exist both in --lib-create (incrementally linked .a/.so)
 // and the main module.  Both refer the same instance of static
-// variables/VL_THREAD_LOCAL in verilated.o such as Verilated, or
+// variables/thread_local in verilated.o such as Verilated, or
 // VerilatedImpData.  This is important to share that state, but the
 // sharing may cause a double-free error when shutting down because the
 // loader will insert a constructor/destructor at each reference to
@@ -94,7 +94,7 @@ VerilatedContext* Verilated::s_lastContextp = nullptr;
 
 // Keep below together in one cache line
 // Internal note: Globals may multi-construct, see verilated.cpp top.
-VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
+thread_local Verilated::ThreadLocal Verilated::t_s;
 
 //===========================================================================
 // User definable functions
@@ -242,7 +242,7 @@ uint32_t VL_THREAD_ID() VL_MT_SAFE {
     // Alternative is to use std::this_thread::get_id, but that returns a
     // hard-to-read number and is very slow
     static std::atomic<uint32_t> s_nextId(0);
-    static VL_THREAD_LOCAL uint32_t t_myId = ++s_nextId;
+    static thread_local uint32_t t_myId = ++s_nextId;
     return t_myId;
 }
 
@@ -289,8 +289,8 @@ static uint32_t vl_sys_rand32() VL_MT_UNSAFE {
 }
 
 uint64_t vl_rand64() VL_MT_SAFE {
-    static VL_THREAD_LOCAL uint64_t t_state[2];
-    static VL_THREAD_LOCAL uint32_t t_seedEpoch = 0;
+    static thread_local uint64_t t_state[2];
+    static thread_local uint32_t t_seedEpoch = 0;
     // For speed, we use a thread-local epoch number to know when to reseed
     // A thread always belongs to a single context, so this works out ok
     if (VL_UNLIKELY(t_seedEpoch != VerilatedContextImp::randSeedEpoch())) {
@@ -734,7 +734,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
     // Note uses a single buffer internally; presumes only one usage per printf
     // Note also assumes variables < 64 are not wide, this assumption is
     // sometimes not true in low-level routines written here in verilated.cpp
-    static VL_THREAD_LOCAL char t_tmp[VL_VALUE_STRING_MAX_WIDTH];
+    static thread_local char t_tmp[VL_VALUE_STRING_MAX_WIDTH];
     const char* pctp = nullptr;  // Most recent %##.##g format
     bool inPct = false;
     bool widthSet = false;
@@ -1132,7 +1132,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     // Read a Verilog $sscanf/$fscanf style format into the output list
     // The format must be pre-processed (and lower cased) by Verilator
     // Arguments are in "width, arg-value (or WDataIn* if wide)" form
-    static VL_THREAD_LOCAL char t_tmp[VL_VALUE_STRING_MAX_WIDTH];
+    static thread_local char t_tmp[VL_VALUE_STRING_MAX_WIDTH];
     int floc = fbits - 1;
     IData got = 0;
     bool inPct = false;
@@ -1425,7 +1425,7 @@ void VL_FCLOSE_I(IData fdi) VL_MT_SAFE {
 }
 
 void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1436,7 +1436,7 @@ void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) VL_MT_SAFE 
 }
 
 void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1447,7 +1447,7 @@ void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) VL_MT_SAFE 
 }
 
 void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1458,7 +1458,7 @@ void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) VL_MT_SAFE 
 }
 
 void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1469,7 +1469,7 @@ void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) VL_MT_SAFE 
 }
 
 void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1490,7 +1490,7 @@ void VL_SFORMAT_X(int obits_ignored, std::string& output, const char* formatp, .
 }
 
 std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1501,7 +1501,7 @@ std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE {
 }
 
 void VL_WRITEF(const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1513,7 +1513,7 @@ void VL_WRITEF(const char* formatp, ...) VL_MT_SAFE {
 
 void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
 
     va_list ap;
@@ -1743,7 +1743,7 @@ IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_S
 
 const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
     const std::string& match = Verilated::threadContextp()->impp()->argPlusMatch(prefixp);
-    static VL_THREAD_LOCAL char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
+    static thread_local char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match.empty()) return nullptr;
     char* dp = t_outstr;
     for (const char* sp = match.c_str() + std::strlen(prefixp) + 1;  // +1 to skip the "+"
@@ -1837,7 +1837,7 @@ IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
 static const char* memhFormat(int nBits) {
     assert((nBits >= 1) && (nBits <= 32));
 
-    static VL_THREAD_LOCAL char t_buf[32];
+    static thread_local char t_buf[32];
     switch ((nBits - 1) / 4) {
     case 0: VL_SNPRINTF(t_buf, 32, "%%01x"); break;
     case 1: VL_SNPRINTF(t_buf, 32, "%%02x"); break;
@@ -1855,7 +1855,7 @@ static const char* memhFormat(int nBits) {
 static const char* formatBinary(int nBits, uint32_t bits) {
     assert((nBits >= 1) && (nBits <= 32));
 
-    static VL_THREAD_LOCAL char t_buf[64];
+    static thread_local char t_buf[64];
     for (int i = 0; i < nBits; i++) {
         const bool isOne = bits & (1 << (nBits - 1 - i));
         t_buf[i] = (isOne ? '1' : '0');
@@ -2469,7 +2469,7 @@ void VerilatedContext::commandArgsAdd(int argc, const char** argv)
 const char* VerilatedContext::commandArgsPlusMatch(const char* prefixp)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const std::string& match = impp()->argPlusMatch(prefixp);
-    static VL_THREAD_LOCAL char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
+    static thread_local char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match.empty()) return "";
     char* dp = t_outstr;
     for (const char* sp = match.c_str(); *sp && (dp - t_outstr) < (VL_VALUE_STRING_MAX_WIDTH - 2);)
@@ -2747,8 +2747,8 @@ void Verilated::debug(int level) VL_MT_SAFE {
 
 const char* Verilated::catName(const char* n1, const char* n2, const char* delimiter) VL_MT_SAFE {
     // Used by symbol table creation to make module names
-    static VL_THREAD_LOCAL char* t_strp = nullptr;
-    static VL_THREAD_LOCAL size_t t_len = 0;
+    static thread_local char* t_strp = nullptr;
+    static thread_local size_t t_len = 0;
     const size_t newlen = std::strlen(n1) + std::strlen(n2) + std::strlen(delimiter) + 1;
     if (VL_UNLIKELY(!t_strp || newlen > t_len)) {
         if (t_strp) delete[] t_strp;

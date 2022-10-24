@@ -30,7 +30,7 @@
 
 // Internal note: Globals may multi-construct, see verilated.cpp top.
 
-VL_THREAD_LOCAL VlExecutionProfiler::ExecutionTrace VlExecutionProfiler::t_trace;
+thread_local VlExecutionProfiler::ExecutionTrace VlExecutionProfiler::t_trace;
 
 constexpr const char* const VlExecutionRecord::s_ascii[];
 

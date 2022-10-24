@@ -149,7 +149,7 @@ private:
     VL_UNCOPYABLE(VerilatedThreadMsgQueue);
     // METHODS
     static VerilatedThreadMsgQueue& threadton() {
-        static VL_THREAD_LOCAL VerilatedThreadMsgQueue t_s;
+        static thread_local VerilatedThreadMsgQueue t_s;
         return t_s;
     }
 
