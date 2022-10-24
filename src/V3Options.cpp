@@ -1389,7 +1389,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     DECL_OPTION("-threads-coarsen", OnOff, &m_threadsCoarsen).undocumented();  // Debug
     DECL_OPTION("-no-threads", CbCall, [this, fl]() {
-        fl->v3warn(DEPRECATED, "Option --no-threads is deprecated.");
+        fl->v3warn(DEPRECATED, "Option --no-threads is deprecated, use '--threads 1' instead");
         m_threads = 1;
     });
     DECL_OPTION("-threads", CbVal, [this, fl](const char* valp) {
@@ -1397,7 +1397,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         if (m_threads < 0) fl->v3fatal("--threads must be >= 0: " << valp);
         if (m_threads == 0) {
             fl->v3warn(DEPRECATED,
-                       "Option --threads 0 is deprecated and it defaults to --threads 1. ");
+                       "Option --threads 0 is deprecated, use '--threads 1' instead");
             m_threads = 1;
         }
     });
