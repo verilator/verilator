@@ -14,9 +14,8 @@
 
 int main(int argc, char *argv[]) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-#if VL_THREADED
-    contextp->threads(6);
-#endif
+    // TEST_THREADS is set in t_hier_block_cmake.pl
+    contextp->threads(TEST_THREADS);
     contextp->commandArgs(argc, argv);
     std::unique_ptr<Vt_hier_block> top{new Vt_hier_block{contextp.get(), "top"}};
     for (int i = 0; i < 100 && !contextp->gotFinish(); ++i) {
