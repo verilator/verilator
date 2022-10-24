@@ -13,7 +13,7 @@ module t;
 
   always @val[0] $write("val[0]=%0d val[1]=%0d val[2]=%0d\n", val[0], val[1], val[2]);
 
-  assign #10 {val[1], val[2]} = {val[0], 4'hf-val[0]};
+  assign #5 {val[1], val[2]} = {val[0], 4'hf-val[0]};
 
   always #10 begin  // always so we can use NBA
     val[0] = 1;

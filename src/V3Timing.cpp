@@ -110,6 +110,8 @@ private:
 
     // Unique names
     V3UniqueNames m_contAssignVarNames{"__VassignWtmp"};  // Names for temp AssignW vars
+    V3UniqueNames m_contAssignTimestampNames{"__VassignWtimestamp"};  // Names for AssignW
+                                                                      // timestamps
     V3UniqueNames m_intraValueNames{"__Vintraval"};  // Intra assign delay value var names
     V3UniqueNames m_intraIndexNames{"__Vintraidx"};  // Intra assign delay index var names
     V3UniqueNames m_intraLsbNames{"__Vintralsb"};  // Intra assign delay LSB var names
@@ -663,11 +665,15 @@ private:
         // V3SchedAcyclic recognize awaits and prevent it from treating this kind of logic as
         // cyclic
         AstNode* const lhsp = nodep->lhsp()->unlinkFrBack();
-        std::string varname;
+        std::string varname, t1name, t2name;
         if (auto* const refp = VN_CAST(lhsp, VarRef)) {
             varname = m_contAssignVarNames.get(refp->name());
+            t1name = m_contAssignTimestampNames.get(refp->name());
+            t2name = m_contAssignTimestampNames.get(refp->name());
         } else {
             varname = m_contAssignVarNames.get(lhsp);
+            t1name = m_contAssignTimestampNames.get(lhsp);
+            t2name = m_contAssignTimestampNames.get(lhsp);
         }
         auto* const tempvscp = m_scopep->createTemp(varname, lhsp->dtypep());
         tempvscp->varp()->delayp(netDelayp);
@@ -681,6 +687,29 @@ private:
         // visit(AstNodeAssign*)
         AstAlways* const alwaysp = nodep->convertToAlways();
         visit(alwaysp);
+        auto* beginp = VN_AS(VN_AS(alwaysp->stmtsp(), Fork)->stmtsp(), Begin);
+        // Skip pre-assign and await to get the final assign
+        AstAssign* newassignp = VN_AS(beginp->stmtsp()->nextp()->nextp(), Assign);
+        // Create the first timestamp var
+        AstVarScope* const t1vscp = m_scopep->createTemp(t1name, nodep->findUInt64DType());
+        // Assign current time to the first timestamp
+        alwaysp->stmtsp()->addHereThisAsNext(
+            new AstAssign{flp, new AstVarRef{flp, t1vscp, VAccess::WRITE},
+                          new AstTime{flp, m_scopep->modp()->timeunit()}});
+        // Create the second timestamp var
+        AstVarScope* const t2vscp
+            = createTemp(flp, t2name, nodep->findUInt64DType(), beginp->stmtsp());
+        // Assign the first timestamp to the second timestamp
+        beginp->stmtsp()->addNextHere(new AstAssign{flp,
+                                                    new AstVarRef{flp, t2vscp, VAccess::WRITE},
+                                                    new AstVarRef{flp, t1vscp, VAccess::READ}});
+        // If the second timestamp >= first timestamp, assign
+        auto* const ifp = new AstIf{flp,
+                                    new AstGte{flp, new AstVarRef{flp, t2vscp, VAccess::READ},
+                                               new AstVarRef{flp, t1vscp, VAccess::READ}},
+                                    newassignp->unlinkFrBack()};
+        ifp->branchPred(VBranchPred::BP_LIKELY);
+        beginp->addStmtsp(ifp);
         // Put the LHS back in the AssignW; put the temp var on the RHS
         nodep->lhsp(lhsp);
         nodep->rhsp(new AstVarRef{flp, tempvscp, VAccess::READ});
