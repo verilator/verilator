@@ -1396,8 +1396,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_threads = std::atoi(valp);
         if (m_threads < 0) fl->v3fatal("--threads must be >= 0: " << valp);
         if (m_threads == 0) {
-            fl->v3warn(DEPRECATED,
-                       "Option --threads 0 is deprecated, use '--threads 1' instead");
+            fl->v3warn(DEPRECATED, "Option --threads 0 is deprecated, use '--threads 1' instead");
             m_threads = 1;
         }
     });
