@@ -2426,23 +2426,25 @@ void VerilatedContext::timeunit(int value) VL_MT_SAFE {
 }
 void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
     if (value < 0) value = -value;  // Stored as 0..15
-    const VerilatedLockGuard lock{m_mutex};
-    m_s.m_timeprecision = value;
-#ifdef SYSTEMC_VERSION
-    const sc_time sc_res = sc_get_time_resolution();
     int sc_prec = 99;
-    if (sc_res == sc_time(1, SC_SEC)) {
-        sc_prec = 0;
-    } else if (sc_res == sc_time(1, SC_MS)) {
-        sc_prec = 3;
-    } else if (sc_res == sc_time(1, SC_US)) {
-        sc_prec = 6;
-    } else if (sc_res == sc_time(1, SC_NS)) {
-        sc_prec = 9;
-    } else if (sc_res == sc_time(1, SC_PS)) {
-        sc_prec = 12;
-    } else if (sc_res == sc_time(1, SC_FS)) {
-        sc_prec = 15;
+    {
+        const VerilatedLockGuard lock{m_mutex};
+        m_s.m_timeprecision = value;
+#ifdef SYSTEMC_VERSION
+        const sc_time sc_res = sc_get_time_resolution();
+        if (sc_res == sc_time(1, SC_SEC)) {
+            sc_prec = 0;
+        } else if (sc_res == sc_time(1, SC_MS)) {
+            sc_prec = 3;
+        } else if (sc_res == sc_time(1, SC_US)) {
+            sc_prec = 6;
+        } else if (sc_res == sc_time(1, SC_NS)) {
+            sc_prec = 9;
+        } else if (sc_res == sc_time(1, SC_PS)) {
+            sc_prec = 12;
+        } else if (sc_res == sc_time(1, SC_FS)) {
+            sc_prec = 15;
+        }
     }
     if (value != sc_prec) {
         std::ostringstream msg;
@@ -2453,6 +2455,8 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
             << vl_time_str(sc_prec) << "'";
         const std::string msgs = msg.str();
         VL_FATAL_MT("", 0, "", msgs.c_str());
+    }
+#else
     }
 #endif
 }
