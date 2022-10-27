@@ -4265,9 +4265,7 @@ public:
     bool same(const AstNode* samep) const override;
     inline bool same(const AstVarRef* samep) const;
     inline bool sameNoLvalue(AstVarRef* samep) const;
-    int instrCount() const override {
-        return widthInstrs() * (access().isReadOrRW() ? INSTR_COUNT_LD : 1);
-    }
+    int instrCount() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }

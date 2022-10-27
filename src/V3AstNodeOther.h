@@ -2851,6 +2851,7 @@ public:
         statement(true);
         dtypeSetVoid();
     }
+    int instrCount() const override;
 };
 class AstCReset final : public AstNodeStmt {
     // Reset variable at startup
