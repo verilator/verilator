@@ -571,10 +571,11 @@ private:
         if (nodep->access().isWriteOnly()) {
             vscp->user2(true);
         } else {
-            // If the variable is read before it is written, and is not in the sensitivity list,
-            // then this cannot be optimized into a combinational process
+            // If the variable is read before it is written (and is not a never-changing value),
+            // and is not in the sensitivity list, then this cannot be optimized into a
+            // combinational process
             // TODO: live variable analysis would be more precise
-            if (!vscp->user2() && !vscp->user1()) m_canBeComb = false;
+            if (!vscp->user2() && !vscp->varp()->valuep() && !vscp->user1()) m_canBeComb = false;
         }
     }
     void visit(AstAssignDly* nodep) override {
