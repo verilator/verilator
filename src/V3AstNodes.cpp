@@ -2047,6 +2047,14 @@ void AstVarRef::dump(std::ostream& str) const {
 bool AstVarRef::same(const AstNode* samep) const {
     return same(static_cast<const AstVarRef*>(samep));
 }
+int AstVarRef::instrCount() const {
+    // Account for the target of hard-coded method calls as just an address computation
+    if (const AstCMethodHard* const callp = VN_CAST(backp(), CMethodHard)) {
+        if (callp->fromp() == this) return 1;
+    }
+    // Otherwise as a load/store
+    return widthInstrs() * (access().isReadOrRW() ? INSTR_COUNT_LD : 1);
+}
 void AstVar::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isSc()) str << " [SC]";
@@ -2246,6 +2254,18 @@ void AstCAwait::dump(std::ostream& str) const {
         str << " => ";
         sensesp()->dump(str);
     }
+}
+int AstCMethodHard::instrCount() const {
+    if (AstBasicDType* const basicp = fromp()->dtypep()->basicp()) {
+        // TODO: add a more structured description of library methods, rather than using string
+        //       matching. See #3715.
+        if (basicp->isTriggerVec() && m_name == "at") {
+            // This is an important special case for scheduling so we compute it precisely,
+            // it is simply a load.
+            return INSTR_COUNT_LD;
+        }
+    }
+    return AstNodeStmt::instrCount();
 }
 const char* AstCFunc::broken() const {
     BROKEN_RTN((m_scopep && !m_scopep->brokeExists()));
