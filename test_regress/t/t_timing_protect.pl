@@ -17,7 +17,8 @@ else {
     top_filename("t/t_timing_fork_join.v");  # Contains all relevant constructs
 
     compile(
-        verilator_flags2 => ["--exe --main --timing --protect-ids"],
+        verilator_flags2 => ["--exe --main --timing --protect-ids",
+                             "--protect-key SECRET_KEY"],
         make_main => 0,
         );
 
