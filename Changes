@@ -50,6 +50,8 @@ Verilator 5.001 devel
 * Fix linker errors in user-facing timing functions (#3657). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix null access on optimized-out fork statements (#3658). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix VPI inline module naming mismatch (#3690) (#3694). [Jiuyang Liu]
+* Fix deadlock in timeprecision when using systemC (#3707). [Kamil Rakoczy, Antmicro Ltd]
+
 
 Verilator 4.228 2022-10-01
 ==========================
