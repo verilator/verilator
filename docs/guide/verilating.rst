@@ -198,9 +198,6 @@ oversubscription, the Verilated model should not livelock nor deadlock,
 however, you can expect performance to be far worse than it would be with
 proper ratio of threads and CPU cores.
 
-:code:`VL_THREADED` is defined in the C++ code when compiling a threaded
-Verilated module, causing the Verilated support classes become threadsafe.
-
 The thread used for constructing a model must be the same thread that calls
 :code:`eval()` into the model, this is called the "eval thread". The thread
 used to perform certain global operations such as saving and tracing must

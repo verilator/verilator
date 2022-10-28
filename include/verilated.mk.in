@@ -130,6 +130,7 @@ endif
 #######################################################################
 ##### Threaded builds
 
+# Deprecated, as always threaded
 VK_C11=1
 VK_LIBS_THREADED=1
 

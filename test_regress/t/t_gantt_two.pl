@@ -25,7 +25,7 @@ compile(
     v_flags2 => ["--prof-exec --exe $Self->{t_dir}/$Self->{name}.cpp"],
     # Checks below care about thread count, so use 2 (minimum reasonable)
     threads => $threads_num,
-    make_flags => "CPPFLAGS_ADD=\"-DVL_NO_LEGACY -DVL_USE_THREADS=$threads_num\"",
+    make_flags => "CPPFLAGS_ADD=\"-DVL_NO_LEGACY -DTEST_USE_THREADS=$threads_num\"",
     );
 
 execute(

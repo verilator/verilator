@@ -141,9 +141,9 @@
 
 
 #ifndef VL_NO_LEGACY
-# define VL_THREAD_LOCAL thread_local  // Deprecated
 # define VL_FUNC __func__  // Deprecated
 # define VL_THREAD  // Deprecated
+# define VL_THREAD_LOCAL thread_local  // Deprecated
 # define VL_STATIC_OR_THREAD static  // Deprecated
 #endif
 

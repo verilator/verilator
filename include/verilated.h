@@ -203,7 +203,7 @@ public:
 
 class VerilatedAssertOneThread final {
     // MEMBERS
-#if defined(VL_DEBUG)
+#ifdef VL_DEBUG
     uint32_t m_threadid;  // Thread that is legal
 public:
     // CONSTRUCTORS

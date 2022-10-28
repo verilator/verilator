@@ -3082,7 +3082,7 @@ void VerilatedHierarchy::remove(VerilatedScope* fromp, VerilatedScope* top) {
 //===========================================================================
 // VerilatedOneThreaded:: Methods
 
-#if defined(VL_DEBUG)
+#ifdef VL_DEBUG
 void VerilatedAssertOneThread::fatal_different() VL_MT_SAFE {
     VL_FATAL_MT(__FILE__, __LINE__, "",
                 "Routine called that is single threaded, but called from"

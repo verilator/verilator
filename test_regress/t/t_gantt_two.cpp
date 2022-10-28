@@ -17,7 +17,7 @@ int main(int argc, char** argv, char** env) {
 
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     // VL_USE_THREADS define is set in t_gantt_two.pl
-    contextp->threads(VL_USE_THREADS);
+    contextp->threads(TEST_USE_THREADS);
     contextp->commandArgs(argc, argv);
     contextp->debug(0);
 
