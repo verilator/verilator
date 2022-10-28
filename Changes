@@ -51,6 +51,7 @@ Verilator 5.001 devel
 * Fix null access on optimized-out fork statements (#3658). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix VPI inline module naming mismatch (#3690) (#3694). [Jiuyang Liu]
 * Fix deadlock in timeprecision when using systemC (#3707). [Kamil Rakoczy, Antmicro Ltd]
+* Fix width mismatch on inside operator (#3714). [Alex Torregrosa]
 
 
 Verilator 4.228 2022-10-01
