@@ -2411,12 +2411,21 @@ private:
             VL_DO_DANGLING(lsb1p->deleteTree(), lsb1p);
             VL_DO_DANGLING(lsb2p->deleteTree(), lsb2p);
         } else {
-            // Width is important, we need the width of the fromp's
-            // expression, not the potentially smaller lsb1p's width
-            newlsbp
-                = new AstAdd(lsb1p->fileline(), lsb2p, new AstExtend(lsb1p->fileline(), lsb1p));
-            newlsbp->dtypeFrom(lsb2p);  // Unsigned
-            VN_AS(newlsbp, Add)->rhsp()->dtypeFrom(lsb2p);
+            // Width is important, we need the width of the fromp's expression, not the
+            // potentially smaller lsb1p's width, but don't insert a redundant AstExtend.
+            // Note that due to some sloppiness in earlier passes, lsb1p might actually be wider,
+            // so extend to the wider type.
+            AstNode* const widep = lsb1p->width() > lsb2p->width() ? lsb1p : lsb2p;
+            AstNode* const lhsp = widep->width() > lsb2p->width()
+                                      ? new AstExtend{lsb2p->fileline(), lsb2p}
+                                      : lsb2p;
+            AstNode* const rhsp = widep->width() > lsb1p->width()
+                                      ? new AstExtend{lsb1p->fileline(), lsb1p}
+                                      : lsb1p;
+            lhsp->dtypeFrom(widep);
+            rhsp->dtypeFrom(widep);
+            newlsbp = new AstAdd{lsb1p->fileline(), lhsp, rhsp};
+            newlsbp->dtypeFrom(widep);
         }
         AstSel* const newp = new AstSel(nodep->fileline(), fromp, newlsbp, widthp);
         nodep->replaceWith(newp);
