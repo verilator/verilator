@@ -78,12 +78,6 @@ if (NOT CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 endif()
 
 define_property(TARGET
-  PROPERTY VERILATOR_THREADED
-  BRIEF_DOCS "Verilator multithreading enabled"
-  FULL_DOCS "Verilator multithreading enabled"
-)
-
-define_property(TARGET
   PROPERTY VERILATOR_TRACE_THREADED
   BRIEF_DOCS "Verilator multithread tracing enabled"
   FULL_DOCS "Verilator multithread tracing enabled"
