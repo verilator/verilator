@@ -324,11 +324,9 @@ function(verilate TARGET)
     ${${VERILATE_PREFIX}_USER_LDLIBS}
   )
 
-  if (${VERILATE_PREFIX}_THREADS OR ${VERILATE_PREFIX}_TRACE_THREADS)
-    target_link_libraries(${TARGET} PUBLIC
-      ${VERILATOR_MT_CFLAGS}
-    )
-  endif()
+  target_link_libraries(${TARGET} PUBLIC
+    ${VERILATOR_MT_CFLAGS}
+  )
 
   target_compile_features(${TARGET} PRIVATE cxx_std_11)
 
