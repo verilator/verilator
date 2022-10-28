@@ -259,7 +259,7 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
         AstModule* const modp = VN_CAST(nodep, Module);
         if (!modp) continue;
 
-        UINFO(3, "Applying DFG optimization to module'" << modp->name() << "'" << endl);
+        UINFO(4, "Applying DFG optimization to module '" << modp->name() << "'" << endl);
         ++ctx.m_modules;
 
         // Build the DFG of this module
