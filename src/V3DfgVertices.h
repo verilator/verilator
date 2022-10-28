@@ -108,11 +108,20 @@ public:
     V3Number& num() { return m_num; }
     const V3Number& num() const { return m_num; }
 
-    uint32_t toU32() const { return num().toUInt(); }
-    int32_t toI32() const { return num().toSInt(); }
+    size_t toSizeT() const {
+        if VL_CONSTEXPR_CXX17 (sizeof(size_t) > sizeof(uint32_t)) {
+            return static_cast<size_t>(num().toUQuad());
+        }
+        return static_cast<size_t>(num().toUInt());
+    }
 
     bool isZero() const { return num().isEqZero(); }
     bool isOnes() const { return num().isEqAllOnes(width()); }
+
+    // Does this DfgConst have the given value? Note this is not easy to answer if wider than 32.
+    bool hasValue(uint32_t value) const {
+        return !num().isFourState() && num().edataWord(0) == value && num().mostSetBitP1() <= 32;
+    }
 
     std::pair<DfgEdge*, size_t> sourceEdges() override { return {nullptr, 0}; }
     std::pair<const DfgEdge*, size_t> sourceEdges() const override { return {nullptr, 0}; }

@@ -1072,7 +1072,7 @@ class V3DfgPeephole final : public DfgVisitor {
     void visit(DfgArraySel* vtxp) override {
         if (DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>()) {
             if (DfgVarArray* const varp = vtxp->fromp()->cast<DfgVarArray>()) {
-                const uint32_t idx = idxp->toU32();
+                const size_t idx = idxp->toSizeT();
                 if (DfgVertex* const driverp = varp->driverAt(idx)) {
                     APPLYING(INLINE_ARRAYSEL) {
                         vtxp->replaceWith(driverp);
@@ -1368,7 +1368,7 @@ class V3DfgPeephole final : public DfgVisitor {
                     return;
                 }
             }
-            if (vtxp->dtypep() == m_bitDType && rConstp->toU32() == 1) {
+            if (vtxp->dtypep() == m_bitDType && rConstp->hasValue(1)) {
                 APPLYING(REPLACE_SUB_WITH_NOT) {
                     DfgNot* const replacementp = new DfgNot{m_dfg, vtxp->fileline(), m_bitDType};
                     replacementp->srcp(lhsp);
@@ -1454,7 +1454,7 @@ class V3DfgPeephole final : public DfgVisitor {
             // 'cond ? a + 1 : a' -> 'a + cond'
             if (DfgAdd* const thenAddp = thenp->cast<DfgAdd>()) {
                 if (DfgConst* const constp = thenAddp->lhsp()->cast<DfgConst>()) {
-                    if (constp->toI32() == 1) {
+                    if (constp->hasValue(1)) {
                         if (thenAddp->rhsp() == elsep) {
                             APPLYING(REPLACE_COND_INC) {
                                 DfgConcat* const extp = new DfgConcat{m_dfg, flp, vtxp->dtypep()};
@@ -1474,7 +1474,7 @@ class V3DfgPeephole final : public DfgVisitor {
             // 'cond ? a - 1 : a' -> 'a - cond'
             if (DfgSub* const thenSubp = thenp->cast<DfgSub>()) {
                 if (DfgConst* const constp = thenSubp->rhsp()->cast<DfgConst>()) {
-                    if (constp->toI32() == 1) {
+                    if (constp->hasValue(1)) {
                         if (thenSubp->lhsp() == elsep) {
                             APPLYING(REPLACE_COND_DEC) {
                                 DfgConcat* const extp = new DfgConcat{m_dfg, flp, vtxp->dtypep()};

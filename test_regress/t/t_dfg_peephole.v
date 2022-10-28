@@ -175,6 +175,8 @@ module t (
    `signal(REMOVE_XOR_WITH_ONES, -64'd1 ^ rand_a);
    `signal(REPLACE_COND_DEC, randbit_a ? rand_b - 64'b1 : rand_b);
    `signal(REPLACE_COND_INC, randbit_a ? rand_b + 64'b1 : rand_b);
+   `signal(NO_REPLACE_COND_DEC, randbit_a ? rand_b - 64'hf000000000000000 : rand_b);
+   `signal(NO_REPLACE_COND_INC, randbit_a ? rand_b + 64'hf000000000000000 : rand_b);
    `signal(RIGHT_LEANING_ASSOC, (((rand_a + rand_b) + rand_a) + rand_b));
    `signal(RIGHT_LEANING_CONCET, {{{rand_a, rand_b}, rand_a}, rand_b});
 
