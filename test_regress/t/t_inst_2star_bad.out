@@ -1,0 +1,7 @@
+%Error: t/t_inst_2star_bad.v:11:17: Duplicate .* in an instance (IEEE 1800-2017 23.3.2)
+   11 |    sub sub (.*, .*);
+      |                 ^~
+%Error: t/t_inst_2star_bad.v:13:13: Connect by position is illegal in .* connected instances (IEEE 1800-2017 23.3.2)
+   13 |    sub sub (foo, .*);
+      |             ^~~
+%Error: Exiting due to

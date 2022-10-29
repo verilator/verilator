@@ -17,6 +17,8 @@
 #ifndef VERILATOR_V3HASH_H_
 #define VERILATOR_V3HASH_H_
 
+#include "verilatedos.h"
+
 #include <cstdint>
 #include <string>
 
@@ -45,8 +47,8 @@ public:
     explicit V3Hash(const std::string& val);
 
     // METHODS
-    uint32_t value() const { return m_value; }
-    std::string toString() const;
+    uint32_t value() const VL_MT_SAFE { return m_value; }
+    std::string toString() const VL_MT_SAFE;
 
     // OPERATORS
     // Comparisons
@@ -68,5 +70,10 @@ public:
 };
 
 std::ostream& operator<<(std::ostream& os, const V3Hash& rhs);
+
+template <>
+struct std::hash<V3Hash> {
+    std::size_t operator()(const V3Hash& h) const noexcept { return h.value(); }
+};
 
 #endif  // Guard

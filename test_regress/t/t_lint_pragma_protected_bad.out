@@ -1,0 +1,44 @@
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:8:17: Unknown '`pragma protect' error
+    8 | `pragma protect encrypt_agent=123
+      |                 ^~~~~~~~~~~~~~~~~
+                     ... For error description see https://verilator.org/warn/BADSTDPRAGMA?v=latest
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:10:17: Unknown '`pragma protect' error
+   10 | `pragma protect encrypt_agent_info
+      |                 ^~~~~~~~~~~~~~~~~~
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:23:1: BASE64 encoding length mismatch in `pragma protect key_bloock/data_block
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:27:17: multiple `pragma protected encoding sections
+   27 | `pragma protect encoding = (enctype = "BASE64", line_length = 76, bytes = 128)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Warning-PROTECTED: t/t_lint_pragma_protected_bad.v:44:17: A '`pragma protected data_block' encrypted section was detected and will be skipped.
+                    ... Use "/* verilator lint_off PROTECTED */" and lint_on around source to disable this message.
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:51:17: Illegal encoding type for `pragma protected encoding
+   51 | `pragma protect encoding = (enctype = "A-bad-not-BASE64", line_length = 1, bytes = 295)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_lint_pragma_protected_bad.v:51:17: Unsupported: only BASE64 is recognized for `pragma protected encoding
+   51 | `pragma protect encoding = (enctype = "A-bad-not-BASE64", line_length = 1, bytes = 295)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Warning-PROTECTED: t/t_lint_pragma_protected_bad.v:53:17: A '`pragma protected data_block' encrypted section was detected and will be skipped.
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:54:1: BASE64 encoding (too short) in `pragma protect key_bloock/data_block
+   54 | c2lvbiAzIG9mIHRoZSBHTlUgTGVzc2VyCkdlbmVyYWwgUHVibGljIExpY2Vuc2UsIGFuZCB0aGUg
+      | ^
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:55:1: BASE64 encoding (too short) in `pragma protect key_bloock/data_block
+   55 | IkdOVSBHUEwiIHJlZmVycyB0byB2ZXJzaW9uIDMgb2YgdGhlIEdOVQpHZW5lcmFsIFB1YmxpYyBM
+      | ^
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:56:1: BASE64 encoding (too short) in `pragma protect key_bloock/data_block
+   56 | aWNlbnNlLgoKICAiVGhlIExpYnJhcnkiIHJlZmVycyB0byBhIGNvdmVyZWQgd29yayBnb3Zlcm5l
+      | ^
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:57:1: BASE64 encoding (too short) in `pragma protect key_bloock/data_block
+   57 | ZCBieSB0aGlzIExpY2Vuc2UsCm90aGVyIHRoYW4gYW4gQXBwbGljYXRpb24gb3IgYSBDb21iaW5l
+      | ^
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:58:1: BASE64 encoding (too short) in `pragma protect key_bloock/data_block
+   58 | ZCBXb3JrIGFzIG==
+      | ^
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:59:1: BASE64 encoding (too short) in `pragma protect key_bloock/data_block
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:59:1: BASE64 encoding length mismatch in `pragma protect key_bloock/data_block
+%Warning-PROTECTED: t/t_lint_pragma_protected_bad.v:63:17: A '`pragma protected data_block' encrypted section was detected and will be skipped.
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:64:1: BASE64 line too long in `pragma protect key_bloock/data_block
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:64:1: BASE64 encoding length mismatch in `pragma protect key_bloock/data_block
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:72:1: `pragma is missing a pragma_expression.
+   72 | `pragma
+      | ^~~~~~~
+%Error: Exiting due to

@@ -395,7 +395,7 @@ void V3Options::addForceInc(const string& filename) { m_forceIncs.push_back(file
 
 void V3Options::addArg(const string& arg) { m_impp->m_allArgs.push_back(arg); }
 
-string V3Options::allArgsString() const {
+string V3Options::allArgsString() const VL_MT_SAFE {
     string out;
     for (const string& i : m_impp->m_allArgs) {
         if (out != "") out += " ";
@@ -604,6 +604,7 @@ V3LangCode V3Options::fileLanguage(const string& filename) {
 // Environment
 
 string V3Options::getenvBuiltins(const string& var) {
+    // If update below, also update V3Options::showVersion()
     if (var == "MAKE") {
         return getenvMAKE();
     } else if (var == "PERL") {
@@ -711,6 +712,17 @@ string V3Options::getenvVERILATOR_ROOT() {
     return var;
 }
 
+string V3Options::getSupported(const string& var) {
+    // If update below, also update V3Options::showVersion()
+    if (var == "COROUTINES" && coroutineSupport()) {
+        return "1";
+    } else if (var == "SYSTEMC" && systemCFound()) {
+        return "1";
+    } else {
+        return "";
+    }
+}
+
 bool V3Options::systemCSystemWide() {
 #ifdef HAVE_SYSTEMC
     return true;
@@ -724,6 +736,14 @@ bool V3Options::systemCFound() {
             || (!getenvSYSTEMC_INCLUDE().empty() && !getenvSYSTEMC_LIBDIR().empty()));
 }
 
+bool V3Options::coroutineSupport() {
+#ifdef HAVE_COROUTINES
+    return true;
+#else
+    return false;
+#endif
+}
+
 //######################################################################
 // V3 Options notification methods
 
@@ -733,7 +753,7 @@ void V3Options::notify() {
 
     if (!outFormatOk() && v3Global.opt.main()) ccSet();  // --main implies --cc if not provided
     if (!outFormatOk() && !cdc() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !xmlOnly()) {
-        v3fatal("verilator: Need --cc, --sc, --cdc, --dpi-hdr-only, --lint-only, "
+        v3fatal("verilator: Need --binary, --cc, --sc, --cdc, --dpi-hdr-only, --lint-only, "
                 "--xml-only or --E option");
     }
 
@@ -820,6 +840,14 @@ void V3Options::notify() {
 
     // Mark options as available
     m_available = true;
+
+    // --dump-tree-dot will turn on tree dumping.
+    if (!m_dumpLevel.count("tree") && m_dumpLevel.count("tree-dot")) {
+        m_dumpLevel["tree"] = m_dumpLevel["tree-dot"];
+    }
+
+    // Preprocessor defines based on options used
+    if (timing().isSetTrue()) V3PreShell::defineCmdLine("VERILATOR_TIMING", "1");
 }
 
 //######################################################################
@@ -1008,6 +1036,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_bboxUnsup = flag;
         FileLine::globalWarnOff(V3ErrorCode::E_UNSUPPORTED, true);
     });
+    DECL_OPTION("-binary", CbCall, [this]() {
+        m_build = true;
+        m_exe = true;
+        m_main = true;
+        if (m_timing.isDefault()) m_timing = VOptionBool::OPT_TRUE;
+    });
     DECL_OPTION("-build", Set, &m_build);
     DECL_OPTION("-build-dep-bin", Set, &m_buildDepBin);
     DECL_OPTION("-build-jobs", CbVal, [this, fl](const char* valp) {
@@ -1113,8 +1147,22 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-fcase", FOnOff, &m_fCase);
     DECL_OPTION("-fcombine", FOnOff, &m_fCombine);
     DECL_OPTION("-fconst", FOnOff, &m_fConst);
+    DECL_OPTION("-fconst-before-dfg", FOnOff, &m_fConstBeforeDfg);
     DECL_OPTION("-fconst-bit-op-tree", FOnOff, &m_fConstBitOpTree);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
+    DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) {
+        m_fDfgPreInline = flag;
+        m_fDfgPostInline = flag;
+    });
+    DECL_OPTION("-fdfg-peephole", FOnOff, &m_fDfgPeephole);
+    DECL_OPTION("-fdfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
+        m_fDfgPeepholeDisabled.erase(optp);
+    });
+    DECL_OPTION("-fno-dfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
+        m_fDfgPeepholeDisabled.emplace(optp);
+    });
+    DECL_OPTION("-fdfg-pre-inline", FOnOff, &m_fDfgPreInline);
+    DECL_OPTION("-fdfg-post-inline", FOnOff, &m_fDfgPostInline);
     DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
     DECL_OPTION("-fgate", FOnOff, &m_fGate);
     DECL_OPTION("-finline", FOnOff, &m_fInline);
@@ -1141,6 +1189,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-getenv", CbVal, [](const char* valp) {
         cout << V3Options::getenvBuiltins(valp) << endl;
+        std::exit(0);
+    });
+    DECL_OPTION("-get-supported", CbVal, [](const char* valp) {
+        cout << V3Options::getSupported(valp) << endl;
         std::exit(0);
     });
 
@@ -1249,7 +1301,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         }
     });
     DECL_OPTION("-o", Set, &m_exeName);
-    DECL_OPTION("-order-clock-delay", OnOff, &m_orderClockDly);
+    DECL_OPTION("-order-clock-delay", CbOnOff, [fl](bool /*flag*/) {
+        fl->v3warn(DEPRECATED, "Option order-clock-delay is deprecated and has no effect.");
+    });
     DECL_OPTION("-output-split", Set, &m_outputSplit);
     DECL_OPTION("-output-split-cfuncs", CbVal, [this, fl](const char* valp) {
         m_outputSplitCFuncs = std::atoi(valp);
@@ -1379,6 +1433,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             m_timeOverridePrec = prec;
         }
     });
+    DECL_OPTION("-timing", OnOff, &m_timing);
     DECL_OPTION("-top-module", Set, &m_topModule);
     DECL_OPTION("-top", Set, &m_topModule);
     DECL_OPTION("-trace", OnOff, &m_trace);
@@ -1433,6 +1488,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         FileLine::globalWarnLintOff(false);
         FileLine::globalWarnStyleOff(false);
     });
+    DECL_OPTION("-Werror-UNUSED", CbCall, []() {
+        V3Error::pretendError(V3ErrorCode::UNUSEDGENVAR, true);
+        V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, true);
+        V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, true);
+    });
     DECL_OPTION("-Werror-", CbPartialMatch, [this, fl](const char* optp) {
         const V3ErrorCode code(optp);
         if (code == V3ErrorCode::EC_ERROR) {
@@ -1463,6 +1523,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         FileLine::globalWarnStyleOff(true);
     });
     DECL_OPTION("-Wno-style", CbCall, []() { FileLine::globalWarnStyleOff(true); });
+    DECL_OPTION("-Wno-UNUSED", CbCall, []() { FileLine::globalWarnUnusedOff(true); });
     DECL_OPTION("-Wwarn-", CbPartialMatch, [this, fl, &parser](const char* optp) {
         const V3ErrorCode code{optp};
         if (code == V3ErrorCode::EC_ERROR) {
@@ -1478,6 +1539,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-Wwarn-lint", CbCall, []() { FileLine::globalWarnLintOff(false); });
     DECL_OPTION("-Wwarn-style", CbCall, []() { FileLine::globalWarnStyleOff(false); });
+    DECL_OPTION("-Wwarn-UNUSED", CbCall, []() {
+        FileLine::globalWarnUnusedOff(false);
+        V3Error::pretendError(V3ErrorCode::UNUSEDGENVAR, false);
+        V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, false);
+        V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, false);
+    });
     DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
 
     DECL_OPTION("-x-assign", CbVal, [this, fl](const char* valp) {
@@ -1527,14 +1594,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             ++i;
             int val = 0;
             if (i < argc && isdigit(argv[i][0])) {
-                val = atoi(argv[i]);
-                if (val < 0) {
-                    fl->v3error("-j requires a non-negative integer argument, but '"
-                                << argv[i] << "' was passed");
-                    val = 1;  // Fall-back value, though we will exit on error.
-                } else if (val == 0) {
-                    val = std::thread::hardware_concurrency();
-                }
+                val = atoi(argv[i]);  // Can't be negative due to isdigit above
+                if (val == 0) val = std::thread::hardware_concurrency();
                 ++i;
             }
             if (m_buildJobs == -1) m_buildJobs = val;
@@ -1749,6 +1810,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT << endl;
     cout << "    SystemC system-wide = " << cvtToStr(systemCSystemWide()) << endl;
 
+    // If update below, also update V3Options::getenvBuiltins()
     cout << endl;
     cout << "Environment:\n";
     cout << "    MAKE               = " << V3Os::getenvStr("MAKE", "") << endl;
@@ -1761,9 +1823,11 @@ void V3Options::showVersion(bool verbose) {
     cout << "    VERILATOR_BIN      = " << V3Os::getenvStr("VERILATOR_BIN", "") << endl;
     cout << "    VERILATOR_ROOT     = " << V3Os::getenvStr("VERILATOR_ROOT", "") << endl;
 
+    // If update below, also update V3Options::getSupported()
     cout << endl;
-    cout << "Features (based on environment or compiled-in support):\n";
-    cout << "    SystemC found      = " << cvtToStr(systemCFound()) << endl;
+    cout << "Supported features (compiled-in or forced by environment):\n";
+    cout << "    COROUTINES         = " << getSupported("COROUTINES") << endl;
+    cout << "    SYSTEMC            = " << getSupported("SYSTEMC") << endl;
 }
 
 //======================================================================
@@ -1800,29 +1864,29 @@ void V3Options::setDebugMode(int level) {
     cout << "Starting " << version() << endl;
 }
 
-unsigned V3Options::debugLevel(const string& tag) const {
+unsigned V3Options::debugLevel(const string& tag) const VL_MT_SAFE {
     const auto iter = m_debugLevel.find(tag);
     return iter != m_debugLevel.end() ? iter->second : V3Error::debugDefault();
 }
 
-unsigned V3Options::debugSrcLevel(const string& srcfile_path) const {
+unsigned V3Options::debugSrcLevel(const string& srcfile_path) const VL_MT_SAFE {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means we need to strip the filenames: ../Foo.cpp -> Foo
     return debugLevel(V3Os::filenameNonDirExt(srcfile_path));
 }
 
-unsigned V3Options::dumpLevel(const string& tag) const {
+unsigned V3Options::dumpLevel(const string& tag) const VL_MT_SAFE {
     const auto iter = m_dumpLevel.find(tag);
     return iter != m_dumpLevel.end() ? iter->second : 0;
 }
 
-unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const {
+unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means we need to strip the filenames: ../Foo.cpp -> Foo
     return dumpLevel(V3Os::filenameNonDirExt(srcfile_path));
 }
 
-bool V3Options::dumpTreeAddrids() const {
+bool V3Options::dumpTreeAddrids() const VL_MT_SAFE {
     static int level = -1;
     if (VL_UNLIKELY(level < 0)) {
         const unsigned value = dumpLevel("tree-addrids");
@@ -1842,6 +1906,8 @@ void V3Options::optimize(int level) {
     m_fConst = flag;
     m_fConstBitOpTree = flag;
     m_fDedupe = flag;
+    m_fDfgPreInline = flag;
+    m_fDfgPostInline = flag;
     m_fExpand = flag;
     m_fGate = flag;
     m_fInline = flag;

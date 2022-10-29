@@ -4,8 +4,8 @@
       |          ^~~~~~~~
                    ... For warning description see https://verilator.org/warn/UNDRIVEN?v=latest
                    ... Use "/* verilator lint_off UNDRIVEN */" and lint_on around source to disable this message.
-%Warning-UNUSED: t/t_lint_unused_iface_bad.v:9:10: Signal is not used: 'sig_uusd'
-                                                 : ... In instance t.sub
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_iface_bad.v:9:10: Signal is not used: 'sig_uusd'
+                                                       : ... In instance t.sub
     9 |    logic sig_uusd;
       |          ^~~~~~~~
 %Error: Exiting due to

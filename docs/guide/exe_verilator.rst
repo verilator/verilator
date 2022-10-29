@@ -115,6 +115,13 @@ Summary:
 
    Using this argument will likely cause incorrect simulation.
 
+.. option:: --binary
+
+   Create a Verilated simulator binary.  Alias for :vlopt:`--main`
+   :vlopt:`--exe` :vlopt:`--build` :vlopt:`--timing`.
+
+   See also :vlopt:`-j`.
+
 .. option:: --build
 
    After generating the SystemC/C++ code, Verilator will invoke the
@@ -169,10 +176,7 @@ Summary:
 
 .. option:: --clk <signal-name>
 
-   With :vlopt:`--clk`, the specified signal-name is taken as a root clock
-   into the model; Verilator will mark the signal as clocker and
-   propagate the clocker attribute automatically to other signals downstream in
-   that clock tree.
+   With :vlopt:`--clk`, the specified signal is marked as a clock signal.
 
    The provided signal-name is specified using a RTL hierarchy path. For
    example, v.foo.bar.  If the signal is the input to top-module, then
@@ -184,11 +188,11 @@ Summary:
    individual bits, Verilator will attempt to decompose the vector and
    connect the single-bit clock signals.
 
-   The clocker attribute is useful in cases where Verilator does not
-   properly distinguish clock signals from other data signals. Using
-   clocker will cause the signal indicated to be considered a clock, and
-   remove it from the combinatorial logic reevaluation checking code. This
-   may greatly improve performance.
+   In versions prior to 5.000, the clocker attribute is useful in cases where
+   Verilator does not properly distinguish clock signals from other data
+   signals. Using clocker will cause the signal indicated to be considered a
+   clock, and remove it from the combinatorial logic reevaluation checking
+   code. This may greatly improve performance.
 
 .. option:: --no-clk <signal-name>
 
@@ -358,6 +362,11 @@ Summary:
 
        touch foo.v ; verilator -E --dump-defines foo.v
 
+.. option:: --dump-dfg
+
+   Rarely needed.  Enable dumping DfgGraph .dot debug files with dumping
+   level 3.
+
 .. option:: --dump-graph
 
    Rarely needed.  Enable dumping V3Graph .dot debug files with dumping
@@ -373,6 +382,12 @@ Summary:
    <--dump-tree>` may be useful if the dump files are large and not
    desired.
 
+.. option:: --dump-tree-dot
+
+   Rarely needed.  Enable dumping Ast .tree.dot debug files in Graphviz
+   Dot format. This option implies :vlopt:`--dump-tree`, unless
+   :vlopt:`--dumpi-tree` was passed explicitly.
+
 .. option:: --dump-tree-addrids
 
    Rarely needed - for developer use.  Replace AST node addresses with
@@ -386,6 +401,11 @@ Summary:
 
    Rarely needed - for developer use. Enable all dumping in the given
    source file at level 3.
+
+.. option:: --dumpi-dfg <level>
+
+   Rarely needed - for developer use.  Set internal DfgGraph dumping level
+   globally to the specified value.
 
 .. option:: --dumpi-graph <level>
 
@@ -401,8 +421,8 @@ Summary:
 
    Rarely needed - for developer use. Set the dumping level in the
    specified Verilator source file to the specified value (e.g.
-   :vlopt:`--dumpi-V3Order 9`).  Level 0 disables dumps and is equivalent
-   to :vlopt:`--no-dump-<srcfile>`.  Level 9 enables dumping of everything.
+   `--dumpi-V3Order 9`).  Level 0 disables dumps and is equivalent to
+   `--no-dump-<srcfile>`.  Level 9 enables dumping of everything.
 
 .. option:: -E
 
@@ -481,9 +501,36 @@ Summary:
 
 .. option:: -fno-const
 
+.. options: -fno-const-before-dfg
+
+   Do not apply any global expression folding prior to the DFG pass. This
+   option is solely for the purpose of DFG testing and should not be used
+   otherwise.
+
 .. option:: -fno-const-bit-op-tree
 
 .. option:: -fno-dedup
+
+.. option:: -fno-dfg
+
+   Disable all use of the DFG based combinational logic optimizer.
+   Alias for :vlopt:`-fno-dfg-pre-inline` and :vlopt:`-fno-dfg-post-inline`.
+
+.. option:: -fno-dfg-peephole
+
+   Disable the DFG peephole optimizer.
+
+.. option:: -fno-dfg-peephole-<pattern>
+
+   Disable individual DFG peephole optimizer pattern.
+
+.. option:: -fno-dfg-pre-inline
+
+   Do not apply the DFG optimizer before inlining.
+
+.. option:: -fno-dfg-post-inline
+
+   Do not apply the DFG optimizer after inlining.
 
 .. option:: -fno-expand
 
@@ -601,6 +648,15 @@ Summary:
    a newline and exit immediately. This can be useful in makefiles. See
    also :vlopt:`-V`, and the various :file:`*.mk` files.
 
+.. option:: --get-supported <feature>
+
+   If the given feature is supported, print "1" and exit
+   immediately. Otherwise, print a newline and exit immediately. This can
+   be useful in makefiles. See also :vlopt:`-V`, and the various
+   :file:`*.mk` files.
+
+   Feature may be one of the following: COROUTINES, SYSTEMC.
+
 .. option:: --help
 
    Displays this message and program version and exits.
@@ -694,6 +750,8 @@ Summary:
    model has a time resolution that is always compatible with the time
    precision of the upper instantiating module.
 
+   Designs compiled using this option cannot use :vlopt:`--timing` with delays.
+
    See also :vlopt:`--protect-lib`.
 
 .. option:: +libext+<ext>[+<ext>][...]
@@ -740,10 +798,19 @@ Summary:
 
    Generates a top-level C++ main() file that supports parsing arguments,
    but does not drive any inputs.  This is sufficient to use for top-level
-   SystemVerilog designs that has no inputs, and does not need the C++ to
-   do any time advancement.
+   SystemVerilog designs that has no inputs.
+
+   This option can also be used once to generate a main .cpp file as a
+   starting point for editing.  Copy it outside the obj directory, manually
+   edit, and then pass the filename on later Verilator command line
+   invocations.
+
+   Typically used with :vlopt:`--timing` to support delay-generated clocks,
+   and :vlopt:`--build`.
 
    Implies :vlopt:`--cc` if no other output mode was provided.
+
+   See also :vlopt:`--binary`.
 
 .. option:: --max-num-width <value>
 
@@ -805,6 +872,10 @@ Summary:
    Defaults to the :vlopt:`--prefix` if not specified.
 
 .. option:: --no-order-clock-delay
+
+   Deprecated and has no effect (ignored).
+
+   In versions prior to 5.000:
 
    Rarely needed.  Disables a bug fix for ordering of clock enables with
    delayed assignments.  This option should only be used when suggested by
@@ -1008,6 +1079,8 @@ Summary:
    in the distribution for a demonstration of how to build and use the DPI
    library.
 
+   Designs compiled using this option cannot use :vlopt:`--timing` with delays.
+
 .. option:: --public
 
    This is only for historical debug use.  Using it may result in
@@ -1199,6 +1272,16 @@ Summary:
    module.  As "1fs" is the finest time precision it may be desirable to
    always use a precision of "1fs".
 
+.. option:: --timing
+
+.. option:: --no-timing
+
+   Enables/disables support for timing constructs such as delays, event
+   controls (unless it's at the top of a process), wait statements, and joins.
+   When disabled, timing control constructs are ignored the same way as they
+   were in earlier versions of Verilator. Enabling this feature requires a C++
+   compiler with coroutine support (GCC 10, Clang 5, or newer).
+
 .. option:: --top <topname>
 
 .. option:: --top-module <topname>
@@ -1362,8 +1445,7 @@ Summary:
 
    Enable all code style warnings, including code style warnings that are
    normally disabled by default. Equivalent to :vlopt:`-Wwarn-lint`
-   :vlopt:`-Wwarn-style`.  Excludes some specialty warnings,
-   i.e. IMPERFECTSCH.
+   :vlopt:`-Wwarn-style`.  Excludes some specialty warnings.
 
 .. option:: -Werror-<message>
 
@@ -1406,7 +1488,8 @@ Summary:
    equivalent to ``-Wno-ALWCOMBORDER -Wno-BSSPACE -Wno-CASEINCOMPLETE
    -Wno-CASEOVERLAP -Wno-CASEX -Wno-CASTCONST -Wno-CASEWITHX -Wno-CMPCONST -Wno-COLONPLUS
    -Wno-ENDLABEL -Wno-IMPLICIT -Wno-LITENDIAN -Wno-PINCONNECTEMPTY
-   -Wno-PINMISSING -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED
+   -Wno-PINMISSING -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED
+   -Wno-UNUSEDGENVAR -Wno-UNUSEDPARAM -Wno-UNUSEDSIGNAL
    -Wno-WIDTH`` plus the list shown for Wno-style.
 
    It is strongly recommended you cleanup your code rather than using this
@@ -1418,7 +1501,8 @@ Summary:
    Disable all code style related warning messages (note by default they are
    already disabled).  This is equivalent to ``-Wno-DECLFILENAME -Wno-DEFPARAM
    -Wno-EOFNEWLINE -Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY
-   -Wno-PINNOCONNECT -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNUSED
+   -Wno-PINNOCONNECT -Wno-SYNCASYNCNET -Wno-UNDRIVEN
+   -Wno-UNUSEDGENVAR -Wno-UNUSEDPARAM -Wno-UNUSEDSIGNAL
    -Wno-VARHIDDEN``.
 
 .. option:: -Wpedantic
@@ -1447,7 +1531,7 @@ Summary:
    Enable all code style related warning messages.  This is equivalent to
    ``-Wwarn ASSIGNDLY -Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-EOFNEWLINE
    -Wwarn-INCABSPATH -Wwarn-PINNOCONNECT -Wwarn-SYNCASYNCNET -Wwarn-UNDRIVEN
-   -Wwarn-UNUSED -Wwarn-VARHIDDEN``.
+   -Wwarn-UNUSEDGENVAR -Wwarn-UNUSEDPARAM -Wwarn-UNUSEDSIGNAL -Wwarn-VARHIDDEN``.
 
 .. option:: --x-assign 0
 
@@ -1616,6 +1700,10 @@ The grammar of configuration commands is as follows:
 
 .. option:: clock_enable -module "<modulename>" -var "<signame>"
 
+   Deprecated and has no effect (ignored).
+
+   In versions prior to 5.000:
+
    Indicate the signal is used to gate a clock, and the user takes
    responsibility for insuring there are no races related to it.
 
@@ -1778,6 +1866,19 @@ The grammar of configuration commands is as follows:
    recommended by Verilator itself, see :option:`UNOPTFLAT`.
 
    Same as :option:`/*verilator&32;split_var*/` metacomment.
+
+.. option:: timing_on  [-file "<filename>" [-lines <line> [ - <line>]]]
+
+.. option:: timing_off [-file "<filename>" [-lines <line> [ - <line>]]]
+
+   Enables/disables timing constructs for the specified file and lines.
+   When disabled, all timing control constructs in the specified source
+   code locations are ignored the same way as with the
+   :option:`--no-timing`, and code:`fork`/:code:`join*` blocks are
+   converted into :code:`begin`/:code:`end` blocks.
+
+   Same as :option:`/*verilator&32;timing_on*/`,
+   :option:`/*verilator&32;timing_off*/` metacomments.
 
 .. option:: tracing_on  [-file "<filename>" [-lines <line> [ - <line> ]]]
 

@@ -39,9 +39,6 @@ module t (/*AUTOARG*/
    assign clk_3 = {3{clk_1}};
    assign clk_final = clk_3[0];
 
-   // the following two assignment triggers the CLKDATA warning
-   // because on LHS there are a mix of signals both CLOCK and
-   // DATA
    assign res8  = {clk_3, 1'b0, clk_4};
    assign res16 = {count, clk_3, clk_1, clk_4};
 
@@ -52,8 +49,6 @@ module t (/*AUTOARG*/
 
    always @(posedge clk_final or negedge clk_final) begin
       count = count + 1;
-      // the following assignment should trigger the CLKDATA warning
-      // because CLOCK signal is used as DATA in sequential block
       res <= clk_final;
       if ( count == 8'hf) begin
          $write("*-* All Finished *-*\n");

@@ -379,7 +379,7 @@ string AstVar::verilogKwd() const {
 }
 
 string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc,
-                         bool asRef) const {
+                         bool asRef) const VL_MT_SAFE {
     UASSERT_OBJ(!forReturn, this,
                 "Internal data is never passed as return, but as first argument");
     string ostatic;
@@ -679,7 +679,7 @@ class AstNodeDType::CTypeRecursed final {
 public:
     string m_type;  // The base type, e.g.: "Foo_t"s
     string m_dims;  // Array dimensions, e.g.: "[3][2][1]"
-    string render(const string& name, bool isRef) const {
+    string render(const string& name, bool isRef) const VL_MT_SAFE {
         string out;
         out += m_type;
         if (!name.empty()) out += " ";
@@ -696,7 +696,7 @@ public:
     }
 };
 
-string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const {
+string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const VL_MT_SAFE {
     const CTypeRecursed info = cTypeRecurse(false);
     return info.render(name, isRef);
 }
@@ -724,6 +724,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         info.m_type += ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
         info.m_type = "VlClassRef<" + EmitCBaseVisitor::prefixNameProtect(adtypep) + ">";
+    } else if (const auto* const adtypep = VN_CAST(dtypep, IfaceRefDType)) {
+        info.m_type = EmitCBaseVisitor::prefixNameProtect(adtypep->ifaceViaCellp()) + "*";
     } else if (const auto* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         if (adtypep->isCompound()) compound = true;
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound);
@@ -746,6 +748,18 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
             info.m_type = "std::string";
         } else if (bdtypep->keyword().isMTaskState()) {
             info.m_type = "VlMTaskVertex";
+        } else if (bdtypep->isTriggerVec()) {
+            info.m_type = "VlTriggerVec<" + cvtToStr(dtypep->width()) + ">";
+        } else if (bdtypep->isDelayScheduler()) {
+            info.m_type = "VlDelayScheduler";
+        } else if (bdtypep->isTriggerScheduler()) {
+            info.m_type = "VlTriggerScheduler";
+        } else if (bdtypep->isDynamicTriggerScheduler()) {
+            info.m_type = "VlDynamicTriggerScheduler";
+        } else if (bdtypep->isForkSync()) {
+            info.m_type = "VlForkSync";
+        } else if (bdtypep->isEvent()) {
+            info.m_type = "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
             info.m_type = "CData" + bitvec;
         } else if (dtypep->widthMin() <= 16) {
@@ -818,7 +832,7 @@ int AstNodeDType::widthPow2() const {
     return 1;
 }
 
-bool AstNodeDType::isLiteralType() const {
+bool AstNodeDType::isLiteralType() const VL_MT_SAFE {
     if (const auto* const dtypep = VN_CAST(skipRefp(), BasicDType)) {
         return dtypep->keyword().isLiteralType();
     } else if (const auto* const dtypep = VN_CAST(skipRefp(), UnpackArrayDType)) {
@@ -894,6 +908,29 @@ string AstScope::nameDotless() const {
     return out;
 }
 
+AstVarScope* AstScope::createTemp(const string& name, unsigned width) {
+    FileLine* const flp = fileline();
+    AstVar* const varp
+        = new AstVar{flp, VVarType::MODULETEMP, name, VFlagBitPacked{}, static_cast<int>(width)};
+    modp()->addStmtsp(varp);
+    AstVarScope* const vscp = new AstVarScope{flp, this, varp};
+    addVarsp(vscp);
+    return vscp;
+}
+
+AstVarScope* AstScope::createTemp(const string& name, AstNodeDType* dtypep) {
+    FileLine* const flp = fileline();
+    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
+    modp()->addStmtsp(varp);
+    AstVarScope* const vscp = new AstVarScope{flp, this, varp};
+    addVarsp(vscp);
+    return vscp;
+}
+
+AstVarScope* AstScope::createTempLike(const string& name, AstVarScope* vscp) {
+    return createTemp(name, vscp->dtypep());
+}
+
 string AstScopeName::scopePrettyNameFormatter(AstText* scopeTextp) const {
     string out;
     for (AstText* textp = scopeTextp; textp; textp = VN_AS(textp->nextp(), Text)) {
@@ -926,10 +963,10 @@ bool AstSenTree::hasClocked() const {
     }
     return false;
 }
-bool AstSenTree::hasSettle() const {
+bool AstSenTree::hasStatic() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
     for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
-        if (senp->isSettle()) return true;
+        if (senp->isStatic()) return true;
     }
     return false;
 }
@@ -940,10 +977,24 @@ bool AstSenTree::hasInitial() const {
     }
     return false;
 }
+bool AstSenTree::hasFinal() const {
+    UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
+        if (senp->isFinal()) return true;
+    }
+    return false;
+}
 bool AstSenTree::hasCombo() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
     for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
         if (senp->isCombo()) return true;
+    }
+    return false;
+}
+bool AstSenTree::hasHybrid() const {
+    UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
+        if (senp->isHybrid()) return true;
     }
     return false;
 }
@@ -1297,7 +1348,10 @@ void AstNode::dump(std::ostream& str) const {
     }
 }
 
-void AstNodeProcedure::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstNodeProcedure::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isSuspendable()) str << " [SUSP]";
+}
 
 void AstAlways::dump(std::ostream& str) const {
     this->AstNodeProcedure::dump(str);
@@ -1667,11 +1721,24 @@ void AstTimeImport::dump(std::ostream& str) const {
 void AstTypedef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (attrPublic()) str << " [PUBLIC]";
+    if (subDTypep()) {
+        str << " -> ";
+        subDTypep()->dump(str);
+    }
 }
 void AstNodeRange::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstRange::dump(std::ostream& str) const {
     this->AstNodeRange::dump(str);
     if (littleEndian()) str << " [LITTLE]";
+}
+void AstParamTypeDType::dump(std::ostream& str) const {
+    this->AstNodeDType::dump(str);
+    if (subDTypep()) {
+        str << " -> ";
+        subDTypep()->dump(str);
+    } else {
+        str << " -> UNLINKED";
+    }
 }
 void AstRefDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
@@ -1785,6 +1852,7 @@ const char* AstNetlist::broken() const {
     BROKEN_RTN(m_evalp && !m_evalp->brokeExists());
     BROKEN_RTN(m_dpiExportTriggerp && !m_dpiExportTriggerp->brokeExists());
     BROKEN_RTN(m_topScopep && !m_topScopep->brokeExists());
+    BROKEN_RTN(m_delaySchedulerp && !m_delaySchedulerp->brokeExists());
     return nullptr;
 }
 AstPackage* AstNetlist::dollarUnitPkgAddp() {
@@ -1940,7 +2008,6 @@ void AstVoidDType::dumpSmall(std::ostream& str) const {
 }
 void AstVarScope::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    if (isCircular()) str << " [CIRC]";
     if (isTrace()) str << " [T]";
     if (scopep()) str << " [scopep=" << reinterpret_cast<const void*>(scopep()) << "]";
     if (varp()) {
@@ -1980,6 +2047,14 @@ void AstVarRef::dump(std::ostream& str) const {
 bool AstVarRef::same(const AstNode* samep) const {
     return same(static_cast<const AstVarRef*>(samep));
 }
+int AstVarRef::instrCount() const {
+    // Account for the target of hard-coded method calls as just an address computation
+    if (const AstCMethodHard* const callp = VN_CAST(backp(), CMethodHard)) {
+        if (callp->fromp() == this) return 1;
+    }
+    // Otherwise as a load/store
+    return widthInstrs() * (access().isReadOrRW() ? INSTR_COUNT_LD : 1);
+}
 void AstVar::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isSc()) str << " [SC]";
@@ -1992,7 +2067,6 @@ void AstVar::dump(std::ostream& str) const {
     if (isSigPublic()) str << " [P]";
     if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOP]";
-    if (attrClockEn()) str << " [aCLKEN]";
     if (attrIsolateAssign()) str << " [aISO]";
     if (attrFileDescr()) str << " [aFD]";
     if (isFuncReturn()) {
@@ -2044,7 +2118,8 @@ void AstClassOrPackageRef::dump(std::ostream& str) const {
 }
 AstNodeModule* AstClassOrPackageRef::classOrPackagep() const {
     AstNode* foundp = m_classOrPackageNodep;
-    while (auto* const anodep = VN_CAST(foundp, Typedef)) foundp = anodep->subDTypep();
+    if (auto* const anodep = VN_CAST(foundp, Typedef)) foundp = anodep->subDTypep();
+    if (auto* const anodep = VN_CAST(foundp, NodeDType)) foundp = anodep->skipRefp();
     if (auto* const anodep = VN_CAST(foundp, ClassRefDType)) foundp = anodep->classp();
     return VN_CAST(foundp, NodeModule);
 }
@@ -2067,10 +2142,7 @@ const char* AstActive::broken() const {
     return nullptr;
 }
 void AstActive::cloneRelink() {
-    if (m_sensesp->clonep()) {
-        m_sensesp = m_sensesp->clonep();
-        UASSERT(m_sensesp, "Bad clone cross link: " << this);
-    }
+    if (m_sensesp->clonep()) m_sensesp = m_sensesp->clonep();
 }
 void AstNodeFTaskRef::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
@@ -2174,6 +2246,26 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isConstructor()) str << " [CTOR]";
     if (isDestructor()) str << " [DTOR]";
     if (isVirtual()) str << " [VIRT]";
+    if (isCoroutine()) str << " [CORO]";
+}
+void AstCAwait::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (sensesp()) {
+        str << " => ";
+        sensesp()->dump(str);
+    }
+}
+int AstCMethodHard::instrCount() const {
+    if (AstBasicDType* const basicp = fromp()->dtypep()->basicp()) {
+        // TODO: add a more structured description of library methods, rather than using string
+        //       matching. See #3715.
+        if (basicp->isTriggerVec() && m_name == "at") {
+            // This is an important special case for scheduling so we compute it precisely,
+            // it is simply a load.
+            return INSTR_COUNT_LD;
+        }
+    }
+    return AstNodeStmt::instrCount();
 }
 const char* AstCFunc::broken() const {
     BROKEN_RTN((m_scopep && !m_scopep->brokeExists()));
@@ -2186,4 +2278,23 @@ void AstCFunc::cloneRelink() {
 void AstCUse::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << useType() << "]";
+}
+
+AstAlways* AstAssignW::convertToAlways() {
+    const bool hasTimingControl = isTimingControl();
+    AstNode* const lhs1p = lhsp()->unlinkFrBack();
+    AstNode* const rhs1p = rhsp()->unlinkFrBack();
+    AstNode* const controlp = timingControlp() ? timingControlp()->unlinkFrBack() : nullptr;
+    FileLine* const flp = fileline();
+    AstNode* bodysp = new AstAssign{flp, lhs1p, rhs1p, controlp};
+    if (hasTimingControl) {
+        // If there's a timing control, put the assignment in a fork..join_none. This process won't
+        // get marked as suspendable and thus will be scheduled normally
+        auto* forkp = new AstFork{flp, "", bodysp};
+        forkp->joinType(VJoinType::JOIN_NONE);
+        bodysp = forkp;
+    }
+    AstAlways* const newp = new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, bodysp};
+    replaceWith(newp);  // User expected to then deleteTree();
+    return newp;
 }

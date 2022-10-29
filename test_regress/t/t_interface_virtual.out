@@ -1,0 +1,7 @@
+va.addr=aa va.data=11 ia.addr=aa ia.data=11
+vb.addr=bb vb.data=22 ib.addr=bb ib.data=22
+ca.fa.addr=a0 ca.fa.data=11 ca.fa.addr=b0 ca.fb.data=22
+cb.fa.addr=b0 cb.fa.data=22 cb.fa.addr=a0 cb.fb.data=11
+gen.x[0].addr=a0 gen.x[1].addr=b0
+gen='{x:'{top.t.ia, top.t.ib, null, null} }
+*-* All Finished *-*

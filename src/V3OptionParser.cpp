@@ -55,6 +55,7 @@ struct V3OptionParser::Impl {
     template <typename BOOL>
     class ActionOnOff;  // "-opt" and "-no-opt" for bool-ish
     class ActionCbCall;  // Callback without argument for "-opt"
+    class ActionCbFOnOff;  // Callback for "-fopt" and "-fno-opt"
     class ActionCbOnOff;  // Callback for "-opt" and "-no-opt"
     template <class T>
     class ActionCbVal;  // Callback for "-opt val"
@@ -108,6 +109,8 @@ V3OPTION_PARSER_DEF_ACT_CLASS(ActionOnOff, VOptionBool, m_valp->setTrueOrFalse(!
     }
 
 V3OPTION_PARSER_DEF_ACT_CB_CLASS(ActionCbCall, void(void), m_cb(), en::NONE);
+V3OPTION_PARSER_DEF_ACT_CB_CLASS(ActionCbFOnOff, void(bool), m_cb(!hasPrefixFNo(optp)),
+                                 en::FONOFF);
 V3OPTION_PARSER_DEF_ACT_CB_CLASS(ActionCbOnOff, void(bool), m_cb(!hasPrefixNo(optp)), en::ONOFF);
 template <>
 V3OPTION_PARSER_DEF_ACT_CB_CLASS(ActionCbVal<int>, void(int), m_cb(std::atoi(argp)), en::VALUE);
@@ -238,6 +241,7 @@ V3OPTION_PARSER_DEF_OP(OnOff, bool*, ActionOnOff<bool>)
 V3OPTION_PARSER_DEF_OP(OnOff, VOptionBool*, ActionOnOff<VOptionBool>)
 #endif
 V3OPTION_PARSER_DEF_OP(CbCall, Impl::ActionCbCall::CbType, ActionCbCall)
+V3OPTION_PARSER_DEF_OP(CbFOnOff, Impl::ActionCbFOnOff::CbType, ActionCbFOnOff)
 V3OPTION_PARSER_DEF_OP(CbOnOff, Impl::ActionCbOnOff::CbType, ActionCbOnOff)
 V3OPTION_PARSER_DEF_OP(CbVal, Impl::ActionCbVal<int>::CbType, ActionCbVal<int>)
 V3OPTION_PARSER_DEF_OP(CbVal, Impl::ActionCbVal<const char*>::CbType, ActionCbVal<const char*>)

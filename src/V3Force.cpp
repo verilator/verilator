@@ -153,7 +153,7 @@ class ForceConvertVisitor final : public VNVisitor {
     // referenced AstVarScope with the given function.
     void transformWritenVarScopes(AstNode* nodep, std::function<AstVarScope*(AstVarScope*)> f) {
         UASSERT_OBJ(nodep->backp(), nodep, "Must have backp, otherwise will be lost if replaced");
-        nodep->foreach<AstNodeVarRef>([&f](AstNodeVarRef* refp) {
+        nodep->foreach([&f](AstNodeVarRef* refp) {
             if (refp->access() != VAccess::WRITE) return;
             // TODO: this is not strictly speaking safe for some complicated lvalues, eg.:
             //       'force foo[a(cnt)] = 1;', where 'cnt' is an out parameter, but it will
@@ -230,7 +230,7 @@ class ForceConvertVisitor final : public VNVisitor {
         AstAssign* const resetRdp
             = new AstAssign{fl_nowarn, lhsp->cloneTree(false), lhsp->unlinkFrBack()};
         // Replace write refs on the LHS
-        resetRdp->lhsp()->foreach<AstNodeVarRef>([this](AstNodeVarRef* refp) {
+        resetRdp->lhsp()->foreach([this](AstNodeVarRef* refp) {
             if (refp->access() != VAccess::WRITE) return;
             AstVarScope* const vscp = refp->varScopep();
             AstVarScope* const newVscp
@@ -243,7 +243,7 @@ class ForceConvertVisitor final : public VNVisitor {
             VL_DO_DANGLING(refp->deleteTree(), refp);
         });
         // Replace write refs on RHS
-        resetRdp->rhsp()->foreach<AstNodeVarRef>([this](AstNodeVarRef* refp) {
+        resetRdp->rhsp()->foreach([this](AstNodeVarRef* refp) {
             if (refp->access() != VAccess::WRITE) return;
             AstVarScope* const vscp = refp->varScopep();
             AstVarScope* const newVscp
@@ -273,7 +273,7 @@ class ForceConvertVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->modulesp());
 
         // Replace references to forced signals
-        nodep->modulesp()->foreachAndNext<AstVarRef>([this](AstVarRef* nodep) {
+        nodep->modulesp()->foreachAndNext([this](AstVarRef* nodep) {
             if (ForceComponentsVarScope* const fcp
                 = m_forceComponentsVarScope.tryGet(nodep->varScopep())) {
                 switch (nodep->access()) {

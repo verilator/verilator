@@ -432,6 +432,12 @@ private:
         if (AstCCall* const callp = VN_CAST(insertp, CCall)) {
             callp->addNextHere(setterp);
         } else if (AstCFunc* const funcp = VN_CAST(insertp, CFunc)) {
+            // If there are awaits, insert the setter after each await
+            if (funcp->isCoroutine() && funcp->stmtsp()) {
+                funcp->stmtsp()->foreachAndNext([&](AstCAwait* awaitp) {
+                    if (awaitp->nextp()) awaitp->addNextHere(setterp->cloneTree(false));
+                });
+            }
             funcp->addStmtsp(setterp);
         } else {
             insertp->v3fatalSrc("Bad trace activity vertex");
@@ -447,7 +453,7 @@ private:
         // read-modify-write on the C type), and the speed of the tracing code
         // is the same on largish designs.
         FileLine* const flp = m_topScopep->fileline();
-        AstNodeDType* const newScalarDtp = new AstBasicDType(flp, VFlagLogicPacked(), 1);
+        AstNodeDType* const newScalarDtp = new AstBasicDType{flp, VFlagBitPacked{}, 1};
         v3Global.rootp()->typeTablep()->addTypesp(newScalarDtp);
         AstRange* const newArange
             = new AstRange{flp, VNumRange{static_cast<int>(m_activityNumber) - 1, 0}};
@@ -840,9 +846,11 @@ private:
         V3GraphVertex* const funcVtxp = getCFuncVertexp(nodep);
         if (!m_finding) {  // If public, we need a unique activity code to allow for sets
                            // directly in this func
-            if (nodep->funcPublic() || nodep->dpiExportImpl()
-                || nodep == v3Global.rootp()->evalp()) {
-                V3GraphVertex* const activityVtxp = getActivityVertexp(nodep, nodep->slow());
+            if (nodep->funcPublic() || nodep->dpiExportImpl() || nodep == v3Global.rootp()->evalp()
+                || nodep->isCoroutine()) {
+                // Cannot treat a coroutine as slow, it may be resumed later
+                const bool slow = nodep->slow() && !nodep->isCoroutine();
+                V3GraphVertex* const activityVtxp = getActivityVertexp(nodep, slow);
                 new V3GraphEdge(&m_graph, activityVtxp, funcVtxp, 1);
             }
         }

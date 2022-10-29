@@ -1,0 +1,4 @@
+%Error: t/t_case_inside_bad.v:9:7: Illegal to have inside on a casex/casez
+    9 |       casex (1'bx) inside
+      |       ^~~~~
+%Error: Exiting due to

@@ -24,14 +24,14 @@ jobs:
 
 
   Build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       CI_BUILD_STAGE_NAME: build
-      CI_RUNS_ON: ubuntu-20.04
+      CI_RUNS_ON: ubuntu-22.04
     steps:
 
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         path: repo
 
@@ -46,7 +46,7 @@ jobs:
       run: tar --posix -c -z -f ${{ env.VERILATOR_ARCHIVE }} repo
 
     - name: Upload tar archive
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         path: ${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}
         name: ${{ env.VERILATOR_ARCHIVE }}
@@ -73,15 +73,15 @@ jobs:
         - 9
         include:
         - { test: dist, num: '' }
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     name: test-${{ matrix.test }}${{ matrix.num }}
     env:
       CI_BUILD_STAGE_NAME: test
-      CI_RUNS_ON: ubuntu-20.04
+      CI_RUNS_ON: ubuntu-22.04
     steps:
 
     - name: Download tar archive
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: ${{ env.VERILATOR_ARCHIVE }}
         path: ${{ github.workspace }}

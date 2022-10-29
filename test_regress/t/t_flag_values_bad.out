@@ -1,0 +1,4 @@
+%Error: --output-split-cfuncs must be >= 0: -1
+%Error: --output-split-ctrace must be >= 0: -1
+%Error: --reloop-limit must be >= 2: -1
+%Error: Exiting due to

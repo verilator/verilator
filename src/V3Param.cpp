@@ -801,6 +801,15 @@ class ParamProcessor final {
             srcModpr = modInfop->m_modp;
         }
 
+        for (auto* stmtp = srcModpr->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (auto* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
+                if (VN_IS(dtypep->subDTypep(), VoidDType)) {
+                    nodep->v3error("Missing type parameter: " << dtypep->prettyNameQ());
+                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                }
+            }
+        }
+
         // Delete the parameters from the cell; they're not relevant any longer.
         if (paramsp) paramsp->unlinkFrBackWithNext()->deleteTree();
         return any_overrides;
@@ -822,8 +831,11 @@ class ParamProcessor final {
     }
 
     void classRefDeparam(AstClassRefDType* nodep, AstNodeModule*& srcModpr) {
-        if (nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false))
-            nodep->classp(VN_AS(srcModpr, Class));
+        if (nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false)) {
+            AstClass* const classp = VN_AS(srcModpr, Class);
+            nodep->classp(classp);
+            nodep->classOrPackagep(classp);
+        }
     }
 
 public:
@@ -915,20 +927,22 @@ class ParamVisitor final : public VNVisitor {
             // Process interface cells, then non-interface cells, which may reference an interface
             // cell.
             while (!m_cellps.empty()) {
-                const auto itm = m_cellps.cbegin();
-                AstNode* const cellp = itm->second;
-                m_cellps.erase(itm);
+                const auto itim = m_cellps.cbegin();
+                AstNode* const cellp = itim->second;
+                m_cellps.erase(itim);
 
                 AstNodeModule* srcModp = nullptr;
                 if (const auto* modCellp = VN_CAST(cellp, Cell)) {
                     srcModp = modCellp->modp();
                 } else if (const auto* classRefp = VN_CAST(cellp, ClassOrPackageRef)) {
                     srcModp = classRefp->classOrPackagep();
+                    if (VN_IS(classRefp->classOrPackageNodep(), ParamTypeDType)) continue;
                 } else if (const auto* classRefp = VN_CAST(cellp, ClassRefDType)) {
                     srcModp = classRefp->classp();
                 } else {
                     cellp->v3fatalSrc("Expected module parametrization");
                 }
+                UASSERT_OBJ(srcModp, cellp, "Unlinked class ref");
 
                 // Update path
                 string someInstanceName(modp->someInstanceName());

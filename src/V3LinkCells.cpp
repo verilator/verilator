@@ -355,7 +355,7 @@ private:
         for (AstPin *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
             nextp = VN_AS(pinp->nextp(), Pin);
             if (pinp->dotStar()) {
-                if (pinStar) pinp->v3error("Duplicate .* in an instance");
+                if (pinStar) pinp->v3error("Duplicate .* in an instance (IEEE 1800-2017 23.3.2)");
                 pinStar = true;
                 // Done with this fake pin
                 VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
@@ -374,8 +374,10 @@ private:
             // Note what pins exist
             std::unordered_set<string> ports;  // Symbol table of all connected port names
             for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-                if (pinp->name() == "")
-                    pinp->v3error("Connect by position is illegal in .* connected instances");
+                if (pinStar && pinp->name().substr(0, 11) == "__pinNumber") {
+                    pinp->v3error("Connect by position is illegal in .* connected instances"
+                                  " (IEEE 1800-2017 23.3.2)");
+                }
                 if (!pinp->exprp()) {
                     if (pinp->name().substr(0, 11) == "__pinNumber") {
                         pinp->v3warn(PINNOCONNECT,

@@ -27,7 +27,7 @@ extract(
 extract(
     in => $Self->{golden_filename},
     out => "../docs/gen/ex_DIDNOTCONVERGE_msg.rst",
-    lines => "2-5");
+    lines => "1-2");
 
 ok(1);
 1;

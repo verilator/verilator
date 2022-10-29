@@ -132,8 +132,8 @@ struct LifePostLocation {
 class LifePostDlyVisitor final : public VNVisitor {
 private:
     // NODE STATE
-    // Cleared on entire tree
-    //  AstVarScope::user4()    -> AstVarScope*: Passed to LifePostElim to substitute this var
+    // AstVarScope::user1()    -> bool: referenced outside _eval__nba
+    // AstVarScope::user4()    -> AstVarScope*: Passed to LifePostElim to substitute this var
     const VNUser4InUse m_inuser4;
 
     // STATE
@@ -155,6 +155,9 @@ private:
 
     const V3Graph* m_mtasksGraphp = nullptr;  // Mtask tracking graph
     std::unique_ptr<GraphPathChecker> m_checker;
+
+    const AstCFunc* const m_evalNbap;  // The _eval__nba function
+    bool m_inEvalNba = false;  // Traversing under _eval__nba
 
     // METHODS
     bool before(const LifeLocation& a, const LifeLocation& b) {
@@ -184,8 +187,11 @@ private:
         return true;
     }
     void squashAssignposts() {
-        for (auto& itr : m_assignposts) {
-            const LifePostLocation* const app = &itr.second;
+        for (auto& pair : m_assignposts) {
+            // If referenced external to _eval__nba, don't optimize
+            if (pair.first->user1()) continue;
+
+            const LifePostLocation* const app = &pair.second;
             const AstVarRef* const lhsp = VN_AS(app->nodep->lhsp(), VarRef);  // original var
             const AstVarRef* const rhsp = VN_AS(app->nodep->rhsp(), VarRef);  // dly var
             AstVarScope* const dlyVarp = rhsp->varScopep();
@@ -273,6 +279,12 @@ private:
         LifePostElimVisitor{nodep};
     }
     void visit(AstVarRef* nodep) override {
+        // Mark variables referenced outside _eval__nba
+        if (!m_inEvalNba) {
+            nodep->varScopep()->user1(true);
+            return;
+        }
+
         // Consumption/generation of a variable,
         const AstVarScope* const vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
@@ -287,6 +299,7 @@ private:
         // The pre-assignment into the dly var should not count as its
         // first write; we only want to consider reads and writes that
         // would still happen if the dly var were eliminated.
+        if (!m_inEvalNba) iterateChildren(nodep);
     }
     void visit(AstAssignPost* nodep) override {
         // Don't record ASSIGNPOST in the read/write maps, record them in a
@@ -314,9 +327,11 @@ private:
     }
     void visit(AstExecGraph* nodep) override {
         // Treat the ExecGraph like a call to each mtask body
-        UASSERT_OBJ(!m_mtasksGraphp, nodep, "Cannot handle more than one AstExecGraph");
-        m_mtasksGraphp = nodep->depGraphp();
-        for (V3GraphVertex* mtaskVxp = m_mtasksGraphp->verticesBeginp(); mtaskVxp;
+        if (m_inEvalNba) {
+            UASSERT_OBJ(!m_mtasksGraphp, nodep, "Cannot handle more than one AstExecGraph");
+            m_mtasksGraphp = nodep->depGraphp();
+        }
+        for (V3GraphVertex* mtaskVxp = nodep->depGraphp()->verticesBeginp(); mtaskVxp;
              mtaskVxp = mtaskVxp->verticesNextp()) {
             const ExecMTask* const mtaskp = dynamic_cast<ExecMTask*>(mtaskVxp);
             m_execMTaskp = mtaskp;
@@ -327,6 +342,8 @@ private:
     }
     void visit(AstCFunc* nodep) override {
         if (!m_tracingCall && !nodep->entryPoint()) return;
+        VL_RESTORER(m_inEvalNba);
+        if (nodep == m_evalNbap) m_inEvalNba = true;
         m_tracingCall = false;
         iterateChildren(nodep);
     }
@@ -336,7 +353,10 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LifePostDlyVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit LifePostDlyVisitor(AstNetlist* netlistp)
+        : m_evalNbap{netlistp->evalNbap()} {
+        iterate(netlistp);
+    }
     ~LifePostDlyVisitor() override {
         V3Stats::addStat("Optimizations, Lifetime postassign deletions", m_statAssnDel);
     }

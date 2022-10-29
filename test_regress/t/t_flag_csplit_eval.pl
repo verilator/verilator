@@ -15,14 +15,14 @@ sub check_evals {
         local $/; undef $/;
         my $wholefile = <$fh>;
 
-        if ($wholefile =~ /___eval__[0-9]+\(.*\)\s*{/) {
+        if ($wholefile =~ /__eval_nba__[0-9]+\(.*\)\s*{/) {
             ++$got;
         }
     }
     $got >= 2 or error("Too few _eval functions found: $got");
 }
 
-scenarios(vlt_all => 1);
+scenarios(vlt => 1);
 
 compile(
     v_flags2 => ["--output-split 1 --output-split-cfuncs 20"],

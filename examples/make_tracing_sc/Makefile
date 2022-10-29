@@ -55,7 +55,7 @@ VERILATOR_FLAGS += --coverage
 VERILATOR_INPUT = -f input.vc top.v sc_main.cpp
 
 # Check if SC exists via a verilator call (empty if not)
-SYSTEMC_EXISTS := $(shell $(VERILATOR) --getenv SYSTEMC_INCLUDE)
+SYSTEMC_EXISTS := $(shell $(VERILATOR) --get-supported SYSTEMC)
 
 ######################################################################
 

@@ -10,7 +10,7 @@
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.228 2022-10-01],
+AC_INIT([Verilator],[5.002 2022-10-29],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
@@ -373,6 +373,36 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wfloat-conversion)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wlogical-op)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wthread-safety)
 AC_SUBST(CFG_CXXFLAGS_WEXTRA)
+
+# Flags for coroutine support for dynamic scheduling
+_MY_CXX_CHECK_IFELSE(
+  -fcoroutines-ts,
+  [CFG_CXXFLAGS_COROUTINES="-fcoroutines-ts"],
+  [CFG_CXXFLAGS_COROUTINES="-fcoroutines"])
+AC_SUBST(CFG_CXXFLAGS_COROUTINES)
+
+# HAVE_COROUTINES
+# Check if coroutines are supported at all
+AC_MSG_CHECKING([whether coroutines are supported by $CXX])
+ACO_SAVE_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$CXXFLAGS $CFG_CXXFLAGS_COROUTINES"
+AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([
+#ifdef __clang__
+#define __cpp_impl_coroutine 1
+#endif
+#include <coroutine>
+    ],[[]])],
+    [_my_result=yes
+     AC_DEFINE([HAVE_COROUTINES],[1],[Defined if coroutines are supported by $CXX])],
+    [AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM([#include <experimental/coroutine>],[[]])],
+        [_my_result=yes
+         AC_DEFINE([HAVE_COROUTINES],[1],[Defined if coroutines are supported by $CXX])],
+        [_my_result=no])])
+AC_MSG_RESULT($_my_result)
+CXXFLAGS="$ACO_SAVE_CXXFLAGS"
+AC_SUBST(HAVE_COROUTINES)
 
 # Flags for compiling Verilator internals including parser always
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Qunused-arguments)

@@ -17,6 +17,7 @@ This section covers the following examples:
    :maxdepth: 1
    :hidden:
 
+   example_binary.rst
    example_cc.rst
    example_sc.rst
    example_dist.rst

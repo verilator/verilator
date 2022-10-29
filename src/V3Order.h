@@ -20,13 +20,36 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include <functional>
+#include <unordered_map>
+#include <vector>
+
+class AstCFunc;
 class AstNetlist;
+class AstSenItem;
+class AstSenTree;
+class AstVarScope;
+
+namespace V3Sched {
+struct LogicByScope;
+};  // namespace V3Sched
 
 //============================================================================
 
-class V3Order final {
-public:
-    static void orderAll(AstNetlist* netlistp);
-};
+namespace V3Order {
+
+using ExternalDomainsProvider = std::function<void(const AstVarScope*, std::vector<AstSenTree*>&)>;
+
+AstCFunc* order(
+    AstNetlist* netlistp,  //
+    const std::vector<V3Sched::LogicByScope*>& logic,  //
+    const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen,
+    const string& tag,  //
+    bool parallel,  //
+    bool slow,  //
+    const ExternalDomainsProvider& externalDomains
+    = [](const AstVarScope*, std::vector<AstSenTree*>&) {});
+
+};  // namespace V3Order
 
 #endif  // Guard

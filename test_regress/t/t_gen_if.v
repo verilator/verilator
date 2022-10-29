@@ -14,6 +14,12 @@ module t(data_i, data_o, single);
    output [31:0] data_o;
    input single;
 
+   // Bare begin/end extension of IEEE allowed by most all tools
+   begin
+   end
+   begin : named
+   end : named
+
    //simplistic example, should choose 1st conditional generate and assign straight through
    //the tool also compiles the special case and determines an error (replication value is 0
    generate

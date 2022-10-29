@@ -421,6 +421,16 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         puts(")");
     }
 
+    void visit(AstCMethodHard* nodep) override {
+        iterate(nodep->fromp());
+        puts("." + nodep->name() + "(");
+        for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
+            if (pinp != nodep->pinsp()) puts(", ");
+            iterate(pinp);
+        }
+        puts(")");
+    }
+
     // Operators
     virtual void emitVerilogFormat(AstNode* nodep, const string& format, AstNode* lhsp = nullptr,
                                    AstNode* const rhsp = nullptr, AstNode* thsp = nullptr,
@@ -587,7 +597,9 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         } else if (nodep->isRanged()) {
             puts(" [");
             puts(cvtToStr(nodep->hi()));
-            puts(":0] ");
+            puts(":");
+            puts(cvtToStr(nodep->lo()));
+            puts("] ");
         }
     }
     void visit(AstConstDType* nodep) override {

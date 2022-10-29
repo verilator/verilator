@@ -426,6 +426,10 @@ protected:
             UINFO(9, "         NotSplittable " << nodep << endl);
             scoreboardPli(nodep);
         }
+        if (nodep->isTimingControl()) {
+            UINFO(9, "         NoReordering " << nodep << endl);
+            m_noReorderWhy = "TimingControl";
+        }
         iterateChildren(nodep);
     }
 

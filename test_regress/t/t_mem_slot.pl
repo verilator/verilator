@@ -13,7 +13,7 @@ scenarios(vlt_all => 1);
 compile(
     make_top_shell => 0,
     make_main => 0,
-    verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"],
+    verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp --no-timing"],
     );
 
 execute(

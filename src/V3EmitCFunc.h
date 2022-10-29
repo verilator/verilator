@@ -119,7 +119,6 @@ private:
     int m_labelNum = 0;  // Next label number
     int m_splitSize = 0;  // # of cfunc nodes placed into output file
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCMath
-    std::vector<AstChangeDet*> m_blkChangeDetVec;  // All encountered changes in block
     bool m_emitConstInit = false;  // Emitting constant initializer
 
     // State associated with processing $display style string formatting
@@ -198,7 +197,6 @@ public:
     void emitVarReset(AstVar* varp);
     string emitVarResetRecurse(const AstVar* varp, const string& varNameProtected,
                                AstNodeDType* dtypep, int depth, const string& suffix);
-    void doubleOrDetect(AstChangeDet* changep, bool& gotOne);
     void emitChangeDet();
     void emitConstInit(AstNode* initp) {
         // We should refactor emit to produce output into a provided buffer, not go through members
@@ -214,8 +212,6 @@ public:
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
         m_cfuncp = nodep;
-
-        m_blkChangeDetVec.clear();
 
         splitSizeInc(nodep);
 
@@ -244,7 +240,7 @@ public:
 
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
-        for (int i = 0; i < m_modp->level(); ++i) { puts("  "); }
+        for (int i = 0; i < m_modp->level(); ++i) puts("  ");
         puts(prefixNameProtect(m_modp));
         puts(nodep->isLoose() ? "__" : "::");
         puts(nodep->nameProtect() + "\\n\"); );\n");
@@ -265,14 +261,10 @@ public:
             iterateAndNextNull(nodep->stmtsp());
         }
 
-        if (!m_blkChangeDetVec.empty()) emitChangeDet();
-
         if (nodep->finalsp()) {
             putsDecoration("// Final\n");
             iterateAndNextNull(nodep->finalsp());
         }
-
-        if (!m_blkChangeDetVec.empty()) puts("return __req;\n");
 
         puts("}\n");
         if (nodep->ifdef() != "") puts("#endif  // " + nodep->ifdef() + "\n");
@@ -420,9 +412,14 @@ public:
         puts(funcp->nameProtect());
         emitCCallArgs(nodep, "");
     }
+    void visit(AstCAwait* nodep) override {
+        puts("co_await ");
+        iterate(nodep->exprp());
+        if (nodep->isStatement()) puts(";\n");
+    }
     void visit(AstCNew* nodep) override {
         bool comma = false;
-        puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");
+        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", ");
         puts("vlSymsp");  // TODO make this part of argsp, and eliminate when unnecessary
         if (nodep->argsp()) comma = true;
         for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
@@ -1057,7 +1054,7 @@ public:
         puts(")");
     }
     void visit(AstNewCopy* nodep) override {
-        puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");
+        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", ");
         puts("*");  // i.e. make into a reference
         iterateAndNextNull(nodep->rhsp());
         puts(")");
@@ -1148,6 +1145,9 @@ public:
         } else if (VN_IS(varModp, Class) && varModp != m_modp) {
             // Superclass member reference
             puts(prefixNameProtect(varModp) + "::");
+        } else if (varp->isIfaceRef()) {
+            puts(nodep->selfPointerProtect(m_useSelfForThis));
+            return;
         } else if (!nodep->selfPointer().empty()) {
             emitDereference(nodep->selfPointerProtect(m_useSelfForThis));
         }
@@ -1170,6 +1170,12 @@ public:
         } else {
             emitConstant(nodep, nullptr, "");
         }
+    }
+    void visit(AstThisRef* nodep) override {
+        putbs(nodep->dtypep()->cType("", false, false));
+        puts("{");
+        puts(m_useSelfForThis ? "vlSelf" : "this");
+        puts("}");
     }
 
     //
@@ -1253,9 +1259,6 @@ public:
         // invoke the graph and wait for it to complete. Emitting the children does just that.
         UASSERT_OBJ(!nodep->mTaskBodiesp(), nodep, "These should have been lowered");
         iterateChildrenConst(nodep);
-    }
-    void visit(AstChangeDet* nodep) override {  //
-        m_blkChangeDetVec.push_back(nodep);
     }
 
     // Default

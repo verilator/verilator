@@ -76,7 +76,7 @@ constexpr int MAX_SPRINTF_DOUBLE_SIZE
 //======================================================================
 // Errors
 
-void V3Number::v3errorEnd(std::ostringstream& str) const {
+void V3Number::v3errorEnd(const std::ostringstream& str) const VL_MT_SAFE {
     std::ostringstream nsstr;
     nsstr << str.str();
     if (m_nodep) {
@@ -88,10 +88,10 @@ void V3Number::v3errorEnd(std::ostringstream& str) const {
     }
 }
 
-void V3Number::v3errorEndFatal(std::ostringstream& str) const {
+void V3Number::v3errorEndFatal(const std::ostringstream& str) const VL_MT_SAFE {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE
-    VL_UNREACHABLE
+    VL_UNREACHABLE;
 }
 
 //======================================================================
@@ -124,10 +124,8 @@ V3Number::V3Number(AstNode* nodep, const AstNodeDType* nodedtypep) {
     }
 }
 
-void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl) {
-    init(nodep, 0);
+void V3Number::create(const char* sourcep) {
     m_data.setLogic();
-    m_fileline = fl;
     const char* value_startp = sourcep;
     for (const char* cp = sourcep; *cp; cp++) {
         if (*cp == '\'') {
@@ -271,7 +269,8 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
             }
             case '_': break;
             default: {
-                v3error("Illegal character in decimal constant: " << *cp);
+                // Likely impossible as parser prevents hitting it
+                v3error("Illegal character in decimal constant: " << *cp);  // LCOV_EXCL_LINE
                 break;
             }
             }
@@ -348,11 +347,17 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
                 case 'x': setBit(obit++,'x'); setBit(obit++,'x'); setBit(obit++,'x'); setBit(obit++,'x'); break;
                     // clang-format on
                 case '_': break;
-                default: v3error("Illegal character in hex constant: " << *cp);
+                default:
+                    // Likely impossible as parser prevents hitting it
+                    v3error("Illegal character in hex constant: " << *cp);  // LCOV_EXCL_LINE
+                    break;
                 }
                 break;
             }
-            default: v3error("Illegal base character: " << base);
+            default:
+                // Likely impossible as parser prevents hitting it
+                v3error("Illegal base character: " << base);  // LCOV_EXCL_LINE
+                break;
             }
         }
     }
@@ -369,7 +374,7 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
     // m_value[0]);
 }
 
-void V3Number::setNames(AstNode* nodep) {
+void V3Number::nodep(AstNode* nodep) {
     m_nodep = nodep;
     if (!nodep) return;
     m_fileline = nodep->fileline();
@@ -508,7 +513,6 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
             out << "'";
             if (bitIs0(0)) {
                 out << '0';
-                if (isNull()) out << "[null]";
             } else if (bitIs1(0)) {
                 out << '1';
             } else if (bitIsZ(0)) {
@@ -544,7 +548,13 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
         // Always deal with 4 bits at once.  Note no 4-state, it's above.
         out << displayed("%0h");
     }
-    if (isNull() && VL_UNCOVERABLE(!isEqZero())) out << "-%E-null-not-zero";
+    if (isNull()) {
+        if (VL_UNCOVERABLE(!isEqZero())) {
+            out << "-%E-null-not-zero";
+        } else {
+            out << " [null]";
+        }
+    }
     return out.str();
 }
 
@@ -600,86 +610,90 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     string str;
     const char code = tolower(pos[0]);
     switch (code) {
-    case 'b': {
-        int bit = width() - 1;
-        if (fmtsize == "0")
-            while (bit && bitIs0(bit)) bit--;
-        for (; bit >= 0; bit--) {
-            if (bitIs0(bit)) {
-                str += '0';
-            } else if (bitIs1(bit)) {
-                str += '1';
-            } else if (bitIsZ(bit)) {
-                str += 'z';
-            } else {
-                str += 'x';
-            }
-        }
-        return str;
-    }
-    case 'o': {
-        int bit = width() - 1;
-        if (fmtsize == "0")
-            while (bit && bitIs0(bit)) bit--;
-        while ((bit % 3) != 2) bit++;
-        for (; bit > 0; bit -= 3) {
-            const int numX = countX(bit - 2, 3);
-            const int numZ = countZ(bit - 2, 3);
-            if (numX == 3 || numX == width() - (bit - 2)) {
-                str += 'x';
-                continue;
-            }
-            if (numZ == 3 || numZ == width() - (bit - 2)) {
-                str += 'z';
-                continue;
-            }
-            if (numX > 0) {
-                str += 'X';
-                continue;
-            }
-            if (numZ > 0) {
-                str += 'Z';
-                continue;
-            }
-            const int v = bitsValue(bit - 2, 3);
-            str += static_cast<char>('0' + v);
-        }
-        return str;
-    }
-    case 'h':
+    case 'b':  // FALLTHRU
+    case 'o':  // FALLTHRU
+    case 'h':  // FALLTHRU
     case 'x': {
         int bit = width() - 1;
-        if (fmtsize == "0")
-            while (bit && bitIs0(bit)) bit--;
-        while ((bit % 4) != 3) bit++;
-        for (; bit > 0; bit -= 4) {
-            const int numX = countX(bit - 3, 4);
-            const int numZ = countZ(bit - 3, 4);
-            if (numX == 4 || numX == width() - (bit - 3)) {
-                str += 'x';
-                continue;
+        if (left || !fmtsize.empty()) {
+            while (bit && bitIs0(bit)) --bit;
+        }
+        switch (code) {
+        case 'b': {
+            for (; bit >= 0; --bit) {
+                if (bitIs0(bit)) {
+                    str += '0';
+                } else if (bitIs1(bit)) {
+                    str += '1';
+                } else if (bitIsZ(bit)) {
+                    str += 'z';
+                } else {
+                    str += 'x';
+                }
             }
-            if (numZ == 4 || numZ == width() - (bit - 3)) {
-                str += 'z';
-                continue;
-            }
-            if (numX > 0) {
-                str += 'X';
-                continue;
-            }
-            if (numZ > 0) {
-                str += 'Z';
-                continue;
-            }
-            const int v = bitsValue(bit - 3, 4);
-            if (v >= 10) {
-                str += static_cast<char>('a' + v - 10);
-            } else {
+            break;
+        }
+        case 'o': {
+            while ((bit % 3) != 2) ++bit;
+            for (; bit > 0; bit -= 3) {
+                const int numX = countX(bit - 2, 3);
+                const int numZ = countZ(bit - 2, 3);
+                if (numX == 3 || numX == width() - (bit - 2)) {
+                    str += 'x';
+                    continue;
+                }
+                if (numZ == 3 || numZ == width() - (bit - 2)) {
+                    str += 'z';
+                    continue;
+                }
+                if (numX > 0) {
+                    str += 'X';
+                    continue;
+                }
+                if (numZ > 0) {
+                    str += 'Z';
+                    continue;
+                }
+                const int v = bitsValue(bit - 2, 3);
                 str += static_cast<char>('0' + v);
             }
+            break;
         }
+        default: {  // h/x
+            while ((bit % 4) != 3) ++bit;
+            for (; bit > 0; bit -= 4) {
+                const int numX = countX(bit - 3, 4);
+                const int numZ = countZ(bit - 3, 4);
+                if (numX == 4 || numX == width() - (bit - 3)) {
+                    str += 'x';
+                    continue;
+                }
+                if (numZ == 4 || numZ == width() - (bit - 3)) {
+                    str += 'z';
+                    continue;
+                }
+                if (numX > 0) {
+                    str += 'X';
+                    continue;
+                }
+                if (numZ > 0) {
+                    str += 'Z';
+                    continue;
+                }
+                const int v = bitsValue(bit - 3, 4);
+                if (v >= 10) {
+                    str += static_cast<char>('a' + v - 10);
+                } else {
+                    str += static_cast<char>('0' + v);
+                }
+            }
+            break;
+        }
+        }  // switch
+        const size_t fmtsizen = static_cast<size_t>(std::atoi(fmtsize.c_str()));
+        str = displayPad(fmtsizen, (left ? ' ' : '0'), left, str);
         return str;
-    }
+    }  // case b/d/x/o
     case 'c': {
         if (width() > 8) fl->v3warn(WIDTH, "$display-like format of %c format of > 8 bit value");
         const unsigned int v = bitsValue(0, 8);
@@ -711,7 +725,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     case 't':  // Time
     case 'd': {  // Unsigned decimal
         const bool issigned = (code == '~');
-        if (fmtsize == "") {
+        if (fmtsize == "" && !left) {
             const double mantissabits = width() - (issigned ? 1 : 0);
             // To get the number of digits required, we want to compute
             // log10(2**mantissabits) and round it up. To be able to handle
@@ -750,7 +764,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
                 }
             }
         }
-        const bool zeropad = fmtsize.length() > 0 && fmtsize[0] == '0';
+        const bool zeropad = fmtsize.length() > 0 && fmtsize[0] == '0' && !left;
         // fmtsize might have changed since we parsed the %fmtsize
         const size_t fmtsizen = static_cast<size_t>(std::atoi(fmtsize.c_str()));
         str = displayPad(fmtsizen, (zeropad ? '0' : ' '), left, str);
@@ -871,7 +885,7 @@ string V3Number::toDecimalU() const {
 //======================================================================
 // ACCESSORS - as numbers
 
-uint32_t V3Number::toUInt() const {
+uint32_t V3Number::toUInt() const VL_MT_SAFE {
     UASSERT(!isFourState(), "toUInt with 4-state " << *this);
     // We allow wide numbers that represent values <= 32 bits
     for (int i = 1; i < words(); ++i) {
@@ -909,7 +923,7 @@ int32_t V3Number::toSInt() const {
     }
 }
 
-uint64_t V3Number::toUQuad() const {
+uint64_t V3Number::toUQuad() const VL_MT_SAFE {
     UASSERT(!isFourState(), "toUQuad with 4-state " << *this);
     // We allow wide numbers that represent values <= 64 bits
     if (isDouble()) return static_cast<uint64_t>(toDouble());
@@ -2171,7 +2185,9 @@ V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
     // to itself; V3Simulate does this when hits "foo=foo;"
     // So no: NUM_ASSERT_OP_ARGS1(lhs);
     if (this != &lhs) {
-        if (isString()) {
+        if (VL_UNLIKELY(lhs.isNull())) {
+            m_data.m_isNull = true;
+        } else if (isString()) {
             if (VL_UNLIKELY(!lhs.isString())) {
                 // Non-compatible types, erase value.
                 m_data.str() = "";

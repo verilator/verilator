@@ -51,7 +51,7 @@ static class BrokenCntGlobal {
     uint8_t m_count = MIN_VALUE;
 
 public:
-    uint8_t get() const {
+    uint8_t get() const VL_MT_SAFE {
         UASSERT(MIN_VALUE <= m_count && m_count <= MAX_VALUE, "Invalid generation number");
         return m_count;
     }
@@ -329,7 +329,7 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
 
         // Mark every node in the tree
         const uint8_t brokenCntCurrent = s_brokenCntGlobal.get();
-        nodep->foreach<AstNode>([brokenCntCurrent](AstNode* nodep) {
+        nodep->foreach([brokenCntCurrent](AstNode* nodep) {
 #ifdef VL_LEAK_CHECKS
             UASSERT_OBJ(s_allocTable.isAllocated(nodep), nodep,
                         "AstNode is in tree, but not allocated");

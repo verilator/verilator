@@ -11,8 +11,6 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   // verilator lint_off GENCLK
-
    reg [7:0] cyc; initial cyc = 0;
    reg       genclk;
    // verilator lint_off MULTIDRIVEN

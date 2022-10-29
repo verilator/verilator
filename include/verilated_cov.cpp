@@ -357,9 +357,6 @@ public:
     void write(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock{m_mutex};
-#ifndef VM_COVERAGE
-        VL_FATAL_MT("", 0, "", "%Error: Called VerilatedCov::write when VM_COVERAGE disabled");
-#endif
         selftest();
 
         std::ofstream os{filename};
@@ -518,7 +515,7 @@ VerilatedCovContext* VerilatedContext::coveragep() VL_MT_SAFE {
     if (VL_UNLIKELY(!m_coveragep)) {
         const VerilatedLockGuard lock{s_mutex};
         // cppcheck-suppress identicalInnerCondition
-        if (VL_LIKELY(!m_coveragep)) {  // Not redundant, prevents race
+        if (VL_LIKELY(!m_coveragep)) {  // LCOV_EXCL_LINE // Not redundant, prevents race
             m_coveragep.reset(new VerilatedCovImp);
         }
     }

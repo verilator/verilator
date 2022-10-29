@@ -16,7 +16,8 @@ my $root = "..";
 
 compile(
     # Can't use --coverage and --savable together, so cheat and compile inline
-    verilator_flags2 => ["--cc --coverage-toggle --coverage-line --coverage-user --trace --prof-exec --prof-pgo --vpi $root/include/verilated_save.cpp"],
+    verilator_flags2 => ["--cc --coverage-toggle --coverage-line --coverage-user --trace --prof-exec --prof-pgo --vpi $root/include/verilated_save.cpp",
+                         $Self->have_coroutines ? "--timing" : "--no-timing -Wno-STMTDLY"],
     make_flags => 'DRIVER_STD=newest',
     );
 

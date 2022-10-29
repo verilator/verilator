@@ -13,7 +13,7 @@ scenarios(vlt => 1);
 top_filename("t/t_math_shift.v");
 
 compile(
-    verilator_flags2 => ["-Wno-CLKDATA", '-fno-expand'],
+    verilator_flags2 => ['-fno-expand'],
     );
 
 execute(

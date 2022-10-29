@@ -1,0 +1,33 @@
+%Warning-STMTDLY: t/t_notiming.v:12:8: Ignoring delay on this statement due to --no-timing
+                                     : ... In instance t
+   12 |        #1
+      |        ^
+                  ... For warning description see https://verilator.org/warn/STMTDLY?v=latest
+                  ... Use "/* verilator lint_off STMTDLY */" and lint_on around source to disable this message.
+%Error-NOTIMING: t/t_notiming.v:13:8: Fork statements require --timing
+                                    : ... In instance t
+   13 |        fork @e; @e; join;
+      |        ^~~~
+%Error-NOTIMING: t/t_notiming.v:14:8: Event control statement in this location requires --timing
+                                    : ... In instance t
+                                    : ... With --no-timing, suggest have one event control statement per procedure, at the top of the procedure
+   14 |        @e
+      |        ^
+%Error-NOTIMING: t/t_notiming.v:15:8: Wait statements require --timing
+                                    : ... In instance t
+   15 |        wait(x == 4)
+      |        ^~~~
+%Error-NOTIMING: t/t_notiming.v:19:8: Event control statement in this location requires --timing
+                                    : ... In instance t
+                                    : ... With --no-timing, suggest have one event control statement per procedure, at the top of the procedure
+   19 |        @e
+      |        ^
+%Warning-STMTDLY: t/t_notiming.v:26:12: Ignoring delay on this statement due to --no-timing
+                                      : ... In instance t
+   26 |    initial #1 ->e;
+      |            ^
+%Warning-STMTDLY: t/t_notiming.v:27:12: Ignoring delay on this statement due to --no-timing
+                                      : ... In instance t
+   27 |    initial #2 $stop;  
+      |            ^
+%Error: Exiting due to

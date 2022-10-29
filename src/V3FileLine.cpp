@@ -155,7 +155,7 @@ void VFileContent::pushText(const string& text) {
     m_lines.emplace_back(string(leftover, line_start));  // Might be ""
 }
 
-string VFileContent::getLine(int lineno) const {
+string VFileContent::getLine(int lineno) const VL_MT_SAFE {
     // Return error text rather than asserting so the user isn't left without a message
     // cppcheck-suppress negativeContainerIndex
     if (VL_UNCOVERABLE(lineno < 0 || lineno >= (int)m_lines.size())) {
@@ -284,7 +284,7 @@ FileLine* FileLine::copyOrSameFileLine() {
     return newp;
 }
 
-string FileLine::filebasename() const {
+string FileLine::filebasename() const VL_MT_SAFE {
     string name = filename();
     string::size_type pos;
     if ((pos = name.rfind('/')) != string::npos) name.erase(0, pos + 1);
@@ -298,7 +298,7 @@ string FileLine::filebasenameNoExt() const {
     return name;
 }
 
-string FileLine::firstColumnLetters() const {
+string FileLine::firstColumnLetters() const VL_MT_SAFE {
     const char a = ((firstColumn() / 26) % 26) + 'a';
     const char b = (firstColumn() % 26) + 'a';
     return string(1, a) + string(1, b);
@@ -322,7 +322,7 @@ string FileLine::asciiLineCol() const {
             + "-" + cvtToStr(lastColumn()) + "[" + (m_contentp ? m_contentp->ascii() : "ct0") + "+"
             + cvtToStr(m_contentLineno) + "]");
 }
-string FileLine::ascii() const {
+string FileLine::ascii() const VL_MT_SAFE {
     // For most errors especially in the parser the lastLineno is more accurate than firstLineno
     return filename() + ":" + cvtToStr(lastLineno()) + ":" + cvtToStr(firstColumn());
 }
@@ -332,7 +332,15 @@ std::ostream& operator<<(std::ostream& os, FileLine* fileline) {
 }
 
 bool FileLine::warnOff(const string& msg, bool flag) {
-    const V3ErrorCode code(msg.c_str());
+    const char* cmsg = msg.c_str();
+    // Backward compatibility with msg="UNUSED"
+    if (V3ErrorCode::unusedMsg(cmsg)) {
+        warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
+        warnOff(V3ErrorCode::UNUSEDPARAM, flag);
+        warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
+        return true;
+    }
+    const V3ErrorCode code(cmsg);
     if (code < V3ErrorCode::EC_FIRST_WARN) {
         return false;
     } else {
@@ -355,14 +363,19 @@ void FileLine::warnStyleOff(bool flag) {
     }
 }
 
-bool FileLine::warnIsOff(V3ErrorCode code) const {
+void FileLine::warnUnusedOff(bool flag) {
+    warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
+    warnOff(V3ErrorCode::UNUSEDPARAM, flag);
+    warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
+}
+
+bool FileLine::warnIsOff(V3ErrorCode code) const VL_MT_SAFE {
     if (!msgEn().test(code)) return true;
     if (!defaultFileLine().msgEn().test(code)) return true;  // Global overrides local
-    // UNOPTFLAT implies UNOPT
-    if (code == V3ErrorCode::UNOPT && !msgEn().test(V3ErrorCode::UNOPTFLAT)) return true;
     if ((code.lintError() || code.styleError()) && !msgEn().test(V3ErrorCode::I_LINT)) {
         return true;
     }
+    if ((code.unusedError()) && !msgEn().test(V3ErrorCode::I_UNUSED)) { return true; }
     return false;
 }
 
@@ -393,7 +406,7 @@ string FileLine::warnMore() const {
         return V3Error::warnMore();
     }
 }
-string FileLine::warnOther() const {
+string FileLine::warnOther() const VL_MT_SAFE {
     if (lastLineno()) {
         return V3Error::warnMore() + ascii() + ": ";
     } else {
@@ -401,7 +414,7 @@ string FileLine::warnOther() const {
     }
 }
 
-string FileLine::source() const {
+string FileLine::source() const VL_MT_SAFE {
     if (VL_UNCOVERABLE(!m_contentp)) {  // LCOV_EXCL_START
         if (debug() || v3Global.opt.debugCheck()) {
             // The newline here is to work around the " <line#> | "
@@ -412,7 +425,7 @@ string FileLine::source() const {
     }  // LCOV_EXCL_STOP
     return m_contentp->getLine(m_contentLineno);
 }
-string FileLine::prettySource() const {
+string FileLine::prettySource() const VL_MT_SAFE {
     string out = source();
     // Drop ignore trailing newline
     const string::size_type pos = out.find('\n');
@@ -421,7 +434,7 @@ string FileLine::prettySource() const {
     return VString::spaceUnprintable(out);
 }
 
-string FileLine::warnContext(bool secondary) const {
+string FileLine::warnContext(bool secondary) const VL_MT_SAFE {
     V3Error::errorContexted(true);
     if (!v3Global.opt.context()) return "";
     string out;

@@ -11,8 +11,6 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   // verilator lint_off GENCLK
-
    reg [7:0] cyc; initial cyc = 0;
    reg [7:0] padd;
    reg       dsp_ph1, dsp_ph2, dsp_reset;

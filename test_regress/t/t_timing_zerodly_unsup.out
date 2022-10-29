@@ -1,0 +1,5 @@
+%Error-ZERODLY: t/t_timing_zerodly_unsup.v:12:13: Unsupported: #0 delays do not schedule process resumption in the Inactive region
+   12 |             #0 if (v) $finish;
+      |             ^
+                ... For error description see https://verilator.org/warn/ZERODLY?v=latest
+%Error: Exiting due to

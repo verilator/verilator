@@ -16,3 +16,7 @@ lint_off --rule UNOPTFLAT -scope "top*"
 lint_off --rule UNOPTFLAT -scope "top*" -levels 0
 lint_on --rule UNOPTFLAT -scope "top*"
 lint_on --rule UNOPTFLAT -scope "top*" -levels 0
+// bad, --module missing
+forceable -module "" -var "net_*"
+// bad, --var missing
+forceable -module "top" -var ""

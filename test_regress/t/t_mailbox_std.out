@@ -1,0 +1,11 @@
+%Error: t/t_mailbox.pl:1:1: syntax error, unexpected '#'
+    1 | #!/usr/bin/env perl
+      | ^
+%Error-UNSUPPORTED: t/t_mailbox.pl:2:19: Unsupported: Verilog 2001-config reserved word not implemented: 'use'
+    2 | if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
+      |                   ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_mailbox.pl:3:47: Unsupported: SystemVerilog 2005 reserved word not implemented: 'expect'
+    3 | # DESCRIPTION: Verilator: Verilog Test driver/expect definition
+      |                                               ^~~~~~
+%Error: Exiting due to

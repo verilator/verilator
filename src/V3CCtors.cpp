@@ -188,7 +188,9 @@ void V3CCtors::cctorsAll() {
             for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
                 if (AstVar* const varp = VN_CAST(np, Var)) {
                     if (!varp->isIfaceParent() && !varp->isIfaceRef() && !varp->noReset()
-                        && !varp->isParam()) {
+                        && !varp->isParam()
+                        && !(varp->basicp()
+                             && (varp->basicp()->isEvent() || varp->basicp()->isTriggerVec()))) {
                         const auto vrefp = new AstVarRef{varp->fileline(), varp, VAccess::WRITE};
                         var_reset.add(new AstCReset{varp->fileline(), vrefp});
                     }

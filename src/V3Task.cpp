@@ -175,7 +175,7 @@ private:
         // Find all var->varscope mappings, for later cleanup
         for (AstNode* stmtp = nodep->varsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVarScope* const vscp = VN_CAST(stmtp, VarScope)) {
-                if (vscp->varp()->isFuncLocal()) {
+                if (vscp->varp()->isFuncLocal() || vscp->varp()->isUsedLoopIdx()) {
                     UINFO(9, "   funcvsc " << vscp << endl);
                     m_varToScopeMap.insert(
                         std::make_pair(std::make_pair(nodep, vscp->varp()), vscp));
@@ -362,6 +362,7 @@ private:
     AstScope* m_scopep = nullptr;  // Current scope
     InsertMode m_insMode = IM_BEFORE;  // How to insert
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
+    bool m_inSensesp = false;  // Are we under a senitem?
     int m_modNCalls = 0;  // Incrementing func # for making symbols
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
 
@@ -407,7 +408,7 @@ private:
 
     // Replace varrefs with new var pointer
     void relink(AstNode* nodep) {
-        nodep->foreachAndNext<AstVarRef>([](AstVarRef* refp) {
+        nodep->foreachAndNext([](AstVarRef* refp) {
             if (refp->varp()->user2p()) {  // It's being converted to an alias.
                 AstVarScope* const newvscp = VN_AS(refp->varp()->user2p(), VarScope);
                 refp->varScopep(newvscp);
@@ -1057,18 +1058,19 @@ private:
         }
     }
 
-    AstVarScope* makeDpiExporTrigger() {
-        AstVarScope* dpiExportTriggerp = v3Global.rootp()->dpiExportTriggerp();
+    AstVarScope* getDpiExporTrigger() {
+        AstNetlist* const netlistp = v3Global.rootp();
+        AstVarScope* dpiExportTriggerp = netlistp->dpiExportTriggerp();
         if (!dpiExportTriggerp) {
             // Create the global DPI export trigger flag the first time we encounter a DPI export.
             // This flag is set any time a DPI export is invoked, and cleared at the end of eval.
             FileLine* const fl = m_topScopep->fileline();
-            AstVar* const varp
-                = new AstVar{fl, VVarType::VAR, "__Vdpi_export_trigger", VFlagBitPacked{}, 1};
+            const string name{"__Vdpi_export_trigger"};
+            AstVar* const varp = new AstVar{fl, VVarType::VAR, name, VFlagBitPacked{}, 1};
             m_topScopep->scopep()->modp()->addStmtsp(varp);
             dpiExportTriggerp = new AstVarScope{fl, m_topScopep->scopep(), varp};
             m_topScopep->scopep()->addVarsp(dpiExportTriggerp);
-            v3Global.rootp()->dpiExportTriggerp(dpiExportTriggerp);
+            netlistp->dpiExportTriggerp(dpiExportTriggerp);
         }
         return dpiExportTriggerp;
     }
@@ -1272,52 +1274,37 @@ private:
             // Mark all non-local variables written by the DPI exported function as being updated
             // by DPI exports. This ensures correct ordering and change detection later.
 
-            // Gather non-local variables written by the exported function
-            std::vector<AstVarScope*> writtenps;
-            {
-                const VNUser5InUse user5InUse;  // AstVarScope::user5 -> Already added variable
-                cfuncp->foreach<AstVarRef>([&writtenps](AstVarRef* refp) {
-                    if (refp->access().isReadOnly()) return;  // Ignore read reference
-                    AstVarScope* const varScopep = refp->varScopep();
-                    if (varScopep->user5()) return;  // Ignore already added variable
-                    varScopep->user5(true);  // Mark as already added
-                    // Note: We are ignoring function locals as they should not be referenced
-                    // anywhere outside of the enclosing AstCFunc, and therefore they are
-                    // irrelevant for code ordering. This is an optimization to avoid adding
-                    // useless nodes to the ordering graph in V3Order.
-                    if (varScopep->varp()->isFuncLocal()) return;
-                    writtenps.push_back(varScopep);
-                });
-            }
+            // Mark non-local variables written by the exported function
+            bool writesNonLocals = false;
+            cfuncp->foreach([&writesNonLocals](AstVarRef* refp) {
+                if (refp->access().isReadOnly()) return;  // Ignore read reference
+                AstVar* const varp = refp->varScopep()->varp();
+                // We are ignoring function locals as they should not be referenced anywhere
+                // outside the enclosing AstCFunc, hence they are irrelevant for code ordering.
+                if (varp->isFuncLocal()) return;
+                // Mark it as written by DPI export
+                varp->setWrittenByDpi();
+                // Remember we had some
+                writesNonLocals = true;
+            });
 
-            if (!writtenps.empty()) {
-                AstVarScope* const dpiExportTriggerp = makeDpiExporTrigger();
-                FileLine* const fl = cfuncp->fileline();
+            // If this DPI export writes some non-local variables, set the DPI Export Trigger flag
+            // in the function.
+            if (writesNonLocals) {
+                AstVarScope* const dpiExportTriggerp = getDpiExporTrigger();
+                FileLine* const flp = cfuncp->fileline();
 
                 // Set DPI export trigger flag every time the DPI export is called.
                 AstAssign* const assignp
-                    = new AstAssign{fl, new AstVarRef{fl, dpiExportTriggerp, VAccess::WRITE},
-                                    new AstConst{fl, AstConst::BitTrue{}}};
+                    = new AstAssign{flp, new AstVarRef{flp, dpiExportTriggerp, VAccess::WRITE},
+                                    new AstConst{flp, AstConst::BitTrue{}}};
+
                 // Add as first statement (to avoid issues with early returns) to exported function
                 if (cfuncp->stmtsp()) {
                     cfuncp->stmtsp()->addHereThisAsNext(assignp);
                 } else {
                     cfuncp->addStmtsp(assignp);
                 }
-
-                // Add an always block sensitive to the DPI export trigger flag, and add an
-                // AstDpiExportUpdated node under it for each variable that are writen by the
-                // exported function.
-                AstAlways* const alwaysp = new AstAlways{
-                    fl, VAlwaysKwd::ALWAYS,
-                    new AstSenTree{
-                        fl, new AstSenItem{fl, VEdgeType::ET_HIGHEDGE,
-                                           new AstVarRef{fl, dpiExportTriggerp, VAccess::READ}}},
-                    nullptr};
-                for (AstVarScope* const varScopep : writtenps) {
-                    alwaysp->addStmtsp(new AstDpiExportUpdated{fl, varScopep});
-                }
-                m_scopep->addBlocksp(alwaysp);
             }
         }
 
@@ -1384,6 +1371,11 @@ private:
         m_scopep = nullptr;
     }
     void visit(AstNodeFTaskRef* nodep) override {
+        if (m_inSensesp) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: function calls in sensitivity lists");
+            nodep->taskp(nullptr);  // So V3Broken doesn't complain
+            return;
+        }
         // Includes handling AstMethodCall, AstNew
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked?");
         iterateIntoFTask(nodep->taskp());  // First, do hierarchical funcs
@@ -1535,6 +1527,12 @@ private:
         m_insStmtp = nodep;
         iterateChildren(nodep);
         m_insStmtp = nullptr;  // Next thing should be new statement
+    }
+    void visit(AstSenItem* nodep) override {
+        UASSERT_OBJ(!m_inSensesp, nodep, "Senitem under senitem?");
+        VL_RESTORER(m_inSensesp);
+        m_inSensesp = true;
+        iterateChildren(nodep);
     }
     //--------------------
     void visit(AstNode* nodep) override { iterateChildren(nodep); }

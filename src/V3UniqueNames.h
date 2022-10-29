@@ -33,10 +33,14 @@ class V3UniqueNames final {
     std::unordered_map<std::string, unsigned> m_multiplicity;  // Suffix number for given key
 
 public:
-    V3UniqueNames()
-        : m_prefix{""} {}
+    V3UniqueNames() = default;
     explicit V3UniqueNames(const std::string& prefix)
-        : m_prefix{prefix} {}
+        : m_prefix{prefix} {
+        if (!m_prefix.empty()) {
+            UASSERT(VString::startsWith(m_prefix, "__V"), "Prefix must start with '__V'");
+            UASSERT(!VString::endsWith(m_prefix, "_"), "Prefix must not end with '_'");
+        }
+    }
 
     // Return argument, prepended with the prefix if any, then appended with a unique suffix each
     // time we are called with the same argument.

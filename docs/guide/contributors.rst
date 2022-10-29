@@ -23,7 +23,8 @@ Contributors
 Many people have provided ideas and other assistance with Verilator.
 
 Verilator is receiving major development support from the `CHIPS Alliance
-<https://chipsalliance.org>`_ and `Shunyao CAD <https://shunyaocad.com>`_.
+<https://chipsalliance.org>`_, `Antmicro Ltd <https://antmicro.com>`_ and
+`Shunyao CAD <https://shunyaocad.com>`_.
 
 Previous major corporate sponsors of Verilator, by providing significant
 contributions of time or funds included include: Atmel Corporation, Cavium
@@ -32,90 +33,101 @@ Hicamp Systems, Intel Corporation, Mindspeed Technologies Inc., MicroTune
 Inc., picoChip Designs Ltd., Sun Microsystems Inc., Nauticus Networks Inc.,
 SiCortex Inc, and Shunyao CAD.
 
-The people who have contributed major functionality are: Byron Bradley,
-Jeremy Bennett, Lane Brooks, John Coiner, Duane Galbi, Geza Lore, Todd
-Strader, Stefan Wallentowitz, Paul Wasson, Jie Xu, and Wilson Snyder.
-Major testers included Jeff Dutton, Jonathon Donaldson, Ralf Karge, David
-Hewson, Iztok Jeras, Wim Michiels, Alex Solomatnikov, Sebastien Van
-Cauwenberghe, Gene Weber, and Clifford Wolf.
+The people who have contributed major functionality are: Krzysztof
+Bieganski, Byron Bradley, Jeremy Bennett, Lane Brooks, John Coiner, Duane
+Galbi, Geza Lore, Todd Strader, Stefan Wallentowitz, Paul Wasson, Jie Xu,
+and Wilson Snyder.  Major testers included Jeff Dutton, Jonathon Donaldson,
+Ralf Karge, David Hewson, Iztok Jeras, Wim Michiels, Alex Solomatnikov,
+Sebastien Van Cauwenberghe, Gene Weber, and Clifford Wolf.
 
 Some of the people who have provided ideas, and feedback for Verilator
-include: David Addison, Nikana Anastasiadis, Vasu Arasanipalai, Jens Arm,
-Tariq B. Ahmad, Sharad Bagri, Matthew Ballance, Andrew Bardsley, Matthew
-Barr, Geoff Barrett, Kaleb Barrett, Julius Baxter, Jeremy Bennett, Michael
-Berman, Jean Berniolles, Victor Besyakov, Moinak Bhattacharyya, Krzysztof
-Bieganski, David Binderman, Piotr Binkowski, Johan Bjork, David Black,
-Tymoteusz Blazejczyk, Daniel Bone, Morten Borup Petersen, Gregg Bouchard,
-Christopher Boumenot, Nick Bowler, Byron Bradley, Bryan Brady, Charlie
-Brej, J Briquet, Lane Brooks, John Brownlee, Jeff Bush, Lawrence Butcher,
-Tony Bybell, Iru Cai, Ted Campbell, Chris Candler, Lauren Carlson, Donal
-Casey, Alex Chadwick, Terry Chen, Yi-Chung Chen, Enzo Chi, Robert A. Clark,
-Ryan Clarke, Allan Cochrane, John Coiner, Gianfranco Costamagna, Sean
-Cross, George Cuan, Joe DErrico, Lukasz Dalek, Gunter Dannoritzer, Ashutosh
-Das, Maarten De Braekeleer, Bernard Deadman, Alberto Del Rio, John Demme,
-Mike Denio, John Deroo, Philip Derrick, John Dickol, Ruben Diez, Danny
-Ding, Jacko Dirks, Ivan Djordjevic, Jonathon Donaldson, Sebastian Dressler,
-Alex Duller, Jeff Dutton, Tomas Dzetkulic, Richard E George, Edgar
-E. Iglesias, Usuario Eda, Charles Eddleston, Chandan Egbert, Jan Egil Ruud,
-Joe Eiler, Ahmed El-Mahmoudy, Trevor Elbourne, Mats Engstrom, Charles Eric
-LaForest, Robert Farrell, Eugen Fekete, Fabrizio Ferrandi, Udi Finkelstein,
-Brian Flachs, Andrea Foletto, Bob Fredieu, Duane Galbi, Benjamin Gartner,
-Christian Gelinek, Peter Gerst, Glen Gibb, Michael Gielda, Barbara Gigerl,
-Shankar Giri, Dan Gisselquist, Petr Gladkikh, Sam Gladstone, Andrew
-Goessling, Amir Gonnen, Chitlesh Goorah, Tomasz Gorochowik, Kai Gossner,
-Sergi Granell, Al Grant, Alexander Grobman, Xuan Guo, Driss Hafdi, Neil
+include:
+
+David Addison, Tariq B. Ahmad, Nikana Anastasiadis, Vasu Arasanipalai, Jens
+Arm, Sharad Bagri, Matthew Ballance, Andrew Bardsley, Matthew Barr, Geoff
+Barrett, Kaleb Barrett, Julius Baxter, Jeremy Bennett, Michael Berman, Jean
+Berniolles, Victor Besyakov, Moinak Bhattacharyya, Krzysztof Bieganski,
+David Binderman, Piotr Binkowski, Johan Bjork, David Black, Tymoteusz
+Blazejczyk, Daniel Bone, Gregg Bouchard, Christopher Boumenot, Nick Bowler,
+Byron Bradley, Bryan Brady, Maarten De Braekeleer, Charlie Brej, J Briquet,
+Lane Brooks, John Brownlee, Jeff Bush, Lawrence Butcher, Tony Bybell, Iru
+Cai, Ted Campbell, Chris Candler, Lauren Carlson, Donal Casey, Alex
+Chadwick, Marcel Chang, Aliaksei Chapyzhenka, Guokai Chen, Terry Chen,
+Yi-Chung Chen, Enzo Chi, Robert A. Clark, Ryan Clarke, Allan Cochrane, John
+Coiner, Keith Colbert, Gianfranco Costamagna, Sean Cross, George Cuan, Joe
+DErrico, Lukasz Dalek, Gunter Dannoritzer, Ashutosh Das, Bernard Deadman,
+John Demme, Mike Denio, John Deroo, Philip Derrick, John Dickol, Ruben
+Diez, Danny Ding, Jacko Dirks, Ivan Djordjevic, Jonathon Donaldson, Larry
+Doolittle, Sebastian Dressler, Jonathan Drolet, Alex Duller, Jeff Dutton,
+Tomas Dzetkulic, Usuario Eda, Charles Eddleston, Chandan Egbert, Joe Eiler,
+Ahmed El-Mahmoudy, Trevor Elbourne, Mats Engstrom, Robert Farrell, Eugen
+Fekete, Fabrizio Ferrandi, Udi Finkelstein, Brian Flachs, Bill Flynn,
+Andrea Foletto, Bob Fredieu, Duane Galbi, Mostafa Gamal, Benjamin Gartner,
+Christian Gelinek, Richard E George, Peter Gerst, Glen Gibb, Michael
+Gielda, Barbara Gigerl, Shankar Giri, Dan Gisselquist, Petr Gladkikh, Sam
+Gladstone, Mariusz Glebocki, Andrew Goessling, Amir Gonnen, Chitlesh
+Goorah, Tomasz Gorochowik, Kai Gossner, Sergi Granell, Al Grant, Nathan
+Graybeal, Alexander Grobman, Graham Rushton, Xuan Guo, Driss Hafdi, Neil
 Hamilton, James Hanlon, Oyvind Harboe, Jannis Harder, Junji Hashimoto,
 Thomas Hawkins, Mitch Hayenga, Harald Heckmann, Robert Henry, Stephen
 Henry, David Hewson, Jamey Hicks, Joel Holdsworth, Andrew Holme, Hiroki
 Honda, Alex Hornung, Pierre-Henri Horrein, David Horton, Peter Horvath, Jae
-Hossell, Kuoping Hsu, Alan Hunter, James Hutchinson, Anderson Ignacio da
-Silva, Jamie Iles, Thomas J Whatson, Ben Jackson, Mark Jackson Pulver,
-Shareef Jalloq, Marlon James, Krzysztof Jankowski, HyungKi Jeong, Iztok
-Jeras, James Johnson, Christophe Joly, Franck Jullien, James Jung, Mike
-Kagen, Arthur Kahlich, Kaalia Kahn, Guy-Armand Kamendje, Vasu Kandadi,
-Kanad Kanhere, Patricio Kaplan, Pieter Kapsenberg, Rafal Kapuscik, Ralf
-Karge, Dan Katz, Sol Katzman, Ian Kennedy, Michael Killough, Jonathan
-Kimmitt, Olof Kindgren, Kevin Kiningham, Dan Kirkham, Sobhan Klnv, Gernot
-Koch, Jack Koenig, Soon Koh, Nathan Kohagen, Steve Kolecki, Brett Koonce,
-Will Korteland, Wojciech Koszek, Varun Koyyalagunta, Markus Krause, David
-Kravitz, Roland Kruse, Andreas Kuster, Sergey Kvachonok, Ed Lander, Steve
-Lang, Stephane Laurent, Walter Lavino, Christian Leber, Larry Lee, Igor
-Lesik, John Li, Eivind Liland, Charlie Lind, Andrew Ling, Jiuyang Liu, Paul
-Liu, Derek Lockhart, Jake Longo, Geza Lore, Arthur Low, Stefan Ludwig, Dan
-Lussier, Fred Ma, Duraid Madina, Odd Magne Reitan, Affe Mao, Julien
-Margetts, Mark Marshall, Alfonso Martinez, Unai Martinez-Corral, Yves
-Mathieu, Patrick Maupin, Conor McCullough, Jason McMullan, Elliot Mednick,
-Wim Michiels, Miodrag Milanovic, Peter Monsson, Sean Moore, Dennis
-Muhlestein, John Murphy, Matt Myers, Nathan Myers, Richard Myers, Dimitris
-Nalbantis, Peter Nelson, Bob Newgard, Paul Nitza, Yossi Nivin, Pete Nixon,
-Lisa Noack, Mark Nodine, Kuba Ober, Andreas Olofsson, Baltazar Ortiz,
-Aleksander Osman, Don Owen, James Pallister, Vassilis Papaefstathiou, Brad
-Parker, Dan Petrisko, Maciej Piechotka, David Pierce, Cody Piersall,
-Dominic Plunkett, David Poole, Mike Popoloski, Roman Popov, Rich Porter,
-Niranjan Prabhu, Usha Priyadharshini, Prateek Puri, Marshal Qiao, Nandu
-Raj, Danilo Ramos, Chris Randall, Anton Rapp, Josh Redford, Frederic
-Requin, Dustin Richmond, Samuel Riedel, Eric Rippey, Oleg Rodionov, Ludwig
-Rogiers, Paul Rolfe, Arjen Roodselaar, Tobias Rosenkranz, Huang Rui, Denis
-Rystsov, John Sanguinetti, Galen Seitz, Joseph Shaker, Salman Sheikh, Yu
-Sheng Lin, Hao Shi, Mike Shinkarovsky, Rafael Shirakawa, Jeffrey Short, Fan
-Shupei, Rodney Sinclair, Steven Slatter, Brian Small, Garrett Smith, Tim
-Snyder, Wilson Snyder, Maciej Sobkowski, Stan Sokorac, Alex Solomatnikov,
-Wei Song, Art Stamness, David Stanford, John Stevenson, Pete Stevenson,
-Patrick Stewart, Rob Stoddard, Todd Strader, John Stroebel, Sven Stucki,
-Howard Su, Emerson Suguimoto, Gene Sullivan, Wai Sum Mong, Qingyao Sun,
-Renga Sundararajan, Rupert Swarbrick, Yutetsu Takatsukasa, Thierry Tambe,
-Drew Taussig, Peter Tengstrand, Wesley Terpstra, Rui Terra, Stefan Thiede,
-Gary Thomas, Ian Thompson, Kevin Thompson, Mike Thyer, Hans Tichelaar,
-Viktor Tomov, Steve Tong, Alex Torregrosa, Michael Tresidder, David Turner,
-Neil Turton, Cong Van Nguyen, Hans Van Antwerpen, Jan Van Winkel, Sebastien
-Van Cauwenberghe, Laurens van Dam, Leendert van Doorn, Srini Vemuri, Yuri
+Hossell, Kuoping Hsu, Teng Huang, Steven Hugg, Alan Hunter, James
+Hutchinson, Ehab Ibrahim, Edgar E. Iglesias, Jamie Iles, Vighnesh Iyer, Ben
+Jackson, Shareef Jalloq, Marlon James, Krzysztof Jankowski, HyungKi Jeong,
+Iztok Jeras, Alexandre Joannou, James Johnson, Christophe Joly, Franck
+Jullien, James Jung, Mike Kagen, Arthur Kahlich, Kaalia Kahn, Guy-Armand
+Kamendje, Vasu Kandadi, Kanad Kanhere, Patricio Kaplan, Pieter Kapsenberg,
+Rafal Kapuscik, Ralf Karge, Per Karlsson, Dan Katz, Sol Katzman, Ian
+Kennedy, Michael Killough, Sun Kim, Jonathan Kimmitt, Olof Kindgren, Kevin
+Kiningham, Dan Kirkham, Aleksander Kiryk, Sobhan Klnv, Gernot Koch, Jack
+Koenig, Soon Koh, Nathan Kohagen, Steve Kolecki, Brett Koonce, Will
+Korteland, Wojciech Koszek, Varun Koyyalagunta, Arkadiusz Kozdra, Markus
+Krause, David Kravitz, Roland Kruse, Andreas Kuster, Sergey Kvachonok,
+Charles Eric LaForest, Ed Lander, Steve Lang, Stephane Laurent, Walter
+Lavino, Christian Leber, Larry Lee, Yoda Lee, Michaël Lefebvre, Igor Lesik,
+John Li, Eivind Liland, Yu Sheng Lin, Charlie Lind, Andrew Ling, Jiuyang
+Liu, Paul Liu, Derek Lockhart, Jake Longo, Geza Lore, Arthur Low, Stefan
+Ludwig, Dan Lussier, Fred Ma, Duraid Madina, Affe Mao, Julien Margetts,
+Mark Marshall, Alfonso Martinez, Unai Martinez-Corral, Adrien Le Masle,
+Yves Mathieu, Patrick Maupin, Conor McCullough, Jason McMullan, Elliot
+Mednick, David Metz, Wim Michiels, Miodrag Milanovic, Kevin Millis, Wai Sum
+Mong, Peter Monsson, Sean Moore, Dennis Muhlestein, John Murphy, Matt
+Myers, Nathan Myers, Richard Myers, Dimitris Nalbantis, Peter Nelson, Bob
+Newgard, Rachit Nigam, Paul Nitza, Yossi Nivin, Pete Nixon, Lisa Noack,
+Mark Nodine, Kuba Ober, Andreas Olofsson, Baltazar Ortiz, Aleksander Osman,
+Don Owen, James Pallister, Vassilis Papaefstathiou, Brad Parker, Morten
+Borup Petersen, Dan Petrisko, Maciej Piechotka, David Pierce, Cody
+Piersall, Michael Platzer, Dominic Plunkett, David Poole, Mike Popoloski,
+Roman Popov, Rich Porter, Stefan Post, Niranjan Prabhu, Damien Pretet, Usha
+Priyadharshini, Mark Jackson Pulver, Prateek Puri, Marshal Qiao, Nandu Raj,
+Kamil Rakoczy, Danilo Ramos, Drew Ranck, Chris Randall, Anton Rapp, Josh
+Redford, Odd Magne Reitan, Frederic Requin, Dustin Richmond, Samuel Riedel,
+Alberto Del Rio, Eric Rippey, Oleg Rodionov, Ludwig Rogiers, Paul Rolfe,
+Arjen Roodselaar, Tobias Rosenkranz, Ryszard Rozak, Huang Rui, Graham
+Rushton, Jan Egil Ruud, Denis Rystsov, John Sanguinetti, Martin Schmidt,
+Julie Schwartz, Galen Seitz, Joseph Shaker, Salman Sheikh, Hao Shi, Mike
+Shinkarovsky, Rafael Shirakawa, Jeffrey Short, Fan Shupei, Anderson Ignacio
+da Silva, Rodney Sinclair, Ameya Vikram Singh, Steven Slatter, Mladen
+Slijepcevic, Brian Small, Garrett Smith, Tim Snyder, Wilson Snyder, Maciej
+Sobkowski, Stan Sokorac, Alex Solomatnikov, Flavien Solt, Wei Song, Trefor
+Southwell, Martin Stadler, Art Stamness, David Stanford, John Stevenson,
+Pete Stevenson, Patrick Stewart, Rob Stoddard, Todd Strader, John Stroebel,
+Sven Stucki, Howard Su, Emerson Suguimoto, Gene Sullivan, Qingyao Sun,
+Renga Sundararajan, Gustav Svensk, Rupert Swarbrick, Yutetsu Takatsukasa,
+Thierry Tambe, Drew Taussig, Jose Tejada, Peter Tengstrand, Wesley
+Terpstra, Rui Terra, Stefan Thiede, Gary Thomas, Ian Thompson, Kevin
+Thompson, Mike Thyer, Hans Tichelaar, Viktor Tomov, Steve Tong, Topa
+Topino, Alex Torregrosa, Michael Tresidder, David Turner, Neil Turton, Mike
+Urbach, Hans Van Antwerpen, Sebastien Van Cauwenberghe, Laurens van Dam,
+Leendert van Doorn, Cong Van Nguyen, Jan Van Winkel, Srini Vemuri, Yuri
 Victorovich, Bogdan Vukobratovic, Holger Waechtler, Philipp Wagner, Stefan
-Wallentowitz, Shawn Wang, Paul Wasson, Greg Waters, Thomas Watts, Eugene
-Weber, David Welch, Martin Whitaker, Marco Widmer, Leon Wildman, Daniel
-Wilkerson, Gerald Williams, Trevor Williams, Jeff Winston, Joshua Wise,
-Clifford Wolf, Tobias Wolfel, Johan Wouters, Paul Wright, Junyi Xi, Ding
-Xiaoliang, Jie Xu, Mandy Xu, Yinan Xu, Luke Yang, Amir Yazdanbakhsh, and
-Keyi Zhang.
+Wallentowitz, Shawn Wang, Zhanglei Wang, Paul Wasson, Greg Waters, Thomas
+Watts, Eugene Weber, David Welch, Thomas J Whatson, Martin Whitaker, Marco
+Widmer, Leon Wildman, Daniel Wilkerson, Gerald Williams, Trevor Williams,
+Jeff Winston, Joshua Wise, Clifford Wolf, Tobias Wolfel, Johan Wouters,
+Paul Wright, Junyi Xi, Ding Xiaoliang, Jie Xu, Mandy Xu, Yinan Xu, Luke
+Yang, Amir Yazdanbakhsh, Keyi Zhang, and Xi Zhang.
 
 Thanks to them, and all those we've missed including above, or wished to
 remain anonymous.
@@ -151,6 +163,10 @@ In 2018, Verilator 4.000 was released with multithreaded support.
 In 2019, Verilator joined the `CHIPS Alliance
 <https://chipsalliance.org>`_.
 
+In 2022, Verilator 5.000 was released with IEEE scheduling semantics,
+fork/join, delay handling, DFG performance optimizations, and other
+improvements.
+
 Currently, various language features and performance enhancements are added
-as the need arises.  Verilator is now about 3x faster than in 2002, and is
-faster than most (if not every) other simulator.
+as the need arises, with a focus towards getting to full Universal
+Verification Methodology (UVM, IEEE 1800.2-2017) support.

@@ -1,0 +1,34 @@
+%Error-NEEDTIMINGOPT: t/t_notiming.v:12:8: Use --timing or --no-timing to specify how delays should be handled
+                                         : ... In instance t
+   12 |        #1
+      |        ^
+                      ... For error description see https://verilator.org/warn/NEEDTIMINGOPT?v=latest
+%Error-NEEDTIMINGOPT: t/t_notiming.v:13:8: Use --timing or --no-timing to specify how forks should be handled
+                                         : ... In instance t
+   13 |        fork @e; @e; join;
+      |        ^~~~
+%Error-NEEDTIMINGOPT: t/t_notiming.v:14:8: Use --timing or --no-timing to specify how event controls should be handled
+                                         : ... In instance t
+   14 |        @e
+      |        ^
+%Error-NEEDTIMINGOPT: t/t_notiming.v:15:8: Use --timing or --no-timing to specify how wait statements should be handled
+                                         : ... In instance t
+   15 |        wait(x == 4)
+      |        ^~~~
+%Error-NEEDTIMINGOPT: t/t_notiming.v:16:12: Use --timing or --no-timing to specify how timing controls should be handled
+                                          : ... In instance t
+   16 |        x = #1 8;
+      |            ^
+%Error-NEEDTIMINGOPT: t/t_notiming.v:19:8: Use --timing or --no-timing to specify how event controls should be handled
+                                         : ... In instance t
+   19 |        @e
+      |        ^
+%Error-NEEDTIMINGOPT: t/t_notiming.v:26:12: Use --timing or --no-timing to specify how delays should be handled
+                                          : ... In instance t
+   26 |    initial #1 ->e;
+      |            ^
+%Error-NEEDTIMINGOPT: t/t_notiming.v:27:12: Use --timing or --no-timing to specify how delays should be handled
+                                          : ... In instance t
+   27 |    initial #2 $stop;  
+      |            ^
+%Error: Exiting due to

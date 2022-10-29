@@ -209,18 +209,16 @@ private:
         }
         if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
-            AstNodeDType* const dtypep = VN_CAST(nodep->valuep(), NodeDType);
-            if (!dtypep) {
-                nodep->v3error(
-                    "Parameter type's initial value isn't a type: " << nodep->prettyNameQ());
-                nodep->unlinkFrBack();
-            } else {
+            AstNodeDType* dtypep = VN_CAST(nodep->valuep(), NodeDType);
+            if (dtypep) {
                 dtypep->unlinkFrBack();
-                AstNode* const newp = new AstParamTypeDType(
-                    nodep->fileline(), nodep->varType(), nodep->name(), VFlagChildDType(), dtypep);
-                nodep->replaceWith(newp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            } else {
+                dtypep = new AstVoidDType{nodep->fileline()};
             }
+            AstNode* const newp = new AstParamTypeDType{nodep->fileline(), nodep->varType(),
+                                                        nodep->name(), VFlagChildDType{}, dtypep};
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
 
@@ -281,7 +279,7 @@ private:
                                                  nodep->valuep()->unlinkFrBack()));
             }
         }
-        if (nodep->isIfaceRef() && !nodep->isIfaceParent()) {
+        if (nodep->isIfaceRef() && !nodep->isIfaceParent() && !v3Global.opt.topIfacesSupported()) {
             // Only AstIfaceRefDType's at this point correspond to ports;
             // haven't made additional ones for interconnect yet, so assert is simple
             // What breaks later is we don't have a Scope/Cell representing
@@ -302,7 +300,7 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_CLOCK_ENABLE) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->attrClockEn(true);
+            // Accepted and silently ignored for backward compatibility, but has no effect
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_FORCEABLE) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
@@ -589,9 +587,7 @@ private:
                              << nodep->warnMore() << "... Suggest use a normal 'always'");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (alwaysp && !alwaysp->sensesp()) {
-            // Verilator is still ony supporting SenTrees under an always,
-            // so allow the parser to handle everything and shim to
-            // historical AST here
+            // If the event control is at the top, move the sentree to the always
             if (AstSenTree* const sensesp = nodep->sensesp()) {
                 sensesp->unlinkFrBackWithNext();
                 alwaysp->sensesp(sensesp);

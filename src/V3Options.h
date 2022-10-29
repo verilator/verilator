@@ -146,7 +146,7 @@ public:
         static const char* const names[] = {"VerilatedVcd", "VerilatedFst"};
         return names[m_e];
     }
-    string sourceName() const {
+    string sourceName() const VL_MT_SAFE {
         static const char* const names[] = {"verilated_vcd", "verilated_fst"};
         return names[m_e];
     }
@@ -214,6 +214,7 @@ private:
     DebugLevelMap m_dumpLevel;  // argument: --dumpi-<srcfile/tag> <level>
     std::map<const string, string> m_parameters;  // Parameters
     std::map<const string, V3HierarchicalBlockOption> m_hierBlocks;  // main switch: --hierarchical-block
+    V3StringSet m_fDfgPeepholeDisabled; // argument: -f[no-]dfg-peephole-<name>
 
     bool m_preprocOnly = false;     // main switch: -E
     bool m_makePhony = false;       // main switch: -MP
@@ -249,7 +250,6 @@ private:
     bool m_lintOnly = false;        // main switch: --lint-only
     bool m_gmake = false;           // main switch: --make gmake
     bool m_main = false;            // main swithc: --main
-    bool m_orderClockDly = true;    // main switch: --order-clock-delay
     bool m_outFormatOk = false;     // main switch: --cc, --sc or --sp was specified
     bool m_pedantic = false;        // main switch: --Wpedantic
     bool m_pinsScUint = false;      // main switch: --pins-sc-uint
@@ -274,6 +274,7 @@ private:
     bool m_threadsCoarsen = true;   // main switch: --threads-coarsen
     bool m_threadsDpiPure = true;   // main switch: --threads-dpi all/pure
     bool m_threadsDpiUnpure = false;  // main switch: --threads-dpi all
+    VOptionBool m_timing;           // main switch: --timing
     bool m_trace = false;           // main switch: --trace
     bool m_traceCoverage = false;   // main switch: --trace-coverage
     bool m_traceParams = true;      // main switch: --trace-params
@@ -348,8 +349,12 @@ private:
     bool m_fCase;        // main switch: -fno-case: case tree conversion
     bool m_fCombine;     // main switch: -fno-combine: common icode packing
     bool m_fConst;       // main switch: -fno-const: constant folding
+    bool m_fConstBeforeDfg = true;  // main switch: -fno-const-before-dfg for testing only!
     bool m_fConstBitOpTree;  // main switch: -fno-const-bit-op-tree constant bit op tree
     bool m_fDedupe;      // main switch: -fno-dedupe: logic deduplication
+    bool m_fDfgPeephole = true; // main switch: -fno-dfg-peephole
+    bool m_fDfgPreInline;    // main switch: -fno-dfg-pre-inline and -fno-dfg
+    bool m_fDfgPostInline;   // main switch: -fno-dfg-post-inline and -fno-dfg
     bool m_fExpand;      // main switch: -fno-expand: expansion of C macros
     bool m_fGate;        // main switch: -fno-gate: gate wire elimination
     bool m_fInline;      // main switch: -fno-inline: module inlining
@@ -396,10 +401,10 @@ public:
     V3Options();
     ~V3Options();
     void setDebugMode(int level);
-    unsigned debugLevel(const string& tag) const;
-    unsigned debugSrcLevel(const string& srcfile_path) const;
-    unsigned dumpLevel(const string& tag) const;
-    unsigned dumpSrcLevel(const string& srcfile_path) const;
+    unsigned debugLevel(const string& tag) const VL_MT_SAFE;
+    unsigned debugSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
+    unsigned dumpLevel(const string& tag) const VL_MT_SAFE;
+    unsigned dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
 
     // METHODS
     void addCppFile(const string& filename);
@@ -411,7 +416,7 @@ public:
     void addNoClocker(const string& signame);
     void addVFile(const string& filename);
     void addForceInc(const string& filename);
-    bool available() const { return m_available; }
+    bool available() const VL_MT_SAFE { return m_available; }
     void ccSet();
     void notify();
 
@@ -421,8 +426,8 @@ public:
     bool preprocNoLine() const { return m_preprocNoLine; }
     bool underlineZero() const { return m_underlineZero; }
     string flags() const { return m_flags; }
-    bool systemC() const { return m_systemC; }
-    bool savable() const { return m_savable; }
+    bool systemC() const VL_MT_SAFE { return m_systemC; }
+    bool savable() const VL_MT_SAFE { return m_savable; }
     bool stats() const { return m_stats; }
     bool statsVars() const { return m_statsVars; }
     bool structsPacked() const { return m_structsPacked; }
@@ -435,38 +440,43 @@ public:
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }
     bool cdc() const { return m_cdc; }
     bool cmake() const { return m_cmake; }
-    bool context() const { return m_context; }
-    bool coverage() const { return m_coverageLine || m_coverageToggle || m_coverageUser; }
+    bool context() const VL_MT_SAFE { return m_context; }
+    bool coverage() const VL_MT_SAFE {
+        return m_coverageLine || m_coverageToggle || m_coverageUser;
+    }
     bool coverageLine() const { return m_coverageLine; }
     bool coverageToggle() const { return m_coverageToggle; }
     bool coverageUnderscore() const { return m_coverageUnderscore; }
     bool coverageUser() const { return m_coverageUser; }
-    bool debugCheck() const { return m_debugCheck; }
+    bool debugCheck() const VL_MT_SAFE { return m_debugCheck; }
     bool debugCollision() const { return m_debugCollision; }
-    bool debugEmitV() const { return m_debugEmitV; }
+    bool debugEmitV() const VL_MT_SAFE { return m_debugEmitV; }
     bool debugExitParse() const { return m_debugExitParse; }
     bool debugExitUvm() const { return m_debugExitUvm; }
     bool debugLeak() const { return m_debugLeak; }
     bool debugNondeterminism() const { return m_debugNondeterminism; }
     bool debugPartition() const { return m_debugPartition; }
-    bool debugProtect() const { return m_debugProtect; }
+    bool debugProtect() const VL_MT_SAFE { return m_debugProtect; }
     bool debugSelfTest() const { return m_debugSelfTest; }
-    bool decoration() const { return m_decoration; }
+    bool decoration() const VL_MT_SAFE { return m_decoration; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpLevel.count("defines") && m_dumpLevel.at("defines"); }
+    bool dumpTreeDot() const {
+        return m_dumpLevel.count("tree-dot") && m_dumpLevel.at("tree-dot");
+    }
     bool exe() const { return m_exe; }
     bool flatten() const { return m_flatten; }
     bool gmake() const { return m_gmake; }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
     bool threadsDpiUnpure() const { return m_threadsDpiUnpure; }
     bool threadsCoarsen() const { return m_threadsCoarsen; }
+    VOptionBool timing() const { return m_timing; }
     bool trace() const { return m_trace; }
     bool traceCoverage() const { return m_traceCoverage; }
     bool traceParams() const { return m_traceParams; }
     bool traceStructs() const { return m_traceStructs; }
     bool traceUnderscore() const { return m_traceUnderscore; }
     bool main() const { return m_main; }
-    bool orderClockDly() const { return m_orderClockDly; }
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault() != 0); }
     bool pedantic() const { return m_pedantic; }
@@ -479,22 +489,23 @@ public:
     bool profExec() const { return m_profExec; }
     bool profPgo() const { return m_profPgo; }
     bool usesProfiler() const { return profExec() || profPgo(); }
-    bool protectIds() const { return m_protectIds; }
+    bool protectIds() const VL_MT_SAFE { return m_protectIds; }
     bool allPublic() const { return m_public; }
     bool publicFlatRW() const { return m_publicFlatRW; }
-    bool lintOnly() const { return m_lintOnly; }
+    bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
-    bool quietExit() const { return m_quietExit; }
+    bool quietExit() const VL_MT_SAFE { return m_quietExit; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
     bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi; }
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool xmlOnly() const { return m_xmlOnly; }
+    bool topIfacesSupported() const { return lintOnly() && !hierarchical(); }
 
-    int buildJobs() const { return m_buildJobs; }
+    int buildJobs() const VL_MT_SAFE { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
     int coverageMaxWidth() const { return m_coverageMaxWidth; }
-    bool dumpTreeAddrids() const;
+    bool dumpTreeAddrids() const VL_MT_SAFE;
     int expandLimit() const { return m_expandLimit; }
     int gateStmts() const { return m_gateStmts; }
     int ifDepth() const { return m_ifDepth; }
@@ -509,7 +520,7 @@ public:
     int pinsBv() const { return m_pinsBv; }
     int reloopLimit() const { return m_reloopLimit; }
     VOptionBool skipIdentical() const { return m_skipIdentical; }
-    int threads() const { return m_threads; }
+    int threads() const VL_MT_SAFE { return m_threads; }
     int threadsMaxMTasks() const { return m_threadsMaxMTasks; }
     bool mtasks() const { return (m_threads > 1); }
     VTimescale timeDefaultPrec() const { return m_timeDefaultPrec; }
@@ -550,10 +561,10 @@ public:
         }
         return libName;
     }
-    string makeDir() const { return m_makeDir; }
-    string modPrefix() const { return m_modPrefix; }
+    string makeDir() const VL_MT_SAFE { return m_makeDir; }
+    string modPrefix() const VL_MT_SAFE { return m_modPrefix; }
     string pipeFilter() const { return m_pipeFilter; }
-    string prefix() const { return m_prefix; }
+    string prefix() const VL_MT_SAFE { return m_prefix; }
     // Not just called protectKey() to avoid bugs of not using protectKeyDefaulted()
     bool protectKeyProvided() const { return !m_protectKey.empty(); }
     string protectKeyDefaulted();  // Set default key if not set by user
@@ -590,8 +601,15 @@ public:
     bool fCase() const { return m_fCase; }
     bool fCombine() const { return m_fCombine; }
     bool fConst() const { return m_fConst; }
+    bool fConstBeforeDfg() const { return m_fConstBeforeDfg; }
     bool fConstBitOpTree() const { return m_fConstBitOpTree; }
     bool fDedupe() const { return m_fDedupe; }
+    bool fDfgPeephole() const { return m_fDfgPeephole; }
+    bool fDfgPreInline() const { return m_fDfgPreInline; }
+    bool fDfgPostInline() const { return m_fDfgPostInline; }
+    bool fDfgPeepholeEnabled(const std::string& name) const {
+        return !m_fDfgPeepholeDisabled.count(name);
+    }
     bool fExpand() const { return m_fExpand; }
     bool fGate() const { return m_fGate; }
     bool fInline() const { return m_fInline; }
@@ -611,24 +629,24 @@ public:
     string traceClassBase() const { return m_traceFormat.classBase(); }
     string traceClassLang() const { return m_traceFormat.classBase() + (systemC() ? "Sc" : "C"); }
     string traceSourceBase() const { return m_traceFormat.sourceName(); }
-    string traceSourceLang() const {
+    string traceSourceLang() const VL_MT_SAFE {
         return m_traceFormat.sourceName() + (systemC() ? "_sc" : "_c");
     }
 
     bool hierarchical() const { return m_hierarchical; }
     int hierChild() const { return m_hierChild; }
-    bool hierTop() const { return !m_hierChild && !m_hierBlocks.empty(); }
+    bool hierTop() const VL_MT_SAFE { return !m_hierChild && !m_hierBlocks.empty(); }
     const V3HierBlockOptSet& hierBlocks() const { return m_hierBlocks; }
     // Directory to save .tree, .dot, .dat, .vpp for hierarchical block top
     // Returns makeDir() unless top module of hierarchical verilation.
-    string hierTopDataDir() const {
+    string hierTopDataDir() const VL_MT_SAFE {
         return hierTop() ? (makeDir() + '/' + prefix() + "__hier.dir") : makeDir();
     }
 
     // METHODS (from main)
     static string version();
     static string argString(int argc, char** argv);  ///< Return list of arguments as simple string
-    string allArgsString() const;  ///< Return all passed arguments as simple string
+    string allArgsString() const VL_MT_SAFE;  ///< Return all passed arguments as simple string
     // Return options for child hierarchical blocks when forTop==false, otherwise returns args for
     // the top module.
     string allArgsStringForHierBlock(bool forTop) const;
@@ -648,8 +666,10 @@ public:
     static string getenvSYSTEMC_INCLUDE();
     static string getenvSYSTEMC_LIBDIR();
     static string getenvVERILATOR_ROOT();
+    static string getSupported(const string& var);
     static bool systemCSystemWide();
     static bool systemCFound();  // SystemC installed, or environment points to it
+    static bool coroutineSupport();  // Compiler supports coroutines
 
     // METHODS (file utilities using these options)
     string fileExists(const string& filename);

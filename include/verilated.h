@@ -164,7 +164,7 @@ public:
     ~VerilatedMutex() = default;
     const VerilatedMutex& operator!() const { return *this; }  // For -fthread_safety
     /// Acquire/lock mutex
-    void lock() VL_ACQUIRE() {
+    void lock() VL_ACQUIRE() VL_MT_SAFE {
         // Try to acquire the lock by spinning.  If the wait is short,
         // avoids a trap to the OS plus OS scheduler overhead.
         if (VL_LIKELY(try_lock())) return;  // Short circuit loop
@@ -176,9 +176,9 @@ public:
         m_mutex.lock();
     }
     /// Release/unlock mutex
-    void unlock() VL_RELEASE() { m_mutex.unlock(); }
+    void unlock() VL_RELEASE() VL_MT_SAFE { m_mutex.unlock(); }
     /// Try to acquire mutex.  Returns true on success, and false on failure.
-    bool try_lock() VL_TRY_ACQUIRE(true) { return m_mutex.try_lock(); }
+    bool try_lock() VL_TRY_ACQUIRE(true) VL_MT_SAFE { return m_mutex.try_lock(); }
 };
 
 /// Lock guard for mutex (ala std::unique_lock), wrapped to allow -fthread_safety checks
@@ -190,16 +190,16 @@ private:
 
 public:
     /// Construct and hold given mutex lock until destruction or unlock()
-    explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr)
+    explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr) VL_MT_SAFE
         : m_mutexr(mutexr) {  // Need () or GCC 4.8 false warning
         m_mutexr.lock();
     }
     /// Destruct and unlock the mutex
     ~VerilatedLockGuard() VL_RELEASE() { m_mutexr.unlock(); }
     /// Unlock the mutex
-    void lock() VL_ACQUIRE() { m_mutexr.lock(); }
+    void lock() VL_ACQUIRE() VL_MT_SAFE { m_mutexr.lock(); }
     /// Lock the mutex
-    void unlock() VL_RELEASE() { m_mutexr.unlock(); }
+    void unlock() VL_RELEASE() VL_MT_SAFE { m_mutexr.unlock(); }
 };
 
 #else  // !VL_THREADED

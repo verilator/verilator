@@ -1,0 +1,9 @@
+%Error-UNSUPPORTED: t/t_event_control_expr.v:55:13: Unsupported: function calls in sensitivity lists
+   55 |    always @(id(cyc)) begin 
+      |             ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_event_control_expr.v:82:17: Unsupported: function calls in sensitivity lists
+                                                  : ... In instance t.u_method
+   82 |    always @(obj.get_k()) begin 
+      |                 ^~~~~
+%Error: Exiting due to

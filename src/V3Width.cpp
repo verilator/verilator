@@ -602,8 +602,20 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
+        if (nodep->fileline()->timingOn()) {
+            if (v3Global.opt.timing().isSetTrue()) {
+                userIterate(nodep->lhsp(), WidthVP{nullptr, BOTH}.p());
+                iterateNull(nodep->stmtsp());
+                return;
+            } else if (v3Global.opt.timing().isSetFalse()) {
+                nodep->v3warn(STMTDLY, "Ignoring delay on this statement due to --no-timing");
+            } else {
+                nodep->v3warn(
+                    E_NEEDTIMINGOPT,
+                    "Use --timing or --no-timing to specify how delays should be handled");
+            }
+        }
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBack());
-        nodep->v3warn(STMTDLY, "Unsupported: Ignoring delay on this delayed statement.");
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstFork* nodep) override {
@@ -613,19 +625,27 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
-        if (v3Global.opt.bboxUnsup()
+        if (!nodep->fileline()->timingOn()
             // With no statements, begin is identical
             || !nodep->stmtsp()
-            // With one statement, a begin block does as good as a fork/join or join_any
-            || (!nodep->stmtsp()->nextp() && !nodep->joinType().joinNone())) {
+            || (!v3Global.opt.timing().isSetTrue()  // If no --timing
+                && (v3Global.opt.bboxUnsup()
+                    // With one statement and no timing, a begin block does as good as a
+                    // fork/join or join_any
+                    || (!nodep->stmtsp()->nextp() && !nodep->joinType().joinNone())))) {
             AstNode* stmtsp = nullptr;
             if (nodep->stmtsp()) stmtsp = nodep->stmtsp()->unlinkFrBack();
             AstBegin* const newp = new AstBegin{nodep->fileline(), nodep->name(), stmtsp};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else if (v3Global.opt.timing().isSetTrue()) {
+            iterateChildren(nodep);
+        } else if (v3Global.opt.timing().isSetFalse()) {
+            nodep->v3warn(E_NOTIMING, "Fork statements require --timing");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: fork statements");
-            // TBD might support only normal join, if so complain about other join flavors
+            nodep->v3warn(E_NEEDTIMINGOPT,
+                          "Use --timing or --no-timing to specify how forks should be handled");
         }
     }
     void visit(AstDisableFork* nodep) override {
@@ -1353,10 +1373,28 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstEventControl* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: event control statement in this location\n"
-                                         << nodep->warnMore()
-                                         << "... Suggest have one event control statement "
-                                         << "per procedure, at the top of the procedure");
+        if (VN_IS(m_ftaskp, Func)) {
+            nodep->v3error("Event controls are not legal in functions. Suggest use a task "
+                           "(IEEE 1800-2017 13.4.4)");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        if (nodep->fileline()->timingOn()) {
+            if (v3Global.opt.timing().isSetTrue()) {
+                iterateChildren(nodep);
+                return;
+            } else if (v3Global.opt.timing().isSetFalse()) {
+                nodep->v3warn(E_NOTIMING,
+                              "Event control statement in this location requires --timing\n"
+                                  << nodep->warnMore()
+                                  << "... With --no-timing, suggest have one event control "
+                                  << "statement per procedure, at the top of the procedure");
+            } else {
+                nodep->v3warn(E_NEEDTIMINGOPT, "Use --timing or --no-timing to specify how "
+                                               "event controls should be handled");
+            }
+        }
+        if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void visit(AstAttrOf* nodep) override {
@@ -2313,7 +2351,7 @@ private:
     void visit(AstInside* nodep) override {
         userIterateAndNext(nodep->exprp(), WidthVP(CONTEXT, PRELIM).p());
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
-            nextip = itemp->nextp();  // Prelim may cause the node to get replaced
+            nextip = itemp->nextp();  // iterate may cause the node to get replaced
             VL_DO_DANGLING(userIterate(itemp, WidthVP(CONTEXT, PRELIM).p()), itemp);
         }
         // Take width as maximum across all items
@@ -2328,7 +2366,8 @@ private:
             = nodep->findLogicDType(width, mwidth, nodep->exprp()->dtypep()->numeric());
         iterateCheck(nodep, "Inside expression", nodep->exprp(), CONTEXT, FINAL, subDTypep,
                      EXTEND_EXP);
-        for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
+            nextip = itemp->nextp();  // iterate may cause the node to get replaced
             iterateCheck(nodep, "Inside Item", itemp, CONTEXT, FINAL, subDTypep, EXTEND_EXP);
         }
         nodep->dtypeSetBit();
@@ -2427,6 +2466,10 @@ private:
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->repairCache();
     }
+    void visit(AstThisRef* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+        nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->childDTypep()));
+    }
     void visit(AstClassRefDType* nodep) override {
         if (nodep->didWidthAndSet()) return;
         // TODO this maybe eventually required to properly resolve members,
@@ -2485,6 +2528,20 @@ private:
                                   << foundp->warnOther() << "... Location of found object\n"
                                   << foundp->warnContextSecondary());
             }
+        } else if (AstIfaceRefDType* const adtypep = VN_CAST(fromDtp, IfaceRefDType)) {
+            if (AstNode* const foundp = memberSelIface(nodep, adtypep)) {
+                if (AstVar* const varp = VN_CAST(foundp, Var)) {
+                    nodep->dtypep(foundp->dtypep());
+                    nodep->varp(varp);
+                    varp->usedVirtIface(true);
+                    return;
+                }
+                UINFO(1, "found object " << foundp << endl);
+                nodep->v3fatalSrc("MemberSel of non-variable\n"
+                                  << nodep->warnContextPrimary() << '\n'
+                                  << foundp->warnOther() << "... Location of found object\n"
+                                  << foundp->warnContextSecondary());
+            }
         } else if (VN_IS(fromDtp, EnumDType)  //
                    || VN_IS(fromDtp, AssocArrayDType)  //
                    || VN_IS(fromDtp, WildcardArrayDType)  //
@@ -2531,6 +2588,26 @@ private:
         nodep->v3error(
             "Member " << nodep->prettyNameQ() << " not found in class "
                       << first_classp->prettyNameQ() << "\n"
+                      << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
+        return nullptr;  // Caller handles error
+    }
+    AstNode* memberSelIface(AstMemberSel* nodep, AstIfaceRefDType* adtypep) {
+        // Returns node if ok
+        // No need to width-resolve the interface, as it was done when we did the child
+        AstNodeModule* const ifacep = adtypep->ifacep();
+        UASSERT_OBJ(ifacep, nodep, "Unlinked");
+        // if (AstNode* const foundp = ifacep->findMember(nodep->name())) return foundp;
+        VSpellCheck speller;
+        for (AstNode* itemp = ifacep->stmtsp(); itemp; itemp = itemp->nextp()) {
+            if (itemp->name() == nodep->name()) return itemp;
+            if (VN_IS(itemp, Var) || VN_IS(itemp, Modport)) {
+                speller.pushCandidate(itemp->prettyName());
+            }
+        }
+        const string suggest = speller.bestCandidateMsg(nodep->prettyName());
+        nodep->v3error(
+            "Member " << nodep->prettyNameQ() << " not found in interface "
+                      << ifacep->prettyNameQ() << "\n"
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         return nullptr;  // Caller handles error
     }
@@ -2595,7 +2672,7 @@ private:
             methodCallClass(nodep, adtypep);
         } else if (AstUnpackArrayDType* const adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
             methodCallUnpack(nodep, adtypep);
-        } else if (basicp && basicp->isEventValue()) {
+        } else if (basicp && basicp->isEvent()) {
             methodCallEvent(nodep, basicp);
         } else if (basicp && basicp->isString()) {
             methodCallString(nodep, basicp);
@@ -3288,10 +3365,12 @@ private:
     void methodCallEvent(AstMethodCall* nodep, AstBasicDType*) {
         // Method call on event
         if (nodep->name() == "triggered") {
-            // We represent events as numbers, so can just return number
             methodOkArguments(nodep, 0, 0);
-            AstNode* const newp = nodep->fromp()->unlinkFrBack();
-            nodep->replaceWith(newp);
+            AstCMethodHard* const callp = new AstCMethodHard{
+                nodep->fileline(), nodep->fromp()->unlinkFrBack(), "isTriggered"};
+            callp->dtypeSetBit();
+            callp->pure(true);
+            nodep->replaceWith(callp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {
             nodep->v3error("Unknown built-in event method " << nodep->prettyNameQ());
@@ -4236,15 +4315,31 @@ private:
             // if (debug()) nodep->dumpTree(cout, "  AssignOut: ");
         }
         if (const AstBasicDType* const basicp = nodep->rhsp()->dtypep()->basicp()) {
-            if (basicp->isEventValue()) {
+            if (basicp->isEvent()) {
                 // see t_event_copy.v for commentary on the mess involved
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
             }
         }
-        if (nodep->timingControlp()) {
-            nodep->timingControlp()->v3warn(
-                ASSIGNDLY, "Unsupported: Ignoring timing control on this assignment.");
-            nodep->timingControlp()->unlinkFrBackWithNext()->deleteTree();
+        if (auto* const controlp = nodep->timingControlp()) {
+            if (VN_IS(m_ftaskp, Func)) {
+                controlp->v3error("Timing controls are not legal in functions. Suggest use a task "
+                                  "(IEEE 1800-2017 13.4.4)");
+                VL_DO_DANGLING(controlp->unlinkFrBackWithNext()->deleteTree(), controlp);
+            } else if (nodep->fileline()->timingOn() && v3Global.opt.timing().isSetTrue()) {
+                iterateNull(controlp);
+            } else {
+                if (nodep->fileline()->timingOn()) {
+                    if (v3Global.opt.timing().isSetFalse()) {
+                        controlp->v3warn(ASSIGNDLY, "Ignoring timing control on this "
+                                                    "assignment/primitive due to --no-timing");
+                    } else {
+                        controlp->v3warn(E_NEEDTIMINGOPT,
+                                         "Use --timing or --no-timing to specify how "
+                                         "timing controls should be handled");
+                    }
+                }
+                VL_DO_DANGLING(controlp->unlinkFrBackWithNext()->deleteTree(), controlp);
+            }
         }
         if (VN_IS(nodep->rhsp(), EmptyQueue)) {
             UINFO(9, "= {} -> .delete(): " << nodep);
@@ -4307,7 +4402,7 @@ private:
                 fmt = ch;
             } else if (inPct && (isdigit(ch) || ch == '.' || ch == '-')) {
                 fmt += ch;
-            } else if (tolower(inPct)) {
+            } else if (inPct) {
                 inPct = false;
                 bool added = false;
                 switch (tolower(ch)) {
@@ -4646,12 +4741,19 @@ private:
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
             // Widthing handled as special init() case
+            bool didWidth = false;
             if (auto* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
-                if (const auto* modVarp = nodep->modVarp()) {
-                    patternp->childDTypep(modVarp->childDTypep()->cloneTree(false));
+                if (const AstVar* const modVarp = nodep->modVarp()) {
+                    // Convert BracketArrayDType
+                    userIterate(modVarp->childDTypep(),
+                                WidthVP{SELF, BOTH}.p());  // May relink pointed to node
+                    AstNodeDType* const setDtp = modVarp->childDTypep()->cloneTree(false);
+                    patternp->childDTypep(setDtp);
+                    userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
+                    didWidth = true;
                 }
             }
-            userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+            if (!didWidth) userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         } else if (!m_paramsOnly) {
             if (!nodep->modVarp()->didWidth()) {
                 // Var hasn't been widthed, so make it so.
@@ -5030,6 +5132,7 @@ private:
                     // (get an ASSIGN with EXTEND on the lhs instead of rhs)
                 }
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
+                    checkClassAssign(nodep, "Function Argument", pinp, portp->dtypep());
                     userIterate(pinp, WidthVP(portp->dtypep(), FINAL).p());
                 } else {
                     iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portp->dtypep());
@@ -5053,6 +5156,57 @@ private:
         m_procedurep = nodep;
         userIterateChildren(nodep, nullptr);
         m_procedurep = nullptr;
+    }
+    void visit(AstSenItem* nodep) override {
+        UASSERT_OBJ(nodep->isClocked(), nodep, "Invalid edge");
+        // Optimize concat/replicate senitems; this has to be done here at the latest, otherwise we
+        // emit WIDTHCONCAT if there are unsized constants
+        if (VN_IS(nodep->sensp(), Concat) || VN_IS(nodep->sensp(), Replicate)) {
+            auto* const concatOrReplp = VN_CAST(nodep->sensp(), NodeBiop);
+            auto* const rhsp = concatOrReplp->rhsp()->unlinkFrBack();
+            if (nodep->edgeType() == VEdgeType::ET_CHANGED) {
+                // If it's ET_CHANGED, split concatenations into multiple senitems
+                auto* const lhsp = concatOrReplp->lhsp()->unlinkFrBack();
+                nodep->addNextHere(new AstSenItem{lhsp->fileline(), nodep->edgeType(), lhsp});
+            }  // Else only use the RHS
+            nodep->replaceWith(new AstSenItem{rhsp->fileline(), nodep->edgeType(), rhsp});
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else {
+            userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+            if (nodep->edgeType().anEdge() && nodep->sensp()->dtypep()->skipRefp()->isDouble()) {
+                nodep->sensp()->v3error(
+                    "Edge event control not legal on real type (IEEE 1800-2017 6.12.1)");
+            }
+        }
+    }
+    void visit(AstWait* nodep) override {
+        if (VN_IS(m_ftaskp, Func)) {
+            nodep->v3error("Wait statements are not legal in functions. Suggest use a task "
+                           "(IEEE 1800-2017 13.4.4)");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        if (nodep->fileline()->timingOn()) {
+            if (v3Global.opt.timing().isSetTrue()) {
+                userIterate(nodep->condp(), WidthVP(SELF, PRELIM).p());
+                iterateNull(nodep->stmtsp());
+                return;
+            } else if (v3Global.opt.timing().isSetFalse()) {
+                nodep->v3warn(E_NOTIMING, "Wait statements require --timing");
+            } else {
+                nodep->v3warn(E_NEEDTIMINGOPT, "Use --timing or --no-timing to specify how wait "
+                                               "statements should be handled");
+            }
+        }
+        // If we ignore timing:
+        // Statements we'll just execute immediately; equivalent to if they followed this
+        if (AstNode* const stmtsp = nodep->stmtsp()) {
+            stmtsp->unlinkFrBackWithNext();
+            nodep->replaceWith(stmtsp);
+        } else {
+            nodep->unlinkFrBack();
+        }
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstWith* nodep) override {
         // Should otherwise be underneath a method call
@@ -5229,7 +5383,13 @@ private:
             userIterateAndNext(nodep->lhsp(), WidthVP(CONTEXT, PRELIM).p());
             userIterateAndNext(nodep->rhsp(), WidthVP(CONTEXT, PRELIM).p());
             if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
-                if (!realok) nodep->v3error("Real not allowed as operand to in ?== operator");
+                if (!realok) {
+                    nodep->v3error("Real is illegal operand to ?== operator");
+                    AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
                 if (AstNodeBiop* const newp = replaceWithDVersion(nodep)) {
                     VL_DANGLING(nodep);
                     nodep = newp;  // Process new node instead
@@ -5582,7 +5742,8 @@ private:
         // node, while the output dtype is the *expected* sign.
         // It is reasonable to have sign extension with unsigned output,
         // for example $unsigned(a)+$signed(b), the SIGNED(B) will be unsigned dtype out
-        UINFO(4, "  widthExtend_(r=" << extendRule << ") old: " << nodep << endl);
+        UINFO(4,
+              "  widthExtend_(r=" << static_cast<int>(extendRule) << ") old: " << nodep << endl);
         if (extendRule == EXTEND_OFF) return;
         AstConst* const constp = VN_CAST(nodep, Const);
         const int expWidth = expDTypep->width();
@@ -5700,6 +5861,15 @@ private:
         return false;  // No change
     }
 
+    void checkClassAssign(AstNode* nodep, const char* side, AstNode* rhsp,
+                          AstNodeDType* lhsDTypep) {
+        if (VN_IS(lhsDTypep, ClassRefDType) && !VN_IS(rhsp->dtypep(), ClassRefDType)) {
+            if (auto* const constp = VN_CAST(rhsp, Const)) {
+                if (constp->num().isNull()) return;
+            }
+            nodep->v3error(side << " expects a " << lhsDTypep->prettyTypeName());
+        }
+    }
     static bool similarDTypeRecurse(AstNodeDType* node1p, AstNodeDType* node2p) {
         return node1p->skipRefp()->similarDType(node2p->skipRefp());
     }
@@ -5782,6 +5952,7 @@ private:
         // if (debug()) nodep->dumpTree(cout, "-checkass: ");
         UASSERT_OBJ(stage == FINAL, nodep, "Bad width call");
         // We iterate and size the RHS based on the result of RHS evaluation
+        checkClassAssign(nodep, side, rhsp, lhsDTypep);
         const bool lhsStream
             = (VN_IS(nodep, NodeAssign) && VN_IS(VN_AS(nodep, NodeAssign)->lhsp(), NodeStream));
         rhsp = iterateCheck(nodep, side, rhsp, ASSIGN, FINAL, lhsDTypep,
@@ -5904,11 +6075,38 @@ private:
                 // Note the check uses the expected size, not the child's subDTypep as we want the
                 // child node's width to end up correct for the assignment (etc)
                 widthCheckSized(nodep, side, underp, expDTypep, extendRule, warnOn);
-            } else if (!VN_IS(expDTypep, IfaceRefDType)
-                       && VN_IS(underp->dtypep(), IfaceRefDType)) {
+            } else if (!VN_IS(expDTypep->skipRefp(), IfaceRefDType)
+                       && VN_IS(underp->dtypep()->skipRefp(), IfaceRefDType)) {
                 underp->v3error(ucfirst(nodep->prettyOperatorName())
                                 << " expected non-interface on " << side << " but '"
                                 << underp->name() << "' is an interface.");
+            } else if (const AstIfaceRefDType* expIfaceRefp
+                       = VN_CAST(expDTypep->skipRefp(), IfaceRefDType)) {
+                const AstIfaceRefDType* underIfaceRefp
+                    = VN_CAST(underp->dtypep()->skipRefp(), IfaceRefDType);
+                if (!underIfaceRefp) {
+                    underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                    << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
+                                    << " interface on " << side << " but " << underp->prettyNameQ()
+                                    << " is not an interface.");
+                } else if (expIfaceRefp->ifaceViaCellp() != underIfaceRefp->ifaceViaCellp()) {
+                    underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                    << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
+                                    << " interface on " << side << " but '" << underp->name()
+                                    << "' is a different interface ("
+                                    << underIfaceRefp->ifaceViaCellp()->prettyNameQ() << ").");
+                } else if (underIfaceRefp->modportp()
+                           && expIfaceRefp->modportp() != underIfaceRefp->modportp()) {
+                    underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                    << " expected "
+                                    << (expIfaceRefp->modportp()
+                                            ? expIfaceRefp->modportp()->prettyNameQ()
+                                            : "no")
+                                    << " interface modport on " << side << " but got "
+                                    << underIfaceRefp->modportp()->prettyNameQ() << " modport.");
+                } else {
+                    underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, FINAL}.p());
+                }
             } else {
                 // Hope it just works out (perhaps a cast will deal with it)
                 underp = userIterateSubtreeReturnEdits(underp, WidthVP(expDTypep, FINAL).p());

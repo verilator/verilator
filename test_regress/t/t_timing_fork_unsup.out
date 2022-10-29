@@ -1,0 +1,34 @@
+%Error-UNSUPPORTED: t/t_timing_fork_unsup.v:12:12: Unsupported: variable local to a forking process accessed in a fork..join_any or fork..join_none
+                                                 : ... In instance t::C
+   12 |         #6 x = 4;
+      |            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_timing_fork_unsup.v:13:12: Unsupported: variable local to a forking process accessed in a fork..join_any or fork..join_none
+                                                 : ... In instance t::C
+   13 |         #2 x++;
+      |            ^
+%Error-UNSUPPORTED: t/t_timing_fork_unsup.v:14:16: Unsupported: variable local to a forking process accessed in a fork..join_any or fork..join_none
+                                                 : ... In instance t::C
+   14 |         x = #4 x * 3;
+      |                ^
+%Error-UNSUPPORTED: t/t_timing_fork_unsup.v:14:9: Unsupported: variable local to a forking process accessed in a fork..join_any or fork..join_none
+                                                : ... In instance t::C
+   14 |         x = #4 x * 3;
+      |         ^
+%Error-UNSUPPORTED: t/t_timing_fork_unsup.v:16:18: Unsupported: variable local to a forking process accessed in a fork..join_any or fork..join_none
+                                                 : ... In instance t::C
+   16 |           #1 if (x != 1) $stop;
+      |                  ^
+%Error-UNSUPPORTED: t/t_timing_fork_unsup.v:17:18: Unsupported: variable local to a forking process accessed in a fork..join_any or fork..join_none
+                                                 : ... In instance t::C
+   17 |           #2 if (x != 2) $stop;
+      |                  ^
+%Error-UNSUPPORTED: t/t_timing_fork_unsup.v:18:18: Unsupported: variable local to a forking process accessed in a fork..join_any or fork..join_none
+                                                 : ... In instance t::C
+   18 |           #2 if (x != 3) $stop;
+      |                  ^
+%Error-UNSUPPORTED: t/t_timing_fork_unsup.v:19:18: Unsupported: variable local to a forking process accessed in a fork..join_any or fork..join_none
+                                                 : ... In instance t::C
+   19 |           #2 if (x != 4) $stop;
+      |                  ^
+%Error: Exiting due to

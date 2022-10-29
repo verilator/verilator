@@ -131,6 +131,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "sc_bv"               { FL; return yVLT_SC_BV; }
   "sformat"             { FL; return yVLT_SFORMAT; }
   "split_var"           { FL; return yVLT_SPLIT_VAR; }
+  "timing_off"          { FL; return yVLT_TIMING_OFF; }
+  "timing_on"           { FL; return yVLT_TIMING_ON; }
   "tracing_off"         { FL; return yVLT_TRACING_OFF; }
   "tracing_on"          { FL; return yVLT_TRACING_ON; }
 
@@ -316,7 +318,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "endmodule"           { FL; return yENDMODULE; }
   "endprimitive"        { FL; return yENDPRIMITIVE; }
   "endspecify"          { FL; return yENDSPECIFY; }
-  "endtable"            { FL; yylval.fl->v3error("Syntax error: ENDTABLE outside of TABLE"); FL_BRK; }
+  "endtable"            { FL; yylval.fl->v3error("Syntax error: 'endtable' outside of 'table'"); FL_BRK; }
   "endtask"             { FL; return yENDTASK; }
   "event"               { FL; return yEVENT; }
   "for"                 { FL; return yFOR; }
@@ -748,6 +750,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator split_var*/"             { FL; return yVL_SPLIT_VAR; }
   "/*verilator tag"[^*]*"*/"            { FL; yylval.strp = PARSEP->newString(V3ParseImp::lexParseTag(yytext));
                                           return yVL_TAG; }
+  "/*verilator timing_off*/"            { FL_FWD; PARSEP->lexFileline()->timingOn(false); FL_BRK; }
+  "/*verilator timing_on*/"             { FL_FWD; PARSEP->lexFileline()->timingOn(true); FL_BRK; }
   "/*verilator trace_init_task*/"       { FL; return yVL_TRACE_INIT_TASK; }
   "/*verilator tracing_off*/"           { FL_FWD; PARSEP->lexFileline()->tracingOn(false); FL_BRK; }
   "/*verilator tracing_on*/"            { FL_FWD; PARSEP->lexFileline()->tracingOn(true); FL_BRK; }
@@ -957,7 +961,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <TABLE>"endtable"       { yy_pop_state(); FL; return yENDTABLE; }
 <TABLE>"`line"{ws}+[^\n\r]*{crnl}       { FL_FWD; PARSEP->lexPpline(yytext); FL_BRK; }
 <TABLE>.                { yymore(); }
-<TABLE><<EOF>>          { FL; yylval.fl->v3error("EOF in TABLE");
+<TABLE><<EOF>>          { FL; yylval.fl->v3error("EOF in 'table'");
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
 
   /************************************************************************/
@@ -1022,8 +1026,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`begin_keywords"[ \t]*\"1800-2012\"          { FL_FWD; yy_push_state(S12); PARSEP->lexPushKeywords(YY_START); FL_BRK; }
   "`begin_keywords"[ \t]*\"1800-2017\"          { FL_FWD; yy_push_state(S17); PARSEP->lexPushKeywords(YY_START); FL_BRK; }
   "`begin_keywords"[ \t]*\"1800[+]VAMS\"        { FL_FWD; yy_push_state(SAX); PARSEP->lexPushKeywords(YY_START); FL_BRK; }  /*Latest SV*/
-  "`end_keywords"                               { FL; yy_pop_state();
-                                                  if (!PARSEP->lexPopKeywords()) yylval.fl->v3error("`end_keywords when not inside `begin_keywords block");
+  "`end_keywords"                               { FL;
+                                                  if (!PARSEP->lexPopKeywords()) {
+                                                      yylval.fl->v3error("`end_keywords when not inside `begin_keywords block");
+                                                  } else { yy_pop_state(); }
                                                   FL_BRK; }
 
   /* Verilator */
@@ -1068,8 +1074,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
   /* Catch all - absolutely last */
-<*>.|\n                 { FL; yylval.fl->v3error("Missing verilog.l rule: Default rule invoked in state "
-                                                 << YY_START << " '" << yytext << "'");
+<*>.|\n                 { FL; yylval.fl->v3error(  // LCOV_EXCL_LINE
+                                 "Missing verilog.l rule: Default rule invoked in state "
+                                 << YY_START << " '" << yytext << "'");
                           FL_BRK; }
 %%
 // Avoid code here as cl format misindents

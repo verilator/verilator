@@ -17,7 +17,7 @@ module t (/*AUTOARG*/
       cyc <= cyc + 1;
       if (cyc!=0) begin
          if (cyc==10) begin
-            $write("*-* All Finished *-*\n");
+            #5 $write("*-* All Finished *-*\n");
             $finish;
          end
       end

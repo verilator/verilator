@@ -400,11 +400,8 @@ private:
 
 // Sort AbstractMTask objects into deterministic order by calling id()
 // which is a unique and stable serial number.
-class MTaskIdLessThan final {
-public:
-    MTaskIdLessThan() = default;
-    virtual ~MTaskIdLessThan() = default;
-    virtual bool operator()(const AbstractMTask* lhsp, const AbstractMTask* rhsp) const {
+struct MTaskIdLessThan final {
+    bool operator()(const AbstractMTask* lhsp, const AbstractMTask* rhsp) const {
         return lhsp->id() < rhsp->id();
     }
 };
@@ -735,20 +732,6 @@ void MergeCandidate::rescore() {
     }
 }
 
-// ######################################################################
-//  Vertex utility classes
-
-class OrderByPtrId final {
-    PartPtrIdMap m_ids;
-
-public:
-    virtual bool operator()(const OrderVarStdVertex* lhsp, const OrderVarStdVertex* rhsp) const {
-        const uint64_t l_id = m_ids.findId(lhsp);
-        const uint64_t r_id = m_ids.findId(rhsp);
-        return l_id < r_id;
-    }
-};
-
 //######################################################################
 // PartParallelismEst - Estimate parallelism of graph
 
@@ -945,7 +928,7 @@ class PartPropagateCp final {
 
 public:
     // CONSTRUCTORS
-    PartPropagateCp(bool slowAsserts)
+    explicit PartPropagateCp(bool slowAsserts)
         : m_slowAsserts{slowAsserts} {}
 
     // METHODS
@@ -1283,6 +1266,18 @@ public:
 
     // METHODS
     void go() {
+        if (m_slowAsserts) {
+            // Check there are no redundant edges
+            for (V3GraphVertex* itp = m_mtasksp->verticesBeginp(); itp;
+                 itp = itp->verticesNextp()) {
+                std::unordered_set<const V3GraphVertex*> neighbors;
+                for (V3GraphEdge* edgep = itp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+                    const bool first = neighbors.insert(edgep->top()).second;
+                    UASSERT_OBJ(first, itp, "Redundant edge found in input to PartContraction()");
+                }
+            }
+        }
+
         unsigned maxMTasks = v3Global.opt.threadsMaxMTasks();
         if (maxMTasks == 0) {  // Unspecified so estimate
             if (v3Global.opt.threads() > 1) {
@@ -1303,15 +1298,9 @@ public:
         //  - Incrementally recompute critical paths near the merged mtask.
 
         for (V3GraphVertex* itp = m_mtasksp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            itp->userp(nullptr);  // Reset user value. Used by PartPropagateCp.
-            std::unordered_set<const V3GraphVertex*> neighbors;
+            itp->userp(nullptr);  // Reset user value while we are here. Used by PartPropagateCp.
             for (V3GraphEdge* edgep = itp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 m_sb.add(static_cast<MTaskEdge*>(edgep));
-                if (m_slowAsserts) {
-                    UASSERT_OBJ(neighbors.find(edgep->top()) == neighbors.end(), itp,
-                                "Redundant edge found in input to PartContraction()");
-                }
-                neighbors.insert(edgep->top());
             }
             siblingPairFromRelatives<GraphWay::REVERSE, true>(itp);
             siblingPairFromRelatives<GraphWay::FORWARD, true>(itp);
@@ -1962,103 +1951,78 @@ private:
 class PartFixDataHazards final {
 private:
     // TYPES
-    using LogicMTaskSet = std::set<LogicMTask*, MTaskIdLessThan>;
-    using TasksByRank = std::map<uint32_t /*rank*/, LogicMTaskSet>;
-    using OvvSet = std::set<const OrderVarStdVertex*, OrderByPtrId&>;
-    using Olv2MTaskMap = std::unordered_map<const OrderLogicVertex*, LogicMTask*>;
+    using TasksByRank = std::map<uint32_t /*rank*/, std::set<LogicMTask*, MTaskIdLessThan>>;
 
     // MEMBERS
+    const OrderGraph* const m_orderGraphp;  // The OrderGraph
     V3Graph* const m_mtasksp;  // Mtask graph
-    Olv2MTaskMap m_olv2mtask;  // Map OrderLogicVertex to LogicMTask who wraps it
-    unsigned m_mergesDone = 0;  // Number of MTasks merged. For stats only.
 public:
     // CONSTRUCTORs
-    explicit PartFixDataHazards(V3Graph* mtasksp)
-        : m_mtasksp{mtasksp} {}
+    explicit PartFixDataHazards(const OrderGraph* orderGraphp, V3Graph* mtasksp)
+        : m_orderGraphp{orderGraphp}
+        , m_mtasksp{mtasksp} {}
     // METHODS
 private:
-    void findAdjacentTasks(OvvSet::iterator ovvIt, TasksByRank* tasksByRankp) {
+    void findAdjacentTasks(const OrderVarStdVertex* varVtxp, TasksByRank& tasksByRank) {
         // Find all writer tasks for this variable, group by rank.
-        for (V3GraphEdge* edgep = (*ovvIt)->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            const OrderLogicVertex* const logicp = dynamic_cast<OrderLogicVertex*>(edgep->fromp());
-            if (!logicp) continue;
-            if (logicp->domainp()->hasInitial() || logicp->domainp()->hasSettle()) continue;
-            LogicMTask* const writerMtaskp = m_olv2mtask.at(logicp);
-            (*tasksByRankp)[writerMtaskp->rank()].insert(writerMtaskp);
+        for (V3GraphEdge* edgep = varVtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+            if (const auto* const logicVtxp = dynamic_cast<OrderLogicVertex*>(edgep->fromp())) {
+                LogicMTask* const writerMtaskp = static_cast<LogicMTask*>(logicVtxp->userp());
+                tasksByRank[writerMtaskp->rank()].insert(writerMtaskp);
+            }
         }
         // Find all reader tasks for this variable, group by rank.
-        for (V3GraphEdge* edgep = (*ovvIt)->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            const OrderLogicVertex* const logicp = dynamic_cast<OrderLogicVertex*>(edgep->fromp());
-            if (!logicp) continue;
-            if (logicp->domainp()->hasInitial() || logicp->domainp()->hasSettle()) continue;
-            LogicMTask* const readerMtaskp = m_olv2mtask.at(logicp);
-            (*tasksByRankp)[readerMtaskp->rank()].insert(readerMtaskp);
+        for (V3GraphEdge* edgep = varVtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            if (const auto* const logicVtxp = dynamic_cast<OrderLogicVertex*>(edgep->fromp())) {
+                LogicMTask* const readerMtaskp = static_cast<LogicMTask*>(logicVtxp->userp());
+                tasksByRank[readerMtaskp->rank()].insert(readerMtaskp);
+            }
         }
     }
-    void mergeSameRankTasks(TasksByRank* tasksByRankp) {
-        LogicMTask* lastMergedp = nullptr;
-        for (TasksByRank::iterator rankIt = tasksByRankp->begin(); rankIt != tasksByRankp->end();
-             ++rankIt) {
+    void mergeSameRankTasks(const TasksByRank& tasksByRank) {
+        LogicMTask* lastRecipientp = nullptr;
+        for (const auto& pair : tasksByRank) {
             // Find the largest node at this rank, merge into it.  (If we
             // happen to find a huge node, this saves time in
             // partRedirectEdgesFrom() versus merging into an arbitrary node.)
-            LogicMTask* mergedp = nullptr;
-            for (LogicMTaskSet::iterator it = rankIt->second.begin(); it != rankIt->second.end();
-                 ++it) {
-                LogicMTask* const mtaskp = *it;
-                if (mergedp) {
-                    if (mergedp->cost() < mtaskp->cost()) mergedp = mtaskp;
-                } else {
-                    mergedp = mtaskp;
-                }
+            LogicMTask* recipientp = nullptr;
+            for (LogicMTask* const mtaskp : pair.second) {
+                if (!recipientp || (recipientp->cost() < mtaskp->cost())) recipientp = mtaskp;
             }
-            rankIt->second.erase(mergedp);
+            UASSERT_OBJ(!lastRecipientp || (lastRecipientp->rank() < recipientp->rank()),
+                        recipientp, "Merging must be on lower rank");
 
-            while (!rankIt->second.empty()) {
-                const auto begin = rankIt->second.cbegin();
-                LogicMTask* const donorp = *begin;
-                UASSERT_OBJ(donorp != mergedp, donorp, "Donor can't be merged edge");
-                rankIt->second.erase(begin);
-                // Merge donorp into mergedp.
-                // Fix up the map, so donor's OLVs map to mergedp
-                for (LogicMTask::VxList::const_iterator tmvit = donorp->vertexListp()->begin();
-                     tmvit != donorp->vertexListp()->end(); ++tmvit) {
-                    const MTaskMoveVertex* const tmvp = *tmvit;
-                    const OrderLogicVertex* const logicp = tmvp->logicp();
-                    if (logicp) m_olv2mtask[logicp] = mergedp;
+            for (LogicMTask* const donorp : pair.second) {
+                // Merge donor into recipient.
+                if (donorp == recipientp) continue;
+                // Fix up the map, so donor's OLVs map to recipientp
+                for (const MTaskMoveVertex* const tmvp : *(donorp->vertexListp())) {
+                    tmvp->logicp()->userp(recipientp);
                 }
-                // Move all vertices from donorp to mergedp
-                mergedp->moveAllVerticesFrom(donorp);
+                // Move all vertices from donorp to recipientp
+                recipientp->moveAllVerticesFrom(donorp);
                 // Redirect edges from donorp to recipientp, delete donorp
-                partRedirectEdgesFrom(m_mtasksp, mergedp, donorp, nullptr);
-                ++m_mergesDone;
+                partRedirectEdgesFrom(m_mtasksp, recipientp, donorp, nullptr);
             }
 
-            if (lastMergedp) {
-                UASSERT_OBJ(lastMergedp->rank() < mergedp->rank(), mergedp,
-                            "Merging must be on lower rank");
-                if (!lastMergedp->hasRelativeMTask(mergedp)) {
-                    new MTaskEdge(m_mtasksp, lastMergedp, mergedp, 1);
-                }
+            if (lastRecipientp && !lastRecipientp->hasRelativeMTask(recipientp)) {
+                new MTaskEdge{m_mtasksp, lastRecipientp, recipientp, 1};
             }
-            lastMergedp = mergedp;
+            lastRecipientp = recipientp;
         }
     }
     bool hasDpiHazard(LogicMTask* mtaskp) {
-        for (LogicMTask::VxList::const_iterator it = mtaskp->vertexListp()->begin();
-             it != mtaskp->vertexListp()->end(); ++it) {
-            if (!(*it)->logicp()) continue;
-            AstNode* const nodep = (*it)->logicp()->nodep();
-            // NOTE: We don't handle DPI exports. If testbench code calls a
-            // DPI-exported function at any time during eval() we may have
-            // a data hazard. (Likewise in non-threaded mode if an export
-            // messes with an ordered variable we're broken.)
+        for (const MTaskMoveVertex* const moveVtxp : *(mtaskp->vertexListp())) {
+            if (OrderLogicVertex* const lvtxp = moveVtxp->logicp()) {
+                // NOTE: We don't handle DPI exports. If testbench code calls a
+                // DPI-exported function at any time during eval() we may have
+                // a data hazard. (Likewise in non-threaded mode if an export
+                // messes with an ordered variable we're broken.)
 
-            // Find all calls to DPI-imported functions, we can put those
-            // into a serial order at least. That should solve the most
-            // likely DPI-related data hazards.
-            if (DpiImportCallVisitor(nodep).hasDpiHazard()) {  //
-                return true;
+                // Find all calls to DPI-imported functions, we can put those
+                // into a serial order at least. That should solve the most
+                // likely DPI-related data hazards.
+                if (DpiImportCallVisitor{lvtxp->nodep()}.hasDpiHazard()) return true;
             }
         }
         return false;
@@ -2066,56 +2030,44 @@ private:
 
 public:
     void go() {
-        uint64_t startUsecs = 0;
-        if (debug() >= 3) startUsecs = V3Os::timeUsecs();
-
-        // Build an OLV->mtask map and a set of OVVs
-        OrderByPtrId ovvOrder;
-        OvvSet ovvSet(ovvOrder);
-        // OVV's which wrap systemC vars will be handled slightly specially
-        OvvSet ovvSetSystemC(ovvOrder);
-
-        for (V3GraphVertex* vxp = m_mtasksp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            LogicMTask* const mtaskp = static_cast<LogicMTask*>(vxp);
-            // Should be only one MTaskMoveVertex in each mtask at this
-            // stage, but whatever, write it as a loop:
-            for (LogicMTask::VxList::const_iterator it = mtaskp->vertexListp()->begin();
-                 it != mtaskp->vertexListp()->end(); ++it) {
-                const MTaskMoveVertex* const tmvp = *it;
-                if (const OrderLogicVertex* const logicp = tmvp->logicp()) {
-                    m_olv2mtask[logicp] = mtaskp;
-                    // Look at downstream vars.
-                    for (V3GraphEdge* edgep = logicp->outBeginp(); edgep;
-                         edgep = edgep->outNextp()) {
-                        // Only consider OrderVarStdVertex which reflects
-                        // an actual lvalue assignment; the others do not.
-                        const OrderVarStdVertex* const ovvp
-                            = dynamic_cast<OrderVarStdVertex*>(edgep->top());
-                        if (!ovvp) continue;
-                        if (ovvp->varScp()->varp()->isSc()) {
-                            ovvSetSystemC.insert(ovvp);
-                        } else {
-                            ovvSet.insert(ovvp);
-                        }
-                    }
+        // Rank the graph. DGS is faster than V3GraphAlg's recursive rank, and also allows us to
+        // set up the OrderLogicVertex -> LogicMTask map at the same time.
+        {
+            GraphStreamUnordered serialize(m_mtasksp);
+            while (LogicMTask* const mtaskp
+                   = const_cast<LogicMTask*>(static_cast<const LogicMTask*>(serialize.nextp()))) {
+                // Compute and assign rank
+                uint32_t rank = 0;
+                for (V3GraphEdge* edgep = mtaskp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+                    rank = std::max(edgep->fromp()->rank() + 1, rank);
                 }
+                mtaskp->rank(rank);
+
+                // Set up the OrderLogicVertex -> LogicMTask map
+                // Entry and exit MTasks have no MTaskMoveVertices under them, so move on
+                if (mtaskp->vertexListp()->empty()) continue;
+                // Otherwise there should be only one MTaskMoveVertex in each MTask at this stage
+                UASSERT_OBJ(mtaskp->vertexListp()->size() == 1, mtaskp,
+                            "Multiple MTaskMoveVertex");
+                const MTaskMoveVertex* const moveVtxp = mtaskp->vertexListp()->front();
+                // Set up mapping back to the MTask from the OrderLogicVertex
+                if (OrderLogicVertex* const lvtxp = moveVtxp->logicp()) lvtxp->userp(mtaskp);
             }
         }
 
-        // Rank the graph.
-        // DGS is faster than V3GraphAlg's recursive rank, in the worst
-        // cases where the recursive rank must pass through the same node
-        // many times. (We saw 22s for DGS vs. 500s for recursive rank on
-        // one large design.)
-        {
-            GraphStreamUnordered serialize(m_mtasksp);
-            const V3GraphVertex* vertexp;
-            while ((vertexp = serialize.nextp())) {
-                uint32_t rank = 0;
-                for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                    rank = std::max(edgep->fromp()->rank() + 1, rank);
+        // Gather all variables. SystemC vars will be handled slightly specially, so keep separate.
+        std::vector<const OrderVarStdVertex*> regularVars;
+        std::vector<const OrderVarStdVertex*> systemCVars;
+        for (V3GraphVertex *vtxp = m_orderGraphp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+            nextp = vtxp->verticesNextp();
+            // Only consider OrderVarStdVertex which reflects
+            // an actual lvalue assignment; the others do not.
+            if (const OrderVarStdVertex* const vvtxp = dynamic_cast<OrderVarStdVertex*>(vtxp)) {
+                if (vvtxp->vscp()->varp()->isSc()) {
+                    systemCVars.push_back(vvtxp);
+                } else {
+                    regularVars.push_back(vvtxp);
                 }
-                const_cast<V3GraphVertex*>(vertexp)->rank(rank);
             }
         }
 
@@ -2132,14 +2084,14 @@ public:
         // NOTE: we don't update the CP's stored in the LogicMTasks to
         // reflect the changes we make to the graph. That's OK, as we
         // haven't yet initialized CPs when we call this routine.
-        for (OvvSet::iterator ovvit = ovvSet.begin(); ovvit != ovvSet.end(); ++ovvit) {
+        for (const OrderVarStdVertex* const varVtxp : regularVars) {
             // Build a set of mtasks, per rank, which access this var.
             // Within a rank, sort by MTaskID to avoid nondeterminism.
             TasksByRank tasksByRank;
 
             // Find all reader and writer tasks for this variable, add to
             // tasksByRank.
-            findAdjacentTasks(ovvit, &tasksByRank);
+            findAdjacentTasks(varVtxp, tasksByRank);
 
             // Merge all writer and reader tasks from same rank together.
             //
@@ -2156,7 +2108,7 @@ public:
             // and it seems to.  It also creates fairly few edges. We don't
             // want to create tons of edges here, doing so is not nice to
             // the main edge contraction pass.
-            mergeSameRankTasks(&tasksByRank);
+            mergeSameRankTasks(tasksByRank);
         }
 
         // Handle SystemC vars just a little differently. Instead of
@@ -2172,11 +2124,10 @@ public:
         // Hopefully we only have a few SC vars -- top level ports, probably.
         {
             TasksByRank tasksByRank;
-            for (OvvSet::iterator ovvit = ovvSetSystemC.begin(); ovvit != ovvSetSystemC.end();
-                 ++ovvit) {
-                findAdjacentTasks(ovvit, &tasksByRank);
+            for (const OrderVarStdVertex* const varVtxp : systemCVars) {
+                findAdjacentTasks(varVtxp, tasksByRank);
             }
-            mergeSameRankTasks(&tasksByRank);
+            mergeSameRankTasks(tasksByRank);
         }
 
         // Handle nodes containing DPI calls, we want to serialize those
@@ -2184,17 +2135,13 @@ public:
         // Same basic strategy as above to serialize access to SC vars.
         if (!v3Global.opt.threadsDpiPure() || !v3Global.opt.threadsDpiUnpure()) {
             TasksByRank tasksByRank;
-            for (V3GraphVertex* vxp = m_mtasksp->verticesBeginp(); vxp;
-                 vxp = vxp->verticesNextp()) {
-                LogicMTask* const mtaskp = static_cast<LogicMTask*>(vxp);
-                if (hasDpiHazard(mtaskp)) tasksByRank[vxp->rank()].insert(mtaskp);
+            for (V3GraphVertex *vtxp = m_mtasksp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+                nextp = vtxp->verticesNextp();
+                LogicMTask* const mtaskp = static_cast<LogicMTask*>(vtxp);
+                if (hasDpiHazard(mtaskp)) tasksByRank[mtaskp->rank()].insert(mtaskp);
             }
-            mergeSameRankTasks(&tasksByRank);
+            mergeSameRankTasks(tasksByRank);
         }
-
-        UINFO(4, "PartFixDataHazards() merged " << m_mergesDone << " pairs of nodes in "
-                                                << (V3Os::timeUsecs() - startUsecs)
-                                                << " usecs.\n");
     }
 
 private:
@@ -2660,33 +2607,126 @@ void V3Partition::hashGraphDebug(const V3Graph* graphp, const char* debugName) {
     UINFO(0, "Hash of shape (not contents) of " << debugName << " = " << cvtToStr(hash) << endl);
 }
 
-void V3Partition::setupMTaskDeps(V3Graph* mtasksp, const Vx2MTaskMap* vx2mtaskp) {
-    // Look at each mtask
-    for (V3GraphVertex* itp = mtasksp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        LogicMTask* const mtaskp = static_cast<LogicMTask*>(itp);
-        const LogicMTask::VxList* vertexListp = mtaskp->vertexListp();
+// Predicate function to determine what MTaskMoveVertex to bypass when constructing the MTask
+// graph. The fine-grained dependency graph of MTaskMoveVertex vertices is a bipartite graph of:
+// - 1. MTaskMoveVertex instances containing logic via OrderLogicVertex
+//      (MTaskMoveVertex::logicp() != nullptr)
+// - 2. MTaskMoveVertex instances containing an (OrderVarVertex, domain) pair
+// Our goal is to order the logic vertices. The second type of variable/domain vertices only carry
+// dependencies and are eventually discarded. In order to reduce the working set size of
+// PartContraction, we 'bypass' and not create LogicMTask vertices for the variable vertices, and
+// instead add the transitive dependencies directly, but only if adding the transitive edges
+// directly does not require more dependency edges than keeping the intermediate vertex. That is,
+// we bypass a variable vertex if fanIn * fanOut <= fanIn + fanOut. This can only be true if fanIn
+// or fanOut are 1, or if they are both 2. This can cause significant reduction in working set
+// size.
+static bool bypassOk(MTaskMoveVertex* mvtxp) {
+    // Need to keep all logic vertices
+    if (mvtxp->logicp()) return false;
+    // Count fan-in, up to 3
+    unsigned fanIn = 0;
+    for (V3GraphEdge* edgep = mvtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+        if (++fanIn == 3) break;
+    }
+    UDEBUGONLY(UASSERT_OBJ(fanIn <= 3, mvtxp, "Should have stopped counting fanIn"););
+    // If fanInn no more than one, bypass
+    if (fanIn <= 1) return true;
+    // Count fan-out, up to 3
+    unsigned fanOut = 0;
+    for (V3GraphEdge* edgep = mvtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+        if (++fanOut == 3) break;
+    }
+    UDEBUGONLY(UASSERT_OBJ(fanOut <= 3, mvtxp, "Should have stopped counting fanOut"););
+    // If fan-out no more than one, bypass
+    if (fanOut <= 1) return true;
+    // They can only be (2, 2), (2, 3), (3, 2), (3, 3) at this point, bypass if (2, 2)
+    return fanIn + fanOut == 4;
+}
 
-        // For each logic vertex in this mtask, create an mtask-to-mtask
-        // edge based on the logic-to-logic edge.
-        for (LogicMTask::VxList::const_iterator vit = vertexListp->begin();
-             vit != vertexListp->end(); ++vit) {
-            for (V3GraphEdge* outp = (*vit)->outBeginp(); outp; outp = outp->outNextp()) {
-                UASSERT(outp->weight() > 0, "Mtask not assigned weight");
-                const MTaskMoveVertex* const top = dynamic_cast<MTaskMoveVertex*>(outp->top());
-                UASSERT(top, "MoveVertex not associated to mtask");
-                const auto it = vlstd::as_const(vx2mtaskp)->find(top);
-                UASSERT(it != vx2mtaskp->end(), "MTask map can't find id");
-                LogicMTask* const otherMTaskp = it->second;
-                UASSERT(otherMTaskp, "nullptr other Mtask");
-                UASSERT_OBJ(otherMTaskp != mtaskp, mtaskp, "Would create a cycle edge");
+uint32_t V3Partition::setupMTaskDeps(V3Graph* mtasksp) {
+    uint32_t totalGraphCost = 0;
 
-                // Don't create redundant edges.
-                if (mtaskp->hasRelativeMTask(otherMTaskp)) continue;
+    // Artificial single entry point vertex in the MTask graph to allow sibling merges.
+    // This is required as otherwise disjoint sub-graphs could not be merged, but the
+    // coarsening algorithm assumes that the graph is connected.
+    LogicMTask* const entryMTask = new LogicMTask{mtasksp, nullptr};
 
-                new MTaskEdge(mtasksp, mtaskp, otherMTaskp, 1);
+    // The V3InstrCount within LogicMTask will set user5 on each AST
+    // node, to assert that we never count any node twice.
+    const VNUser5InUse user5inUse;
+
+    // Create the LogicMTasks for each MTaskMoveVertex
+    for (V3GraphVertex *vtxp = m_fineDepsGraphp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+        nextp = vtxp->verticesNextp();
+        MTaskMoveVertex* const mVtxp = static_cast<MTaskMoveVertex*>(vtxp);
+        if (bypassOk(mVtxp)) {
+            mVtxp->userp(nullptr);  // Set to nullptr to mark as bypassed
+        } else {
+            LogicMTask* const mtaskp = new LogicMTask{mtasksp, mVtxp};
+            mVtxp->userp(mtaskp);
+            totalGraphCost += mtaskp->cost();
+        }
+    }
+
+    // Artificial single exit point vertex in the MTask graph to allow sibling merges.
+    // this enables merging MTasks with no downstream dependents if that is the ideal merge.
+    LogicMTask* const exitMTask = new LogicMTask{mtasksp, nullptr};
+
+    // Create the mtask->mtask dependency edges based on the dependencies between MTaskMoveVertex
+    // vertices.
+    for (V3GraphVertex *vtxp = mtasksp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+        nextp = vtxp->verticesNextp();
+        LogicMTask* const mtaskp = static_cast<LogicMTask*>(vtxp);
+
+        // Entry and exit vertices handled separately
+        if (VL_UNLIKELY((mtaskp == entryMTask) || (mtaskp == exitMTask))) continue;
+
+        // At this point, there should only be one MTaskMoveVertex per LogicMTask
+        UASSERT_OBJ(mtaskp->vertexListp()->size() == 1, mtaskp, "Multiple MTaskMoveVertex");
+        MTaskMoveVertex* const mvtxp = mtaskp->vertexListp()->front();
+        UASSERT_OBJ(mvtxp->userp(), mtaskp, "Bypassed MTaskMoveVertex should not have MTask");
+
+        // Function to add a edge to a dependent from 'mtaskp'
+        const auto addEdge = [mtasksp, mtaskp](LogicMTask* otherp) {
+            UASSERT_OBJ(otherp != mtaskp, mtaskp, "Would create a cycle edge");
+            if (mtaskp->hasRelativeMTask(otherp)) return;  // Don't create redundant edges.
+            new MTaskEdge{mtasksp, mtaskp, otherp, 1};
+        };
+
+        // Iterate downstream direct dependents
+        for (V3GraphEdge *dEdgep = mvtxp->outBeginp(), *dNextp; dEdgep; dEdgep = dNextp) {
+            dNextp = dEdgep->outNextp();
+            V3GraphVertex* const top = dEdgep->top();
+            if (LogicMTask* const otherp = static_cast<LogicMTask*>(top->userp())) {
+                // The opposite end of the edge is not a bypassed vertex, add as direct dependent
+                addEdge(otherp);
+            } else {
+                // The opposite end of the edge is a bypassed vertex, add transitive dependents
+                for (V3GraphEdge *tEdgep = top->outBeginp(), *tNextp; tEdgep; tEdgep = tNextp) {
+                    tNextp = tEdgep->outNextp();
+                    LogicMTask* const transp = static_cast<LogicMTask*>(tEdgep->top()->userp());
+                    // The Move graph is bipartite (logic <-> var), and logic is never bypassed,
+                    // hence 'transp' must be non nullptr.
+                    UASSERT_OBJ(transp, mvtxp, "This cannot be a bypassed vertex");
+                    addEdge(transp);
+                }
             }
         }
     }
+
+    // Create Dependencies to/from the entry/exit vertices.
+    for (V3GraphVertex *vtxp = mtasksp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+        nextp = vtxp->verticesNextp();
+        LogicMTask* const mtaskp = static_cast<LogicMTask*>(vtxp);
+
+        if (VL_UNLIKELY((mtaskp == entryMTask) || (mtaskp == exitMTask))) continue;
+
+        // Add the entry/exit edges
+        if (mtaskp->inEmpty()) new MTaskEdge{mtasksp, entryMTask, mtaskp, 1};
+        if (mtaskp->outEmpty()) new MTaskEdge{mtasksp, mtaskp, exitMTask, 1};
+    }
+
+    return totalGraphCost;
 }
 
 void V3Partition::go(V3Graph* mtasksp) {
@@ -2697,26 +2737,7 @@ void V3Partition::go(V3Graph* mtasksp) {
     // MTaskMoveVertex. Over time, we'll merge MTasks together and
     // eventually each MTask will wrap a large number of MTaskMoveVertices
     // (and the logic nodes therein.)
-    uint32_t totalGraphCost = 0;
-    {
-        // The V3InstrCount within LogicMTask will set user5 on each AST
-        // node, to assert that we never count any node twice.
-        const VNUser5InUse inUser5;
-        Vx2MTaskMap vx2mtask;
-        for (V3GraphVertex* vxp = m_fineDepsGraphp->verticesBeginp(); vxp;
-             vxp = vxp->verticesNextp()) {
-            MTaskMoveVertex* const mtmvVxp = dynamic_cast<MTaskMoveVertex*>(vxp);
-            UASSERT_OBJ(mtmvVxp, vxp, "Every vertex here should be an MTaskMoveVertex");
-
-            LogicMTask* const mtaskp = new LogicMTask(mtasksp, mtmvVxp);
-            vx2mtask[mtmvVxp] = mtaskp;
-
-            totalGraphCost += mtaskp->cost();
-        }
-
-        // Create the mtask->mtask dep edges based on vertex deps
-        setupMTaskDeps(mtasksp, &vx2mtask);
-    }
+    const uint32_t totalGraphCost = setupMTaskDeps(mtasksp);
 
     V3Partition::debugMTaskGraphStats(mtasksp, "initial");
 
@@ -2727,7 +2748,7 @@ void V3Partition::go(V3Graph* mtasksp) {
 
     // Merge nodes that could present data hazards; see comment within.
     {
-        PartFixDataHazards(mtasksp).go();
+        PartFixDataHazards(m_orderGraphp, mtasksp).go();
         V3Partition::debugMTaskGraphStats(mtasksp, "hazards");
         hashGraphDebug(mtasksp, "mtasksp after fixDataHazards()");
     }
@@ -3121,15 +3142,15 @@ static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& 
         }
 
         // Unblock the fake "final" mtask when this thread is finished
-        funcp->addStmtsp(
-            new AstCStmt(fl, "vlSelf->__Vm_mtaskstate_final.signalUpstreamDone(even_cycle);\n"));
+        funcp->addStmtsp(new AstCStmt{fl, "vlSelf->__Vm_mtaskstate_final__" + tag
+                                              + ".signalUpstreamDone(even_cycle);\n"});
     }
 
     // Create the fake "final" mtask state variable
     AstBasicDType* const mtaskStateDtypep
         = v3Global.rootp()->typeTablep()->findBasicDType(fl, VBasicDTypeKwd::MTASKSTATE);
     AstVar* const varp
-        = new AstVar(fl, VVarType::MODULETEMP, "__Vm_mtaskstate_final", mtaskStateDtypep);
+        = new AstVar{fl, VVarType::MODULETEMP, "__Vm_mtaskstate_final__" + tag, mtaskStateDtypep};
     varp->valuep(new AstConst(fl, funcps.size()));
     varp->protect(false);  // Do not protect as we still have references in AstText
     modp->addStmtsp(varp);
@@ -3141,6 +3162,7 @@ static void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
                                       const std::vector<AstCFunc*>& funcps) {
     // FileLine used for constructing nodes below
     FileLine* const fl = v3Global.rootp()->fileline();
+    const string& tag = execGraphp->name();
 
     // Add thread function invocations to execGraph
     const auto addStrStmt = [=](const string& stmt) -> void {  //
@@ -3150,7 +3172,8 @@ static void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
         execGraphp->addStmtsp(new AstText(fl, text, /* tracking: */ true));
     };
 
-    addStrStmt("vlSymsp->__Vm_even_cycle = !vlSymsp->__Vm_even_cycle;\n");
+    addStrStmt("vlSymsp->__Vm_even_cycle__" + tag + " = !vlSymsp->__Vm_even_cycle__" + tag
+               + ";\n");
 
     const uint32_t last = funcps.size() - 1;
     for (uint32_t i = 0; i <= last; ++i) {
@@ -3159,17 +3182,18 @@ static void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
             // The first N-1 will run on the thread pool.
             addTextStmt("vlSymsp->__Vm_threadPoolp->workerp(" + cvtToStr(i) + ")->addTask(");
             execGraphp->addStmtsp(new AstAddrOfCFunc(fl, funcp));
-            addTextStmt(", vlSelf, vlSymsp->__Vm_even_cycle);\n");
+            addTextStmt(", vlSelf, vlSymsp->__Vm_even_cycle__" + tag + ");\n");
         } else {
             // The last will run on the main thread.
             AstCCall* const callp = new AstCCall(fl, funcp);
-            callp->argTypes("vlSelf, vlSymsp->__Vm_even_cycle");
+            callp->argTypes("vlSelf, vlSymsp->__Vm_even_cycle__" + tag);
             execGraphp->addStmtsp(callp);
             addStrStmt("Verilated::mtaskId(0);\n");
         }
     }
 
-    addStrStmt("vlSelf->__Vm_mtaskstate_final.waitUntilUpstreamDone(vlSymsp->__Vm_even_cycle);\n");
+    addStrStmt("vlSelf->__Vm_mtaskstate_final__" + tag
+               + ".waitUntilUpstreamDone(vlSymsp->__Vm_even_cycle__" + tag + ");\n");
 }
 
 static void implementExecGraph(AstExecGraph* const execGraphp) {
@@ -3191,7 +3215,7 @@ static void implementExecGraph(AstExecGraph* const execGraphp) {
 
 void V3Partition::finalize(AstNetlist* netlistp) {
     // Called by Verilator top stage
-    netlistp->topModulep()->foreach<AstExecGraph>([&](AstExecGraph* execGraphp) {
+    netlistp->topModulep()->foreach([&](AstExecGraph* execGraphp) {
         // Back in V3Order, we partitioned mtasks using provisional cost
         // estimates. However, V3Order precedes some optimizations (notably
         // V3LifePost) that can change the cost of logic within each mtask.

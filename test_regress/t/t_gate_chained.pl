@@ -46,7 +46,7 @@ gen($Self->{top_filename});
 
 compile(
     verilator_flags2 => ["--stats --x-assign fast --x-initial fast",
-                         "-Wno-UNOPTTHREADS"],
+                         "-Wno-UNOPTTHREADS -fno-dfg"],
     );
 
 execute(

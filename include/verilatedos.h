@@ -69,9 +69,9 @@
 #  define VL_EXCLUDES(x) __attribute__((locks_excluded(x)))
 #  define VL_SCOPED_CAPABILITY __attribute__((scoped_lockable))
 # endif
-# define VL_LIKELY(x) __builtin_expect(!!(x), 1)
-# define VL_UNLIKELY(x) __builtin_expect(!!(x), 0)
-# define VL_UNREACHABLE __builtin_unreachable();
+# define VL_LIKELY(x) __builtin_expect(!!(x), 1)  // Prefer over C++20 [[likely]]
+# define VL_UNLIKELY(x) __builtin_expect(!!(x), 0)  // Prefer over C++20 [[unlikely]]
+# define VL_UNREACHABLE __builtin_unreachable()  // C++23 std::unreachable()
 # define VL_PREFETCH_RD(p) __builtin_prefetch((p), 0)
 # define VL_PREFETCH_RW(p) __builtin_prefetch((p), 1)
 #endif
@@ -163,14 +163,22 @@
 // Comment tag that Function is pure (and thus also VL_MT_SAFE)
 #define VL_PURE
 // Comment tag that function is threadsafe when VL_THREADED
-#define VL_MT_SAFE
+#if defined(__clang__)
+# define VL_MT_SAFE __attribute__((annotate("MT_SAFE")))
+#else
+# define VL_MT_SAFE
+#endif
 // Comment tag that function is threadsafe when VL_THREADED, only
 // during normal operation (post-init)
 #define VL_MT_SAFE_POSTINIT
 // Attribute that function is clang threadsafe and uses given mutex
 #define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
 // Comment tag that function is not threadsafe when VL_THREADED
-#define VL_MT_UNSAFE
+#if defined(__clang__)
+# define VL_MT_UNSAFE __attribute__((annotate("MT_UNSAFE")))
+#else
+# define VL_MT_UNSAFE
+#endif
 // Comment tag that function is not threadsafe when VL_THREADED,
 // protected to make sure single-caller
 #define VL_MT_UNSAFE_ONE
@@ -540,6 +548,8 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 //=========================================================================
 // Conversions
 
+#include <utility>
+
 namespace vlstd {
 
 template <typename T>
@@ -562,6 +572,14 @@ reverse_wrapper<T> reverse_view(const T& v) {
 template <class T>
 T const& as_const(T& v) {
     return v;
+}
+
+// C++14's std::exchange
+template <class T, class U = T>
+T exchange(T& obj, U&& new_value) {
+    T old_value = std::move(obj);
+    obj = std::forward<U>(new_value);
+    return old_value;
 }
 
 };  // namespace vlstd

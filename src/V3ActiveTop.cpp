@@ -39,18 +39,26 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Active class functions
 
 class ActiveTopVisitor final : public VNVisitor {
-private:
-    // NODE STATE
-    //  Entire netlist
-    //   AstNode::user()                bool. True if processed
-    //  Each call to V3Const::constify
-    //   AstNode::user4()               Used by V3Const::constify, called below
-    const VNUser1InUse m_inuser1;
-
     // STATE
     SenTreeFinder m_finder;  // Find global sentree's / add them under the AstTopScope
 
     // METHODS
+
+    static bool isInitial(AstNode* nodep) {
+        const VNUser1InUse user1InUse;
+        // Return true if no variables that read.
+        return nodep->forall([&](const AstVarRef* refp) -> bool {
+            AstVarScope* const vscp = refp->varScopep();
+            // Note: Use same heuristic as ordering does to ignore written variables
+            // TODO: Use live variable analysis.
+            if (refp->access().isWriteOnly()) {
+                vscp->user1(true);
+                return true;
+            }
+            // Read or ReadWrite: OK if written before
+            return vscp->user1();
+        });
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -72,15 +80,6 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        // Copy combo tree to settlement tree with duplicated statements
-        if (sensesp->hasCombo()) {
-            AstSenTree* const newsentreep = new AstSenTree(
-                nodep->fileline(), new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
-            AstActive* const newp = new AstActive(nodep->fileline(), "settle", newsentreep);
-            newp->sensesStorep(newsentreep);
-            if (nodep->stmtsp()) newp->addStmtsp(nodep->stmtsp()->cloneTree(true));
-            nodep->addNextHere(newp);
-        }
         // Move the SENTREE for each active up to the global level.
         // This way we'll easily see what clock domains are identical
         AstSenTree* const wantp = m_finder.getSenTree(sensesp);
@@ -99,8 +98,23 @@ private:
             }
             nodep->sensesp(wantp);
         }
-        // No need to do statements under it, they're already moved.
-        // iterateChildren(nodep);
+
+        // If this is combinational logic that does not read any variables, then it really is an
+        // initial block in disguise, so move such logic under an Initial AstActive, V3Order would
+        // prune these otherwise.
+        // TODO: we should warn for these if they were 'always @*' as some (including strictly
+        //       compliant) simulators will never execute these.
+        if (nodep->sensesp()->hasCombo()) {
+            FileLine* const flp = nodep->fileline();
+            AstActive* initialp = nullptr;
+            for (AstNode *logicp = nodep->stmtsp(), *nextp; logicp; logicp = nextp) {
+                nextp = logicp->nextp();
+                if (!isInitial(logicp)) continue;
+                if (!initialp) initialp = new AstActive{flp, "", m_finder.getInitial()};
+                initialp->addStmtsp(logicp->unlinkFrBack());
+            }
+            if (initialp) nodep->addHereThisAsNext(initialp);
+        }
     }
     void visit(AstNodeProcedure* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");

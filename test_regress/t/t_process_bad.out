@@ -1,10 +1,10 @@
-%Error: t/t_process.v:22:4: Can't find typedef: 'process'
-   22 |    process p;
+%Error: t/t_process_bad.v:8:4: Can't find typedef: 'process'
+    8 |    process p;
       |    ^~~~~~~
-%Error-UNSUPPORTED: t/t_process.v:26:20: Unsupported: 'process'
-   26 |       p = process::self();
+%Error-UNSUPPORTED: t/t_process_bad.v:12:20: Unsupported: 'process'
+   12 |       p = process::self();
       |                    ^~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Internal Error: t/t_process.v:26:11: ../V3LinkDot.cpp:#: Bad package link
-   26 |       p = process::self();
+%Error: Internal Error: t/t_process_bad.v:12:11: ../V3LinkDot.cpp:#: Bad package link
+   12 |       p = process::self();
       |           ^~~~~~~

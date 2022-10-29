@@ -295,7 +295,7 @@ class EmitCSyms final : EmitCBaseVisitor {
         if (v3Global.opt.vpi()) {
             const string type
                 = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
-            const string name = nodep->scopep()->name() + "__DOT__" + nodep->name();
+            const string name = nodep->scopep()->shortName() + "__DOT__" + nodep->name();
             const string name_dedot = AstNode::dedotName(name);
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
@@ -445,12 +445,16 @@ void EmitCSyms::emitSymHdr() {
         puts("uint32_t __Vm_baseCode = 0;"
              "  ///< Used by trace routines when tracing multiple models\n");
     }
+    if (v3Global.hasEvents()) puts("std::vector<VlEvent*> __Vm_triggeredEvents;\n");
+    if (v3Global.hasClasses()) puts("VlDeleter __Vm_deleter;\n");
     puts("bool __Vm_didInit = false;\n");
 
     if (v3Global.opt.mtasks()) {
         puts("\n// MULTI-THREADING\n");
         puts("VlThreadPool* const __Vm_threadPoolp;\n");
-        puts("bool __Vm_even_cycle = false;\n");
+        puts("bool __Vm_even_cycle__ico = false;\n");
+        puts("bool __Vm_even_cycle__act = false;\n");
+        puts("bool __Vm_even_cycle__nba = false;\n");
     }
 
     if (v3Global.opt.profExec()) {
@@ -507,6 +511,22 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// METHODS\n");
     puts("const char* name() { return TOP.name(); }\n");
+
+    if (v3Global.hasEvents()) {
+        puts("void enqueueTriggeredEventForClearing(VlEvent& event) {\n");
+        puts("#ifdef VL_DEBUG\n");
+        puts("if (VL_UNLIKELY(!event.isTriggered())) {\n");
+        puts("VL_FATAL_MT(__FILE__, __LINE__, __FILE__, \"event passed to "
+             "'enqueueTriggeredEventForClearing' was not triggered\");\n");
+        puts("}\n");
+        puts("#endif\n");
+        puts("__Vm_triggeredEvents.push_back(&event);\n");
+        puts("}\n");
+        puts("void clearTriggeredEvents() {\n");
+        puts("for (const auto eventp : __Vm_triggeredEvents) eventp->clearTriggered();\n");
+        puts("__Vm_triggeredEvents.clear();\n");
+        puts("}\n");
+    }
 
     if (v3Global.needTraceDumper()) {
         if (!optSystemC()) puts("void _traceDump();\n");
@@ -766,15 +786,14 @@ void EmitCSyms::emitSymImp() {
     if (v3Global.opt.profPgo()) {
         puts("// Configure profiling for PGO\n");
         if (v3Global.opt.mtasks()) {
-            v3Global.rootp()->topModulep()->foreach<AstExecGraph>(
-                [&](const AstExecGraph* execGraphp) {
-                    for (const V3GraphVertex* vxp = execGraphp->depGraphp()->verticesBeginp(); vxp;
-                         vxp = vxp->verticesNextp()) {
-                        const ExecMTask* const mtp = static_cast<const ExecMTask*>(vxp);
-                        puts("_vm_pgoProfiler.addCounter(" + cvtToStr(mtp->profilerId()) + ", \""
-                             + mtp->hashName() + "\");\n");
-                    }
-                });
+            v3Global.rootp()->topModulep()->foreach([&](const AstExecGraph* execGraphp) {
+                for (const V3GraphVertex* vxp = execGraphp->depGraphp()->verticesBeginp(); vxp;
+                     vxp = vxp->verticesNextp()) {
+                    const ExecMTask* const mtp = static_cast<const ExecMTask*>(vxp);
+                    puts("_vm_pgoProfiler.addCounter(" + cvtToStr(mtp->profilerId()) + ", \""
+                         + mtp->hashName() + "\");\n");
+                }
+            });
         }
     }
 
@@ -846,7 +865,7 @@ void EmitCSyms::emitSymImp() {
 
     if (v3Global.dpi()) {
         m_ofpBase->puts("// Setup export functions\n");
-        m_ofpBase->puts("for (int __Vfinal=0; __Vfinal<2; __Vfinal++) {\n");
+        m_ofpBase->puts("for (int __Vfinal = 0; __Vfinal < 2; ++__Vfinal) {\n");
         for (auto it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
             AstScopeName* const scopep = it->second.m_scopep;
             AstCFunc* const funcp = it->second.m_cfuncp;

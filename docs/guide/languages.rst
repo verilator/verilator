@@ -95,6 +95,72 @@ keywords on case statement, as well as "unique" on if statements.  However,
 "priority if" is currently ignored.
 
 
+Time
+====
+
+With :vlopt:`--timing`, all timing controls are supported:
+
+* delay statements,
+* event control statements not only at the top of a process,
+* intra-assignment timing controls,
+* net delays,
+* :code:`wait` statements,
+
+as well as all flavors of :code:`fork`.
+
+Compiling a verilated design that makes use of these features requires a
+compiler with C++20 coroutine support, e.g. Clang 5, GCC 10, or newer.
+
+:code:`#0` delays cause Verilator to issue the :option:`ZERODLY` warning, as
+they work differently than described in the LRM. They do not schedule process
+resumption in the Inactive region, though the process will get resumed in the
+same time slot.
+
+Rising/falling/turn-off delays are currently unsupported and cause the
+:option:`RISEFALLDLY` warning.
+
+Minimum/typical/maximum delays are currently unsupported. The typical delay is
+always the one chosen. Such expressions cause the :option:`MINTYPMAX` warning.
+
+Another consequence of using :vlopt:`--timing` is that the :vlopt:`--main`
+option generates a main file with a proper timing eval loop, eliminating the
+need for writing any driving C++ code. You can then simply compile the
+simulation (perhaps using :vlopt:`--build`) and run it.
+
+With :vlopt:`--no-timing`, all timing controls cause the :option:`NOTIMING`
+error, with the exception of:
+
+* delay statements – they are ignored (as they are in synthesis), though they
+  do issue a :option:`STMTDLY` warning,
+* intra-assignment timing controls – they are ignored, though they do issue an
+  :option:`ASSIGNDLY` warning,
+* net delays – they are ignored,
+* event controls at the top of the procedure,
+
+Forks cause this error as well, with the exception of:
+
+* forks with no statements,
+* :code:`fork..join` or :code:`fork..join_any` with one statement,
+* forks with :vlopt:`--bbox-unsup`.
+
+If neither :vlopt:`--timing` nor :vlopt:`--no-timing` is specified, all timing
+controls cause the :option:`NEEDTIMINGOPT` error, with the exception of event
+controls at the top of the process. Forks cause this error as well, with the
+exception of:
+
+* forks with no statements,
+* :code:`fork..join` or :code:`fork..join_any` with one statement,
+* forks with :vlopt:`--bbox-unsup`.
+
+Timing controls and forks can also be ignored in specific files or parts of
+files. The :option:`/*verilator&32;timing_off*/` and
+:option:`/*verilator&32;timing_off*/` metacomments will make Verilator ignore
+the encompassed timing controls and forks, regardless of the chosen
+:vlopt:`--timing` or :vlopt:`--no-timing` option. This can also be achieved
+using the :option:`timing_off` and :option:`timing_off` options in Verilator
+configuration files.
+
+
 .. _Language Limitations:
 
 Language Limitations
@@ -178,12 +244,6 @@ and randc tags on members are ignored.  All structures and unions are
 represented as a single vector, which means that generating one member of a
 structure from blocking, and another from non-blocking assignments is
 unsupported.
-
-
-Time
-----
-
-All delays (#) are ignored, as they are in synthesis.
 
 
 .. _Unknown States:
@@ -274,17 +334,6 @@ are automatic, as if they had the Verilog 2001 "automatic" keyword
 prepended.  (If you don't know what this means, Verilator will do what you
 probably expect, what C does. The default behavior of Verilog is
 different.)
-
-
-Generated Clocks
-----------------
-
-Verilator attempts to deal with generated and gated clocks correctly,
-however some cases cause problems in the scheduling algorithm which is
-optimized for performance.  The safest option is to have all clocks as
-primary inputs to the model, or wires directly attached to primary inputs.
-For proper behavior clock enables may also need the
-:option:`/*verilator&32;clock_enable*/` metacomment.
 
 
 Gate Primitives

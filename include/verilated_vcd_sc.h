@@ -86,6 +86,7 @@ private:
 
     // clang-format off
     // Formatting matches that of sc_trace.h
+    // LCOV_EXCL_START
 #if (SYSTEMC_VERSION >= 20171012)
     DECL_TRACE_METHOD_A( sc_event )
     DECL_TRACE_METHOD_A( sc_time )
@@ -120,6 +121,7 @@ private:
 
     DECL_TRACE_METHOD_A( sc_dt::sc_bv_base )
     DECL_TRACE_METHOD_A( sc_dt::sc_lv_base )
+    // LCOV_EXCL_STOP
     // clang-format on
 
 #undef DECL_TRACE_METHOD_A

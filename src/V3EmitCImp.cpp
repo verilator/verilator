@@ -75,6 +75,7 @@ class EmitCGatherDependencies final : VNVisitor {
         iterateChildrenConst(nodep);
     }
     void visit(AstCNew* nodep) override {
+        addSymsDependency();
         addDTypeDependency(nodep->dtypep());
         iterateChildrenConst(nodep);
     }
@@ -83,6 +84,7 @@ class EmitCGatherDependencies final : VNVisitor {
         iterateChildrenConst(nodep);
     }
     void visit(AstNewCopy* nodep) override {
+        addSymsDependency();
         addDTypeDependency(nodep->dtypep());
         iterateChildrenConst(nodep);
     }
@@ -259,6 +261,10 @@ class EmitCImp final : EmitCFunc {
                         puts("(");
                         putsQuoted(varp->nameProtect());
                         puts(")\n");
+                    } else if (dtypep->isDelayScheduler()) {
+                        puts(", ");
+                        puts(varp->nameProtect());
+                        puts("{*symsp->_vm_contextp__}\n");
                     }
                 }
             }
@@ -377,6 +383,7 @@ class EmitCImp final : EmitCFunc {
                             // lower level subinst code does it.
                         } else if (varp->isParam()) {
                         } else if (varp->isStatic() && varp->isConst()) {
+                        } else if (varp->basicp() && varp->basicp()->isTriggerVec()) {
                         } else {
                             int vects = 0;
                             AstNodeDType* elementp = varp->dtypeSkipRefp();
@@ -386,8 +393,8 @@ class EmitCImp final : EmitCFunc {
                                 UASSERT_OBJ(arrayp->hi() >= arrayp->lo(), varp,
                                             "Should have swapped msb & lsb earlier.");
                                 const string ivar = string("__Vi") + cvtToStr(vecnum);
-                                puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0));
-                                puts("; " + ivar + "<" + cvtToStr(arrayp->elementsConst()));
+                                puts("for (int __Vi" + cvtToStr(vecnum) + " = " + cvtToStr(0));
+                                puts("; " + ivar + " < " + cvtToStr(arrayp->elementsConst()));
                                 puts("; ++" + ivar + ") {\n");
                                 elementp = arrayp->subDTypep()->skipRefp();
                             }
@@ -400,8 +407,8 @@ class EmitCImp final : EmitCFunc {
                                 && !(basicp && basicp->keyword() == VBasicDTypeKwd::STRING)) {
                                 const int vecnum = vects++;
                                 const string ivar = string("__Vi") + cvtToStr(vecnum);
-                                puts("for (int __Vi" + cvtToStr(vecnum) + "=" + cvtToStr(0));
-                                puts("; " + ivar + "<" + cvtToStr(elementp->widthWords()));
+                                puts("for (int __Vi" + cvtToStr(vecnum) + " = " + cvtToStr(0));
+                                puts("; " + ivar + " < " + cvtToStr(elementp->widthWords()));
                                 puts("; ++" + ivar + ") {\n");
                             }
                             puts("os" + op + varp->nameProtect());

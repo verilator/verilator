@@ -105,6 +105,9 @@ class V3Global final {
     // Experimenting with always requiring heavy, see (#2701)
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
+    bool m_hasEvents = false;  // Design uses SystemVerilog named events
+    bool m_hasClasses = false;  // Design uses SystemVerilog classes
+    bool m_usesTiming = false;  // Design uses timing constructs
     bool m_hasForceableSignals = false;  // Need to apply V3Force pass
     bool m_hasSCTextSections = false;  // Has `systemc_* sections that need to be emitted
     bool m_useParallelBuild = false;  // Use parallel build for model
@@ -124,7 +127,7 @@ public:
     void clear();
     void shutdown();  // Release allocated resorces
     // ACCESSORS (general)
-    AstNetlist* rootp() const { return m_rootp; }
+    AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }
     VWidthMinUsage widthMinUsage() const { return m_widthMinUsage; }
     bool assertDTypesResolved() const { return m_assertDTypesResolved; }
     bool assertScoped() const { return m_assertScoped; }
@@ -143,11 +146,17 @@ public:
     static string digitsFilename(int number);
     bool needTraceDumper() const { return m_needTraceDumper; }
     void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
-    bool dpi() const { return m_dpi; }
+    bool dpi() const VL_MT_SAFE { return m_dpi; }
     void dpi(bool flag) { m_dpi = flag; }
+    bool hasEvents() const { return m_hasEvents; }
+    void setHasEvents() { m_hasEvents = true; }
+    bool hasClasses() const { return m_hasClasses; }
+    void setHasClasses() { m_hasClasses = true; }
+    bool usesTiming() const { return m_usesTiming; }
+    void setUsesTiming() { m_usesTiming = true; }
     bool hasForceableSignals() const { return m_hasForceableSignals; }
     void setHasForceableSignals() { m_hasForceableSignals = true; }
-    bool hasSCTextSections() const { return m_hasSCTextSections; }
+    bool hasSCTextSections() const VL_MT_SAFE { return m_hasSCTextSections; }
     void setHasSCTextSections() { m_hasSCTextSections = true; }
     V3HierBlockPlan* hierPlanp() const { return m_hierPlanp; }
     void hierPlanp(V3HierBlockPlan* plan) {

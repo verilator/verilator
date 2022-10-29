@@ -61,12 +61,12 @@ jobs:
     steps:
 
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         path: repo
 
     - name: Cache $CCACHE_DIR
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       env:
         CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
       with:
@@ -86,7 +86,7 @@ jobs:
       run: tar --posix -c -z -f ${{ env.VERILATOR_ARCHIVE }} repo
 
     - name: Upload tar archive
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         path: ${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}
         name: ${{ env.VERILATOR_ARCHIVE }}
@@ -132,7 +132,7 @@ jobs:
     steps:
 
     - name: Download tar archive
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: ${{ env.VERILATOR_ARCHIVE }}
         path: ${{ github.workspace }}
@@ -142,7 +142,7 @@ jobs:
       run: tar -x -z -f ${{ env.VERILATOR_ARCHIVE }}
 
     - name: Cache $CCACHE_DIR
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       env:
         CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
       with:

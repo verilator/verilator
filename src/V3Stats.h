@@ -75,13 +75,13 @@ class V3Statistic final {
     bool m_printit = true;  ///< Print the results
 public:
     // METHODS
-    string stage() const { return m_stage; }
-    string name() const { return m_name; }
-    double count() const { return m_count; }
-    bool sumit() const { return m_sumit; }
-    bool perf() const { return m_perf; }
-    bool printit() const { return m_printit; }
-    virtual void dump(std::ofstream& os) const;
+    string stage() const VL_MT_SAFE { return m_stage; }
+    string name() const VL_MT_SAFE { return m_name; }
+    double count() const VL_MT_SAFE { return m_count; }
+    bool sumit() const VL_MT_SAFE { return m_sumit; }
+    bool perf() const VL_MT_SAFE { return m_perf; }
+    bool printit() const VL_MT_SAFE { return m_printit; }
+    virtual void dump(std::ofstream& os) const VL_MT_SAFE;
     void combineWith(V3Statistic* otherp) {
         m_count += otherp->count();
         otherp->m_printit = false;

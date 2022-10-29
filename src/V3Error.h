@@ -51,13 +51,16 @@ public:
         I_COVERAGE,     // Coverage is on/off from /*verilator coverage_on/off*/
         I_TRACING,      // Tracing is on/off from /*verilator tracing_on/off*/
         I_LINT,         // All lint messages
+        I_UNUSED,       // Unused genvar, parameter or signal message (Backward Compatibility)
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
+        I_TIMING,       // Enable timing from /*verilator timing_on/off*/
         // Error codes:
-        E_DETECTARRAY,  // Error: Unsupported: Can't detect changes on arrayed variable
         E_ENCAPSULATED, // Error: local/protected violation
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
         E_UNSUPPORTED,  // Error: Unsupported (generally)
         E_TASKNSVAR,    // Error: Task I/O not simple
+        E_NEEDTIMINGOPT,  // Error: --timing/--no-timing option not specified
+        E_NOTIMING,     // Timing control encountered with --no-timing
         //
         // Warning codes:
         EC_FIRST_WARN,  // Just a code so the program knows where to start warnings
@@ -76,7 +79,7 @@ public:
         CASEX,          // Casex
         CASTCONST,      // Cast is constant
         CDCRSTLOGIC,    // Logic in async reset path
-        CLKDATA,        // Clock used as data
+        CLKDATA,        // Clock used as data. Historical, never issued.
         CMPCONST,       // Comparison is constant due to limited range
         COLONPLUS,      // :+ instead of +:
         COMBDLY,        // Combinatorial delayed assignment
@@ -84,13 +87,15 @@ public:
         DEFPARAM,       // Style: Defparam
         DECLFILENAME,   // Declaration doesn't match filename
         DEPRECATED,     // Feature will be deprecated
+        RISEFALLDLY,    // Unsupported: rise/fall/turn-off delays
+        MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
         ENDLABEL,       // End lable name mismatch
         EOFNEWLINE,     // End-of-file missing newline
-        GENCLK,         // Generated Clock
+        GENCLK,         // Generated Clock. Historical, never issued.
         HIERBLOCK,      // Ignored hierarchical block setting
         IFDEPTH,        // If statements too deep
         IGNOREDRETURN,  // Ignoring return value (function as task)
-        IMPERFECTSCH,   // Imperfect schedule (disabled by default)
+        IMPERFECTSCH,   // Imperfect schedule (disabled by default). Historical, never issued.
         IMPLICIT,       // Implicit wire
         IMPORTSTAR,     // Import::* in $unit
         IMPURE,         // Impure function not being inlined
@@ -125,19 +130,23 @@ public:
         TICKCOUNT,      // Too large tick count
         TIMESCALEMOD,   // Need timescale for module
         UNDRIVEN,       // No drivers
-        UNOPT,          // Unoptimizable block
+        UNOPT,          // Unoptimizable block. Historical, never issued.
         UNOPTFLAT,      // Unoptimizable block after flattening
         UNOPTTHREADS,   // Thread partitioner unable to fill all requested threads
         UNPACKED,       // Unsupported unpacked
         UNSIGNED,       // Comparison is constant due to unsigned arithmetic
-        UNUSED,         // No receivers
+        UNUSEDGENVAR,   // No receivers for genvar
+        UNUSEDPARAM,    // No receivers for parameters
+        UNUSEDSIGNAL,   // No receivers for signals
         USERERROR,      // Elaboration time $error
         USERFATAL,      // Elaboration time $fatal
         USERINFO,       // Elaboration time $info
         USERWARN,       // Elaboration time $warning
         VARHIDDEN,      // Hiding variable
+        WAITCONST,      // Wait condition is constant
         WIDTH,          // Width mismatch
         WIDTHCONCAT,    // Unsized numbers/parameters in concatenations
+        ZERODLY,        // #0 delay
         _ENUM_MAX
         // ***Add new elements below also***
     };
@@ -151,23 +160,23 @@ public:
     explicit V3ErrorCode(const char* msgp);  // Matching code or ERROR
     explicit V3ErrorCode(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    constexpr operator en() const { return m_e; }
-    const char* ascii() const {
+    constexpr operator en() const VL_MT_SAFE { return m_e; }
+    const char* ascii() const VL_MT_SAFE {
         // clang-format off
         static const char* const names[] = {
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
-            " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
+            " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_UNUSED", " I_DEF_NETTYPE_WIRE", " I_TIMING",
             // Errors
-            "DETECTARRAY", "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR",
+            "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
-            "DEFPARAM", "DECLFILENAME", "DEPRECATED",
+            "DEFPARAM", "DECLFILENAME", "DEPRECATED", "RISEFALLDLY", "MINTYPMAXDLY",
             "ENDLABEL", "EOFNEWLINE", "GENCLK", "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
@@ -179,33 +188,34 @@ public:
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
-            "UNPACKED", "UNSIGNED", "UNUSED",
+            "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDPARAM", "UNUSEDSIGNAL",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
+            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT", "ZERODLY",
             " MAX"
         };
         // clang-format on
         return names[m_e];
     }
     // Warnings that default to off
-    bool defaultsOff() const {
+    bool defaultsOff() const VL_MT_SAFE {
         return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || styleError());
     }
     // Warnings that warn about nasty side effects
-    bool dangerous() const { return (m_e == COMBDLY); }
+    bool dangerous() const VL_MT_SAFE { return (m_e == COMBDLY); }
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
-    bool pretendError() const {
+    bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BLKANDNBLK || m_e == BLKLOOPINIT
                 || m_e == CONTASSREG || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL
-                || m_e == PROCASSWIRE);  // Says IEEE
+                || m_e == PROCASSWIRE  // Says IEEE
+                || m_e == ZERODLY);
     }
     // Warnings to mention manual
-    bool mentionManual() const {
+    bool mentionManual() const VL_MT_SAFE {
         return (m_e == EC_FATALSRC || m_e == SYMRSVDWORD || pretendError());
     }
     // Warnings that are lint only
-    bool lintError() const {
+    bool lintError() const VL_MT_SAFE {
         return (m_e == ALWCOMBORDER || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == ENDLABEL || m_e == IMPLICIT
@@ -213,13 +223,19 @@ public:
                 || m_e == UNSIGNED || m_e == WIDTH);
     }
     // Warnings that are style only
-    bool styleError() const {
+    bool styleError() const VL_MT_SAFE {
         return (m_e == ASSIGNDLY  // More than style, but for backward compatibility
                 || m_e == BLKSEQ || m_e == DEFPARAM || m_e == DECLFILENAME || m_e == EOFNEWLINE
                 || m_e == IMPORTSTAR || m_e == INCABSPATH || m_e == PINCONNECTEMPTY
-                || m_e == PINNOCONNECT || m_e == SYNCASYNCNET || m_e == UNDRIVEN || m_e == UNUSED
+                || m_e == PINNOCONNECT || m_e == SYNCASYNCNET || m_e == UNDRIVEN
+                || m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL
                 || m_e == VARHIDDEN);
     }
+    // Warnings that are unused only
+    bool unusedError() const VL_MT_SAFE {
+        return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
+    }
+    static bool unusedMsg(const char* msgp) { return 0 == VL_STRCASECMP(msgp, "UNUSED"); }
 };
 constexpr bool operator==(const V3ErrorCode& lhs, const V3ErrorCode& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -269,15 +285,15 @@ public:
     // CONSTRUCTORS
     // ACCESSORS
     static void debugDefault(int level) { s_debugDefault = level; }
-    static int debugDefault() { return s_debugDefault; }
+    static int debugDefault() VL_MT_SAFE { return s_debugDefault; }
     static void errorLimit(int level) { s_errorLimit = level; }
-    static int errorLimit() { return s_errorLimit; }
+    static int errorLimit() VL_MT_SAFE { return s_errorLimit; }
     static void warnFatal(bool flag) { s_warnFatal = flag; }
     static bool warnFatal() { return s_warnFatal; }
     static string msgPrefix();  // returns %Error/%Warn
-    static int errorCount() { return s_errCount; }
+    static int errorCount() VL_MT_SAFE { return s_errCount; }
     static int warnCount() { return s_warnCount; }
-    static bool errorContexted() { return s_errorContexted; }
+    static bool errorContexted() VL_MT_SAFE { return s_errorContexted; }
     static void errorContexted(bool flag) { s_errorContexted = flag; }
     // METHODS
     static void incErrors();
@@ -291,7 +307,7 @@ public:
     static void pretendError(V3ErrorCode code, bool flag) { s_pretendError[code] = flag; }
     static bool isError(V3ErrorCode code, bool supp);
     static string lineStr(const char* filename, int lineno);
-    static V3ErrorCode errorCode() { return s_errorCode; }
+    static V3ErrorCode errorCode() VL_MT_SAFE { return s_errorCode; }
     static void errorExitCb(ErrorExitCb cb) { s_errorExitCb = cb; }
 
     // When printing an error/warning, print prefix for multiline message
@@ -322,7 +338,7 @@ inline void v3errorEnd(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
 inline void v3errorEndFatal(std::ostringstream& sstr) {
     V3Error::v3errorEnd(sstr);
     assert(0);  // LCOV_EXCL_LINE
-    VL_UNREACHABLE
+    VL_UNREACHABLE;
 }
 
 // Theses allow errors using << operators: v3error("foo"<<"bar");
@@ -450,6 +466,7 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 #define VL_DEFINE_DEBUG_FUNCTIONS \
     VL_DEFINE_DEBUG(); /* Define 'int debug()' */ \
     VL_DEFINE_DUMP(); /* Define 'int dump()' */ \
+    VL_DEFINE_DUMP(Dfg); /* Define 'int dumpDfg()' */ \
     VL_DEFINE_DUMP(Graph); /* Define 'int dumpGraph()' */ \
     VL_DEFINE_DUMP(Tree); /* Define 'int dumpTree()' */ \
     static_assert(true, "")

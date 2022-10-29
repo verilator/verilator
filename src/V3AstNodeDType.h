@@ -50,7 +50,7 @@ protected:
         : AstNode{t, fl} {}
 
 public:
-    ASTGEN_MEMBERS_NodeDType;
+    ASTGEN_MEMBERS_AstNodeDType;
     // ACCESSORS
     void dump(std::ostream& str) const override;
     virtual void dumpSmall(std::ostream& str) const;
@@ -97,25 +97,26 @@ public:
         m_widthMin = widthMin;
     }
     // For backward compatibility inherit width and signing from the subDType/base type
-    void widthFromSub(AstNodeDType* nodep) {
+    void widthFromSub(const AstNodeDType* nodep) {
         m_width = nodep->m_width;
         m_widthMin = nodep->m_widthMin;
         m_numeric = nodep->m_numeric;
     }
     //
-    int width() const { return m_width; }
+    int width() const VL_MT_SAFE { return m_width; }
     void numeric(VSigning flag) { m_numeric = flag; }
-    bool isSigned() const { return m_numeric.isSigned(); }
-    bool isNosign() const { return m_numeric.isNosign(); }
+    bool isSigned() const VL_MT_SAFE { return m_numeric.isSigned(); }
+    bool isNosign() const VL_MT_SAFE { return m_numeric.isNosign(); }
     VSigning numeric() const { return m_numeric; }
-    int widthWords() const { return VL_WORDS_I(width()); }
-    int widthMin() const {  // If sized, the size, if unsized the min digits to represent it
+    int widthWords() const VL_MT_SAFE { return VL_WORDS_I(width()); }
+    int widthMin() const VL_MT_SAFE {  // If sized, the size,
+                                       // if unsized the min digits to represent it
         return m_widthMin ? m_widthMin : m_width;
     }
     int widthPow2() const;
     void widthMinFromWidth() { m_widthMin = m_width; }
-    bool widthSized() const { return !m_widthMin || m_widthMin == m_width; }
-    bool generic() const { return m_generic; }
+    bool widthSized() const VL_MT_SAFE { return !m_widthMin || m_widthMin == m_width; }
+    bool generic() const VL_MT_SAFE { return m_generic; }
     void generic(bool flag) { m_generic = flag; }
     std::pair<uint32_t, uint32_t> dimensions(bool includeBasic);
     uint32_t arrayUnpackedElements();  // 1, or total multiplication of all dimensions
@@ -123,12 +124,12 @@ public:
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I");
     }
-    string cType(const string& name, bool forFunc, bool isRef) const;
-    bool isLiteralType() const;  // Does this represent a C++ LiteralType? (can be constexpr)
+    string cType(const string& name, bool forFunc, bool isRef) const VL_MT_SAFE;
+    bool isLiteralType() const VL_MT_SAFE;  // Represents a C++ LiteralType? (can be constexpr)
 
 private:
     class CTypeRecursed;
-    CTypeRecursed cTypeRecurse(bool compound) const;
+    CTypeRecursed cTypeRecurse(bool compound) const VL_MT_SAFE;
 };
 class AstNodeArrayDType VL_NOT_FINAL : public AstNodeDType {
     // Array data type, ie "some_dtype var_name [2:0]"
@@ -144,7 +145,7 @@ protected:
         : AstNodeDType{t, fl} {}
 
 public:
-    ASTGEN_MEMBERS_NodeArrayDType;
+    ASTGEN_MEMBERS_AstNodeArrayDType;
     void dump(std::ostream& str) const override;
     void dumpSmall(std::ostream& str) const override;
     const char* broken() const override {
@@ -167,15 +168,17 @@ public:
                 && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+        return m_refDTypep ? m_refDTypep : childDTypep();
+    }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
-    AstBasicDType* basicp() const override {
+    AstBasicDType* basicp() const override VL_MT_SAFE {
         return subDTypep()->basicp();
     }  // (Slow) recurse down to find basic data type
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
@@ -212,7 +215,7 @@ protected:
     }
 
 public:
-    ASTGEN_MEMBERS_NodeUOrStructDType;
+    ASTGEN_MEMBERS_AstNodeUOrStructDType;
     int uniqueNum() const { return m_uniqueNum; }
     const char* broken() const override;
     void dump(std::ostream& str) const override;
@@ -225,7 +228,7 @@ public:
                     : VN_AS(findBitRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
                             BasicDType));
     }
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
@@ -237,7 +240,7 @@ public:
     }
     string name() const override { return m_name; }
     void name(const string& flag) override { m_name = flag; }
-    bool packed() const { return m_packed; }
+    bool packed() const VL_MT_SAFE { return m_packed; }
     // packed() but as don't support unpacked, presently all structs
     static bool packedUnsup() { return true; }
     void isFourstate(bool flag) { m_isFourstate = flag; }
@@ -270,7 +273,7 @@ public:
         this->rangep(rangep);
         this->valuep(valuep);
     }
-    ASTGEN_MEMBERS_EnumItem;
+    ASTGEN_MEMBERS_AstEnumItem;
     string name() const override { return m_name; }
     bool maybePointedTo() const override { return true; }
     bool hasDType() const override { return true; }
@@ -300,7 +303,7 @@ public:
         keyDTypep(keyDtp);
         dtypep(dtp);
     }
-    ASTGEN_MEMBERS_AssocArrayDType;
+    ASTGEN_MEMBERS_AstAssocArrayDType;
     const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -327,18 +330,22 @@ public:
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* getChild2DTypep() const override { return keyChildDTypep(); }
-    AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+        return m_refDTypep ? m_refDTypep : childDTypep();
+    }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     AstNodeDType* virtRefDType2p() const override { return m_keyDTypep; }
     void virtRefDType2p(AstNodeDType* nodep) override { keyDTypep(nodep); }
     //
-    AstNodeDType* keyDTypep() const { return m_keyDTypep ? m_keyDTypep : keyChildDTypep(); }
+    AstNodeDType* keyDTypep() const VL_MT_SAFE {
+        return m_keyDTypep ? m_keyDTypep : keyChildDTypep();
+    }
     void keyDTypep(AstNodeDType* nodep) { m_keyDTypep = nodep; }
     // METHODS
-    AstBasicDType* basicp() const override { return nullptr; }
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
@@ -385,7 +392,7 @@ private:
               AstRange* rangep);
 
 public:
-    ASTGEN_MEMBERS_BasicDType;
+    ASTGEN_MEMBERS_AstBasicDType;
     void dump(std::ostream& str) const override;
     // width/widthMin/numeric compared elsewhere
     bool same(const AstNode* samep) const override {
@@ -410,8 +417,8 @@ public:
         }
     }
     // METHODS
-    AstBasicDType* basicp() const override { return (AstBasicDType*)this; }
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return (AstBasicDType*)this; }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
@@ -419,14 +426,25 @@ public:
     // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     int widthTotalBytes() const override;
     bool isFourstate() const override { return keyword().isFourstate(); }
-    VBasicDTypeKwd keyword() const {  // Avoid using - use isSomething accessors instead
+    VBasicDTypeKwd keyword() const VL_MT_SAFE {  // Avoid using - use isSomething accessors instead
         return m.m_keyword;
     }
     bool isBitLogic() const { return keyword().isBitLogic(); }
-    bool isDouble() const { return keyword().isDouble(); }
-    bool isEventValue() const { return keyword().isEventValue(); }
-    bool isOpaque() const { return keyword().isOpaque(); }
-    bool isString() const { return keyword().isString(); }
+    bool isDouble() const VL_MT_SAFE { return keyword().isDouble(); }
+    bool isEvent() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::EVENT; }
+    bool isTriggerVec() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::TRIGGERVEC; }
+    bool isForkSync() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::FORK_SYNC; }
+    bool isDelayScheduler() const VL_MT_SAFE {
+        return keyword() == VBasicDTypeKwd::DELAY_SCHEDULER;
+    }
+    bool isTriggerScheduler() const VL_MT_SAFE {
+        return keyword() == VBasicDTypeKwd::TRIGGER_SCHEDULER;
+    }
+    bool isDynamicTriggerScheduler() const VL_MT_SAFE {
+        return keyword() == VBasicDTypeKwd::DYNAMIC_TRIGGER_SCHEDULER;
+    }
+    bool isOpaque() const VL_MT_SAFE { return keyword().isOpaque(); }
+    bool isString() const VL_MT_SAFE { return keyword().isString(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }
     bool isRanged() const { return rangep() || m.m_nrange.ranged(); }
     bool isDpiBitVec() const {  // DPI uses svBitVecVal
@@ -463,15 +481,15 @@ public:
         this->childDTypep(childDTypep);
         this->elementsp(elementsp);
     }
-    ASTGEN_MEMBERS_BracketArrayDType;
+    ASTGEN_MEMBERS_AstBracketArrayDType;
     bool similarDType(AstNodeDType* samep) const override { V3ERROR_NA_RETURN(false); }
     AstNodeDType* subDTypep() const override { return childDTypep(); }
     // METHODS
     // Will be removed in V3Width, which relies on this
     // being a child not a dtype pointed node
     bool maybePointedTo() const override { return false; }
-    AstBasicDType* basicp() const override { return nullptr; }
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { V3ERROR_NA_RETURN(0); }
@@ -491,7 +509,7 @@ public:
         this->dtypep(this);
         this->addParamsp(paramsp);
     }
-    ASTGEN_MEMBERS_ClassRefDType;
+    ASTGEN_MEMBERS_AstClassRefDType;
     // METHODS
     const char* broken() const override;
     void cloneRelink() override;
@@ -505,8 +523,8 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     string name() const override;
-    AstBasicDType* basicp() const override { return nullptr; }
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return 0; }
@@ -535,7 +553,7 @@ public:
         dtypep(nullptr);  // V3Width will resolve
         widthFromSub(subDTypep());
     }
-    ASTGEN_MEMBERS_ConstDType;
+    ASTGEN_MEMBERS_AstConstDType;
     const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -557,8 +575,8 @@ public:
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
-    AstBasicDType* basicp() const override { return subDTypep()->basicp(); }
-    AstNodeDType* skipRefp() const override { return subDTypep()->skipRefp(); }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return subDTypep()->skipRefp(); }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return subDTypep()->skipRefToEnump(); }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
@@ -589,7 +607,7 @@ public:
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
     }
-    ASTGEN_MEMBERS_DefImplicitDType;
+    ASTGEN_MEMBERS_AstDefImplicitDType;
     int uniqueNum() const { return m_uniqueNum; }
     bool same(const AstNode* samep) const override {
         const AstDefImplicitDType* const sp = static_cast<const AstDefImplicitDType*>(samep);
@@ -604,8 +622,8 @@ public:
     // METHODS
     // op1 = Range of variable
     AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }
-    AstBasicDType* basicp() const override { return subDTypep()->basicp(); }
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return dtypep()->widthAlignBytes(); }
@@ -631,7 +649,7 @@ public:
         refDTypep(dtp);
         dtypep(nullptr);  // V3Width will resolve
     }
-    ASTGEN_MEMBERS_DynArrayDType;
+    ASTGEN_MEMBERS_AstDynArrayDType;
     const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -653,13 +671,15 @@ public:
     string prettyDTypeName() const override;
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+        return m_refDTypep ? m_refDTypep : childDTypep();
+    }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
-    AstBasicDType* basicp() const override { return nullptr; }
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
@@ -673,7 +693,7 @@ public:
         : ASTGEN_SUPER_EmptyQueueDType(fl) {
         dtypep(this);
     }
-    ASTGEN_MEMBERS_EmptyQueueDType;
+    ASTGEN_MEMBERS_AstEmptyQueueDType;
     void dumpSmall(std::ostream& str) const override;
     bool hasDType() const override { return true; }
     bool maybePointedTo() const override { return true; }
@@ -682,9 +702,9 @@ public:
     AstNodeDType* virtRefDTypep() const override { return nullptr; }
     void virtRefDTypep(AstNodeDType* nodep) override {}
     bool similarDType(AstNodeDType* samep) const override { return this == samep; }
-    AstBasicDType* basicp() const override { return nullptr; }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
     // cppcheck-suppress csyleCast
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
@@ -712,7 +732,7 @@ public:
         dtypep(nullptr);  // V3Width will resolve
         widthFromSub(subDTypep());
     }
-    ASTGEN_MEMBERS_EnumDType;
+    ASTGEN_MEMBERS_AstEnumDType;
     const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -735,8 +755,8 @@ public:
     string name() const override { return m_name; }
     void name(const string& flag) override { m_name = flag; }
     // METHODS
-    AstBasicDType* basicp() const override { return subDTypep()->basicp(); }
-    AstNodeDType* skipRefp() const override { return subDTypep()->skipRefp(); }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return subDTypep()->skipRefp(); }
     AstNodeDType* skipRefToConstp() const override { return subDTypep()->skipRefToConstp(); }
     // cppcheck-suppress csyleCast
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
@@ -751,6 +771,7 @@ public:
 };
 class AstIfaceRefDType final : public AstNodeDType {
     // Reference to an interface, either for a port, or inside parent cell
+    // @astgen op1 := paramsp : List[AstPin]
 private:
     FileLine* m_modportFileline;  // Where modport token was
     string m_cellName;  // "" = no cell, such as when connects to 'input' iface
@@ -773,14 +794,22 @@ public:
         , m_cellName{cellName}
         , m_ifaceName{ifaceName}
         , m_modportName{modport} {}
-    ASTGEN_MEMBERS_IfaceRefDType;
+    AstIfaceRefDType(FileLine* fl, FileLine* modportFl, const string& cellName,
+                     const string& ifaceName, const string& modport, AstPin* paramsp)
+        : ASTGEN_SUPER_IfaceRefDType(fl)
+        , m_modportFileline{modportFl}
+        , m_cellName{cellName}
+        , m_ifaceName{ifaceName} {
+        addParamsp(paramsp);
+    }
+    ASTGEN_MEMBERS_AstIfaceRefDType;
     // METHODS
     const char* broken() const override;
     void dump(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     void cloneRelink() override;
-    AstBasicDType* basicp() const override { return nullptr; }
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     bool similarDType(AstNodeDType* samep) const override { return this == samep; }
@@ -828,7 +857,7 @@ public:
         dtypep(this);
         widthFromSub(subDTypep());
     }
-    ASTGEN_MEMBERS_MemberDType;
+    ASTGEN_MEMBERS_AstMemberDType;
     string name() const override { return m_name; }  // * = Var name
     bool hasDType() const override { return true; }
     bool maybePointedTo() const override { return true; }
@@ -848,10 +877,10 @@ public:
     //
     // (Slow) recurse down to find basic data type (Note don't need virtual -
     // AstVar isn't a NodeDType)
-    AstBasicDType* basicp() const override { return subDTypep()->basicp(); }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
     // op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
     AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }
-    AstNodeDType* skipRefp() const override { return subDTypep()->skipRefp(); }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return subDTypep()->skipRefp(); }
     AstNodeDType* skipRefToConstp() const override { return subDTypep()->skipRefToConstp(); }
     AstNodeDType* skipRefToEnump() const override { return subDTypep()->skipRefToEnump(); }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
@@ -885,11 +914,12 @@ public:
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
     }
-    ASTGEN_MEMBERS_ParamTypeDType;
+    ASTGEN_MEMBERS_AstParamTypeDType;
+    void dump(std::ostream& str = std::cout) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const override { return dtypep() ? dtypep() : childDTypep(); }
-    AstBasicDType* basicp() const override { return subDTypep()->basicp(); }
-    AstNodeDType* skipRefp() const override { return subDTypep()->skipRefp(); }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return subDTypep()->skipRefp(); }
     AstNodeDType* skipRefToConstp() const override { return subDTypep()->skipRefToConstp(); }
     AstNodeDType* skipRefToEnump() const override { return subDTypep()->skipRefToEnump(); }
     bool similarDType(AstNodeDType* samep) const override {
@@ -919,12 +949,12 @@ class AstParseTypeDType final : public AstNodeDType {
 public:
     explicit AstParseTypeDType(FileLine* fl)
         : ASTGEN_SUPER_ParseTypeDType(fl) {}
-    ASTGEN_MEMBERS_ParseTypeDType;
+    ASTGEN_MEMBERS_AstParseTypeDType;
     AstNodeDType* dtypep() const { return nullptr; }
     // METHODS
     bool similarDType(AstNodeDType* samep) const override { return this == samep; }
-    AstBasicDType* basicp() const override { return nullptr; }
-    AstNodeDType* skipRefp() const override { return nullptr; }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return nullptr; }
     // cppcheck-suppress csyleCast
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
@@ -956,7 +986,7 @@ public:
         refDTypep(dtp);
         dtypep(dtp);
     }
-    ASTGEN_MEMBERS_QueueDType;
+    ASTGEN_MEMBERS_AstQueueDType;
     const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -978,15 +1008,17 @@ public:
     void dumpSmall(std::ostream& str) const override;
     string prettyDTypeName() const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+        return m_refDTypep ? m_refDTypep : childDTypep();
+    }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     inline int boundConst() const;
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
-    AstBasicDType* basicp() const override { return nullptr; }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
     // cppcheck-suppress csyleCast
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
@@ -1022,7 +1054,7 @@ public:
         : ASTGEN_SUPER_RefDType(fl) {
         this->typeofp(typeofp);
     }
-    ASTGEN_MEMBERS_RefDType;
+    ASTGEN_MEMBERS_AstRefDType;
     // METHODS
     const char* broken() const override;
     void cloneRelink() override;
@@ -1039,11 +1071,11 @@ public:
     string prettyDTypeName() const override {
         return subDTypep() ? subDTypep()->name() : prettyName();
     }
-    AstBasicDType* basicp() const override {
+    AstBasicDType* basicp() const override VL_MT_SAFE {
         return subDTypep() ? subDTypep()->basicp() : nullptr;
     }
     AstNodeDType* subDTypep() const override;
-    AstNodeDType* skipRefp() const override {
+    AstNodeDType* skipRefp() const override VL_MT_SAFE {
         // Skip past both the Ref and the Typedef
         if (subDTypep()) {
             return subDTypep()->skipRefp();
@@ -1097,7 +1129,7 @@ public:
         refDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
     }
-    ASTGEN_MEMBERS_UnsizedArrayDType;
+    ASTGEN_MEMBERS_AstUnsizedArrayDType;
     const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -1115,8 +1147,8 @@ public:
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
-    AstBasicDType* basicp() const override { return subDTypep()->basicp(); }
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
@@ -1130,7 +1162,7 @@ public:
         : ASTGEN_SUPER_VoidDType(fl) {
         dtypep(this);
     }
-    ASTGEN_MEMBERS_VoidDType;
+    ASTGEN_MEMBERS_AstVoidDType;
     void dumpSmall(std::ostream& str) const override;
     bool hasDType() const override { return true; }
     bool maybePointedTo() const override { return true; }
@@ -1139,9 +1171,9 @@ public:
     AstNodeDType* virtRefDTypep() const override { return nullptr; }
     void virtRefDTypep(AstNodeDType* nodep) override {}
     bool similarDType(AstNodeDType* samep) const override { return this == samep; }
-    AstBasicDType* basicp() const override { return nullptr; }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
     // cppcheck-suppress csyleCast
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
@@ -1162,7 +1194,7 @@ public:
         refDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
     }
-    ASTGEN_MEMBERS_WildcardArrayDType;
+    ASTGEN_MEMBERS_AstWildcardArrayDType;
     const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
@@ -1175,13 +1207,15 @@ public:
     bool similarDType(AstNodeDType* samep) const override;
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+        return m_refDTypep ? m_refDTypep : childDTypep();
+    }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
-    AstBasicDType* basicp() const override { return subDTypep()->basicp(); }
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return sizeof(std::map<std::string, std::string>); }
@@ -1195,7 +1229,7 @@ class AstPackArrayDType final : public AstNodeArrayDType {
 public:
     inline AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep);
     inline AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep);
-    ASTGEN_MEMBERS_PackArrayDType;
+    ASTGEN_MEMBERS_AstPackArrayDType;
     string prettyDTypeName() const override;
     bool isCompound() const override { return false; }
 };
@@ -1222,7 +1256,7 @@ public:
         // width and signing from the subDType/base type
         widthFromSub(subDTypep());
     }
-    ASTGEN_MEMBERS_UnpackArrayDType;
+    ASTGEN_MEMBERS_AstUnpackArrayDType;
     string prettyDTypeName() const override;
     bool same(const AstNode* samep) const override {
         const AstUnpackArrayDType* const sp = static_cast<const AstUnpackArrayDType*>(samep);
@@ -1231,7 +1265,7 @@ public:
     // Outer dimension comes first. The first element is this node.
     std::vector<AstUnpackArrayDType*> unpackDimensions();
     void isCompound(bool flag) { m_isCompound = flag; }
-    bool isCompound() const override { return m_isCompound; }
+    bool isCompound() const override VL_MT_SAFE { return m_isCompound; }
 };
 
 // === AstNodeUOrStructDType ===
@@ -1240,7 +1274,7 @@ public:
     // VSigning below is mispurposed to indicate if packed or not
     AstStructDType(FileLine* fl, VSigning numericUnpack)
         : ASTGEN_SUPER_StructDType(fl, numericUnpack) {}
-    ASTGEN_MEMBERS_StructDType;
+    ASTGEN_MEMBERS_AstStructDType;
     string verilogKwd() const override { return "struct"; }
 };
 class AstUnionDType final : public AstNodeUOrStructDType {
@@ -1249,7 +1283,7 @@ public:
     // VSigning below is mispurposed to indicate if packed or not
     AstUnionDType(FileLine* fl, VSigning numericUnpack)
         : ASTGEN_SUPER_UnionDType(fl, numericUnpack) {}
-    ASTGEN_MEMBERS_UnionDType;
+    ASTGEN_MEMBERS_AstUnionDType;
     string verilogKwd() const override { return "union"; }
 };
 

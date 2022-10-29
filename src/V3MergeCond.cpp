@@ -744,7 +744,7 @@ private:
         if (!m_mgFirstp) {
             UASSERT_OBJ(condp, nodep, "Cannot start new list without condition");
             // Mark variable references in the condition
-            condp->foreach<AstVarRef>([](const AstVarRef* nodep) { nodep->varp()->user1(1); });
+            condp->foreach([](const AstVarRef* nodep) { nodep->varp()->user1(1); });
             // Now check again if mergeable. We need this to pick up assignments to conditions,
             // e.g.: 'c = c ? a : b' at the beginning of the list, which is in fact not mergeable
             // because it updates the condition. We simply bail on these.

@@ -141,7 +141,7 @@ public:
     void checkRemoveAssign(const LifeMap::iterator& it) {
         const AstVar* const varp = it->first->varp();
         LifeVarEntry* const entp = &(it->second);
-        if (!varp->isSigPublic()) {
+        if (!varp->isSigPublic() && !varp->isUsedVirtIface()) {
             // Rather than track what sigs AstUCFunc/AstUCStmt may change,
             // we just don't optimize any public sigs
             // Check the var entry, and remove if appropriate
@@ -186,7 +186,7 @@ public:
         const auto it = m_map.find(nodep);
         if (it != m_map.end()) {
             if (AstConst* const constp = it->second.constNodep()) {
-                if (!varrefp->varp()->isSigPublic()) {
+                if (!varrefp->varp()->isSigPublic() && !varrefp->varp()->isUsedVirtIface()) {
                     // Aha, variable is constant; substitute in.
                     // We'll later constant propagate
                     UINFO(4, "     replaceconst: " << varrefp << endl);
@@ -309,6 +309,12 @@ private:
         }
     }
     void visit(AstNodeAssign* nodep) override {
+        if (nodep->isTimingControl()) {
+            // V3Life doesn't understand time sense - don't optimize
+            setNoopt();
+            iterateChildren(nodep);
+            return;
+        }
         // Collect any used variables first, as lhs may also be on rhs
         // Similar code in V3Dead
         m_sideEffect = false;
@@ -329,7 +335,12 @@ private:
         }
     }
     void visit(AstAssignDly* nodep) override {
-        // Don't treat as normal assign; V3Life doesn't understand time sense
+        // V3Life doesn't understand time sense
+        if (nodep->isTimingControl()) {
+            // Don't optimize
+            setNoopt();
+        }
+        // Don't treat as normal assign
         iterateChildren(nodep);
     }
 
@@ -436,7 +447,13 @@ private:
     }
 
     void visit(AstVar*) override {}  // Don't want varrefs under it
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override {
+        if (nodep->isTimingControl()) {
+            // V3Life doesn't understand time sense - don't optimize
+            setNoopt();
+        }
+        iterateChildren(nodep);
+    }
 
 public:
     // CONSTRUCTORS

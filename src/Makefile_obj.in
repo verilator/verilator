@@ -166,7 +166,6 @@ RAW_OBJS = \
 	V3Case.o \
 	V3Cast.o \
 	V3Cdc.o \
-	V3Changed.o \
 	V3Class.o \
 	V3Clean.o \
 	V3Clock.o \
@@ -181,7 +180,15 @@ RAW_OBJS = \
 	V3Depth.o \
 	V3DepthBlock.o \
 	V3Descope.o \
+	V3Dfg.o \
+	V3DfgAstToDfg.o \
+	V3DfgDecomposition.o \
+	V3DfgDfgToAst.o \
+	V3DfgOptimizer.o \
+	V3DfgPasses.o \
+	V3DfgPeephole.o \
 	V3DupFinder.o \
+	V3Timing.o \
 	V3EmitCBase.o \
 	V3EmitCConstPool.o \
 	V3EmitCFunc.o \
@@ -201,7 +208,6 @@ RAW_OBJS = \
 	V3FileLine.o \
 	V3Force.o \
 	V3Gate.o \
-	V3GenClk.o \
 	V3Global.o \
 	V3Graph.o \
 	V3GraphAlg.o \
@@ -239,6 +245,11 @@ RAW_OBJS = \
 	V3ProtectLib.o \
 	V3Randomize.o \
 	V3Reloop.o \
+	V3Sched.o \
+	V3SchedAcyclic.o \
+	V3SchedPartition.o \
+	V3SchedReplicate.o \
+	V3SchedTiming.o \
 	V3Scope.o \
 	V3Scoreboard.o \
 	V3Slice.o \
@@ -279,6 +290,7 @@ NON_STANDALONE_HEADERS = \
 	V3AstNodeDType.h  \
 	V3AstNodeMath.h  \
 	V3AstNodeOther.h  \
+	V3DfgVertices.h  \
 	V3WidthCommit.h  \
 
 AST_DEFS := \
@@ -286,10 +298,19 @@ AST_DEFS := \
   V3AstNodeMath.h \
   V3AstNodeOther.h \
 
+DFG_DEFS := \
+  V3DfgVertices.h
+
+#### astgen common flags
+
+ASTGENFLAGS = -I $(srcdir)
+ASTGENFLAGS += $(foreach f,$(AST_DEFS),--astdef $f)
+ASTGENFLAGS += $(foreach f,$(DFG_DEFS),--dfgdef $f)
+
 #### Linking
 
 ifeq ($(VL_VLCOV),)
-PREDEP_H = V3Ast__gen_classes.h
+PREDEP_H = V3Ast__gen_forward_class_decls.h
 OBJS += $(RAW_OBJS) $(NC_OBJS)
 else
 PREDEP_H =
@@ -308,8 +329,8 @@ V3Number_test: V3Number_test.o
 
 #### Modules
 
-%__gen.cpp:	%.cpp $(ASTGEN) $(AST_DEFS)
-	$(PYTHON3) $(ASTGEN) -I $(srcdir) $(foreach f,$(AST_DEFS),--astdef $f) $*.cpp
+%__gen.cpp:	%.cpp $(ASTGEN) $(AST_DEFS) $(DFG_DEFS)
+	$(PYTHON3) $(ASTGEN) $(ASTGENFLAGS) $*.cpp
 
 %.o:	%.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
@@ -331,7 +352,7 @@ V3PreProc.o:	V3PreProc.cpp V3PreLex.yy.cpp
 #### Generated files
 
 # Target rule called before parallel build to make generated files
-serial:: V3Ast__gen_classes.h V3ParseBison.c
+serial:: V3Ast__gen_forward_class_decls.h V3ParseBison.c
 
 serial_vlcov:: vlcovgen.d
 
@@ -339,8 +360,8 @@ vlcovgen.d: $(VLCOVGEN) $(srcdir)/../include/verilated_cov_key.h
 	$(PYTHON3) $(VLCOVGEN) --srcdir $(srcdir)
 	touch $@
 
-V3Ast__gen_classes.h : $(ASTGEN) $(AST_DEFS)
-	$(PYTHON3) $(ASTGEN) -I $(srcdir) $(foreach f,$(AST_DEFS),--astdef $f) --classes
+V3Ast__gen_forward_class_decls.h: $(ASTGEN) $(AST_DEFS) $(DFG_DEFS)
+	$(PYTHON3) $(ASTGEN) $(ASTGENFLAGS) --classes
 
 V3ParseBison.h: V3ParseBison.c
 

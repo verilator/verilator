@@ -60,6 +60,7 @@ private:
     };
 
     // STATE
+    AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     int m_modIncrementsNum = 0;  // Var name counter
     InsertMode m_insMode = IM_BEFORE;  // How to insert
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
@@ -92,6 +93,11 @@ private:
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modIncrementsNum);
         m_modIncrementsNum = 0;
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
         iterateChildren(nodep);
     }
     void visit(AstWhile* nodep) override {
@@ -149,6 +155,25 @@ private:
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin.cpp");
     }
+    void visit(AstDelay* nodep) override {
+        m_insStmtp = nodep;
+        iterateAndNextNull(nodep->lhsp());
+        m_insStmtp = nullptr;
+        iterateAndNextNull(nodep->stmtsp());
+        m_insStmtp = nullptr;
+    }
+    void visit(AstEventControl* nodep) override {
+        m_insStmtp = nullptr;
+        iterateAndNextNull(nodep->stmtsp());
+        m_insStmtp = nullptr;
+    }
+    void visit(AstWait* nodep) override {
+        m_insStmtp = nodep;
+        iterateAndNextNull(nodep->condp());
+        m_insStmtp = nullptr;
+        iterateAndNextNull(nodep->stmtsp());
+        m_insStmtp = nullptr;
+    }
     void visit(AstNodeStmt* nodep) override {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
@@ -170,6 +195,7 @@ private:
     void visit(AstLogEq* nodep) override { unsupported_visit(nodep); }
     void visit(AstLogIf* nodep) override { unsupported_visit(nodep); }
     void visit(AstNodeCond* nodep) override { unsupported_visit(nodep); }
+    void visit(AstPropClocked* nodep) override { unsupported_visit(nodep); }
     void prepost_visit(AstNodeTriop* nodep) {
         // Check if we are underneath a statement
         if (!m_insStmtp) {
@@ -221,6 +247,7 @@ private:
         const string name = string("__Vincrement") + cvtToStr(++m_modIncrementsNum);
         AstVar* const varp = new AstVar(fl, VVarType::BLOCKTEMP, name, VFlagChildDType(),
                                         varrefp->varp()->subDTypep()->cloneTree(true));
+        if (m_ftaskp) varp->funcLocal(true);
 
         // Declare the variable
         insertBeforeStmt(nodep, varp);
@@ -254,7 +281,7 @@ private:
         }
 
         // Replace the node with the temporary
-        nodep->replaceWith(new AstVarRef(varrefp->fileline(), varp, VAccess::WRITE));
+        nodep->replaceWith(new AstVarRef{varrefp->fileline(), varp, VAccess::READ});
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }

@@ -12,7 +12,6 @@ module t (/*AUTOARG*/
    input clk;
    integer cyc; initial cyc=1;
 
-   // verilator lint_on GENCLK
    reg [31:0] long;
    reg [63:0] quad;
    wire [31:0] longout;

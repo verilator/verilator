@@ -183,6 +183,11 @@ bool VString::startsWith(const string& str, const string& prefix) {
     return str.rfind(prefix, 0) == 0;  // Faster than .find(_) == 0
 }
 
+bool VString::endsWith(const string& str, const string& suffix) {
+    if (str.length() < suffix.length()) return false;
+    return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
+}
+
 //######################################################################
 // VHashSha256
 

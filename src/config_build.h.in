@@ -82,6 +82,7 @@ using std::endl;
 // - If defined, the default search path has it, so support is always enabled.
 // - If undef, not system-wide, user can set SYSTEMC_INCLUDE.
 #undef HAVE_SYSTEMC
+#undef HAVE_COROUTINES
 
 //**********************************************************************
 //**** OS and compiler specifics

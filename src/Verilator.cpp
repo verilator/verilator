@@ -27,7 +27,6 @@
 #include "V3Case.h"
 #include "V3Cast.h"
 #include "V3Cdc.h"
-#include "V3Changed.h"
 #include "V3Class.h"
 #include "V3Clean.h"
 #include "V3Clock.h"
@@ -41,6 +40,7 @@
 #include "V3Depth.h"
 #include "V3DepthBlock.h"
 #include "V3Descope.h"
+#include "V3DfgOptimizer.h"
 #include "V3EmitC.h"
 #include "V3EmitCMain.h"
 #include "V3EmitCMake.h"
@@ -51,7 +51,6 @@
 #include "V3File.h"
 #include "V3Force.h"
 #include "V3Gate.h"
-#include "V3GenClk.h"
 #include "V3Global.h"
 #include "V3Graph.h"
 #include "V3HierBlock.h"
@@ -69,7 +68,6 @@
 #include "V3Localize.h"
 #include "V3MergeCond.h"
 #include "V3Name.h"
-#include "V3Order.h"
 #include "V3Os.h"
 #include "V3Param.h"
 #include "V3ParseSym.h"
@@ -79,6 +77,7 @@
 #include "V3ProtectLib.h"
 #include "V3Randomize.h"
 #include "V3Reloop.h"
+#include "V3Sched.h"
 #include "V3Scope.h"
 #include "V3Scoreboard.h"
 #include "V3Slice.h"
@@ -91,6 +90,7 @@
 #include "V3TSP.h"
 #include "V3Table.h"
 #include "V3Task.h"
+#include "V3Timing.h"
 #include "V3Trace.h"
 #include "V3TraceDecl.h"
 #include "V3Tristate.h"
@@ -189,7 +189,7 @@ static void process() {
 
     // Push constants, but only true constants preserving liveness
     // so V3Undriven sees variables to be eliminated, ie "if (0 && foo) ..."
-    V3Const::constifyAllLive(v3Global.rootp());
+    if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAllLive(v3Global.rootp());
 
     // Signal based lint checks, no change to structures
     // Must be before first constification pass drops dead code
@@ -209,7 +209,7 @@ static void process() {
     }
 
     // Propagate constants into expressions
-    V3Const::constifyAllLint(v3Global.rootp());
+    if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAllLint(v3Global.rootp());
 
     if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Split packed variables into multiple pieces to resolve UNOPTFLAT.
@@ -236,6 +236,16 @@ static void process() {
         v3Global.constRemoveXs(true);
     }
 
+    if (v3Global.opt.fDfgPreInline() || v3Global.opt.fDfgPostInline()) {
+        // If doing DFG optimization, extract some additional candidates
+        V3DfgOptimizer::extract(v3Global.rootp());
+    }
+
+    if (v3Global.opt.fDfgPreInline()) {
+        // Pre inline DFG optimization
+        V3DfgOptimizer::optimize(v3Global.rootp(), " pre inline");
+    }
+
     if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Module inlining
         // Cannot remove dead variables after this, as alias information for final
@@ -244,6 +254,11 @@ static void process() {
             V3Inline::inlineAll(v3Global.rootp());
             V3LinkDot::linkDotArrayed(v3Global.rootp());  // Cleanup as made new modules
         }
+    }
+
+    if (v3Global.opt.fDfgPostInline()) {
+        // Post inline DFG optimization
+        V3DfgOptimizer::optimize(v3Global.rootp(), "post inline");
     }
 
     // --PRE-FLAT OPTIMIZATIONS------------------
@@ -366,6 +381,14 @@ static void process() {
         // Reorder assignments in pipelined blocks
         if (v3Global.opt.fReorder()) V3Split::splitReorderAll(v3Global.rootp());
 
+        if (v3Global.opt.timing().isSetTrue()) {
+            // Convert AST for timing if requested
+            // Needs to be after V3Gate, as that step modifies sentrees
+            // Needs to be before V3Delayed, as delayed assignments are handled differently in
+            // suspendable processes
+            V3Timing::timingAll(v3Global.rootp());
+        }
+
         // Create delayed assignments
         // This creates lots of duplicate ACTIVES so ActiveTop needs to be after this step
         V3Delayed::delayedAll(v3Global.rootp());
@@ -377,11 +400,8 @@ static void process() {
 
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "PreOrder");
 
-        // Order the code; form SBLOCKs and BLOCKCALLs
-        V3Order::orderAll(v3Global.rootp());
-
-        // Change generated clocks to look at delayed signals
-        V3GenClk::genClkAll(v3Global.rootp());
+        // Schedule the logic
+        V3Sched::schedule(v3Global.rootp());
 
         // Convert sense lists into IF statements.
         V3Clock::clockAll(v3Global.rootp());
@@ -393,14 +413,12 @@ static void process() {
             V3Const::constifyAll(v3Global.rootp());
             V3Life::lifeAll(v3Global.rootp());
         }
+
         if (v3Global.opt.fLifePost()) V3LifePost::lifepostAll(v3Global.rootp());
 
         // Remove unused vars
         V3Const::constifyAll(v3Global.rootp());
         V3Dead::deadifyAllScoped(v3Global.rootp());
-
-        // Detect change loop
-        V3Changed::changedAll(v3Global.rootp());
 
         // Create tracing logic, since we ripped out some signals the user might want to trace
         // Note past this point, we presume traced variables won't move between CFuncs
@@ -541,6 +559,9 @@ static void process() {
 
     // Output DPI protected library files
     if (!v3Global.opt.libCreate().empty()) {
+        if (v3Global.rootp()->delaySchedulerp()) {
+            v3warn(E_UNSUPPORTED, "Unsupported: --lib-create with --timing and delays");
+        }
         V3ProtectLib::protect();
         V3EmitV::emitvFiles();
         V3EmitC::emitcFiles();

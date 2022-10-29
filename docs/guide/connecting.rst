@@ -94,7 +94,10 @@ commented example.
 Top level IO signals are read and written as members of the model.  You
 call the model's :code:`eval()` method to evaluate the model.  When the
 simulation is complete call the model's :code:`final()` method to execute
-any SystemVerilog final blocks, and complete any assertions. See
+any SystemVerilog final blocks, and complete any assertions. If using
+:vlopt:`--timing`, there are two additional functions for checking if
+there are any events pending in the simulation due to delays, and for
+retrieving the simulation time of the next delayed event. See
 :ref:`Evaluation Loop`.
 
 
@@ -440,10 +443,25 @@ there is only a single design, you would call :code:`eval_step()` then
 :code:`eval_end_step()`; in fact :code:`eval()` described above is just a
 wrapper which calls these two functions.
 
+3. If using delays and :vlopt:`--timing`, there are two additional methods
+the user should call:
+
+   * :code:`designp->eventsPending()`, which returns :code:`true` if there are
+     any delayed events pending,
+   * :code:`designp->nextTimeSlot()`, which returns the simulation time of the
+     next delayed event. This method can only be called if
+     :code:`designp->nextTimeSlot()` returned :code:`true`.
+
+Call :code:`eventsPending()` to check if you should continue with the
+simulation, and then :code:`nextTimeSlot()` to move simulation time forward.
+:vlopt:`--main` can be used with :vlopt:`--timing` to generate a basic example
+of a timing-enabled eval loop.
+
 When :code:`eval()` (or :code:`eval_step()`) is called Verilator looks for
 changes in clock signals and evaluates related sequential always blocks,
-such as computing always_ff @ (posedge...) outputs.  Then Verilator
-evaluates combinatorial logic.
+such as computing always_ff @ (posedge...) outputs. With :vlopt:`--timing`, it
+resumes any delayed processes awaiting the current simulation time. Then
+Verilator evaluates combinational logic.
 
 Note combinatorial logic is not computed before sequential always blocks
 are computed (for speed reasons). Therefore it is best to set any non-clock

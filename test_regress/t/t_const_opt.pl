@@ -11,7 +11,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    verilator_flags2 => ["-Wno-UNOPTTHREADS", "--stats", "$Self->{t_dir}/$Self->{name}.cpp"],
+    verilator_flags2 => ["-Wno-UNOPTTHREADS", "-fno-dfg",
+                         "--stats", "$Self->{t_dir}/$Self->{name}.cpp"],
     );
 
 execute(

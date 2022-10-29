@@ -5,6 +5,7 @@
 Errors and Warnings
 *******************
 
+.. _Disabling Warnings:
 
 Disabling Warnings
 ==================
@@ -110,6 +111,8 @@ List Of Warnings
    Ignoring this warning may make Verilator simulations differ from other
    simulators, however at one point this was a common style so disabled by
    default as a code style warning.
+
+   This warning is issued only if Verilator is run with :vlopt:`--no-timing`.
 
 
 .. option:: ASSIGNIN
@@ -315,16 +318,16 @@ List Of Warnings
 
 .. option:: CLKDATA
 
-   .. TODO better example
+   Historical, never issued since version 5.000.
 
-   Warns that clock signal is mixed used with/as data signal. The checking
-   for this warning is enabled only if user has explicitly marked some
-   signal as clocker using command line option or in-source meta comment
-   (see :vlopt:`--clk`).
+   Warned that clock signal was mixed used with/as data signal. The
+   checking for this warning was enabled only if user has explicitly marked
+   some signal as clocker using command line option or in-source meta
+   comment (see :vlopt:`--clk`).
 
-   The warning can be disabled without affecting the simulation result. But
-   it is recommended to check the warning as this may degrade the
-   performance of the Verilated model.
+   The warning could be disabled without affecting the simulation
+   result. But it was recommended to check the warning as it may have
+   degraded the performance of the Verilated model.
 
 
 .. option:: CMPCONST
@@ -462,15 +465,11 @@ List Of Warnings
 
 .. option:: DETECTARRAY
 
-   .. TODO better example
+   Historical, never issued since version 3.862.
 
-   Error when Verilator tries to deal with a combinatorial loop that could
-   not be flattened, and which involves a datatype which Verilator cannot
-   handle, such as an unpacked struct or a large unpacked array. This
-   typically occurs when :vlopt:`-Wno-UNOPTFLAT <UNOPTFLAT>` has been used
-   to override an UNOPTFLAT warning (see below).
-
-   The solution is to break the loop, as described for UNOPTFLAT.
+   Was an error when Verilator tried to deal with a combinatorial loop that
+   could not be flattened, and which involves a datatype which Verilator
+   could not handle, such as an unpacked struct or a large unpacked array.
 
 
 .. option:: DIDNOTCONVERGE
@@ -492,7 +491,7 @@ List Of Warnings
    passing. Thus to prevent an infinite loop, the Verilated executable
    gives the DIDNOTCONVERGE error.
 
-   To debug this, first review any UNOPT or UNOPTFLAT warnings that were
+   To debug this, first review any UNOPTFLAT warnings that were
    ignored.  Though typically it is safe to ignore UNOPTFLAT (at a
    performance cost), at the time of issuing a UNOPTFLAT Verilator did not
    know if the logic would eventually converge and assumed it would.
@@ -516,9 +515,10 @@ List Of Warnings
    constructs (e.g. always_ff and always_latch).
 
    Another way DIDNOTCONVERGE may occur is if # delays are used to generate
-   clocks.  Verilator ignores the delays and gives an :option:`ASSIGNDLY`
-   or :option:`STMTDLY` warning.  If these were suppressed, due to the
-   absence of the delay, the code may now oscillate.
+   clocks if Verilator is run with :vlopt:`--no-timing`. In this mode,
+   Verilator ignores the delays and gives an :option:`ASSIGNDLY` or
+   :option:`STMTDLY` warning.  If these were suppressed, due to the absence of
+   the delay, the code may now oscillate.
 
    Finally, rare, more difficult cases can be debugged like a C++ program;
    either enter :command:`gdb` and use its tracing facilities, or edit the
@@ -589,9 +589,10 @@ List Of Warnings
 
 .. option:: GENCLK
 
-   Deprecated and no longer used as a warning.  Used to indicate that the
-   specified signal was is generated inside the model, and also being used
-   as a clock.
+   Historical, never issued since version 5.000.
+
+   Indicated that the specified signal was generated inside the model, and
+   was also being used as a clock.
 
 
 .. option:: HIERBLOCK
@@ -653,12 +654,12 @@ List Of Warnings
 
 .. option:: IMPERFECTSCH
 
-   .. TODO better example
+   Historical, never issued since version 5.000.
 
-   Warns that the scheduling of the model is not absolutely perfect, and
+   Warned that the scheduling of the model is not absolutely perfect, and
    some manual code edits may result in faster performance.  This warning
-   defaults to off, is not part of -Wall, and must be turned on explicitly
-   before the top module statement is processed.
+   defaulted to off, was not part of -Wall, and had to be turned on
+   explicitly before the top module statement is processed.
 
 
 .. option:: IMPLICIT
@@ -730,9 +731,9 @@ List Of Warnings
    Warns that a while or for statement has a condition that is always true.
    and thus results in an infinite loop if the statement ever executes.
 
-   This might be unintended behavior if the loop body contains statements
-   that in other simulators would make time pass, which Verilator is
-   ignoring due to e.g. ``STMTDLY`` warnings being disabled.
+   This might be unintended behavior if Verilator is run with
+   :vlopt:`--no-timing` and the loop body contains statements that would make
+   time pass otherwise.
 
    Ignoring this warning will only suppress the lint check, it will
    simulate correctly (i.e. hang due to the infinite loop).
@@ -791,6 +792,16 @@ List Of Warnings
 
    Ignoring this warning will only suppress the lint check, it will
    simulate correctly.
+
+
+.. option:: MINTYPMAX
+
+   .. code-block:: sv
+
+         #(3:5:8) clk = ~clk;
+
+   Warns that minimum, typical, and maximum delay expressions are currently
+   unsupported. Only the typical delay value is used by Verilator.
 
 
 .. option:: MODDUP
@@ -863,6 +874,13 @@ List Of Warnings
    input.
 
 
+.. option:: NEEDTIMINGOPT
+
+    Error when a timing-related construct, such as an event control or delay,
+    has been encountered, without specifying how Verilator should handle it
+    (neither :vlopt:`--timing` nor :vlopt:`--no-timing` option was provided).
+
+
 .. option:: NOLATCH
 
    .. TODO better example
@@ -873,6 +891,13 @@ List Of Warnings
 
    Ignoring this warning will only suppress the lint check, it will
    simulate correctly.
+
+
+.. option:: NOTIMING
+
+   Error when a timing-related construct that requires :vlopt:`--timing` has
+   been encountered. Issued only if Verilator is run with the
+   :vlopt:`--no-timing` option.
 
 
 .. option:: NULLPORT
@@ -1112,6 +1137,16 @@ List Of Warnings
    "Duplicate macro arguments with name".
 
 
+.. option:: RISEFALLDLY
+
+   .. code-block:: sv
+
+         and #(1,2,3) AND (out, a, b);
+
+   Warns that rising, falling, and turn-off delays are currently unsupported.
+   The first (rising) delay is used for all cases.
+
+
 .. option:: SELRANGE
 
    Warns that a selection index will go out of bounds.
@@ -1211,11 +1246,11 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_STMTDLY_msg.rst
 
-   This is a warning because Verilator does not support delayed statements.
-   It will ignore all such delays.  In many cases ignoring a delay might be
-   harmless, but if the delayed statement is, as in this example, used to
-   cause some important action at a later time, it might be an important
-   difference.
+   This warning is issued only if Verilator is run with :vlopt:`--no-timing`.
+   All delays on statements are ignored in this mode.  In many cases ignoring a
+   delay might be harmless, but if the delayed statement is, as in this
+   example, used to cause some important action at a later time, it might be an
+   important difference.
 
    Some possible workarounds:
 
@@ -1224,6 +1259,8 @@ List Of Warnings
 
    * Convert the statement into a FSM, or other statement that tests
      against $time.
+
+   * Run Verilator with :vlopt:`--timing`.
 
 
 .. option:: SYMRSVDWORD
@@ -1355,23 +1392,12 @@ List Of Warnings
 
 .. option:: UNOPT
 
-   .. TODO better example
+   Historical, never issued since version 5.000.
 
-   Warns that due to some construct, optimization of the specified signal
-   or block is disabled.  The construct should be cleaned up to improve
-   simulation performance.
+   Warned that due to some construct, optimization of the specified signal
+   or block was disabled.
 
-   A less obvious case of this is when a module instantiates two
-   submodules.  Inside submodule A, signal I is input and signal O is
-   output.  Likewise in submodule B, signal O is an input and I is an
-   output.  A loop exists and a UNOPT warning will result if AI & AO both
-   come from and go to combinatorial blocks in both submodules, even if
-   they are unrelated always blocks.  This affects performance because
-   Verilator would have to evaluate each submodule multiple times to
-   stabilize the signals crossing between the modules.
-
-   Ignoring this warning will only slow simulations, it will simulate
-   correctly.
+   Ignoring this warning only slowed simulations, it simulated correctly.
 
 
 .. option:: UNOPTFLAT
@@ -1384,10 +1410,6 @@ List Of Warnings
    block.  The construct should be cleaned up to improve simulation
    performance; two times better performance may be possible by fixing
    these warnings.
-
-   Unlike the ``UNOPT`` warning, this occurs after flattening the netlist,
-   and indicates a more basic problem, as the less obvious case described
-   under ``UNOPT`` does not apply.
 
    Often UNOPTFLAT is caused by logic that isn't truly circular as viewed by
    synthesis which analyzes interconnection per-bit, but is circular to
@@ -1441,14 +1463,14 @@ List Of Warnings
    the conflict. If you run with `--report-unoptflat` Verilator will
    suggest possible candidates for :option:`/*verilator&32;split_var*/`.
 
-   The UNOPTFLAT warning may also be due to clock enables, identified from
-   the reported path going through a clock gating instance.  To fix these,
-   use the clock_enable meta comment described above.
-
    The UNOPTFLAT warning may also occur where outputs from a block of logic
    are independent, but occur in the same always block.  To fix this, use
    the :option:`/*verilator&32;isolate_assignments*/` metacomment described
    above.
+
+   Prior to version 5.000, the UNOPTFLAT warning may also have been due to
+   clock enables, identified from the reported path going through a clock
+   gating instance.  To fix these, the clock_enable meta comment was used.
 
    To assist in resolving UNOPTFLAT, the option :vlopt:`--report-unoptflat`
    can be used, which will provide suggestions for variables that can be
@@ -1520,9 +1542,31 @@ List Of Warnings
 
 .. option:: UNUSED
 
+   Disabling/enabling UNUSED is equivalent to disabling/enabling the
+   `UNUSEDGENVAR`, `UNUSEDPARAM` and `UNUSEDSIGNAL` warnings.
+
+   Never issued since version 5.000.  Historically warned that a variable,
+   parameter, or signal was unused.
+
+.. option:: UNUSEDGENVAR
+
    .. TODO better example
 
-   Warns that the specified signal or parameter is never used/consumed.
+   Warns that the specified genvar is never used/consumed.
+
+
+.. option:: UNUSEDPARAM
+
+   .. TODO better example
+
+   Warns that the specified parameter is never used/consumed.
+
+
+.. option:: UNUSEDSIGNAL
+
+   .. TODO better example
+
+   Warns that the specified signal is never used/consumed.
    Verilator is fairly liberal in the usage calculations; making a signal
    public, a signal matching the :vlopt:`--unused-regexp` option (default
    "\*unused\*" or accessing only a single array element marks the entire
@@ -1635,6 +1679,16 @@ List Of Warnings
    To resolve, rename the variable to a unique name.
 
 
+.. option:: WAITCONST
+
+   .. code-block:: sv
+
+         wait(0);  // Blocks forever
+
+   Warns that a `wait` statement awaits a constant condition, which means it
+   either blocks forever or never blocks.
+
+
 .. option:: WIDTH
 
    Warns that based on width rules of Verilog:
@@ -1702,3 +1756,11 @@ List Of Warnings
    The correct fix is to either size the 1 (:code:`32'h1`), or add the
    width to the parameter definition (:code:`parameter [31:0]`), or add the
    width to the parameter usage (:code:`{PAR[31:0], PAR[31:0]}`).
+
+
+.. option:: ZERODLY
+
+   Warns that `#0` delays do not schedule the process to be resumed in the
+   Inactive region. Such processes do get resumed in the same time slot
+   somewhere in the Active region. Issued only if Verilator is run with the
+   :vlopt:`--timing` option.

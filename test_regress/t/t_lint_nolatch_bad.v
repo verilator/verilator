@@ -8,10 +8,10 @@ module t (/*AUTOARG*/ a, b, o);
    input  b;
    output reg o;
 
-   always_latch @(a or b)
+   always_latch
      if (a)
-       o <= b;
+       o = b;
      else
-       o <= ~b;
+       o = ~b;
 
 endmodule

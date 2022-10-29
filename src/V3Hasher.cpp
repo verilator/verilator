@@ -263,6 +263,11 @@ private:
             m_hash += nodep->name();
         });
     }
+    void visit(AstCAwait* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
+            iterateNull(nodep->sensesp());
+        });
+    }
     void visit(AstCoverInc* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
             iterateNull(nodep->declp());

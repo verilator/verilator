@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Also check that SystemC is ordering properly
-// verilator lint_on IMPERFECTSCH
 
 module t (/*AUTOARG*/
    // Outputs

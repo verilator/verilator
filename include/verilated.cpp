@@ -905,15 +905,22 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         digits = append.length();
                     }
                     const int needmore = width - digits;
-                    std::string padding;
                     if (needmore > 0) {
-                        if (pctp && pctp[0] && pctp[1] == '0') {  // %0
-                            padding.append(needmore, '0');  // Pre-pad zero
-                        } else {
+                        std::string padding;
+                        if (left) {
                             padding.append(needmore, ' ');  // Pre-pad spaces
+                            output += append + padding;
+                        } else {
+                            if (pctp && pctp[0] && pctp[1] == '0') {  // %0
+                                padding.append(needmore, '0');  // Pre-pad zero
+                            } else {
+                                padding.append(needmore, ' ');  // Pre-pad spaces
+                            }
+                            output += padding + append;
                         }
+                    } else {
+                        output += append;
                     }
-                    output += left ? (append + padding) : (padding + append);
                     break;
                 }
                 case '#': {  // Unsigned decimal
@@ -927,15 +934,22 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         digits = append.length();
                     }
                     const int needmore = width - digits;
-                    std::string padding;
                     if (needmore > 0) {
-                        if (pctp && pctp[0] && pctp[1] == '0') {  // %0
-                            padding.append(needmore, '0');  // Pre-pad zero
-                        } else {
+                        std::string padding;
+                        if (left) {
                             padding.append(needmore, ' ');  // Pre-pad spaces
+                            output += append + padding;
+                        } else {
+                            if (pctp && pctp[0] && pctp[1] == '0') {  // %0
+                                padding.append(needmore, '0');  // Pre-pad zero
+                            } else {
+                                padding.append(needmore, ' ');  // Pre-pad spaces
+                            }
+                            output += padding + append;
                         }
+                    } else {
+                        output += append;
                     }
-                    output += left ? (append + padding) : (padding + append);
                     break;
                 }
                 case 't': {  // Time
@@ -944,21 +958,62 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     output += _vl_vsformat_time(t_tmp, ld, timeunit, left, width);
                     break;
                 }
-                case 'b':
-                    for (; lsb >= 0; --lsb) output += (VL_BITRSHIFT_W(lwp, lsb) & 1) + '0';
-                    break;
-                case 'o':
-                    for (; lsb >= 0; --lsb) {
-                        lsb = (lsb / 3) * 3;  // Next digit
-                        // Octal numbers may span more than one wide word,
-                        // so we need to grab each bit separately and check for overrun
-                        // Octal is rare, so we'll do it a slow simple way
-                        output += static_cast<char>(
-                            '0' + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 0)) ? 1 : 0)
-                            + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 1)) ? 2 : 0)
-                            + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 2)) ? 4 : 0));
+                case 'b':  // FALLTHRU
+                case 'o':  // FALLTHRU
+                case 'x': {
+                    if (widthSet || left) {
+                        lsb = VL_MOSTSETBITP1_W(VL_WORDS_I(lbits), lwp);
+                        lsb = (lsb < 1) ? 0 : (lsb - 1);
+                    }
+
+                    std::string append;
+                    int digits;
+                    switch (fmt) {
+                    case 'b': {
+                        digits = lsb + 1;
+                        for (; lsb >= 0; --lsb) append += (VL_BITRSHIFT_W(lwp, lsb) & 1) + '0';
+                        break;
+                    }
+                    case 'o': {
+                        digits = (lsb + 1 + 2) / 3;
+                        for (; lsb >= 0; --lsb) {
+                            lsb = (lsb / 3) * 3;  // Next digit
+                            // Octal numbers may span more than one wide word,
+                            // so we need to grab each bit separately and check for overrun
+                            // Octal is rare, so we'll do it a slow simple way
+                            append += static_cast<char>(
+                                '0' + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 0)) ? 1 : 0)
+                                + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 1)) ? 2 : 0)
+                                + ((VL_BITISSETLIMIT_W(lwp, lbits, lsb + 2)) ? 4 : 0));
+                        }
+                        break;
+                    }
+                    default: {  // 'x'
+                        digits = (lsb + 1 + 3) / 4;
+                        for (; lsb >= 0; --lsb) {
+                            lsb = (lsb / 4) * 4;  // Next digit
+                            const IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xf;
+                            append += "0123456789abcdef"[charval];
+                        }
+                        break;
+                    }
+                    }  // switch
+
+                    const int needmore = width - digits;
+                    if (needmore > 0) {
+                        std::string padding;
+                        if (left) {
+                            padding.append(needmore, ' ');  // Pre-pad spaces
+                            output += append + padding;
+                        } else {
+                            padding.append(needmore, '0');  // Pre-pad zero
+                            output += padding + append;
+                        }
+                    } else {
+                        output += append;
                     }
                     break;
+                }  // b / o / x
                 case 'u':
                 case 'z': {  // Packed 4-state
                     const bool is_4_state = (fmt == 'z');
@@ -982,13 +1037,6 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         } else {
                             output += "St0 ";
                         }
-                    }
-                    break;
-                case 'x':
-                    for (; lsb >= 0; --lsb) {
-                        lsb = (lsb / 4) * 4;  // Next digit
-                        const IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xf;
-                        output += "0123456789abcdef"[charval];
                     }
                     break;
                 default: {  // LCOV_EXCL_START
@@ -2310,7 +2358,7 @@ std::string VerilatedContext::dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMut
 std::string VerilatedContext::dumpfileCheck() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
     std::string out = dumpfile();
     if (VL_UNLIKELY(out.empty())) {
-        VL_PRINTF_MT("%%Warning: $dumpvar ignored as not proceeded by $dumpfile\n");
+        VL_PRINTF_MT("%%Warning: $dumpvar ignored as not preceded by $dumpfile\n");
         return "";
     }
     return out;
@@ -2378,23 +2426,25 @@ void VerilatedContext::timeunit(int value) VL_MT_SAFE {
 }
 void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
     if (value < 0) value = -value;  // Stored as 0..15
-    const VerilatedLockGuard lock{m_mutex};
-    m_s.m_timeprecision = value;
-#ifdef SYSTEMC_VERSION
-    const sc_time sc_res = sc_get_time_resolution();
     int sc_prec = 99;
-    if (sc_res == sc_time(1, SC_SEC)) {
-        sc_prec = 0;
-    } else if (sc_res == sc_time(1, SC_MS)) {
-        sc_prec = 3;
-    } else if (sc_res == sc_time(1, SC_US)) {
-        sc_prec = 6;
-    } else if (sc_res == sc_time(1, SC_NS)) {
-        sc_prec = 9;
-    } else if (sc_res == sc_time(1, SC_PS)) {
-        sc_prec = 12;
-    } else if (sc_res == sc_time(1, SC_FS)) {
-        sc_prec = 15;
+    {
+        const VerilatedLockGuard lock{m_mutex};
+        m_s.m_timeprecision = value;
+#ifdef SYSTEMC_VERSION
+        const sc_time sc_res = sc_get_time_resolution();
+        if (sc_res == sc_time(1, SC_SEC)) {
+            sc_prec = 0;
+        } else if (sc_res == sc_time(1, SC_MS)) {
+            sc_prec = 3;
+        } else if (sc_res == sc_time(1, SC_US)) {
+            sc_prec = 6;
+        } else if (sc_res == sc_time(1, SC_NS)) {
+            sc_prec = 9;
+        } else if (sc_res == sc_time(1, SC_PS)) {
+            sc_prec = 12;
+        } else if (sc_res == sc_time(1, SC_FS)) {
+            sc_prec = 15;
+        }
     }
     if (value != sc_prec) {
         std::ostringstream msg;
@@ -2405,6 +2455,8 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
             << vl_time_str(sc_prec) << "'";
         const std::string msgs = msg.str();
         VL_FATAL_MT("", 0, "", msgs.c_str());
+    }
+#else
     }
 #endif
 }
@@ -2836,7 +2888,7 @@ const char* Verilated::productVersion() VL_PURE { return VERILATOR_VERSION; }
 void Verilated::nullPointerError(const char* filename, int linenum) VL_MT_SAFE {
     // Slowpath - Called only on error
     VL_FATAL_MT(filename, linenum, "", "Null pointer dereferenced");
-    VL_UNREACHABLE
+    VL_UNREACHABLE;
 }
 
 void Verilated::overWidthError(const char* signame) VL_MT_SAFE {
@@ -2844,7 +2896,7 @@ void Verilated::overWidthError(const char* signame) VL_MT_SAFE {
     const std::string msg = (std::string{"Testbench C set input '"} + signame
                              + "' to value that overflows what the signal's width can fit");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
-    VL_UNREACHABLE
+    VL_UNREACHABLE;
 }
 
 void Verilated::mkdir(const char* dirname) VL_MT_UNSAFE {
@@ -3093,5 +3145,20 @@ void VerilatedAssertOneThread::fatal_different() VL_MT_SAFE {
                 " a different thread then the expected constructing thread");
 }
 #endif
+
+//===========================================================================
+// VlDeleter:: Methods
+
+void VlDeleter::deleteAll() {
+    while (true) {
+        VerilatedLockGuard lock{m_mutex};
+        if (m_newGarbage.empty()) break;
+        VerilatedLockGuard deleteLock{m_deleteMutex};
+        std::swap(m_newGarbage, m_toDelete);
+        lock.unlock();  // So destuctors can enqueue new objects
+        for (VlClass* const objp : m_toDelete) delete objp;
+        m_toDelete.clear();
+    }
+}
 
 //===========================================================================

@@ -11,7 +11,7 @@
 module t (/*AUTOARG*/);
    initial begin
       int q[*];
-      int qe[*];  // Empty
+      int qe [ * ];  // Empty - Note spaces around [*] for parsing coverage
       int qv[$];  // Value returns
       int qi[$];  // Index returns
       int i;

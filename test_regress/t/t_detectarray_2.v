@@ -1,9 +1,5 @@
 // DESCRIPTION: Verilator: Simple test of unoptflat
 //
-// This should trigger the DETECTARRAY error like t_detectarray_1.v, but in
-// fact it casuses a broken link error. The only difference is that the struct
-// is defined using a constant rather than a localparam.
-//
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2013 by Jeremy Bennett.
 // SPDX-License-Identifier: CC0-1.0

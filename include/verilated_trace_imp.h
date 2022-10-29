@@ -644,6 +644,10 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
         // Assert no buffer overflow
         assert(m_offloadBufferWritep - bufferp <= m_offloadBufferSize);
 
+        // Reset our pointers as we are giving up the buffer
+        m_offloadBufferWritep = nullptr;
+        m_offloadBufferEndp = nullptr;
+
         // Pass it to the worker thread
         m_offloadBuffersToWorker.put(bufferp);
     }

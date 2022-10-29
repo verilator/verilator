@@ -25,5 +25,7 @@ module t (/*AUTOARG*/);
       a.rsort;  // Not legal on assoc
       a.reverse;  // Not legal on assoc
       a.shuffle;  // Not legal on assoc
+
+      a.bad_not_defined();
    end
 endmodule
