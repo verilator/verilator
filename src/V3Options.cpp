@@ -877,6 +877,24 @@ void V3Options::throwSigsegv() {  // LCOV_EXCL_START
 #endif
 }  // LCOV_EXCL_STOP
 
+// Intentional stack overflow.
+void V3Options::overflowStack() {  // LCOV_EXCL_START
+#if !(defined(VL_CPPCHECK) || defined(__clang_analyzer__))
+    // clang-format off
+    // This function does just an infinite recursive call. Complexities below are here to supress
+    // compiler warnings about it.
+    using f_type = void (*)(volatile char*);
+    static const f_type f = [](volatile char* argp) {
+        volatile char arrayOnStackp[4096] = {0};
+        if (!argp) argp = arrayOnStackp;
+        // Always true. Used to supress compiler warnings about recursion.
+        if (argp[0] == 0) f(arrayOnStackp);
+    };
+    f(nullptr);
+    // clang-format on
+#endif
+}  // LCOV_EXCL_STOP
+
 VTimescale V3Options::timeComputePrec(const VTimescale& flag) const {
     if (!timeOverridePrec().isNone()) {
         return timeOverridePrec();
@@ -1117,6 +1135,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-debug-protect", OnOff, &m_debugProtect).undocumented();
     DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest).undocumented();
     DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv).undocumented();  // See also --debug-abort
+    DECL_OPTION("-debug-sigsegv-stackoverflow", CbCall, overflowStack).undocumented();
     DECL_OPTION("-decoration", OnOff, &m_decoration);
     DECL_OPTION("-dpi-hdr-only", OnOff, &m_dpiHdrOnly);
     DECL_OPTION("-dump-", CbPartialMatch, [this](const char* optp) { m_dumpLevel[optp] = 3; });

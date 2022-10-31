@@ -682,6 +682,7 @@ public:
 
     // METHODS (other OS)
     static void throwSigsegv();
+    static void overflowStack();
 };
 
 //######################################################################
