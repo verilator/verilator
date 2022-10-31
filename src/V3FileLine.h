@@ -64,7 +64,7 @@ class FileLineSingleton final {
     ~FileLineSingleton() = default;
 
     fileNameIdx_t nameToNumber(const string& filename);
-    string numberToName(fileNameIdx_t filenameno) const { return m_names[filenameno]; }
+    string numberToName(fileNameIdx_t filenameno) const VL_MT_SAFE { return m_names[filenameno]; }
     V3LangCode numberToLang(fileNameIdx_t filenameno) const { return m_languages[filenameno]; }
     void numberToLang(fileNameIdx_t filenameno, const V3LangCode& l) {
         m_languages[filenameno] = l;
@@ -75,7 +75,7 @@ class FileLineSingleton final {
         m_languages.clear();
     }
     void fileNameNumMapDumpXml(std::ostream& os);
-    static string filenameLetters(fileNameIdx_t fileno);
+    static string filenameLetters(fileNameIdx_t fileno) VL_PURE;
 
     // Add given bitset to the interned bitsets, return interned index
     msgEnSetIdx_t addMsgEnBitSet(const MsgEnBitSet& bitSet);
@@ -112,7 +112,7 @@ class VFileContent final {
 
 public:
     void pushText(const string& text);  // Add arbitrary text (need not be line-by-line)
-    string getLine(int lineno) const;
+    string getLine(int lineno) const VL_MT_SAFE;
     string ascii() const { return "ct" + cvtToStr(m_id); }
 };
 std::ostream& operator<<(std::ostream& os, VFileContent* contentp);
@@ -159,7 +159,7 @@ protected:
 
 private:
     // CONSTRUCTORS
-    static FileLineSingleton& singleton() {
+    static FileLineSingleton& singleton() VL_MT_SAFE {
         static FileLineSingleton s;
         return s;
     }
@@ -238,21 +238,21 @@ public:
     // If not otherwise more specific, use last lineno for errors etc,
     // as the parser errors etc generally make more sense pointing at the last parse point
     int lineno() const VL_MT_SAFE { return m_lastLineno; }
-    string source() const;
-    string prettySource() const;  // Source, w/stripped unprintables and newlines
+    string source() const VL_MT_SAFE;
+    string prettySource() const VL_MT_SAFE;  // Source, w/stripped unprintables and newlines
     FileLine* parent() const VL_MT_SAFE { return m_parent; }
     V3LangCode language() const { return singleton().numberToLang(filenameno()); }
-    string ascii() const;
+    string ascii() const VL_MT_SAFE;
     string asciiLineCol() const;
     int filenameno() const VL_MT_SAFE { return m_filenameno; }
-    string filename() const { return singleton().numberToName(filenameno()); }
+    string filename() const VL_MT_SAFE { return singleton().numberToName(filenameno()); }
     bool filenameIsGlobal() const VL_MT_SAFE {
         return (filename() == commandLineFilename() || filename() == builtInFilename());
     }
-    string filenameLetters() const {
+    string filenameLetters() const VL_MT_SAFE {
         return FileLineSingleton::filenameLetters(filenameno());
     }
-    string filebasename() const;
+    string filebasename() const VL_MT_SAFE;
     string filebasenameNoExt() const;
     string firstColumnLetters() const VL_MT_SAFE;
     string profileFuncname() const;
@@ -270,7 +270,7 @@ public:
     }
     void warnOff(V3ErrorCode code, bool flag) { warnOn(code, !flag); }
     bool warnOff(const string& msg, bool flag);  // Returns 1 if ok
-    bool warnIsOff(V3ErrorCode code) const;
+    bool warnIsOff(V3ErrorCode code) const VL_MT_SAFE;
     void warnLintOff(bool flag);
     void warnStyleOff(bool flag);
     void warnUnusedOff(bool flag);

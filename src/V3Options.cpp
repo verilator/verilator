@@ -874,7 +874,7 @@ void V3Options::notify() {
 //######################################################################
 // V3 Options accessors
 
-string V3Options::version() {
+string V3Options::version() VL_PURE {
     string ver = DTVERSION;
     ver += " rev " + cvtToStr(DTVERSION_rev);
     return ver;

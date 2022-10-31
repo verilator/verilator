@@ -48,7 +48,7 @@ public:
 
     // METHODS
     uint32_t value() const VL_MT_SAFE { return m_value; }
-    std::string toString() const;
+    std::string toString() const VL_MT_SAFE;
 
     // OPERATORS
     // Comparisons
@@ -69,7 +69,7 @@ public:
     }
 };
 
-std::ostream& operator<<(std::ostream& os, const V3Hash& rhs);
+std::ostream& operator<<(std::ostream& os, const V3Hash& rhs) VL_MT_SAFE;
 
 template <>
 struct std::hash<V3Hash> {

@@ -853,7 +853,8 @@ void V3OutFormatter::putcNoTracking(char chr) {
     putcOutput(chr);
 }
 
-string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::Language lang) {
+string V3OutFormatter::quoteNameControls(const string& namein,
+                                         V3OutFormatter::Language lang) VL_PURE {
     // Encode control chars into output-appropriate escapes
     // Reverse is V3Parse::deQuote
     string out;

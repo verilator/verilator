@@ -598,7 +598,7 @@ bool V3Number::displayedFmtLegal(char format, bool isScan) {
     }
 }
 
-string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& in) {
+string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& in) VL_PURE {
     string padding;
     if (in.length() < fmtsize) padding = string(fmtsize - in.length(), pad);
     return left ? (in + padding) : (padding + in);
@@ -901,7 +901,7 @@ string V3Number::toDecimalU() const {
 //======================================================================
 // ACCESSORS - as numbers
 
-uint32_t V3Number::toUInt() const {
+uint32_t V3Number::toUInt() const VL_MT_SAFE {
     UASSERT(!isFourState(), "toUInt with 4-state " << *this);
     // We allow wide numbers that represent values <= 32 bits
     for (int i = 1; i < words(); ++i) {
@@ -926,7 +926,7 @@ double V3Number::toDouble() const {
     return u.d;
 }
 
-int32_t V3Number::toSInt() const {
+int32_t V3Number::toSInt() const VL_MT_SAFE {
     if (isSigned()) {
         const uint32_t v = toUInt();
         const uint32_t signExtend = (-(v & (1UL << (width() - 1))));
@@ -939,7 +939,7 @@ int32_t V3Number::toSInt() const {
     }
 }
 
-uint64_t V3Number::toUQuad() const {
+uint64_t V3Number::toUQuad() const VL_MT_SAFE {
     UASSERT(!isFourState(), "toUQuad with 4-state " << *this);
     // We allow wide numbers that represent values <= 64 bits
     if (isDouble()) return static_cast<uint64_t>(toDouble());

@@ -1544,7 +1544,9 @@ public:
     ASTGEN_MEMBERS_AstTypedef;
     void dump(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    virtual AstNodeDType* subDTypep() const VL_MT_SAFE {
+        return dtypep() ? dtypep() : childDTypep();
+    }
     // METHODS
     string name() const override { return m_name; }
     bool maybePointedTo() const override { return true; }
@@ -1793,10 +1795,10 @@ public:
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
     void combineType(VVarType type);
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }
+    AstNodeDType* dtypeSkipRefp() const VL_MT_SAFE { return subDTypep()->skipRefp(); }
     // (Slow) recurse down to find basic data type (Note don't need virtual -
     // AstVar isn't a NodeDType)
-    AstBasicDType* basicp() const { return subDTypep()->basicp(); }
+    AstBasicDType* basicp() const VL_MT_SAFE { return subDTypep()->basicp(); }
     virtual AstNodeDType* subDTypep() const VL_MT_SAFE {
         return dtypep() ? dtypep() : childDTypep();
     }
@@ -2334,19 +2336,19 @@ public:
     inline AstRange(FileLine* fl, int left, int right);
     inline AstRange(FileLine* fl, const VNumRange& range);
     ASTGEN_MEMBERS_AstRange;
-    inline int leftConst() const;
-    inline int rightConst() const;
-    int hiConst() const {
+    inline int leftConst() const VL_MT_SAFE;
+    inline int rightConst() const VL_MT_SAFE;
+    int hiConst() const VL_MT_SAFE {
         const int l = leftConst();
         const int r = rightConst();
         return l > r ? l : r;
     }
-    int loConst() const {
+    int loConst() const VL_MT_SAFE {
         const int l = leftConst();
         const int r = rightConst();
         return l > r ? r : l;
     }
-    int elementsConst() const { return hiConst() - loConst() + 1; }
+    int elementsConst() const VL_MT_SAFE { return hiConst() - loConst() + 1; }
     bool littleEndian() const { return leftConst() < rightConst(); }
     void dump(std::ostream& str) const override;
     virtual string emitC() { V3ERROR_NA_RETURN(""); }

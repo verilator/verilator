@@ -650,7 +650,7 @@ public:
     }
 
     // METHODS (from main)
-    static string version();
+    static string version() VL_PURE;
     static string argString(int argc, char** argv);  ///< Return list of arguments as simple string
     string allArgsString() const VL_MT_SAFE;  ///< Return all passed arguments as simple string
     // Return options for child hierarchical blocks when forTop==false, otherwise returns args for

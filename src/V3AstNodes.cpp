@@ -704,12 +704,12 @@ public:
     }
 };
 
-string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const {
+string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const VL_MT_SAFE {
     const CTypeRecursed info = cTypeRecurse(false);
     return info.render(name, isRef);
 }
 
-AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
+AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const VL_MT_SAFE {
     // Legacy compound argument currently just passed through and unused
     CTypeRecursed info;
 
@@ -1804,7 +1804,7 @@ void AstRefDType::cloneRelink() {
         m_classOrPackagep = m_classOrPackagep->clonep();
     }
 }
-AstNodeDType* AstRefDType::subDTypep() const {
+AstNodeDType* AstRefDType::subDTypep() const VL_MT_SAFE {
     if (typedefp()) return typedefp()->subDTypep();
     return refDTypep();  // Maybe nullptr
 }

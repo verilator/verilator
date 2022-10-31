@@ -39,7 +39,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // FileLineSingleton class functions
 
-string FileLineSingleton::filenameLetters(fileNameIdx_t fileno) {
+string FileLineSingleton::filenameLetters(fileNameIdx_t fileno) VL_PURE {
     constexpr int size
         = 1 + (64 / 4);  // Each letter retires more than 4 bits of a > 64 bit number
     char out[size];
@@ -155,7 +155,7 @@ void VFileContent::pushText(const string& text) {
     m_lines.emplace_back(string(leftover, line_start));  // Might be ""
 }
 
-string VFileContent::getLine(int lineno) const {
+string VFileContent::getLine(int lineno) const VL_MT_SAFE {
     // Return error text rather than asserting so the user isn't left without a message
     // cppcheck-suppress negativeContainerIndex
     if (VL_UNCOVERABLE(lineno < 0 || lineno >= (int)m_lines.size())) {
@@ -284,7 +284,7 @@ FileLine* FileLine::copyOrSameFileLine() {
     return newp;
 }
 
-string FileLine::filebasename() const {
+string FileLine::filebasename() const VL_MT_SAFE {
     string name = filename();
     string::size_type pos;
     if ((pos = name.rfind('/')) != string::npos) name.erase(0, pos + 1);
@@ -420,7 +420,7 @@ string FileLine::warnOtherStandalone() const VL_EXCLUDES(V3Error::s().m_mutex) V
     return warnOther();
 }
 
-string FileLine::source() const {
+string FileLine::source() const VL_MT_SAFE {
     if (VL_UNCOVERABLE(!m_contentp)) {  // LCOV_EXCL_START
         if (debug() || v3Global.opt.debugCheck()) {
             // The newline here is to work around the " <line#> | "
@@ -431,7 +431,7 @@ string FileLine::source() const {
     }  // LCOV_EXCL_STOP
     return m_contentp->getLine(m_contentLineno);
 }
-string FileLine::prettySource() const {
+string FileLine::prettySource() const VL_MT_SAFE {
     string out = source();
     // Drop ignore trailing newline
     const string::size_type pos = out.find('\n');

@@ -102,11 +102,11 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const VL_MT_SAFE { return m_e; }
 };
-constexpr bool operator==(const VNType& lhs, const VNType& rhs) VL_MT_SAFE {
+constexpr bool operator==(const VNType& lhs, const VNType& rhs) VL_PURE {
     return lhs.m_e == rhs.m_e;
 }
-constexpr bool operator==(const VNType& lhs, VNType::en rhs) { return lhs.m_e == rhs; }
-constexpr bool operator==(VNType::en lhs, const VNType& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VNType& lhs, VNType::en rhs) VL_PURE { return lhs.m_e == rhs; }
+constexpr bool operator==(VNType::en lhs, const VNType& rhs) VL_PURE { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VNType& rhs) { return os << rhs.ascii(); }
 
 // ######################################################################
@@ -1600,7 +1600,7 @@ protected:
 public:
     // ACCESSORS
     VNType type() const VL_MT_SAFE { return m_type; }
-    const char* typeName() const { return type().ascii(); }  // See also prettyTypeName
+    const char* typeName() const VL_MT_SAFE { return type().ascii(); }  // See also prettyTypeName
     AstNode* nextp() const VL_MT_SAFE { return m_nextp; }
     AstNode* backp() const VL_MT_SAFE { return m_backp; }
     AstNode* abovep() const;  // Parent node above, only when no nextp() as otherwise slow
@@ -1667,7 +1667,7 @@ public:
     string origNameProtect() const;  // origName with --protect-id applied
     string shortName() const;  // Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);  // Name with dots removed
-    static string prettyName(const string& namein);  // Name for printing out to the user
+    static string prettyName(const string& namein) VL_PURE;  // Name for printing out to the user
     static string vpiName(const string& namein);  // Name for vpi access
     static string prettyNameQ(const string& namein) {  // Quoted pretty name (for errors)
         return std::string{"'"} + prettyName(namein) + "'";
@@ -1676,7 +1676,7 @@ public:
     encodeName(const string& namein);  // Encode user name into internal C representation
     static string encodeNumber(int64_t num);  // Encode number into internal C representation
     static string vcdName(const string& namein);  // Name for printing out to vcd files
-    string prettyName() const { return prettyName(name()); }
+    string prettyName() const VL_MT_SAFE { return prettyName(name()); }
     string prettyNameQ() const { return prettyNameQ(name()); }
     string prettyTypeName() const;  // "VARREF" for error messages (NOT dtype's pretty name)
     virtual string prettyOperatorName() const { return "operator " + prettyTypeName(); }
@@ -1705,9 +1705,9 @@ public:
     int widthWords() const { return VL_WORDS_I(width()); }
     bool isQuad() const VL_MT_SAFE { return (width() > VL_IDATASIZE && width() <= VL_QUADSIZE); }
     bool isWide() const VL_MT_SAFE { return (width() > VL_QUADSIZE); }
-    inline bool isDouble() const;
-    inline bool isSigned() const;
-    inline bool isString() const;
+    inline bool isDouble() const VL_MT_SAFE;
+    inline bool isSigned() const VL_MT_SAFE;
+    inline bool isString() const VL_MT_SAFE;
 
     // clang-format off
     VNUser      user1u() const VL_MT_SAFE {
@@ -1992,7 +1992,7 @@ private:
 
     // For internal use only.
     template <typename TargetType, typename DeclType>
-    constexpr static bool uselessCast() {
+    constexpr static bool uselessCast() VL_PURE {
         using NonRef = typename std::remove_reference<DeclType>::type;
         using NonPtr = typename std::remove_pointer<NonRef>::type;
         using NonCV = typename std::remove_cv<NonPtr>::type;
@@ -2001,7 +2001,7 @@ private:
 
     // For internal use only.
     template <typename TargetType, typename DeclType>
-    constexpr static bool impossibleCast() {
+    constexpr static bool impossibleCast() VL_PURE {
         using NonRef = typename std::remove_reference<DeclType>::type;
         using NonPtr = typename std::remove_pointer<NonRef>::type;
         using NonCV = typename std::remove_cv<NonPtr>::type;

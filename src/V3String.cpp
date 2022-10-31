@@ -36,7 +36,7 @@ std::map<string, string> VName::s_dehashMap;
 // Wildcard
 
 // Double procedures, inlined, unrolls loop much better
-bool VString::wildmatchi(const char* s, const char* p) {
+bool VString::wildmatchi(const char* s, const char* p) VL_PURE {
     for (; *p; s++, p++) {
         if (*p != '*') {
             if (((*s) != (*p)) && *p != '?') return false;
@@ -52,7 +52,7 @@ bool VString::wildmatchi(const char* s, const char* p) {
     return (*s == '\0');
 }
 
-bool VString::wildmatch(const char* s, const char* p) {
+bool VString::wildmatch(const char* s, const char* p) VL_PURE {
     for (; *p; s++, p++) {
         if (*p != '*') {
             if (((*s) != (*p)) && *p != '?') return false;
@@ -68,7 +68,7 @@ bool VString::wildmatch(const char* s, const char* p) {
     return (*s == '\0');
 }
 
-bool VString::wildmatch(const string& s, const string& p) {
+bool VString::wildmatch(const string& s, const string& p) VL_PURE {
     return wildmatch(s.c_str(), p.c_str());
 }
 
@@ -130,7 +130,7 @@ string VString::escapeStringForPath(const string& str) {
     return result;
 }
 
-string VString::spaceUnprintable(const string& str) {
+string VString::spaceUnprintable(const string& str) VL_PURE {
     string out;
     for (const char c : str) {
         if (std::isprint(c)) {
@@ -216,10 +216,12 @@ static const uint32_t sha256K[]
        0xc67178f2};
 
 VL_ATTR_ALWINLINE
-static uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) { return lhs >> rhs | lhs << (32 - rhs); }
+static uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) VL_PURE {
+    return lhs >> rhs | lhs << (32 - rhs);
+}
 
 VL_ATTR_ALWINLINE
-static void sha256Block(uint32_t* h, const uint32_t* chunk) {
+static void sha256Block(uint32_t* h, const uint32_t* chunk) VL_PURE {
     uint32_t ah[8];
     const uint32_t* p = chunk;
 
