@@ -493,29 +493,14 @@ static thread_local volatile std::uintptr_t someAddressOnThreadStack{0};
 // Set when `someAddressOnThreadStack` is being assigned to.
 static thread_local std::atomic_flag someAddressOnThreadStackIsUndetermined = ATOMIC_FLAG_INIT;
 
-// Restores a default handler which will be called after returning from the current handler.
-static void restoreDefaultSegfaultHandler() {
-    struct sigaction sa = {};
-    sa.sa_handler = SIG_DFL;
-    sa.sa_flags = SA_ONSTACK;
-    sigaction(SIGSEGV, &sa, nullptr);
-}
-
-extern "C" void v3SegfaultSignalHandler(int /*signo*/, siginfo_t* info, void* /*context*/) {
-    if (segfaultHandlingInProgress.test_and_set(std::memory_order_acquire)) {
-        // Other thread segfaulted too, and is already running this handler.
-        // Wait for it to print relevant error and terminate the whole process.
-        // Mutexes and similar things are not allowed in signal handlers, but sleep() is.
-        // The sleep() doesn't prevent immediate termination, so it won't delay anything.
-        for (;;) sleep(10);
-    }
-
+static void analyzeFaultAddrAndHandleStackOverflow(siginfo_t* info) {
     if (someAddressOnThreadStackIsUndetermined.test_and_set(std::memory_order_acquire)
         || someAddressOnThreadStack == 0) {
         someAddressOnThreadStackIsUndetermined.clear(std::memory_order_release);
         // Finding the stack memory region is not possible without an address from the stack.
-        return restoreDefaultSegfaultHandler();
+        return;
     }
+
     // Parsing `maps` file and looking for a range containing known stack address is one of
     // probably only two methods to reliably find the stack memory region on Linux. The other one
     // is forking and using ptrace API to check rsp and rbp registers.
@@ -523,8 +508,9 @@ extern "C" void v3SegfaultSignalHandler(int /*signo*/, siginfo_t* info, void* /*
     const auto stackRegion = ProcMapsParser().find_address_range(someAddressOnThreadStack);
     if (stackRegion.begin == 0) {
         // Failed to find stack region.
-        return restoreDefaultSegfaultHandler();
+        return;
     }
+
     const uintptr_t pageSize = sysconf(_SC_PAGESIZE);
     const uintptr_t faultAddr = reinterpret_cast<uintptr_t>(info->si_addr);
 
@@ -554,10 +540,26 @@ extern "C" void v3SegfaultSignalHandler(int /*signo*/, siginfo_t* info, void* /*
                                   "Try increasing stack size limit using `ulimit -s` command.\n"
                                   "\n";
         const auto result = write(STDERR_FILENO, msg, sizeof(msg) - 1);
-        if (!result) {}  // Supress GCC's unused-result warning
+        if (result < 0) {}  // Supress GCC's unused-result warning
+    }
+}
+
+extern "C" void v3SegfaultSignalHandler(int /*signo*/, siginfo_t* info, void* /*context*/) {
+    if (segfaultHandlingInProgress.test_and_set(std::memory_order_acquire)) {
+        // Other thread segfaulted too, and is already running this handler.
+        // Wait for it to print relevant error and terminate the whole process.
+        // Mutexes and similar things are not allowed in signal handlers, but sleep() is.
+        // The sleep() doesn't prevent immediate termination, so it won't delay anything.
+        for (;;) sleep(10);
     }
 
-    return restoreDefaultSegfaultHandler();
+    analyzeFaultAddrAndHandleStackOverflow(info);
+
+    // Restore default handler which will be called after returning from the current handler.
+    struct sigaction sa = {};
+    sa.sa_handler = SIG_DFL;
+    sa.sa_flags = SA_ONSTACK;
+    sigaction(SIGSEGV, &sa, nullptr);
 }
 #endif
 
@@ -574,7 +576,10 @@ void V3Os::setupThreadSegfaultSignalHandler() {
     stack_t altStack = {};
     altStack.ss_sp = signalStackp.get();
     altStack.ss_size = signalStackSize;
-    sigaltstack(&altStack, nullptr);
+    if (sigaltstack(&altStack, nullptr) < 0) {
+        // Signal handler won't work without dedicated stack.
+        return;
+    }
 
     // `someAddressOnThreadStackIsUndetermined` is always unset here due to being thread_local.
     if (!someAddressOnThreadStackIsUndetermined.test_and_set(std::memory_order_acquire)) {
