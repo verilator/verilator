@@ -169,7 +169,14 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
         dtypep = new AstBasicDType(fileline, VBasicDTypeKwd::DOUBLE);
     }
     if (!dtypep) {  // Created implicitly
-        dtypep = new AstBasicDType(fileline, LOGIC_IMPLICIT);
+        if (m_insideProperty) {
+            if (m_typedPropertyPort) {
+                fileline->v3warn(E_UNSUPPORTED, "Untyped property port following a typed port");
+            }
+            dtypep = new AstBasicDType{fileline, VBasicDTypeKwd::UNTYPED};
+        } else {
+            dtypep = new AstBasicDType{fileline, LOGIC_IMPLICIT};
+        }
     } else {  // May make new variables with same type, so clone
         dtypep = dtypep->cloneTree(false);
     }

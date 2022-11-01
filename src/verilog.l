@@ -598,7 +598,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "unique0"             { FL; return yUNIQUE0; }
   "until"               { ERROR_RSVD_WORD("SystemVerilog 2009"); }
   "until_with"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "untyped"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "untyped"             { FL; return yUNTYPED; }
   "weak"                { ERROR_RSVD_WORD("SystemVerilog 2009"); }
 }
 

@@ -1593,7 +1593,7 @@ public:
         return pragType() == static_cast<const AstPragma*>(samep)->pragType();
     }
 };
-class AstPropClocked final : public AstNode {
+class AstPropSpec final : public AstNode {
     // A clocked property
     // Parents:  ASSERT|COVER (property)
     // Children: SENITEM, Properties
@@ -1601,13 +1601,13 @@ class AstPropClocked final : public AstNode {
     // @astgen op2 := disablep : Optional[AstNode]
     // @astgen op3 := propp : AstNode
 public:
-    AstPropClocked(FileLine* fl, AstSenItem* sensesp, AstNode* disablep, AstNode* propp)
-        : ASTGEN_SUPER_PropClocked(fl) {
+    AstPropSpec(FileLine* fl, AstSenItem* sensesp, AstNode* disablep, AstNode* propp)
+        : ASTGEN_SUPER_PropSpec(fl) {
         this->sensesp(sensesp);
         this->disablep(disablep);
         this->propp(propp);
     }
-    ASTGEN_MEMBERS_AstPropClocked;
+    ASTGEN_MEMBERS_AstPropSpec;
     bool hasDType() const override {
         return true;
     }  // Used under Cover, which expects a bool child
@@ -2431,6 +2431,14 @@ public:
         this->fvarp(fvarp);
     }
     ASTGEN_MEMBERS_AstFunc;
+    bool hasDType() const override { return true; }
+};
+class AstProperty final : public AstNodeFTask {
+    // A property inside a module
+public:
+    AstProperty(FileLine* fl, const string& name, AstNode* stmtp)
+        : ASTGEN_SUPER_Property(fl, name, stmtp) {}
+    ASTGEN_MEMBERS_AstProperty;
     bool hasDType() const override { return true; }
 };
 class AstTask final : public AstNodeFTask {
