@@ -566,10 +566,9 @@ extern "C" void v3SegfaultSignalHandler(int /*signo*/, siginfo_t* info, void* /*
 void V3Os::setupThreadSegfaultSignalHandler() {
 // Relies on /proc/self/maps; tested only on Linux.
 #if defined(__linux__)
-    // Segfault signal handler uses something between 300 and 400 bytes of the stack.
     // MINSIGSTKSZ may not be constant (it is a function call on some systems).
     // As a result we have to use dynamic memory below.
-    static const std::size_t signalStackSize = (MINSIGSTKSZ < 1024) ? 1024 : MINSIGSTKSZ;
+    static const std::size_t signalStackSize = (MINSIGSTKSZ < 4096) ? 4096 : MINSIGSTKSZ;
     // Stack used by all signal handlers in the current thread.
     static const thread_local std::unique_ptr<char[]> signalStackp{new char[signalStackSize]};
 
