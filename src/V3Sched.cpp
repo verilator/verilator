@@ -574,6 +574,7 @@ std::pair<AstVarScope*, AstNode*> makeEvalLoop(AstNetlist* netlistp, const strin
                 constp->num().setLong(limit);
                 AstNodeMath* const condp = new AstGt{flp, refp, constp};
                 AstIf* const failp = new AstIf{flp, condp};
+                failp->branchPred(VBranchPred::BP_UNLIKELY);
                 ifp->addThensp(failp);
                 AstTextBlock* const blockp = new AstTextBlock{flp};
                 failp->addThensp(blockp);
