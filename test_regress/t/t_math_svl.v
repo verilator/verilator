@@ -14,13 +14,13 @@ module t (/*AUTOARG*/
    reg [15:0] l;
    reg [49:0] q;
    reg [79:0] w;
-   reg [4:0]  lc;
+   int        lc;
    reg        lo;
    reg        l0;
-   reg [5:0]  qc;
+   int        qc;
    reg        qo;
    reg        q0;
-   reg [6:0]  wc;
+   int        wc;
    reg        wo;
    reg        w0;
 
@@ -55,7 +55,7 @@ module t (/*AUTOARG*/
       if ($isunknown(32'b11101011111) != 0) $stop;
       if ($isunknown(32'b10zzzzzzzzz) != 1) $stop;
       if ($bits(0) != 32'd32) $stop;
-      if ($bits(lc) != 5) $stop;
+      if ($bits(lc) != 32) $stop;
       if ($onehot(32'b00000001000000) != 1'b1) $stop;
       if ($onehot(32'b00001001000000) != 1'b0) $stop;
       if ($onehot(32'b0) != 1'b0) $stop;
@@ -81,51 +81,51 @@ module t (/*AUTOARG*/
             q <= ~50'h0;
             w <= ~80'h0;
             //
-            if ({lc,lo,l0} != {5'd0,1'b0,1'b1}) $stop;
-            if ({qc,qo,q0} != {6'd0,1'b0,1'b1}) $stop;
-            if ({wc,wo,w0} != {7'd0,1'b0,1'b1}) $stop;
+            if ({lc,lo,l0} != {32'd0,1'b0,1'b1}) $stop;
+            if ({qc,qo,q0} != {32'd0,1'b0,1'b1}) $stop;
+            if ({wc,wo,w0} != {32'd0,1'b0,1'b1}) $stop;
          end
          if (cyc==3) begin
             l <= 16'b0010110010110111;
             q <= 50'h01_1111_0001;
             w <= 80'h0100_0000_0f00_00f0_0000;
             //
-            if ({lc,lo,l0} != {5'd16,1'b0,1'b0}) $stop;
-            if ({qc,qo,q0} != {6'd50,1'b0,1'b0}) $stop;
-            if ({wc,wo,w0} != {7'd80,1'b0,1'b0}) $stop;
+            if ({lc,lo,l0} != {32'd16,1'b0,1'b0}) $stop;
+            if ({qc,qo,q0} != {32'd50,1'b0,1'b0}) $stop;
+            if ({wc,wo,w0} != {32'd80,1'b0,1'b0}) $stop;
          end
          if (cyc==4) begin
             l <= 16'b0000010000000000;
             q <= 50'h1_0000_0000;
             w <= 80'h010_00000000_00000000;
             //
-            if ({lc,lo,l0} != {5'd9,1'b0,1'b0}) $stop;
-            if ({qc,qo,q0} != {6'd6,1'b0,1'b0}) $stop;
-            if ({wc,wo,w0} != {7'd9,1'b0,1'b0}) $stop;
+            if ({lc,lo,l0} != {32'd9,1'b0,1'b0}) $stop;
+            if ({qc,qo,q0} != {32'd6,1'b0,1'b0}) $stop;
+            if ({wc,wo,w0} != {32'd9,1'b0,1'b0}) $stop;
          end
          if (cyc==5) begin
             l <= 16'b0000000100000000;
             q <= 50'h8000_0000_0000;
             w <= 80'h10_00000000_00000000;
             //
-            if ({lc,lo,l0} != {5'd1,1'b1,1'b1}) $stop;
-            if ({qc,qo,q0} != {6'd1,1'b1,1'b1}) $stop;
-            if ({wc,wo,w0} != {7'd1,1'b1,1'b1}) $stop;
+            if ({lc,lo,l0} != {32'd1,1'b1,1'b1}) $stop;
+            if ({qc,qo,q0} != {32'd1,1'b1,1'b1}) $stop;
+            if ({wc,wo,w0} != {32'd1,1'b1,1'b1}) $stop;
          end
          if (cyc==6) begin
             l <= 16'b0000100100000000;
             q <= 50'h01_00000100;
             w <= 80'h01_00000100_00000000;
             //
-            if ({lc,lo,l0} != {5'd1,1'b1,1'b1}) $stop;
-            if ({qc,qo,q0} != {6'd1,1'b1,1'b1}) $stop;
-            if ({wc,wo,w0} != {7'd1,1'b1,1'b1}) $stop;
+            if ({lc,lo,l0} != {32'd1,1'b1,1'b1}) $stop;
+            if ({qc,qo,q0} != {32'd1,1'b1,1'b1}) $stop;
+            if ({wc,wo,w0} != {32'd1,1'b1,1'b1}) $stop;
          end
          if (cyc==7) begin
             //
-            if ({lc,lo,l0} != {5'd2,1'b0,1'b0}) $stop;
-            if ({qc,qo,q0} != {6'd2,1'b0,1'b0}) $stop;
-            if ({wc,wo,w0} != {7'd2,1'b0,1'b0}) $stop;
+            if ({lc,lo,l0} != {32'd2,1'b0,1'b0}) $stop;
+            if ({qc,qo,q0} != {32'd2,1'b0,1'b0}) $stop;
+            if ({wc,wo,w0} != {32'd2,1'b0,1'b0}) $stop;
          end
          if (cyc==8) begin
          end

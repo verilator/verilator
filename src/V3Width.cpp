@@ -1337,19 +1337,17 @@ private:
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             iterateCheckSizedSelf(nodep, "THS", nodep->thsp(), SELF, BOTH);
             iterateCheckSizedSelf(nodep, "FHS", nodep->fhsp(), SELF, BOTH);
-            // If it's a 32 bit number, we need a 6 bit number as we need to return '32'.
-            const int selwidth = V3Number::log2b(nodep->lhsp()->width()) + 1;
-            nodep->dtypeSetLogicSized(selwidth,
-                                      VSigning::UNSIGNED);  // Spec doesn't indicate if an integer
+            // For widthMin, if a 32 bit number, we need a 6 bit number as we need to return '32'.
+            const int widthMin = V3Number::log2b(nodep->lhsp()->width()) + 1;
+            nodep->dtypeSetLogicUnsized(32, widthMin, VSigning::SIGNED);
         }
     }
     void visit(AstCountOnes* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
-            // If it's a 32 bit number, we need a 6 bit number as we need to return '32'.
-            const int selwidth = V3Number::log2b(nodep->lhsp()->width()) + 1;
-            nodep->dtypeSetLogicSized(selwidth,
-                                      VSigning::UNSIGNED);  // Spec doesn't indicate if an integer
+            // For widthMin, if a 32 bit number, we need a 6 bit number as we need to return '32'.
+            const int widthMin = V3Number::log2b(nodep->lhsp()->width()) + 1;
+            nodep->dtypeSetLogicUnsized(32, widthMin, VSigning::SIGNED);
         }
     }
     void visit(AstCvtPackString* nodep) override {

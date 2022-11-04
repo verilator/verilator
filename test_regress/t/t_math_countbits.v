@@ -23,19 +23,19 @@ module t(/*AUTOARG*/
    reg [31:0] ctrl1;
    reg [31:0] ctrl2;
 
-   reg [4:0] result_16_1;
-   reg [4:0] result_16_2;
-   reg [4:0] result_16_3;
-   reg [5:0] result_32_1;
-   reg [5:0] result_32_2;
-   reg [5:0] result_32_3;
-   reg [6:0] result_64_1;
-   reg [6:0] result_64_2;
-   reg [6:0] result_64_3;
-   reg [3:0] result_10_3;
-   reg [4:0] result_21_3;
-   reg [5:0] result_59_3;
-   reg [6:0] result_70_3;
+   int result_16_1;
+   int result_16_2;
+   int result_16_3;
+   int result_32_1;
+   int result_32_2;
+   int result_32_3;
+   int result_64_1;
+   int result_64_2;
+   int result_64_3;
+   int result_10_3;
+   int result_21_3;
+   int result_59_3;
+   int result_70_3;
 
    initial begin
       if ($countbits(32'b111100000000, '1) != 4) $stop;
