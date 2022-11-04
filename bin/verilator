@@ -76,7 +76,8 @@ if ($opt_gdbbt && !gdb_works()) {
 my @quoted_sw = map { sh_escape($_) } @Opt_Verilator_Sw;
 if ($opt_gdb) {
     # Generic GDB interactive
-    run (aslr_off()
+    run (ulimit_stack_unlimited()
+         . aslr_off()
          . ($ENV{VERILATOR_GDB} || "gdb")
          . " " . verilator_bin()
          # Note, uncomment to set breakpoints before running:
@@ -92,12 +93,14 @@ if ($opt_gdb) {
          . " -ex 'bt'");
 } elsif ($opt_rr) {
     # Record with rr
-    run (aslr_off()
+    run (ulimit_stack_unlimited()
+         . aslr_off()
          . "rr record " . verilator_bin()
          . " " . join(' ', @quoted_sw));
 } elsif ($opt_gdbbt && $Debug) {
     # Run under GDB to get gdbbt
-    run (aslr_off()
+    run (ulimit_stack_unlimited()
+         . aslr_off()
          . "gdb"
          . " " . verilator_bin()
          . " --batch --quiet --return-child-result"
@@ -106,10 +109,13 @@ if ($opt_gdb) {
          . " -ex 'bt' -ex 'quit'");
 } elsif ($Debug) {
     # Debug
-    run(aslr_off() . verilator_bin() . " " . join(' ', @quoted_sw));
+    run(ulimit_stack_unlimited()
+        . aslr_off()
+        . verilator_bin()
+        . " " . join(' ', @quoted_sw));
 } else {
     # Normal, non gdb
-    run(verilator_bin() . " " . join(' ', @quoted_sw));
+    run(ulimit_stack_unlimited() . verilator_bin() . " " . join(' ', @quoted_sw));
 }
 
 #----------------------------------------------------------------------
@@ -175,6 +181,16 @@ sub aslr_off {
     my $ok = `setarch --addr-no-randomize echo ok 2>/dev/null` || "";
     if ($ok =~ /ok/) {
         return "setarch --addr-no-randomize ";
+    } else {
+        return "";
+    }
+}
+
+sub ulimit_stack_unlimited {
+    system("ulimit -s unlimited 2>/dev/null");
+    my $status = $?;
+    if ($status == 0) {
+        return "ulimit -s unlimited 2>/dev/null; exec ";
     } else {
         return "";
     }
