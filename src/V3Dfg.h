@@ -375,6 +375,22 @@ public:
         return *storagep;
     }
 
+    // Set user data, becomes current.
+    template <typename T>
+    typename std::enable_if<sizeof(T) <= sizeof(void*), void>::type setUser(T value) {
+        static_assert(sizeof(T) <= sizeof(UserDataStorage),
+                      "Size of user data type 'T' is too large for allocated storage");
+        static_assert(alignof(T) <= alignof(UserDataStorage),
+                      "Alignment of user data type 'T' is larger than allocated storage");
+        T* const storagep = reinterpret_cast<T*>(&m_userDataStorage);
+        const uint32_t userCurrent = m_graphp->m_userCurrent;
+#if VL_DEBUG
+        UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving");
+#endif
+        m_userCnt = userCurrent;
+        *storagep = value;
+    }
+
     // Width of result
     uint32_t width() const {
         // This is a hot enough function that this is an expensive check, so in debug build only.
