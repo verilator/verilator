@@ -1223,6 +1223,8 @@ Summary:
 
    Deprecated and has no effect (ignored).
 
+   In versions prior to 5.004, created a model which was not thread safe.
+
 .. option:: --threads-dpi all
 
 .. option:: --threads-dpi none

@@ -130,8 +130,8 @@ endif
 #######################################################################
 ##### Threaded builds
 
-LDLIBS += $(CFG_LDLIBS_THREADS)
 CPPFLAGS += $(CFG_CXXFLAGS_STD_NEWEST)
+LDLIBS += $(CFG_LDLIBS_THREADS)
 
 ifneq ($(VM_TIMING),0)
  ifneq ($(VM_TIMING),)
