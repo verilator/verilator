@@ -499,7 +499,7 @@ private:
         warnTri(rhsp);
         const int width = VN_AS(widthp, Const)->toSInt();
         if (width > (1 << 28)) {
-            nodep->v3error("Width of :+ or :- is huge; vector of over 1billion bits: "
+            nodep->v3error("Width of :+ or :- is huge; vector of over 1 billion bits: "
                            << widthp->prettyName());
         }
         if (width < 0) nodep->v3error("Width of :+ or :- is < 0: " << widthp->prettyName());

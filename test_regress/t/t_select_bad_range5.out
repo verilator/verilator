@@ -1,0 +1,19 @@
+%Error: t/t_select_bad_range5.v:16:19: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
+                                     : ... In instance t
+   16 |    assign mi = unk[3:2];
+      |                   ^
+%Warning-SELRANGE: t/t_select_bad_range5.v:16:19: Extracting 2 bits from only 1 bit number
+                                                : ... In instance t
+   16 |    assign mi = unk[3:2];
+      |                   ^
+                   ... For warning description see https://verilator.org/warn/SELRANGE?v=latest
+                   ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
+%Warning-SELRANGE: t/t_select_bad_range5.v:16:19: Selection index out of range: 3:2 outside 1:0
+                                                : ... In instance t
+   16 |    assign mi = unk[3:2];
+      |                   ^
+%Warning-WIDTH: t/t_select_bad_range5.v:16:14: Operator ASSIGNW expects 1 bits on the Assign RHS, but Assign RHS's SEL generates 2 bits.
+                                             : ... In instance t
+   16 |    assign mi = unk[3:2];
+      |              ^
+%Error: Exiting due to

@@ -835,7 +835,7 @@ void V3Options::notify() {
     }
 
     if (coverage() && savable()) {
-        cmdfl->v3error("--coverage and --savable not supported together");
+        cmdfl->v3error("Unsupported: --coverage and --savable not supported together");
     }
 
     // Mark options as available

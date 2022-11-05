@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_sys_fscanf_bad.v:13:7: Unsupported: %l in $fscanf
+   13 |       $fscanf(file, "%l", i);   
+      |       ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_sys_fscanf_bad.v:14:7: Unsupported: %m in $fscanf
+   14 |       $fscanf(file, "%m", i);   
+      |       ^~~~~~~
+%Error: Exiting due to

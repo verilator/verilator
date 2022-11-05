@@ -21,14 +21,19 @@ my %Outputs;
 
 my %Suppressed;
 foreach my $s (
-    ' exited with ',  # driver.pl filters out
+    ' exited with ',  # Is hit; driver.pl filters out
     'EOF in unterminated string',  # Instead get normal unterminated
+    'Enum ranges must be integral, per spec',  # Hard to hit
+    'Return with return value isn\'t underneath a function',  # Hard to hit, get other bad return messages
+    'Select from non-array ',  # Instead get type does not have a bit range
+    'Syntax error parsing real: \'',  # Instead can't lex the number
+    'Unsupported: Ranges ignored in port-lists',  # Hard to hit
+    'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
     # Not yet analyzed
     ' is not an in/out/inout/param/interface: ',
     ' loading non-variable',
     '$fopen mode should be <= 4 characters',
     '\'foreach\' loop variable expects simple variable name',
-    '--coverage and --savable not supported together',
     '--pipe-filter protocol error, unexpected: ',
     '/*verilator sformat*/ can only be applied to last argument of ',
     'Argument needed for string.',
@@ -47,10 +52,7 @@ foreach my $s (
     'Circular logic when ordering code (non-cutable edge loop)',
     'Deferred assertions must use \'#0\' (IEEE 1800-2017 16.4)',
     'Define or directive not defined: `',
-    'Duplicate declaration of member name: ',
-    'EOF in (*',
     'Enum names without values only allowed on numeric types',
-    'Enum ranges must be integral, per spec',
     'Exceeded limit of ',
     'Extern declaration\'s scope is not a defined class',
     'Format to $display-like function must have constant format string',
@@ -73,8 +75,6 @@ foreach my $s (
     'Parameter type pin value isn\'t a type: Param ',
     'Parameter type variable isn\'t a type: Param ',
     'Pattern replication value of 0 is not legal.',
-    'Return with return value isn\'t underneath a function',
-    'Select from non-array ',
     'Signals inside functions/tasks cannot be marked forceable',
     'Size-changing cast to zero or negative size',
     'Slice size cannot be zero.',
@@ -82,9 +82,7 @@ foreach my $s (
     'String of ',
     'Symbol matching ',
     'Syntax Error: Range \':\', \'+:\' etc are not allowed in the instance ',
-    'Syntax error parsing real: \'',
     'Syntax error: \'virtual\' not allowed before var declaration',
-    'This may be because there\'s no search path specified with -I<dir>.',
     'Unexpected connection to arrayed port',
     'Unhandled attribute type',
     'Unknown Error Code: ',
@@ -101,8 +99,6 @@ foreach my $s (
     'Unsupported/unknown built-in dynamic array method ',
     'Unsupported: $bits for queue',
     'Unsupported: $c can\'t generate wider than 64 bits',
-    'Unsupported: %l in $fscanf',
-    'Unsupported: %m in $fscanf',
     'Unsupported: --no-structs-packed',
     'Unsupported: 4-state numbers in this context',
     'Unsupported: Concatenation to form ',
@@ -111,7 +107,6 @@ foreach my $s (
     'Unsupported: Per-bit array instantiations ',
     'Unsupported: Public functions with >64 bit outputs; ',
     'Unsupported: RHS of ==? or !=? must be ',
-    'Unsupported: Ranges ignored in port-lists',
     'Unsupported: Replication to form ',
     'Unsupported: Shifting of by over 32-bit number isn\'t supported.',
     'Unsupported: Signal strengths are unsupported ',
@@ -120,19 +115,10 @@ foreach my $s (
     'Unsupported: Unclocked assertion',
     'Unsupported: don\'t know how to deal with ',
     'Unsupported: event arrays',
-    'Unsupported: left < right of bit extract: ',
     'Unsupported: modport export',
+    'Unsupported: no_inline for tasks',
     'Unsupported: static cast to ',
     'Unsupported: super',
-    'Width of :+ or :- is < 0: ',
-    'Width of :+ or :- is huge; vector of over 1billion bits: ',
-    'Width of bit extract isn\'t a constant',
-    'Width of bit range is huge; vector of over 1billion bits: 0x',
-    'dynamic new() not expected in this context (data type must be dynamic array)',
-    'dynamic new() not expected in this context (expected under an assign)',
-    'line_length must be multiple of 4 for BASE64',
-    'new() not expected in this context',
-    'no_inline not supported for tasks',
     ) { $Suppressed{$s} = 1; }
 
 if (!-r "$root/.git") {
@@ -153,6 +139,7 @@ sub check {
     print "\n";
 
     print "Checking for v3error/v3warn messages in sources without coverage in test_regress/t/*.out:\n";
+    print "(Developers: If a message is impossible, use UASSERT or v3fatalSrc instead of v3error)";
     print "\n";
 
     my %used_suppressed;

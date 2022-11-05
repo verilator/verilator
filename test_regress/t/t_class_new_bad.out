@@ -10,4 +10,15 @@
                                  : ... In instance t
    33 |       c3 = new();   
       |            ^~~
-%Error: Exiting due to
+%Error: t/t_class_new_bad.v:34:12: dynamic new() not expected in this context (data type must be dynamic array)
+                                 : ... In instance t
+   34 |       c1 = new[2];
+      |            ^~~
+%Error: t/t_class_new_bad.v:34:10: Assign RHS expects a CLASSREFDTYPE 'ClsNoArg'
+                                 : ... In instance t
+   34 |       c1 = new[2];
+      |          ^
+%Error: Internal Error: t/t_class_new_bad.v:34:10: ../V3Width.cpp:#: Node has no type
+                                                 : ... In instance t
+   34 |       c1 = new[2];
+      |          ^

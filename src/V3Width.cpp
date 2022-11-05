@@ -802,7 +802,7 @@ private:
             // Don't need to iterate because V3Const already constified
             const int width = nodep->elementsConst();
             if (width > (1 << 28)) {
-                nodep->v3error("Width of bit range is huge; vector of over 1billion bits: 0x"
+                nodep->v3error("Width of bit range is huge; vector of over 1 billion bits: 0x"
                                << std::hex << width);
             }
             // Note width() not set on range; use elementsConst()
@@ -831,7 +831,8 @@ private:
             V3Const::constifyParamsEdit(nodep->widthp());  // widthp may change
             const AstConst* const widthConstp = VN_CAST(nodep->widthp(), Const);
             if (!widthConstp) {
-                nodep->v3error("Width of bit extract isn't a constant");
+                nodep->v3error(
+                    "Width of bit extract isn't a constant");  // Impossible? // LCOV_EXCL_LINE
                 nodep->dtypeSetBit();
                 return;
             }
