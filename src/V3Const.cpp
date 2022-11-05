@@ -1646,6 +1646,16 @@ private:
         nodep->replaceWith(childp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
+    void replaceWChildBool(AstNode* nodep, AstNode* childp) {
+        // NODE(..., CHILD(...)) -> REDOR(CHILD(...))
+        childp->unlinkFrBack();
+        if (childp->width1()) {
+            nodep->replaceWith(childp);
+        } else {
+            nodep->replaceWith(new AstRedOr{childp->fileline(), childp});
+        }
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
 
     //! Replace a ternary node with its RHS after iterating
     //! Used with short-circuiting, where the RHS has not yet been iterated.
@@ -1672,6 +1682,8 @@ private:
         // Keep RHS, remove LHS
         replaceWChild(nodep, nodep->rhsp());
     }
+    void replaceWLhsBool(AstNodeBiop* nodep) { replaceWChildBool(nodep, nodep->lhsp()); }
+    void replaceWRhsBool(AstNodeBiop* nodep) { replaceWChildBool(nodep, nodep->rhsp()); }
     void replaceAsv(AstNodeBiop* nodep) {
         // BIASV(CONSTa, BIASV(CONSTb, c)) -> BIASV( BIASV_CONSTED(a,b), c)
         // BIASV(SAMEa,  BIASV(SAMEb, c))  -> BIASV( BIASV(SAMEa,SAMEb), c)
@@ -3282,7 +3294,7 @@ private:
     TREEOP ("AstLogAnd{$lhsp.isZero, $rhsp}",   "replaceZero(nodep)");
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstLogOr   {$lhsp.isOne}",         "replaceNum(nodep, 1)");
-    TREEOP ("AstLogOr {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
+    TREEOP ("AstLogOr {$lhsp.isZero, $rhsp}",   "replaceWRhsBool(nodep)");
     TREEOP ("AstDiv   {$lhsp.isZero, $rhsp}",   "replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstDivS  {$lhsp.isZero, $rhsp}",   "replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstMul   {$lhsp.isZero, $rhsp}",   "replaceZeroChkPure(nodep,$rhsp)");
@@ -3304,7 +3316,7 @@ private:
     TREEOP ("AstAdd   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
     TREEOP ("AstAnd   {$lhsp, $rhsp.isZero}",   "replaceZeroChkPure(nodep,$lhsp)");
     TREEOP ("AstLogAnd{$lhsp, $rhsp.isZero}",   "replaceZeroChkPure(nodep,$lhsp)");
-    TREEOP ("AstLogOr {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
+    TREEOP ("AstLogOr {$lhsp, $rhsp.isZero}",   "replaceWLhsBool(nodep)");
     TREEOP ("AstMul   {$lhsp, $rhsp.isZero}",   "replaceZeroChkPure(nodep,$lhsp)");
     TREEOP ("AstMulS  {$lhsp, $rhsp.isZero}",   "replaceZeroChkPure(nodep,$lhsp)");
     TREEOP ("AstOr    {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
@@ -3315,11 +3327,11 @@ private:
     TREEOP ("AstXor   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
     // Non-zero on one side or the other
     TREEOP ("AstAnd   {$lhsp.isAllOnes, $rhsp}",        "replaceWRhs(nodep)");
-    TREEOP ("AstLogAnd{$lhsp.isNeqZero, $rhsp}",        "replaceWRhs(nodep)");
+    TREEOP ("AstLogAnd{$lhsp.isNeqZero, $rhsp}",        "replaceWRhsBool(nodep)");
     TREEOP ("AstOr    {$lhsp.isAllOnes, $rhsp, isTPure($rhsp)}",        "replaceWLhs(nodep)");  // ->allOnes
     TREEOP ("AstLogOr {$lhsp.isNeqZero, $rhsp}",        "replaceNum(nodep,1)");
     TREEOP ("AstAnd   {$lhsp, $rhsp.isAllOnes}",        "replaceWLhs(nodep)");
-    TREEOP ("AstLogAnd{$lhsp, $rhsp.isNeqZero}",        "replaceWLhs(nodep)");
+    TREEOP ("AstLogAnd{$lhsp, $rhsp.isNeqZero}",        "replaceWLhsBool(nodep)");
     TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, isTPure($lhsp)}",        "replaceWRhs(nodep)");  // ->allOnes
     TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, isTPure($lhsp), nodep->isPure()}",        "replaceNum(nodep,1)");
     TREEOP ("AstXor   {$lhsp.isAllOnes, $rhsp}",        "AstNot{$rhsp}");
@@ -3460,8 +3472,8 @@ private:
     TREEOP ("AstNeqN   {operandsSame($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstNeqCase{operandsSame($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstNeqWild{operandsSame($lhsp,,$rhsp)}",   "replaceZero(nodep)");
-    TREEOP ("AstLogAnd {operandsSame($lhsp,,$rhsp), $lhsp.width1}",     "replaceWLhs(nodep)");
-    TREEOP ("AstLogOr  {operandsSame($lhsp,,$rhsp), $lhsp.width1}",     "replaceWLhs(nodep)");
+    TREEOP ("AstLogAnd {operandsSame($lhsp,,$rhsp)}",   "replaceWLhsBool(nodep)");
+    TREEOP ("AstLogOr  {operandsSame($lhsp,,$rhsp)}",   "replaceWLhsBool(nodep)");
     ///=== Verilog operators
     // Comparison against 1'b0/1'b1; must be careful about widths.
     // These use Not, so must be Verilog only
