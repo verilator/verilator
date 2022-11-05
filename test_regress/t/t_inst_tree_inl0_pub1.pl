@@ -16,7 +16,7 @@ my $default_vltmt_threads = $Self->get_default_vltmt_threads();
 compile(
     verilator_flags2 => ['--stats', "$Self->{t_dir}/$Self->{name}.vlt"],
     # Force 3 threads even if we have fewer cores
-    threads => $Self->{vltmt} ? $default_vltmt_threads : 0
+    threads => $Self->{vltmt} ? $default_vltmt_threads : 1
     );
 
 sub checkRelativeRefs {

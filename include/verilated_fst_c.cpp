@@ -28,10 +28,8 @@
 #include "verilated_fst_c.h"
 
 // GTKWave configuration
-#ifdef VL_THREADED
-# define HAVE_LIBPTHREAD
-# define FST_WRITER_PARALLEL
-#endif
+#define HAVE_LIBPTHREAD
+#define FST_WRITER_PARALLEL
 
 // Include the GTKWave implementation directly
 #define FST_CONFIG_INCLUDE "fst_config.h"
@@ -248,14 +246,11 @@ void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum, fst
 // Get/commit trace buffer
 
 VerilatedFst::Buffer* VerilatedFst::getTraceBuffer() {
-#ifdef VL_THREADED
     if (offload()) return new OffloadBuffer{*this};
-#endif
     return new Buffer{*this};
 }
 
 void VerilatedFst::commitTraceBuffer(VerilatedFst::Buffer* bufp) {
-#ifdef VL_THREADED
     if (offload()) {
         OffloadBuffer* const offloadBufferp = static_cast<OffloadBuffer*>(bufp);
         if (offloadBufferp->m_offloadBufferWritep) {
@@ -263,7 +258,6 @@ void VerilatedFst::commitTraceBuffer(VerilatedFst::Buffer* bufp) {
             return;  // Buffer will be deleted by the offload thread
         }
     }
-#endif
     delete bufp;
 }
 

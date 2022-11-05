@@ -1213,14 +1213,17 @@ Summary:
 
 .. option:: --threads <threads>
 
-.. option:: --no-threads
-
-   With "--threads 0" or "--no-threads", the default, the generated model
-   is not thread safe. With "--threads 1", the generated model is single
-   threaded but may run in a multithreaded environment. With "--threads N",
+   With "--threads 1", the default, the generated model is single threaded
+   but may run in a multithreaded environment. With "--threads N",
    where N >= 2, the model is generated to run multithreaded on up to N
    threads. See :ref:`Multithreading`. This option also applies to
    :vlopt:`--trace` (but not :vlopt:`--trace-fst`).
+
+.. option:: --no-threads
+
+   Deprecated and has no effect (ignored).
+
+   In versions prior to 5.004, created a model which was not thread safe.
 
 .. option:: --threads-dpi all
 

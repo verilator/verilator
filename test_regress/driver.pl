@@ -904,7 +904,7 @@ sub compile_vlt_flags {
                           @{$param{verilator_flags}},
                           @{$param{verilator_flags2}},
                           @{$param{verilator_flags3}});
-    die "%Error: specify threads via 'threads =>' argument, not as a command line option" unless ($checkflags !~ /(^|\s)-?-threads\s/ && $checkflags !~ /(^|\s)-?-no-threads($|\s)/);
+    die "%Error: specify threads via 'threads =>' argument, not as a command line option" unless ($checkflags !~ /(^|\s)-?-threads\s/);
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
     $self->{trace} = ($opt_trace || $checkflags =~ /-trace\b/
                       || $checkflags =~ /-trace-fst\b/);

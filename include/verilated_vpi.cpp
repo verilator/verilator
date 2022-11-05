@@ -71,7 +71,7 @@ class VerilatedVpio VL_NOT_FINAL {
 
     // MEM MANGLEMENT
     // Internal note: Globals may multi-construct, see verilated.cpp top.
-    static VL_THREAD_LOCAL uint8_t* t_freeHead;
+    static thread_local uint8_t* t_freeHead;
 
 public:
     // CONSTRUCTORS
@@ -205,7 +205,7 @@ public:
     const VerilatedRange* rangep() const override { return &get_range(); }
     const char* name() const override { return m_varp->name(); }
     const char* fullname() const override {
-        static VL_THREAD_LOCAL std::string t_out;
+        static thread_local std::string t_out;
         t_out = std::string{m_scopep->name()} + "." + name();
         return t_out.c_str();
     }
@@ -348,7 +348,7 @@ public:
     uint32_t size() const override { return varp()->packed().elements(); }
     const VerilatedRange* rangep() const override { return &(varp()->packed()); }
     const char* fullname() const override {
-        static VL_THREAD_LOCAL std::string t_out;
+        static thread_local std::string t_out;
         constexpr size_t LEN_MAX_INDEX = 25;
         char num[LEN_MAX_INDEX];
         VL_SNPRINTF(num, LEN_MAX_INDEX, "%d", m_index);
@@ -666,7 +666,7 @@ public:
 // Statics
 // Internal note: Globals may multi-construct, see verilated.cpp top.
 
-VL_THREAD_LOCAL uint8_t* VerilatedVpio::t_freeHead = nullptr;
+thread_local uint8_t* VerilatedVpio::t_freeHead = nullptr;
 
 //======================================================================
 // VerilatedVpiError
@@ -708,7 +708,7 @@ public:
     }
     void setMessage(const std::string& file, PLI_INT32 line, const char* message, ...) {
         // message cannot be a const string& as va_start cannot use a reference
-        static VL_THREAD_LOCAL std::string t_filehold;
+        static thread_local std::string t_filehold;
         va_list args;
         va_start(args, message);
         VL_VSNPRINTF(m_buff, sizeof(m_buff), message, args);
@@ -1701,15 +1701,15 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
                   const char* fullname) {
     if (!vl_check_format(varp, valuep, fullname, true)) return;
     // Maximum required size is for binary string, one byte per bit plus null termination
-    static VL_THREAD_LOCAL char t_outStr[VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE + 1];
+    static thread_local char t_outStr[VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE + 1];
     // cppcheck-suppress variableScope
-    static const VL_THREAD_LOCAL int t_outStrSz = sizeof(t_outStr) - 1;
+    static const thread_local int t_outStrSz = sizeof(t_outStr) - 1;
     // We used to presume vpiValue.format = vpiIntVal or if single bit vpiScalarVal
     // This may cause backward compatibility issues with older code.
     if (valuep->format == vpiVectorVal) {
         // Vector pointer must come from our memory pool
         // It only needs to persist until the next vpi_get_value
-        static VL_THREAD_LOCAL t_vpi_vecval t_out[VL_VALUE_STRING_MAX_WORDS * 2];
+        static thread_local t_vpi_vecval t_out[VL_VALUE_STRING_MAX_WORDS * 2];
         valuep->value.vector = t_out;
         if (varp->vltype() == VLVT_UINT8) {
             t_out[0].aval = *(reinterpret_cast<CData*>(varDatap));

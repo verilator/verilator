@@ -56,7 +56,7 @@
 # if !defined(_WIN32) && !defined(__MINGW32__)
 #  define VL_ATTR_WEAK __attribute__((weak))
 # endif
-# if defined(__clang__) && defined(VL_THREADED)
+# if defined(__clang__)
 #  define VL_ACQUIRE(...) __attribute__((acquire_capability(__VA_ARGS__)))
 #  define VL_ACQUIRE_SHARED(...) __attribute__((acquire_shared_capability(__VA_ARGS__)))
 #  define VL_RELEASE(...) __attribute__((release_capability(__VA_ARGS__)))
@@ -139,47 +139,34 @@
 # define VL_PREFETCH_RW(p)  ///< Prefetch pointer argument with read/write intent
 #endif
 
-#if defined(VL_THREADED) && !defined(VL_CPPCHECK)
-# if defined(_MSC_VER) && _MSC_VER >= 1900
-#  define VL_THREAD_LOCAL thread_local
-# elif defined(__GNUC__)
-#  if (__cplusplus < 201103L)
-#   error "VL_THREADED/--threads support requires C++-11 or newer only; use newer compiler"
-#  endif
-# else
-#  error "Unsupported compiler for VL_THREADED: No thread-local declarator"
-# endif
-# define VL_THREAD_LOCAL thread_local  // "thread_local" when supported
-#else
-# define VL_THREAD_LOCAL  // "thread_local" when supported
-#endif
 
 #ifndef VL_NO_LEGACY
 # define VL_FUNC __func__  // Deprecated
 # define VL_THREAD  // Deprecated
+# define VL_THREAD_LOCAL thread_local  // Deprecated
 # define VL_STATIC_OR_THREAD static  // Deprecated
 #endif
 
 // Comment tag that Function is pure (and thus also VL_MT_SAFE)
 #define VL_PURE
-// Comment tag that function is threadsafe when VL_THREADED
+// Comment tag that function is threadsafe
 #if defined(__clang__)
 # define VL_MT_SAFE __attribute__((annotate("MT_SAFE")))
 #else
 # define VL_MT_SAFE
 #endif
-// Comment tag that function is threadsafe when VL_THREADED, only
+// Comment tag that function is threadsafe, only
 // during normal operation (post-init)
 #define VL_MT_SAFE_POSTINIT
 // Attribute that function is clang threadsafe and uses given mutex
 #define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
-// Comment tag that function is not threadsafe when VL_THREADED
+// Comment tag that function is not threadsafe
 #if defined(__clang__)
 # define VL_MT_UNSAFE __attribute__((annotate("MT_UNSAFE")))
 #else
 # define VL_MT_UNSAFE
 #endif
-// Comment tag that function is not threadsafe when VL_THREADED,
+// Comment tag that function is not threadsafe
 // protected to make sure single-caller
 #define VL_MT_UNSAFE_ONE
 
@@ -482,28 +469,26 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 //=========================================================================
 // Threading related OS-specific functions
 
-#if VL_THREADED
-# ifdef _WIN32
-#  define WIN32_LEAN_AND_MEAN
-#  define NOMINMAX
-#  include "Windows.h"
-#  define VL_CPU_RELAX() YieldProcessor()
-# elif defined(__i386__) || defined(__x86_64__) || defined(VL_CPPCHECK)
+#ifdef _WIN32
+# define WIN32_LEAN_AND_MEAN
+# define NOMINMAX
+# include "Windows.h"
+# define VL_CPU_RELAX() YieldProcessor()
+#elif defined(__i386__) || defined(__x86_64__) || defined(VL_CPPCHECK)
 // For more efficient busy waiting on SMT CPUs, let the processor know
 // we're just waiting so it can let another thread run
-#  define VL_CPU_RELAX() asm volatile("rep; nop" ::: "memory")
-# elif defined(__ia64__)
-#  define VL_CPU_RELAX() asm volatile("hint @pause" ::: "memory")
-# elif defined(__aarch64__)
-#  define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
-# elif defined(__powerpc64__)
-#  define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
-# elif defined(__loongarch__)
-// LoongArch does not currently have a yield/pause instruction
-#  define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
-# else
-#  error "Missing VL_CPU_RELAX() definition. Or, don't use VL_THREADED"
-# endif
+# define VL_CPU_RELAX() asm volatile("rep; nop" ::: "memory")
+#elif defined(__ia64__)
+# define VL_CPU_RELAX() asm volatile("hint @pause" ::: "memory")
+#elif defined(__aarch64__)
+# define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
+#elif defined(__powerpc64__)
+# define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
+#elif defined(__loongarch__)
+/ LoongArch does not currently have a yield/pause instruction
+# define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
+#else
+# error "Missing VL_CPU_RELAX() definition."
 #endif
 
 //=========================================================================

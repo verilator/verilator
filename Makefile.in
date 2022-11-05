@@ -322,7 +322,7 @@ CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
 
 cppcheck: $(CPPCHECK_DEP)
 %.cppcheck: %.cpp
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 -DVL_THREADED=1 $(CPPCHECK_INC) $<
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $<
 
 CLANGTIDY = clang-tidy
 CLANGTIDY_FLAGS = -config='' \
@@ -330,7 +330,7 @@ CLANGTIDY_FLAGS = -config='' \
 	-checks='-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-init-variables,-cppcoreguidelines-avoid-goto,-modernize-avoid-c-arrays,-readability-magic-numbers,-readability-simplify-boolean-expr,-cppcoreguidelines-macro-usage' \
 
 CLANGTIDY_DEP = $(subst .cpp,.cpp.tidy,$(CPPCHECK_CPP))
-CLANGTIDY_DEFS = -DVL_DEBUG=1 -DVL_THREADED=1 -DVL_CPPCHECK=1
+CLANGTIDY_DEFS = -DVL_DEBUG=1 -DVL_CPPCHECK=1
 
 clang-tidy: $(CLANGTIDY_DEP)
 %.cpp.tidy: %.cpp

@@ -116,7 +116,7 @@ class CMakeEmitter final {
         cmake_set_raw(*of, name + "_COVERAGE", v3Global.opt.coverage() ? "1" : "0");
         *of << "# Timing mode?  0/1\n";
         cmake_set_raw(*of, name + "_TIMING", v3Global.usesTiming() ? "1" : "0");
-        *of << "# Threaded output mode?  0/1/N threads (from --threads)\n";
+        *of << "# Threaded output mode?  1/N threads (from --threads)\n";
         cmake_set_raw(*of, name + "_THREADS", cvtToStr(v3Global.opt.threads()));
         *of << "# VCD Tracing output mode?  0/1 (from --trace)\n";
         cmake_set_raw(*of, name + "_TRACE_VCD",

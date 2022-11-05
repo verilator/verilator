@@ -130,19 +130,8 @@ endif
 #######################################################################
 ##### Threaded builds
 
-ifneq ($(VM_C11),0)
- ifneq ($(VM_C11),)
-  VK_C11=1
- endif
-endif
-
-ifneq ($(VM_THREADS),0)
- ifneq ($(VM_THREADS),)
-  CPPFLAGS += -DVL_THREADED
-  VK_C11=1
-  VK_LIBS_THREADED=1
- endif
-endif
+CPPFLAGS += $(CFG_CXXFLAGS_STD_NEWEST)
+LDLIBS += $(CFG_LDLIBS_THREADS)
 
 ifneq ($(VM_TIMING),0)
  ifneq ($(VM_TIMING),)
@@ -150,18 +139,6 @@ ifneq ($(VM_TIMING),0)
  endif
 endif
 
-ifneq ($(VK_C11),0)
- ifneq ($(VK_C11),)
-  # Need C++11 at least, so always default to newest
-  CPPFLAGS += $(CFG_CXXFLAGS_STD_NEWEST)
- endif
-endif
-
-ifneq ($(VK_LIBS_THREADED),0)
- ifneq ($(VK_LIBS_THREADED),)
-  LDLIBS += $(CFG_LDLIBS_THREADS)
- endif
-endif
 
 #######################################################################
 ### Aggregates

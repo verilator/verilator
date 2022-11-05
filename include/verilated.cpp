@@ -27,7 +27,7 @@
 //
 // verilated.o may exist both in --lib-create (incrementally linked .a/.so)
 // and the main module.  Both refer the same instance of static
-// variables/VL_THREAD_LOCAL in verilated.o such as Verilated, or
+// variables/thread_local in verilated.o such as Verilated, or
 // VerilatedImpData.  This is important to share that state, but the
 // sharing may cause a double-free error when shutting down because the
 // loader will insert a constructor/destructor at each reference to
@@ -68,9 +68,7 @@
 # include <direct.h>  // mkdir
 #endif
 
-#ifdef VL_THREADED
-# include "verilated_threads.h"
-#endif
+#include "verilated_threads.h"
 // clang-format on
 
 #include "verilated_trace.h"
@@ -96,7 +94,7 @@ VerilatedContext* Verilated::s_lastContextp = nullptr;
 
 // Keep below together in one cache line
 // Internal note: Globals may multi-construct, see verilated.cpp top.
-VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
+thread_local Verilated::ThreadLocal Verilated::t_s;
 
 //===========================================================================
 // User definable functions
@@ -193,43 +191,27 @@ void vl_warn(const char* filename, int linenum, const char* hier, const char* ms
 // Wrapper to call certain functions via messages when multithreaded
 
 void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE {
-#ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_finish(filename, linenum, hier);
     }});
-#else
-    vl_finish(filename, linenum, hier);
-#endif
 }
 
 void VL_STOP_MT(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_SAFE {
-#ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_stop_maybe(filename, linenum, hier, maybe);
     }});
-#else
-    vl_stop_maybe(filename, linenum, hier, maybe);
-#endif
 }
 
 void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
-#ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_fatal(filename, linenum, hier, msg);
     }});
-#else
-    vl_fatal(filename, linenum, hier, msg);
-#endif
 }
 
 void VL_WARN_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
-#ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_warn(filename, linenum, hier, msg);
     }});
-#else
-    vl_warn(filename, linenum, hier, msg);
-#endif
 }
 
 //===========================================================================
@@ -252,24 +234,16 @@ std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
 }
 
 uint64_t _vl_dbg_sequence_number() VL_MT_SAFE {
-#ifdef VL_THREADED
     static std::atomic<uint64_t> sequence;
-#else
-    static uint64_t sequence = 0;
-#endif
     return ++sequence;
 }
 
 uint32_t VL_THREAD_ID() VL_MT_SAFE {
-#ifdef VL_THREADED
     // Alternative is to use std::this_thread::get_id, but that returns a
     // hard-to-read number and is very slow
     static std::atomic<uint32_t> s_nextId(0);
-    static VL_THREAD_LOCAL uint32_t t_myId = ++s_nextId;
+    static thread_local uint32_t t_myId = ++s_nextId;
     return t_myId;
-#else
-    return 0;
-#endif
 }
 
 void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
@@ -288,7 +262,6 @@ void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
     VL_PRINTF("-V{t%u,%" PRIu64 "}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
 }
 
-#ifdef VL_THREADED
 void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap, formatp);
@@ -298,7 +271,6 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
         VL_PRINTF("%s", out.c_str());
     }});
 }
-#endif
 
 //===========================================================================
 // Random -- Mostly called at init time, so not inline.
@@ -317,8 +289,8 @@ static uint32_t vl_sys_rand32() VL_MT_UNSAFE {
 }
 
 uint64_t vl_rand64() VL_MT_SAFE {
-    static VL_THREAD_LOCAL uint64_t t_state[2];
-    static VL_THREAD_LOCAL uint32_t t_seedEpoch = 0;
+    static thread_local uint64_t t_state[2];
+    static thread_local uint32_t t_seedEpoch = 0;
     // For speed, we use a thread-local epoch number to know when to reseed
     // A thread always belongs to a single context, so this works out ok
     if (VL_UNLIKELY(t_seedEpoch != VerilatedContextImp::randSeedEpoch())) {
@@ -762,7 +734,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
     // Note uses a single buffer internally; presumes only one usage per printf
     // Note also assumes variables < 64 are not wide, this assumption is
     // sometimes not true in low-level routines written here in verilated.cpp
-    static VL_THREAD_LOCAL char t_tmp[VL_VALUE_STRING_MAX_WIDTH];
+    static thread_local char t_tmp[VL_VALUE_STRING_MAX_WIDTH];
     const char* pctp = nullptr;  // Most recent %##.##g format
     bool inPct = false;
     bool widthSet = false;
@@ -1160,7 +1132,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     // Read a Verilog $sscanf/$fscanf style format into the output list
     // The format must be pre-processed (and lower cased) by Verilator
     // Arguments are in "width, arg-value (or WDataIn* if wide)" form
-    static VL_THREAD_LOCAL char t_tmp[VL_VALUE_STRING_MAX_WIDTH];
+    static thread_local char t_tmp[VL_VALUE_STRING_MAX_WIDTH];
     int floc = fbits - 1;
     IData got = 0;
     bool inPct = false;
@@ -1453,7 +1425,7 @@ void VL_FCLOSE_I(IData fdi) VL_MT_SAFE {
 }
 
 void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1464,7 +1436,7 @@ void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) VL_MT_SAFE 
 }
 
 void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1475,7 +1447,7 @@ void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) VL_MT_SAFE 
 }
 
 void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1486,7 +1458,7 @@ void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) VL_MT_SAFE 
 }
 
 void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1497,7 +1469,7 @@ void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) VL_MT_SAFE 
 }
 
 void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1518,7 +1490,7 @@ void VL_SFORMAT_X(int obits_ignored, std::string& output, const char* formatp, .
 }
 
 std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1529,7 +1501,7 @@ std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE {
 }
 
 void VL_WRITEF(const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1541,7 +1513,7 @@ void VL_WRITEF(const char* formatp, ...) VL_MT_SAFE {
 
 void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
 
     va_list ap;
@@ -1771,7 +1743,7 @@ IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_S
 
 const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
     const std::string& match = Verilated::threadContextp()->impp()->argPlusMatch(prefixp);
-    static VL_THREAD_LOCAL char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
+    static thread_local char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match.empty()) return nullptr;
     char* dp = t_outstr;
     for (const char* sp = match.c_str() + std::strlen(prefixp) + 1;  // +1 to skip the "+"
@@ -1865,7 +1837,7 @@ IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
 static const char* memhFormat(int nBits) {
     assert((nBits >= 1) && (nBits <= 32));
 
-    static VL_THREAD_LOCAL char t_buf[32];
+    static thread_local char t_buf[32];
     switch ((nBits - 1) / 4) {
     case 0: VL_SNPRINTF(t_buf, 32, "%%01x"); break;
     case 1: VL_SNPRINTF(t_buf, 32, "%%02x"); break;
@@ -1883,7 +1855,7 @@ static const char* memhFormat(int nBits) {
 static const char* formatBinary(int nBits, uint32_t bits) {
     assert((nBits >= 1) && (nBits <= 32));
 
-    static VL_THREAD_LOCAL char t_buf[64];
+    static thread_local char t_buf[64];
     for (int i = 0; i < nBits; i++) {
         const bool isOne = bits & (1 << (nBits - 1 - i));
         t_buf[i] = (isOne ? '1' : '0');
@@ -2474,7 +2446,6 @@ void VerilatedContext::threads(unsigned n) {
             "%Error: Cannot set simulation threads after the thread pool has been created.");
     }
 
-#if VL_THREADED
     if (m_threads == n) return;  // To avoid unnecessary warnings
     m_threads = n;
     const unsigned hardwareThreadsAvailable = std::thread::hardware_concurrency();
@@ -2483,13 +2454,6 @@ void VerilatedContext::threads(unsigned n) {
                      "to %u. This will likely cause significant slowdown.\n",
                      hardwareThreadsAvailable, m_threads);
     }
-#else
-    if (n > 1) {
-        VL_PRINTF_MT("%%Warning: Verilator run-time library built without VL_THREADS. Ignoring "
-                     "call to 'VerilatedContext::threads' with argument %u.\n",
-                     n);
-    }
-#endif
 }
 
 void VerilatedContext::commandArgs(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex) {
@@ -2505,7 +2469,7 @@ void VerilatedContext::commandArgsAdd(int argc, const char** argv)
 const char* VerilatedContext::commandArgsPlusMatch(const char* prefixp)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const std::string& match = impp()->argPlusMatch(prefixp);
-    static VL_THREAD_LOCAL char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
+    static thread_local char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match.empty()) return "";
     char* dp = t_outstr;
     for (const char* sp = match.c_str(); *sp && (dp - t_outstr) < (VL_VALUE_STRING_MAX_WIDTH - 2);)
@@ -2537,9 +2501,7 @@ void VerilatedContext::addModel(VerilatedModel* modelp) {
 
 VerilatedVirtualBase* VerilatedContext::threadPoolp() {
     if (m_threads == 1) return nullptr;
-#if VL_THREADED
     if (!m_threadPool) m_threadPool.reset(new VlThreadPool{this, m_threads - 1});
-#endif
     return m_threadPool.get();
 }
 
@@ -2701,9 +2663,7 @@ void VerilatedContext::randSeed(int val) VL_MT_SAFE {
     m_s.m_randSeed = val;
     const uint64_t newEpoch = VerilatedContextImp::s().s_randSeedEpoch + 1;
     // Obververs must see new epoch AFTER seed updated
-#ifdef VL_THREADED
     std::atomic_signal_fence(std::memory_order_release);
-#endif
     VerilatedContextImp::s().s_randSeedEpoch = newEpoch;
 }
 uint64_t VerilatedContextImp::randSeedDefault64() const VL_MT_SAFE {
@@ -2760,16 +2720,12 @@ VerilatedSyms::VerilatedSyms(VerilatedContext* contextp)
     : _vm_contextp__(contextp ? contextp : Verilated::threadContextp()) {
     VerilatedContext::checkMagic(_vm_contextp__);
     Verilated::threadContextp(_vm_contextp__);
-#ifdef VL_THREADED
     __Vm_evalMsgQp = new VerilatedEvalMsgQueue;
-#endif
 }
 
 VerilatedSyms::~VerilatedSyms() {
     VerilatedContext::checkMagic(_vm_contextp__);
-#ifdef VL_THREADED
     delete __Vm_evalMsgQp;
-#endif
 }
 
 //===========================================================================
@@ -2791,8 +2747,8 @@ void Verilated::debug(int level) VL_MT_SAFE {
 
 const char* Verilated::catName(const char* n1, const char* n2, const char* delimiter) VL_MT_SAFE {
     // Used by symbol table creation to make module names
-    static VL_THREAD_LOCAL char* t_strp = nullptr;
-    static VL_THREAD_LOCAL size_t t_len = 0;
+    static thread_local char* t_strp = nullptr;
+    static thread_local size_t t_len = 0;
     const size_t newlen = std::strlen(n1) + std::strlen(n2) + std::strlen(delimiter) + 1;
     if (VL_UNLIKELY(!t_strp || newlen > t_len)) {
         if (t_strp) delete[] t_strp;
@@ -2843,11 +2799,7 @@ void Verilated::removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
 }
 void Verilated::runFlushCallbacks() VL_MT_SAFE {
     // Flush routines may call flush, so avoid mutex deadlock
-#ifdef VL_THREADED
     static std::atomic<int> s_recursing;
-#else
-    static int s_recursing = 0;
-#endif
     if (!s_recursing++) {
         const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
         runCallbacks(VlCbStatic.s_flushCbs);
@@ -2870,11 +2822,7 @@ void Verilated::removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
     removeCb(cb, datap, VlCbStatic.s_exitCbs);
 }
 void Verilated::runExitCallbacks() VL_MT_SAFE {
-#ifdef VL_THREADED
     static std::atomic<int> s_recursing;
-#else
-    static int s_recursing = 0;
-#endif
     if (!s_recursing++) {
         const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
         runCallbacks(VlCbStatic.s_exitCbs);
@@ -2908,17 +2856,14 @@ void Verilated::mkdir(const char* dirname) VL_MT_UNSAFE {
 }
 
 void Verilated::quiesce() VL_MT_SAFE {
-#ifdef VL_THREADED
     // Wait until all threads under this evaluation are quiet
     // THREADED-TODO
-#endif
 }
 
 int Verilated::exportFuncNum(const char* namep) VL_MT_SAFE {
     return VerilatedImp::exportFind(namep);
 }
 
-#ifdef VL_THREADED
 void Verilated::endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
     VL_DEBUG_IF(VL_DBG_MSGF("End of thread mtask\n"););
     VerilatedThreadMsgQueue::flush(evalMsgQp);
@@ -2932,7 +2877,6 @@ void Verilated::endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
     VL_DEBUG_IF(VL_DBG_MSGF("End-of-eval cleanup\n"););
     evalMsgQp->process();
 }
-#endif
 
 //===========================================================================
 // VerilatedImp:: Methods
@@ -3138,7 +3082,7 @@ void VerilatedHierarchy::remove(VerilatedScope* fromp, VerilatedScope* top) {
 //===========================================================================
 // VerilatedOneThreaded:: Methods
 
-#if defined(VL_THREADED) && defined(VL_DEBUG)
+#ifdef VL_DEBUG
 void VerilatedAssertOneThread::fatal_different() VL_MT_SAFE {
     VL_FATAL_MT(__FILE__, __LINE__, "",
                 "Routine called that is single threaded, but called from"

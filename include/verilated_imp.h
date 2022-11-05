@@ -41,10 +41,8 @@
 #include <string>
 #include <utility>
 #include <vector>
-#ifdef VL_THREADED
-# include <functional>
-# include <queue>
-#endif
+#include <functional>
+#include <queue>
 // clang-format on
 
 class VerilatedScope;
@@ -52,7 +50,6 @@ class VerilatedScope;
 //======================================================================
 // Threaded message passing
 
-#ifdef VL_THREADED
 // Message, enqueued on an mtask, and consumed on the main eval thread
 class VerilatedMsg final {
 public:
@@ -152,7 +149,7 @@ private:
     VL_UNCOPYABLE(VerilatedThreadMsgQueue);
     // METHODS
     static VerilatedThreadMsgQueue& threadton() {
-        static VL_THREAD_LOCAL VerilatedThreadMsgQueue t_s;
+        static thread_local VerilatedThreadMsgQueue t_s;
         return t_s;
     }
 
@@ -178,7 +175,6 @@ public:
         }
     }
 };
-#endif  // VL_THREADED
 
 // FILE* list constructed from a file-descriptor
 class VerilatedFpList final {

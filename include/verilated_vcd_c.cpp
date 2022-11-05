@@ -230,12 +230,10 @@ VerilatedVcd::~VerilatedVcd() {
     if (m_wrBufp) VL_DO_CLEAR(delete[] m_wrBufp, m_wrBufp = nullptr);
     deleteNameMap();
     if (m_filep && m_fileNewed) VL_DO_CLEAR(delete m_filep, m_filep = nullptr);
-#ifdef VL_THREADED
     if (parallel()) {
         assert(m_numBuffers == m_freeBuffers.size());
         for (auto& pair : m_freeBuffers) VL_DO_CLEAR(delete[] pair.first, pair.first = nullptr);
     }
-#endif
 }
 
 void VerilatedVcd::closePrev() {
@@ -574,7 +572,6 @@ void VerilatedVcd::declDouble(uint32_t code, const char* name, bool array, int a
 
 VerilatedVcd::Buffer* VerilatedVcd::getTraceBuffer() {
     VerilatedVcd::Buffer* const bufp = new Buffer{*this};
-#ifdef VL_THREADED
     if (parallel()) {
         // Note: This is called from VeriltedVcd::dump, which already holds the lock
         // If no buffer available, allocate a new one
@@ -593,14 +590,12 @@ VerilatedVcd::Buffer* VerilatedVcd::getTraceBuffer() {
         bufp->m_size = pair.second;
         bufp->adjustGrowp();
     }
-#endif
     // Return the buffer
     return bufp;
 }
 
 void VerilatedVcd::commitTraceBuffer(VerilatedVcd::Buffer* bufp) {
     if (parallel()) {
-#if VL_THREADED
         // Note: This is called from VeriltedVcd::dump, which already holds the lock
         // Resize output buffer. Note, we use the full size of the trace buffer, as
         // this is a lot more stable than the actual occupancy of the trace buffer.
@@ -616,9 +611,6 @@ void VerilatedVcd::commitTraceBuffer(VerilatedVcd::Buffer* bufp) {
         bufferCheck();
         // Put buffer back on free list
         m_freeBuffers.emplace_back(bufp->m_bufp, bufp->m_size);
-#else
-        VL_FATAL_MT(__FILE__, __LINE__, "", "Unreachable");
-#endif
     } else {
         // Needs adjusting for emitTimeChange
         m_writep = bufp->m_writep;
@@ -665,7 +657,6 @@ void VerilatedVcdBuffer::finishLine(uint32_t code, char* writep) {
     m_writep = writep + suffixp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1];
 
     if (m_owner.parallel()) {
-#ifdef VL_THREADED
         // Double the size of the buffer if necessary
         if (VL_UNLIKELY(m_writep >= m_growp)) {
             // Compute occupied size of current buffer
@@ -685,9 +676,6 @@ void VerilatedVcdBuffer::finishLine(uint32_t code, char* writep) {
             // Adjust resize limit
             adjustGrowp();
         }
-#else
-        VL_FATAL_MT(__FILE__, __LINE__, "", "Unreachable");
-#endif
     } else {
         // Flush the write buffer if there's not enough space left for new information
         // We only call this once per vector, so we need enough slop for a very wide "b###" line

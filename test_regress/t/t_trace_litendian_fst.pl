@@ -17,7 +17,7 @@ top_filename("t/t_trace_litendian.v");
 # Strangely, asking for more threads makes it go away.
 compile(
     verilator_flags2 => ['--cc --trace-fst --trace-params -Wno-LITENDIAN'],
-    threads => $Self->{vltmt} ? 6 : 0
+    threads => $Self->{vltmt} ? 6 : 1
     );
 
 execute(

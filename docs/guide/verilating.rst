@@ -183,11 +183,6 @@ Multithreading
 
 Verilator supports multithreaded simulation models.
 
-With :vlopt:`--no-threads`, the default, the model is not thread safe, and
-any use of more than one thread calling into one or even different
-Verilated models may result in unpredictable behavior. This gives the
-highest single thread performance.
-
 With :vlopt:`--threads 1 <--threads>`, the generated model is single
 threaded, however the support libraries are multithread safe. This allows
 different instantiations of model(s) to potentially each be run under a
@@ -202,13 +197,6 @@ responsibility not to oversubscribe the available CPU cores. Under CPU
 oversubscription, the Verilated model should not livelock nor deadlock,
 however, you can expect performance to be far worse than it would be with
 proper ratio of threads and CPU cores.
-
-The remainder of this section describe behavior with :vlopt:`--threads 1
-<--threads>` or :vlopt:`--threads {N} <--threads>` (not
-:vlopt:`--no-threads`).
-
-:code:`VL_THREADED` is defined in the C++ code when compiling a threaded
-Verilated module, causing the Verilated support classes become threadsafe.
 
 The thread used for constructing a model must be the same thread that calls
 :code:`eval()` into the model, this is called the "eval thread". The thread
