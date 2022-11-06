@@ -209,29 +209,53 @@ void V3DfgPasses::removeVars(DfgGraph& dfg, DfgRemoveVarsContext& ctx) {
 }
 
 void V3DfgPasses::removeUnused(DfgGraph& dfg) {
-    // Iteratively remove operation vertices
-    while (true) {
-        // Do one pass over the graph.
-        bool changed = false;
-        for (DfgVertex *vtxp = dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
-            if (!vtxp->hasSinks()) {
-                changed = true;
-                vtxp->unlinkDelete(dfg);
-            }
+    // DfgVertex::user is the next pointer of the work list elements
+    const auto userDataInUse = dfg.userDataInUse();
+
+    // Head of work list. Note that we want all next pointers in the list to be non-zero (including
+    // that of the last element). This allows as to do two important things: detect if an element
+    // is in the list by checking for a non-zero next poitner, and easy prefetching without
+    // conditionals. The address of the graph is a good sentinel as it is a valid memory address,
+    // and we can easily check for the end of the list.
+    DfgVertex* const sentinelp = reinterpret_cast<DfgVertex*>(&dfg);
+    DfgVertex* workListp = sentinelp;
+
+    // Add all unused vertices to the work list. This also allocates all DfgVertex::user.
+    for (DfgVertex *vtxp = dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+        nextp = vtxp->verticesNext();
+        if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
+        if (vtxp->hasSinks()) {
+            // This vertex is used. Allocate user, but don't add to work list.
+            vtxp->setUser<DfgVertex*>(nullptr);
+        } else {
+            // This vertex is unused. Add to work list.
+            vtxp->setUser<DfgVertex*>(workListp);
+            workListp = vtxp;
         }
-        if (!changed) break;
-        // Do another pass in the opposite direction. Alternating directions reduces
-        // the pathological complexity with left/right leaning trees.
-        changed = false;
-        for (DfgVertex *vtxp = dfg.opVerticesRbeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesPrev();
-            if (!vtxp->hasSinks()) {
-                changed = true;
-                vtxp->unlinkDelete(dfg);
-            }
-        }
-        if (!changed) break;
+    }
+
+    // Process the work list
+    while (workListp != sentinelp) {
+        // Pick up the head
+        DfgVertex* const vtxp = workListp;
+        // Detach the head
+        workListp = vtxp->getUser<DfgVertex*>();
+        // Prefetch next item
+        VL_PREFETCH_RW(workListp);
+        // If used, then nothing to do, so move on
+        if (vtxp->hasSinks()) continue;
+        // Add sources of unused vertex to work list
+        vtxp->forEachSource([&](DfgVertex& src) {
+            // We only remove actual operation vertices in this loop
+            if (src.is<DfgConst>() || src.is<DfgVertexVar>()) return;
+            // If already in work list then nothing to do
+            if (src.getUser<DfgVertex*>()) return;
+            // Actually add to work list.
+            src.setUser<DfgVertex*>(workListp);
+            workListp = &src;
+        });
+        // Remove the unused vertex
+        vtxp->unlinkDelete(dfg);
     }
 
     // Finally remove unused constants
