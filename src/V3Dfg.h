@@ -496,6 +496,9 @@ public:
     // Is this a DfgConst that is all ones
     inline bool isOnes() const;
 
+    // Should this vertex be inlined when rendering to Ast, or be stored to a temporary
+    inline bool inlined() const;
+
     // Methods that allow DfgVertex to participate in error reporting/messaging
     void v3errorEnd(std::ostringstream& str) const { m_filelinep->v3errorEnd(str); }
     void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN {
@@ -911,6 +914,15 @@ bool DfgVertex::isZero() const {
 
 bool DfgVertex::isOnes() const {
     if (const DfgConst* const constp = cast<DfgConst>()) return constp->isOnes();
+    return false;
+}
+
+bool DfgVertex::inlined() const {
+    // Inline vertices that drive only a single node, or are special
+    if (!hasMultipleSinks()) return true;
+    if (is<DfgConst>()) return true;
+    if (is<DfgVertexVar>()) return true;
+    if (const DfgArraySel* const selp = cast<DfgArraySel>()) return selp->bitp()->is<DfgConst>();
     return false;
 }
 

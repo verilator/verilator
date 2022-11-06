@@ -221,19 +221,8 @@ class DfgToAstVisitor final : DfgVisitor {
         return resultp;
     }
 
-    bool inlineVertex(DfgVertex& vtx) {
-        // Inline vertices that drive only a single node, or are special
-        if (!vtx.hasMultipleSinks()) return true;
-        if (vtx.is<DfgConst>()) return true;
-        if (vtx.is<DfgVertexVar>()) return true;
-        if (const DfgArraySel* const selp = vtx.cast<DfgArraySel>()) {
-            return selp->bitp()->is<DfgConst>();
-        }
-        return false;
-    }
-
     AstNodeExpr* convertSource(DfgVertex* vtxp) {
-        if (inlineVertex(*vtxp)) {
+        if (vtxp->inlined()) {
             // Inlined vertices are simply recursively converted
             UASSERT_OBJ(vtxp->hasSinks(), vtxp, "Must have one sink: " << vtxp->typeName());
             return convertDfgVertexToAstNodeExpr(vtxp);
@@ -406,7 +395,7 @@ class DfgToAstVisitor final : DfgVisitor {
             nextp = vtxp->verticesNext();
 
             // If the vertex is known to be inlined, then there is nothing to do
-            if (inlineVertex(*vtxp)) continue;
+            if (vtxp->inlined()) continue;
 
             // Check if this uses a temporary, vs one of the vars rendered above
             AstVar* const resultVarp = getResultVar(vtxp);

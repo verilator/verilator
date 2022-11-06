@@ -1615,18 +1615,6 @@ class V3DfgPeephole final : public DfgVisitor {
 
 #undef APPLYING
 
-    //    // Process one vertex. Return true if graph changed
-    void processVertex(DfgVertex* vtxp) {
-        // Check if unused and remove if so
-        if (!vtxp->hasSinks()) {
-            deleteVertex(vtxp);
-            return;
-        }
-
-        // Transform node (might get deleted)
-        iterate(vtxp);
-    }
-
     V3DfgPeephole(DfgGraph& dfg, V3DfgPeepholeContext& ctx)
         : m_dfg{dfg}
         , m_ctx{ctx} {
@@ -1650,8 +1638,13 @@ class V3DfgPeephole final : public DfgVisitor {
             m_workListp = vtxp->getUser<DfgVertex*>();
             VL_PREFETCH_RW(m_workListp);
             vtxp->setUser<DfgVertex*>(nullptr);
-            // Process the vertex
-            processVertex(vtxp);
+            // Remove unused vertices as we gp
+            if (!vtxp->hasSinks()) {
+                deleteVertex(vtxp);
+                continue;
+            }
+            // Transform node (might get deleted in the process)
+            iterate(vtxp);
         }
     }
 
