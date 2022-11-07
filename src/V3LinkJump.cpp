@@ -83,6 +83,14 @@ private:
                 underp = nodep;
                 under_and_next = false;  // IE we skip the entire while
             }
+        } else if (AstDoWhile* const dowhilep = VN_CAST(nodep, DoWhile)) {
+            // Handle it the same as AstWhile, because it will be converted to it
+            if (endOfIter) {
+                underp = dowhilep->stmtsp();
+            } else {
+                underp = nodep;
+                under_and_next = false;
+            }
         } else {
             nodep->v3fatalSrc("Unknown jump point for break/disable/continue");
             return nullptr;
@@ -113,7 +121,7 @@ private:
             // Keep any AstVars under the function not under the new JumpLabel
             for (AstNode *nextp, *varp = underp; varp; varp = nextp) {
                 nextp = varp->nextp();
-                if (VN_IS(varp, Var)) blockp->addPrev(varp->unlinkFrBack());
+                if (VN_IS(varp, Var)) blockp->addHereThisAsNext(varp->unlinkFrBack());
             }
             // Label goes last
             blockp->addEndStmtsp(labelp);
@@ -189,6 +197,27 @@ private:
             iterateAndNextNull(nodep->incsp());
         }
     }
+    void visit(AstDoWhile* nodep) override {
+        // It is converted to AstWhile in this visit method
+        VL_RESTORER(m_loopp);
+        VL_RESTORER(m_loopInc);
+        {
+            m_loopp = nodep;
+            m_loopInc = false;
+            iterateAndNextNull(nodep->precondsp());
+            iterateAndNextNull(nodep->condp());
+            iterateAndNextNull(nodep->stmtsp());
+            m_loopInc = true;
+            iterateAndNextNull(nodep->incsp());
+        }
+        AstNode* const condp = nodep->condp() ? nodep->condp()->unlinkFrBack() : nullptr;
+        AstNode* const bodyp = nodep->stmtsp() ? nodep->stmtsp()->unlinkFrBack() : nullptr;
+        AstNode* const incsp = nodep->incsp() ? nodep->incsp()->unlinkFrBack() : nullptr;
+        AstWhile* const whilep = new AstWhile{nodep->fileline(), condp, bodyp, incsp};
+        nodep->replaceWith(whilep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        if (bodyp) whilep->addHereThisAsNext(bodyp->cloneTree(false));
+    }
     void visit(AstForeach* nodep) override {
         VL_RESTORER(m_loopp);
         {
@@ -212,14 +241,14 @@ private:
         } else {
             if (funcp && nodep->lhsp()) {
                 // Set output variable to return value
-                nodep->addPrev(new AstAssign(
+                nodep->addHereThisAsNext(new AstAssign(
                     nodep->fileline(),
                     new AstVarRef(nodep->fileline(), VN_AS(funcp->fvarp(), Var), VAccess::WRITE),
                     nodep->lhsp()->unlinkFrBackWithNext()));
             }
             // Jump to the end of the function call
             AstJumpLabel* const labelp = findAddLabel(m_ftaskp, false);
-            nodep->addPrev(new AstJumpGo(nodep->fileline(), labelp));
+            nodep->addHereThisAsNext(new AstJumpGo(nodep->fileline(), labelp));
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
