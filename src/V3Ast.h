@@ -1874,7 +1874,6 @@ public:
         return static_cast<T_NodeResult*>(addNext<AstNode, AstNode>(nodep, newp));
     }
     inline AstNode* addNext(AstNode* newp);
-    inline void addPrev(AstNode* newp);
     void addNextHere(AstNode* newp);  // Insert newp at this->nextp
     void addHereThisAsNext(AstNode* newp);  // Adds at old place of this, this becomes next
     void replaceWith(AstNode* newp);  // Replace current node in tree with new node
@@ -2207,10 +2206,6 @@ AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp);
 
 // Inline method implementations
 AstNode* AstNode::addNext(AstNode* newp) { return addNext(this, newp); }
-void AstNode::addPrev(AstNode* newp) {
-    replaceWith(newp);
-    newp->addNext(this);
-}
 
 // Specialisations of privateTypeTest
 #include "V3Ast__gen_type_tests.h"  // From ./astgen

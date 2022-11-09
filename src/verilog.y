@@ -3324,11 +3324,7 @@ statement_item<nodep>:          // IEEE: statement_item
         |       yWHILE '(' expr ')' stmtBlock           { $$ = new AstWhile{$1, $3, $5}; }
         //                      // for's first ';' is in for_initialization
         |       statementFor                            { $$ = $1; }
-        |       yDO stmtBlock yWHILE '(' expr ')' ';'   { if ($2) {
-                                                             $$ = $2->cloneTree(true);
-                                                             $$->addNext(new AstWhile($1,$5,$2));
-                                                          }
-                                                          else $$ = new AstWhile($1,$5); }
+        |       yDO stmtBlock yWHILE '(' expr ')' ';'   { $$ = new AstDoWhile{$1, $5, $2}; }
         //                      // IEEE says array_identifier here, but dotted accepted in VMM and 1800-2009
         |       yFOREACH '(' idClassSelForeach ')' stmtBlock    { $$ = new AstForeach($1, $3, $5); }
         //
