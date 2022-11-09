@@ -234,7 +234,7 @@ private:
             return;
         } else if (!m_ftaskp) {
             nodep->v3error("Return isn't underneath a task or function");
-        } else if (funcp && !nodep->lhsp()) {
+        } else if (funcp && !nodep->lhsp() && !funcp->isConstructor()) {
             nodep->v3error("Return underneath a function should have return value");
         } else if (!funcp && nodep->lhsp()) {
             nodep->v3error("Return underneath a task shouldn't have return value");
