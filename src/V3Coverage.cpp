@@ -123,12 +123,13 @@ private:
         m_modp->addStmtsp(declp);
         UINFO(9, "new " << declp << endl);
 
-        AstCoverInc* const incp = new AstCoverInc(fl, declp);
+        AstCoverInc* const incp = new AstCoverInc{fl, declp};
         if (!trace_var_name.empty() && v3Global.opt.traceCoverage()) {
-            AstVar* const varp = new AstVar(incp->fileline(), VVarType::MODULETEMP, trace_var_name,
-                                            incp->findUInt32DType());
+            FileLine* const fl_nowarn = new FileLine{incp->fileline()};
+            fl_nowarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
+            AstVar* const varp = new AstVar{fl_nowarn, VVarType::MODULETEMP, trace_var_name,
+                                            incp->findUInt32DType()};
             varp->trace(true);
-            varp->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
             m_modp->addStmtsp(varp);
             UINFO(5, "New coverage trace: " << varp << endl);
             AstAssign* const assp = new AstAssign(
@@ -281,18 +282,18 @@ private:
 
                 // Add signal to hold the old value
                 const string newvarname = std::string{"__Vtogcov__"} + nodep->shortName();
+                FileLine* const fl_nowarn = new FileLine{nodep->fileline()};
+                fl_nowarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
                 AstVar* const chgVarp
-                    = new AstVar(nodep->fileline(), VVarType::MODULETEMP, newvarname, nodep);
-                chgVarp->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
+                    = new AstVar{fl_nowarn, VVarType::MODULETEMP, newvarname, nodep};
                 m_modp->addStmtsp(chgVarp);
 
                 // Create bucket for each dimension * bit.
                 // This is necessarily an O(n^2) expansion, which is why
                 // we limit coverage to signals with < 256 bits.
 
-                ToggleEnt newvec{std::string{""},
-                                 new AstVarRef{nodep->fileline(), nodep, VAccess::READ},
-                                 new AstVarRef{nodep->fileline(), chgVarp, VAccess::WRITE}};
+                ToggleEnt newvec{std::string{""}, new AstVarRef{fl_nowarn, nodep, VAccess::READ},
+                                 new AstVarRef{fl_nowarn, chgVarp, VAccess::WRITE}};
                 toggleVarRecurse(nodep->dtypeSkipRefp(), 0, newvec, nodep, chgVarp);
                 newvec.cleanup();
             }
