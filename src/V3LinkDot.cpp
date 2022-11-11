@@ -1220,20 +1220,15 @@ class LinkDotFindVisitor final : public VNVisitor {
                     && (m_statep->rootEntp()->nodep() == m_modSymp->parentp()->nodep())) {
                     // This is the toplevel module. Check for command line overwrites of parameters
                     // We first search if the parameter is overwritten and then replace it with a
-                    // new value. It will keep the same FileLine information.
+                    // new value.
                     if (v3Global.opt.hasParameter(nodep->name())) {
-                        AstVar* const newp = new AstVar{
-                            nodep->fileline(), VVarType{VVarType::GPARAM}, nodep->name(), nodep};
-                        newp->combineType(nodep);
                         const string svalue = v3Global.opt.parameter(nodep->name());
                         if (AstNode* const valuep
                             = AstConst::parseParamLiteral(nodep->fileline(), svalue)) {
-                            newp->valuep(valuep);
                             UINFO(9, "       replace parameter " << nodep << endl);
-                            UINFO(9, "       with " << newp << endl);
-                            nodep->replaceWith(newp);
-                            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                            nodep = newp;
+                            UINFO(9, "       with " << valuep << endl);
+                            if (nodep->valuep()) pushDeletep(nodep->valuep()->unlinkFrBack());
+                            nodep->valuep(valuep);
                         }
                     }
                 }
