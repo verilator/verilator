@@ -2,6 +2,4 @@
                                       : ... In instance t
    27 |    assert property (disable iff (val == 0) check(1, 1));
       |                                      ^~
-%Error: Internal Error: t/t_assert_disable_bad.v:21:7: ../V3Ast.cpp:#: Adding to non-empty, non-list op2
-   21 |       @(posedge clk)
-      |       ^
+%Error: Exiting due to

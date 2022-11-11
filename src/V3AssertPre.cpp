@@ -109,6 +109,7 @@ private:
                 if (nodep->disablep() && propExprp->disablep()) {
                     nodep->v3error("disable iff expression before property call and in its "
                                    "body is not legal");
+                    pushDeletep(propExprp->disablep()->unlinkFrBack());
                 }
                 // If disable iff is in outer property, move it to inner
                 if (nodep->disablep()) {
