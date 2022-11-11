@@ -20,6 +20,7 @@ Verilator 5.003 devel
 * Fix missing UNUSED warnings with --coverage (#3736). [alejandro-castro-ortegon]
 * Fix tracing parameters overridden with -G (#3723). [Iztok Jeras]
 * Fix wait 0.
+* Fix comparing ranged slices of unpacked arrays.
 
 
 Verilator 5.002 2022-10-29

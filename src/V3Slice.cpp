@@ -185,14 +185,12 @@ class SliceVisitor final : public VNVisitor {
                         << nodep->rhsp()->prettyTypeName()
                         << " on non-slicable (e.g. non-vector) right-hand-side operand");
                 } else {
-                    for (int index = 0; index < adtypep->rangep()->elementsConst(); ++index) {
+                    const int elements = adtypep->rangep()->elementsConst();
+                    for (int offset = 0; offset < elements; ++offset) {
                         // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
                         AstNodeBiop* const clonep
-                            = VN_AS(nodep->cloneType(
-                                        new AstArraySel{nodep->fileline(),
-                                                        nodep->lhsp()->cloneTree(false), index},
-                                        new AstArraySel{nodep->fileline(),
-                                                        nodep->rhsp()->cloneTree(false), index}),
+                            = VN_AS(nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, offset),
+                                                     cloneAndSel(nodep->rhsp(), elements, offset)),
                                     NodeBiop);
                         if (!logp) {
                             logp = clonep;
