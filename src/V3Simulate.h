@@ -863,6 +863,12 @@ private:
 
     void visit(AstComment*) override {}
 
+    void visit(AstStmtExpr* nodep) override {
+        if (jumpingOver(nodep)) return;
+        checkNodeInfo(nodep);
+        iterateChildren(nodep);
+    }
+
     void visit(AstJumpBlock* nodep) override {
         if (jumpingOver(nodep)) return;
         iterateChildren(nodep);
