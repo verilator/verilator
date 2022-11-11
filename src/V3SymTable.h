@@ -183,7 +183,7 @@ private:
                          bool honorExport) {
         if ((!honorExport || srcp->exported())
             && !findIdFlat(name)) {  // Don't insert over existing entry
-            VSymEnt* const symp = new VSymEnt(graphp, srcp);
+            VSymEnt* const symp = new VSymEnt{graphp, srcp};
             symp->exported(false);  // Can't reimport an import without an export
             symp->imported(true);
             reinsert(name, symp);
@@ -248,7 +248,7 @@ public:
             VSymEnt* const subSrcp = it->second;
             const AstVar* const varp = VN_CAST(subSrcp->nodep(), Var);
             if (!onlyUnmodportable || (varp && varp->isParam())) {
-                VSymEnt* const subSymp = new VSymEnt(graphp, subSrcp);
+                VSymEnt* const subSymp = new VSymEnt{graphp, subSrcp};
                 reinsert(name, subSymp);
                 // And recurse to create children
                 subSymp->importFromIface(graphp, subSrcp);
@@ -290,7 +290,7 @@ class VSymGraph final {
     VL_DEFINE_DEBUG_FUNCTIONS;
 
 public:
-    explicit VSymGraph(AstNetlist* nodep) { m_symRootp = new VSymEnt(this, nodep); }
+    explicit VSymGraph(AstNetlist* nodep) { m_symRootp = new VSymEnt{this, nodep}; }
     ~VSymGraph() {
         for (const VSymEnt* entp : m_symsp) delete entp;
     }

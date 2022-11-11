@@ -203,7 +203,7 @@ public:
     explicit V3GraphVertex(V3Graph* graphp);
     //! Clone copy constructor. Doesn't copy edges or user/userp.
     virtual V3GraphVertex* clone(V3Graph* graphp) const {
-        return new V3GraphVertex(graphp, *this);
+        return new V3GraphVertex{graphp, *this};
     }
     virtual ~V3GraphVertex() = default;
     void unlinkEdges(V3Graph* graphp);
@@ -271,6 +271,7 @@ protected:
     friend class V3GraphVertex;
     friend class GraphAcyc;
     friend class GraphAcycEdge;
+
     V3ListEnt<V3GraphEdge*> m_outs;  // Next Outbound edge for same vertex (linked list)
     V3ListEnt<V3GraphEdge*> m_ins;  // Next Inbound edge for same vertex (linked list)
     //
@@ -303,7 +304,7 @@ public:
     }
     //! Clone copy constructor.  Doesn't copy existing vertices or user/userp.
     virtual V3GraphEdge* clone(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top) const {
-        return new V3GraphEdge(graphp, fromp, top, *this);
+        return new V3GraphEdge{graphp, fromp, top, *this};
     }
     virtual ~V3GraphEdge() = default;
     // METHODS

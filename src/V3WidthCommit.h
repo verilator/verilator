@@ -80,10 +80,10 @@ public:
     static AstConst* newIfConstCommitSize(AstConst* nodep) {
         if (((nodep->dtypep()->width() != nodep->num().width()) || !nodep->num().sized())
             && !nodep->num().isString()) {  // Need to force the number from unsized to sized
-            V3Number num(nodep, nodep->dtypep()->width());
+            V3Number num{nodep, nodep->dtypep()->width()};
             num.opAssign(nodep->num());
             num.isSigned(nodep->isSigned());
-            AstConst* const newp = new AstConst(nodep->fileline(), num);
+            AstConst* const newp = new AstConst{nodep->fileline(), num};
             newp->dtypeFrom(nodep);
             return newp;
         } else {

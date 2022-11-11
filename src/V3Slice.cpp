@@ -109,14 +109,14 @@ class SliceVisitor final : public VNVisitor {
                                   + (!snodep->declRange().littleEndian()
                                          ? snodep->declRange().elements() - 1 - offset
                                          : offset));
-            newp = new AstArraySel(nodep->fileline(), snodep->fromp()->cloneTree(false), leOffset);
+            newp = new AstArraySel{nodep->fileline(), snodep->fromp()->cloneTree(false), leOffset};
         } else if (VN_IS(nodep, ArraySel) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel)
                    || VN_IS(nodep, CMethodHard) || VN_IS(nodep, MemberSel)) {
             UINFO(9, "  cloneSel(" << elements << "," << offset << ") " << nodep << endl);
             const int leOffset = !arrayp->rangep()->littleEndian()
                                      ? arrayp->rangep()->elementsConst() - 1 - offset
                                      : offset;
-            newp = new AstArraySel(nodep->fileline(), nodep->cloneTree(false), leOffset);
+            newp = new AstArraySel{nodep->fileline(), nodep->cloneTree(false), leOffset};
         } else {
             if (!m_assignError) {
                 nodep->v3error(nodep->prettyTypeName()
@@ -189,10 +189,10 @@ class SliceVisitor final : public VNVisitor {
                         // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
                         AstNodeBiop* const clonep
                             = VN_AS(nodep->cloneType(
-                                        new AstArraySel(nodep->fileline(),
-                                                        nodep->lhsp()->cloneTree(false), index),
-                                        new AstArraySel(nodep->fileline(),
-                                                        nodep->rhsp()->cloneTree(false), index)),
+                                        new AstArraySel{nodep->fileline(),
+                                                        nodep->lhsp()->cloneTree(false), index},
+                                        new AstArraySel{nodep->fileline(),
+                                                        nodep->rhsp()->cloneTree(false), index}),
                                     NodeBiop);
                         if (!logp) {
                             logp = clonep;
@@ -200,11 +200,11 @@ class SliceVisitor final : public VNVisitor {
                             switch (nodep->type()) {
                             case VNType::atEq:  // FALLTHRU
                             case VNType::atEqCase:
-                                logp = new AstLogAnd(nodep->fileline(), logp, clonep);
+                                logp = new AstLogAnd{nodep->fileline(), logp, clonep};
                                 break;
                             case VNType::atNeq:  // FALLTHRU
                             case VNType::atNeqCase:
-                                logp = new AstLogOr(nodep->fileline(), logp, clonep);
+                                logp = new AstLogOr{nodep->fileline(), logp, clonep};
                                 break;
                             default:
                                 nodep->v3fatalSrc("Unknown node type processing array slice");
