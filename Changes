@@ -19,6 +19,7 @@ Verilator 5.003 devel
 * Fix return type of $countbits functions to int (#3725). [Ryszard Rozak, Antmicro Ltd]
 * Fix missing UNUSED warnings with --coverage (#3736). [alejandro-castro-ortegon]
 * Fix tracing parameters overridden with -G (#3723). [Iztok Jeras]
+* Fix wait 0.
 
 
 Verilator 5.002 2022-10-29

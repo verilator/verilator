@@ -709,11 +709,13 @@ private:
                 awaitp->dtypeSetVoid();
                 nodep->replaceWith(awaitp->makeStmt());
                 if (stmtsp) VL_DO_DANGLING(stmtsp->deleteTree(), stmtsp);
+                VL_DO_DANGLING(condp->deleteTree(), condp);
             } else if (stmtsp) {
                 // Just put the statements there
                 nodep->replaceWith(stmtsp);
+            } else {
+                nodep->unlinkFrBack();
             }
-            VL_DO_DANGLING(condp->deleteTree(), condp);
         } else if (needDynamicTrigger(condp)) {
             // No point in making a sentree, just use the expression as sensitivity
             // Put the event control in an if so we only wait if the condition isn't met already
