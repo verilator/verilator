@@ -1165,8 +1165,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                                        << nodep->prettyNameQ() << '\n'
                                        << (ansiWarn ? nodep->warnMore()
                                                           + "... note: ANSI ports must have"
-                                                            " type declared with the I/O (IEEE "
-                                                            "1800-2017 23.2.2.2)\n"
+                                                            " type declared with the I/O"
+                                                            " (IEEE 1800-2017 23.2.2.2)\n"
                                                     : "")
                                        << nodep->warnContextPrimary() << '\n'
                                        << findvarp->warnOther()

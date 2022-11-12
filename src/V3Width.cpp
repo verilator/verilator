@@ -683,8 +683,8 @@ private:
             uint32_t times = constp->toUInt();
             if (times == 0
                 && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
-                nodep->v3error("Replication value of 0 is only legal under a concatenation (IEEE "
-                               "1800-2017 11.4.12.1)");
+                nodep->v3error("Replication value of 0 is only legal under a concatenation"
+                               " (IEEE 1800-2017 11.4.12.1)");
                 times = 1;
             }
 
@@ -743,8 +743,8 @@ private:
             const uint32_t times = constp->toUInt();
             if (times == 0
                 && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
-                nodep->v3error("Replication value of 0 is only legal under a concatenation (IEEE "
-                               "1800-2017 11.4.12.1)");
+                nodep->v3error("Replication value of 0 is only legal under a concatenation"
+                               " (IEEE 1800-2017 11.4.12.1)");
             }
             nodep->dtypeSetString();
         }
