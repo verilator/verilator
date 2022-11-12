@@ -285,7 +285,7 @@ private:
                 // Recurse into data type of the signal. The visit methods will add AstTraceDecls.
                 iterate(m_traVscp->varp()->dtypep()->skipRefToEnump());
                 // Cleanup
-                if (m_traValuep) VL_DO_DANGLING(m_traValuep->deleteTree(), m_traValuep);
+                if (m_traValuep) VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = nullptr);
             }
         }
         pathAdjustor.unwind();
