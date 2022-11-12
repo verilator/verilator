@@ -3012,6 +3012,16 @@ public:
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
 };
+class AstRandCase final : public AstNodeStmt {
+    // @astgen op2 := itemsp : List[AstCaseItem]
+public:
+    AstRandCase(FileLine* fl, AstCaseItem* itemsp)
+        : ASTGEN_SUPER_RandCase(fl) {
+        addItemsp(itemsp);
+    }
+    ASTGEN_MEMBERS_AstRandCase;
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
+};
 class AstRelease final : public AstNodeStmt {
     // Procedural 'release' statement
     // @astgen op1 := lhsp : AstNode

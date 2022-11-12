@@ -3369,8 +3369,7 @@ statement_item<nodep>:          // IEEE: statement_item
         //UNSUP randsequence_statement                  { $$ = $1; }
         //
         //                      // IEEE: randcase_statement
-        |       yRANDCASE case_itemList yENDCASE
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: SystemVerilog 2005 randcase statements"); }
+        |       yRANDCASE rand_case_itemList yENDCASE   { $$ = new AstRandCase{$1, $2}; }
         //
         //UNSUP expect_property_statement               { $$ = $1; }
         //
@@ -3525,6 +3524,12 @@ case_inside_itemList<caseItemp>:        // IEEE: { case_inside_item + open_range
         |       case_inside_itemList open_range_list colon stmtBlock { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
         |       case_inside_itemList yDEFAULT stmtBlock         { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $3}); }
         |       case_inside_itemList yDEFAULT colon stmtBlock   { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $4}); }
+        ;
+
+rand_case_itemList<caseItemp>:       // IEEE: { rand_case_item + ... }
+        //                      // Randcase syntax doesn't have default, or expression lists
+                expr colon stmtBlock                            { $$ = new AstCaseItem{$2, $1, $3}; }
+        |       rand_case_itemList expr colon stmtBlock         { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
         ;
 
 open_range_list<nodep>:         // ==IEEE: open_range_list + open_value_range

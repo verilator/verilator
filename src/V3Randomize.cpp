@@ -100,6 +100,7 @@ private:
             markMembers(classp);
         }
     }
+
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
@@ -124,7 +125,9 @@ private:
     const VNUser2InUse m_inuser2;
 
     // STATE
+    AstNodeModule* m_modp = nullptr;  // Current module
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
+    int m_randCaseNum = 0;  // Randcase number within a module for var naming
 
     // METHODS
     AstVar* enumValueTabp(AstEnumDType* nodep) {
@@ -197,7 +200,16 @@ private:
     }
 
     // VISITORS
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_randCaseNum);
+        m_modp = nodep;
+        m_randCaseNum = 0;
+        iterateChildren(nodep);
+    }
     void visit(AstClass* nodep) override {
+        VL_RESTORER(m_randCaseNum);
+        m_modp = nodep;
+        m_randCaseNum = 0;
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
         UINFO(9, "Define randomize() for " << nodep << endl);
@@ -238,6 +250,63 @@ private:
             }
         }
         nodep->user1(false);
+    }
+    void visit(AstRandCase* nodep) override {
+        // RANDCASE
+        //   CASEITEM expr1 : stmt1
+        //   CASEITEM expr2 : stmt2
+        // ->
+        //   tmp = URandomRange{0, num} + 1   // + 1 so weight 0 means never
+        //   if (tmp < expr1) stmt1;
+        //   else if (tmp < (expr2 + expr1)) stmt1;
+        //   else warning
+        // Note this code assumes that the expressions after V3Const are fast to compute
+        // Optimize: we would be better with a binary search tree to reduce ifs that execute
+        if (debug() >= 9) nodep->dumpTree(cout, "-rcin:  ");
+        AstNodeDType* const sumDTypep = nodep->findUInt64DType();
+
+        FileLine* const fl = nodep->fileline();
+        const std::string name = "__Vrandcase" + cvtToStr(m_randCaseNum++);
+        AstVar* const randVarp = new AstVar{fl, VVarType::STMTTEMP, name, sumDTypep};
+        randVarp->noSubst(true);
+        AstNodeExpr* sump = new AstConst{fl, AstConst::WidthedValue{}, 64, 0};
+        AstNodeIf* firstIfsp
+            = new AstIf{fl, new AstConst{fl, AstConst::BitFalse{}}, nullptr, nullptr};
+        AstNodeIf* ifsp = firstIfsp;
+
+        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+            AstNode* const condp = itemp->condsp()->unlinkFrBack();
+            sump
+                = new AstAdd{condp->fileline(), sump, new AstExtend{itemp->fileline(), condp, 64}};
+            AstNode* const stmtsp
+                = itemp->stmtsp() ? itemp->stmtsp()->unlinkFrBackWithNext() : nullptr;
+            AstNodeIf* const newifp
+                = new AstIf{itemp->fileline(),
+                            new AstLte{condp->fileline(),
+                                       new AstVarRef{condp->fileline(), randVarp, VAccess::READ},
+                                       sump->cloneTree(true)},
+                            stmtsp, nullptr};
+            ifsp->addElsesp(newifp);
+            ifsp = newifp;
+        }
+        AstDisplay* dispp = new AstDisplay{
+            fl, VDisplayType::DT_ERROR, "All randcase items had 0 weights (IEEE 1800-2017 18.16)",
+            nullptr, nullptr};
+        UASSERT_OBJ(m_modp, nodep, "randcase not under module");
+        dispp->fmtp()->timeunit(m_modp->timeunit());
+        ifsp->addElsesp(dispp);
+
+        AstNode* newp = randVarp;
+        AstNode* randp = new AstRand{fl, nullptr, false};
+        randp->dtypeSetUInt64();
+        newp->addNext(new AstAssign{fl, new AstVarRef{fl, randVarp, VAccess::WRITE},
+                                    new AstAdd{fl, new AstConst{fl, AstConst::Unsized64{}, 1},
+                                               new AstModDiv{fl, randp, sump}}});
+        newp->addNext(firstIfsp);
+        if (debug() >= 9) newp->dumpTreeAndNext(cout, "-rcnew: ");
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

@@ -4087,6 +4087,24 @@ private:
             }
         }
     }
+    void visit(AstRandCase* nodep) override {
+        // IEEE says each item is a int (32-bits), and sizes are based on natural sizing,
+        // but we'll sum to a 64-bit number then math is faster.
+        assertAtStatement(nodep);
+        v3Global.useRandomizeMethods(true);
+        AstNodeDType* const itemDTypep = nodep->findUInt32DType();
+        for (AstCaseItem *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
+            nextip = VN_AS(itemp->nextp(), CaseItem);  // Prelim may cause the node to get replaced
+            userIterateAndNext(itemp->stmtsp(), nullptr);
+            for (AstNode *nextcp, *condp = itemp->condsp(); condp; condp = nextcp) {
+                nextcp = condp->nextp();  // Prelim may cause the node to get replaced
+                iterateCheckTyped(itemp, "Randcase Item", condp, itemDTypep, BOTH);
+                VL_DANGLING(condp);  // Might have been replaced
+            }
+            VL_DANGLING(itemp);  // Might have been replaced
+        }
+    }
+
     void visit(AstNodeFor* nodep) override {
         assertAtStatement(nodep);
         userIterateAndNext(nodep->initsp(), nullptr);

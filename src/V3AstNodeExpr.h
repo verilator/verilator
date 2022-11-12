@@ -2839,7 +2839,7 @@ public:
 class AstURandomRange final : public AstNodeBiop {
     // $urandom_range
 public:
-    explicit AstURandomRange(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+    AstURandomRange(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER_URandomRange(fl, lhsp, rhsp) {
         dtypeSetUInt32();  // Says IEEE
     }

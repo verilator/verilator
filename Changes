@@ -15,6 +15,7 @@ Verilator 5.003 devel
 
 * Deprecate --no-threads; use --threads 1 for single threaded (#3703). [Kamil Rakoczy, Antmicro Ltd]
 * Support named properties (#3667). [Ryszard Rozak, Antmicro Ltd]
+* Support randcase.
 * Internal AST improvements, also affect XML format (#3721). [Geza Lore]
 * Fix return type of $countbits functions to int (#3725). [Ryszard Rozak, Antmicro Ltd]
 * Fix missing UNUSED warnings with --coverage (#3736). [alejandro-castro-ortegon]
