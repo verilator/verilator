@@ -206,8 +206,8 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BLKANDNBLK || m_e == BLKLOOPINIT
-                || m_e == CONTASSREG || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL
-                || m_e == PROCASSWIRE  // Says IEEE
+                || m_e == CONTASSREG || m_e == ENDLABEL || m_e == IMPURE || m_e == PINNOTFOUND
+                || m_e == PKGNODECL || m_e == PROCASSWIRE  // Says IEEE
                 || m_e == ZERODLY);
     }
     // Warnings to mention manual
@@ -218,7 +218,7 @@ public:
     bool lintError() const VL_MT_SAFE {
         return (m_e == ALWCOMBORDER || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
-                || m_e == CMPCONST || m_e == COLONPLUS || m_e == ENDLABEL || m_e == IMPLICIT
+                || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT
                 || m_e == LATCH || m_e == LITENDIAN || m_e == PINMISSING || m_e == REALCVT
                 || m_e == UNSIGNED || m_e == WIDTH);
     }

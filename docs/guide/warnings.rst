@@ -537,11 +537,11 @@ List Of Warnings
 
 .. option:: ENDLABEL
 
-   Warns that a label attached to a "end"-something statement does not
+   Error that a label attached to a "end"-something statement does not
    match the label attached to the block start.
 
-   Ignoring this warning will only suppress the lint check, it will
-   simulate correctly.
+   This error is required by IEEE. Ignoring this warning will only suppress
+   the lint check, it will simulate correctly.
 
    Faulty example:
 
@@ -556,7 +556,7 @@ List Of Warnings
 
    .. code-block::
 
-         %Warning-ENDLABEL: example.v:2:13: End label 'not_mine' does not match begin label 'mine'
+         %Error-ENDLABEL: example.v:2:13: End label 'not_mine' does not match begin label 'mine'
 
    To repair either fix the end label's name, or remove entirely.
 
