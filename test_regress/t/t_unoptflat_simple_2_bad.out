@@ -1,14 +1,14 @@
-%Warning-UNOPTFLAT: t/t_unoptflat_simple_2.v:15:15: Signal unoptimizable: Circular combinational logic: 't.x'
-   15 |    wire [2:0] x;
+%Warning-UNOPTFLAT: t/t_unoptflat_simple_2.v:16:15: Signal unoptimizable: Circular combinational logic: 't.x'
+   16 |    wire [2:0] x;
       |               ^
                     ... For warning description see https://verilator.org/warn/UNOPTFLAT?v=latest
                     ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
-                    t/t_unoptflat_simple_2.v:15:15:      Example path: t.x
-                    t/t_unoptflat_simple_2.v:17:18:      Example path: ASSIGNW
-                    t/t_unoptflat_simple_2.v:15:15:      Example path: t.x
+                    t/t_unoptflat_simple_2.v:16:15:      Example path: t.x
+                    t/t_unoptflat_simple_2.v:13:10:      Example path: ASSIGNW
+                    t/t_unoptflat_simple_2.v:16:15:      Example path: t.x
                     ... Widest variables candidate to splitting:
-                        t/t_unoptflat_simple_2.v:15:15:  t.x, width 3, circular fanout 2, can split_var
+                        t/t_unoptflat_simple_2.v:16:15:  t.x, width 3, circular fanout 1, can split_var
                     ... Candidates with the highest fanout:
-                        t/t_unoptflat_simple_2.v:15:15:  t.x, width 3, circular fanout 2, can split_var
+                        t/t_unoptflat_simple_2.v:16:15:  t.x, width 3, circular fanout 1, can split_var
                     ... Suggest add /*verilator split_var*/ to appropriate variables above.
 %Error: Exiting due to

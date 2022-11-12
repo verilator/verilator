@@ -1,0 +1,39 @@
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:13:18: Bits [3:1] of signal 'a' have multiple combinational drivers
+                                                         : ... In instance t
+                      t/t_dfg_multidriver_dfg_bad.v:14:19: ... Location of first driver
+   14 |     assign a[3:0] = i[3:0];
+      |                   ^
+                      t/t_dfg_multidriver_dfg_bad.v:15:19: ... Location of other driver
+   15 |     assign a[4:1] = ~i[4:1];
+      |                   ^
+                      t/t_dfg_multidriver_dfg_bad.v:13:18: ... Only the first driver will be respected
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:13:18: Bits [3:3] of signal 'a' have multiple combinational drivers
+                                                         : ... In instance t
+                      t/t_dfg_multidriver_dfg_bad.v:14:19: ... Location of first driver
+   14 |     assign a[3:0] = i[3:0];
+      |                   ^
+                      t/t_dfg_multidriver_dfg_bad.v:16:17: ... Location of other driver
+   16 |     assign a[3] = ~i[3];
+      |                 ^
+                      t/t_dfg_multidriver_dfg_bad.v:13:18: ... Only the first driver will be respected
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:13:18: Bits [7:6] of signal 'a' have multiple combinational drivers
+                                                         : ... In instance t
+                      t/t_dfg_multidriver_dfg_bad.v:17:19: ... Location of first driver
+   17 |     assign a[8:5] = i[8:5];
+      |                   ^
+                      t/t_dfg_multidriver_dfg_bad.v:18:19: ... Location of other driver
+   18 |     assign a[7:6] = ~i[7:6];
+      |                   ^
+                      t/t_dfg_multidriver_dfg_bad.v:13:18: ... Only the first driver will be respected
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:13:18: Bits [9:9] of signal 'a' have multiple combinational drivers
+                                                         : ... In instance t
+                      t/t_dfg_multidriver_dfg_bad.v:19:17: ... Location of first driver
+   19 |     assign a[9] = i[9];
+      |                 ^
+                      t/t_dfg_multidriver_dfg_bad.v:20:19: ... Location of other driver
+   20 |     assign a[9] = ~i[9];
+      |                   ^
+                      t/t_dfg_multidriver_dfg_bad.v:13:18: ... Only the first driver will be respected
+%Error: Exiting due to
