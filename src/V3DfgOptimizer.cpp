@@ -244,9 +244,12 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
     UINFO(2, __FUNCTION__ << ": " << endl);
 
     // NODE STATE
-    // AstVar::user1        -> Used by V3DfgPasses::astToDfg
-    // AstVar::user2        -> bool: Flag indicating referenced by AstVarXRef
+    // AstVar::user1 -> Used by V3DfgPasses::astToDfg and DfgPassed::dfgToAst
+    // AstVar::user2 -> bool: Flag indicating referenced by AstVarXRef (set just below)
+    // AstVar::user3 -> bool: Flag indicating written by logic not representable as DFG
+    //                        (set by V3DfgPasses::astToDfg)
     const VNUser2InUse user2InUse;
+    const VNUser3InUse user3InUse;
 
     // Mark cross-referenced variables
     netlistp->foreach([](const AstVarXRef* xrefp) { xrefp->varp()->user2(true); });

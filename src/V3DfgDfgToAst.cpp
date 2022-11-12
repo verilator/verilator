@@ -415,14 +415,14 @@ class DfgToAstVisitor final : DfgVisitor {
         // Remap all references to point to the canonical variables, if one exists
         VNDeleter deleter;
         m_modp->foreach([&](AstVarRef* refp) {
-            // Any variable that is written outside the DFG will have itself as the canonical
-            // var, so need not be replaced, furthermore, if a variable is traced, we don't
-            // want to update the write ref we just created above, so we only replace read only
-            // references.
-            if (!refp->access().isReadOnly()) return;
+            // Any variable that is written partially outside the DFG will have itself as the
+            // canonical var, so need not be replaced, furthermore, if a variable is traced, we
+            // don't want to update the write-refs we just created above, so we only replace
+            // read-only references to those variables to those variables we know are not written
+            // in non-DFG logic.
+            if (!refp->access().isReadOnly() || refp->varp()->user3()) return;
             const auto it = m_canonVars.find(refp->varp());
-            if (it == m_canonVars.end()) return;
-            if (it->second == refp->varp()) return;
+            if (it == m_canonVars.end() || it->second == refp->varp()) return;
             refp->replaceWith(new AstVarRef{refp->fileline(), it->second, refp->access()});
             deleter.pushDeletep(refp);
         });

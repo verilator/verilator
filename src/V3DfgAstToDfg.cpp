@@ -94,7 +94,10 @@ class AstToDfgVisitor final : public VNVisitor {
         nodep->foreach([this](const AstVarRef* refp) {
             // No need to (and in fact cannot) mark variables with unsupported dtypes
             if (!DfgVertex::isSupportedDType(refp->varp()->dtypep())) return;
+            // Mark vertex as having a module reference outside current DFG
             getNet(refp->varp())->setHasModRefs();
+            // Mark variable as written from non-DFG logic
+            if (refp->access().isWriteOrRW()) refp->varp()->user3(true);
         });
     }
 
