@@ -1958,7 +1958,8 @@ private:
                        : nodep->findBitDType(calcWidth, calcWidth, underDtp->numeric()));
             nodep->dtypep(calcDtp);
             // We ignore warnings as that is sort of the point of a cast
-            iterateCheck(nodep, "Cast expr", underp, CONTEXT_DET, FINAL, calcDtp, EXTEND_EXP, false);
+            iterateCheck(nodep, "Cast expr", underp, CONTEXT_DET, FINAL, calcDtp, EXTEND_EXP,
+                         false);
             VL_DANGLING(underp);
             underp = nodep->op1p();  // Above asserts that op1 was underp pre-relink
         }
@@ -2260,8 +2261,8 @@ private:
         if (m_vup->prelim()) {
             nodep->dtypeFrom(vdtypep);
             userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, BOTH}.p());
-            iterateCheck(nodep, "key", nodep->keyp(), CONTEXT_DET, FINAL, vdtypep->findStringDType(),
-                         EXTEND_EXP);
+            iterateCheck(nodep, "key", nodep->keyp(), CONTEXT_DET, FINAL,
+                         vdtypep->findStringDType(), EXTEND_EXP);
             iterateCheck(nodep, "value", nodep->valuep(), CONTEXT_DET, FINAL, vdtypep->subDTypep(),
                          EXTEND_EXP);
         }
