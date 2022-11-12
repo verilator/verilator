@@ -2398,7 +2398,9 @@ void VerilatedContext::timeunit(int value) VL_MT_SAFE {
 }
 void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
     if (value < 0) value = -value;  // Stored as 0..15
+#ifdef SYSTEMC_VERSION
     int sc_prec = 99;
+#endif
     {
         const VerilatedLockGuard lock{m_mutex};
         m_s.m_timeprecision = value;
