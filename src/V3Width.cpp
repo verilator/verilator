@@ -1765,7 +1765,7 @@ private:
                 const int selwidth = V3Number::log2b(maxval) + 1;  // Width to address a bit
                 AstVar* const varp
                     = enumVarp(enumDtp, VAttrType::ENUM_VALID, false, (1ULL << selwidth) - 1);
-                FileLine* const fl_nowarn = new FileLine(fl);
+                FileLine* const fl_nowarn = new FileLine{fl};
                 fl_nowarn->warnOff(V3ErrorCode::WIDTH, true);
                 testp = new AstCond{
                     fl,
@@ -1780,8 +1780,8 @@ private:
                                new AstExprStmt{fl,
                                                new AstAssign{fl, nodep->top()->unlinkFrBack(),
                                                              nodep->fromp()->unlinkFrBack()},
-                                               new AstConst{fl, AstConst::Signed32(), 1}},
-                               new AstConst{fl, AstConst::Signed32(), 0}};
+                                               new AstConst{fl, AstConst::Signed32{}, 1}},
+                               new AstConst{fl, AstConst::Signed32{}, 0}};
         } else if (castable == COMPATIBLE) {
             nodep->v3warn(CASTCONST, "$cast will always return one as "
                                          << toDtp->prettyDTypeNameQ()
@@ -1792,7 +1792,7 @@ private:
                 fl,
                 new AstAssign{fl, nodep->top()->unlinkFrBack(),
                               new AstCast{fl, nodep->fromp()->unlinkFrBack(), toDtp}},
-                new AstConst{fl, AstConst::Signed32(), 1}};
+                new AstConst{fl, AstConst::Signed32{}, 1}};
         } else if (castable == INCOMPATIBLE) {
             newp = new AstConst{fl, 0};
             nodep->v3warn(CASTCONST, "$cast will always return zero as "
@@ -2735,7 +2735,6 @@ private:
     void methodCallEnum(AstMethodCall* nodep, AstEnumDType* adtypep) {
         // Method call on enum without following parenthesis, e.g. "ENUM.next"
         // Convert this into a method call, and let that visitor figure out what to do next
-        if (adtypep) {}
         if (nodep->name() == "num"  //
             || nodep->name() == "first"  //
             || nodep->name() == "last") {

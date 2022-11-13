@@ -3411,7 +3411,7 @@ public:
         : ASTGEN_SUPER_AssignForce(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AstAssignForce;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstAssignForce{this->fileline(), lhsp, rhsp};
+        return new AstAssignForce{fileline(), lhsp, rhsp};
     }
     bool brokeLhsMustBeLvalue() const override { return true; }
 };
@@ -3422,7 +3422,7 @@ public:
         : ASTGEN_SUPER_AssignPost(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AstAssignPost;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstAssignPost(this->fileline(), lhsp, rhsp);
+        return new AstAssignPost{fileline(), lhsp, rhsp};
     }
     bool brokeLhsMustBeLvalue() const override { return true; }
 };
@@ -3433,7 +3433,7 @@ public:
         : ASTGEN_SUPER_AssignPre(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AstAssignPre;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstAssignPre(this->fileline(), lhsp, rhsp);
+        return new AstAssignPre{fileline(), lhsp, rhsp};
     }
     bool brokeLhsMustBeLvalue() const override { return true; }
 };
@@ -3446,7 +3446,7 @@ public:
     }
     ASTGEN_MEMBERS_AstAssignVarScope;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstAssignVarScope(this->fileline(), lhsp, rhsp);
+        return new AstAssignVarScope{fileline(), lhsp, rhsp};
     }
     bool brokeLhsMustBeLvalue() const override { return false; }
 };

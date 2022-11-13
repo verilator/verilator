@@ -802,7 +802,7 @@ public:
     // For parser, make only if non-null package
     static AstNodeExpr* newIfPkg(FileLine* fl, AstNode* packageOrClassp, AstNodeExpr* rhsp) {
         if (!packageOrClassp) return rhsp;
-        return new AstDot(fl, true, packageOrClassp, rhsp);
+        return new AstDot{fl, true, packageOrClassp, rhsp};
     }
     void dump(std::ostream& str) const override;
     bool colon() const { return m_colon; }
@@ -1703,7 +1703,7 @@ public:
     }
     ASTGEN_MEMBERS_AstBufIf1;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstBufIf1(this->fileline(), lhsp, rhsp);
+        return new AstBufIf1{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opBufIf1(lhs, rhs);
@@ -1731,7 +1731,7 @@ public:
         V3ERROR_NA;
     }
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstCastDynamic(this->fileline(), lhsp, rhsp);
+        return new AstCastDynamic{fileline(), lhsp, rhsp};
     }
     string emitVerilog() override { return "%f$cast(%r, %l)"; }
     string emitC() override { return "VL_DYNAMIC_CAST(%r, %l)"; }
@@ -1756,7 +1756,7 @@ public:
     }
     ASTGEN_MEMBERS_AstCompareNN;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstCompareNN(this->fileline(), lhsp, rhsp, m_ignoreCase);
+        return new AstCompareNN{fileline(), lhsp, rhsp, m_ignoreCase};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opCompareNN(lhs, rhs, m_ignoreCase);
@@ -1787,7 +1787,7 @@ public:
     }
     ASTGEN_MEMBERS_AstConcat;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstConcat(this->fileline(), lhsp, rhsp);
+        return new AstConcat{fileline(), lhsp, rhsp};
     }
     string emitVerilog() override { return "%f{%l, %k%r}"; }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -1810,7 +1810,7 @@ public:
     }
     ASTGEN_MEMBERS_AstConcatN;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstConcatN(this->fileline(), lhsp, rhsp);
+        return new AstConcatN{fileline(), lhsp, rhsp};
     }
     string emitVerilog() override { return "%f{%l, %k%r}"; }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -1833,7 +1833,7 @@ public:
     }
     ASTGEN_MEMBERS_AstDiv;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstDiv(this->fileline(), lhsp, rhsp);
+        return new AstDiv{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opDiv(lhs, rhs);
@@ -1855,7 +1855,7 @@ public:
     }
     ASTGEN_MEMBERS_AstDivD;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstDivD(this->fileline(), lhsp, rhsp);
+        return new AstDivD{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opDivD(lhs, rhs);
@@ -1879,7 +1879,7 @@ public:
     }
     ASTGEN_MEMBERS_AstDivS;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstDivS(this->fileline(), lhsp, rhsp);
+        return new AstDivS{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opDivS(lhs, rhs);
@@ -1903,7 +1903,7 @@ public:
     }
     ASTGEN_MEMBERS_AstEqWild;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstEqWild(this->fileline(), lhsp, rhsp);
+        return new AstEqWild{fileline(), lhsp, rhsp};
     }
     static AstNodeBiop* newTyped(FileLine* fl, AstNode* lhsp,
                                  AstNode* rhsp);  // Return AstEqWild/AstEqD
@@ -1925,7 +1925,7 @@ public:
         : ASTGEN_SUPER_FGetS(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AstFGetS;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstFGetS(this->fileline(), lhsp, rhsp);
+        return new AstFGetS{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         V3ERROR_NA;
@@ -1953,7 +1953,7 @@ public:
         V3ERROR_NA;
     }
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstFUngetC(this->fileline(), lhsp, rhsp);
+        return new AstFUngetC{fileline(), lhsp, rhsp};
     }
     string emitVerilog() override { return "%f$ungetc(%r, %l)"; }
     // Non-existent filehandle returns EOF
@@ -1979,7 +1979,7 @@ public:
     }
     ASTGEN_MEMBERS_AstGetcN;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstGetcN(this->fileline(), lhsp, rhsp);
+        return new AstGetcN{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opGetcN(lhs, rhs);
@@ -2004,7 +2004,7 @@ public:
     }
     ASTGEN_MEMBERS_AstGetcRefN;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstGetcRefN(this->fileline(), lhsp, rhsp);
+        return new AstGetcRefN{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         V3ERROR_NA;
@@ -2026,7 +2026,7 @@ public:
     }
     ASTGEN_MEMBERS_AstGt;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstGt(this->fileline(), lhsp, rhsp);
+        return new AstGt{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opGt(lhs, rhs);
@@ -2048,7 +2048,7 @@ public:
     }
     ASTGEN_MEMBERS_AstGtD;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstGtD(this->fileline(), lhsp, rhsp);
+        return new AstGtD{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opGtD(lhs, rhs);
@@ -2072,7 +2072,7 @@ public:
     }
     ASTGEN_MEMBERS_AstGtN;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstGtN(this->fileline(), lhsp, rhsp);
+        return new AstGtN{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opGtN(lhs, rhs);
@@ -2096,7 +2096,7 @@ public:
     }
     ASTGEN_MEMBERS_AstGtS;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstGtS(this->fileline(), lhsp, rhsp);
+        return new AstGtS{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opGtS(lhs, rhs);
@@ -2119,7 +2119,7 @@ public:
     }
     ASTGEN_MEMBERS_AstGte;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstGte(this->fileline(), lhsp, rhsp);
+        return new AstGte{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opGte(lhs, rhs);
@@ -2141,7 +2141,7 @@ public:
     }
     ASTGEN_MEMBERS_AstGteD;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstGteD(this->fileline(), lhsp, rhsp);
+        return new AstGteD{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opGteD(lhs, rhs);
@@ -2165,7 +2165,7 @@ public:
     }
     ASTGEN_MEMBERS_AstGteN;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstGteN(this->fileline(), lhsp, rhsp);
+        return new AstGteN{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opGteN(lhs, rhs);
@@ -2189,7 +2189,7 @@ public:
     }
     ASTGEN_MEMBERS_AstGteS;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstGteS(this->fileline(), lhsp, rhsp);
+        return new AstGteS{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opGteS(lhs, rhs);
@@ -2212,7 +2212,7 @@ public:
     }
     ASTGEN_MEMBERS_AstLogAnd;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstLogAnd(this->fileline(), lhsp, rhsp);
+        return new AstLogAnd{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLogAnd(lhs, rhs);
@@ -2235,7 +2235,7 @@ public:
     }
     ASTGEN_MEMBERS_AstLogIf;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstLogIf(this->fileline(), lhsp, rhsp);
+        return new AstLogIf{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLogIf(lhs, rhs);
@@ -2263,7 +2263,7 @@ public:
     }
     ASTGEN_MEMBERS_AstLogOr;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstLogOr(this->fileline(), lhsp, rhsp);
+        return new AstLogOr{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLogOr(lhs, rhs);
@@ -2294,7 +2294,7 @@ public:
     }
     ASTGEN_MEMBERS_AstLt;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstLt(this->fileline(), lhsp, rhsp);
+        return new AstLt{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLt(lhs, rhs);
@@ -2316,7 +2316,7 @@ public:
     }
     ASTGEN_MEMBERS_AstLtD;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstLtD(this->fileline(), lhsp, rhsp);
+        return new AstLtD{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLtD(lhs, rhs);
@@ -2340,7 +2340,7 @@ public:
     }
     ASTGEN_MEMBERS_AstLtN;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstLtN(this->fileline(), lhsp, rhsp);
+        return new AstLtN{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLtN(lhs, rhs);
@@ -2364,7 +2364,7 @@ public:
     }
     ASTGEN_MEMBERS_AstLtS;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstLtS(this->fileline(), lhsp, rhsp);
+        return new AstLtS{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLtS(lhs, rhs);
@@ -2387,7 +2387,7 @@ public:
     }
     ASTGEN_MEMBERS_AstLte;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstLte(this->fileline(), lhsp, rhsp);
+        return new AstLte{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLte(lhs, rhs);
@@ -2409,7 +2409,7 @@ public:
     }
     ASTGEN_MEMBERS_AstLteD;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstLteD(this->fileline(), lhsp, rhsp);
+        return new AstLteD{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLteD(lhs, rhs);
@@ -2433,7 +2433,7 @@ public:
     }
     ASTGEN_MEMBERS_AstLteN;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstLteN(this->fileline(), lhsp, rhsp);
+        return new AstLteN{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLteN(lhs, rhs);
@@ -2457,7 +2457,7 @@ public:
     }
     ASTGEN_MEMBERS_AstLteS;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstLteS(this->fileline(), lhsp, rhsp);
+        return new AstLteS{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLteS(lhs, rhs);
@@ -2480,7 +2480,7 @@ public:
     }
     ASTGEN_MEMBERS_AstModDiv;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstModDiv(this->fileline(), lhsp, rhsp);
+        return new AstModDiv{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opModDiv(lhs, rhs);
@@ -2502,7 +2502,7 @@ public:
     }
     ASTGEN_MEMBERS_AstModDivS;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstModDivS(this->fileline(), lhsp, rhsp);
+        return new AstModDivS{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opModDivS(lhs, rhs);
@@ -2525,7 +2525,7 @@ public:
     }
     ASTGEN_MEMBERS_AstNeqWild;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstNeqWild(this->fileline(), lhsp, rhsp);
+        return new AstNeqWild{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opWildNeq(lhs, rhs);
@@ -2547,7 +2547,7 @@ public:
     }
     ASTGEN_MEMBERS_AstPow;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstPow(this->fileline(), lhsp, rhsp);
+        return new AstPow{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opPow(lhs, rhs);
@@ -2570,7 +2570,7 @@ public:
     }
     ASTGEN_MEMBERS_AstPowD;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstPowD(this->fileline(), lhsp, rhsp);
+        return new AstPowD{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opPowD(lhs, rhs);
@@ -2593,7 +2593,7 @@ public:
     }
     ASTGEN_MEMBERS_AstPowSS;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstPowSS(this->fileline(), lhsp, rhsp);
+        return new AstPowSS{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opPowSS(lhs, rhs);
@@ -2617,7 +2617,7 @@ public:
     }
     ASTGEN_MEMBERS_AstPowSU;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstPowSU(this->fileline(), lhsp, rhsp);
+        return new AstPowSU{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opPowSU(lhs, rhs);
@@ -2641,7 +2641,7 @@ public:
     }
     ASTGEN_MEMBERS_AstPowUS;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstPowUS(this->fileline(), lhsp, rhsp);
+        return new AstPowUS{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opPowUS(lhs, rhs);
@@ -2672,10 +2672,10 @@ public:
         }
     }
     AstReplicate(FileLine* fl, AstNode* lhsp, uint32_t repCount)
-        : AstReplicate(fl, lhsp, new AstConst(fl, repCount)) {}
+        : AstReplicate{fl, lhsp, new AstConst{fl, repCount}} {}
     ASTGEN_MEMBERS_AstReplicate;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstReplicate(this->fileline(), lhsp, rhsp);
+        return new AstReplicate{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opRepl(lhs, rhs);
@@ -2697,10 +2697,10 @@ public:
         dtypeSetString();
     }
     AstReplicateN(FileLine* fl, AstNode* lhsp, uint32_t repCount)
-        : AstReplicateN(fl, lhsp, new AstConst(fl, repCount)) {}
+        : AstReplicateN{fl, lhsp, new AstConst{fl, repCount}} {}
     ASTGEN_MEMBERS_AstReplicateN;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstReplicateN(this->fileline(), lhsp, rhsp);
+        return new AstReplicateN{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opReplN(lhs, rhs);
@@ -2723,7 +2723,7 @@ public:
     }
     ASTGEN_MEMBERS_AstShiftL;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstShiftL(this->fileline(), lhsp, rhsp);
+        return new AstShiftL{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opShiftL(lhs, rhs);
@@ -2747,7 +2747,7 @@ public:
     }
     ASTGEN_MEMBERS_AstShiftR;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstShiftR(this->fileline(), lhsp, rhsp);
+        return new AstShiftR{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opShiftR(lhs, rhs);
@@ -2775,7 +2775,7 @@ public:
     }
     ASTGEN_MEMBERS_AstShiftRS;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstShiftRS(this->fileline(), lhsp, rhsp);
+        return new AstShiftRS{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opShiftRS(lhs, rhs, lhsp()->widthMinV());
@@ -2798,7 +2798,7 @@ public:
     }
     ASTGEN_MEMBERS_AstSub;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstSub(this->fileline(), lhsp, rhsp);
+        return new AstSub{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opSub(lhs, rhs);
@@ -2820,7 +2820,7 @@ public:
     }
     ASTGEN_MEMBERS_AstSubD;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstSubD(this->fileline(), lhsp, rhsp);
+        return new AstSubD{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opSubD(lhs, rhs);
@@ -2845,7 +2845,7 @@ public:
     }
     ASTGEN_MEMBERS_AstURandomRange;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstURandomRange(fileline(), lhsp, rhsp);
+        return new AstURandomRange{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         V3ERROR_NA;
@@ -2871,7 +2871,7 @@ public:
     }
     ASTGEN_MEMBERS_AstEq;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstEq(this->fileline(), lhsp, rhsp);
+        return new AstEq{fileline(), lhsp, rhsp};
     }
     static AstNodeBiop* newTyped(FileLine* fl, AstNode* lhsp,
                                  AstNode* rhsp);  // Return AstEq/AstEqD
@@ -2895,7 +2895,7 @@ public:
     }
     ASTGEN_MEMBERS_AstEqCase;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstEqCase(this->fileline(), lhsp, rhsp);
+        return new AstEqCase{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opCaseEq(lhs, rhs);
@@ -2917,7 +2917,7 @@ public:
     }
     ASTGEN_MEMBERS_AstEqD;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstEqD(this->fileline(), lhsp, rhsp);
+        return new AstEqD{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opEqD(lhs, rhs);
@@ -2941,7 +2941,7 @@ public:
     }
     ASTGEN_MEMBERS_AstEqN;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstEqN(this->fileline(), lhsp, rhsp);
+        return new AstEqN{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opEqN(lhs, rhs);
@@ -2965,7 +2965,7 @@ public:
     }
     ASTGEN_MEMBERS_AstLogEq;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstLogEq(this->fileline(), lhsp, rhsp);
+        return new AstLogEq{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLogEq(lhs, rhs);
@@ -2988,7 +2988,7 @@ public:
     }
     ASTGEN_MEMBERS_AstNeq;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstNeq(this->fileline(), lhsp, rhsp);
+        return new AstNeq{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opNeq(lhs, rhs);
@@ -3010,7 +3010,7 @@ public:
     }
     ASTGEN_MEMBERS_AstNeqCase;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstNeqCase(this->fileline(), lhsp, rhsp);
+        return new AstNeqCase{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opCaseNeq(lhs, rhs);
@@ -3032,7 +3032,7 @@ public:
     }
     ASTGEN_MEMBERS_AstNeqD;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstNeqD(this->fileline(), lhsp, rhsp);
+        return new AstNeqD{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opNeqD(lhs, rhs);
@@ -3056,7 +3056,7 @@ public:
     }
     ASTGEN_MEMBERS_AstNeqN;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstNeqN(this->fileline(), lhsp, rhsp);
+        return new AstNeqN{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opNeqN(lhs, rhs);
@@ -3082,7 +3082,7 @@ public:
     }
     ASTGEN_MEMBERS_AstAdd;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstAdd(this->fileline(), lhsp, rhsp);
+        return new AstAdd{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opAdd(lhs, rhs);
@@ -3104,7 +3104,7 @@ public:
     }
     ASTGEN_MEMBERS_AstAddD;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstAddD(this->fileline(), lhsp, rhsp);
+        return new AstAddD{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opAddD(lhs, rhs);
@@ -3128,7 +3128,7 @@ public:
     }
     ASTGEN_MEMBERS_AstAnd;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstAnd(this->fileline(), lhsp, rhsp);
+        return new AstAnd{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opAnd(lhs, rhs);
@@ -3150,7 +3150,7 @@ public:
     }
     ASTGEN_MEMBERS_AstMul;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstMul(this->fileline(), lhsp, rhsp);
+        return new AstMul{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opMul(lhs, rhs);
@@ -3173,7 +3173,7 @@ public:
     }
     ASTGEN_MEMBERS_AstMulD;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstMulD(this->fileline(), lhsp, rhsp);
+        return new AstMulD{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opMulD(lhs, rhs);
@@ -3197,7 +3197,7 @@ public:
     }
     ASTGEN_MEMBERS_AstMulS;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstMulS(this->fileline(), lhsp, rhsp);
+        return new AstMulS{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opMulS(lhs, rhs);
@@ -3222,7 +3222,7 @@ public:
     }
     ASTGEN_MEMBERS_AstOr;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstOr(this->fileline(), lhsp, rhsp);
+        return new AstOr{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opOr(lhs, rhs);
@@ -3244,7 +3244,7 @@ public:
     }
     ASTGEN_MEMBERS_AstXor;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstXor(this->fileline(), lhsp, rhsp);
+        return new AstXor{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opXor(lhs, rhs);
@@ -3274,12 +3274,12 @@ public:
         init(fromp);
     }
     AstArraySel(FileLine* fl, AstNode* fromp, int bit)
-        : ASTGEN_SUPER_ArraySel(fl, fromp, new AstConst(fl, bit)) {
+        : ASTGEN_SUPER_ArraySel(fl, fromp, new AstConst(fl, bit)) {  // Need () constructor
         init(fromp);
     }
     ASTGEN_MEMBERS_AstArraySel;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstArraySel(this->fileline(), lhsp, rhsp);
+        return new AstArraySel{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         V3ERROR_NA; /* How can from be a const? */
@@ -3314,7 +3314,7 @@ public:
     }
     ASTGEN_MEMBERS_AstAssocSel;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstAssocSel(this->fileline(), lhsp, rhsp);
+        return new AstAssocSel{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         V3ERROR_NA;
@@ -3346,7 +3346,7 @@ public:
     }
     ASTGEN_MEMBERS_AstWildcardSel;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstWildcardSel{this->fileline(), lhsp, rhsp};
+        return new AstWildcardSel{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         V3ERROR_NA;
@@ -3372,7 +3372,7 @@ public:
     }
     ASTGEN_MEMBERS_AstWordSel;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstWordSel(this->fileline(), lhsp, rhsp);
+        return new AstWordSel{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit) override {
         V3ERROR_NA;
@@ -3397,7 +3397,7 @@ public:
         : ASTGEN_SUPER_StreamL(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AstStreamL;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstStreamL(this->fileline(), lhsp, rhsp);
+        return new AstStreamL{fileline(), lhsp, rhsp};
     }
     string emitVerilog() override { return "%f{ << %r %k{%l} }"; }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3418,7 +3418,7 @@ public:
         : ASTGEN_SUPER_StreamR(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AstStreamR;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstStreamR(this->fileline(), lhsp, rhsp);
+        return new AstStreamR{fileline(), lhsp, rhsp};
     }
     string emitVerilog() override { return "%f{ >> %r %k{%l} }"; }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -3440,7 +3440,7 @@ public:
         : ASTGEN_SUPER_Atan2D(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AstAtan2D;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstAtan2D(this->fileline(), lhsp, rhsp);
+        return new AstAtan2D{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.setDouble(std::atan2(lhs.toDouble(), rhs.toDouble()));
@@ -3454,7 +3454,7 @@ public:
         : ASTGEN_SUPER_HypotD(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AstHypotD;
     AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
-        return new AstHypotD(this->fileline(), lhsp, rhsp);
+        return new AstHypotD{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.setDouble(std::hypot(lhs.toDouble(), rhs.toDouble()));
@@ -3810,7 +3810,8 @@ public:
         }
     }
     AstSel(FileLine* fl, AstNode* fromp, int lsb, int bitwidth)
-        : ASTGEN_SUPER_Sel(fl, fromp, new AstConst(fl, lsb), new AstConst(fl, bitwidth))
+        : ASTGEN_SUPER_Sel(fl, fromp, new AstConst(fl, lsb),  // Need () constructor
+                           new AstConst(fl, bitwidth))  // Need () constructor
         , m_declElWidth{1} {
         dtypeSetLogicSized(bitwidth, VSigning::UNSIGNED);
     }
@@ -3850,8 +3851,9 @@ class AstSliceSel final : public AstNodeTriop {
     VNumRange m_declRange;  // Range of the 'from' array if isRanged() is set, else invalid
 public:
     AstSliceSel(FileLine* fl, AstNode* fromp, const VNumRange& declRange)
-        : ASTGEN_SUPER_SliceSel(fl, fromp, new AstConst(fl, declRange.lo()),
-                                new AstConst(fl, declRange.elements()))
+        : ASTGEN_SUPER_SliceSel(fl, fromp,
+                                new AstConst(fl, declRange.lo()),  // Need () constructor
+                                new AstConst(fl, declRange.elements()))  // Need () constructor
         , m_declRange{declRange} {}
     ASTGEN_MEMBERS_AstSliceSel;
     void dump(std::ostream& str) const override;
@@ -3908,7 +3910,7 @@ public:
         : ASTGEN_SUPER_Cond(fl, condp, thenp, elsep) {}
     ASTGEN_MEMBERS_AstCond;
     AstNode* cloneType(AstNode* condp, AstNode* thenp, AstNode* elsep) override {
-        return new AstCond(this->fileline(), condp, thenp, elsep);
+        return new AstCond{fileline(), condp, thenp, elsep};
     }
 };
 class AstCondBound final : public AstNodeCond {
@@ -3918,7 +3920,7 @@ public:
         : ASTGEN_SUPER_CondBound(fl, condp, thenp, elsep) {}
     ASTGEN_MEMBERS_AstCondBound;
     AstNode* cloneType(AstNode* condp, AstNode* thenp, AstNode* elsep) override {
-        return new AstCondBound(this->fileline(), condp, thenp, elsep);
+        return new AstCondBound{fileline(), condp, thenp, elsep};
     }
 };
 

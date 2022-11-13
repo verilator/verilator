@@ -110,26 +110,26 @@ public:
             // Every vertex initially is waiting, or ready.
             if (way == GraphWay::FORWARD) {
                 if (vxp->inEmpty()) {
-                    const VxHolder newVx(vxp, pos++, 0);
+                    const VxHolder newVx{vxp, pos++, 0};
                     m_readyVertices.insert(newVx);
                 } else {
                     uint32_t depCount = 0;
                     for (V3GraphEdge* depp = vxp->inBeginp(); depp; depp = depp->inNextp()) {
                         ++depCount;
                     }
-                    const VxHolder newVx(vxp, pos++, depCount);
+                    const VxHolder newVx{vxp, pos++, depCount};
                     m_waitingVertices.emplace(vxp, newVx);
                 }
             } else {  // REVERSE
                 if (vxp->outEmpty()) {
-                    const VxHolder newVx(vxp, pos++, 0);
+                    const VxHolder newVx{vxp, pos++, 0};
                     m_readyVertices.insert(newVx);
                 } else {
                     uint32_t depCount = 0;
                     for (V3GraphEdge* depp = vxp->outBeginp(); depp; depp = depp->outNextp()) {
                         ++depCount;
                     }
-                    const VxHolder newVx(vxp, pos++, depCount);
+                    const VxHolder newVx{vxp, pos++, depCount};
                     m_waitingVertices.emplace(vxp, newVx);
                 }
             }
