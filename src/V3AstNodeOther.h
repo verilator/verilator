@@ -1630,6 +1630,7 @@ class AstTypedef final : public AstNode {
     string m_name;
     string m_tag;  // Holds the string of the verilator tag -- used in XML output.
     bool m_attrPublic = false;
+
 public:
     AstTypedef(FileLine* fl, const string& name, AstNode* attrsp, VFlagChildDType,
                AstNodeDType* dtp)
