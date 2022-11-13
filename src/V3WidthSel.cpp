@@ -116,7 +116,7 @@ private:
         return FromData(errp, ddtypep, fromRange);
     }
 
-    AstNode* newSubNeg(AstNode* lhsp, int32_t rhs) {
+    AstNodeExpr* newSubNeg(AstNodeExpr* lhsp, int32_t rhs) {
         // Return lhs-rhs, but if rhs is negative use an add, so we won't
         // have to deal with signed math and related 32bit sign extension problems
         if (rhs == 0) {
@@ -126,17 +126,16 @@ private:
             V3Number num(lhsp, lhsp->width());
             num.opSub(VN_AS(lhsp, Const)->num(), V3Number(lhsp, 32, rhs));
             num.isSigned(lhsp->isSigned());
-            AstNode* const newp = new AstConst(lhsp->fileline(), num);
-            return newp;
+            return new AstConst(lhsp->fileline(), num);
         } else if (rhs > 0) {
-            AstNode* const newp
+            AstNodeExpr* const newp
                 = new AstSub(lhsp->fileline(), lhsp,
                              new AstConst(lhsp->fileline(), AstConst::Unsized32(), rhs));
             // We must make sure sub gets sign of original value, not from the constant
             newp->dtypeFrom(lhsp);
             return newp;
         } else {  // rhs < 0;
-            AstNode* const newp
+            AstNodeExpr* const newp
                 = new AstAdd(lhsp->fileline(), lhsp,
                              new AstConst(lhsp->fileline(), AstConst::Unsized32(), -rhs));
             // We must make sure sub gets sign of original value, not from the constant
@@ -144,16 +143,16 @@ private:
             return newp;
         }
     }
-    AstNode* newSubNeg(int32_t lhs, AstNode* rhsp) {
+    AstNodeExpr* newSubNeg(int32_t lhs, AstNodeExpr* rhsp) {
         // Return lhs-rhs
         // We must make sure sub gets sign of original value
-        AstNode* const newp = new AstSub(
+        AstNodeExpr* const newp = new AstSub(
             rhsp->fileline(), new AstConst(rhsp->fileline(), AstConst::Unsized32(), lhs), rhsp);
         newp->dtypeFrom(rhsp);  // Important as AstSub default is lhs's sign
         return newp;
     }
 
-    AstNode* newSubLsbOf(AstNode* underp, const VNumRange& fromRange) {
+    AstNodeExpr* newSubLsbOf(AstNodeExpr* underp, const VNumRange& fromRange) {
         // Account for a variable's LSB in bit selections
         // Will likely become SUB(underp, lsb_of_signal).
         // Don't report WIDTH warnings etc here, as may be inside a
@@ -165,12 +164,10 @@ private:
         } else {
             if (fromRange.littleEndian()) {
                 // reg [1:3] was swapped to [3:1] (lsbEndianedp==3) and needs a SUB(3,under)
-                AstNode* const newp = newSubNeg(fromRange.hi(), underp);
-                return newp;
+                return newSubNeg(fromRange.hi(), underp);
             } else {
                 // reg [3:1] needs a SUB(under,1)
-                AstNode* const newp = newSubNeg(underp, fromRange.lo());
-                return newp;
+                return newSubNeg(underp, fromRange.lo());
             }
         }
     }
@@ -209,8 +206,8 @@ private:
         UINFO(6, "SELBIT " << nodep << endl);
         if (debug() >= 9) nodep->backp()->dumpTree(cout, "--SELBT0: ");
         // lhsp/rhsp do not need to be constant
-        AstNode* const fromp = nodep->fromp()->unlinkFrBack();
-        AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();  // bit we're extracting
+        AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+        AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();  // bit we're extracting
         if (debug() >= 9) nodep->dumpTree(cout, "--SELBT2: ");
         const FromData fromdata = fromDataForArray(nodep, fromp);
         AstNodeDType* const ddtypep = fromdata.m_dtypep;
@@ -218,7 +215,7 @@ private:
         UINFO(6, "  ddtypep " << ddtypep << endl);
         if (const AstUnpackArrayDType* const adtypep = VN_CAST(ddtypep, UnpackArrayDType)) {
             // SELBIT(array, index) -> ARRAYSEL(array, index)
-            AstNode* subp = rhsp;
+            AstNodeExpr* subp = rhsp;
             if (fromRange.lo() != 0 || fromRange.hi() < 0) {
                 subp = newSubNeg(subp, fromRange.lo());
             }
@@ -229,7 +226,7 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstPackArrayDType* const adtypep = VN_CAST(ddtypep, PackArrayDType)) {
             // SELBIT(array, index) -> SEL(array, index*width-of-subindex, width-of-subindex)
-            AstNode* subp = rhsp;
+            AstNodeExpr* subp = rhsp;
             if (fromRange.littleEndian()) {
                 subp = newSubNeg(fromRange.hi(), subp);
             } else {
@@ -253,7 +250,7 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstAssocArrayDType* const adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
             // SELBIT(array, index) -> ASSOCSEL(array, index)
-            AstNode* const subp = rhsp;
+            AstNodeExpr* const subp = rhsp;
             AstAssocSel* const newp = new AstAssocSel(nodep->fileline(), fromp, subp);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
@@ -262,7 +259,7 @@ private:
         } else if (const AstWildcardArrayDType* const adtypep
                    = VN_CAST(ddtypep, WildcardArrayDType)) {
             // SELBIT(array, index) -> WILDCARDSEL(array, index)
-            AstNode* const subp = rhsp;
+            AstNodeExpr* const subp = rhsp;
             AstWildcardSel* const newp = new AstWildcardSel{nodep->fileline(), fromp, subp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
@@ -270,7 +267,7 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstDynArrayDType* const adtypep = VN_CAST(ddtypep, DynArrayDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
-            AstNode* const subp = rhsp;
+            AstNodeExpr* const subp = rhsp;
             AstCMethodHard* const newp = new AstCMethodHard(nodep->fileline(), fromp, "at", subp);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTq: ");
@@ -278,7 +275,7 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstQueueDType* const adtypep = VN_CAST(ddtypep, QueueDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
-            AstNode* const subp = rhsp;
+            AstNodeExpr* const subp = rhsp;
             AstCMethodHard* const newp = new AstCMethodHard(nodep->fileline(), fromp, "at", subp);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTq: ");
@@ -291,7 +288,7 @@ private:
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: String array operation on non-variable");
             }
-            AstNode* newp;
+            AstNodeExpr* newp;
             if (varrefp && varrefp->access().isReadOnly()) {
                 newp = new AstGetcN(nodep->fileline(), fromp, rhsp);
             } else {
@@ -345,9 +342,9 @@ private:
                                "First value of [a:b] isn't a constant, maybe you want +: or -:");
         checkConstantOrReplace(nodep->rightp(),
                                "Second value of [a:b] isn't a constant, maybe you want +: or -:");
-        AstNode* const fromp = nodep->fromp()->unlinkFrBack();
-        AstNode* const msbp = nodep->rhsp()->unlinkFrBack();
-        AstNode* const lsbp = nodep->thsp()->unlinkFrBack();
+        AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+        AstNodeExpr* const msbp = nodep->rhsp()->unlinkFrBack();
+        AstNodeExpr* const lsbp = nodep->thsp()->unlinkFrBack();
         int32_t msb = VN_AS(msbp, Const)->toSInt();
         int32_t lsb = VN_AS(lsbp, Const)->toSInt();
         const int32_t elem = (msb > lsb) ? (msb - lsb + 1) : (lsb - msb + 1);
@@ -424,7 +421,7 @@ private:
                 msb = lsb;
                 lsb = x;
             }
-            AstNode* const widthp
+            AstNodeExpr* const widthp
                 = new AstConst(msbp->fileline(),
                                AstConst::Unsized32(),  // Unsized so width from user
                                msb + 1 - lsb);
@@ -447,7 +444,7 @@ private:
                 msb = lsb;
                 lsb = x;
             }
-            AstNode* const widthp
+            AstNodeExpr* const widthp
                 = new AstConst(msbp->fileline(),
                                AstConst::Unsized32(),  // Unsized so width from user
                                msb + 1 - lsb);
@@ -493,9 +490,9 @@ private:
         checkConstantOrReplace(nodep->thsp(), "Width of :+ or :- bit extract isn't a constant");
         if (debug() >= 9) nodep->dumpTree(cout, "--SELPM3: ");
         // Now replace it with an AstSel
-        AstNode* const fromp = nodep->fromp()->unlinkFrBack();
-        AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
-        AstNode* const widthp = nodep->thsp()->unlinkFrBack();
+        AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+        AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+        AstNodeExpr* const widthp = nodep->thsp()->unlinkFrBack();
         warnTri(rhsp);
         const int width = VN_AS(widthp, Const)->toSInt();
         if (width > (1 << 28)) {
@@ -536,13 +533,13 @@ private:
                    || (VN_IS(ddtypep, NodeUOrStructDType)
                        && VN_AS(ddtypep, NodeUOrStructDType)->packedUnsup())) {
             int elwidth = 1;
-            AstNode* newwidthp = widthp;
+            AstNodeExpr* newwidthp = widthp;
             if (const AstPackArrayDType* const adtypep = VN_CAST(ddtypep, PackArrayDType)) {
                 elwidth = adtypep->width() / fromRange.elements();
                 newwidthp
                     = new AstConst(nodep->fileline(), AstConst::Unsized32(), width * elwidth);
             }
-            AstNode* newlsbp = nullptr;
+            AstNodeExpr* newlsbp = nullptr;
             if (VN_IS(nodep, SelPlus)) {
                 if (fromRange.littleEndian()) {
                     // SELPLUS(from,lsb,width) -> SEL(from, (vector_msb-width+1)-sel, width)

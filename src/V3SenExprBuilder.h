@@ -64,7 +64,7 @@ class SenExprBuilder final {
     }
 
     // METHODS
-    AstNode* getCurr(AstNode* exprp) {
+    AstNodeExpr* getCurr(AstNodeExpr* exprp) {
         // For simple expressions like varrefs or selects, just use them directly
         if (isSimpleExpr(exprp)) return exprp->cloneTree(false);
 
@@ -89,7 +89,7 @@ class SenExprBuilder final {
         }
         return new AstVarRef{flp, currp, VAccess::READ};
     }
-    AstVarScope* getPrev(AstNode* exprp) {
+    AstVarScope* getPrev(AstNodeExpr* exprp) {
         FileLine* const flp = exprp->fileline();
         const auto rdCurr = [=]() { return getCurr(exprp); };
 
@@ -150,9 +150,9 @@ class SenExprBuilder final {
         return prevp;
     }
 
-    std::pair<AstNode*, bool> createTerm(AstSenItem* senItemp) {
+    std::pair<AstNodeExpr*, bool> createTerm(AstSenItem* senItemp) {
         FileLine* const flp = senItemp->fileline();
-        AstNode* const senp = senItemp->sensp();
+        AstNodeExpr* const senp = senItemp->sensp();
 
         const auto currp = [=]() { return getCurr(senp); };
         const auto prevp = [=]() { return new AstVarRef{flp, getPrev(senp), VAccess::READ}; };
@@ -215,14 +215,14 @@ class SenExprBuilder final {
 public:
     // Returns the expression computing the trigger, and a bool indicating that
     // this trigger should be fired on the first evaluation (at initialization)
-    std::pair<AstNode*, bool> build(const AstSenTree* senTreep) {
+    std::pair<AstNodeExpr*, bool> build(const AstSenTree* senTreep) {
         FileLine* const flp = senTreep->fileline();
-        AstNode* resultp = nullptr;
+        AstNodeExpr* resultp = nullptr;
         bool firedAtInitialization = false;
         for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
              senItemp = VN_AS(senItemp->nextp(), SenItem)) {
             const auto& pair = createTerm(senItemp);
-            if (AstNode* const termp = pair.first) {
+            if (AstNodeExpr* const termp = pair.first) {
                 resultp = resultp ? new AstOr{flp, resultp, termp} : termp;
                 firedAtInitialization |= pair.second;
             }

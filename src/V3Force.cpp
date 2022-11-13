@@ -174,8 +174,8 @@ class ForceConvertVisitor final : public VNVisitor {
         pushDeletep(nodep);
 
         FileLine* const flp = nodep->fileline();
-        AstNode* const lhsp = nodep->lhsp();  // The LValue we are forcing
-        AstNode* const rhsp = nodep->rhsp();  // The value we are forcing it to
+        AstNodeExpr* const lhsp = nodep->lhsp();  // The LValue we are forcing
+        AstNodeExpr* const rhsp = nodep->rhsp();  // The value we are forcing it to
 
         // Set corresponding enable signals to ones
         V3Number ones{lhsp, lhsp->width()};
@@ -210,7 +210,7 @@ class ForceConvertVisitor final : public VNVisitor {
         pushDeletep(nodep);
 
         FileLine* const flp = nodep->fileline();
-        AstNode* const lhsp = nodep->lhsp();  // The LValue we are releasing
+        AstNodeExpr* const lhsp = nodep->lhsp();  // The LValue we are releasing
 
         // Set corresponding enable signals to zero
         V3Number zero{lhsp, lhsp->width()};

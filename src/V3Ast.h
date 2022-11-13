@@ -1877,8 +1877,8 @@ public:
     void addNextHere(AstNode* newp);  // Insert newp at this->nextp
     void addHereThisAsNext(AstNode* newp);  // Adds at old place of this, this becomes next
     void replaceWith(AstNode* newp);  // Replace current node in tree with new node
-    AstNode* unlinkFrBack(VNRelinker* linkerp
-                          = nullptr);  // Unlink this from whoever points to it.
+    // Unlink this from whoever points to it.
+    AstNode* unlinkFrBack(VNRelinker* linkerp = nullptr);
     // Unlink this from whoever points to it, keep entire next list with unlinked node
     AstNode* unlinkFrBackWithNext(VNRelinker* linkerp = nullptr);
     void swapWith(AstNode* bp);

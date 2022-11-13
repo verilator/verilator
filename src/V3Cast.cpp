@@ -63,7 +63,7 @@ private:
 
     // METHODS
 
-    void insertCast(AstNode* nodep, int needsize) {  // We'll insert ABOVE passed node
+    void insertCast(AstNodeExpr* nodep, int needsize) {  // We'll insert ABOVE passed node
         UINFO(4, "  NeedCast " << nodep << endl);
         VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
@@ -87,7 +87,7 @@ private:
             return VL_IDATASIZE;
         }
     }
-    void ensureCast(AstNode* nodep) {
+    void ensureCast(AstNodeExpr* nodep) {
         if (castSize(nodep->backp()) != castSize(nodep) || !nodep->user1()) {
             insertCast(nodep, castSize(nodep->backp()));
         }
@@ -101,13 +101,12 @@ private:
             insertCast(nodep->lhsp(), VL_IDATASIZE);
         }
     }
-    void ensureNullChecked(AstNode* nodep) {
+    void ensureNullChecked(AstNodeExpr* nodep) {
         // TODO optimize to track null checked values and avoid where possible
         if (!VN_IS(nodep->backp(), NullCheck)) {
             VNRelinker relinkHandle;
             nodep->unlinkFrBack(&relinkHandle);
-            AstNode* const newp = new AstNullCheck{nodep->fileline(), nodep};
-            relinkHandle.relink(newp);
+            relinkHandle.relink(new AstNullCheck{nodep->fileline(), nodep});
         }
     }
 

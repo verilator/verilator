@@ -69,7 +69,7 @@ private:
         return (VN_IS(nodep->lhsp(), VarRef) && !AstVar::scVarRecurse(nodep->lhsp())
                 && VN_IS(nodep->rhsp(), Const));
     }
-    void checkNode(AstNode* nodep) {
+    void checkNode(AstNodeExpr* nodep) {
         // Consider adding a temp for this expression.
         // We need to avoid adding temps to the following:
         //   ASSIGN(x, *here*)
@@ -116,7 +116,7 @@ private:
         }
     }
 
-    void createDeepTemp(AstNode* nodep, bool noSubst) {
+    void createDeepTemp(AstNodeExpr* nodep, bool noSubst) {
         if (nodep->user1SetOnce()) return;  // Only add another assignment for this node
 
         VNRelinker relinker;
@@ -236,7 +236,7 @@ private:
                 && nodep->width() < (1LL << nodep->rhsp()->widthMin())) {
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
-                AstNode* constzerop;
+                AstNodeExpr* constzerop;
                 const int m1value
                     = nodep->widthMin() - 1;  // Constant of width-1; not changing dtype width
                 if (nodep->signedFlavor()) {
@@ -253,7 +253,7 @@ private:
                 }
                 constzerop->dtypeFrom(nodep);  // unsigned
 
-                AstNode* const constwidthp
+                AstNodeExpr* const constwidthp
                     = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
                                    nodep->rhsp()->widthMin(), m1value);
                 constwidthp->dtypeFrom(nodep->rhsp());  // unsigned
@@ -352,8 +352,9 @@ private:
                 // There's another display next; we can just wait to flush
             } else {
                 UINFO(4, "Autoflush " << nodep << endl);
-                nodep->addNextHere(new AstFFlush(nodep->fileline(),
-                                                 AstNode::cloneTreeNull(nodep->filep(), true)));
+                nodep->addNextHere(
+                    new AstFFlush{nodep->fileline(),
+                                  VN_AS(AstNode::cloneTreeNull(nodep->filep(), true), NodeExpr)});
             }
         }
     }
@@ -361,7 +362,7 @@ private:
         iterateChildren(nodep);
         // Any strings sent to a display must be var of string data type,
         // to avoid passing a pointer to a temporary.
-        for (AstNode* expp = nodep->exprsp(); expp; expp = expp->nextp()) {
+        for (AstNodeExpr* expp = nodep->exprsp(); expp; expp = VN_AS(expp->nextp(), NodeExpr)) {
             if (expp->dtypep()->basicp() && expp->dtypep()->basicp()->isString()
                 && !VN_IS(expp, VarRef)) {
                 createDeepTemp(expp, true);

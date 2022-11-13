@@ -425,9 +425,10 @@ class Cpt:
                               key=lambda val: self._exec_syms[val]):
                 argnp = self._exec_syms[sym]
                 arg = self.add_nodep(sym)
-                out += "AstNode* " + argnp + " = " + arg + "->unlinkFrBack();\n"
+                out += "AstNodeExpr* " + argnp + " = " + arg + "->unlinkFrBack();\n"
 
-            out += "AstNode* newp = " + self._exec_new_recurse(aref) + ";\n"
+            out += "AstNodeExpr* newp = " + self._exec_new_recurse(
+                aref) + ";\n"
             out += "nodep->replaceWith(newp);"
             out += "VL_DO_DANGLING(nodep->deleteTree(), nodep);"
         elif func == "NEVER":
@@ -918,11 +919,17 @@ def write_ast_macros(filename):
         for node in AstNodeList:
             fh.write("#define ASTGEN_MEMBERS_Ast{t} \\\n".format(t=node.name))
             emitBlock('''\
-            static Ast{t}* cloneTreeNull(Ast{t}* nodep, bool cloneNextLink) {{
-                return nodep ? nodep->cloneTree(cloneNextLink) : nullptr;
+            Ast{t}* unlinkFrBack(VNRelinker* linkerp = nullptr) {{
+                return static_cast<Ast{t}*>(AstNode::unlinkFrBack(linkerp));
+            }}
+            Ast{t}* unlinkFrBackWithNext(VNRelinker* linkerp = nullptr) {{
+                return static_cast<Ast{t}*>(AstNode::unlinkFrBackWithNext(linkerp));
             }}
             Ast{t}* cloneTree(bool cloneNext) {{
                 return static_cast<Ast{t}*>(AstNode::cloneTree(cloneNext));
+            }}
+            static Ast{t}* cloneTreeNull(Ast{t}* nodep, bool cloneNextLink) {{
+                return nodep ? nodep->cloneTree(cloneNextLink) : nullptr;
             }}
             Ast{t}* clonep() const VL_MT_SAFE {{ return static_cast<Ast{t}*>(AstNode::clonep()); }}
             Ast{t}* addNext(Ast{t}* nodep) {{ return static_cast<Ast{t}*>(AstNode::addNext(this, nodep)); }}

@@ -46,7 +46,7 @@ private:
     // Reset each always:
     AstSenItem* m_seniAlwaysp = nullptr;  // Last sensitivity in always
     // Reset each assertion:
-    AstNode* m_disablep = nullptr;  // Last disable
+    AstNodeExpr* m_disablep = nullptr;  // Last disable
 
     // METHODS
 
@@ -113,7 +113,7 @@ private:
                 }
                 // If disable iff is in outer property, move it to inner
                 if (nodep->disablep()) {
-                    AstNode* const disablep = nodep->disablep()->unlinkFrBack();
+                    AstNodeExpr* const disablep = nodep->disablep()->unlinkFrBack();
                     propExprp->disablep(disablep);
                 }
 
@@ -170,9 +170,9 @@ private:
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
-        AstNode* exprp = nodep->exprp()->unlinkFrBack();
+        AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
         if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
-        AstNode* const past = new AstPast(fl, exprp, nullptr);
+        AstNodeExpr* const past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstAnd(fl, past, new AstNot(fl, exprp->cloneTree(false)));
         exprp->dtypeSetBit();
@@ -189,9 +189,9 @@ private:
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
-        AstNode* exprp = nodep->exprp()->unlinkFrBack();
+        AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
         if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
-        AstNode* const past = new AstPast(fl, exprp, nullptr);
+        AstNodeExpr* const past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstAnd(fl, new AstNot(fl, past), exprp->cloneTree(false));
         exprp->dtypeSetBit();
@@ -203,8 +203,8 @@ private:
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
-        AstNode* exprp = nodep->exprp()->unlinkFrBack();
-        AstNode* const past = new AstPast(fl, exprp, nullptr);
+        AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
+        AstNodeExpr* const past = new AstPast(fl, exprp, nullptr);
         past->dtypeFrom(exprp);
         exprp = new AstEq(fl, past, exprp->cloneTree(false));
         exprp->dtypeSetBit();
@@ -217,14 +217,14 @@ private:
         if (nodep->sentreep()) return;  // Already processed
 
         FileLine* const fl = nodep->fileline();
-        AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
-        AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+        AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
 
         if (m_disablep) lhsp = new AstAnd(fl, new AstNot(fl, m_disablep), lhsp);
 
-        AstNode* const past = new AstPast(fl, lhsp, nullptr);
+        AstNodeExpr* const past = new AstPast(fl, lhsp, nullptr);
         past->dtypeFrom(lhsp);
-        AstNode* const exprp = new AstOr(fl, new AstNot(fl, past), rhsp);
+        AstNodeExpr* const exprp = new AstOr(fl, new AstNot(fl, past), rhsp);
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));
@@ -238,8 +238,8 @@ private:
         if (m_senip)
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Only one PSL clock allowed per assertion");
         // Block is the new expression to evaluate
-        AstNode* blockp = nodep->propp()->unlinkFrBack();
-        if (AstNode* const disablep = nodep->disablep()) {
+        AstNodeExpr* blockp = VN_AS(nodep->propp()->unlinkFrBack(), NodeExpr);
+        if (AstNodeExpr* const disablep = nodep->disablep()) {
             m_disablep = disablep->cloneTree(false);
             if (VN_IS(nodep->backp(), Cover)) {
                 blockp = new AstAnd(disablep->fileline(),

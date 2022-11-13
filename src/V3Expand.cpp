@@ -92,17 +92,19 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    static AstNode* newWordAssign(AstNodeAssign* placep, int word, AstNode* lhsp, AstNode* rhsp) {
+    static AstNode* newWordAssign(AstNodeAssign* placep, int word, AstNodeExpr* lhsp,
+                                  AstNodeExpr* rhsp) {
         FileLine* const fl = placep->fileline();
         return new AstAssign{fl,
                              new AstWordSel{fl, lhsp->cloneTree(true),
                                             new AstConst{fl, static_cast<uint32_t>(word)}},
                              rhsp};
     }
-    static void addWordAssign(AstNodeAssign* placep, int word, AstNode* lhsp, AstNode* rhsp) {
+    static void addWordAssign(AstNodeAssign* placep, int word, AstNodeExpr* lhsp,
+                              AstNodeExpr* rhsp) {
         insertBefore(placep, newWordAssign(placep, word, lhsp, rhsp));
     }
-    static void addWordAssign(AstNodeAssign* placep, int word, AstNode* rhsp) {
+    static void addWordAssign(AstNodeAssign* placep, int word, AstNodeExpr* rhsp) {
         addWordAssign(placep, word, placep->lhsp(), rhsp);
     }
 
@@ -117,7 +119,7 @@ private:
         if (nodep->op4p()) fixCloneLvalue(nodep->op4p());
     }
 
-    static AstNode* newAstWordSelClone(AstNode* nodep, int word) {
+    static AstNodeExpr* newAstWordSelClone(AstNodeExpr* nodep, int word) {
         // Get the specified word number from a wide array
         // Or, if it's a long/quad, do appropriate conversion to wide
         // Concat may pass negative word numbers, that means it wants a zero
@@ -126,11 +128,11 @@ private:
             return new AstWordSel{fl, nodep->cloneTree(true),
                                   new AstConst{fl, static_cast<uint32_t>(word)}};
         } else if (nodep->isQuad() && word == 0) {
-            AstNode* const quadfromp = nodep->cloneTree(true);
+            AstNodeExpr* const quadfromp = nodep->cloneTree(true);
             quadfromp->dtypeSetBitUnsized(VL_QUADSIZE, quadfromp->widthMin(), VSigning::UNSIGNED);
             return new AstCCast{fl, quadfromp, VL_EDATASIZE};
         } else if (nodep->isQuad() && word == 1) {
-            AstNode* const quadfromp = nodep->cloneTree(true);
+            AstNodeExpr* const quadfromp = nodep->cloneTree(true);
             quadfromp->dtypeSetBitUnsized(VL_QUADSIZE, quadfromp->widthMin(), VSigning::UNSIGNED);
             return new AstCCast{
                 fl, new AstShiftR{fl, quadfromp, new AstConst{fl, VL_EDATASIZE}, VL_EDATASIZE},
@@ -142,16 +144,16 @@ private:
         }
     }
 
-    static AstNode* newWordGrabShift(FileLine* fl, int word, AstNode* lhsp, int shift) {
+    static AstNodeExpr* newWordGrabShift(FileLine* fl, int word, AstNodeExpr* lhsp, int shift) {
         // Extract the expression to grab the value for the specified word, if it's the shift
         // of shift bits from lhsp
-        AstNode* newp;
+        AstNodeExpr* newp;
         // Negative word numbers requested for lhs when it's "before" what we want.
         // We get a 0 then.
         const int othword = word - shift / VL_EDATASIZE;
-        AstNode* const llowp = newAstWordSelClone(lhsp, othword);
+        AstNodeExpr* const llowp = newAstWordSelClone(lhsp, othword);
         if (const int loffset = VL_BITBIT_E(shift)) {
-            AstNode* const lhip = newAstWordSelClone(lhsp, othword - 1);
+            AstNodeExpr* const lhip = newAstWordSelClone(lhsp, othword - 1);
             const int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword
             newp = new AstOr{
                 fl,
@@ -170,8 +172,8 @@ private:
         return newp;
     }
 
-    static AstNode* newWordSel(FileLine* fl, AstNode* fromp, AstNode* lsbp,
-                               uint32_t wordOffset = 0) {
+    static AstNodeExpr* newWordSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* lsbp,
+                                   uint32_t wordOffset = 0) {
         // Return equation to get the VL_BITWORD of a constant or non-constant
         UASSERT_OBJ(fromp->isWide(), fromp, "Only need AstWordSel on wide from's");
         if (wordOffset >= static_cast<uint32_t>(fromp->widthWords())) {
@@ -181,7 +183,7 @@ private:
             // AstCondBound is protecting above this node.
             return new AstConst{fl, AstConst::SizedEData(), 0};
         } else {
-            AstNode* wordp;
+            AstNodeExpr* wordp;
             FileLine* const lfl = lsbp->fileline();
             if (VN_IS(lsbp, Const)) {
                 wordp = new AstConst{lfl, wordOffset + VL_BITWORD_E(VN_AS(lsbp, Const)->toUInt())};
@@ -197,7 +199,7 @@ private:
         }
     }
 
-    static AstNode* dropCondBound(AstNode* nodep) {
+    static AstNodeExpr* dropCondBound(AstNodeExpr* nodep) {
         // Experimental only...
         //  If there's a CONDBOUND safety to keep arrays in bounds,
         //  we're going to AND it to a value that always fits inside a
@@ -208,7 +210,7 @@ private:
         return nodep;
     }
 
-    static AstNode* newSelBitBit(AstNode* lsbp) {
+    static AstNodeExpr* newSelBitBit(AstNodeExpr* lsbp) {
         // Return equation to get the VL_BITBIT of a constant or non-constant
         FileLine* const fl = lsbp->fileline();
         if (VN_IS(lsbp, Const)) {
@@ -320,8 +322,8 @@ private:
         if (nodep->isWide()) {
             // See under ASSIGN(EXTEND)
         } else {
-            AstNode* const lhsp = nodep->lhsp()->unlinkFrBack();
-            AstNode* newp = lhsp;
+            AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* newp = lhsp;
             if (nodep->isQuad()) {
                 if (lhsp->isQuad()) {
                     lhsp->dtypeFrom(nodep);  // Just mark it, else nop
@@ -359,28 +361,29 @@ private:
             FileLine* const nfl = nodep->fileline();
             FileLine* const lfl = nodep->lsbp()->fileline();
             FileLine* const ffl = nodep->fromp()->fileline();
-            AstNode* lowwordp = newWordSel(ffl, nodep->fromp()->cloneTree(true), nodep->lsbp());
+            AstNodeExpr* lowwordp
+                = newWordSel(ffl, nodep->fromp()->cloneTree(true), nodep->lsbp());
             if (nodep->isQuad() && !lowwordp->isQuad()) {
                 lowwordp = new AstCCast{nfl, lowwordp, nodep};
             }
-            AstNode* const lowp
+            AstNodeExpr* const lowp
                 = new AstShiftR{nfl, lowwordp, newSelBitBit(nodep->lsbp()), nodep->width()};
             // If > 1 bit, we might be crossing the word boundary
-            AstNode* midp = nullptr;
+            AstNodeExpr* midp = nullptr;
             if (nodep->widthConst() > 1) {
                 const uint32_t midMsbOffset
                     = std::min<uint32_t>(nodep->widthConst(), VL_EDATASIZE) - 1;
-                AstNode* const midMsbp = new AstAdd{lfl, new AstConst{lfl, midMsbOffset},
-                                                    nodep->lsbp()->cloneTree(false)};
-                AstNode* midwordp =  // SEL(from,[midwordnum])
+                AstNodeExpr* const midMsbp = new AstAdd{lfl, new AstConst{lfl, midMsbOffset},
+                                                        nodep->lsbp()->cloneTree(false)};
+                AstNodeExpr* midwordp =  // SEL(from,[midwordnum])
                     newWordSel(ffl, nodep->fromp()->cloneTree(true), midMsbp, 0);
                 // newWordSel clones the index, so delete it
                 VL_DO_DANGLING(midMsbp->deleteTree(), midMsbp);
                 if (nodep->isQuad() && !midwordp->isQuad()) {
                     midwordp = new AstCCast{nfl, midwordp, nodep};
                 }
-                AstNode* const midshiftp = new AstSub{lfl, new AstConst{lfl, VL_EDATASIZE},
-                                                      newSelBitBit(nodep->lsbp())};
+                AstNodeExpr* const midshiftp = new AstSub{lfl, new AstConst{lfl, VL_EDATASIZE},
+                                                          newSelBitBit(nodep->lsbp())};
                 // If we're selecting bit zero, then all 32 bits in the mid word
                 // get shifted << by 32 bits, so ignore them.
                 const V3Number zero{nodep, longOrQuadWidth(nodep)};
@@ -395,19 +398,19 @@ private:
                     new AstShiftL{nfl, midwordp, midshiftp, nodep->width()}};
             }
             // If > 32 bits, we might be crossing the second word boundary
-            AstNode* hip = nullptr;
+            AstNodeExpr* hip = nullptr;
             if (nodep->widthConst() > VL_EDATASIZE) {
                 const uint32_t hiMsbOffset = nodep->widthConst() - 1;
-                AstNode* const hiMsbp = new AstAdd{lfl, new AstConst{lfl, hiMsbOffset},
-                                                   nodep->lsbp()->cloneTree(false)};
-                AstNode* hiwordp =  // SEL(from,[hiwordnum])
+                AstNodeExpr* const hiMsbp = new AstAdd{lfl, new AstConst{lfl, hiMsbOffset},
+                                                       nodep->lsbp()->cloneTree(false)};
+                AstNodeExpr* hiwordp =  // SEL(from,[hiwordnum])
                     newWordSel(ffl, nodep->fromp()->cloneTree(true), hiMsbp);
                 // newWordSel clones the index, so delete it
                 VL_DO_DANGLING(hiMsbp->deleteTree(), hiMsbp);
                 if (nodep->isQuad() && !hiwordp->isQuad()) {
                     hiwordp = new AstCCast{nfl, hiwordp, nodep};
                 }
-                AstNode* const hishiftp = new AstCond{
+                AstNodeExpr* const hishiftp = new AstCond{
                     nfl,
                     // lsb % VL_EDATASIZE == 0 ?
                     new AstEq{nfl, new AstConst{nfl, 0}, newSelBitBit(nodep->lsbp())},
@@ -418,7 +421,7 @@ private:
                 hip = new AstShiftL{nfl, hiwordp, hishiftp, nodep->width()};
             }
 
-            AstNode* newp = lowp;
+            AstNodeExpr* newp = lowp;
             if (midp) newp = new AstOr{nfl, midp, newp};
             if (hip) newp = new AstOr{nfl, hip, newp};
             newp->dtypeFrom(nodep);
@@ -426,11 +429,11 @@ private:
         } else {  // Long/Quad from Long/Quad
             UINFO(8, "    SEL->SHIFT " << nodep << endl);
             FileLine* const fl = nodep->fileline();
-            AstNode* fromp = nodep->fromp()->unlinkFrBack();
-            AstNode* const lsbp = nodep->lsbp()->unlinkFrBack();
+            AstNodeExpr* fromp = nodep->fromp()->unlinkFrBack();
+            AstNodeExpr* const lsbp = nodep->lsbp()->unlinkFrBack();
             if (nodep->isQuad() && !fromp->isQuad()) { fromp = new AstCCast{fl, fromp, nodep}; }
             // {large}>>32 requires 64-bit shift operation; then cast
-            AstNode* newp = new AstShiftR{fl, fromp, dropCondBound(lsbp), fromp->width()};
+            AstNodeExpr* newp = new AstShiftR{fl, fromp, dropCondBound(lsbp), fromp->width()};
             newp->dtypeFrom(fromp);
             if (!nodep->isQuad() && fromp->isQuad()) { newp = new AstCCast{fl, newp, nodep}; }
             newp->dtypeFrom(nodep);
@@ -456,21 +459,21 @@ private:
             FileLine* const lfl = rhsp->lsbp()->fileline();
             for (int w = 0; w < nodep->widthWords(); ++w) {
                 // Grab lowest bits
-                AstNode* const lowwordp
+                AstNodeExpr* const lowwordp
                     = newWordSel(rfl, rhsp->fromp()->cloneTree(true), rhsp->lsbp(), w);
-                AstNode* const lowp
+                AstNodeExpr* const lowp
                     = new AstShiftR{rfl, lowwordp, newSelBitBit(rhsp->lsbp()), VL_EDATASIZE};
                 // Upper bits
                 const V3Number zero{nodep, VL_EDATASIZE, 0};
-                AstNode* const midwordp =  // SEL(from,[1+wordnum])
+                AstNodeExpr* const midwordp =  // SEL(from,[1+wordnum])
                     newWordSel(ffl, rhsp->fromp()->cloneTree(true), rhsp->lsbp(), w + 1);
-                AstNode* const midshiftp
+                AstNodeExpr* const midshiftp
                     = new AstSub{lfl, new AstConst{lfl, VL_EDATASIZE}, newSelBitBit(rhsp->lsbp())};
-                AstNode* const midmayp = new AstShiftL{rfl, midwordp, midshiftp, VL_EDATASIZE};
-                AstNode* const midp = new AstCond{
+                AstNodeExpr* const midmayp = new AstShiftL{rfl, midwordp, midshiftp, VL_EDATASIZE};
+                AstNodeExpr* const midp = new AstCond{
                     rfl, new AstEq{rfl, new AstConst{rfl, 0}, newSelBitBit(rhsp->lsbp())},
                     new AstConst{rfl, zero}, midmayp};
-                AstNode* const newp = new AstOr{nfl, midp, lowp};
+                AstNodeExpr* const newp = new AstOr{nfl, midp, lowp};
                 addWordAssign(nodep, w, newp);
             }
             return true;
@@ -491,8 +494,8 @@ private:
         if (VN_IS(lhsp->lsbp(), Const)) {
             // The code should work without this constant test, but it won't
             // constify as nicely as we'd like.
-            AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
-            AstNode* const destp = lhsp->fromp()->unlinkFrBack();
+            AstNodeExpr* rhsp = nodep->rhsp()->unlinkFrBack();
+            AstNodeExpr* const destp = lhsp->fromp()->unlinkFrBack();
             const int lsb = lhsp->lsbConst();
             const int msb = lhsp->msbConst();
             V3Number maskset{nodep, destp->widthMin()};
@@ -504,7 +507,7 @@ private:
                 for (int w = 0; w < destp->widthWords(); ++w) {
                     if (w >= VL_BITWORD_E(lsb) && w <= VL_BITWORD_E(msb)) {
                         // else we would just be setting it to the same exact value
-                        AstNode* oldvalp = newAstWordSelClone(destp, w);
+                        AstNodeExpr* oldvalp = newAstWordSelClone(destp, w);
                         fixCloneLvalue(oldvalp);
                         if (!ones) {
                             oldvalp = new AstAnd{
@@ -514,7 +517,7 @@ private:
                         }
 
                         // Appropriate word of new value to insert:
-                        AstNode* newp = newWordGrabShift(lfl, w, rhsp, lsb);
+                        AstNodeExpr* newp = newWordGrabShift(lfl, w, rhsp, lsb);
 
                         // Apply cleaning at the top word of the destination
                         // (no cleaning to do if dst's width is a whole number
@@ -524,7 +527,7 @@ private:
                             cleanmask.setMask(VL_BITBIT_E(destp->widthMin()));
                             newp = new AstAnd{lfl, newp, new AstConst{lfl, cleanmask}};
                         }
-                        AstNode* const orp
+                        AstNodeExpr* const orp
                             = V3Const::constifyEditCpp(new AstOr{lfl, oldvalp, newp});
                         addWordAssign(nodep, w, destp, orp);
                     }
@@ -534,7 +537,7 @@ private:
             } else {
                 UINFO(8, "    ASSIGNSEL(const,narrow) " << nodep << endl);
                 if (destp->isQuad() && !rhsp->isQuad()) { rhsp = new AstCCast{nfl, rhsp, nodep}; }
-                AstNode* oldvalp = destp->cloneTree(true);
+                AstNodeExpr* oldvalp = destp->cloneTree(true);
                 fixCloneLvalue(oldvalp);
                 if (!ones) { oldvalp = new AstAnd{lfl, new AstConst{lfl, maskold}, oldvalp}; }
 
@@ -543,20 +546,21 @@ private:
                 // valid range of nodep which we apply to the new shifted RHS.
                 V3Number cleanmask{nodep, destp->widthMin()};
                 cleanmask.setMask(destp->widthMin());
-                AstNode* const shifted = new AstShiftL{
+                AstNodeExpr* const shifted = new AstShiftL{
                     lfl, rhsp, new AstConst{lfl, static_cast<uint32_t>(lsb)}, destp->width()};
-                AstNode* const cleaned = new AstAnd{lfl, shifted, new AstConst{lfl, cleanmask}};
-                AstNode* const orp = V3Const::constifyEditCpp(new AstOr{lfl, oldvalp, cleaned});
-                AstNode* newp = new AstAssign{nfl, destp, orp};
-                insertBefore(nodep, newp);
+                AstNodeExpr* const cleaned
+                    = new AstAnd{lfl, shifted, new AstConst{lfl, cleanmask}};
+                AstNodeExpr* const orp
+                    = V3Const::constifyEditCpp(new AstOr{lfl, oldvalp, cleaned});
+                insertBefore(nodep, new AstAssign{nfl, destp, orp});
             }
             return true;
         } else {  // non-const select offset
             if (destwide && lhsp->widthConst() == 1) {
                 UINFO(8, "    ASSIGNSEL(varlsb,wide,1bit) " << nodep << endl);
-                AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
-                AstNode* const destp = lhsp->fromp()->unlinkFrBack();
-                AstNode* oldvalp = newWordSel(lfl, destp->cloneTree(true), lhsp->lsbp());
+                AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+                AstNodeExpr* const destp = lhsp->fromp()->unlinkFrBack();
+                AstNodeExpr* oldvalp = newWordSel(lfl, destp->cloneTree(true), lhsp->lsbp());
                 fixCloneLvalue(oldvalp);
                 if (!ones) {
                     oldvalp = new AstAnd{
@@ -570,8 +574,8 @@ private:
                         oldvalp};
                 }
                 // Restrict the shift amount to 0-31, see bug804.
-                AstNode* const shiftp = new AstAnd{nfl, lhsp->lsbp()->cloneTree(true),
-                                                   new AstConst{nfl, VL_EDATASIZE - 1}};
+                AstNodeExpr* const shiftp = new AstAnd{nfl, lhsp->lsbp()->cloneTree(true),
+                                                       new AstConst{nfl, VL_EDATASIZE - 1}};
                 AstNode* const newp = new AstAssign{
                     nfl, newWordSel(nfl, destp, lhsp->lsbp()),
                     new AstOr{lfl, oldvalp, new AstShiftL{lfl, rhsp, shiftp, VL_EDATASIZE}}};
@@ -592,9 +596,9 @@ private:
             } else {
                 UINFO(8, "    ASSIGNSEL(varlsb,narrow) " << nodep << endl);
                 // nodep->dumpTree(cout, "-  old: ");
-                AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
-                AstNode* const destp = lhsp->fromp()->unlinkFrBack();
-                AstNode* oldvalp = destp->cloneTree(true);
+                AstNodeExpr* rhsp = nodep->rhsp()->unlinkFrBack();
+                AstNodeExpr* const destp = lhsp->fromp()->unlinkFrBack();
+                AstNodeExpr* oldvalp = destp->cloneTree(true);
                 fixCloneLvalue(oldvalp);
 
                 V3Number maskwidth{nodep, destp->widthMin()};
@@ -609,7 +613,7 @@ private:
                                                  lhsp->lsbp()->cloneTree(true), destp->width()}},
                         oldvalp};
                 }
-                AstNode* newp
+                AstNodeExpr* newp
                     = new AstShiftL{lfl, rhsp, lhsp->lsbp()->cloneTree(true), destp->width()};
                 // Apply cleaning to the new value being inserted.  Mask is
                 // slightly wider than necessary to avoid an AND with all ones
@@ -621,9 +625,7 @@ private:
                     newp = new AstAnd{lfl, newp, new AstConst{lfl, cleanmask}};
                 }
 
-                newp = new AstAssign{nfl, destp, new AstOr{lfl, oldvalp, newp}};
-                // newp->dumpTree(cout, "-  new: ");
-                insertBefore(nodep, newp);
+                insertBefore(nodep, new AstAssign{nfl, destp, new AstOr{lfl, oldvalp, newp}});
                 return true;
             }
         }
@@ -637,12 +639,12 @@ private:
         } else {
             UINFO(8, "    CONCAT " << nodep << endl);
             FileLine* const fl = nodep->fileline();
-            AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
-            AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
+            AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* rhsp = nodep->rhsp()->unlinkFrBack();
             const uint32_t rhsshift = rhsp->widthMin();
             if (nodep->isQuad() && !lhsp->isQuad()) { lhsp = new AstCCast{fl, lhsp, nodep}; }
             if (nodep->isQuad() && !rhsp->isQuad()) { rhsp = new AstCCast{fl, rhsp, nodep}; }
-            AstNode* const newp = new AstOr{
+            AstNodeExpr* const newp = new AstOr{
                 fl, new AstShiftL{fl, lhsp, new AstConst{fl, rhsshift}, nodep->width()}, rhsp};
             newp->dtypeFrom(nodep);  // Unsigned
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
@@ -673,8 +675,8 @@ private:
             // See under ASSIGN(WIDE)
         } else {
             FileLine* const fl = nodep->fileline();
-            AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
-            AstNode* newp;
+            AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* newp;
             const int lhswidth = lhsp->widthMin();
             if (lhswidth == 1) {
                 UINFO(8, "    REPLICATE(w1) " << nodep << endl);
@@ -707,13 +709,13 @@ private:
         UINFO(8, "    Wordize ASSIGN(REPLICATE) " << nodep << endl);
         if (!doExpand(rhsp)) return false;
         FileLine* const fl = nodep->fileline();
-        AstNode* const lhsp = rhsp->lhsp();
+        AstNodeExpr* const lhsp = rhsp->lhsp();
         const int lhswidth = lhsp->widthMin();
         const AstConst* const constp = VN_AS(rhsp->rhsp(), Const);
         UASSERT_OBJ(constp, rhsp, "Replication value isn't a constant.  Checked earlier!");
         const uint32_t times = constp->toUInt();
         for (int w = 0; w < rhsp->widthWords(); ++w) {
-            AstNode* newp;
+            AstNodeExpr* newp;
             if (lhswidth == 1) {
                 newp = new AstNegate{fl, lhsp->cloneTree(true)};
                 // Replicate always unsigned
@@ -737,10 +739,10 @@ private:
             UINFO(8, "    Wordize EQ/NEQ " << nodep << endl);
             // -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
             FileLine* const fl = nodep->fileline();
-            AstNode* newp = nullptr;
+            AstNodeExpr* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); ++w) {
-                AstNode* const eqp = new AstXor{fl, newAstWordSelClone(nodep->lhsp(), w),
-                                                newAstWordSelClone(nodep->rhsp(), w)};
+                AstNodeExpr* const eqp = new AstXor{fl, newAstWordSelClone(nodep->lhsp(), w),
+                                                    newAstWordSelClone(nodep->rhsp(), w)};
                 newp = newp ? new AstOr{fl, newp, eqp} : eqp;
             }
             if (VN_IS(nodep, Neq)) {
@@ -761,17 +763,17 @@ private:
         if (nodep->lhsp()->isWide()) {
             UINFO(8, "    Wordize REDOR " << nodep << endl);
             // -> (0!={or{for each_word{WORDSEL(lhs,#)}}}
-            AstNode* newp = nullptr;
+            AstNodeExpr* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); ++w) {
-                AstNode* const eqp = newAstWordSelClone(nodep->lhsp(), w);
+                AstNodeExpr* const eqp = newAstWordSelClone(nodep->lhsp(), w);
                 newp = newp ? new AstOr{fl, newp, eqp} : eqp;
             }
             newp = new AstNeq{fl, new AstConst{fl, AstConst::SizedEData(), 0}, newp};
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {
             UINFO(8, "    REDOR->EQ " << nodep << endl);
-            AstNode* const lhsp = nodep->lhsp()->unlinkFrBack();
-            AstNode* const newp = new AstNeq{
+            AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const newp = new AstNeq{
                 fl, new AstConst{fl, AstConst::WidthedValue(), longOrQuadWidth(nodep), 0}, lhsp};
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
@@ -783,9 +785,9 @@ private:
         if (nodep->lhsp()->isWide()) {
             UINFO(8, "    Wordize REDAND " << nodep << endl);
             // -> (0!={and{for each_word{WORDSEL(lhs,#)}}}
-            AstNode* newp = nullptr;
+            AstNodeExpr* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); ++w) {
-                AstNode* eqp = newAstWordSelClone(nodep->lhsp(), w);
+                AstNodeExpr* eqp = newAstWordSelClone(nodep->lhsp(), w);
                 if (w == nodep->lhsp()->widthWords() - 1) {
                     // Rather than doing a (slowish) ==##, we OR in the
                     // bits that aren't part of the mask
@@ -801,8 +803,8 @@ private:
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {
             UINFO(8, "    REDAND->EQ " << nodep << endl);
-            AstNode* const lhsp = nodep->lhsp()->unlinkFrBack();
-            AstNode* const newp = new AstEq{fl, new AstConst{fl, wordMask(lhsp)}, lhsp};
+            AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const newp = new AstEq{fl, new AstConst{fl, wordMask(lhsp)}, lhsp};
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
@@ -813,9 +815,9 @@ private:
             UINFO(8, "    Wordize REDXOR " << nodep << endl);
             // -> (0!={redxor{for each_word{XOR(WORDSEL(lhs,#))}}}
             FileLine* const fl = nodep->fileline();
-            AstNode* newp = nullptr;
+            AstNodeExpr* newp = nullptr;
             for (int w = 0; w < nodep->lhsp()->widthWords(); ++w) {
-                AstNode* const eqp = newAstWordSelClone(nodep->lhsp(), w);
+                AstNodeExpr* const eqp = newAstWordSelClone(nodep->lhsp(), w);
                 newp = newp ? new AstXor{fl, newp, eqp} : eqp;
             }
             newp = new AstRedXor{fl, newp};

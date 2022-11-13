@@ -191,7 +191,7 @@ public:
                 for (V3TaskConnects::iterator conIt = tconnects->begin();
                      conIt != tconnects->end(); ++conIt) {
                     AstVar* const portp = conIt->first;
-                    AstNode* const pinp = conIt->second->exprp();
+                    AstNodeExpr* const pinp = conIt->second->exprp();
                     AstNodeDType* const dtypep = pinp->dtypep();
                     if (AstConst* const valp = fetchConstNull(pinp)) {
                         stack << "\n           " << portp->prettyName() << " = "
@@ -248,26 +248,26 @@ private:
     }
 
 public:
-    void newValue(AstNode* nodep, const AstNode* valuep) {
+    void newValue(AstNode* nodep, const AstNodeExpr* valuep) {
         if (const AstConst* const constp = VN_CAST(valuep, Const)) {
             newConst(nodep)->num().opAssign(constp->num());
         } else if (fetchValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
-            setValue(nodep, newTrackedClone(const_cast<AstNode*>(valuep)));
+            setValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
         }
     }
-    void newOutValue(AstNode* nodep, const AstNode* valuep) {
+    void newOutValue(AstNode* nodep, const AstNodeExpr* valuep) {
         if (const AstConst* const constp = VN_CAST(valuep, Const)) {
             newOutConst(nodep)->num().opAssign(constp->num());
         } else if (fetchOutValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
-            setOutValue(nodep, newTrackedClone(const_cast<AstNode*>(valuep)));
+            setOutValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
         }
     }
 
 private:
-    AstNode* newTrackedClone(AstNode* nodep) {
-        AstNode* const newp = nodep->cloneTree(false);
+    AstNodeExpr* newTrackedClone(AstNodeExpr* nodep) {
+        AstNodeExpr* const newp = nodep->cloneTree(false);
         m_reclaimValuesp.push_back(newp);
         return newp;
     }
@@ -293,16 +293,16 @@ private:
     }
 
 public:
-    AstNode* fetchValueNull(AstNode* nodep) { return nodep->user3p(); }
+    AstNodeExpr* fetchValueNull(AstNode* nodep) { return VN_AS(nodep->user3p(), NodeExpr); }
 
 private:
-    AstNode* fetchOutValueNull(AstNode* nodep) { return nodep->user2p(); }
+    AstNodeExpr* fetchOutValueNull(AstNode* nodep) { return VN_AS(nodep->user2p(), NodeExpr); }
     AstConst* fetchConstNull(AstNode* nodep) { return VN_CAST(fetchValueNull(nodep), Const); }
     AstConst* fetchOutConstNull(AstNode* nodep) {
         return VN_CAST(fetchOutValueNull(nodep), Const);
     }
-    AstNode* fetchValue(AstNode* nodep) {
-        AstNode* const valuep = fetchValueNull(nodep);
+    AstNodeExpr* fetchValue(AstNode* nodep) {
+        AstNodeExpr* const valuep = fetchValueNull(nodep);
         UASSERT_OBJ(valuep, nodep, "No value found for node.");
         // UINFO(9, "     fetch val " << *valuep << " on " << nodep << endl);
         return valuep;
@@ -332,12 +332,12 @@ public:
     }
 
 private:
-    void setValue(AstNode* nodep, const AstNode* valuep) {
+    void setValue(AstNode* nodep, const AstNodeExpr* valuep) {
         UASSERT_OBJ(valuep, nodep, "Simulate setting null value");
         UINFO(9, "     set val " << valuep->name() << " on " << nodep << endl);
         nodep->user3p((void*)valuep);
     }
-    void setOutValue(AstNode* nodep, const AstNode* valuep) {
+    void setOutValue(AstNode* nodep, const AstNodeExpr* valuep) {
         UASSERT_OBJ(valuep, nodep, "Simulate setting null value");
         UINFO(9, "     set oval " << valuep->name() << " on " << nodep << endl);
         nodep->user2p((void*)valuep);
@@ -386,7 +386,7 @@ private:
         // True to jump over this node - all visitors must call this up front
         return (m_jumpp && m_jumpp->labelp() != nodep);
     }
-    void assignOutValue(AstNodeAssign* nodep, AstNode* vscp, const AstNode* valuep) {
+    void assignOutValue(AstNodeAssign* nodep, AstNode* vscp, const AstNodeExpr* valuep) {
         if (VN_IS(nodep, AssignDly)) {
             // Don't do setValue, as value isn't yet visible to following statements
             newOutValue(vscp, valuep);
@@ -443,10 +443,10 @@ private:
                 }
                 vscp->user1(vscp->user1() | VU_RV);
                 const bool isConst = nodep->varp()->isParam() && nodep->varp()->valuep();
-                AstNode* const valuep
+                AstNodeExpr* const valuep
                     = isConst ? fetchValueNull(nodep->varp()->valuep()) : nullptr;
-                if (isConst
-                    && valuep) {  // Propagate PARAM constants for constant function analysis
+                // Propagate PARAM constants for constant function analysis
+                if (isConst && valuep) {
                     if (!m_checkOnly && optimizable()) newValue(vscp, valuep);
                 } else {
                     if (m_checkOnly) varRefCb(nodep);
@@ -458,7 +458,7 @@ private:
                         "LHS varref should be handled in AstAssign visitor.");
             {
                 // Return simulation value - copy by reference instead of value for speed
-                AstNode* valuep = fetchValueNull(vscp);
+                AstNodeExpr* valuep = fetchValueNull(vscp);
                 if (!valuep) {
                     if (m_params) {
                         clearOptimizable(
@@ -697,7 +697,7 @@ private:
                 m_reclaimValuesp.push_back(initp);
             }
             const uint32_t index = fetchConst(selp->bitp())->toUInt();
-            AstNode* const valuep = newTrackedClone(fetchValue(nodep->rhsp()));
+            AstNodeExpr* const valuep = newTrackedClone(fetchValue(nodep->rhsp()));
             UINFO(9, "     set val[" << index << "] = " << valuep << endl);
             // Values are in the "real" tree under the InitArray so can eventually extract it,
             // Not in the usual setValue (pointed to by user2/3p)
@@ -803,7 +803,7 @@ private:
         if (AstInitArray* const initp = VN_CAST(fetchValueNull(nodep->fromp()), InitArray)) {
             AstConst* const indexp = fetchConst(nodep->bitp());
             const uint32_t offset = indexp->num().toUInt();
-            AstNode* const itemp = initp->getIndexDefaultedValuep(offset);
+            AstNodeExpr* const itemp = initp->getIndexDefaultedValuep(offset);
             if (!itemp) {
                 clearOptimizable(nodep, "Array initialization has too few elements, need element "
                                             + cvtToStr(offset));

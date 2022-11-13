@@ -435,7 +435,7 @@ private:
         for (const auto& itr : tconnects) {
             AstVar* const portp = itr.first;
             AstArg* const argp = itr.second;
-            AstNode* const pinp = argp->exprp();
+            AstNodeExpr* const pinp = argp->exprp();
             portp->unlinkFrBack();
             pushDeletep(portp);  // Remove it from the clone (not original)
             if (!pinp) {
@@ -564,7 +564,7 @@ private:
         const V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
         for (const auto& itr : tconnects) {
             AstVar* const portp = itr.first;
-            AstNode* const pinp = itr.second->exprp();
+            AstNodeExpr* const pinp = itr.second->exprp();
             if (!pinp) {
                 // Too few arguments in function call
             } else {
@@ -615,7 +615,7 @@ private:
 
         if (refp->taskp()->dpiContext()) {
             // __Vscopep
-            AstNode* const snp = refp->scopeNamep()->unlinkFrBack();
+            AstScopeName* const snp = refp->scopeNamep()->unlinkFrBack();
             UASSERT_OBJ(snp, refp, "Missing scoping context");
             ccallp->addArgsp(snp);
             // __Vfilenamep
@@ -630,7 +630,7 @@ private:
         for (AstNode* pinp = refp->pinsp(); pinp; pinp = nextpinp) {
             nextpinp = pinp->nextp();
             // Move pin to the CCall, removing all Arg's
-            AstNode* const exprp = VN_AS(pinp, Arg)->exprp();
+            AstNodeExpr* const exprp = VN_AS(pinp, Arg)->exprp();
             exprp->unlinkFrBack();
             ccallp->addArgsp(exprp);
         }
@@ -721,7 +721,7 @@ private:
         AstNode* newp = nullptr;
         const int widthWords = portp->basicp()->widthWords();
         for (int i = 0; i < total; ++i) {
-            AstNode* srcp = new AstVarRef(portvscp->fileline(), portvscp, VAccess::WRITE);
+            AstNodeExpr* srcp = new AstVarRef(portvscp->fileline(), portvscp, VAccess::WRITE);
             // extract a scalar from multi-dimensional array (internal format)
             for (auto&& dimStride : dimStrides) {
                 const size_t dimIdx = (i / dimStride.second) % dimStride.first->elementsConst();
@@ -744,7 +744,7 @@ private:
                     from += "[" + cvtToStr(i * coef) + "]";
                 }
                 from += ket;
-                AstNode* const rhsp = new AstSel(
+                AstNodeExpr* const rhsp = new AstSel(
                     portp->fileline(), new AstCExpr(portp->fileline(), from, cwidth, false), 0,
                     portp->width());
                 stmtp = new AstAssign(portp->fileline(), srcp, rhsp);
@@ -1629,7 +1629,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     for (int i = 0; i < tpinnum; ++i) {
         AstVar* const portp = tconnects[i].first;
         if (!tconnects[i].second || !tconnects[i].second->exprp()) {
-            AstNode* newvaluep = nullptr;
+            AstNodeExpr* newvaluep = nullptr;
             if (!portp->valuep()) {
                 nodep->v3error("Missing argument on non-defaulted argument "
                                << portp->prettyNameQ() << " in function call to "
@@ -1639,7 +1639,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                 // The default value for this port might be a constant
                 // expression that hasn't been folded yet. Try folding it
                 // now; we don't have much to lose if it fails.
-                newvaluep = V3Const::constifyParamsEdit(portp->valuep());
+                newvaluep = V3Const::constifyParamsEdit(VN_AS(portp->valuep(), NodeExpr));
                 if (!VN_IS(newvaluep, Const)) {
                     // Problem otherwise is we might have a varref, task
                     // call, or something else that only makes sense in the
@@ -1653,7 +1653,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                     newvaluep = newvaluep->cloneTree(true);
                 }
             } else {
-                newvaluep = portp->valuep()->cloneTree(true);
+                newvaluep = VN_AS(portp->valuep(), NodeExpr)->cloneTree(true);
             }
             // To avoid problems with callee needing to know to deleteTree
             // or not, we make this into a pin

@@ -152,7 +152,7 @@ void V3CCtors::evalAsserts() {
                         AstVarRef* const vrefp
                             = new AstVarRef{varp->fileline(), varp, VAccess::READ};
                         vrefp->selfPointer("this");
-                        AstNode* newp = vrefp;
+                        AstNodeExpr* newp = vrefp;
                         if (varp->isWide()) {
                             newp = new AstWordSel{
                                 varp->fileline(), newp,
@@ -167,8 +167,7 @@ void V3CCtors::evalAsserts() {
                             new AstCStmt{varp->fileline(), "Verilated::overWidthError(\""
                                                                + varp->prettyName() + "\");"}};
                         ifp->branchPred(VBranchPred::BP_UNLIKELY);
-                        newp = ifp;
-                        funcp->addStmtsp(newp);
+                        funcp->addStmtsp(ifp);
                     }
                 }
             }

@@ -215,12 +215,12 @@ private:
         }
     }
 
-    AstNode* createDlyOnSet(AstAssignDly* nodep, AstNode* lhsp) {
+    AstNodeExpr* createDlyOnSet(AstAssignDly* nodep, AstNodeExpr* lhsp) {
         // Create delayed assignment
         // See top of this file for transformation
         // Return the new LHS for the assignment, Null = unlink
         // Find selects
-        AstNode* newlhsp = nullptr;  // nullptr = unlink old assign
+        AstNodeExpr* newlhsp = nullptr;  // nullptr = unlink old assign
         const AstSel* bitselp = nullptr;
         AstArraySel* arrayselp = nullptr;
         AstVarRef* varrefp = nullptr;
@@ -242,10 +242,10 @@ private:
             UINFO(4, "AssignDlyOnSet: " << nodep << endl);
         }
         //=== Dimensions: __Vdlyvdim__
-        std::deque<AstNode*> dimvalp;  // Assignment value for each dimension of assignment
+        std::deque<AstNodeExpr*> dimvalp;  // Assignment value for each dimension of assignment
         AstNode* dimselp = arrayselp;
         for (; VN_IS(dimselp, ArraySel); dimselp = VN_AS(dimselp, ArraySel)->fromp()) {
-            AstNode* const valp = VN_AS(dimselp, ArraySel)->bitp()->unlinkFrBack();
+            AstNodeExpr* const valp = VN_AS(dimselp, ArraySel)->bitp()->unlinkFrBack();
             dimvalp.push_front(valp);
         }
         if (dimselp) varrefp = VN_AS(dimselp, VarRef);
@@ -255,9 +255,9 @@ private:
         const AstVar* const oldvarp = varrefp->varp();
         const int modVecNum = m_scopeVecMap[varrefp->varScopep()]++;
         //
-        std::deque<AstNode*> dimreadps;  // Read value for each dimension of assignment
+        std::deque<AstNodeExpr*> dimreadps;  // Read value for each dimension of assignment
         for (unsigned dimension = 0; dimension < dimvalp.size(); dimension++) {
-            AstNode* const dimp = dimvalp[dimension];
+            AstNodeExpr* const dimp = dimvalp[dimension];
             if (VN_IS(dimp, Const)) {  // bit = const, can just use it
                 dimreadps.push_front(dimp);
             } else {
@@ -274,9 +274,9 @@ private:
         }
         //
         //=== Bitselect: __Vdlyvlsb__
-        AstNode* bitreadp = nullptr;  // Code to read Vdlyvlsb
+        AstNodeExpr* bitreadp = nullptr;  // Code to read Vdlyvlsb
         if (bitselp) {
-            AstNode* const lsbvaluep = bitselp->lsbp()->unlinkFrBack();
+            AstNodeExpr* const lsbvaluep = bitselp->lsbp()->unlinkFrBack();
             if (VN_IS(bitselp->fromp(), Const)) {
                 // vlsb = constant, can just push constant into where we use it
                 bitreadp = lsbvaluep;
@@ -294,7 +294,7 @@ private:
         }
         //
         //=== Value: __Vdlyvval__
-        AstNode* valreadp;  // Code to read Vdlyvval
+        AstNodeExpr* valreadp;  // Code to read Vdlyvval
         if (VN_IS(nodep->rhsp(), Const)) {
             // vval = constant, can just push constant into where we use it
             valreadp = nodep->rhsp()->unlinkFrBack();
@@ -342,7 +342,7 @@ private:
         // This ensures that multiple assignments to the same memory will result
         // in correctly ordered code - the last assignment must be last.
         // It also has the nice side effect of assisting cache locality.
-        AstNode* selectsp = varrefp;
+        AstNodeExpr* selectsp = varrefp;
         for (int dimension = int(dimreadps.size()) - 1; dimension >= 0; --dimension) {
             selectsp = new AstArraySel(nodep->fileline(), selectsp, dimreadps[dimension]);
         }
@@ -519,8 +519,8 @@ private:
                              || (VN_IS(nodep->lhsp(), Sel)
                                  && VN_IS(VN_AS(nodep->lhsp(), Sel)->fromp(), ArraySel));
         if (m_procp->isSuspendable() || isArray) {
-            AstNode* const lhsp = nodep->lhsp();
-            AstNode* const newlhsp = createDlyOnSet(nodep, lhsp);
+            AstNodeExpr* const lhsp = nodep->lhsp();
+            AstNodeExpr* const newlhsp = createDlyOnSet(nodep, lhsp);
             if (m_inLoop && isArray) {
                 nodep->v3warn(BLKLOOPINIT, "Unsupported: Delayed assignment to array inside for "
                                            "loops (non-delayed is ok - see docs)");

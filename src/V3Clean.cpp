@@ -121,7 +121,7 @@ private:
     }
 
     // Operate on nodes
-    void insertClean(AstNode* nodep) {  // We'll insert ABOVE passed node
+    void insertClean(AstNodeExpr* nodep) {  // We'll insert ABOVE passed node
         UINFO(4, "  NeedClean " << nodep << endl);
         VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
@@ -134,14 +134,14 @@ private:
         cleanp->dtypeFrom(nodep);  // Otherwise the AND normally picks LHS
         relinkHandle.relink(cleanp);
     }
-    void ensureClean(AstNode* nodep) {
+    void ensureClean(AstNodeExpr* nodep) {
         computeCppWidth(nodep);
         if (!isClean(nodep)) insertClean(nodep);
     }
-    void ensureCleanAndNext(AstNode* nodep) {
+    void ensureCleanAndNext(AstNodeExpr* nodep) {
         // Editing list, careful looping!
-        for (AstNode* exprp = nodep; exprp;) {
-            AstNode* const nextp = exprp->nextp();
+        for (AstNodeExpr* exprp = nodep; exprp;) {
+            AstNodeExpr* const nextp = VN_AS(exprp->nextp(), NodeExpr);
             ensureClean(exprp);
             exprp = nextp;
         }
@@ -237,7 +237,9 @@ private:
         setClean(nodep, false);
         // We always clean, as we don't trust those pesky users.
         if (!VN_IS(nodep->backp(), And)) insertClean(nodep);
-        ensureCleanAndNext(nodep->exprsp());
+        for (AstNode* argp = nodep->exprsp(); argp; argp = argp->nextp()) {
+            if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) ensureClean(exprp);
+        }
     }
     void visit(AstTraceDecl* nodep) override {
         // No cleaning, or would loose pointer to enum
@@ -277,7 +279,9 @@ private:
     }
     void visit(AstUCStmt* nodep) override {
         iterateChildren(nodep);
-        ensureCleanAndNext(nodep->exprsp());
+        for (AstNode* argp = nodep->exprsp(); argp; argp = argp->nextp()) {
+            if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) ensureClean(exprp);
+        }
     }
     void visit(AstNodeCCall* nodep) override {
         iterateChildren(nodep);

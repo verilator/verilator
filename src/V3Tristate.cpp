@@ -465,7 +465,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         AstConst* const newp = new AstConst{nodep->fileline(), num};
         return newp;
     }
-    AstNode* getEnp(AstNode* nodep) {
+    AstNodeExpr* getEnp(AstNode* nodep) {
         if (nodep->user1p()) {
             if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
                 if (refp->varp()->isIO()) {
@@ -480,7 +480,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             nodep->user1p(newAllZerosOrOnes(nodep, true));
         }
         // Otherwise return the previous output enable
-        return nodep->user1p();
+        return VN_AS(nodep->user1p(), NodeExpr);
     }
     AstVar* getCreateEnVarp(AstVar* invarp) {
         // Return the master __en for the specified input variable
@@ -501,7 +501,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         numz0.opNot(numz);  // Z->0, else 1
         return new AstConst{fl, numz0};
     }
-    AstNode* getEnExprBasedOnOriginalp(AstNode* const nodep) {
+    AstNodeExpr* getEnExprBasedOnOriginalp(AstNodeExpr* const nodep) {
         if (AstVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
             return new AstVarRef{varrefp->fileline(), getCreateEnVarp(varrefp->varp()),
                                  VAccess::READ};
@@ -514,17 +514,17 @@ class TristateVisitor final : public TristateBaseVisitor {
             // whole extend.
 
             // Unlink lhsp before copying to save unnecessary copy of lhsp
-            AstNode* const lhsp = extendp->lhsp()->unlinkFrBack();
+            AstNodeExpr* const lhsp = extendp->lhsp()->unlinkFrBack();
             AstExtend* const enExtendp = extendp->cloneTree(false);
             extendp->lhsp(lhsp);
-            AstNode* const enLhsp = getEnExprBasedOnOriginalp(lhsp);
+            AstNodeExpr* const enLhsp = getEnExprBasedOnOriginalp(lhsp);
             enExtendp->lhsp(new AstNot{enLhsp->fileline(), enLhsp});
             return new AstNot{enExtendp->fileline(), enExtendp};
         } else if (AstSel* const selp = VN_CAST(nodep, Sel)) {
-            AstNode* const fromp = selp->fromp()->unlinkFrBack();
+            AstNodeExpr* const fromp = selp->fromp()->unlinkFrBack();
             AstSel* const enSelp = selp->cloneTree(false);
             selp->fromp(fromp);
-            AstNode* const enFromp = getEnExprBasedOnOriginalp(fromp);
+            AstNodeExpr* const enFromp = getEnExprBasedOnOriginalp(fromp);
             enSelp->fromp(enFromp);
             return enSelp;
         } else {
@@ -566,10 +566,10 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
-    AstNode* newEnableDeposit(AstSel* selp, AstNode* enp) {
+    AstNodeExpr* newEnableDeposit(AstSel* selp, AstNodeExpr* enp) {
         // Form a "deposit" instruction for given enable, using existing select as a template.
         // Would be nicer if we made this a new AST type
-        AstNode* const newp = new AstShiftL(
+        AstNodeExpr* const newp = new AstShiftL(
             selp->fileline(), new AstExtend(selp->fileline(), enp, selp->fromp()->width()),
             selp->lsbp()->cloneTree(false), selp->fromp()->width());
         return newp;
@@ -659,8 +659,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         // For each driver seperate variables (normal and __en) are created and initialized with
         // values. In case of normal variable, the original expression is reused. Their values are
         // aggregated using | to form one expression, which are assigned to varp end envarp.
-        AstNode* orp = nullptr;
-        AstNode* enp = nullptr;
+        AstNodeExpr* orp = nullptr;
+        AstNodeExpr* enp = nullptr;
 
         for (auto it = beginStrength; it != endStrength; it++) {
             AstVarRef* refp = it->m_varrefp;
@@ -689,14 +689,14 @@ class TristateVisitor final : public TristateBaseVisitor {
             nodep->addStmtsp(enLhspAssignp);
 
             // now append this driver to the driver logic.
-            AstNode* const ref1p = new AstVarRef{refp->fileline(), newLhsp, VAccess::READ};
-            AstNode* const ref2p = new AstVarRef{refp->fileline(), newEnLhsp, VAccess::READ};
-            AstNode* const andp = new AstAnd{refp->fileline(), ref1p, ref2p};
+            AstNodeExpr* const ref1p = new AstVarRef{refp->fileline(), newLhsp, VAccess::READ};
+            AstNodeExpr* const ref2p = new AstVarRef{refp->fileline(), newEnLhsp, VAccess::READ};
+            AstNodeExpr* const andp = new AstAnd{refp->fileline(), ref1p, ref2p};
 
             // or this to the others
             orp = (!orp) ? andp : new AstOr{refp->fileline(), orp, andp};
 
-            AstNode* const ref3p = new AstVarRef{refp->fileline(), newEnLhsp, VAccess::READ};
+            AstNodeExpr* const ref3p = new AstVarRef{refp->fileline(), newEnLhsp, VAccess::READ};
             enp = (!enp) ? ref3p : new AstOr{ref3p->fileline(), enp, ref3p};
         }
         AstNode* const assp = new AstAssignW{
@@ -742,8 +742,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             envarp = VN_AS(invarp->user1p(), Var);  // From CASEEQ, foo === 1'bz
         }
 
-        AstNode* orp = nullptr;
-        AstNode* enp = nullptr;
+        AstNodeExpr* orp = nullptr;
+        AstNodeExpr* enp = nullptr;
         const int w = lhsp->width();
 
         std::sort(refsp->begin(), refsp->end(),
@@ -774,7 +774,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             aggregateTriSameStrength(nodep, varStrengthp, enVarStrengthp, beginStrength,
                                      endStrength);
 
-            AstNode* exprCurrentStrengthp;
+            AstNodeExpr* exprCurrentStrengthp;
             if (enp) {
                 // If weaker driver should be overwritten by a stronger, replace its value with z
                 exprCurrentStrengthp
@@ -785,7 +785,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             }
             orp = (!orp) ? exprCurrentStrengthp : new AstOr{fl, orp, exprCurrentStrengthp};
 
-            AstNode* enVarStrengthRefp = new AstVarRef{fl, enVarStrengthp, VAccess::READ};
+            AstNodeExpr* enVarStrengthRefp = new AstVarRef{fl, enVarStrengthp, VAccess::READ};
 
             enp = (!enp) ? enVarStrengthRefp : new AstOr{fl, enp, enVarStrengthRefp};
 
@@ -798,7 +798,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             const AstPull* const pullp = static_cast<AstPull*>(lhsp->user3p());
             bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
 
-            AstNode* undrivenp;
+            AstNodeExpr* undrivenp;
             if (envarp) {
                 undrivenp = new AstNot{envarp->fileline(),
                                        new AstVarRef{envarp->fileline(), envarp, VAccess::READ}};
@@ -1033,20 +1033,20 @@ class TristateVisitor final : public TristateBaseVisitor {
             // expression 1 or 2 have an output enable '__en' signal. If the
             // condition has an enable, not sure what to do, so generate an
             // error.
-            AstNode* const condp = nodep->condp();
+            AstNodeExpr* const condp = nodep->condp();
             if (condp->user1p()) {
                 condp->v3warn(E_UNSUPPORTED, "Unsupported: don't know how to deal with "
                                              "tristate logic in the conditional expression");
             }
-            AstNode* const thenp = nodep->thenp();
-            AstNode* const elsep = nodep->elsep();
+            AstNodeExpr* const thenp = nodep->thenp();
+            AstNodeExpr* const elsep = nodep->elsep();
             if (thenp->user1p() || elsep->user1p()) {  // else no tristates
                 m_tgraph.didProcess(nodep);
-                AstNode* const en1p = getEnp(thenp);
-                AstNode* const en2p = getEnp(elsep);
+                AstNodeExpr* const en1p = getEnp(thenp);
+                AstNodeExpr* const en2p = getEnp(elsep);
                 // The output enable of a cond is a cond of the output enable of the
                 // two expressions with the same conditional.
-                AstNode* const enp
+                AstNodeExpr* const enp
                     = new AstCond(nodep->fileline(), condp->cloneTree(false), en1p, en2p);
                 UINFO(9, "       newcond " << enp << endl);
                 nodep->user1p(enp);  // propagate up COND(lhsp->enable, rhsp->enable)
@@ -1069,7 +1069,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                 UINFO(9, dbgState() << nodep << endl);
                 if (nodep->user1p()) {
                     // Form a "deposit" instruction.  Would be nicer if we made this a new AST type
-                    AstNode* const newp = newEnableDeposit(nodep, nodep->user1p());
+                    AstNodeExpr* const newp
+                        = newEnableDeposit(nodep, VN_AS(nodep->user1p(), NodeExpr));
                     nodep->fromp()->user1p(newp);  // Push to varref (etc)
                     if (debug() >= 9) newp->dumpTree(cout, "-assign-sel; ");
                     m_tgraph.didProcess(nodep);
@@ -1083,8 +1084,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                      << nodep->prettyTypeName());
                 }
                 if (nodep->fromp()->user1p()) {  // SEL(VARREF, lsb)
-                    AstNode* const en1p = getEnp(nodep->fromp());
-                    AstNode* const enp
+                    AstNodeExpr* const en1p = getEnp(nodep->fromp());
+                    AstNodeExpr* const enp
                         = new AstSel(nodep->fileline(), en1p, nodep->lsbp()->cloneTree(true),
                                      nodep->widthp()->cloneTree(true));
                     UINFO(9, "       newsel " << enp << endl);
@@ -1110,7 +1111,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 UINFO(9, dbgState() << nodep << endl);
                 if (nodep->user1p()) {
                     // Each half of the concat gets a select of the enable expression
-                    AstNode* const enp = nodep->user1p();
+                    AstNodeExpr* const enp = VN_AS(nodep->user1p(), NodeExpr);
                     nodep->user1p(nullptr);
                     nodep->lhsp()->user1p(new AstSel(nodep->fileline(), enp->cloneTree(true),
                                                      nodep->rhsp()->width(),
@@ -1125,13 +1126,13 @@ class TristateVisitor final : public TristateBaseVisitor {
                 UINFO(9, dbgState() << nodep << endl);
                 // Generate the new output enable signal, just as a concat
                 // identical to the data concat
-                AstNode* const expr1p = nodep->lhsp();
-                AstNode* const expr2p = nodep->rhsp();
+                AstNodeExpr* const expr1p = nodep->lhsp();
+                AstNodeExpr* const expr2p = nodep->rhsp();
                 if (expr1p->user1p() || expr2p->user1p()) {  // else no tristates
                     m_tgraph.didProcess(nodep);
-                    AstNode* const en1p = getEnp(expr1p);
-                    AstNode* const en2p = getEnp(expr2p);
-                    AstNode* const enp = new AstConcat(nodep->fileline(), en1p, en2p);
+                    AstNodeExpr* const en1p = getEnp(expr1p);
+                    AstNodeExpr* const en2p = getEnp(expr2p);
+                    AstNodeExpr* const enp = new AstConcat(nodep->fileline(), en1p, en2p);
                     UINFO(9, "       newconc " << enp << endl);
                     nodep->user1p(enp);  // propagate up CONCAT(lhsp->enable, rhsp->enable)
                     expr1p->user1p(nullptr);
@@ -1156,10 +1157,10 @@ class TristateVisitor final : public TristateBaseVisitor {
                 return;
             }
             m_tgraph.didProcess(nodep);
-            AstNode* const expr1p = nodep->lhsp()->unlinkFrBack();
-            AstNode* const expr2p = nodep->rhsp()->unlinkFrBack();
-            AstNode* enp;
-            if (AstNode* const en2p = expr2p->user1p()) {
+            AstNodeExpr* const expr1p = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const expr2p = nodep->rhsp()->unlinkFrBack();
+            AstNodeExpr* enp;
+            if (AstNodeExpr* const en2p = VN_AS(expr2p->user1p(), NodeExpr)) {
                 enp = new AstAnd(nodep->fileline(), expr1p, en2p);
             } else {
                 enp = expr1p;
@@ -1199,22 +1200,22 @@ class TristateVisitor final : public TristateBaseVisitor {
             // have to define what is means to OR 1'bz with other
             // expressions. Here I take the approach that when one expression
             // is 0, that is passes the other.
-            AstNode* const expr1p = nodep->lhsp();
-            AstNode* const expr2p = nodep->rhsp();
+            AstNodeExpr* const expr1p = nodep->lhsp();
+            AstNodeExpr* const expr2p = nodep->rhsp();
             if (!expr1p->user1p() && !expr2p->user1p()) {
                 return;  // no tristates in either expression, so nothing to do
             }
             m_tgraph.didProcess(nodep);
-            AstNode* const en1p = getEnp(expr1p);
-            AstNode* const en2p = getEnp(expr2p);
-            AstNode* subexpr1p = expr1p->cloneTree(false);
-            AstNode* subexpr2p = expr2p->cloneTree(false);
+            AstNodeExpr* const en1p = getEnp(expr1p);
+            AstNodeExpr* const en2p = getEnp(expr2p);
+            AstNodeExpr* subexpr1p = expr1p->cloneTree(false);
+            AstNodeExpr* subexpr2p = expr2p->cloneTree(false);
             if (isAnd) {
                 subexpr1p = new AstNot(nodep->fileline(), subexpr1p);
                 subexpr2p = new AstNot(nodep->fileline(), subexpr2p);
             }
             // calc new output enable
-            AstNode* const enp = new AstOr(
+            AstNodeExpr* const enp = new AstOr(
                 nodep->fileline(), new AstAnd(nodep->fileline(), en1p, en2p),
                 new AstOr(nodep->fileline(),
                           new AstAnd(nodep->fileline(), en1p->cloneTree(false), subexpr1p),
@@ -1301,12 +1302,12 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
             if (constp && constp->user1p()) {
                 // 3'b1z0 -> ((3'b101 == in__en) && (3'b100 == in))
-                AstNode* const rhsp = nodep->rhsp();
+                AstNodeExpr* const rhsp = nodep->rhsp();
                 rhsp->unlinkFrBack();
                 FileLine* const fl = nodep->fileline();
-                AstNode* enRhsp;
+                AstNodeExpr* enRhsp;
                 if (rhsp->user1p()) {
-                    enRhsp = rhsp->user1p();
+                    enRhsp = VN_AS(rhsp->user1p(), NodeExpr);
                     rhsp->user1p(nullptr);
                 } else {
                     enRhsp = getEnExprBasedOnOriginalp(rhsp);
@@ -1315,7 +1316,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     = VN_AS(constp->user1p(), Const)
                           ->num();  // visit(AstConst) already split into en/ones
                 const V3Number& oneIfEnOne = constp->num();
-                AstNode* newp
+                AstNodeExpr* newp
                     = new AstLogAnd{fl, new AstEq{fl, new AstConst{fl, oneIfEn}, enRhsp},
                                     // Keep the caseeq if there are X's present
                                     new AstEqCase{fl, new AstConst{fl, oneIfEnOne}, rhsp}};
@@ -1328,11 +1329,12 @@ class TristateVisitor final : public TristateBaseVisitor {
             } else if (constp && nodep->rhsp()->user1p()) {
                 FileLine* const fl = nodep->fileline();
                 constp->unlinkFrBack();
-                AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
-                AstNode* newp = new AstLogAnd{
-                    fl, new AstEq{fl, newAllZerosOrOnes(constp, false), rhsp->user1p()},
-                    // Keep the caseeq if there are X's present
-                    new AstEqCase{fl, constp, rhsp}};
+                AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+                AstNodeExpr* newp = new AstLogAnd{fl,
+                                                  new AstEq{fl, newAllZerosOrOnes(constp, false),
+                                                            VN_AS(rhsp->user1p(), NodeExpr)},
+                                                  // Keep the caseeq if there are X's present
+                                                  new AstEqCase{fl, constp, rhsp}};
                 if (neq) newp = new AstLogNot{fl, newp};
                 rhsp->user1p(nullptr);
                 UINFO(9, "       newceq " << newp << endl);
@@ -1376,7 +1378,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (!dropop[1]) iterateAndNextNull(nodep->thsp());
             if (!dropop[2]) iterateAndNextNull(nodep->fhsp());
         } else {
-            AstNode* nonXp = nullptr;
+            AstNodeExpr* nonXp = nullptr;
             if (!dropop[0]) {
                 nonXp = nodep->rhsp();
             } else if (!dropop[1]) {
@@ -1400,7 +1402,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 UINFO(4, " COUNTBITS('z)-> " << nodep << endl);
                 VNRelinker relinkHandle;
                 nodep->unlinkFrBack(&relinkHandle);
-                AstNode* newp = new AstCountOnes(
+                AstNodeExpr* newp = new AstCountOnes(
                     nodep->fileline(), new AstVarRef(nodep->fileline(), envarp, VAccess::READ));
                 if (nonXp) {  // Need to still count '0 or '1 or 'x's
                     if (dropop[0]) {
@@ -1545,7 +1547,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             // Therefore, create the enable, output and separate input pin,
             // then pinReconnectSimple all
             // Create the output enable pin, connect to new signal
-            AstNode* enrefp;
+            AstNodeExpr* enrefp;
             {
                 AstVar* const enVarp = new AstVar(nodep->fileline(), VVarType::MODULETEMP,
                                                   nodep->name() + "__en" + cvtToStr(m_unique++),
@@ -1580,8 +1582,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                      << nodep->prettyNameQ());
                 }
             } else {
-                AstNode* const outexprp
-                    = nodep->exprp()->cloneTree(false);  // Note has lvalue() set
+                AstNodeExpr* const outexprp
+                    = VN_AS(nodep->exprp(), NodeExpr)->cloneTree(false);  // Note has lvalue() set
                 outpinp = new AstPin(nodep->fileline(), nodep->pinNum(),
                                      outModVarp->name(),  // should be {var}"__out"
                                      outexprp);

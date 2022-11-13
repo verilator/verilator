@@ -250,7 +250,7 @@ private:
         return true;  // All is fine
     }
 
-    AstNode* replaceCaseFastRecurse(AstNode* cexprp, int msb, uint32_t upperValue) {
+    AstNode* replaceCaseFastRecurse(AstNodeExpr* cexprp, int msb, uint32_t upperValue) {
         if (msb < 0) {
             // There's no space for a IF.  We know upperValue is thus down to a specific
             // exact value, so just return the tree value
@@ -290,9 +290,9 @@ private:
             // V3Number nummask (cexprp, cexprp->width(), (1UL<<msb));
             // AstNode* and1p = new AstAnd(cexprp->fileline(), cexprp->cloneTree(false),
             //                            new AstConst(cexprp->fileline(), nummask));
-            AstNode* const and1p
+            AstNodeExpr* const and1p
                 = new AstSel(cexprp->fileline(), cexprp->cloneTree(false), msb, 1);
-            AstNode* const eqp
+            AstNodeExpr* const eqp
                 = new AstNeq(cexprp->fileline(), new AstConst(cexprp->fileline(), 0), and1p);
             AstIf* const ifp = new AstIf(cexprp->fileline(), eqp, tree1p, tree0p);
             ifp->user3(1);  // So we don't bother to clone it
@@ -304,7 +304,7 @@ private:
         // CASEx(cexpr,....
         // ->  tree of IF(msb,  IF(msb-1, 11, 10)
         //                      IF(msb-1, 01, 00))
-        AstNode* const cexprp = nodep->exprp()->unlinkFrBack();
+        AstNodeExpr* const cexprp = nodep->exprp()->unlinkFrBack();
 
         if (debug() >= 9) {  // LCOV_EXCL_START
             for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
@@ -337,7 +337,7 @@ private:
         // ->  IF((cexpr==icond1),istmts1,
         //                       IF((EQ (AND MASK cexpr) (AND MASK icond1)
         //                              ,istmts2, istmts3
-        AstNode* const cexprp = nodep->exprp()->unlinkFrBack();
+        AstNodeExpr* const cexprp = nodep->exprp()->unlinkFrBack();
         // We'll do this in two stages.  First stage, convert the conditions to
         // the appropriate IF AND terms.
         if (debug() >= 9) nodep->dumpTree(cout, "    _comp_IN:   ");
@@ -350,13 +350,13 @@ private:
                 hadDefault = true;
             } else {
                 // Expressioned clause
-                AstNode* icondNextp = nullptr;
-                AstNode* ifexprp = nullptr;  // If expression to test
-                for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondNextp) {
-                    icondNextp = icondp->nextp();
+                AstNodeExpr* icondNextp = nullptr;
+                AstNodeExpr* ifexprp = nullptr;  // If expression to test
+                for (AstNodeExpr* icondp = itemp->condsp(); icondp; icondp = icondNextp) {
+                    icondNextp = VN_AS(icondp->nextp(), NodeExpr);
                     icondp->unlinkFrBack();
 
-                    AstNode* condp = nullptr;  // Default is to use and1p/and2p
+                    AstNodeExpr* condp = nullptr;  // Default is to use and1p/and2p
                     AstConst* const iconstp = VN_CAST(icondp, Const);
                     if (iconstp && neverItem(nodep, iconstp)) {
                         // X in casez can't ever be executed
@@ -375,10 +375,10 @@ private:
                         nummask.opBitsNonX(iconstp->num());
                         V3Number numval(itemp, iconstp->width());
                         numval.opBitsOne(iconstp->num());
-                        AstNode* const and1p
+                        AstNodeExpr* const and1p
                             = new AstAnd(itemp->fileline(), cexprp->cloneTree(false),
                                          new AstConst(itemp->fileline(), nummask));
-                        AstNode* const and2p = new AstAnd(
+                        AstNodeExpr* const and2p = new AstAnd(
                             itemp->fileline(), new AstConst(itemp->fileline(), numval),
                             new AstConst(itemp->fileline(), nummask));
                         VL_DO_DANGLING(icondp->deleteTree(), icondp);
@@ -386,8 +386,8 @@ private:
                         condp = AstEq::newTyped(itemp->fileline(), and1p, and2p);
                     } else {
                         // Not a caseX mask, we can build CASEEQ(cexpr icond)
-                        AstNode* const and1p = cexprp->cloneTree(false);
-                        AstNode* const and2p = icondp;
+                        AstNodeExpr* const and1p = cexprp->cloneTree(false);
+                        AstNodeExpr* const and2p = icondp;
                         condp = AstEq::newTyped(itemp->fileline(), and1p, and2p);
                     }
                     if (!ifexprp) {
@@ -423,7 +423,7 @@ private:
             AstNode* const istmtsp = itemp->stmtsp();  // Maybe null -- no action.
             if (istmtsp) istmtsp->unlinkFrBackWithNext();
             // Expressioned clause
-            AstNode* const ifexprp = itemp->condsp()->unlinkFrBack();
+            AstNodeExpr* const ifexprp = itemp->condsp()->unlinkFrBack();
             {  // Prepare for next group
                 if (++depth > CASE_ENCODER_GROUP_DEPTH) depth = 1;
                 if (depth == 1) {  // First group or starting new group
@@ -436,13 +436,13 @@ private:
                     }
                     groupnextp = newp;
                 } else {  // Continue group, modify if condition to OR in this new condition
-                    AstNode* const condp = groupnextp->condp()->unlinkFrBack();
+                    AstNodeExpr* const condp = groupnextp->condp()->unlinkFrBack();
                     groupnextp->condp(
                         new AstOr(ifexprp->fileline(), condp, ifexprp->cloneTree(true)));
                 }
             }
             {  // Make the new lower IF and attach in the tree
-                AstNode* itemexprp = ifexprp;
+                AstNodeExpr* itemexprp = ifexprp;
                 VL_DANGLING(ifexprp);
                 if (depth == CASE_ENCODER_GROUP_DEPTH) {  // End of group - can skip the condition
                     VL_DO_DANGLING(itemexprp->deleteTree(), itemexprp);

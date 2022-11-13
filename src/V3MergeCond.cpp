@@ -136,7 +136,7 @@ bool areDisjoint(const std::set<const AstVar*>& a, const std::set<const AstVar*>
 // Structure containing information required for code motion/merging
 
 struct StmtProperties {
-    AstNode* m_condp = nullptr;  // The condition expression, if a conditional node
+    AstNodeExpr* m_condp = nullptr;  // The condition expression, if a conditional node
     std::set<const AstVar*> m_rdVars;  // Variables read by this statement
     std::set<const AstVar*> m_wrVars;  // Variables writen by this statement
     bool m_isFence = false;  // Nothing should move across this statement, nor should it be merged
@@ -178,8 +178,8 @@ class CodeMotionAnalysisVisitor final : public VNVisitor {
     StmtProperties* m_propsp = nullptr;  // StmtProperties structure of current AstNodeStmt
 
     // Extract condition expression from a megeable conditional statement, if any
-    static AstNode* extractCondition(const AstNodeStmt* nodep) {
-        AstNode* conditionp = nullptr;
+    static AstNodeExpr* extractCondition(const AstNodeStmt* nodep) {
+        AstNodeExpr* conditionp = nullptr;
         if (const AstNodeAssign* const assignp = VN_CAST(nodep, NodeAssign)) {
             if (AstNodeCond* const conditionalp = extractCondFromRhs(assignp->rhsp())) {
                 conditionp = conditionalp->condp();
@@ -199,7 +199,7 @@ class CodeMotionAnalysisVisitor final : public VNVisitor {
         m_propsp = &m_stmtProperties(nodep);
 
         // Extract condition from statement
-        if (AstNode* const condp = extractCondition(nodep)) {
+        if (AstNodeExpr* const condp = extractCondition(nodep)) {
             // Remember condition node. We always need this as it is used in the later
             // traversal.
             m_propsp->m_condp = condp;
@@ -447,7 +447,7 @@ private:
     VDouble0 m_statLongestList;  // Statistic tracking
 
     AstNode* m_mgFirstp = nullptr;  // First node in merged sequence
-    AstNode* m_mgCondp = nullptr;  // The condition of the first node
+    AstNodeExpr* m_mgCondp = nullptr;  // The condition of the first node
     const AstNode* m_mgLastp = nullptr;  // Last node in merged sequence
     const AstNode* m_mgNextp = nullptr;  // Next node in list being examined
     uint32_t m_listLenght = 0;  // Length of current list
@@ -578,10 +578,10 @@ private:
     // Apply (1'b1 & _) cleaning mask if necessary. This is required because this pass is after
     // V3Clean, and sometimes we have an AstAnd with a 1-bit condition on one side, but a more
     // than 1-bit value on the other side, so we need to keep only the LSB.
-    static AstNode* maskLsb(AstNode* nodep) {
+    static AstNodeExpr* maskLsb(AstNodeExpr* nodep) {
         if (yieldsOneOrZero(nodep)) return nodep;
         // Otherwise apply masking
-        AstNode* const maskp = new AstConst{nodep->fileline(), AstConst::BitTrue()};
+        AstConst* const maskp = new AstConst{nodep->fileline(), AstConst::BitTrue()};
         // Mask on left, as conventional
         return new AstAnd{nodep->fileline(), maskp, nodep};
     }
@@ -589,11 +589,11 @@ private:
     // Fold the RHS expression of an assignment assuming the given condition state.
     // Unlink bits from the RHS which is only used once, and can be reused (is an unomdified
     // sub-tree). What remains of the RHS is expected to be deleted by the caller.
-    AstNode* foldAndUnlink(AstNode* rhsp, bool condTrue) {
+    AstNodeExpr* foldAndUnlink(AstNodeExpr* rhsp, bool condTrue) {
         if (rhsp->sameTree(m_mgCondp)) {
             return new AstConst{rhsp->fileline(), AstConst::BitTrue{}, condTrue};
         } else if (const AstNodeCond* const condp = extractCondFromRhs(rhsp)) {
-            AstNode* const resp
+            AstNodeExpr* const resp
                 = condTrue ? condp->thenp()->unlinkFrBack() : condp->elsep()->unlinkFrBack();
             if (condp == rhsp) return resp;
             if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
@@ -671,7 +671,7 @@ private:
                 ++m_statMergedItems;
                 if (AstNodeAssign* const assignp = VN_CAST(currp, NodeAssign)) {
                     // Unlink RHS and clone to get the 2 assignments (reusing assignp)
-                    AstNode* const rhsp = assignp->rhsp()->unlinkFrBack();
+                    AstNodeExpr* const rhsp = assignp->rhsp()->unlinkFrBack();
                     AstNodeAssign* const thenp = assignp;
                     AstNodeAssign* const elsep = assignp->cloneTree(false);
                     // Construct the new RHSs and add to branches
@@ -739,7 +739,7 @@ private:
         return false;
     }
 
-    bool addToList(AstNodeStmt* nodep, AstNode* condp) {
+    bool addToList(AstNodeStmt* nodep, AstNodeExpr* condp) {
         // Set up head of new list if node is first in list
         if (!m_mgFirstp) {
             UASSERT_OBJ(condp, nodep, "Cannot start new list without condition");
@@ -825,7 +825,7 @@ private:
 
     // VISITORS
     void visit(AstNodeAssign* nodep) override {
-        if (AstNode* const condp = (*m_stmtPropertiesp)(nodep).m_condp) {
+        if (AstNodeExpr* const condp = (*m_stmtPropertiesp)(nodep).m_condp) {
             // Check if mergeable
             if (!checkOrMakeMergeable(nodep)) return;
             // Close potentially incompatible pending merge

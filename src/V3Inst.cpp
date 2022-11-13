@@ -70,14 +70,14 @@ private:
         // Use user1p on the PIN to indicate we created an assign for this pin
         if (!nodep->user1SetOnce()) {
             // Make an ASSIGNW (expr, pin)
-            AstNode* const exprp = nodep->exprp()->cloneTree(false);
+            AstNodeExpr* const exprp = VN_AS(nodep->exprp(), NodeExpr)->cloneTree(false);
             UASSERT_OBJ(exprp->width() == nodep->modVarp()->width(), nodep,
                         "Width mismatch, should have been handled in pinReconnectSimple");
             if (nodep->modVarp()->isInoutish()) {
                 nodep->v3fatalSrc("Unsupported: Verilator is a 2-state simulator");
             } else if (nodep->modVarp()->isWritable()) {
-                AstNode* const rhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(),
-                                                     m_cellp->name(), VAccess::READ);
+                AstNodeExpr* const rhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(),
+                                                         m_cellp->name(), VAccess::READ);
                 AstAssignW* const assp = new AstAssignW(exprp->fileline(), exprp, rhsp);
                 m_cellp->addNextHere(assp);
             } else if (nodep->modVarp()->isNonOutput()) {
@@ -97,8 +97,8 @@ private:
                                IfaceRefDType))) {
                 // Create an AstAssignVarScope for Vars to Cells so we can
                 // link with their scope later
-                AstNode* const lhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(),
-                                                     m_cellp->name(), VAccess::READ);
+                AstNodeExpr* const lhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(),
+                                                         m_cellp->name(), VAccess::READ);
                 const AstVarRef* const refp = VN_CAST(exprp, VarRef);
                 const AstVarXRef* const xrefp = VN_CAST(exprp, VarXRef);
                 UASSERT_OBJ(refp || xrefp, exprp,
@@ -334,7 +334,7 @@ private:
                 const int arraySelNum = rangep->littleEndian()
                                             ? (rangep->elementsConst() - 1 - m_instSelNum)
                                             : m_instSelNum;
-                AstNode* exprp = nodep->exprp()->unlinkFrBack();
+                AstNodeExpr* exprp = VN_AS(nodep->exprp(), NodeExpr)->unlinkFrBack();
                 exprp = new AstArraySel(exprp->fileline(), exprp, arraySelNum);
                 nodep->exprp(exprp);
             } else if (expwidth == modwidth) {
@@ -348,7 +348,7 @@ private:
                                                           << m_cellRangep->leftConst() << ":"
                                                           << m_cellRangep->rightConst() << "]");
                 }
-                AstNode* exprp = nodep->exprp()->unlinkFrBack();
+                AstNodeExpr* exprp = VN_AS(nodep->exprp(), NodeExpr)->unlinkFrBack();
                 const bool inputPin = nodep->modVarp()->isNonOutput();
                 if (!inputPin
                     && !VN_IS(exprp, VarRef)
@@ -489,10 +489,10 @@ class InstStatic final {
 private:
     InstStatic() = default;  // Static class
 
-    static AstNode* extendOrSel(FileLine* fl, AstNode* rhsp, AstNode* cmpWidthp) {
+    static AstNodeExpr* extendOrSel(FileLine* fl, AstNodeExpr* rhsp, AstNode* cmpWidthp) {
         if (cmpWidthp->width() > rhsp->width()) {
-            rhsp = (rhsp->isSigned() ? static_cast<AstNode*>(new AstExtendS{fl, rhsp})
-                                     : static_cast<AstNode*>(new AstExtend{fl, rhsp}));
+            rhsp = (rhsp->isSigned() ? static_cast<AstNodeExpr*>(new AstExtendS{fl, rhsp})
+                                     : static_cast<AstNodeExpr*>(new AstExtend{fl, rhsp}));
             // Need proper widthMin, which may differ from AstSel created above
             rhsp->dtypeFrom(cmpWidthp);
         } else if (cmpWidthp->width() < rhsp->width()) {
@@ -553,7 +553,7 @@ public:
             // Make a new temp wire
             // if (1 || debug() >= 9) pinp->dumpTree(cout, "-in_pin:");
             V3Inst::checkOutputShort(pinp);
-            AstNode* const pinexprp = pinp->exprp()->unlinkFrBack();
+            AstNodeExpr* const pinexprp = VN_AS(pinp->exprp(), NodeExpr)->unlinkFrBack();
             const string newvarname
                 = (string(pinVarp->isWritable() ? "__Vcellout" : "__Vcellinp")
                    // Prevent name conflict if both tri & non-tri add signals
@@ -568,12 +568,12 @@ public:
                                     " direct one-to-one connection (without any expression)");
             } else if (pinVarp->isWritable()) {
                 // See also V3Inst
-                AstNode* rhsp = new AstVarRef(pinp->fileline(), newvarp, VAccess::READ);
+                AstNodeExpr* rhsp = new AstVarRef(pinp->fileline(), newvarp, VAccess::READ);
                 UINFO(5, "pinRecon width " << pinVarp->width() << " >? " << rhsp->width() << " >? "
                                            << pinexprp->width() << endl);
                 rhsp = extendOrSel(pinp->fileline(), rhsp, pinVarp);
                 pinp->exprp(new AstVarRef(newvarp->fileline(), newvarp, VAccess::WRITE));
-                AstNode* const rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
+                AstNodeExpr* const rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
                 assignp = new AstAssignW(pinp->fileline(), pinexprp, rhsSelp);
             } else {
                 // V3 width should have range/extended to make the widths correct

@@ -159,7 +159,7 @@ private:
         // So later optimizations don't need to deal with them,
         //    REPEAT(count,body) -> loop=count,WHILE(loop>0) { body, loop-- }
         // Note var can be signed or unsigned based on original number.
-        AstNode* const countp = nodep->countp()->unlinkFrBackWithNext();
+        AstNodeExpr* const countp = nodep->countp()->unlinkFrBackWithNext();
         const string name = string("__Vrepeat") + cvtToStr(m_modRepeatNum++);
         // Spec says value is integral, if negative is ignored
         AstVar* const varp
@@ -172,8 +172,8 @@ private:
             nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE),
             new AstSub(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::READ),
                        new AstConst(nodep->fileline(), 1)));
-        AstNode* const zerosp = new AstConst(nodep->fileline(), AstConst::Signed32(), 0);
-        AstNode* const condp = new AstGtS(
+        AstNodeExpr* const zerosp = new AstConst(nodep->fileline(), AstConst::Signed32(), 0);
+        AstNodeExpr* const condp = new AstGtS(
             nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::READ), zerosp);
         AstNode* const bodysp = nodep->stmtsp();
         if (bodysp) bodysp->unlinkFrBackWithNext();
@@ -210,7 +210,7 @@ private:
             m_loopInc = true;
             iterateAndNextNull(nodep->incsp());
         }
-        AstNode* const condp = nodep->condp() ? nodep->condp()->unlinkFrBack() : nullptr;
+        AstNodeExpr* const condp = nodep->condp() ? nodep->condp()->unlinkFrBack() : nullptr;
         AstNode* const bodyp = nodep->stmtsp() ? nodep->stmtsp()->unlinkFrBack() : nullptr;
         AstNode* const incsp = nodep->incsp() ? nodep->incsp()->unlinkFrBack() : nullptr;
         AstWhile* const whilep = new AstWhile{nodep->fileline(), condp, bodyp, incsp};
