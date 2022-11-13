@@ -86,7 +86,7 @@ private:
         iterateChildren(nodep);
         if (nodep->extendsp()) {
             // Save pointer to derived class
-            auto* const basep = nodep->extendsp()->classp();
+            AstClass* const basep = nodep->extendsp()->classp();
             m_baseToDerivedMap[basep].insert(nodep);
         }
     }
@@ -95,7 +95,7 @@ private:
         if (nodep->name() != "randomize") return;
         if (const AstClassRefDType* const classRefp
             = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
-            auto* const classp = classRefp->classp();
+            AstClass* const classp = classRefp->classp();
             classp->user1(true);
             markMembers(classp);
         }
@@ -134,13 +134,13 @@ private:
         if (nodep->user2p()) return VN_AS(nodep->user2p(), Var);
         UINFO(9, "Construct Venumvaltab " << nodep << endl);
         AstNodeArrayDType* const vardtypep
-            = new AstUnpackArrayDType(nodep->fileline(), nodep->dtypep(),
-                                      new AstRange(nodep->fileline(), nodep->itemCount(), 0));
-        AstInitArray* const initp = new AstInitArray(nodep->fileline(), vardtypep, nullptr);
+            = new AstUnpackArrayDType{nodep->fileline(), nodep->dtypep(),
+                                      new AstRange{nodep->fileline(), nodep->itemCount(), 0}};
+        AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
         v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
         AstVar* const varp
-            = new AstVar(nodep->fileline(), VVarType::MODULETEMP,
-                         "__Venumvaltab_" + cvtToStr(m_enumValueTabCount++), vardtypep);
+            = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
+                         "__Venumvaltab_" + cvtToStr(m_enumValueTabCount++), vardtypep};
         varp->isConst(true);
         varp->isStatic(true);
         varp->valuep(initp);
@@ -163,10 +163,10 @@ private:
                       StructDType)) {
             AstNodeStmt* stmtsp = nullptr;
             offset += memberp ? memberp->lsb() : 0;
-            for (auto* smemberp = structDtp->membersp(); smemberp;
+            for (AstMemberDType* smemberp = structDtp->membersp(); smemberp;
                  smemberp = VN_AS(smemberp->nextp(), MemberDType)) {
-                auto* const randp = newRandStmtsp(fl, stmtsp ? varrefp->cloneTree(false) : varrefp,
-                                                  offset, smemberp);
+                AstNodeStmt* const randp = newRandStmtsp(
+                    fl, stmtsp ? varrefp->cloneTree(false) : varrefp, offset, smemberp);
                 if (stmtsp) {
                     stmtsp->addNext(randp);
                 } else {
@@ -176,26 +176,26 @@ private:
             return stmtsp;
         } else {
             AstNodeExpr* valp;
-            if (auto* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
-                                                      : varrefp->dtypep()->subDTypep(),
-                                              EnumDType)) {
+            if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
+                                                              : varrefp->dtypep()->subDTypep(),
+                                                      EnumDType)) {
                 AstVarRef* const tabRefp
-                    = new AstVarRef(fl, enumValueTabp(enumDtp), VAccess::READ);
+                    = new AstVarRef{fl, enumValueTabp(enumDtp), VAccess::READ};
                 tabRefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
-                auto* const randp = new AstRand(fl, nullptr, false);
-                auto* const moddivp
-                    = new AstModDiv(fl, randp, new AstConst(fl, enumDtp->itemCount()));
+                AstRand* const randp = new AstRand{fl, nullptr, false};
+                AstNode* const moddivp = new AstModDiv{
+                    fl, randp, new AstConst{fl, static_cast<uint32_t>(enumDtp->itemCount())}};
                 randp->dtypep(varrefp->findBasicDType(VBasicDTypeKwd::UINT32));
                 moddivp->dtypep(enumDtp);
-                valp = new AstArraySel(fl, tabRefp, moddivp);
+                valp = new AstArraySel{fl, tabRefp, moddivp};
             } else {
-                valp = new AstRand(fl, nullptr, false);
+                valp = new AstRand{fl, nullptr, false};
                 valp->dtypep(memberp ? memberp->dtypep() : varrefp->varp()->dtypep());
             }
-            return new AstAssign(fl,
-                                 new AstSel(fl, varrefp, offset + (memberp ? memberp->lsb() : 0),
-                                            memberp ? memberp->width() : varrefp->width()),
-                                 valp);
+            return new AstAssign{fl,
+                                 new AstSel{fl, varrefp, offset + (memberp ? memberp->lsb() : 0),
+                                            memberp ? memberp->width() : varrefp->width()},
+                                 valp};
         }
     }
 
@@ -213,35 +213,36 @@ private:
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
         UINFO(9, "Define randomize() for " << nodep << endl);
-        auto* const funcp = V3Randomize::newRandomizeFunc(nodep);
-        auto* const fvarp = VN_AS(funcp->fvarp(), Var);
-        funcp->addStmtsp(new AstAssign(
-            nodep->fileline(), new AstVarRef(nodep->fileline(), fvarp, VAccess::WRITE),
-            new AstConst(nodep->fileline(), AstConst::WidthedValue(), 32, 1)));
-        for (auto* classp = nodep; classp;
+        AstFunc* const funcp = V3Randomize::newRandomizeFunc(nodep);
+        AstVar* const fvarp = VN_AS(funcp->fvarp(), Var);
+        funcp->addStmtsp(new AstAssign{
+            nodep->fileline(), new AstVarRef{nodep->fileline(), fvarp, VAccess::WRITE},
+            new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32, 1}});
+        for (AstClass* classp = nodep; classp;
              classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr) {
             for (auto* memberp = classp->stmtsp(); memberp; memberp = memberp->nextp()) {
-                auto* const memberVarp = VN_CAST(memberp, Var);
+                AstVar* const memberVarp = VN_CAST(memberp, Var);
                 if (!memberVarp || !memberVarp->isRand()) continue;
-                const auto* const dtypep = memberp->dtypep()->skipRefp();
+                const AstNodeDType* const dtypep = memberp->dtypep()->skipRefp();
                 if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType)) {
-                    auto* const refp
-                        = new AstVarRef(nodep->fileline(), memberVarp, VAccess::WRITE);
-                    auto* const stmtp = newRandStmtsp(nodep->fileline(), refp);
+                    AstVarRef* const refp
+                        = new AstVarRef{nodep->fileline(), memberVarp, VAccess::WRITE};
+                    AstNodeStmt* const stmtp = newRandStmtsp(nodep->fileline(), refp);
                     funcp->addStmtsp(stmtp);
                 } else if (const auto* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
-                    auto* const refp
-                        = new AstVarRef(nodep->fileline(), memberVarp, VAccess::WRITE);
-                    auto* const memberFuncp = V3Randomize::newRandomizeFunc(classRefp->classp());
-                    auto* const callp
-                        = new AstMethodCall(nodep->fileline(), refp, "randomize", nullptr);
+                    AstVarRef* const refp
+                        = new AstVarRef{nodep->fileline(), memberVarp, VAccess::WRITE};
+                    AstFunc* const memberFuncp
+                        = V3Randomize::newRandomizeFunc(classRefp->classp());
+                    AstMethodCall* const callp
+                        = new AstMethodCall{nodep->fileline(), refp, "randomize", nullptr};
                     callp->taskp(memberFuncp);
                     callp->dtypeFrom(memberFuncp);
-                    funcp->addStmtsp(new AstAssign(
-                        nodep->fileline(), new AstVarRef(nodep->fileline(), fvarp, VAccess::WRITE),
-                        new AstAnd(nodep->fileline(),
-                                   new AstVarRef(nodep->fileline(), fvarp, VAccess::READ),
-                                   callp)));
+                    funcp->addStmtsp(new AstAssign{
+                        nodep->fileline(), new AstVarRef{nodep->fileline(), fvarp, VAccess::WRITE},
+                        new AstAnd{nodep->fileline(),
+                                   new AstVarRef{nodep->fileline(), fvarp, VAccess::READ},
+                                   callp}});
                 } else {
                     memberp->v3warn(E_UNSUPPORTED,
                                     "Unsupported: random member variables with type "
@@ -329,16 +330,16 @@ void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
 }
 
 AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep) {
-    auto* funcp = VN_AS(nodep->findMember("randomize"), Func);
+    AstFunc* funcp = VN_AS(nodep->findMember("randomize"), Func);
     if (!funcp) {
-        auto* const dtypep
+        AstNodeDType* const dtypep
             = nodep->findBitDType(32, 32, VSigning::SIGNED);  // IEEE says int return of 0/1
-        auto* const fvarp = new AstVar(nodep->fileline(), VVarType::MEMBER, "randomize", dtypep);
+        AstVar* const fvarp = new AstVar{nodep->fileline(), VVarType::MEMBER, "randomize", dtypep};
         fvarp->lifetime(VLifetime::AUTOMATIC);
         fvarp->funcLocal(true);
         fvarp->funcReturn(true);
         fvarp->direction(VDirection::OUTPUT);
-        funcp = new AstFunc(nodep->fileline(), "randomize", nullptr, fvarp);
+        funcp = new AstFunc{nodep->fileline(), "randomize", nullptr, fvarp};
         funcp->dtypep(dtypep);
         funcp->classMethod(true);
         funcp->isVirtual(nodep->isExtended());
