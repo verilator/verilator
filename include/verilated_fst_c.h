@@ -53,7 +53,7 @@ private:
     std::map<int, fstEnumHandle> m_local2fstdtype;
     std::list<std::string> m_curScope;
     fstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
-    char* m_strbuf = nullptr;  // String buffer long enough to hold maxBits() chars
+    char* m_strbufp = nullptr;  // String buffer long enough to hold maxBits() chars
 
     bool m_useFstWriterThread = false;  // Whether to use the separate FST writer thread
 
@@ -149,7 +149,7 @@ class VerilatedFstBuffer VL_NOT_FINAL {
     // code to fstHande map, as an array
     const fstHandle* const m_symbolp = m_owner.m_symbolp;
     // String buffer long enough to hold maxBits() chars
-    char* const m_strbuf = m_owner.m_strbuf;
+    char* const m_strbufp = m_owner.m_strbufp;
 
     // CONSTRUCTOR
     explicit VerilatedFstBuffer(VerilatedFst& owner)

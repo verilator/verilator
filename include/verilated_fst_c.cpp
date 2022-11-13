@@ -95,7 +95,7 @@ VerilatedFst::VerilatedFst(void* /*fst*/) {}
 VerilatedFst::~VerilatedFst() {
     if (m_fst) fstWriterClose(m_fst);
     if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = nullptr);
-    if (m_strbuf) VL_DO_CLEAR(delete[] m_strbuf, m_strbuf = nullptr);
+    if (m_strbufp) VL_DO_CLEAR(delete[] m_strbufp, m_strbufp = nullptr);
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
@@ -125,7 +125,7 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     m_code2symbol.clear();
 
     // Allocate string buffer for arrays
-    if (!m_strbuf) m_strbuf = new char[maxBits() + 32];
+    if (!m_strbufp) m_strbufp = new char[maxBits() + 32];
 }
 
 void VerilatedFst::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
@@ -320,7 +320,7 @@ void VerilatedFstBuffer::emitQData(uint32_t code, QData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
     int words = VL_WORDS_I(bits);
-    char* wp = m_strbuf;
+    char* wp = m_strbufp;
     // Convert the most significant word
     const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
     cvtEDataToStr(wp, newvalp[--words] << (VL_EDATASIZE - bitsInMSW));
@@ -330,7 +330,7 @@ void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int bits
         cvtEDataToStr(wp, newvalp[--words]);
         wp += VL_EDATASIZE;
     }
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbuf);
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbufp);
 }
 
 VL_ATTR_ALWINLINE

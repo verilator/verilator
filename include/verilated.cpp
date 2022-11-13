@@ -3102,7 +3102,7 @@ void VlDeleter::deleteAll() {
         VerilatedLockGuard deleteLock{m_deleteMutex};
         std::swap(m_newGarbage, m_toDelete);
         lock.unlock();  // So destuctors can enqueue new objects
-        for (VlClass* const objp : m_toDelete) delete objp;
+        for (VlDeletable* const objp : m_toDelete) delete objp;
         m_toDelete.clear();
     }
 }

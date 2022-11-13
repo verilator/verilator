@@ -1004,7 +1004,14 @@ std::string VL_TO_STRING(const VlUnpacked<T_Value, T_Depth>& obj) {
     return obj.to_string();
 }
 
-class VlClass;  // See below
+//===================================================================
+// Object that VlDeleter is capable of deleting
+
+class VlDeletable VL_NOT_FINAL {
+public:
+    VlDeletable() = default;
+    virtual ~VlDeletable() = default;
+};
 
 //===================================================================
 // Class providing delayed deletion of garbage objects. Objects get deleted only when 'deleteAll()'
@@ -1013,9 +1020,9 @@ class VlClass;  // See below
 class VlDeleter final {
     // MEMBERS
     // Queue of new objects that should be deleted
-    std::vector<VlClass*> m_newGarbage VL_GUARDED_BY(m_mutex);
+    std::vector<VlDeletable*> m_newGarbage VL_GUARDED_BY(m_mutex);
     // Queue of objects currently being deleted (only for deleteAll())
-    std::vector<VlClass*> m_toDelete VL_GUARDED_BY(m_deleteMutex);
+    std::vector<VlDeletable*> m_toDelete VL_GUARDED_BY(m_deleteMutex);
     mutable VerilatedMutex m_mutex;  // Mutex protecting the 'new garbage' queue
     mutable VerilatedMutex m_deleteMutex;  // Mutex protecting the delete queue
 
@@ -1030,7 +1037,7 @@ private:
 public:
     // METHODS
     // Adds a new object to the 'new garbage' queue.
-    void put(VlClass* const objp) VL_MT_SAFE {
+    void put(VlDeletable* const objp) VL_MT_SAFE {
         const VerilatedLockGuard lock{m_mutex};
         m_newGarbage.push_back(objp);
     }
@@ -1042,17 +1049,16 @@ public:
 //===================================================================
 // Base class for all verilated classes. Includes a reference counter, and a pointer to the deleter
 // object that should destroy it after the counter reaches 0. This allows for easy construction of
-// VlClassRefs from 'this'. Also declares a virtual constructor, so that the object can be deleted
-// using a base pointer.
+// VlClassRefs from 'this'.
 
-class VlClass VL_NOT_FINAL {
+class VlClass VL_NOT_FINAL : public VlDeletable {
     // TYPES
     template <typename T_Class>
     friend class VlClassRef;  // Needed for access to the ref counter and deleter
 
     // MEMBERS
     std::atomic<size_t> m_counter{0};  // Reference count for this object
-    VlDeleter* m_deleter = nullptr;  // The deleter that will delete this object
+    VlDeleter* m_deleterp = nullptr;  // The deleter that will delete this object
 
     // METHODS
     // Atomically increments the reference counter
@@ -1060,14 +1066,14 @@ class VlClass VL_NOT_FINAL {
     // Atomically decrements the reference counter. Assuming VlClassRef semantics are sound, it
     // should never get called at m_counter == 0.
     void refCountDec() VL_MT_SAFE {
-        if (!--m_counter) m_deleter->put(this);
+        if (!--m_counter) m_deleterp->put(this);
     }
 
 public:
     // CONSTRUCTORS
     VlClass() = default;
     VlClass(const VlClass& copied) {}
-    virtual ~VlClass() {}
+    ~VlClass() override = default;
 };
 
 //===================================================================
@@ -1110,7 +1116,7 @@ public:
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         : m_objp{new T_Class{std::forward<T_Args>(args)...}} {
-        m_objp->m_deleter = &deleter;
+        m_objp->m_deleterp = &deleter;
         refCountInc();
     }
     // Explicit to avoid implicit conversion from 0

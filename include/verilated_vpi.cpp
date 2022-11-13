@@ -71,7 +71,7 @@ class VerilatedVpio VL_NOT_FINAL {
 
     // MEM MANGLEMENT
     // Internal note: Globals may multi-construct, see verilated.cpp top.
-    static thread_local uint8_t* t_freeHead;
+    static thread_local uint8_t* t_freeHeadp;
 
 public:
     // CONSTRUCTORS
@@ -85,9 +85,9 @@ public:
         static constexpr size_t CHUNK_SIZE = 96;
         if (VL_UNCOVERABLE(size > CHUNK_SIZE))
             VL_FATAL_MT(__FILE__, __LINE__, "", "increase CHUNK_SIZE");
-        if (VL_LIKELY(t_freeHead)) {
-            uint8_t* const newp = t_freeHead;
-            t_freeHead = *(reinterpret_cast<uint8_t**>(newp));
+        if (VL_LIKELY(t_freeHeadp)) {
+            uint8_t* const newp = t_freeHeadp;
+            t_freeHeadp = *(reinterpret_cast<uint8_t**>(newp));
             *(reinterpret_cast<uint32_t*>(newp)) = activeMagic();
             return newp + 8;
         }
@@ -106,8 +106,8 @@ public:
 #ifdef VL_VPI_IMMEDIATE_FREE  // Define to aid in finding leaky handles
         ::operator delete(oldp);
 #else
-        *(reinterpret_cast<void**>(oldp)) = t_freeHead;
-        t_freeHead = oldp;
+        *(reinterpret_cast<void**>(oldp)) = t_freeHeadp;
+        t_freeHeadp = oldp;
 #endif
     }
     // MEMBERS
@@ -225,28 +225,28 @@ public:
 };
 
 class VerilatedVpioRange final : public VerilatedVpio {
-    const VerilatedRange* const m_range;
+    const VerilatedRange* const m_rangep;
 
 public:
-    explicit VerilatedVpioRange(const VerilatedRange* range)
-        : m_range{range} {}
+    explicit VerilatedVpioRange(const VerilatedRange* rangep)
+        : m_rangep{rangep} {}
     ~VerilatedVpioRange() override = default;
     static VerilatedVpioRange* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioRange*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t type() const override { return vpiRange; }
-    uint32_t size() const override { return m_range->elements(); }
-    const VerilatedRange* rangep() const override { return m_range; }
+    uint32_t size() const override { return m_rangep->elements(); }
+    const VerilatedRange* rangep() const override { return m_rangep; }
 };
 
 class VerilatedVpioRangeIter final : public VerilatedVpio {
     // Only supports 1 dimension
-    const VerilatedRange* const m_range;
+    const VerilatedRange* const m_rangep;
     bool m_done = false;
 
 public:
-    explicit VerilatedVpioRangeIter(const VerilatedRange* range)
-        : m_range{range} {}
+    explicit VerilatedVpioRangeIter(const VerilatedRange* rangep)
+        : m_rangep{rangep} {}
     ~VerilatedVpioRangeIter() override = default;
     static VerilatedVpioRangeIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioRangeIter*>(reinterpret_cast<VerilatedVpio*>(h));
@@ -258,7 +258,7 @@ public:
             return nullptr;
         }
         m_done = true;
-        return ((new VerilatedVpioRange{m_range})->castVpiHandle());
+        return ((new VerilatedVpioRange{m_rangep})->castVpiHandle());
     }
 };
 
@@ -666,7 +666,7 @@ public:
 // Statics
 // Internal note: Globals may multi-construct, see verilated.cpp top.
 
-thread_local uint8_t* VerilatedVpio::t_freeHead = nullptr;
+thread_local uint8_t* VerilatedVpio::t_freeHeadp = nullptr;
 
 //======================================================================
 // VerilatedVpiError
