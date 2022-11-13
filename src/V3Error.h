@@ -56,6 +56,7 @@ public:
         I_TIMING,       // Enable timing from /*verilator timing_on/off*/
         // Error codes:
         E_ENCAPSULATED, // Error: local/protected violation
+        E_ENUMVALUE,    // Error: enum type needs explicit cast
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
         E_UNSUPPORTED,  // Error: Unsupported (generally)
         E_TASKNSVAR,    // Error: Task I/O not simple
@@ -169,7 +170,7 @@ public:
             // Boolean
             " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_UNUSED", " I_DEF_NETTYPE_WIRE", " I_TIMING",
             // Errors
-            "ENCAPSULATED", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
+            "ENCAPSULATED", "ENUMVALUE", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",

@@ -216,6 +216,7 @@ private:
     // STATE
     WidthVP* m_vup = nullptr;  // Current node state
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
+    const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     const AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
     const AstWith* m_withp = nullptr;  // Current 'with' statement
@@ -468,7 +469,10 @@ private:
             //  the size of this subexpression only.
             // Second call (final()) m_vup->width() is probably the expression size, so
             //  the expression includes the size of the output too.
-            if (nodep->thenp()->isDouble() || nodep->elsep()->isDouble()) {
+            if (nodep->thenp()->dtypep()->skipRefp() == nodep->elsep()->dtypep()->skipRefp()) {
+                // TODO might need a broader equation, use the Castable function?
+                nodep->dtypeFrom(nodep->thenp()->dtypep());
+            } else if (nodep->thenp()->isDouble() || nodep->elsep()->isDouble()) {
                 nodep->dtypeSetDouble();
             } else if (nodep->thenp()->isString() || nodep->elsep()->isString()) {
                 nodep->dtypeSetString();
@@ -1757,31 +1761,34 @@ private:
             const uint64_t maxval = enumMaxValue(nodep, enumDtp);
             const bool assoc = maxval > ENUM_LOOKUP_BITS;
             AstNode* testp = nullptr;
+            FileLine* const fl_novalue = new FileLine{fl};
+            fl_novalue->warnOff(V3ErrorCode::E_ENUMVALUE, true);
             if (assoc) {
                 AstVar* const varp = enumVarp(enumDtp, VAttrType::ENUM_VALID, true, 0);
-                testp = new AstAssocSel{fl, newVarRefDollarUnit(varp),
+                testp = new AstAssocSel{fl_novalue, newVarRefDollarUnit(varp),
                                         nodep->fromp()->cloneTree(false)};
             } else {
                 const int selwidth = V3Number::log2b(maxval) + 1;  // Width to address a bit
                 AstVar* const varp
                     = enumVarp(enumDtp, VAttrType::ENUM_VALID, false, (1ULL << selwidth) - 1);
-                FileLine* const fl_nowarn = new FileLine{fl};
-                fl_nowarn->warnOff(V3ErrorCode::WIDTH, true);
+                FileLine* const fl_nowidth = new FileLine{fl};
+                fl_nowidth->warnOff(V3ErrorCode::WIDTH, true);
                 testp = new AstCond{
                     fl,
-                    new AstGt{fl_nowarn, nodep->fromp()->cloneTree(false),
-                              new AstConst{fl_nowarn, AstConst::Unsized64{}, maxval}},
+                    new AstGt{fl_nowidth, nodep->fromp()->cloneTree(false),
+                              new AstConst{fl_nowidth, AstConst::Unsized64{}, maxval}},
                     new AstConst{fl, AstConst::BitFalse{}},
                     new AstArraySel{
                         fl, newVarRefDollarUnit(varp),
-                        new AstSel{fl, nodep->fromp()->cloneTree(false), 0, selwidth}}};
+                        new AstSel{fl_novalue, nodep->fromp()->cloneTree(false), 0, selwidth}}};
             }
-            newp = new AstCond{fl, testp,
-                               new AstExprStmt{fl,
-                                               new AstAssign{fl, nodep->top()->unlinkFrBack(),
-                                                             nodep->fromp()->unlinkFrBack()},
-                                               new AstConst{fl, AstConst::Signed32{}, 1}},
-                               new AstConst{fl, AstConst::Signed32{}, 0}};
+            newp = new AstCond{
+                fl, testp,
+                new AstExprStmt{fl,
+                                new AstAssign{fl_novalue, nodep->top()->unlinkFrBack(),
+                                              nodep->fromp()->unlinkFrBack()},
+                                new AstConst{fl, AstConst::Signed32{}, 1}},
+                new AstConst{fl, AstConst::Signed32{}, 0}};
         } else if (castable == COMPATIBLE) {
             nodep->v3warn(CASTCONST, "$cast will always return one as "
                                          << toDtp->prettyDTypeNameQ()
@@ -1893,7 +1900,8 @@ private:
                 } else if (!basicp->isSigned() && nodep->fromp()->isSigned()) {
                     newp = new AstUnsigned(nodep->fileline(), nodep->fromp()->unlinkFrBack());
                 } else {
-                    // Can just remove cast
+                    // Can just remove cast, but need extend placeholder
+                    // so we can avoid warning message
                 }
             } else if (VN_IS(toDtp, ClassRefDType)) {
                 // Can just remove cast
@@ -2192,6 +2200,8 @@ private:
     }
     void visit(AstEnumItem* nodep) override {
         UINFO(5, "   ENUMITEM " << nodep << endl);
+        VL_RESTORER(m_enumItemp);
+        m_enumItemp = nodep;
         AstNodeDType* const vdtypep = m_vup->dtypep();
         UASSERT_OBJ(vdtypep, nodep, "ENUMITEM not under ENUM");
         nodep->dtypep(vdtypep);
@@ -2752,6 +2762,7 @@ private:
                                         0);  // Spec doesn't say what to do
                 } else {
                     newp = VN_AS(itemp->valuep()->cloneTree(false), Const);  // A const
+                    newp->dtypeFrom(adtypep);  // To prevent a later E_ENUMVALUE
                 }
             } else if (nodep->name() == "last") {
                 const AstEnumItem* itemp = adtypep->itemsp();
@@ -2761,6 +2772,7 @@ private:
                                         0);  // Spec doesn't say what to do
                 } else {
                     newp = VN_AS(itemp->valuep()->cloneTree(false), Const);  // A const
+                    newp->dtypeFrom(adtypep);  // To prevent a later E_ENUMVALUE
                 }
             }
             UASSERT_OBJ(newp, nodep, "Enum method (perhaps enum item) not const");
@@ -2808,6 +2820,7 @@ private:
                 AstVar* const varp = enumVarp(adtypep, attrType, true, 0);
                 AstNode* const newp = new AstAssocSel{nodep->fileline(), newVarRefDollarUnit(varp),
                                                       nodep->fromp()->unlinkFrBack()};
+                newp->dtypeFrom(adtypep);  // To prevent a later E_ENUMVALUE
                 nodep->replaceWith(newp);
             } else {
                 const int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
@@ -2818,6 +2831,7 @@ private:
                     // We return "random" values if outside the range, which is fine
                     // as next/previous on illegal values just need something good out
                     new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(), 0, selwidth));
+                newp->dtypeFrom(adtypep);  // To prevent a later E_ENUMVALUE
                 nodep->replaceWith(newp);
             }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -6101,6 +6115,20 @@ private:
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
             if (expBasicp && underBasicp) {
+                if (const AstEnumDType* const expEnump
+                    = VN_CAST(expDTypep->skipRefToEnump(), EnumDType)) {
+                    const auto castable = computeCastable(expEnump, underp->dtypep(), underp);
+                    if (castable != COMPATIBLE && castable != ENUM_IMPLICIT && !VN_IS(underp, Cast)
+                        && !VN_IS(underp, CastDynamic) && !m_enumItemp && warnOn) {
+                        nodep->v3warn(E_ENUMVALUE,
+                                      "Illegal implicit conversion to enum "
+                                          << expDTypep->prettyDTypeNameQ() << " from "
+                                          << underp->dtypep()->prettyDTypeNameQ()
+                                          << " (IEEE 1800-2017 6.19.3)\n"
+                                          << nodep->warnMore()
+                                          << "... Suggest use enum's mnemonic, or static cast");
+                    }
+                }
                 AstNodeDType* subDTypep = expDTypep;
                 // We then iterate FINAL before width fixes, as if the under-operation
                 // is e.g. an ADD, the ADD will auto-adjust to the proper data type

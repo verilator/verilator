@@ -572,6 +572,40 @@ List Of Warnings
    missing."
 
 
+.. option:: ENUMVALUE
+
+   Error that an enum data type value is being assigned from another data
+   type that is not implicitly assignment compatible with that enumerated
+   type.  This error is required by IEEE, but it may be disabled.
+
+   Faulty example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+         typedef enum { ZERO } e_t;
+         initial e_t en = 0;  //<--- Warning
+
+   The ideal repair is to use the enumeration value's mnemonic:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+         typedef enum { ZERO } e_t;
+         initial e_t en = ZERO;  //<--- Repaired
+
+   Or, alternatively use a static cast:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+         typedef enum { ZERO } e_t;
+         initial e_t en = e_t'(0);  //<--- Repaired
+
+
 .. option:: EOFNEWLINE
 
    Warns that a file does not end in a newline.  POSIX defines that a line
