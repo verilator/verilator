@@ -107,8 +107,8 @@ private:
 
                 AstNode* const initp = new AstAssign(fl, new AstVarRef(fl, itp, VAccess::WRITE),
                                                      new AstConst(fl, m_mgIndexLo));
-                AstNode* const condp = new AstLte(fl, new AstVarRef(fl, itp, VAccess::READ),
-                                                  new AstConst(fl, m_mgIndexHi));
+                AstNodeExpr* const condp = new AstLte(fl, new AstVarRef(fl, itp, VAccess::READ),
+                                                      new AstConst(fl, m_mgIndexHi));
                 AstNode* const incp = new AstAssign(
                     fl, new AstVarRef(fl, itp, VAccess::WRITE),
                     new AstAdd(fl, new AstConst(fl, 1), new AstVarRef(fl, itp, VAccess::READ)));
@@ -118,15 +118,15 @@ private:
                 whilep->addStmtsp(bodyp);
 
                 // Replace constant index with new loop index
-                AstNode* const offsetp
+                AstNodeExpr* const offsetp
                     = m_mgOffset == 0 ? nullptr : new AstConst(fl, std::abs(m_mgOffset));
-                AstNode* const lbitp = m_mgSelLp->bitp();
-                AstNode* const lvrefp = new AstVarRef(fl, itp, VAccess::READ);
+                AstNodeExpr* const lbitp = m_mgSelLp->bitp();
+                AstNodeExpr* const lvrefp = new AstVarRef(fl, itp, VAccess::READ);
                 lbitp->replaceWith(m_mgOffset > 0 ? new AstAdd(fl, lvrefp, offsetp) : lvrefp);
                 VL_DO_DANGLING(lbitp->deleteTree(), lbitp);
                 if (m_mgSelRp) {  // else constant and no replace
-                    AstNode* const rbitp = m_mgSelRp->bitp();
-                    AstNode* const rvrefp = new AstVarRef(fl, itp, VAccess::READ);
+                    AstNodeExpr* const rbitp = m_mgSelRp->bitp();
+                    AstNodeExpr* const rvrefp = new AstVarRef(fl, itp, VAccess::READ);
                     rbitp->replaceWith(m_mgOffset < 0 ? new AstAdd(fl, rvrefp, offsetp) : rvrefp);
                     VL_DO_DANGLING(rbitp->deleteTree(), lbitp);
                 }

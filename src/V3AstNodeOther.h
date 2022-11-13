@@ -310,11 +310,11 @@ public:
 };
 class AstNodeAssign VL_NOT_FINAL : public AstNodeStmt {
     // Iteration is in order, and we want rhsp to be visited first (which is the execution order)
-    // @astgen op1 := rhsp : AstNode
-    // @astgen op2 := lhsp : AstNode
+    // @astgen op1 := rhsp : AstNodeExpr
+    // @astgen op2 := lhsp : AstNodeExpr
     // @astgen op3 := timingControlp : Optional[AstNode]
 protected:
-    AstNodeAssign(VNType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp,
+    AstNodeAssign(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
                   AstNode* timingControlp = nullptr)
         : AstNodeStmt{t, fl} {
         this->rhsp(rhsp);
@@ -326,7 +326,7 @@ protected:
 public:
     ASTGEN_MEMBERS_AstNodeAssign;
     // Clone single node, just get same type back.
-    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) = 0;
+    virtual AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) = 0;
     bool hasDType() const override { return true; }
     virtual bool cleanRhs() const { return true; }
     int instrCount() const override { return widthInstrs(); }
@@ -336,11 +336,11 @@ public:
     virtual bool brokeLhsMustBeLvalue() const = 0;
 };
 class AstNodeCase VL_NOT_FINAL : public AstNodeStmt {
-    // @astgen op1 := exprp : AstNode // Condition (scurtinee) expression
+    // @astgen op1 := exprp : AstNodeExpr // Condition (scurtinee) expression
     // @astgen op2 := itemsp : List[AstCaseItem]
     // @astgen op3 := notParallelp : List[AstNode] // assertion code for non-full case's
 protected:
-    AstNodeCase(VNType t, FileLine* fl, AstNode* exprp, AstCaseItem* itemsp)
+    AstNodeCase(VNType t, FileLine* fl, AstNodeExpr* exprp, AstCaseItem* itemsp)
         : AstNodeStmt{t, fl} {
         this->exprp(exprp);
         this->addItemsp(itemsp);
@@ -377,11 +377,11 @@ public:
 };
 class AstNodeFor VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := initsp : List[AstNode]
-    // @astgen op2 := condp : AstNode
+    // @astgen op2 := condp : AstNodeExpr
     // @astgen op3 := incsp : List[AstNode]
     // @astgen op4 := stmtsp : List[AstNode]
 protected:
-    AstNodeFor(VNType t, FileLine* fl, AstNode* initsp, AstNode* condp, AstNode* incsp,
+    AstNodeFor(VNType t, FileLine* fl, AstNode* initsp, AstNodeExpr* condp, AstNode* incsp,
                AstNode* stmtsp)
         : AstNodeStmt{t, fl} {
         this->addInitsp(initsp);
@@ -397,14 +397,14 @@ public:
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstNodeIf VL_NOT_FINAL : public AstNodeStmt {
-    // @astgen op1 := condp : AstNode
+    // @astgen op1 := condp : AstNodeExpr
     // @astgen op2 := thensp : List[AstNode]
     // @astgen op3 := elsesp : List[AstNode]
 private:
     VBranchPred m_branchPred;  // Branch prediction as taken/untaken?
     bool m_isBoundsCheck;  // True if this if node is for assertion/bounds checking
 protected:
-    AstNodeIf(VNType t, FileLine* fl, AstNode* condp, AstNode* thensp, AstNode* elsesp)
+    AstNodeIf(VNType t, FileLine* fl, AstNodeExpr* condp, AstNode* thensp, AstNode* elsesp)
         : AstNodeStmt{t, fl} {
         this->condp(condp);
         this->addThensp(thensp);
@@ -427,15 +427,15 @@ public:
     }
 };
 class AstNodeReadWriteMem VL_NOT_FINAL : public AstNodeStmt {
-    // @astgen op1 := filenamep : AstNode
-    // @astgen op2 := memp : AstNode
-    // @astgen op3 := lsbp : Optional[AstNode]
-    // @astgen op4 := msbp : Optional[AstNode]
+    // @astgen op1 := filenamep : AstNodeExpr
+    // @astgen op2 := memp : AstNodeExpr
+    // @astgen op3 := lsbp : Optional[AstNodeExpr]
+    // @astgen op4 := msbp : Optional[AstNodeExpr]
 
     const bool m_isHex;  // readmemh, not readmemb
 public:
-    AstNodeReadWriteMem(VNType t, FileLine* fl, bool hex, AstNode* filenamep, AstNode* memp,
-                        AstNode* lsbp, AstNode* msbp)
+    AstNodeReadWriteMem(VNType t, FileLine* fl, bool hex, AstNodeExpr* filenamep,
+                        AstNodeExpr* memp, AstNodeExpr* lsbp, AstNodeExpr* msbp)
         : AstNodeStmt(t, fl)
         , m_isHex(hex) {
         this->filenamep(filenamep);
@@ -517,21 +517,6 @@ public:
     // METHODS
     inline bool hasClocked() const;
     inline bool hasCombo() const;
-};
-class AstArg final : public AstNode {
-    // An argument to a function/task
-    // @astgen op1 := exprp : Optional[AstNode] // nullptr if omitted
-    string m_name;  // Pin name, or "" for number based interconnect
-public:
-    AstArg(FileLine* fl, const string& name, AstNode* exprp)
-        : ASTGEN_SUPER_Arg(fl)
-        , m_name{name} {
-        this->exprp(exprp);
-    }
-    ASTGEN_MEMBERS_AstArg;
-    string name() const override { return m_name; }  // * = Pin name, ""=go by number
-    void name(const string& name) override { m_name = name; }
-    bool emptyConnectNoNext() const { return !exprp() && name() == "" && !nextp(); }
 };
 class AstBind final : public AstNode {
     // Parents: MODULE
@@ -718,10 +703,10 @@ public:
 };
 class AstCaseItem final : public AstNode {
     // Single item of a case statement
-    // @astgen op1 := condsp : List[AstNode]
+    // @astgen op1 := condsp : List[AstNodeExpr]
     // @astgen op2 := stmtsp : List[AstNode]
 public:
-    AstCaseItem(FileLine* fl, AstNode* condsp, AstNode* stmtsp)
+    AstCaseItem(FileLine* fl, AstNodeExpr* condsp, AstNode* stmtsp)
         : ASTGEN_SUPER_CaseItem(fl) {
         this->addCondsp(condsp);
         this->addStmtsp(stmtsp);
@@ -730,23 +715,6 @@ public:
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool isDefault() const { return condsp() == nullptr; }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
-};
-class AstCastSize final : public AstNode {
-    // Cast to specific size; signed/twostate inherited from lower element per IEEE
-    // @astgen op1 := lhsp : AstNode
-    // @astgen op2 := rhsp : AstNode
-public:
-    AstCastSize(FileLine* fl, AstNode* lhsp, AstConst* rhsp)
-        : ASTGEN_SUPER_CastSize(fl) {
-        this->lhsp(lhsp);
-        this->rhsp(rhsp);
-    }
-    ASTGEN_MEMBERS_AstCastSize;
-    // No hasDType because widthing removes this node before the hasDType check
-    virtual string emitVerilog() { return "((%r)'(%l))"; }
-    virtual bool cleanOut() const { V3ERROR_NA_RETURN(true); }
-    virtual bool cleanLhs() const { return true; }
-    virtual bool sizeMattersLhs() const { return false; }
 };
 class AstCell final : public AstNode {
     // A instantiation cell or interface call (don't know which until link)
@@ -799,20 +767,6 @@ public:
     void recursive(bool flag) { m_recursive = flag; }
     bool recursive() const { return m_recursive; }
 };
-class AstCellArrayRef final : public AstNode {
-    // As-of-yet unlinkable reference into an array of cells
-    // @astgen op1 := selp : List[AstNode] // Select expression
-    string m_name;  // Array name
-public:
-    AstCellArrayRef(FileLine* fl, const string& name, AstNode* selp)
-        : ASTGEN_SUPER_CellArrayRef(fl)
-        , m_name{name} {
-        this->addSelp(selp);
-    }
-    ASTGEN_MEMBERS_AstCellArrayRef;
-    // ACCESSORS
-    string name() const override { return m_name; }  // * = Array name
-};
 class AstCellInline final : public AstNode {
     // A instantiation cell that was removed by inlining
     // For communication between V3Inline and V3LinkDot,
@@ -844,23 +798,6 @@ public:
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
 };
-class AstCellRef final : public AstNode {
-    // As-of-yet unlinkable reference into a cell
-    // @astgen op1 := cellp : AstNode
-    // @astgen op2 := exprp : AstNode
-private:
-    string m_name;  // Cell name
-public:
-    AstCellRef(FileLine* fl, const string& name, AstNode* cellp, AstNode* exprp)
-        : ASTGEN_SUPER_CellRef(fl)
-        , m_name{name} {
-        this->cellp(cellp);
-        this->exprp(exprp);
-    }
-    ASTGEN_MEMBERS_AstCellRef;
-    // ACCESSORS
-    string name() const override { return m_name; }  // * = Array name
-};
 class AstClassExtends final : public AstNode {
     // Children: List of AstParseRef for packages/classes
     // during early parse, then moves to dtype
@@ -875,43 +812,6 @@ public:
     bool hasDType() const override { return true; }
     string verilogKwd() const override { return "extends"; }
     AstClass* classp() const;  // Class being extended (after link)
-};
-class AstClassOrPackageRef final : public AstNode {
-    // @astgen op1 := paramsp : List[AstPin]
-private:
-    string m_name;
-    // Node not NodeModule to appease some early parser usage
-    AstNode* m_classOrPackageNodep;  // Package hierarchy
-public:
-    AstClassOrPackageRef(FileLine* fl, const string& name, AstNode* classOrPackageNodep,
-                         AstPin* paramsp)
-        : ASTGEN_SUPER_ClassOrPackageRef(fl)
-        , m_name{name}
-        , m_classOrPackageNodep{classOrPackageNodep} {
-        this->addParamsp(paramsp);
-    }
-    ASTGEN_MEMBERS_AstClassOrPackageRef;
-    // METHODS
-    const char* broken() const override {
-        BROKEN_RTN(m_classOrPackageNodep && !m_classOrPackageNodep->brokeExists());
-        return nullptr;
-    }
-    void cloneRelink() override {
-        if (m_classOrPackageNodep && m_classOrPackageNodep->clonep()) {
-            m_classOrPackageNodep = m_classOrPackageNodep->clonep();
-        }
-    }
-    bool same(const AstNode* samep) const override {
-        return (m_classOrPackageNodep
-                == static_cast<const AstClassOrPackageRef*>(samep)->m_classOrPackageNodep);
-    }
-    void dump(std::ostream& str = std::cout) const override;
-    string name() const override { return m_name; }  // * = Var name
-    AstNode* classOrPackageNodep() const { return m_classOrPackageNodep; }
-    void classOrPackageNodep(AstNode* nodep) { m_classOrPackageNodep = nodep; }
-    AstNodeModule* classOrPackagep() const;
-    AstPackage* packagep() const { return VN_CAST(classOrPackageNodep(), Package); }
-    void classOrPackagep(AstNodeModule* nodep) { m_classOrPackageNodep = (AstNode*)nodep; }
 };
 class AstClocking final : public AstNode {
     // Set default clock region
@@ -934,7 +834,7 @@ class AstConstPool final : public AstNode {
     AstModule* const m_modp;  // The Module holding the Scope below ...
     AstScope* const m_scopep;  // Scope holding the constant variables
 
-    AstVarScope* createNewEntry(const string& name, AstNode* initp);
+    AstVarScope* createNewEntry(const string& name, AstNodeExpr* initp);
 
 public:
     explicit AstConstPool(FileLine* fl);
@@ -960,11 +860,11 @@ public:
 class AstDefParam final : public AstNode {
     // A defparam assignment
     // Parents: MODULE
-    // @astgen op1 := rhsp : AstNode
+    // @astgen op1 := rhsp : AstNodeExpr
     string m_name;  // Name of variable getting set
     string m_path;  // Dotted cellname to set parameter of
 public:
-    AstDefParam(FileLine* fl, const string& path, const string& name, AstNode* rhsp)
+    AstDefParam(FileLine* fl, const string& path, const string& name, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_DefParam(fl)
         , m_name{name}
         , m_path{path} {
@@ -1000,7 +900,7 @@ private:
     VDisplayType m_displayType;
 
 public:
-    inline AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNode* exprsp);
+    inline AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr* exprsp);
     ASTGEN_MEMBERS_AstElabDisplay;
     const char* broken() const override {
         BROKEN_RTN(!fmtp());
@@ -1064,50 +964,14 @@ public:
     }
     ASTGEN_MEMBERS_AstImplicit;
 };
-class AstInitArray final : public AstNode {
-    // Set a var to a map of values
-    // The list of initsp() is not relevant
-    // If default is specified, the vector may be sparse, and not provide each value.
-    // Key values are C++ array style, with lo() at index 0
-    // Parents: ASTVAR::init()
-    // @astgen op1 := defaultp : Optional[AstNode] // Default, if sparse
-    // @astgen op2 := initsp : List[AstNode] // Initial value expressions
-    //
-public:
-    using KeyItemMap = std::map<uint64_t, AstInitItem*>;
-
-private:
-    KeyItemMap m_map;  // Node value for each array index
-public:
-    AstInitArray(FileLine* fl, AstNodeDType* newDTypep, AstNode* defaultp)
-        : ASTGEN_SUPER_InitArray(fl) {
-        dtypep(newDTypep);
-        this->defaultp(defaultp);
-    }
-    ASTGEN_MEMBERS_AstInitArray;
-    void dump(std::ostream& str) const override;
-    const char* broken() const override;
-    void cloneRelink() override;
-    bool hasDType() const override { return true; }
-    bool same(const AstNode* samep) const override {
-        // Only works if exact same children, instead should override comparison
-        // of children list, and instead use map-vs-map key/value compare
-        return m_map == static_cast<const AstInitArray*>(samep)->m_map;
-    }
-    void addValuep(AstNode* newp) { addIndexValuep(m_map.size(), newp); }
-    const KeyItemMap& map() const { return m_map; }
-    void addIndexValuep(uint64_t index, AstNode* newp);
-    AstNode* getIndexValuep(uint64_t index) const;
-    AstNode* getIndexDefaultedValuep(uint64_t index) const;
-};
 class AstInitItem final : public AstNode {
     // Container for a item in an init array
     // This container is present so that the value underneath may get replaced with a new nodep
     // and the upper AstInitArray's map will remain correct (pointing to this InitItem)
-    // @astgen op1 := valuep : AstNode
+    // @astgen op1 := valuep : AstNodeExpr
 public:
     // Parents: INITARRAY
-    AstInitItem(FileLine* fl, AstNode* valuep)
+    AstInitItem(FileLine* fl, AstNodeExpr* valuep)
         : ASTGEN_SUPER_InitItem(fl) {
         this->valuep(valuep);
     }
@@ -1317,7 +1181,7 @@ public:
 };
 class AstPin final : public AstNode {
     // A port or parameter assignment on an instantiaton
-    // @astgen op1 := exprp : Optional[AstNode] // Expression connected (nullptr if unconnected)
+    // @astgen op1 := exprp : Optional[AstNode] // NodeExpr or NodeDType (nullptr if unconnected)
 private:
     int m_pinNum;  // Pin number
     string m_name;  // Pin name, or "" for number based interconnect
@@ -1353,7 +1217,7 @@ public:
 };
 class AstPort final : public AstNode {
     // A port (in/out/inout) on a module
-    // @astgen op1 := exprp : Optional[AstNode] // Expression connected to port
+    // @astgen op1 := exprp : Optional[AstNodeExpr] // Expression connected to port
     const int m_pinNum;  // Pin number
     const string m_name;  // Name of pin
 public:
@@ -1385,10 +1249,10 @@ class AstPropSpec final : public AstNode {
     // Parents:  ASSERT|COVER (property)
     // Children: SENITEM, Properties
     // @astgen op1 := sensesp : Optional[AstSenItem]
-    // @astgen op2 := disablep : Optional[AstNode]
+    // @astgen op2 := disablep : Optional[AstNodeExpr]
     // @astgen op3 := propp : AstNode
 public:
-    AstPropSpec(FileLine* fl, AstSenItem* sensesp, AstNode* disablep, AstNode* propp)
+    AstPropSpec(FileLine* fl, AstSenItem* sensesp, AstNodeExpr* disablep, AstNode* propp)
         : ASTGEN_SUPER_PropSpec(fl) {
         this->sensesp(sensesp);
         this->disablep(disablep);
@@ -1400,12 +1264,12 @@ public:
     }  // Used under Cover, which expects a bool child
 };
 class AstPull final : public AstNode {
-    // @astgen op1 := lhsp : AstNode
+    // @astgen op1 := lhsp : AstNodeExpr
 
     const bool m_direction;
 
 public:
-    AstPull(FileLine* fl, AstNode* lhsp, bool direction)
+    AstPull(FileLine* fl, AstNodeExpr* lhsp, bool direction)
         : ASTGEN_SUPER_Pull(fl)
         , m_direction{direction} {
         this->lhsp(lhsp);
@@ -1455,24 +1319,9 @@ public:
     AstVarScope* createTemp(const string& name, AstNodeDType* dtypep);
     AstVarScope* createTempLike(const string& name, AstVarScope* vscp);
 };
-class AstSelLoopVars final : public AstNode {
-    // Parser only concept "[id, id, id]" for a foreach statement
-    // Unlike normal selects elements is a list
-    // @astgen op1 := fromp : AstNode
-    // @astgen op2 := elementsp : List[AstNode]
-public:
-    AstSelLoopVars(FileLine* fl, AstNode* fromp, AstNode* elementsp)
-        : ASTGEN_SUPER_SelLoopVars(fl) {
-        this->fromp(fromp);
-        this->addElementsp(elementsp);
-    }
-    ASTGEN_MEMBERS_AstSelLoopVars;
-    bool same(const AstNode* /*samep*/) const override { return true; }
-    bool maybePointedTo() const override { return false; }
-};
 class AstSenItem final : public AstNode {
     // Parents:  SENTREE
-    // @astgen op1 := sensp : Optional[AstNode] // Sensitivity expression
+    // @astgen op1 := sensp : Optional[AstNodeExpr] // Sensitivity expression
     VEdgeType m_edgeType;  // Edge type
 public:
     class Combo {};  // for constructor type-overload selection
@@ -1481,7 +1330,7 @@ public:
     class Initial {};  // for constructor type-overload selection
     class Final {};  // for constructor type-overload selection
     class Never {};  // for constructor type-overload selection
-    AstSenItem(FileLine* fl, VEdgeType edgeType, AstNode* senp)
+    AstSenItem(FileLine* fl, VEdgeType edgeType, AstNodeExpr* senp)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{edgeType} {
         this->sensp(senp);
@@ -1695,7 +1544,7 @@ class AstVar final : public AstNode {
     // @astgen op2 := delayp : Optional[AstDelay] // Net delay
     // Initial value that never changes (static const), or constructor argument for
     // MTASKSTATE variables
-    // @astgen op3 := valuep : Optional[AstNode]
+    // @astgen op3 := valuep : Optional[AstNode] // May be a DType for type parameter defaults
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
 
     string m_name;  // Name of variable
@@ -2381,7 +2230,7 @@ public:
 class AstBracketRange final : public AstNodeRange {
     // Parser only concept "[lhsp]", a AstUnknownRange, QueueRange or Range,
     // unknown until lhsp type is determined
-    // @astgen op1 := elementsp : AstNode
+    // @astgen op1 := elementsp : AstNode // Expr or DType
 public:
     AstBracketRange(FileLine* fl, AstNode* elementsp)
         : ASTGEN_SUPER_BracketRange(fl) {
@@ -2397,10 +2246,10 @@ public:
 };
 class AstRange final : public AstNodeRange {
     // Range specification, for use under variables and cells
-    // @astgen op1 := leftp : AstNode
-    // @astgen op2 := rightp : AstNode
+    // @astgen op1 := leftp : AstNodeExpr
+    // @astgen op2 := rightp : AstNodeExpr
 public:
-    AstRange(FileLine* fl, AstNode* leftp, AstNode* rightp)
+    AstRange(FileLine* fl, AstNodeExpr* leftp, AstNodeExpr* rightp)
         : ASTGEN_SUPER_Range(fl) {
         this->leftp(leftp);
         this->rightp(rightp);
@@ -2490,9 +2339,9 @@ public:
 };
 class AstCReturn final : public AstNodeStmt {
     // C++ return from a function
-    // @astgen op1 := lhsp : AstNode
+    // @astgen op1 := lhsp : AstNodeExpr
 public:
-    AstCReturn(FileLine* fl, AstNode* lhsp)
+    AstCReturn(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_CReturn(fl) {
         this->lhsp(lhsp);
     }
@@ -2516,7 +2365,6 @@ public:
 };
 class AstComment final : public AstNodeStmt {
     // Some comment to put into the output stream
-    // Parents:  {statement list}
     const string m_name;  // Text of comment
     const bool m_showAt;  // Show "at <fileline>"
 public:
@@ -2541,9 +2389,6 @@ public:
 };
 class AstCoverDecl final : public AstNodeStmt {
     // Coverage analysis point declaration
-    // Parents:  {statement list}
-    // Children: none
-private:
     AstCoverDecl* m_dataDeclp = nullptr;  // [After V3CoverageJoin] Pointer to duplicate
                                           // declaration to get data from instead
     string m_page;
@@ -2597,9 +2442,6 @@ public:
 };
 class AstCoverInc final : public AstNodeStmt {
     // Coverage analysis point; increment coverage count
-    // Parents:  {statement list}
-    // Children: none
-private:
     AstCoverDecl* m_declp;  // [After V3Coverage] Pointer to declaration
 public:
     AstCoverInc(FileLine* fl, AstCoverDecl* declp)
@@ -2628,10 +2470,10 @@ class AstCoverToggle final : public AstNodeStmt {
     // Toggle analysis of given signal
     // Parents:  MODULE
     // @astgen op1 := incp : AstCoverInc
-    // @astgen op2 := origp : AstNode
-    // @astgen op3 := changep : AstNode
+    // @astgen op2 := origp : AstNodeExpr
+    // @astgen op3 := changep : AstNodeExpr
 public:
-    AstCoverToggle(FileLine* fl, AstCoverInc* incp, AstNode* origp, AstNode* changep)
+    AstCoverToggle(FileLine* fl, AstCoverInc* incp, AstNodeExpr* origp, AstNodeExpr* changep)
         : ASTGEN_SUPER_CoverToggle(fl) {
         this->incp(incp);
         this->origp(origp);
@@ -2649,10 +2491,10 @@ public:
 };
 class AstDelay final : public AstNodeStmt {
     // Delay statement
-    // @astgen op1 := lhsp : AstNode // Delay value
+    // @astgen op1 := lhsp : AstNodeExpr // Delay value
     // @astgen op2 := stmtsp : List[AstNode] // Statements under delay
 public:
-    AstDelay(FileLine* fl, AstNode* lhsp)
+    AstDelay(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_Delay(fl) {
         this->lhsp(lhsp);
     }
@@ -2661,7 +2503,6 @@ public:
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstDisable final : public AstNodeStmt {
-private:
     string m_name;  // Name of block
 public:
     AstDisable(FileLine* fl, const string& name)
@@ -2684,19 +2525,19 @@ public:
 class AstDisplay final : public AstNodeStmt {
     // Parents: stmtlist
     // @astgen op1 := fmtp : AstSFormatF
-    // @astgen op2 := filep : Optional[AstNode] // file (must be a VarRef)
+    // @astgen op2 := filep : Optional[AstNodeExpr] // file (must resolve to a VarRef)
 private:
     VDisplayType m_displayType;
 
 public:
-    AstDisplay(FileLine* fl, VDisplayType dispType, const string& text, AstNode* filep,
-               AstNode* exprsp, char missingArgChar = 'd')
+    AstDisplay(FileLine* fl, VDisplayType dispType, const string& text, AstNodeExpr* filep,
+               AstNodeExpr* exprsp, char missingArgChar = 'd')
         : ASTGEN_SUPER_Display(fl)
         , m_displayType{dispType} {
         this->fmtp(new AstSFormatF{fl, text, true, exprsp, missingArgChar});
         this->filep(filep);
     }
-    AstDisplay(FileLine* fl, VDisplayType dispType, AstNode* filep, AstNode* exprsp,
+    AstDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr* filep, AstNodeExpr* exprsp,
                char missingArgChar = 'd')
         : ASTGEN_SUPER_Display(fl)
         , m_displayType{dispType} {
@@ -2729,11 +2570,11 @@ public:
 };
 class AstDoWhile final : public AstNodeStmt {
     // @astgen op1 := precondsp : List[AstNode]
-    // @astgen op2 := condp : AstNode
+    // @astgen op2 := condp : AstNodeExpr
     // @astgen op3 := stmtsp : List[AstNode]
     // @astgen op4 := incsp : List[AstNode]
 public:
-    AstDoWhile(FileLine* fl, AstNode* conditionp, AstNode* stmtsp = nullptr,
+    AstDoWhile(FileLine* fl, AstNodeExpr* conditionp, AstNode* stmtsp = nullptr,
                AstNode* incsp = nullptr)
         : ASTGEN_SUPER_DoWhile(fl) {
         condp(conditionp);
@@ -2750,10 +2591,10 @@ public:
 class AstDumpCtl final : public AstNodeStmt {
     // $dumpon etc
     // Parents: expr
-    // @astgen op1 := exprp : Optional[AstNode] // Expression based on type of control statement
+    // @astgen op1 := exprp : Optional[AstNodeExpr] // Expression based on type of statement
     const VDumpCtlType m_ctlType;  // Type of operation
 public:
-    AstDumpCtl(FileLine* fl, VDumpCtlType ctlType, AstNode* exprp = nullptr)
+    AstDumpCtl(FileLine* fl, VDumpCtlType ctlType, AstNodeExpr* exprp = nullptr)
         : ASTGEN_SUPER_DumpCtl(fl)
         , m_ctlType{ctlType} {
         this->exprp(exprp);
@@ -2784,9 +2625,9 @@ public:
 };
 class AstFClose final : public AstNodeStmt {
     // Parents: stmtlist
-    // @astgen op1 := filep : AstNode // file (must be a VarRef)
+    // @astgen op1 := filep : AstNodeExpr // file (must be a VarRef)
 public:
-    AstFClose(FileLine* fl, AstNode* filep)
+    AstFClose(FileLine* fl, AstNodeExpr* filep)
         : ASTGEN_SUPER_FClose(fl) {
         this->filep(filep);
     }
@@ -2801,9 +2642,9 @@ public:
 };
 class AstFFlush final : public AstNodeStmt {
     // Parents: stmtlist
-    // @astgen op1 := filep : Optional[AstNode] // file (must be a VarRef)
+    // @astgen op1 := filep : Optional[AstNodeExpr] // file (must be a VarRef)
 public:
-    AstFFlush(FileLine* fl, AstNode* filep)
+    AstFFlush(FileLine* fl, AstNodeExpr* filep)
         : ASTGEN_SUPER_FFlush(fl) {
         this->filep(filep);
     }
@@ -2818,11 +2659,11 @@ public:
 };
 class AstFOpen final : public AstNodeStmt {
     // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
-    // @astgen op1 := filep : AstNode
-    // @astgen op2 := filenamep : AstNode
-    // @astgen op3 := modep : AstNode
+    // @astgen op1 := filep : AstNodeExpr
+    // @astgen op2 := filenamep : AstNodeExpr
+    // @astgen op3 := modep : AstNodeExpr
 public:
-    AstFOpen(FileLine* fl, AstNode* filep, AstNode* filenamep, AstNode* modep)
+    AstFOpen(FileLine* fl, AstNodeExpr* filep, AstNodeExpr* filenamep, AstNodeExpr* modep)
         : ASTGEN_SUPER_FOpen(fl) {
         this->filep(filep);
         this->filenamep(filenamep);
@@ -2839,10 +2680,10 @@ public:
 };
 class AstFOpenMcd final : public AstNodeStmt {
     // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
-    // @astgen op1 := filep : AstNode
-    // @astgen op2 := filenamep : AstNode
+    // @astgen op1 := filep : AstNodeExpr
+    // @astgen op2 := filenamep : AstNodeExpr
 public:
-    AstFOpenMcd(FileLine* fl, AstNode* filep, AstNode* filenamep)
+    AstFOpenMcd(FileLine* fl, AstNodeExpr* filep, AstNodeExpr* filenamep)
         : ASTGEN_SUPER_FOpenMcd(fl) {
         this->filep(filep);
         this->filenamep(filenamep);
@@ -2871,10 +2712,10 @@ public:
 };
 class AstFireEvent final : public AstNodeStmt {
     // '-> _' and '->> _' event trigger statements
-    // @astgen op1 := operandp : AstNode
+    // @astgen op1 := operandp : AstNodeExpr
     const bool m_delayed;  // Delayed (->>) vs non-delayed (->)
 public:
-    AstFireEvent(FileLine* fl, AstNode* operandp, bool delayed)
+    AstFireEvent(FileLine* fl, AstNodeExpr* operandp, bool delayed)
         : ASTGEN_SUPER_FireEvent(fl)
         , m_delayed{delayed} {
         this->operandp(operandp);
@@ -3026,19 +2867,19 @@ public:
 };
 class AstRelease final : public AstNodeStmt {
     // Procedural 'release' statement
-    // @astgen op1 := lhsp : AstNode
+    // @astgen op1 := lhsp : AstNodeExpr
 public:
-    AstRelease(FileLine* fl, AstNode* lhsp)
+    AstRelease(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_Release(fl) {
         this->lhsp(lhsp);
     }
     ASTGEN_MEMBERS_AstRelease;
 };
 class AstRepeat final : public AstNodeStmt {
-    // @astgen op1 := countp : AstNode
+    // @astgen op1 := countp : AstNodeExpr
     // @astgen op2 := stmtsp : List[AstNode]
 public:
-    AstRepeat(FileLine* fl, AstNode* countp, AstNode* stmtsp)
+    AstRepeat(FileLine* fl, AstNodeExpr* countp, AstNode* stmtsp)
         : ASTGEN_SUPER_Repeat(fl) {
         this->countp(countp);
         this->addStmtsp(stmtsp);
@@ -3050,9 +2891,9 @@ public:
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
 class AstReturn final : public AstNodeStmt {
-    // @astgen op1 := lhsp : Optional[AstNode]
+    // @astgen op1 := lhsp : Optional[AstNodeExpr]
 public:
-    explicit AstReturn(FileLine* fl, AstNode* lhsp = nullptr)
+    explicit AstReturn(FileLine* fl, AstNodeExpr* lhsp = nullptr)
         : ASTGEN_SUPER_Return(fl) {
         this->lhsp(lhsp);
     }
@@ -3065,15 +2906,15 @@ public:
 class AstSFormat final : public AstNodeStmt {
     // Parents: statement container
     // @astgen op1 := fmtp : AstSFormatF
-    // @astgen op2 := lhsp : AstNode
+    // @astgen op2 := lhsp : AstNodeExpr
 public:
-    AstSFormat(FileLine* fl, AstNode* lhsp, const string& text, AstNode* exprsp,
+    AstSFormat(FileLine* fl, AstNodeExpr* lhsp, const string& text, AstNodeExpr* exprsp,
                char missingArgChar = 'd')
         : ASTGEN_SUPER_SFormat(fl) {
         this->fmtp(new AstSFormatF{fl, text, true, exprsp, missingArgChar});
         this->lhsp(lhsp);
     }
-    AstSFormat(FileLine* fl, AstNode* lhsp, AstNode* exprsp, char missingArgChar = 'd')
+    AstSFormat(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* exprsp, char missingArgChar = 'd')
         : ASTGEN_SUPER_SFormat(fl) {
         this->fmtp(new AstSFormatF{fl, AstSFormatF::NoFormat(), exprsp, missingArgChar});
         this->lhsp(lhsp);
@@ -3130,10 +2971,11 @@ public:
     bool same(const AstNode* samep) const override { return fileline() == samep->fileline(); }
 };
 class AstSysFuncAsTask final : public AstNodeStmt {
+    // TODO: This is superseded by AstStmtExpr, remove
     // Call what is normally a system function (with a return) in a non-return context
-    // @astgen op1 := lhsp : AstNode
+    // @astgen op1 := lhsp : AstNodeExpr
 public:
-    AstSysFuncAsTask(FileLine* fl, AstNode* lhsp)
+    AstSysFuncAsTask(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_SysFuncAsTask(fl) {
         this->lhsp(lhsp);
     }
@@ -3148,9 +2990,9 @@ public:
 };
 class AstSystemT final : public AstNodeStmt {
     // $system used as task
-    // @astgen op1 := lhsp : AstNode
+    // @astgen op1 := lhsp : AstNodeExpr
 public:
-    AstSystemT(FileLine* fl, AstNode* lhsp)
+    AstSystemT(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_SystemT(fl) {
         this->lhsp(lhsp);
     }
@@ -3165,13 +3007,13 @@ public:
 };
 class AstTimeFormat final : public AstNodeStmt {
     // Parents: stmtlist
-    // @astgen op1 := unitsp : AstNode
-    // @astgen op2 := precisionp : AstNode
-    // @astgen op3 := suffixp : AstNode
-    // @astgen op4 := widthp : AstNode
+    // @astgen op1 := unitsp : AstNodeExpr
+    // @astgen op2 := precisionp : AstNodeExpr
+    // @astgen op3 := suffixp : AstNodeExpr
+    // @astgen op4 := widthp : AstNodeExpr
 public:
-    AstTimeFormat(FileLine* fl, AstNode* unitsp, AstNode* precisionp, AstNode* suffixp,
-                  AstNode* widthp)
+    AstTimeFormat(FileLine* fl, AstNodeExpr* unitsp, AstNodeExpr* precisionp, AstNodeExpr* suffixp,
+                  AstNodeExpr* widthp)
         : ASTGEN_SUPER_TimeFormat(fl) {
         this->unitsp(unitsp);
         this->precisionp(precisionp);
@@ -3191,7 +3033,7 @@ class AstTraceDecl final : public AstNodeStmt {
     // Separate from AstTraceInc; as a declaration can't be deleted
     // Parents:  {statement list}
     // Expression being traced - Moved to AstTraceInc by V3Trace
-    // @astgen op1 := valuep : Optional[AstNode]
+    // @astgen op1 := valuep : Optional[AstNodeExpr]
 private:
     uint32_t m_code = 0;  // Trace identifier code; converted to ASCII by trace routines
     const string m_showname;  // Name of variable
@@ -3204,7 +3046,7 @@ private:
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
                  AstVar* varp,  // For input/output state etc
-                 AstNode* valuep, const VNumRange& bitRange, const VNumRange& arrayRange)
+                 AstNodeExpr* valuep, const VNumRange& bitRange, const VNumRange& arrayRange)
         : ASTGEN_SUPER_TraceDecl(fl)
         , m_showname{showname}
         , m_bitRange{bitRange}
@@ -3239,7 +3081,7 @@ public:
 class AstTraceInc final : public AstNodeStmt {
     // Trace point dump
     // @astgen op1 := precondsp : List[AstNode] // Statements to emit before this node
-    // @astgen op2 := valuep : AstNode // Expression being traced (from decl)
+    // @astgen op2 := valuep : AstNodeExpr // Expression being traced (from decl)
 
 private:
     AstTraceDecl* m_declp;  // Pointer to declaration
@@ -3300,7 +3142,7 @@ public:
 };
 class AstUCStmt final : public AstNodeStmt {
     // User $c statement
-    // @astgen op1 := exprsp : List[AstNode]
+    // @astgen op1 := exprsp : List[AstNode] // (some are AstText)
 public:
     AstUCStmt(FileLine* fl, AstNode* exprsp)
         : ASTGEN_SUPER_UCStmt(fl) {
@@ -3314,10 +3156,10 @@ public:
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstWait final : public AstNodeStmt {
-    // @astgen op1 := condp : AstNode
+    // @astgen op1 := condp : AstNodeExpr
     // @astgen op2 := stmtsp : List[AstNode]
 public:
-    AstWait(FileLine* fl, AstNode* condp, AstNode* stmtsp)
+    AstWait(FileLine* fl, AstNodeExpr* condp, AstNode* stmtsp)
         : ASTGEN_SUPER_Wait(fl) {
         this->condp(condp);
         this->addStmtsp(stmtsp);
@@ -3335,11 +3177,11 @@ public:
 };
 class AstWhile final : public AstNodeStmt {
     // @astgen op1 := precondsp : List[AstNode]
-    // @astgen op2 := condp : AstNode
+    // @astgen op2 := condp : AstNodeExpr
     // @astgen op3 := stmtsp : List[AstNode]
     // @astgen op4 := incsp : List[AstNode]
 public:
-    AstWhile(FileLine* fl, AstNode* condp, AstNode* stmtsp = nullptr, AstNode* incsp = nullptr)
+    AstWhile(FileLine* fl, AstNodeExpr* condp, AstNode* stmtsp = nullptr, AstNode* incsp = nullptr)
         : ASTGEN_SUPER_While(fl) {
         this->condp(condp);
         this->addStmtsp(stmtsp);
@@ -3355,43 +3197,17 @@ public:
     void addNextStmt(AstNode* newp, AstNode* belowp) override;
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
-class AstWith final : public AstNodeStmt {
-    // Used as argument to method, then to AstCMethodHard
-    // dtypep() contains the with lambda's return dtype
-    // Parents: funcref (similar to AstArg)
-    // Children: LambdaArgRef that declares the item variable
-    // Children: LambdaArgRef that declares the item.index variable
-    // Children: expression (equation establishing the with)
-    // @astgen op1 := indexArgRefp : AstLambdaArgRef
-    // @astgen op2 := valueArgRefp : AstLambdaArgRef
-    // @astgen op3 := exprp : AstNode
-public:
-    AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,
-            AstNode* exprp)
-        : ASTGEN_SUPER_With(fl) {
-        this->indexArgRefp(indexArgRefp);
-        this->valueArgRefp(valueArgRefp);
-        this->exprp(exprp);
-    }
-    ASTGEN_MEMBERS_AstWith;
-    bool same(const AstNode* /*samep*/) const override { return true; }
-    bool hasDType() const override { return true; }
-    const char* broken() const override {
-        BROKEN_RTN(!indexArgRefp());  // varp needed to know lambda's arg dtype
-        BROKEN_RTN(!valueArgRefp());  // varp needed to know lambda's arg dtype
-        return nullptr;
-    }
-};
 
 // === AstNodeAssign ===
 class AstAssign final : public AstNodeAssign {
 public:
-    AstAssign(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* timingControlp = nullptr)
+    AstAssign(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
+              AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_Assign(fl, lhsp, rhsp, timingControlp) {
         dtypeFrom(lhsp);
     }
     ASTGEN_MEMBERS_AstAssign;
-    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
         return new AstAssign{fileline(), lhsp, rhsp, controlp};
     }
@@ -3402,17 +3218,20 @@ class AstAssignAlias final : public AstNodeAssign {
     // If both sides are wires, there's no LHS vs RHS,
 public:
     AstAssignAlias(FileLine* fl, AstVarRef* lhsp, AstVarRef* rhsp)
-        : ASTGEN_SUPER_AssignAlias(fl, (AstNode*)lhsp, (AstNode*)rhsp) {}
+        : ASTGEN_SUPER_AssignAlias(fl, (AstNodeExpr*)lhsp, (AstNodeExpr*)rhsp) {}
     ASTGEN_MEMBERS_AstAssignAlias;
-    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override { V3ERROR_NA_RETURN(nullptr); }
+    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
+        V3ERROR_NA_RETURN(nullptr);
+    }
     bool brokeLhsMustBeLvalue() const override { return false; }
 };
 class AstAssignDly final : public AstNodeAssign {
 public:
-    AstAssignDly(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* timingControlp = nullptr)
+    AstAssignDly(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
+                 AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignDly(fl, lhsp, rhsp, timingControlp) {}
     ASTGEN_MEMBERS_AstAssignDly;
-    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
         return new AstAssignDly{fileline(), lhsp, rhsp, controlp};
     }
@@ -3423,10 +3242,10 @@ public:
 class AstAssignForce final : public AstNodeAssign {
     // Procedural 'force' statement
 public:
-    AstAssignForce(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+    AstAssignForce(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_AssignForce(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AstAssignForce;
-    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         return new AstAssignForce{fileline(), lhsp, rhsp};
     }
     bool brokeLhsMustBeLvalue() const override { return true; }
@@ -3434,10 +3253,10 @@ public:
 class AstAssignPost final : public AstNodeAssign {
     // Like Assign, but predelayed assignment requiring special order handling
 public:
-    AstAssignPost(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+    AstAssignPost(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_AssignPost(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AstAssignPost;
-    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         return new AstAssignPost{fileline(), lhsp, rhsp};
     }
     bool brokeLhsMustBeLvalue() const override { return true; }
@@ -3445,10 +3264,10 @@ public:
 class AstAssignPre final : public AstNodeAssign {
     // Like Assign, but predelayed assignment requiring special order handling
 public:
-    AstAssignPre(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+    AstAssignPre(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_AssignPre(fl, lhsp, rhsp) {}
     ASTGEN_MEMBERS_AstAssignPre;
-    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         return new AstAssignPre{fileline(), lhsp, rhsp};
     }
     bool brokeLhsMustBeLvalue() const override { return true; }
@@ -3456,12 +3275,12 @@ public:
 class AstAssignVarScope final : public AstNodeAssign {
     // Assign two VarScopes to each other
 public:
-    AstAssignVarScope(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+    AstAssignVarScope(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_AssignVarScope(fl, lhsp, rhsp) {
         dtypeFrom(rhsp);
     }
     ASTGEN_MEMBERS_AstAssignVarScope;
-    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         return new AstAssignVarScope{fileline(), lhsp, rhsp};
     }
     bool brokeLhsMustBeLvalue() const override { return false; }
@@ -3470,10 +3289,11 @@ class AstAssignW final : public AstNodeAssign {
     // Like assign, but wire/assign's in verilog, the only setting of the specified variable
     // @astgen op4 := strengthSpecp : Optional[AstStrengthSpec]
 public:
-    AstAssignW(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* timingControlp = nullptr)
+    AstAssignW(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
+               AstNode* timingControlp = nullptr)
         : ASTGEN_SUPER_AssignW(fl, lhsp, rhsp, timingControlp) {}
     ASTGEN_MEMBERS_AstAssignW;
-    AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) override {
+    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
         return new AstAssignW{fileline(), lhsp, rhsp, controlp};
     }
@@ -3489,8 +3309,6 @@ public:
 // === AstNodeCase ===
 class AstCase final : public AstNodeCase {
     // Case statement
-    // Parents:  {statement list}
-private:
     VCaseType m_casex;  // 0=case, 1=casex, 2=casez
     bool m_fullPragma = false;  // Synthesis full_case
     bool m_parallelPragma = false;  // Synthesis parallel_case
@@ -3498,7 +3316,7 @@ private:
     bool m_unique0Pragma = false;  // unique0 case
     bool m_priorityPragma = false;  // priority case
 public:
-    AstCase(FileLine* fl, VCaseType casex, AstNode* exprp, AstCaseItem* itemsp)
+    AstCase(FileLine* fl, VCaseType casex, AstNodeExpr* exprp, AstCaseItem* itemsp)
         : ASTGEN_SUPER_Case(fl, exprp, itemsp)
         , m_casex{casex} {}
     ASTGEN_MEMBERS_AstCase;
@@ -3524,9 +3342,8 @@ public:
 };
 class AstGenCase final : public AstNodeCase {
     // Generate Case statement
-    // Parents:  {statement list}
 public:
-    AstGenCase(FileLine* fl, AstNode* exprp, AstCaseItem* itemsp)
+    AstGenCase(FileLine* fl, AstNodeExpr* exprp, AstCaseItem* itemsp)
         : ASTGEN_SUPER_GenCase(fl, exprp, itemsp) {}
     ASTGEN_MEMBERS_AstGenCase;
 };
@@ -3572,7 +3389,7 @@ public:
 // === AstNodeFor ===
 class AstGenFor final : public AstNodeFor {
 public:
-    AstGenFor(FileLine* fl, AstNode* initsp, AstNode* condp, AstNode* incsp, AstNode* stmtsp)
+    AstGenFor(FileLine* fl, AstNode* initsp, AstNodeExpr* condp, AstNode* incsp, AstNode* stmtsp)
         : ASTGEN_SUPER_GenFor(fl, initsp, condp, incsp, stmtsp) {}
     ASTGEN_MEMBERS_AstGenFor;
 };
@@ -3580,7 +3397,7 @@ public:
 // === AstNodeIf ===
 class AstGenIf final : public AstNodeIf {
 public:
-    AstGenIf(FileLine* fl, AstNode* condp, AstNode* thensp, AstNode* elsesp)
+    AstGenIf(FileLine* fl, AstNodeExpr* condp, AstNode* thensp, AstNode* elsesp)
         : ASTGEN_SUPER_GenIf(fl, condp, thensp, elsesp) {}
     ASTGEN_MEMBERS_AstGenIf;
 };
@@ -3590,7 +3407,7 @@ private:
     bool m_unique0Pragma = false;  // unique0 case
     bool m_priorityPragma = false;  // priority case
 public:
-    AstIf(FileLine* fl, AstNode* condp, AstNode* thensp = nullptr, AstNode* elsesp = nullptr)
+    AstIf(FileLine* fl, AstNodeExpr* condp, AstNode* thensp = nullptr, AstNode* elsesp = nullptr)
         : ASTGEN_SUPER_If(fl, condp, thensp, elsesp) {}
     ASTGEN_MEMBERS_AstIf;
     bool uniquePragma() const { return m_uniquePragma; }
@@ -3604,8 +3421,8 @@ public:
 // === AstNodeReadWriteMem ===
 class AstReadMem final : public AstNodeReadWriteMem {
 public:
-    AstReadMem(FileLine* fl, bool hex, AstNode* filenamep, AstNode* memp, AstNode* lsbp,
-               AstNode* msbp)
+    AstReadMem(FileLine* fl, bool hex, AstNodeExpr* filenamep, AstNodeExpr* memp,
+               AstNodeExpr* lsbp, AstNodeExpr* msbp)
         : ASTGEN_SUPER_ReadMem(fl, hex, filenamep, memp, lsbp, msbp) {}
     ASTGEN_MEMBERS_AstReadMem;
     string verilogKwd() const override { return (isHex() ? "$readmemh" : "$readmemb"); }
@@ -3613,8 +3430,8 @@ public:
 };
 class AstWriteMem final : public AstNodeReadWriteMem {
 public:
-    AstWriteMem(FileLine* fl, bool hex, AstNode* filenamep, AstNode* memp, AstNode* lsbp,
-                AstNode* msbp)
+    AstWriteMem(FileLine* fl, bool hex, AstNodeExpr* filenamep, AstNodeExpr* memp,
+                AstNodeExpr* lsbp, AstNodeExpr* msbp)
         : ASTGEN_SUPER_WriteMem(fl, hex, filenamep, memp, lsbp, msbp) {}
     ASTGEN_MEMBERS_AstWriteMem;
     string verilogKwd() const override { return (isHex() ? "$writememh" : "$writememb"); }

@@ -205,8 +205,8 @@ private:
         UASSERT_OBJ(nodep, constp, "Expecting CONST");
         AstConst* const newconstp = constp->cloneTree(true);
 
-        AstNode* const storetop = nodep->thsp();
-        AstNode* const valuep = nodep->rhsp();
+        AstNodeExpr* const storetop = nodep->thsp();
+        AstNodeExpr* const valuep = nodep->rhsp();
 
         storetop->unlinkFrBack();
         valuep->unlinkFrBack();
@@ -247,7 +247,7 @@ private:
         insertBeforeStmt(nodep, varp);
 
         // Define what operation will we be doing
-        AstNode* operp;
+        AstNodeExpr* operp;
         if (VN_IS(nodep, PostSub) || VN_IS(nodep, PreSub)) {
             operp = new AstSub(fl, new AstVarRef(fl, varrefp->varp(), VAccess::READ), newconstp);
         } else {

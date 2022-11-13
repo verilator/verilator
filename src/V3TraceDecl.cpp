@@ -128,7 +128,7 @@ private:
     };
     std::vector<Signal> m_signals;  // Signals under current scope
     AstVarScope* m_traVscp = nullptr;  // Current AstVarScope we are constructing AstTraceDecls for
-    AstNode* m_traValuep = nullptr;  // Value expression for current signal
+    AstNodeExpr* m_traValuep = nullptr;  // Value expression for current signal
     string m_traName;  // Name component for current signal
 
     VDouble0 m_statSigs;  // Statistic tracking

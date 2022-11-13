@@ -181,7 +181,7 @@ private:
             FileLine* const flp = nodep->fileline();
             for (int i = left; i != (right + increment); i += increment, offset_from_init++) {
                 const string name = nodep->name() + cvtToStr(i);
-                AstNode* valuep = nullptr;
+                AstNodeExpr* valuep = nullptr;
                 if (nodep->valuep()) {
                     valuep
                         = new AstAdd(flp, nodep->valuep()->cloneTree(true),
@@ -266,7 +266,7 @@ private:
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
                 auto* const assp
                     = new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), VAccess::WRITE),
-                                    nodep->valuep()->unlinkFrBack());
+                                    VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr));
                 if (nodep->lifetime().isAutomatic()) {
                     nodep->addNextHere(new AstInitialAutomatic{newfl, assp});
                 } else {
@@ -274,9 +274,9 @@ private:
                 }
             }  // 4. Under blocks, it's an initial value to be under an assign
             else {
-                nodep->addNextHere(new AstAssign(fl,
-                                                 new AstVarRef(fl, nodep->name(), VAccess::WRITE),
-                                                 nodep->valuep()->unlinkFrBack()));
+                nodep->addNextHere(
+                    new AstAssign(fl, new AstVarRef(fl, nodep->name(), VAccess::WRITE),
+                                  VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)));
             }
         }
         if (nodep->isIfaceRef() && !nodep->isIfaceParent() && !v3Global.opt.topIfacesSupported()) {

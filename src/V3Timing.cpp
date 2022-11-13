@@ -91,7 +91,7 @@ private:
     //                                                            to this sentree
     //  Ast{NodeProcedure,CFunc,Begin}::user2()  -> bool.         Set true if process/task is
     //                                                            suspendable
-    //  AstSenTree::user2()                      -> AstText*.     Debug info passed to the
+    //  AstSenTree::user2()                      -> AstCExpr*.    Debug info passed to the
     //                                                            timing schedulers
     //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_depGraph
     const VNUser1InUse m_user1InUse;
@@ -286,24 +286,29 @@ private:
         return VN_AS(sensesp->user1p(), VarScope);
     }
     // Creates a string describing the sentree
-    AstText* createEventDescription(AstSenTree* const sensesp) const {
+    AstCExpr* createEventDescription(AstSenTree* const sensesp) const {
         if (!sensesp->user2p()) {
             std::stringstream ss;
             ss << '"';
             V3EmitV::verilogForTree(sensesp, ss);
             ss << '"';
-            auto* const commentp = new AstText{sensesp->fileline(), ss.str()};
+            auto* const commentp = new AstCExpr{sensesp->fileline(), ss.str(), 0};
+            commentp->dtypeSetString();
             sensesp->user2p(commentp);
             return commentp;
         }
-        return VN_AS(sensesp->user2p(), Text)->cloneTree(false);
+        return VN_AS(sensesp->user2p(), CExpr)->cloneTree(false);
     }
     // Adds debug info to a hardcoded method call
     void addDebugInfo(AstCMethodHard* const methodp) const {
         if (v3Global.opt.protectIds()) return;
         FileLine* const flp = methodp->fileline();
-        methodp->addPinsp(new AstText{flp, '"' + flp->filename() + '"'});
-        methodp->addPinsp(new AstText{flp, cvtToStr(flp->lineno())});
+        AstCExpr* const ap = new AstCExpr{flp, '"' + flp->filename() + '"', 0};
+        ap->dtypeSetString();
+        methodp->addPinsp(ap);
+        AstCExpr* const bp = new AstCExpr{flp, cvtToStr(flp->lineno()), 0};
+        bp->dtypeSetString();
+        methodp->addPinsp(bp);
     }
     // Adds debug info to a trigSched.trigger() call
     void addEventDebugInfo(AstCMethodHard* const methodp, AstSenTree* const sensesp) const {
@@ -491,7 +496,7 @@ private:
     }
     void visit(AstDelay* nodep) override {
         FileLine* const flp = nodep->fileline();
-        AstNode* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
+        AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
         auto* const constp = VN_CAST(valuep, Const);
         if (constp && constp->isZero()) {
             nodep->v3warn(ZERODLY, "Unsupported: #0 delays do not schedule process resumption in "
@@ -632,7 +637,8 @@ private:
         // do that. These intra-assignment vars will later be passed to forked processes by value.
         AstNode* const insertBeforep = VN_IS(m_procp, CFunc) ? controlp : nullptr;
         // Function for replacing values with intermediate variables
-        const auto replaceWithIntermediate = [&](AstNode* const valuep, const std::string& name) {
+        const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
+                                                 const std::string& name) {
             AstVarScope* const newvscp = createTemp(flp, name, valuep->dtypep(), insertBeforep);
             valuep->replaceWith(new AstVarRef{flp, newvscp, VAccess::READ});
             controlp->addHereThisAsNext(
@@ -665,7 +671,7 @@ private:
         // TODO: Find a way to do this without introducing this var. Perhaps make
         // V3SchedAcyclic recognize awaits and prevent it from treating this kind of logic as
         // cyclic
-        AstNode* const lhsp = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
         std::string varname;
         if (auto* const refp = VN_CAST(lhsp, VarRef)) {
             varname = m_contAssignVarNames.get(refp->name());
@@ -696,7 +702,7 @@ private:
         FileLine* const flp = nodep->fileline();
         AstNode* const stmtsp = nodep->stmtsp();
         if (stmtsp) stmtsp->unlinkFrBackWithNext();
-        AstNode* const condp = V3Const::constifyEdit(nodep->condp()->unlinkFrBack());
+        AstNodeExpr* const condp = V3Const::constifyEdit(nodep->condp()->unlinkFrBack());
         auto* const constp = VN_CAST(condp, Const);
         if (constp) {
             condp->v3warn(WAITCONST, "Wait statement condition is constant");

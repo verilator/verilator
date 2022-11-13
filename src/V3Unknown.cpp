@@ -68,7 +68,7 @@ private:
 
     // METHODS
 
-    void replaceBoundLvalue(AstNode* nodep, AstNode* condp) {
+    void replaceBoundLvalue(AstNodeExpr* nodep, AstNodeExpr* condp) {
         // Spec says a out-of-range LHS SEL results in a NOP.
         // This is a PITA.  We could:
         //  1. IF(...) around an ASSIGN,
@@ -101,11 +101,11 @@ private:
             m_assigndlyp->replaceWith(newp);
             VL_DO_CLEAR(pushDeletep(m_assigndlyp), m_assigndlyp = nullptr);
         }
-        AstNode* prep = nodep;
+        AstNodeExpr* prep = nodep;
 
         // Scan back to put the condlvalue above all selects (IE top of the lvalue)
         while (VN_IS(prep->backp(), NodeSel) || VN_IS(prep->backp(), Sel)) {
-            prep = prep->backp();
+            prep = VN_AS(prep->backp(), NodeExpr);
         }
         FileLine* const fl = nodep->fileline();
         VL_DANGLING(nodep);  // Zap it so we don't use it by mistake - use prep
@@ -115,8 +115,8 @@ private:
         if (const AstIf* const ifp = VN_AS(prep->user2p(), If)) {
             UASSERT_OBJ(!needDly, prep, "Should have already converted to non-delay");
             VNRelinker replaceHandle;
-            AstNode* const earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
-            AstNode* const newp = new AstLogAnd(condp->fileline(), condp, earliercondp);
+            AstNodeExpr* const earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
+            AstNodeExpr* const newp = new AstLogAnd(condp->fileline(), condp, earliercondp);
             UINFO(4, "Edit BOUNDLVALUE " << newp << endl);
             replaceHandle.relink(newp);
         } else {
@@ -207,9 +207,9 @@ private:
             VL_DO_DANGLING(V3Const::constifyEdit(nodep), nodep);
             return;
         } else {
-            AstNode* const lhsp = nodep->lhsp()->unlinkFrBack();
-            AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
-            AstNode* newp;
+            AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+            AstNodeExpr* newp;
             // If we got ==1'bx it can never be true (but 1'bx==1'bx can be!)
             if (((VN_IS(lhsp, Const) && VN_AS(lhsp, Const)->num().isFourState())
                  || (VN_IS(rhsp, Const) && VN_AS(rhsp, Const)->num().isFourState()))) {
@@ -239,9 +239,9 @@ private:
             VL_DO_DANGLING(V3Const::constifyEdit(nodep), nodep);
             return;
         } else {
-            AstNode* const lhsp = nodep->lhsp()->unlinkFrBack();
-            AstNode* const rhsp = nodep->rhsp()->unlinkFrBack();
-            AstNode* newp;
+            AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+            AstNodeExpr* newp;
             if (!VN_IS(rhsp, Const)) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: RHS of ==? or !=? must be "
                                              "constant to be synthesizable");  // Says spec.
@@ -253,9 +253,9 @@ private:
                 nummask.opBitsNonX(VN_AS(rhsp, Const)->num());
                 V3Number numval(rhsp, rhsp->width());
                 numval.opBitsOne(VN_AS(rhsp, Const)->num());
-                AstNode* const and1p = new AstAnd(nodep->fileline(), lhsp,
-                                                  new AstConst(nodep->fileline(), nummask));
-                AstNode* const and2p = new AstConst(nodep->fileline(), numval);
+                AstNodeExpr* const and1p = new AstAnd(nodep->fileline(), lhsp,
+                                                      new AstConst(nodep->fileline(), nummask));
+                AstNodeExpr* const and2p = new AstConst(nodep->fileline(), numval);
                 if (VN_IS(nodep, EqWild)) {
                     newp = new AstEq(nodep->fileline(), and1p, and2p);
                 } else {
@@ -290,7 +290,7 @@ private:
         dropop[2] = VN_IS(nodep->fhsp(), Const) && VN_AS(nodep->fhsp(), Const)->num().isAnyX();
         UINFO(4, " COUNTBITS(" << dropop[0] << dropop[1] << dropop[2] << " " << nodep << endl);
 
-        AstNode* nonXp = nullptr;
+        AstNodeExpr* nonXp = nullptr;
         if (!dropop[0]) {
             nonXp = nodep->rhsp();
         } else if (!dropop[1]) {
@@ -394,10 +394,11 @@ private:
             if (debug() >= 9) nodep->dumpTree(cout, "sel_old: ");
 
             // If (maxmsb >= selected), we're in bound
-            AstNode* condp = new AstGte(nodep->fileline(),
-                                        new AstConst(nodep->fileline(), AstConst::WidthedValue(),
-                                                     nodep->lsbp()->width(), maxmsb),
-                                        nodep->lsbp()->cloneTree(false));
+            AstNodeExpr* condp
+                = new AstGte(nodep->fileline(),
+                             new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                                          nodep->lsbp()->width(), maxmsb),
+                             nodep->lsbp()->cloneTree(false));
             // See if the condition is constant true (e.g. always in bound due to constant select)
             // Note below has null backp(); the Edit function knows how to deal with that.
             condp = V3Const::constifyEdit(condp);
@@ -452,10 +453,11 @@ private:
             if (debug() >= 9) nodep->dumpTree(cout, "arraysel_old: ");
 
             // See if the condition is constant true
-            AstNode* condp = new AstGte(nodep->fileline(),
-                                        new AstConst(nodep->fileline(), AstConst::WidthedValue(),
-                                                     nodep->bitp()->width(), declElements - 1),
-                                        nodep->bitp()->cloneTree(false));
+            AstNodeExpr* condp
+                = new AstGte(nodep->fileline(),
+                             new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                                          nodep->bitp()->width(), declElements - 1),
+                             nodep->bitp()->cloneTree(false));
             // Note below has null backp(); the Edit function knows how to deal with that.
             condp = V3Const::constifyEdit(condp);
             if (condp->isOne()) {
@@ -483,8 +485,8 @@ private:
             } else if (!lvalue) {  // Mid-multidimension read, just use zero
                 // ARRAYSEL(...) -> ARRAYSEL(COND(LT(bit<maxbit), bit, 0))
                 VNRelinker replaceHandle;
-                AstNode* const bitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
-                AstNode* const newp = new AstCondBound(
+                AstNodeExpr* const bitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
+                AstNodeExpr* const newp = new AstCondBound(
                     bitp->fileline(), condp, bitp,
                     new AstConst(bitp->fileline(), AstConst::WidthedValue(), bitp->width(), 0));
                 // Added X's, tristate them too

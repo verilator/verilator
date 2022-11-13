@@ -52,7 +52,7 @@ private:
 
     // METHODS
 
-    void createDeepTemp(AstNode* nodep) {
+    void createDeepTemp(AstNodeExpr* nodep) {
         UINFO(6, "  Deep  " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree(cout, "deep:");
         AstVar* const varp = new AstVar{nodep->fileline(), VVarType::STMTTEMP,

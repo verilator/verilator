@@ -421,7 +421,7 @@ private:
         graphSimplify(false);
     }
 
-    AstNode* selectActivity(FileLine* flp, uint32_t acode, const VAccess& access) {
+    AstNodeExpr* selectActivity(FileLine* flp, uint32_t acode, const VAccess& access) {
         return new AstArraySel(flp, new AstVarRef(flp, m_activityVscp, access), acode);
     }
 
@@ -667,12 +667,12 @@ private:
                 if (!prevActSet || actSet != *prevActSet) {
                     FileLine* const flp = m_topScopep->fileline();
                     const bool always = actSet.count(TraceActivityVertex::ACTIVITY_ALWAYS) != 0;
-                    AstNode* condp = nullptr;
+                    AstNodeExpr* condp = nullptr;
                     if (always) {
                         condp = new AstConst(flp, 1);  // Always true, will be folded later
                     } else {
                         for (const uint32_t actCode : actSet) {
-                            AstNode* const selp = selectActivity(flp, actCode, VAccess::READ);
+                            AstNodeExpr* const selp = selectActivity(flp, actCode, VAccess::READ);
                             condp = condp ? new AstOr(flp, condp, selp) : selp;
                         }
                     }

@@ -60,7 +60,7 @@ class SliceVisitor final : public VNVisitor {
     bool m_assignError = false;  // True if the current assign already has an error
 
     // METHODS
-    AstNode* cloneAndSel(AstNode* nodep, int elements, int offset) {
+    AstNodeExpr* cloneAndSel(AstNode* nodep, int elements, int offset) {
         // Insert an ArraySel, except for a few special cases
         const AstUnpackArrayDType* const arrayp
             = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
@@ -73,7 +73,8 @@ class SliceVisitor final : public VNVisitor {
                 V3Error::incErrors();  // Otherwise might infinite loop
             }
             m_assignError = true;
-            return nodep->cloneTree(false);  // Likely will cause downstream errors
+            // Likely will cause downstream errors
+            return VN_AS(nodep, NodeExpr)->cloneTree(false);
         }
         if (arrayp->rangep()->elementsConst() != elements) {
             if (!m_assignError) {
@@ -85,19 +86,18 @@ class SliceVisitor final : public VNVisitor {
             elements = 1;
             offset = 0;
         }
-        AstNode* newp;
+        AstNodeExpr* newp;
         if (const AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
             UINFO(9, "  cloneInitArray(" << elements << "," << offset << ") " << nodep << endl);
             const int leOffset = !arrayp->rangep()->littleEndian()
                                      ? arrayp->rangep()->elementsConst() - 1 - offset
                                      : offset;
-            AstNode* itemp = initp->getIndexDefaultedValuep(leOffset);
+            AstNodeExpr* const itemp = initp->getIndexDefaultedValuep(leOffset);
             if (!itemp) {
                 nodep->v3error("Array initialization has too few elements, need element "
                                << offset);
-                itemp = initp->initsp();
             }
-            newp = itemp->cloneTree(false);
+            newp = itemp ? itemp->cloneTree(false) : new AstConst{nodep->fileline(), 0};
         } else if (AstNodeCond* const snodep = VN_CAST(nodep, NodeCond)) {
             UINFO(9, "  cloneCond(" << elements << "," << offset << ") " << nodep << endl);
             return snodep->cloneType(snodep->condp()->cloneTree(false),
@@ -116,14 +116,16 @@ class SliceVisitor final : public VNVisitor {
             const int leOffset = !arrayp->rangep()->littleEndian()
                                      ? arrayp->rangep()->elementsConst() - 1 - offset
                                      : offset;
-            newp = new AstArraySel{nodep->fileline(), nodep->cloneTree(false), leOffset};
+            newp = new AstArraySel{nodep->fileline(), VN_AS(nodep, NodeExpr)->cloneTree(false),
+                                   leOffset};
         } else {
             if (!m_assignError) {
                 nodep->v3error(nodep->prettyTypeName()
                                << " unexpected in assignment to unpacked array");
             }
             m_assignError = true;
-            newp = nodep->cloneTree(false);  // Likely will cause downstream errors
+            // Likely will cause downstream errors
+            newp = VN_AS(nodep, NodeExpr)->cloneTree(false);
         }
         return newp;
     }
@@ -143,9 +145,8 @@ class SliceVisitor final : public VNVisitor {
                 const int elements = arrayp->rangep()->elementsConst();
                 for (int offset = 0; offset < elements; ++offset) {
                     AstNodeAssign* const newp
-                        = VN_AS(nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, offset),
-                                                 cloneAndSel(nodep->rhsp(), elements, offset)),
-                                NodeAssign);
+                        = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, offset),
+                                           cloneAndSel(nodep->rhsp(), elements, offset));
                     if (debug() >= 9) newp->dumpTree(cout, "-new ");
                     newlistp = AstNode::addNext(newlistp, newp);
                 }

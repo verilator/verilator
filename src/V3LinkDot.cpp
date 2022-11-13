@@ -1223,7 +1223,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                     // new value.
                     if (v3Global.opt.hasParameter(nodep->name())) {
                         const string svalue = v3Global.opt.parameter(nodep->name());
-                        if (AstNode* const valuep
+                        if (AstConst* const valuep
                             = AstConst::parseParamLiteral(nodep->fileline(), svalue)) {
                             UINFO(9, "       replace parameter " << nodep << endl);
                             UINFO(9, "       with " << valuep << endl);
@@ -1366,7 +1366,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             // DOT(x, SELLOOPVARS(var, loops)) -> SELLOOPVARS(DOT(x, var), loops)
             if (AstDot* const dotp = VN_CAST(nodep->arrayp(), Dot)) {
                 if (AstSelLoopVars* const loopvarsp = VN_CAST(dotp->rhsp(), SelLoopVars)) {
-                    AstNode* const fromp = loopvarsp->fromp()->unlinkFrBack();
+                    AstNodeExpr* const fromp = loopvarsp->fromp()->unlinkFrBack();
                     loopvarsp->unlinkFrBack();
                     dotp->replaceWith(loopvarsp);
                     dotp->rhsp(fromp);
@@ -1540,7 +1540,7 @@ private:
         if (!cellp) {
             nodep->v3error("In defparam, instance " << nodep->path() << " never declared");
         } else {
-            AstNode* const exprp = nodep->rhsp()->unlinkFrBack();
+            AstNodeExpr* const exprp = nodep->rhsp()->unlinkFrBack();
             UINFO(9, "Defparam cell " << nodep->path() << "." << nodep->name() << " attach-to "
                                       << cellp << "  <= " << exprp << endl);
             // Don't need to check the name of the defparam exists.  V3Param does.
@@ -2295,7 +2295,7 @@ private:
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {  // Dot midpoint
-                AstNode* newp = nodep->rhsp()->unlinkFrBack();
+                AstNodeExpr* newp = nodep->rhsp()->unlinkFrBack();
                 if (m_ds.m_unresolved) {
                     AstCellRef* const crp = new AstCellRef(nodep->fileline(), nodep->name(),
                                                            nodep->lhsp()->unlinkFrBack(), newp);
@@ -2358,8 +2358,8 @@ private:
             return;
         } else if (m_ds.m_dotPos == DP_MEMBER) {
             // Found a Var, everything following is membership.  {scope}.{var}.HERE {member}
-            AstNode* const varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
-            AstNode* const newp
+            AstNodeExpr* const varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
+            AstNodeExpr* const newp
                 = new AstMemberSel(nodep->fileline(), varEtcp, VFlagChildDType(), nodep->name());
             if (m_ds.m_dotErr) {
                 nodep->unlinkFrBack();  // Avoid circular node loop on errors
@@ -2545,7 +2545,8 @@ private:
                     m_ds.m_dotPos = DP_SCOPE;
                     UINFO(9, " modport -> iface varref " << foundp->nodep() << endl);
                     // We lose the modport name here, so we cannot detect mismatched modports.
-                    AstNode* newp = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
+                    AstNodeExpr* newp
+                        = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
                     auto* const cellarrayrefp = VN_CAST(m_ds.m_unlinkedScopep, CellArrayRef);
                     if (cellarrayrefp) {
                         // iface[vec].modport became CellArrayRef(iface, lsb)
@@ -2811,8 +2812,8 @@ private:
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_MEMBER) {
             // Found a Var, everything following is method call.
             // {scope}.{var}.HERE {method} ( ARGS )
-            AstNode* const varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
-            AstNode* argsp = nullptr;
+            AstNodeExpr* const varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
+            AstNodeExpr* argsp = nullptr;
             if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
             AstNode* const newp = new AstMethodCall(nodep->fileline(), varEtcp, VFlagChildDType(),
                                                     nodep->name(), argsp);
@@ -2965,7 +2966,7 @@ private:
             }
         }
         if (m_ds.m_unresolved && m_ds.m_dotPos == DP_SCOPE) {
-            AstNode* const exprp = nodep->bitp()->unlinkFrBack();
+            AstNodeExpr* const exprp = nodep->bitp()->unlinkFrBack();
             AstCellArrayRef* const newp
                 = new AstCellArrayRef(nodep->fileline(), nodep->fromp()->name(), exprp);
             nodep->replaceWith(newp);

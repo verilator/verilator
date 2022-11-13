@@ -252,7 +252,7 @@ int AstNodeUOrStructDType::widthAlignBytes() const {
     }
 }
 
-AstNodeBiop* AstEq::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
+AstNodeBiop* AstEq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
     if (lhsp->isString() && rhsp->isString()) {
         return new AstEqN(fl, lhsp, rhsp);
     } else if (lhsp->isDouble() && rhsp->isDouble()) {
@@ -262,7 +262,7 @@ AstNodeBiop* AstEq::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
     }
 }
 
-AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
+AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
     if (lhsp->isString() && rhsp->isString()) {
         return new AstEqN(fl, lhsp, rhsp);
     } else if (lhsp->isDouble() && rhsp->isDouble()) {
@@ -279,13 +279,13 @@ AstExecGraph::AstExecGraph(FileLine* fileline, const string& name)
 
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
 
-AstNode* AstInsideRange::newAndFromInside(AstNode* exprp, AstNode* lhsp, AstNode* rhsp) {
-    AstNode* const ap = new AstGte(fileline(), exprp->cloneTree(true), lhsp);
-    AstNode* const bp = new AstLte(fileline(), exprp->cloneTree(true), rhsp);
+AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,
+                                              AstNodeExpr* rhsp) {
+    AstNodeExpr* const ap = new AstGte{fileline(), exprp->cloneTree(true), lhsp};
+    AstNodeExpr* const bp = new AstLte{fileline(), exprp->cloneTree(true), rhsp};
     ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
     bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
-    AstNode* const newp = new AstAnd(fileline(), ap, bp);
-    return newp;
+    return new AstAnd(fileline(), ap, bp);
 }
 
 AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
@@ -1122,7 +1122,7 @@ const char* AstConstPool::broken() const {
     return nullptr;
 }
 
-AstVarScope* AstConstPool::createNewEntry(const string& name, AstNode* initp) {
+AstVarScope* AstConstPool::createNewEntry(const string& name, AstNodeExpr* initp) {
     FileLine* const fl = initp->fileline();
     AstVar* const varp = new AstVar(fl, VVarType::MODULETEMP, name, initp->dtypep());
     varp->isConst(true);
@@ -1575,7 +1575,7 @@ void AstInitArray::cloneRelink() {
         if (it->second->clonep()) it->second = it->second->clonep();
     }
 }
-void AstInitArray::addIndexValuep(uint64_t index, AstNode* newp) {
+void AstInitArray::addIndexValuep(uint64_t index, AstNodeExpr* newp) {
     const auto it = m_map.find(index);
     if (it != m_map.end()) {
         it->second->valuep(newp);
@@ -1585,7 +1585,7 @@ void AstInitArray::addIndexValuep(uint64_t index, AstNode* newp) {
         addInitsp(itemp);
     }
 }
-AstNode* AstInitArray::getIndexValuep(uint64_t index) const {
+AstNodeExpr* AstInitArray::getIndexValuep(uint64_t index) const {
     const auto it = m_map.find(index);
     if (it == m_map.end()) {
         return nullptr;
@@ -1593,8 +1593,8 @@ AstNode* AstInitArray::getIndexValuep(uint64_t index) const {
         return it->second->valuep();
     }
 }
-AstNode* AstInitArray::getIndexDefaultedValuep(uint64_t index) const {
-    AstNode* valuep = getIndexValuep(index);
+AstNodeExpr* AstInitArray::getIndexDefaultedValuep(uint64_t index) const {
+    AstNodeExpr* valuep = getIndexValuep(index);
     if (!valuep) valuep = defaultp();
     return valuep;
 }
@@ -2302,8 +2302,8 @@ void AstCUse::dump(std::ostream& str) const {
 
 AstAlways* AstAssignW::convertToAlways() {
     const bool hasTimingControl = isTimingControl();
-    AstNode* const lhs1p = lhsp()->unlinkFrBack();
-    AstNode* const rhs1p = rhsp()->unlinkFrBack();
+    AstNodeExpr* const lhs1p = lhsp()->unlinkFrBack();
+    AstNodeExpr* const rhs1p = rhsp()->unlinkFrBack();
     AstNode* const controlp = timingControlp() ? timingControlp()->unlinkFrBack() : nullptr;
     FileLine* const flp = fileline();
     AstNode* bodysp = new AstAssign{flp, lhs1p, rhs1p, controlp};

@@ -184,7 +184,7 @@ private:
                     = new AstVarRef{fl, enumValueTabp(enumDtp), VAccess::READ};
                 tabRefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
                 AstRand* const randp = new AstRand{fl, nullptr, false};
-                AstNode* const moddivp = new AstModDiv{
+                AstNodeExpr* const moddivp = new AstModDiv{
                     fl, randp, new AstConst{fl, static_cast<uint32_t>(enumDtp->itemCount())}};
                 randp->dtypep(varrefp->findBasicDType(VBasicDTypeKwd::UINT32));
                 moddivp->dtypep(enumDtp);
@@ -296,7 +296,7 @@ private:
 
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
-            AstNode* const condp = itemp->condsp()->unlinkFrBack();
+            AstNodeExpr* const condp = itemp->condsp()->unlinkFrBack();
             sump
                 = new AstAdd{condp->fileline(), sump, new AstExtend{itemp->fileline(), condp, 64}};
             AstNode* const stmtsp
@@ -318,7 +318,7 @@ private:
         ifsp->addElsesp(dispp);
 
         AstNode* newp = randVarp;
-        AstNode* randp = new AstRand{fl, nullptr, false};
+        AstNodeExpr* randp = new AstRand{fl, nullptr, false};
         randp->dtypeSetUInt64();
         newp->addNext(new AstAssign{fl, new AstVarRef{fl, randVarp, VAccess::WRITE},
                                     new AstAdd{fl, new AstConst{fl, AstConst::Unsized64{}, 1},

@@ -299,7 +299,7 @@ class DfgToAstVisitor final : DfgVisitor {
         });
     }
 
-    void addResultEquation(FileLine* flp, AstNode* lhsp, AstNode* rhsp) {
+    void addResultEquation(FileLine* flp, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
         m_modp->addStmtsp(new AstAssignW{flp, lhsp, rhsp});
         ++m_ctx.m_resultEquations;
     }

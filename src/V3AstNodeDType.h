@@ -261,13 +261,13 @@ public:
 // === AstNode ===
 class AstEnumItem final : public AstNode {
     // @astgen op1 := rangep : Optional[AstRange] // Range for name appending
-    // @astgen op2 := valuep : Optional[AstNode]
+    // @astgen op2 := valuep : Optional[AstNodeExpr]
 private:
     string m_name;
 
 public:
     // Parents: ENUM
-    AstEnumItem(FileLine* fl, const string& name, AstRange* rangep, AstNode* valuep)
+    AstEnumItem(FileLine* fl, const string& name, AstRange* rangep, AstNodeExpr* valuep)
         : ASTGEN_SUPER_EnumItem(fl)
         , m_name{name} {
         this->rangep(rangep);
@@ -972,18 +972,18 @@ public:
 class AstQueueDType final : public AstNodeDType {
     // Queue array data type, ie "[ $ ]"
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
-    // @astgen op2 := boundp : Optional[AstNode]
+    // @astgen op2 := boundp : Optional[AstNodeExpr]
 private:
     AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
 public:
-    AstQueueDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNode* boundp)
+    AstQueueDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNodeExpr* boundp)
         : ASTGEN_SUPER_QueueDType(fl) {
         this->childDTypep(dtp);
         this->boundp(boundp);
         refDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
     }
-    AstQueueDType(FileLine* fl, AstNodeDType* dtp, AstNode* boundp)
+    AstQueueDType(FileLine* fl, AstNodeDType* dtp, AstNodeExpr* boundp)
         : ASTGEN_SUPER_QueueDType(fl) {
         this->boundp(boundp);
         refDTypep(dtp);
@@ -1032,7 +1032,7 @@ public:
 };
 class AstRefDType final : public AstNodeDType {
     // @astgen op1 := typeofp : Optional[AstNode]
-    // @astgen op2 := classOrPackageOpp : Optional[AstNode]
+    // @astgen op2 := classOrPackageOpp : Optional[AstNodeExpr]
     // @astgen op3 := paramsp : List[AstPin]
 private:
     // Pre-Width must reference the Typeref, not what it points to, as some child
@@ -1046,7 +1046,7 @@ public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER_RefDType(fl)
         , m_name{name} {}
-    AstRefDType(FileLine* fl, const string& name, AstNode* classOrPackagep, AstPin* paramsp)
+    AstRefDType(FileLine* fl, const string& name, AstNodeExpr* classOrPackagep, AstPin* paramsp)
         : ASTGEN_SUPER_RefDType(fl)
         , m_name{name} {
         this->classOrPackageOpp(classOrPackagep);

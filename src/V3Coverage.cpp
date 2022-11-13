@@ -47,9 +47,9 @@ private:
 
     struct ToggleEnt {
         const string m_comment;  // Comment for coverage dump
-        AstNode* m_varRefp;  // How to get to this element
-        AstNode* m_chgRefp;  // How to get to this element
-        ToggleEnt(const string& comment, AstNode* vp, AstNode* cp)
+        AstNodeExpr* m_varRefp;  // How to get to this element
+        AstNodeExpr* m_chgRefp;  // How to get to this element
+        ToggleEnt(const string& comment, AstNodeExpr* vp, AstNodeExpr* cp)
             : m_comment{comment}
             , m_varRefp{vp}
             , m_chgRefp{cp} {}
