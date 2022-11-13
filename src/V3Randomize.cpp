@@ -198,6 +198,14 @@ private:
                                  valp};
         }
     }
+    void addPrePostCall(AstClass* classp, AstFunc* funcp, const string& name) {
+        if (AstTask* userFuncp = VN_CAST(classp->findMember(name), Task)) {
+            AstTaskRef* const callp
+                = new AstTaskRef{userFuncp->fileline(), userFuncp->name(), nullptr};
+            callp->taskp(userFuncp);
+            funcp->addStmtsp(callp->makeStmt());
+        }
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -215,6 +223,7 @@ private:
         UINFO(9, "Define randomize() for " << nodep << endl);
         AstFunc* const funcp = V3Randomize::newRandomizeFunc(nodep);
         AstVar* const fvarp = VN_AS(funcp->fvarp(), Var);
+        addPrePostCall(nodep, funcp, "pre_randomize");
         funcp->addStmtsp(new AstAssign{
             nodep->fileline(), new AstVarRef{nodep->fileline(), fvarp, VAccess::WRITE},
             new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32, 1}});
@@ -250,6 +259,7 @@ private:
                 }
             }
         }
+        addPrePostCall(nodep, funcp, "post_randomize");
         nodep->user1(false);
     }
     void visit(AstRandCase* nodep) override {

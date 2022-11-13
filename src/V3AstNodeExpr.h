@@ -1585,7 +1585,7 @@ class AstThisRef final : public AstNodeExpr {
     // Reference to 'this'.
     // @astgen op1 := childDTypep : Optional[AstClassRefDType] // dtype of the node
 public:
-    explicit AstThisRef(FileLine* fl, AstClassRefDType* dtypep)
+    AstThisRef(FileLine* fl, VFlagChildDType, AstClassRefDType* dtypep)
         : ASTGEN_SUPER_ThisRef(fl) {
         childDTypep(dtypep);
     }

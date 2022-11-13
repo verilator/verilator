@@ -2342,7 +2342,7 @@ private:
             AstClass* const classp = VN_AS(classSymp->nodep(), Class);
             AstClassRefDType* const dtypep
                 = new AstClassRefDType{nodep->fileline(), classp, nullptr};
-            AstThisRef* const newp = new AstThisRef{nodep->fileline(), dtypep};
+            AstThisRef* const newp = new AstThisRef{nodep->fileline(), VFlagChildDType{}, dtypep};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
