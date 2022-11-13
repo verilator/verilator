@@ -67,8 +67,8 @@ public:
 private:
     // MEMBERS
     string m_name;  //< Name of the source file
-    bool m_needed = false;  //< Need to annotate; has low coverage
     LinenoMap m_lines;  //< Map of each annotated line
+    bool m_needed = false;  //< Need to annotate; has low coverage
 
 public:
     // CONSTRUCTORS

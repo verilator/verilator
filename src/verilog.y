@@ -75,11 +75,6 @@
 
 class V3ParseGrammar {
 public:
-    bool m_impliedDecl = false;  // Allow implied wire declarations
-    VVarType m_varDecl;  // Type for next signal declaration (reg/wire/etc)
-    bool m_varDeclTyped = false;  // Var got reg/wire for dedup check
-    VDirection m_varIO;  // Direction for next signal declaration (reg/wire/etc)
-    VLifetime m_varLifetime;  // Static/Automatic for next signal
     AstVar* m_varAttrp = nullptr;  // Current variable for attribute adding
     AstRange* m_gateRangep = nullptr;  // Current range for gate declarations
     AstCase* m_caseAttrp = nullptr;  // Current case statement for attribute adding
@@ -88,10 +83,15 @@ public:
     AstDelay* m_netDelayp = nullptr;  // Pointer to delay for next signal declaration
     AstStrengthSpec* m_netStrengthp = nullptr;  // Pointer to strength for next net declaration
     AstNodeModule* m_modp = nullptr;  // Last module for timeunits
-    bool m_pinAnsi = false;  // In ANSI port list
     FileLine* m_instModuleFl = nullptr;  // Fileline of module referenced for instantiations
-    string m_instModule;  // Name of module referenced for instantiations
     AstPin* m_instParamp = nullptr;  // Parameters for instantiations
+    string m_instModule;  // Name of module referenced for instantiations
+    VVarType m_varDecl;  // Type for next signal declaration (reg/wire/etc)
+    VDirection m_varIO;  // Direction for next signal declaration (reg/wire/etc)
+    VLifetime m_varLifetime;  // Static/Automatic for next signal
+    bool m_impliedDecl = false;  // Allow implied wire declarations
+    bool m_varDeclTyped = false;  // Var got reg/wire for dedup check
+    bool m_pinAnsi = false;  // In ANSI port list
     bool m_tracingParse = true;  // Tracing disable for parser
     bool m_insideProperty = false;  // Is inside property declaration
     bool m_typedPropertyPort = false;  // True if typed property port occured on port lists

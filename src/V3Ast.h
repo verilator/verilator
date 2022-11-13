@@ -1179,9 +1179,9 @@ class VBasicTypeKey final {
 public:
     const int m_width;  // From AstNodeDType: Bit width of operation
     const int m_widthMin;  // From AstNodeDType: If unsized, bitwidth of minimum implementation
+    const VNumRange m_nrange;  // From AstBasicDType: Numeric msb/lsb (if non-opaque keyword)
     const VSigning m_numeric;  // From AstNodeDType: Node is signed
     const VBasicDTypeKwd m_keyword;  // From AstBasicDType: What keyword created basic type
-    const VNumRange m_nrange;  // From AstBasicDType: Numeric msb/lsb (if non-opaque keyword)
     bool operator==(const VBasicTypeKey& rhs) const {
         return m_width == rhs.m_width && m_widthMin == rhs.m_widthMin && m_numeric == rhs.m_numeric
                && m_keyword == rhs.m_keyword && m_nrange == rhs.m_nrange;
@@ -1203,9 +1203,9 @@ public:
                   const VNumRange& nrange)
         : m_width{width}
         , m_widthMin{widthMin}
+        , m_nrange{nrange}
         , m_numeric{numeric}
-        , m_keyword{kwd}
-        , m_nrange{nrange} {}
+        , m_keyword{kwd} {}
     ~VBasicTypeKey() = default;
 };
 
@@ -1419,8 +1419,8 @@ protected:
     };
     AstNode* m_oldp = nullptr;  // The old node that was linked to this point in the tree
     AstNode* m_backp = nullptr;
-    RelinkWhatEn m_chg = RELINK_BAD;
     AstNode** m_iterpp = nullptr;
+    RelinkWhatEn m_chg = RELINK_BAD;
 
 public:
     VNRelinker() = default;

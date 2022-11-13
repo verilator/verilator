@@ -132,8 +132,8 @@ class VHashSha256 final {
     // MEMBERS
     uint32_t m_inthash[8];  // Intermediate hash, in host order
     string m_remainder;  // Unhashed data
-    bool m_final = false;  // Finalized
     size_t m_totLength = 0;  // Total all-chunk length as needed by output digest
+    bool m_final = false;  // Finalized
 public:
     // CONSTRUCTORS
     VHashSha256() {

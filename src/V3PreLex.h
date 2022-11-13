@@ -132,9 +132,9 @@ public:
     V3PreLex* const m_lexp;  // Lexer, for resource tracking
     std::deque<string> m_buffers;  // Buffer of characters to process
     int m_ignNewlines = 0;  // Ignore multiline newlines
+    int m_termState = 0;  // Termination fsm
     bool m_eof = false;  // "EOF" buffer
     bool m_file = false;  // Buffer is start of new file
-    int m_termState = 0;  // Termination fsm
     VPreStream(FileLine* fl, V3PreLex* lexp)
         : m_curFilelinep{fl}
         , m_lexp{lexp} {

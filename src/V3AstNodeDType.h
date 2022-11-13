@@ -200,10 +200,10 @@ private:
     using MemberNameMap = std::map<const std::string, AstMemberDType*>;
     // MEMBERS
     string m_name;  // Name from upper typedef, if any
-    bool m_packed;
-    bool m_isFourstate = false;  // V3Width computes
     MemberNameMap m_members;
     const int m_uniqueNum;
+    bool m_packed;
+    bool m_isFourstate = false;  // V3Width computes
 
 protected:
     AstNodeUOrStructDType(VNType t, FileLine* fl, VSigning numericUnpack)

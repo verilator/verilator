@@ -201,6 +201,11 @@ private:
     const string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
     string m_someInstanceName;  // Hierarchical name of some arbitrary instance of this module.
                                 // Used for user messages only.
+    int m_level = 0;  // 1=top module, 2=cell off top module, ...
+    VLifetime m_lifetime;  // Lifetime
+    VTimescale m_timeunit;  // Global time unit
+    VOptionBool m_unconnectedDrive;  // State of `unconnected_drive
+
     bool m_modPublic : 1;  // Module has public references
     bool m_modTrace : 1;  // Tracing this module
     bool m_inLibrary : 1;  // From a library, no error if not used, never top level
@@ -209,10 +214,6 @@ private:
     bool m_internal : 1;  // Internally created
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
-    int m_level = 0;  // 1=top module, 2=cell off top module, ...
-    VLifetime m_lifetime;  // Lifetime
-    VTimescale m_timeunit;  // Global time unit
-    VOptionBool m_unconnectedDrive;  // State of `unconnected_drive
 protected:
     AstNodeModule(VNType t, FileLine* fl, const string& name)
         : AstNode{t, fl}
@@ -356,14 +357,14 @@ class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op2 := sentreep : Optional[AstSenTree]
     // op3 used by some sub-types only
     // @astgen op4 := passsp: List[AstNode] // Statments when propp is passing/truthly
-    const bool m_immediate;  // Immediate assertion/cover
     string m_name;  // Name to report
+    const bool m_immediate;  // Immediate assertion/cover
 public:
     AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp, bool immediate,
                          const string& name = "")
         : AstNodeStmt{t, fl}
-        , m_immediate{immediate}
-        , m_name{name} {
+        , m_name{name}
+        , m_immediate{immediate} {
         this->propp(propp);
         this->addPasssp(passsp);
     }
@@ -702,14 +703,14 @@ class AstCUse final : public AstNode {
     // C++ use of a class or #include; indicates need of forward declaration
     // Parents:  NODEMODULE
 private:
-    const VUseType m_useType;  // What sort of use this is
     const string m_name;
+    const VUseType m_useType;  // What sort of use this is
 
 public:
     AstCUse(FileLine* fl, VUseType useType, const string& name)
         : ASTGEN_SUPER_CUse(fl)
-        , m_useType{useType}
-        , m_name{name} {}
+        , m_name{name}
+        , m_useType{useType} {}
     ASTGEN_MEMBERS_AstCUse;
     void dump(std::ostream& str = std::cout) const override;
     string name() const override { return m_name; }
@@ -1170,8 +1171,8 @@ class AstModportFTaskRef final : public AstNode {
     // PARENT: AstModport
 private:
     string m_name;  // Name of the variable referenced
-    bool m_export;  // Type of the function (import/export)
     AstNodeFTask* m_ftaskp = nullptr;  // Link to the function
+    bool m_export;  // Type of the function (import/export)
 public:
     AstModportFTaskRef(FileLine* fl, const string& name, bool isExport)
         : ASTGEN_SUPER_ModportFTaskRef(fl)
@@ -1193,8 +1194,8 @@ class AstModportVarRef final : public AstNode {
     // PARENT: AstModport
 private:
     string m_name;  // Name of the variable referenced
-    VDirection m_direction;  // Direction of the variable (in/out)
     AstVar* m_varp = nullptr;  // Link to the actual Var
+    VDirection m_direction;  // Direction of the variable (in/out)
 public:
     AstModportVarRef(FileLine* fl, const string& name, VDirection::en direction)
         : ASTGEN_SUPER_ModportVarRef(fl)
@@ -1627,8 +1628,8 @@ class AstTypedef final : public AstNode {
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
 
     string m_name;
-    bool m_attrPublic = false;
     string m_tag;  // Holds the string of the verilator tag -- used in XML output.
+    bool m_attrPublic = false;
 public:
     AstTypedef(FileLine* fl, const string& name, AstNode* attrsp, VFlagChildDType,
                AstNodeDType* dtp)
@@ -2515,13 +2516,13 @@ public:
 class AstComment final : public AstNodeStmt {
     // Some comment to put into the output stream
     // Parents:  {statement list}
-    const bool m_showAt;  // Show "at <fileline>"
     const string m_name;  // Text of comment
+    const bool m_showAt;  // Show "at <fileline>"
 public:
     AstComment(FileLine* fl, const string& name, bool showAt = false)
         : ASTGEN_SUPER_Comment(fl)
-        , m_showAt{showAt}
-        , m_name{name} {}
+        , m_name{name}
+        , m_showAt{showAt} {}
     ASTGEN_MEMBERS_AstComment;
     string name() const override { return m_name; }  // * = Text
     bool same(const AstNode* samep) const override { return true; }  // Ignore name in comments
@@ -3227,15 +3228,15 @@ class AstTraceInc final : public AstNodeStmt {
 
 private:
     AstTraceDecl* m_declp;  // Pointer to declaration
-    const bool m_full;  // Is this a full vs incremental dump
     const uint32_t m_baseCode;  // Trace code base value in function containing this AstTraceInc
+    const bool m_full;  // Is this a full vs incremental dump
 
 public:
     AstTraceInc(FileLine* fl, AstTraceDecl* declp, bool full, uint32_t baseCode = 0)
         : ASTGEN_SUPER_TraceInc(fl)
         , m_declp{declp}
-        , m_full{full}
-        , m_baseCode{baseCode} {
+        , m_baseCode{baseCode}
+        , m_full{full} {
         dtypeFrom(declp);
         this->valuep(
             declp->valuep()->cloneTree(true));  // TODO: maybe use reference to TraceDecl instead?

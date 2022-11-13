@@ -177,8 +177,8 @@ public:
 
 class CdcWidthVisitor final : public CdcBaseVisitor {
 private:
-    int m_maxLineno = 0;
     size_t m_maxFilenameLen = 0;
+    int m_maxLineno = 0;
 
     void visit(AstNode* nodep) override {
         iterateChildren(nodep);

@@ -195,9 +195,9 @@ class V3OutFile VL_NOT_FINAL : public V3OutFormatter {
     static constexpr std::size_t WRITE_BUFFER_SIZE_BYTES = 128 * 1024;
 
     // MEMBERS
-    std::unique_ptr<std::array<char, WRITE_BUFFER_SIZE_BYTES>> m_bufferp;  // Write buffer
-    std::size_t m_usedBytes = 0;  // Number of bytes stored in m_bufferp
     FILE* m_fp = nullptr;
+    std::size_t m_usedBytes = 0;  // Number of bytes stored in m_bufferp
+    std::unique_ptr<std::array<char, WRITE_BUFFER_SIZE_BYTES>> m_bufferp;  // Write buffer
 
 public:
     V3OutFile(const string& filename, V3OutFormatter::Language lang);
