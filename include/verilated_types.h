@@ -1079,6 +1079,7 @@ public:
 //===================================================================
 // Represents the null pointer. Used for setting VlClassRef to null instead of
 // via nullptr_t, to prevent the implicit conversion of 0 to nullptr.
+
 struct VlNull {
     operator bool() const { return false; }
 };
@@ -1178,6 +1179,19 @@ public:
     operator bool() const { return m_objp; }
 };
 
+template <typename T, typename U>
+static inline bool VL_CAST_DYNAMIC(VlClassRef<T> in, VlClassRef<U>& outr) {
+    VlClassRef<U> casted = in.template dynamicCast<U>();
+    if (VL_LIKELY(casted)) {
+        outr = casted;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//======================================================================
+
 #define VL_NEW(Class, ...) \
     VlClassRef<Class> { vlSymsp->__Vm_deleter, __VA_ARGS__ }
 
@@ -1188,17 +1202,6 @@ template <class T>  // T typically of type VlClassRef<x>
 inline T VL_NULL_CHECK(T t, const char* filename, int linenum) {
     if (VL_UNLIKELY(!t)) Verilated::nullPointerError(filename, linenum);
     return t;
-}
-
-template <typename T, typename U>
-static inline bool VL_CAST_DYNAMIC(VlClassRef<T> in, VlClassRef<U>& outr) {
-    VlClassRef<U> casted = in.template dynamicCast<U>();
-    if (VL_LIKELY(casted)) {
-        outr = casted;
-        return true;
-    } else {
-        return false;
-    }
 }
 
 //======================================================================
