@@ -11,10 +11,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 if ($^O eq "linux") {
-    lint(
-        v_flags => ["--debug-sigsegv-stackoverflow"],
+    run(cmd => ["bash -c 'ulimit -s 8192;",  # 8MB stack limit.
+                "exec ../bin/verilator",
+                "--no-unlimited-stack",
+                "--debug-sigsegv-stackoverflow",
+                "--cc",
+                "--sv",
+                $Self->{top_filename},
+                "'",
+        ],
+        tee => $Self->{verbose},
+        logfile => $Self->{run_log_filename},
         fails => 1,
-        sanitize => 0,
         expect => '.*' .
                   'Segmentation fault due to stack overflow.\n' .
                   'Try increasing stack size limit.*\n' .
