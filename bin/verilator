@@ -31,6 +31,7 @@ my $opt_gdb;
 my $opt_rr;
 my $opt_gdbbt;
 my $opt_quiet_exit;
+my $opt_unlimited_stack = 1;
 
 # No arguments can't do anything useful.  Give help
 if ($#ARGV < 0) {
@@ -49,16 +50,17 @@ foreach my $sw (@ARGV) {
 Getopt::Long::config("no_auto_abbrev", "pass_through");
 if (! GetOptions(
           # Major operating modes
-          "help"        => \&usage,
-          "debug"       => \&debug,
-          # "version!"  => \&version,   # Also passthru'ed
+          "help"             => \&usage,
+          "debug"            => \&debug,
+          # "version!"       => \&version,   # Also passthru'ed
           # Switches
-          "gdb!"        => \$opt_gdb,
-          "gdbbt!"      => \$opt_gdbbt,
-          "quiet-exit!" => \$opt_quiet_exit,
-          "rr!"         => \$opt_rr,
+          "gdb!"             => \$opt_gdb,
+          "gdbbt!"           => \$opt_gdbbt,
+          "quiet-exit!"      => \$opt_quiet_exit,
+          "rr!"              => \$opt_rr,
+          "unlimited-stack!" => \$opt_unlimited_stack,
           # Additional parameters
-          "<>"          => sub {},      # Ignored
+          "<>"               => sub {},      # Ignored
     )) {
     pod2usage(-exitstatus => 2, -verbose => 0);
 }
@@ -187,6 +189,9 @@ sub aslr_off {
 }
 
 sub ulimit_stack_unlimited {
+    if (!$opt_unlimited_stack) {
+        return "";
+    }
     system("ulimit -s unlimited 2>/dev/null");
     my $status = $?;
     if ($status == 0) {
@@ -436,6 +441,7 @@ detailed descriptions of these arguments.
     --trace-threads <threads>   Enable FST waveform creation on separate threads
     --trace-underscore          Enable tracing of _signals
      -U<var>                    Undefine preprocessor define
+    --no-unlimited-stack        Don't disable stack size limit
     --unroll-count <loops>      Tune maximum loop iterations
     --unroll-stmts <stmts>      Tune maximum loop body size
     --unused-regexp <regexp>    Tune UNUSED lint signals
