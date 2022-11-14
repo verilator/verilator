@@ -227,13 +227,22 @@ private:
                 }
             }
         }
-        for (uint32_t i = 0; i < numCases; ++i) {
-            if (!m_valueItem[i]) {
-                nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
-                                              "(example pattern 0x"
-                                                  << std::hex << i << ")");
-                m_caseNoOverlapsAllCovered = false;
-                return false;
+        if (AstEnumDType* enumDtp = VN_CAST(nodep->exprp()->dtypep()->skipRefp(), EnumDType)) {
+                    cout << "Case is an enum, TODO: check if all values are within the enum"  << endl;
+                  //for (AstEnumItem* itemp = enump->itemsp(); itemp;
+                  //       itemp = VN_AS(itemp->nextp(), EnumItem)) {
+                  //      if (++nvals > 1) puts(", ");
+                  //      putbs("\"" + itemp->prettyName() + "\"");
+                  //  }
+        } else {
+            for (uint32_t i = 0; i < numCases; ++i) {
+                if (!m_valueItem[i]) {
+                    nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
+                                                  "(example pattern 0x"
+                                                      << std::hex << i << ")");
+                    m_caseNoOverlapsAllCovered = false;
+                    return false;
+                }
             }
         }
         if (m_caseItems <= 3
