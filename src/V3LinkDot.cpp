@@ -868,7 +868,6 @@ class LinkDotFindVisitor final : public VNVisitor {
         } else if (doit) {
             UINFO(4, "     Link Module: " << nodep << endl);
             UASSERT_OBJ(!nodep->dead(), nodep, "Module in instance tree mislabeled as dead?");
-            VSymEnt* const upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
             AstPackage* const pkgp = VN_CAST(nodep, Package);
             m_classOrPackagep = pkgp;
             if (standalonePkg) {
@@ -876,6 +875,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                     m_curSymp = m_modSymp = m_statep->dunitEntp();
                     nodep->user1p(m_curSymp);
                 } else {
+                    VSymEnt* const upperSymp = m_statep->dunitEntp();
                     m_scope = nodep->name();
                     m_curSymp = m_modSymp = m_statep->insertBlock(
                         upperSymp, nodep->name() + "::", nodep, m_classOrPackagep);
