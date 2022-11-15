@@ -586,7 +586,7 @@ static inline WDataOutP VL_EXTENDS_WW(int obits, int lbits, WDataOutP owp,
 // EMIT_RULE: VL_REDAND:  oclean=clean; lclean==clean; obits=1;
 #define VL_REDAND_II(lbits, lhs) ((lhs) == VL_MASK_I(lbits))
 #define VL_REDAND_IQ(lbits, lhs) ((lhs) == VL_MASK_Q(lbits))
-static inline IData VL_REDAND_IW(int lbits, WDataInP const lwp) VL_MT_SAFE {
+static inline IData VL_REDAND_IW(int lbits, WDataInP const lwp) VL_PURE {
     const int words = VL_WORDS_I(lbits);
     EData combine = lwp[0];
     for (int i = 1; i < words - 1; ++i) combine &= lwp[i];
@@ -597,7 +597,7 @@ static inline IData VL_REDAND_IW(int lbits, WDataInP const lwp) VL_MT_SAFE {
 // EMIT_RULE: VL_REDOR:  oclean=clean; lclean==clean; obits=1;
 #define VL_REDOR_I(lhs) ((lhs) != 0)
 #define VL_REDOR_Q(lhs) ((lhs) != 0)
-static inline IData VL_REDOR_W(int words, WDataInP const lwp) VL_MT_SAFE {
+static inline IData VL_REDOR_W(int words, WDataInP const lwp) VL_PURE {
     EData equal = 0;
     for (int i = 0; i < words; ++i) equal |= lwp[i];
     return (equal != 0);
@@ -664,7 +664,7 @@ static inline IData VL_REDXOR_64(QData r) VL_PURE {
     return static_cast<IData>(r);
 #endif
 }
-static inline IData VL_REDXOR_W(int words, WDataInP const lwp) VL_MT_SAFE {
+static inline IData VL_REDXOR_W(int words, WDataInP const lwp) VL_PURE {
     EData r = lwp[0];
     for (int i = 1; i < words; ++i) r ^= lwp[i];
     return VL_REDXOR_32(r);
@@ -683,7 +683,7 @@ static inline IData VL_COUNTONES_Q(QData lhs) VL_PURE {
     return VL_COUNTONES_I(static_cast<IData>(lhs)) + VL_COUNTONES_I(static_cast<IData>(lhs >> 32));
 }
 #define VL_COUNTONES_E VL_COUNTONES_I
-static inline IData VL_COUNTONES_W(int words, WDataInP const lwp) VL_MT_SAFE {
+static inline IData VL_COUNTONES_W(int words, WDataInP const lwp) VL_PURE {
     EData r = 0;
     for (int i = 0; i < words; ++i) r += VL_COUNTONES_E(lwp[i]);
     return r;
@@ -725,7 +725,7 @@ static inline IData VL_ONEHOT_I(IData lhs) VL_PURE {
 static inline IData VL_ONEHOT_Q(QData lhs) VL_PURE {
     return (((lhs & (lhs - 1)) == 0) & (lhs != 0));
 }
-static inline IData VL_ONEHOT_W(int words, WDataInP const lwp) VL_MT_SAFE {
+static inline IData VL_ONEHOT_W(int words, WDataInP const lwp) VL_PURE {
     EData one = 0;
     for (int i = 0; (i < words); ++i) {
         if (lwp[i]) {
@@ -739,7 +739,7 @@ static inline IData VL_ONEHOT_W(int words, WDataInP const lwp) VL_MT_SAFE {
 
 static inline IData VL_ONEHOT0_I(IData lhs) VL_PURE { return ((lhs & (lhs - 1)) == 0); }
 static inline IData VL_ONEHOT0_Q(QData lhs) VL_PURE { return ((lhs & (lhs - 1)) == 0); }
-static inline IData VL_ONEHOT0_W(int words, WDataInP const lwp) VL_MT_SAFE {
+static inline IData VL_ONEHOT0_W(int words, WDataInP const lwp) VL_PURE {
     bool one = false;
     for (int i = 0; (i < words); ++i) {
         if (lwp[i]) {
@@ -766,7 +766,7 @@ static inline IData VL_CLOG2_Q(QData lhs) VL_PURE {
     for (; lhs != 0; ++shifts) lhs = lhs >> 1ULL;
     return shifts;
 }
-static inline IData VL_CLOG2_W(int words, WDataInP const lwp) VL_MT_SAFE {
+static inline IData VL_CLOG2_W(int words, WDataInP const lwp) VL_PURE {
     const EData adjust = (VL_COUNTONES_W(words, lwp) == 1) ? 0 : 1;
     for (int i = words - 1; i >= 0; --i) {
         if (VL_UNLIKELY(lwp[i])) {  // Shorter worst case if predict not taken
@@ -781,7 +781,7 @@ static inline IData VL_CLOG2_W(int words, WDataInP const lwp) VL_MT_SAFE {
     return 0;
 }
 
-static inline IData VL_MOSTSETBITP1_W(int words, WDataInP const lwp) VL_MT_SAFE {
+static inline IData VL_MOSTSETBITP1_W(int words, WDataInP const lwp) VL_PURE {
     // MSB set bit plus one; similar to FLS.  0=value is zero
     for (int i = words - 1; i >= 0; --i) {
         if (VL_UNLIKELY(lwp[i])) {  // Shorter worst case if predict not taken
@@ -810,7 +810,7 @@ static inline WDataOutP VL_OR_W(int words, WDataOutP owp, WDataInP const lwp,
     return owp;
 }
 // EMIT_RULE: VL_CHANGEXOR:  oclean=1; obits=32; lbits==rbits;
-static inline IData VL_CHANGEXOR_W(int words, WDataInP const lwp, WDataInP const rwp) VL_MT_SAFE {
+static inline IData VL_CHANGEXOR_W(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE {
     IData od = 0;
     for (int i = 0; (i < words); ++i) od |= (lwp[i] ^ rwp[i]);
     return od;
@@ -843,14 +843,14 @@ static inline WDataOutP VL_NOT_W(int words, WDataOutP owp, WDataInP const lwp) V
 #define VL_GTE_W(words, lwp, rwp) (_vl_cmp_w(words, lwp, rwp) >= 0)
 
 // Output clean, <lhs> AND <rhs> MUST BE CLEAN
-static inline IData VL_EQ_W(int words, WDataInP const lwp, WDataInP const rwp) VL_MT_SAFE {
+static inline IData VL_EQ_W(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE {
     EData nequal = 0;
     for (int i = 0; (i < words); ++i) nequal |= (lwp[i] ^ rwp[i]);
     return (nequal == 0);
 }
 
 // Internal usage
-static inline int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_MT_SAFE {
+static inline int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE {
     for (int i = words - 1; i >= 0; --i) {
         if (lwp[i] > rwp[i]) return 1;
         if (lwp[i] < rwp[i]) return -1;
@@ -909,7 +909,7 @@ static inline IData VL_LTES_IQQ(int lbits, QData lhs, QData rhs) VL_PURE {
     return lhs_signed <= rhs_signed;
 }
 
-static inline int _vl_cmps_w(int lbits, WDataInP const lwp, WDataInP const rwp) VL_MT_SAFE {
+static inline int _vl_cmps_w(int lbits, WDataInP const lwp, WDataInP const rwp) VL_PURE {
     const int words = VL_WORDS_I(lbits);
     int i = words - 1;
     // We need to flip sense if negative comparison

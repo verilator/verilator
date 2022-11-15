@@ -197,7 +197,7 @@ public:
 /// zero in memory, but during intermediate operations in the Verilated
 /// internals is unpredictable.
 
-static int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_MT_SAFE;
+static int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
 
 template <std::size_t T_Words>
 struct VlWide final {

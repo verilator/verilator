@@ -732,11 +732,11 @@ public:
         }
         VL_FATAL_MT(__FILE__, __LINE__, "", "vpi_unsupported called without error info set");
     }
-    static const char* strFromVpiVal(PLI_INT32 vpiVal) VL_MT_SAFE;
-    static const char* strFromVpiObjType(PLI_INT32 vpiVal) VL_MT_SAFE;
-    static const char* strFromVpiMethod(PLI_INT32 vpiVal) VL_MT_SAFE;
-    static const char* strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_MT_SAFE;
-    static const char* strFromVpiProp(PLI_INT32 vpiVal) VL_MT_SAFE;
+    static const char* strFromVpiVal(PLI_INT32 vpiVal) VL_PURE;
+    static const char* strFromVpiObjType(PLI_INT32 vpiVal) VL_PURE;
+    static const char* strFromVpiMethod(PLI_INT32 vpiVal) VL_PURE;
+    static const char* strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_PURE;
+    static const char* strFromVpiProp(PLI_INT32 vpiVal) VL_PURE;
 };
 
 //======================================================================
@@ -775,7 +775,7 @@ VerilatedVpiError* VerilatedVpiImp::error_info() VL_MT_UNSAFE_ONE {
 //======================================================================
 // VerilatedVpiError Methods
 
-const char* VerilatedVpiError::strFromVpiVal(PLI_INT32 vpiVal) VL_MT_SAFE {
+const char* VerilatedVpiError::strFromVpiVal(PLI_INT32 vpiVal) VL_PURE {
     // clang-format off
     static const char* const names[] = {
         "*undefined*",
@@ -802,7 +802,7 @@ const char* VerilatedVpiError::strFromVpiVal(PLI_INT32 vpiVal) VL_MT_SAFE {
     if (VL_UNCOVERABLE(vpiVal < 0)) return names[0];
     return names[(vpiVal <= vpiRawFourStateVal) ? vpiVal : 0];
 }
-const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_MT_SAFE {
+const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_PURE {
     // clang-format off
     static const char* const names[] = {
         "*undefined*",
@@ -947,7 +947,7 @@ const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_MT_SAFE {
     if (VL_UNCOVERABLE(vpiVal < 0)) return names[0];
     return names[(vpiVal <= vpiAutomatics) ? vpiVal : 0];
 }
-const char* VerilatedVpiError::strFromVpiMethod(PLI_INT32 vpiVal) VL_MT_SAFE {
+const char* VerilatedVpiError::strFromVpiMethod(PLI_INT32 vpiVal) VL_PURE {
     // clang-format off
     static const char* const names[] = {
         "vpiCondition",
@@ -990,7 +990,7 @@ const char* VerilatedVpiError::strFromVpiMethod(PLI_INT32 vpiVal) VL_MT_SAFE {
     return names[vpiVal - vpiCondition];
 }
 
-const char* VerilatedVpiError::strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_MT_SAFE {
+const char* VerilatedVpiError::strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_PURE {
     // clang-format off
     static const char* const names[] = {
         "*undefined*",
@@ -1031,7 +1031,7 @@ const char* VerilatedVpiError::strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_MT_
     return names[(vpiVal <= cbAtEndOfSimTime) ? vpiVal : 0];
 }
 
-const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) VL_MT_SAFE {
+const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) VL_PURE {
     // clang-format off
     static const char* const names[] = {
         "*undefined or other*",

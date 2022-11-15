@@ -275,7 +275,7 @@ public:
     }
 
 private:
-    static constexpr int bitsToWords(int bitsCount) VL_MT_SAFE { return (bitsCount + 31) / 32; }
+    static constexpr int bitsToWords(int bitsCount) VL_PURE { return (bitsCount + 31) / 32; }
 
     bool isNumber() const VL_MT_SAFE {
         return m_type == V3NumberDataType::DOUBLE || m_type == V3NumberDataType::LOGIC;
