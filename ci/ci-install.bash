@@ -93,6 +93,19 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     sudo apt-get update
     # libfl-dev needed for internal coverage's test runs
     sudo apt-get install gdb gtkwave lcov libfl-dev ccache
+    # Required for test_regress/t/t_dist_attributes.pl
+    sudo apt-get install libclang-dev
+    if [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
+      pip3 install clang==14.0
+    fi
+    if [ "$CI_RUNS_ON" = "ubuntu-20.04" ]; then
+      pip3 install clang==10.0.1
+    fi
+    if [ "$CI_RUNS_ON" = "ubuntu-18.04" ]; then
+      sudo apt-get install python3-setuptools
+      pip3 install clang==6.0.0.2
+    fi
+    pip3 install termcolor
     if [ "$CI_RUNS_ON" = "ubuntu-20.04" ] || [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
       sudo apt-get install libsystemc-dev
     fi
