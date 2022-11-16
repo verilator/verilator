@@ -364,7 +364,6 @@ detailed descriptions of these arguments.
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
     --no-order-clock-delay      Disable ordering clock enable assignments
-    --no-verilate               Skip Verilation, only compile previously Verilated code
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split model functions
     --output-split-ctrace <statements>   Split tracing functions
@@ -425,7 +424,7 @@ detailed descriptions of these arguments.
     --unused-regexp <regexp>    Tune UNUSED lint signals
      -V                         Verbose version and config
      -v <filename>              Verilog library
-    --no-verilate               Skip verilation and just compile previously Verilated code.
+    --no-verilate               Skip verilation and just compile previously Verilated code
      +verilog1995ext+<ext>      Synonym for +1364-1995ext+<ext>
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
     --version                   Displays program version and exits
