@@ -876,7 +876,7 @@ public:
     }
     void visit(AstPrintTimeScale* nodep) override {
         puts("VL_PRINTTIMESCALE(");
-        putsQuoted(protect(nodep->name()));
+        putsQuoted(protect(nodep->prettyName()));
         puts(", ");
         putsQuoted(nodep->timeunit().ascii());
         puts(", vlSymsp->_vm_contextp__);\n");
