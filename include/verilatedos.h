@@ -471,8 +471,10 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 
 #ifdef _WIN32
 # define WIN32_LEAN_AND_MEAN
-# define NOMINMAX
-# include "Windows.h"
+# ifndef NOMINMAX
+#  define NOMINMAX
+# endif
+# include "windows.h"
 # define VL_CPU_RELAX() YieldProcessor()
 #elif defined(__i386__) || defined(__x86_64__) || defined(VL_CPPCHECK)
 // For more efficient busy waiting on SMT CPUs, let the processor know
@@ -480,11 +482,11 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 # define VL_CPU_RELAX() asm volatile("rep; nop" ::: "memory")
 #elif defined(__ia64__)
 # define VL_CPU_RELAX() asm volatile("hint @pause" ::: "memory")
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || defined(__arm__)
 # define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
 #elif defined(__powerpc64__)
 # define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
-#elif defined(__loongarch__)
+#elif defined(__loongarch__) || defined(__riscv)
 // LoongArch does not currently have a yield/pause instruction
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
 #else
