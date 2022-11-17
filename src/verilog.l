@@ -281,7 +281,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$test$plusargs"      { FL; return yD_TESTPLUSARGS; }
   "$time"               { FL; return yD_TIME; }
   "$timeformat"         { FL; return yD_TIMEFORMAT; }
+  "$timeprecision"      { FL; return yD_TIMEPRECISION; }
   "$timeskew"           { FL; return yaTIMINGSPEC; }
+  "$timeunit"           { FL; return yD_TIMEUNIT; }
   "$typename"           { FL; return yD_TYPENAME; }
   "$ungetc"             { FL; return yD_UNGETC; }
   "$urandom"            { FL; return yD_URANDOM; }

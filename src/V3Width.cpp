@@ -446,6 +446,11 @@ private:
     // Widths: Constant, terminal
     void visit(AstTime* nodep) override { nodep->dtypeSetUInt64(); }
     void visit(AstTimeD* nodep) override { nodep->dtypeSetDouble(); }
+    void visit(AstTimePrecision* nodep) override { nodep->dtypeSetSigned32(); }
+    void visit(AstTimeUnit* nodep) override {
+        nodep->replaceWith(
+            new AstConst{nodep->fileline(), AstConst::Signed32(), nodep->timeunit().powerOfTen()});
+    }
     void visit(AstScopeName* nodep) override {
         nodep->dtypeSetUInt64();  // A pointer, but not that it matters
     }

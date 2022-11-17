@@ -577,6 +577,10 @@ private:
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
+    void visit(AstTimeUnit* nodep) override {
+        iterateChildren(nodep);
+        nodep->timeunit(m_modp->timeunit());
+    }
     void visit(AstEventControl* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);

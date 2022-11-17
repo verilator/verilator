@@ -73,6 +73,16 @@ or "`ifdef`"'s may break other tools.
    prints 5 digits per the C standard (this is unspecified in Verilog, but
    was incorporated into the 1800-2009).
 
+.. option:: $timeprecision
+
+   Returns the timeprecision of the model as an integer.  This extension is
+   experimental and may be removed without deprecation.
+
+.. option:: $timeunit
+
+   Returns the timeunit of the current module as an integer.  This
+   extension is experimental and may be removed without deprecation.
+
 .. option:: `coverage_block_off
 
    Specifies the entire begin/end block should be ignored for coverage

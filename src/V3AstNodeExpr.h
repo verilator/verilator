@@ -1597,6 +1597,39 @@ public:
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
 };
+class AstTimePrecision final : public AstNodeExpr {
+    // Verilog $timeprecision
+public:
+    AstTimePrecision(FileLine* fl)
+        : ASTGEN_SUPER_TimePrecision(fl) {
+        dtypeSetSigned32();
+    }
+    ASTGEN_MEMBERS_AstTimePrecision;
+    string emitVerilog() override { return "$timeprecision"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    int instrCount() const override { return widthInstrs(); }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+};
+class AstTimeUnit final : public AstNodeExpr {
+    VTimescale m_timeunit;  // Parent module time unit
+    // Verilog $timeunit
+public:
+    AstTimeUnit(FileLine* fl)
+        : ASTGEN_SUPER_TimeUnit(fl) {
+        dtypeSetSigned32();
+    }
+    ASTGEN_MEMBERS_AstTimeUnit;
+    string emitVerilog() override { return "$timeunit"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    int instrCount() const override { return widthInstrs(); }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
+    VTimescale timeunit() const { return m_timeunit; }
+};
 class AstUCFunc final : public AstNodeExpr {
     // User's $c function
     // Perhaps this should be an AstNodeListop; but there's only one list math right now

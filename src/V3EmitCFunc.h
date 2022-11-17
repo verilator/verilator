@@ -909,6 +909,9 @@ public:
         iterateAndNextNull(nodep->widthp());
         puts(", vlSymsp->_vm_contextp__);\n");
     }
+    void visit(AstTimePrecision* nodep) override {
+        puts("vlSymsp->_vm_contextp__->timeprecision()");
+    }
     void visit(AstNodeSimpleText* nodep) override {
         const string text = m_inUC && m_useSelfForThis
                                 ? VString::replaceWord(nodep->text(), "this", "vlSelf")

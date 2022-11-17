@@ -17,6 +17,7 @@ Verilator 5.003 devel
 * Support named properties (#3667). [Ryszard Rozak, Antmicro Ltd]
 * Support randcase.
 * Support pre_randomize and post_randomize.
+* Support $timeunit and $timeprecision.
 * Add ENUMVALUE warning when value misused for enum (#726).
 * Internal AST improvements, also affect XML format (#3721). [Geza Lore]
 * Change ENDLABEL from warning into an error.
