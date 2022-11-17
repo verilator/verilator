@@ -85,8 +85,6 @@ private:
         } else {
             nodep->v3fatalSrc("Unknown InsertMode");
         }
-        m_insMode = IM_AFTER;
-        m_insStmtp = newp;
     }
 
     // VISITORS
@@ -259,21 +257,18 @@ private:
         if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PreSub)) {
             // PreAdd/PreSub operations
             // Immediately after declaration - increment it by one
-            m_insStmtp->addHereThisAsNext(
-                new AstAssign(fl, new AstVarRef(fl, varp, VAccess::WRITE), operp));
+            varp->addNextHere(new AstAssign{fl, new AstVarRef{fl, varrefp->varp(), VAccess::WRITE},
+                                            new AstVarRef{fl, varp, VAccess::READ}});
             // Immediately after incrementing - assign it to the original variable
-            m_insStmtp->addHereThisAsNext(
-                new AstAssign(fl, new AstVarRef(fl, varrefp->varp(), VAccess::WRITE),
-                              new AstVarRef(fl, varp, VAccess::READ)));
+            varp->addNextHere(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, operp});
         } else {
             // PostAdd/PostSub operations
             // assign the original variable to the temporary one
-            m_insStmtp->addHereThisAsNext(
-                new AstAssign(fl, new AstVarRef(fl, varp, VAccess::WRITE),
-                              new AstVarRef(fl, varrefp->varp(), VAccess::READ)));
+            varp->addNextHere(
+                new AstAssign{fl, new AstVarRef{fl, varrefp->varp(), VAccess::WRITE}, operp});
             // Increment the original variable by one
-            m_insStmtp->addHereThisAsNext(
-                new AstAssign(fl, new AstVarRef(fl, varrefp->varp(), VAccess::WRITE), operp));
+            varp->addNextHere(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                            new AstVarRef{fl, varrefp->varp(), VAccess::READ}});
         }
 
         // Replace the node with the temporary

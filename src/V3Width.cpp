@@ -614,7 +614,7 @@ private:
         if (nodep->fileline()->timingOn()) {
             if (v3Global.opt.timing().isSetTrue()) {
                 userIterate(nodep->lhsp(), WidthVP{nullptr, BOTH}.p());
-                iterateNull(nodep->stmtsp());
+                iterateAndNextNull(nodep->stmtsp());
                 return;
             } else if (v3Global.opt.timing().isSetFalse()) {
                 nodep->v3warn(STMTDLY, "Ignoring delay on this statement due to --no-timing");
@@ -624,7 +624,7 @@ private:
                     "Use --timing or --no-timing to specify how delays should be handled");
             }
         }
-        if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBack());
+        if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBackWithNext());
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstFork* nodep) override {
