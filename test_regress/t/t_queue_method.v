@@ -44,10 +44,17 @@ module t (/*AUTOARG*/);
       v = $sformatf("%p", qv); `checks(v, "'{'h2, 'h4, 'h1, 'h3} ");
       qv = qe.unique;
       `checkh(qv.size(), 0);
+      qv = q.unique(x) with (x % 2);
+      `checkh(qv.size(), 2);
       qi = q.unique_index; qv.sort;
-      v = $sformatf("%p", qi); `checks(v, "'{'h0, 'h2, 'h3, 'h4} ");
+      // According to 7.12.1 of IEEE Std 1800-2017, it is not specified which index of duplicated value should be returned
+      `checkh(qi.size(), 4);
+      qi.delete(1);
+      v = $sformatf("%p", qi); `checks(v, "'{'h0, 'h3, 'h4} ");
       qi = qe.unique_index;
       `checkh(qi.size(), 0);
+      qi = q.unique_index(x) with (x % 3); qv.sort;
+      `checkh(qi.size(), 3);
 
       q.reverse;
       v = $sformatf("%p", q); `checks(v, "'{'h3, 'h1, 'h4, 'h2, 'h2} ");
@@ -104,8 +111,12 @@ module t (/*AUTOARG*/);
 
       qv = q.min;
       v = $sformatf("%p", qv); `checks(v, "'{'h1} ");
+      qv = q.min(x) with (x + 1);
+      v = $sformatf("%p", qv); `checks(v, "'{'h1} ");
       qv = q.max;
       v = $sformatf("%p", qv); `checks(v, "'{'h4} ");
+      qv = q.max(x) with ((x % 4) + 100);
+      v = $sformatf("%p", qv); `checks(v, "'{'h3} ");
       qv = qe.min;
       v = $sformatf("%p", qv); `checks(v, "'{}");
       qv = qe.max;

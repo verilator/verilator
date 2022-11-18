@@ -12,7 +12,6 @@ module t (/*AUTOARG*/);
       int qi[$];  // Index returns
 
       q = '{2, 2, 4, 1, 3};
-      qv = q.unique with (1);  // Bad no with allowed
       q.reverse(1);  // Bad no args allowed
       q.shuffle(1);  // Bad no args allowed
       qv = q.find;  // Bad missing with
