@@ -775,6 +775,12 @@ public:
         iterateAndNextNull(nodep->lhsp());
         if (!nodep->lhsp()->isWide()) puts(";");
     }
+    void visit(AstStackTraceF* nodep) override {
+        puts("VL_STACKTRACE_N()");
+    }
+    void visit(AstStackTraceT* nodep) override {
+        puts("VL_STACKTRACE();\n");
+    }
     void visit(AstSystemT* nodep) override {
         puts("(void)VL_SYSTEM_I");
         emitIQW(nodep->lhsp());

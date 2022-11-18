@@ -138,6 +138,8 @@ extern void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...);
 extern void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...);
 extern void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...);
 
+extern void VL_STACKTRACE() VL_MT_SAFE;
+extern std::string VL_STACKTRACE_N() VL_MT_SAFE;
 extern IData VL_SYSTEM_IW(int lhswords, WDataInP const lhsp);
 extern IData VL_SYSTEM_IQ(QData lhs);
 inline IData VL_SYSTEM_II(IData lhs) VL_MT_SAFE { return VL_SYSTEM_IQ(lhs); }

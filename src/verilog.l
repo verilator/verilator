@@ -265,6 +265,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$skew"               { FL; return yaTIMINGSPEC; }
   "$sqrt"               { FL; return yD_SQRT; }
   "$sscanf"             { FL; return yD_SSCANF; }
+  "$stacktrace"         { FL; return yD_STACKTRACE; }
   "$stime"              { FL; return yD_STIME; }
   "$stop"               { FL; return yD_STOP; }
   "$strobe"             { FL; return yD_STROBE; }

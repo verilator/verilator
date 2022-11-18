@@ -4676,6 +4676,9 @@ private:
             userIterateAndNext(nodep->exprsp(), WidthVP(SELF, BOTH).p());
         }
     }
+    void visit(AstStackTraceF* nodep) override {
+        nodep->dtypeSetString();
+    }
     void visit(AstSysIgnore* nodep) override {
         userIterateAndNext(nodep->exprsp(), WidthVP(SELF, BOTH).p());
     }
