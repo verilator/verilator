@@ -1010,6 +1010,20 @@ endmodule
 
 `line 695 "t/t_preproc.v" 0
 //====================================================================== 
+
+"""First line with "quoted"\nSecond line\
+Third line"""
+"""First line
+Second line"""
+
+`line 702 "t/t_preproc.v" 0
+ 
+ 
+"""QQQ defform"""
+"""QQQ defval"""
+
+`line 707 "t/t_preproc.v" 0
+//====================================================================== 
 // IEEE mandated predefines 
   // undefineall should have no effect on these 
 predef 0 0
@@ -1031,4 +1045,4 @@ predef 2 2
 // After `undefineall above, for testing --dump-defines 
  
 
-`line 717 "t/t_preproc.v" 2
+`line 729 "t/t_preproc.v" 2

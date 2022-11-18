@@ -25,6 +25,12 @@ or "`ifdef`"'s may break other tools.
 
    This will report an error when encountered, like C++'s #error.
 
+.. option:: """ [string] """
+
+   A triple-quoted block specifies a string which may include newlines and
+   single quotes.  This extension is experimental and may be removed
+   without deprecation.
+
 .. option:: $c([string], ...);
 
    The string will be embedded directly in the output C++ code at the point

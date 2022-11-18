@@ -693,6 +693,18 @@ endmodule
 `stringify(`NOT_DEFINED_STR)
 
 //======================================================================
+
+"""First line with "quoted"\nSecond line\
+Third line"""
+"""First line
+Second line"""
+
+`define QQQ """QQQ defform"""
+`define QQQS(x) x
+`QQQ
+`QQQS("""QQQ defval""")
+
+//======================================================================
 // IEEE mandated predefines
 `undefineall  // undefineall should have no effect on these
 predef `SV_COV_START 0
