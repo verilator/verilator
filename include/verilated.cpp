@@ -1632,9 +1632,9 @@ std::string VL_STACKTRACE_N() VL_MT_SAFE {
     const VerilatedLockGuard lock{s_stackTraceMutex};
 
     constexpr int BT_BUF_SIZE = 100;
-    void *buffer[BT_BUF_SIZE];
+    void* buffer[BT_BUF_SIZE];
     int nptrs = 0;
-    char ** strings = nullptr;
+    char** strings = nullptr;
 
 #ifdef _VL_HAVE_STACKTRACE
     nptrs = backtrace(buffer, BT_BUF_SIZE);
