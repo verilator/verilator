@@ -4203,15 +4203,27 @@ private:
                 // Prep for next
                 fromDtp = fromDtp->subDTypep();
             } else if (AstBasicDType* const adtypep = VN_CAST(fromDtp, BasicDType)) {
-                if (!adtypep->isRanged()) {
+                if (adtypep->isString()) {
+                    if (varp) {
+                        AstConst* const leftp = new AstConst{fl, AstConst::Signed32{}, 0};
+                        AstLt* const condp = new AstLt{fl, new AstVarRef{fl, varp, VAccess::READ},
+                                                       new AstLenN{fl, fromp->cloneTree(false)}};
+                        AstAdd* const incp
+                            = new AstAdd{fl, new AstConst{fl, AstConst::Signed32{}, 1},
+                                         new AstVarRef{fl, varp, VAccess::READ}};
+                        loopp = createForeachLoop(nodep, bodyPointp, varp, leftp, condp, incp);
+                    }
+                } else if (!adtypep->isRanged()) {
                     argsp->v3error("Illegal to foreach loop on basic '" + fromDtp->prettyTypeName()
                                    + "'");
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                     VL_DO_DANGLING(bodyPointp->deleteTree(), bodyPointp);
                     return;
-                }
-                if (varp) {
-                    loopp = createForeachLoopRanged(nodep, bodyPointp, varp, adtypep->declRange());
+                } else {
+                    if (varp) {
+                        loopp = createForeachLoopRanged(nodep, bodyPointp, varp,
+                                                        adtypep->declRange());
+                    }
                 }
                 // Prep for next
                 fromDtp = nullptr;
@@ -4676,6 +4688,7 @@ private:
             userIterateAndNext(nodep->exprsp(), WidthVP(SELF, BOTH).p());
         }
     }
+    void visit(AstStackTraceF* nodep) override { nodep->dtypeSetString(); }
     void visit(AstSysIgnore* nodep) override {
         userIterateAndNext(nodep->exprsp(), WidthVP(SELF, BOTH).p());
     }

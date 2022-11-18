@@ -1,0 +1,2 @@
+%Error: t/t_preproc_eof6_bad.v:10:1: EOF in unterminated """ string
+%Error: Exiting due to

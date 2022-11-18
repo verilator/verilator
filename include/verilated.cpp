@@ -67,6 +67,10 @@
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
 #endif
+#ifdef __linux__
+# include <execinfo.h>
+# define _VL_HAVE_STACKTRACE
+#endif
 
 #include "verilated_threads.h"
 // clang-format on
@@ -1621,6 +1625,33 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi
         }
     }
     return read_count;
+}
+
+std::string VL_STACKTRACE_N() VL_MT_SAFE {
+    static VerilatedMutex s_stackTraceMutex;
+    const VerilatedLockGuard lock{s_stackTraceMutex};
+
+    constexpr int BT_BUF_SIZE = 100;
+    void* buffer[BT_BUF_SIZE];
+    int nptrs = 0;
+    char** strings = nullptr;
+
+#ifdef _VL_HAVE_STACKTRACE
+    nptrs = backtrace(buffer, BT_BUF_SIZE);
+    strings = backtrace_symbols(buffer, nptrs);
+#endif
+
+    if (!strings) return "Unable to backtrace\n";
+
+    std::string out = "Backtrace:\n";
+    for (int j = 0; j < nptrs; j++) out += std::string{strings[j]} + std::string{"\n"};
+    free(strings);
+    return out;
+}
+
+void VL_STACKTRACE() VL_MT_SAFE {
+    const std::string out = VL_STACKTRACE_N();
+    VL_PRINTF("%s", out.c_str());
 }
 
 IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {

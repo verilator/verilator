@@ -1525,6 +1525,25 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
+class AstStackTraceF final : public AstNodeExpr {
+    // $stacktrace used as function
+public:
+    AstStackTraceF(FileLine* fl)
+        : ASTGEN_SUPER_StackTraceF(fl) {
+        dtypeSetString();
+    }
+    ASTGEN_MEMBERS_AstStackTraceF;
+    string verilogKwd() const override { return "$stacktrace"; }
+    string emitVerilog() override { return verilogKwd(); }
+    string emitC() override { return "VL_STACKTRACE_N()"; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return true; }
+    bool isUnlikely() const override { return true; }
+    bool cleanOut() const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+};
 class AstSysIgnore final : public AstNodeExpr {
     // @astgen op1 := exprsp : List[AstNode] // Expressions to output (???)
 public:

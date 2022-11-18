@@ -298,7 +298,7 @@ string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
         } else if (*cp == '\\') {
             quoted = true;
             octal_digits = 0;
-        } else if (*cp != '"') {
+        } else {
             newtext += *cp;
         }
     }

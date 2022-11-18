@@ -3092,6 +3092,20 @@ public:
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
+class AstStackTraceT final : public AstNodeStmt {
+    // $stacktrace used as task
+public:
+    AstStackTraceT(FileLine* fl)
+        : ASTGEN_SUPER_StackTraceT(fl) {}
+    ASTGEN_MEMBERS_AstStackTraceT;
+    string verilogKwd() const override { return "$stacktrace"; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return true; }
+    bool isUnlikely() const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+};
 class AstStmtExpr final : public AstNodeStmt {
     // Expression in statement position
     // @astgen op1 := exprp : AstNodeExpr

@@ -860,6 +860,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_SQRT         "$sqrt"
 %token<fl>              yD_SSCANF       "$sscanf"
 %token<fl>              yD_STABLE       "$stable"
+%token<fl>              yD_STACKTRACE   "$stacktrace"
 %token<fl>              yD_STIME        "$stime"
 %token<fl>              yD_STOP         "$stop"
 %token<fl>              yD_STROBE       "$strobe"
@@ -3788,6 +3789,7 @@ system_t_call<nodep>:           // IEEE: system_tf_call (as task)
         |       yD_DUMPON '(' expr ')'                  { $$ = new AstDumpCtl($<fl>1, VDumpCtlType::ON); DEL($3); }
         //
         |       yD_C '(' cStrList ')'                   { $$ = (v3Global.opt.ignc() ? nullptr : new AstUCStmt($1,$3)); }
+        |       yD_STACKTRACE parenE                    { $$ = new AstStackTraceT{$1}; }
         |       yD_SYSTEM '(' expr ')'                  { $$ = new AstSystemT($1, $3); }
         //
         |       yD_EXIT parenE                          { $$ = new AstFinish($1); }
@@ -3897,6 +3899,7 @@ system_f_call<nodeExprp>:           // IEEE: system_tf_call (as func)
         //
         |       yD_C '(' cStrList ')'                   { $$ = (v3Global.opt.ignc() ? nullptr : new AstUCFunc($1,$3)); }
         |       yD_CAST '(' expr ',' expr ')'           { $$ = new AstCastDynamic($1, $5, $3); }
+        |       yD_STACKTRACE parenE                    { $$ = new AstStackTraceF{$1}; }
         |       yD_SYSTEM  '(' expr ')'                 { $$ = new AstSystemF($1,$3); }
         //
         |       system_f_call_or_t                      { $$ = $1; }

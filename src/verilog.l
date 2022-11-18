@@ -79,7 +79,7 @@ static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
 %o 25000
 
 %s V95 V01NC V01C V05 S05 S09 S12 S17
-%s STRING ATTRMODE TABLE
+%s ATTRMODE QQQ STRING TABLE
 %s VA5 SAX VLT
 %s SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
 %s IGNORE
@@ -265,6 +265,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$skew"               { FL; return yaTIMINGSPEC; }
   "$sqrt"               { FL; return yD_SQRT; }
   "$sscanf"             { FL; return yD_SSCANF; }
+  "$stacktrace"         { FL; return yD_STACKTRACE; }
   "$stime"              { FL; return yD_STIME; }
   "$stop"               { FL; return yD_STOP; }
   "$strobe"             { FL; return yD_STROBE; }
@@ -885,6 +886,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           return yaSTRING;
                         }
   \"                    { yy_push_state(STRING); yymore(); }
+  \"\"\"                { yy_push_state(QQQ); yymore(); }
   {vnum}                {
                           /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
                           if (PARSEP->lexPrevToken()=='#') {
@@ -938,6 +940,19 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           return yaSTRING; }
 <STRING>{word}          { yymore(); }
 <STRING>.               { yymore(); }
+
+  /************************************************************************/
+  /* """ */
+<QQQ><<EOF>>            { FL; yylval.fl->v3error("EOF in unterminated \"\"\" string");
+                          yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
+<QQQ>\\.                { yymore(); }
+<QQQ>\n                 { yymore(); }
+<QQQ>\"\"\"             { yy_pop_state();
+                          FL; yylval.strp = PARSEP->newString(yytext + 3, yyleng - 6);
+                          return yaSTRING; }
+<QQQ>\"                 { yymore(); }
+<QQQ>{word}             { yymore(); }
+<QQQ>.                  { yymore(); }
 
   /************************************************************************/
   /* Attributes */
