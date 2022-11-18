@@ -19,7 +19,7 @@ module t;
     event ev ;
 
     initial begin
-        $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
+        $dumpfile({`STRINGIFY(`TEST_OBJ_DIR),"/simx.fst"});
         $dumpvars;
         forever clk = #CLK_HALF_PERIOD ~clk;
     end
