@@ -189,9 +189,7 @@ sub aslr_off {
 }
 
 sub ulimit_stack_unlimited {
-    if (!$opt_unlimited_stack) {
-        return "";
-    }
+    return "" if !$opt_unlimited_stack;
     system("ulimit -s unlimited 2>/dev/null");
     my $status = $?;
     if ($status == 0) {
