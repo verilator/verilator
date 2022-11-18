@@ -637,6 +637,8 @@ class EmitCTrace final : EmitCFunc {
             puts("tracep->declQuad");
         } else if (nodep->bitRange().ranged()) {
             puts("tracep->declBus");
+        } else if (nodep->dtypep()->basicp()->isEvent()) {
+            puts("tracep->declEvent");
         } else {
             puts("tracep->declBit");
         }
@@ -689,11 +691,11 @@ class EmitCTrace final : EmitCFunc {
             else if (kwd == VBasicDTypeKwd::SHORTINT) { fstvt = "FST_VT_SV_SHORTINT"; }
             else if (kwd == VBasicDTypeKwd::LONGINT) {  fstvt = "FST_VT_SV_LONGINT"; }
             else if (kwd == VBasicDTypeKwd::BYTE) {     fstvt = "FST_VT_SV_BYTE"; }
+            else if (kwd == VBasicDTypeKwd::EVENT) {     fstvt = "FST_VT_VCD_EVENT"; }
             else { fstvt = "FST_VT_SV_BIT"; }
             // clang-format on
             //
             // Not currently supported
-            // FST_VT_VCD_EVENT
             // FST_VT_VCD_PORT
             // FST_VT_VCD_SHORTREAL
             // FST_VT_VCD_REALTIME
@@ -779,6 +781,9 @@ class EmitCTrace final : EmitCFunc {
             puts("bufp->" + func + "SData");
         } else if (nodep->declp()->widthMin() > 1) {
             puts("bufp->" + func + "CData");
+        } else if (nodep->dtypep()->basicp()->isEvent()) {
+            puts("bufp->" + func + "Event");
+            emitWidth = false;
         } else {
             puts("bufp->" + func + "Bit");
             emitWidth = false;

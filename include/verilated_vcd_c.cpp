@@ -548,6 +548,9 @@ void VerilatedVcd::declare(uint32_t code, const char* name, const char* wirep, b
     m_namemapp->emplace(hiername, decl);
 }
 
+void VerilatedVcd::declEvent(uint32_t code, const char* name, bool array, int arraynum) {
+    declare(code, name, "event", array, arraynum, false, false, 0, 0);
+}
 void VerilatedVcd::declBit(uint32_t code, const char* name, bool array, int arraynum) {
     declare(code, name, "wire", array, arraynum, false, false, 0, 0);
 }

@@ -221,6 +221,10 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum, fstVar
     }
 }
 
+void VerilatedFst::declEvent(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                           fstVarType vartype, bool array, int arraynum) {
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 0, 0);
+}
 void VerilatedFst::declBit(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                            fstVarType vartype, bool array, int arraynum) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 0, 0);

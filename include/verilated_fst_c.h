@@ -101,6 +101,8 @@ public:
     //=========================================================================
     // Internal interface to Verilator generated code
 
+    void declEvent(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                 fstVarType vartype, bool array, int arraynum);
     void declBit(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                  fstVarType vartype, bool array, int arraynum);
     void declBus(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,

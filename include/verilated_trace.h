@@ -422,6 +422,7 @@ public:
     void fullQData(uint32_t* oldp, QData newval, int bits);
     void fullWData(uint32_t* oldp, const WData* newvalp, int bits);
     void fullDouble(uint32_t* oldp, double newval);
+    void fullEvent(uint32_t* oldp, VlEvent newval);
 
     // In non-offload mode, these are called directly by the trace callbacks,
     // and are called chg*. In offload mode, they are called by the worker
@@ -455,6 +456,10 @@ public:
                 return;
             }
         }
+    }
+    VL_ATTR_ALWINLINE void chgEvent(uint32_t* oldp, VlEvent newval) {
+        const bool triggered = newval.isTriggered();
+        if(triggered) fullEvent(oldp, newval);
     }
     VL_ATTR_ALWINLINE void chgDouble(uint32_t* oldp, double newval) {
         // cppcheck-suppress invalidPointerCast
