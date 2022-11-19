@@ -1383,6 +1383,11 @@ Summary:
 
    Undefines the given preprocessor symbol.
 
+.. option:: --no-unlimited-stack
+
+   Verilator tries to disable stack size limit using
+   :command:`ulimit -s unlimited` command. This option turns this behavior off.
+
 .. option:: --unroll-count <loops>
 
    Rarely needed.  Specifies the maximum number of loop iterations that may be
