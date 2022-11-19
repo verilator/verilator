@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `define check_range(gotv,minv,maxv) do if ((gotv) < (minv) || (gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d-%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); $stop; end while(0);
+`define check_within_30_percent(gotv,val) `check_range((gotv), (val) * 70 / 100, (val) * 130 / 100)
 
 module t (/*AUTOARG*/);
 
@@ -56,8 +57,8 @@ module t (/*AUTOARG*/);
            4 : counts[1]++;
          endcase
       end
-      `check_range(counts[0], (COUNT * 1 / 5) * 70 / 100, (COUNT * 1 / 5) * 130 / 100);
-      `check_range(counts[1], (COUNT * 4 / 5) * 70 / 100, (COUNT * 4 / 5) * 130 / 100);
+      `check_within_30_percent(counts[0], (COUNT * 1 / 5));
+      `check_within_30_percent(counts[1], (COUNT * 4 / 5));
 
       //
       for (int i = 0; i < 8; ++i) counts[i] = 0;
@@ -73,10 +74,10 @@ module t (/*AUTOARG*/);
            1 : counts[7]++;  // Never
          endcase
       end
-      `check_range(counts[0], (COUNT * 2 / 10) * 70 / 100, (COUNT * 2 / 10) * 130 / 100);
-      `check_range(counts[1], (COUNT * 2 / 10) * 70 / 100, (COUNT * 2 / 10) * 130 / 100);
-      `check_range(counts[2], (COUNT * 1 / 10) * 70 / 100, (COUNT * 1 / 10) * 130 / 100);
-      `check_range(counts[7], (COUNT * 1 / 10) * 70 / 100, (COUNT * 1 / 10) * 130 / 100);
+      `check_within_30_percent(counts[0], (COUNT * 2 / 10));
+      `check_within_30_percent(counts[1], (COUNT * 2 / 10));
+      `check_within_30_percent(counts[2], (COUNT * 1 / 10));
+      `check_within_30_percent(counts[7], (COUNT * 1 / 10));
 
       //
       $write("*-* All Finished *-*\n");
