@@ -19,6 +19,9 @@ module t(/*AUTOARG*/);
    localparam enum_t PARAMVAL1 = VAL1;
    localparam enum_t PARAMVAL1CONST = enum_t'(2);
 
+   typedef enum {I_ZERO, I_ONE, I_TWO} inte_t;
+   localparam inte_t I_PARAM = inte_t'(1);
+
    initial begin
       enum_t e;
       e = VAL01;
@@ -26,6 +29,8 @@ module t(/*AUTOARG*/);
 
       if (PARAMVAL1 != VAL1) $stop;
       if (PARAMVAL1CONST != VAL1) $stop;
+
+      if (I_PARAM != I_ONE) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

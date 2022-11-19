@@ -1139,8 +1139,12 @@ private:
         // The node got setup with the signed/real state of the node.
         // However a later operation may have changed the node->signed w/o changing
         // the number's sign.  So we don't: nodep->dtypeChgSigned(nodep->num().isSigned());
+        if (nodep->didWidthAndSet()) return;
         if (m_vup && m_vup->prelim()) {
-            if (nodep->num().isString()) {
+            if (VN_IS(nodep->dtypep()->skipRefToEnump(), EnumDType)) {
+                // Assume this constant was properly casted ealier
+                // (Otherwise it couldn't have an enum data type)
+            } else if (nodep->num().isString()) {
                 nodep->dtypeSetString();
             } else if (nodep->num().sized()) {
                 nodep->dtypeChgWidth(nodep->num().width(), nodep->num().width());
