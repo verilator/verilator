@@ -13,7 +13,17 @@ module t (/*AUTOARG*/);
    int v;
    int counts[8];
 
+   function int randfunc();
+      int i;
+      randcase
+        0 : i = 50;  // Never
+        1 : i = 100;
+      endcase
+      return i;
+   endfunction
+
    initial begin;
+      if (randfunc() != 100) $stop;
 
       //
       for (int i = 0; i < 8; ++i) counts[i] = 0;

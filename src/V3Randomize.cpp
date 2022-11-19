@@ -126,6 +126,7 @@ private:
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
     int m_randCaseNum = 0;  // Randcase number within a module for var naming
 
@@ -209,12 +210,19 @@ private:
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
         VL_RESTORER(m_randCaseNum);
         m_modp = nodep;
         m_randCaseNum = 0;
         iterateChildren(nodep);
     }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
+        iterateChildren(nodep);
+    }
     void visit(AstClass* nodep) override {
+        VL_RESTORER(m_modp);
         VL_RESTORER(m_randCaseNum);
         m_modp = nodep;
         m_randCaseNum = 0;
@@ -278,8 +286,9 @@ private:
 
         FileLine* const fl = nodep->fileline();
         const std::string name = "__Vrandcase" + cvtToStr(m_randCaseNum++);
-        AstVar* const randVarp = new AstVar{fl, VVarType::STMTTEMP, name, sumDTypep};
+        AstVar* const randVarp = new AstVar{fl, VVarType::BLOCKTEMP, name, sumDTypep};
         randVarp->noSubst(true);
+        if (m_ftaskp) randVarp->funcLocal(true);
         AstNodeExpr* sump = new AstConst{fl, AstConst::WidthedValue{}, 64, 0};
         AstNodeIf* firstIfsp
             = new AstIf{fl, new AstConst{fl, AstConst::BitFalse{}}, nullptr, nullptr};
