@@ -396,15 +396,15 @@ class OrderBuildVisitor final : public VNVisitor {
     void visit(AstAssignW* nodep) override { iterateLogic(nodep); }
     void visit(AstAssignPre* nodep) override {
         UASSERT_OBJ(!m_inPre, nodep, "Should not nest");
+        VL_RESTORER(m_inPre);
         m_inPre = true;
         iterateLogic(nodep);
-        m_inPre = false;
     }
     void visit(AstAssignPost* nodep) override {
         UASSERT_OBJ(!m_inPost, nodep, "Should not nest");
+        VL_RESTORER(m_inPost);
         m_inPost = true;
         iterateLogic(nodep);
-        m_inPost = false;
     }
 
     //--- Verilator concoctions

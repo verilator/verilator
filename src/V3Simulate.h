@@ -759,6 +759,9 @@ private:
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
+
+        VL_RESTORER(m_inDlyAssign);
+
         if (VN_IS(nodep, AssignForce)) {
             clearOptimizable(nodep, "Force");
         } else if (VN_IS(nodep, AssignDly)) {
@@ -793,7 +796,6 @@ private:
                 assignOutValue(nodep, vscp, fetchValue(nodep->rhsp()));
             }
         }
-        m_inDlyAssign = false;
     }
     void visit(AstArraySel* nodep) override {
         checkNodeInfo(nodep);

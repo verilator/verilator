@@ -190,18 +190,18 @@ class DataflowExtractVisitor final : public VNVisitor {
     }
 
     void visit(AstAssignForce* nodep) override {
+        VL_RESTORER(m_inForceReleaseLhs);
         iterate(nodep->rhsp());
         UASSERT_OBJ(!m_inForceReleaseLhs, nodep, "Should not nest");
         m_inForceReleaseLhs = true;
         iterate(nodep->lhsp());
-        m_inForceReleaseLhs = false;
     }
 
     void visit(AstRelease* nodep) override {
+        VL_RESTORER(m_inForceReleaseLhs);
         UASSERT_OBJ(!m_inForceReleaseLhs, nodep, "Should not nest");
         m_inForceReleaseLhs = true;
         iterate(nodep->lhsp());
-        m_inForceReleaseLhs = false;
     }
 
     void visit(AstNodeExpr* nodep) override { iterateChildrenConst(nodep); }

@@ -156,9 +156,9 @@ class SliceVisitor final : public VNVisitor {
                 // This will potentially call this function again to resolve next level of slicing
                 return;
             }
+            VL_RESTORER(m_assignp);
             m_assignp = nodep;
             iterateChildren(nodep);
-            m_assignp = nullptr;
         }
     }
 

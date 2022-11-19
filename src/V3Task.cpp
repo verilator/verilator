@@ -189,9 +189,9 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstAssignW* nodep) override {
+        VL_RESTORER(m_assignwp);
         m_assignwp = nodep;
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        m_assignwp = nullptr;
     }
     void visit(AstNodeFTaskRef* nodep) override {
         // Includes handling AstMethodCall, AstNew

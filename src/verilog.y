@@ -2691,18 +2691,30 @@ genvar_initialization<nodep>:   // ==IEEE: genvar_initialization
         ;
 
 genvar_iteration<nodep>:        // ==IEEE: genvar_iteration
-                varRefBase '='          expr            { $$ = new AstAssign($2,$1,$3); }
-        |       varRefBase yP_PLUSEQ    expr            { $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),$3)); }
-        |       varRefBase yP_MINUSEQ   expr            { $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),$3)); }
-        |       varRefBase yP_TIMESEQ   expr            { $$ = new AstAssign($2,$1,new AstMul    ($2,$1->cloneTree(true),$3)); }
-        |       varRefBase yP_DIVEQ     expr            { $$ = new AstAssign($2,$1,new AstDiv    ($2,$1->cloneTree(true),$3)); }
-        |       varRefBase yP_MODEQ     expr            { $$ = new AstAssign($2,$1,new AstModDiv ($2,$1->cloneTree(true),$3)); }
-        |       varRefBase yP_ANDEQ     expr            { $$ = new AstAssign($2,$1,new AstAnd    ($2,$1->cloneTree(true),$3)); }
-        |       varRefBase yP_OREQ      expr            { $$ = new AstAssign($2,$1,new AstOr     ($2,$1->cloneTree(true),$3)); }
-        |       varRefBase yP_XOREQ     expr            { $$ = new AstAssign($2,$1,new AstXor    ($2,$1->cloneTree(true),$3)); }
-        |       varRefBase yP_SLEFTEQ   expr            { $$ = new AstAssign($2,$1,new AstShiftL ($2,$1->cloneTree(true),$3)); }
-        |       varRefBase yP_SRIGHTEQ  expr            { $$ = new AstAssign($2,$1,new AstShiftR ($2,$1->cloneTree(true),$3)); }
-        |       varRefBase yP_SSRIGHTEQ expr            { $$ = new AstAssign($2,$1,new AstShiftRS($2,$1->cloneTree(true),$3)); }
+                varRefBase '='          expr
+                        { $$ = new AstAssign{$2, $1, $3}; }
+        |       varRefBase yP_PLUSEQ    expr
+                        { $$ = new AstAssign{$2, $1, new AstAdd{$2, $1->cloneTree(true), $3}}; }
+        |       varRefBase yP_MINUSEQ   expr
+                        { $$ = new AstAssign{$2, $1, new AstSub{$2, $1->cloneTree(true), $3}}; }
+        |       varRefBase yP_TIMESEQ   expr
+                        { $$ = new AstAssign{$2, $1, new AstMul{$2, $1->cloneTree(true), $3}}; }
+        |       varRefBase yP_DIVEQ     expr
+                        { $$ = new AstAssign{$2, $1, new AstDiv{$2, $1->cloneTree(true), $3}}; }
+        |       varRefBase yP_MODEQ     expr
+                        { $$ = new AstAssign{$2, $1, new AstModDiv{$2, $1->cloneTree(true), $3}}; }
+        |       varRefBase yP_ANDEQ     expr
+                        { $$ = new AstAssign{$2, $1, new AstAnd{$2, $1->cloneTree(true), $3}}; }
+        |       varRefBase yP_OREQ      expr
+                        { $$ = new AstAssign{$2, $1, new AstOr{$2, $1->cloneTree(true), $3}}; }
+        |       varRefBase yP_XOREQ     expr
+                        { $$ = new AstAssign{$2, $1, new AstXor{$2, $1->cloneTree(true), $3}}; }
+        |       varRefBase yP_SLEFTEQ   expr
+                        { $$ = new AstAssign{$2, $1, new AstShiftL{$2, $1->cloneTree(true), $3}}; }
+        |       varRefBase yP_SRIGHTEQ  expr
+                        { $$ = new AstAssign{$2, $1, new AstShiftR{$2, $1->cloneTree(true), $3}}; }
+        |       varRefBase yP_SSRIGHTEQ expr
+                        { $$ = new AstAssign{$2, $1, new AstShiftRS{$2, $1->cloneTree(true), $3}}; }
         //                      // inc_or_dec_operator
         // When support ++ as a real AST type, maybe AstWhile::precondsp() becomes generic AstNodeExprStmt?
         |       yP_PLUSPLUS   varRefBase
@@ -3425,17 +3437,28 @@ foperator_assignment<nodep>:    // IEEE: operator_assignment (for first part of 
         |       fexprLvalue '=' yD_FOPEN '(' expr ',' expr ')'  { $$ = new AstFOpen($3,$1,$5,$7); }
         //
         //UNSUP ~f~exprLvalue yP_PLUS(etc) expr         { UNSUP }
-        |       fexprLvalue yP_PLUSEQ    expr           { $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),$3)); }
-        |       fexprLvalue yP_MINUSEQ   expr           { $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),$3)); }
-        |       fexprLvalue yP_TIMESEQ   expr           { $$ = new AstAssign($2,$1,new AstMul    ($2,$1->cloneTree(true),$3)); }
-        |       fexprLvalue yP_DIVEQ     expr           { $$ = new AstAssign($2,$1,new AstDiv    ($2,$1->cloneTree(true),$3)); }
-        |       fexprLvalue yP_MODEQ     expr           { $$ = new AstAssign($2,$1,new AstModDiv ($2,$1->cloneTree(true),$3)); }
-        |       fexprLvalue yP_ANDEQ     expr           { $$ = new AstAssign($2,$1,new AstAnd    ($2,$1->cloneTree(true),$3)); }
-        |       fexprLvalue yP_OREQ      expr           { $$ = new AstAssign($2,$1,new AstOr     ($2,$1->cloneTree(true),$3)); }
-        |       fexprLvalue yP_XOREQ     expr           { $$ = new AstAssign($2,$1,new AstXor    ($2,$1->cloneTree(true),$3)); }
-        |       fexprLvalue yP_SLEFTEQ   expr           { $$ = new AstAssign($2,$1,new AstShiftL ($2,$1->cloneTree(true),$3)); }
-        |       fexprLvalue yP_SRIGHTEQ  expr           { $$ = new AstAssign($2,$1,new AstShiftR ($2,$1->cloneTree(true),$3)); }
-        |       fexprLvalue yP_SSRIGHTEQ expr           { $$ = new AstAssign($2,$1,new AstShiftRS($2,$1->cloneTree(true),$3)); }
+        |       fexprLvalue yP_PLUSEQ    expr
+                        { $$ = new AstAssign{$2, $1, new AstAdd{$2, $1->cloneTree(true), $3}}; }
+        |       fexprLvalue yP_MINUSEQ   expr
+                        { $$ = new AstAssign{$2, $1, new AstSub{$2, $1->cloneTree(true), $3}}; }
+        |       fexprLvalue yP_TIMESEQ   expr
+                        { $$ = new AstAssign{$2, $1, new AstMul{$2, $1->cloneTree(true), $3}}; }
+        |       fexprLvalue yP_DIVEQ     expr
+                        { $$ = new AstAssign{$2, $1, new AstDiv{$2, $1->cloneTree(true), $3}}; }
+        |       fexprLvalue yP_MODEQ     expr
+                        { $$ = new AstAssign{$2, $1, new AstModDiv{$2, $1->cloneTree(true), $3}}; }
+        |       fexprLvalue yP_ANDEQ     expr
+                        { $$ = new AstAssign{$2, $1, new AstAnd{$2, $1->cloneTree(true), $3}}; }
+        |       fexprLvalue yP_OREQ      expr
+                        { $$ = new AstAssign{$2, $1, new AstOr{$2, $1->cloneTree(true), $3}}; }
+        |       fexprLvalue yP_XOREQ     expr
+                        { $$ = new AstAssign{$2, $1, new AstXor{$2, $1->cloneTree(true), $3}}; }
+        |       fexprLvalue yP_SLEFTEQ   expr
+                        { $$ = new AstAssign{$2, $1, new AstShiftL{$2, $1->cloneTree(true), $3}}; }
+        |       fexprLvalue yP_SRIGHTEQ  expr
+                        { $$ = new AstAssign{$2, $1, new AstShiftR{$2, $1->cloneTree(true), $3}}; }
+        |       fexprLvalue yP_SSRIGHTEQ expr
+                        { $$ = new AstAssign{$2, $1, new AstShiftRS{$2, $1->cloneTree(true), $3}}; }
         //UNSUP replace above with:
         //UNSUP BISONPRE_COPY(operator_assignment,{s/~f~/f/g})  // {copied}
         ;
@@ -4403,18 +4426,42 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //
         //                      // IEEE: '(' operator_assignment ')'
         //                      // Need exprScope of variable_lvalue to prevent conflict
-        //UNSUP '(' ~p~exprScope '='          expr ')'  { UNSUP }
-        //UNSUP '(' ~p~exprScope yP_PLUSEQ    expr ')'  { UNSUP }
-        //UNSUP '(' ~p~exprScope yP_MINUSEQ   expr ')'  { UNSUP }
-        //UNSUP '(' ~p~exprScope yP_TIMESEQ   expr ')'  { UNSUP }
-        //UNSUP '(' ~p~exprScope yP_DIVEQ     expr ')'  { UNSUP }
-        //UNSUP '(' ~p~exprScope yP_MODEQ     expr ')'  { UNSUP }
-        //UNSUP '(' ~p~exprScope yP_ANDEQ     expr ')'  { UNSUP }
-        //UNSUP '(' ~p~exprScope yP_OREQ      expr ')'  { UNSUP }
-        //UNSUP '(' ~p~exprScope yP_XOREQ     expr ')'  { UNSUP }
-        //UNSUP '(' ~p~exprScope yP_SLEFTEQ   expr ')'  { UNSUP }
-        //UNSUP '(' ~p~exprScope yP_SRIGHTEQ  expr ')'  { UNSUP }
-        //UNSUP '(' ~p~exprScope yP_SSRIGHTEQ expr ')'  { UNSUP }
+        |       '(' ~p~exprScope '='          expr ')'
+                        { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, $4},
+                                               $2->cloneTree(true)}; }
+        |       '(' ~p~exprScope yP_PLUSEQ    expr ')'
+                        { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, new AstAdd{$3, $2->cloneTree(true), $4}},
+                                               $2->cloneTree(true)}; }
+        |       '(' ~p~exprScope yP_MINUSEQ   expr ')'
+                        { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, new AstSub{$3, $2->cloneTree(true), $4}},
+                                               $2->cloneTree(true)}; }
+        |       '(' ~p~exprScope yP_TIMESEQ   expr ')'
+                        { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, new AstMul{$3, $2->cloneTree(true), $4}},
+                                               $2->cloneTree(true)}; }
+        |       '(' ~p~exprScope yP_DIVEQ     expr ')'
+                        { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, new AstDiv{$3, $2->cloneTree(true), $4}},
+                                               $2->cloneTree(true)}; }
+        |       '(' ~p~exprScope yP_MODEQ     expr ')'
+                        { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, new AstModDiv{$3, $2->cloneTree(true), $4}},
+                                               $2->cloneTree(true)}; }
+        |       '(' ~p~exprScope yP_ANDEQ     expr ')'
+                        { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, new AstAnd{$3, $2->cloneTree(true), $4}},
+                                               $2->cloneTree(true)}; }
+        |       '(' ~p~exprScope yP_OREQ      expr ')'
+                        { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, new AstOr{$3, $2->cloneTree(true), $4}},
+                                               $2->cloneTree(true)}; }
+        |       '(' ~p~exprScope yP_XOREQ     expr ')'
+                        { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, new AstXor{$3, $2->cloneTree(true), $4}},
+                                               $2->cloneTree(true)}; }
+        |       '(' ~p~exprScope yP_SLEFTEQ   expr ')'
+                        { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, new AstShiftL{$3, $2->cloneTree(true), $4}},
+                                               $2->cloneTree(true)}; }
+        |       '(' ~p~exprScope yP_SRIGHTEQ  expr ')'
+                        { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, new AstShiftR{$3, $2->cloneTree(true), $4}},
+                                               $2->cloneTree(true)}; }
+        |       '(' ~p~exprScope yP_SSRIGHTEQ expr ')'
+                        { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, new AstShiftRS{$3, $2->cloneTree(true), $4}},
+                                               $2->cloneTree(true)}; }
         //
         //                      // IEEE: expression binary_operator expression
         |       ~l~expr '+' ~r~expr                     { $$ = new AstAdd       ($2,$1,$3); }

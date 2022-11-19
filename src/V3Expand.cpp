@@ -828,12 +828,13 @@ private:
 
     void visit(AstNodeStmt* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
+        VL_RESTORER(m_stmtp);
         m_stmtp = nodep;
         iterateChildren(nodep);
-        m_stmtp = nullptr;
     }
     void visit(AstNodeAssign* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
+        VL_RESTORER(m_stmtp);
         m_stmtp = nodep;
         iterateChildren(nodep);
         bool did = false;
@@ -869,7 +870,6 @@ private:
         }
         // Cleanup common code
         if (did) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        m_stmtp = nullptr;
     }
 
     //--------------------

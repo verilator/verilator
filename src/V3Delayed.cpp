@@ -505,6 +505,8 @@ private:
         nodep->deleteTree();
     }
     void visit(AstAssignDly* nodep) override {
+        VL_RESTORER(m_inDly);
+        VL_RESTORER(m_nextDlyp);
         m_inDly = true;
         m_nextDlyp
             = VN_CAST(nodep->nextp(), AssignDly);  // Next assignment in same block, maybe nullptr.
@@ -537,8 +539,6 @@ private:
         } else {
             iterateChildren(nodep);
         }
-        m_inDly = false;
-        m_nextDlyp = nullptr;
     }
 
     void visit(AstVarRef* nodep) override {

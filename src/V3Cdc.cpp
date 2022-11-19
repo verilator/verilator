@@ -237,6 +237,7 @@ private:
     // METHODS
     void iterateNewStmt(AstNode* nodep) {
         if (m_scopep) {
+            VL_RESTORER(m_logicVertexp);
             UINFO(4, "   STMT " << nodep << endl);
             m_logicVertexp = new CdcLogicVertex(&m_graph, m_scopep, nodep, m_domainp);
             if (m_domainp && m_domainp->hasClocked()) {  // To/from a flop
@@ -247,7 +248,6 @@ private:
                 m_logicVertexp->dstDomainSet(true);
             }
             iterateChildren(nodep);
-            m_logicVertexp = nullptr;
 
             if (false && debug() >= 9) {
                 UINFO(9, "Trace Logic:\n");
@@ -680,6 +680,7 @@ private:
         }
     }
     void visit(AstAssignDly* nodep) override {
+        VL_RESTORER(m_inDly);
         m_inDly = true;
         iterateChildren(nodep);
         m_inDly = false;

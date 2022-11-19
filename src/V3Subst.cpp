@@ -252,6 +252,7 @@ private:
 
     // VISITORS
     void visit(AstNodeAssign* nodep) override {
+        VL_RESTORER(m_ops);
         m_ops = 0;
         m_assignStep++;
         iterateAndNextNull(nodep->rhsp());
@@ -360,7 +361,7 @@ private:
         doDeletes();
     }
     void visit(AstNode* nodep) override {
-        m_ops++;
+        ++m_ops;
         if (!nodep->isSubstOptimizable()) m_ops = SUBST_MAX_OPS_NA;
         iterateChildren(nodep);
     }

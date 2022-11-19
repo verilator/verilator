@@ -18,6 +18,7 @@ Verilator 5.003 devel
 * Support randcase.
 * Support pre_randomize and post_randomize.
 * Support $timeunit and $timeprecision.
+* Support assignment expressions.
 * Add ENUMVALUE warning when value misused for enum (#726).
 * Internal AST improvements, also affect XML format (#3721). [Geza Lore]
 * Change ENDLABEL from warning into an error.

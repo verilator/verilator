@@ -340,10 +340,10 @@ protected:
     // of what is before vs. after
 
     void visit(AstAssignDly* nodep) override {
+        VL_RESTORER(m_inDly);
         m_inDly = true;
         UINFO(4, "    ASSIGNDLY " << nodep << endl);
         iterateChildren(nodep);
-        m_inDly = false;
     }
     void visit(AstVarRef* nodep) override {
         if (!m_stmtStackps.empty()) {

@@ -1229,6 +1229,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     void visit(AstOr* nodep) override { visitAndOr(nodep, false); }
 
     void visitAssign(AstNodeAssign* nodep) {
+        VL_RESTORER(m_alhs);
+        VL_RESTORER(m_currentStrength);
         if (m_graphing) {
             if (AstAssignW* assignWp = VN_CAST(nodep, AssignW)) addToAssignmentList(assignWp);
 
@@ -1279,9 +1281,6 @@ class TristateVisitor final : public TristateBaseVisitor {
                 }
             }
             iterateAndNextNull(nodep->lhsp());
-            // back to default strength
-            m_currentStrength = VStrength::STRONG;
-            m_alhs = false;
         }
     }
     void visit(AstAssignW* nodep) override { visitAssign(nodep); }
