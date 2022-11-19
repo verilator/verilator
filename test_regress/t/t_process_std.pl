@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-top_filename("t/t_process.pl");
+top_filename("t/t_process.v");
 
 compile(
     v_flags2 => ["+define+T_PROCESS+std::process"],
