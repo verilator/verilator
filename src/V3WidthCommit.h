@@ -142,13 +142,13 @@ private:
             if (how) {
                 UINFO(9, "refclass " << refClassp << endl);
                 UINFO(9, "defclass " << defClassp << endl);
-                nodep->v3warn(E_ENCAPSULATED, nodep->prettyNameQ()
-                                                  << " is hidden as " << how
-                                                  << " within this context (IEEE 1800-2017 8.18)\n"
-                                                  << nodep->warnContextPrimary() << endl
-                                                  << nodep->warnOther()
-                                                  << "... Location of definition" << endl
-                                                  << defp->warnContextSecondary());
+                nodep->v3warn(ENCAPSULATED, nodep->prettyNameQ()
+                                                << " is hidden as " << how
+                                                << " within this context (IEEE 1800-2017 8.18)\n"
+                                                << nodep->warnContextPrimary() << endl
+                                                << nodep->warnOther()
+                                                << "... Location of definition" << endl
+                                                << defp->warnContextSecondary());
             }
         }
     }

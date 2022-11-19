@@ -1767,7 +1767,7 @@ private:
             const bool assoc = maxval > ENUM_LOOKUP_BITS;
             AstNode* testp = nullptr;
             FileLine* const fl_novalue = new FileLine{fl};
-            fl_novalue->warnOff(V3ErrorCode::E_ENUMVALUE, true);
+            fl_novalue->warnOff(V3ErrorCode::ENUMVALUE, true);
             if (assoc) {
                 AstVar* const varp = enumVarp(enumDtp, VAttrType::ENUM_VALID, true, 0);
                 testp = new AstAssocSel{fl_novalue, newVarRefDollarUnit(varp),
@@ -2767,7 +2767,7 @@ private:
                                         0);  // Spec doesn't say what to do
                 } else {
                     newp = VN_AS(itemp->valuep()->cloneTree(false), Const);  // A const
-                    newp->dtypeFrom(adtypep);  // To prevent a later E_ENUMVALUE
+                    newp->dtypeFrom(adtypep);  // To prevent a later ENUMVALUE
                 }
             } else if (nodep->name() == "last") {
                 const AstEnumItem* itemp = adtypep->itemsp();
@@ -2777,7 +2777,7 @@ private:
                                         0);  // Spec doesn't say what to do
                 } else {
                     newp = VN_AS(itemp->valuep()->cloneTree(false), Const);  // A const
-                    newp->dtypeFrom(adtypep);  // To prevent a later E_ENUMVALUE
+                    newp->dtypeFrom(adtypep);  // To prevent a later ENUMVALUE
                 }
             }
             UASSERT_OBJ(newp, nodep, "Enum method (perhaps enum item) not const");
@@ -2825,7 +2825,7 @@ private:
                 AstVar* const varp = enumVarp(adtypep, attrType, true, 0);
                 AstNode* const newp = new AstAssocSel{nodep->fileline(), newVarRefDollarUnit(varp),
                                                       nodep->fromp()->unlinkFrBack()};
-                newp->dtypeFrom(adtypep);  // To prevent a later E_ENUMVALUE
+                newp->dtypeFrom(adtypep);  // To prevent a later ENUMVALUE
                 nodep->replaceWith(newp);
             } else {
                 const int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
@@ -2836,7 +2836,7 @@ private:
                     // We return "random" values if outside the range, which is fine
                     // as next/previous on illegal values just need something good out
                     new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(), 0, selwidth));
-                newp->dtypeFrom(adtypep);  // To prevent a later E_ENUMVALUE
+                newp->dtypeFrom(adtypep);  // To prevent a later ENUMVALUE
                 nodep->replaceWith(newp);
             }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -6138,7 +6138,7 @@ private:
                     const auto castable = computeCastable(expEnump, underp->dtypep(), underp);
                     if (castable != COMPATIBLE && castable != ENUM_IMPLICIT && !VN_IS(underp, Cast)
                         && !VN_IS(underp, CastDynamic) && !m_enumItemp && warnOn) {
-                        nodep->v3warn(E_ENUMVALUE,
+                        nodep->v3warn(ENUMVALUE,
                                       "Illegal implicit conversion to enum "
                                           << expDTypep->prettyDTypeNameQ() << " from "
                                           << underp->dtypep()->prettyDTypeNameQ()

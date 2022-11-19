@@ -55,8 +55,6 @@ public:
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
         I_TIMING,       // Enable timing from /*verilator timing_on/off*/
         // Error codes:
-        E_ENCAPSULATED, // Error: local/protected violation
-        E_ENUMVALUE,    // Error: enum type needs explicit cast
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
         E_UNSUPPORTED,  // Error: Unsupported (generally)
         E_TASKNSVAR,    // Error: Task I/O not simple
@@ -85,12 +83,12 @@ public:
         COLONPLUS,      // :+ instead of +:
         COMBDLY,        // Combinatorial delayed assignment
         CONTASSREG,     // Continuous assignment on reg
-        DEFPARAM,       // Style: Defparam
         DECLFILENAME,   // Declaration doesn't match filename
+        DEFPARAM,       // Style: Defparam
         DEPRECATED,     // Feature will be deprecated
-        RISEFALLDLY,    // Unsupported: rise/fall/turn-off delays
-        MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
+        ENCAPSULATED,   // Error: local/protected violation
         ENDLABEL,       // End lable name mismatch
+        ENUMVALUE,      // Error: enum type needs explicit cast
         EOFNEWLINE,     // End-of-file missing newline
         GENCLK,         // Generated Clock. Historical, never issued.
         HIERBLOCK,      // Ignored hierarchical block setting
@@ -106,6 +104,7 @@ public:
         INSECURE,       // Insecure options
         LATCH,          // Latch detected outside of always_latch block
         LITENDIAN,      // Little bit endian vector
+        MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
@@ -122,6 +121,7 @@ public:
         RANDC,          // Unsupported: 'randc' converted to 'rand'
         REALCVT,        // Real conversion
         REDEFMACRO,     // Redefining existing define macro
+        RISEFALLDLY,    // Unsupported: rise/fall/turn-off delays
         SELRANGE,       // Selection index out of range
         SHORTREAL,      // Shortreal not supported
         SPLITVAR,       // Cannot split the variable
@@ -170,22 +170,22 @@ public:
             // Boolean
             " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_UNUSED", " I_DEF_NETTYPE_WIRE", " I_TIMING",
             // Errors
-            "ENCAPSULATED", "ENUMVALUE", "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
+            "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
-            "DEFPARAM", "DECLFILENAME", "DEPRECATED", "RISEFALLDLY", "MINTYPMAXDLY",
-            "ENDLABEL", "EOFNEWLINE", "GENCLK", "HIERBLOCK",
+            "DECLFILENAME", "DEFPARAM", "DEPRECATED",
+            "ENCAPSULATED", "ENDLABEL", "ENUMVALUE", "EOFNEWLINE", "GENCLK", "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
-            "LATCH", "LITENDIAN", "MODDUP",
+            "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MODDUP",
             "MULTIDRIVEN", "MULTITOP","NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
-            "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO",
+            "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
@@ -207,8 +207,9 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BLKANDNBLK || m_e == BLKLOOPINIT
-                || m_e == CONTASSREG || m_e == ENDLABEL || m_e == IMPURE || m_e == PINNOTFOUND
-                || m_e == PKGNODECL || m_e == PROCASSWIRE  // Says IEEE
+                || m_e == CONTASSREG || m_e == ENCAPSULATED || m_e == ENDLABEL || m_e == ENUMVALUE
+                || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL
+                || m_e == PROCASSWIRE  // Says IEEE
                 || m_e == ZERODLY);
     }
     // Warnings to mention manual
