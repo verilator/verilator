@@ -333,6 +333,6 @@ private:
 
 uint32_t V3InstrCount::count(AstNode* nodep, bool assertNoDups, std::ostream* osp) {
     const InstrCountVisitor visitor{nodep, assertNoDups, osp};
-    if (osp) InstrCountDumpVisitor dumper(nodep, osp);
+    if (osp) InstrCountDumpVisitor dumper{nodep, osp};
     return visitor.instrCount();
 }

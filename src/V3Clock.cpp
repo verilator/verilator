@@ -58,7 +58,7 @@ private:
         UASSERT_OBJ(!nodep->access().isRW(), nodep, "Cannot handle a READWRITE reference");
         if (nodep->access().isWriteOnly()) {
             nodep->replaceWith(
-                new AstVarRef(nodep->fileline(), nodep->varScopep(), VAccess::READ));
+                new AstVarRef{nodep->fileline(), nodep->varScopep(), VAccess::READ});
         }
     }
 
@@ -113,7 +113,7 @@ private:
     AstIf* makeActiveIf(AstSenTree* sensesp) {
         AstNode* const senEqnp = createSenseEquation(sensesp->sensesp());
         UASSERT_OBJ(senEqnp, sensesp, "No sense equation, shouldn't be in sequent activation.");
-        AstIf* const newifp = new AstIf(sensesp->fileline(), senEqnp);
+        AstIf* const newifp = new AstIf{sensesp->fileline(), senEqnp};
         return newifp;
     }
     void clearLastSen() {
@@ -130,11 +130,11 @@ private:
         AstNode* const changeWrp = nodep->changep()->unlinkFrBack();
         AstNode* const changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
         AstIf* const newp
-            = new AstIf(nodep->fileline(), new AstXor(nodep->fileline(), origp, changeRdp), incp);
+            = new AstIf{nodep->fileline(), new AstXor{nodep->fileline(), origp, changeRdp}, incp};
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
-        newp->addThensp(new AstAssign(nodep->fileline(), changeWrp, origp->cloneTree(false)));
+        newp->addThensp(new AstAssign{nodep->fileline(), changeWrp, origp->cloneTree(false)});
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }

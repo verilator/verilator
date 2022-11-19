@@ -196,7 +196,7 @@ double V3ParseImp::lexParseTimenum(const char* textp) {
     }
     *dp++ = '\0';
     const double d = strtod(strgp, nullptr);
-    const string suffix(sp);
+    const string suffix{sp};
 
     double divisor = 1;
     if (suffix == "s") {
@@ -240,7 +240,7 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
         got += len;
     }
     if (debug() >= 9) {
-        const string out = string(buf, got);
+        const string out = std::string{buf, got};
         cout << "   inputToLex  got=" << got << " '" << out << "'" << endl;
     }
     // Note returns 0 at EOF
@@ -274,7 +274,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     const string modname = V3Os::filenameNonExt(modfilename);
 
     UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : "") << endl);
-    m_lexFileline = new FileLine(fileline);
+    m_lexFileline = new FileLine{fileline};
     m_lexFileline->newContent();
     m_bisonLastFileline = m_lexFileline;
     m_inLibrary = inLibrary;
@@ -284,7 +284,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     if (!ok) {
         if (errmsg != "") return;  // Threw error already
         // Create fake node for later error reporting
-        AstNodeModule* const nodep = new AstNotFoundModule(fileline, modname);
+        AstNodeModule* const nodep = new AstNotFoundModule{fileline, modname};
         v3Global.rootp()->addModulesp(nodep);
         return;
     }
@@ -589,7 +589,7 @@ std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs) {
 // V3Parse functions
 
 V3Parse::V3Parse(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* symp) {
-    m_impp = new V3ParseImp(rootp, filterp, symp);
+    m_impp = new V3ParseImp{rootp, filterp, symp};
 }
 V3Parse::~V3Parse() {  //
     VL_DO_CLEAR(delete m_impp, m_impp = nullptr);

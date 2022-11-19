@@ -46,10 +46,10 @@ protected:
     void boot() {
         // Create the implementation pointer
         if (!s_preprocp) {
-            FileLine* const cmdfl = new FileLine(FileLine::commandLineFilename());
+            FileLine* const cmdfl = new FileLine{FileLine::commandLineFilename()};
             s_preprocp = V3PreProc::createPreProc(cmdfl);
             // Default defines
-            FileLine* const prefl = new FileLine(FileLine::builtInFilename());
+            FileLine* const prefl = new FileLine{FileLine::builtInFilename()};
             s_preprocp->defineCmdLine(prefl, "VERILATOR", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator3", "1");  // LEAK_OK
@@ -161,7 +161,7 @@ void V3PreShell::preprocInclude(FileLine* fl, const string& modname) {
     V3PreShellImp::s_preImp.preprocInclude(fl, modname);
 }
 void V3PreShell::defineCmdLine(const string& name, const string& value) {
-    FileLine* const prefl = new FileLine(FileLine::commandLineFilename());
+    FileLine* const prefl = new FileLine{FileLine::commandLineFilename()};
     V3PreShellImp::s_preprocp->defineCmdLine(prefl, name, value);
 }
 void V3PreShell::undef(const string& name) { V3PreShellImp::s_preprocp->undef(name); }

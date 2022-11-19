@@ -73,12 +73,12 @@ AstArg* V3ParseGrammar::argWrapList(AstNode* nodep) {
     // Convert list of expressions to list of arguments
     if (!nodep) return nullptr;
     AstArg* outp = nullptr;
-    AstBegin* const tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
+    AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nodep};
     while (nodep) {
         AstNode* const nextp = nodep->nextp();
         AstNode* const exprp = nodep->unlinkFrBack();
         nodep = nextp;
-        outp = AstNode::addNext(outp, new AstArg(exprp->fileline(), "", exprp));
+        outp = AstNode::addNext(outp, new AstArg{exprp->fileline(), "", exprp});
     }
     VL_DO_DANGLING(tempp->deleteTree(), tempp);
     return outp;
@@ -127,22 +127,22 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
             AstRange* const rangep = VN_CAST(nrangep, Range);
             if (rangep && isPacked) {
                 arrayp
-                    = new AstPackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep);
+                    = new AstPackArrayDType{rangep->fileline(), VFlagChildDType(), arrayp, rangep};
             } else if (rangep
                        && (VN_IS(rangep->leftp(), Unbounded)
                            || VN_IS(rangep->rightp(), Unbounded))) {
-                arrayp = new AstQueueDType(nrangep->fileline(), VFlagChildDType(), arrayp,
-                                           rangep->rightp()->cloneTree(true));
+                arrayp = new AstQueueDType{nrangep->fileline(), VFlagChildDType(), arrayp,
+                                           rangep->rightp()->cloneTree(true)};
             } else if (rangep) {
-                arrayp = new AstUnpackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp,
-                                                 rangep);
+                arrayp = new AstUnpackArrayDType{rangep->fileline(), VFlagChildDType{}, arrayp,
+                                                 rangep};
             } else if (VN_IS(nrangep, UnsizedRange)) {
-                arrayp = new AstUnsizedArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp);
+                arrayp = new AstUnsizedArrayDType{nrangep->fileline(), VFlagChildDType{}, arrayp};
             } else if (VN_IS(nrangep, BracketRange)) {
                 const AstBracketRange* const arangep = VN_AS(nrangep, BracketRange);
                 AstNode* const keyp = arangep->elementsp()->unlinkFrBack();
-                arrayp = new AstBracketArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp,
-                                                  keyp);
+                arrayp = new AstBracketArrayDType{nrangep->fileline(), VFlagChildDType{}, arrayp,
+                                                  keyp};
             } else if (VN_IS(nrangep, WildcardRange)) {
                 arrayp = new AstWildcardArrayDType{nrangep->fileline(), VFlagChildDType{}, arrayp};
             } else {
@@ -166,7 +166,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     }
     if (GRAMMARP->m_varDecl == VVarType::WREAL) {
         // dtypep might not be null, might be implicit LOGIC before we knew better
-        dtypep = new AstBasicDType(fileline, VBasicDTypeKwd::DOUBLE);
+        dtypep = new AstBasicDType{fileline, VBasicDTypeKwd::DOUBLE};
     }
     if (!dtypep) {  // Created implicitly
         if (m_insideProperty) {
@@ -199,7 +199,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     // ARRAYDTYPE0(ARRAYDTYPE1(ARRAYDTYPE2(BASICTYPE3), RANGE), RANGE)
     AstNodeDType* const arrayDTypep = createArray(dtypep, arrayp, false);
 
-    AstVar* const nodep = new AstVar(fileline, type, name, VFlagChildDType(), arrayDTypep);
+    AstVar* const nodep = new AstVar{fileline, type, name, VFlagChildDType(), arrayDTypep};
     nodep->addAttrsp(attrsp);
     nodep->ansi(m_pinAnsi);
     nodep->declTyped(m_varDeclTyped);
@@ -222,7 +222,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     }
     if (VN_IS(dtypep, ParseTypeDType)) {
         // Parser needs to know what is a type
-        AstNode* const newp = new AstTypedefFwd(fileline, name);
+        AstNode* const newp = new AstTypedefFwd{fileline, name};
         AstNode::addNext<AstNode, AstNode>(nodep, newp);
         SYMP->reinsert(newp);
     }

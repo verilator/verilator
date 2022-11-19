@@ -58,9 +58,9 @@ void V3ScoreboardBase::selfTest() {
 
     UASSERT(!sb.needsRescore(), "SelfTest: Empty sb should not need rescore.");
 
-    ScoreboardTestElem e1(10);
-    ScoreboardTestElem e2(20);
-    ScoreboardTestElem e3(30);
+    ScoreboardTestElem e1{10};
+    ScoreboardTestElem e2{20};
+    ScoreboardTestElem e3{30};
 
     sb.add(&e1);
     sb.add(&e2);

@@ -106,7 +106,7 @@ private:
                           ? oldVarp->name()
                           : nodep->scopep()->nameDotless() + "__DOT__" + oldVarp->name();
                 AstVar* const newVarp
-                    = new AstVar(oldVarp->fileline(), oldVarp->varType(), newName, oldVarp);
+                    = new AstVar{oldVarp->fileline(), oldVarp->varType(), newName, oldVarp};
                 newVarp->funcLocal(true);
                 funcp->addInitsp(newVarp);
 

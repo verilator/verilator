@@ -263,10 +263,10 @@ public:
     void configure(FileLine* filelinep) {
         // configure() separate from constructor to avoid calling abstract functions
         m_preprocp = this;  // Silly, but to make code more similar to Verilog-Perl
-        m_finFilelinep = new FileLine(filelinep->filename());
+        m_finFilelinep = new FileLine{filelinep->filename()};
         m_finFilelinep->lineno(1);
         // Create lexer
-        m_lexp = new V3PreLex(this, filelinep);
+        m_lexp = new V3PreLex{this, filelinep};
         m_lexp->m_keepComments = keepComments();
         m_lexp->m_keepWhitespace = keepWhitespace();
         m_lexp->m_pedantic = pedantic();
@@ -793,7 +793,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
     }
 
     // Save file contents for future error reporting
-    FileLine* const flsp = new FileLine(filename);
+    FileLine* const flsp = new FileLine{filename};
     flsp->lineno(1);
     flsp->newContent();
     for (const string& i : wholefile) flsp->contentp()->pushText(i);

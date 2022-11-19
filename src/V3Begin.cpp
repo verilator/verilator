@@ -95,8 +95,8 @@ private:
                 m_unnamedScope = dot(m_unnamedScope, ident);
                 // Create CellInline for dotted var resolution
                 if (!m_ftaskp) {
-                    AstCellInline* const inlinep = new AstCellInline(
-                        nodep->fileline(), m_unnamedScope, blockName, m_modp->timeunit());
+                    AstCellInline* const inlinep = new AstCellInline{
+                        nodep->fileline(), m_unnamedScope, blockName, m_modp->timeunit()};
                     m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
                 }
             }

@@ -1688,7 +1688,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     whole_file += "\n";  // So string match below is simplified
     if (inCmt) fl->v3error("Unterminated /* comment inside -f file.");
 
-    fl = new FileLine(filename);
+    fl = new FileLine{filename};
 
     // Split into argument list and process
     // Note we try to respect escaped char, double/simple quoted strings

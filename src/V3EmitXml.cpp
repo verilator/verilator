@@ -441,7 +441,7 @@ void V3EmitXml::emitxml() {
     const string filename = (v3Global.opt.xmlOutput().empty()
                                  ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".xml"
                                  : v3Global.opt.xmlOutput());
-    V3OutXmlFile of(filename);
+    V3OutXmlFile of{filename};
     of.putsHeader();
     of.puts("<!-- DESCR"
             "IPTION: Verilator output: XML representation of netlist -->\n");

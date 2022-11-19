@@ -267,7 +267,7 @@ private:
 
     UndrivenVarEntry* getEntryp(AstVar* nodep, int which_user) {
         if (!(which_user == 1 ? nodep->user1p() : nodep->user2p())) {
-            UndrivenVarEntry* const entryp = new UndrivenVarEntry(nodep);
+            UndrivenVarEntry* const entryp = new UndrivenVarEntry{nodep};
             // UINFO(9," Associate u="<<which_user<<" "<<cvtToHex(this)<<" "<<nodep->name()<<endl);
             m_entryps[which_user].push_back(entryp);
             if (which_user == 1) {

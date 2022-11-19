@@ -238,7 +238,7 @@ private:
     // METHODS
     SubstVarEntry* getEntryp(AstVarRef* nodep) {
         if (!nodep->varp()->user1p()) {
-            SubstVarEntry* const entryp = new SubstVarEntry(nodep->varp());
+            SubstVarEntry* const entryp = new SubstVarEntry{nodep->varp()};
             m_entryps.push_back(entryp);
             nodep->varp()->user1p(entryp);
             return entryp;
@@ -290,7 +290,7 @@ private:
         if (debug() > 5) nodep->dumpTree(cout, "  substw_old: ");
         AstNode* newp = substp->cloneTree(true);
         if (!nodep->isQuad() && newp->isQuad()) {
-            newp = new AstCCast(newp->fileline(), newp, nodep);
+            newp = new AstCCast{newp->fileline(), newp, nodep};
         }
         if (debug() > 5) newp->dumpTree(cout, "       w_new: ");
         nodep->replaceWith(newp);

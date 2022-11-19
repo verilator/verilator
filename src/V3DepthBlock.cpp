@@ -53,14 +53,14 @@ private:
         // Create sub function
         AstScope* const scopep = m_cfuncp->scopep();
         const string name = m_cfuncp->name() + "__deep" + cvtToStr(++m_deepNum);
-        AstCFunc* const funcp = new AstCFunc(nodep->fileline(), name, scopep);
+        AstCFunc* const funcp = new AstCFunc{nodep->fileline(), name, scopep};
         funcp->slow(m_cfuncp->slow());
         funcp->isStatic(m_cfuncp->isStatic());
         funcp->isLoose(m_cfuncp->isLoose());
         funcp->addStmtsp(nodep);
         scopep->addBlocksp(funcp);
         // Call sub function at the point where the body was removed from
-        AstCCall* const callp = new AstCCall(nodep->fileline(), funcp);
+        AstCCall* const callp = new AstCCall{nodep->fileline(), funcp};
         callp->dtypeSetVoid();
         if (VN_IS(m_modp, Class)) {
             funcp->argTypes(EmitCBaseVisitor::symClassVar());

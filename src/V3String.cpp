@@ -263,7 +263,7 @@ void VHashSha256::insert(const void* datap, size_t length) {
         // If there are large inserts it would be more efficient to avoid this copy
         // by copying bytes in the loop below from either m_remainder or the data
         // as appropriate.
-        tempData = m_remainder + string(static_cast<const char*>(datap), length);
+        tempData = m_remainder + std::string{static_cast<const char*>(datap), length};
         chunkLen = tempData.length();
         chunkp = reinterpret_cast<const uint8_t*>(tempData.data());
     }
@@ -286,7 +286,7 @@ void VHashSha256::insert(const void* datap, size_t length) {
         sha256Block(m_inthash, w);
     }
 
-    m_remainder = string(reinterpret_cast<const char*>(chunkp + posBegin), chunkLen - posEnd);
+    m_remainder = std::string(reinterpret_cast<const char*>(chunkp + posBegin), chunkLen - posEnd);
 }
 
 void VHashSha256::finalize() {
@@ -426,7 +426,7 @@ string VName::dehash(const string& in) {
         const auto begin_vhsh
             = std::search(search_begin, search_end, std::begin(VHSH), std::end(VHSH) - 1);
         if (begin_vhsh != search_end) {
-            const std::string vhsh(begin_vhsh, search_end);
+            const std::string vhsh{begin_vhsh, search_end};
             const auto& it = s_dehashMap.find(vhsh);
             UASSERT(it != s_dehashMap.end(), "String not in reverse hash map '" << vhsh << "'");
             // Is this not the first component, but the first to require dehashing?
@@ -435,13 +435,13 @@ string VName::dehash(const string& in) {
                 dehashed = in.substr(0, last_dot_pos);
             }
             // Append the unhashed part of the component.
-            dehashed += std::string(search_begin, begin_vhsh);
+            dehashed += std::string{search_begin, begin_vhsh};
             // Append the bit that was lost to truncation but retrieved from the dehash map.
             dehashed += it->second;
         }
         // This component doesn't need dehashing but a previous one might have.
         else if (!dehashed.empty()) {
-            dehashed += std::string(search_begin, search_end);
+            dehashed += std::string{search_begin, search_end};
         }
 
         if (next_dot_pos != string::npos) {

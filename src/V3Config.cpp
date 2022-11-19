@@ -105,10 +105,10 @@ public:
     // Apply all attributes to the variable
     void apply(AstVar* varp) {
         for (const_iterator it = begin(); it != end(); ++it) {
-            AstNode* const newp = new AstAttrOf(varp->fileline(), it->m_type);
+            AstNode* const newp = new AstAttrOf{varp->fileline(), it->m_type};
             varp->addAttrsp(newp);
             if (it->m_type == VAttrType::VAR_PUBLIC_FLAT_RW && it->m_sentreep) {
-                newp->addNext(new AstAlwaysPublic(varp->fileline(), it->m_sentreep, nullptr));
+                newp->addNext(new AstAlwaysPublic{varp->fileline(), it->m_sentreep, nullptr});
             }
         }
     }
@@ -143,9 +143,9 @@ public:
 
     void apply(AstNodeFTask* ftaskp) const {
         if (m_noinline)
-            ftaskp->addStmtsp(new AstPragma(ftaskp->fileline(), VPragmaType::NO_INLINE_TASK));
+            ftaskp->addStmtsp(new AstPragma{ftaskp->fileline(), VPragmaType::NO_INLINE_TASK});
         if (m_public)
-            ftaskp->addStmtsp(new AstPragma(ftaskp->fileline(), VPragmaType::PUBLIC_TASK));
+            ftaskp->addStmtsp(new AstPragma{ftaskp->fileline(), VPragmaType::PUBLIC_TASK});
         // Only functions can have isolate (return value)
         if (VN_IS(ftaskp, Func)) ftaskp->attrIsolateAssign(m_isolate);
     }
@@ -194,7 +194,7 @@ public:
         if (m_inline) {
             const VPragmaType type
                 = m_inlineValue ? VPragmaType::INLINE_MODULE : VPragmaType::NO_INLINE_MODULE;
-            AstNode* const nodep = new AstPragma(modp->fileline(), type);
+            AstNode* const nodep = new AstPragma{modp->fileline(), type};
             modp->addStmtsp(nodep);
         }
         for (const auto& itr : m_modPragmas) {
@@ -208,7 +208,7 @@ public:
         if (!nodep->unnamed()) {
             for (const string& i : m_coverageOffBlocks) {
                 if (VString::wildmatch(nodep->name(), i)) {
-                    nodep->addStmtsp(new AstPragma(nodep->fileline(), pragma));
+                    nodep->addStmtsp(new AstPragma{nodep->fileline(), pragma});
                 }
             }
         }
@@ -302,7 +302,7 @@ public:
         // Apply to block at this line
         const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
         if (lineMatch(nodep->fileline()->lineno(), pragma)) {
-            nodep->addStmtsp(new AstPragma(nodep->fileline(), pragma));
+            nodep->addStmtsp(new AstPragma{nodep->fileline(), pragma});
         }
     }
     void applyCase(AstCase* nodep) {
@@ -569,14 +569,14 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
                 fl->v3error("Signals inside functions/tasks cannot be marked forceable");
             } else {
                 V3ConfigResolver::s().modules().at(module).vars().at(var).push_back(
-                    V3ConfigVarAttr(attr));
+                    V3ConfigVarAttr{attr});
             }
         } else {
             V3ConfigModule& mod = V3ConfigResolver::s().modules().at(module);
             if (ftask.empty()) {
-                mod.vars().at(var).push_back(V3ConfigVarAttr(attr, sensep));
+                mod.vars().at(var).push_back(V3ConfigVarAttr{attr, sensep});
             } else {
-                mod.ftasks().at(ftask).vars().at(var).push_back(V3ConfigVarAttr(attr, sensep));
+                mod.ftasks().at(ftask).vars().at(var).push_back(V3ConfigVarAttr{attr, sensep});
             }
         }
     }

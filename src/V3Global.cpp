@@ -52,14 +52,14 @@ void V3Global::readFiles() {
     //   AstNode::user4p()      // VSymEnt*    Package and typedef symbol names
     const VNUser4InUse inuser4;
 
-    VInFilter filter(v3Global.opt.pipeFilter());
-    V3ParseSym parseSyms(v3Global.rootp());  // Symbol table must be common across all parsing
+    VInFilter filter{v3Global.opt.pipeFilter()};
+    V3ParseSym parseSyms{v3Global.rootp()};  // Symbol table must be common across all parsing
 
     V3Parse parser(v3Global.rootp(), &filter, &parseSyms);
     // Read top module
     const V3StringList& vFiles = v3Global.opt.vFiles();
     for (const string& filename : vFiles) {
-        parser.parseFile(new FileLine(FileLine::commandLineFilename()), filename, false,
+        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filename, false,
                          "Cannot find file containing module: ");
     }
 
@@ -68,7 +68,7 @@ void V3Global::readFiles() {
     // this needs to be done after the top file is read
     const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
     for (const string& filename : libraryFiles) {
-        parser.parseFile(new FileLine(FileLine::commandLineFilename()), filename, true,
+        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filename, true,
                          "Cannot find file containing library module: ");
     }
     // v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("parse.tree"));
