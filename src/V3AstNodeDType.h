@@ -755,6 +755,8 @@ public:
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     string name() const override { return m_name; }
     void name(const string& flag) override { m_name = flag; }
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpSmall(std::ostream& str) const override;
     // METHODS
     AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
     AstNodeDType* skipRefp() const override VL_MT_SAFE { return subDTypep()->skipRefp(); }
@@ -1068,6 +1070,7 @@ public:
         return skipRefp()->similarDType(samep->skipRefp());
     }
     void dump(std::ostream& str = std::cout) const override;
+    void dumpSmall(std::ostream& str) const override;
     string name() const override { return m_name; }
     string prettyDTypeName() const override {
         return subDTypep() ? subDTypep()->name() : prettyName();

@@ -1505,6 +1505,14 @@ void AstDisplay::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     // str << " " << displayType().ascii();
 }
+void AstEnumDType::dump(std::ostream& str) const {
+    this->AstNodeDType::dump(str);
+    str << " enum";
+}
+void AstEnumDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "enum";
+}
 void AstEnumItemRef::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     str << " -> ";
@@ -1758,6 +1766,10 @@ void AstRefDType::dump(std::ostream& str) const {
     } else {
         str << " -> UNLINKED";
     }
+}
+void AstRefDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "ref";
 }
 const char* AstRefDType::broken() const {
     BROKEN_RTN(m_typedefp && !m_typedefp->brokeExists());
