@@ -228,7 +228,7 @@ void V3Stats::statsReport() {
     std::ofstream* ofp{V3File::new_ofstream(filename)};
     if (ofp->fail()) v3fatal("Can't write " << filename);
 
-    const StatsReport reporter(ofp);
+    { StatsReport{ofp}; }  // Destruct before cleanup
 
     // Cleanup
     ofp->close();
