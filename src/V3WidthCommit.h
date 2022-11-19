@@ -85,6 +85,7 @@ public:
             num.isSigned(nodep->isSigned());
             AstConst* const newp = new AstConst{nodep->fileline(), num};
             newp->dtypeFrom(nodep);
+            newp->user1(true);
             return newp;
         } else {
             return nullptr;
@@ -163,6 +164,7 @@ private:
         }
     }
     void visit(AstConst* nodep) override {
+        if (nodep->user1SetOnce()) return;  // Process once
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype");
         iterate(nodep->dtypep());  // Do datatype first
         if (AstConst* const newp = newIfConstCommitSize(nodep)) {

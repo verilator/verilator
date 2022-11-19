@@ -1841,9 +1841,12 @@ private:
         }
     }
     void visit(AstCast* nodep) override {
+        if (nodep->didWidth()) return;
+        UINFO(9, "CAST " << nodep << endl);
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         if (m_vup->prelim()) {
             // if (debug()) nodep->dumpTree(cout, "  CastPre: ");
+            // if (debug()) nodep->backp()->dumpTree(cout, "  CastPreUpUp: ");
             userIterateAndNext(nodep->fromp(), WidthVP(SELF, PRELIM).p());
             AstNodeDType* const toDtp = nodep->dtypep()->skipRefToEnump();
             AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
@@ -1878,8 +1881,10 @@ private:
             if (bad) {
             } else if (const AstBasicDType* const basicp = toDtp->basicp()) {
                 if (!basicp->isDouble() && !fromDtp->isDouble()) {
+                    AstNodeDType* const origDTypep = nodep->dtypep();
                     const int width = toDtp->width();
                     castSized(nodep, nodep->fromp(), width);
+                    nodep->dtypeFrom(origDTypep);  // If was enum, need dtype to preserve as enum
                     // Note castSized might modify nodep->fromp()
                 } else {
                     iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, fromDtp, EXTEND_EXP,
@@ -1924,8 +1929,10 @@ private:
                          EXTEND_EXP, false);
             AstNode* const underp = nodep->fromp()->unlinkFrBack();
             // if (debug()) underp->dumpTree(cout, "  CastRep: ");
+            underp->dtypeFrom(nodep);
             nodep->replaceWith(underp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            underp->didWidth(true);
         }
     }
     void visit(AstCastSize* nodep) override {
@@ -2217,6 +2224,9 @@ private:
             // and if we keep minwidth we'll consider it unsized which is incorrect
             iterateCheck(nodep, "Enum value", nodep->valuep(), CONTEXT_DET, FINAL, nodep->dtypep(),
                          EXTEND_EXP);
+            // Always create a cast, to avoid later ENUMVALUE warnings
+            nodep->valuep(new AstCast{nodep->valuep()->fileline(), nodep->valuep()->unlinkFrBack(),
+                                      nodep->dtypep()});
         }
     }
     void visit(AstEnumItemRef* nodep) override {
@@ -6139,12 +6149,13 @@ private:
                     if (castable != COMPATIBLE && castable != ENUM_IMPLICIT && !VN_IS(underp, Cast)
                         && !VN_IS(underp, CastDynamic) && !m_enumItemp && warnOn) {
                         nodep->v3warn(ENUMVALUE,
-                                      "Illegal implicit conversion to enum "
+                                      "Implicit conversion to enum "
                                           << expDTypep->prettyDTypeNameQ() << " from "
                                           << underp->dtypep()->prettyDTypeNameQ()
                                           << " (IEEE 1800-2017 6.19.3)\n"
                                           << nodep->warnMore()
                                           << "... Suggest use enum's mnemonic, or static cast");
+                        if (debug()) nodep->backp()->dumpTree(cout, "- back: ");
                     }
                 }
                 AstNodeDType* subDTypep = expDTypep;
