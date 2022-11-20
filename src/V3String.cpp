@@ -116,13 +116,14 @@ string VString::quoteStringLiteralForShell(const string& str) {
     return result;
 }
 
-string VString::escapeStringForPath(const string &str) {
-    if (str.find(R"(\\)") != string::npos) return str; // if it has been escaped already, don't do it again
-    if (str.find('/') != string::npos) return str; // can be replaced by `__MINGW32__` or `_WIN32`
+string VString::escapeStringForPath(const string& str) {
+    if (str.find(R"(\\)") != string::npos)
+        return str;  // if it has been escaped already, don't do it again
+    if (str.find('/') != string::npos) return str;  // can be replaced by `__MINGW32__` or `_WIN32`
     string result;
-    const char space = ' '; // escape space like this `Program Files`
+    const char space = ' ';  // escape space like this `Program Files`
     const char escape = '\\';
-    for (const char c: str) {
+    for (const char c : str) {
         if (c == space || c == escape) result.push_back(escape);
         result.push_back(c);
     }

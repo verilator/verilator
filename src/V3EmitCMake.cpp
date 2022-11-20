@@ -214,8 +214,7 @@ class CMakeEmitter final {
                     << hblockp->modp()->name() << " DIRECTORY "
                     << v3Global.opt.makeDir() + "/" + prefix << " SOURCES ";
                 for (const auto& childr : children) {
-                    *of << " "
-                        << v3Global.opt.makeDir() + "/" + childr->hierWrapper(true);
+                    *of << " " << v3Global.opt.makeDir() + "/" + childr->hierWrapper(true);
                 }
                 *of << " ";
                 const string vFile = hblockp->vFileIfNecessary();
@@ -233,8 +232,7 @@ class CMakeEmitter final {
                 << v3Global.rootp()->topModulep()->name() << " DIRECTORY "
                 << v3Global.opt.makeDir() << " SOURCES ";
             for (const auto& itr : *planp) {
-                *of << " "
-                    << v3Global.opt.makeDir() + "/" + itr.second->hierWrapper(true);
+                *of << " " << v3Global.opt.makeDir() + "/" + itr.second->hierWrapper(true);
             }
             *of << " " << cmake_list(v3Global.opt.vFiles());
             *of << " VERILATOR_ARGS ";
