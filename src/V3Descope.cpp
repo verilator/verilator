@@ -144,9 +144,9 @@ private:
                     for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
                         if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
-                                AstVarRef* const newp = new AstVarRef(
+                                AstVarRef* const newp = new AstVarRef{
                                     portp->fileline(), portp,
-                                    portp->isWritable() ? VAccess::WRITE : VAccess::READ);
+                                    portp->isWritable() ? VAccess::WRITE : VAccess::READ};
                                 argsp = AstNode::addNext(argsp, newp);
                             }
                         }
@@ -161,14 +161,14 @@ private:
                     AstNode* const returnp = new AstCReturn{funcp->fileline(), callp};
 
                     if (moreOfSame) {
-                        AstIf* const ifp = new AstIf(
+                        AstIf* const ifp = new AstIf{
                             funcp->fileline(),
-                            new AstEq(
-                                funcp->fileline(), new AstCExpr(funcp->fileline(), "this", 64),
-                                new AstCExpr(funcp->fileline(),
+                            new AstEq{
+                                funcp->fileline(), new AstCExpr{funcp->fileline(), "this", 64},
+                                new AstCExpr{funcp->fileline(),
                                              string("&(") + funcp->scopep()->nameVlSym() + ")",
-                                             64)),
-                            returnp);
+                                             64}},
+                            returnp};
                         newfuncp->addStmtsp(ifp);
                     } else {
                         newfuncp->addStmtsp(returnp);

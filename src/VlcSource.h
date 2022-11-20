@@ -89,7 +89,7 @@ public:
         ColumnMap& cmap = lit->second;
         ColumnMap::iterator cit = cmap.find(column);
         if (cit == cmap.end()) {
-            cit = cmap.insert(std::make_pair(column, VlcSourceCount(lineno, column))).first;
+            cit = cmap.insert(std::make_pair(column, VlcSourceCount{lineno, column})).first;
         }
         VlcSourceCount& sc = cit->second;
         sc.incCount(count, ok);
@@ -124,7 +124,7 @@ public:
         if (iter != m_sources.end()) {
             return iter->second;
         } else {
-            iter = m_sources.insert(std::make_pair(name, VlcSource(name))).first;
+            iter = m_sources.insert(std::make_pair(name, VlcSource{name})).first;
             return iter->second;
         }
     }

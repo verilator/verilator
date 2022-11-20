@@ -291,7 +291,7 @@ public:
     }
     void addLineAttribute(int lineno, VPragmaType attr) { m_lineAttrs[lineno].set(attr); }
     void addIgnore(V3ErrorCode code, int lineno, bool on) {
-        m_ignLines.insert(V3ConfigIgnoresLine(code, lineno, on));
+        m_ignLines.insert(V3ConfigIgnoresLine{code, lineno, on});
         m_lastIgnore.it = m_ignLines.begin();
     }
     void addWaiver(V3ErrorCode code, const string& match) {

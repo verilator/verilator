@@ -125,7 +125,7 @@ public:
         if (m_filenameSet.find(filename) == m_filenameSet.end()) {
             // cppcheck-suppress stlFindInsert  // cppcheck 1.90 bug
             m_filenameSet.insert(filename);
-            DependFile df(filename, false);
+            DependFile df{filename, false};
             df.loadStats();  // Get size now, in case changes during the run
             m_filenameList.insert(df);
         }
@@ -134,7 +134,7 @@ public:
         if (m_filenameSet.find(filename) == m_filenameSet.end()) {
             // cppcheck-suppress stlFindInsert  // cppcheck 1.90 bug
             m_filenameSet.insert(filename);
-            m_filenameList.insert(DependFile(filename, true));
+            m_filenameList.insert(DependFile{filename, true});
         }
     }
     void writeDepend(const string& filename);
@@ -603,7 +603,7 @@ protected:
 // VInFilter
 // Just dispatch to the implementation
 
-VInFilter::VInFilter(const string& command) { m_impp = new VInFilterImp(command); }
+VInFilter::VInFilter(const string& command) { m_impp = new VInFilterImp{command}; }
 VInFilter::~VInFilter() {
     if (m_impp) VL_DO_CLEAR(delete m_impp, m_impp = nullptr);
 }
@@ -1002,7 +1002,7 @@ public:
                 // missing a protect()
                 out = "PS" + old;
             } else {
-                VHashSha256 digest(v3Global.opt.protectKeyDefaulted());
+                VHashSha256 digest{v3Global.opt.protectKeyDefaulted()};
                 digest.insert(old);
                 // Add "PS" prefix (Protect Symbols) as cannot start symbol with number
                 out = "PS" + digest.digestSymbol();
@@ -1044,7 +1044,7 @@ public:
         return out;
     }
     void writeMapFile(const string& filename) const {
-        V3OutXmlFile of(filename);
+        V3OutXmlFile of{filename};
         of.putsHeader();
         of.puts("<!-- DESCR"
                 "IPTION: Verilator output: XML representation of netlist -->\n");

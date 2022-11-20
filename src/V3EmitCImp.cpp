@@ -167,7 +167,7 @@ class EmitCImp final : EmitCFunc {
             const string filename = VL_DEV_NULL;
             m_cfilesr.push_back(
                 newCFile(filename, /* slow: */ m_slow, /* source: */ true, /* add */ false));
-            m_ofp = new V3OutCFile(filename);
+            m_ofp = new V3OutCFile{filename};
         } else {
             string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(m_fileModp);
             if (!subFileName.empty()) {
@@ -178,7 +178,7 @@ class EmitCImp final : EmitCFunc {
             filename += ".cpp";
             m_cfilesr.push_back(
                 newCFile(filename, /* slow: */ m_slow, /* source: */ true, /* add */ false));
-            m_ofp = v3Global.opt.systemC() ? new V3OutScFile(filename) : new V3OutCFile(filename);
+            m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
         }
 
         ofp()->putsHeader();
@@ -593,9 +593,9 @@ class EmitCTrace final : EmitCFunc {
         m_cfilesr.push_back(cfilep);
 
         if (optSystemC()) {
-            m_ofp = new V3OutScFile(filename);
+            m_ofp = new V3OutScFile{filename};
         } else {
-            m_ofp = new V3OutCFile(filename);
+            m_ofp = new V3OutCFile{filename};
         }
         m_ofp->putsHeader();
         m_ofp->puts("// DESCR"
@@ -937,10 +937,10 @@ void V3EmitC::emitcFiles() {
          filep = VN_AS(filep->nextp(), NodeFile)) {
         AstCFile* const cfilep = VN_CAST(filep, CFile);
         if (cfilep && cfilep->tblockp()) {
-            V3OutCFile of(cfilep->name());
+            V3OutCFile of{cfilep->name()};
             of.puts("// DESCR"
                     "IPTION: Verilator generated C++\n");
-            const EmitCFunc visitor(cfilep->tblockp(), &of, true);
+            const EmitCFunc visitor{cfilep->tblockp(), &of, true};
         }
     }
 }

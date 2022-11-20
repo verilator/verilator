@@ -344,7 +344,7 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
             }
             undef(name);
         }
-        m_defines.emplace(name, VDefine(fl, value, params, cmdline));
+        m_defines.emplace(name, VDefine{fl, value, params, cmdline});
     }
 }
 
@@ -1050,7 +1050,7 @@ int V3PreProcImp::getStateToken() {
                     bool enable = defExists(m_lastSym);
                     UINFO(4, "Ifdef " << m_lastSym << (enable ? " ON" : " OFF") << endl);
                     if (state() == ps_DEFNAME_IFNDEF) enable = !enable;
-                    m_ifdefStack.push(VPreIfEntry(enable, false));
+                    m_ifdefStack.push(VPreIfEntry{enable, false});
                     if (!enable) parsingOff();
                     statePop();
                     goto next_tok;
@@ -1065,7 +1065,7 @@ int V3PreProcImp::getStateToken() {
                         // Handle `if portion
                         const bool enable = !lastIf.everOn() && defExists(m_lastSym);
                         UINFO(4, "Elsif " << m_lastSym << (enable ? " ON" : " OFF") << endl);
-                        m_ifdefStack.push(VPreIfEntry(enable, lastIf.everOn()));
+                        m_ifdefStack.push(VPreIfEntry{enable, lastIf.everOn()});
                         if (!enable) parsingOff();
                     }
                     statePop();
@@ -1380,7 +1380,7 @@ int V3PreProcImp::getStateToken() {
                 m_ifdefStack.pop();
                 const bool enable = !lastIf.everOn();
                 UINFO(4, "Else " << (enable ? " ON" : " OFF") << endl);
-                m_ifdefStack.push(VPreIfEntry(enable, lastIf.everOn()));
+                m_ifdefStack.push(VPreIfEntry{enable, lastIf.everOn()});
                 if (!lastIf.on()) parsingOn();
                 if (!enable) parsingOff();
             }
@@ -1428,7 +1428,7 @@ int V3PreProcImp::getStateToken() {
                 if (params == "0" || params == "") {  // Found, as simple substitution
                     string out;
                     if (!m_off) {
-                        VDefineRef tempref(name, "");
+                        VDefineRef tempref{name, ""};
                         out = defineSubst(&tempref);
                     }
                     // Similar code in parenthesized define (Search for END_OF_DEFARG)
@@ -1467,7 +1467,7 @@ int V3PreProcImp::getStateToken() {
                     // The CURRENT macro needs the paren saved, it's not a
                     // property of the child macro
                     if (!m_defRefs.empty()) m_defRefs.top().parenLevel(m_lexp->m_parenLevel);
-                    m_defRefs.push(VDefineRef(name, params));
+                    m_defRefs.push(VDefineRef{name, params});
                     statePush(ps_DEFPAREN);
                     m_lexp->pushStateDefArg(0);
                     goto next_tok;

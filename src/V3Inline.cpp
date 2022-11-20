@@ -292,8 +292,8 @@ private:
             UASSERT_OBJ(exprconstp || exprvarrefp, nodep,
                         "Unknown interconnect type; pinReconnectSimple should have cleared up");
             if (exprconstp) {
-                m_modp->addStmtsp(new AstAssignW(flp, new AstVarRef(flp, nodep, VAccess::WRITE),
-                                                 exprconstp->cloneTree(false)));
+                m_modp->addStmtsp(new AstAssignW{flp, new AstVarRef{flp, nodep, VAccess::WRITE},
+                                                 exprconstp->cloneTree(false)});
             } else if (nodep->user3()) {
                 // Public variable at the lower module end - we need to make sure we propagate
                 // the logic changes up and down; if we aliased, we might
@@ -301,8 +301,8 @@ private:
                 UINFO(9, "public pin assign: " << exprvarrefp << endl);
                 UASSERT_OBJ(!nodep->isNonOutput(), nodep, "Outputs only - inputs use AssignAlias");
                 m_modp->addStmtsp(
-                    new AstAssignW(flp, new AstVarRef(flp, exprvarrefp->varp(), VAccess::WRITE),
-                                   new AstVarRef(flp, nodep, VAccess::READ)));
+                    new AstAssignW{flp, new AstVarRef{flp, exprvarrefp->varp(), VAccess::WRITE},
+                                   new AstVarRef{flp, nodep, VAccess::READ}});
             } else if (nodep->isSigPublic() && VN_IS(nodep->dtypep(), UnpackArrayDType)) {
                 // Public variable at this end and it is an unpacked array. We need to assign
                 // instead of aliased, because otherwise it will pass V3Slice and invalid
@@ -313,8 +313,8 @@ private:
                                    new AstVarRef{flp, exprvarrefp->varp(), VAccess::READ}});
             } else if (nodep->isIfaceRef()) {
                 m_modp->addStmtsp(
-                    new AstAssignVarScope(flp, new AstVarRef(flp, nodep, VAccess::WRITE),
-                                          new AstVarRef(flp, exprvarrefp->varp(), VAccess::READ)));
+                    new AstAssignVarScope{flp, new AstVarRef{flp, nodep, VAccess::WRITE},
+                                          new AstVarRef{flp, exprvarrefp->varp(), VAccess::READ}});
                 FileLine* const flbp = exprvarrefp->varp()->fileline();
                 flp->modifyStateInherit(flbp);
                 flbp->modifyStateInherit(flp);
@@ -322,8 +322,8 @@ private:
                 // Do to inlining child's variable now within the same
                 // module, so a AstVarRef not AstVarXRef below
                 m_modp->addStmtsp(
-                    new AstAssignAlias(flp, new AstVarRef(flp, nodep, VAccess::WRITE),
-                                       new AstVarRef(flp, exprvarrefp->varp(), VAccess::READ)));
+                    new AstAssignAlias{flp, new AstVarRef{flp, nodep, VAccess::WRITE},
+                                       new AstVarRef{flp, exprvarrefp->varp(), VAccess::READ}});
                 FileLine* const flbp = exprvarrefp->varp()->fileline();
                 flp->modifyStateInherit(flbp);
                 flbp->modifyStateInherit(flp);
@@ -519,8 +519,8 @@ private:
         });
         // Create data for dotted variable resolution
         AstCellInline* const inlinep
-            = new AstCellInline(nodep->fileline(), nodep->name(), nodep->modp()->origName(),
-                                nodep->modp()->timeunit());
+            = new AstCellInline{nodep->fileline(), nodep->name(), nodep->modp()->origName(),
+                                nodep->modp()->timeunit()};
         m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
         // Create assignments to the pins
         for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
@@ -659,7 +659,7 @@ private:
                 if ((cellp = VN_CAST(fromVarp->user1p(), Cell)) || (cellp = irdtp->cellp())) {
                     varp->user1p(cellp);
                     const string alias = m_scope + "__DOT__" + pinp->name();
-                    cellp->addIntfRefsp(new AstIntfRef(pinp->fileline(), alias));
+                    cellp->addIntfRefsp(new AstIntfRef{pinp->fileline(), alias});
                 }
             }
 
@@ -688,7 +688,7 @@ private:
         string alias;
         if (!m_scope.empty()) alias = m_scope + "__DOT__";
         alias += varlp->name();
-        cellp->addIntfRefsp(new AstIntfRef(varlp->fileline(), alias));
+        cellp->addIntfRefsp(new AstIntfRef{varlp->fileline(), alias});
     }
     //--------------------
     void visit(AstNodeExpr*) override {}  // Accelerate

@@ -378,9 +378,9 @@ void EmitCSyms::emitSymHdr() {
     newCFile(filename, true /*slow*/, false /*source*/);
 
     if (v3Global.opt.systemC()) {
-        m_ofp = new V3OutScFile(filename);
+        m_ofp = new V3OutScFile{filename};
     } else {
-        m_ofp = new V3OutCFile(filename);
+        m_ofp = new V3OutCFile{filename};
     }
 
     ofp()->putsHeader();
@@ -569,9 +569,9 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
     closeSplit();
 
     if (v3Global.opt.systemC()) {
-        m_ofp = new V3OutScFile(filename);
+        m_ofp = new V3OutScFile{filename};
     } else {
-        m_ofp = new V3OutCFile(filename);
+        m_ofp = new V3OutCFile{filename};
     }
 
     m_ofpBase->puts(symClassName() + "_" + cvtToStr(m_funcNum) + "(");
@@ -650,9 +650,9 @@ void EmitCSyms::emitSymImp() {
     cfilep->support(true);
 
     if (v3Global.opt.systemC()) {
-        m_ofp = new V3OutScFile(filename);
+        m_ofp = new V3OutScFile{filename};
     } else {
-        m_ofp = new V3OutCFile(filename);
+        m_ofp = new V3OutCFile{filename};
     }
 
     m_ofpBase = m_ofp;

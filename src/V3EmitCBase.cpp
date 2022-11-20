@@ -58,7 +58,7 @@ string EmitCBaseVisitor::funcNameProtect(const AstCFunc* nodep, const AstNodeMod
 }
 
 AstCFile* EmitCBaseVisitor::newCFile(const string& filename, bool slow, bool source, bool add) {
-    AstCFile* const cfilep = new AstCFile(v3Global.rootp()->fileline(), filename);
+    AstCFile* const cfilep = new AstCFile{v3Global.rootp()->fileline(), filename};
     cfilep->slow(slow);
     cfilep->source(source);
     if (add) v3Global.rootp()->addFilesp(cfilep);

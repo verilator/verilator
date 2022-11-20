@@ -133,7 +133,7 @@ VTimescale::VTimescale(const string& value, bool& badr)
     badr = true;
     const string spaceless = VString::removeWhitespace(value);
     for (int i = TS_100S; i < _ENUM_END; ++i) {
-        const VTimescale ts(i);
+        const VTimescale ts{i};
         if (spaceless == ts.ascii()) {
             badr = false;
             m_e = ts.m_e;
@@ -258,7 +258,7 @@ void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr
     }
 
     bool unitbad;
-    const VTimescale unit(unitStr, unitbad /*ref*/);
+    const VTimescale unit{unitStr, unitbad /*ref*/};
     if (unitbad && !(unitStr.empty() && allowEmpty)) {
         fl->v3error("`timescale timeunit syntax error: '" << unitStr << "'");
         return;
@@ -863,7 +863,7 @@ string V3Options::protectKeyDefaulted() {
     if (m_protectKey.empty()) {
         // Create a key with a human-readable symbol-like name.
         // This conversion drops ~2 bits of entropy out of 256, shouldn't matter.
-        VHashSha256 digest(V3Os::trueRandom(32));
+        VHashSha256 digest{V3Os::trueRandom(32)};
         m_protectKey = "VL-KEY-" + digest.digestSymbol();
     }
     return m_protectKey;
@@ -1198,7 +1198,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     DECL_OPTION("-hierarchical", OnOff, &m_hierarchical);
     DECL_OPTION("-hierarchical-block", CbVal, [this](const char* valp) {
-        const V3HierarchicalBlockOption opt(valp);
+        const V3HierarchicalBlockOption opt{valp};
         m_hierBlocks.emplace(opt.mangledName(), opt);
     });
     DECL_OPTION("-hierarchical-child", Set, &m_hierChild);
@@ -1502,7 +1502,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, true);
     });
     DECL_OPTION("-Werror-", CbPartialMatch, [this, fl](const char* optp) {
-        const V3ErrorCode code(optp);
+        const V3ErrorCode code{optp};
         if (code == V3ErrorCode::EC_ERROR) {
             if (!isFuture(optp)) fl->v3fatal("Unknown warning specified: -Werror-" << optp);
         } else {

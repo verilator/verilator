@@ -211,7 +211,7 @@ public:
             } else {
                 varNum.opAssign(pinValuep->num());
             }
-            V3Number isEq(pinValuep, 1);
+            V3Number isEq{pinValuep, 1};
             isEq.opEq(varNum, hierOptParamp->num());
             return isEq.isNeqZero();
         }
@@ -344,7 +344,7 @@ class ParamProcessor final {
         const string key = paramValueKey(nodep);
         V3Hash hash = V3Hasher::uncachedHash(nodep);
         // Force hash collisions -- for testing only
-        if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash();
+        if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash{};
         int num;
         const auto it = m_valueMap.find(hash);
         if (it != m_valueMap.end() && it->second.second == key) {
@@ -656,8 +656,8 @@ class ParamProcessor final {
                     if (debug()) pinp->dumpTree(cout, "-nodes: ");
                     pinp->v3error("Can't convert defparam value to constant: Param "
                                   << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
-                    pinp->exprp()->replaceWith(new AstConst(
-                        pinp->fileline(), AstConst::WidthedValue(), modvarp->width(), 0));
+                    pinp->exprp()->replaceWith(new AstConst{
+                        pinp->fileline(), AstConst::WidthedValue{}, modvarp->width(), 0});
                 } else if (origp && exprp->sameTree(origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
@@ -1220,7 +1220,7 @@ class ParamVisitor final : public VNVisitor {
             if (!itemp->isDefault()) {
                 for (AstNode* ep = itemp->condsp(); ep; ep = ep->nextp()) {
                     if (const AstConst* const ccondp = VN_CAST(ep, Const)) {
-                        V3Number match(nodep, 1);
+                        V3Number match{nodep, 1};
                         match.opEq(ccondp->num(), exprp->num());
                         if (!keepp && match.isNeqZero()) keepp = itemp->stmtsp();
                     } else {

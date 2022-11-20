@@ -45,7 +45,7 @@ class EmitCConstPool final : public EmitCConstInit {
         const string fileName = v3Global.opt.makeDir() + "/" + topClassName() + "__ConstPool_"
                                 + cvtToStr(m_outFileCount) + ".cpp";
         newCFile(fileName, /* slow: */ true, /* source: */ true);
-        V3OutCFile* const ofp = new V3OutCFile(fileName);
+        V3OutCFile* const ofp = new V3OutCFile{fileName};
         ofp->putsHeader();
         ofp->puts("// DESCRIPTION: Verilator output: Constant pool\n");
         ofp->puts("//\n");

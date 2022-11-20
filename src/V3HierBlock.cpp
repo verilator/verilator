@@ -311,7 +311,7 @@ public:
 void V3HierBlockPlan::add(const AstNodeModule* modp, const std::vector<AstVar*>& gparams) {
     const iterator it = m_blocks.find(modp);
     if (it == m_blocks.end()) {
-        V3HierBlock* hblockp = new V3HierBlock(modp, gparams);
+        V3HierBlock* hblockp = new V3HierBlock{modp, gparams};
         UINFO(3, "Add " << modp->prettyNameQ() << " with " << gparams.size() << " parameters"
                         << std::endl);
         m_blocks.emplace(modp, hblockp);

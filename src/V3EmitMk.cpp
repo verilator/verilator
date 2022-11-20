@@ -39,7 +39,7 @@ public:
 
     void emitClassMake() {
         // Generate the makefile
-        V3OutMkFile of(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_classes.mk");
+        V3OutMkFile of{v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_classes.mk"};
         of.putsHeader();
         of.puts("# DESCR"
                 "IPTION: Verilator output: Make include file with class lists\n");
@@ -135,7 +135,7 @@ public:
 
     void emitOverallMake() {
         // Generate the makefile
-        V3OutMkFile of(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".mk");
+        V3OutMkFile of{v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".mk"};
         of.putsHeader();
         of.puts("# DESCR"
                 "IPTION: Verilator output: "
@@ -398,7 +398,7 @@ public:
     explicit EmitMkHierVerilation(const V3HierBlockPlan* planp)
         : m_planp{planp}
         , m_makefile{v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_hier.mk"} {
-        V3OutMkFile of(m_makefile);
+        V3OutMkFile of{m_makefile};
         emit(of);
     }
 };

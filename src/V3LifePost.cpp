@@ -263,7 +263,7 @@ private:
 
         if (v3Global.opt.mtasks()) {
             UASSERT_OBJ(m_mtasksGraphp, nodep, "Should have initted m_mtasksGraphp by now");
-            m_checker.reset(new GraphPathChecker(m_mtasksGraphp));
+            m_checker.reset(new GraphPathChecker{m_mtasksGraphp});
         } else {
             UASSERT_OBJ(!m_mtasksGraphp, nodep,
                         "Did not expect any m_mtasksGraphp in serial mode");

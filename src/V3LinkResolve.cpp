@@ -152,21 +152,21 @@ private:
             AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
             if (AstNodeVarRef* const varrefp
                 = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
-                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::VAR_BASE,
-                                           varrefp->cloneTree(false)));
+                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
+                                           varrefp->cloneTree(false)});
             } else if (AstUnlinkedRef* const uvxrp
                        = VN_CAST(basefromp, UnlinkedRef)) {  // Maybe unlinked - so need to clone
-                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::VAR_BASE,
-                                           uvxrp->cloneTree(false)));
+                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
+                                           uvxrp->cloneTree(false)});
             } else if (auto* const fromp = VN_CAST(basefromp, LambdaArgRef)) {
-                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::VAR_BASE,
-                                           fromp->cloneTree(false)));
+                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
+                                           fromp->cloneTree(false)});
             } else if (AstMemberSel* const fromp = VN_CAST(basefromp, MemberSel)) {
-                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::MEMBER_BASE,
-                                           fromp->cloneTree(false)));
+                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::MEMBER_BASE,
+                                           fromp->cloneTree(false)});
             } else if (AstEnumItemRef* const fromp = VN_CAST(basefromp, EnumItemRef)) {
-                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::ENUM_BASE,
-                                           fromp->cloneTree(false)));
+                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::ENUM_BASE,
+                                           fromp->cloneTree(false)});
             } else if (VN_IS(basefromp, Replicate)) {
                 // From {...}[...] syntax in IEEE 2017
                 if (basefromp) UINFO(1, "    Related node: " << basefromp << endl);
@@ -412,9 +412,9 @@ private:
                         varoutp = varp;
                         // Tie off
                         m_modp->addStmtsp(
-                            new AstAssignW(varp->fileline(),
-                                           new AstVarRef(varp->fileline(), varp, VAccess::WRITE),
-                                           new AstConst(varp->fileline(), AstConst::BitFalse())));
+                            new AstAssignW{varp->fileline(),
+                                           new AstVarRef{varp->fileline(), varp, VAccess::WRITE},
+                                           new AstConst{varp->fileline(), AstConst::BitFalse{}}});
                     } else {
                         varp->v3error("Only inputs and outputs are allowed in udp modules");
                     }

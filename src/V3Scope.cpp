@@ -107,10 +107,10 @@ private:
         UINFO(4, " MOD AT " << scopename << "  " << nodep << endl);
         AstNode::user1ClearTree();
 
-        m_scopep = new AstScope(
+        m_scopep = new AstScope{
             (m_aboveCellp ? static_cast<AstNode*>(m_aboveCellp) : static_cast<AstNode*>(nodep))
                 ->fileline(),
-            nodep, scopename, m_aboveScopep, m_aboveCellp);
+            nodep, scopename, m_aboveScopep, m_aboveCellp};
         if (VN_IS(nodep, Package)) m_packageScopes.emplace(nodep, m_scopep);
 
         // Now for each child cell, iterate the module this cell points to
@@ -173,7 +173,7 @@ private:
             const AstNode* const abovep = (m_aboveCellp ? static_cast<AstNode*>(m_aboveCellp)
                                                         : static_cast<AstNode*>(nodep));
             m_scopep
-                = new AstScope(abovep->fileline(), m_modp, scopename, m_aboveScopep, m_aboveCellp);
+                = new AstScope{abovep->fileline(), m_modp, scopename, m_aboveScopep, m_aboveCellp};
             m_packageScopes.emplace(nodep, m_scopep);
 
             // Create scope for the current usage of this cell
@@ -304,11 +304,11 @@ private:
         // To keep correct visual order, must add before other Text's
         AstText* afterp = nodep->scopeAttrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->addScopeAttrp(new AstText(nodep->fileline(), prefix));
+        nodep->addScopeAttrp(new AstText{nodep->fileline(), prefix});
         if (afterp) nodep->addScopeAttrp(afterp);
         afterp = nodep->scopeEntrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->addScopeEntrp(new AstText(nodep->fileline(), prefix));
+        nodep->addScopeEntrp(new AstText{nodep->fileline(), prefix});
         if (afterp) nodep->addScopeEntrp(afterp);
         iterateChildren(nodep);
     }

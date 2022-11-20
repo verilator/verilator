@@ -498,7 +498,7 @@ public:
         if (iter != s_dsMap.end()) {
             return iter->second;
         } else {
-            OrderMoveDomScope* domScopep = new OrderMoveDomScope(domainp, scopep);
+            OrderMoveDomScope* domScopep = new OrderMoveDomScope{domainp, scopep};
             s_dsMap.emplace(key, domScopep);
             return domScopep;
         }
@@ -736,7 +736,7 @@ public:
     // METHODS
     OrderMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex*,
                                  const AstSenTree* domainp) override {
-        OrderMoveVertex* const resultp = new OrderMoveVertex(m_pomGraphp, lvertexp);
+        OrderMoveVertex* const resultp = new OrderMoveVertex{m_pomGraphp, lvertexp};
         AstScope* const scopep = lvertexp ? lvertexp->scopep() : nullptr;
         resultp->domScopep(OrderMoveDomScope::findCreate(domainp, scopep));
         resultp->m_pomWaitingE.pushBack(*m_pomWaitingp, resultp);
@@ -1358,7 +1358,7 @@ void OrderProcess::processMTasks() {
         const AbstractLogicMTask* const mtaskp = static_cast<const AbstractLogicMTask*>(mtaskVxp);
 
         // Create a body for this mtask
-        AstMTaskBody* const bodyp = new AstMTaskBody(rootFlp);
+        AstMTaskBody* const bodyp = new AstMTaskBody{rootFlp};
         MTaskState& state = mtaskStates[mtaskp->id()];
         state.m_mtaskBodyp = bodyp;
 
@@ -1388,7 +1388,7 @@ void OrderProcess::processMTasks() {
         // - The ExecMTask graph and the AstMTaskBody's produced here
         //   persist until code generation time.
         V3Graph* const depGraphp = execGraphp->depGraphp();
-        state.m_execMTaskp = new ExecMTask(depGraphp, bodyp, mtaskp->id());
+        state.m_execMTaskp = new ExecMTask{depGraphp, bodyp, mtaskp->id()};
         // Cross-link each ExecMTask and MTaskBody
         //  Q: Why even have two objects?
         //  A: One is an AstNode, the other is a GraphVertex,
@@ -1399,7 +1399,7 @@ void OrderProcess::processMTasks() {
             const AbstractLogicMTask* const fromp
                 = static_cast<const AbstractLogicMTask*>(fromVxp);
             const MTaskState& fromState = mtaskStates[fromp->id()];
-            new V3GraphEdge(depGraphp, fromState.m_execMTaskp, state.m_execMTaskp, 1);
+            new V3GraphEdge{depGraphp, fromState.m_execMTaskp, state.m_execMTaskp, 1};
         }
         execGraphp->addMTaskBodiesp(bodyp);
     }

@@ -147,7 +147,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
         return;
     }
 
-    AstNodeModule* const newmodp = new AstModule(oldmodp->fileline(), "$root");
+    AstNodeModule* const newmodp = new AstModule{oldmodp->fileline(), "$root"};
     newmodp->name(AstNode::encodeName(newmodp->name()));  // so origName is nice
     // Make the new module first in the list
     oldmodp->unlinkFrBackWithNext();
@@ -167,10 +167,10 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
     for (AstNodeModule* modp = rootp->modulesp(); modp; modp = VN_AS(modp->nextp(), NodeModule)) {
         if (VN_IS(modp, Package)) {
             AstCell* const cellp
-                = new AstCell(modp->fileline(), modp->fileline(),
+                = new AstCell{modp->fileline(), modp->fileline(),
                               // Could add __03a__03a="::" to prevent conflict
                               // with module names/"v"
-                              modp->name(), modp->name(), nullptr, nullptr, nullptr);
+                              modp->name(), modp->name(), nullptr, nullptr, nullptr};
             cellp->modp(modp);
             newmodp->addStmtsp(cellp);
         }
@@ -240,10 +240,14 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
         if (VN_IS(oldmodp, Package)) continue;
         // Add instance
         UINFO(5, "LOOP " << oldmodp << endl);
-        AstCell* const cellp = new AstCell(
-            newmodp->fileline(), newmodp->fileline(),
+        AstCell* const cellp = new AstCell{
+            newmodp->fileline(),
+            newmodp->fileline(),
             (!v3Global.opt.l2Name().empty() ? v3Global.opt.l2Name() : oldmodp->name()),
-            oldmodp->name(), nullptr, nullptr, nullptr);
+            oldmodp->name(),
+            nullptr,
+            nullptr,
+            nullptr};
         cellp->modp(oldmodp);
         newmodp->addStmtsp(cellp);
 
@@ -279,10 +283,10 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                         varp->trace(false);
                     }
 
-                    AstPin* const pinp = new AstPin(
+                    AstPin* const pinp = new AstPin{
                         oldvarp->fileline(), 0, varp->name(),
-                        new AstVarRef(varp->fileline(), varp,
-                                      oldvarp->isWritable() ? VAccess::WRITE : VAccess::READ));
+                        new AstVarRef{varp->fileline(), varp,
+                                      oldvarp->isWritable() ? VAccess::WRITE : VAccess::READ}};
                     // Skip length and width comp; we know it's a direct assignment
                     pinp->modVarp(oldvarp);
                     cellp->addPinsp(pinp);

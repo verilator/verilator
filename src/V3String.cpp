@@ -386,7 +386,7 @@ string VHashSha256::digestSymbol() {
 
 void VHashSha256::selfTestOne(const string& data, const string& data2, const string& exp,
                               const string& exp64) {
-    VHashSha256 digest(data);
+    VHashSha256 digest{data};
     if (data2 != "") digest.insert(data2);
     if (VL_UNCOVERABLE(digest.digestHex() != exp)) {
         std::cerr << "%Error: When hashing '" << data + data2 << "'\n"  // LCOV_EXCL_LINE
@@ -476,7 +476,7 @@ string VName::hashedName() {
         m_hashed = m_name;
         return m_hashed;
     } else {
-        VHashSha256 hash(m_name);
+        VHashSha256 hash{m_name};
         const string suffix = "__Vhsh" + hash.digestSymbol();
         if (s_minLength < s_maxLength) {
             s_dehashMap[suffix] = m_name.substr(s_minLength);

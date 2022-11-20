@@ -880,7 +880,7 @@ void V3EmitV::emitvFiles() {
          filep = VN_AS(filep->nextp(), NodeFile)) {
         AstVFile* const vfilep = VN_CAST(filep, VFile);
         if (vfilep && vfilep->tblockp()) {
-            V3OutVFile of(vfilep->name());
+            V3OutVFile of{vfilep->name()};
             of.puts("// DESCR"
                     "IPTION: Verilator generated Verilog\n");
             { EmitVFileVisitor{vfilep->tblockp(), &of, true, false}; }

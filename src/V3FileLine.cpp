@@ -279,7 +279,7 @@ FileLine* FileLine::copyOrSameFileLine() {
     if (lastNewp && *lastNewp == *this) {  // Compares lineno, filename, etc
         return lastNewp;
     }
-    FileLine* const newp = new FileLine(this);
+    FileLine* const newp = new FileLine{this};
     lastNewp = newp;
     return newp;
 }
@@ -340,7 +340,7 @@ bool FileLine::warnOff(const string& msg, bool flag) {
         warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
         return true;
     }
-    const V3ErrorCode code(cmsg);
+    const V3ErrorCode code{cmsg};
     if (code < V3ErrorCode::EC_FIRST_WARN) {
         return false;
     } else {
