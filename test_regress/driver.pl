@@ -688,6 +688,7 @@ sub new {
         $self->{top_shell_filename} = "$self->{obj_dir}/$self->{VM_PREFIX}__top.v";
     }
     $self->{pli_filename} ||= $self->{name} . ".cpp";
+
     return $self;
 }
 
@@ -963,6 +964,11 @@ sub compile {
     $self->{context_threads} = $param{context_threads};
 
     compile_vlt_cmd(%param);
+
+    my $define_opt = defineOpt($self->{xsim});
+    if (join(' ', @{$self->{v_flags}}) !~ /TEST_DUMPFILE/) {
+        push @{$self->{v_flags}}, ($define_opt . "TEST_DUMPFILE=" . $self->trace_filename);
+    }
 
     if (!$param{make_top_shell}) {
         $param{top_shell_filename}

@@ -12,7 +12,7 @@ module t #(
            ) (/*AUTOARG*/);
 
    initial begin
-      $dumpfile({`STRINGIFY(`TEST_OBJ_DIR),"/simx.vcd"});
+      $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
       $dumpvars;
 
       $write("*-* All Finished *-*\n");

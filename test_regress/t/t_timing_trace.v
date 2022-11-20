@@ -18,7 +18,7 @@ module t;
     logic d;
 
     initial begin
-        $dumpfile({`STRINGIFY(`TEST_OBJ_DIR),"/simx.vcd"});
+        $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
         $dumpvars;
         forever clk = #CLK_HALF_PERIOD ~clk;
     end

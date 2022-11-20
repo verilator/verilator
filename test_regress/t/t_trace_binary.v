@@ -10,7 +10,7 @@ module t(/*AUTOARG*/);
    int sig;
    initial begin
       sig = 10;
-      $dumpfile({`STRINGIFY(`TEST_OBJ_DIR),"/simx.vcd"});
+      $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
       $dumpvars();
       #20;
       sig = 20;
