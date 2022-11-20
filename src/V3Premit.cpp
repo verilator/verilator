@@ -137,17 +137,17 @@ private:
             ++m_extractedToConstPool;
         } else {
             // Keep as local temporary. Name based on hash of node for output stability.
-            varp = new AstVar(fl, VVarType::STMTTEMP, m_tempNames.get(nodep), nodep->dtypep());
+            varp = new AstVar{fl, VVarType::STMTTEMP, m_tempNames.get(nodep), nodep->dtypep()};
             m_cfuncp->addInitsp(varp);
             // Put assignment before the referencing statement
-            insertBeforeStmt(new AstAssign(fl, new AstVarRef(fl, varp, VAccess::WRITE), nodep));
+            insertBeforeStmt(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, nodep});
         }
 
         // Do not remove VarRefs to this in V3Const
         if (noSubst) varp->noSubst(true);
 
         // Replace node with VarRef to new Var
-        relinker.relink(new AstVarRef(fl, varp, VAccess::READ));
+        relinker.relink(new AstVarRef{fl, varp, VAccess::READ});
     }
 
     // VISITORS
@@ -243,24 +243,24 @@ private:
                     // Then over shifting gives the sign bit, not all zeros
                     // Note *NOT* clean output -- just like normal shift!
                     // Create equivalent of VL_SIGNONES_(node_width)
-                    constzerop = new AstNegate(
+                    constzerop = new AstNegate{
                         nodep->fileline(),
-                        new AstShiftR(nodep->fileline(), nodep->lhsp()->cloneTree(false),
-                                      new AstConst(nodep->fileline(), m1value), nodep->width()));
+                        new AstShiftR{nodep->fileline(), nodep->lhsp()->cloneTree(false),
+                                      new AstConst(nodep->fileline(), m1value), nodep->width()}};
                 } else {
-                    constzerop = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
-                                              nodep->width(), 0);
+                    constzerop = new AstConst{nodep->fileline(), AstConst::WidthedValue{},
+                                              nodep->width(), 0};
                 }
                 constzerop->dtypeFrom(nodep);  // unsigned
 
                 AstNodeExpr* const constwidthp
-                    = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                    = new AstConst(nodep->fileline(), AstConst::WidthedValue{},
                                    nodep->rhsp()->widthMin(), m1value);
                 constwidthp->dtypeFrom(nodep->rhsp());  // unsigned
-                AstCond* const newp = new AstCond(
+                AstCond* const newp = new AstCond{
                     nodep->fileline(),
-                    new AstGte(nodep->fileline(), constwidthp, nodep->rhsp()->cloneTree(false)),
-                    nodep, constzerop);
+                    new AstGte{nodep->fileline(), constwidthp, nodep->rhsp()->cloneTree(false)},
+                    nodep, constzerop};
                 replaceHandle.relink(newp);
             }
         }

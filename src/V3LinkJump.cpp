@@ -105,8 +105,8 @@ private:
         if (VN_IS(underp, JumpLabel)) {
             return VN_AS(underp, JumpLabel);
         } else {  // Move underp stuff to be under a new label
-            AstJumpBlock* const blockp = new AstJumpBlock(nodep->fileline(), nullptr);
-            AstJumpLabel* const labelp = new AstJumpLabel(nodep->fileline(), blockp);
+            AstJumpBlock* const blockp = new AstJumpBlock{nodep->fileline(), nullptr};
+            AstJumpLabel* const labelp = new AstJumpLabel{nodep->fileline(), blockp};
             blockp->labelp(labelp);
 
             VNRelinker repHandle;
@@ -163,21 +163,21 @@ private:
         const string name = string("__Vrepeat") + cvtToStr(m_modRepeatNum++);
         // Spec says value is integral, if negative is ignored
         AstVar* const varp
-            = new AstVar(nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findSigned32DType());
+            = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findSigned32DType()};
         varp->usedLoopIdx(true);
         m_modp->addStmtsp(varp);
-        AstNode* initsp = new AstAssign(
-            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE), countp);
-        AstNode* const decp = new AstAssign(
-            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::WRITE),
-            new AstSub(nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::READ),
-                       new AstConst(nodep->fileline(), 1)));
-        AstNodeExpr* const zerosp = new AstConst(nodep->fileline(), AstConst::Signed32(), 0);
-        AstNodeExpr* const condp = new AstGtS(
-            nodep->fileline(), new AstVarRef(nodep->fileline(), varp, VAccess::READ), zerosp);
+        AstNode* initsp = new AstAssign{
+            nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE}, countp};
+        AstNode* const decp = new AstAssign{
+            nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE},
+            new AstSub{nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::READ},
+                       new AstConst{nodep->fileline(), 1}}};
+        AstNodeExpr* const zerosp = new AstConst{nodep->fileline(), AstConst::Signed32{}, 0};
+        AstNodeExpr* const condp = new AstGtS{
+            nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::READ}, zerosp};
         AstNode* const bodysp = nodep->stmtsp();
         if (bodysp) bodysp->unlinkFrBackWithNext();
-        AstNode* newp = new AstWhile(nodep->fileline(), condp, bodysp, decp);
+        AstNode* newp = new AstWhile{nodep->fileline(), condp, bodysp, decp};
         initsp = initsp->addNext(newp);
         newp = initsp;
         nodep->replaceWith(newp);
@@ -241,14 +241,14 @@ private:
         } else {
             if (funcp && nodep->lhsp()) {
                 // Set output variable to return value
-                nodep->addHereThisAsNext(new AstAssign(
+                nodep->addHereThisAsNext(new AstAssign{
                     nodep->fileline(),
-                    new AstVarRef(nodep->fileline(), VN_AS(funcp->fvarp(), Var), VAccess::WRITE),
-                    nodep->lhsp()->unlinkFrBackWithNext()));
+                    new AstVarRef{nodep->fileline(), VN_AS(funcp->fvarp(), Var), VAccess::WRITE},
+                    nodep->lhsp()->unlinkFrBackWithNext()});
             }
             // Jump to the end of the function call
             AstJumpLabel* const labelp = findAddLabel(m_ftaskp, false);
-            nodep->addHereThisAsNext(new AstJumpGo(nodep->fileline(), labelp));
+            nodep->addHereThisAsNext(new AstJumpGo{nodep->fileline(), labelp});
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -260,7 +260,7 @@ private:
         } else {
             // Jump to the end of the loop
             AstJumpLabel* const labelp = findAddLabel(m_loopp, false);
-            nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
+            nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -273,7 +273,7 @@ private:
             // Jump to the end of this iteration
             // If a "for" loop then need to still do the post-loop increment
             AstJumpLabel* const labelp = findAddLabel(m_loopp, true);
-            nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
+            nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -295,7 +295,7 @@ private:
         } else if (AstBegin* const beginp = VN_CAST(blockp, Begin)) {
             // Jump to the end of the named block
             AstJumpLabel* const labelp = findAddLabel(beginp, false);
-            nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
+            nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
         } else {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disable fork");
         }

@@ -184,8 +184,8 @@ private:
                 AstNodeExpr* valuep = nullptr;
                 if (nodep->valuep()) {
                     valuep
-                        = new AstAdd(flp, nodep->valuep()->cloneTree(true),
-                                     new AstConst(flp, AstConst::Unsized32(), offset_from_init));
+                        = new AstAdd{flp, nodep->valuep()->cloneTree(true),
+                                     new AstConst(flp, AstConst::Unsized32{}, offset_from_init)};
                 }
                 addp = AstNode::addNext(addp, new AstEnumItem{flp, name, nullptr, valuep});
             }
@@ -262,11 +262,11 @@ private:
                // AstInitial
             else if (m_valueModp) {
                 // Making an AstAssign (vs AstAssignW) to a wire is an error, suppress it
-                FileLine* const newfl = new FileLine(fl);
+                FileLine* const newfl = new FileLine{fl};
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
                 auto* const assp
-                    = new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), VAccess::WRITE),
-                                    VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr));
+                    = new AstAssign{newfl, new AstVarRef{newfl, nodep->name(), VAccess::WRITE},
+                                    VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)};
                 if (nodep->lifetime().isAutomatic()) {
                     nodep->addNextHere(new AstInitialAutomatic{newfl, assp});
                 } else {
@@ -275,8 +275,8 @@ private:
             }  // 4. Under blocks, it's an initial value to be under an assign
             else {
                 nodep->addNextHere(
-                    new AstAssign(fl, new AstVarRef(fl, nodep->name(), VAccess::WRITE),
-                                  VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)));
+                    new AstAssign{fl, new AstVarRef{fl, nodep->name(), VAccess::WRITE},
+                                  VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)});
             }
         }
         if (nodep->isIfaceRef() && !nodep->isIfaceParent() && !v3Global.opt.topIfacesSupported()) {
@@ -371,7 +371,7 @@ private:
             // but someday we may be more general
             const bool lvalue = m_varp->isSigUserRWPublic();
             nodep->addStmtsp(
-                new AstVarRef(nodep->fileline(), m_varp, lvalue ? VAccess::WRITE : VAccess::READ));
+                new AstVarRef{nodep->fileline(), m_varp, lvalue ? VAccess::WRITE : VAccess::READ});
         }
     }
 
@@ -405,14 +405,14 @@ private:
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return;
             } else {
-                defp = new AstTypedef(nodep->fileline(), nodep->name(), nullptr, VFlagChildDType(),
-                                      dtypep);
+                defp = new AstTypedef{nodep->fileline(), nodep->name(), nullptr, VFlagChildDType{},
+                                      dtypep};
                 m_implTypedef.insert(
                     std::make_pair(std::make_pair(nodep->containerp(), defp->name()), defp));
                 backp->addNextHere(defp);
             }
         }
-        nodep->replaceWith(new AstRefDType(nodep->fileline(), defp->name()));
+        nodep->replaceWith(new AstRefDType{nodep->fileline(), defp->name()});
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 

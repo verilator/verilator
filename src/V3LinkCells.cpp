@@ -123,7 +123,7 @@ private:
     // METHODS
     V3GraphVertex* vertex(AstNodeModule* nodep) {
         // Return corresponding vertex for this module
-        if (!nodep->user1p()) nodep->user1p(new LinkCellsVertex(&m_graph, nodep));
+        if (!nodep->user1p()) nodep->user1p(new LinkCellsVertex{&m_graph, nodep});
         return nodep->user1u().toGraphVertex();
     }
 
@@ -143,7 +143,7 @@ private:
             // If file not found, make AstNotFoundModule, rather than error out.
             // We'll throw the error when we know the module will really be needed.
             const string prettyName = AstNode::prettyName(modName);
-            V3Parse parser(v3Global.rootp(), m_filterp, m_parseSymp);
+            V3Parse parser{v3Global.rootp(), m_filterp, m_parseSymp};
             // true below -> other simulators treat modules in link-found files as library cells
             parser.parseFile(nodep->fileline(), prettyName, true, "");
             V3Error::abortIfErrors();
@@ -218,8 +218,8 @@ private:
                                                : !topMatch) {  // Any non-specified module is lower
                 // Put under a fake vertex so that the graph ranking won't indicate
                 // this is a top level module
-                if (!m_libVertexp) m_libVertexp = new LibraryVertex(&m_graph);
-                new V3GraphEdge(&m_graph, m_libVertexp, vertex(nodep), 1, false);
+                if (!m_libVertexp) m_libVertexp = new LibraryVertex{&m_graph};
+                new V3GraphEdge{&m_graph, m_libVertexp, vertex(nodep), 1, false};
             }
             // Note AstBind also has iteration on cells
             iterateChildren(nodep);
@@ -236,7 +236,7 @@ private:
         if (modp) {
             if (VN_IS(modp, Iface)) {
                 // Track module depths, so can sort list from parent down to children
-                new V3GraphEdge(&m_graph, vertex(m_modp), vertex(modp), 1, false);
+                new V3GraphEdge{&m_graph, vertex(m_modp), vertex(modp), 1, false};
                 if (!nodep->cellp()) nodep->ifacep(VN_AS(modp, Iface));
             } else if (VN_IS(modp, NotFoundModule)) {  // Will error out later
             } else {
@@ -250,7 +250,7 @@ private:
         // Package Import: We need to do the package before the use of a package
         iterateChildren(nodep);
         UASSERT_OBJ(nodep->packagep(), nodep, "Unlinked package");  // Parser should set packagep
-        new V3GraphEdge(&m_graph, vertex(m_modp), vertex(nodep->packagep()), 1, false);
+        new V3GraphEdge{&m_graph, vertex(m_modp), vertex(nodep->packagep()), 1, false};
     }
 
     void visit(AstBind* nodep) override {
@@ -322,8 +322,8 @@ private:
                             // user1 etc will retain its pre-clone value
                             cellmodp->user2p(otherModp);
                             v3Global.rootp()->addModulesp(otherModp);
-                            new V3GraphEdge(&m_graph, vertex(cellmodp), vertex(otherModp), 1,
-                                            false);
+                            new V3GraphEdge{&m_graph, vertex(cellmodp), vertex(otherModp), 1,
+                                            false};
                         }
                         cellmodp = otherModp;
                         nodep->modp(cellmodp);
@@ -336,7 +336,7 @@ private:
                 } else {  // Non-recursive
                     // Track module depths, so can sort list from parent down to children
                     nodep->modp(cellmodp);
-                    new V3GraphEdge(&m_graph, vertex(m_modp), vertex(cellmodp), 1, false);
+                    new V3GraphEdge{&m_graph, vertex(m_modp), vertex(cellmodp), 1, false};
                 }
             }
         }
@@ -400,17 +400,17 @@ private:
                         if (pinStar) {
                             UINFO(9, "    need .* PORT  " << portp << endl);
                             // Create any not already connected
-                            AstPin* const newp = new AstPin(
+                            AstPin* const newp = new AstPin{
                                 nodep->fileline(), 0, portp->name(),
-                                new AstParseRef(nodep->fileline(), VParseRefExp::PX_TEXT,
-                                                portp->name(), nullptr, nullptr));
+                                new AstParseRef{nodep->fileline(), VParseRefExp::PX_TEXT,
+                                                portp->name(), nullptr, nullptr}};
                             newp->svImplicit(true);
                             nodep->addPinsp(newp);
                         } else {  // warn on the CELL that needs it, not the port
                             nodep->v3warn(PINMISSING,
                                           "Cell has missing pin: " << portp->prettyNameQ());
                             AstPin* const newp
-                                = new AstPin(nodep->fileline(), 0, portp->name(), nullptr);
+                                = new AstPin{nodep->fileline(), 0, portp->name(), nullptr};
                             nodep->addPinsp(newp);
                         }
                     }
@@ -427,21 +427,21 @@ private:
             if (!nodep->hasIfaceVar()) {
                 const string varName
                     = nodep->name() + "__Viftop";  // V3LinkDot looks for this naming
-                AstIfaceRefDType* const idtypep = new AstIfaceRefDType(
-                    nodep->fileline(), nodep->name(), nodep->modp()->name());
+                AstIfaceRefDType* const idtypep = new AstIfaceRefDType{
+                    nodep->fileline(), nodep->name(), nodep->modp()->name()};
                 idtypep->ifacep(nullptr);  // cellp overrides
                 // In the case of arrayed interfaces, we replace cellp when de-arraying in V3Inst
                 idtypep->cellp(nodep);  // Only set when real parent cell known.
                 AstVar* varp;
                 if (nodep->rangep()) {
                     AstNodeArrayDType* const arrp
-                        = new AstUnpackArrayDType(nodep->fileline(), VFlagChildDType(), idtypep,
-                                                  nodep->rangep()->cloneTree(true));
-                    varp = new AstVar(nodep->fileline(), VVarType::IFACEREF, varName,
-                                      VFlagChildDType(), arrp);
+                        = new AstUnpackArrayDType{nodep->fileline(), VFlagChildDType{}, idtypep,
+                                                  nodep->rangep()->cloneTree(true)};
+                    varp = new AstVar{nodep->fileline(), VVarType::IFACEREF, varName,
+                                      VFlagChildDType{}, arrp};
                 } else {
-                    varp = new AstVar(nodep->fileline(), VVarType::IFACEREF, varName,
-                                      VFlagChildDType(), idtypep);
+                    varp = new AstVar{nodep->fileline(), VVarType::IFACEREF, varName,
+                                      VFlagChildDType{}, idtypep};
                 }
                 varp->isIfaceParent(true);
                 nodep->addNextHere(varp);
@@ -504,7 +504,7 @@ private:
                 nodep->unlinkFrBack();
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (!foundp) {
-                m_mods.rootp()->insert(nodep->name(), new VSymEnt(&m_mods, nodep));
+                m_mods.rootp()->insert(nodep->name(), new VSymEnt{&m_mods, nodep});
             }
         }
         // if (debug() >= 9) m_mods.dump(cout, "-syms: ");

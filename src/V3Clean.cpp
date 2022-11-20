@@ -127,10 +127,10 @@ private:
         nodep->unlinkFrBack(&relinkHandle);
         //
         computeCppWidth(nodep);
-        V3Number mask(nodep, cppWidth(nodep));
+        V3Number mask{nodep, cppWidth(nodep)};
         mask.setMask(nodep->widthMin());
         AstNode* const cleanp
-            = new AstAnd(nodep->fileline(), new AstConst(nodep->fileline(), mask), nodep);
+            = new AstAnd{nodep->fileline(), new AstConst{nodep->fileline(), mask}, nodep};
         cleanp->dtypeFrom(nodep);  // Otherwise the AND normally picks LHS
         relinkHandle.relink(cleanp);
     }

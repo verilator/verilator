@@ -239,7 +239,7 @@ private:
         if (m_scopep) {
             VL_RESTORER(m_logicVertexp);
             UINFO(4, "   STMT " << nodep << endl);
-            m_logicVertexp = new CdcLogicVertex(&m_graph, m_scopep, nodep, m_domainp);
+            m_logicVertexp = new CdcLogicVertex{&m_graph, m_scopep, nodep, m_domainp};
             if (m_domainp && m_domainp->hasClocked()) {  // To/from a flop
                 m_logicVertexp->isFlop(true);
                 m_logicVertexp->srcDomainp(m_domainp);
@@ -260,18 +260,18 @@ private:
         CdcVarVertex* vertexp = reinterpret_cast<CdcVarVertex*>(varscp->user1p());
         if (!vertexp) {
             UINFO(6, "New vertex " << varscp << endl);
-            vertexp = new CdcVarVertex(&m_graph, m_scopep, varscp);
+            vertexp = new CdcVarVertex{&m_graph, m_scopep, varscp};
             varscp->user1p(vertexp);
             if (varscp->varp()->isUsedClock()) {}
             if (varscp->varp()->isPrimaryIO()) {
                 // Create IO vertex - note it's relative to the pointed to var, not where we are
                 // now This allows reporting to easily print the input statement
                 CdcLogicVertex* const ioVertexp
-                    = new CdcLogicVertex(&m_graph, varscp->scopep(), varscp->varp(), nullptr);
+                    = new CdcLogicVertex{&m_graph, varscp->scopep(), varscp->varp(), nullptr};
                 if (varscp->varp()->isWritable()) {
-                    new V3GraphEdge(&m_graph, vertexp, ioVertexp, 1);
+                    new V3GraphEdge{&m_graph, vertexp, ioVertexp, 1};
                 } else {
-                    new V3GraphEdge(&m_graph, ioVertexp, vertexp, 1);
+                    new V3GraphEdge{&m_graph, ioVertexp, vertexp, 1};
                 }
             }
         }
@@ -466,7 +466,7 @@ private:
         } else {
             V3EmitV::verilogPrefixedTree(nodep, *m_ofp, prefix + " +- ", filelineWidth(),
                                          vertexp->srcDomainp(), true);
-            if (debug()) { CdcDumpVisitor visitor(nodep, m_ofp, front + "DBG: "); }
+            if (debug()) { CdcDumpVisitor{nodep, m_ofp, front + "DBG: "}; }
         }
 
         nextsep = " | ";
@@ -564,8 +564,8 @@ private:
             // If primary I/O, give it domain of the input
             const AstVar* const varp = vvertexp->varScp()->varp();
             if (varp->isPrimaryIO() && varp->isNonOutput() && !traceDests) {
-                senouts.insert(new AstSenTree(
-                    varp->fileline(), new AstSenItem(varp->fileline(), AstSenItem::Combo())));
+                senouts.insert(new AstSenTree{
+                    varp->fileline(), new AstSenItem{varp->fileline(), AstSenItem::Combo{}}});
             }
         }
 
@@ -662,7 +662,7 @@ private:
             // Weight of CDC_WEIGHT_ASYNC to indicate feeds async (for reporting)
             // When simplify we'll take the MAX weight
             if (nodep->access().isWriteOrRW()) {
-                new V3GraphEdge(&m_graph, m_logicVertexp, varvertexp, 1);
+                new V3GraphEdge{&m_graph, m_logicVertexp, varvertexp, 1};
                 if (m_inDly) {
                     varvertexp->fromFlop(true);
                     varvertexp->srcDomainp(m_domainp);
@@ -671,10 +671,10 @@ private:
             } else {
                 if (varvertexp->cntAsyncRst()) {
                     // UINFO(9," edgeasync "<<varvertexp->name()<<" to "<<m_logicVertexp<<endl);
-                    new V3GraphEdge(&m_graph, varvertexp, m_logicVertexp, CDC_WEIGHT_ASYNC);
+                    new V3GraphEdge{&m_graph, varvertexp, m_logicVertexp, CDC_WEIGHT_ASYNC};
                 } else {
                     // UINFO(9," edgena    "<<varvertexp->name()<<" to "<<m_logicVertexp<<endl);
-                    new V3GraphEdge(&m_graph, varvertexp, m_logicVertexp, 1);
+                    new V3GraphEdge{&m_graph, varvertexp, m_logicVertexp, 1};
                 }
             }
         }

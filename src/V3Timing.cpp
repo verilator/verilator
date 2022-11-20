@@ -510,7 +510,7 @@ private:
                                 new AstConst{flp, AstConst::RealDouble{}, m_timescaleFactor}}};
             } else {
                 valuep = new AstMul{flp, valuep,
-                                    new AstConst{flp, AstConst::Unsized64(),
+                                    new AstConst{flp, AstConst::Unsized64{},
                                                  static_cast<uint64_t>(m_timescaleFactor)}};
             }
         }

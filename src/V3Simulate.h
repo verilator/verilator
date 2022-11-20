@@ -1025,7 +1025,7 @@ private:
                 if (!m_checkOnly && optimizable()) newValue(portp, fetchValue(pinp));
             }
         }
-        SimStackNode stackNode(nodep, &tconnects);
+        SimStackNode stackNode{nodep, &tconnects};
         // cppcheck-suppress danglingLifetime
         m_callStack.push_back(&stackNode);
         // Clear output variable

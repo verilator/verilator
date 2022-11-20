@@ -581,7 +581,7 @@ private:
     static AstNodeExpr* maskLsb(AstNodeExpr* nodep) {
         if (yieldsOneOrZero(nodep)) return nodep;
         // Otherwise apply masking
-        AstConst* const maskp = new AstConst{nodep->fileline(), AstConst::BitTrue()};
+        AstConst* const maskp = new AstConst{nodep->fileline(), AstConst::BitTrue{}};
         // Mask on left, as conventional
         return new AstAnd{nodep->fileline(), maskp, nodep};
     }
@@ -603,12 +603,12 @@ private:
         } else if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
             if (andp->lhsp()->sameTree(m_mgCondp)) {
                 return condTrue ? maskLsb(andp->rhsp()->unlinkFrBack())
-                                : new AstConst{rhsp->fileline(), AstConst::BitFalse()};
+                                : new AstConst{rhsp->fileline(), AstConst::BitFalse{}};
             } else {
                 UASSERT_OBJ(andp->rhsp()->sameTree(m_mgCondp), rhsp,
                             "AstAnd doesn't hold condition expression");
                 return condTrue ? maskLsb(andp->lhsp()->unlinkFrBack())
-                                : new AstConst{rhsp->fileline(), AstConst::BitFalse()};
+                                : new AstConst{rhsp->fileline(), AstConst::BitFalse{}};
             }
         } else if (VN_IS(rhsp, ArraySel) || VN_IS(rhsp, WordSel) || VN_IS(rhsp, VarRef)
                    || VN_IS(rhsp, Const)) {

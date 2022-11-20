@@ -254,21 +254,21 @@ int AstNodeUOrStructDType::widthAlignBytes() const {
 
 AstNodeBiop* AstEq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
     if (lhsp->isString() && rhsp->isString()) {
-        return new AstEqN(fl, lhsp, rhsp);
+        return new AstEqN{fl, lhsp, rhsp};
     } else if (lhsp->isDouble() && rhsp->isDouble()) {
-        return new AstEqD(fl, lhsp, rhsp);
+        return new AstEqD{fl, lhsp, rhsp};
     } else {
-        return new AstEq(fl, lhsp, rhsp);
+        return new AstEq{fl, lhsp, rhsp};
     }
 }
 
 AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
     if (lhsp->isString() && rhsp->isString()) {
-        return new AstEqN(fl, lhsp, rhsp);
+        return new AstEqN{fl, lhsp, rhsp};
     } else if (lhsp->isDouble() && rhsp->isDouble()) {
-        return new AstEqD(fl, lhsp, rhsp);
+        return new AstEqD{fl, lhsp, rhsp};
     } else {
-        return new AstEqWild(fl, lhsp, rhsp);
+        return new AstEqWild{fl, lhsp, rhsp};
     }
 }
 
@@ -285,7 +285,7 @@ AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* l
     AstNodeExpr* const bp = new AstLte{fileline(), exprp->cloneTree(true), rhsp};
     ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
     bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
-    return new AstAnd(fileline(), ap, bp);
+    return new AstAnd{fileline(), ap, bp};
 }
 
 AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
@@ -293,11 +293,11 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
     if (literal[0] == '"') {
         // This is a string
         const string v = literal.substr(1, literal.find('"', 1) - 1);
-        return new AstConst(fl, AstConst::VerilogStringLiteral(), v);
+        return new AstConst{fl, AstConst::VerilogStringLiteral{}, v};
     } else if (literal.find_first_of(".eEpP") != string::npos) {
         // This may be a real
         const double v = VString::parseDouble(literal, &success);
-        if (success) return new AstConst(fl, AstConst::RealDouble(), v);
+        if (success) return new AstConst{fl, AstConst::RealDouble{}, v};
     }
     if (!success) {
         // This is either an integer or an error
@@ -310,18 +310,18 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
         char* endp;
         const int v = strtol(literal.c_str(), &endp, 0);
         if ((v != 0) && (endp[0] == 0)) {  // C literal
-            return new AstConst(fl, AstConst::Signed32(), v);
+            return new AstConst{fl, AstConst::Signed32{}, v};
         } else {  // Try a Verilog literal (fatals if not)
-            return new AstConst(fl, AstConst::StringToParse(), literal.c_str());
+            return new AstConst{fl, AstConst::StringToParse{}, literal.c_str()};
         }
     }
     return nullptr;
 }
 
 AstNetlist::AstNetlist()
-    : ASTGEN_SUPER_Netlist(new FileLine(FileLine::builtInFilename()))
-    , m_typeTablep{new AstTypeTable(fileline())}
-    , m_constPoolp{new AstConstPool(fileline())} {
+    : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
+    , m_typeTablep{new AstTypeTable{fileline()}}
+    , m_constPoolp{new AstConstPool{fileline()}} {
     addMiscsp(m_typeTablep);
     addMiscsp(m_constPoolp);
 }
@@ -1047,7 +1047,7 @@ AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
 
 AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
     if (VL_UNLIKELY(!m_queueIndexp)) {
-        AstQueueDType* const newp = new AstQueueDType(fl, AstNode::findUInt32DType(), nullptr);
+        AstQueueDType* const newp = new AstQueueDType{fl, AstNode::findUInt32DType(), nullptr};
         addTypesp(newp);
         m_queueIndexp = newp;
     }
@@ -1057,7 +1057,7 @@ AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
 AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd) {
     if (m_basicps[kwd]) return m_basicps[kwd];
     //
-    AstBasicDType* const new1p = new AstBasicDType(fl, kwd);
+    AstBasicDType* const new1p = new AstBasicDType{fl, kwd};
     // Because the detailed map doesn't update this map,
     // check the detailed map for this same node
     // Also adds this new node to the detailed map
@@ -1074,7 +1074,7 @@ AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd) {
 
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, int width,
                                                int widthMin, VSigning numeric) {
-    AstBasicDType* const new1p = new AstBasicDType(fl, kwd, numeric, width, widthMin);
+    AstBasicDType* const new1p = new AstBasicDType{fl, kwd, numeric, width, widthMin};
     AstBasicDType* const newp = findInsertSameDType(new1p);
     if (newp != new1p) {
         VL_DO_DANGLING(new1p->deleteTree(), new1p);
@@ -1087,7 +1087,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
                                                const VNumRange& range, int widthMin,
                                                VSigning numeric) {
-    AstBasicDType* const new1p = new AstBasicDType(fl, kwd, numeric, range, widthMin);
+    AstBasicDType* const new1p = new AstBasicDType{fl, kwd, numeric, range, widthMin};
     AstBasicDType* const newp = findInsertSameDType(new1p);
     if (newp != new1p) {
         VL_DO_DANGLING(new1p->deleteTree(), new1p);
@@ -1098,8 +1098,8 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
 }
 
 AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
-    const VBasicTypeKey key(nodep->width(), nodep->widthMin(), nodep->numeric(), nodep->keyword(),
-                            nodep->nrange());
+    const VBasicTypeKey key{nodep->width(), nodep->widthMin(), nodep->numeric(), nodep->keyword(),
+                            nodep->nrange()};
     DetailedMap& mapr = m_detailedMap;
     const auto it = mapr.find(key);
     if (it != mapr.end()) return it->second;
@@ -1111,8 +1111,8 @@ AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
 
 AstConstPool::AstConstPool(FileLine* fl)
     : ASTGEN_SUPER_ConstPool(fl)
-    , m_modp{new AstModule(fl, "@CONST-POOL@")}
-    , m_scopep{new AstScope(fl, m_modp, "@CONST-POOL@", nullptr, nullptr)} {
+    , m_modp{new AstModule{fl, "@CONST-POOL@"}}
+    , m_scopep{new AstScope{fl, m_modp, "@CONST-POOL@", nullptr, nullptr}} {
     this->modulep(m_modp);
     m_modp->addStmtsp(m_scopep);
 }
@@ -1124,12 +1124,12 @@ const char* AstConstPool::broken() const {
 
 AstVarScope* AstConstPool::createNewEntry(const string& name, AstNodeExpr* initp) {
     FileLine* const fl = initp->fileline();
-    AstVar* const varp = new AstVar(fl, VVarType::MODULETEMP, name, initp->dtypep());
+    AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, name, initp->dtypep()};
     varp->isConst(true);
     varp->isStatic(true);
     varp->valuep(initp->cloneTree(false));
     m_modp->addStmtsp(varp);
-    AstVarScope* const varScopep = new AstVarScope(fl, m_scopep, varp);
+    AstVarScope* const varScopep = new AstVarScope{fl, m_scopep, varp};
     m_scopep->addVarsp(varScopep);
     return varScopep;
 }
@@ -1580,7 +1580,7 @@ void AstInitArray::addIndexValuep(uint64_t index, AstNodeExpr* newp) {
     if (it != m_map.end()) {
         it->second->valuep(newp);
     } else {
-        AstInitItem* const itemp = new AstInitItem(fileline(), newp);
+        AstInitItem* const itemp = new AstInitItem{fileline(), newp};
         m_map.emplace(index, itemp);
         addInitsp(itemp);
     }
@@ -1870,7 +1870,7 @@ const char* AstNetlist::broken() const {
 }
 AstPackage* AstNetlist::dollarUnitPkgAddp() {
     if (!m_dollarUnitPkgp) {
-        m_dollarUnitPkgp = new AstPackage(fileline(), AstPackage::dollarUnitName());
+        m_dollarUnitPkgp = new AstPackage{fileline(), AstPackage::dollarUnitName()};
         // packages are always libraries; don't want to make them a "top"
         m_dollarUnitPkgp->inLibrary(true);
         m_dollarUnitPkgp->modTrace(false);  // may reconsider later

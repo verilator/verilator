@@ -160,7 +160,7 @@ void V3CCtors::evalAsserts() {
                         }
                         const uint64_t value = VL_MASK_Q(storedWidth) & ~VL_MASK_Q(lastWordWidth);
                         newp = new AstAnd{varp->fileline(), newp,
-                                          new AstConst(varp->fileline(), AstConst::WidthedValue(),
+                                          new AstConst(varp->fileline(), AstConst::WidthedValue{},
                                                        storedWidth, value)};
                         AstNodeIf* const ifp = new AstIf{
                             varp->fileline(), newp,

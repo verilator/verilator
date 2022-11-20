@@ -65,7 +65,7 @@ private:
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
-    static AstNodeExpr* main(AstNodeExpr* nodep) { return ConvertWriteRefsToRead(nodep).m_result; }
+    static AstNodeExpr* main(AstNodeExpr* nodep) { return ConvertWriteRefsToRead{nodep}.m_result; }
 };
 
 //######################################################################

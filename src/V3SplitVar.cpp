@@ -328,14 +328,14 @@ public:
     }
     // Register the location where a variable is used.
     bool tryAdd(AstNode* context, AstVarRef* refp, AstArraySel* selp, int idx, bool ftask) {
-        return addCore(refp, UnpackRef(context, selp, idx, refp->access(), ftask));
+        return addCore(refp, UnpackRef{context, selp, idx, refp->access(), ftask});
     }
     bool tryAdd(AstNode* context, AstVarRef* refp, AstSliceSel* selp, int msb, int lsb,
                 bool ftask) {
-        return addCore(refp, UnpackRef(context, selp, msb, lsb, refp->access(), ftask));
+        return addCore(refp, UnpackRef{context, selp, msb, lsb, refp->access(), ftask});
     }
     bool tryAdd(AstNode* context, AstVarRef* refp, bool ftask) {
-        return addCore(refp, UnpackRef(context, refp, ftask));
+        return addCore(refp, UnpackRef{context, refp, ftask});
     }
 
     // Remove a variable from the list to split
@@ -943,7 +943,7 @@ public:
             }
             UASSERT(refcount >= 0, "refcounut must not be negative");
             if (bitwidth == 0 || refcount == 0) continue;  // Vacant region
-            plan.emplace_back(SplitNewVar(points[i].first, bitwidth));
+            plan.emplace_back(SplitNewVar{points[i].first, bitwidth});
         }
 
         return plan;
@@ -965,7 +965,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             warnNoSplit(nodep, nodep, reason);
             nodep->attrSplitVar(false);
         } else {  // Finally find a good candidate
-            const bool inserted = m_refs.insert(std::make_pair(nodep, PackedVarRef(nodep))).second;
+            const bool inserted = m_refs.insert(std::make_pair(nodep, PackedVarRef{nodep})).second;
             if (inserted) UINFO(3, nodep->prettyNameQ() << " is added to candidate list.\n");
         }
     }
@@ -978,7 +978,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         UASSERT_OBJ(!nodep->classOrPackagep(), nodep,
                     "variable in package must have been dropped beforehand.");
         const AstBasicDType* const basicp = refit->second.basicp();
-        refit->second.append(PackedVarRefEntry(nodep, basicp->lo(), varp->width()),
+        refit->second.append(PackedVarRefEntry{nodep, basicp->lo(), varp->width()},
                              nodep->access());
         UINFO(5, varp->prettyName()
                      << " Entire bit of [" << basicp->lo() << "+:" << varp->width() << "] \n");
@@ -1080,11 +1080,11 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             AstBasicDType* dtypep;
             switch (basicp->keyword()) {
             case VBasicDTypeKwd::BIT:
-                dtypep = new AstBasicDType{varp->subDTypep()->fileline(), VFlagBitPacked(),
+                dtypep = new AstBasicDType{varp->subDTypep()->fileline(), VFlagBitPacked{},
                                            newvar.bitwidth()};
                 break;
             case VBasicDTypeKwd::LOGIC:
-                dtypep = new AstBasicDType{varp->subDTypep()->fileline(), VFlagLogicPacked(),
+                dtypep = new AstBasicDType{varp->subDTypep()->fileline(), VFlagLogicPacked{},
                                            newvar.bitwidth()};
                 break;
             default: UASSERT_OBJ(false, basicp, "Only bit and logic are allowed");

@@ -59,9 +59,9 @@ private:
         if (!senip) senip = m_seniAlwaysp;
         if (!senip) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Unclocked assertion");
-            newp = new AstSenTree(nodep->fileline(), nullptr);
+            newp = new AstSenTree{nodep->fileline(), nullptr};
         } else {
-            newp = new AstSenTree(nodep->fileline(), senip->cloneTree(true));
+            newp = new AstSenTree{nodep->fileline(), senip->cloneTree(true)};
         }
         return newp;
     }
@@ -171,10 +171,10 @@ private:
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
-        if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
-        AstNodeExpr* const past = new AstPast(fl, exprp, nullptr);
+        if (exprp->width() > 1) exprp = new AstSel{fl, exprp, 0, 1};
+        AstNodeExpr* const past = new AstPast{fl, exprp, nullptr};
         past->dtypeFrom(exprp);
-        exprp = new AstAnd(fl, past, new AstNot(fl, exprp->cloneTree(false)));
+        exprp = new AstAnd{fl, past, new AstNot{fl, exprp->cloneTree(false)}};
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));
@@ -190,10 +190,10 @@ private:
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
-        if (exprp->width() > 1) exprp = new AstSel(fl, exprp, 0, 1);
-        AstNodeExpr* const past = new AstPast(fl, exprp, nullptr);
+        if (exprp->width() > 1) exprp = new AstSel{fl, exprp, 0, 1};
+        AstNodeExpr* const past = new AstPast{fl, exprp, nullptr};
         past->dtypeFrom(exprp);
-        exprp = new AstAnd(fl, new AstNot(fl, past), exprp->cloneTree(false));
+        exprp = new AstAnd{fl, new AstNot{fl, past}, exprp->cloneTree(false)};
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));
@@ -204,9 +204,9 @@ private:
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
-        AstNodeExpr* const past = new AstPast(fl, exprp, nullptr);
+        AstNodeExpr* const past = new AstPast{fl, exprp, nullptr};
         past->dtypeFrom(exprp);
-        exprp = new AstEq(fl, past, exprp->cloneTree(false));
+        exprp = new AstEq{fl, past, exprp->cloneTree(false)};
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));
@@ -220,11 +220,11 @@ private:
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
 
-        if (m_disablep) lhsp = new AstAnd(fl, new AstNot(fl, m_disablep), lhsp);
+        if (m_disablep) lhsp = new AstAnd{fl, new AstNot{fl, m_disablep}, lhsp};
 
-        AstNodeExpr* const past = new AstPast(fl, lhsp, nullptr);
+        AstNodeExpr* const past = new AstPast{fl, lhsp, nullptr};
         past->dtypeFrom(lhsp);
-        AstNodeExpr* const exprp = new AstOr(fl, new AstNot(fl, past), rhsp);
+        AstNodeExpr* const exprp = new AstOr{fl, new AstNot{fl, past}, rhsp};
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep));
@@ -242,11 +242,11 @@ private:
         if (AstNodeExpr* const disablep = nodep->disablep()) {
             m_disablep = disablep->cloneTree(false);
             if (VN_IS(nodep->backp(), Cover)) {
-                blockp = new AstAnd(disablep->fileline(),
-                                    new AstNot(disablep->fileline(), disablep->unlinkFrBack()),
-                                    blockp);
+                blockp = new AstAnd{disablep->fileline(),
+                                    new AstNot{disablep->fileline(), disablep->unlinkFrBack()},
+                                    blockp};
             } else {
-                blockp = new AstOr(disablep->fileline(), disablep->unlinkFrBack(), blockp);
+                blockp = new AstOr{disablep->fileline(), disablep->unlinkFrBack(), blockp};
             }
         }
         // Unlink and just keep a pointer to it, convert to sentree as needed

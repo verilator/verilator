@@ -127,11 +127,11 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
             AstRange* const rangep = VN_CAST(nrangep, Range);
             if (rangep && isPacked) {
                 arrayp
-                    = new AstPackArrayDType{rangep->fileline(), VFlagChildDType(), arrayp, rangep};
+                    = new AstPackArrayDType{rangep->fileline(), VFlagChildDType{}, arrayp, rangep};
             } else if (rangep
                        && (VN_IS(rangep->leftp(), Unbounded)
                            || VN_IS(rangep->rightp(), Unbounded))) {
-                arrayp = new AstQueueDType{nrangep->fileline(), VFlagChildDType(), arrayp,
+                arrayp = new AstQueueDType{nrangep->fileline(), VFlagChildDType{}, arrayp,
                                            rangep->rightp()->cloneTree(true)};
             } else if (rangep) {
                 arrayp = new AstUnpackArrayDType{rangep->fileline(), VFlagChildDType{}, arrayp,

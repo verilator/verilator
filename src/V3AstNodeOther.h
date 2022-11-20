@@ -436,7 +436,7 @@ class AstNodeReadWriteMem VL_NOT_FINAL : public AstNodeStmt {
 public:
     AstNodeReadWriteMem(VNType t, FileLine* fl, bool hex, AstNodeExpr* filenamep,
                         AstNodeExpr* memp, AstNodeExpr* lsbp, AstNodeExpr* msbp)
-        : AstNodeStmt(t, fl)
+        : AstNodeStmt{t, fl}
         , m_isHex(hex) {
         this->filenamep(filenamep);
         this->memp(memp);
@@ -480,8 +480,8 @@ private:
     bool m_tracking;  // When emit, it's ok to parse the string to do indentation
 public:
     AstNodeSimpleText(VNType t, FileLine* fl, const string& textp, bool tracking = false)
-        : AstNodeText(t, fl, textp)
-        , m_tracking(tracking) {}
+        : AstNodeText{t, fl, textp}
+        , m_tracking{tracking} {}
     ASTGEN_MEMBERS_AstNodeSimpleText;
     void tracking(bool flag) { m_tracking = flag; }
     bool tracking() const { return m_tracking; }
@@ -2541,7 +2541,7 @@ public:
                char missingArgChar = 'd')
         : ASTGEN_SUPER_Display(fl)
         , m_displayType{dispType} {
-        this->fmtp(new AstSFormatF{fl, AstSFormatF::NoFormat(), exprsp, missingArgChar});
+        this->fmtp(new AstSFormatF{fl, AstSFormatF::NoFormat{}, exprsp, missingArgChar});
         this->filep(filep);
     }
     ASTGEN_MEMBERS_AstDisplay;
@@ -2916,7 +2916,7 @@ public:
     }
     AstSFormat(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* exprsp, char missingArgChar = 'd')
         : ASTGEN_SUPER_SFormat(fl) {
-        this->fmtp(new AstSFormatF{fl, AstSFormatF::NoFormat(), exprsp, missingArgChar});
+        this->fmtp(new AstSFormatF{fl, AstSFormatF::NoFormat{}, exprsp, missingArgChar});
         this->lhsp(lhsp);
     }
     ASTGEN_MEMBERS_AstSFormat;
@@ -3507,7 +3507,7 @@ public:
     void commas(bool flag) { m_commas = flag; }
     bool commas() const { return m_commas; }
     void addText(FileLine* fl, const string& textp, bool tracking = false) {
-        addNodesp(new AstText(fl, textp, tracking));
+        addNodesp(new AstText{fl, textp, tracking});
     }
 };
 

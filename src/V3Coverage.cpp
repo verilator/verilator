@@ -118,7 +118,7 @@ private:
         // Someday the user might be allowed to specify a different page suffix
         const string page = page_prefix + "/" + m_modp->prettyName();
 
-        AstCoverDecl* const declp = new AstCoverDecl(fl, page, comment, linescov, offset);
+        AstCoverDecl* const declp = new AstCoverDecl{fl, page, comment, linescov, offset};
         declp->hier(hier);
         m_modp->addStmtsp(declp);
         UINFO(9, "new " << declp << endl);
@@ -132,10 +132,10 @@ private:
             varp->trace(true);
             m_modp->addStmtsp(varp);
             UINFO(5, "New coverage trace: " << varp << endl);
-            AstAssign* const assp = new AstAssign(
-                incp->fileline(), new AstVarRef(incp->fileline(), varp, VAccess::WRITE),
-                new AstAdd(incp->fileline(), new AstVarRef(incp->fileline(), varp, VAccess::READ),
-                           new AstConst(incp->fileline(), AstConst::WidthedValue(), 32, 1)));
+            AstAssign* const assp = new AstAssign{
+                incp->fileline(), new AstVarRef{incp->fileline(), varp, VAccess::WRITE},
+                new AstAdd{incp->fileline(), new AstVarRef{incp->fileline(), varp, VAccess::READ},
+                           new AstConst{incp->fileline(), AstConst::WidthedValue{}, 32, 1}}};
             AstNode::addNext<AstNode, AstNode>(incp, assp);
         }
         return incp;
@@ -301,11 +301,11 @@ private:
     }
 
     void toggleVarBottom(const ToggleEnt& above, const AstVar* varp) {
-        AstCoverToggle* const newp = new AstCoverToggle(
+        AstCoverToggle* const newp = new AstCoverToggle{
             varp->fileline(),
             newCoverInc(varp->fileline(), "", "v_toggle", varp->name() + above.m_comment, "", 0,
                         ""),
-            above.m_varRefp->cloneTree(true), above.m_chgRefp->cloneTree(true));
+            above.m_varRefp->cloneTree(true), above.m_chgRefp->cloneTree(true)};
         m_modp->addStmtsp(newp);
     }
 

@@ -71,7 +71,7 @@ private:
         return (nodep->width() + (VL_EDATASIZE - 1)) & ~(VL_EDATASIZE - 1);
     }
     static V3Number notWideMask(AstNode* nodep) {
-        return V3Number(nodep, VL_EDATASIZE, ~VL_MASK_E(nodep->widthMin()));
+        return V3Number{nodep, VL_EDATASIZE, ~VL_MASK_E(nodep->widthMin())};
     }
     static V3Number wordMask(AstNode* nodep) {
         if (nodep->isWide()) {
@@ -157,11 +157,11 @@ private:
             const int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword
             newp = new AstOr{
                 fl,
-                new AstAnd{fl, new AstConst{fl, AstConst::SizedEData(), VL_MASK_E(loffset)},
+                new AstAnd{fl, new AstConst{fl, AstConst::SizedEData{}, VL_MASK_E(loffset)},
                            new AstShiftR{fl, lhip,
                                          new AstConst{fl, static_cast<uint32_t>(nbitsonright)},
                                          VL_EDATASIZE}},
-                new AstAnd{fl, new AstConst{fl, AstConst::SizedEData(), ~VL_MASK_E(loffset)},
+                new AstAnd{fl, new AstConst{fl, AstConst::SizedEData{}, ~VL_MASK_E(loffset)},
                            new AstShiftL{fl, llowp,
                                          new AstConst{fl, static_cast<uint32_t>(loffset)},
                                          VL_EDATASIZE}}};
@@ -181,7 +181,7 @@ private:
             // Squash before C++ to avoid getting a C++ compiler warning
             // (even though code would be unreachable as presumably a
             // AstCondBound is protecting above this node.
-            return new AstConst{fl, AstConst::SizedEData(), 0};
+            return new AstConst{fl, AstConst::SizedEData{}, 0};
         } else {
             AstNodeExpr* wordp;
             FileLine* const lfl = lsbp->fileline();
@@ -234,7 +234,7 @@ private:
         FileLine* const fl = nodep->fileline();
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w,
-                          new AstConst{fl, AstConst::SizedEData(), rhsp->num().edataWord(w)});
+                          new AstConst{fl, AstConst::SizedEData{}, rhsp->num().edataWord(w)});
         }
         return true;
     }
@@ -512,7 +512,7 @@ private:
                         if (!ones) {
                             oldvalp = new AstAnd{
                                 lfl,
-                                new AstConst{lfl, AstConst::SizedEData(), maskold.edataWord(w)},
+                                new AstConst{lfl, AstConst::SizedEData{}, maskold.edataWord(w)},
                                 oldvalp};
                         }
 
@@ -746,9 +746,9 @@ private:
                 newp = newp ? new AstOr{fl, newp, eqp} : eqp;
             }
             if (VN_IS(nodep, Neq)) {
-                newp = new AstNeq{fl, new AstConst{fl, AstConst::SizedEData(), 0}, newp};
+                newp = new AstNeq{fl, new AstConst{fl, AstConst::SizedEData{}, 0}, newp};
             } else {
-                newp = new AstEq{fl, new AstConst{fl, AstConst::SizedEData(), 0}, newp};
+                newp = new AstEq{fl, new AstConst{fl, AstConst::SizedEData{}, 0}, newp};
             }
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
@@ -768,13 +768,13 @@ private:
                 AstNodeExpr* const eqp = newAstWordSelClone(nodep->lhsp(), w);
                 newp = newp ? new AstOr{fl, newp, eqp} : eqp;
             }
-            newp = new AstNeq{fl, new AstConst{fl, AstConst::SizedEData(), 0}, newp};
+            newp = new AstNeq{fl, new AstConst{fl, AstConst::SizedEData{}, 0}, newp};
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {
             UINFO(8, "    REDOR->EQ " << nodep << endl);
             AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
             AstNodeExpr* const newp = new AstNeq{
-                fl, new AstConst{fl, AstConst::WidthedValue(), longOrQuadWidth(nodep), 0}, lhsp};
+                fl, new AstConst{fl, AstConst::WidthedValue{}, longOrQuadWidth(nodep), 0}, lhsp};
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
@@ -798,7 +798,7 @@ private:
                 }
                 newp = newp ? new AstAnd{fl, newp, eqp} : eqp;
             }
-            newp = new AstEq{fl, new AstConst{fl, AstConst::SizedEData(), VL_MASK_E(VL_EDATASIZE)},
+            newp = new AstEq{fl, new AstConst{fl, AstConst::SizedEData{}, VL_MASK_E(VL_EDATASIZE)},
                              newp};
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {

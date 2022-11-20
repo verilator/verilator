@@ -132,7 +132,7 @@ bool AstActive::hasCombo() const { return m_sensesp->hasCombo(); }
 
 AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr* exprsp)
     : ASTGEN_SUPER_ElabDisplay(fl) {
-    addFmtp(new AstSFormatF{fl, AstSFormatF::NoFormat(), exprsp});
+    addFmtp(new AstSFormatF{fl, AstSFormatF::NoFormat{}, exprsp});
     m_displayType = dispType;
 }
 

@@ -213,11 +213,11 @@ private:
 
         AstAssign* assignp;
         if (VN_IS(nodep, PreSub) || VN_IS(nodep, PostSub)) {
-            assignp = new AstAssign(nodep->fileline(), storetop,
-                                    new AstSub(nodep->fileline(), valuep, newconstp));
+            assignp = new AstAssign{nodep->fileline(), storetop,
+                                    new AstSub{nodep->fileline(), valuep, newconstp}};
         } else {
-            assignp = new AstAssign(nodep->fileline(), storetop,
-                                    new AstAdd(nodep->fileline(), valuep, newconstp));
+            assignp = new AstAssign{nodep->fileline(), storetop,
+                                    new AstAdd{nodep->fileline(), valuep, newconstp}};
         }
         nodep->replaceWith(assignp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -239,8 +239,8 @@ private:
         // Prepare a temporary variable
         FileLine* const fl = backp->fileline();
         const string name = string("__Vincrement") + cvtToStr(++m_modIncrementsNum);
-        AstVar* const varp = new AstVar(fl, VVarType::BLOCKTEMP, name, VFlagChildDType(),
-                                        varrefp->varp()->subDTypep()->cloneTree(true));
+        AstVar* const varp = new AstVar{fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
+                                        varrefp->varp()->subDTypep()->cloneTree(true)};
         if (m_ftaskp) varp->funcLocal(true);
 
         // Declare the variable
@@ -249,9 +249,9 @@ private:
         // Define what operation will we be doing
         AstNodeExpr* operp;
         if (VN_IS(nodep, PostSub) || VN_IS(nodep, PreSub)) {
-            operp = new AstSub(fl, new AstVarRef(fl, varrefp->varp(), VAccess::READ), newconstp);
+            operp = new AstSub{fl, new AstVarRef{fl, varrefp->varp(), VAccess::READ}, newconstp};
         } else {
-            operp = new AstAdd(fl, new AstVarRef(fl, varrefp->varp(), VAccess::READ), newconstp);
+            operp = new AstAdd{fl, new AstVarRef{fl, varrefp->varp(), VAccess::READ}, newconstp};
         }
 
         if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PreSub)) {

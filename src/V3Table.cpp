@@ -100,8 +100,8 @@ public:
         v3Global.rootp()->typeTablep()->addTypesp(tableDTypep);
         // Create table initializer (with default value 0)
         AstConst* const defaultp = elemDType->isString()
-                                       ? new AstConst{m_fl, AstConst::String(), ""}
-                                       : new AstConst{m_fl, AstConst::WidthedValue(), width, 0};
+                                       ? new AstConst{m_fl, AstConst::String{}, ""}
+                                       : new AstConst{m_fl, AstConst::WidthedValue{}, width, 0};
         m_initp = new AstInitArray{m_fl, tableDTypep, defaultp};
     }
 
