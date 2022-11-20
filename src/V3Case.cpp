@@ -176,10 +176,10 @@ private:
                 if (neverItem(nodep, iconstp)) {
                     // X in casez can't ever be executed
                 } else {
-                    V3Number nummask(itemp, iconstp->width());
+                    V3Number nummask{itemp, iconstp->width()};
                     nummask.opBitsNonX(iconstp->num());
                     const uint32_t mask = nummask.toUInt();
-                    V3Number numval(itemp, iconstp->width());
+                    V3Number numval{itemp, iconstp->width()};
                     numval.opBitsOne(iconstp->num());
                     const uint32_t val = numval.toUInt();
 
@@ -291,10 +291,10 @@ private:
             // AstNode* and1p = new AstAnd(cexprp->fileline(), cexprp->cloneTree(false),
             //                            new AstConst(cexprp->fileline(), nummask));
             AstNodeExpr* const and1p
-                = new AstSel(cexprp->fileline(), cexprp->cloneTree(false), msb, 1);
+                = new AstSel{cexprp->fileline(), cexprp->cloneTree(false), msb, 1};
             AstNodeExpr* const eqp
-                = new AstNeq(cexprp->fileline(), new AstConst(cexprp->fileline(), 0), and1p);
-            AstIf* const ifp = new AstIf(cexprp->fileline(), eqp, tree1p, tree0p);
+                = new AstNeq{cexprp->fileline(), new AstConst{cexprp->fileline(), 0}, and1p};
+            AstIf* const ifp = new AstIf{cexprp->fileline(), eqp, tree1p, tree0p};
             ifp->user3(1);  // So we don't bother to clone it
             return ifp;
         }
@@ -346,7 +346,7 @@ private:
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             if (!itemp->condsp()) {
                 // Default clause.  Just make true, we'll optimize it away later
-                itemp->addCondsp(new AstConst(itemp->fileline(), AstConst::BitTrue()));
+                itemp->addCondsp(new AstConst{itemp->fileline(), AstConst::BitTrue{}});
                 hadDefault = true;
             } else {
                 // Expressioned clause
@@ -364,23 +364,23 @@ private:
                         VL_DANGLING(iconstp);
                         // For simplicity, make expression that is not equal, and let later
                         // optimizations remove it
-                        condp = new AstConst(itemp->fileline(), AstConst::BitFalse());
+                        condp = new AstConst{itemp->fileline(), AstConst::BitFalse{}};
                     } else if (AstInsideRange* const irangep = VN_CAST(icondp, InsideRange)) {
                         // Similar logic in V3Width::visit(AstInside)
                         condp = irangep->newAndFromInside(cexprp, irangep->lhsp()->unlinkFrBack(),
                                                           irangep->rhsp()->unlinkFrBack());
                     } else if (iconstp && iconstp->num().isFourState()
                                && (nodep->casex() || nodep->casez() || nodep->caseInside())) {
-                        V3Number nummask(itemp, iconstp->width());
+                        V3Number nummask{itemp, iconstp->width()};
                         nummask.opBitsNonX(iconstp->num());
-                        V3Number numval(itemp, iconstp->width());
+                        V3Number numval{itemp, iconstp->width()};
                         numval.opBitsOne(iconstp->num());
                         AstNodeExpr* const and1p
-                            = new AstAnd(itemp->fileline(), cexprp->cloneTree(false),
-                                         new AstConst(itemp->fileline(), nummask));
-                        AstNodeExpr* const and2p = new AstAnd(
-                            itemp->fileline(), new AstConst(itemp->fileline(), numval),
-                            new AstConst(itemp->fileline(), nummask));
+                            = new AstAnd{itemp->fileline(), cexprp->cloneTree(false),
+                                         new AstConst{itemp->fileline(), nummask}};
+                        AstNodeExpr* const and2p = new AstAnd{
+                            itemp->fileline(), new AstConst{itemp->fileline(), numval},
+                            new AstConst{itemp->fileline(), nummask}};
                         VL_DO_DANGLING(icondp->deleteTree(), icondp);
                         VL_DANGLING(iconstp);
                         condp = AstEq::newTyped(itemp->fileline(), and1p, and2p);
@@ -393,7 +393,7 @@ private:
                     if (!ifexprp) {
                         ifexprp = condp;
                     } else {
-                        ifexprp = new AstLogOr(itemp->fileline(), ifexprp, condp);
+                        ifexprp = new AstLogOr{itemp->fileline(), ifexprp, condp};
                     }
                 }
                 // Replace expression in tree
@@ -404,8 +404,8 @@ private:
         if (!hadDefault) {
             // If there was no default, add a empty one, this greatly simplifies below code
             // and constant propagation will just eliminate it for us later.
-            nodep->addItemsp(new AstCaseItem(
-                nodep->fileline(), new AstConst(nodep->fileline(), AstConst::BitTrue()), nullptr));
+            nodep->addItemsp(new AstCaseItem{
+                nodep->fileline(), new AstConst{nodep->fileline(), AstConst::BitTrue{}}, nullptr});
         }
         if (debug() >= 9) nodep->dumpTree(cout, "    _comp_COND: ");
         // Now build the IF statement tree
@@ -428,7 +428,7 @@ private:
                 if (++depth > CASE_ENCODER_GROUP_DEPTH) depth = 1;
                 if (depth == 1) {  // First group or starting new group
                     itemnextp = nullptr;
-                    AstIf* const newp = new AstIf(itemp->fileline(), ifexprp->cloneTree(true));
+                    AstIf* const newp = new AstIf{itemp->fileline(), ifexprp->cloneTree(true)};
                     if (groupnextp) {
                         groupnextp->addElsesp(newp);
                     } else {
@@ -438,7 +438,7 @@ private:
                 } else {  // Continue group, modify if condition to OR in this new condition
                     AstNodeExpr* const condp = groupnextp->condp()->unlinkFrBack();
                     groupnextp->condp(
-                        new AstOr(ifexprp->fileline(), condp, ifexprp->cloneTree(true)));
+                        new AstOr{ifexprp->fileline(), condp, ifexprp->cloneTree(true)});
                 }
             }
             {  // Make the new lower IF and attach in the tree
@@ -446,9 +446,9 @@ private:
                 VL_DANGLING(ifexprp);
                 if (depth == CASE_ENCODER_GROUP_DEPTH) {  // End of group - can skip the condition
                     VL_DO_DANGLING(itemexprp->deleteTree(), itemexprp);
-                    itemexprp = new AstConst(itemp->fileline(), AstConst::BitTrue());
+                    itemexprp = new AstConst{itemp->fileline(), AstConst::BitTrue{}};
                 }
-                AstIf* const newp = new AstIf(itemp->fileline(), itemexprp, istmtsp);
+                AstIf* const newp = new AstIf{itemp->fileline(), itemexprp, istmtsp};
                 if (itemnextp) {
                     itemnextp->addElsesp(newp);
                 } else {

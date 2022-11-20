@@ -413,7 +413,7 @@ private:
             // equation is heuristic.
             if (complexity <= actSet.size() * 2) {
                 for (; head != it; ++head) {
-                    new V3GraphEdge(&m_graph, m_alwaysVtxp, head->second, 1);
+                    new V3GraphEdge{&m_graph, m_alwaysVtxp, head->second, 1};
                 }
             }
         }
@@ -422,13 +422,13 @@ private:
     }
 
     AstNodeExpr* selectActivity(FileLine* flp, uint32_t acode, const VAccess& access) {
-        return new AstArraySel(flp, new AstVarRef(flp, m_activityVscp, access), acode);
+        return new AstArraySel(flp, new AstVarRef{flp, m_activityVscp, access}, acode);
     }
 
     void addActivitySetter(AstNode* insertp, uint32_t code) {
         FileLine* const fl = insertp->fileline();
-        AstAssign* const setterp = new AstAssign(fl, selectActivity(fl, code, VAccess::WRITE),
-                                                 new AstConst(fl, AstConst::BitTrue()));
+        AstAssign* const setterp = new AstAssign{fl, selectActivity(fl, code, VAccess::WRITE),
+                                                 new AstConst{fl, AstConst::BitTrue{}}};
         if (AstStmtExpr* const stmtp = VN_CAST(insertp, StmtExpr)) {
             stmtp->addNextHere(setterp);
         } else if (AstCFunc* const funcp = VN_CAST(insertp, CFunc)) {
@@ -459,12 +459,12 @@ private:
         v3Global.rootp()->typeTablep()->addTypesp(newScalarDtp);
         AstRange* const newArange
             = new AstRange{flp, VNumRange{static_cast<int>(m_activityNumber) - 1, 0}};
-        AstNodeDType* const newArrDtp = new AstUnpackArrayDType(flp, newScalarDtp, newArange);
+        AstNodeDType* const newArrDtp = new AstUnpackArrayDType{flp, newScalarDtp, newArange};
         v3Global.rootp()->typeTablep()->addTypesp(newArrDtp);
         AstVar* const newvarp
-            = new AstVar(flp, VVarType::MODULETEMP, "__Vm_traceActivity", newArrDtp);
+            = new AstVar{flp, VVarType::MODULETEMP, "__Vm_traceActivity", newArrDtp};
         m_topModp->addStmtsp(newvarp);
-        AstVarScope* const newvscp = new AstVarScope(flp, m_topScopep, newvarp);
+        AstVarScope* const newvscp = new AstVarScope{flp, m_topScopep, newvarp};
         m_topScopep->addVarsp(newvscp);
         m_activityVscp = newvscp;
 
@@ -495,7 +495,7 @@ private:
                                                   : "trace_chg_sub_";
 
         FileLine* const flp = m_topScopep->fileline();
-        AstCFunc* const funcp = new AstCFunc(flp, baseName + cvtToStr(funcNump++), m_topScopep);
+        AstCFunc* const funcp = new AstCFunc{flp, baseName + cvtToStr(funcNump++), m_topScopep};
         funcp->isTrace(true);
         funcp->dontCombine(true);
         funcp->isLoose(true);
@@ -504,7 +504,7 @@ private:
         // Add it to top scope
         m_topScopep->addBlocksp(funcp);
         const auto addInitStr = [funcp, flp](const string& str) -> void {
-            funcp->addInitsp(new AstCStmt(flp, str));
+            funcp->addInitsp(new AstCStmt{flp, str});
         };
         if (isTopFunc) {
             // Top functions
@@ -519,13 +519,13 @@ private:
             }
             // Register function
             if (full) {
-                m_regFuncp->addStmtsp(new AstText(flp, "tracep->addFullCb(", true));
+                m_regFuncp->addStmtsp(new AstText{flp, "tracep->addFullCb(", true});
             } else {
-                m_regFuncp->addStmtsp(new AstText(flp, "tracep->addChgCb(", true));
+                m_regFuncp->addStmtsp(new AstText{flp, "tracep->addChgCb(", true});
             }
-            m_regFuncp->addStmtsp(new AstAddrOfCFunc(flp, funcp));
-            m_regFuncp->addStmtsp(new AstText(flp, ", vlSelf", true));
-            m_regFuncp->addStmtsp(new AstText(flp, ");\n", true));
+            m_regFuncp->addStmtsp(new AstAddrOfCFunc{flp, funcp});
+            m_regFuncp->addStmtsp(new AstText{flp, ", vlSelf", true});
+            m_regFuncp->addStmtsp(new AstText{flp, ");\n", true});
         } else {
             // Sub functions
             funcp->argTypes(v3Global.opt.traceClassBase()
@@ -551,7 +551,7 @@ private:
                 }
             }
             // Add call to top function
-            AstCCall* const callp = new AstCCall(funcp->fileline(), funcp);
+            AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
             callp->dtypeSetVoid();
             callp->argTypes("bufp");
             topFuncp->addStmtsp(callp->makeStmt());
@@ -609,7 +609,7 @@ private:
 
                     // Add TraceInc node
                     AstTraceInc* const incp
-                        = new AstTraceInc(declp->fileline(), declp, /* full: */ true);
+                        = new AstTraceInc{declp->fileline(), declp, /* full: */ true};
                     subFuncp->addStmtsp(incp);
                     subStmts += incp->nodeCount();
 
@@ -669,14 +669,14 @@ private:
                     const bool always = actSet.count(TraceActivityVertex::ACTIVITY_ALWAYS) != 0;
                     AstNodeExpr* condp = nullptr;
                     if (always) {
-                        condp = new AstConst(flp, 1);  // Always true, will be folded later
+                        condp = new AstConst{flp, 1};  // Always true, will be folded later
                     } else {
                         for (const uint32_t actCode : actSet) {
                             AstNodeExpr* const selp = selectActivity(flp, actCode, VAccess::READ);
-                            condp = condp ? new AstOr(flp, condp, selp) : selp;
+                            condp = condp ? new AstOr{flp, condp, selp} : selp;
                         }
                     }
-                    ifp = new AstIf(flp, condp);
+                    ifp = new AstIf{flp, condp};
                     if (!always) ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     subFuncp->addStmtsp(ifp);
                     subStmts += ifp->nodeCount();
@@ -685,7 +685,7 @@ private:
 
                 // Add TraceInc node
                 AstTraceInc* const incp
-                    = new AstTraceInc(declp->fileline(), declp, /* full: */ false, baseCode);
+                    = new AstTraceInc{declp->fileline(), declp, /* full: */ false, baseCode};
                 ifp->addThensp(incp);
                 subStmts += incp->nodeCount();
 
@@ -701,7 +701,7 @@ private:
 
     void createCleanupFunction() {
         FileLine* const fl = m_topScopep->fileline();
-        AstCFunc* const cleanupFuncp = new AstCFunc(fl, "trace_cleanup", m_topScopep);
+        AstCFunc* const cleanupFuncp = new AstCFunc{fl, "trace_cleanup", m_topScopep};
         cleanupFuncp->argTypes("void* voidSelf, " + v3Global.opt.traceClassBase()
                                + "* /*unused*/");
         cleanupFuncp->isTrace(true);
@@ -709,22 +709,22 @@ private:
         cleanupFuncp->isStatic(true);
         cleanupFuncp->isLoose(true);
         m_topScopep->addBlocksp(cleanupFuncp);
-        cleanupFuncp->addInitsp(new AstCStmt(fl, voidSelfAssign(m_topModp)));
-        cleanupFuncp->addInitsp(new AstCStmt(fl, symClassAssign()));
+        cleanupFuncp->addInitsp(new AstCStmt{fl, voidSelfAssign(m_topModp)});
+        cleanupFuncp->addInitsp(new AstCStmt{fl, symClassAssign()});
 
         // Register it
-        m_regFuncp->addStmtsp(new AstText(fl, "tracep->addCleanupCb(", true));
-        m_regFuncp->addStmtsp(new AstAddrOfCFunc(fl, cleanupFuncp));
-        m_regFuncp->addStmtsp(new AstText(fl, ", vlSelf);\n", true));
+        m_regFuncp->addStmtsp(new AstText{fl, "tracep->addCleanupCb(", true});
+        m_regFuncp->addStmtsp(new AstAddrOfCFunc{fl, cleanupFuncp});
+        m_regFuncp->addStmtsp(new AstText{fl, ", vlSelf);\n", true});
 
         // Clear global activity flag
-        cleanupFuncp->addStmtsp(
-            new AstCStmt(m_topScopep->fileline(), string("vlSymsp->__Vm_activity = false;\n")));
+        cleanupFuncp->addStmtsp(new AstCStmt{m_topScopep->fileline(),
+                                             std::string{"vlSymsp->__Vm_activity = false;\n"}});
 
         // Clear fine grained activity flags
         for (uint32_t i = 0; i < m_activityNumber; ++i) {
-            AstNode* const clrp = new AstAssign(fl, selectActivity(fl, i, VAccess::WRITE),
-                                                new AstConst(fl, AstConst::BitFalse()));
+            AstNode* const clrp = new AstAssign{fl, selectActivity(fl, i, VAccess::WRITE),
+                                                new AstConst{fl, AstConst::BitFalse{}}};
             cleanupFuncp->addStmtsp(clrp);
         }
     }
@@ -759,7 +759,7 @@ private:
         // last value vector is more compact
 
         // Create the trace registration function
-        m_regFuncp = new AstCFunc(m_topScopep->fileline(), "trace_register", m_topScopep);
+        m_regFuncp = new AstCFunc{m_topScopep->fileline(), "trace_register", m_topScopep};
         m_regFuncp->argTypes(v3Global.opt.traceClassBase() + "* tracep");
         m_regFuncp->isTrace(true);
         m_regFuncp->slow(true);
@@ -789,7 +789,7 @@ private:
         TraceCFuncVertex* vertexp
             = dynamic_cast<TraceCFuncVertex*>(nodep->user1u().toGraphVertex());
         if (!vertexp) {
-            vertexp = new TraceCFuncVertex(&m_graph, nodep);
+            vertexp = new TraceCFuncVertex{&m_graph, nodep};
             nodep->user1p(vertexp);
         }
         return vertexp;
@@ -798,7 +798,7 @@ private:
         TraceActivityVertex* vertexp
             = dynamic_cast<TraceActivityVertex*>(nodep->user3u().toGraphVertex());
         if (!vertexp) {
-            vertexp = new TraceActivityVertex(&m_graph, nodep, slow);
+            vertexp = new TraceActivityVertex{&m_graph, nodep, slow};
             nodep->user3p(vertexp);
         }
         vertexp->slow(slow);
@@ -840,7 +840,7 @@ private:
                             UINFO(8, "     SubCCALL " << ccallp << endl);
                             V3GraphVertex* const ccallFuncVtxp = getCFuncVertexp(ccallp->funcp());
                             activityVtxp->slow(ccallp->funcp()->slow());
-                            new V3GraphEdge(&m_graph, activityVtxp, ccallFuncVtxp, 1);
+                            new V3GraphEdge{&m_graph, activityVtxp, ccallFuncVtxp, 1};
                         }
                     }
                 }
@@ -858,7 +858,7 @@ private:
                 // Cannot treat a coroutine as slow, it may be resumed later
                 const bool slow = nodep->slow() && !nodep->isCoroutine();
                 V3GraphVertex* const activityVtxp = getActivityVertexp(nodep, slow);
-                new V3GraphEdge(&m_graph, activityVtxp, funcVtxp, 1);
+                new V3GraphEdge{&m_graph, activityVtxp, funcVtxp, 1};
             }
         }
         VL_RESTORER(m_cfuncp);
@@ -870,7 +870,7 @@ private:
     void visit(AstTraceDecl* nodep) override {
         UINFO(8, "   TRACE " << nodep << endl);
         if (!m_finding) {
-            V3GraphVertex* const vertexp = new TraceTraceVertex(&m_graph, nodep);
+            V3GraphVertex* const vertexp = new TraceTraceVertex{&m_graph, nodep};
             nodep->user1p(vertexp);
 
             UASSERT_OBJ(m_cfuncp, nodep, "Trace not under func");
@@ -885,21 +885,21 @@ private:
             UASSERT_OBJ(nodep->access().isReadOnly(), nodep, "Lvalue in trace?  Should be const.");
             V3GraphVertex* varVtxp = nodep->varScopep()->user1u().toGraphVertex();
             if (!varVtxp) {
-                varVtxp = new TraceVarVertex(&m_graph, nodep->varScopep());
+                varVtxp = new TraceVarVertex{&m_graph, nodep->varScopep()};
                 nodep->varScopep()->user1p(varVtxp);
             }
             V3GraphVertex* const traceVtxp = m_tracep->user1u().toGraphVertex();
-            new V3GraphEdge(&m_graph, varVtxp, traceVtxp, 1);
+            new V3GraphEdge{&m_graph, varVtxp, traceVtxp, 1};
             if (nodep->varp()->isPrimaryInish()  // Always need to trace primary inputs
                 || nodep->varp()->isSigPublic()) {  // Or ones user can change
-                new V3GraphEdge(&m_graph, m_alwaysVtxp, traceVtxp, 1);
+                new V3GraphEdge{&m_graph, m_alwaysVtxp, traceVtxp, 1};
             }
         } else if (m_cfuncp && m_finding && nodep->access().isWriteOrRW()) {
             UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
             V3GraphVertex* const funcVtxp = getCFuncVertexp(m_cfuncp);
             V3GraphVertex* const varVtxp = nodep->varScopep()->user1u().toGraphVertex();
             if (varVtxp) {  // else we're not tracing this signal
-                new V3GraphEdge(&m_graph, funcVtxp, varVtxp, 1);
+                new V3GraphEdge{&m_graph, funcVtxp, varVtxp, 1};
             }
         }
     }

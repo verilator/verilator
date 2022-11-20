@@ -349,7 +349,7 @@ private:
         if (m_scopep) {
             UINFO(5, "   STMT " << nodep << endl);
             // m_activep is null under AstCFunc's, that's ok.
-            m_logicVertexp = new GateLogicVertex(&m_graph, m_scopep, nodep, m_activep, m_inSlow);
+            m_logicVertexp = new GateLogicVertex{&m_graph, m_scopep, nodep, m_activep, m_inSlow};
             if (nonReducibleReason) {
                 m_logicVertexp->clearReducibleAndDedupable(nonReducibleReason);
             } else if (!m_activeReducible) {
@@ -368,7 +368,7 @@ private:
         GateVarVertex* vertexp = reinterpret_cast<GateVarVertex*>(varscp->user1p());
         if (!vertexp) {
             UINFO(6, "New vertex " << varscp << endl);
-            vertexp = new GateVarVertex(&m_graph, m_scopep, varscp);
+            vertexp = new GateVarVertex{&m_graph, m_scopep, varscp};
             varscp->user1p(vertexp);
             if (varscp->varp()->isSigPublic()) {
                 // Public signals shouldn't be changed, pli code might be messing with them
@@ -493,10 +493,10 @@ private:
             // We use weight of one; if we ref the var more than once, when we simplify,
             // the weight will increase
             if (nodep->access().isWriteOrRW()) {
-                new V3GraphEdge(&m_graph, m_logicVertexp, vvertexp, 1);
+                new V3GraphEdge{&m_graph, m_logicVertexp, vvertexp, 1};
             }
             if (nodep->access().isReadOrRW()) {
-                new V3GraphEdge(&m_graph, vvertexp, m_logicVertexp, 1);
+                new V3GraphEdge{&m_graph, vvertexp, m_logicVertexp, 1};
             }
         }
     }
@@ -638,7 +638,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                 for (AstNodeVarRef* const refp : rhsVarRefs) {
                     AstVarScope* const newvarscp = refp->varScopep();
                     GateVarVertex* const varvertexp = makeVarVertex(newvarscp);
-                    new V3GraphEdge(&m_graph, varvertexp, consumeVertexp, 1);
+                    new V3GraphEdge{&m_graph, varvertexp, consumeVertexp, 1};
                     // Propagate clock attribute onto generating node
                     varvertexp->propagateAttrClocksFrom(vvertexp);
                 }
@@ -1177,8 +1177,8 @@ private:
         const AstConst* const cwidth = VN_CAST(cur->widthp(), Const);
         if (!pstart || !pwidth || !cstart || !cwidth) return nullptr;  // too complicated
         if (cur->lsbConst() + cur->widthConst() == pre->lsbConst()) {
-            return new AstSel(curVarRefp->fileline(), curVarRefp->cloneTree(false),
-                              cur->lsbConst(), pre->widthConst() + cur->widthConst());
+            return new AstSel{curVarRefp->fileline(), curVarRefp->cloneTree(false),
+                              cur->lsbConst(), pre->widthConst() + cur->widthConst()};
         } else {
             return nullptr;
         }
@@ -1218,9 +1218,9 @@ private:
                             preselp->replaceWith(newselp);
                             VL_DO_DANGLING(preselp->deleteTree(), preselp);
                             // create new rhs for pre assignment
-                            AstNode* const newrhsp = new AstConcat(
+                            AstNode* const newrhsp = new AstConcat{
                                 m_assignp->rhsp()->fileline(), m_assignp->rhsp()->cloneTree(false),
-                                assignp->rhsp()->cloneTree(false));
+                                assignp->rhsp()->cloneTree(false)};
                             AstNode* const oldrhsp = m_assignp->rhsp();
                             oldrhsp->replaceWith(newrhsp);
                             VL_DO_DANGLING(oldrhsp->deleteTree(), oldrhsp);
@@ -1240,7 +1240,7 @@ private:
                                         ledgep = ledgep->inNextp();
                                         GateEitherVertex* const fromvp
                                             = static_cast<GateEitherVertex*>(oedgep->fromp());
-                                        new V3GraphEdge(m_graphp, fromvp, m_logicvp, 1);
+                                        new V3GraphEdge{m_graphp, fromvp, m_logicvp, 1};
                                         VL_DO_DANGLING(oedgep->unlinkDelete(), oedgep);
                                     }
                                 }
@@ -1369,7 +1369,7 @@ private:
             m_total_seen_clk_vectors++;
         }
         const GateClkDecompState* const currState = reinterpret_cast<GateClkDecompState*>(vu.c());
-        GateClkDecompState nextState(currState->m_offset, vsp);
+        GateClkDecompState nextState{currState->m_offset, vsp};
         vvertexp->iterateCurrentOutEdges(*this, VNUser{&nextState});
         if (vsp->varp()->width() > 1) --m_seen_clk_vectors;
         vsp->user2(false);
@@ -1424,17 +1424,17 @@ private:
                     UINFO(9, "CLK DECOMP Connecting - " << assignp->lhsp() << endl);
                     UINFO(9, "                   to - " << m_clk_vsp << endl);
                     AstNode* const rhsp = assignp->rhsp();
-                    rhsp->replaceWith(new AstVarRef(rhsp->fileline(), m_clk_vsp, VAccess::READ));
+                    rhsp->replaceWith(new AstVarRef{rhsp->fileline(), m_clk_vsp, VAccess::READ});
                     while (V3GraphEdge* const edgep = lvertexp->inBeginp()) {
                         VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
                     }
-                    new V3GraphEdge(m_graphp, m_clk_vvertexp, lvertexp, 1);
+                    new V3GraphEdge{m_graphp, m_clk_vvertexp, lvertexp, 1};
                     m_total_decomposed_clk_vectors++;
                 }
             } else {
                 return VNUser{0};
             }
-            GateClkDecompState nextState(clk_offset, currState->m_last_vsp);
+            GateClkDecompState nextState{clk_offset, currState->m_last_vsp};
             return lvertexp->iterateCurrentOutEdges(*this, VNUser{&nextState});
         }
         return VNUser{0};
@@ -1453,7 +1453,7 @@ public:
         m_seen_clk_vectors = 0;
         m_clk_vsp = vvertexp->varScp();
         m_clk_vvertexp = vvertexp;
-        GateClkDecompState nextState(0, m_clk_vsp);
+        GateClkDecompState nextState{0, m_clk_vsp};
         vvertexp->accept(*this, VNUser{&nextState});
     }
 };

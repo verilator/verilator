@@ -163,7 +163,7 @@ private:
         }
     }
     TaskFTaskVertex* getFTaskVertex(AstNodeFTask* nodep) {
-        if (!nodep->user4p()) nodep->user4p(new TaskFTaskVertex(&m_callGraph, nodep));
+        if (!nodep->user4p()) nodep->user4p(new TaskFTaskVertex{&m_callGraph, nodep});
         return static_cast<TaskFTaskVertex*>(nodep->user4u().toGraphVertex());
     }
 
@@ -204,7 +204,7 @@ private:
         }
         // We make multiple edges if a task is called multiple times from another task.
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
-        new TaskEdge(&m_callGraph, m_curVxp, getFTaskVertex(nodep->taskp()));
+        new TaskEdge{&m_callGraph, m_curVxp, getFTaskVertex(nodep->taskp())};
     }
     void visit(AstNodeFTask* nodep) override {
         UINFO(9, "  TASK " << nodep << endl);
@@ -276,7 +276,7 @@ private:
 public:
     // CONSTRUCTORS
     explicit TaskStateVisitor(AstNetlist* nodep) {
-        m_curVxp = new TaskCodeVertex(&m_callGraph);
+        m_curVxp = new TaskCodeVertex{&m_callGraph};
         AstNode::user3ClearTree();
         AstNode::user4ClearTree();
         //
@@ -369,20 +369,20 @@ private:
     // METHODS
 
     AstVarScope* createFuncVar(AstCFunc* funcp, const string& name, AstVar* examplep) {
-        AstVar* const newvarp = new AstVar(funcp->fileline(), VVarType::BLOCKTEMP, name, examplep);
+        AstVar* const newvarp = new AstVar{funcp->fileline(), VVarType::BLOCKTEMP, name, examplep};
         newvarp->funcLocal(true);
         funcp->addInitsp(newvarp);
-        AstVarScope* const newvscp = new AstVarScope(funcp->fileline(), m_scopep, newvarp);
+        AstVarScope* const newvscp = new AstVarScope{funcp->fileline(), m_scopep, newvarp};
         m_scopep->addVarsp(newvscp);
         return newvscp;
     }
     AstVarScope* createInputVar(AstCFunc* funcp, const string& name, VBasicDTypeKwd kwd) {
         AstVar* const newvarp
-            = new AstVar(funcp->fileline(), VVarType::BLOCKTEMP, name, funcp->findBasicDType(kwd));
+            = new AstVar{funcp->fileline(), VVarType::BLOCKTEMP, name, funcp->findBasicDType(kwd)};
         newvarp->funcLocal(true);
         newvarp->direction(VDirection::INPUT);
         funcp->addArgsp(newvarp);
-        AstVarScope* const newvscp = new AstVarScope(funcp->fileline(), m_scopep, newvarp);
+        AstVarScope* const newvscp = new AstVarScope{funcp->fileline(), m_scopep, newvarp};
         m_scopep->addVarsp(newvscp);
         return newvscp;
     }
@@ -425,7 +425,7 @@ private:
         AstNode* const newbodysp
             = AstNode::cloneTreeNull(refp->taskp()->stmtsp(), true);  // Maybe nullptr
         AstNode* const beginp
-            = new AstComment(refp->fileline(), string("Function: ") + refp->name(), true);
+            = new AstComment{refp->fileline(), string("Function: ") + refp->name(), true};
         if (newbodysp) beginp->addNext(newbodysp);
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-newbegi:");
         //
@@ -478,9 +478,9 @@ private:
                     AstVarScope* const tempvscp
                         = createVarScope(portp, namePrefix + "__" + portp->shortName());
                     portp->user2p(tempvscp);
-                    AstAssign* const assp = new AstAssign(
+                    AstAssign* const assp = new AstAssign{
                         pinp->fileline(), pinp,
-                        new AstVarRef(tempvscp->fileline(), tempvscp, VAccess::READ));
+                        new AstVarRef{tempvscp->fileline(), tempvscp, VAccess::READ}};
                     assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
                                                     true);  // Ok if in <= block
                     // Put assignment BEHIND of all other statements
@@ -490,9 +490,9 @@ private:
                     AstVarScope* const inVscp
                         = createVarScope(portp, namePrefix + "__" + portp->shortName());
                     portp->user2p(inVscp);
-                    AstAssign* const assp = new AstAssign(
+                    AstAssign* const assp = new AstAssign{
                         pinp->fileline(),
-                        new AstVarRef(inVscp->fileline(), inVscp, VAccess::WRITE), pinp);
+                        new AstVarRef{inVscp->fileline(), inVscp, VAccess::WRITE}, pinp};
                     assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
                                                     true);  // Ok if in <= block
                     // Put assignment in FRONT of all other statements
@@ -542,20 +542,20 @@ private:
         UASSERT_OBJ(cfuncp, refp, "No non-inline task associated with this task call?");
         //
         AstNode* const beginp
-            = new AstComment(refp->fileline(), string("Function: ") + refp->name(), true);
+            = new AstComment{refp->fileline(), string("Function: ") + refp->name(), true};
         AstNodeCCall* ccallp;
         if (VN_IS(refp, New)) {
-            AstCNew* const cnewp = new AstCNew(refp->fileline(), cfuncp);
+            AstCNew* const cnewp = new AstCNew{refp->fileline(), cfuncp};
             cnewp->dtypep(refp->dtypep());
             ccallp = cnewp;
             // Parent AstNew will replace with this CNew
             cnewpr = cnewp;
         } else if (const AstMethodCall* const mrefp = VN_CAST(refp, MethodCall)) {
-            ccallp = new AstCMethodCall(refp->fileline(), mrefp->fromp()->unlinkFrBack(), cfuncp);
+            ccallp = new AstCMethodCall{refp->fileline(), mrefp->fromp()->unlinkFrBack(), cfuncp};
             ccallp->dtypeSetVoid();
             beginp->addNext(ccallp->makeStmt());
         } else {
-            ccallp = new AstCCall(refp->fileline(), cfuncp);
+            ccallp = new AstCCall{refp->fileline(), cfuncp};
             ccallp->dtypeSetVoid();
             beginp->addNext(ccallp->makeStmt());
         }
@@ -598,10 +598,10 @@ private:
                     AstVarScope* const newvscp
                         = createVarScope(portp, namePrefix + "__" + portp->shortName());
                     portp->user2p(newvscp);
-                    pinp->replaceWith(new AstVarRef(newvscp->fileline(), newvscp, VAccess::WRITE));
-                    AstAssign* const assp = new AstAssign(
+                    pinp->replaceWith(new AstVarRef{newvscp->fileline(), newvscp, VAccess::WRITE});
+                    AstAssign* const assp = new AstAssign{
                         pinp->fileline(), pinp,
-                        new AstVarRef(newvscp->fileline(), newvscp, VAccess::READ));
+                        new AstVarRef{newvscp->fileline(), newvscp, VAccess::READ}};
                     assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
                                                     true);  // Ok if in <= block
                     // Put assignment BEHIND of all other statements
@@ -619,8 +619,8 @@ private:
             UASSERT_OBJ(snp, refp, "Missing scoping context");
             ccallp->addArgsp(snp);
             // __Vfilenamep
-            ccallp->addArgsp(new AstCExpr(refp->fileline(),
-                                          "\"" + refp->fileline()->filename() + "\"", 64, true));
+            ccallp->addArgsp(new AstCExpr{refp->fileline(),
+                                          "\"" + refp->fileline()->filename() + "\"", 64, true});
             // __Vlineno
             ccallp->addArgsp(new AstConst(refp->fileline(), refp->fileline()->lineno()));
         }
@@ -635,7 +635,7 @@ private:
             ccallp->addArgsp(exprp);
         }
 
-        if (outvscp) ccallp->addArgsp(new AstVarRef(refp->fileline(), outvscp, VAccess::WRITE));
+        if (outvscp) ccallp->addArgsp(new AstVarRef{refp->fileline(), outvscp, VAccess::WRITE});
 
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-nitask: ");
         return beginp;
@@ -668,7 +668,7 @@ private:
 
     static AstNode* createDpiTemp(AstVar* portp, const string& suffix) {
         const string stmt = portp->dpiTmpVarType(portp->name() + suffix) + ";\n";
-        return new AstCStmt(portp->fileline(), stmt);
+        return new AstCStmt{portp->fileline(), stmt};
     }
 
     void unlinkAndClone(AstNodeFTask* funcp, AstNode* nodep, bool withNext) {
@@ -692,7 +692,7 @@ private:
     static AstNode* createAssignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
                                               const string& toSuffix) {
         const string stmt = V3Task::assignInternalToDpi(portp, isPtr, frSuffix, toSuffix);
-        return new AstCStmt(portp->fileline(), stmt);
+        return new AstCStmt{portp->fileline(), stmt};
     }
 
     AstNode* createAssignDpiToInternal(AstVarScope* portvscp, const string& frName) {
@@ -721,7 +721,7 @@ private:
         AstNode* newp = nullptr;
         const int widthWords = portp->basicp()->widthWords();
         for (int i = 0; i < total; ++i) {
-            AstNodeExpr* srcp = new AstVarRef(portvscp->fileline(), portvscp, VAccess::WRITE);
+            AstNodeExpr* srcp = new AstVarRef{portvscp->fileline(), portvscp, VAccess::WRITE};
             // extract a scalar from multi-dimensional array (internal format)
             for (auto&& dimStride : dimStrides) {
                 const size_t dimIdx = (i / dimStride.second) % dimStride.first->elementsConst();
@@ -730,12 +730,12 @@ private:
             AstNode* stmtp = nullptr;
             // extract a scalar from DPI temporary var that is scalar or 1D array
             if (useSetWSvlv) {
-                AstNode* const linesp = new AstText(portvscp->fileline(), frstmt + ket);
+                AstNode* const linesp = new AstText{portvscp->fileline(), frstmt + ket};
                 linesp->addNext(srcp);
                 linesp->addNext(
-                    new AstText(portvscp->fileline(),
-                                "," + frName + " + " + cvtToStr(i * widthWords) + ");\n"));
-                stmtp = new AstCStmt(portvscp->fileline(), linesp);
+                    new AstText{portvscp->fileline(),
+                                "," + frName + " + " + cvtToStr(i * widthWords) + ");\n"});
+                stmtp = new AstCStmt{portvscp->fileline(), linesp};
             } else {
                 string from = frstmt;
                 if (!dimStrides.empty()) {
@@ -744,10 +744,10 @@ private:
                     from += "[" + cvtToStr(i * coef) + "]";
                 }
                 from += ket;
-                AstNodeExpr* const rhsp = new AstSel(
-                    portp->fileline(), new AstCExpr(portp->fileline(), from, cwidth, false), 0,
-                    portp->width());
-                stmtp = new AstAssign(portp->fileline(), srcp, rhsp);
+                AstNodeExpr* const rhsp = new AstSel{
+                    portp->fileline(), new AstCExpr{portp->fileline(), from, cwidth, false}, 0,
+                    portp->width()};
+                stmtp = new AstAssign{portp->fileline(), srcp, rhsp};
             }
             if (i > 0) {
                 newp->addNext(stmtp);
@@ -760,8 +760,8 @@ private:
 
     AstCFunc* makeDpiExportDispatcher(AstNodeFTask* nodep, AstVar* rtnvarp) {
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
-        AstCFunc* const funcp = new AstCFunc(nodep->fileline(), nodep->cname(), m_scopep,
-                                             (rtnvarp ? rtnvarp->dpiArgType(true, true) : ""));
+        AstCFunc* const funcp = new AstCFunc{nodep->fileline(), nodep->cname(), m_scopep,
+                                             (rtnvarp ? rtnvarp->dpiArgType(true, true) : "")};
         funcp->dpiExportDispatcher(true);
         funcp->dpiContext(nodep->dpiContext());
         funcp->dontCombine(true);
@@ -797,7 +797,7 @@ private:
                     + ")(VerilatedScope::exportFind(__Vscopep, __Vfuncnum));\n";  // Can't use
                                                                                   // static_cast
             // If __Vcb is null the exportFind function throws and error
-            funcp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
+            funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
         }
 
         // Convert input/inout DPI arguments to Internal types
@@ -812,7 +812,7 @@ private:
                     // SAME CODE BELOW
                     args += ", ";
                     if (args != "") {
-                        argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true));
+                        argnodesp = argnodesp->addNext(new AstText{portp->fileline(), args, true});
                         args = "";
                     }
                     AstVarScope* const outvscp
@@ -821,8 +821,8 @@ private:
                     outvscp->varp()->protect(false);
                     portp->protect(false);
                     AstVarRef* const refp
-                        = new AstVarRef(portp->fileline(), outvscp,
-                                        portp->isWritable() ? VAccess::WRITE : VAccess::READ);
+                        = new AstVarRef{portp->fileline(), outvscp,
+                                        portp->isWritable() ? VAccess::WRITE : VAccess::READ};
                     argnodesp = argnodesp->addNext(refp);
 
                     if (portp->isNonOutput()) {
@@ -843,14 +843,14 @@ private:
             // SAME CODE ABOVE
             args += ", ";
             if (args != "") {
-                argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true));
+                argnodesp = argnodesp->addNext(new AstText{portp->fileline(), args, true});
                 args = "";
             }
             AstVarScope* const outvscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
             // No information exposure; is already visible in import/export func template
             outvscp->varp()->protect(false);
-            AstVarRef* const refp = new AstVarRef(
-                portp->fileline(), outvscp, portp->isWritable() ? VAccess::WRITE : VAccess::READ);
+            AstVarRef* const refp = new AstVarRef{
+                portp->fileline(), outvscp, portp->isWritable() ? VAccess::WRITE : VAccess::READ};
             argnodesp = argnodesp->addNext(refp);
         }
 
@@ -858,10 +858,10 @@ private:
             // Add the variables referenced as VarRef's so that lifetime analysis
             // doesn't rip up the variables on us
             args += ");\n";
-            AstCStmt* const newp = new AstCStmt(nodep->fileline(), "(*__Vcb)(");
+            AstCStmt* const newp = new AstCStmt{nodep->fileline(), "(*__Vcb)("};
             newp->addExprsp(argnodesp);
             VL_DANGLING(argnodesp);
-            newp->addExprsp(new AstText(nodep->fileline(), args, true));
+            newp->addExprsp(new AstText{nodep->fileline(), args, true});
             funcp->addStmtsp(newp);
         }
 
@@ -879,7 +879,7 @@ private:
             funcp->addStmtsp(createAssignInternalToDpi(rtnvarp, false, tmpSuffixp, ""));
             string stmt = "return " + rtnvarp->name();
             stmt += rtnvarp->basicp()->isDpiPrimitive() ? ";\n" : "[0];\n";
-            funcp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
+            funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
         }
         makePortList(nodep, funcp);
         return funcp;
@@ -894,7 +894,7 @@ private:
         const string rtnType = rtnvarp            ? rtnvarp->dpiArgType(true, true)
                                : nodep->dpiTask() ? "int"
                                                   : "";
-        AstCFunc* const funcp = new AstCFunc(nodep->fileline(), nodep->cname(), m_scopep, rtnType);
+        AstCFunc* const funcp = new AstCFunc{nodep->fileline(), nodep->cname(), m_scopep, rtnType};
         funcp->dpiContext(nodep->dpiContext());
         funcp->dpiImportPrototype(true);
         funcp->dontCombine(true);
@@ -997,7 +997,7 @@ private:
                         // At least put them into the module's CTOR as static?
                         const string propName = portp->name() + "__Vopenprops";
                         const string propCode = portp->vlPropDecl(propName);
-                        cfuncp->addStmtsp(new AstCStmt(portp->fileline(), propCode));
+                        cfuncp->addStmtsp(new AstCStmt{portp->fileline(), propCode});
                         //
                         // At runtime we need the svOpenArrayHandle to
                         // point to this task & thread's data, in addition
@@ -1007,7 +1007,7 @@ private:
                             = ("VerilatedDpiOpenVar "
                                // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
                                + name + " (&" + propName + ", &" + portp->name() + ");\n");
-                        cfuncp->addStmtsp(new AstCStmt(portp->fileline(), varCode));
+                        cfuncp->addStmtsp(new AstCStmt{portp->fileline(), varCode});
                         args += "&" + name;
                     } else {
                         if (portp->isWritable() && portp->basicp()->isDpiPrimitive()) {
@@ -1029,7 +1029,7 @@ private:
         // Store context, if needed
         if (nodep->dpiContext()) {
             const string stmt = "Verilated::dpiContext(__Vscopep, __Vfilenamep, __Vlineno);\n";
-            cfuncp->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
+            cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
         }
 
         {  // Call the imported function
@@ -1038,9 +1038,9 @@ private:
                 string stmt = rtnvscp->varp()->name();
                 stmt += tmpSuffixp;
                 stmt += rtnvscp->varp()->basicp()->isDpiPrimitive() ? " = " : "[0] = ";
-                cfuncp->addStmtsp(new AstText(nodep->fileline(), stmt, /* tracking: */ true));
+                cfuncp->addStmtsp(new AstText{nodep->fileline(), stmt, /* tracking: */ true});
             }
-            AstCCall* const callp = new AstCCall(nodep->fileline(), dpiFuncp);
+            AstCCall* const callp = new AstCCall{nodep->fileline(), dpiFuncp};
             callp->dtypeSetVoid();
             callp->argTypes(args);
             cfuncp->addStmtsp(callp->makeStmt());
@@ -1139,7 +1139,7 @@ private:
 
         AstVarScope* rtnvscp = nullptr;
         if (rtnvarp) {
-            rtnvscp = new AstVarScope(rtnvarp->fileline(), m_scopep, rtnvarp);
+            rtnvscp = new AstVarScope{rtnvarp->fileline(), m_scopep, rtnvarp};
             m_scopep->addVarsp(rtnvscp);
             rtnvarp->user2p(rtnvscp);
         }
@@ -1157,9 +1157,9 @@ private:
         string suffix;  // So, make them unique
         if (!nodep->taskPublic() && !nodep->classMethod()) suffix = "_" + m_scopep->nameDotless();
         const string name = ((nodep->name() == "new") ? "new" : prefix + nodep->name() + suffix);
-        AstCFunc* const cfuncp = new AstCFunc(
+        AstCFunc* const cfuncp = new AstCFunc{
             nodep->fileline(), name, m_scopep,
-            ((nodep->taskPublic() && rtnvarp) ? rtnvarp->cPubArgType(true, true) : ""));
+            ((nodep->taskPublic() && rtnvarp) ? rtnvarp->cPubArgType(true, true) : "")};
         // It's ok to combine imports because this is just a wrapper;
         // duplicate wrappers can get merged.
         cfuncp->dontCombine(!nodep->dpiImport());
@@ -1192,7 +1192,7 @@ private:
             cfuncp->argTypes(EmitCBaseVisitor::symClassVar());
             if (cfuncp->name() == "new") {
                 const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);\n";
-                cfuncp->addInitsp(new AstCStmt(nodep->fileline(), stmt));
+                cfuncp->addInitsp(new AstCStmt{nodep->fileline(), stmt});
             }
         }
         if (nodep->dpiContext()) {
@@ -1267,8 +1267,8 @@ private:
 
         // Return statement
         if (rtnvscp && nodep->taskPublic()) {
-            cfuncp->addFinalsp(new AstCReturn(
-                rtnvscp->fileline(), new AstVarRef(rtnvscp->fileline(), rtnvscp, VAccess::READ)));
+            cfuncp->addFinalsp(new AstCReturn{
+                rtnvscp->fileline(), new AstVarRef{rtnvscp->fileline(), rtnvscp, VAccess::READ}});
         }
         // Replace variable refs
         relink(cfuncp);
@@ -1412,7 +1412,7 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else if (!VN_IS(nodep->backp(), StmtExpr)) {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep, "func reference to non-function");
-            AstVarRef* const outrefp = new AstVarRef(nodep->fileline(), outvscp, VAccess::READ);
+            AstVarRef* const outrefp = new AstVarRef{nodep->fileline(), outvscp, VAccess::READ};
             nodep->replaceWith(outrefp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
@@ -1634,7 +1634,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                 nodep->v3error("Missing argument on non-defaulted argument "
                                << portp->prettyNameQ() << " in function call to "
                                << nodep->taskp()->prettyTypeName());
-                newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
+                newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
             } else if (!VN_IS(portp->valuep(), Const)) {
                 // The default value for this port might be a constant
                 // expression that hasn't been folded yet. Try folding it
@@ -1648,7 +1648,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                                   "Unsupported: Non-constant default value in missing argument "
                                       << portp->prettyNameQ() << " in function call to "
                                       << nodep->taskp()->prettyTypeName());
-                    newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
+                    newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
                 } else {
                     newvaluep = newvaluep->cloneTree(true);
                 }
@@ -1658,7 +1658,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
             // To avoid problems with callee needing to know to deleteTree
             // or not, we make this into a pin
             UINFO(9, "Default pin for " << portp << endl);
-            AstArg* const newp = new AstArg(nodep->fileline(), portp->name(), newvaluep);
+            AstArg* const newp = new AstArg{nodep->fileline(), portp->name(), newvaluep};
             if (tconnects[i].second) {  // Have a "nullptr" pin already defined for it
                 VL_DO_CLEAR(tconnects[i].second->unlinkFrBack()->deleteTree(),
                             tconnects[i].second = nullptr);

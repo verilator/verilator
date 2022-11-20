@@ -156,28 +156,28 @@ private:
             varp = it->second;
         } else {
             if (newdtypep) {
-                varp = new AstVar(oldvarscp->fileline(), VVarType::BLOCKTEMP, name, newdtypep);
+                varp = new AstVar{oldvarscp->fileline(), VVarType::BLOCKTEMP, name, newdtypep};
             } else if (width == 0) {
-                varp = new AstVar(oldvarscp->fileline(), VVarType::BLOCKTEMP, name,
-                                  oldvarscp->varp());
+                varp = new AstVar{oldvarscp->fileline(), VVarType::BLOCKTEMP, name,
+                                  oldvarscp->varp()};
                 varp->dtypeFrom(oldvarscp);
             } else {  // Used for vset and dimensions, so can zero init
-                varp = new AstVar(oldvarscp->fileline(), VVarType::BLOCKTEMP, name,
-                                  VFlagBitPacked(), width);
+                varp = new AstVar{oldvarscp->fileline(), VVarType::BLOCKTEMP, name,
+                                  VFlagBitPacked{}, width};
             }
             addmodp->addStmtsp(varp);
             m_modVarMap.emplace(std::make_pair(addmodp, name), varp);
         }
 
         AstVarScope* const varscp
-            = new AstVarScope(oldvarscp->fileline(), oldvarscp->scopep(), varp);
+            = new AstVarScope{oldvarscp->fileline(), oldvarscp->scopep(), varp};
         oldvarscp->scopep()->addVarsp(varscp);
         return varscp;
     }
 
     AstActive* createActive(AstNode* varrefp) {
         AstActive* const newactp
-            = new AstActive(varrefp->fileline(), "sequentdly", m_activep->sensesp());
+            = new AstActive{varrefp->fileline(), "sequentdly", m_activep->sensesp()};
         // Was addNext(), but addNextHere() avoids a linear search.
         m_activep->addNextHere(newactp);
         return newactp;
@@ -204,7 +204,7 @@ private:
             // Make a new sensitivity list, which is the combination of both blocks
             AstSenItem* const sena = m_activep->sensesp()->sensesp()->cloneTree(true);
             AstSenItem* const senb = oldactivep->sensesp()->sensesp()->cloneTree(true);
-            AstSenTree* const treep = new AstSenTree(m_activep->fileline(), sena);
+            AstSenTree* const treep = new AstSenTree{m_activep->fileline(), sena};
             if (senb) treep->addSensesp(senb);
             if (AstSenTree* const storep = oldactivep->sensesStorep()) {
                 storep->unlinkFrBack();
@@ -265,11 +265,11 @@ private:
                                            + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
                 AstVarScope* const bitvscp
                     = createVarSc(varrefp->varScopep(), bitvarname, dimp->width(), nullptr);
-                AstAssign* const bitassignp = new AstAssign(
-                    nodep->fileline(), new AstVarRef(nodep->fileline(), bitvscp, VAccess::WRITE),
-                    dimp);
+                AstAssign* const bitassignp = new AstAssign{
+                    nodep->fileline(), new AstVarRef{nodep->fileline(), bitvscp, VAccess::WRITE},
+                    dimp};
                 nodep->addNextHere(bitassignp);
-                dimreadps.push_front(new AstVarRef(nodep->fileline(), bitvscp, VAccess::READ));
+                dimreadps.push_front(new AstVarRef{nodep->fileline(), bitvscp, VAccess::READ});
             }
         }
         //
@@ -285,11 +285,11 @@ private:
                                            + cvtToStr(modVecNum));
                 AstVarScope* const bitvscp
                     = createVarSc(varrefp->varScopep(), bitvarname, lsbvaluep->width(), nullptr);
-                AstAssign* const bitassignp = new AstAssign(
-                    nodep->fileline(), new AstVarRef(nodep->fileline(), bitvscp, VAccess::WRITE),
-                    lsbvaluep);
+                AstAssign* const bitassignp = new AstAssign{
+                    nodep->fileline(), new AstVarRef{nodep->fileline(), bitvscp, VAccess::WRITE},
+                    lsbvaluep};
                 nodep->addNextHere(bitassignp);
-                bitreadp = new AstVarRef(nodep->fileline(), bitvscp, VAccess::READ);
+                bitreadp = new AstVarRef{nodep->fileline(), bitvscp, VAccess::READ};
             }
         }
         //
@@ -303,8 +303,8 @@ private:
                 = (string("__Vdlyvval__") + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
             AstVarScope* const valvscp
                 = createVarSc(varrefp->varScopep(), valvarname, 0, nodep->rhsp()->dtypep());
-            newlhsp = new AstVarRef(nodep->fileline(), valvscp, VAccess::WRITE);
-            valreadp = new AstVarRef(nodep->fileline(), valvscp, VAccess::READ);
+            newlhsp = new AstVarRef{nodep->fileline(), valvscp, VAccess::WRITE};
+            valreadp = new AstVarRef{nodep->fileline(), valvscp, VAccess::READ};
         }
         //
         //=== Setting/not setting boolean: __Vdlyvset__
@@ -328,9 +328,9 @@ private:
                     nodep->fileline(), new AstVarRef{nodep->fileline(), setvscp, VAccess::WRITE},
                     new AstConst{nodep->fileline(), 0}};
             }
-            AstAssign* const setassignp = new AstAssign(
-                nodep->fileline(), new AstVarRef(nodep->fileline(), setvscp, VAccess::WRITE),
-                new AstConst(nodep->fileline(), AstConst::BitTrue()));
+            AstAssign* const setassignp = new AstAssign{
+                nodep->fileline(), new AstVarRef{nodep->fileline(), setvscp, VAccess::WRITE},
+                new AstConst{nodep->fileline(), AstConst::BitTrue{}}};
             nodep->addNextHere(setassignp);
         }
         if (m_nextDlyp) {  // Tell next assigndly it can share the variable
@@ -344,11 +344,11 @@ private:
         // It also has the nice side effect of assisting cache locality.
         AstNodeExpr* selectsp = varrefp;
         for (int dimension = int(dimreadps.size()) - 1; dimension >= 0; --dimension) {
-            selectsp = new AstArraySel(nodep->fileline(), selectsp, dimreadps[dimension]);
+            selectsp = new AstArraySel{nodep->fileline(), selectsp, dimreadps[dimension]};
         }
         if (bitselp) {
-            selectsp = new AstSel(nodep->fileline(), selectsp, bitreadp,
-                                  bitselp->widthp()->cloneTree(false));
+            selectsp = new AstSel{nodep->fileline(), selectsp, bitreadp,
+                                  bitselp->widthp()->cloneTree(false)};
         }
         // Build "IF (changeit) ...
         UINFO(9, "   For " << setvscp << endl);
@@ -392,14 +392,14 @@ private:
             UASSERT_OBJ(postLogicp, nodep,
                         "Delayed assignment misoptimized; prev var found w/o associated IF");
         } else {
-            postLogicp = new AstIf(nodep->fileline(),
-                                   new AstVarRef(nodep->fileline(), setvscp, VAccess::READ));
+            postLogicp = new AstIf{nodep->fileline(),
+                                   new AstVarRef{nodep->fileline(), setvscp, VAccess::READ}};
             UINFO(9, "     Created " << postLogicp << endl);
             finalp->addStmtsp(postLogicp);
             finalp->user3p(setvscp);  // Remember IF's vset variable
             finalp->user4p(postLogicp);  // and the associated IF, as we may be able to reuse it
         }
-        postLogicp->addThensp(new AstAssign(nodep->fileline(), selectsp, valreadp));
+        postLogicp->addThensp(new AstAssign{nodep->fileline(), selectsp, valreadp});
         if (m_procp->isSuspendable()) {
             FileLine* const flp = nodep->fileline();
             postLogicp->addThensp(new AstAssign{flp, new AstVarRef{flp, setvscp, VAccess::WRITE},
@@ -579,7 +579,7 @@ private:
                     newactp->addStmtsp(postp);
                 }
                 AstVarRef* const newrefp
-                    = new AstVarRef(nodep->fileline(), dlyvscp, VAccess::WRITE);
+                    = new AstVarRef{nodep->fileline(), dlyvscp, VAccess::WRITE};
                 newrefp->user2(true);  // No reason to do it again
                 nodep->replaceWith(newrefp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
