@@ -100,6 +100,9 @@ public:
     static string quotePercent(const string& str) { return quoteAny(str, '%', '%'); }
     // Surround a raw string by double quote and escape if necessary
     // e.g. input abc's  becomes "\"abc\'s\""
+    static string escapeStringForPath(const string& str);
+    // Escape path in Windows
+    // e.g. input `C:\Program Files\My Program\My Program.exe` becomes `C:\\Program\ Files\\My\ Program\\My\ Program.exe`
     static string quoteStringLiteralForShell(const string& str);
     // Replace any unprintable with space
     // This includes removing tabs, so column tracking is correct

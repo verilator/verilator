@@ -76,6 +76,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Environment
 
 string V3Os::getenvStr(const string& envvar, const string& defaultValue) {
+    string ret = "";
 #if defined(_MSC_VER)
     // Note: MinGW does not offer _dupenv_s
     const char* envvalue = nullptr;
@@ -83,17 +84,18 @@ string V3Os::getenvStr(const string& envvar, const string& defaultValue) {
     if (envvalue != nullptr) {
         const std::string result{envvalue};
         free(envvalue);
-        return result;
+        ret = result;
     } else {
-        return defaultValue;
+        ret = defaultValue;
     }
 #else
     if (const char* const envvalue = getenv(envvar.c_str())) {
-        return envvalue;
+        ret = envvalue;
     } else {
-        return defaultValue;
+        ret = defaultValue;
     }
 #endif
+    return VString::escapeStringForPath(ret);
 }
 
 void V3Os::setenvStr(const string& envvar, const string& value, const string& why) {
