@@ -19,11 +19,11 @@
 module t (/*AUTOARG*/);
 
    // Note these are NOT pure.
-   import "DPI-C" function int dpii_clear ();
-   import "DPI-C" function int dpii_count (input int ctr);
-   import "DPI-C" function bit dpii_inc0  (input int ctr);
-   import "DPI-C" function bit dpii_inc1  (input int ctr);
-   import "DPI-C" function bit dpii_incx  (input int ctr, input bit value);
+   import "DPI-C" function void dpii_clear();
+   import "DPI-C" function int dpii_count(input int ctr);
+   import "DPI-C" function bit dpii_inc0(input int ctr);
+   import "DPI-C" function bit dpii_inc1(input int ctr);
+   import "DPI-C" function bit dpii_incx(input int ctr, input bit value);
 
    integer i;
    integer j;

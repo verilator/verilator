@@ -19,11 +19,11 @@
 module t (/*AUTOARG*/);
 
    // Note these are NOT pure.
-   import "DPI-C" function int dpii_clear ();
-   import "DPI-C" function int dpii_count (input int ctr);
-   import "DPI-C" function bit dpii_inc0  (input int ctr);
-   import "DPI-C" function bit dpii_inc1  (input int ctr);
-   import "DPI-C" function bit dpii_incx  (input int ctr, input bit value);
+   import "DPI-C" function void dpii_clear();
+   import "DPI-C" function int dpii_count(input int ctr);
+   import "DPI-C" function bit dpii_inc0(input int ctr);
+   import "DPI-C" function bit dpii_inc1(input int ctr);
+   import "DPI-C" function bit dpii_incx(input int ctr, input bit value);
 
    integer i;
    integer j;
@@ -46,10 +46,7 @@ module t (/*AUTOARG*/);
 
    // Test loop
    initial begin
-      // bug963
-      // verilator lint_off IGNOREDRETURN
       dpii_clear();
-      // verilator lint_on IGNOREDRETURN
       j = 0;
       for (i=0; i<64; i++) begin
          if (i[0])

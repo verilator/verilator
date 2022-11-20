@@ -87,7 +87,6 @@ my $opt_stop;
 my $opt_trace;
 my $opt_verbose;
 my $Opt_Verilated_Debug;
-our $Opt_Unsupported;
 our $Opt_Verilation = 1;
 our @Opt_Driver_Verilator_Flags;
 
@@ -111,7 +110,6 @@ if (! GetOptions(
           "site!"       => \$opt_site,
           "stop!"       => \$opt_stop,
           "trace!"      => \$opt_trace,
-          "unsupported!"=> \$Opt_Unsupported,
           "verbose!"    => \$opt_verbose,
           "verilation!"         => \$Opt_Verilation,  # Undocumented debugging
           "verilated-debug!"    => \$Opt_Verilated_Debug,
@@ -197,8 +195,7 @@ if ($opt_rerun && $runner->fail_count) {
         quiet => 0,
         fail1_cnt => $orig_runner->fail_count,
         ok_cnt => $orig_runner->{ok_cnt},
-        skip_cnt => $orig_runner->{skip_cnt},
-        unsup_cnt => $orig_runner->{unsup_cnt});
+        skip_cnt => $orig_runner->{skip_cnt});
     foreach my $test (@{$orig_runner->{fail_tests}}) {
         $test->clean;
         # Reschedule test
@@ -313,7 +310,6 @@ sub new {
         fail1_cnt => 0,
         fail_cnt => 0,
         skip_cnt => 0,
-        unsup_cnt => 0,
         skip_msgs => [],
         fail_msgs => [],
         fail_tests => [],
@@ -374,8 +370,6 @@ sub one_test {
                  push @{$self->{skip_msgs}},
                      ("\t#" . $test->soprint("-Skip:  $test->{skips}\n"));
                  $self->{skip_cnt}++;
-             } elsif ($test->unsupporteds && !$test->errors) {
-                 $self->{unsup_cnt}++;
              } else {
                  $test->oprint("FAILED: $test->{errors}\n");
                  my $j = ($opt_jobs > 1 ? " -j" : "");
@@ -485,7 +479,6 @@ sub sprint_summary {
     $out .= "  Failed $self->{fail_cnt}";
     $out .= "  Failed-First $self->{fail1_cnt}" if $self->{fail1_cnt};
     $out .= "  Skipped $self->{skip_cnt}" if $self->{skip_cnt};
-    $out .= "  Unsup $self->{unsup_cnt}";
     $out .= sprintf("  Eta %d:%02d", int($eta / 60), $eta % 60) if $self->{left_cnt} > 10 && $eta > 10;
     $out .= sprintf("  Time %d:%02d", int($delta / 60), $delta % 60);
     return $out;
@@ -751,16 +744,6 @@ sub skip {
     $self->{skips} ||= "Skip: " . $msg;
 }
 
-sub unsupported {
-    my $self = (ref $_[0] ? shift : $Self);
-    my $msg = join('', @_);
-    # Called from tests as: unsupported("Reason message"[, ...]);
-    warn "-Unsupported: $self->{scenario}/$self->{name}: " . $msg . "\n";
-    if (!$::Opt_Unsupported) {
-        $self->{unsupporteds} ||= "Unsupported: " . $msg;
-    }
-}
-
 sub scenarios {
     my $self = (ref $_[0] ? shift : $Self);
     my %params = (@_);
@@ -815,8 +798,6 @@ sub _exit {
         $self->oprint("Self PASSED\n");
     } elsif ($self->skips && !$self->errors) {
         $self->oprint("-Skip: $self->{skips}\n");
-    } elsif ($self->unsupporteds && !$self->errors) {
-        $self->oprint("%Unsupported: $self->{unsupporteds}\n");
     } else {
         $self->error("Missing ok\n") if !$self->errors;
         $self->oprint("%Error: $self->{errors}\n");
@@ -882,7 +863,7 @@ sub clean_objs {
 sub compile_vlt_cmd {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (%{$self}, @_);  # Default arguments are from $self
-    return 1 if $self->errors || $self->skips || $self->unsupporteds;
+    return 1 if $self->errors || $self->skips;
 
     my @vlt_cmd = (
         "perl", "$ENV{VERILATOR_ROOT}/bin/verilator",
@@ -897,7 +878,7 @@ sub compile_vlt_cmd {
 sub compile_vlt_flags {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (%{$self}, @_);  # Default arguments are from $self
-    return 1 if $self->errors || $self->skips || $self->unsupporteds;
+    return 1 if $self->errors || $self->skips;
 
     my $checkflags = join(' ', @{$param{v_flags}},
                           @{$param{v_flags2}},
@@ -971,7 +952,7 @@ sub compile {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (tee => 1,
                  %{$self}, @_);  # Default arguments are from $self
-    return 1 if $self->errors || $self->skips || $self->unsupporteds;
+    return 1 if $self->errors || $self->skips;
     $self->oprint("Compile\n") if $self->{verbose};
 
     die "%Error: 'threads =>' argument must be <= 1 for vlt scenario" if $param{vlt} && $param{threads} > 1;
@@ -1139,7 +1120,7 @@ sub compile {
                         expect_filename => $param{expect_filename},
                         verilator_run => 1,
                         cmd => \@vlt_cmd) if $::Opt_Verilation;
-            return 1 if $self->errors || $self->skips || $self->unsupporteds;
+            return 1 if $self->errors || $self->skips;
         }
 
         if ($param{verilator_make_cmake}) {
@@ -1168,7 +1149,7 @@ sub compile {
                                 "-DTEST_OPT_GLOBAL=\"" . ($param{benchmark} ? "-Os" : "-O0") . "\"",
                                 "-DTEST_VERILATION=\"" . $::Opt_Verilation . "\"",
                         ]);
-            return 1 if $self->errors || $self->skips || $self->unsupporteds;
+            return 1 if $self->errors || $self->skips;
         }
 
         if (!$param{fails} && $param{verilator_make_gmake}) {
@@ -1220,7 +1201,7 @@ sub compile {
 
 sub execute {
     my $self = (ref $_[0] ? shift : $Self);
-    return 1 if $self->errors || $self->skips || $self->unsupporteds;
+    return 1 if $self->errors || $self->skips;
     my %param = (%{$self}, @_);  # Default arguments are from $self
     # params may be expect or {tool}_expect
     $self->oprint("Run\n") if $self->{verbose};
@@ -1367,7 +1348,7 @@ sub setenv {
 
 sub inline_checks {
     my $self = (ref $_[0] ? shift : $Self);
-    return 1 if $self->errors || $self->skips || $self->unsupporteds;
+    return 1 if $self->errors || $self->skips;
     return 1 if !$self->{vlt_all};
 
     my %param = (%{$self}, @_);  # Default arguments are from $self
@@ -1412,13 +1393,13 @@ sub inline_checks {
 sub ok {
     my $self = (ref $_[0] ? shift : $Self);
     $self->{ok} = $_[0] if defined $_[0];
-    $self->{ok} = 0 if $self->{errors} || $self->{errors_keep_going} || $self->{skips} || $self->unsupporteds;
+    $self->{ok} = 0 if $self->{errors} || $self->{errors_keep_going} || $self->{skips};
     return $self->{ok};
 }
 
 sub continuing {
     my $self = (ref $_[0] ? shift : $Self);
-    return !($self->errors || $self->skips || $self->unsupporteds);
+    return !($self->errors || $self->skips);
 }
 
 sub errors {
@@ -1440,11 +1421,6 @@ sub scenario_off {
 sub skips {
     my $self = (ref $_[0] ? shift : $Self);
     return $self->{skips};
-}
-
-sub unsupporteds {
-    my $self = (ref $_[0] ? shift : $Self);
-    return $self->{unsupporteds};
 }
 
 sub top_filename {
@@ -1662,7 +1638,7 @@ sub _run {
     if ($param{fails} && !$status) {
         $self->error("Exec of $param{cmd}[0] ok, but expected to fail\n");
     }
-    return if $self->errors || $self->skips || $self->unsupporteds;
+    return if $self->errors || $self->skips;
 
     # Read the log file a couple of times to allow for NFS delays
     if ($param{check_finished} || $param{expect}) {
@@ -2186,7 +2162,7 @@ sub files_identical {
     my $fn1 = shift;
     my $fn2 = shift;
     my $fn1_is_logfile = shift;
-    return 1 if $self->errors || $self->skips || $self->unsupporteds;
+    return 1 if $self->errors || $self->skips;
 
   try:
     for (my $try = $self->tries - 1; $try >= 0; $try--) {
@@ -2263,7 +2239,7 @@ sub files_identical_sorted {
     my $fn1 = shift;
     my $fn2 = shift;
     my $fn1_is_logfile = shift;
-    return 1 if $self->errors || $self->skips || $self->unsupporteds;
+    return 1 if $self->errors || $self->skips;
     # Set LC_ALL as suggested in the sort manpage to avoid sort order
     # changes from the locale.
     setenv('LC_ALL', "C");
@@ -2287,7 +2263,7 @@ sub vcd_identical {
     my $self = (ref $_[0] ? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
-    return 0 if $self->errors || $self->skips || $self->unsupporteds;
+    return 0 if $self->errors || $self->skips;
     if (!-r $fn1) { $self->error("Vcd_identical file does not exist $fn1\n"); return 0; }
     if (!-r $fn2) { $self->error("Vcd_identical file does not exist $fn2\n"); return 0; }
     {
@@ -2350,7 +2326,7 @@ sub fst_identical {
     my $self = (ref $_[0] ? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
-    return 0 if $self->errors || $self->skips || $self->unsupporteds;
+    return 0 if $self->errors || $self->skips;
     my $tmp = $fn1 . ".vcd";
     fst2vcd($fn1, $tmp);
     return vcd_identical($tmp, $fn2);
@@ -2424,7 +2400,7 @@ sub glob_all {
 sub glob_one {
     my $self = (ref $_[0] ? shift : $Self);
     my $pattern = shift;
-    return if $self->errors || $self->skips || $self->unsupporteds;
+    return if $self->errors || $self->skips;
 
     my @files = glob($pattern);
     my $n = scalar @files;
@@ -2446,7 +2422,7 @@ sub file_grep_not {
     my $filename = shift;
     my $regexp = shift;
     my $expvalue = shift;
-    return if $self->errors || $self->skips || $self->unsupporteds;
+    return if $self->errors || $self->skips;
     !defined $expvalue or $self->error("file_grep_not: Unexpected 3rd argument: $expvalue");
 
     my $contents = $self->file_contents($filename);
@@ -2461,7 +2437,7 @@ sub file_grep {
     my $filename = shift;
     my $regexp = shift;
     my $expvalue = shift;
-    return if $self->errors || $self->skips || $self->unsupporteds;
+    return if $self->errors || $self->skips;
 
     my $contents = $self->file_contents($filename);
     return if ($contents eq "_Already_Errored_");
@@ -2477,7 +2453,7 @@ sub file_grep_any {
     my @filenames = @{$_[0]}; shift;
     my $regexp = shift;
     my $expvalue = shift;
-    return if $self->errors || $self->skips || $self->unsupporteds;
+    return if $self->errors || $self->skips;
 
     foreach my $filename (@filenames) {
         my $contents = $self->file_contents($filename);
@@ -2674,9 +2650,8 @@ driver.pl - Run regression tests
 
 driver.pl invokes Verilator or another simulator on each test file.
 
-The driver reports the number of tests which pass, fail, skipped (some
-resource required by the test is not available, such as SystemC), or are
-unsupported (buggy or require a feature change before will pass.)
+The driver reports the number of tests which pass, fail, or skipped (some
+resource required by the test is not available, such as SystemC).
 
 There are hundreds of tests, and for faster completion you may want to run
 the regression tests with OBJCACHE enabled and in parallel on a machine
@@ -2975,10 +2950,6 @@ Stop on the first error.
 =item --trace
 
 Set the simulator specific flags to request waveform tracing.
-
-=item --unsupported
-
-Run tests even if marked as unsupported.
 
 =item --verbose
 

@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_interface_param2.v:38:12: Unsupported: generic interfaces
+   38 | module mem(interface a);
+      |            ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_interface_param2.v:49:12: Unsupported: generic interfaces
+   49 | module cpu(interface b);
+      |            ^~~~~~~~~
+%Error: Exiting due to
