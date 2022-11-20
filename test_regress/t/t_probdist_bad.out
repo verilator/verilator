@@ -1,0 +1,19 @@
+%Error: t/t_probdist_bad.v:16:11: Unsupported or unknown PLI call: '$dist_chi_square'
+   16 |       r = $dist_chi_square(seed, 0);
+      |           ^~~~~~~~~~~~~~~~
+%Error: t/t_probdist_bad.v:18:11: Unsupported or unknown PLI call: '$dist_erlang'
+   18 |       r = $dist_erlang(seed, 0, 0);
+      |           ^~~~~~~~~~~~
+%Error: t/t_probdist_bad.v:20:11: Unsupported or unknown PLI call: '$dist_exponential'
+   20 |       r = $dist_exponential(seed, 0);
+      |           ^~~~~~~~~~~~~~~~~
+%Error: t/t_probdist_bad.v:23:11: Unsupported or unknown PLI call: '$dist_poisson'
+   23 |       r = $dist_poisson(seed, 0);
+      |           ^~~~~~~~~~~~~
+%Error: t/t_probdist_bad.v:25:11: Unsupported or unknown PLI call: '$dist_t'
+   25 |       r = $dist_t(seed, 0);
+      |           ^~~~~~~
+%Error: t/t_probdist_bad.v:27:11: Unsupported or unknown PLI call: '$dist_uniform'
+   27 |       r = $dist_uniform(seed, 10, 0);
+      |           ^~~~~~~~~~~~~
+%Error: Exiting due to
