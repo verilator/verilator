@@ -13,6 +13,7 @@ module t (/*AUTOARG*/
    m1 #(PAR) m1();
    m3 #(PAR) m3();
    mnooverride #(10) mno();
+   mreal #1.2 mr();
 
    input clk;
    integer cyc=1;
@@ -72,5 +73,13 @@ module mnooverride;
       $display("%x %x",LOC,PAR);
       if (LOC !== 13) $stop;
       if (PAR !== 10) $stop;
+   end
+endmodule
+
+module mreal;
+   parameter real REAL = 99.99;
+   initial begin
+      $display("%f", REAL);
+      if (REAL !== 1.2) $stop;
    end
 endmodule

@@ -1322,12 +1322,11 @@ parameter_value_assignmentE<pinp>:      // IEEE: [ parameter_value_assignment ]
 parameter_value_assignment<pinp>:       // IEEE: parameter_value_assignment
                 '#' '(' cellparamList ')'               { $$ = $3; }
         //                      // Parentheses are optional around a single parameter
-        |       '#' yaINTNUM                            { $$ = new AstPin($<fl>2, 1, "", new AstConst($<fl>2, *$2)); }
-        |       '#' yaFLOATNUM                          { $$ = new AstPin($<fl>2, 1, "",
-                                                                          new AstConst($<fl>2, AstConst::Unsized32(),
-                                                                                       (int)(($2<0)?($2-0.5):($2+0.5)))); }
-        |       '#' timeNumAdjusted                     { $$ = new AstPin($<fl>2, 1, "", $2); }
-        |       '#' idClassSel                          { $$ = new AstPin($<fl>2, 1, "", $2); }
+        |       '#' yaINTNUM                            { $$ = new AstPin{$<fl>2, 1, "", new AstConst{$<fl>2, *$2}}; }
+        |       '#' yaFLOATNUM                          { $$ = new AstPin{$<fl>2, 1, "",
+                                                                          new AstConst{$<fl>2, AstConst::RealDouble{}, $2}}; }
+        |       '#' timeNumAdjusted                     { $$ = new AstPin{$<fl>2, 1, "", $2}; }
+        |       '#' idClassSel                          { $$ = new AstPin{$<fl>2, 1, "", $2}; }
         //                      // Not needed in Verilator:
         //                      // Side effect of combining *_instantiations
         //                      // '#' delay_value      { UNSUP }
@@ -2794,8 +2793,8 @@ delay_control<delayp>:   //== IEEE: delay_control
 delay_value<nodeExprp>:         // ==IEEE:delay_value
         //                      // IEEE: ps_identifier
                 packageClassScopeE varRefBase           { $$ = AstDot::newIfPkg($<fl>2, $1, $2); }
-        |       yaINTNUM                                { $$ = new AstConst($<fl>1, *$1); }
-        |       yaFLOATNUM                              { $$ = new AstConst($<fl>1, AstConst::RealDouble(), $1); }
+        |       yaINTNUM                                { $$ = new AstConst{$<fl>1, *$1}; }
+        |       yaFLOATNUM                              { $$ = new AstConst{$<fl>1, AstConst::RealDouble{}, $1}; }
         |       timeNumAdjusted                         { $$ = $1; }
         ;
 
