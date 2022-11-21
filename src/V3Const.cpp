@@ -2801,14 +2801,11 @@ private:
             // least as frequently activating.  So we
             // SENGATE(SENITEM(x)) -> SENITEM(x), then let it collapse with the
             // other SENITEM(x).
-            {
-                const VNUser4InUse m_inuse4;
-                // Mark x in SENITEM(x)
-                for (AstSenItem* senp = nodep->sensesp(); senp;
-                     senp = VN_AS(senp->nextp(), SenItem)) {
-                    if (senp->varrefp() && senp->varrefp()->varScopep()) {
-                        senp->varrefp()->varScopep()->user4(1);
-                    }
+
+            // Mark x in SENITEM(x)
+            for (AstSenItem* senp = nodep->sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
+                if (senp->varrefp() && senp->varrefp()->varScopep()) {
+                    senp->varrefp()->varScopep()->user4(1);
                 }
             }
 
