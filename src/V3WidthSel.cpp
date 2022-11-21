@@ -55,7 +55,7 @@ private:
         // Note can't call V3Const::constifyParam(nodep) here, as constify may change nodep on us!
         if (!VN_IS(nodep, Const)) {
             nodep->v3error(message);
-            nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Unsized32(), 1));
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::Unsized32{}, 1});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
@@ -126,18 +126,18 @@ private:
             V3Number num(lhsp, lhsp->width());
             num.opSub(VN_AS(lhsp, Const)->num(), V3Number(lhsp, 32, rhs));
             num.isSigned(lhsp->isSigned());
-            return new AstConst(lhsp->fileline(), num);
+            return new AstConst{lhsp->fileline(), num};
         } else if (rhs > 0) {
             AstNodeExpr* const newp
-                = new AstSub(lhsp->fileline(), lhsp,
-                             new AstConst(lhsp->fileline(), AstConst::Unsized32(), rhs));
+                = new AstSub{lhsp->fileline(), lhsp,
+                             new AstConst(lhsp->fileline(), AstConst::Unsized32{}, rhs)};
             // We must make sure sub gets sign of original value, not from the constant
             newp->dtypeFrom(lhsp);
             return newp;
         } else {  // rhs < 0;
             AstNodeExpr* const newp
-                = new AstAdd(lhsp->fileline(), lhsp,
-                             new AstConst(lhsp->fileline(), AstConst::Unsized32(), -rhs));
+                = new AstAdd{lhsp->fileline(), lhsp,
+                             new AstConst(lhsp->fileline(), AstConst::Unsized32{}, -rhs)};
             // We must make sure sub gets sign of original value, not from the constant
             newp->dtypeFrom(lhsp);
             return newp;
@@ -146,8 +146,8 @@ private:
     AstNodeExpr* newSubNeg(int32_t lhs, AstNodeExpr* rhsp) {
         // Return lhs-rhs
         // We must make sure sub gets sign of original value
-        AstNodeExpr* const newp = new AstSub(
-            rhsp->fileline(), new AstConst(rhsp->fileline(), AstConst::Unsized32(), lhs), rhsp);
+        AstNodeExpr* const newp = new AstSub{
+            rhsp->fileline(), new AstConst(rhsp->fileline(), AstConst::Unsized32{}, lhs), rhsp};
         newp->dtypeFrom(rhsp);  // Important as AstSub default is lhs's sign
         return newp;
     }
@@ -180,11 +180,11 @@ private:
         } else {
             // Need a slice data type, which is an array of the extracted
             // type, but with (presumably) different size
-            const VNumRange newRange(msb, lsb, nodep->declRange().littleEndian());
+            const VNumRange newRange{msb, lsb, nodep->declRange().littleEndian()};
             AstNodeDType* const vardtypep
-                = new AstPackArrayDType(nodep->fileline(),
+                = new AstPackArrayDType{nodep->fileline(),
                                         nodep->subDTypep(),  // Need to strip off array reference
-                                        new AstRange(nodep->fileline(), newRange));
+                                        new AstRange{nodep->fileline(), newRange}};
             v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
             return vardtypep;
         }
@@ -219,7 +219,7 @@ private:
             if (fromRange.lo() != 0 || fromRange.hi() < 0) {
                 subp = newSubNeg(subp, fromRange.lo());
             }
-            AstArraySel* const newp = new AstArraySel(nodep->fileline(), fromp, subp);
+            AstArraySel* const newp = new AstArraySel{nodep->fileline(), fromp, subp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
             nodep->replaceWith(newp);
@@ -237,11 +237,11 @@ private:
                         "Array extraction with width miscomputed " << adtypep->width() << "/"
                                                                    << fromRange.elements());
             const int elwidth = adtypep->width() / fromRange.elements();
-            AstSel* const newp = new AstSel(
+            AstSel* const newp = new AstSel{
                 nodep->fileline(), fromp,
-                new AstMul(nodep->fileline(),
-                           new AstConst(nodep->fileline(), AstConst::Unsized32(), elwidth), subp),
-                new AstConst(nodep->fileline(), AstConst::Unsized32(), elwidth));
+                new AstMul{nodep->fileline(),
+                           new AstConst(nodep->fileline(), AstConst::Unsized32{}, elwidth), subp},
+                new AstConst(nodep->fileline(), AstConst::Unsized32{}, elwidth)};
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
@@ -251,7 +251,7 @@ private:
         } else if (const AstAssocArrayDType* const adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
             // SELBIT(array, index) -> ASSOCSEL(array, index)
             AstNodeExpr* const subp = rhsp;
-            AstAssocSel* const newp = new AstAssocSel(nodep->fileline(), fromp, subp);
+            AstAssocSel* const newp = new AstAssocSel{nodep->fileline(), fromp, subp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
             nodep->replaceWith(newp);
@@ -268,7 +268,7 @@ private:
         } else if (const AstDynArrayDType* const adtypep = VN_CAST(ddtypep, DynArrayDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
             AstNodeExpr* const subp = rhsp;
-            AstCMethodHard* const newp = new AstCMethodHard(nodep->fileline(), fromp, "at", subp);
+            AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, "at", subp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTq: ");
             nodep->replaceWith(newp);
@@ -276,7 +276,7 @@ private:
         } else if (const AstQueueDType* const adtypep = VN_CAST(ddtypep, QueueDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
             AstNodeExpr* const subp = rhsp;
-            AstCMethodHard* const newp = new AstCMethodHard(nodep->fileline(), fromp, "at", subp);
+            AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, "at", subp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTq: ");
             nodep->replaceWith(newp);
@@ -290,9 +290,9 @@ private:
             }
             AstNodeExpr* newp;
             if (varrefp && varrefp->access().isReadOnly()) {
-                newp = new AstGetcN(nodep->fileline(), fromp, rhsp);
+                newp = new AstGetcN{nodep->fileline(), fromp, rhsp};
             } else {
-                newp = new AstGetcRefN(nodep->fileline(), fromp, rhsp);
+                newp = new AstGetcRefN{nodep->fileline(), fromp, rhsp};
             }
             UINFO(6, "   new " << newp << endl);
             nodep->replaceWith(newp);
@@ -300,9 +300,9 @@ private:
         } else if (VN_IS(ddtypep, BasicDType)) {
             // SELBIT(range, index) -> SEL(array, index, 1)
             AstSel* const newp
-                = new AstSel(nodep->fileline(), fromp, newSubLsbOf(rhsp, fromRange),
+                = new AstSel{nodep->fileline(), fromp, newSubLsbOf(rhsp, fromRange),
                              // Unsized so width from user
-                             new AstConst(nodep->fileline(), AstConst::Unsized32(), 1));
+                             new AstConst{nodep->fileline(), AstConst::Unsized32{}, 1}};
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp << endl);
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
@@ -311,9 +311,9 @@ private:
         } else if (VN_IS(ddtypep, NodeUOrStructDType)) {  // A bit from the packed struct
             // SELBIT(range, index) -> SEL(array, index, 1)
             AstSel* const newp
-                = new AstSel(nodep->fileline(), fromp, newSubLsbOf(rhsp, fromRange),
+                = new AstSel{nodep->fileline(), fromp, newSubLsbOf(rhsp, fromRange),
                              // Unsized so width from user
-                             new AstConst(nodep->fileline(), AstConst::Unsized32(), 1));
+                             new AstConst{nodep->fileline(), AstConst::Unsized32{}, 1}};
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp << endl);
             if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
@@ -358,7 +358,7 @@ private:
                 nodep->replaceWith(fromp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (fromRange.elements() == 1) {  // Extracting single element
-                AstArraySel* const newp = new AstArraySel(nodep->fileline(), fromp, lsbp);
+                AstArraySel* const newp = new AstArraySel{nodep->fileline(), fromp, lsbp};
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {  // Slice
@@ -392,11 +392,11 @@ private:
                 lsb = x;
             }
             const int elwidth = adtypep->width() / fromRange.elements();
-            AstSel* const newp = new AstSel(
+            AstSel* const newp = new AstSel{
                 nodep->fileline(), fromp,
-                new AstMul(nodep->fileline(), newSubLsbOf(lsbp, fromRange),
-                           new AstConst(nodep->fileline(), AstConst::Unsized32(), elwidth)),
-                new AstConst(nodep->fileline(), AstConst::Unsized32(), (msb - lsb + 1) * elwidth));
+                new AstMul{nodep->fileline(), newSubLsbOf(lsbp, fromRange),
+                           new AstConst(nodep->fileline(), AstConst::Unsized32{}, elwidth)},
+                new AstConst(nodep->fileline(), AstConst::Unsized32{}, (msb - lsb + 1) * elwidth)};
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);
             newp->dtypeFrom(sliceDType(adtypep, msb, lsb));
@@ -421,12 +421,11 @@ private:
                 msb = lsb;
                 lsb = x;
             }
-            AstNodeExpr* const widthp
-                = new AstConst(msbp->fileline(),
-                               AstConst::Unsized32(),  // Unsized so width from user
-                               msb + 1 - lsb);
+            AstNodeExpr* const widthp = new AstConst(
+                msbp->fileline(), AstConst::Unsized32{},  // Unsized so width from user
+                msb + 1 - lsb);
             AstSel* const newp
-                = new AstSel(nodep->fileline(), fromp, newSubLsbOf(lsbp, fromRange), widthp);
+                = new AstSel{nodep->fileline(), fromp, newSubLsbOf(lsbp, fromRange), widthp};
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp << endl);
             // if (debug() >= 9) newp->dumpTree(cout, "--SELEXnew: ");
@@ -444,19 +443,18 @@ private:
                 msb = lsb;
                 lsb = x;
             }
-            AstNodeExpr* const widthp
-                = new AstConst(msbp->fileline(),
-                               AstConst::Unsized32(),  // Unsized so width from user
-                               msb + 1 - lsb);
+            AstNodeExpr* const widthp = new AstConst(
+                msbp->fileline(), AstConst::Unsized32{},  // Unsized so width from user
+                msb + 1 - lsb);
             AstSel* const newp
-                = new AstSel(nodep->fileline(), fromp, newSubLsbOf(lsbp, fromRange), widthp);
+                = new AstSel{nodep->fileline(), fromp, newSubLsbOf(lsbp, fromRange), widthp};
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp << endl);
             // if (debug() >= 9) newp->dumpTree(cout, "--SELEXnew: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (VN_IS(ddtypep, QueueDType)) {
-            auto* const newp = new AstCMethodHard(nodep->fileline(), fromp, "slice", msbp);
+            auto* const newp = new AstCMethodHard{nodep->fileline(), fromp, "slice", msbp};
             msbp->addNext(lsbp);
             newp->dtypep(ddtypep);
             newp->didWidth(true);
@@ -511,7 +509,7 @@ private:
                 nodep->replaceWith(fromp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (fromRange.elements() == 1) {  // Extracting single element
-                AstArraySel* const newp = new AstArraySel(nodep->fileline(), fromp, rhsp);
+                AstArraySel* const newp = new AstArraySel{nodep->fileline(), fromp, rhsp};
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (VN_IS(rhsp, Const)) {  // Slice
@@ -537,7 +535,7 @@ private:
             if (const AstPackArrayDType* const adtypep = VN_CAST(ddtypep, PackArrayDType)) {
                 elwidth = adtypep->width() / fromRange.elements();
                 newwidthp
-                    = new AstConst(nodep->fileline(), AstConst::Unsized32(), width * elwidth);
+                    = new AstConst(nodep->fileline(), AstConst::Unsized32{}, width * elwidth);
             }
             AstNodeExpr* newlsbp = nullptr;
             if (VN_IS(nodep, SelPlus)) {
@@ -560,10 +558,10 @@ private:
                 nodep->v3fatalSrc("Bad Case");
             }
             if (elwidth != 1) {
-                newlsbp = new AstMul(nodep->fileline(), newlsbp,
-                                     new AstConst(nodep->fileline(), elwidth));
+                newlsbp = new AstMul{nodep->fileline(), newlsbp,
+                                     new AstConst(nodep->fileline(), elwidth)};
             }
-            AstSel* const newp = new AstSel(nodep->fileline(), fromp, newlsbp, newwidthp);
+            AstSel* const newp = new AstSel{nodep->fileline(), fromp, newlsbp, newwidthp};
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);
             UINFO(6, "   new " << newp << endl);

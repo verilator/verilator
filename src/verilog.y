@@ -123,7 +123,7 @@ public:
     AstNode* createSupplyExpr(FileLine* fileline, const string& name, int value);
     AstText* createTextQuoted(FileLine* fileline, const string& text) {
         string newtext = deQuote(fileline, text);
-        return new AstText(fileline, newtext);
+        return new AstText{fileline, newtext};
     }
     AstNode* createCellOrIfaceRef(FileLine* fileline, const string& name, AstPin* pinlistp,
                                   AstNodeRange* rangelistp) {
@@ -151,8 +151,8 @@ public:
         return nodep;
     }
     AstDisplay* createDisplayError(FileLine* fileline) {
-        AstDisplay* nodep = new AstDisplay(fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr);
-        AstNode::addNext<AstNode, AstNode>(nodep, new AstStop(fileline, true));
+        AstDisplay* nodep = new AstDisplay{fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr};
+        AstNode::addNext<AstNode, AstNode>(nodep, new AstStop{fileline, true});
         return nodep;
     }
     AstNodeExpr* createGatePin(AstNodeExpr* exprp) {
@@ -160,7 +160,7 @@ public:
         if (!rangep) {
             return exprp;
         } else {
-            return new AstGatePin(rangep->fileline(), exprp, rangep->cloneTree(true));
+            return new AstGatePin{rangep->fileline(), exprp, rangep->cloneTree(true)};
         }
     }
     AstNode* createTypedef(FileLine* fl, const string& name, AstNode* attrsp, AstNodeDType* basep,
@@ -1159,7 +1159,7 @@ package_declaration:            // ==IEEE: package_declaration
 
 packageFront<nodeModulep>:
                 yPACKAGE lifetimeE idAny ';'
-                        { $$ = new AstPackage($<fl>3, *$3);
+                        { $$ = new AstPackage{$<fl>3, *$3};
                           $$->inLibrary(true);  // packages are always libraries; don't want to make them a "top"
                           $$->lifetime($2);
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
@@ -1224,7 +1224,7 @@ package_import_item<nodep>:     // ==IEEE: package_import_item
                               $$ = nullptr;
                               $<fl>1->v3error("Importing from missing package '" << *$<strp>1 << "'");
                           } else {
-                              $$ = new AstPackageImport($<fl>2, VN_CAST($<scp>1, Package), *$3);
+                              $$ = new AstPackageImport{$<fl>2, VN_CAST($<scp>1, Package), *$3};
                               SYMP->importItem($<scp>1,*$3);
                           } }
         ;
@@ -1285,7 +1285,7 @@ modFront<nodeModulep>:
         //                      // General note: all *Front functions must call symPushNew before
         //                      // any formal arguments, as the arguments must land in the new scope.
                 yMODULE lifetimeE idAny
-                        { $$ = new AstModule($<fl>3,*$3);
+                        { $$ = new AstModule{$<fl>3, *$3};
                           $$->lifetime($2);
                           $$->inLibrary(PARSEP->inLibrary() || $$->fileline()->celldefineOn());
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
@@ -1304,10 +1304,11 @@ importsAndParametersE<nodep>:   // IEEE: common part of module_declaration, inte
 
 udpFront<nodeModulep>:
                 yPRIMITIVE lifetimeE idAny
-                        { $$ = new AstPrimitive($<fl>3, *$3); $$->inLibrary(true);
+                        { $$ = new AstPrimitive{$<fl>3, *$3};
+                          $$->inLibrary(true);
                           $$->lifetime($2);
                           $$->modTrace(false);
-                          $$->addStmtsp(new AstPragma($<fl>3, VPragmaType::INLINE_MODULE));
+                          $$->addStmtsp(new AstPragma{$<fl>3, VPragmaType::INLINE_MODULE});
                           GRAMMARP->m_tracingParse = false;
                           PARSEP->rootp()->addModulesp($$);
                           SYMP->pushNew($$); }
@@ -1531,7 +1532,7 @@ interface_declaration:          // IEEE: interface_declaration + interface_nonan
 
 intFront<nodeModulep>:
                 yINTERFACE lifetimeE idAny/*new_interface*/
-                        { $$ = new AstIface($<fl>3, *$3);
+                        { $$ = new AstIface{$<fl>3, *$3};
                           $$->inLibrary(true);
                           $$->lifetime($2);
                           PARSEP->rootp()->addModulesp($$);
@@ -1623,7 +1624,7 @@ program_declaration:            // IEEE: program_declaration + program_nonansi_h
 
 pgmFront<nodeModulep>:
                 yPROGRAM lifetimeE idAny/*new_program*/
-                        { $$ = new AstModule($<fl>3, *$3, true);
+                        { $$ = new AstModule{$<fl>3, *$3, true};
                           $$->lifetime($2);
                           $$->inLibrary(PARSEP->inLibrary() || $$->fileline()->celldefineOn());
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
@@ -4360,10 +4361,10 @@ dpi_import_export<nodep>:       // ==IEEE: dpi_import_export
                           if ($$->prettyName()[0]=='$') SYMP->reinsert($$,nullptr,$$->prettyName());  // For $SysTF overriding
                           SYMP->reinsert($$); }
         |       yEXPORT yaSTRING dpi_importLabelE yFUNCTION idAny ';'
-                        { $$ = new AstDpiExport($<fl>5, *$5, *$3);
+                        { $$ = new AstDpiExport{$<fl>5, *$5, *$3};
                           GRAMMARP->checkDpiVer($1, *$2); v3Global.dpi(true); }
         |       yEXPORT yaSTRING dpi_importLabelE yTASK     idAny ';'
-                        { $$ = new AstDpiExport($<fl>5, *$5, *$3);
+                        { $$ = new AstDpiExport{$<fl>5, *$5, *$3};
                           GRAMMARP->checkDpiVer($1, *$2); v3Global.dpi(true); }
         ;
 
@@ -4831,11 +4832,11 @@ streaming_concatenation<nodeStreamp>: // ==IEEE: streaming_concatenation
         |       '{' yP_SLEFT  stream_expressionOrDataType stream_concatenation '}'
                         { AstNodeExpr* const bitsp = VN_IS($3, NodeExpr) ? VN_AS($3, NodeExpr)
                                                                          : new AstAttrOf{$1, VAttrType::DIM_BITS, $3};
-                          $$ = new AstStreamL($2, $4, bitsp); }
+                          $$ = new AstStreamL{$2, $4, bitsp}; }
         |       '{' yP_SRIGHT stream_expressionOrDataType stream_concatenation '}'
                         { AstNodeExpr* const bitsp = VN_IS($3, NodeExpr) ? VN_AS($3, NodeExpr)
                                                                           : new AstAttrOf{$1, VAttrType::DIM_BITS, $3};
-                          $$ = new AstStreamR($2, $4, bitsp); }
+                          $$ = new AstStreamR{$2, $4, bitsp}; }
         ;
 
 stream_concatenation<nodeExprp>:    // ==IEEE: stream_concatenation
@@ -4960,7 +4961,7 @@ gateRangeE<nodep>:
 
 gateBuf<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ')'
-                        { $$ = new AstAssignW($<fl>1, $2, $4); DEL($1); }
+                        { $$ = new AstAssignW{$<fl>1, $2, $4}; DEL($1); }
         // UNSUP                        // IEEE: Multiple output variable_lvalues
         // UNSUP                        // Causes conflict - need to take in variable_lvalue or a gatePinExpr
         ;
@@ -5089,7 +5090,7 @@ tableEntryList<udpTableLinep>:  // IEEE: { combinational_entry | sequential_entr
         ;
 
 tableEntry<udpTableLinep>:      // IEEE: combinational_entry + sequential_entry
-                yaTABLELINE                             { $$ = new AstUdpTableLine($<fl>1,*$1); }
+                yaTABLELINE                             { $$ = new AstUdpTableLine{$<fl>1, *$1}; }
         |       error                                   { $$ = nullptr; }
         ;
 
@@ -5313,7 +5314,7 @@ endLabelE<strp>:
 clocking_declaration<nodep>:            // IEEE: clocking_declaration  (INCOMPLETE)
         //UNSUP: vvv remove this -- vastly simplified grammar:
                 yDEFAULT yCLOCKING '@' '(' senitemEdge ')' ';' yENDCLOCKING
-                        { $$ = new AstClocking($2, $5, nullptr); }
+                        { $$ = new AstClocking{$2, $5, nullptr}; }
         //UNSUP: ^^^ remove this -- vastly simplified grammar:
         //UNSUP clockingFront clocking_event ';'
         //UNSUP  clocking_itemListE yENDCLOCKING endLabelE { SYMP->popScope($$); }
@@ -5410,7 +5411,7 @@ assertion_item<nodep>:          // ==IEEE: assertion_item
 deferred_immediate_assertion_item<nodep>:       // ==IEEE: deferred_immediate_assertion_item
                 deferred_immediate_assertion_statement  { $$ = $1; }
         |       id/*block_identifier*/ ':' deferred_immediate_assertion_statement
-                        { $$ = new AstBegin($<fl>1, *$1, $3, false, true); }
+                        { $$ = new AstBegin{$<fl>1, *$1, $3, false, true}; }
         ;
 
 procedural_assertion_statement<nodep>:  // ==IEEE: procedural_assertion_statement
@@ -5466,7 +5467,7 @@ deferred_immediate_assertion_statement<nodep>:  // ==IEEE: deferred_immediate_as
 concurrent_assertion_item<nodep>:       // IEEE: concurrent_assertion_item
                 concurrent_assertion_statement          { $$ = $1; }
         |       id/*block_identifier*/ ':' concurrent_assertion_statement
-                        { $$ = new AstBegin($<fl>1, *$1, $3, false, true); }
+                        { $$ = new AstBegin{$<fl>1, *$1, $3, false, true}; }
         //                      // IEEE: checker_instantiation
         //                      // identical to module_instantiation; see etcInst
         ;
@@ -6312,14 +6313,14 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
 
 classFront<classp>:             // IEEE: part of class_declaration
                 classVirtualE yCLASS lifetimeE idAny/*class_identifier*/
-                        { $$ = new AstClass($2, *$4);
+                        { $$ = new AstClass{$2, *$4};
                           $$->isVirtual($1);
                           $$->lifetime($3);
                           SYMP->pushNew($<classp>$);
                           v3Global.setHasClasses(); }
         //                      // IEEE: part of interface_class_declaration
         |       yINTERFACE yCLASS lifetimeE idAny/*class_identifier*/
-                        { $$ = new AstClass($2, *$4);
+                        { $$ = new AstClass{$2, *$4};
                           $$->lifetime($3);
                           SYMP->pushNew($<classp>$);
                           BBUNSUP($2, "Unsupported: interface classes");  }
@@ -6347,11 +6348,11 @@ classExtendsList<classExtendsp>:        // IEEE: part of class_declaration
 
 classExtendsOne<classExtendsp>:         // IEEE: part of class_declaration
                 class_typeExtImpList
-                        { $$ = new AstClassExtends($1->fileline(), $1);
+                        { $$ = new AstClassExtends{$1->fileline(), $1};
                           $<scp>$ = $<scp>1; }
         //
         |       class_typeExtImpList '(' list_of_argumentsE ')'
-                        { $$ = new AstClassExtends($1->fileline(), $1);
+                        { $$ = new AstClassExtends{$1->fileline(), $1};
                           $<scp>$ = $<scp>1;
                           if ($3) BBUNSUP($3, "Unsupported: extends with parameters"); }
         ;
@@ -6388,17 +6389,17 @@ class_typeExtImpOne<nodep>:     // part of IEEE: class_type, where we either get
                 idAny
         /*mid*/         { /* no nextId as not refing it above this*/ }
         /*cont*/    parameter_value_assignmentE
-                        { $$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, $3);
+                        { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, $3};
                           $<scp>$ = $<scp>1; }
         //
         //                      // package_sopeIdFollows expanded
         |       yD_UNIT yP_COLONCOLON
-                        { $$ = new AstClassOrPackageRef($<fl>1, "$unit", nullptr, nullptr);
+                        { $$ = new AstClassOrPackageRef{$<fl>1, "$unit", nullptr, nullptr};
                           $<scp>$ = nullptr;  // No purpose otherwise, every symtab can see root
                           SYMP->nextId(PARSEP->rootp()); }
         //
         |       yLOCAL__COLONCOLON yP_COLONCOLON
-                        { $$ = new AstClassOrPackageRef($<fl>1, "local::", nullptr, nullptr);
+                        { $$ = new AstClassOrPackageRef{$<fl>1, "local::", nullptr, nullptr};
                           $<scp>$ = nullptr;  // UNSUP
                           SYMP->nextId(PARSEP->rootp());
                           BBUNSUP($1, "Unsupported: Randomize 'local::'"); }
@@ -6434,7 +6435,7 @@ packageClassScope<nodeExprp>:   // IEEE: class_scope
         |       localNextId yP_COLONCOLON               { $$ = $1; $<scp>$ = $<scp>1; }
         |       dollarUnitNextId yP_COLONCOLON          { $$ = $1; $<scp>$ = $<scp>1; }
         |       dollarUnitNextId yP_COLONCOLON packageClassScopeList
-                        { $$ = new AstDot($2, true, $1, $3); $<scp>$ = $<scp>3; }
+                        { $$ = new AstDot{$2, true, $1, $3}; $<scp>$ = $<scp>3; }
         ;
 
 packageClassScopeList<nodeExprp>:   // IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
@@ -6445,7 +6446,7 @@ packageClassScopeList<nodeExprp>:   // IEEE: class_type: "id [ parameter_value_a
         //                      // If you follow the rules down, class_type is really a list via ps_class_identifier
                 packageClassScopeItem                   { $$ = $1; $<scp>$ = $<scp>1; }
         |       packageClassScopeList packageClassScopeItem
-                        { $$ = new AstDot($<fl>2, true, $1, $2); $<scp>$ = $<scp>2; }
+                        { $$ = new AstDot{$<fl>2, true, $1, $2}; $<scp>$ = $<scp>2; }
         ;
 
 packageClassScopeItem<nodeExprp>:   // IEEE: package_scope or [package_scope]::[class_scope]
@@ -6456,12 +6457,12 @@ packageClassScopeItem<nodeExprp>:   // IEEE: package_scope or [package_scope]::[
                 idCC
         /*mid*/         { SYMP->nextId($<scp>1); }
         /*cont*/    yP_COLONCOLON
-                        { $$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, nullptr); $<scp>$ = $<scp>1; }
+                        { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, nullptr}; $<scp>$ = $<scp>1; }
         //
         |       idCC parameter_value_assignment
         /*mid*/         { SYMP->nextId($<scp>1); }   // Change next *after* we handle parameters, not before
         /*cont*/    yP_COLONCOLON
-                        { $$ = new AstClassOrPackageRef($<fl>1, *$1, $<scp>1, $2); $<scp>$ = $<scp>1; }
+                        { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, $2}; $<scp>$ = $<scp>1; }
         ;
 
 dollarUnitNextId<nodeExprp>:    // $unit
@@ -6650,7 +6651,7 @@ constraintStaticE<cbool>:  // IEEE: part of extern_constraint_declaration
 
 timeNumAdjusted<nodeExprp>:         // Time constant, adjusted to module's time units/precision
                 yaTIMENUM
-                        { $$ = new AstTimeImport($<fl>1, new AstConst($<fl>1, AstConst::RealDouble(), $1)); }
+                        { $$ = new AstTimeImport{$<fl>1, new AstConst{$<fl>1, AstConst::RealDouble{}, $1}}; }
         ;
 
 //**********************************************************************
