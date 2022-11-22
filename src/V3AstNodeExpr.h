@@ -138,7 +138,7 @@ public:
 class AstNodeSystemBiop VL_NOT_FINAL : public AstNodeBiop {
 public:
     AstNodeSystemBiop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
-        : AstNodeBiop(t, fl, lhsp, rhsp) {
+        : AstNodeBiop{t, fl, lhsp, rhsp} {
         dtypeSetDouble();
     }
     ASTGEN_MEMBERS_AstNodeSystemBiop;
@@ -391,7 +391,7 @@ public:
 class AstNodeSystemUniop VL_NOT_FINAL : public AstNodeUniop {
 public:
     AstNodeSystemUniop(VNType t, FileLine* fl, AstNodeExpr* lhsp)
-        : AstNodeUniop(t, fl, lhsp) {
+        : AstNodeUniop{t, fl, lhsp} {
         dtypeSetDouble();
     }
     ASTGEN_MEMBERS_AstNodeSystemUniop;
@@ -825,7 +825,7 @@ public:
     class VerilogStringLiteral {};  // for creator type-overload selection
     AstConst(FileLine* fl, VerilogStringLiteral, const string& str)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(V3Number::VerilogStringLiteral(), this, str) {
+        , m_num(V3Number::VerilogStringLiteral{}, this, str) {
         initWithNumber();
     }
     AstConst(FileLine* fl, uint32_t num)
@@ -871,7 +871,7 @@ public:
     class String {};  // for creator type-overload selection
     AstConst(FileLine* fl, String, const string& num)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(V3Number::String(), this, num) {
+        , m_num(V3Number::String{}, this, num) {
         dtypeSetString();
     }
     class BitFalse {};

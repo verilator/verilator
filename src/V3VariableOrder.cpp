@@ -195,7 +195,7 @@ class VariableOrder final {
     }
 
 public:
-    static void processModule(AstNodeModule* modp) { VariableOrder().orderModuleVars(modp); }
+    static void processModule(AstNodeModule* modp) { VariableOrder{}.orderModuleVars(modp); }
 };
 
 //######################################################################

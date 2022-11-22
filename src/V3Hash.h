@@ -59,7 +59,7 @@ public:
     // '+' combines hashes
     template <class T>
     V3Hash operator+(T that) const {
-        return V3Hash(combine(m_value, V3Hash{that}.m_value));
+        return V3Hash{combine(m_value, V3Hash{that}.m_value)};
     }
 
     // '+=' combines in place

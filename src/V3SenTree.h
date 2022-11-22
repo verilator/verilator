@@ -53,7 +53,7 @@ private:
 public:
     // CONSTRUCTORS
     SenTreeFinder()
-        : SenTreeFinder(v3Global.rootp()) {}
+        : SenTreeFinder{v3Global.rootp()} {}
 
     explicit SenTreeFinder(AstNetlist* netlistp)
         : m_topScopep{netlistp->topScopep()} {

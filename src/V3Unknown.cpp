@@ -396,7 +396,7 @@ private:
             // If (maxmsb >= selected), we're in bound
             AstNodeExpr* condp
                 = new AstGte{nodep->fileline(),
-                             new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                             new AstConst(nodep->fileline(), AstConst::WidthedValue{},
                                           nodep->lsbp()->width(), maxmsb),
                              nodep->lsbp()->cloneTree(false)};
             // See if the condition is constant true (e.g. always in bound due to constant select)

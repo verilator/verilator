@@ -266,7 +266,7 @@ void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr
     unitr = unit;
 
     if (!precStr.empty()) {
-        VTimescale prec(VTimescale::NONE);
+        VTimescale prec{VTimescale::NONE};
         bool precbad;
         prec = VTimescale{precStr, precbad /*ref*/};
         if (precbad) {

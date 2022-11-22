@@ -2300,7 +2300,7 @@ private:
             if (nodep->lhsp()) {
                 if (VN_IS(nodep->lhsp()->dtypep(), DynArrayDType)
                     || VN_IS(nodep->lhsp(), ConsDynArray)) {
-                    userIterateAndNext(nodep->lhsp(), WidthVP(vdtypep, FINAL).p());
+                    userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, FINAL}.p());
                 } else {
                     // Sub elements are not queues, but concats, must always pass concats down
                     iterateCheckTyped(nodep, "LHS", nodep->lhsp(), vdtypep->subDTypep(), FINAL);
@@ -2309,7 +2309,7 @@ private:
             if (nodep->rhsp()) {
                 if (VN_IS(nodep->rhsp()->dtypep(), DynArrayDType)
                     || VN_IS(nodep->rhsp(), ConsDynArray)) {
-                    userIterateAndNext(nodep->rhsp(), WidthVP(vdtypep, FINAL).p());
+                    userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, FINAL}.p());
                 } else {
                     iterateCheckTyped(nodep, "RHS", nodep->rhsp(), vdtypep->subDTypep(), FINAL);
                 }
@@ -2341,7 +2341,7 @@ private:
             if (nodep->rhsp()) {
                 if (VN_IS(nodep->rhsp()->dtypep(), QueueDType)
                     || VN_IS(nodep->rhsp(), ConsQueue)) {
-                    userIterateAndNext(nodep->rhsp(), WidthVP(vdtypep, FINAL).p());
+                    userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, FINAL}.p());
                 } else {
                     iterateCheckTyped(nodep, "RHS", nodep->rhsp(), vdtypep->subDTypep(), FINAL);
                 }
@@ -2360,7 +2360,7 @@ private:
             nodep->dtypep(vdtypep);
             const AstNodeDType* const arrayp = vdtypep->skipRefp();
             if (VN_IS(arrayp, NodeArrayDType) || VN_IS(arrayp, AssocArrayDType)) {
-                userIterateChildren(nodep, WidthVP(arrayp->subDTypep(), BOTH).p());
+                userIterateChildren(nodep, WidthVP{arrayp->subDTypep(), BOTH}.p());
             } else {
                 UINFO(1, "dtype object " << vdtypep->skipRefp() << endl);
                 nodep->v3fatalSrc("InitArray on non-array");
@@ -2709,7 +2709,7 @@ private:
         if (AstWith* const withp = VN_CAST(nodep->pinsp(), With)) {
             withp->indexArgRefp()->dtypep(indexDtp);
             withp->valueArgRefp()->dtypep(valueDtp);
-            userIterate(withp, WidthVP(returnDtp, BOTH).p());
+            userIterate(withp, WidthVP{returnDtp, BOTH}.p());
             withp->unlinkFrBack();
             return withp;
         } else if (required) {
@@ -4000,7 +4000,7 @@ private:
     }
     AstNodeExpr* patternMemberValueIterate(AstPatMember* patp) {
         // Determine values - might be another InitArray
-        userIterate(patp, WidthVP(patp->dtypep(), BOTH).p());
+        userIterate(patp, WidthVP{patp->dtypep(), BOTH}.p());
         // Convert to InitArray or constify immediately
         AstNodeExpr* valuep = patp->lhssp()->unlinkFrBack();
         if (VN_IS(valuep, Const)) {
@@ -4822,7 +4822,7 @@ private:
             }
             // Very much like like an assignment, but which side is LH/RHS
             // depends on pin being a in/output/inout.
-            userIterateAndNext(nodep->exprp(), WidthVP(nodep->modVarp()->dtypep(), PRELIM).p());
+            userIterateAndNext(nodep->exprp(), WidthVP{nodep->modVarp()->dtypep(), PRELIM}.p());
             AstNodeDType* modDTypep = nodep->modVarp()->dtypep();
             AstNodeDType* conDTypep = nodep->exprp()->dtypep();
             if (!modDTypep) nodep->v3fatalSrc("Unlinked pin data type");
@@ -4834,7 +4834,7 @@ private:
             const int conwidth = conDTypep->width();
             if (conDTypep == modDTypep  // If match, we're golden
                 || similarDTypeRecurse(conDTypep, modDTypep)) {
-                userIterateAndNext(nodep->exprp(), WidthVP(subDTypep, FINAL).p());
+                userIterateAndNext(nodep->exprp(), WidthVP{subDTypep, FINAL}.p());
             } else if (m_cellp->rangep()) {
                 const int numInsts = m_cellp->rangep()->elementsConst();
                 if (conwidth == modwidth) {
@@ -4855,7 +4855,7 @@ private:
                                    << " bits. (IEEE 1800-2017 23.3.3)");
                     subDTypep = conDTypep;  // = same expr dtype
                 }
-                userIterateAndNext(nodep->exprp(), WidthVP(subDTypep, FINAL).p());
+                userIterateAndNext(nodep->exprp(), WidthVP{subDTypep, FINAL}.p());
             } else {
                 if (nodep->modVarp()->direction() == VDirection::REF) {
                     nodep->v3error("Ref connection "
@@ -4955,9 +4955,10 @@ private:
             const int conwidth = conDTypep->width();
             if (conwidth == 1 && modwidth > 1) {  // Multiple connections
                 AstNodeDType* const subDTypep = nodep->findLogicDType(1, 1, conDTypep->numeric());
-                userIterateAndNext(nodep->exprp(), WidthVP(subDTypep, FINAL).p());
-                AstNode* const newp = new AstReplicate(nodep->fileline(),
-                                                       nodep->exprp()->unlinkFrBack(), numInsts);
+                userIterateAndNext(nodep->exprp(), WidthVP{subDTypep, FINAL}.p());
+                AstNode* const newp
+                    = new AstReplicate{nodep->fileline(), nodep->exprp()->unlinkFrBack(),
+                                       static_cast<uint32_t>(numInsts)};
                 nodep->replaceWith(newp);
             } else {
                 // Eliminating so pass down all of vup
@@ -5167,7 +5168,7 @@ private:
                     pinp = newp;
                 }
                 // AstPattern requires assignments to pass datatype on PRELIM
-                VL_DO_DANGLING(userIterate(pinp, WidthVP(portp->dtypep(), PRELIM).p()), pinp);
+                VL_DO_DANGLING(userIterate(pinp, WidthVP{portp->dtypep(), PRELIM}.p()), pinp);
             }
         } while (false);
         // Stage 2
@@ -5193,7 +5194,7 @@ private:
                 if (!pinp) continue;  // Argument error we'll find later
                 // Do PRELIM again, because above accept may have exited early
                 // due to node replacement
-                userIterate(pinp, WidthVP(portp->dtypep(), PRELIM).p());
+                userIterate(pinp, WidthVP{portp->dtypep(), PRELIM}.p());
             }
         }
         // Cleanup any open arrays
@@ -5223,7 +5224,7 @@ private:
                 }
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
                     checkClassAssign(nodep, "Function Argument", pinp, portp->dtypep());
-                    userIterate(pinp, WidthVP(portp->dtypep(), FINAL).p());
+                    userIterate(pinp, WidthVP{portp->dtypep(), FINAL}.p());
                 } else {
                     iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portp->dtypep());
                 }
