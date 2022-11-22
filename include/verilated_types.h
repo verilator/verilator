@@ -429,11 +429,25 @@ public:
     void shuffle() { std::shuffle(m_deque.begin(), m_deque.end(), VlURNG{}); }
     VlQueue unique() const {
         VlQueue out;
-        std::unordered_set<T_Value> saw;
+        std::set<T_Value> saw;
         for (const auto& i : m_deque) {
-            auto it = saw.find(i);
+            const auto it = saw.find(i);
             if (it == saw.end()) {
                 saw.insert(it, i);
+                out.push_back(i);
+            }
+        }
+        return out;
+    }
+    template <typename Func>
+    VlQueue unique(Func with_func) const {
+        VlQueue out;
+        std::set<T_Value> saw;
+        for (const auto& i : m_deque) {
+            const auto i_mapped = with_func(0, i);
+            const auto it = saw.find(i_mapped);
+            if (it == saw.end()) {
+                saw.insert(it, i_mapped);
                 out.push_back(i);
             }
         }
@@ -442,11 +456,27 @@ public:
     VlQueue<IData> unique_index() const {
         VlQueue<IData> out;
         IData index = 0;
-        std::unordered_set<T_Value> saw;
+        std::set<T_Value> saw;
         for (const auto& i : m_deque) {
-            auto it = saw.find(i);
+            const auto it = saw.find(i);
             if (it == saw.end()) {
                 saw.insert(it, i);
+                out.push_back(index);
+            }
+            ++index;
+        }
+        return out;
+    }
+    template <typename Func>
+    VlQueue<IData> unique_index(Func with_func) const {
+        VlQueue<IData> out;
+        IData index = 0;
+        std::unordered_set<T_Value> saw;
+        for (const auto& i : m_deque) {
+            const auto i_mapped = with_func(index, i);
+            auto it = saw.find(i_mapped);
+            if (it == saw.end()) {
+                saw.insert(it, i_mapped);
                 out.push_back(index);
             }
             ++index;
@@ -517,9 +547,27 @@ public:
         const auto it = std::min_element(m_deque.begin(), m_deque.end());
         return VlQueue::cons(*it);
     }
+    template <typename Func>
+    VlQueue min(Func with_func) const {
+        if (m_deque.empty()) return VlQueue{};
+        const auto it = std::min_element(m_deque.begin(), m_deque.end(),
+                                         [&with_func](const IData& a, const IData& b) {
+                                             return with_func(0, a) < with_func(0, b);
+                                         });
+        return VlQueue::cons(*it);
+    }
     VlQueue max() const {
         if (m_deque.empty()) return VlQueue{};
         const auto it = std::max_element(m_deque.begin(), m_deque.end());
+        return VlQueue::cons(*it);
+    }
+    template <typename Func>
+    VlQueue max(Func with_func) const {
+        if (m_deque.empty()) return VlQueue{};
+        const auto it = std::max_element(m_deque.begin(), m_deque.end(),
+                                         [&with_func](const IData& a, const IData& b) {
+                                             return with_func(0, a) < with_func(0, b);
+                                         });
         return VlQueue::cons(*it);
     }
 
