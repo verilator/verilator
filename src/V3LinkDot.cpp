@@ -2347,9 +2347,11 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
-        if (m_ds.m_dotPos == DP_FINAL && VN_IS(m_ds.m_unlinkedScopep, LambdaArgRef)
+        if (m_ds.m_dotPos == DP_MEMBER && VN_IS(m_ds.m_dotp->lhsp(), LambdaArgRef)
             && nodep->name() == "index") {
             // 'with' statement's 'item.index'
+            // m_ds.dotp->lhsp() was checked to know if `index` is directly after lambda arg ref.
+            // If not, treat it as normal member select
             iterateChildren(nodep);
             const auto newp = new AstLambdaArgRef{
                 nodep->fileline(), m_ds.m_unlinkedScopep->name() + "__DOT__index", true};
@@ -2577,6 +2579,7 @@ private:
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     ok = true;
+                    m_ds.m_dotPos = DP_MEMBER;
                     m_ds.m_dotText = "";
                 }
             }
