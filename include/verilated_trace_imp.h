@@ -183,6 +183,10 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
                 traceBufp->chgDouble(oldp, *reinterpret_cast<const double*>(readp));
                 readp += 2;
                 continue;
+            case VerilatedTraceOffloadCommand::CHG_EVENT:
+                VL_TRACE_OFFLOAD_DEBUG("Command CHG_EVENT " << top);
+                traceBufp->chgEvent(oldp, *reinterpret_cast<const VlEvent*>(readp));
+                continue;
 
                 //===
                 // Rare commands
@@ -838,7 +842,7 @@ template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullEvent(uint32_t* oldp, VlEvent newval) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     *oldp = 1;  // Do we really store an "event" ?
-    emitBit(code, 1); // Like a bit update
+    emitEvent(code, newval);
 }
 
 template <>

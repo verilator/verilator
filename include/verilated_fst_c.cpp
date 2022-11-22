@@ -284,6 +284,13 @@ void VerilatedFst::configure(const VerilatedTraceConfig& config) {
 // so always inline them.
 
 VL_ATTR_ALWINLINE
+void VerilatedFstBuffer::emitEvent(uint32_t code, VlEvent newval) {
+    const bool triggered = newval.isTriggered();
+        VL_DEBUG_IFDEF(assert(m_symbolp[code]););
+        fstWriterEmitValueChange(m_fst, m_symbolp[code], "1");
+}
+
+VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitBit(uint32_t code, CData newval) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");

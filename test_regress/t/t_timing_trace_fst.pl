@@ -10,6 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
+top_filename("t/t_timing_trace.v");
+
 if (!$Self->have_coroutines) {
     skip("No coroutine support");
 }
