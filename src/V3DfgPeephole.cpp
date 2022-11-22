@@ -1509,8 +1509,7 @@ class V3DfgPeephole final : public DfgVisitor {
         if (DfgNot* const thenNotp = thenp->cast<DfgNot>()) {
             if (DfgNot* const elseNotp = elsep->cast<DfgNot>()) {
                 if (!thenNotp->srcp()->is<DfgConst>() && !elseNotp->srcp()->is<DfgConst>()
-                    && (!thenp->hasMultipleSinks() || thenNotp->hasMultipleSinks())
-                    && (!elsep->hasMultipleSinks() || elsep->hasMultipleSinks())) {
+                    && !thenNotp->hasMultipleSinks() && !elseNotp->hasMultipleSinks()) {
                     APPLYING(PULL_NOTS_THROUGH_COND) {
                         DfgNot* const replacementp
                             = make<DfgNot>(thenp->fileline(), vtxp->dtypep());
