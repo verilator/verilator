@@ -105,7 +105,6 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       sudo apt-get install python3-setuptools
       pip3 install clang==6.0.0.2
     fi
-    pip3 install termcolor
     if [ "$CI_RUNS_ON" = "ubuntu-20.04" ] || [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
       sudo apt-get install libsystemc-dev
     fi

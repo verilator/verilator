@@ -15,7 +15,6 @@ import glob
 import pathlib
 from pprint import pprint
 from clang.cindex import CursorKind, Index
-from termcolor import colored
 
 
 # https://stackoverflow.com/a/74205044
@@ -74,7 +73,7 @@ def get_translate_unit(file, cfg):
     return translate_unit
 
 
-def print_node(node, level, search_attributes):
+def print_node(node, level):
     if fully_qualified_pretty(node) not in PRINTED:
         annotations = get_annotations(node)
         filepath = pathlib.Path(str(node.location.file)).resolve()
@@ -222,7 +221,7 @@ def print_funcs(node, cfg, search_attributes, level=1):
                     call = tu_call
 
         if call is not None:
-            print_node(call, level, search_attributes)
+            print_node(call, level)
             if call.kind in [
                     CursorKind.CXX_METHOD, CursorKind.CONSTRUCTOR,
                     CursorKind.FUNCTION_DECL
@@ -299,7 +298,6 @@ def main():
     cfg = read_args(sys.argv)
 
     files = []
-    print('reading source files...')
     for folder in cfg['base_folders']:
         files.extend(get_files(folder))
     files.sort()
@@ -314,7 +312,7 @@ def main():
         if "MT_SAFE" in attributes or "MT_START" in attributes:
             search_attributes.append("MT_SAFE")
         print(f"::group::{fully_qualified_pretty(call)}")
-        print_node(call, 0, search_attributes)
+        print_node(call, 0)
         print_funcs(call, cfg, search_attributes, level=1)
         print("::endgroup::")
 
