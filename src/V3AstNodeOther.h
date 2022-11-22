@@ -2936,7 +2936,7 @@ public:
 class AstStackTraceT final : public AstNodeStmt {
     // $stacktrace used as task
 public:
-    AstStackTraceT(FileLine* fl)
+    explicit AstStackTraceT(FileLine* fl)
         : ASTGEN_SUPER_StackTraceT(fl) {}
     ASTGEN_MEMBERS_AstStackTraceT;
     string verilogKwd() const override { return "$stacktrace"; }

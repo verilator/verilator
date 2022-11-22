@@ -404,11 +404,13 @@ public:
 
     // CONSTRUCTORS
     // Construct
+    // cppcheck-suppress noExplicitConstructor
     VlCoroutine(VlPromise* promisep)
         : m_promisep{promisep} {
         m_promisep->m_corop = this;
     }
     // Move. Update the pointers each time the return object is moved
+    // cppcheck-suppress noExplicitConstructor
     VlCoroutine(VlCoroutine&& other)
         : m_promisep{std::exchange(other.m_promisep, nullptr)} {
         if (m_promisep) m_promisep->m_corop = this;

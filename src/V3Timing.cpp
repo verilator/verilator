@@ -605,7 +605,6 @@ private:
             auto* const sensesp = m_finder.getSenTree(nodep->sensesp());
             nodep->sensesp()->unlinkFrBack()->deleteTree();
             // Get this sentree's trigger scheduler
-            FileLine* const flp = nodep->fileline();
             // Replace self with a 'co_await trigSched.trigger()'
             auto* const triggerMethodp = new AstCMethodHard{
                 flp, new AstVarRef{flp, getCreateTriggerSchedulerp(sensesp), VAccess::WRITE},

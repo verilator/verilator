@@ -1543,7 +1543,7 @@ class AstNode VL_NOT_FINAL {
 private:
     AstNode* cloneTreeIter();
     AstNode* cloneTreeIterList();
-    void checkTreeIter(const AstNode* backp) const VL_MT_SAFE;
+    void checkTreeIter(const AstNode* prevBackp) const VL_MT_SAFE;
     bool gateTreeIter() const;
     static bool sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext,
                              bool gateOnly);
@@ -2439,9 +2439,10 @@ class VNRef final : public std::reference_wrapper<T_Node> {
 
 public:
     template <typename U>
+    // cppcheck-suppress noExplicitConstructor
     VNRef(U&& x)
         : std::reference_wrapper<T_Node>{x} {}
-
+    // cppcheck-suppress noExplicitConstructor
     VNRef(const std::reference_wrapper<T_Node>& other)
         : std::reference_wrapper<T_Node>{other} {}
 };

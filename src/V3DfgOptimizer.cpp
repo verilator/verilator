@@ -110,7 +110,7 @@ class DataflowExtractVisitor final : public VNVisitor {
             if (!VN_IS(modp, Module)) continue;
 
             for (const auto& pair : m_extractionCandidates(modp)) {
-                AstNodeExpr* const nodep = pair.first;
+                AstNodeExpr* const cnodep = pair.first;
 
                 // Do not extract expressions without any variable references
                 if (pair.second.empty()) continue;
@@ -132,18 +132,18 @@ class DataflowExtractVisitor final : public VNVisitor {
                 }
 
                 // Create temporary variable
-                FileLine* const flp = nodep->fileline();
-                const string name = names.get(nodep);
-                AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, nodep->dtypep()};
+                FileLine* const flp = cnodep->fileline();
+                const string name = names.get(cnodep);
+                AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, cnodep->dtypep()};
                 varp->trace(false);
                 modp->addStmtsp(varp);
 
                 // Replace expression with temporary variable
-                nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
+                cnodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
 
                 // Add assignment driving temporary variable
                 modp->addStmtsp(
-                    new AstAssignW{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep});
+                    new AstAssignW{flp, new AstVarRef{flp, varp, VAccess::WRITE}, cnodep});
             }
         }
     }

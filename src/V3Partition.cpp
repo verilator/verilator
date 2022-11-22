@@ -197,7 +197,7 @@ private:
     // Set of MTaskMoveVertex's assigned to this mtask. LogicMTask does not
     // own the MTaskMoveVertex objects, we merely keep pointers to them
     // here.
-    VxList m_vertices;
+    VxList m_mvertices;
 
     // Cost estimate for this LogicMTask, derived from V3InstrCount.
     // In abstract time units.
@@ -234,7 +234,7 @@ public:
         : AbstractLogicMTask{graphp} {
         for (uint32_t& item : m_critPathCost) item = 0;
         if (mtmvVxp) {  // Else null for test
-            m_vertices.push_back(mtmvVxp);
+            m_mvertices.push_back(mtmvVxp);
             if (const OrderLogicVertex* const olvp = mtmvVxp->logicp()) {
                 m_cost += V3InstrCount::count(olvp->nodep(), true);
             }
@@ -252,10 +252,10 @@ public:
 
     void moveAllVerticesFrom(LogicMTask* otherp) {
         // splice() is constant time
-        m_vertices.splice(m_vertices.end(), otherp->m_vertices);
+        m_mvertices.splice(m_mvertices.end(), otherp->m_mvertices);
         m_cost += otherp->m_cost;
     }
-    const VxList* vertexListp() const override { return &m_vertices; }
+    const VxList* vertexListp() const override { return &m_mvertices; }
     static uint64_t incGeneration() {
         static uint64_t s_generation = 0;
         ++s_generation;

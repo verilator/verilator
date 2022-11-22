@@ -362,6 +362,7 @@ public:  // But only for verilated*.cpp
 private:
     VerilatedFpList fdToFpList(IData fdi) VL_REQUIRES(m_fdMutex) {
         VerilatedFpList fp;
+        // cppcheck-suppress integeroverflow shifttoomanybitssigned
         if ((fdi & (1 << 31)) != 0) {
             // Non-MCD case
             const IData idx = fdi & VL_MASK_I(31);

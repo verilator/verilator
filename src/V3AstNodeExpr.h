@@ -1718,7 +1718,7 @@ public:
 class AstStackTraceF final : public AstNodeExpr {
     // $stacktrace used as function
 public:
-    AstStackTraceF(FileLine* fl)
+    explicit AstStackTraceF(FileLine* fl)
         : ASTGEN_SUPER_StackTraceF(fl) {
         dtypeSetString();
     }
@@ -1809,7 +1809,7 @@ public:
 class AstTimePrecision final : public AstNodeExpr {
     // Verilog $timeprecision
 public:
-    AstTimePrecision(FileLine* fl)
+    explicit AstTimePrecision(FileLine* fl)
         : ASTGEN_SUPER_TimePrecision(fl) {
         dtypeSetSigned32();
     }
@@ -1825,7 +1825,7 @@ class AstTimeUnit final : public AstNodeExpr {
     VTimescale m_timeunit;  // Parent module time unit
     // Verilog $timeunit
 public:
-    AstTimeUnit(FileLine* fl)
+    explicit AstTimeUnit(FileLine* fl)
         : ASTGEN_SUPER_TimeUnit(fl) {
         dtypeSetSigned32();
     }

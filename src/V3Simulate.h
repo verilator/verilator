@@ -382,7 +382,7 @@ private:
     int unrollCount() const {
         return m_params ? v3Global.opt.unrollCount() * 16 : v3Global.opt.unrollCount();
     }
-    bool jumpingOver(AstNode* nodep) {
+    bool jumpingOver(AstNode* nodep) const {
         // True to jump over this node - all visitors must call this up front
         return (m_jumpp && m_jumpp->labelp() != nodep);
     }

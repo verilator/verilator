@@ -1641,6 +1641,7 @@ std::string VL_STACKTRACE_N() VL_MT_SAFE {
     strings = backtrace_symbols(buffer, nptrs);
 #endif
 
+    // cppcheck-suppress knownConditionTrueFalse
     if (!strings) return "Unable to backtrace\n";
 
     std::string out = "Backtrace:\n";

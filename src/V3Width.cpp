@@ -3765,7 +3765,7 @@ private:
 
     AstNodeExpr* nestedvalueConcat_patternUOrStruct(AstNodeUOrStructDType* memp_vdtypep,
                                                     AstPatMember* defaultp, AstNodeExpr* newp,
-                                                    AstPattern* nodep, DTypeMap dtypemap) {
+                                                    AstPattern* nodep, const DTypeMap& dtypemap) {
         AstPatMember* patp = nullptr;
         for (AstMemberDType* memp_nested = memp_vdtypep->membersp(); memp_nested;
              memp_nested = VN_AS(memp_nested->nextp(), MemberDType)) {
@@ -3787,7 +3787,7 @@ private:
     AstPatMember* Defaultpatp_patternUOrStruct(AstPattern* nodep, AstMemberDType* memp,
                                                AstPatMember* patp,
                                                AstNodeUOrStructDType* memp_vdtypep,
-                                               AstPatMember* defaultp, DTypeMap dtypemap) {
+                                               AstPatMember* defaultp, const DTypeMap& dtypemap) {
         const string memp_DType = memp->virtRefDTypep()->prettyDTypeName();
         const auto it = dtypemap.find(memp_DType);
         if (it != dtypemap.end()) {
@@ -6127,17 +6127,17 @@ private:
         } else if (expDTypep->isDouble() && !underp->isDouble()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
-            underp = spliceCvtD(VN_AS(underp, NodeExpr));
+            spliceCvtD(VN_AS(underp, NodeExpr));
             underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL}.p());
         } else if (!expDTypep->isDouble() && underp->isDouble()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
-            underp = spliceCvtS(VN_AS(underp, NodeExpr), true, expDTypep->width());  // Round RHS
+            spliceCvtS(VN_AS(underp, NodeExpr), true, expDTypep->width());  // Round RHS
             underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL}.p());
         } else if (expDTypep->isString() && !underp->dtypep()->isString()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
-            underp = spliceCvtString(VN_AS(underp, NodeExpr));
+            spliceCvtString(VN_AS(underp, NodeExpr));
             underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL}.p());
         } else {
             const AstBasicDType* const expBasicp = expDTypep->basicp();

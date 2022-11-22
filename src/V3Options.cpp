@@ -257,7 +257,7 @@ void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr
         return;
     }
 
-    bool unitbad;
+    bool unitbad = false;
     const VTimescale unit{unitStr, unitbad /*ref*/};
     if (unitbad && !(unitStr.empty() && allowEmpty)) {
         fl->v3error("`timescale timeunit syntax error: '" << unitStr << "'");

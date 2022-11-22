@@ -1113,7 +1113,7 @@ public:
     // CONSTRUCTORS
     VlClassRef() = default;
     // Init with nullptr
-    VlClassRef(VlNull){};
+    explicit VlClassRef(VlNull){};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         : m_objp{new T_Class{std::forward<T_Args>(args)...}} {

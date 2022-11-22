@@ -137,7 +137,7 @@ void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
     removeUnused(dfg);
 }
 
-void V3DfgPasses::inlineVars(DfgGraph& dfg) {
+void V3DfgPasses::inlineVars(const DfgGraph& dfg) {
     for (DfgVertexVar *vtxp = dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
         nextp = vtxp->verticesNext();
         if (DfgVarPacked* const varp = vtxp->cast<DfgVarPacked>()) {

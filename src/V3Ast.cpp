@@ -1001,9 +1001,9 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 //======================================================================
 // Debugging
 
-void AstNode::checkTreeIter(const AstNode* backp) const {
+void AstNode::checkTreeIter(const AstNode* prevBackp) const {
     // private: Check a tree and children
-    UASSERT_OBJ(backp == this->backp(), this, "Back node inconsistent");
+    UASSERT_OBJ(prevBackp == this->backp(), this, "Back node inconsistent");
     switch (this->type()) {
 #include "V3Ast__gen_op_checks.h"
     default: VL_UNREACHABLE;  // LCOV_EXCL_LINE

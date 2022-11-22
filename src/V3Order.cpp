@@ -836,7 +836,7 @@ class OrderProcess final : VNDeleter {
     void processMovePrepReady();
     void processMoveReadyOne(OrderMoveVertex* vertexp);
     void processMoveDoneOne(OrderMoveVertex* vertexp);
-    void processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* domScopep, int level);
+    void processMoveOne(OrderMoveVertex* vertexp, const OrderMoveDomScope* domScopep, int level);
     AstActive* processMoveOneLogic(const OrderLogicVertex* lvertexp, AstCFunc*& newFuncpr,
                                    int& newStmtsr);
 
@@ -1180,7 +1180,7 @@ void OrderProcess::processMoveDoneOne(OrderMoveVertex* vertexp) {
     }
 }
 
-void OrderProcess::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* domScopep,
+void OrderProcess::processMoveOne(OrderMoveVertex* vertexp, const OrderMoveDomScope* domScopep,
                                   int level) {
     UASSERT_OBJ(vertexp->domScopep() == domScopep, vertexp, "Domain mismatch; list misbuilt?");
     const OrderLogicVertex* const lvertexp = vertexp->logicp();
