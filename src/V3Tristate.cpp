@@ -600,9 +600,9 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
         // Ignore Var's because they end up adjacent to statements
         if ((nodep->op1p() && nodep->op1p()->user1p() && !VN_IS(nodep->op1p(), Var))
-            || (nodep->op2p() && nodep->op2p()->user1p() && !VN_IS(nodep->op1p(), Var))
-            || (nodep->op3p() && nodep->op3p()->user1p() && !VN_IS(nodep->op1p(), Var))
-            || (nodep->op4p() && nodep->op4p()->user1p() && !VN_IS(nodep->op1p(), Var))) {
+            || (nodep->op2p() && nodep->op2p()->user1p() && !VN_IS(nodep->op2p(), Var))
+            || (nodep->op3p() && nodep->op3p()->user1p() && !VN_IS(nodep->op3p(), Var))
+            || (nodep->op4p() && nodep->op4p()->user1p() && !VN_IS(nodep->op4p(), Var))) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported tristate construct: " << nodep->prettyTypeName());
         }
