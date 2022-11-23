@@ -171,7 +171,7 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 
 #else
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
     uint64_t sim_time = 1100;

@@ -110,7 +110,7 @@ void mon_eval() {
 
 //======================================================================
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
     uint64_t sim_time = 1100;

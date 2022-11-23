@@ -1788,7 +1788,7 @@ sub _make_main {
         print $fh "    sc_set_time_resolution(1, $Self->{sc_time_resolution});\n";
         print $fh "    sc_time sim_time($self->{sim_time}, $Self->{sc_time_resolution});\n";
     } else {
-        print $fh "int main(int argc, char** argv, char** env) {\n";
+        print $fh "int main(int argc, char** argv) {\n";
         print $fh "    uint64_t sim_time = $self->{sim_time};\n";
     }
 

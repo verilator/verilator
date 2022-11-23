@@ -16,7 +16,7 @@
 unsigned long long main_time = 0;
 double sc_time_stamp() { return (double)main_time; }
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     std::unique_ptr<VM_PREFIX> top{new VM_PREFIX("top")};
 
     Verilated::debug(0);

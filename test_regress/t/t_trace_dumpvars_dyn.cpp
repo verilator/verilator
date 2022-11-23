@@ -19,7 +19,7 @@ double sc_time_stamp() { return (double)main_time; }
 
 const unsigned long long dt_2 = 3;
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     std::unique_ptr<VM_PREFIX> top{new VM_PREFIX("top")};
 
     Verilated::debug(0);

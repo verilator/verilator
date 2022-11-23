@@ -28,7 +28,7 @@ Now, let's create an example Verilog, and C++ wrapper file:
      cat >sim_main.cpp <<'EOF'
        #include "Vour.h"
        #include "verilated.h"
-       int main(int argc, char** argv, char** env) {
+       int main(int argc, char** argv) {
            VerilatedContext* contextp = new VerilatedContext;
            contextp->commandArgs(argc, argv);
            Vour* top = new Vour{contextp};

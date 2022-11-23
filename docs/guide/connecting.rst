@@ -406,7 +406,7 @@ accesses the above signal "readme" would be:
            printf("Value of v: %d\n", v.value.integer);  // Prints "readme"
        }
 
-       int main(int argc, char** argv, char** env) {
+       int main(int argc, char** argv) {
            Verilated::commandArgs(argc, argv);
            const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
            const std::unique_ptr<Vour> top{new Vour{contextp.get()}};

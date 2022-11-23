@@ -29,7 +29,7 @@ vluint64_t vl_time_stamp64() { return main_time; }
 double sc_time_stamp() { return main_time; }
 #endif
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     // Test that the old non-context Verilated:: calls all work
     // (This test should never get updated to use context)
 

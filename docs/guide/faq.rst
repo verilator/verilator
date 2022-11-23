@@ -144,7 +144,7 @@ B. Or, for finer-grained control, or C++ files with multiple Verilated
 
       #include "verilated_vcd_c.h"
       ...
-      int main(int argc, char** argv, char** env) {
+      int main(int argc, char** argv) {
           const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
           ...
           Verilated::traceEverOn(true);
@@ -197,7 +197,7 @@ C. Alternatively you may use the C++ trace mechanism described in the
 
       #include "verilated_vcd_sc.h"
       ...
-      int main(int argc, char** argv, char** env) {
+      int main(int argc, char** argv) {
           ...
           Verilated::traceEverOn(true);
           VerilatedVcdSc* tfp = new VerilatedVcdSc;

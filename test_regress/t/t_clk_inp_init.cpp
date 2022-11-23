@@ -51,7 +51,7 @@ void oneTest(int argc, char** argv, int seed) {
     topp->final();
 }
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
 #if VL_DEBUG
     // Verilated::debug(1);
 #endif

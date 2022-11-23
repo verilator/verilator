@@ -22,7 +22,7 @@ const char* trace_name() {
     return name;
 }
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     std::unique_ptr<VM_PREFIX> top{new VM_PREFIX("top")};
 
     Verilated::debug(0);

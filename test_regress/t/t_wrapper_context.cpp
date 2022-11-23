@@ -88,7 +88,7 @@ void sim(VM_PREFIX* topp) {
     contextp->coveragep()->write(filename.c_str());
 }
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     // Create contexts
     std::unique_ptr<VerilatedContext> context0p{new VerilatedContext};
     std::unique_ptr<VerilatedContext> context1p{new VerilatedContext};
