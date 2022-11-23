@@ -548,6 +548,9 @@ void VerilatedVcd::declare(uint32_t code, const char* name, const char* wirep, b
     m_namemapp->emplace(hiername, decl);
 }
 
+void VerilatedVcd::declEvent(uint32_t code, const char* name, bool array, int arraynum) {
+    declare(code, name, "event", array, arraynum, false, false, 0, 0);
+}
 void VerilatedVcd::declBit(uint32_t code, const char* name, bool array, int arraynum) {
     declare(code, name, "wire", array, arraynum, false, false, 0, 0);
 }
@@ -693,6 +696,19 @@ void VerilatedVcdBuffer::finishLine(uint32_t code, char* writep) {
 // Note: emit* are only ever called from one place (full* in
 // verilated_trace_imp.h, which is included in this file at the top),
 // so always inline them.
+
+VL_ATTR_ALWINLINE
+void VerilatedVcdBuffer::emitEvent(uint32_t code, VlEvent newval) {
+    const bool triggered = newval.isTriggered();
+    // TODO : It seems that untriggerd events are not filtered
+    // should be tested before this last step
+    if(triggered) {
+    // Don't prefetch suffix as it's a bit too late;
+    char* wp = m_writep;
+    *wp++ = '1' ;
+    finishLine(code, wp);
+    }
+}
 
 VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitBit(uint32_t code, CData newval) {

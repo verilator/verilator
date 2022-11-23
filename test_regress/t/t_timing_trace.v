@@ -16,6 +16,7 @@ module t;
     logic b;
     logic c;
     logic d;
+    event ev;
 
     initial begin
         $dumpfile(`STRINGIFY(`TEST_DUMPFILE));
@@ -34,10 +35,15 @@ module t;
         #CLK_PERIOD;
         rst = 0;
         b = 1;
+        -> ev ;
+        #CLK_PERIOD;
+        -> ev ;
 
-        #(10 * CLK_PERIOD);
+        #(9 * CLK_PERIOD);
+        -> ev ;
 
         $write("*-* All Finished *-*\n");
         $finish;
     end
+
 endmodule
