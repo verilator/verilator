@@ -29,7 +29,8 @@ sub run_clang_check {
     run(logfile => $stdout_filename,
         tee     => 1,
         cmd     => ["python3", "$root/nodist/clang_check_attributes.py $input_dirs $include_dirs -x $exclude"]);
-    files_identical($stdout_filename, $Self->{golden_filename});
+
+    file_grep($stdout_filename, "Number of functions marked as MT_SAFE calling unsafe functions: 72");
 }
 
 run_clang_check();
