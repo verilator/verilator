@@ -172,18 +172,18 @@ void VerilatedRestore::open(const char* filenamep) VL_MT_UNSAFE_ONE {
     header();
 }
 
-void VerilatedSave::close() VL_MT_UNSAFE_ONE {
+void VerilatedSave::closeImp() VL_MT_UNSAFE_ONE {
     if (!isOpen()) return;
     trailer();
-    flush();
+    flushImp();
     m_isOpen = false;
     ::close(m_fd);  // May get error, just ignore it
 }
 
-void VerilatedRestore::close() VL_MT_UNSAFE_ONE {
+void VerilatedRestore::closeImp() VL_MT_UNSAFE_ONE {
     if (!isOpen()) return;
     trailer();
-    flush();
+    flushImp();
     m_isOpen = false;
     ::close(m_fd);  // May get error, just ignore it
 }
@@ -191,7 +191,7 @@ void VerilatedRestore::close() VL_MT_UNSAFE_ONE {
 //=============================================================================
 // Buffer management
 
-void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
+void VerilatedSave::flushImp() VL_MT_UNSAFE_ONE {
     m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
     const uint8_t* wp = m_bufp;

@@ -62,9 +62,9 @@ public:
         m_bufp = new uint8_t[bufferSize()];
         m_cp = m_bufp;
     }
-    /// Flish, close, and destruct
+    /// Flush, close, and destruct
     virtual ~VerilatedSerialize() {
-        close();
+        // Child classes will need to typically call closeImp() in destructors
         if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = nullptr);
     }
     // METHODS
@@ -137,7 +137,7 @@ public:
     }
     /// Destruct
     virtual ~VerilatedDeserialize() {
-        close();
+        // Child classes will need to typically call closeImp() in destructors
         if (m_bufp) VL_DO_CLEAR(delete[] m_bufp, m_bufp = nullptr);
     }
     // METHODS
@@ -190,21 +190,24 @@ class VerilatedSave final : public VerilatedSerialize {
 private:
     int m_fd = -1;  // File descriptor we're writing to
 
+    void closeImp() VL_MT_UNSAFE_ONE;
+    void flushImp() VL_MT_UNSAFE_ONE;
+
 public:
     // CONSTRUCTORS
     /// Construct new object
     VerilatedSave() = default;
     /// Flush, close and destruct
-    ~VerilatedSave() override { close(); }
+    ~VerilatedSave() override { closeImp(); }
     // METHODS
     /// Open the file; call isOpen() to see if errors
     void open(const char* filenamep) VL_MT_UNSAFE_ONE;
     /// Open the file; call isOpen() to see if errors
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
     /// Flush and close the file
-    void close() override VL_MT_UNSAFE_ONE;
+    void close() override VL_MT_UNSAFE_ONE { closeImp(); }
     /// Flush data to file
-    void flush() override VL_MT_UNSAFE_ONE;
+    void flush() override VL_MT_UNSAFE_ONE { flushImp(); }
 };
 
 //=============================================================================
@@ -217,12 +220,15 @@ class VerilatedRestore final : public VerilatedDeserialize {
 private:
     int m_fd = -1;  // File descriptor we're writing to
 
+    void closeImp() VL_MT_UNSAFE_ONE;
+    void flushImp() VL_MT_UNSAFE_ONE {}
+
 public:
     // CONSTRUCTORS
     /// Construct new object
     VerilatedRestore() = default;
     /// Flush, close and destruct
-    ~VerilatedRestore() override { close(); }
+    ~VerilatedRestore() override { closeImp(); }
 
     // METHODS
     /// Open the file; call isOpen() to see if errors
@@ -230,8 +236,8 @@ public:
     /// Open the file; call isOpen() to see if errors
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
     /// Close the file
-    void close() override VL_MT_UNSAFE_ONE;
-    void flush() override VL_MT_UNSAFE_ONE {}
+    void close() override VL_MT_UNSAFE_ONE { closeImp(); }
+    void flush() override VL_MT_UNSAFE_ONE { flushImp(); }
     void fill() override VL_MT_UNSAFE_ONE;
 };
 
