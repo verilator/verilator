@@ -20,10 +20,10 @@ my $exclude = "std::,__builtin_,__gnu_cxx";
 
 sub run_clang_check {
     {
-        my $cmd = qq{python3 -c "import clang.cindex; print(clang.cindex.conf.get_filename())";};
+        my $cmd = qq{python3 -c "from clang.cindex import Index; INDEX = Index.create(); print(\\"Clang imported\\")";};
         print "\t$cmd\n" if $::Debug;
         my $out = `$cmd`;
-        if (!$out || $out !~ /libclang/) { skip("No libclang installed\n"); return 1; }
+        if (!$out || $out !~ /Clang imported/) { skip("No libclang installed\n"); return 1; }
     }
     my $stdout_filename = "$Self->{obj_dir}/clang_check_attributes.log";
     run(logfile => $stdout_filename,
