@@ -222,7 +222,7 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum, fstVar
 }
 
 void VerilatedFst::declEvent(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                           fstVarType vartype, bool array, int arraynum) {
+                             fstVarType vartype, bool array, int arraynum) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 0, 0);
 }
 void VerilatedFst::declBit(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
@@ -285,8 +285,8 @@ void VerilatedFst::configure(const VerilatedTraceConfig& config) {
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitEvent(uint32_t code, VlEvent newval) {
-        VL_DEBUG_IFDEF(assert(m_symbolp[code]););
-        fstWriterEmitValueChange(m_fst, m_symbolp[code], "1");
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], "1");
 }
 
 VL_ATTR_ALWINLINE
