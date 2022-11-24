@@ -3555,22 +3555,32 @@ private:
 
     void visit(AstNew* nodep) override {
         if (nodep->didWidth()) return;
-        AstClassRefDType* const refp
-            = m_vup ? VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType) : nullptr;
-        if (!refp) {  // e.g. int a = new;
-            nodep->v3error("new() not expected in this context");
-            return;
-        }
-        nodep->dtypep(refp);
+        AstClass* classp = nullptr;
+        if (VN_IS(nodep->backp(), Assign)) {  // assignment case
+            AstClassRefDType* const refp
+                = m_vup ? VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType) : nullptr;
+            if (!refp) {  // e.g. int a = new;
+                nodep->v3error("new() not expected in this context");
+                return;
+            }
+            nodep->dtypep(refp);
 
-        AstClass* const classp = refp->classp();
-        UASSERT_OBJ(classp, nodep, "Unlinked");
-        if (AstNodeFTask* const ftaskp = VN_CAST(classp->findMember("new"), Func)) {
-            nodep->taskp(ftaskp);
-            nodep->classOrPackagep(classp);
-        } else {
-            // Either made explicitly or V3LinkDot made implicitly
-            classp->v3fatalSrc("Can't find class's new");
+            classp = refp->classp();
+            UASSERT_OBJ(classp, nodep, "Unlinked");
+            if (AstNodeFTask* const ftaskp = VN_CAST(classp->findMember("new"), Func)) {
+                nodep->taskp(ftaskp);
+                nodep->classOrPackagep(classp);
+            } else {
+                // Either made explicitly or V3LinkDot made implicitly
+                classp->v3fatalSrc("Can't find class's new");
+            }
+        } else {  // super.new case
+            // in this case class and taskp() should be properly linked in V3LinkDot.cpp during
+            // "super" reference resolution
+            classp = VN_CAST(nodep->classOrPackagep(), Class);
+            UASSERT_OBJ(classp, nodep, "Unlinked classOrPackagep()");
+            UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked taskp()");
+            nodep->dtypeFrom(nodep->taskp());
         }
         if (classp->isVirtual()) {
             nodep->v3error(

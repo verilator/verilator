@@ -428,11 +428,7 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
         puts(nodep->argTypes());
         comma = true;
     }
-    for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
-        if (comma) puts(", ");
-        iterate(subnodep);
-        comma = true;
-    }
+    putCommaIterateNext(nodep->argsp(), comma);
     puts(")");
 }
 
