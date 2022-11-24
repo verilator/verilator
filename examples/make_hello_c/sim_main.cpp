@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
 
     // This is intended to be a minimal example.  Before copying this to start a
     // real project, it is better to start with a more complete example,
-    // e.g. examples/c_tracing.
+    // e.g. examples/make_tracing_c.
 
     // Construct a VerilatedContext to hold simulation time, etc.
     VerilatedContext* contextp = new VerilatedContext;
