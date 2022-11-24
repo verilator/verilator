@@ -9,10 +9,10 @@
 # Based on the work of (Guillaume "Vermeille" Sanchez)[https://github.com/Vermeille/clang-callgraph]
 # licensed under Apache 2.0
 
+import argparse
 import sys
 import os
-import glob
-import pathlib
+from pathlib import Path
 from pprint import pprint
 from clang.cindex import CursorKind, Index
 
@@ -31,16 +31,36 @@ class FixSizedDict(dict):
                 self.pop(next(iter(self)))
 
 
-INDEX = Index.create()
-CLANG_ARGS = []
-TRANSLATE_UNITS = FixSizedDict(maxlen=20)
-PRINTED = []
-
 # by definition constructor is MT safe,
 # but functions that constructor call are not!
 MT_SAFE_KINDS = [CursorKind.CONSTRUCTOR]
-UNSAFE_CALLS = []
-VERILATOR_ROOT = pathlib.Path(__file__).parent.parent.resolve()
+VERILATOR_ROOT = Path(__file__).parent.parent.resolve()
+IGNORE_FILES_LIST = [
+    # Dont process test files
+    "_test.cpp",
+    # Dont process Verilator coverage files
+    "Vlc",
+    # We want to use V3Const after astgen
+    "V3Const.cpp",
+    # Skip SystemC files
+    "_sc",
+    # Skip parser files
+    ".yy.cpp"
+]
+
+index = Index.create()
+# Cache of files already turned into translate unit
+# this speeds up checking when used function is from another
+# translation unit, but it increases memory consumption.
+# Limit max cache size to 20, to make sure we won't run OOM
+# in github actions
+translate_units = FixSizedDict(maxlen=20)
+# Already printed nodes in current function.
+# This prevents infinite loops due to recursion
+printed = []
+# Nodes that were marked as MT_SAFE, but are calling
+# function that isn't marked with this attribute
+unsafe_calls = []
 
 
 def get_diag_info(diag):
@@ -56,38 +76,34 @@ def get_diag_info(diag):
 def get_translate_unit(file, cfg):
     file = str(file)
     try:
-        translate_unit = TRANSLATE_UNITS[file]
+        translate_unit = translate_units[file]
     except KeyError:
-        translate_unit = INDEX.parse(file, cfg['clang_args'])
+        translate_unit = index.parse(file, cfg.clang_args)
         if not translate_unit:
-            print(f"unable to load translate_unit from file: {file}")
+            print(f"%Error: unable to load translate unit from file: {file}")
             sys.exit(1)
         for diag in translate_unit.diagnostics:
             if diag.severity in [diag.Error, diag.Fatal]:
-                if "sc_time_stamp" in diag.spelling:
-                    continue
                 pprint(('diags',
                         list(map(get_diag_info, translate_unit.diagnostics))))
                 sys.exit(1)
-        TRANSLATE_UNITS[file] = translate_unit
+        translate_units[file] = translate_unit
     return translate_unit
 
 
 def print_node(node, level):
-    if fully_qualified_pretty(node) not in PRINTED:
+    if fully_qualified_pretty(node) not in printed:
         annotations = get_annotations(node)
-        filepath = pathlib.Path(str(node.location.file)).resolve()
+        filepath = Path(str(node.location.file)).resolve()
         try:
-            relative = filepath.relative_to(VERILATOR_ROOT)
-            print('%s %-35s %-100s %s [%s:%s - %s:%s] \t %s  %s' %
-                  (' ' * level, node.kind, fully_qualified_pretty(node), ' ' *
-                   (20 - level), node.extent.start.line,
-                   node.extent.start.column, node.extent.end.line,
-                   node.extent.end.column, relative, annotations))
+            filepath_relative = filepath.relative_to(VERILATOR_ROOT)
+            print('%s %s:%s \t\t %-35s %-100s %s' %
+                  (' ' * level, filepath_relative, node.extent.start.line,
+                   node.kind, fully_qualified_pretty(node), annotations))
         except ValueError:
             # Dont print functions that are not defined in verilator repository
             pass
-        PRINTED.append(fully_qualified_pretty(node))
+        printed.append(fully_qualified_pretty(node))
 
 
 def get_annotations(node):
@@ -122,14 +138,9 @@ def fully_qualified_pretty(cursor):
 
 
 def is_excluded(node, cfg):
-    xfiles = cfg['excluded_paths']
-    xprefs = cfg['excluded_prefixes']
+    xprefs = cfg.exclude_prefixes
     if not node.extent.start.file:
         return False
-
-    for xfile in xfiles:
-        if node.extent.start.file.name.startswith(xfile):
-            return True
 
     fqp = fully_qualified_pretty(node)
 
@@ -176,7 +187,7 @@ def find_funcs(node, cfg, search_attributes):
         call = func.referenced
         # Don't recurse into already printed nodes
         # it some cases in increases printing nodes by a lot
-        if fully_qualified_pretty(call) in PRINTED:
+        if fully_qualified_pretty(call) in printed:
             continue
         if str(call.location.file).endswith(".h"):
             if os.path.exists(str(call.location.file).replace(".h", ".cpp")):
@@ -187,8 +198,8 @@ def find_funcs(node, cfg, search_attributes):
                     call = tu_call
 
         if call is not None:
-            if fully_qualified_pretty(call) not in PRINTED:
-                PRINTED.append(fully_qualified_pretty(call))
+            if fully_qualified_pretty(call) not in printed:
+                printed.append(fully_qualified_pretty(call))
 
             if not check_attributes(call, search_attributes):
                 return False
@@ -210,7 +221,7 @@ def print_funcs(node, cfg, search_attributes, level=1):
         call = func.referenced
         # Don't recurse into already printed nodes
         # it some cases in increases printing nodes by a lot
-        if fully_qualified_pretty(call) in PRINTED:
+        if fully_qualified_pretty(call) in printed:
             continue
         if str(call.location.file).endswith(".h"):
             if os.path.exists(str(call.location.file).replace(".h", ".cpp")):
@@ -234,79 +245,75 @@ def get_info(node, cfg):
         annotations = get_annotations(node)
         if "MT_SAFE" in annotations:
             if not find_funcs(node, cfg, ["MT_SAFE", "PURE"]):
-                UNSAFE_CALLS.append(node)
+                unsafe_calls.append(node)
         if "PURE" in annotations:
             if not find_funcs(node, cfg, ["PURE"]):
-                UNSAFE_CALLS.append(node)
+                unsafe_calls.append(node)
         if "MT_START" in annotations:
             if not find_funcs(node, cfg, ["MT_SAFE", "PURE"]):
-                UNSAFE_CALLS.append(node)
+                unsafe_calls.append(node)
     for cursor in node.get_children():
         get_info(cursor, cfg)
 
 
 def get_files(filename):
-    files = list(glob.glob(f"{filename}/*.cpp"))
-    # Dont process test files
-    files = [f for f in files if "_test.cpp" not in f]
-    # Dont process Verilator coverage files
-    files = [f for f in files if "Vlc" not in f]
-    # We want to use V3Const after astgen
-    files = [f for f in files if "V3Const.cpp" not in f]
-    # Skip SystemC files
-    files = [f for f in files if "_sc" not in f]
-    # Skip parser files
-    files = [f for f in files if ".yy.cpp" not in f]
+    files = list(Path(filename).rglob('*.cpp'))
+    for ignore in IGNORE_FILES_LIST:
+        files = list(f for f in files if ignore not in str(f))
+
     # Make sure list is unique
     files = list(dict.fromkeys(files))
     # Make filepaths absolute
-    files = [os.path.abspath(f) for f in files]
+    files = [f.absolute() for f in files]
     return files
 
 
-def read_args(args):
-    base_folders = []
-    clang_args = []
-    excluded_prefixes = []
-    excluded_paths = ['/usr']
-    i = 0
-    while i < len(args):
-        if args[i] == '-x':
-            i += 1
-            excluded_prefixes = args[i].split(',')
-        elif args[i] == '-p':
-            i += 1
-            excluded_paths = args[i].split(',')
-        elif args[i][0] == '-':
-            clang_args.append(args[i])
-        else:
-            base_folders.append(args[i])
-        i += 1
-    return {
-        'base_folders': base_folders,
-        'clang_args': clang_args,
-        'excluded_prefixes': excluded_prefixes,
-        'excluded_paths': excluded_paths,
-    }
+def parse_exclude(exclude_string):
+    return exclude_string.split(',')
 
 
 def main():
-    if len(sys.argv) < 2:
-        print('usage: ' + sys.argv[0] + ' folder [extra clang args...]')
-        return
+    parser = argparse.ArgumentParser(
+        allow_abbrev=False,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="""Check function annotations for correctness""",
+        epilog=
+        """Copyright 2022 by Wilson Snyder. Verilator is free software; you
+    can redistribute it and/or modify it under the terms of either the GNU
+    Lesser General Public License Version 3 or the Apache License 2.0.
 
-    cfg = read_args(sys.argv)
+    SPDX-License-Identifier: LGPL-3.0-only OR Apache-2.0""")
+
+    parser.add_argument('-x',
+                        dest='exclude_prefixes',
+                        type=parse_exclude,
+                        help='comma separated list of excluded prefixes')
+    parser.add_argument('-I',
+                        dest='clang_args',
+                        action='append',
+                        help='extra clang arguments')
+    parser.add_argument('input_folders',
+                        nargs='*',
+                        help='list of input paths for .cpp files')
+
+    cfg, unknowns = parser.parse_known_args()
+    # Add -I stripped by argparser to clang_args
+    cfg.clang_args = [f"-I{clang_arg}" for clang_arg in cfg.clang_args]
+    # if option starts with dash, assume it is clang arg
+    for unknown in unknowns:
+        if unknown.startswith('-'):
+            cfg.clang_args.append(unknown)
 
     files = []
-    for folder in cfg['base_folders']:
+    for folder in cfg.input_folders:
         files.extend(get_files(folder))
     files.sort()
     for file in files:
         translate_unit = get_translate_unit(file, cfg)
         get_info(translate_unit.cursor, cfg)
 
-    for call in UNSAFE_CALLS:
-        PRINTED.clear()
+    for call in unsafe_calls:
+        printed.clear()
         search_attributes = ["PURE"]
         attributes = get_annotations(call)
         if "MT_SAFE" in attributes or "MT_START" in attributes:
@@ -317,7 +324,7 @@ def main():
         print("::endgroup::")
 
     print(
-        f"Number of functions marked as MT_SAFE calling unsafe functions: {len(UNSAFE_CALLS)}"
+        f"Number of functions marked as MT_SAFE calling unsafe functions: {len(unsafe_calls)}"
     )
 
 
