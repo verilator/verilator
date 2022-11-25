@@ -227,14 +227,36 @@ private:
                 }
             }
         }
-        if (AstEnumDType* enumDtp = VN_CAST(nodep->exprp()->dtypep()->skipRefp(), EnumDType)) {
-                    cout << "Case is an enum, TODO: check if all values are within the enum"  << endl;
-                  //for (AstEnumItem* itemp = enump->itemsp(); itemp;
-                  //       itemp = VN_AS(itemp->nextp(), EnumItem)) {
-                  //      if (++nvals > 1) puts(", ");
-                  //      putbs("\"" + itemp->prettyName() + "\"");
-                  //  }
-        } else {
+            //nodep->uniquePragma()
+        if (AstEnumDType* enumDtp = VN_CAST(nodep->exprp()->dtypep()->skipRefToEnump(), EnumDType)) { // CASE uses enum
+            bool foundMatch =false;
+            for (uint32_t i = 0; i < numCases; ++i) { // iterate through all case items
+                for (AstEnumItem* itemp = enumDtp->itemsp(); itemp; 
+                                  itemp = VN_AS(itemp->nextp(), EnumItem)) { //iterate through all enum values
+                     if ( m_valueItem[i])  {
+                      AstConst* const constp = VN_AS(itemp->valuep(), Const);
+                      AstConst* const itemvp  = VN_AS(m_valueItem[i]->op1p(),Const);
+                        if (itemvp->num().toDecimalU().compare(constp->num().toDecimalU()) == 0 ) { // match
+                            foundMatch= true;
+                        } else { // no match
+                          UINFO(9, "Value " << std::hex << i << " " << 
+                                   m_valueItem[i]->op1p() << " " <<  itemvp->num().toDecimalU() << 
+                                   " => " <<  itemp->prettyName() << " numeric value "<< constp->num().toDecimalU() <<endl);
+                        }
+                     }
+                }
+                if (m_valueItem[i]) {
+                    if (!foundMatch) {
+                        nodep->v3warn(CASEINCOMPLETE, "Case values outside of enum "
+                                                      "(example pattern 0x" << std::hex << std::stoi(VN_AS(m_valueItem[i]->op1p(),Const)->num().toDecimalU()) << ")");
+                        return false;
+                    } else {
+                        foundMatch= false;
+                    }
+                }
+            }
+
+        } else {// CASE is not using an enum
             for (uint32_t i = 0; i < numCases; ++i) {
                 if (!m_valueItem[i]) {
                     nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
