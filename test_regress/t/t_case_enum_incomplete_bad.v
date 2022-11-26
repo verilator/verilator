@@ -1,17 +1,5 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// Use this file as a template for submitting bugs, etc.
-// This module takes a single clock input, and should either
-//      $write("*-* All Finished *-*\n");
-//      $finish;
-// on success, or $stop.
-//
-// The code as shown applies a random vector to the Test
-// module, then calculates a CRC on the Test module's outputs.
-//
-// **If you do not wish for your code to be released to the public
-// please note it here, otherwise:**
-//
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2022 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
@@ -21,119 +9,85 @@ module t(/*AUTOARG*/
    clk
    );
    input clk;
-
-   integer cyc = 0;
-   reg [63:0] crc;
-   reg [63:0] sum;
-
-   // Take CRC data and apply to testblock inputs
-   wire [31:0] in = crc[31:0];
-
-   /*AUTOWIRE*/
-   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [31:0]          out;                    // From test of Test.v
-   // End of automatics
-
-   Test test(/*AUTOINST*/
-             // Outputs
-             .out                       (out[31:0]),
-             // Inputs
-             .clk                       (clk),
-             .in                        (in[31:0]));
-
-   // Aggregate outputs into a single result vector
-   wire [63:0] result = {32'h0, out};
-
+  logic reset=1'b1;
+  logic in=1'b0;
+  integer cyc = 0;
+  
+  
+   
+    
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x result=%x\n", $time, cyc, crc, result);
+      $write("[%0t] cyc==%0d in=%b reset=%b state=S%x\n", $time, cyc, in, reset, test.state);
 `endif
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
-      sum <= result ^ {sum[62:0], sum[63] ^ sum[2] ^ sum[0]};
-      if (cyc == 0) begin
-         // Setup
-         crc <= 64'h5aef0c8d_d70a4497;
-         sum <= '0;
-      end
-      else if (cyc < 10) begin
-         sum <= '0;
-      end
-      else if (cyc < 90) begin
-      end
-      else if (cyc == 99) begin
-         $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
-         if (crc !== 64'hc77bb9b3784ea091) $stop;
-         // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h4afe43fb79d7b71e
-         if (sum !== `EXPECTED_SUM) $stop;
-         $write("*-* All Finished *-*\n");
+      if (cyc == 2) begin
+         reset <= 1'b0;// assert reset
+         in    <= 1'b1;// 
+      end else if (cyc == 4) begin
+         reset <= 1'b1;// deassert reset
+      end else if (cyc == 5) begin
+         in    <= 1'b1;// 
+      end else if (cyc == 10) begin
+         if (test.state == 2'b00 || test.state == 2'b01 || test.state == 2'b10 ) begin
+             $write("*-* All Finished *-*\n");
+         end else begin
+             $write("*-* wrong state *-*\n");
+             $write("[%0t] cyc==%0d in=%b reset=%b state=S%x\n", $time, cyc, in, reset, test.state);
+             $stop;
+         end
          $finish;
       end
    end
+  
+ 
+  
 
+
+   Test test(/*AUTOINST*/
+             .clk(clk),
+             .reset(reset),
+             .in   (in   )
+             );
 endmodule
 
 module Test(/*AUTOARG*/
-   // Outputs
-   out,
-   // Inputs
-   clk, in
+   input logic clk,
+   input logic reset,
+   input logic in
    );
 
-   // Replace this module with the device under test.
-   //
-   // Change the code in the t module to apply values to the inputs and
-   // merge the output values into the result vector.
+enum logic [1:0] {S0,S1,S2,S3} state, next;
 
-   input clk;
-   input [31:0] in;
-   output reg [31:0] out;
+always_ff @(posedge clk or negedge reset) begin
+      if ( reset==1'b0 ) begin
+          state <= S0;
+       end else begin
+         state <= next;
+       end
+end
 
-   always @(posedge clk) begin
-      out <= in;
-   end
+  always_comb begin: set_next_state
+    next = state; 
+     unique case ( state )
+      S0: if (in==1'b1) 
+           next = S1;
+          else
+           next = S0;
+      S1: if (in==1'b0) 
+            next = S2;
+          else if (in==1'b1)
+            next = S3;
+      S2: if (in==1'b1) 
+            next = S1;
+          else if (in==1'b0)
+            next = S2;
+    endcase
+  
+  end: set_next_state
+
 endmodule
 
-module tb_fsm;
-  logic reset;
-  logic clk;
-  logic X;
-  logic Z;
-
-  
-  fsm dutfsm(.*);
-  
-  task automatic my_task();
-    logic [4:0] val = 5'b01101;
-    for (int i = 0; i < $size(val); ++i)
-      begin
-        #10 X = val[i];
-      end
-    
-    #10;
-  endtask
-   
-    
-  
-  always begin
-    #5 clk = ~clk;
-  end
- 
-  
-  initial begin
-    X = 0;
-    clk = 0;
-    reset = 0;
-    
-    #1 reset = 1;
-    #2 reset = 0;
-    my_task();
-
-    #10; $finish;
-    end
-  
-endmodule
     
 

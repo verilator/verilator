@@ -8,11 +8,11 @@ module t (
     input logic in 
   );
 
-  enum logic [1:0] {S0,S1,S2} state, next;
+  enum logic [1:0] {S0,S1,S2,S3} state, next;
 
   always_comb begin: set_next_state
     next = state; //default value
-    unique case ( state )
+     unique case ( state )
       S0: if (in==1'b1) 
            next = S1;
           else

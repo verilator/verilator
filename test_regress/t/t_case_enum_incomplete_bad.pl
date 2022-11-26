@@ -15,6 +15,7 @@ compile(
 
 execute(
     check_finished => 1,
+    fails => 1,
     );
 
 
