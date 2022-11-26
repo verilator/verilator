@@ -13,9 +13,6 @@ module t(/*AUTOARG*/
   logic in=1'b0;
   integer cyc = 0;
   
-  
-   
-    
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
@@ -30,20 +27,11 @@ module t(/*AUTOARG*/
       end else if (cyc == 5) begin
          in    <= 1'b1;// 
       end else if (cyc == 10) begin
-         if (test.state == 2'b00 || test.state == 2'b01 || test.state == 2'b10 ) begin
-             $write("*-* All Finished *-*\n");
-         end else begin
-             $write("*-* wrong state *-*\n");
-             $write("[%0t] cyc==%0d in=%b reset=%b state=S%x\n", $time, cyc, in, reset, test.state);
-             $stop;
-         end
+         if (test.state != 2'b00 && test.state != 2'b01 && test.state != 2'b10) $stop;
+         $write("*-* All Finished *-*\n");
          $finish;
       end
    end
-  
- 
-  
-
 
    Test test(/*AUTOINST*/
              .clk(clk),
@@ -84,9 +72,7 @@ end
           else if (in==1'b0)
             next = S2;
     endcase
-  
   end: set_next_state
-
 endmodule
 
     

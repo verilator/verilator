@@ -250,13 +250,12 @@ private:
                      }
                      if (m_valueItem[i]) {
                          if (!foundMatch) {
-                           suppressCaseIncWarn =false; //warning should not be suppressed since not all values were supplied 
+                           suppressCaseIncWarn =false; //warning should not be suppressed since not all values were supplied
                          } else {
                              foundMatch= false;
                          }
                      }
                  }
-
             } 
         } else { // CASE not enum
             suppressCaseIncWarn =false; // warning should not be suppresed when not an enum

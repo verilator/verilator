@@ -26,7 +26,5 @@ module t (
           else if (in==1'b0)
             next = S2;
     endcase
-  
   end: set_next_state
-
 endmodule
