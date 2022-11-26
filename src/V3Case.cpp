@@ -231,10 +231,10 @@ private:
         if (AstEnumDType* enumDtp = VN_CAST(nodep->exprp()->dtypep()->skipRefToEnump(), EnumDType)) { // CASE is enum
             if (nodep->uniquePragma() || nodep->priorityPragma()) {
               suppressCaseIncWarn =true; // suppress the warning when we have unique or priority
-            } else { // check if all values were supplied 
+            } else { // check if all values were supplied
                  bool foundMatch =false;
                  for (uint32_t i = 0; i < numCases; ++i) { // iterate through all case items
-                     for (AstEnumItem* itemp = enumDtp->itemsp(); itemp; 
+                     for (AstEnumItem* itemp = enumDtp->itemsp(); itemp;
                                        itemp = VN_AS(itemp->nextp(), EnumItem)) { //iterate through all enum values
                           if ( m_valueItem[i])  {
                            AstConst* const constp = VN_AS(itemp->valuep(), Const);
@@ -242,8 +242,8 @@ private:
                              if (itemvp->num().toDecimalU().compare(constp->num().toDecimalU()) == 0 ) { // match
                                  foundMatch= true;
                              } else { // no match
-                               UINFO(9, "Value " << std::hex << i << " " << 
-                                        m_valueItem[i]->op1p() << " " <<  itemvp->num().toDecimalU() << 
+                               UINFO(9, "Value " << std::hex << i << " " <<
+                                        m_valueItem[i]->op1p() << " " <<  itemvp->num().toDecimalU() <<
                                         " => " <<  itemp->prettyName() << " numeric value "<< constp->num().toDecimalU() <<endl);
                              }
                           }
@@ -256,7 +256,7 @@ private:
                          }
                      }
                  }
-            } 
+            }
         } else { // CASE not enum
             suppressCaseIncWarn =false; // warning should not be suppresed when not an enum
         }

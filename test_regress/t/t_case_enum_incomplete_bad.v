@@ -12,7 +12,7 @@ module t(/*AUTOARG*/
   logic reset=1'b1;
   logic in=1'b0;
   integer cyc = 0;
-  
+
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
@@ -21,11 +21,11 @@ module t(/*AUTOARG*/
       cyc <= cyc + 1;
       if (cyc == 2) begin
          reset <= 1'b0;// assert reset
-         in    <= 1'b1;// 
+         in    <= 1'b1;//
       end else if (cyc == 4) begin
          reset <= 1'b1;// deassert reset
       end else if (cyc == 5) begin
-         in    <= 1'b1;// 
+         in    <= 1'b1;//
       end else if (cyc == 10) begin
          if (test.state != 2'b00 && test.state != 2'b01 && test.state != 2'b10) $stop;
          $write("*-* All Finished *-*\n");
@@ -57,23 +57,20 @@ always_ff @(posedge clk or negedge reset) begin
 end
 
   always_comb begin: set_next_state
-    next = state; 
+    next = state;
      unique case ( state )
-      S0: if (in==1'b1) 
+      S0: if (in==1'b1)
            next = S1;
           else
            next = S0;
-      S1: if (in==1'b0) 
+      S1: if (in==1'b0)
             next = S2;
           else if (in==1'b1)
             next = S3;
-      S2: if (in==1'b1) 
+      S2: if (in==1'b1)
             next = S1;
           else if (in==1'b0)
             next = S2;
     endcase
   end: set_next_state
 endmodule
-
-    
-
