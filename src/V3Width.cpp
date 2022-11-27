@@ -374,7 +374,15 @@ private:
     void visit(AstRealToBits* nodep) override { visit_Ou64_Lr(nodep); }
 
     // Output integer, input string
-    void visit(AstLenN* nodep) override { visit_Os32_string(nodep); }
+    void visit(AstLenN* nodep) override {
+        // Widths: 32 bit out
+        UASSERT_OBJ(nodep->lhsp(), nodep, "For unary ops only!");
+        if (m_vup->prelim()) {
+            // See similar handling in visit_cmp_eq_gt where created
+            iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetSigned32();
+        }
+    }
     void visit(AstPutcN* nodep) override {
         // CALLER: str.putc()
         UASSERT_OBJ(nodep->rhsp() && nodep->thsp(), nodep, "For ternary ops only!");
@@ -5553,17 +5561,6 @@ private:
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckString(nodep, "RHS", nodep->rhsp(), BOTH);
             nodep->dtypeSetBit();
-        }
-    }
-
-    void visit_Os32_string(AstNodeUniop* nodep) {
-        // CALLER: LenN
-        // Widths: 32 bit out
-        UASSERT_OBJ(nodep->lhsp(), nodep, "For unary ops only!");
-        if (m_vup->prelim()) {
-            // See similar handling in visit_cmp_eq_gt where created
-            iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
-            nodep->dtypeSetSigned32();
         }
     }
 

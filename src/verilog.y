@@ -5363,15 +5363,8 @@ str<strp>:                      // yaSTRING but with \{escapes} need decoded
 
 strAsInt<nodeExprp>:
                 yaSTRING
-                        { if ($1->empty()) {
-                              // else "" is not representable as number as is width 0
-                              // TODO all strings should be represented this way
-                              // until V3Width converts as/if needed to a numerical constant
-                              $$ = new AstConst{$<fl>1, AstConst::String{}, GRAMMARP->deQuote($<fl>1, *$1)};
-                          } else {
-                              $$ = new AstConst{$<fl>1, AstConst::VerilogStringLiteral{}, GRAMMARP->deQuote($<fl>1, *$1)};
-                          }
-                        }
+                        { // Numeric context, so IEEE 1800-2017 11.10.3 "" is a "\000"
+                          $$ = new AstConst{$<fl>1, AstConst::VerilogStringLiteral{}, GRAMMARP->deQuote($<fl>1, *$1)}; }
         ;
 
 strAsIntIgnore<nodeExprp>:          // strAsInt, but never matches for when expr shouldn't parse strings

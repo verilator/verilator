@@ -27,6 +27,7 @@ Verilator 5.003 devel
 * Fix tracing parameters overridden with -G (#3723). [Iztok Jeras]
 * Fix wait 0.
 * Fix comparing ranged slices of unpacked arrays.
+* Fix empty string literals converting to string types (#3774). [miree]
 
 
 Verilator 5.002 2022-10-29

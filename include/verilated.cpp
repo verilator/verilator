@@ -1812,16 +1812,14 @@ std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_MT_SAFE {
     char destout[VL_VALUE_STRING_MAX_CHARS + 1];
     const int obits = lwords * VL_EDATASIZE;
     int lsb = obits - 1;
-    bool start = true;
     char* destp = destout;
     size_t len = 0;
     for (; lsb >= 0; --lsb) {
         lsb = (lsb / 8) * 8;  // Next digit
         const IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xff;
-        if (!start || charval) {
-            *destp++ = (charval == 0) ? ' ' : charval;
+        if (charval) {
+            *destp++ = static_cast<char>(charval);
             ++len;
-            start = false;  // Drop leading 0s
         }
     }
     return std::string{destout, len};

@@ -100,15 +100,19 @@ void V3Number::v3errorEndFatal(const std::ostringstream& str) const VL_MT_SAFE {
 
 V3Number::V3Number(VerilogStringLiteral, AstNode* nodep, const string& str) {
     // Create a number using a verilog string as the value, thus 8 bits per character.
-    init(nodep, std::max<int>(str.length() * 8, 1));
-    m_data.m_fromString = true;
-    for (unsigned pos = 0; pos < str.length(); ++pos) {
-        const int topos = str.length() - 1 - pos;
-        ValueAndX& v = m_data.num()[topos / 4];
-        for (int bit = 0; bit < 8; ++bit) {
-            if (str[pos] & (1UL << bit)) { v.m_value |= (1UL << (bit + (topos % 4) * 8)); }
+    if (str.empty()) {  // IEEE 1800-2017 11.10.3 "" = "\000"
+        init(nodep, 8);
+    } else {
+        init(nodep, std::max<int>(str.length() * 8, 1));
+        for (unsigned pos = 0; pos < str.length(); ++pos) {
+            const int topos = str.length() - 1 - pos;
+            ValueAndX& v = m_data.num()[topos / 4];
+            for (int bit = 0; bit < 8; ++bit) {
+                if (str[pos] & (1UL << bit)) { v.m_value |= (1UL << (bit + (topos % 4) * 8)); }
+            }
         }
     }
+    m_data.m_fromString = true;
     opCleanThis(true);
 }
 
@@ -948,18 +952,15 @@ int64_t V3Number::toSQuad() const {
 
 string V3Number::toString() const {
     UASSERT(!isFourState(), "toString with 4-state " << *this);
-    // Spec says always drop leading zeros, this isn't quite right, we space pad.
+    // IEEE says \000 are removed
+    // If used to print a %s space padding is still required after call to here
     if (isString()) return m_data.str();
     int bit = width() - 1;
-    bool start = true;
-    while ((bit % 8) != 7) bit++;
-    string str;
+    while ((bit % 8) != 7) ++bit;
+    std::string str;
     for (; bit >= 0; bit -= 8) {
         const int v = bitsValue(bit - 7, 8);
-        if (!start || v) {
-            str += static_cast<char>((v == 0) ? ' ' : v);
-            start = false;  // Drop leading 0s
-        }
+        if (v) str += static_cast<char>(v);
     }
     return str;
 }
