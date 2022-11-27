@@ -6149,14 +6149,15 @@ private:
                     = VN_CAST(expDTypep->skipRefToEnump(), EnumDType)) {
                     const auto castable = computeCastable(expEnump, underp->dtypep(), underp);
                     if (castable != COMPATIBLE && castable != ENUM_IMPLICIT && !VN_IS(underp, Cast)
-                        && !VN_IS(underp, CastDynamic) && !m_enumItemp && warnOn) {
-                        nodep->v3warn(ENUMVALUE,
-                                      "Implicit conversion to enum "
-                                          << expDTypep->prettyDTypeNameQ() << " from "
-                                          << underp->dtypep()->prettyDTypeNameQ()
-                                          << " (IEEE 1800-2017 6.19.3)\n"
-                                          << nodep->warnMore()
-                                          << "... Suggest use enum's mnemonic, or static cast");
+                        && !VN_IS(underp, CastDynamic) && !m_enumItemp
+                        && !nodep->fileline()->warnIsOff(V3ErrorCode::ENUMVALUE) && warnOn) {
+                        underp->v3warn(ENUMVALUE,
+                                       "Implicit conversion to enum "
+                                           << expDTypep->prettyDTypeNameQ() << " from "
+                                           << underp->dtypep()->prettyDTypeNameQ()
+                                           << " (IEEE 1800-2017 6.19.3)\n"
+                                           << nodep->warnMore()
+                                           << "... Suggest use enum's mnemonic, or static cast");
                         if (debug()) nodep->backp()->dumpTree("-  back: ");
                     }
                 }
