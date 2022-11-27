@@ -702,7 +702,7 @@ private:
             // Values are in the "real" tree under the InitArray so can eventually extract it,
             // Not in the usual setValue (pointed to by user2/3p)
             initp->addIndexValuep(index, valuep);
-            if (debug() >= 9) initp->dumpTree(cout, "-array-");
+            if (debug() >= 9) initp->dumpTree("-  array: ");
             assignOutValue(nodep, vscp, initp);
         }
     }

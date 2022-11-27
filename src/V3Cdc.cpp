@@ -251,7 +251,7 @@ private:
 
             if (false && debug() >= 9) {
                 UINFO(9, "Trace Logic:\n");
-                nodep->dumpTree(cout, "-log1: ");
+                nodep->dumpTree("-  log1: ");
             }
         }
     }

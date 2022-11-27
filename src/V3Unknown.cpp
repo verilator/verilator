@@ -135,7 +135,7 @@ private:
                          fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp}))};
             newp->branchPred(VBranchPred::BP_LIKELY);
             newp->isBoundsCheck(true);
-            if (debug() >= 9) newp->dumpTree(cout, "     _new: ");
+            if (debug() >= 9) newp->dumpTree("-     _new: ");
             abovep->addNextStmt(newp, abovep);
             prep->user2p(newp);  // Save so we may LogAnd it next time
         }
@@ -321,7 +321,7 @@ private:
     void visit(AstConst* nodep) override {
         if (m_constXCvt && nodep->num().isFourState()) {
             UINFO(4, " CONST4 " << nodep << endl);
-            if (debug() >= 9) nodep->dumpTree(cout, "  Const_old: ");
+            if (debug() >= 9) nodep->dumpTree("-  Const_old: ");
             // CONST(num) -> VARREF(newvarp)
             //          -> VAR(newvarp)
             //          -> INITIAL(VARREF(newvarp, OR(num_No_Xs,AND(random,num_1s_Where_X))
@@ -371,9 +371,9 @@ private:
                 m_modp->addStmtsp(newvarp);
                 m_modp->addStmtsp(newinitp);
                 m_modp->addStmtsp(afterp);
-                if (debug() >= 9) newref1p->dumpTree(cout, "     _new: ");
-                if (debug() >= 9) newvarp->dumpTree(cout, "     _new: ");
-                if (debug() >= 9) newinitp->dumpTree(cout, "     _new: ");
+                if (debug() >= 9) newref1p->dumpTree("-     _new: ");
+                if (debug() >= 9) newvarp->dumpTree("-     _new: ");
+                if (debug() >= 9) newinitp->dumpTree("-     _new: ");
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             }
         }
@@ -391,7 +391,7 @@ private:
             // Find range of dtype we are selecting from
             // Similar code in V3Const::warnSelect
             const int maxmsb = nodep->fromp()->dtypep()->width() - 1;
-            if (debug() >= 9) nodep->dumpTree(cout, "sel_old: ");
+            if (debug() >= 9) nodep->dumpTree("-  sel_old: ");
 
             // If (maxmsb >= selected), we're in bound
             AstNodeExpr* condp
@@ -413,7 +413,7 @@ private:
                 xnum.setAllBitsX();
                 AstNode* const newp = new AstCondBound{nodep->fileline(), condp, nodep,
                                                        new AstConst{nodep->fileline(), xnum}};
-                if (debug() >= 9) newp->dumpTree(cout, "        _new: ");
+                if (debug() >= 9) newp->dumpTree("-        _new: ");
                 // Link in conditional
                 replaceHandle.relink(newp);
                 // Added X's, tristate them too
@@ -430,7 +430,7 @@ private:
     void visit(AstArraySel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
-            if (debug() == 9) nodep->dumpTree(cout, "-in: ");
+            if (debug() == 9) nodep->dumpTree("-  in: ");
             // Guard against reading/writing past end of arrays
             AstNode* const basefromp = AstArraySel::baseFromp(nodep->fromp(), true);
             bool lvalue = false;
@@ -450,7 +450,7 @@ private:
             } else {
                 nodep->v3error("Select from non-array " << dtypep->prettyTypeName());
             }
-            if (debug() >= 9) nodep->dumpTree(cout, "arraysel_old: ");
+            if (debug() >= 9) nodep->dumpTree("-  arraysel_old: ");
 
             // See if the condition is constant true
             AstNodeExpr* condp
@@ -477,7 +477,7 @@ private:
                 }
                 AstNode* const newp = new AstCondBound{nodep->fileline(), condp, nodep,
                                                        new AstConst{nodep->fileline(), xnum}};
-                if (debug() >= 9) newp->dumpTree(cout, "        _new: ");
+                if (debug() >= 9) newp->dumpTree("-        _new: ");
                 // Link in conditional, can blow away temp xor
                 replaceHandle.relink(newp);
                 // Added X's, tristate them too
@@ -490,7 +490,7 @@ private:
                     bitp->fileline(), condp, bitp,
                     new AstConst{bitp->fileline(), AstConst::WidthedValue{}, bitp->width(), 0}};
                 // Added X's, tristate them too
-                if (debug() >= 9) newp->dumpTree(cout, "        _new: ");
+                if (debug() >= 9) newp->dumpTree("-        _new: ");
                 replaceHandle.relink(newp);
                 iterate(newp);
             } else {  // lvalue

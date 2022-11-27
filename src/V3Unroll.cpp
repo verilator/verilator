@@ -65,7 +65,7 @@ private:
         if (m_generate)
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Can't unroll generate for; " << reason);
         UINFO(3, "   Can't Unroll: " << reason << " :" << nodep << endl);
-        // if (debug() >= 9) nodep->dumpTree(cout, "-cant-");
+        // if (debug() >= 9) nodep->dumpTree("-  cant: ");
         V3Stats::addStatSum(std::string{"Unrolling gave up, "} + reason, 1);
         return false;
     }
@@ -151,7 +151,7 @@ private:
         } else {
             UINFO(8, "   Loop Variable: " << m_forVarp << endl);
         }
-        if (debug() >= 9) nodep->dumpTree(cout, "-   for: ");
+        if (debug() >= 9) nodep->dumpTree("-   for: ");
 
         if (!m_generate) {
             const AstAssign* const incpAssign = VN_AS(incp, Assign);
@@ -213,7 +213,7 @@ private:
         simvis.mainParamEmulate(clonep);
         if (!simvis.optimizable()) {
             UINFO(3, "Unable to simulate" << endl);
-            if (debug() >= 9) nodep->dumpTree(cout, "- _simtree: ");
+            if (debug() >= 9) nodep->dumpTree("-  _simtree: ");
             VL_DO_DANGLING(clonep->deleteTree(), clonep);
             return false;
         }
@@ -368,7 +368,7 @@ private:
         if (precondsp) VL_DO_DANGLING(pushDeletep(precondsp), precondsp);
         if (initp) VL_DO_DANGLING(pushDeletep(initp), initp);
         if (incp && !incp->backp()) VL_DO_DANGLING(pushDeletep(incp), incp);
-        if (debug() >= 9 && newbodysp) newbodysp->dumpTree(cout, "-  _new: ");
+        if (debug() >= 9 && newbodysp) newbodysp->dumpTree("-  _new: ");
         return true;
     }
 

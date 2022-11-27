@@ -427,7 +427,7 @@ private:
         AstNode* const beginp
             = new AstComment{refp->fileline(), string("Function: ") + refp->name(), true};
         if (newbodysp) beginp->addNext(newbodysp);
-        if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-newbegi:");
+        if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  newbegi: ");
         //
         // Create input variables
         AstNode::user2ClearTree();
@@ -530,7 +530,7 @@ private:
         // Replace variable refs
         relink(beginp);
         //
-        if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-iotask: ");
+        if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  iotask: ");
         return beginp;
     }
 
@@ -637,7 +637,7 @@ private:
 
         if (outvscp) ccallp->addArgsp(new AstVarRef{refp->fileline(), outvscp, VAccess::WRITE});
 
-        if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-nitask: ");
+        if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  nitask: ");
         return beginp;
     }
 
@@ -1313,7 +1313,7 @@ private:
 
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        if (debug() >= 9) cfuncp->dumpTree(cout, "-userFunc: ");
+        if (debug() >= 9) cfuncp->dumpTree("-  userFunc: ");
         return cfuncp;
     }
 
@@ -1331,13 +1331,13 @@ private:
     AstNode* insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
         // See also AstNode::addBeforeStmt; this predates that function
-        if (debug() >= 9) nodep->dumpTree(cout, "-newstmt:");
+        if (debug() >= 9) nodep->dumpTree("-  newstmt: ");
         UASSERT_OBJ(m_insStmtp, nodep, "Function not underneath a statement");
         AstNode* visitp = nullptr;
         if (m_insMode == IM_BEFORE) {
             // Add the whole thing before insertAt
             UINFO(5, "     IM_Before  " << m_insStmtp << endl);
-            if (debug() >= 9) newp->dumpTree(cout, "-newfunc:");
+            if (debug() >= 9) newp->dumpTree("-  newfunc: ");
             m_insStmtp->addHereThisAsNext(newp);
         } else if (m_insMode == IM_AFTER) {
             UINFO(5, "     IM_After   " << m_insStmtp << endl);
@@ -1383,7 +1383,7 @@ private:
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked?");
         iterateIntoFTask(nodep->taskp());  // First, do hierarchical funcs
         UINFO(4, " FTask REF   " << nodep << endl);
-        if (debug() >= 9) nodep->dumpTree(cout, "-inlfunc:");
+        if (debug() >= 9) nodep->dumpTree("-  inlfunc: ");
         UASSERT_OBJ(m_scopep, nodep, "func ref not under scope");
         const string namePrefix = ((VN_IS(nodep, FuncRef) ? "__Vfunc_" : "__Vtask_")
                                    + nodep->taskp()->shortName() + "__" + cvtToStr(m_modNCalls++));
@@ -1687,7 +1687,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     }
 
     if (debug() >= 9) {  // LCOV_EXCL_START
-        nodep->dumpTree(cout, "-ftref-out: ");
+        nodep->dumpTree("-  ftref-out: ");
         for (int i = 0; i < tpinnum; ++i) {
             UINFO(0, "   pin " << i << "  conn=" << cvtToHex(tconnects[i].second) << endl);
         }

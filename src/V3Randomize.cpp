@@ -281,7 +281,7 @@ private:
         //   else warning
         // Note this code assumes that the expressions after V3Const are fast to compute
         // Optimize: we would be better with a binary search tree to reduce ifs that execute
-        if (debug() >= 9) nodep->dumpTree(cout, "-rcin:  ");
+        if (debug() >= 9) nodep->dumpTree("-  rcin:: ");
         AstNodeDType* const sumDTypep = nodep->findUInt64DType();
 
         FileLine* const fl = nodep->fileline();
@@ -324,7 +324,7 @@ private:
                                     new AstAdd{fl, new AstConst{fl, AstConst::Unsized64{}, 1},
                                                new AstModDiv{fl, randp, sump}}});
         newp->addNext(firstIfsp);
-        if (debug() >= 9) newp->dumpTreeAndNext(cout, "-rcnew: ");
+        if (debug() >= 9) newp->dumpTreeAndNext(cout, "-  rcnew: ");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }

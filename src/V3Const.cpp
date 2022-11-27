@@ -366,7 +366,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         if (fail && !m_failed) {
             UINFO(9, "cannot optimize " << m_rootp << " reason:" << reason << " called from line:"
                                         << line << " when checking:" << nodep << std::endl);
-            // if (debug() >= 9) m_rootp->dumpTree(std::cout << "Root node:\n");
+            // if (debug() >= 9) m_rootp->dumpTree("-  root: ");
             m_failed = true;
         }
         return m_failed;
@@ -752,16 +752,16 @@ public:
         if (needsCleaning) ++resultOps;
 
         if (debug() >= 9) {  // LCOV_EXCL_START
-            cout << "Bitop tree considered: " << endl;
-            for (AstNodeExpr* const termp : termps) termp->dumpTree("Reduced term: ");
+            cout << "-  Bitop tree considered: " << endl;
+            for (AstNodeExpr* const termp : termps) termp->dumpTree("-  Reduced term: ");
             for (const std::pair<AstNodeExpr*, FrozenNodeInfo>& termp : visitor.m_frozenNodes) {
-                termp.first->dumpTree("Frozen term with lsb " + std::to_string(termp.second.m_lsb)
-                                      + " polarity " + std::to_string(termp.second.m_polarity)
-                                      + ": ");
+                termp.first->dumpTree("-  Frozen term with lsb "
+                                      + std::to_string(termp.second.m_lsb) + " polarity "
+                                      + std::to_string(termp.second.m_polarity) + ": ");
             }
-            cout << "Needs flipping: " << needsFlip << endl;
-            cout << "Needs cleaning: " << needsCleaning << endl;
-            cout << "Size: " << resultOps << " input size: " << visitor.m_ops << endl;
+            cout << "-  Needs flipping: " << needsFlip << endl;
+            cout << "-  Needs cleaning: " << needsCleaning << endl;
+            cout << "-  Size: " << resultOps << " input size: " << visitor.m_ops << endl;
         }  // LCOV_EXCL_END
 
         // Sometimes we have no terms left after ignoring redundant terms
@@ -1148,7 +1148,7 @@ private:
         string debugPrefix;
         if (debug() >= 9) {  // LCOV_EXCL_START
             static int c = 0;
-            debugPrefix = "matchBitOpTree[";
+            debugPrefix = "-  matchBitOpTree[";
             debugPrefix += cvtToStr(++c);
             debugPrefix += "] ";
             nodep->dumpTree(debugPrefix + "INPUT: ");
@@ -1277,12 +1277,12 @@ private:
         if (!(m_doV && bip && VN_IS(nodep->lsbp(), Const) && VN_IS(nodep->widthp(), Const)
               && nodep->lsbConst() == 0))
             return false;
-        if (debug() >= 9) nodep->dumpTree(cout, "SEL(BI)-in:");
+        if (debug() >= 9) nodep->dumpTree("-  SEL(BI)-in: ");
         AstNodeExpr* const bilhsp = bip->lhsp()->unlinkFrBack();
         AstNodeExpr* const birhsp = bip->rhsp()->unlinkFrBack();
         bip->lhsp(new AstSel{nodep->fileline(), bilhsp, 0, nodep->widthConst()});
         bip->rhsp(new AstSel{nodep->fileline(), birhsp, 0, nodep->widthConst()});
-        if (debug() >= 9) bip->dumpTree(cout, "SEL(BI)-ou:");
+        if (debug() >= 9) bip->dumpTree("-  SEL(BI)-ou: ");
         VL_DO_DANGLING(replaceWChild(nodep, bip), nodep);
         return true;
     }
@@ -1306,11 +1306,11 @@ private:
         if (newLsb + nodep->widthConst() > ap->width()) return false;
         //
         UINFO(9, "SEL(SHIFTR(a,b),l,w) -> SEL(a,l+b,w)\n");
-        if (debug() >= 9) nodep->dumpTree(cout, "SEL(SH)-in:");
+        if (debug() >= 9) nodep->dumpTree("-  SEL(SH)-in: ");
         AstSel* const newp
             = new AstSel{nodep->fileline(), ap->unlinkFrBack(), newLsb, nodep->widthConst()};
         newp->dtypeFrom(nodep);
-        if (debug() >= 9) newp->dumpTree(cout, "SEL(SH)-ou:");
+        if (debug() >= 9) newp->dumpTree("-  SEL(SH)-ou: ");
         VL_DO_DANGLING(nodep->replaceWith(newp), nodep);
         return true;
     }
@@ -1328,7 +1328,7 @@ private:
         if (!constp) return false;
         if (!constp->num().isBitsZero(constp->width() - 1, subsize)) return false;
         //
-        if (debug() >= 9) nodep->dumpTree(cout, "BI(EXTEND)-in:");
+        if (debug() >= 9) nodep->dumpTree("-  BI(EXTEND)-in: ");
         smallerp->unlinkFrBack();
         VL_DO_DANGLING(extendp->unlinkFrBack()->deleteTree(), extendp);  // aka nodep->lhsp.
         nodep->rhsp(smallerp);
@@ -1338,7 +1338,7 @@ private:
         num.opAssign(constp->num());
         nodep->lhsp(new AstConst{constp->fileline(), num});
         VL_DO_DANGLING(constp->deleteTree(), constp);
-        if (debug() >= 9) nodep->dumpTree(cout, "BI(EXTEND)-ou:");
+        if (debug() >= 9) nodep->dumpTree("-  BI(EXTEND)-ou: ");
         return true;
     }
     bool operandBiExtendConstOver(const AstNodeBiop* nodep) {
@@ -1553,8 +1553,8 @@ private:
                     "Already constant??");
         AstNode* const newp = new AstConst{oldp->fileline(), num};
         newp->dtypeFrom(oldp);
-        if (debug() > 5) oldp->dumpTree(cout, "  const_old: ");
-        if (debug() > 5) newp->dumpTree(cout, "       _new: ");
+        if (debug() > 5) oldp->dumpTree("-  const_old: ");
+        if (debug() > 5) newp->dumpTree("-       _new: ");
         oldp->replaceWith(newp);
         VL_DO_DANGLING(oldp->deleteTree(), oldp);
     }
@@ -1629,8 +1629,8 @@ private:
         // Replace oldp node with a constant set to specified value
         UASSERT(oldp, "Null old");
         AstNode* const newp = new AstConst{oldp->fileline(), AstConst::String{}, num};
-        if (debug() > 5) oldp->dumpTree(cout, "  const_old: ");
-        if (debug() > 5) newp->dumpTree(cout, "       _new: ");
+        if (debug() > 5) oldp->dumpTree("-  const_old: ");
+        if (debug() > 5) newp->dumpTree("-       _new: ");
         oldp->replaceWith(newp);
         VL_DO_DANGLING(oldp->deleteTree(), oldp);
     }
@@ -1688,7 +1688,7 @@ private:
     void replaceAsv(AstNodeBiop* nodep) {
         // BIASV(CONSTa, BIASV(CONSTb, c)) -> BIASV( BIASV_CONSTED(a,b), c)
         // BIASV(SAMEa,  BIASV(SAMEb, c))  -> BIASV( BIASV(SAMEa,SAMEb), c)
-        // nodep->dumpTree(cout, "  repAsvConst_old: ");
+        // nodep->dumpTree("-  repAsvConst_old: ");
         AstNodeExpr* const ap = nodep->lhsp();
         AstNodeBiop* const rp = VN_AS(nodep->rhsp(), NodeBiop);
         AstNodeExpr* const bp = rp->lhsp();
@@ -1702,7 +1702,7 @@ private:
         rp->lhsp(ap);
         rp->rhsp(bp);
         if (VN_IS(rp->lhsp(), Const) && VN_IS(rp->rhsp(), Const)) replaceConst(rp);
-        // nodep->dumpTree(cout, "  repAsvConst_new: ");
+        // nodep->dumpTree("-  repAsvConst_new: ");
     }
     void replaceAsvLUp(AstNodeBiop* nodep) {
         // BIASV(BIASV(CONSTll,lr),r) -> BIASV(CONSTll,BIASV(lr,r))
@@ -1714,7 +1714,7 @@ private:
         nodep->rhsp(lp);
         lp->lhsp(lrp);
         lp->rhsp(rp);
-        // nodep->dumpTree(cout, "  repAsvLUp_new: ");
+        // nodep->dumpTree("-  repAsvLUp_new: ");
     }
     void replaceAsvRUp(AstNodeBiop* nodep) {
         // BIASV(l,BIASV(CONSTrl,rr)) -> BIASV(CONSTrl,BIASV(l,rr))
@@ -1726,7 +1726,7 @@ private:
         nodep->rhsp(rp);
         rp->lhsp(lp);
         rp->rhsp(rrp);
-        // nodep->dumpTree(cout, "  repAsvRUp_new: ");
+        // nodep->dumpTree("-  repAsvRUp_new: ");
     }
     void replaceAndOr(AstNodeBiop* nodep) {
         //  OR  (AND (CONSTll,lr), AND(CONSTrl==ll,rr))    -> AND (CONSTll, OR(lr,rr))
@@ -1759,7 +1759,7 @@ private:
         } else {
             nodep->v3fatalSrc("replaceAndOr on something operandAndOrSame shouldn't have matched");
         }
-        // nodep->dumpTree(cout, "  repAndOr_new: ");
+        // nodep->dumpTree("-  repAndOr_new: ");
     }
     void replaceShiftSame(AstNodeBiop* nodep) {
         // Or(Shift(ll,CONSTlr),Shift(rl,CONSTrr==lr)) -> Shift(Or(ll,rl),CONSTlr)
@@ -1778,7 +1778,7 @@ private:
         nodep->dtypep(llp->dtypep());  // dtype of Biop is before shift.
         VL_DO_DANGLING(rp->deleteTree(), rp);
         VL_DO_DANGLING(rrp->deleteTree(), rrp);
-        // nodep->dumpTree(cout, "  repShiftSame_new: ");
+        // nodep->dumpTree("-  repShiftSame_new: ");
     }
     void replaceConcatSel(AstConcat* nodep) {
         // {a[1], a[0]} -> a[1:0]
@@ -1902,7 +1902,7 @@ private:
     }
     void replaceShiftShift(AstNodeBiop* nodep) {
         UINFO(4, "SHIFT(SHIFT(a,s1),s2)->SHIFT(a,ADD(s1,s2)) " << nodep << endl);
-        if (debug() >= 9) nodep->dumpTree(cout, "  repShiftShift_old: ");
+        if (debug() >= 9) nodep->dumpTree("-  repShiftShift_old: ");
         AstNodeBiop* const lhsp = VN_AS(nodep->lhsp(), NodeBiop);
         lhsp->unlinkFrBack();
         AstNodeExpr* const ap = lhsp->lhsp()->unlinkFrBack();
@@ -1955,7 +1955,7 @@ private:
             newp->dtypeFrom(nodep);
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            // newp->dumpTree(cout, "  repShiftShift_new: ");
+            // newp->dumpTree("-  repShiftShift_new: ");
             iterate(newp);  // Further reduce, either node may have more reductions.
         }
         VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
@@ -1998,8 +1998,8 @@ private:
         const bool lsbFirstAssign = (con1p->toUInt() < con2p->toUInt());
         UINFO(4, "replaceAssignMultiSel " << nodep << endl);
         UINFO(4, "                   && " << nextp << endl);
-        // nodep->dumpTree(cout, "comb1: ");
-        // nextp->dumpTree(cout, "comb2: ");
+        // nodep->dumpTree("-  comb1: ");
+        // nextp->dumpTree("-  comb2: ");
         AstNodeExpr* const rhs1p = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* const rhs2p = nextp->rhsp()->unlinkFrBack();
         AstNodeAssign* newp;
@@ -2012,7 +2012,7 @@ private:
                                                sel2p->lsbConst(), sel1p->width() + sel2p->width()},
                                     new AstConcat{rhs1p->fileline(), rhs1p, rhs2p});
         }
-        // pnewp->dumpTree(cout, "conew: ");
+        // pnewp->dumpTree("-  conew: ");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         VL_DO_DANGLING(nextp->unlinkFrBack()->deleteTree(), nextp);
@@ -2071,7 +2071,7 @@ private:
                 // ASSIGN(CONCAT(lc1,lc2),rhs) -> ASSIGN(lc1,SEL(rhs,{size})),
                 //                                ASSIGN(lc2,SEL(newrhs,{size}))
             }
-            if (debug() >= 9) nodep->dumpTree(cout, "  Ass_old: ");
+            if (debug() >= 9) nodep->dumpTree("-  Ass_old: ");
             // Unlink the stuff
             AstNodeExpr* const lc1p = VN_AS(nodep->lhsp(), Concat)->lhsp()->unlinkFrBack();
             AstNodeExpr* const lc2p = VN_AS(nodep->lhsp(), Concat)->rhsp()->unlinkFrBack();
@@ -2129,7 +2129,7 @@ private:
                 newp = AstNode::addNext(newp, asn1bp);
                 newp = AstNode::addNext(newp, asn2bp);
             }
-            if (debug() >= 9 && newp) newp->dumpTreeAndNext(cout, "     _new: ");
+            if (debug() >= 9 && newp) newp->dumpTreeAndNext(cout, "-     _new: ");
             nodep->addNextHere(newp);
             // Cleanup
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -2209,7 +2209,7 @@ private:
         return true;
     }
     void replaceBoolShift(AstNode* nodep) {
-        if (debug() >= 9) nodep->dumpTree(cout, "  bshft_old: ");
+        if (debug() >= 9) nodep->dumpTree("-  bshft_old: ");
         AstConst* const andConstp = VN_AS(VN_AS(nodep, And)->lhsp(), Const);
         AstNodeExpr* const fromp
             = VN_AS(VN_AS(nodep, And)->rhsp(), ShiftR)->lhsp()->unlinkFrBack();
@@ -2223,7 +2223,7 @@ private:
         newp->dtypeSetLogicSized(nodep->width(), VSigning::UNSIGNED);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        if (debug() >= 9) newp->dumpTree(cout, "       _new: ");
+        if (debug() >= 9) newp->dumpTree("-       _new: ");
     }
 
     void replaceWithSimulation(AstNode* nodep) {
@@ -2617,7 +2617,7 @@ private:
         UASSERT_OBJ(nodep->varp(), nodep, "Not linked");
         bool did = false;
         if (m_doV && nodep->varp()->valuep() && !m_attrp) {
-            // if (debug()) valuep->dumpTree(cout, "  visitvaref: ");
+            // if (debug()) valuep->dumpTree("-  visitvaref: ");
             iterateAndNextNull(nodep->varp()->valuep());  // May change nodep->varp()->valuep()
             AstNode* const valuep = nodep->varp()->valuep();
             if (nodep->access().isReadOnly()
@@ -2671,7 +2671,7 @@ private:
         UASSERT_OBJ(nodep->itemp(), nodep, "Not linked");
         bool did = false;
         if (nodep->itemp()->valuep()) {
-            // if (debug()) nodep->itemp()->valuep()->dumpTree(cout, "  visitvaref: ");
+            // if (debug()) nodep->itemp()->valuep()->dumpTree("-  visitvaref: ");
             if (nodep->itemp()->user4()) {
                 nodep->v3error("Recursive enum value: " << nodep->itemp()->prettyNameQ());
             } else {
@@ -2791,7 +2791,7 @@ private:
     void visit(AstSenTree* nodep) override {
         iterateChildren(nodep);
         if (m_doExpensive) {
-            // cout<<endl; nodep->dumpTree(cout, "ssin: ");
+            // cout<<endl; nodep->dumpTree("-  ssin: ");
             // Optimize ideas for the future:
             //   SENTREE(... SENGATE(x,a), SENGATE(SENITEM(x),b) ...)  => SENGATE(x,OR(a,b))
 
@@ -2859,7 +2859,7 @@ private:
                     }
                 }
             }
-            // nodep->dumpTree(cout, "ssou: ");
+            // nodep->dumpTree("-  ssou: ");
         }
     }
 
@@ -3645,7 +3645,7 @@ uint32_t ConstVisitor::s_globalPassNum = 0;
 //! Force this cell node's parameter list to become a constant
 //! @return  Pointer to the edited node.
 AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
-    // if (debug() > 0) nodep->dumpTree(cout, "  forceConPRE : ");
+    // if (debug() > 0) nodep->dumpTree("-  forceConPRE : ");
     // Resize even if the node already has a width, because buried in the tree
     // we may have a node we just created with signing, etc, that isn't sized yet.
 
@@ -3661,7 +3661,7 @@ AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
         nodep = visitor.mainAcceptEdit(nodep);
     }
     // Because we do edits, nodep links may get trashed and core dump this.
-    // if (debug() > 0) nodep->dumpTree(cout, "  forceConDONE: ");
+    // if (debug() > 0) nodep->dumpTree("-  forceConDONE: ");
     return nodep;
 }
 
@@ -3674,7 +3674,7 @@ AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
 //! width check.
 //! @return  Pointer to the edited node.
 AstNode* V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
-    // if (debug() > 0) nodep->dumpTree(cout, "  forceConPRE : ");
+    // if (debug() > 0) nodep->dumpTree("-  forceConPRE:: ");
     // Resize even if the node already has a width, because buried in the tree
     // we may have a node we just created with signing, etc, that isn't sized
     // yet.
@@ -3691,7 +3691,7 @@ AstNode* V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
         nodep = visitor.mainAcceptEdit(nodep);
     }
     // Because we do edits, nodep links may get trashed and core dump this.
-    // if (debug() > 0) nodep->dumpTree(cout, "  forceConDONE: ");
+    // if (debug() > 0) nodep->dumpTree("-  forceConDONE: ");
     return nodep;
 }
 

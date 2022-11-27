@@ -171,8 +171,8 @@ private:
             nodep->replaceWith(newp);
             AstNode* const oldp = nodep;
             nodep = newp;
-            // if (debug() > 4) oldp->dumpTree(cout, "  fixConstSize_old: ");
-            // if (debug() > 4) newp->dumpTree(cout, "              _new: ");
+            // if (debug() > 4) oldp->dumpTree("-  fixConstSize_old: ");
+            // if (debug() > 4) newp->dumpTree("-              _new: ");
             VL_DO_DANGLING(pushDeletep(oldp), oldp);
         }
         editDType(nodep);

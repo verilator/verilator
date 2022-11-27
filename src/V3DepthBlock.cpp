@@ -98,11 +98,11 @@ private:
         if (m_depth > v3Global.opt.compLimitBlocks()) {  // Already done
             UINFO(4, "DeepBlocks " << m_depth << " " << nodep << endl);
             const AstNode* const backp = nodep->backp();  // Only for debug
-            if (debug() >= 9) backp->dumpTree(cout, "-   pre : ");
+            if (debug() >= 9) backp->dumpTree("-   pre : ");
             AstCFunc* const funcp = createDeepFunc(nodep);
             iterate(funcp);
-            if (debug() >= 9) backp->dumpTree(cout, "-   post: ");
-            if (debug() >= 9) funcp->dumpTree(cout, "-   func: ");
+            if (debug() >= 9) backp->dumpTree("-   post: ");
+            if (debug() >= 9) funcp->dumpTree("-   func: ");
         } else {
             iterateChildren(nodep);
         }

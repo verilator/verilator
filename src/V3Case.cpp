@@ -170,7 +170,7 @@ private:
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
-                // if (debug() >= 9) icondp->dumpTree(cout, " caseitem: ");
+                // if (debug() >= 9) icondp->dumpTree("-  caseitem: ");
                 AstConst* const iconstp = VN_AS(icondp, Const);
                 UASSERT_OBJ(iconstp, nodep, "above 'can't parse' should have caught this");
                 if (neverItem(nodep, iconstp)) {
@@ -331,7 +331,7 @@ private:
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         VL_DO_DANGLING(cexprp->deleteTree(), cexprp);
-        if (debug() >= 9) ifrootp->dumpTree(cout, "    _simp: ");
+        if (debug() >= 9) ifrootp->dumpTree("-    _simp: ");
     }
 
     void replaceCaseComplicated(AstCase* nodep) {
@@ -342,7 +342,7 @@ private:
         AstNodeExpr* const cexprp = nodep->exprp()->unlinkFrBack();
         // We'll do this in two stages.  First stage, convert the conditions to
         // the appropriate IF AND terms.
-        if (debug() >= 9) nodep->dumpTree(cout, "    _comp_IN:   ");
+        if (debug() >= 9) nodep->dumpTree("-    _comp_IN::: ");
         bool hadDefault = false;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
@@ -409,7 +409,7 @@ private:
             nodep->addItemsp(new AstCaseItem{
                 nodep->fileline(), new AstConst{nodep->fileline(), AstConst::BitTrue{}}, nullptr});
         }
-        if (debug() >= 9) nodep->dumpTree(cout, "    _comp_COND: ");
+        if (debug() >= 9) nodep->dumpTree("-    _comp_COND: ");
         // Now build the IF statement tree
         // The tree can be quite huge.  Pull ever group of 8 out, and make a OR tree.
         // This reduces the depth for the bottom elements, at the cost of
@@ -459,11 +459,11 @@ private:
                 itemnextp = newp;
             }
         }
-        if (debug() >= 9) nodep->dumpTree(cout, "    _comp_TREE: ");
+        if (debug() >= 9) nodep->dumpTree("-    _comp_TREE: ");
         // Handle any assertions
         replaceCaseParallel(nodep, false);
         // Replace the CASE... with IF...
-        if (debug() >= 9 && grouprootp) grouprootp->dumpTree(cout, "     _new: ");
+        if (debug() >= 9 && grouprootp) grouprootp->dumpTree("-     _new: ");
         if (grouprootp) {
             nodep->replaceWith(grouprootp);
         } else {
@@ -498,7 +498,7 @@ private:
     void visit(AstCase* nodep) override {
         V3Case::caseLint(nodep);
         iterateChildren(nodep);
-        if (debug() >= 9) nodep->dumpTree(cout, " case_old: ");
+        if (debug() >= 9) nodep->dumpTree("-  case_old: ");
         if (isCaseTreeFast(nodep) && v3Global.opt.fCase()) {
             // It's a simple priority encoder or complete statement
             // we can make a tree of statements to avoid extra comparisons

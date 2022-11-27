@@ -289,7 +289,7 @@ private:
                 break;
             }
         }
-        // if (debug() >= 9) { UINFO(0, "\n"); blockp->dumpTree(cout, "  labeli: "); }
+        // if (debug() >= 9) { UINFO(0, "\n"); blockp->dumpTree("-  labeli: "); }
         if (!blockp) {
             nodep->v3error("disable isn't underneath a begin with name: " << nodep->prettyNameQ());
         } else if (AstBegin* const beginp = VN_CAST(blockp, Begin)) {
@@ -301,7 +301,7 @@ private:
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        // if (debug() >= 9) { UINFO(0, "\n"); beginp->dumpTree(cout, "  labelo: "); }
+        // if (debug() >= 9) { UINFO(0, "\n"); beginp->dumpTree("-  labelo: "); }
     }
     void visit(AstVarRef* nodep) override {
         if (m_loopInc && nodep->varp()) nodep->varp()->usedLoopIdx(true);

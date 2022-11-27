@@ -288,12 +288,12 @@ private:
         if (!hit) iterate(nodep->lhsp());
     }
     void replaceSubstEtc(AstNode* nodep, AstNodeExpr* substp) {
-        if (debug() > 5) nodep->dumpTree(cout, "  substw_old: ");
+        if (debug() > 5) nodep->dumpTree("-  substw_old: ");
         AstNodeExpr* newp = substp->cloneTree(true);
         if (!nodep->isQuad() && newp->isQuad()) {
             newp = new AstCCast{newp->fileline(), newp, nodep};
         }
-        if (debug() > 5) newp->dumpTree(cout, "       w_new: ");
+        if (debug() > 5) newp->dumpTree("-       w_new: ");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         ++m_statSubsts;

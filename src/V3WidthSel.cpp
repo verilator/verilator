@@ -204,11 +204,11 @@ private:
         // Select of a non-width specified part of an array, i.e. "array[2]"
         // This select style has a lsb and msb (no user specified width)
         UINFO(6, "SELBIT " << nodep << endl);
-        if (debug() >= 9) nodep->backp()->dumpTree(cout, "--SELBT0: ");
+        if (debug() >= 9) nodep->backp()->dumpTree("-  SELBT0: ");
         // lhsp/rhsp do not need to be constant
         AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();  // bit we're extracting
-        if (debug() >= 9) nodep->dumpTree(cout, "--SELBT2: ");
+        if (debug() >= 9) nodep->dumpTree("-  SELBT2: ");
         const FromData fromdata = fromDataForArray(nodep, fromp);
         AstNodeDType* const ddtypep = fromdata.m_dtypep;
         const VNumRange fromRange = fromdata.m_fromRange;
@@ -221,7 +221,7 @@ private:
             }
             AstArraySel* const newp = new AstArraySel{nodep->fileline(), fromp, subp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
-            if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
+            if (debug() >= 9) newp->dumpTree("-  SELBTn: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstPackArrayDType* const adtypep = VN_CAST(ddtypep, PackArrayDType)) {
@@ -245,7 +245,7 @@ private:
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
-            if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
+            if (debug() >= 9) newp->dumpTree("-  SELBTn: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstAssocArrayDType* const adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
@@ -253,7 +253,7 @@ private:
             AstNodeExpr* const subp = rhsp;
             AstAssocSel* const newp = new AstAssocSel{nodep->fileline(), fromp, subp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
-            if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
+            if (debug() >= 9) newp->dumpTree("-  SELBTn: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstWildcardArrayDType* const adtypep
@@ -262,7 +262,7 @@ private:
             AstNodeExpr* const subp = rhsp;
             AstWildcardSel* const newp = new AstWildcardSel{nodep->fileline(), fromp, subp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
-            if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
+            if (debug() >= 9) newp->dumpTree("-  SELBTn: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstDynArrayDType* const adtypep = VN_CAST(ddtypep, DynArrayDType)) {
@@ -270,7 +270,7 @@ private:
             AstNodeExpr* const subp = rhsp;
             AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, "at", subp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
-            if (debug() >= 9) newp->dumpTree(cout, "--SELBTq: ");
+            if (debug() >= 9) newp->dumpTree("-  SELBTq: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstQueueDType* const adtypep = VN_CAST(ddtypep, QueueDType)) {
@@ -278,7 +278,7 @@ private:
             AstNodeExpr* const subp = rhsp;
             AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, "at", subp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
-            if (debug() >= 9) newp->dumpTree(cout, "--SELBTq: ");
+            if (debug() >= 9) newp->dumpTree("-  SELBTq: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (VN_IS(ddtypep, BasicDType) && ddtypep->isString()) {
@@ -305,7 +305,7 @@ private:
                              new AstConst{nodep->fileline(), AstConst::Unsized32{}, 1}};
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp << endl);
-            if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
+            if (debug() >= 9) newp->dumpTree("-  SELBTn: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (VN_IS(ddtypep, NodeUOrStructDType)) {  // A bit from the packed struct
@@ -316,7 +316,7 @@ private:
                              new AstConst{nodep->fileline(), AstConst::Unsized32{}, 1}};
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp << endl);
-            if (debug() >= 9) newp->dumpTree(cout, "--SELBTn: ");
+            if (debug() >= 9) newp->dumpTree("-  SELBTn: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {  // nullptr=bad extract, or unknown node type
@@ -333,11 +333,11 @@ private:
         // SELEXTRACT(from,msb,lsb) -> SEL(from, lsb, 1+msb-lsb)
         // This select style has a (msb or lsb) and width
         UINFO(6, "SELEXTRACT " << nodep << endl);
-        // if (debug() >= 9) nodep->dumpTree(cout, "--SELEX0: ");
+        // if (debug() >= 9) nodep->dumpTree("-  SELEX0: ");
         // Below 2 lines may change nodep->widthp()
         V3Const::constifyParamsEdit(nodep->leftp());  // May relink pointed to node
         V3Const::constifyParamsEdit(nodep->rightp());  // May relink pointed to node
-        // if (debug() >= 9) nodep->dumpTree(cout, "--SELEX3: ");
+        // if (debug() >= 9) nodep->dumpTree("-  SELEX3: ");
         checkConstantOrReplace(nodep->leftp(),
                                "First value of [a:b] isn't a constant, maybe you want +: or -:");
         checkConstantOrReplace(nodep->rightp(),
@@ -400,7 +400,7 @@ private:
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);
             newp->dtypeFrom(sliceDType(adtypep, msb, lsb));
-            // if (debug() >= 9) newp->dumpTree(cout, "--EXTBTn: ");
+            // if (debug() >= 9) newp->dumpTree("-  EXTBTn: ");
             UASSERT_OBJ(newp->widthMin() == newp->widthConst(), nodep, "Width mismatch");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -428,7 +428,7 @@ private:
                 = new AstSel{nodep->fileline(), fromp, newSubLsbOf(lsbp, fromRange), widthp};
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp << endl);
-            // if (debug() >= 9) newp->dumpTree(cout, "--SELEXnew: ");
+            // if (debug() >= 9) newp->dumpTree("-  SELEXnew: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (VN_IS(ddtypep, NodeUOrStructDType)) {
@@ -450,7 +450,7 @@ private:
                 = new AstSel{nodep->fileline(), fromp, newSubLsbOf(lsbp, fromRange), widthp};
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp << endl);
-            // if (debug() >= 9) newp->dumpTree(cout, "--SELEXnew: ");
+            // if (debug() >= 9) newp->dumpTree("-  SELEXnew: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (VN_IS(ddtypep, QueueDType)) {
@@ -481,12 +481,12 @@ private:
         // This select style has a lsb and width
         UINFO(6, "SELPLUS/MINUS " << nodep << endl);
         // Below 2 lines may change nodep->widthp()
-        if (debug() >= 9) nodep->dumpTree(cout, "--SELPM0: ");
+        if (debug() >= 9) nodep->dumpTree("-  SELPM0: ");
         V3Width::widthParamsEdit(nodep->rhsp());  // constifyEdit doesn't ensure widths finished
         V3Const::constifyEdit(nodep->rhsp());  // May relink pointed to node, ok if not const
         V3Const::constifyParamsEdit(nodep->thsp());  // May relink pointed to node
         checkConstantOrReplace(nodep->thsp(), "Width of :+ or :- bit extract isn't a constant");
-        if (debug() >= 9) nodep->dumpTree(cout, "--SELPM3: ");
+        if (debug() >= 9) nodep->dumpTree("-  SELPM3: ");
         // Now replace it with an AstSel
         AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
@@ -565,7 +565,7 @@ private:
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);
             UINFO(6, "   new " << newp << endl);
-            if (debug() >= 9) newp->dumpTree(cout, "--SELNEW: ");
+            if (debug() >= 9) newp->dumpTree("-  SELNEW: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {  // nullptr=bad extract, or unknown node type

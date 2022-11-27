@@ -320,7 +320,7 @@ protected:
                 if (debug() >= 9) {
                     const SplitVarStdVertex* const stdp = static_cast<SplitVarStdVertex*>(vertexp);
                     UINFO(0, "Will prune deps on var " << stdp->nodep() << endl);
-                    stdp->nodep()->dumpTree(cout, "- ");
+                    stdp->nodep()->dumpTree("-  ");
                 }
                 for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                     SplitEdge* const oedgep = dynamic_cast<SplitEdge*>(edgep);
@@ -600,10 +600,10 @@ protected:
 
     void visit(AstAlways* nodep) override {
         UINFO(4, "   ALW   " << nodep << endl);
-        if (debug() >= 9) nodep->dumpTree(cout, "   alwIn:: ");
+        if (debug() >= 9) nodep->dumpTree("-  alwIn:: ");
         scoreboardClear();
         processBlock(nodep->stmtsp());
-        if (debug() >= 9) nodep->dumpTree(cout, "   alwOut: ");
+        if (debug() >= 9) nodep->dumpTree("-  alwOut: ");
     }
 
     void visit(AstNodeIf* nodep) override {
@@ -924,7 +924,7 @@ protected:
                         const SplitNodeVertex* const nvxp = dynamic_cast<SplitNodeVertex*>(vxp);
                         UINFO(0, "Cannot prune if-node due to edge "
                                      << oedgep << " pointing to node " << nvxp->nodep() << endl);
-                        nvxp->nodep()->dumpTree(cout, "- ");
+                        nvxp->nodep()->dumpTree("-  ");
                     }
 
                     break;

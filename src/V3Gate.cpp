@@ -286,7 +286,7 @@ public:
                 clearSimple("Circular logic\n");  // Oh my, we'll get a UNOPTFLAT much later.
             }
         }
-        if (debug() >= 9 && !m_isSimple) nodep->dumpTree(cout, "    gate!Ok: ");
+        if (debug() >= 9 && !m_isSimple) nodep->dumpTree("-    gate!Ok: ");
     }
     ~GateOkVisitor() override = default;
     // PUBLIC METHODS
@@ -387,7 +387,7 @@ private:
     }
 
     void optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode* consumerp) {
-        if (debug() >= 5) consumerp->dumpTree(cout, "    elimUsePre: ");
+        if (debug() >= 5) consumerp->dumpTree("-    elimUsePre: ");
         if (!m_substitutions.tryGet(consumerp)) m_optimized.push_back(consumerp);
         m_substitutions(consumerp).emplace(varscp, substp->cloneTree(false));
     }
@@ -619,8 +619,8 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
 
         // Process it
         AstNode* const substp = okVisitor.substTree();
-        if (debug() >= 5) logicp->dumpTree(cout, "    elimVar:  ");
-        if (debug() >= 5) substp->dumpTree(cout, "      subst:  ");
+        if (debug() >= 5) logicp->dumpTree("-    elimVar: ");
+        if (debug() >= 5) substp->dumpTree("-      subst: ");
         ++m_statSigs;
         bool removedAllUsages = true;
         for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep;) {

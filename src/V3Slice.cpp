@@ -135,7 +135,7 @@ class SliceVisitor final : public VNVisitor {
         if (!nodep->user1() && !VN_IS(nodep, AssignAlias)) {
             nodep->user1(true);
             m_assignError = false;
-            if (debug() >= 9) nodep->dumpTree(cout, " Deslice-In: ");
+            if (debug() >= 9) nodep->dumpTree("-  Deslice-In: ");
             AstNodeDType* const dtp = nodep->lhsp()->dtypep()->skipRefp();
             if (const AstUnpackArrayDType* const arrayp = VN_CAST(dtp, UnpackArrayDType)) {
                 // Left and right could have different msb/lsbs/endianness, but #elements is common
@@ -147,10 +147,10 @@ class SliceVisitor final : public VNVisitor {
                     AstNodeAssign* const newp
                         = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, offset),
                                            cloneAndSel(nodep->rhsp(), elements, offset));
-                    if (debug() >= 9) newp->dumpTree(cout, "-new ");
+                    if (debug() >= 9) newp->dumpTree("-  new: ");
                     newlistp = AstNode::addNext(newlistp, newp);
                 }
-                if (debug() >= 9) nodep->dumpTree(cout, " Deslice-Dn: ");
+                if (debug() >= 9) nodep->dumpTree("-  Deslice-Dn: ");
                 nodep->replaceWith(newlistp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 // Normal edit iterator will now iterate on all of the expansion assignments

@@ -818,7 +818,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (envarp) {
             AstAssignW* const enAssp = new AstAssignW{
                 enp->fileline(), new AstVarRef{envarp->fileline(), envarp, VAccess::WRITE}, enp};
-            if (debug() >= 9) enAssp->dumpTree(cout, "enAssp: ");
+            if (debug() >= 9) enAssp->dumpTree("-  enAssp: ");
             nodep->addStmtsp(enAssp);
         }
 
@@ -826,7 +826,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         AstNode* const assp = new AstAssignW{
             lhsp->fileline(), new AstVarRef{lhsp->fileline(), lhsp, VAccess::WRITE}, orp};
         assp->user2(U2_BOTH);  // Don't process further; already resolved
-        if (debug() >= 9) assp->dumpTree(cout, "-lhsp-eqn: ");
+        if (debug() >= 9) assp->dumpTree("-  lhsp-eqn: ");
         nodep->addStmtsp(assp);
     }
 
@@ -1072,7 +1072,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     AstNodeExpr* const newp
                         = newEnableDeposit(nodep, VN_AS(nodep->user1p(), NodeExpr));
                     nodep->fromp()->user1p(newp);  // Push to varref (etc)
-                    if (debug() >= 9) newp->dumpTree(cout, "-assign-sel; ");
+                    if (debug() >= 9) newp->dumpTree("-  assign-sel: ");
                     m_tgraph.didProcess(nodep);
                 }
                 iterateChildren(nodep);
@@ -1150,7 +1150,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             associateLogic(nodep->rhsp(), nodep);
             m_tgraph.setTristate(nodep);
         } else {
-            if (debug() >= 9) nodep->backp()->dumpTree(cout, "-bufif: ");
+            if (debug() >= 9) nodep->backp()->dumpTree("-  bufif: ");
             if (m_alhs) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported LHS tristate construct: " << nodep->prettyTypeName());
@@ -1252,7 +1252,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             nodep->user2(U2_NONGRAPH);
             iterateAndNextNull(nodep->rhsp());
             UINFO(9, dbgState() << nodep << endl);
-            if (debug() >= 9) nodep->dumpTree(cout, "-assign: ");
+            if (debug() >= 9) nodep->dumpTree("-  assign: ");
             // if the rhsp of this assign statement has an output enable driver,
             // then propagate the corresponding output enable assign statement.
             // down the lvalue tree by recursion for eventual attachment to
@@ -1322,8 +1322,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                                     new AstEqCase{fl, new AstConst{fl, oneIfEnOne}, rhsp}};
                 if (neq) newp = new AstLogNot{fl, newp};
                 UINFO(9, "       newceq " << newp << endl);
-                if (debug() >= 9) nodep->dumpTree(cout, "-caseeq-old: ");
-                if (debug() >= 9) newp->dumpTree(cout, "-caseeq-new: ");
+                if (debug() >= 9) nodep->dumpTree("-  caseeq-old: ");
+                if (debug() >= 9) newp->dumpTree("-  caseeq-new: ");
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (constp && nodep->rhsp()->user1p()) {
@@ -1338,8 +1338,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                 if (neq) newp = new AstLogNot{fl, newp};
                 rhsp->user1p(nullptr);
                 UINFO(9, "       newceq " << newp << endl);
-                if (debug() >= 9) nodep->dumpTree(cout, "-caseeq-old: ");
-                if (debug() >= 9) newp->dumpTree(cout, "-caseeq-new: ");
+                if (debug() >= 9) nodep->dumpTree("-  caseeq-old: ");
+                if (debug() >= 9) newp->dumpTree("-  caseeq-new: ");
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {
@@ -1419,7 +1419,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     }
                     newp = new AstAdd{nodep->fileline(), nodep, newp};
                 }
-                if (debug() >= 9) newp->dumpTree(cout, "-countout: ");
+                if (debug() >= 9) newp->dumpTree("-  countout: ");
                 relinkHandle.relink(newp);
             }
             iterateChildren(nodep);
@@ -1435,7 +1435,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             varrefp = VN_AS(VN_AS(nodep->lhsp(), Sel)->fromp(), VarRef);
         }
         if (!varrefp) {
-            if (debug() >= 4) nodep->dumpTree(cout, "- ");
+            if (debug() >= 4) nodep->dumpTree("-  ");
             nodep->v3warn(E_UNSUPPORTED, "Unsupported pullup/down (weak driver) construct.");
         } else {
             if (m_graphing) {
@@ -1514,7 +1514,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             }
             // Tristate exists:
             UINFO(9, dbgState() << nodep << endl);
-            if (debug() >= 9) nodep->dumpTree(cout, "-pin-pre: ");
+            if (debug() >= 9) nodep->dumpTree("-  pin-pre: ");
 
             // Empty/in-only; need Z to propagate
             const bool inDeclProcessing = (nodep->exprp()
@@ -1569,7 +1569,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 m_modp->addStmtsp(enVarp);
                 enrefp = new AstVarRef{nodep->fileline(), enVarp, VAccess::READ};
                 UINFO(9, "       newvrf " << enrefp << endl);
-                if (debug() >= 9) enpinp->dumpTree(cout, "-pin-ena: ");
+                if (debug() >= 9) enpinp->dumpTree("-  pin-ena: ");
             }
             // Create new output pin
             const AstAssignW* outAssignp = nullptr;  // If reconnected, the related assignment
@@ -1600,11 +1600,11 @@ class TristateVisitor final : public TristateBaseVisitor {
                     // a VarRef without any ArraySel, etc
                     TristatePinVisitor{outexprp, m_tgraph, true};
                 }
-                if (debug() >= 9) outpinp->dumpTree(cout, "-pin-opr: ");
+                if (debug() >= 9) outpinp->dumpTree("-  pin-opr: ");
                 outAssignp = V3Inst::pinReconnectSimple(outpinp, m_cellp,
                                                         true);  // Note may change outpinp->exprp()
-                if (debug() >= 9) outpinp->dumpTree(cout, "-pin-out: ");
-                if (debug() >= 9 && outAssignp) outAssignp->dumpTree(cout, "-pin-out: ");
+                if (debug() >= 9) outpinp->dumpTree("-  pin-out: ");
+                if (debug() >= 9 && outAssignp) outAssignp->dumpTree("-  pin-out: ");
                 // Must still iterate the outAssignp, as need to build output equation
             }
 
@@ -1612,8 +1612,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             const TristatePinVisitor visitor{nodep->exprp(), m_tgraph, false};
             const AstNode* const inAssignp = V3Inst::pinReconnectSimple(
                 nodep, m_cellp, true);  // Note may change nodep->exprp()
-            if (debug() >= 9) nodep->dumpTree(cout, "-pin-in:  ");
-            if (debug() >= 9 && inAssignp) inAssignp->dumpTree(cout, "-pin-as:  ");
+            if (debug() >= 9) nodep->dumpTree("-  pin-in:: ");
+            if (debug() >= 9 && inAssignp) inAssignp->dumpTree("-  pin-as:: ");
 
             // Connect enable to output signal
             AstVarRef* exprrefp;  // Tristate variable that the Pin's expression refers to

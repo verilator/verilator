@@ -65,7 +65,7 @@ private:
             V3Inst::pinReconnectSimple(nodep, m_cellp, false);
         }
         if (!nodep->exprp()) return;  // No-connect
-        if (debug() >= 9) nodep->dumpTree(cout, "  Pin_oldb: ");
+        if (debug() >= 9) nodep->dumpTree("-  Pin_oldb: ");
         V3Inst::checkOutputShort(nodep);
         // Use user1p on the PIN to indicate we created an assign for this pin
         if (!nodep->user1SetOnce()) {
@@ -89,7 +89,7 @@ private:
                                                     m_cellp->name(), VAccess::WRITE},
                                      exprp};
                 m_cellp->addNextHere(assp);
-                if (debug() >= 9) assp->dumpTree(cout, "     _new: ");
+                if (debug() >= 9) assp->dumpTree("-     _new: ");
             } else if (nodep->modVarp()->isIfaceRef()
                        || (VN_IS(nodep->modVarp()->subDTypep(), UnpackArrayDType)
                            && VN_IS(
@@ -227,7 +227,7 @@ private:
             }
             if (prevp) nodep->addNextHere(prevp);
             if (prevp && debug() == 9) {
-                prevp->dumpTree(cout, "newintf: ");
+                prevp->dumpTree("-  newintf: ");
                 cout << endl;
             }
         }
@@ -285,14 +285,14 @@ private:
                     varNewp->dtypep(ifaceRefp);
                     newp->addNextHere(varNewp);
                     if (debug() == 9) {
-                        varNewp->dumpTree(cout, "newintf: ");
+                        varNewp->dumpTree("-  newintf: ");
                         cout << endl;
                     }
                 }
                 // Fixup pins
                 iterateAndNextNull(newp->pinsp());
                 if (debug() == 9) {
-                    newp->dumpTree(cout, "newcell: ");
+                    newp->dumpTree("-  newcell: ");
                     cout << endl;
                 }
             }
@@ -551,7 +551,7 @@ public:
             // Done. Constant.
         } else {
             // Make a new temp wire
-            // if (1 || debug() >= 9) pinp->dumpTree(cout, "-in_pin:");
+            // if (1 || debug() >= 9) pinp->dumpTree("-  in_pin: ");
             V3Inst::checkOutputShort(pinp);
             AstNodeExpr* const pinexprp = VN_AS(pinp->exprp(), NodeExpr)->unlinkFrBack();
             const string newvarname
@@ -583,8 +583,8 @@ public:
                 pinp->exprp(new AstVarRef{pinexprp->fileline(), newvarp, VAccess::READ});
             }
             if (assignp) cellp->addNextHere(assignp);
-            // if (debug()) pinp->dumpTree(cout, "-  out:");
-            // if (debug()) assignp->dumpTree(cout, "- aout:");
+            // if (debug()) pinp->dumpTree("-  out: ");
+            // if (debug()) assignp->dumpTree("-  aout: ");
         }
         return assignp;
     }

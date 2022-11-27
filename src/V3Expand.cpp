@@ -595,7 +595,7 @@ private:
                 return false;
             } else {
                 UINFO(8, "    ASSIGNSEL(varlsb,narrow) " << nodep << endl);
-                // nodep->dumpTree(cout, "-  old: ");
+                // nodep->dumpTree("-  old: ");
                 AstNodeExpr* rhsp = nodep->rhsp()->unlinkFrBack();
                 AstNodeExpr* const destp = lhsp->fromp()->unlinkFrBack();
                 AstNodeExpr* oldvalp = destp->cloneTree(true);

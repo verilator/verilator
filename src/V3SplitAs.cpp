@@ -136,18 +136,18 @@ private:
     void splitAlways(AstAlways* nodep) {
         UINFO(3, "Split  " << nodep << endl);
         UINFO(3, "   For " << m_splitVscp << endl);
-        if (debug() >= 9) nodep->dumpTree(cout, "-in  : ");
+        if (debug() >= 9) nodep->dumpTree("-  in: ");
         // Duplicate it and link in
         AstAlways* const newp = nodep->cloneTree(false);
         newp->user1(true);  // So we don't clone it again
         nodep->addNextHere(newp);
         {  // Delete stuff we don't want in old
             const SplitAsCleanVisitor visitor{nodep, m_splitVscp, false};
-            if (debug() >= 9) nodep->dumpTree(cout, "-out0: ");
+            if (debug() >= 9) nodep->dumpTree("-  out0: ");
         }
         {  // Delete stuff we don't want in new
             const SplitAsCleanVisitor visitor{newp, m_splitVscp, true};
-            if (debug() >= 9) newp->dumpTree(cout, "-out1: ");
+            if (debug() >= 9) newp->dumpTree("-  out1: ");
         }
     }
 

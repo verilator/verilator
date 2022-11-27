@@ -130,8 +130,8 @@ private:
                     rbitp->replaceWith(m_mgOffset < 0 ? new AstAdd{fl, rvrefp, offsetp} : rvrefp);
                     VL_DO_DANGLING(rbitp->deleteTree(), lbitp);
                 }
-                if (debug() >= 9) initp->dumpTree(cout, "-new: ");
-                if (debug() >= 9) whilep->dumpTree(cout, "-new: ");
+                if (debug() >= 9) initp->dumpTree("-  new: ");
+                if (debug() >= 9) whilep->dumpTree("-  new: ");
 
                 // Remove remaining assigns
                 for (AstNodeAssign* assp : m_mgAssignps) {

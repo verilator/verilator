@@ -1909,7 +1909,7 @@ public:
     void dumpTree(std::ostream& os = std::cout, const string& indent = "    ",
                   int maxDepth = 0) const;
     void dumpTree(const string& indent, int maxDepth = 0) const {
-        dumpTree(cout, indent, maxDepth);
+        dumpTree(std::cout, indent, maxDepth);
     }
     static void dumpTreeGdb(const AstNode* nodep);  // For GDB only
     void dumpTreeAndNext(std::ostream& os = std::cout, const string& indent = "    ",

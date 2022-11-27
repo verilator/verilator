@@ -226,9 +226,9 @@ void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int line
 //  // Commenting out the section below may crash, as the tree state
 //  // between edits is not always consistent for printing
 //  cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<endl;
-//  v3Global.rootp()->dumpTree(cout, "-treeChange: ");
+//  v3Global.rootp()->dumpTree("-  treeChange: ");
 //  if (next||1) this->dumpTreeAndNext(cout, prefix);
-//  else this->dumpTree(cout, prefix);
+//  else this->dumpTree(prefix);
 //  this->checkTree();
 //  v3Global.rootp()->checkTree();
 //}

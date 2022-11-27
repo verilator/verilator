@@ -122,7 +122,7 @@ private:
     }
     // VISITORS
     void visit(AstCoverToggle* nodep) override {
-        // nodep->dumpTree(cout, "ct:");
+        // nodep->dumpTree("-  ct: ");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
         AstNode* const incp = nodep->incp()->unlinkFrBack();

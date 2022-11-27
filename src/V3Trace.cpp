@@ -331,7 +331,7 @@ private:
             if (TraceTraceVertex* const vtxp = dynamic_cast<TraceTraceVertex*>(itp)) {
                 ActCodeSet actSet;
                 UINFO(9, "  Add to sort: " << vtxp << endl);
-                if (debug() >= 9) vtxp->nodep()->dumpTree(cout, "-   trnode: ");
+                if (debug() >= 9) vtxp->nodep()->dumpTree("-   trnode: ");
                 for (const V3GraphEdge* edgep = vtxp->inBeginp(); edgep;
                      edgep = edgep->inNextp()) {
                     const TraceActivityVertex* const cfvertexp

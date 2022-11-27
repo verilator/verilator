@@ -70,11 +70,11 @@ private:
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
         // See also AstNode::addBeforeStmt; this predates that function
-        if (debug() >= 9) newp->dumpTree(cout, "-newstmt:");
+        if (debug() >= 9) newp->dumpTree("-  newstmt: ");
         UASSERT_OBJ(m_insStmtp, nodep, "Function not underneath a statement");
         if (m_insMode == IM_BEFORE) {
             // Add the whole thing before insertAt
-            if (debug() >= 9) newp->dumpTree(cout, "-newfunc:");
+            if (debug() >= 9) newp->dumpTree("-  newfunc: ");
             m_insStmtp->addHereThisAsNext(newp);
         } else if (m_insMode == IM_AFTER) {
             m_insStmtp->addNextHere(newp);

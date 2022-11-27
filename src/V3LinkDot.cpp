@@ -1741,7 +1741,7 @@ class LinkDotScopeVisitor final : public VNVisitor {
     void visit(AstAssignAlias* nodep) override {
         // Track aliases created by V3Inline; if we get a VARXREF(aliased_from)
         // we'll need to replace it with a VARXREF(aliased_to)
-        if (debug() >= 9) nodep->dumpTree(cout, "-    alias: ");
+        if (debug() >= 9) nodep->dumpTree("-    alias: ");
         AstVarScope* const fromVscp = VN_AS(nodep->lhsp(), VarRef)->varScopep();
         AstVarScope* const toVscp = VN_AS(nodep->rhsp(), VarRef)->varScopep();
         UASSERT_OBJ(fromVscp && toVscp, nodep, "Bad alias scopes");
@@ -1750,7 +1750,7 @@ class LinkDotScopeVisitor final : public VNVisitor {
     }
     void visit(AstAssignVarScope* nodep) override {
         UINFO(5, "ASSIGNVARSCOPE  " << nodep << endl);
-        if (debug() >= 9) nodep->dumpTree(cout, "-    avs: ");
+        if (debug() >= 9) nodep->dumpTree("-    avs: ");
         VSymEnt* rhsSymp;
         {
             AstVarRef* const refp = VN_CAST(nodep->rhsp(), VarRef);
@@ -2142,8 +2142,8 @@ private:
             else {
                 m_pinSymp = m_statep->getNodeSym(nodep->modp());
                 UINFO(4, "(Backto) Link Cell: " << nodep << endl);
-                // if (debug()) nodep->dumpTree(cout, "linkcell:");
-                // if (debug()) nodep->modp()->dumpTree(cout, "linkcemd:");
+                // if (debug()) nodep->dumpTree("-  linkcell: ");
+                // if (debug()) nodep->modp()->dumpTree("-  linkcemd: ");
                 iterateChildren(nodep);
             }
         }
@@ -2162,8 +2162,8 @@ private:
             // ClassRef's have pins, so track
             m_pinSymp = m_statep->getNodeSym(nodep->classp());
             UINFO(4, "(Backto) Link ClassRefDType: " << nodep << endl);
-            // if (debug()) nodep->dumpTree(cout, "linkcell:");
-            // if (debug()) nodep->modp()->dumpTree(cout, "linkcemd:");
+            // if (debug()) nodep->dumpTree("-  linkcell: ");
+            // if (debug()) nodep->modp()->dumpTree("-  linkcemd: ");
             iterateChildren(nodep);
         }
     }
@@ -2221,7 +2221,7 @@ private:
         const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         {
             if (start) {  // Starting dot sequence
-                if (debug() >= 9) nodep->dumpTree("-dot-in: ");
+                if (debug() >= 9) nodep->dumpTree("-  dot-in: ");
                 m_ds.init(m_curSymp);  // Start from current point
             }
             m_ds.m_dotp = nodep;  // Always, not just at start
@@ -2264,7 +2264,7 @@ private:
             } else {
                 m_ds.m_dotPos = DP_SCOPE;
                 iterateAndNextNull(nodep->lhsp());
-                // if (debug() >= 9) nodep->dumpTree("-dot-lho: ");
+                // if (debug() >= 9) nodep->dumpTree("-  dot-lho: ");
             }
             if (m_statep->forPrimary() && isParamedClassRef(nodep->lhsp())) {
                 // Dots of paramed classes will be linked after deparametrization
@@ -2281,7 +2281,7 @@ private:
                 // DOT(DOT(x,*here*),real-rhs) which we consider a RHS
                 if (start && m_ds.m_dotPos == DP_SCOPE) m_ds.m_dotPos = DP_FINAL;
                 iterateAndNextNull(nodep->rhsp());
-                // if (debug() >= 9) nodep->dumpTree("-dot-rho: ");
+                // if (debug() >= 9) nodep->dumpTree("-  dot-rho: ");
             }
             if (start) {
                 AstNode* newp;
@@ -2291,7 +2291,7 @@ private:
                     // RHS is what we're left with
                     newp = nodep->rhsp()->unlinkFrBack();
                 }
-                if (debug() >= 9) newp->dumpTree("-dot-out: ");
+                if (debug() >= 9) newp->dumpTree("-  dot-out: ");
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {  // Dot midpoint

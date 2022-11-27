@@ -71,7 +71,7 @@ private:
         AstCCast* const castp
             = new AstCCast{nodep->fileline(), nodep, needsize, nodep->widthMin()};
         relinkHandle.relink(castp);
-        // if (debug() > 8) castp->dumpTree(cout, "-castins: ");
+        // if (debug() > 8) castp->dumpTree("-  castins: ");
         //
         ensureLower32Cast(castp);
         nodep->user1(1);  // Now must be of known size

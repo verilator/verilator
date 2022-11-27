@@ -150,7 +150,7 @@ public:
                 // Redundant assignment, in same level block
                 // Don't delete it now as it will confuse iteration since it maybe WAY
                 // above our current iteration point.
-                if (debug() > 4) oldassp->dumpTree(cout, "       REMOVE/SAMEBLK ");
+                if (debug() > 4) oldassp->dumpTree("-      REMOVE/SAMEBLK: ");
                 entp->complexAssign();
                 VL_DO_DANGLING(m_statep->pushUnlinkDeletep(oldassp), oldassp);
                 ++m_statep->m_statAssnDel;

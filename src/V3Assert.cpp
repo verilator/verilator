@@ -363,7 +363,7 @@ private:
             AstNode* const assp = new AstAssignDly{
                 nodep->fileline(), new AstVarRef{nodep->fileline(), outvarp, VAccess::WRITE}, inp};
             alwaysp->addStmtsp(assp);
-            // if (debug() >= 9) assp->dumpTree(cout, "-ass: ");
+            // if (debug() >= 9) assp->dumpTree("-  ass: ");
             invarp = outvarp;
             inp = new AstVarRef{nodep->fileline(), invarp, VAccess::READ};
         }
