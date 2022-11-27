@@ -558,8 +558,7 @@ private:
         }  // Fully computed
 
         std::set<AstSenTree*> senouts;  // List of all sensitivities for new signal
-        if (const CdcLogicVertex* const vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
-            if (vvertexp) {}  // Unused
+        if (dynamic_cast<CdcLogicVertex*>(vertexp)) {
         } else if (const CdcVarVertex* const vvertexp = dynamic_cast<CdcVarVertex*>(vertexp)) {
             // If primary I/O, give it domain of the input
             const AstVar* const varp = vvertexp->varScp()->varp();

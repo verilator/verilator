@@ -1193,6 +1193,7 @@ AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
         UASSERT_OBJ(VN_IS(valuep, Const), valuep, "Const pool table entry must be Const");
     }
     // Try to find an existing table with the same content
+    // cppcheck-has-bug-suppress unreadVariable
     const V3Hash hash = V3Hasher::uncachedHash(initp);
     const auto& er = m_tables.equal_range(hash.value());
     for (auto it = er.first; it != er.second; ++it) {
@@ -1222,6 +1223,7 @@ static bool sameInit(const AstConst* ap, const AstConst* bp) {
 
 AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
     // Try to find an existing constant with the same value
+    // cppcheck-has-bug-suppress unreadVariable
     const V3Hash hash = initp->num().toHash();
     const auto& er = m_consts.equal_range(hash.value());
     for (auto it = er.first; it != er.second; ++it) {

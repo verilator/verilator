@@ -675,6 +675,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             setContextAndIterate(assignp, nodes[1]);
         }
     }
+    // cppcheck-has-bug-suppress constParameter
     size_t collapse(UnpackRefMap& refs) {
         size_t numSplit = 0;
         for (const auto& pair : refs) {

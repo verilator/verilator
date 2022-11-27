@@ -486,10 +486,8 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
         for (V3TSP::StateVec::iterator it = prelim_result.begin(); it != prelim_result.end();
              ++it) {
             const TspStateBase* const elemp = *it;
-            if (seen.find(elemp) == seen.end()) {
-                seen.insert(elemp);
-                resultp->push_back(elemp);
-            }
+            const auto itFoundPair = seen.insert(elemp);
+            if (itFoundPair.second) resultp->push_back(elemp);
         }
     }
 

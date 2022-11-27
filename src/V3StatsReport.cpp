@@ -121,8 +121,9 @@ class StatsReport final {
             const V3Statistic* repp = &(*it);
             if (repp->stage() != "*" && repp->printit()) {
                 if (maxWidth < repp->name().length()) maxWidth = repp->name().length();
-                if (stageInt.find(repp->stage()) == stageInt.end()) {
-                    stageInt.emplace(repp->stage(), stage++);
+                const auto itFoundPair = stageInt.emplace(repp->stage(), stage);
+                if (itFoundPair.second) {
+                    ++stage;
                     stages.push_back(repp->stage());
                 }
                 byName.emplace(repp->name(), repp);

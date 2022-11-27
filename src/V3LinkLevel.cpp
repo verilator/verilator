@@ -267,10 +267,8 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                     varp->protect(false);
                     newmodp->addStmtsp(varp);
                     varp->sigPublic(true);  // User needs to be able to get to it...
-                    if (oldvarp->isIO()) {
-                        oldvarp->primaryIO(false);
-                        varp->primaryIO(true);
-                    }
+                    oldvarp->primaryIO(false);
+                    varp->primaryIO(true);
                     if (varp->direction().isRefOrConstRef()) {
                         varp->v3warn(E_UNSUPPORTED,
                                      "Unsupported: ref/const ref as primary input/output: "

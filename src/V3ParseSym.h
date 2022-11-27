@@ -87,6 +87,7 @@ public:
     void reinsert(AstNode* nodep, VSymEnt* parentp = nullptr) {
         reinsert(nodep, parentp, nodep->name());
     }
+    // cppcheck-suppress passedByValue
     void reinsert(AstNode* nodep, VSymEnt* parentp, string name) {
         if (!parentp) parentp = symCurrentp();
         if (name == "") {  // New name with space in name so can't collide with users

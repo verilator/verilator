@@ -88,7 +88,7 @@ protected:
     friend class GraphAcyc;
     // METHODS
     double orderDFSIterate(V3GraphVertex* vertexp);
-    void dumpEdge(std::ostream& os, V3GraphVertex* vertexp, V3GraphEdge* edgep);
+    void dumpEdge(std::ostream& os, const V3GraphVertex* vertexp, const V3GraphEdge* edgep);
     void verticesUnlink() { m_vertices.reset(); }
     // ACCESSORS
 

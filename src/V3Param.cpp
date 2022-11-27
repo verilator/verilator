@@ -342,8 +342,10 @@ class ParamProcessor final {
         //       particularly robust for type parameters. We should really have a type
         //       equivalence predicate function.
         const string key = paramValueKey(nodep);
+        // cppcheck-has-bug-suppress unreadVariable
         V3Hash hash = V3Hasher::uncachedHash(nodep);
         // Force hash collisions -- for testing only
+        // cppcheck-has-bug-suppress unreadVariable
         if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash{};
         int num;
         const auto it = m_valueMap.find(hash);

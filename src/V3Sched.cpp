@@ -493,12 +493,12 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // Add the initialization statements
     if (initialTrigsp) {
-        AstVarScope* const vscp = scopeTopp->createTemp("__V" + name + "DidInit", 1);
-        AstVarRef* const condp = new AstVarRef{flp, vscp, VAccess::READ};
+        AstVarScope* const tempVscp = scopeTopp->createTemp("__V" + name + "DidInit", 1);
+        AstVarRef* const condp = new AstVarRef{flp, tempVscp, VAccess::READ};
         AstIf* const ifp = new AstIf{flp, new AstNot{flp, condp}};
         funcp->addStmtsp(ifp);
         ifp->branchPred(VBranchPred::BP_UNLIKELY);
-        ifp->addThensp(setVar(vscp, 1));
+        ifp->addThensp(setVar(tempVscp, 1));
         ifp->addThensp(initialTrigsp);
     }
 
@@ -574,10 +574,10 @@ std::pair<AstVarScope*, AstNodeStmt*> makeEvalLoop(AstNetlist* netlistp, const s
             // If we exceeded the iteration limit, die
             {
                 const uint32_t limit = v3Global.opt.convergeLimit();
-                AstVarRef* const refp = new AstVarRef{flp, counterp, VAccess::READ};
+                AstVarRef* const counterRefp = new AstVarRef{flp, counterp, VAccess::READ};
                 AstConst* const constp = new AstConst{flp, AstConst::DTyped{}, counterp->dtypep()};
                 constp->num().setLong(limit);
-                AstNodeExpr* const condp = new AstGt{flp, refp, constp};
+                AstNodeExpr* const condp = new AstGt{flp, counterRefp, constp};
                 AstIf* const failp = new AstIf{flp, condp};
                 failp->branchPred(VBranchPred::BP_UNLIKELY);
                 ifp->addThensp(failp);
@@ -588,9 +588,9 @@ std::pair<AstVarScope*, AstNodeStmt*> makeEvalLoop(AstNetlist* netlistp, const s
                 const string& line = cvtToStr(locp->lineno());
                 const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
                 add("#ifdef VL_DEBUG\n");
-                AstCCall* const callp = new AstCCall{flp, trigDumpp};
-                callp->dtypeSetVoid();
-                blockp->addNodesp(callp->makeStmt());
+                AstCCall* const newcallp = new AstCCall{flp, trigDumpp};
+                newcallp->dtypeSetVoid();
+                blockp->addNodesp(newcallp->makeStmt());
                 add("#endif\n");
                 add("VL_FATAL_MT(\"" + file + "\", " + line + ", \"\", ");
                 add("\"" + name + " region did not converge.\");\n");

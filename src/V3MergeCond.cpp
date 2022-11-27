@@ -491,7 +491,10 @@ private:
 
             // Close pending merge, if there is one at the end of the whole sub-tree list
             if (m_mgFirstp) mergeEnd();
+            m_stmtPropertiesp = nullptr;
         } while (!m_workQueuep->empty());
+
+        m_workQueuep = nullptr;
     }
 
     // Skip past AstArraySel and AstWordSel with const index
@@ -716,6 +719,7 @@ private:
             iterateAndNextNull(recursivep->elsesp());
             // Close a pending merge to ensure merge state is
             // reset as expected at the end of this function
+            // cppcheck-has-bug-suppress knownConditionTrueFalse
             if (m_mgFirstp) mergeEnd();
         }
     }

@@ -122,20 +122,16 @@ class V3FileDependImp final {
 public:
     // ACCESSOR METHODS
     void addSrcDepend(const string& filename) {
-        if (m_filenameSet.find(filename) == m_filenameSet.end()) {
-            // cppcheck-suppress stlFindInsert  // cppcheck 1.90 bug
-            m_filenameSet.insert(filename);
+        const auto itFoundPair = m_filenameSet.insert(filename);
+        if (itFoundPair.second) {
             DependFile df{filename, false};
             df.loadStats();  // Get size now, in case changes during the run
             m_filenameList.insert(df);
         }
     }
     void addTgtDepend(const string& filename) {
-        if (m_filenameSet.find(filename) == m_filenameSet.end()) {
-            // cppcheck-suppress stlFindInsert  // cppcheck 1.90 bug
-            m_filenameSet.insert(filename);
-            m_filenameList.insert(DependFile{filename, true});
-        }
+        const auto itFoundPair = m_filenameSet.insert(filename);
+        if (itFoundPair.second) m_filenameList.insert(DependFile{filename, true});
     }
     void writeDepend(const string& filename);
     std::vector<string> getAllDeps() const;
@@ -424,7 +420,7 @@ private:
             }
         }
     }
-    // cppcheck-suppress unusedFunction unusedPrivateFunction
+    // cppverilator-suppress unusedFunction unusedPrivateFunction
     string readFilterLine() {
         // Slow, but we don't need it much
         UINFO(9, "readFilterLine\n");
@@ -446,7 +442,7 @@ private:
         UINFO(6, "filter-line-in: " << line);
         return line;
     }
-    // cppcheck-suppress unusedFunction unusedPrivateFunction
+    // cppverilator-suppress unusedFunction unusedPrivateFunction
     void writeFilter(const string& out) {
         if (debug() >= 6) {
             UINFO(6, "filter-out: " << out);

@@ -302,34 +302,56 @@ install-all: installbin installman installdata install-msg
 install-here: installman info
 
 # Use --xml flag to see the cppcheck code to use for suppression
-CPPCHECK_CPP = $(wildcard \
-	$(srcdir)/examples/*/*.cpp \
-	$(srcdir)/include/*.cpp \
-	$(srcdir)/src/*.cpp )
-CPPCHECK_H = $(wildcard \
+CPPCHECK1_CPP = $(wildcard $(srcdir)/include/*.cpp)
+CPPCHECK2_CPP = $(wildcard $(srcdir)/examples/*/*.cpp)
+CPPCHECK3_CPP = $(wildcard $(srcdir)/src/Vlc*.cpp)
+CPPCHECK4_CPP = $(wildcard $(srcdir)/src/V3[A-D]*.cpp $(srcdir)/src/Verilator*.cpp)
+CPPCHECK5_CPP = $(wildcard $(srcdir)/src/V3[E-I]*.cpp)
+CPPCHECK6_CPP = $(wildcard $(srcdir)/src/V3[P-Z]*.cpp)
+CPPCHECK7_CPP = $(wildcard $(srcdir)/src/V3[L-R]*.cpp)
+CPPCHECK8_CPP = $(wildcard $(srcdir)/src/V3[S-Z]*.cpp)
+CHECK_CPP = $(CPPCHECK1_CPP) $(CPPCHECK2_CPP) $(CPPCHECK3_CPP) $(CPPCHECK4_CPP) \
+	$(CPPCHECK5_CPP) $(CPPCHECK6_CPP) $(CPPCHECK7_CPP) $(CPPCHECK8_CPP)
+CHECK_H = $(wildcard \
 	$(srcdir)/include/*.h \
 	$(srcdir)/src/*.h )
-CPPCHECK_YL = $(wildcard \
+CHECK_YL = $(wildcard \
 	$(srcdir)/src/*.y \
 	$(srcdir)/src/*.l )
 CPPCHECK = src/cppcheck_filtered cppcheck
 CPPCHECK_FLAGS = --enable=all --inline-suppr \
-	--suppress=unusedScopedObject --suppress=cstyleCast --suppress=useInitializationList \
-	--suppress=nullPointerRedundantCheck
+	--suppress=cstyleCast --suppress=useInitializationList \
+	--suppress=nullPointer --suppress=nullPointerRedundantCheck --suppress=ctunullpointer \
+	--suppress=unusedFunction --suppress=unusedScopedObject \
+	--suppress=useStlAlgorithm
 CPPCHECK_FLAGS += --xml
-CPPCHECK_DEP = $(subst .cpp,.cppcheck,$(CPPCHECK_CPP))
+CPPCHECK_DEP = $(subst .cpp,.cppcheck,$(CHECK_CPP))
 CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
 
-cppcheck: $(CPPCHECK_DEP)
-%.cppcheck: %.cpp
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $<
+cppcheck: cppcheck-1 cppcheck-2 cppcheck-3 cppcheck-4 cppcheck-5 cppcheck-6 cppcheck-7 cppcheck-8
+cppcheck-1:
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK1_CPP)
+cppcheck-2:
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK2_CPP)
+cppcheck-3:
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK3_CPP)
+cppcheck-4:
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK4_CPP)
+cppcheck-5:
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK5_CPP)
+cppcheck-6:
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK6_CPP)
+cppcheck-7:
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK7_CPP)
+cppcheck-8:
+	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK8_CPP)
 
 CLANGTIDY = clang-tidy
 CLANGTIDY_FLAGS = -config='' \
 	-header-filter='.*' \
 	-checks='-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-init-variables,-cppcoreguidelines-avoid-goto,-modernize-avoid-c-arrays,-readability-magic-numbers,-readability-simplify-boolean-expr,-cppcoreguidelines-macro-usage' \
 
-CLANGTIDY_DEP = $(subst .cpp,.cpp.tidy,$(CPPCHECK_CPP))
+CLANGTIDY_DEP = $(subst .cpp,.cpp.tidy,$(CHECK_CPP))
 CLANGTIDY_DEFS = -DVL_DEBUG=1 -DVL_CPPCHECK=1
 
 clang-tidy: $(CLANGTIDY_DEP)
@@ -350,7 +372,7 @@ format: clang-format yapf format-pl-exec
 
 CLANGFORMAT = clang-format-14
 CLANGFORMAT_FLAGS = -i
-CLANGFORMAT_FILES = $(CPPCHECK_CPP) $(CPPCHECK_H) $(CPPCHECK_YL) test_regress/t/*.c* test_regress/t/*.h
+CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test_regress/t/*.h
 
 clang-format:
 	@$(CLANGFORMAT) --version | egrep 14.0 > /dev/null \

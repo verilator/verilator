@@ -283,7 +283,7 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
 
     int passNumber = 0;
 
-    const auto apply = [&](int dumpLevel, const string name, std::function<void()> pass) {
+    const auto apply = [&](int dumpLevel, const string& name, std::function<void()> pass) {
         pass();
         if (dumpDfg() >= dumpLevel) {
             const string strippedName = VString::removeWhitespace(name);

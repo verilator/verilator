@@ -155,6 +155,7 @@ string V3Os::filenameNonExt(const string& filename) {
 
 string V3Os::filenameSubstitute(const string& filename) {
     string out;
+    // cppcheck-has-bug-suppress unusedLabel
     enum : uint8_t { NONE, PAREN, CURLY } brackets = NONE;
     for (string::size_type pos = 0; pos < filename.length(); ++pos) {
         if ((filename[pos] == '$') && (pos + 1 < filename.length())) {

@@ -255,12 +255,14 @@ private:
             // There's no space for a IF.  We know upperValue is thus down to a specific
             // exact value, so just return the tree value
             // Note can't clone here, as we're going to check for equivalence above
-            return m_valueItem[upperValue];
+            AstNode* const foundp = m_valueItem[upperValue];
+            return foundp;
         } else {
             // Make left and right subtrees
             // cexpr[msb:lsb] == 1
             AstNode* tree0p = replaceCaseFastRecurse(cexprp, msb - 1, upperValue | 0);
-            AstNode* tree1p = replaceCaseFastRecurse(cexprp, msb - 1, upperValue | (1UL << msb));
+            AstNode* tree1p = replaceCaseFastRecurse(
+                cexprp, msb - 1, upperValue | (1UL << static_cast<uint32_t>(msb)));
 
             if (tree0p == tree1p) {
                 // Same logic on both sides, so we can just return one of 'em

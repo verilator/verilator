@@ -274,6 +274,7 @@ extern uint64_t vl_time_stamp64() VL_ATTR_WEAK;
 extern double sc_time_stamp() VL_ATTR_WEAK;  // Verilator 4.032 and newer
 inline uint64_t vl_time_stamp64() {
     // clang9.0.1 requires & although we really do want the weak symbol value
+    // cppcheck-suppress duplicateValueTernary
     return VL_LIKELY(&sc_time_stamp) ? static_cast<uint64_t>(sc_time_stamp()) : 0;
 }
 #  endif
@@ -593,6 +594,7 @@ static inline IData VL_REDAND_IW(int lbits, WDataInP const lwp) VL_PURE {
     EData combine = lwp[0];
     for (int i = 1; i < words - 1; ++i) combine &= lwp[i];
     combine &= ~VL_MASK_E(lbits) | lwp[words - 1];
+    // cppcheck-has-bug-suppress knownConditionTrueFalse
     return ((~combine) == 0);
 }
 
@@ -1024,12 +1026,14 @@ static inline WDataOutP VL_MULS_WWW(int lbits, WDataOutP owp, WDataInP const lwp
     if (lneg) {  // Negate lhs
         lwusp = lwstore;
         VL_NEGATE_W(words, lwstore, lwp);
+        // cppcheck-has-bug-suppress unreadVariable
         lwstore[words - 1] &= VL_MASK_E(lbits);  // Clean it
     }
     const EData rneg = VL_SIGN_E(lbits, rwp[words - 1]);
     if (rneg) {  // Negate rhs
         rwusp = rwstore;
         VL_NEGATE_W(words, rwstore, rwp);
+        // cppcheck-has-bug-suppress unreadVariable
         rwstore[words - 1] &= VL_MASK_E(lbits);  // Clean it
     }
     VL_MUL_W(words, owp, lwusp, rwusp);

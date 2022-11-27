@@ -176,7 +176,7 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
     int m_enterExit = 0;  // For VL_LINE, the enter/exit level
     int m_protLength = 0;  // unencoded length for BASE64
     int m_protBytes = 0;  // decoded length for BASE64
-    Enctype m_encType;  // encoding type for `pragma protect
+    Enctype m_encType{};  // encoding type for `pragma protect
 
     // CONSTRUCTORS
     V3PreLex(V3PreProcImp* preimpp, FileLine* filelinep)

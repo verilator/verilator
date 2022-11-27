@@ -128,6 +128,7 @@ V3GraphEdge* V3GraphVertex::findConnectingEdgep(GraphWay way, const V3GraphVerte
     return nullptr;
 }
 
+// cppcheck-has-bug-suppress constParameter
 void V3GraphVertex::v3errorEnd(std::ostringstream& str) const {
     std::ostringstream nsstr;
     nsstr << str.str();
@@ -300,7 +301,7 @@ void V3Graph::dump(std::ostream& os) {
     }
 }
 
-void V3Graph::dumpEdge(std::ostream& os, V3GraphVertex* vertexp, V3GraphEdge* edgep) {
+void V3Graph::dumpEdge(std::ostream& os, const V3GraphVertex* vertexp, const V3GraphEdge* edgep) {
     if (edgep->weight() && (edgep->fromp() == vertexp || edgep->top() == vertexp)) {
         os << "\t\t";
         if (edgep->fromp() == vertexp) os << "-> " << edgep->top()->name();

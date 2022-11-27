@@ -379,6 +379,7 @@ bool FileLine::warnIsOff(V3ErrorCode code) const VL_MT_SAFE {
     return false;
 }
 
+// cppverilator-suppress constParameter
 void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra) {
     std::ostringstream nsstr;
     if (lastLineno()) nsstr << this;

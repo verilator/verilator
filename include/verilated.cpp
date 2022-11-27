@@ -491,11 +491,11 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lw
     // obits==lbits, rbits can be different
     owp[0] = 1;
     for (int i = 1; i < VL_WORDS_I(obits); i++) owp[i] = 0;
-    // cppcheck-suppress variableScope
+    // cppcheck-has-bug-suppress variableScope
     VlWide<VL_MULS_MAX_WORDS> powstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastpowstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastoutstore;  // Fixed size, as MSVC++ doesn't allow [words] here
-    // cppcheck-suppress variableScope
+    // cppcheck-has-bug-suppress variableScope
     VL_ASSIGN_W(obits, powstore, lwp);
     for (int bit = 0; bit < rbits; bit++) {
         if (bit > 0) {  // power = power*power
@@ -1227,7 +1227,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "+-.0123456789eE");
                     if (!t_tmp[0]) goto done;
-                    // cppcheck-suppress unusedStructMember  // It's used
+                    // cppcheck-has-bug-suppress unusedStructMember, unreadVariable
                     union {
                         double r;
                         int64_t ld;
@@ -1682,7 +1682,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
             inPct = true;
         } else if (!inPct) {  // Normal text
             prefix += *posp;
-        } else if (inPct && posp[0] == '0') {  // %0
+        } else if (*posp == '0') {  // %0
         } else {  // Format character
             switch (std::tolower(*posp)) {
             case '%':
@@ -1906,7 +1906,7 @@ VlReadMem::VlReadMem(bool hex, int bits, const std::string& filename, QData star
     if (VL_UNLIKELY(!m_fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
         VL_WARN_MT(filename.c_str(), 0, "", "$readmem file not found");
-        // cppcheck-suppress resourceLeak  // m_fp is nullptr - bug in cppcheck
+        // cppcheck-has-bug-suppress resourceLeak  // m_fp is nullptr
         return;
     }
 }
@@ -2044,7 +2044,7 @@ VlWriteMem::VlWriteMem(bool hex, int bits, const std::string& filename, QData st
     m_fp = std::fopen(filename.c_str(), "w");
     if (VL_UNLIKELY(!m_fp)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "$writemem file not found");
-        // cppcheck-suppress resourceLeak  // m_fp is nullptr - bug in cppcheck
+        // cppcheck-has-bug-suppress resourceLeak  // m_fp is nullptr
         return;
     }
 }
@@ -2227,6 +2227,7 @@ static const char* vl_time_str(int scale) VL_PURE {
 double vl_time_multiplier(int scale) VL_PURE {
     // Return timescale multipler -18 to +18
     // For speed, this does not check for illegal values
+    // cppcheck-has-bug-suppress arrayIndexOutOfBoundsCond
     if (scale < 0) {
         static const double neg10[] = {1.0,
                                        0.1,
@@ -2247,6 +2248,7 @@ double vl_time_multiplier(int scale) VL_PURE {
                                        0.0000000000000001,
                                        0.00000000000000001,
                                        0.000000000000000001};
+        // cppcheck-has-bug-suppress arrayIndexOutOfBoundsCond
         return neg10[-scale];
     } else {
         static const double pow10[] = {1.0,
@@ -2268,6 +2270,7 @@ double vl_time_multiplier(int scale) VL_PURE {
                                        10000000000000000.0,
                                        100000000000000000.0,
                                        1000000000000000000.0};
+        // cppcheck-has-bug-suppress arrayIndexOutOfBoundsCond
         return pow10[scale];
     }
 }
@@ -2754,6 +2757,7 @@ VerilatedSyms::VerilatedSyms(VerilatedContext* contextp)
     : _vm_contextp__(contextp ? contextp : Verilated::threadContextp()) {
     VerilatedContext::checkMagic(_vm_contextp__);
     Verilated::threadContextp(_vm_contextp__);
+    // cppcheck-has-bug-suppress noCopyConstructor
     __Vm_evalMsgQp = new VerilatedEvalMsgQueue;
 }
 

@@ -75,9 +75,9 @@ public:
 
     // ACCESSOR METHODS
     void addIncDirUser(const string& incdir) {
-        if (m_incDirUserSet.find(incdir) == m_incDirUserSet.end()) {
+        const auto itFoundPair = m_incDirUserSet.insert(incdir);
+        if (itFoundPair.second) {
             // cppcheck-suppress stlFindInsert  // cppcheck 1.90 bug
-            m_incDirUserSet.insert(incdir);
             m_incDirUsers.push_back(incdir);
             m_incDirFallbacks.remove(incdir);  // User has priority over Fallback
             m_incDirFallbackSet.erase(incdir);  // User has priority over Fallback
@@ -86,11 +86,8 @@ public:
     void addIncDirFallback(const string& incdir) {
         if (m_incDirUserSet.find(incdir)
             == m_incDirUserSet.end()) {  // User has priority over Fallback
-            if (m_incDirFallbackSet.find(incdir) == m_incDirFallbackSet.end()) {
-                // cppcheck-suppress stlFindInsert  // cppcheck 1.90 bug
-                m_incDirFallbackSet.insert(incdir);
-                m_incDirFallbacks.push_back(incdir);
-            }
+            const auto itFoundPair = m_incDirFallbackSet.insert(incdir);
+            if (itFoundPair.second) m_incDirFallbacks.push_back(incdir);
         }
     }
     void addLangExt(const string& langext, const V3LangCode& lc) {
@@ -100,11 +97,8 @@ public:
     }
 
     void addLibExtV(const string& libext) {
-        if (m_libExtVSet.find(libext) == m_libExtVSet.end()) {
-            // cppcheck-suppress stlFindInsert  // cppcheck 1.90 bug
-            m_libExtVSet.insert(libext);
-            m_libExtVs.push_back(libext);
-        }
+        const auto itFoundPair = m_libExtVSet.insert(libext);
+        if (itFoundPair.second) m_libExtVs.push_back(libext);
     }
     V3OptionsImp() = default;
     ~V3OptionsImp() = default;

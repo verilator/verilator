@@ -852,6 +852,7 @@ void AstNode::iterateAndNext(VNVisitor& v) {
 #ifdef VL_DEBUG  // Otherwise too hot of a function for debug
     UASSERT_OBJ(!(nodep && !nodep->m_backp), nodep, "iterateAndNext node has no back");
 #endif
+    // cppcheck-suppress knownConditionTrueFalse
     if (nodep) ASTNODE_PREFETCH(nodep->m_nextp);
     while (nodep) {  // effectively: if (!this) return;  // Callers rely on this
         if (nodep->m_nextp) ASTNODE_PREFETCH(nodep->m_nextp->m_nextp);

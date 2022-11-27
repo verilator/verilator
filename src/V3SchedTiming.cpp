@@ -296,7 +296,6 @@ void transformForks(AstNetlist* const netlistp) {
                 AstVarScope* const vscp = refp->varScopep();
                 if (!vscp->user2p()) {
                     // Clone the var to the new function
-                    AstVar* const varp = refp->varp();
                     AstVar* const newvarp
                         = new AstVar{varp->fileline(), VVarType::BLOCKTEMP, varp->name(), varp};
                     newvarp->funcLocal(true);
@@ -308,7 +307,7 @@ void transformForks(AstNetlist* const netlistp) {
                     vscp->user2p(newvscp);
                     callp->addArgsp(new AstVarRef{refp->fileline(), vscp, VAccess::READ});
                 }
-                auto* const newvscp = VN_AS(vscp->user2p(), VarScope);
+                AstVarScope* const newvscp = VN_AS(vscp->user2p(), VarScope);
                 refp->varScopep(newvscp);
                 refp->varp(newvscp->varp());
             });

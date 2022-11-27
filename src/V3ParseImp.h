@@ -142,7 +142,7 @@ class V3ParseImp final {
     static V3ParseImp* s_parsep;  // Current THIS, bison() isn't class based
     FileLine* m_lexFileline = nullptr;  // Filename/linenumber currently active for lexing
 
-    FileLine* m_bisonLastFileline;  // Filename/linenumber of last token
+    FileLine* m_bisonLastFileline = nullptr;  // Filename/linenumber of last token
 
     bool m_inLibrary = false;  // Currently reading a library vs. regular file
     int m_lexKwdDepth = 0;  // Inside a `begin_keywords

@@ -197,8 +197,8 @@ private:
                 && !nodep->internal()) {
                 // We only complain once per file, otherwise library-like files
                 // have a huge mess of warnings
-                if (m_declfnWarned.find(nodep->fileline()->filename()) == m_declfnWarned.end()) {
-                    m_declfnWarned.insert(nodep->fileline()->filename());
+                const auto itFoundPair = m_declfnWarned.insert(nodep->fileline()->filename());
+                if (itFoundPair.second) {
                     nodep->v3warn(DECLFILENAME, "Filename '"
                                                     << nodep->fileline()->filebasenameNoExt()
                                                     << "' does not match " << nodep->typeName()

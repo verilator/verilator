@@ -244,7 +244,7 @@ public:
     }
 
     // CONSTRUCTOR
-    SenExprBuilder(AstScope* scopep)
+    explicit SenExprBuilder(AstScope* scopep)
         : m_scopep{scopep} {}
 };
 

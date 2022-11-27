@@ -184,6 +184,7 @@ void V3Error::suppressThisWarning() {
 
 string V3Error::warnMore() { return string(msgPrefix().size(), ' '); }
 
+// cppcheck-has-bug-suppress constParameter
 void V3Error::v3errorEnd(std::ostringstream& sstr, const string& extra) {
 #if defined(__COVERITY__) || defined(__cppcheck__)
     if (s_errorCode == V3ErrorCode::EC_FATAL) __coverity_panic__(x);

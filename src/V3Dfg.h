@@ -101,10 +101,10 @@ class DfgGraph final {
         DfgGraph* m_graphp;  // The referenced graph
 
     public:
-        UserDataInUse(DfgGraph* graphp)
+        explicit UserDataInUse(DfgGraph* graphp)
             : m_graphp{graphp} {}
         VL_UNCOPYABLE(UserDataInUse);
-        UserDataInUse(UserDataInUse&& that) {
+        explicit UserDataInUse(UserDataInUse&& that) {
             UASSERT(that.m_graphp, "Moving from empty");
             m_graphp = vlstd::exchange(that.m_graphp, nullptr);
         }
@@ -353,6 +353,7 @@ public:
         UDEBUGONLY(UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving"););
         if (m_userCnt != userCurrent) {
             m_userCnt = userCurrent;
+            // cppcheck-has-bug-suppress uninitvar
             VL_ATTR_UNUSED T* const resultp = new (storagep) T{};
             UDEBUGONLY(UASSERT_OBJ(resultp == storagep, this, "Something is odd"););
         }

@@ -740,10 +740,7 @@ public:
 // Emit to an output file
 
 class EmitVFileVisitor final : public EmitVBaseVisitor {
-    // MEMBERS
-    V3OutFile* m_ofp;
     // METHODS
-    V3OutFile* ofp() const { return m_ofp; }
     void puts(const string& str) override { ofp()->puts(str); }
     void putbs(const string& str) override { ofp()->putbs(str); }
     void putfs(AstNode*, const string& str) override { putbs(str); }
@@ -751,9 +748,9 @@ class EmitVFileVisitor final : public EmitVBaseVisitor {
     void putsNoTracking(const string& str) override { ofp()->putsNoTracking(str); }
 
 public:
-    EmitVFileVisitor(AstNode* nodep, V3OutFile* ofp, bool trackText, bool suppressUnknown)
-        : EmitVBaseVisitor{suppressUnknown, nullptr}
-        , m_ofp{ofp} {
+    EmitVFileVisitor(AstNode* nodep, V3OutVFile* ofp, bool trackText, bool suppressUnknown)
+        : EmitVBaseVisitor{suppressUnknown, nullptr} {
+        m_ofp = ofp;
         m_trackText = trackText;
         iterate(nodep);
     }

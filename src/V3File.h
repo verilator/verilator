@@ -242,8 +242,9 @@ class V3OutCFile VL_NOT_FINAL : public V3OutFile {
     int m_guard = false;  // Created header guard
     int m_private;  // 1 = Most recently emitted private:, 2 = public:
 public:
-    explicit V3OutCFile(const string& filename)
-        : V3OutFile{filename, V3OutFormatter::LA_C} {
+    explicit V3OutCFile(const string& filename,
+                        V3OutFormatter::Language lang = V3OutFormatter::LA_C)
+        : V3OutFile{filename, lang} {
         resetPrivate();
     }
     ~V3OutCFile() override = default;
@@ -279,10 +280,10 @@ public:
     }
 };
 
-class V3OutVFile final : public V3OutFile {
+class V3OutVFile final : public V3OutCFile {
 public:
     explicit V3OutVFile(const string& filename)
-        : V3OutFile{filename, V3OutFormatter::LA_VERILOG} {}
+        : V3OutCFile{filename, V3OutFormatter::LA_VERILOG} {}
     ~V3OutVFile() override = default;
     virtual void putsHeader() { puts("// Verilated -*- Verilog -*-\n"); }
 };
