@@ -1073,7 +1073,7 @@ public:
     void dumpSmall(std::ostream& str) const override;
     string name() const override { return m_name; }
     string prettyDTypeName() const override {
-        return subDTypep() ? subDTypep()->name() : prettyName();
+        return subDTypep() ? prettyName(subDTypep()->name()) : prettyName();
     }
     AstBasicDType* basicp() const override VL_MT_SAFE {
         return subDTypep() ? subDTypep()->basicp() : nullptr;
