@@ -285,7 +285,7 @@ public:
     explicit V3OutVFile(const string& filename)
         : V3OutCFile{filename, V3OutFormatter::LA_VERILOG} {}
     ~V3OutVFile() override = default;
-    virtual void putsHeader() { puts("// Verilated -*- Verilog -*-\n"); }
+    void putsHeader() override { puts("// Verilated -*- Verilog -*-\n"); }
 };
 
 class V3OutXmlFile final : public V3OutFile {

@@ -101,13 +101,15 @@ class DfgGraph final {
         DfgGraph* m_graphp;  // The referenced graph
 
     public:
-        explicit UserDataInUse(DfgGraph* graphp)
+        // cppcheck-suppress noExplicitConstructor
+        UserDataInUse(DfgGraph* graphp)
             : m_graphp{graphp} {}
-        VL_UNCOPYABLE(UserDataInUse);
-        explicit UserDataInUse(UserDataInUse&& that) {
+        // cppcheck-suppress noExplicitConstructor
+        UserDataInUse(UserDataInUse&& that) {
             UASSERT(that.m_graphp, "Moving from empty");
             m_graphp = vlstd::exchange(that.m_graphp, nullptr);
         }
+        VL_UNCOPYABLE(UserDataInUse);
         UserDataInUse& operator=(UserDataInUse&& that) {
             UASSERT(that.m_graphp, "Moving from empty");
             m_graphp = vlstd::exchange(that.m_graphp, nullptr);
