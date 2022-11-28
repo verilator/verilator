@@ -99,10 +99,12 @@ def print_node(node, level):
         try:
             filepath_relative = filepath.relative_to(VERILATOR_ROOT)
             print('%-50s %-40s %s %-100s' %
-                  (f"{filepath_relative}:{node.extent.start.line}:", annotations,
-                   ' ' * level, fully_qualified_pretty(node)))
+                  (f"{filepath_relative}:{node.extent.start.line}:",
+                   annotations, ' ' * level, fully_qualified_pretty(node)))
         except ValueError:
-            print(f"%Error: unsafe call to function outside verilator: {filepath}: {fully_qualified_pretty(node)}")
+            print(
+                f"%Error: unsafe call to function outside verilator: {filepath}: {fully_qualified_pretty(node)}"
+            )
             sys.exit(1)
         printed.append(fully_qualified_pretty(node))
 
@@ -215,7 +217,8 @@ def find_funcs(node, cfg, search_attributes=None, level=1, verbose=False):
                     CursorKind.CXX_METHOD, CursorKind.CONSTRUCTOR,
                     CursorKind.FUNCTION_DECL
             ]:
-                if not find_funcs(call, cfg, search_attributes, level + 1, verbose) and not verbose:
+                if not find_funcs(call, cfg, search_attributes, level + 1,
+                                  verbose) and not verbose:
                     return False
     return True
 
