@@ -502,12 +502,6 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 # define VL_STRCASECMP strcasecmp
 #endif
 
-#if defined(__MINGW32__) || defined(_MSC_VER)
-# define VL_LOCALTIME_R(timep, tmp) localtime_s((tmp), (timep))
-#else
-# define VL_LOCALTIME_R(timep, tmp) localtime_r((timep), (tmp))
-#endif
-
 //=========================================================================
 // Macros controlling target specific optimizations
 
