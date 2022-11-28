@@ -759,6 +759,10 @@ void V3Options::notify() {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
+    if (m_exe && !v3Global.opt.libCreate().empty()) {
+        cmdfl->v3error("--exe cannot be used together with --lib-create. Suggest see manual");
+    }
+
     // Make sure at least one make system is enabled
     if (!m_gmake && !m_cmake) m_gmake = true;
 
