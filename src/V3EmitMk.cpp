@@ -231,13 +231,16 @@ public:
             of.puts("\n### Executable rules... (from --exe)\n");
             of.puts("VPATH += $(VM_USER_DIR)\n");
             of.puts("\n");
-            for (const string& cppfile : cppFiles) {
-                const string basename = V3Os::filenameNonExt(cppfile);
-                // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-                of.puts(basename + ".o: " + cppfile + "\n");
-                of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");
-            }
+        }
 
+        for (const string& cppfile : cppFiles) {
+            const string basename = V3Os::filenameNonExt(cppfile);
+            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+            of.puts(basename + ".o: " + cppfile + "\n");
+            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");
+        }
+
+        if (v3Global.opt.exe()) {
             of.puts("\n### Link rules... (from --exe)\n");
             of.puts(v3Global.opt.exeName()
                     + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a $(VM_HIER_LIBS)\n");
