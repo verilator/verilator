@@ -2528,7 +2528,7 @@ void VerilatedContextImp::commandArgsAddGutsLock(int argc, const char** argv)
     commandArgsAddGuts(argc, argv);
 }
 
-void VerilatedContextImp::commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(m_argMutex) {
+void VerilatedContextImp::commandArgsAddGuts(int argc, const char** argv) VL_MT_SAFE_REQUIRES(m_argMutex) {
     if (!m_args.m_argVecLoaded) m_args.m_argVec.clear();
     for (int i = 0; i < argc; ++i) {
         m_args.m_argVec.emplace_back(argv[i]);

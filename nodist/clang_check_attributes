@@ -8,7 +8,6 @@
 #
 # Based on the work of (Guillaume "Vermeille" Sanchez)[https://github.com/Vermeille/clang-callgraph]
 # licensed under Apache 2.0
-
 import argparse
 import sys
 import os
@@ -33,7 +32,7 @@ class FixSizedDict(dict):
 
 # by definition constructor is MT safe,
 # but functions that constructor call are not!
-MT_SAFE_KINDS = [CursorKind.CONSTRUCTOR]
+MT_SAFE_DEFINITION_KINDS = [CursorKind.CONSTRUCTOR]
 VERILATOR_ROOT = Path(__file__).parent.parent.resolve()
 IGNORE_FILES_LIST = [
     # Dont process test files
@@ -94,15 +93,17 @@ def get_translate_unit(file, cfg):
 def print_node(node, level):
     if fully_qualified_pretty(node) not in printed:
         annotations = get_annotations(node)
+        if node.kind in MT_SAFE_DEFINITION_KINDS:
+            annotations.append("MT_SAFE_DEFINITION")
         filepath = Path(str(node.location.file)).resolve()
         try:
             filepath_relative = filepath.relative_to(VERILATOR_ROOT)
-            print('%s %s:%s \t\t %-35s %-100s %s' %
-                  (' ' * level, filepath_relative, node.extent.start.line,
-                   node.kind, fully_qualified_pretty(node), annotations))
+            print('%-50s %-40s %s %-100s' %
+                  (f"{filepath_relative}:{node.extent.start.line}:", annotations,
+                   ' ' * level, fully_qualified_pretty(node)))
         except ValueError:
-            # Dont print functions that are not defined in verilator repository
-            pass
+            print(f"%Error: unsafe call to function outside verilator: {filepath}: {fully_qualified_pretty(node)}")
+            sys.exit(1)
         printed.append(fully_qualified_pretty(node))
 
 
@@ -138,9 +139,14 @@ def fully_qualified_pretty(cursor):
 
 
 def is_excluded(node, cfg):
+    xpaths = cfg.exclude_paths
     xprefs = cfg.exclude_prefixes
     if not node.extent.start.file:
         return False
+
+    for xpath in xpaths:
+        if str(Path(node.extent.start.file.name).resolve()).startswith(xpath):
+            return True
 
     fqp = fully_qualified_pretty(node)
 
@@ -169,7 +175,7 @@ def find_usr(file, usr, cfg):
 
 
 def check_attributes(cursor, search_attributes):
-    if cursor.kind in MT_SAFE_KINDS:
+    if cursor.kind in MT_SAFE_DEFINITION_KINDS:
         return True
     for attribute in search_attributes:
         if attribute in get_annotations(cursor):
@@ -177,7 +183,7 @@ def check_attributes(cursor, search_attributes):
     return False
 
 
-def find_funcs(node, cfg, search_attributes):
+def find_funcs(node, cfg, search_attributes=None, level=1, verbose=False):
     funcs = get_call_expr(node)
     for func in funcs:
         if not func.referenced:
@@ -190,54 +196,28 @@ def find_funcs(node, cfg, search_attributes):
         if fully_qualified_pretty(call) in printed:
             continue
         if str(call.location.file).endswith(".h"):
-            if os.path.exists(str(call.location.file).replace(".h", ".cpp")):
-                tu_call = find_usr(
-                    str(call.location.file).replace(".h", ".cpp"),
-                    call.get_usr(), cfg)
+            cpp_file = str(call.location.file).replace(".h", ".cpp")
+            if os.path.exists(cpp_file):
+                tu_call = find_usr(cpp_file, call.get_usr(), cfg)
                 if tu_call is not None:
                     call = tu_call
 
         if call is not None:
-            if fully_qualified_pretty(call) not in printed:
-                printed.append(fully_qualified_pretty(call))
+            if verbose:
+                print_node(call, level)
+            else:
+                if fully_qualified_pretty(call) not in printed:
+                    printed.append(fully_qualified_pretty(call))
 
-            if not check_attributes(call, search_attributes):
-                return False
+                if not check_attributes(call, search_attributes):
+                    return False
             if call.kind in [
                     CursorKind.CXX_METHOD, CursorKind.CONSTRUCTOR,
                     CursorKind.FUNCTION_DECL
             ]:
-                return find_funcs(call, cfg, search_attributes)
+                if not find_funcs(call, cfg, search_attributes, level + 1, verbose) and not verbose:
+                    return False
     return True
-
-
-def print_funcs(node, cfg, search_attributes, level=1):
-    funcs = get_call_expr(node)
-    for func in funcs:
-        if not func.referenced:
-            continue
-        if is_excluded(func.referenced, cfg):
-            continue
-        call = func.referenced
-        # Don't recurse into already printed nodes
-        # it some cases in increases printing nodes by a lot
-        if fully_qualified_pretty(call) in printed:
-            continue
-        if str(call.location.file).endswith(".h"):
-            if os.path.exists(str(call.location.file).replace(".h", ".cpp")):
-                tu_call = find_usr(
-                    str(call.location.file).replace(".h", ".cpp"),
-                    call.get_usr(), cfg)
-                if tu_call is not None:
-                    call = tu_call
-
-        if call is not None:
-            print_node(call, level)
-            if call.kind in [
-                    CursorKind.CXX_METHOD, CursorKind.CONSTRUCTOR,
-                    CursorKind.FUNCTION_DECL
-            ]:
-                print_funcs(call, cfg, search_attributes, level + 1)
 
 
 def get_info(node, cfg):
@@ -288,6 +268,11 @@ def main():
                         dest='exclude_prefixes',
                         type=parse_exclude,
                         help='comma separated list of excluded prefixes')
+    parser.add_argument('-p',
+                        dest='exclude_paths',
+                        type=parse_exclude,
+                        nargs="?",
+                        help='comma separated list of excluded paths')
     parser.add_argument('-I',
                         dest='clang_args',
                         action='append',
@@ -299,6 +284,8 @@ def main():
     cfg, unknowns = parser.parse_known_args()
     # Add -I stripped by argparser to clang_args
     cfg.clang_args = [f"-I{clang_arg}" for clang_arg in cfg.clang_args]
+    if cfg.exclude_paths is None:
+        cfg.exclude_paths = ["/usr"]
     # if option starts with dash, assume it is clang arg
     for unknown in unknowns:
         if unknown.startswith('-'):
@@ -314,13 +301,9 @@ def main():
 
     for call in unsafe_calls:
         printed.clear()
-        search_attributes = ["PURE"]
-        attributes = get_annotations(call)
-        if "MT_SAFE" in attributes or "MT_START" in attributes:
-            search_attributes.append("MT_SAFE")
         print(f"::group::{fully_qualified_pretty(call)}")
         print_node(call, 0)
-        print_funcs(call, cfg, search_attributes, level=1)
+        find_funcs(call, cfg, search_attributes=None, level=1, verbose=True)
         print("::endgroup::")
 
     print(
