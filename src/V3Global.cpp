@@ -63,6 +63,13 @@ void V3Global::readFiles() {
                          "Cannot find file containing module: ");
     }
 
+    if (usesStdPackage()) {
+        // Parse the std package
+        parser.parseFile(new FileLine{FileLine::commandLineFilename()},
+                         V3Options::getStdPackagePath(), false,
+                         "Cannot find std.sv containing built-in std:: definitions: ");
+    }
+
     // Read libraries
     // To be compatible with other simulators,
     // this needs to be done after the top file is read

@@ -150,6 +150,7 @@ class V3ParseImp final {
     VOptionBool m_unconnectedDrive;  // Last unconnected drive
 
     int m_lexPrevToken = 0;  // previous parsed token (for lexer)
+    bool m_afterColonColon = false;  // The previous token was '::'
     std::deque<V3ParseBisonYYSType> m_tokensAhead;  // Tokens we parsed ahead of parser
 
     std::deque<string*> m_stringps;  // Created strings for later cleanup

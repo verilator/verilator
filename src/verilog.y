@@ -1162,6 +1162,13 @@ package_declaration:            // ==IEEE: package_declaration
 packageFront<nodeModulep>:
                 yPACKAGE lifetimeE idAny ';'
                         { $$ = new AstPackage{$<fl>3, *$3};
+                          if ($$->name() == "std") {
+                              if ($$->fileline()->filename() != V3Options::getStdPackagePath()) {
+                                  $$->v3error("Redeclaring the 'std' package is not allowed");
+                              } else {
+                                  PARSEP->rootp()->stdPackagep(VN_AS($$, Package));
+                              }
+                          }
                           $$->inLibrary(true);  // packages are always libraries; don't want to make them a "top"
                           $$->lifetime($2);
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));

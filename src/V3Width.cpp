@@ -3291,6 +3291,16 @@ private:
         VL_DANGLING(index_exprp);  // May have been edited
         return VN_AS(nodep->pinsp(), Arg)->exprp();
     }
+    void methodCallWarnTiming(AstMethodCall* const nodep, const std::string& className) {
+        if (v3Global.opt.timing().isSetFalse()) {
+            nodep->v3warn(E_NOTIMING,
+                          className << "::" << nodep->name() << "() requires --timing");
+        } else if (!v3Global.opt.timing().isSetTrue()) {
+            nodep->v3warn(E_NEEDTIMINGOPT, "Use --timing or --no-timing to specify how "
+                                               << className << "::" << nodep->name()
+                                               << "() should be handled");
+        }
+    }
     void methodCallClass(AstMethodCall* nodep, AstClassRefDType* adtypep) {
         // No need to width-resolve the class, as it was done when we did the child
         AstClass* const first_classp = adtypep->classp();
@@ -3300,6 +3310,26 @@ private:
         }
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
+            if (nodep->fileline()->timingOn()) {
+                if (classp->name() == "semaphore"
+                    || VString::startsWith(classp->name(), "mailbox")) {
+                    // Find the package the class is in
+                    AstNode* pkgItemp = classp;
+                    while (pkgItemp->backp() && pkgItemp->backp()->nextp() == pkgItemp) {
+                        pkgItemp = pkgItemp->backp();
+                    }
+                    AstPackage* const packagep = VN_CAST(pkgItemp->backp(), Package);
+                    // Check if it's std
+                    if (packagep && packagep->name() == "std") {
+                        if (classp->name() == "semaphore" && nodep->name() == "get") {
+                            methodCallWarnTiming(nodep, "semaphore");
+                        } else if (nodep->name() == "put" || nodep->name() == "get"
+                                   || nodep->name() == "peek") {
+                            methodCallWarnTiming(nodep, "mailbox");
+                        }
+                    }
+                }
+            }
             if (AstNodeFTask* const ftaskp
                 = VN_CAST(classp->findMember(nodep->name()), NodeFTask)) {
                 userIterate(ftaskp, nullptr);

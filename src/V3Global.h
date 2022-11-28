@@ -107,6 +107,7 @@ class V3Global final {
     bool m_dpi = false;  // Need __Dpi include files
     bool m_hasEvents = false;  // Design uses SystemVerilog named events
     bool m_hasClasses = false;  // Design uses SystemVerilog classes
+    bool m_usesStdPackage = false;  // Design uses the std package
     bool m_usesTiming = false;  // Design uses timing constructs
     bool m_hasForceableSignals = false;  // Need to apply V3Force pass
     bool m_hasSCTextSections = false;  // Has `systemc_* sections that need to be emitted
@@ -152,6 +153,8 @@ public:
     void setHasEvents() { m_hasEvents = true; }
     bool hasClasses() const { return m_hasClasses; }
     void setHasClasses() { m_hasClasses = true; }
+    bool usesStdPackage() const { return m_usesStdPackage; }
+    void setUsesStdPackage() { m_usesStdPackage = true; }
     bool usesTiming() const { return m_usesTiming; }
     void setUsesTiming() { m_usesTiming = true; }
     bool hasForceableSignals() const { return m_hasForceableSignals; }

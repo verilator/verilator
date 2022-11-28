@@ -706,6 +706,8 @@ string V3Options::getenvVERILATOR_ROOT() {
     return var;
 }
 
+string V3Options::getStdPackagePath() { return getenvVERILATOR_ROOT() + "/include/std.sv"; }
+
 string V3Options::getSupported(const string& var) {
     // If update below, also update V3Options::showVersion()
     if (var == "COROUTINES" && coroutineSupport()) {

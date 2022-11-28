@@ -1086,6 +1086,7 @@ class AstNetlist final : public AstNode {
     AstTypeTable* const m_typeTablep;  // Reference to top type table, for faster lookup
     AstConstPool* const m_constPoolp;  // Reference to constant pool, for faster lookup
     AstPackage* m_dollarUnitPkgp = nullptr;  // $unit
+    AstPackage* m_stdPackagep = nullptr;  // SystemVerilog std package
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
     AstCFunc* m_evalNbap = nullptr;  // The '_eval__nba' function
     AstVarScope* m_dpiExportTriggerp = nullptr;  // The DPI export trigger variable
@@ -1119,6 +1120,8 @@ public:
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstVar* delaySchedulerp() const { return m_delaySchedulerp; }
     void delaySchedulerp(AstVar* const varScopep) { m_delaySchedulerp = varScopep; }
+    void stdPackagep(AstPackage* const packagep) { m_stdPackagep = packagep; }
+    AstPackage* stdPackagep() const { return m_stdPackagep; }
     AstTopScope* topScopep() const { return m_topScopep; }
     void createTopScope(AstScope* scopep);
     VTimescale timeunit() const { return m_timeunit; }
