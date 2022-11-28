@@ -152,7 +152,7 @@ protected:
 
     // METHODS
     // Internal: access to implementation class
-    VerilatedCovImp* impp() { return reinterpret_cast<VerilatedCovImp*>(this); }
+    VerilatedCovImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedCovImp*>(this); }
 };
 
 //=============================================================================

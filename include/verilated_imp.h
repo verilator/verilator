@@ -226,7 +226,7 @@ class VerilatedContextImp final : VerilatedContext {
         // Number incrementing on each reseed, 0=illegal
         int s_randSeedEpoch = 1;  // Reads ok, wish had a VL_WRITE_GUARDED_BY(s_randMutex)
     };
-    static Statics& s() {
+    static Statics& s() VL_MT_SAFE {
         static Statics s_s;
         return s_s;
     }

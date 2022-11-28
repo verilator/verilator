@@ -275,7 +275,7 @@ private:
 public:
     explicit VerilatedModule(const char* namep);  // Create module with given hierarchy name
     ~VerilatedModule();
-    const char* name() const { return m_namep; }  ///< Return name of module
+    const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }  ///< Return name of module
 };
 
 //=========================================================================
@@ -533,8 +533,8 @@ public:
     // METHODS - public but for internal use only
 
     // Internal: access to implementation class
-    VerilatedContextImp* impp() { return reinterpret_cast<VerilatedContextImp*>(this); }
-    const VerilatedContextImp* impp() const {
+    VerilatedContextImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedContextImp*>(this); }
+    const VerilatedContextImp* impp() const VL_MT_SAFE {
         return reinterpret_cast<const VerilatedContextImp*>(this);
     }
 
@@ -617,10 +617,10 @@ public:  // But internals only - called from VerilatedModule's
     void varInsert(int finalize, const char* namep, void* datap, bool isParam,
                    VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE;
     // ACCESSORS
-    const char* name() const { return m_namep; }
-    const char* identifier() const { return m_identifierp; }
-    int8_t timeunit() const { return m_timeunit; }
-    VerilatedSyms* symsp() const { return m_symsp; }
+    const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
+    const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
+    int8_t timeunit() const VL_MT_SAFE_POSTINIT { return m_timeunit; }
+    VerilatedSyms* symsp() const VL_MT_SAFE_POSTINIT { return m_symsp; }
     VerilatedVar* varFind(const char* namep) const VL_MT_SAFE_POSTINIT;
     VerilatedVarNameMap* varsp() const VL_MT_SAFE_POSTINIT { return m_varsp; }
     void scopeDump() const;

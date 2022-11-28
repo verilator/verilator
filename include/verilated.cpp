@@ -279,7 +279,7 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
 //===========================================================================
 // Random -- Mostly called at init time, so not inline.
 
-static uint32_t vl_sys_rand32() VL_MT_UNSAFE {
+static uint32_t vl_sys_rand32() VL_MT_SAFE {
     // Return random 32-bits using system library.
     // Used only to construct seed for Verilator's PNRG.
     static VerilatedMutex s_mutex;
