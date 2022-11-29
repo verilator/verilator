@@ -68,7 +68,7 @@ end
           else if (in==1'b1)
             next = S3;
       S2: if (in==1'b1)
-            next = S1;
+            next = S3;
           else if (in==1'b0)
             next = S2;
     endcase

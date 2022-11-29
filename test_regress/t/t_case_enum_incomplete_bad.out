@@ -1,0 +1,3 @@
+[70] %Error: t_case_enum_incomplete_bad.v:61: Assertion failed in top.t.test.set_next_state: synthesis parallel_case, but multiple matches found
+%Error: t/t_case_enum_incomplete_bad.v:61: Verilog $stop
+Aborting...
