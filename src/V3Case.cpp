@@ -145,7 +145,7 @@ private:
             = VN_CAST(nodep->exprp()->dtypep()->skipRefToEnump(), EnumDType)) {  // CASE is enum
             if (nodep->uniquePragma() || nodep->priorityPragma()) {
                 // suppress the warning when we have unique or priority
-                suppressCaseIncWarn = true;  
+                suppressCaseIncWarn = true;
             } else {  // check if all values were supplied
                 bool foundMatch = false;
                 for (uint32_t i = 0; i < numCases; ++i) {  // iterate through all case items
