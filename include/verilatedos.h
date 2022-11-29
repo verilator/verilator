@@ -172,7 +172,6 @@
 #else
 # define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
 #endif
-#define VL_MT_SAFE_REQUIRES(mutex) VL_MT_SAFE VL_REQUIRES(mutex)
 // Comment tag that function is not threadsafe
 #if defined(__clang__)
 # define VL_MT_UNSAFE __attribute__((annotate("MT_UNSAFE")))
