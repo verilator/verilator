@@ -139,11 +139,58 @@ private:
     std::array<AstNode*, 1 << CASE_OVERLAP_WIDTH> m_valueItem;
 
     // METHODS
+    bool caseIsEnumComplete(AstCase* nodep, uint32_t numCases) {
+        bool suppressCaseIncWarn = false;
+        if (AstEnumDType* enumDtp = VN_CAST(nodep->exprp()->dtypep()->skipRefToEnump(), EnumDType)) { // CASE is enum
+            if (nodep->uniquePragma() || nodep->priorityPragma()) {
+              suppressCaseIncWarn =true; // suppress the warning when we have unique or priority
+            } else { // check if all values were supplied
+                 bool foundMatch =false;
+                 for (uint32_t i = 0; i < numCases; ++i) { // iterate through all case items
+                     for (AstEnumItem* itemp = enumDtp->itemsp(); itemp;
+                                       itemp = VN_AS(itemp->nextp(), EnumItem)) { //iterate through all enum values
+                          if ( m_valueItem[i])  {
+                           AstConst* const constp = VN_AS(itemp->valuep(), Const);
+                           AstConst* const itemvp  = VN_AS(m_valueItem[i]->op1p(),Const);
+                             if (itemvp->num().toDecimalU().compare(constp->num().toDecimalU()) == 0 ) { // match
+                                 foundMatch= true;
+                             } else { // no match
+                               UINFO(9, "Value " << std::hex << i << " " <<
+                                        m_valueItem[i]->op1p() << " " <<  itemvp->num().toDecimalU() <<
+                                        " => " <<  itemp->prettyName() << " numeric value "<< constp->num().toDecimalU() <<endl);
+                             }
+                          }
+                     }
+                     if (m_valueItem[i]) {
+                         if (!foundMatch) {
+                           suppressCaseIncWarn =false; //warning should not be suppressed since not all values were supplied
+                         } else {
+                             foundMatch= false;
+                         }
+                     }
+                 }
+            }
+        } else { // CASE not enum
+            suppressCaseIncWarn =false; // warning should not be suppresed when not an enum
+        }
+        if (!suppressCaseIncWarn){
+             for (uint32_t i = 0; i < numCases; ++i) {
+                 if (!m_valueItem[i]) {
+                     nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
+                                                   "(example pattern 0x"
+                                                       << std::hex << i << ")");
+                     m_caseNoOverlapsAllCovered = false;
+                     return false;
+                 }
+             }
 
+        }
+        return true;
+
+    }
     bool isCaseTreeFast(AstCase* nodep) {
         int width = 0;
         bool opaque = false;
-        bool suppressCaseIncWarn = false;
         m_caseItems = 0;
         m_caseNoOverlapsAllCovered = true;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
@@ -228,49 +275,8 @@ private:
                 }
             }
         }
-        if (AstEnumDType* enumDtp = VN_CAST(nodep->exprp()->dtypep()->skipRefToEnump(), EnumDType)) { // CASE is enum
-            if (nodep->uniquePragma() || nodep->priorityPragma()) {
-              suppressCaseIncWarn =true; // suppress the warning when we have unique or priority
-            } else { // check if all values were supplied
-                 bool foundMatch =false;
-                 for (uint32_t i = 0; i < numCases; ++i) { // iterate through all case items
-                     for (AstEnumItem* itemp = enumDtp->itemsp(); itemp;
-                                       itemp = VN_AS(itemp->nextp(), EnumItem)) { //iterate through all enum values
-                          if ( m_valueItem[i])  {
-                           AstConst* const constp = VN_AS(itemp->valuep(), Const);
-                           AstConst* const itemvp  = VN_AS(m_valueItem[i]->op1p(),Const);
-                             if (itemvp->num().toDecimalU().compare(constp->num().toDecimalU()) == 0 ) { // match
-                                 foundMatch= true;
-                             } else { // no match
-                               UINFO(9, "Value " << std::hex << i << " " <<
-                                        m_valueItem[i]->op1p() << " " <<  itemvp->num().toDecimalU() <<
-                                        " => " <<  itemp->prettyName() << " numeric value "<< constp->num().toDecimalU() <<endl);
-                             }
-                          }
-                     }
-                     if (m_valueItem[i]) {
-                         if (!foundMatch) {
-                           suppressCaseIncWarn =false; //warning should not be suppressed since not all values were supplied
-                         } else {
-                             foundMatch= false;
-                         }
-                     }
-                 }
-            }
-        } else { // CASE not enum
-            suppressCaseIncWarn =false; // warning should not be suppresed when not an enum
-        }
-        if (!suppressCaseIncWarn){
-             for (uint32_t i = 0; i < numCases; ++i) {
-                 if (!m_valueItem[i]) {
-                     nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
-                                                   "(example pattern 0x"
-                                                       << std::hex << i << ")");
-                     m_caseNoOverlapsAllCovered = false;
-                     return false;
-                 }
-             }
-
+        if ( !caseIsEnumComplete(nodep, numCases) ) {
+            return false;
         }
 
         if (m_caseItems <= 3
