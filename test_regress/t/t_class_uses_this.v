@@ -30,6 +30,17 @@ function void Cls::setext2(bit [3:0] addr);
    c2.addr = addr;
 endfunction
 
+class wrapped_int;
+   int x;
+   static wrapped_int q[$];
+   function new(int a);
+      this.x = a;
+   endfunction
+   function void push_this;
+      q.push_back(this);
+   endfunction
+endclass
+
 module t(/*AUTOARG*/
    // Inputs
    clk
@@ -37,6 +48,8 @@ module t(/*AUTOARG*/
    input clk;
    Cls bar;
    Cls baz;
+   wrapped_int i1, i2;
+
    initial begin
       bar = new();
       baz = new();
@@ -52,6 +65,13 @@ module t(/*AUTOARG*/
       if (bar.addr != 2) $stop;
       bar.setext2(3);
       if (bar.addr != 3) $stop;
+
+      i1 = new(1);
+      i1.push_this();
+      i2 = new(2);
+      i2.push_this();
+      if (wrapped_int::q.size() != 2) $stop;
+
       $write("*-* All Finished *-*\n");
       $finish;
    end
