@@ -1,0 +1,93 @@
+::group::bad::t_no_attributes_function_from_VL_PURE_e()
+test_regress/t/t_dist_attributes_bad.cpp:84:       ['PURE']                                  bad::t_no_attributes_function_from_VL_PURE_e()                                                      
+test_regress/t/t_dist_attributes_bad.cpp:16:       []                                         no_attributes_function()                                                                            
+::endgroup::
+::group::bad::t_mt_unsafe_function_from_VL_PURE_e()
+test_regress/t/t_dist_attributes_bad.cpp:85:       ['PURE']                                  bad::t_mt_unsafe_function_from_VL_PURE_e()                                                          
+test_regress/t/t_dist_attributes_bad.cpp:17:       ['MT_UNSAFE']                              mt_unsafe_function()                                                                                
+::endgroup::
+::group::bad::t_mt_unsafe_one_function_from_VL_PURE_e()
+test_regress/t/t_dist_attributes_bad.cpp:86:       ['PURE']                                  bad::t_mt_unsafe_one_function_from_VL_PURE_e()                                                      
+test_regress/t/t_dist_attributes_bad.cpp:18:       ['MT_UNSAFE']                              mt_unsafe_one_function()                                                                            
+::endgroup::
+::group::bad::t_mt_safe_function_from_VL_PURE_e()
+test_regress/t/t_dist_attributes_bad.cpp:87:       ['PURE']                                  bad::t_mt_safe_function_from_VL_PURE_e()                                                            
+test_regress/t/t_dist_attributes_bad.cpp:19:       ['MT_SAFE']                                mt_safe_function()                                                                                  
+::endgroup::
+::group::bad::t_mt_safe_postinit_function_from_VL_PURE_e()
+test_regress/t/t_dist_attributes_bad.cpp:88:       ['PURE']                                  bad::t_mt_safe_postinit_function_from_VL_PURE_e()                                                   
+test_regress/t/t_dist_attributes_bad.cpp:21:       ['MT_SAFE']                                mt_safe_postinit_function()                                                                         
+::endgroup::
+::group::bad::t_mt_safe_excludes_function_from_VL_PURE_e()
+test_regress/t/t_dist_attributes_bad.cpp:89:       ['PURE']                                  bad::t_mt_safe_excludes_function_from_VL_PURE_e()                                                   
+test_regress/t/t_dist_attributes_bad.cpp:22:       ['MT_SAFE']                                mt_safe_excludes_function()                                                                         
+::endgroup::
+::group::bad::t_mt_start_function_from_VL_PURE_e()
+test_regress/t/t_dist_attributes_bad.cpp:90:       ['PURE']                                  bad::t_mt_start_function_from_VL_PURE_e()                                                           
+test_regress/t/t_dist_attributes_bad.cpp:23:       ['MT_START']                               mt_start_function()                                                                                 
+::endgroup::
+::group::bad::t_no_attributes_function_from_VL_MT_SAFE_e()
+test_regress/t/t_dist_attributes_bad.cpp:93:       ['MT_SAFE']                               bad::t_no_attributes_function_from_VL_MT_SAFE_e()                                                   
+test_regress/t/t_dist_attributes_bad.cpp:16:       []                                         no_attributes_function()                                                                            
+::endgroup::
+::group::bad::t_mt_unsafe_function_from_VL_MT_SAFE_e()
+test_regress/t/t_dist_attributes_bad.cpp:94:       ['MT_SAFE']                               bad::t_mt_unsafe_function_from_VL_MT_SAFE_e()                                                       
+test_regress/t/t_dist_attributes_bad.cpp:17:       ['MT_UNSAFE']                              mt_unsafe_function()                                                                                
+::endgroup::
+::group::bad::t_mt_unsafe_one_function_from_VL_MT_SAFE_e()
+test_regress/t/t_dist_attributes_bad.cpp:95:       ['MT_SAFE']                               bad::t_mt_unsafe_one_function_from_VL_MT_SAFE_e()                                                   
+test_regress/t/t_dist_attributes_bad.cpp:18:       ['MT_UNSAFE']                              mt_unsafe_one_function()                                                                            
+::endgroup::
+::group::bad::t_mt_start_function_from_VL_MT_SAFE_e()
+test_regress/t/t_dist_attributes_bad.cpp:96:       ['MT_SAFE']                               bad::t_mt_start_function_from_VL_MT_SAFE_e()                                                        
+test_regress/t/t_dist_attributes_bad.cpp:23:       ['MT_START']                               mt_start_function()                                                                                 
+::endgroup::
+::group::bad::t_no_attributes_function_from_VL_MT_SAFE_POSTINIT_e()
+test_regress/t/t_dist_attributes_bad.cpp:99:       ['MT_SAFE']                               bad::t_no_attributes_function_from_VL_MT_SAFE_POSTINIT_e()                                          
+test_regress/t/t_dist_attributes_bad.cpp:16:       []                                         no_attributes_function()                                                                            
+::endgroup::
+::group::bad::t_mt_unsafe_function_from_VL_MT_SAFE_POSTINIT_e()
+test_regress/t/t_dist_attributes_bad.cpp:100:      ['MT_SAFE']                               bad::t_mt_unsafe_function_from_VL_MT_SAFE_POSTINIT_e()                                              
+test_regress/t/t_dist_attributes_bad.cpp:17:       ['MT_UNSAFE']                              mt_unsafe_function()                                                                                
+::endgroup::
+::group::bad::t_mt_unsafe_one_function_from_VL_MT_SAFE_POSTINIT_e()
+test_regress/t/t_dist_attributes_bad.cpp:101:      ['MT_SAFE']                               bad::t_mt_unsafe_one_function_from_VL_MT_SAFE_POSTINIT_e()                                          
+test_regress/t/t_dist_attributes_bad.cpp:18:       ['MT_UNSAFE']                              mt_unsafe_one_function()                                                                            
+::endgroup::
+::group::bad::t_mt_start_function_from_VL_MT_SAFE_POSTINIT_e()
+test_regress/t/t_dist_attributes_bad.cpp:102:      ['MT_SAFE']                               bad::t_mt_start_function_from_VL_MT_SAFE_POSTINIT_e()                                               
+test_regress/t/t_dist_attributes_bad.cpp:23:       ['MT_START']                               mt_start_function()                                                                                 
+::endgroup::
+::group::bad::t_no_attributes_function_from_VL_MT_SAFE_EXCLUDES_e()
+test_regress/t/t_dist_attributes_bad.cpp:105:      ['MT_SAFE']                               bad::t_no_attributes_function_from_VL_MT_SAFE_EXCLUDES_e()                                          
+test_regress/t/t_dist_attributes_bad.cpp:16:       []                                         no_attributes_function()                                                                            
+::endgroup::
+::group::bad::t_mt_unsafe_function_from_VL_MT_SAFE_EXCLUDES_e()
+test_regress/t/t_dist_attributes_bad.cpp:106:      ['MT_SAFE']                               bad::t_mt_unsafe_function_from_VL_MT_SAFE_EXCLUDES_e()                                              
+test_regress/t/t_dist_attributes_bad.cpp:17:       ['MT_UNSAFE']                              mt_unsafe_function()                                                                                
+::endgroup::
+::group::bad::t_mt_unsafe_one_function_from_VL_MT_SAFE_EXCLUDES_e()
+test_regress/t/t_dist_attributes_bad.cpp:107:      ['MT_SAFE']                               bad::t_mt_unsafe_one_function_from_VL_MT_SAFE_EXCLUDES_e()                                          
+test_regress/t/t_dist_attributes_bad.cpp:18:       ['MT_UNSAFE']                              mt_unsafe_one_function()                                                                            
+::endgroup::
+::group::bad::t_mt_start_function_from_VL_MT_SAFE_EXCLUDES_e()
+test_regress/t/t_dist_attributes_bad.cpp:108:      ['MT_SAFE']                               bad::t_mt_start_function_from_VL_MT_SAFE_EXCLUDES_e()                                               
+test_regress/t/t_dist_attributes_bad.cpp:23:       ['MT_START']                               mt_start_function()                                                                                 
+::endgroup::
+::group::bad::t_no_attributes_function_from_VL_MT_START_e()
+test_regress/t/t_dist_attributes_bad.cpp:111:      ['MT_START']                              bad::t_no_attributes_function_from_VL_MT_START_e()                                                  
+test_regress/t/t_dist_attributes_bad.cpp:16:       []                                         no_attributes_function()                                                                            
+::endgroup::
+::group::bad::t_mt_unsafe_function_from_VL_MT_START_e()
+test_regress/t/t_dist_attributes_bad.cpp:112:      ['MT_START']                              bad::t_mt_unsafe_function_from_VL_MT_START_e()                                                      
+test_regress/t/t_dist_attributes_bad.cpp:17:       ['MT_UNSAFE']                              mt_unsafe_function()                                                                                
+::endgroup::
+::group::bad::t_mt_unsafe_one_function_from_VL_MT_START_e()
+test_regress/t/t_dist_attributes_bad.cpp:113:      ['MT_START']                              bad::t_mt_unsafe_one_function_from_VL_MT_START_e()                                                  
+test_regress/t/t_dist_attributes_bad.cpp:18:       ['MT_UNSAFE']                              mt_unsafe_one_function()                                                                            
+::endgroup::
+::group::bad::t_mt_start_function_from_VL_MT_START_e()
+test_regress/t/t_dist_attributes_bad.cpp:114:      ['MT_START']                              bad::t_mt_start_function_from_VL_MT_START_e()                                                       
+test_regress/t/t_dist_attributes_bad.cpp:23:       ['MT_START']                               mt_start_function()                                                                                 
+::endgroup::
+Number of functions marked as MT_SAFE calling unsafe functions: 23
