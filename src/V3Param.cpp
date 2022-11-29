@@ -1098,8 +1098,8 @@ class ParamVisitor final : public VNVisitor {
     }
 
     void visit(AstUnlinkedRef* nodep) override {
-        AstVarXRef* const varxrefp = VN_CAST(nodep->op1p(), VarXRef);
-        AstNodeFTaskRef* const taskrefp = VN_CAST(nodep->op1p(), NodeFTaskRef);
+        AstVarXRef* const varxrefp = VN_CAST(nodep->refp(), VarXRef);
+        AstNodeFTaskRef* const taskrefp = VN_CAST(nodep->refp(), NodeFTaskRef);
         if (varxrefp) {
             m_unlinkedTxt = varxrefp->dotted();
         } else if (taskrefp) {
@@ -1115,7 +1115,7 @@ class ParamVisitor final : public VNVisitor {
         } else {
             taskrefp->dotted(m_unlinkedTxt);
         }
-        nodep->replaceWith(nodep->op1p()->unlinkFrBack());
+        nodep->replaceWith(nodep->refp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstCellArrayRef* nodep) override {

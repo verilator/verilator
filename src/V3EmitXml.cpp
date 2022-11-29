@@ -117,13 +117,13 @@ class EmitXmlFileVisitor final : public VNVisitor {
     void visit(AstNodeIf* nodep) override {
         outputTag(nodep, "if");
         puts(">\n");
-        iterateAndNextNull(nodep->op1p());
+        iterateAndNextNull(nodep->condp());
         puts("<begin>\n");
-        iterateAndNextNull(nodep->op2p());
+        iterateAndNextNull(nodep->thensp());
         puts("</begin>\n");
-        if (nodep->op3p()) {
+        if (nodep->elsesp()) {
             puts("<begin>\n");
-            iterateAndNextNull(nodep->op3p());
+            iterateAndNextNull(nodep->elsesp());
             puts("</begin>\n");
         }
         puts("</if>\n");
@@ -132,21 +132,21 @@ class EmitXmlFileVisitor final : public VNVisitor {
         outputTag(nodep, "while");
         puts(">\n");
         puts("<begin>\n");
-        iterateAndNextNull(nodep->op1p());
+        iterateAndNextNull(nodep->precondsp());
         puts("</begin>\n");
-        if (nodep->op2p()) {
+        if (nodep->condp()) {
             puts("<begin>\n");
-            iterateAndNextNull(nodep->op2p());
+            iterateAndNextNull(nodep->condp());
             puts("</begin>\n");
         }
-        if (nodep->op3p()) {
+        if (nodep->stmtsp()) {
             puts("<begin>\n");
-            iterateAndNextNull(nodep->op3p());
+            iterateAndNextNull(nodep->stmtsp());
             puts("</begin>\n");
         }
-        if (nodep->op4p()) {
+        if (nodep->incsp()) {
             puts("<begin>\n");
-            iterateAndNextNull(nodep->op4p());
+            iterateAndNextNull(nodep->incsp());
             puts("</begin>\n");
         }
         puts("</while>\n");

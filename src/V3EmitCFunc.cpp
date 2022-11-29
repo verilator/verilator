@@ -36,15 +36,9 @@ bool EmitCFunc::emitSimpleOk(AstNodeExpr* nodep) {
     // Can we put out a simple (A + B) instead of VL_ADD_III(A,B)?
     if (nodep->emitSimpleOperator() == "") return false;
     if (nodep->isWide()) return false;
-    if (nodep->op1p()) {
-        if (nodep->op1p()->isWide()) return false;
-    }
-    if (nodep->op2p()) {
-        if (nodep->op2p()->isWide()) return false;
-    }
-    if (nodep->op3p()) {
-        if (nodep->op3p()->isWide()) return false;
-    }
+    if (nodep->op1p() && nodep->op1p()->isWide()) return false;
+    if (nodep->op2p() && nodep->op2p()->isWide()) return false;
+    if (nodep->op3p() && nodep->op3p()->isWide()) return false;
     return true;
 }
 
