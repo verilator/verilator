@@ -100,12 +100,12 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
 
         // METHODS
         void setLeaf(AstVarRef* refp) {
-            UASSERT(!m_refp && !m_constp, "Must be called just once");
+            UASSERT_OBJ(!m_refp && !m_constp, refp, "Must be called just once");
             m_refp = refp;
             m_msb = refp->varp()->widthMin() - 1;
         }
         void setLeaf(const AstConst* constp) {
-            UASSERT(!m_refp && !m_constp, "Must be called just once");
+            UASSERT_OBJ(!m_refp && !m_constp, constp, "Must be called just once");
             m_constp = constp;
             m_msb = constp->widthMin() - 1;
         }
@@ -129,10 +129,10 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             UASSERT(m_refp, "m_refp should be set");
             const int width = m_refp->varp()->widthMin();
             if (!m_refp->isWide()) {
-                UASSERT(m_wordIdx == -1, "Bad word index into non-wide");
+                UASSERT_OBJ(m_wordIdx == -1, m_refp, "Bad word index into non-wide");
                 return width;
             } else {
-                UASSERT(m_wordIdx >= 0, "Bad word index into wide");
+                UASSERT_OBJ(m_wordIdx >= 0, m_refp, "Bad word index into wide");
                 const int bitsInMSW = VL_BITBIT_E(width) ? VL_BITBIT_E(width) : VL_EDATASIZE;
                 return m_wordIdx == m_refp->widthWords() - 1 ? bitsInMSW : VL_EDATASIZE;
             }
@@ -239,7 +239,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         // Return reduction term for this VarInfo, together with the number of ops in the term,
         // and a boolean indicating if the term is clean (1-bit vs multi-bit value)
         ResultTerm getResultTerm() const {
-            UASSERT(!hasConstResult(), "getTerm on reduction that yields constant");
+            UASSERT_OBJ(!hasConstResult(), m_refp, "getTerm on reduction that yields constant");
             FileLine* const fl = m_refp->fileline();
 
             // Get the term we are referencing (the WordSel, if wide, otherwise just the VarRef)
@@ -257,7 +257,8 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             V3Number maskNum{srcp, m_width, 0};
             maskNum.opBitsNonX(m_bitPolarity);  // 'x' -> 0, 0->1, 1->1
             const uint64_t maskVal = maskNum.toUQuad();
-            UASSERT(maskVal != 0, "Should have been recognized as having const 0 result");
+            UASSERT_OBJ(maskVal != 0, m_refp,
+                        "Should have been recognized as having const 0 result");
 
             // Parts of the return value
             AstNodeExpr* resultp = srcp;  // The tree for this term
