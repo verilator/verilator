@@ -35,7 +35,7 @@ sub check {
 	    tee => 1,
 	    cmd => ["python3", "$root/nodist/clang_check_attributes $input_dirs $clang_args -x $exclude"]);
 
-	file_grep($Self->{run_log_filename}, "Number of functions marked as MT_SAFE calling unsafe functions: 38");
+	file_grep($Self->{run_log_filename}, "Number of functions marked as MT_SAFE calling unsafe functions: 37");
     }
 
     run_clang_check();
