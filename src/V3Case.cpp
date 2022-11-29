@@ -152,7 +152,7 @@ private:
                           if ( m_valueItem[i])  {
                            AstConst* const constp = VN_AS(itemp->valuep(), Const);
                            AstConst* const itemvp  = VN_AS(m_valueItem[i]->op1p(),Const);
-                             if (itemvp->num().toDecimalU().compare(constp->num().toDecimalU()) == 0 ) { // match
+                             if (itemvp->num().isCaseEq(constp->num())) { // match
                                  foundMatch= true;
                              } else { // no match
                                UINFO(9, "Value " << std::hex << i << " " <<
