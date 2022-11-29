@@ -218,9 +218,9 @@ public:
     bool lintError() const VL_MT_SAFE {
         return (m_e == ALWCOMBORDER || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
-                || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT
-                || m_e == LATCH || m_e == LITENDIAN || m_e == PINMISSING || m_e == REALCVT
-                || m_e == UNSIGNED || m_e == WIDTH);
+                || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == LATCH
+                || m_e == LITENDIAN || m_e == PINMISSING || m_e == REALCVT || m_e == UNSIGNED
+                || m_e == WIDTH);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
