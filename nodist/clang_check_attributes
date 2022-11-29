@@ -224,6 +224,8 @@ def find_funcs(node, cfg, search_attributes=None, level=1, verbose=False):
 
 
 def get_info(node, cfg):
+    if cfg.print_all:
+        printed.clear()
     if node.kind == CursorKind.CXX_METHOD:
         annotations = get_annotations(node)
         if "MT_SAFE" in annotations:
@@ -239,11 +241,13 @@ def get_info(node, cfg):
         get_info(cursor, cfg)
 
 
-def get_files(filename):
+def get_files(filename, cfg):
     files = list(Path(filename).rglob('*.cpp'))
     for ignore in IGNORE_FILES_LIST:
         files = list(f for f in files if ignore not in str(f))
 
+    if cfg.filter_input:
+        files = list(f for f in files if cfg.filter_input in str(f))
     # Make sure list is unique
     files = list(dict.fromkeys(files))
     # Make filepaths absolute
@@ -283,6 +287,18 @@ def main():
     parser.add_argument('input_folders',
                         nargs='*',
                         help='list of input paths for .cpp files')
+    parser.add_argument('-filter',
+                        dest='filter_input',
+                        type=str,
+                        help='filter files from input folder that contains this string')
+    parser.add_argument('-print-all',
+                        dest='print_all',
+                        action='store_true',
+                        help="""
+                        Print all unsafe calls.
+                        By default, we only print unsafe call once in order
+                        to speedup processing. This option disables this behavior.
+                        """)
 
     cfg, unknowns = parser.parse_known_args()
     # Add -I stripped by argparser to clang_args
@@ -296,7 +312,7 @@ def main():
 
     files = []
     for folder in cfg.input_folders:
-        files.extend(get_files(folder))
+        files.extend(get_files(folder, cfg))
     files.sort()
     for file in files:
         translate_unit = get_translate_unit(file, cfg)
