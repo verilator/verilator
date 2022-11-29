@@ -1,13 +1,16 @@
 #include "verilatedos.h"
+
 #include <mutex>
 
 #define NO_ANNOTATION
 
+// clang-format off
 #define TEST(MAIN_ANNOTATION, SUB_FUNCTION) \
     static void t_ ## SUB_FUNCTION ## _from_ ## MAIN_ANNOTATION ## _e() MAIN_ANNOTATION { SUB_FUNCTION(); }
 
 #define TEST2(MAIN_ANNOTATION, X, SUB_FUNCTION) \
     static void t_ ## SUB_FUNCTION ## _from_ ## MAIN_ANNOTATION ## _e() MAIN_ANNOTATION(X) { SUB_FUNCTION(); }
+// clang-format on
 
 static std::mutex m_mutex;
 static void no_attributes_function();
@@ -31,7 +34,7 @@ class good {
     TEST(NO_ANNOTATION, mt_safe_excludes_function);
     TEST(NO_ANNOTATION, mt_start_function);
     // pure functions can only call another pure function
-    TEST(VL_PURE,       mt_pure_function);
+    TEST(VL_PURE, mt_pure_function);
     // mt_safe can call other mt_safe function, or
     // pure function
     TEST(VL_MT_SAFE, mt_safe_function);

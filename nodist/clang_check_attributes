@@ -287,10 +287,11 @@ def main():
     parser.add_argument('input_folders',
                         nargs='*',
                         help='list of input paths for .cpp files')
-    parser.add_argument('-filter',
-                        dest='filter_input',
-                        type=str,
-                        help='filter files from input folder that contains this string')
+    parser.add_argument(
+        '-filter',
+        dest='filter_input',
+        type=str,
+        help='filter files from input folder that contains this string')
     parser.add_argument('-print-all',
                         dest='print_all',
                         action='store_true',
