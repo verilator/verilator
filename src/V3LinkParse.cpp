@@ -551,6 +551,32 @@ private:
         cleanFileline(nodep);
         iterateChildren(nodep);
     }
+    void visit(AstDot* nodep) override {
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+        if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "super"
+            && VN_IS(nodep->rhsp(), New)) {
+            // Look for other statements until hit function start
+            AstNode* scanp = nodep;
+            // Skip over the New's statement
+            for (; scanp && !VN_IS(scanp, StmtExpr); scanp = scanp->backp()) {}
+            if (VN_IS(scanp, StmtExpr)) {  // Ignore warnign if something not understood
+                scanp = scanp->backp();
+                for (; scanp; scanp = scanp->backp()) {
+                    if (VN_IS(scanp, NodeStmt) || VN_IS(scanp, NodeModule)
+                        || VN_IS(scanp, NodeFTask))
+                        break;
+                }
+                if (!VN_IS(scanp, NodeFTask)) {
+                    nodep->rhsp()->v3error(
+                        "'super.new' not first statement in new function (IEEE 1800-2017 8.15)\n"
+                        << nodep->rhsp()->warnContextPrimary() << scanp->warnOther()
+                        << "... Location of earlier statement\n"
+                        << scanp->warnContextSecondary());
+                }
+            }
+        }
+    }
     void visit(AstPrintTimeScale* nodep) override {
         // Inlining may change hierarchy, so just save timescale where needed
         cleanFileline(nodep);
