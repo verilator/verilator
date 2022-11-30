@@ -2883,6 +2883,14 @@ void Verilated::overWidthError(const char* signame) VL_MT_SAFE {
     VL_UNREACHABLE;
 }
 
+void Verilated::scTraceBeforeElaboration() VL_MT_SAFE {
+    // Slowpath - Called only when trace file opened before SystemC elaboration
+    VL_FATAL_MT("unknown", 0, "",
+                "%Error: Verilated*Sc::open(...) was called before sc_core::sc_start(). "
+                "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before opening a wave file.");
+    VL_UNREACHABLE;
+}
+
 void Verilated::mkdir(const char* dirname) VL_MT_UNSAFE {
 #if defined(_WIN32) || defined(__MINGW32__)
     ::mkdir(dirname);

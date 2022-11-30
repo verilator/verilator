@@ -105,9 +105,6 @@ public:
                     if (v3Global.opt.coverage()) putMakeClassEntry(of, "verilated_cov.cpp");
                     if (v3Global.opt.trace()) {
                         putMakeClassEntry(of, v3Global.opt.traceSourceBase() + "_c.cpp");
-                        if (v3Global.opt.systemC()) {
-                            putMakeClassEntry(of, v3Global.opt.traceSourceLang() + ".cpp");
-                        }
                     }
                     if (v3Global.usesTiming()) putMakeClassEntry(of, "verilated_timing.cpp");
                     if (v3Global.opt.threads()) putMakeClassEntry(of, "verilated_threads.cpp");
