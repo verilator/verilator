@@ -1181,8 +1181,8 @@ private:
             cfuncp->isConstructor(true);
             AstClass* const classp = m_statep->getClassp(nodep);
             if (classp->extendsp()) {
-                cfuncp->ctorInits(EmitCBaseVisitor::prefixNameProtect(classp->extendsp()->classp())
-                                  + "(vlSymsp)");
+                cfuncp->baseCtors(
+                    EmitCBaseVisitor::prefixNameProtect(classp->extendsp()->classp()));
             }
         }
         if (cfuncp->dpiExportImpl()) cfuncp->cname(nodep->cname());

@@ -550,7 +550,7 @@ private:
     string m_cname;  // C name, for dpiExports
     string m_rtnType;  // void, bool, or other return type
     string m_argTypes;  // Argument types
-    string m_ctorInits;  // Constructor sub-class inits
+    string m_baseCtors;  // Base class constructor
     string m_ifdef;  // #ifdef symbol around this function
     VBoolOrUnknown m_isConst;  // Function is declared const (*this not changed)
     bool m_isStatic : 1;  // Function is static (no need for a 'this' pointer)
@@ -611,7 +611,7 @@ public:
     bool same(const AstNode* samep) const override {
         const AstCFunc* const asamep = static_cast<const AstCFunc*>(samep);
         return ((isTrace() == asamep->isTrace()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
-                && (argTypes() == asamep->argTypes()) && (ctorInits() == asamep->ctorInits())
+                && (argTypes() == asamep->argTypes()) && (baseCtors() == asamep->baseCtors())
                 && isLoose() == asamep->isLoose()
                 && (!(dpiImportPrototype() || dpiExportImpl()) || name() == asamep->name()));
     }
@@ -644,8 +644,8 @@ public:
     void funcPublic(bool flag) { m_funcPublic = flag; }
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
-    void ctorInits(const string& str) { m_ctorInits = str; }
-    string ctorInits() const { return m_ctorInits; }
+    void baseCtors(const string& str) { m_baseCtors = str; }
+    string baseCtors() const { return m_baseCtors; }
     void ifdef(const string& str) { m_ifdef = str; }
     string ifdef() const { return m_ifdef; }
     bool isConstructor() const { return m_isConstructor; }
