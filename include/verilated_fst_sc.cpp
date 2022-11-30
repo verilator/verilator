@@ -29,7 +29,7 @@
 //======================================================================
 
 void VerilatedFstSc::open(const char* filename) {
-    if (!sc_core::sc_get_curr_simcontext()->elaboration_done()) {
+    if (VL_UNLIKELY(!sc_core::sc_get_curr_simcontext()->elaboration_done())) {
         vl_fatal(__FILE__, __LINE__, "VerilatedFstSc",
                  ("%Error: VerilatedFstSc::open(\"" + std::string{filename}
                   + "\") is called before sc_core::sc_start(). "

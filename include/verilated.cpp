@@ -2453,7 +2453,7 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
             sc_prec = 15;
         }
     }
-    if (value != sc_prec) {
+    if (VL_UNLIKELY(value != sc_prec)) {
         std::ostringstream msg;
         msg << "SystemC's sc_set_time_resolution is 10^-" << sc_prec
             << ", which does not match Verilog timeprecision 10^-" << value
@@ -2524,7 +2524,7 @@ void VerilatedContext::internalsDump() const VL_MT_SAFE {
 void VerilatedContext::addModel(VerilatedModel* modelp) {
     threadPoolp();  // Ensure thread pool is created, so m_threads cannot change any more
 
-    if (modelp->threads() > m_threads) {
+    if (VL_UNLIKELY(modelp->threads() > m_threads)) {
         std::ostringstream msg;
         msg << "VerilatedContext has " << m_threads << " threads but model '"
             << modelp->modelName() << "' (instantiated as '" << modelp->hierName()
