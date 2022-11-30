@@ -505,7 +505,7 @@ public:
     /// Get time precision as power-of-ten
     int timeprecision() const VL_MT_SAFE { return -m_s.m_timeprecision; }
     /// Return time precision as power-of-ten
-    void timeprecision(int value) VL_MT_SAFE;
+    inline void timeprecision(int value) VL_MT_SAFE;
     /// Get time precision as IEEE-standard text
     const char* timeprecisionString() const VL_MT_SAFE;
 
@@ -861,7 +861,8 @@ public:
     // Internal: Throw signal assertion
     static void nullPointerError(const char* filename, int linenum) VL_ATTR_NORETURN VL_MT_SAFE;
     static void overWidthError(const char* signame) VL_ATTR_NORETURN VL_MT_SAFE;
-    static void scTraceBeforeElaboration() VL_ATTR_NORETURN VL_MT_SAFE;
+    static void scTimePrecisionError(int sc_prec, int vl_prec) VL_ATTR_NORETURN VL_MT_SAFE;
+    static void scTraceBeforeElaborationError() VL_ATTR_NORETURN VL_MT_SAFE;
 
     // Internal: Get and set DPI context
     static const VerilatedScope* dpiScope() VL_MT_SAFE { return t_s.t_dpiScopep; }
@@ -910,6 +911,36 @@ int VerilatedContext::debug() VL_MT_SAFE { return Verilated::debug(); }
 #include "verilated_funcs.h"
 
 //======================================================================
+
+void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
+    if (value < 0) value = -value;  // Stored as 0..15
+#if VM_SC
+    int sc_prec = 99;
+#endif
+    {
+        const VerilatedLockGuard lock{m_mutex};
+        m_s.m_timeprecision = value;
+#if VM_SC
+        const sc_time sc_res = sc_get_time_resolution();
+        if (sc_res == sc_time(1, SC_SEC)) {
+            sc_prec = 0;
+        } else if (sc_res == sc_time(1, SC_MS)) {
+            sc_prec = 3;
+        } else if (sc_res == sc_time(1, SC_US)) {
+            sc_prec = 6;
+        } else if (sc_res == sc_time(1, SC_NS)) {
+            sc_prec = 9;
+        } else if (sc_res == sc_time(1, SC_PS)) {
+            sc_prec = 12;
+        } else if (sc_res == sc_time(1, SC_FS)) {
+            sc_prec = 15;
+        }
+#endif
+    }
+#if VM_SC
+    if (VL_UNLIKELY(value != sc_prec)) Verilated::scTimePrecisionError(sc_prec, value);
+#endif
+}
 
 #undef VERILATOR_VERILATED_H_INTERNAL_
 #endif  // Guard

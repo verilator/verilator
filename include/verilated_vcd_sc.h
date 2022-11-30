@@ -66,7 +66,7 @@ public:
     // Override VerilatedVcdC. Must be called after starting simulation.
     void open(const char* filename) override VL_MT_SAFE {
         if (VL_UNLIKELY(!sc_core::sc_get_curr_simcontext()->elaboration_done())) {
-            Verilated::scTraceBeforeElaboration();
+            Verilated::scTraceBeforeElaborationError();
         }
         VerilatedVcdC::open(filename);
     }

@@ -67,7 +67,7 @@ public:
     // Note: this is not a virtual function in the base class, so no 'override'
     virtual void open(const char* filename) VL_MT_SAFE {
         if (VL_UNLIKELY(!sc_core::sc_get_curr_simcontext()->elaboration_done())) {
-            Verilated::scTraceBeforeElaboration();
+            Verilated::scTraceBeforeElaborationError();
         }
         VerilatedFstC::open(filename);
     }

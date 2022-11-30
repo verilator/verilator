@@ -2429,44 +2429,6 @@ void VerilatedContext::timeunit(int value) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_timeunit = value;
 }
-void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
-    if (value < 0) value = -value;  // Stored as 0..15
-#ifdef SYSTEMC_VERSION
-    int sc_prec = 99;
-#endif
-    {
-        const VerilatedLockGuard lock{m_mutex};
-        m_s.m_timeprecision = value;
-#ifdef SYSTEMC_VERSION
-        const sc_time sc_res = sc_get_time_resolution();
-        if (sc_res == sc_time(1, SC_SEC)) {
-            sc_prec = 0;
-        } else if (sc_res == sc_time(1, SC_MS)) {
-            sc_prec = 3;
-        } else if (sc_res == sc_time(1, SC_US)) {
-            sc_prec = 6;
-        } else if (sc_res == sc_time(1, SC_NS)) {
-            sc_prec = 9;
-        } else if (sc_res == sc_time(1, SC_PS)) {
-            sc_prec = 12;
-        } else if (sc_res == sc_time(1, SC_FS)) {
-            sc_prec = 15;
-        }
-    }
-    if (VL_UNLIKELY(value != sc_prec)) {
-        std::ostringstream msg;
-        msg << "SystemC's sc_set_time_resolution is 10^-" << sc_prec
-            << ", which does not match Verilog timeprecision 10^-" << value
-            << ". Suggest use 'sc_set_time_resolution(" << vl_time_str(value)
-            << ")', or Verilator '--timescale-override " << vl_time_str(sc_prec) << "/"
-            << vl_time_str(sc_prec) << "'";
-        const std::string msgs = msg.str();
-        VL_FATAL_MT("", 0, "", msgs.c_str());
-    }
-#else
-    }
-#endif
-}
 const char* VerilatedContext::timeunitString() const VL_MT_SAFE { return vl_time_str(timeunit()); }
 const char* VerilatedContext::timeprecisionString() const VL_MT_SAFE {
     return vl_time_str(timeprecision());
@@ -2883,7 +2845,19 @@ void Verilated::overWidthError(const char* signame) VL_MT_SAFE {
     VL_UNREACHABLE;
 }
 
-void Verilated::scTraceBeforeElaboration() VL_MT_SAFE {
+void Verilated::scTimePrecisionError(int sc_prec, int vl_prec) VL_MT_SAFE {
+    std::ostringstream msg;
+    msg << "SystemC's sc_set_time_resolution is 10^-" << sc_prec
+        << ", which does not match Verilog timeprecision 10^-" << vl_prec
+        << ". Suggest use 'sc_set_time_resolution(" << vl_time_str(vl_prec)
+        << ")', or Verilator '--timescale-override " << vl_time_str(sc_prec) << "/"
+        << vl_time_str(sc_prec) << "'";
+    const std::string msgs = msg.str();
+    VL_FATAL_MT("", 0, "", msgs.c_str());
+    VL_UNREACHABLE;
+}
+
+void Verilated::scTraceBeforeElaborationError() VL_MT_SAFE {
     // Slowpath - Called only when trace file opened before SystemC elaboration
     VL_FATAL_MT("unknown", 0, "",
                 "%Error: Verilated*Sc::open(...) was called before sc_core::sc_start(). "
