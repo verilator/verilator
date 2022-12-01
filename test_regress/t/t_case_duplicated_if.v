@@ -21,7 +21,6 @@ module t (/*AUTOARG*/
    always_comb direction = idx % 2 == 0 ? UP : DOWN;
 
 
-   // always_ff @(negedge clk) if (selected == MGMT) $error("no");
    always @(posedge clk) begin
       if (idx > 100) begin
            $write("*-* All Finished *-*\n");
