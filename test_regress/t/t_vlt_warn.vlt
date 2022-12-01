@@ -20,3 +20,4 @@ lint_off -rule UNUSED         -file "*/t_vlt_warn.v" -match "Signal is not used:
 coverage_off -file "t/t_vlt_warn.v"
 // Test --flag is also accepted
 tracing_off --file "t/t_vlt_warn.v"
+lint_off -rule EOFNEWLINE -file "t/t_vlt_warn.v"
