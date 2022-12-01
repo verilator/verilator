@@ -8,17 +8,17 @@
 
 module top();
 
-  typedef struct { // IEEE 1800-2017 SV CH:5.10
+  typedef struct packed { // IEEE 1800-2017 SV CH:5.10
     int a;
     shortint b;
   } ab_struct;
 
-  typedef struct { // IEEE 1800-2017 SV CH:10.9.2
+  typedef struct packed { // IEEE 1800-2017 SV CH:10.9.2
   int x;
   int y;
   } st_struct;
 
-  typedef struct { // IEEE 1800-2017 SV CH:10.9.2
+  typedef struct packed { // IEEE 1800-2017 SV CH:10.9.2
     logic [7:0] a;
     bit b;
     bit signed [31:0] c;
@@ -26,21 +26,21 @@ module top();
   } sa_struct;
 
 
-  typedef struct { // IEEE 1800-2017 SV CH:10.9.2
+  typedef struct packed { // IEEE 1800-2017 SV CH:10.9.2
     int A;
-    struct {
+    struct packed {
     int B, C;
     } BC1, BC2;
   } DEF_struct;
 
 
-  typedef struct { // IEEE 1800-2017 SV CH:10.9.2
+  typedef struct packed { // IEEE 1800-2017 SV CH:10.9.2
     int A;
-    struct {
+    struct packed {
       int B, C;
-      struct{
+      struct packed {
         int D, E;
-        struct{
+        struct packed {
           int F;
           shortint G;
         } FG1;
