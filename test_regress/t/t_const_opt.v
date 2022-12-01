@@ -320,7 +320,7 @@ module bug3399(input wire clk, input wire [31:0] in, inout wire out0, inout wire
 endmodule
 
 // Bug3786
-// When V3Expand is skipped, wide number is not split by ARRAYSEL.
+// When V3Expand is skipped, wide number is not split by WORDSEL.
 // Bit op tree opt. expects that bit width is 64 bit at most.
 module bug3786(input wire clk, input wire [31:0] in, inout wire out);
    logic [127:0] d0, d1;
