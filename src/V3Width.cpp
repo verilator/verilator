@@ -6082,6 +6082,39 @@ private:
         // Check using assignment-like context rules
         // if (debug()) nodep->dumpTree("-  checkass: ");
         UASSERT_OBJ(stage == FINAL, nodep, "Bad width call");
+        // Create unpacked byte from string perl IEEE 1800-2017 5.9
+        if (AstConst* constp = VN_CAST(rhsp, Const)) {
+            if (const AstUnpackArrayDType* const arrayp
+                = VN_CAST(lhsDTypep->skipRefp(), UnpackArrayDType)) {
+                if (AstBasicDType* basicp = VN_CAST(arrayp->subDTypep()->skipRefp(), BasicDType)) {
+                    if (basicp->width() == 8 && constp->num().isFromString()) {
+                        AstInitArray* newp = new AstInitArray{
+                            constp->fileline(), lhsDTypep,
+                            new AstConst{constp->fileline(), AstConst::WidthedValue{}, 8, 0}};
+                        for (int aindex = arrayp->lo(); aindex <= arrayp->hi(); ++aindex) {
+                            int cindex = arrayp->declRange().littleEndian()
+                                             ? (arrayp->hi() - aindex)
+                                             : (aindex - arrayp->lo());
+                            V3Number selected{constp, 8};
+                            selected.opSel(constp->num(), cindex * 8 + 7, cindex * 8);
+                            UINFO(0, "   aindex=" << aindex << "  cindex=" << cindex
+                                                  << "  c=" << selected << endl);
+                            if (!selected.isFourState()) {
+                                if (const uint32_t c = selected.toUInt()) {
+                                    newp->addIndexValuep(
+                                        aindex, new AstConst{constp->fileline(),
+                                                             AstConst::WidthedValue{}, 8, c});
+                                }
+                            }
+                        }
+                        UINFO(6, "   unpackFromString: " << nodep << endl);
+                        rhsp->replaceWith(newp);
+                        VL_DO_DANGLING(pushDeletep(rhsp), rhsp);
+                        rhsp = newp;
+                    }
+                }
+            }
+        }
         // We iterate and size the RHS based on the result of RHS evaluation
         checkClassAssign(nodep, side, rhsp, lhsDTypep);
         const bool lhsStream
