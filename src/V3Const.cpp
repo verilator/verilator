@@ -122,6 +122,10 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         const AstConst* constp() const { return m_constp; }
         int wordIdx() const { return m_wordIdx; }
         bool polarity() const { return m_polarity; }
+        bool missingWordSel() const {
+            // When V3Expand is skipped, WordSel is not inserted.
+            return m_refp->isWide() && m_wordIdx == -1;
+        }
         int lsb() const { return m_lsb; }
 
         int msb() const { return std::min(m_msb, varWidth() - 1); }
@@ -132,6 +136,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                 UASSERT_OBJ(m_wordIdx == -1, m_refp, "Bad word index into non-wide");
                 return width;
             } else {
+                if (missingWordSel()) return width;
                 UASSERT_OBJ(m_wordIdx >= 0, m_refp, "Bad word index into wide");
                 const int bitsInMSW = VL_BITBIT_E(width) ? VL_BITBIT_E(width) : VL_EDATASIZE;
                 return m_wordIdx == m_refp->widthWords() - 1 ? bitsInMSW : VL_EDATASIZE;
@@ -393,6 +398,11 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         if (!varInfop) {
             varInfop = new VarInfo{this, ref.refp(), ref.varWidth()};
             m_varInfos[idx].reset(varInfop);
+            if (ref.missingWordSel()) {
+                // ConstBitOpTreeVisitor makes some constants for masks and its type is uint64_t.
+                // That's why V3Expand, that inserts WordSel, is needed.
+                CONST_BITOP_SET_FAILED("V3Expand is skipped", ref.refp());
+            }
         } else {
             if (!varInfop->sameVarAs(ref.refp()))
                 CONST_BITOP_SET_FAILED("different var (scope?)", ref.refp());
