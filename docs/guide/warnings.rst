@@ -253,6 +253,12 @@ List Of Warnings
    :code:`default: ;` so that any design assumption violations will be
    discovered in simulation.
 
+   Unique case statements that select on an enumerated variable, where all
+   of the enumerated values are covered by case items, are considered
+   complete even if illegal non-enumerated values are not covered by the
+   case statement.  To check that illegal values are not hit, use
+   :vlopt:`--assert` (see IEEE 1800-2017 12.5.3).
+
    Ignoring this warning will only suppress the lint check, it will
    simulate correctly.
 
