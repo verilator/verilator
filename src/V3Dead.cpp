@@ -234,6 +234,11 @@ private:
         if (nodep->fromp()->dtypep()) nodep->fromp()->dtypep()->user1Inc();  // classref
         checkAll(nodep);
     }
+    void visit(AstStructSel* nodep) override {
+        iterateChildren(nodep);
+        if (nodep->fromp()->dtypep()) nodep->fromp()->dtypep()->user1Inc();  // structdtype
+        checkAll(nodep);
+    }
     void visit(AstModport* nodep) override {
         iterateChildren(nodep);
         if (m_elimCells) {

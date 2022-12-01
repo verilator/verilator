@@ -17,6 +17,8 @@
 //
 // Each class:
 //      Move to be modules under AstNetlist
+// Each typedef of an unpacked struct:
+//      Move to a new package under AstNetlist
 //
 //*************************************************************************
 
@@ -164,6 +166,21 @@ private:
         if (m_packageScopep) {
             m_toScopeMoves.emplace_back(std::make_pair(nodep, m_packageScopep));
         }
+    }
+    void visit(AstTypedef* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+        auto* const dtypep = VN_CAST(nodep->dtypep(), StructDType);
+        if (!dtypep || dtypep->packed()) return;
+
+        nodep->unlinkFrBack();
+
+        AstPackage* const packagep = new AstPackage{nodep->fileline(), nodep->name()};
+        packagep->name(nodep->name());
+        dtypep->name(nodep->name());  // The name will be used in struct definition
+        dtypep->classOrPackagep(packagep);
+        v3Global.rootp()->addModulesp(packagep);
+        packagep->addStmtsp(nodep);
     }
 
     void visit(AstNodeExpr* nodep) override {}  // Short circuit

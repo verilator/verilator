@@ -2097,9 +2097,7 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
         //                      // At present we allow only packed structures/unions.
         //                      // So this is different from variable_decl_assignment
                 id variable_dimensionListE
-                        { if ($2) $2->v3warn(UNPACKED, "Unsupported: Unpacked array in packed struct/union"
-                                                       " (struct/union converted to unpacked)");
-                          $$ = new AstMemberDType{$<fl>1, *$1, VFlagChildDType{},
+                        { $$ = new AstMemberDType{$<fl>1, *$1, VFlagChildDType{},
                                                   AstNodeDType::cloneTreeNull(GRAMMARP->m_memDTypep, true)};
                           PARSEP->tagNodep($$);
                           }

@@ -1274,12 +1274,15 @@ public:
 
 // === AstNodeUOrStructDType ===
 class AstStructDType final : public AstNodeUOrStructDType {
+    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
 public:
     // VSigning below is mispurposed to indicate if packed or not
     AstStructDType(FileLine* fl, VSigning numericUnpack)
         : ASTGEN_SUPER_StructDType(fl, numericUnpack) {}
     ASTGEN_MEMBERS_AstStructDType;
     string verilogKwd() const override { return "struct"; }
+    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
+    void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
 };
 class AstUnionDType final : public AstNodeUOrStructDType {
 public:

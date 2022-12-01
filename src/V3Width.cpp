@@ -222,6 +222,7 @@ private:
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
+    AstNodeModule* m_modp = nullptr;  // Current module
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables = 0;  // Number of created data type tables
@@ -1738,6 +1739,10 @@ private:
             return;
         }
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
+        // If this typedef defines a union or struct, assure it won't be deleted from AST by V3Dead
+        if (auto* const dtype = VN_CAST(nodep->dtypep(), NodeUOrStructDType)) {
+            if (!dtype->packed()) nodep->attrPublic(true);
+        }
         userIterateChildren(nodep, nullptr);
     }
     void visit(AstParamTypeDType* nodep) override {
@@ -2455,7 +2460,9 @@ private:
         UINFO(5, "   NODECLASS " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree("-  class-in: ");
         if (!nodep->packed()) {
-            nodep->v3warn(UNPACKED, "Unsupported: Unpacked struct/union");
+            if (VN_IS(nodep, UnionDType)) {
+                nodep->v3warn(UNPACKED, "Unsupported: Unpacked union");
+            }
             if (!v3Global.opt.structsPacked()) {
                 nodep->v3warn(UNPACKED, "Unsupported: --no-structs-packed");
             }
@@ -2502,6 +2509,13 @@ private:
         // TODO this maybe eventually required to properly resolve members,
         // though causes problems with t_class_forward.v, so for now avoided
         // userIterateChildren(nodep->classp(), nullptr);
+    }
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        {
+            m_modp = nodep;
+            userIterateChildren(nodep, nullptr);
+        }
     }
     void visit(AstClassOrPackageRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
@@ -2645,9 +2659,21 @@ private:
                 nodep->dtypep(memberp);
                 UINFO(9, "   MEMBERSEL(attr) -> " << nodep << endl);
                 UINFO(9, "           dt-> " << nodep->dtypep() << endl);
-            } else {
+            } else if (adtypep->packed()) {
                 AstSel* const newp = new AstSel{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                                 memberp->lsb(), memberp->width()};
+                // Must skip over the member to find the union; as the member may disappear later
+                newp->dtypep(memberp->subDTypep()->skipRefToEnump());
+                newp->didWidth(true);  // Don't replace dtype with basic type
+                UINFO(9, "   MEMBERSEL -> " << newp << endl);
+                UINFO(9, "           dt-> " << newp->dtypep() << endl);
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                // Should be able to treat it as a normal-ish nodesel - maybe.
+                // The lhsp() will be strange until this stage; create the number here?
+            } else {
+                AstStructSel* const newp = new AstStructSel{
+                    nodep->fileline(), nodep->fromp()->unlinkFrBack(), nodep->name()};
                 // Must skip over the member to find the union; as the member may disappear later
                 newp->dtypep(memberp->subDTypep()->skipRefToEnump());
                 newp->didWidth(true);  // Don't replace dtype with basic type
