@@ -135,13 +135,13 @@ protected:
 public:
     ASTGEN_MEMBERS_AstNodeStream;
 };
-class AstNodeSystemBiop VL_NOT_FINAL : public AstNodeBiop {
+class AstNodeSystemBiopD VL_NOT_FINAL : public AstNodeBiop {
 public:
-    AstNodeSystemBiop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+    AstNodeSystemBiopD(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : AstNodeBiop{t, fl, lhsp, rhsp} {
         dtypeSetDouble();
     }
-    ASTGEN_MEMBERS_AstNodeSystemBiop;
+    ASTGEN_MEMBERS_AstNodeSystemBiopD;
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return false; }
@@ -388,13 +388,13 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode*) const override { return true; }
 };
-class AstNodeSystemUniop VL_NOT_FINAL : public AstNodeUniop {
+class AstNodeSystemUniopD VL_NOT_FINAL : public AstNodeUniop {
 public:
-    AstNodeSystemUniop(VNType t, FileLine* fl, AstNodeExpr* lhsp)
+    AstNodeSystemUniopD(VNType t, FileLine* fl, AstNodeExpr* lhsp)
         : AstNodeUniop{t, fl, lhsp} {
         dtypeSetDouble();
     }
-    ASTGEN_MEMBERS_AstNodeSystemUniop;
+    ASTGEN_MEMBERS_AstNodeSystemUniopD;
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
@@ -3706,8 +3706,8 @@ public:
     int instrCount() const override { return widthInstrs() * 2; }
 };
 
-// === AstNodeSystemBiop ===
-class AstAtan2D final : public AstNodeSystemBiop {
+// === AstNodeSystemBiopD ===
+class AstAtan2D final : public AstNodeSystemBiopD {
 public:
     AstAtan2D(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Atan2D(fl, lhsp, rhsp) {}
@@ -3721,7 +3721,7 @@ public:
     string emitVerilog() override { return "%f$atan2(%l,%r)"; }
     string emitC() override { return "atan2(%li,%ri)"; }
 };
-class AstHypotD final : public AstNodeSystemBiop {
+class AstHypotD final : public AstNodeSystemBiopD {
 public:
     AstHypotD(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_HypotD(fl, lhsp, rhsp) {}
@@ -4805,8 +4805,8 @@ public:
     int instrCount() const override { return 0; }
 };
 
-// === AstNodeSystemUniop ===
-class AstAcosD final : public AstNodeSystemUniop {
+// === AstNodeSystemUniopD ===
+class AstAcosD final : public AstNodeSystemUniopD {
 public:
     AstAcosD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_AcosD(fl, lhsp) {}
@@ -4817,7 +4817,7 @@ public:
     string emitVerilog() override { return "%f$acos(%l)"; }
     string emitC() override { return "acos(%li)"; }
 };
-class AstAcoshD final : public AstNodeSystemUniop {
+class AstAcoshD final : public AstNodeSystemUniopD {
 public:
     AstAcoshD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_AcoshD(fl, lhsp) {}
@@ -4828,7 +4828,7 @@ public:
     string emitVerilog() override { return "%f$acosh(%l)"; }
     string emitC() override { return "acosh(%li)"; }
 };
-class AstAsinD final : public AstNodeSystemUniop {
+class AstAsinD final : public AstNodeSystemUniopD {
 public:
     AstAsinD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_AsinD(fl, lhsp) {}
@@ -4839,7 +4839,7 @@ public:
     string emitVerilog() override { return "%f$asin(%l)"; }
     string emitC() override { return "asin(%li)"; }
 };
-class AstAsinhD final : public AstNodeSystemUniop {
+class AstAsinhD final : public AstNodeSystemUniopD {
 public:
     AstAsinhD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_AsinhD(fl, lhsp) {}
@@ -4850,7 +4850,7 @@ public:
     string emitVerilog() override { return "%f$asinh(%l)"; }
     string emitC() override { return "asinh(%li)"; }
 };
-class AstAtanD final : public AstNodeSystemUniop {
+class AstAtanD final : public AstNodeSystemUniopD {
 public:
     AstAtanD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_AtanD(fl, lhsp) {}
@@ -4861,7 +4861,7 @@ public:
     string emitVerilog() override { return "%f$atan(%l)"; }
     string emitC() override { return "atan(%li)"; }
 };
-class AstAtanhD final : public AstNodeSystemUniop {
+class AstAtanhD final : public AstNodeSystemUniopD {
 public:
     AstAtanhD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_AtanhD(fl, lhsp) {}
@@ -4872,7 +4872,7 @@ public:
     string emitVerilog() override { return "%f$atanh(%l)"; }
     string emitC() override { return "atanh(%li)"; }
 };
-class AstCeilD final : public AstNodeSystemUniop {
+class AstCeilD final : public AstNodeSystemUniopD {
 public:
     AstCeilD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_CeilD(fl, lhsp) {}
@@ -4883,7 +4883,7 @@ public:
     string emitVerilog() override { return "%f$ceil(%l)"; }
     string emitC() override { return "ceil(%li)"; }
 };
-class AstCosD final : public AstNodeSystemUniop {
+class AstCosD final : public AstNodeSystemUniopD {
 public:
     AstCosD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_CosD(fl, lhsp) {}
@@ -4894,7 +4894,7 @@ public:
     string emitVerilog() override { return "%f$cos(%l)"; }
     string emitC() override { return "cos(%li)"; }
 };
-class AstCoshD final : public AstNodeSystemUniop {
+class AstCoshD final : public AstNodeSystemUniopD {
 public:
     AstCoshD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_CoshD(fl, lhsp) {}
@@ -4905,7 +4905,7 @@ public:
     string emitVerilog() override { return "%f$cosh(%l)"; }
     string emitC() override { return "cosh(%li)"; }
 };
-class AstExpD final : public AstNodeSystemUniop {
+class AstExpD final : public AstNodeSystemUniopD {
 public:
     AstExpD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_ExpD(fl, lhsp) {}
@@ -4916,7 +4916,7 @@ public:
     string emitVerilog() override { return "%f$exp(%l)"; }
     string emitC() override { return "exp(%li)"; }
 };
-class AstFloorD final : public AstNodeSystemUniop {
+class AstFloorD final : public AstNodeSystemUniopD {
 public:
     AstFloorD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_FloorD(fl, lhsp) {}
@@ -4927,7 +4927,7 @@ public:
     string emitVerilog() override { return "%f$floor(%l)"; }
     string emitC() override { return "floor(%li)"; }
 };
-class AstLog10D final : public AstNodeSystemUniop {
+class AstLog10D final : public AstNodeSystemUniopD {
 public:
     AstLog10D(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_Log10D(fl, lhsp) {}
@@ -4938,7 +4938,7 @@ public:
     string emitVerilog() override { return "%f$log10(%l)"; }
     string emitC() override { return "log10(%li)"; }
 };
-class AstLogD final : public AstNodeSystemUniop {
+class AstLogD final : public AstNodeSystemUniopD {
 public:
     AstLogD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_LogD(fl, lhsp) {}
@@ -4949,7 +4949,7 @@ public:
     string emitVerilog() override { return "%f$ln(%l)"; }
     string emitC() override { return "log(%li)"; }
 };
-class AstSinD final : public AstNodeSystemUniop {
+class AstSinD final : public AstNodeSystemUniopD {
 public:
     AstSinD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_SinD(fl, lhsp) {}
@@ -4960,7 +4960,7 @@ public:
     string emitVerilog() override { return "%f$sin(%l)"; }
     string emitC() override { return "sin(%li)"; }
 };
-class AstSinhD final : public AstNodeSystemUniop {
+class AstSinhD final : public AstNodeSystemUniopD {
 public:
     AstSinhD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_SinhD(fl, lhsp) {}
@@ -4971,7 +4971,7 @@ public:
     string emitVerilog() override { return "%f$sinh(%l)"; }
     string emitC() override { return "sinh(%li)"; }
 };
-class AstSqrtD final : public AstNodeSystemUniop {
+class AstSqrtD final : public AstNodeSystemUniopD {
 public:
     AstSqrtD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_SqrtD(fl, lhsp) {}
@@ -4982,7 +4982,7 @@ public:
     string emitVerilog() override { return "%f$sqrt(%l)"; }
     string emitC() override { return "sqrt(%li)"; }
 };
-class AstTanD final : public AstNodeSystemUniop {
+class AstTanD final : public AstNodeSystemUniopD {
 public:
     AstTanD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_TanD(fl, lhsp) {}
@@ -4993,7 +4993,7 @@ public:
     string emitVerilog() override { return "%f$tan(%l)"; }
     string emitC() override { return "tan(%li)"; }
 };
-class AstTanhD final : public AstNodeSystemUniop {
+class AstTanhD final : public AstNodeSystemUniopD {
 public:
     AstTanhD(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_TanhD(fl, lhsp) {}

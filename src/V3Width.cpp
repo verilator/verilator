@@ -340,10 +340,10 @@ private:
     void visit(AstDivD* nodep) override { visit_real_add_sub(nodep); }
     void visit(AstMulD* nodep) override { visit_real_add_sub(nodep); }
     void visit(AstPowD* nodep) override { visit_real_add_sub(nodep); }
-    void visit(AstNodeSystemBiop* nodep) override { visit_real_add_sub(nodep); }
+    void visit(AstNodeSystemBiopD* nodep) override { visit_real_add_sub(nodep); }
     // Real: Output real
     void visit(AstNegateD* nodep) override { visit_real_neg_ceil(nodep); }
-    void visit(AstNodeSystemUniop* nodep) override { visit_real_neg_ceil(nodep); }
+    void visit(AstNodeSystemUniopD* nodep) override { visit_real_neg_ceil(nodep); }
 
     // Widths: out signed/unsigned width = lhs width, input un|signed
     void visit(AstSigned* nodep) override { visit_signed_unsigned(nodep, VSigning::SIGNED); }
