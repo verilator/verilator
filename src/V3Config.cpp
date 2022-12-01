@@ -319,7 +319,7 @@ public:
             const int curlineno = filelinep->lastLineno();
             for (; m_lastIgnore.it != m_ignLines.end(); ++m_lastIgnore.it) {
                 if (m_lastIgnore.it->m_lineno > curlineno) break;
-                // UINFO(9, "     Hit " << *m_lastIt << endl);
+                // UINFO(9, "     Hit " << *m_lastIgnore.it << endl);
                 filelinep->warnOn(m_lastIgnore.it->m_code, m_lastIgnore.it->m_on);
             }
             if (false && debug() >= 9) {
