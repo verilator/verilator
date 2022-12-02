@@ -736,7 +736,7 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         info.m_type += ">";
     } else if (VN_IS(dtypep, StructDType) && !VN_AS(dtypep, StructDType)->packed()) {
         const auto* const sdtypep = VN_AS(dtypep, StructDType);
-        info.m_type = "struct " + EmitCBaseVisitor::prefixNameProtect(sdtypep) + "__struct"
+        info.m_type = EmitCBaseVisitor::prefixNameProtect(sdtypep) + "__struct"
                       + cvtToStr(sdtypep->uniqueNum());
 
     } else if (const AstBasicDType* const bdtypep = dtypep->basicp()) {
