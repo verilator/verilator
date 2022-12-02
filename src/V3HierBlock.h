@@ -87,14 +87,14 @@ public:
     string hierGenerated(bool withDir) const;
     // Returns the original HDL file if it is not included in v3Global.opt.vFiles().
     string vFileIfNecessary() const;
-    // Write command line argumuents to .f file for this hierarchical block
+    // Write command line arguments to .f file for this hierarchical block
     void writeCommandArgsFile(bool forCMake) const;
     string commandArgsFileName(bool forCMake) const;
 };
 
 //######################################################################
 
-// Holds relashonship between AstNodeModule and V3HierBlock
+// Holds relationship between AstNodeModule and V3HierBlock
 class V3HierBlockPlan final {
     using HierMap = std::unordered_map<const AstNodeModule*, V3HierBlock*>;
     HierMap m_blocks;

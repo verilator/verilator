@@ -111,12 +111,12 @@
 # define VL_ATTR_WEAK  ///< Attribute that function external that is optionally defined
 #endif
 #ifndef VL_CAPABILITY
-# define VL_ACQUIRE(...)  ///< Function aquires a capability/lock (-fthread-safety)
-# define VL_ACQUIRE_SHARED(...)  ///< Function aquires a shared capability/lock (-fthread-safety)
+# define VL_ACQUIRE(...)  ///< Function acquires a capability/lock (-fthread-safety)
+# define VL_ACQUIRE_SHARED(...)  ///< Function acquires a shared capability/lock (-fthread-safety)
 # define VL_RELEASE(...)  ///< Function releases a capability/lock (-fthread-safety)
 # define VL_RELEASE_SHARED(...)  ///< Function releases a shared capability/lock (-fthread-safety)
-# define VL_TRY_ACQUIRE(...)  ///< Function returns bool if aquired a capability (-fthread-safety)
-# define VL_TRY_ACQUIRE_SHARED(...)  ///< Function returns bool if aquired shared (-fthread-safety)
+# define VL_TRY_ACQUIRE(...)  ///< Function returns bool if acquired a capability (-fthread-safety)
+# define VL_TRY_ACQUIRE_SHARED(...)  ///< Function returns bool if acquired shared (-fthread-safety)
 # define VL_REQUIRES(x)  ///< Function requires a capability inbound (-fthread-safety)
 # define VL_EXCLUDES(x)  ///< Function requires not having a capability inbound (-fthread-safety)
 # define VL_CAPABILITY(x)  ///< Name of capability/lock (-fthread-safety)

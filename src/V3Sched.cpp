@@ -349,7 +349,7 @@ AstSenTree* createTriggerSenTree(AstNetlist* netlistp, AstVarScope* const vscp, 
 // Utility for extra trigger allocation
 
 class ExtraTriggers final {
-    std::vector<string> m_descriptions;  // Human readable descirption of extra triggers
+    std::vector<string> m_descriptions;  // Human readable description of extra triggers
 
 public:
     ExtraTriggers() = default;

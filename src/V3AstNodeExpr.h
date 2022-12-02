@@ -115,7 +115,7 @@ public:
 class AstNodeSel VL_NOT_FINAL : public AstNodeBiop {
     // Single bit range extraction, perhaps with non-constant selection or array selection
     // @astgen alias op1 := fromp // Expression we are indexing into
-    // @astgen alias op2 := bitp // The index // TOOD: rename to idxp
+    // @astgen alias op2 := bitp // The index // TODO: rename to idxp
 protected:
     AstNodeSel(VNType t, FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
         : AstNodeBiop{t, fl, fromp, bitp} {}
@@ -4178,7 +4178,7 @@ public:
 
 // === AstNodeCond ===
 class AstCond final : public AstNodeCond {
-    // Conditional ?: expressoin
+    // Conditional ?: expression
 public:
     AstCond(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep)
         : ASTGEN_SUPER_Cond(fl, condp, thenp, elsep) {}
@@ -4463,7 +4463,7 @@ public:
     int instrCount() const override { return INSTR_COUNT_DBL; }
 };
 class AstIsUnbounded final : public AstNodeUniop {
-    // True if is unmbounded ($)
+    // True if is unbounded ($)
 public:
     AstIsUnbounded(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_IsUnbounded(fl, lhsp) {

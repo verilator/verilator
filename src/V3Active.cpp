@@ -88,7 +88,7 @@ protected:
     // Recursively traverse the graph to determine whether every control 'BLOCK' has an assignment
     // to the output we are currently analysing (the output whose 'user() is set), if so return
     // true. Where a BLOCK contains a BRANCH, both the if and else sides of the branch must return
-    // true for the BRANCH to evalute to true. A BLOCK however needs only a single one of its
+    // true for the BRANCH to evaluate to true. A BLOCK however needs only a single one of its
     // siblings to evaluate true in order to evaluate true itself. On output vertex only evaluates
     // true if it is the vertex we are analyzing on this check
 

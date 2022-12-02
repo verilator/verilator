@@ -51,7 +51,7 @@ private:
         // Not defining main_time/vl_time_stamp, so
         v3Global.opt.addCFlags("-DVL_TIME_CONTEXT");  // On MSVC++ anyways
 
-        // Heavly commented output, as users are likely to look at or copy this code
+        // Heavily commented output, as users are likely to look at or copy this code
         ofp()->putsHeader();
         puts("// DESCRIPTION: main() calling loop, created with Verilator --main\n");
         puts("\n");

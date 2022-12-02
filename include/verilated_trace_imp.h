@@ -82,7 +82,7 @@ static std::string doubleToTimescale(double value) {
 template <>
 uint32_t* VerilatedTrace<VL_SUB_T, VL_BUF_T>::getOffloadBuffer() {
     uint32_t* bufferp;
-    // Some jitter is expected, so some number of alternative offlaod buffers are
+    // Some jitter is expected, so some number of alternative offload buffers are
     // required, but don't allocate more than 8 buffers.
     if (m_numOffloadBuffers < 8) {
         // Allocate a new buffer if none is available
@@ -348,7 +348,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
         // Else if was empty, m_sigs_enabledp = nullptr to short circuit tests
         // But it isn't, so alloc one bit for each code to indicate enablement
         // We don't want to still use m_signs_enabledVec as std::vector<bool> is not
-        // guarenteed to be fast
+        // guaranteed to be fast
         m_sigs_enabledp = new uint32_t[1 + VL_WORDS_I(nextCode())]{0};
         m_sigs_enabledVec.reserve(nextCode());
         for (size_t code = 0; code < nextCode(); ++code) {
@@ -513,7 +513,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runCallbacks(const std::vector<Callback
                 mainThreadWorkerData.push_back(itemp);
             }
         }
-        // Execute main thead jobs
+        // Execute main thread jobs
         for (ParallelWorkerData* const itemp : mainThreadWorkerData) {
             parallelWorkerTask(itemp, false);
         }

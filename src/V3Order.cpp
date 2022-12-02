@@ -173,7 +173,7 @@ class OrderBuildVisitor final : public VNVisitor {
 
     // Current AstScope being processed
     AstScope* m_scopep = nullptr;
-    // Sensitivity list for clocked logic, nullptr for combinational and hybird logic
+    // Sensitivity list for clocked logic, nullptr for combinational and hybrid logic
     AstSenTree* m_domainp = nullptr;
     // Sensitivity list for hybrid logic, nullptr for everything else
     AstSenTree* m_hybridp = nullptr;
@@ -810,7 +810,7 @@ class OrderProcess final : VNDeleter {
 
     SenTreeFinder m_finder;  // Global AstSenTree manager
     AstSenTree* const m_deleteDomainp;  // Dummy AstSenTree indicating needs deletion
-    const string m_tag;  // Subtring to add to generated names
+    const string m_tag;  // Substring to add to generated names
     const bool m_slow;  // Ordering slow code
     std::vector<AstNode*> m_result;  // The result nodes (~statements) in their sequential order
 

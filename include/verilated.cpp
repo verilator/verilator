@@ -281,7 +281,7 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
 
 static uint32_t vl_sys_rand32() VL_MT_SAFE {
     // Return random 32-bits using system library.
-    // Used only to construct seed for Verilator's PNRG.
+    // Used only to construct seed for Verilator's PRNG.
     static VerilatedMutex s_mutex;
     const VerilatedLockGuard lock{s_mutex};  // Otherwise rand is unsafe
 #if defined(_WIN32) && !defined(__CYGWIN__)
@@ -2223,7 +2223,7 @@ static const char* vl_time_str(int scale) VL_PURE {
     return names[2 - scale];
 }
 double vl_time_multiplier(int scale) VL_PURE {
-    // Return timescale multipler -18 to +18
+    // Return timescale multiplier -18 to +18
     // For speed, this does not check for illegal values
     // cppcheck-has-bug-suppress arrayIndexOutOfBoundsCond
     if (scale < 0) {
@@ -2340,8 +2340,8 @@ void VerilatedContext::checkMagic(const VerilatedContext* contextp) {
 
 VerilatedContext::Serialized::Serialized() {
     constexpr int8_t picosecond = -12;
-    m_timeunit = picosecond;  // Initial value until overriden by _Vconfigure
-    m_timeprecision = picosecond;  // Initial value until overriden by _Vconfigure
+    m_timeunit = picosecond;  // Initial value until overridden by _Vconfigure
+    m_timeprecision = picosecond;  // Initial value until overridden by _Vconfigure
 }
 
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
@@ -2659,7 +2659,7 @@ void VerilatedContext::randSeed(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock{VerilatedContextImp::s().s_randMutex};
     m_s.m_randSeed = val;
     const uint64_t newEpoch = VerilatedContextImp::s().s_randSeedEpoch + 1;
-    // Obververs must see new epoch AFTER seed updated
+    // Observers must see new epoch AFTER seed updated
     std::atomic_signal_fence(std::memory_order_release);
     VerilatedContextImp::s().s_randSeedEpoch = newEpoch;
 }
@@ -3117,7 +3117,7 @@ void VlDeleter::deleteAll() {
         if (m_newGarbage.empty()) break;
         VerilatedLockGuard deleteLock{m_deleteMutex};
         std::swap(m_newGarbage, m_toDelete);
-        lock.unlock();  // So destuctors can enqueue new objects
+        lock.unlock();  // So destructors can enqueue new objects
         for (VlDeletable* const objp : m_toDelete) delete objp;
         m_toDelete.clear();
     }

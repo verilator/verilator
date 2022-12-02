@@ -560,7 +560,7 @@ private:
             AstNode* scanp = nodep;
             // Skip over the New's statement
             for (; scanp && !VN_IS(scanp, StmtExpr); scanp = scanp->backp()) {}
-            if (VN_IS(scanp, StmtExpr)) {  // Ignore warnign if something not understood
+            if (VN_IS(scanp, StmtExpr)) {  // Ignore warning if something not understood
                 scanp = scanp->backp();
                 for (; scanp; scanp = scanp->backp()) {
                     if (VN_IS(scanp, NodeStmt) || VN_IS(scanp, NodeModule)

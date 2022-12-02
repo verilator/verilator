@@ -114,7 +114,7 @@ private:
         iterateChildren(nodep);
         if (m_packageScopep) {
             if (m_ftaskp && m_ftaskp->lifetime().isStatic()) {
-                // Move later, or we wouldn't keep interating the class
+                // Move later, or we wouldn't keep iterating the class
                 // We're really moving the VarScope but we might not
                 // have a pointer to it yet
                 m_toScopeMoves.emplace_back(std::make_pair(nodep, m_packageScopep));
@@ -145,7 +145,7 @@ private:
     }
     void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
-        // Don't move now, or wouldn't keep interating the class
+        // Don't move now, or wouldn't keep iterating the class
         // TODO move function statics only
         // if (m_classScopep) {
         //    m_toScopeMoves.push_back(std::make_pair(nodep, m_classScopep));

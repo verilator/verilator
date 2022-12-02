@@ -1394,7 +1394,7 @@ static inline IData VL_STREAML_FAST_III(int lbits, IData ld, IData rd_log2) VL_P
     //
     // If lbits is not a multiple of the slice size (i.e., lbits % rd != 0),
     // then we end up with a "gap" in our reversed result. For example, if we
-    // have a 5-bit Verlilog signal (lbits=5) in an 8-bit C data type:
+    // have a 5-bit Verilog signal (lbits=5) in an 8-bit C data type:
     //
     //   ld = ---43210
     //

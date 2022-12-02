@@ -81,7 +81,7 @@ class FileLineSingleton final {
     msgEnSetIdx_t addMsgEnBitSet(const MsgEnBitSet& bitSet);
     // Add index of default bitset
     msgEnSetIdx_t defaultMsgEnIndex();
-    // Set bitIdx to value in bitset at interned idnex setIdx, return interned index of result
+    // Set bitIdx to value in bitset at interned index setIdx, return interned index of result
     msgEnSetIdx_t msgEnSetBit(msgEnSetIdx_t setIdx, size_t bitIdx, bool value);
     // Return index to intersection set
     msgEnSetIdx_t msgEnAnd(msgEnSetIdx_t lhsIdx, msgEnSetIdx_t rhsIdx);

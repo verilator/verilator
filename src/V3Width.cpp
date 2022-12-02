@@ -1138,7 +1138,7 @@ private:
         if (nodep->didWidthAndSet()) return;
         if (m_vup && m_vup->prelim()) {
             if (VN_IS(nodep->dtypep()->skipRefToEnump(), EnumDType)) {
-                // Assume this constant was properly casted ealier
+                // Assume this constant was properly casted earlier
                 // (Otherwise it couldn't have an enum data type)
             } else if (nodep->num().isString()) {
                 nodep->dtypeSetString();
@@ -1713,7 +1713,7 @@ private:
             userIterate(nodep->subDTypep(), nullptr);
             nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
             nodep->typedefp(nullptr);  // Note until line above subDTypep() may have followed this
-            // Widths are resolved, but special iterate to check for recurstion
+            // Widths are resolved, but special iterate to check for recursion
             userIterate(nodep->subDTypep(), nullptr);
         }
         // Effectively nodep->dtypeFrom(nodep->dtypeSkipRefp());
@@ -1732,7 +1732,7 @@ private:
                                                           << refp->warnOther()
                                                           << "... Location of reference\n"
                                                           << refp->warnContextSecondary());
-            // May cause internel error but avoids infinite loop on dump
+            // May cause internal error but avoids infinite loop on dump
             refp->typedefp(nullptr);
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
@@ -3789,7 +3789,7 @@ private:
             const auto it = patmap.find(memp);
             AstPatMember* patp = nullptr;
             if (it == patmap.end()) {
-                // default or deafult_type assignment
+                // default or default_type assignment
                 if (AstNodeUOrStructDType* const memp_nested_vdtypep
                     = VN_CAST(memp->virtRefDTypep(), NodeUOrStructDType)) {
                     newp = nestedvalueConcat_patternUOrStruct(memp_nested_vdtypep, defaultp, newp,

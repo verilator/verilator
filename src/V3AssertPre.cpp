@@ -91,7 +91,7 @@ private:
         if (AstFuncRef* const funcrefp = VN_CAST(nodep->propp(), FuncRef)) {
             if (AstProperty* const propp = VN_CAST(funcrefp->taskp(), Property)) {
                 AstPropSpec* propExprp = getPropertyExprp(propp);
-                // Substitute inner property call befory copying in order to not doing the same for
+                // Substitute inner property call before copying in order to not doing the same for
                 // each call of outer property call.
                 propExprp = substitutePropertyCall(propExprp);
                 // Clone subtree after substitution. It is needed, because property might be called

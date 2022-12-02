@@ -440,7 +440,7 @@ public:
     void errorLimit(int val) VL_MT_SAFE;
     /// Return number of errors/assertions before stop
     int errorLimit() const VL_MT_SAFE { return m_s.m_errorLimit; }
-    /// Set to throw fatal error on $stop/non-fatal ettot
+    /// Set to throw fatal error on $stop/non-fatal error
     void fatalOnError(bool flag) VL_MT_SAFE;
     /// Return if to throw fatal error on $stop/non-fatal
     bool fatalOnError() const VL_MT_SAFE { return m_s.m_fatalOnError; }

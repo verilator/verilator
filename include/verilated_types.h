@@ -412,7 +412,7 @@ public:
     void sort(Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
         std::sort(m_deque.begin(), m_deque.end(), [=](const T_Value& a, const T_Value& b) {
-            // index number is meaninless with sort, as it changes
+            // index number is meaningless with sort, as it changes
             return with_func(0, a) < with_func(0, b);
         });
     }
@@ -421,7 +421,7 @@ public:
     void rsort(Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
         std::sort(m_deque.rbegin(), m_deque.rend(), [=](const T_Value& a, const T_Value& b) {
-            // index number is meaninless with sort, as it changes
+            // index number is meaningless with sort, as it changes
             return with_func(0, a) < with_func(0, b);
         });
     }

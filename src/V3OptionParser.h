@@ -29,8 +29,8 @@
 class VOptionBool;
 #endif
 
-// Typycal usage would look as below.
-// See also V3Options::parseOptsList() in V3Optoins.cpp for more detailed usage.
+// Typical usage would look as below.
+// See also V3Options::parseOptsList() in V3Options.cpp for more detailed usage.
 //
 //    V3OptionParser parser;
 //    V3OptionParser::AppendHelper DECL_OPTION{parser};
@@ -89,8 +89,8 @@ class V3OptionParser::ActionIfs VL_NOT_FINAL {
 public:
     virtual ~ActionIfs() = default;
     virtual bool isValueNeeded() const = 0;  // Need val of "-opt val"
-    virtual bool isFOnOffAllowed() const = 0;  // true if "-fno-opt" is allowd
-    virtual bool isOnOffAllowed() const = 0;  // true if "-no-opt" is allowd
+    virtual bool isFOnOffAllowed() const = 0;  // true if "-fno-opt" is allowed
+    virtual bool isOnOffAllowed() const = 0;  // true if "-no-opt" is allowed
     virtual bool isPartialMatchAllowed() const = 0;  // true if "-Wno-" matches "-Wno-fatal"
     virtual bool isUndocumented() const = 0;  // Will not be suggested in typo
     // Set a value or run callback
@@ -117,7 +117,7 @@ public:
 
 private:
     // MEMBERS
-    V3OptionParser& m_parser;  // The actual option registory
+    V3OptionParser& m_parser;  // The actual option registry
 
 public:
     // METHODS
