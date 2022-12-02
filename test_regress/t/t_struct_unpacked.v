@@ -6,11 +6,13 @@
 
 module x;
    typedef struct {
-      int         a;
+      int a, b;
+      logic [3:0] c;
    } embedded_t;
 
    typedef struct {
       embedded_t b;
+      embedded_t tab [3:0];
    } notembedded_t;
 
    notembedded_t p;
