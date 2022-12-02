@@ -2462,9 +2462,8 @@ private:
         if (!nodep->packed()) {
             if (VN_IS(nodep, UnionDType)) {
                 nodep->v3warn(UNPACKED, "Unsupported: Unpacked union");
-            }
-            if (!v3Global.opt.structsPacked()) {
-                nodep->v3warn(UNPACKED, "Unsupported: --no-structs-packed");
+            } else if (v3Global.opt.structsPacked()) {
+                nodep->packed(true);
             }
         }
         userIterateChildren(nodep, nullptr);  // First size all members
