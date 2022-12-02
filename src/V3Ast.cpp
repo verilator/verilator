@@ -112,7 +112,7 @@ string AstNode::encodeName(const string& namein) {
     }
     // Shorten names
     // TODO long term use VName in place of "string name"
-    // Then we also won't need to save the table of hased values
+    // Then we also won't need to save the table of hashed values
     VName vname{out};
     return vname.hashedName();
 }

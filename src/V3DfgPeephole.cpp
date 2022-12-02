@@ -141,7 +141,7 @@ class V3DfgPeephole final : public DfgVisitor {
     AstNodeDType* const m_bitDType = DfgVertex::dtypeForWidth(1);  // Common, so grab it up front
     // Head of work list. Note that we want all next pointers in the list to be non-zero (including
     // that of the last element). This allows as to do two important things: detect if an element
-    // is in the list by checking for a non-zero next poitner, and easy prefetching without
+    // is in the list by checking for a non-zero next pointer, and easy prefetching without
     // conditionals. The 'this' pointer is a good sentinel as it is a valid memory address, and we
     // can easily check for the end of the list.
     DfgVertex* m_workListp = reinterpret_cast<DfgVertex*>(this);

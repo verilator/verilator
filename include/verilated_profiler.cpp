@@ -119,7 +119,7 @@ VerilatedVirtualBase* VlExecutionProfiler::construct(VerilatedContext& context) 
                 },
                 &data);
 
-            // Wait until initializationis complete
+            // Wait until initialization is complete
             threadPoolp->workerp(i)->wait();
         }
     }

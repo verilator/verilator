@@ -258,7 +258,7 @@ class V3ConfigFile final {
     using WaiverSetting = std::pair<V3ErrorCode, std::string>;  // Waive code if string matches
     using Waivers = std::vector<WaiverSetting>;  // List of {code,wildcard string}
 
-    LineAttrMap m_lineAttrs;  // Atributes to line mapping
+    LineAttrMap m_lineAttrs;  // Attributes to line mapping
     IgnLines m_ignLines;  // Ignore line settings
     Waivers m_waivers;  // Waive messages
 
@@ -416,7 +416,7 @@ public:
         for (const auto& ent : m_entries) {
             // We apply shortest match first for each rule component
             // (Otherwise the levels would be useless as "--scope top* --levels 1" would
-            // always match at every scopepart, and we wound't know how to count levels)
+            // always match at every scopepart, and we wouldn't know how to count levels)
             int partLevel = 1;
             for (string::size_type partEnd = 0; true;) {
                 partEnd = scope.find('.', partEnd + 1);

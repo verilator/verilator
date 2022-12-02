@@ -168,7 +168,7 @@ void VerilatedVcd::Super::dumpvars(int level, const std::string& hier);
 // VerilatedVcdBuffer
 
 class VerilatedVcdBuffer VL_NOT_FINAL {
-    // Give the trace file ans sub-classes access to the private bits
+    // Give the trace file and sub-classes access to the private bits
     friend VerilatedVcd;
     friend VerilatedVcd::Super;
     friend VerilatedVcd::Buffer;

@@ -1002,7 +1002,7 @@ int V3PreProcImp::getStateToken() {
 
         if (tok == VP_DEFREF_JOIN) {
             // Here's something fun and unspecified as yet:
-            // The existence of non-existance of a base define changes `` expansion
+            // The existence of non-existence of a base define changes `` expansion
             //  `define QA_b zzz
             //  `define Q1 `QA``_b
             //   1Q1 -> zzz
@@ -1249,7 +1249,7 @@ int V3PreProcImp::getStateToken() {
                 refp->nextarg(refp->nextarg() + rtn);
                 goto next_tok;
             } else if (tok == VP_STRIFY) {
-                // We must expand stringinfication, when done will return to this state
+                // We must expand stringification, when done will return to this state
                 statePush(ps_STRIFY);
                 goto next_tok;
             } else {

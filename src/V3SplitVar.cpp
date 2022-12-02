@@ -14,9 +14,9 @@
 //
 //*************************************************************************
 // V3SplitVar divides a variable into multiple variables to avoid UNOPTFLAT warning
-// and get better perfomance.
+// and get better performance.
 // Variables to be split must be marked by /*verilator split_var*/ metacomment.
-// There are sveral kinds of data types that may cause the warning.
+// There are several kinds of data types that may cause the warning.
 // 1) Unpacked arrays
 // 2) Packed arrays
 // 3) Unpacked structs
@@ -1142,7 +1142,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                     }
                 }
                 // If varp is an argument of task/func, need to update temporary var
-                // everytime the var is updated. See also another call of connectPortAndVar() in
+                // every time the var is updated. See also another call of connectPortAndVar() in
                 // split()
                 if (varp->isIO() && (varp->isFuncLocal() || varp->isFuncReturn()))
                     connectPortAndVar(vars, varp, ref.nodep());

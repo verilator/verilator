@@ -835,7 +835,7 @@ public:
 
         // Set width of masks to expected result width. This is required to prevent later removal
         // of the masking node e.g. by the "AND with all ones" rule. If the result width happens
-        // to be 1, we still need to ensure the AstAnd is not dropped, so use a wider maks in this
+        // to be 1, we still need to ensure the AstAnd is not dropped, so use a wider mask in this
         // special case.
         const int maskWidth = resultWidth == 1 ? VL_IDATASIZE : resultWidth;
 
@@ -1051,7 +1051,7 @@ private:
         // Push down a AND into conditional, when one side of conditional is constant
         // (otherwise we'd be trading one operation for two operations)
         // V3Clean often makes this pattern, as it postpones the AND until
-        // as high as possible, which is usally the right choice, except for this.
+        // as high as possible, which is usually the right choice, except for this.
         AstNodeCond* const condp = VN_CAST(nodep->rhsp(), NodeCond);
         if (!condp) return false;
         if (!VN_IS(condp->thenp(), Const) && !VN_IS(condp->elsep(), Const)) return false;

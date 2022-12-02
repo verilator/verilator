@@ -177,7 +177,7 @@ class CodeMotionAnalysisVisitor final : public VNVisitor {
     std::vector<V3DupFinder> m_stack;
     StmtProperties* m_propsp = nullptr;  // StmtProperties structure of current AstNodeStmt
 
-    // Extract condition expression from a megeable conditional statement, if any
+    // Extract condition expression from a mergeable conditional statement, if any
     static AstNodeExpr* extractCondition(const AstNodeStmt* nodep) {
         AstNodeExpr* conditionp = nullptr;
         if (const AstNodeAssign* const assignp = VN_CAST(nodep, NodeAssign)) {
@@ -590,7 +590,7 @@ private:
     }
 
     // Fold the RHS expression of an assignment assuming the given condition state.
-    // Unlink bits from the RHS which is only used once, and can be reused (is an unomdified
+    // Unlink bits from the RHS which is only used once, and can be reused (is an unmodified
     // sub-tree). What remains of the RHS is expected to be deleted by the caller.
     AstNodeExpr* foldAndUnlink(AstNodeExpr* rhsp, bool condTrue) {
         if (rhsp->sameTree(m_mgCondp)) {
@@ -793,7 +793,7 @@ private:
     }
 
     // If this node is the next expected node and is helpful to add to the list, do so,
-    // otherwise end the current merge. Return ture if added, false if ended merge.
+    // otherwise end the current merge. Return true if added, false if ended merge.
     bool addIfHelpfulElseEndMerge(AstNodeStmt* nodep) {
         UASSERT_OBJ(m_mgFirstp, nodep, "List must be open");
         if (!checkOrMakeMergeable(nodep)) return false;

@@ -126,7 +126,7 @@ public:
     V3Global() {}
     void boot();
     void clear();
-    void shutdown();  // Release allocated resorces
+    void shutdown();  // Release allocated resources
     // ACCESSORS (general)
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }
     VWidthMinUsage widthMinUsage() const { return m_widthMinUsage; }

@@ -1792,11 +1792,11 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             // align so least significant 3 bits represent octal char
             val >>= idx.rem;
             if (i == (chars - 1)) {
-                // most signifcant char, mask off non existant bits when vector
+                // most significant char, mask off nonexistent bits when vector
                 // size is not a multiple of 3
                 const unsigned int rem = varp->packed().elements() % 3;
                 if (rem) {
-                    // generate bit mask & zero non existant bits
+                    // generate bit mask & zero nonexistent bits
                     val &= (1 << rem) - 1;
                 }
             }
@@ -1842,11 +1842,11 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
         for (i = 0; i < chars; ++i) {
             char val = (datap[i >> 1] >> ((i & 1) << 2)) & 15;
             if (i == (chars - 1)) {
-                // most signifcant char, mask off non existant bits when vector
+                // most significant char, mask off nonexistent bits when vector
                 // size is not a multiple of 4
                 const unsigned int rem = varp->packed().elements() & 3;
                 if (rem) {
-                    // generate bit mask & zero non existant bits
+                    // generate bit mask & zero nonexistent bits
                     val &= (1 << rem) - 1;
                 }
             }
@@ -2269,7 +2269,7 @@ PLI_INT32 vpi_chk_error(p_vpi_error_info error_info_p) {
     VerilatedVpiImp::assertOneCheck();
     p_vpi_error_info const _error_info_p = VerilatedVpiImp::error_info()->getError();
     if (error_info_p && _error_info_p) *error_info_p = *_error_info_p;
-    if (!_error_info_p) return 0;  // no error occured
+    if (!_error_info_p) return 0;  // no error occurred
     return _error_info_p->level;  // return error severity level
 }
 

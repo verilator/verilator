@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Common implemenetations
+// DESCRIPTION: Verilator: Common implementations
 //
 // Code available from: https://verilator.org
 //

@@ -118,7 +118,7 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const GParams& gparams, boo
             // V3Param.cpp. See also ParamVisitor::checkSupportedParam() in the file.
             if (constp->isDouble()) {
                 // 64 bit width of hex can be expressed with 16 chars.
-                // 32 chars must be long enough for hexadecial floating point
+                // 32 chars must be long enough for hexadecimal floating point
                 // considering prefix of '0x', '.', and 'P'.
                 std::vector<char> hexFpStr(32, '\0');
                 const int len = VL_SNPRINTF(hexFpStr.data(), hexFpStr.size(), "%a",
@@ -377,7 +377,7 @@ V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
         const V3HierBlock* hblockp = sorted[i];
         const V3HierBlock::HierBlockSet& p = hblockp->parents();
         for (V3HierBlock::HierBlockSet::const_iterator it = p.begin(); it != p.end(); ++it) {
-            // Delete hblockp from parrents. If a parent does not have a child anymore, then it is
+            // Delete hblockp from parents. If a parent does not have a child anymore, then it is
             // a leaf too.
             const auto parentIt = childrenOfHierBlock.find(*it);
             UASSERT_OBJ(parentIt != childrenOfHierBlock.end(), (*it)->modp(), "must be included");

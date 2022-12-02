@@ -240,7 +240,7 @@ public:
     }
 
     // Bison sometimes needs error context without a token, so remember last token's line
-    // Only use this if do not have and cannot get a token-relevent fileline
+    // Only use this if do not have and cannot get a token-relevant fileline
     FileLine* bisonLastFileline() const { return m_bisonLastFileline; }
 
     // Return next token, for bison, since bison isn't class based, use a global THIS

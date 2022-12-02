@@ -510,7 +510,7 @@ public:
         // If a pin connection is "simple" leave it as-is
         // Else create a intermediate wire to perform the interconnect
         // Return the new assignment, if one was made
-        // Note this module calles cloneTree() via new AstVar
+        // Note this module calls cloneTree() via new AstVar
         AstVar* const pinVarp = pinp->modVarp();
         if (!pinp->exprp()) {
             // No-connect, perhaps promote based on `unconnected_drive,

@@ -80,7 +80,7 @@ public:
             return result;
         }
 
-        // Minimal convenience acessors and operators
+        // Minimal convenience accessors and operators
         VL_ATTR_ALWINLINE Node* ptr() const { return m_ptr; }
         VL_ATTR_ALWINLINE operator bool() const { return m_ptr; }
         VL_ATTR_ALWINLINE bool operator!() const { return !m_ptr; }
@@ -214,7 +214,7 @@ public:
         if (nodep == m_root.ptr()) return;
         // Otherwise we do have a little work to do
         if (!nodep->m_kids) {
-            // If the node has no children, replace it with its siblings (migtht be null)
+            // If the node has no children, replace it with its siblings (might be null)
             nodep->replaceWith(nodep->m_next.unlink());
         } else if (!nodep->m_next) {
             // If the node has no siblings, replace it with its children
