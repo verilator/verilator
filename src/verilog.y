@@ -2098,7 +2098,7 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
         //                      // So this is different from variable_decl_assignment
                 id variable_dimensionListE
                         { $$ = new AstMemberDType{$<fl>1, *$1, VFlagChildDType{},
-                                                  AstNodeDType::cloneTreeNull(GRAMMARP->m_memDTypep, true)};
+                                                  GRAMMARP->createArray(AstNodeDType::cloneTreeNull(GRAMMARP->m_memDTypep, true), $2, false)};
                           PARSEP->tagNodep($$);
                           }
         |       id variable_dimensionListE '=' variable_declExpr
