@@ -18,7 +18,7 @@
 // Each class:
 //      Move to be modules under AstNetlist
 // Each typedef of an unpacked struct:
-//      Move to a new package under AstNetlist
+//      Move to the struct definitons package
 //
 //*************************************************************************
 
@@ -47,6 +47,7 @@ private:
     const AstScope* m_classScopep = nullptr;  // Package moving scopes into
     AstScope* m_packageScopep = nullptr;  // Class package scope
     const AstNodeFTask* m_ftaskp = nullptr;  // Current task
+    AstPackage *m_structs_packagep = nullptr; // Struct definitions package
     std::vector<std::pair<AstNode*, AstScope*>> m_toScopeMoves;
     std::vector<std::pair<AstNode*, AstNodeModule*>> m_toPackageMoves;
 
@@ -172,15 +173,16 @@ private:
         iterateChildren(nodep);
         auto* const dtypep = VN_CAST(nodep->dtypep(), StructDType);
         if (!dtypep || dtypep->packed()) return;
+        if (!m_structs_packagep) {
+            m_structs_packagep = new AstPackage{nodep->fileline(), "__structs"};
+            v3Global.rootp()->addModulesp(m_structs_packagep);
+        }
 
         nodep->unlinkFrBack();
 
-        AstPackage* const packagep = new AstPackage{nodep->fileline(), nodep->name()};
-        packagep->name(nodep->name());
         dtypep->name(nodep->name());  // The name will be used in struct definition
-        dtypep->classOrPackagep(packagep);
-        v3Global.rootp()->addModulesp(packagep);
-        packagep->addStmtsp(nodep);
+        dtypep->classOrPackagep(m_structs_packagep);
+        m_structs_packagep->addStmtsp(nodep);
     }
 
     void visit(AstNodeExpr* nodep) override {}  // Short circuit
