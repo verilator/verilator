@@ -441,7 +441,7 @@ protected:
     friend class Verilated;
 
     // MEMBERS
-    static VerilatedImpData& s() {  // Singleton
+    static VerilatedImpData& s() VL_MT_SAFE {  // Singleton
         static VerilatedImpData s_s;
         return s_s;
     }

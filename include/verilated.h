@@ -248,7 +248,7 @@ protected:
 public:
     /// Returns the VerilatedContext this model is instantiated under
     /// Used to get to e.g. simulation time via contextp()->time()
-    VerilatedContext* contextp() const { return &m_context; }
+    VerilatedContext* contextp() const VL_MT_SAFE { return &m_context; }
     /// Returns the hierarchical name of this module instance.
     virtual const char* hierName() const = 0;
     /// Returns the name of this model (the name of the generated model class).
@@ -718,7 +718,7 @@ public:
         lastContextp(contextp);
     }
     /// Return the VerilatedContext for the current thread
-    static VerilatedContext* threadContextp() {
+    static VerilatedContext* threadContextp() VL_MT_SAFE {
         if (VL_UNLIKELY(!t_s.t_contextp)) t_s.t_contextp = lastContextp();
         return t_s.t_contextp;
     }

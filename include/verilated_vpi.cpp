@@ -67,7 +67,7 @@ class VerilatedVpio VL_NOT_FINAL {
     // CONSTANTS
     // Magic value stored in front of object to detect double free etc
     // Must be odd, as aligned pointer can never be odd
-    static constexpr uint32_t activeMagic() { return 0xfeed100f; }
+    static constexpr uint32_t activeMagic() VL_PURE { return 0xfeed100f; }
 
     // MEM MANGLEMENT
     // Internal note: Globals may multi-construct, see verilated.cpp top.
