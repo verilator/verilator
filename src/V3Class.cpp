@@ -47,7 +47,7 @@ private:
     const AstScope* m_classScopep = nullptr;  // Package moving scopes into
     AstScope* m_packageScopep = nullptr;  // Class package scope
     const AstNodeFTask* m_ftaskp = nullptr;  // Current task
-    AstPackage *m_structs_packagep = nullptr; // Struct definitions package
+    AstPackage* m_structs_packagep = nullptr;  // Struct definitions package
     std::vector<std::pair<AstNode*, AstScope*>> m_toScopeMoves;
     std::vector<std::pair<AstNode*, AstNodeModule*>> m_toPackageMoves;
 
