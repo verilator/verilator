@@ -67,7 +67,7 @@ void V3Global::readFiles() {
         // Parse the std package
         parser.parseFile(new FileLine{FileLine::commandLineFilename()},
                          V3Options::getStdPackagePath(), false,
-                         "Cannot find std.sv containing built-in std:: definitions: ");
+                         "Cannot find verilated_std.sv containing built-in std:: definitions:");
     }
 
     // Read libraries
