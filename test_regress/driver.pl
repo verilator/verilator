@@ -197,10 +197,11 @@ if ($opt_rerun && $runner->fail_count) {
         ok_cnt => $orig_runner->{ok_cnt},
         skip_cnt => $orig_runner->{skip_cnt});
     foreach my $test (@{$orig_runner->{fail_tests}}) {
-        $test->clean;
         # Reschedule test
+        $test->clean if $test->rerunnable;
         $runner->one_test(pl_filename => $test->{pl_filename},
-                          $test->{scenario} => 1);
+                          $test->{scenario} => 1,
+                          rerun_skipping => !$test->rerunnable);
     }
     $runner->wait_and_report;
 }
@@ -350,9 +351,15 @@ sub one_test {
              my $test = VTest->new(@params,
                                    running_id => $process->{running_id});
              $test->oprint("=" x 50, "\n");
-             unlink $test->{status_filename};
+             unlink $test->{status_filename} if !$params{rerun_skipping};
              $test->_prep;
-             $test->_read;
+             if ($params{rerun_skipping}) {
+                 print "  ---------- Earlier logfiles below; test was rerunnable = 0\n";
+                 system("cat $test->{obj_dir}/*.log");
+                 print "  ---------- Earlier logfiles above; test was rerunnable = 0\n";
+             } else {
+                 $test->_read;
+             }
              # Don't put anything other than _exit after _read,
              # as may call _exit via another path
              $test->_exit;
@@ -575,6 +582,7 @@ sub new {
         context_threads => 0,   # Number of threads to allocate in the context
         benchmark => $opt_benchmark,
         verbose => $opt_verbose,
+        rerunnable => 1,        # Rerun if fails
         run_env => '',
         # All compilers
         v_flags => [split(/\s+/,
@@ -1513,6 +1521,12 @@ sub pli_filename {
     my $self = (ref $_[0] ? shift : $Self);
     $self->{pli_filename} = shift if defined $_[0];
     return $self->{pli_filename};
+}
+
+sub rerunnable {
+    my $self = (ref $_[0] ? shift : $Self);
+    $self->{rerunnable} = shift if defined $_[0];
+    return $self->{rerunnable};
 }
 
 sub too_few_cores {
@@ -2488,7 +2502,7 @@ sub file_contents {
         my $fh = IO::File->new("<$filename");
         if (!$fh) {
             $_File_Contents_Cache{$filename} = "_Already_Errored_";
-            $self->error("File_grep file not found: " . $filename . "\n");
+            $self->error("File_contents file not found: " . $filename . "\n");
             return $_File_Contents_Cache{$filename};
         }
         local $/; undef $/;
