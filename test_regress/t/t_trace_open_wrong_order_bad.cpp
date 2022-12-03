@@ -9,13 +9,14 @@
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 
-#include "Vt_trace_open_wrong_order.h"
+#include "Vt_trace_open_wrong_order_bad.h"
+
 using namespace std;
 
 int main(int argc, char** argv) {
     VerilatedContext ctx;
     VerilatedVcdC tfp;
-    Vt_trace_open_wrong_order dut;
+    Vt_trace_open_wrong_order_bad dut;
     ctx.traceEverOn(true);
     tfp.open(VL_STRINGIFY(TEST_OBJ_DIR) "/dump.vcd");  // Error! shall put to the next line!
     dut.trace(&tfp, 99);  // Error!

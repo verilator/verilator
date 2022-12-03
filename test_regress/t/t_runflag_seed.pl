@@ -15,12 +15,10 @@ compile(
 
 execute(
     all_run_flags => ["+verilator+seed+5 +SEED=fffffff4"],
-    fails => 0,
     );
 
 execute(
     all_run_flags => ["+verilator+seed+6 +SEED=fffffff2"],
-    fails => 0,
     );
 
 ok(1);

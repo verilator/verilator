@@ -14,7 +14,6 @@ top_filename("t/t_castdyn.v");
 
 lint(
     verilator_flags2 => ['-bbox-unsup'],
-    fails => 0,
     );
 
 ok(1);
