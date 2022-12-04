@@ -16,9 +16,12 @@ module x;
    } notembedded_t;
 
    notembedded_t p;
+   embedded_t t [1:0];
 
    initial begin
+      t[1].a = 2;
       p.b.a = 1;
+      if (t[1].a != 2) $stop;
       if (p.b.a != 1) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
