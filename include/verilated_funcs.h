@@ -2156,6 +2156,17 @@ extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
 extern IData VL_FGETS_NI(std::string& dest, IData fpi);
 
 //======================================================================
+// Dist functions
+
+extern IData VL_DIST_CHI_SQUARE(IData& seedr, IData udeg_of_free) VL_MT_SAFE;
+extern IData VL_DIST_ERLANG(IData& seedr, IData uk, IData umean) VL_MT_SAFE;
+extern IData VL_DIST_EXPONENTIAL(IData& seedr, IData umean) VL_MT_SAFE;
+extern IData VL_DIST_NORMAL(IData& seedr, IData umean, IData udeviation) VL_MT_SAFE;
+extern IData VL_DIST_POISSON(IData& seedr, IData umean) VL_MT_SAFE;
+extern IData VL_DIST_T(IData& seedr, IData udeg_of_free) VL_MT_SAFE;
+extern IData VL_DIST_UNIFORM(IData& seedr, IData ustart, IData uend) VL_MT_SAFE;
+
+//======================================================================
 // Conversion functions
 
 extern std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_MT_SAFE;

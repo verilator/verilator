@@ -773,6 +773,21 @@ private:
             }
         }
     }
+    void visit(AstNodeDistBiop* nodep) override {
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckSigned32(nodep, "seed", nodep->lhsp(), BOTH);
+            iterateCheckSigned32(nodep, "RHS", nodep->rhsp(), BOTH);
+            nodep->dtypeSetSigned32();
+        }
+    }
+    void visit(AstNodeDistTriop* nodep) override {
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckSigned32(nodep, "seed", nodep->lhsp(), BOTH);
+            iterateCheckSigned32(nodep, "RHS", nodep->rhsp(), BOTH);
+            iterateCheckSigned32(nodep, "THS", nodep->thsp(), BOTH);
+            nodep->dtypeSetSigned32();
+        }
+    }
     void visit(AstNodeStream* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);

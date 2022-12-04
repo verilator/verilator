@@ -10,7 +10,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
+top_filename("t/t_probdist.v");
+
 compile(
+    verilator_make_gmake => 0,
+    verilator_make_cmake => 1,
     );
 
 execute(

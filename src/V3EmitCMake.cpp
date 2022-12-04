@@ -159,6 +159,9 @@ class CMakeEmitter final {
             global.emplace_back("${VERILATOR_ROOT}/include/" + v3Global.opt.traceSourceBase()
                                 + "_c.cpp");
         }
+        if (v3Global.usesProbDist()) {
+            global.emplace_back("${VERILATOR_ROOT}/include/verilated_probdist.cpp");
+        }
         if (v3Global.usesTiming()) {
             global.emplace_back("${VERILATOR_ROOT}/include/verilated_timing.cpp");
         }
