@@ -219,7 +219,7 @@ public:
     int uniqueNum() const { return m_uniqueNum; }
     const char* broken() const override;
     void dump(std::ostream& str) const override;
-    bool isCompound() const override { return false; }  // Because don't support unpacked
+    bool isCompound() const override { return !packed(); }
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     AstBasicDType* basicp() const override {
         return (isFourstate()
