@@ -2468,27 +2468,31 @@ private:
         }
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->repairMemberCache();
-        // Determine bit assignments and width
         nodep->dtypep(nodep);
-        int lsb = 0;
-        int width = 0;
         nodep->isFourstate(false);
-        // MSB is first, so go backwards
-        AstMemberDType* itemp;
-        for (itemp = nodep->membersp(); itemp && itemp->nextp();
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {}
-        for (AstMemberDType* backip; itemp; itemp = backip) {
-            if (itemp->isFourstate()) nodep->isFourstate(true);
-            backip = VN_CAST(itemp->backp(), MemberDType);
-            itemp->lsb(lsb);
-            if (VN_IS(nodep, UnionDType)) {
-                width = std::max(width, itemp->width());
-            } else {
-                lsb += itemp->width();
-                width += itemp->width();
+        // Determine bit assignments and width
+        if (VN_IS(nodep, UnionDType) || nodep->packed()) {
+            int lsb = 0;
+            int width = 0;
+            // MSB is first, so go backwards
+            AstMemberDType* itemp;
+            for (itemp = nodep->membersp(); itemp && itemp->nextp();
+                itemp = VN_AS(itemp->nextp(), MemberDType)) {}
+            for (AstMemberDType* backip; itemp; itemp = backip) {
+                if (itemp->isFourstate()) nodep->isFourstate(true);
+                backip = VN_CAST(itemp->backp(), MemberDType);
+                itemp->lsb(lsb);
+                if (VN_IS(nodep, UnionDType)) {
+                    width = std::max(width, itemp->width());
+                } else {
+                    lsb += itemp->width();
+                    width += itemp->width();
+                }
             }
+            nodep->widthForce(width, width);  // Signing stays as-is, as parsed from declaration
+        } else {
+            nodep->widthForce(1, 1);
         }
-        nodep->widthForce(width, width);  // Signing stays as-is, as parsed from declaration
         // if (debug() >= 9) nodep->dumpTree("-  class-out: ");
     }
     void visit(AstClass* nodep) override {
@@ -2539,6 +2543,9 @@ private:
         nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);  // The member itself, not subDtype
         nodep->widthFromSub(nodep->subDTypep());
+    }
+    void visit(AstStructSel* nodep) override {
+        userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
     }
     void visit(AstMemberSel* nodep) override {
         UINFO(5, "   MEMBERSEL " << nodep << endl);
