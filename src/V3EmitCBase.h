@@ -63,7 +63,9 @@ public:
     void putsQuoted(const string& str) { ofp()->putsQuoted(str); }
     void ensureNewLine() { ofp()->ensureNewLine(); }
     bool optSystemC() { return v3Global.opt.systemC(); }
-    static string protect(const string& name) { return VIdProtect::protectIf(name, true); }
+    static string protect(const string& name) VL_MT_SAFE {
+        return VIdProtect::protectIf(name, true);
+    }
     static string protectIf(const string& name, bool doIt) {
         return VIdProtect::protectIf(name, doIt);
     }
@@ -84,7 +86,7 @@ public:
         return symClassName() + "* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;\n";
     }
     static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp = nullptr);
-    static string prefixNameProtect(const AstNode* nodep) {  // C++ name with prefix
+    static string prefixNameProtect(const AstNode* nodep) VL_MT_SAFE {  // C++ name with prefix
         return v3Global.opt.modPrefix() + "_" + protect(nodep->name());
     }
     static string topClassName() VL_MT_SAFE {  // Return name of top wrapper module

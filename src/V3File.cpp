@@ -108,7 +108,8 @@ class V3FileDependImp final {
     };
 
     // MEMBERS
-    std::set<string> m_filenameSet;  // Files generated (elim duplicates)
+    VerilatedMutex m_mutex;  // Protects members
+    std::set<string> m_filenameSet VL_GUARDED_BY(m_mutex);  // Files generated (elim duplicates)
     std::set<DependFile> m_filenameList;  // Files sourced/generated
 
     static string stripQuotes(const string& in) {
@@ -121,7 +122,8 @@ class V3FileDependImp final {
 
 public:
     // ACCESSOR METHODS
-    void addSrcDepend(const string& filename) {
+    void addSrcDepend(const string& filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
+        const VerilatedLockGuard lock{m_mutex};
         const auto itFoundPair = m_filenameSet.insert(filename);
         if (itFoundPair.second) {
             DependFile df{filename, false};
@@ -129,7 +131,8 @@ public:
             m_filenameList.insert(df);
         }
     }
-    void addTgtDepend(const string& filename) {
+    void addTgtDepend(const string& filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
+        const VerilatedLockGuard lock{m_mutex};
         const auto itFoundPair = m_filenameSet.insert(filename);
         if (itFoundPair.second) m_filenameList.insert(DependFile{filename, true});
     }
@@ -297,8 +300,8 @@ bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn
 //######################################################################
 // V3File
 
-void V3File::addSrcDepend(const string& filename) { dependImp.addSrcDepend(filename); }
-void V3File::addTgtDepend(const string& filename) { dependImp.addTgtDepend(filename); }
+void V3File::addSrcDepend(const string& filename) VL_MT_SAFE { dependImp.addSrcDepend(filename); }
+void V3File::addTgtDepend(const string& filename) VL_MT_SAFE { dependImp.addTgtDepend(filename); }
 void V3File::writeDepend(const string& filename) { dependImp.writeDepend(filename); }
 std::vector<string> V3File::getAllDeps() { return dependImp.getAllDeps(); }
 void V3File::writeTimes(const string& filename, const string& cmdlineIn) {
@@ -954,12 +957,13 @@ void V3OutCFile::putsGuard() {
 
 class VIdProtectImp final {
     // MEMBERS
+    VerilatedMutex m_mutex;  // Protects members
     std::map<const std::string, std::string> m_nameMap;  // Map of old name into new name
-    std::unordered_set<std::string> m_newIdSet;  // Which new names exist
+    std::unordered_set<std::string> m_newIdSet VL_GUARDED_BY(m_mutex);  // Which new names exist
 protected:
     // CONSTRUCTORS
     friend class VIdProtect;
-    static VIdProtectImp& singleton() {
+    static VIdProtectImp& singleton() VL_MT_SAFE {
         static VIdProtectImp s;
         return s;
     }
@@ -973,8 +977,9 @@ public:
     }
     ~VIdProtectImp() = default;
     // METHODS
-    string passthru(const string& old) {
+    string passthru(const string& old) VL_MT_SAFE_EXCLUDES(m_mutex) {
         if (!v3Global.opt.protectIds()) return old;
+        const VerilatedLockGuard lock{m_mutex};
         const auto it = m_nameMap.find(old);
         if (it != m_nameMap.end()) {
             // No way to go back and correct the older crypt name
@@ -986,8 +991,9 @@ public:
         }
         return old;
     }
-    string protectIf(const string& old, bool doIt) {
+    string protectIf(const string& old, bool doIt) VL_MT_SAFE_EXCLUDES(m_mutex) {
         if (!v3Global.opt.protectIds() || old.empty() || !doIt) return old;
+        const VerilatedLockGuard lock{m_mutex};
         const auto it = m_nameMap.find(old);
         if (it != m_nameMap.end()) {
             return it->second;
@@ -1017,7 +1023,7 @@ public:
             return out;
         }
     }
-    string protectWordsIf(const string& old, bool doIt) {
+    string protectWordsIf(const string& old, bool doIt) VL_MT_SAFE {
         // Split at " " (for traces), "." (for scopes), "->", "(", "&", ")" (for self pointers)
         if (!(doIt && v3Global.opt.protectIds())) return old;
         string out;
@@ -1056,7 +1062,7 @@ public:
 
 private:
     void trySep(const string& old, string::size_type start, const string& trySep,
-                string::size_type& posr, string& separatorr) {
+                string::size_type& posr, string& separatorr) VL_PURE {
         const string::size_type trypos = old.find(trySep, start);
         if (trypos != string::npos) {
             if (posr == string::npos || (posr > trypos)) {
@@ -1067,10 +1073,10 @@ private:
     }
 };
 
-string VIdProtect::protectIf(const string& old, bool doIt) {
+string VIdProtect::protectIf(const string& old, bool doIt) VL_MT_SAFE {
     return VIdProtectImp::singleton().protectIf(old, doIt);
 }
-string VIdProtect::protectWordsIf(const string& old, bool doIt) {
+string VIdProtect::protectWordsIf(const string& old, bool doIt) VL_MT_SAFE {
     return VIdProtectImp::singleton().protectWordsIf(old, doIt);
 }
 void VIdProtect::writeMapFile(const string& filename) {

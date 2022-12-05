@@ -20,6 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "verilated_threads.h"
+
 #include "V3Error.h"
 #include "V3LangCode.h"
 
@@ -50,12 +52,13 @@ class FileLineSingleton final {
     using MsgEnBitSet = std::bitset<V3ErrorCode::_ENUM_MAX>;
 
     // MEMBERS
+    VerilatedMutex m_mutex;  // protects members
     std::map<const std::string, fileNameIdx_t> m_namemap;  // filenameno for each filename
     std::deque<string> m_names;  // filename text for each filenameno
     std::deque<V3LangCode> m_languages;  // language for each filenameno
 
     // Map from flag set to the index in m_internedMsgEns for interning
-    std::unordered_map<MsgEnBitSet, msgEnSetIdx_t> m_internedMsgEnIdxs;
+    std::unordered_map<MsgEnBitSet, msgEnSetIdx_t> m_internedMsgEnIdxs VL_GUARDED_BY(m_mutex);
     // Interned message enablement flag sets
     std::vector<MsgEnBitSet> m_internedMsgEns;
 
@@ -78,9 +81,9 @@ class FileLineSingleton final {
     static string filenameLetters(fileNameIdx_t fileno) VL_PURE;
 
     // Add given bitset to the interned bitsets, return interned index
-    msgEnSetIdx_t addMsgEnBitSet(const MsgEnBitSet& bitSet);
+    msgEnSetIdx_t addMsgEnBitSet(const MsgEnBitSet& bitSet) VL_MT_SAFE_EXCLUDES(m_mutex);
     // Add index of default bitset
-    msgEnSetIdx_t defaultMsgEnIndex();
+    msgEnSetIdx_t defaultMsgEnIndex() VL_MT_SAFE;
     // Set bitIdx to value in bitset at interned index setIdx, return interned index of result
     msgEnSetIdx_t msgEnSetBit(msgEnSetIdx_t setIdx, size_t bitIdx, bool value);
     // Return index to intersection set

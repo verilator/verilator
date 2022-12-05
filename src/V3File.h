@@ -61,8 +61,8 @@ public:
     }
 
     // Dependencies
-    static void addSrcDepend(const string& filename);
-    static void addTgtDepend(const string& filename);
+    static void addSrcDepend(const string& filename) VL_MT_SAFE;
+    static void addTgtDepend(const string& filename) VL_MT_SAFE;
     static void writeDepend(const string& filename);
     static std::vector<string> getAllDeps();
     static void writeTimes(const string& filename, const string& cmdlineIn);
@@ -318,10 +318,10 @@ class VIdProtect final {
 public:
     // METHODS
     // Rename to a new encoded string (unless earlier passthru'ed)
-    static string protect(const string& old) { return protectIf(old, true); }
-    static string protectIf(const string& old, bool doIt = true);
+    static string protect(const string& old) VL_MT_SAFE { return protectIf(old, true); }
+    static string protectIf(const string& old, bool doIt = true) VL_MT_SAFE;
     // Rename words to a new encoded string
-    static string protectWordsIf(const string& old, bool doIt = true);
+    static string protectWordsIf(const string& old, bool doIt = true) VL_MT_SAFE;
     // Write map of renames to output file
     static void writeMapFile(const string& filename);
 };
