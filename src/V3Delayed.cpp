@@ -101,6 +101,7 @@ private:
     bool m_inDly = false;  // True in delayed assignments
     bool m_inLoop = false;  // True in for loops
     bool m_inInitial = false;  // True in static initializers and initial blocks
+    bool m_inSuspendableOrFork = false;  // True in suspendable processes and forks
     bool m_ignoreBlkAndNBlk = false;  // Suppress delayed assignment BLKANDNBLK
     using VarMap = std::map<const std::pair<AstNodeModule*, std::string>, AstVar*>;
     VarMap m_modVarMap;  // Table of new var names created under module
@@ -311,7 +312,7 @@ private:
         AstVarScope* setvscp;
         AstAssignPre* setinitp = nullptr;
 
-        if (!m_procp->isSuspendable() && nodep->user3p()) {
+        if (!m_inSuspendableOrFork && nodep->user3p()) {
             // Simplistic optimization.  If the previous statement in same scope was also a =>,
             // then we told this nodep->user3 we can use its Vdlyvset rather than making a new one.
             // This is good for code like:
@@ -322,7 +323,7 @@ private:
             const string setvarname
                 = (string("__Vdlyvset__") + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
             setvscp = createVarSc(varrefp->varScopep(), setvarname, 1, nullptr);
-            if (!m_procp->isSuspendable()) {
+            if (!m_inSuspendableOrFork) {
                 // Suspendables reset __Vdlyvset__ in the AstAlwaysPost
                 setinitp = new AstAssignPre{
                     nodep->fileline(), new AstVarRef{nodep->fileline(), setvscp, VAccess::WRITE},
@@ -342,6 +343,8 @@ private:
         // This ensures that multiple assignments to the same memory will result
         // in correctly ordered code - the last assignment must be last.
         // It also has the nice side effect of assisting cache locality.
+        varrefp->user2Inc();  // Do not generate a warning for the blocking assignment
+                              // that uses this varref
         AstNodeExpr* selectsp = varrefp;
         for (int dimension = int(dimreadps.size()) - 1; dimension >= 0; --dimension) {
             selectsp = new AstArraySel{nodep->fileline(), selectsp, dimreadps[dimension]};
@@ -354,7 +357,7 @@ private:
         UINFO(9, "   For " << setvscp << endl);
         UINFO(9, "     & " << varrefp << endl);
         AstAlwaysPost* finalp = nullptr;
-        if (m_procp->isSuspendable()) {
+        if (m_inSuspendableOrFork) {
             finalp = VN_AS(varrefp->varScopep()->user3p(), AlwaysPost);
             if (!finalp) {
                 FileLine* const flp = nodep->fileline();
@@ -400,7 +403,7 @@ private:
             finalp->user4p(postLogicp);  // and the associated IF, as we may be able to reuse it
         }
         postLogicp->addThensp(new AstAssign{nodep->fileline(), selectsp, valreadp});
-        if (m_procp->isSuspendable()) {
+        if (m_inSuspendableOrFork) {
             FileLine* const flp = nodep->fileline();
             postLogicp->addThensp(new AstAssign{flp, new AstVarRef{flp, setvscp, VAccess::WRITE},
                                                 new AstConst{flp, 0}});
@@ -438,6 +441,8 @@ private:
         }
     }
     void visit(AstNodeProcedure* nodep) override {
+        VL_RESTORER(m_inSuspendableOrFork);
+        m_inSuspendableOrFork = nodep->isSuspendable();
         m_procp = nodep;
         m_timingDomains.clear();
         iterateChildren(nodep);
@@ -463,6 +468,11 @@ private:
             actp->sensesp(clockedDomain);
             actp->sensesStorep(clockedDomain);
         }
+    }
+    void visit(AstFork* nodep) override {
+        VL_RESTORER(m_inSuspendableOrFork);
+        m_inSuspendableOrFork = true;
+        iterateChildren(nodep);
     }
     void visit(AstCAwait* nodep) override { m_timingDomains.insert(nodep->sensesp()); }
     void visit(AstFireEvent* nodep) override {
@@ -518,7 +528,7 @@ private:
         const bool isArray = VN_IS(nodep->lhsp(), ArraySel)
                              || (VN_IS(nodep->lhsp(), Sel)
                                  && VN_IS(VN_AS(nodep->lhsp(), Sel)->fromp(), ArraySel));
-        if (m_procp->isSuspendable() || isArray) {
+        if (m_inSuspendableOrFork || isArray) {
             AstNodeExpr* const lhsp = nodep->lhsp();
             AstNodeExpr* const newlhsp = createDlyOnSet(nodep, lhsp);
             if (m_inLoop && isArray) {
