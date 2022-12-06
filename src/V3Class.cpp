@@ -17,8 +17,6 @@
 //
 // Each class:
 //      Move to be modules under AstNetlist
-// Each typedef of an unpacked struct:
-//      Move to the struct definitons package
 //
 //*************************************************************************
 
@@ -43,11 +41,11 @@ private:
 
     // MEMBERS
     string m_prefix;  // String prefix to add to name based on hier
+    AstNodeModule* m_modp = nullptr; // Current module
     AstNodeModule* m_classPackagep = nullptr;  // Package moving into
     const AstScope* m_classScopep = nullptr;  // Package moving scopes into
     AstScope* m_packageScopep = nullptr;  // Class package scope
     const AstNodeFTask* m_ftaskp = nullptr;  // Current task
-    AstPackage* m_structs_packagep = nullptr;  // Struct definitions package
     std::vector<std::pair<AstNode*, AstScope*>> m_toScopeMoves;
     std::vector<std::pair<AstNode*, AstNodeModule*>> m_toPackageMoves;
 
@@ -95,7 +93,9 @@ private:
         VL_RESTORER(m_classPackagep);
         VL_RESTORER(m_classScopep);
         VL_RESTORER(m_packageScopep);
+        VL_RESTORER(m_modp);
         {
+            m_modp = nodep;
             m_classPackagep = packagep;
             m_classScopep = classScopep;
             m_packageScopep = scopep;
@@ -107,7 +107,9 @@ private:
     void visit(AstNodeModule* nodep) override {
         // Visit for NodeModules that are not AstClass (AstClass is-a AstNodeModule)
         VL_RESTORER(m_prefix);
+        VL_RESTORER(m_modp);
         {
+            m_modp = nodep;
             m_prefix = nodep->name() + "__03a__03a";  // ::
             iterateChildren(nodep);
         }
@@ -172,17 +174,10 @@ private:
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
         auto* const dtypep = VN_CAST(nodep->dtypep(), StructDType);
-        if (!dtypep || dtypep->packed()) return;
-        if (!m_structs_packagep) {
-            m_structs_packagep = new AstPackage{nodep->fileline(), "__structs"};
-            v3Global.rootp()->addModulesp(m_structs_packagep);
+        if (dtypep && !dtypep->packed()) {
+            dtypep->name(nodep->name());  // The name will be used in struct definition
+            dtypep->classOrPackagep(m_modp);
         }
-
-        nodep->unlinkFrBack();
-
-        dtypep->name(nodep->name());  // The name will be used in struct definition
-        dtypep->classOrPackagep(m_structs_packagep);
-        m_structs_packagep->addStmtsp(nodep);
     }
 
     void visit(AstNodeExpr* nodep) override {}  // Short circuit
