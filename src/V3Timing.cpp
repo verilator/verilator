@@ -746,6 +746,7 @@ private:
     }
     void visit(AstFork* nodep) override {
         if (nodep->user1SetOnce()) return;
+        v3Global.setUsesTiming();
         // Create a unique name for this fork
         nodep->name(m_forkNames.get(nodep));
         unsigned idx = 0;  // Index for naming begins
