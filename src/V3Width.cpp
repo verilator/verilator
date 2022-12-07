@@ -2464,6 +2464,7 @@ private:
                 nodep->v3warn(UNPACKED, "Unsupported: Unpacked union");
             } else if (v3Global.opt.structsPacked()) {
                 nodep->packed(true);
+                cout << ">>>>>> " << nodep << endl;
             }
         }
         userIterateChildren(nodep, nullptr);  // First size all members
@@ -2479,6 +2480,7 @@ private:
             for (itemp = nodep->membersp(); itemp && itemp->nextp();
                 itemp = VN_AS(itemp->nextp(), MemberDType)) {}
             for (AstMemberDType* backip; itemp; itemp = backip) {
+                if (itemp->skipRefp()->isCompound()) itemp->v3error("Unpacked data type in packed struct/union");
                 if (itemp->isFourstate()) nodep->isFourstate(true);
                 backip = VN_CAST(itemp->backp(), MemberDType);
                 itemp->lsb(lsb);
