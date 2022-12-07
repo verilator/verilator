@@ -6,15 +6,19 @@
 
 module x;
 
-   typedef union {
+   typedef struct {
       int         a;
-   } union_t;
+   } notpacked_t;
 
-   union_t b;
+   typedef struct packed {
+      notpacked_t b;
+   } ispacked_t;
+
+   ispacked_t p;
 
    initial begin
-      b = 1;
-      if (b != 1) $stop;
+      p.b = 1;
+      if (p.b != 1) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

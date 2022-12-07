@@ -2464,7 +2464,6 @@ private:
                 nodep->v3warn(UNPACKED, "Unsupported: Unpacked union");
             } else if (v3Global.opt.structsPacked()) {
                 nodep->packed(true);
-                cout << ">>>>>> " << nodep << endl;
             }
         }
         userIterateChildren(nodep, nullptr);  // First size all members
