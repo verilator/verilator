@@ -41,7 +41,7 @@ private:
 
     // MEMBERS
     string m_prefix;  // String prefix to add to name based on hier
-    AstNodeModule* m_modp = nullptr; // Current module
+    AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeModule* m_classPackagep = nullptr;  // Package moving into
     const AstScope* m_classScopep = nullptr;  // Package moving scopes into
     AstScope* m_packageScopep = nullptr;  // Class package scope

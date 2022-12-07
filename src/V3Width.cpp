@@ -2477,9 +2477,10 @@ private:
             // MSB is first, so go backwards
             AstMemberDType* itemp;
             for (itemp = nodep->membersp(); itemp && itemp->nextp();
-                itemp = VN_AS(itemp->nextp(), MemberDType)) {}
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {}
             for (AstMemberDType* backip; itemp; itemp = backip) {
-                if (itemp->skipRefp()->isCompound()) itemp->v3error("Unpacked data type in packed struct/union");
+                if (itemp->skipRefp()->isCompound())
+                    itemp->v3error("Unpacked data type in packed struct/union");
                 if (itemp->isFourstate()) nodep->isFourstate(true);
                 backip = VN_CAST(itemp->backp(), MemberDType);
                 itemp->lsb(lsb);
