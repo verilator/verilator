@@ -2480,7 +2480,7 @@ private:
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {}
             for (AstMemberDType* backip; itemp; itemp = backip) {
                 if (itemp->skipRefp()->isCompound())
-                    itemp->v3error("Unpacked data type in packed struct/union");
+                    itemp->v3error("Unpacked data type in packed struct/union (IEEE 1800-2017 7.2.1)");
                 if (itemp->isFourstate()) nodep->isFourstate(true);
                 backip = VN_CAST(itemp->backp(), MemberDType);
                 itemp->lsb(lsb);
