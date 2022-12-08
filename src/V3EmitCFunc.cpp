@@ -675,7 +675,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         string literal;
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            string line
+            const std::string line
                 = emitVarResetRecurse(varp, varNameProtected + suffix + "." + itemp->name(),
                                       itemp->dtypep(), depth + 1, "");
             if (line.length() > 0) literal += line;
