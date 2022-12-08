@@ -4,6 +4,7 @@
 // any use, without warranty, 2022 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
+// bug3781
 module t;
     logic clk;
     logic [7:0] data;
