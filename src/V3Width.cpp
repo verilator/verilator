@@ -2518,10 +2518,8 @@ private:
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            userIterateChildren(nodep, nullptr);
-        }
+        m_modp = nodep;
+        userIterateChildren(nodep, nullptr);
     }
     void visit(AstClassOrPackageRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
