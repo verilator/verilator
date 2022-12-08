@@ -1384,9 +1384,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_statsVars = flag;
         m_stats |= flag;
     });
-    DECL_OPTION("-structs-unpacked", CbOnOff, [this](bool flag) {
-        m_structsPacked = !flag;
-    });
+    DECL_OPTION("-structs-unpacked", CbOnOff, [this](bool flag) { m_structsPacked = !flag; });
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2017; });
 
     DECL_OPTION("-threads-coarsen", OnOff, &m_threadsCoarsen).undocumented();  // Debug
