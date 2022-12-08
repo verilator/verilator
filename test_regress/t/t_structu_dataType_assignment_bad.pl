@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 
 
 compile(
-    verilator_flags2 => ['--structs-packed'],
+    verilator_flags2 => ['-no-structs-unpacked'],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

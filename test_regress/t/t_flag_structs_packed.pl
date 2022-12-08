@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(linter => 1);
 
 compile(
-    verilator_flags2 => ['--structs-packed'],
+    verilator_flags2 => ['-no-structs-unpacked'],
     );
 
 execute(
