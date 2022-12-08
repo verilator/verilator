@@ -678,7 +678,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
             const std::string line
                 = emitVarResetRecurse(varp, varNameProtected + suffix + "." + itemp->name(),
                                       itemp->dtypep(), depth + 1, "");
-            if (line.length() > 0) literal += line;
+            if (!line.empty()) literal += line;
         }
         return literal;
     } else if (basicp && basicp->keyword() == VBasicDTypeKwd::STRING) {
