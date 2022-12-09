@@ -170,13 +170,30 @@ private:
             m_toScopeMoves.emplace_back(std::make_pair(nodep, m_packageScopep));
         }
     }
+
+    void setStructModulep(AstStructDType* const dtypep) {
+        // Give it a pointer to its package and a final name
+        dtypep->classOrPackagep(m_modp);
+        dtypep->name(dtypep->name() + "__struct" + cvtToStr(dtypep->uniqueNum()));
+
+        for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            AstStructDType* const subp = VN_CAST(itemp->skipRefp(), StructDType);
+            // Recurse only into anonymous unpacked structs inside this definition,
+            // other unpacked structs will be reached from another typedefs
+            if (subp && !subp->packed() && subp->name().length() == 0) {
+                setStructModulep(subp);
+            }
+        }
+    }
     void visit(AstTypedef* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
-        auto* const dtypep = VN_CAST(nodep->dtypep(), StructDType);
+
+        AstStructDType* const dtypep = VN_CAST(nodep->dtypep(), StructDType);
         if (dtypep && !dtypep->packed()) {
-            dtypep->name(nodep->name());  // The name will be used in struct definition
-            dtypep->classOrPackagep(m_modp);
+            dtypep->name(nodep->name());
+            setStructModulep(dtypep);
         }
     }
 

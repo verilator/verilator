@@ -20,6 +20,7 @@ module t (/*AUTOARG*/);
       a = b;
 
       $display("(%d, %d) (%d, %d)", a.fst, a.snd, b.fst, b.snd);
+      $display("%%p=%p", a);
       $write("*-* All Finished *-*\n");
       $finish;
    end
