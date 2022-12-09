@@ -1193,13 +1193,13 @@ Summary:
    by size (plain :vlopt:`--stats` just gives a count).  See
    :vlopt:`--stats`, which is implied by this.
 
-.. option:: --structs-packed
+.. option:: --structs-unpacked
 
-   Converts all unpacked structures to packed structures and issues a
-   UNPACKED warning.  Currently this is the default and
-   :vlopt:`--no-structs-packed <--structs-packed>` will not work.
-   Specifying this option allows for forward compatibility when a future
-   version of Verilator no longer always packs unpacked structures.
+   Enables support for unpacked structures. Currently this is the default
+   and :vlopt:`--no-structs-unpacked <--structs-unpacked>` converts all
+   structures to packed structures, specifying this option allows for
+   backward compatibility as older versions of Verilator would always pack
+   unpacked structures.
 
 .. option:: -sv
 
