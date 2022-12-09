@@ -148,7 +148,11 @@
 #endif
 
 // Comment tag that Function is pure (and thus also VL_MT_SAFE)
-#define VL_PURE
+#if defined(__clang__)
+# define VL_PURE __attribute__((annotate("PURE")))
+#else
+# define VL_PURE
+#endif
 // Comment tag that function is threadsafe
 #if defined(__clang__)
 # define VL_MT_SAFE __attribute__((annotate("MT_SAFE")))
@@ -157,9 +161,17 @@
 #endif
 // Comment tag that function is threadsafe, only
 // during normal operation (post-init)
-#define VL_MT_SAFE_POSTINIT
+#if defined(__clang__)
+# define VL_MT_SAFE_POSTINIT __attribute__((annotate("MT_SAFE_POSTINIT")))
+#else
+# define VL_MT_SAFE_POSTINIT
+#endif
 // Attribute that function is clang threadsafe and uses given mutex
-#define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
+#if defined(__clang__)
+# define VL_MT_SAFE_EXCLUDES(mutex) __attribute__((annotate("MT_SAFE_EXCLUDES"))) VL_EXCLUDES(mutex)
+#else
+# define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
+#endif
 // Comment tag that function is not threadsafe
 #if defined(__clang__)
 # define VL_MT_UNSAFE __attribute__((annotate("MT_UNSAFE")))
@@ -168,7 +180,17 @@
 #endif
 // Comment tag that function is not threadsafe
 // protected to make sure single-caller
-#define VL_MT_UNSAFE_ONE
+#if defined(__clang__)
+# define VL_MT_UNSAFE_ONE __attribute__((annotate("MT_UNSAFE_ONE")))
+#else
+# define VL_MT_UNSAFE_ONE
+#endif
+// Comment tag that function is entry point of parallelization
+#if defined(__clang__)
+# define VL_MT_START __attribute__((annotate("MT_START")))
+#else
+# define VL_MT_START
+#endif
 
 #ifndef VL_NO_LEGACY
 # define VL_ULL(c) (c##ULL)  // Add appropriate suffix to 64-bit constant (deprecated)
