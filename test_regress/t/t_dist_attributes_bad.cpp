@@ -1,115 +1,169 @@
 #include "verilatedos.h"
 
-#include <mutex>
+#include "t_dist_attributes_bad.h"
 
-#define NO_ANNOTATION
+// Non-Static Functions, Annotated declaration, Unannotated definition.
+// (definitions)
+EMIT_ALL(SIG_UNANNOTATED, nsf_au, /**/, {})
 
-// clang-format off
-#define TEST(MAIN_ANNOTATION, SUB_FUNCTION) \
-    static void t_ ## SUB_FUNCTION ## _from_ ## MAIN_ANNOTATION ## _e() MAIN_ANNOTATION { SUB_FUNCTION(); }
+// Non-Static Functions, Unannotated declaration, Annotated definition.
+// (definitions)
+EMIT_ALL(SIG_ANNOTATED, nsf_ua, /**/, {})
 
-#define TEST2(MAIN_ANNOTATION, X, SUB_FUNCTION) \
-    static void t_ ## SUB_FUNCTION ## _from_ ## MAIN_ANNOTATION ## _e() MAIN_ANNOTATION(X) { SUB_FUNCTION(); }
-// clang-format on
+// Non-Static Functions, Annotated declaration, Annotated definition.
+// (definitions)
+EMIT_ALL(SIG_ANNOTATED, nsf_aa, /**/, {})
 
-static std::mutex m_mutex;
-static void no_attributes_function();
-static void mt_unsafe_function() VL_MT_UNSAFE;
-static void mt_unsafe_one_function() VL_MT_UNSAFE_ONE;
-static void mt_safe_function() VL_MT_SAFE;
-static void mt_pure_function() VL_PURE;
-static void mt_safe_postinit_function() VL_MT_SAFE_POSTINIT;
-static void mt_safe_excludes_function() VL_MT_SAFE_EXCLUDES(m_mutex);
-static void mt_start_function() VL_MT_START;
+// Non-Static Functions, Annotated declaration, Annotated definition.
+// Definitions have extra annotations.
+// (definitions)
+EMIT_ALL(SIG_ANNOTATED, nsf_ae, /**/, VL_PURE VL_MT_SAFE{})
 
-class good {
-    // function that doesn't have any annotations
-    // can use all possible functions without any warning
-    TEST(NO_ANNOTATION, no_attributes_function);
-    TEST(NO_ANNOTATION, mt_unsafe_function);
-    TEST(NO_ANNOTATION, mt_unsafe_one_function);
-    TEST(NO_ANNOTATION, mt_safe_function);
-    TEST(NO_ANNOTATION, mt_pure_function);
-    TEST(NO_ANNOTATION, mt_safe_postinit_function);
-    TEST(NO_ANNOTATION, mt_safe_excludes_function);
-    TEST(NO_ANNOTATION, mt_start_function);
-    // pure functions can only call another pure function
-    TEST(VL_PURE, mt_pure_function);
-    // mt_safe can call other mt_safe function, or
-    // pure function
-    TEST(VL_MT_SAFE, mt_safe_function);
-    TEST(VL_MT_SAFE, mt_pure_function);
-    TEST(VL_MT_SAFE, mt_safe_postinit_function);
-    TEST(VL_MT_SAFE, mt_safe_excludes_function);
-    // mt_safe_postinit can call other mt_safe function, or
-    // pure function
-    TEST(VL_MT_SAFE_POSTINIT, mt_safe_function);
-    TEST(VL_MT_SAFE_POSTINIT, mt_pure_function);
-    TEST(VL_MT_SAFE_POSTINIT, mt_safe_postinit_function);
-    TEST(VL_MT_SAFE_POSTINIT, mt_safe_excludes_function);
-    // mt_safe_excludes can call other mt_safe function, or
-    // pure function
-    TEST2(VL_MT_SAFE_EXCLUDES, m_mutex, mt_safe_function);
-    TEST2(VL_MT_SAFE_EXCLUDES, m_mutex, mt_pure_function);
-    TEST2(VL_MT_SAFE_EXCLUDES, m_mutex, mt_safe_postinit_function);
-    TEST2(VL_MT_SAFE_EXCLUDES, m_mutex, mt_safe_excludes_function);
-    // mt_unsafe can use all possible functions
-    TEST(VL_MT_UNSAFE, no_attributes_function);
-    TEST(VL_MT_UNSAFE, mt_unsafe_function);
-    TEST(VL_MT_UNSAFE, mt_unsafe_one_function);
-    TEST(VL_MT_UNSAFE, mt_safe_function);
-    TEST(VL_MT_UNSAFE, mt_pure_function);
-    TEST(VL_MT_UNSAFE, mt_safe_postinit_function);
-    TEST(VL_MT_UNSAFE, mt_safe_excludes_function);
-    TEST(VL_MT_UNSAFE, mt_start_function);
-    // mt_unsafe_one can use all possible functions
-    TEST(VL_MT_UNSAFE_ONE, no_attributes_function);
-    TEST(VL_MT_UNSAFE_ONE, mt_unsafe_function);
-    TEST(VL_MT_UNSAFE_ONE, mt_unsafe_one_function);
-    TEST(VL_MT_UNSAFE_ONE, mt_safe_function);
-    TEST(VL_MT_UNSAFE_ONE, mt_pure_function);
-    TEST(VL_MT_UNSAFE_ONE, mt_safe_postinit_function);
-    TEST(VL_MT_UNSAFE_ONE, mt_safe_excludes_function);
-    TEST(VL_MT_UNSAFE_ONE, mt_start_function);
-    // mt_start can call mt_safe function, or
-    // pure function
-    TEST(VL_MT_START, mt_safe_function);
-    TEST(VL_MT_START, mt_pure_function);
-    TEST(VL_MT_START, mt_safe_postinit_function);
-    TEST(VL_MT_START, mt_safe_excludes_function);
-};
+// Non-Static Functions, Annotated declaration, Annotated definition.
+// Declarations have extra annotations.
+// (definitions)
+EMIT_ALL(SIG_ANNOTATED, nsf_ea, /**/, {})
 
-class bad {
-    // pure functions can only call another pure function
-    TEST(VL_PURE, no_attributes_function);
-    TEST(VL_PURE, mt_unsafe_function);
-    TEST(VL_PURE, mt_unsafe_one_function);
-    TEST(VL_PURE, mt_safe_function);
-    TEST(VL_PURE, mt_safe_postinit_function);
-    TEST(VL_PURE, mt_safe_excludes_function);
-    TEST(VL_PURE, mt_start_function);
-    // mt_safe can call other mt_safe function, or
-    // pure function
-    TEST(VL_MT_SAFE, no_attributes_function);
-    TEST(VL_MT_SAFE, mt_unsafe_function);
-    TEST(VL_MT_SAFE, mt_unsafe_one_function);
-    TEST(VL_MT_SAFE, mt_start_function);
-    // mt_safe_postinit can call other mt_safe function, or
-    // pure function
-    TEST(VL_MT_SAFE_POSTINIT, no_attributes_function);
-    TEST(VL_MT_SAFE_POSTINIT, mt_unsafe_function);
-    TEST(VL_MT_SAFE_POSTINIT, mt_unsafe_one_function);
-    TEST(VL_MT_SAFE_POSTINIT, mt_start_function);
-    // mt_safe_excludes can call other mt_safe function, or
-    // pure function
-    TEST2(VL_MT_SAFE_EXCLUDES, m_mutex, no_attributes_function);
-    TEST2(VL_MT_SAFE_EXCLUDES, m_mutex, mt_unsafe_function);
-    TEST2(VL_MT_SAFE_EXCLUDES, m_mutex, mt_unsafe_one_function);
-    TEST2(VL_MT_SAFE_EXCLUDES, m_mutex, mt_start_function);
-    // mt_start can call mt_safe function, or
-    // pure function
-    TEST(VL_MT_START, no_attributes_function);
-    TEST(VL_MT_START, mt_unsafe_function);
-    TEST(VL_MT_START, mt_unsafe_one_function);
-    TEST(VL_MT_START, mt_start_function);
-};
+// Non-Static Functions (call test).
+EMIT_ALL(VL_ATTR_UNUSED static SIG_ANNOTATED, nsf_test_caller_func, /**/, {
+    VerilatedMutex m;
+
+    EMIT_ALL(CALL, nsf_au, m, ;)
+    EMIT_ALL(CALL, nsf_ua, m, ;)
+    EMIT_ALL(CALL, nsf_aa, m, ;)
+    EMIT_ALL(CALL, nsf_ae, m, ;)
+    EMIT_ALL(CALL, nsf_ea, m, ;)
+})
+
+// Inline Functions in Header (call test).
+EMIT_ALL(VL_ATTR_UNUSED static SIG_ANNOTATED, ifh_test_caller_func, /**/, {
+    VerilatedMutex m;
+
+    EMIT_ALL(CALL, ifh, m, ;)
+})
+
+// Static Functions in Cpp file.
+EMIT_ALL(inline SIG_ANNOTATED, sfc, /**/, {})
+
+// Static Functions in Cpp file (call test).
+EMIT_ALL(VL_ATTR_UNUSED static SIG_ANNOTATED, sfc_test_caller_func, /**/, {
+    VerilatedMutex m;
+
+    EMIT_ALL(CALL, sfc, m, ;)
+})
+
+// Static Class Methods, Annotated declaration, Unannotated definition.
+// (definitions)
+EMIT_ALL(SIG_UNANNOTATED, TestClass::scm_au, /**/, {})
+
+// Static Class Methods, Unannotated declaration, Annotated definition.
+// (definitions)
+EMIT_ALL(SIG_ANNOTATED, TestClass::scm_ua, /**/, {})
+
+// Static Class Methods, Annotated declaration, Annotated definition.
+// (definitions)
+EMIT_ALL(SIG_ANNOTATED, TestClass::scm_aa, /**/, {})
+
+// Static Class Methods, Annotated declaration, Annotated definition.
+// Definitions have extra annotations.
+// (definitions)
+EMIT_ALL(SIG_ANNOTATED, TestClass::scm_ae, /**/, VL_PURE VL_MT_SAFE{})
+
+// Static Class Methods, Annotated declaration, Annotated definition.
+// Declarations have extra annotations.
+// (definitions)
+EMIT_ALL(SIG_ANNOTATED, TestClass::scm_ea, /**/, {})
+
+// Static Class Methods (call test).
+// (definition)
+EMIT_ALL(SIG_ANNOTATED, TestClass::scm_test_caller_smethod, /**/, {
+    VerilatedMutex m;
+
+    EMIT_ALL(CALL, TestClass::scm_au, m, ;)
+    EMIT_ALL(CALL, TestClass::scm_ua, m, ;)
+    EMIT_ALL(CALL, TestClass::scm_aa, m, ;)
+    EMIT_ALL(CALL, TestClass::scm_ae, m, ;)
+    EMIT_ALL(CALL, TestClass::scm_ea, m, ;)
+
+    TestClass tc;
+    EMIT_ALL(CALL, tc.scm_au, m, ;)
+    EMIT_ALL(CALL, tc.scm_ua, m, ;)
+    EMIT_ALL(CALL, tc.scm_aa, m, ;)
+    EMIT_ALL(CALL, tc.scm_ae, m, ;)
+    EMIT_ALL(CALL, tc.scm_ea, m, ;)
+
+    TestClass* tcp = &tc;
+    EMIT_ALL(CALL, tcp->scm_au, m, ;)
+    EMIT_ALL(CALL, tcp->scm_ua, m, ;)
+    EMIT_ALL(CALL, tcp->scm_aa, m, ;)
+    EMIT_ALL(CALL, tcp->scm_ae, m, ;)
+    EMIT_ALL(CALL, tcp->scm_ea, m, ;)
+})
+
+// Inline Static Class Methods (call test).
+// (definition)
+EMIT_ALL(SIG_ANNOTATED, TestClass::iscm_test_caller_smethod, /**/, {
+    VerilatedMutex m;
+
+    EMIT_ALL(CALL, TestClass::iscm, m, ;)
+
+    TestClass tc;
+    EMIT_ALL(CALL, tc.iscm, m, ;)
+
+    TestClass* tcp = &tc;
+    EMIT_ALL(CALL, tcp->iscm, m, ;)
+})
+
+// Class Methods, Annotated declaration, Unannotated definition.
+// (definitions)
+EMIT_ALL(SIG_UNANNOTATED, TestClass::cm_au, /**/, {})
+
+// Class Methods, Unannotated declaration, Annotated definition.
+// (definitions)
+EMIT_ALL(SIG_ANNOTATED, TestClass::cm_ua, /**/, {})
+
+// Class Methods, Annotated declaration, Annotated definition.
+// (definitions)
+EMIT_ALL(SIG_ANNOTATED, TestClass::cm_aa, /**/, {})
+
+// Class Methods, Annotated declaration, Annotated definition.
+// Definitions have extra annotations.
+// (definitions)
+EMIT_ALL(SIG_ANNOTATED, TestClass::cm_ae, /**/, VL_PURE VL_MT_SAFE{})
+
+// Class Methods, Annotated declaration, Annotated definition.
+// Declarations have extra annotations.
+// (definitions)
+EMIT_ALL(SIG_ANNOTATED, TestClass::cm_ea, /**/, {})
+
+// Class Methods (call test).
+// (definition)
+EMIT_ALL(SIG_ANNOTATED, TestClass::cm_test_caller_smethod, /**/, {
+    VerilatedMutex m;
+
+    TestClass tc;
+    EMIT_ALL(CALL, tc.cm_au, m, ;)
+    EMIT_ALL(CALL, tc.cm_ua, m, ;)
+    EMIT_ALL(CALL, tc.cm_aa, m, ;)
+    EMIT_ALL(CALL, tc.cm_ae, m, ;)
+    EMIT_ALL(CALL, tc.cm_ea, m, ;)
+
+    TestClass* tcp = &tc;
+    EMIT_ALL(CALL, tcp->cm_au, m, ;)
+    EMIT_ALL(CALL, tcp->cm_ua, m, ;)
+    EMIT_ALL(CALL, tcp->cm_aa, m, ;)
+    EMIT_ALL(CALL, tcp->cm_ae, m, ;)
+    EMIT_ALL(CALL, tcp->cm_ea, m, ;)
+})
+
+// Inline Class Methods (call test).
+// (definition)
+EMIT_ALL(SIG_ANNOTATED, TestClass::icm_test_caller_smethod, /**/, {
+    VerilatedMutex m;
+
+    TestClass tc;
+    EMIT_ALL(CALL, tc.icm, m, ;)
+
+    TestClass* tcp = &tc;
+    EMIT_ALL(CALL, tcp->icm, m, ;)
+})
