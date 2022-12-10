@@ -41,11 +41,24 @@ class Cls #(parameter PBASE = 12);
       return PBASE;
    endfunction
    typedef enum { E_PBASE = PBASE } enum_t;
+   typedef bit [PBASE-1:0] data_t;
 endclass
 
 typedef Cls#(8) Cls8_t;
 
 module t (/*AUTOARG*/);
+
+   function automatic Cls#(10)::data_t incrementer_nospecial10 (
+      input Cls#(10)::data_t data
+   );
+      return data + 1;
+   endfunction: incrementer_nospecial10
+
+//   function automatic Cls8_t::data_t incrementer_special8 (
+//      input Cls8_t::data_t data
+//   );
+//      return data + 1;
+//   endfunction: incrementer_special8
 
    Cls c12;
    Cls #(.PBASE(4)) c4;
@@ -79,6 +92,15 @@ module t (/*AUTOARG*/);
       if (c8.get_p() != 8) $stop;
       if (w16.get_p() != 16) $stop;
       if (w32.get_p() != 32) $stop;
+
+      $display("DEBUG: $bits(Cls#(10)::data_t) = %d", $bits(Cls#(10)::data_t));
+//      $display("DEBUG: $bits(Cls8_t::data_t) = %d", $bits(Cls8_t::data_t));
+      if ($bits(Cls#(10)::data_t) != 10) $stop;
+//      if ($bits(Cls8_t::data_t) != 8) $stop;
+      /* verilator lint_off WIDTH */
+      if (incrementer_nospecial10(10'd5) != 10'd6) $stop;
+      /* verilator lint_on WIDTH */
+//      if (incrementer_special8(8'd5) != 8'd6) $stop;
 
       // verilator lint_off WIDTH
       c12.member = 32'haaaaaaaa;
