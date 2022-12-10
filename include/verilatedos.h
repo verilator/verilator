@@ -57,16 +57,16 @@
 #  define VL_ATTR_WEAK __attribute__((weak))
 # endif
 # if defined(__clang__)
-#  define VL_ACQUIRE(...) __attribute__((acquire_capability(__VA_ARGS__)))
-#  define VL_ACQUIRE_SHARED(...) __attribute__((acquire_shared_capability(__VA_ARGS__)))
-#  define VL_RELEASE(...) __attribute__((release_capability(__VA_ARGS__)))
-#  define VL_RELEASE_SHARED(...) __attribute__((release_shared_capability(__VA_ARGS__)))
+#  define VL_ACQUIRE(...) __attribute__((annotate("ACQUIRE"))) __attribute__((acquire_capability(__VA_ARGS__)))
+#  define VL_ACQUIRE_SHARED(...) __attribute__((annotate("ACQUIRE_SHARED"))) __attribute__((acquire_shared_capability(__VA_ARGS__)))
+#  define VL_RELEASE(...) __attribute__((annotate("RELEASE"))) __attribute__((release_capability(__VA_ARGS__)))
+#  define VL_RELEASE_SHARED(...) __attribute__((annotate("RELEASE_SHARED"))) __attribute__((release_shared_capability(__VA_ARGS__)))
 #  define VL_TRY_ACQUIRE(...) __attribute__((try_acquire_capability(__VA_ARGS__)))
 #  define VL_TRY_ACQUIRE_SHARED(...) __attribute__((try_acquire_shared_capability(__VA_ARGS__)))
 #  define VL_CAPABILITY(x) __attribute__((capability(x)))
-#  define VL_REQUIRES(x) __attribute__((requires_capability(x)))
-#  define VL_GUARDED_BY(x) __attribute__((guarded_by(x)))
-#  define VL_EXCLUDES(x) __attribute__((locks_excluded(x)))
+#  define VL_REQUIRES(x) __attribute__((annotate("REQUIRES"))) __attribute__((requires_capability(x)))
+#  define VL_GUARDED_BY(x) __attribute__((annotate("GUARDED_BY"))) __attribute__((guarded_by(x)))
+#  define VL_EXCLUDES(x) __attribute__((annotate("EXCLUDES"))) __attribute__((locks_excluded(x)))
 #  define VL_SCOPED_CAPABILITY __attribute__((scoped_lockable))
 # endif
 # define VL_LIKELY(x) __builtin_expect(!!(x), 1)  // Prefer over C++20 [[likely]]
