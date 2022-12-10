@@ -32,7 +32,7 @@ Welcome to Verilator
         * Single- and multithreaded output models
    * - **Widely Used**
         * Wide industry and academic deployment
-        * Out-of-the-box support from Arm, and RISC-V vendor IP
+        * Out-of-the-box support from Arm and RISC-V vendor IP
      - |verilator usage|
    * - |verilator community|
      - **Community Driven & Openly Licensed**
@@ -62,7 +62,7 @@ performs the design simulation. Verilator also supports linking Verilated
 generated libraries, optionally encrypted, into other simulators.
 
 Verilator may not be the best choice if you are expecting a full-featured
-replacement for a closed-source Verilog simulator, need SDF annotation,
+replacement for a closed-source Verilog simulator, needs SDF annotation,
 mixed-signal simulation, or are doing a quick class project (we recommend
 `Icarus Verilog`_ for classwork.)  However, if you are looking for a path
 to migrate SystemVerilog to C++/SystemC, or want high-speed simulation of
@@ -101,7 +101,7 @@ For more information:
 - `Verilator manual (HTML) <https://verilator.org/verilator_doc.html>`_,
   or `Verilator manual (PDF) <https://verilator.org/verilator_doc.pdf>`_
 
-- `Subscribe to verilator announcements
+- `Subscribe to Verilator announcements
   <https://github.com/verilator/verilator-announce>`_
 
 - `Verilator forum <https://verilator.org/forum>`_

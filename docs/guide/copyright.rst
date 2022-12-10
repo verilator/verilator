@@ -13,7 +13,7 @@ can redistribute it and/or modify the Verilator internals under the terms
 of either the GNU Lesser General Public License Version 3 or the Perl
 Artistic License Version 2.0.
 
-All Verilog and C++/SystemC code quoted within this documentation file are
-released as Creative Commons Public Domain (CC0).  Many example files and
+All Verilog and C++/SystemC code quoted within this documentation file is
+released as Creative Commons Public Domain (CC0). Many example files and
 test files are likewise released under CC0 into effectively the Public
 Domain as described in the files themselves.
