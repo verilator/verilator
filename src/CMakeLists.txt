@@ -1,6 +1,5 @@
 #
 # Utilities
-set(FLEX_INCLUDE_DIRS "C:\\scratch\\flex\\src")
 macro (addBuildType sourceConfig newConfig)
     get_cmake_property(variableNames VARIABLES)
     foreach (variableName ${variableNames})
@@ -25,7 +24,7 @@ set(HEADERS
     V3AstConstOnly.h                                                                                         
     V3AstInlines.h                                                                                           
     V3AstNodeDType.h                                                                                         
-    V3AstNodeMath.h                                                                                          
+    V3AstNodeExpr.h                                                                                          
     V3AstNodeOther.h                                                                                         
     V3AstUserAllocator.h                                                                                     
     V3Begin.h                                                                                                
@@ -330,8 +329,8 @@ configure_file(config_build.h.in config_build.h @ONLY)
 add_custom_command(
     OUTPUT V3Ast__gen_forward_class_decls.h V3Dfg__gen_forward_class_decls.h
     DEPENDS ./V3Ast.h ./V3AstNodes.h ${ASTGEN}
-    COMMAND ${PERL_EXECUTABLE} ARGS
-        ${ASTGEN} -I"${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeMath.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h --classes
+    COMMAND python ARGS
+    ${ASTGEN} -I"${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h --classes
 )
 list(APPEND GENERATED_FILES V3Ast__gen_forward_class_decls.h V3Dfg__gen_forward_class_decls.h)
 # Output used directly by the `verilator` target
@@ -343,7 +342,7 @@ add_custom_command(
     OUTPUT V3ParseBison.c V3ParseBison.h
     MAIN_DEPENDENCY ./verilog.y
     DEPENDS ${BISONPRE}
-    COMMAND ${PERL_EXECUTABLE} ARGS
+    COMMAND python ARGS
         ${BISONPRE} --yacc "${BISON_EXECUTABLE}" -d -v
             -o "${BISON_V3ParseBison_OUTPUT_SOURCE}" "${verilog_y}"
 )
@@ -366,7 +365,7 @@ add_custom_command(
     OUTPUT V3Lexer.yy.cpp
     MAIN_DEPENDENCY ${FLEX_V3Lexer_pregen_OUTPUTS}
     DEPENDS ${FLEXFIX}
-    COMMAND ${PERL_EXECUTABLE} ARGS
+    COMMAND python ARGS
         ${FLEXFIX} V3Lexer < "$<SHELL_PATH:${FLEX_V3Lexer_pregen_OUTPUTS}>" > "$<SHELL_PATH:${FLEX_V3Lexer_OUTPUTS}>"
 )
 add_custom_target(V3Lexer_yy_cpp${CMAKE_BUILD_TYPE} DEPENDS ${FLEX_V3Lexer_OUTPUTS})
@@ -387,7 +386,7 @@ add_custom_command(
     OUTPUT V3PreLex.yy.cpp
     MAIN_DEPENDENCY ${FLEX_V3PreLex_pregen_OUTPUTS}
     DEPENDS ${FLEXFIX}
-    COMMAND ${PERL_EXECUTABLE} ARGS
+    COMMAND python ARGS
         ${FLEXFIX} V3PreLex < "$<SHELL_PATH:${FLEX_V3PreLex_pregen_OUTPUTS}>" > "$<SHELL_PATH:${FLEX_V3PreLex_OUTPUTS}>"
 )
 add_custom_target(V3PreLex_yy_cpp${CMAKE_BUILD_TYPE} DEPENDS ${FLEX_V3PreLex_OUTPUTS})
@@ -401,7 +400,7 @@ add_custom_command(
     OUTPUT config_rev.h
     MAIN_DEPENDENCY ${gitHead}
     DEPENDS ${CONFIG_REV}
-    COMMAND ${PERL_EXECUTABLE} ARGS
+    COMMAND python ARGS
         ${CONFIG_REV} "${srcdir}" > "$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/config_rev.h>"
 )
 list(APPEND GENERATED_FILES config_rev.h)
@@ -416,8 +415,8 @@ foreach(astgen_name ${ASTGENERATED_NAMES})
     	    OUTPUT ${astgen_name}__gen.cpp
     	    MAIN_DEPENDENCY ${astgen_name}.cpp
     	    DEPENDS ${ASTGEN} V3Ast.h V3AstNodes.h
-    	    COMMAND ${PERL_EXECUTABLE} ARGS
-    	        ${ASTGEN} -I"${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeMath.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h ${astgen_name}.cpp
+    	    COMMAND python ARGS
+	    ${ASTGEN} -I"${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h ${astgen_name}.cpp
     	)
 	list(APPEND GENERATED_FILES ${astgen_name}__gen.cpp)
 endforeach()
@@ -434,7 +433,7 @@ add_custom_target(
     vlcovgen.d${CMAKE_BUILD_TYPE}
     DEPENDS ../include/verilated_cov_key.h ${VLCOVGEN}
     COMMENT "Updating include/verilated_cov_key.h"
-    COMMAND ${PERL_EXECUTABLE}
+    COMMAND python
         ${VLCOVGEN} --srcdir ${srcdir}
 )
 
@@ -455,7 +454,7 @@ set_target_properties(${verilator} PROPERTIES
     OUTPUT_NAME_COVERAGE  verilator_coverage_bin_dbg
     #UNITY_BUILD $<IF:$<CONFIG:DEBUG>,FALSE,${CMAKE_UNITY_BUILD}>
     MSVC_RUNTIME_LIBRARY  MultiThreaded$<IF:$<CONFIG:Release>,,DebugDLL>
-    JOB_POOL_LINK         one_job      # Linking takes lots of resources
+    #JOB_POOL_LINK         one_job      # Linking takes lots of resources
     INTERPROCEDURAL_OPTIMIZATION_RELEASE  TRUE
 )
 
@@ -482,7 +481,6 @@ target_compile_definitions(${verilator} PRIVATE
 target_include_directories(${verilator}
     PRIVATE
     ../include
-    ${FLEX_INCLUDE_DIRS}
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
