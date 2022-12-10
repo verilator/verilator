@@ -387,9 +387,9 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 
 #define VL_BYTESIZE 8  ///< Bits in a CData / byte
 #define VL_SHORTSIZE 16  ///< Bits in a SData / short
-#define VL_IDATASIZE 32  ///< Bits in a IData / word
+#define VL_IDATASIZE 32  ///< Bits in an IData / word
 #define VL_QUADSIZE 64  ///< Bits in a QData / quadword
-#define VL_EDATASIZE 32  ///< Bits in a EData (WData entry)
+#define VL_EDATASIZE 32  ///< Bits in an EData (WData entry)
 #define VL_EDATASIZE_LOG2 5  ///< log2(VL_EDATASIZE)
 #define VL_CACHE_LINE_BYTES 64  ///< Bytes in a cache line (for alignment)
 
@@ -443,7 +443,7 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_BITWORD_E(bit) ((bit) >> VL_EDATASIZE_LOG2)  ///< Word number for a wide quantity
 #define VL_BITBIT_I(bit) ((bit) & VL_SIZEBITS_I)  ///< Bit number for a bit in a long
 #define VL_BITBIT_Q(bit) ((bit) & VL_SIZEBITS_Q)  ///< Bit number for a bit in a quad
-#define VL_BITBIT_E(bit) ((bit) & VL_SIZEBITS_E)  ///< Bit number for a bit in a EData
+#define VL_BITBIT_E(bit) ((bit) & VL_SIZEBITS_E)  ///< Bit number for a bit in an EData
 
 // Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
 #define VL_BITISSET_I(data, bit) ((data) & (VL_UL(1) << VL_BITBIT_I(bit)))

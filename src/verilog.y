@@ -991,9 +991,9 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yP_SRIGHTEQ     ">>="
 %token<fl>              yP_SSRIGHTEQ    ">>>="
 
-// [* is not a operator, as "[ * ]" is legal
+// [* is not an operator, as "[ * ]" is legal
 // [= and [-> could be repitition operators, but to match [* we don't add them.
-// '( is not a operator, as "' (" is legal
+// '( is not an operator, as "' (" is legal
 
 //********************
 // Verilog op precedence

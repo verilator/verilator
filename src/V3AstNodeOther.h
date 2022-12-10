@@ -2231,7 +2231,7 @@ public:
 
 // === AstNodeRange ===
 class AstBracketRange final : public AstNodeRange {
-    // Parser only concept "[lhsp]", a AstUnknownRange, QueueRange or Range,
+    // Parser only concept "[lhsp]", an AstUnknownRange, QueueRange or Range,
     // unknown until lhsp type is determined
     // @astgen op1 := elementsp : AstNode // Expr or DType
 public:

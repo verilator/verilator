@@ -29,7 +29,7 @@ Welcome to Verilator
    * - |verilator multithreaded performance|
      - **Fast**
         * Outperforms many closed-source commercial simulators
-        * Single- and multi-threaded output models
+        * Single- and multithreaded output models
    * - **Widely Used**
         * Wide industry and academic deployment
         * Out-of-the-box support from Arm, and RISC-V vendor IP
@@ -52,7 +52,7 @@ What Verilator Does
 Verilator is invoked with parameters similar to GCC or Synopsys's VCS.  It
 "Verilates" the specified Verilog or SystemVerilog code by reading it,
 performing lint checks, and optionally inserting assertion checks and
-coverage-analysis points. It outputs single- or multi-threaded .cpp and .h
+coverage-analysis points. It outputs single- or multithreaded .cpp and .h
 files, the "Verilated" code.
 
 These Verilated C++/SystemC files are then compiled by a C++ compiler
@@ -61,11 +61,11 @@ file to instantiate the Verilated model. Executing the resulting executable
 performs the design simulation. Verilator also supports linking Verilated
 generated libraries, optionally encrypted, into other simulators.
 
-Verilator may not be the best choice if you are expecting a full featured
+Verilator may not be the best choice if you are expecting a full-featured
 replacement for a closed-source Verilog simulator, need SDF annotation,
 mixed-signal simulation, or are doing a quick class project (we recommend
 `Icarus Verilog`_ for classwork.)  However, if you are looking for a path
-to migrate SystemVerilog to C++/SystemC, or want high speed simulation of
+to migrate SystemVerilog to C++/SystemC, or want high-speed simulation of
 synthesizable designs containing limited verification constructs, Verilator
 is the tool for you.
 
@@ -86,7 +86,7 @@ Verilator has typically similar or better performance versus the
 closed-source Verilog simulators (Carbon Design Systems Carbonator,
 Modelsim/Questa, Cadence Incisive/NC-Verilog, Synopsys VCS, VTOC, and
 Pragmatic CVer/CVC). But, Verilator is open-sourced, so you can spend on
-computes rather than licenses. Thus Verilator gives you the best
+computes rather than licenses. Thus, Verilator gives you the best
 cycles/dollar.
 
 
@@ -132,7 +132,7 @@ Related Projects
 - `GTKwave <http://gtkwave.sourceforge.net/>`_ - Waveform viewer for
   Verilator traces.
 
-- `Icarus Verilog`_ - Icarus is a full featured interpreted Verilog
+- `Icarus Verilog`_ - Icarus is a full-featured interpreted Verilog
   simulator. If Verilator does not support your needs, perhaps Icarus may.
 
 

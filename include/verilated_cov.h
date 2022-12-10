@@ -36,7 +36,7 @@
 class VerilatedCovImp;
 
 //=============================================================================
-/// Insert a item for coverage analysis.
+/// Insert an item for coverage analysis.
 /// The first argument is a pointer to the count to be dumped.
 /// The remaining arguments occur in pairs: A string key, and a value.
 /// The value may be a string, or another type which will be auto-converted to a string.

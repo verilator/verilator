@@ -42,7 +42,7 @@ The main flow of Verilator can be followed by reading the Verilator.cpp
 4.  Functions, variable and other references are linked to their
     definitions.
 
-5.  Parameters are resolved and the design is elaborated.
+5.  Parameters are resolved, and the design is elaborated.
 
 6.  Verilator then performs many additional edits and optimizations on
     the hierarchical design. This includes coverage, assertions, X
@@ -149,8 +149,8 @@ an associated ``fanout``, ``color`` and ``rank``, which may be used in
 algorithms for ordering the graph. A generic ``user``/``userp`` member
 variable is also provided.
 
-Virtual methods are provided to specify the name, color, shape and style to
-be used in dot output. Typically users provide derived classes from
+Virtual methods are provided to specify the name, color, shape, and style
+to be used in dot output. Typically, users provide derived classes from
 ``V3GraphVertex`` which will reimplement these methods.
 
 Iterators are provided to access in and out edges. Typically these are used
@@ -994,7 +994,7 @@ Per-Instance Classes
 If we have multiple instances of the same module, and they partition
 differently (likely; we make no attempt to partition them the same) then
 the variable sort will be suboptimal for either instance. A possible
-improvement would be to emit a unique class for each instance of a module,
+improvement would be to emit an unique class for each instance of a module,
 and sort its variables optimally for that instance's code stream.
 
 

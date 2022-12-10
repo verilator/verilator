@@ -312,7 +312,7 @@ public:
     bool same(const AstNode*) const override { return true; }
 };
 class AstNodeTermop VL_NOT_FINAL : public AstNodeExpr {
-    // Terminal operator -- a operator with no "inputs"
+    // Terminal operator -- an operator with no "inputs"
 protected:
     AstNodeTermop(VNType t, FileLine* fl)
         : AstNodeExpr{t, fl} {}

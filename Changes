@@ -75,7 +75,7 @@ Verilator 5.002 2022-10-29
 * Fix linker errors in user-facing timing functions (#3657). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix null access on optimized-out fork statements (#3658). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix VPI inline module naming mismatch (#3690) (#3694). [Jiuyang Liu]
-* Fix deadlock in timeprecision when using systemC (#3707). [Kamil Rakoczy, Antmicro Ltd]
+* Fix deadlock in timeprecision when using SystemC (#3707). [Kamil Rakoczy, Antmicro Ltd]
 * Fix width mismatch on inside operator (#3714). [Alex Torregrosa]
 
 
@@ -2987,7 +2987,7 @@ Verilator 3.502 2005-11-30 Stable
 
 * Fix local non-IO variables in public functions and tasks.
 * Fix bad lifetime optimization when same signal is assigned multiple
-  times in both branch of a if. [Danny Ding]
+  times in both branch of an if. [Danny Ding]
 
 
 Verilator 3.501 2005-11-16 Stable
@@ -3127,8 +3127,8 @@ Verilator 3.450 2005-07-12
 * $finish will no longer exit, but set Verilated::gotFinish().
   This enables support for final statements, and for other cleanup code.
   If this is undesired, redefine the vl_user_finish routine. Top level
-  loops should use Verilated::gotFinish() as a exit condition for their
-  loop, and then call top->final(). To prevent a infinite loop, a double
+  loops should use Verilated::gotFinish() as an exit condition for their
+  loop, and then call top->final(). To prevent an infinite loop, a double
   $finish will still exit; this may be removed in future releases.
 * Support SystemVerilog keywords $bits, $countones, $isunknown,
   $onehot, $onehot0, always_comb, always_ff, always_latch, finish.
@@ -3529,7 +3529,7 @@ Verilator 3.201-beta 2003-12-10
 **Major:**
 
 * BETA VERSION, USE 3.124 for stable release!
-* Version 3.2XX includes a all new back-end.
+* Version 3.2XX includes an all new back-end.
   This includes automatic inlining, flattening of signals between
   hierarchy, and complete ordering of statements. This results in
   60-300% execution speedups, though less pretty C++ output. Even
@@ -3558,7 +3558,7 @@ Verilator 3.124 2003-12-05
 
 **Major:**
 
-* A optimized executable will be made by default, in addition to a debug
+* An optimized executable will be made by default, in addition to a debug
   executable. Invoking Verilator with --debug will pick the debug version.
 
 **Minor:**

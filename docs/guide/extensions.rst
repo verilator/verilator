@@ -563,7 +563,7 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: $stacktrace
 
-   Called as a task, orint a stack trace.  Called as a function, return a
+   Called as a task, print a stack trace.  Called as a function, return a
    string with a stack trace.  This relies on the C++ system trace, which
    may give less meaningful results if the model was not compiled with
    debug symbols.  Also the data represents the C++ stack, the

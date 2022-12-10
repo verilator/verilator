@@ -1575,7 +1575,7 @@ sub _run {
     if ($param{verilator_run}) {
         # Gcov fails when parallel jobs write same data file,
         # so we make sure .gcda output dir is unique across all running jobs.
-        # We can't just put each one in a unique obj_dir as it uses too much disk.
+        # We can't just put each one in an unique obj_dir as it uses too much disk.
         # Must use absolute path as some execute()s have different PWD
         $ENV{GCOV_PREFIX_STRIP} = 99;
         $ENV{GCOV_PREFIX} = File::Spec->rel2abs("$FindBin::RealBin/obj_dist/gcov_$self->{running_id}");

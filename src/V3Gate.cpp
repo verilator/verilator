@@ -283,7 +283,7 @@ public:
         for (GateVarRefList::const_iterator it = m_rhsVarRefs.begin(); it != m_rhsVarRefs.end();
              ++it) {
             if (m_lhsVarRef && m_lhsVarRef->varScopep() == (*it)->varScopep()) {
-                clearSimple("Circular logic\n");  // Oh my, we'll get a UNOPTFLAT much later.
+                clearSimple("Circular logic\n");  // Oh my, we'll get an UNOPTFLAT much later
             }
         }
         if (debug() >= 9 && !m_isSimple) nodep->dumpTree("-    gate!Ok: ");
