@@ -82,10 +82,10 @@ Summary:
 
 .. option:: +verilator+rand+reset+<value>
 
-   When a model was Verilated using :vlopt:`--x-initial unique
-   <--x-initial>`, sets the simulation runtime initialization technique.  0
-   = Reset to zeros. 1 = Reset to all-ones.  2 = Randomize.  See
-   :ref:`Unknown States`.
+   When a model was Verilated using
+   :vlopt:`--x-initial unique <--x-initial>`, sets the simulation runtime
+   initialization technique.  0 = Reset to zeros. 1 = Reset to all-ones.  2
+   = Randomize.  See :ref:`Unknown States`.
 
 .. option:: +verilator+seed+<value>
 

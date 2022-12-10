@@ -23,7 +23,7 @@ foreach my $file (sort keys %files) {
     my $contents = file_contents($filename);
 
     checkPattern($filename, $contents,
-                 qr/.*(?<!ref):\`[^`]+\n/,
+                 qr/.*[a-z](?<!:ref):\`[^`]+\n/,
                  "tag:`...` should not be split between lines");
 }
 

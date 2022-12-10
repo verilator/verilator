@@ -80,10 +80,11 @@ string, and wreal.
 Synthesis Directive Assertion Support
 -------------------------------------
 
-With the :vlopt:`--assert` option, Verilator reads any :code:`//synopsys
-full_case` or :code:`//synopsys parallel_case` directives.  The same
-applies to any :code:`//ambit synthesis`, :code:`//cadence` or
-:code:`//pragma` directives of the same form.
+With the :vlopt:`--assert` option, Verilator reads any
+
+:code:`//synopsys full_case` or :code:`//synopsys parallel_case`
+directives.  The same applies to any :code:`//ambit synthesis`,
+:code:`//cadence` or :code:`//pragma` directives of the same form.
 
 When these synthesis directives are discovered, Verilator will either
 formally prove the directive to be true, or failing that, will insert the
@@ -369,7 +370,7 @@ and the address.  For non-power-of-2-sizes arrays, index 0 will be written.
 
 Reading a memory element that is outside the bounds specified for the array
 will give a width warning and wrap around the power-of-2 size.  For
-non-power-of-2 sizes, it will return a unspecified constant of the
+non-power-of-2 sizes, it will return an unspecified constant of the
 appropriate width.
 
 

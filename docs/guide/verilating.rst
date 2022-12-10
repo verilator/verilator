@@ -239,17 +239,17 @@ physical core. For best performance use the :command:`numactl` program to
 (when the threading count fits) select unique physical cores on the same
 socket. The same applies for :vlopt:`--trace-threads` as well.
 
-As an example, if a model was Verilated with :vlopt:`--threads 4
-<--threads>`, we consult:
+As an example, if a model was Verilated with
+:vlopt:`--threads 4 <--threads>`, we consult:
 
 .. code-block:: bash
 
     egrep 'processor|physical id|core id' /proc/cpuinfo
 
 To select cores 0, 1, 2, and 3 that are all located on the same socket (0)
-but different physical cores.  (Also useful is :command:`numactl
---hardware`, or :command:`lscpu` but those doesn't show Hyperthreading
-cores.) Then we execute:
+but different physical cores.  (Also useful is
+:command:`numactl --hardware`, or :command:`lscpu` but those doesn't show
+hyperthreading cores.)  Then we execute:
 
 .. code-block:: bash
 

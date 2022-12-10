@@ -150,11 +150,11 @@ List Of Warnings
    practice. Verilator reports this as an error, because ignoring this
    warning may make Verilator simulations differ from other simulators.
 
-   It is generally safe to disable this error (with a :code:`// verilator
-   lint_off BLKANDNBLK` metacomment or the :code:`-Wno-BLKANDNBLK` option)
-   when one of the assignments is inside a public task, or when the
-   blocking and non-blocking assignments have non-overlapping bits and
-   structure members.
+   It is generally safe to disable this error (with a
+   :code:`// verilator lint_off BLKANDNBLK` metacomment or the
+   :code:`-Wno-BLKANDNBLK` option) when one of the assignments is inside a
+   public task, or when the blocking and non-blocking assignments have
+   non-overlapping bits and structure members.
 
    Generally, this is caused by a register driven by both combo logic and a
    flop:
@@ -383,8 +383,10 @@ List Of Warnings
    Verilog, but not SystemVerilog, a wire must be used as the target of
    continuous assignments.
 
-   This error is only reported when :vlopt:`--language 1364-1995
-   <--language>`, :vlopt:`--language 1364-2001 <--language>`, or
+   This error is only reported when
+
+   :vlopt:`--language 1364-1995 <--language>`,
+   :vlopt:`--language 1364-2001 <--language>`, or
    :vlopt:`--language 1364-2005 <--language>` is used.
 
    Ignoring this error will only suppress the lint check, it will simulate
@@ -483,7 +485,7 @@ List Of Warnings
    Error at simulation runtime when model did not properly settle.
 
    Verilator sometimes has to evaluate combinatorial logic multiple times,
-   usually around code where a UNOPTFLAT warning was issued, but disabled.
+   usually around code where an UNOPTFLAT warning was issued, but disabled.
 
    Faulty example:
 
@@ -499,12 +501,13 @@ List Of Warnings
 
    To debug this, first review any UNOPTFLAT warnings that were
    ignored.  Though typically it is safe to ignore UNOPTFLAT (at a
-   performance cost), at the time of issuing a UNOPTFLAT Verilator did not
+   performance cost), at the time of issuing an UNOPTFLAT Verilator did not
    know if the logic would eventually converge and assumed it would.
 
-   Next, run Verilator with :vlopt:`--prof-cfuncs -CFLAGS -DVL_DEBUG
-   <--prof-cfuncs>`.  Rerun the test.  Now just before the convergence
-   error you should see additional output similar to this:
+   Next, run Verilator with
+   :vlopt:`--prof-cfuncs -CFLAGS -DVL_DEBUG <--prof-cfuncs>`.  Rerun the
+   test.  Now just before the convergence error you should see additional
+   output similar to this:
 
    .. include:: ../../docs/gen/ex_DIDNOTCONVERGE_msg.rst
 
@@ -983,7 +986,7 @@ List Of Warnings
 
    Warns that a module has a pin which is not mentioned in an instance.  If
    a pin is not missing it should still be specified on the instance
-   declaration with a empty connection, using :code:`(.pin_name())`.
+   declaration with an empty connection, using :code:`(.pin_name())`.
 
    Ignoring this warning will only suppress the lint check, it will
    simulate correctly.
@@ -1161,7 +1164,7 @@ List Of Warnings
                               example.v:1:20: ... Location of previous definition, with value: 'def2'
 
    The best solution is to use a different name for the second macro.  If
-   this is not possible, add a undef to indicate the code is overriding the
+   this is not possible, add an undef to indicate the code is overriding the
    value. This will express the intent and should avoid future warnings on
    any linting tool:
 
@@ -1555,7 +1558,7 @@ List Of Warnings
 
    .. TODO better example
 
-   Warns that the code is comparing a unsigned value in a way that implies
+   Warns that the code is comparing an unsigned value in a way that implies
    it is signed, for example "X < 0" will always be false when X is
    unsigned.
 
@@ -1716,7 +1719,7 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_VARHIDDEN_msg.rst
 
-   To resolve, rename the variable to a unique name.
+   To resolve, rename the variable to an unique name.
 
 
 .. option:: WAITCONST

@@ -29,10 +29,10 @@ Summary:
 .. option:: <file.a/.o/.so>
 
    Specifies optional object or library files to be linked in with the
-   Verilog code, as a shorthand for :vlopt:`-LDFLAGS \<file\>`. The file
-   path should either be absolute, or relative to where the make will be
-   executed from, or add to your makefile's VPATH the appropriate directory
-   to find the file.
+   Verilog code, as a shorthand for
+   :vlopt:`-LDFLAGS \<file\> <-LDFLAGS>`. The file path should either be
+   absolute, or relative to where the make will be executed from, or add to
+   your makefile's VPATH the appropriate directory to find the file.
 
    If any files are specified in this way, Verilator will include a make
    rule that uses these files when linking the module's executable.  This
@@ -257,10 +257,11 @@ Summary:
 
 .. option:: -D<var>=<value>
 
-   Defines the given preprocessor symbol.  Similar to :vlopt:`+define
-   <+define+<var>>`, but does not allow multiple definitions with a single
-   option using plus signs. "+define" is fairly standard across Verilog
-   tools while "-D" is similar to :command:`gcc -D`.
+   Defines the given preprocessor symbol.  Similar to
+   :vlopt:`+define <+define+<var>>`, but does not allow multiple
+   definitions with a single option using plus signs. "+define" is fairly
+   standard across Verilog tools while "-D" is similar to
+   :command:`gcc -D`.
 
 .. option:: --debug
 
@@ -270,10 +271,10 @@ Summary:
      generally is a less-optimized binary with symbols present (so GDB can be used on it).
    * Enable debugging messages (equivalent to :vlopt:`--debugi 3 <--debugi>`).
    * Enable internal assertions (equivalent to :vlopt:`--debug-check`).
-   * Enable intermediate form dump files (equivalent to :vlopt:`--dumpi-tree 3
-     <--dumpi-tree>`).
-   * Leak to make node numbers unique (equivalent to :vlopt:`--debug-leak
-     <--no-debug-leak>`.
+   * Enable intermediate form dump files (equivalent to
+     :vlopt:`--dumpi-tree 3 <--dumpi-tree>`).
+   * Leak to make node numbers unique (equivalent to
+     :vlopt:`--debug-leak <--no-debug-leak>`.
    * Call abort() instead of exit() if there are any errors (so GDB can see
      the program state).
 
@@ -304,9 +305,10 @@ Summary:
 .. option:: --debugi-<srcfile> <level>
 
    Rarely needed - for developer use.  Set the specified Verilator source
-   file to the specified level (e.g. :vlopt:`--debugi-V3Width 9
-   <--debugi>`). Higher levels produce more detailed messages.  See
-   :vlopt:`--debug` for other implications of enabling debug.
+   file to the specified level (e.g.
+   :vlopt:`--debugi-V3Width 9 <--debugi>`). Higher levels produce more
+   detailed messages.  See :vlopt:`--debug` for other implications of
+   enabling debug.
 
 .. option:: --no-decoration
 
@@ -378,9 +380,9 @@ Summary:
    Rarely needed.  Enable dumping Ast .tree debug files with dumping level 3,
    which dumps the standard critical stages.  For details on the format see
    the Verilator Internals manual.  :vlopt:`--dump-tree` is enabled
-   automatically with :vlopt:`--debug`, so :vlopt:`--debug --no-dump-tree
-   <--dump-tree>` may be useful if the dump files are large and not
-   desired.
+   automatically with :vlopt:`--debug`, so
+   :vlopt:`--debug --no-dump-tree <--dump-tree>` may be useful if the dump
+   files are large and not desired.
 
 .. option:: --dump-tree-dot
 
@@ -392,7 +394,7 @@ Summary:
 
    Rarely needed - for developer use.  Replace AST node addresses with
    short identifiers in tree dumps to enhance readability.  Each unique
-   pointer value is mapped to a unique identifier, but note that this is
+   pointer value is mapped to an unique identifier, but note that this is
    not necessarily unique per node instance as an address might get reused
    by a newly allocated node after a node with the same address has been
    dumped then freed.
@@ -570,7 +572,7 @@ Summary:
 
    Rarely needed.  Suppress an unknown Verilator option for an option that
    takes no additional arguments.  This is used to allow scripts written
-   with pragmas for a later version of Verilator to run under a older
+   with pragmas for a later version of Verilator to run under an older
    version.  e.g. :code:`-future0 option --option` would on older versions
    that do not understand :code:`--option` or :code:`+option` suppress what
    would otherwise be an invalid option error, and on newer versions that
@@ -582,13 +584,14 @@ Summary:
 
    Rarely needed.  Suppress an unknown Verilator option for an option that
    takes an additional argument.  This is used to allow scripts written
-   with pragmas for a later version of Verilator to run under a older
+   with pragmas for a later version of Verilator to run under an older
    version.  e.g. :code:`-future1 option --option arg` would on older
-   versions that do not understand :code:`--option arg` or :code:`+option
-   arg` suppress what would otherwise be an invalid option error, and on
-   newer versions that implement :code:`--option arg`, :code:`-future1
-   option --option arg` would have the :code:`-future1 option` ignored and
-   the :code:`--option arg` would function appropriately.
+   versions that do not understand :code:`--option arg` or
+   :code:`+option arg` suppress what would otherwise be an invalid option
+   error, and on newer versions that implement :code:`--option arg`,
+   :code:`-future1 option --option arg` would have the
+   :code:`-future1 option` ignored and the :code:`--option arg` would function
+   appropriately.
 
 .. option:: -G<name>=<value>
 
@@ -711,9 +714,9 @@ Summary:
    methodologies. Default is an l2-name matching the top module. The
    default before Verilator 3.884 was ``--l2-name v``.
 
-   For example, the program :code:`module t; initial $display("%m");
-   endmodule` will show by default "t". With ``--l2-name v`` it will print
-   "v".
+   For example, the program
+   :code:`module t; initial $display("%m"); endmodule` will show by default
+   "t". With ``--l2-name v`` it will print "v".
 
 .. option:: --language <value>
 
@@ -855,8 +858,8 @@ Summary:
    Enables slow optimizations for the code Verilator itself generates (as
    opposed to :vlopt:`-CFLAGS -O3 <-CFLAGS>` which effects the C compiler's
    optimization.  :vlopt:`-O3` may improve simulation performance at the
-   cost of compile time.  This currently sets :vlopt:`--inline-mult -1
-   <--inline-mult>`.
+   cost of compile time.  This currently sets
+   :vlopt:`--inline-mult -1 <--inline-mult>`.
 
 .. option:: -O<optimization-letter>
 
@@ -1096,18 +1099,18 @@ Summary:
 .. option:: --public-flat-rw
 
    Declares all variables, ports and wires public as if they had
-   :code:`/*verilator public_flat_rw @
-   (<variable's_source_process_edge>)*/` metacomments.  This will make them
-   VPI accessible by their flat name, but not turn off module inlining.
-   This is particularly useful in combination with :vlopt:`--vpi`. This may
-   also in some rare cases result in mis-simulation of generated clocks.
-   Instead of this global option, marking only those signals that need
-   public_flat_rw is typically significantly better performing.
+   :code:`/*verilator public_flat_rw @ (<variable's_source_process_edge>)*/`
+   metacomments.  This will make them VPI accessible by their flat name,
+   but not turn off module inlining.  This is particularly useful in
+   combination with :vlopt:`--vpi`. This may also in some rare cases result
+   in mis-simulation of generated clocks.  Instead of this global option,
+   marking only those signals that need public_flat_rw is typically
+   significantly better performing.
 
 .. option:: -pvalue+<name>=<value>
 
-   Overwrites the given parameter(s) of the toplevel module. See :vlopt:`-G
-   <-G<name>>` for a detailed description.
+   Overwrites the given parameter(s) of the toplevel module. See
+   :vlopt:`-G <-G<name>>` for a detailed description.
 
 .. option:: --quiet-exit
 
@@ -1465,7 +1468,7 @@ Summary:
 
    Rarely needed.  Suppress unknown Verilator comments or warning messages
    with the given message code.  This is used to allow code written with
-   pragmas for a later version of Verilator to run under a older version;
+   pragmas for a later version of Verilator to run under an older version;
    add "-Wfuture-" arguments for each message code or comment that the new
    version supports which the older version does not support.
 
@@ -1753,15 +1756,16 @@ The grammar of configuration commands is as follows:
 
 .. option:: parallel_case -file "<filename>" -lines <lineno>
 
-   Same as :code:`//synopsys full_case` and :code:`//synopsys
-   parallel_case`. When these synthesis directives are discovered,
-   Verilator will either formally prove the directive to be true, or
-   failing that, will insert the appropriate code to detect failing cases
-   at simulation runtime and print an "Assertion failed" error message.
+   Same as :code:`//synopsys full_case` and
+   :code:`//synopsys parallel_case`. When these synthesis directives are
+   discovered, Verilator will either formally prove the directive to be
+   true, or failing that, will insert the appropriate code to detect
+   failing cases at simulation runtime and print an "Assertion failed"
+   error message.
 
 .. option:: hier_block -module "<modulename>"
 
-   Specifies that the module is a unit of hierarchical Verilation.  Note
+   Specifies that the module is an unit of hierarchical Verilation.  Note
    that the setting is ignored unless the :vlopt:`--hierarchical` option is
    specified.  See :ref:`Hierarchical Verilation`.
 

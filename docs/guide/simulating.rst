@@ -18,12 +18,14 @@ Benchmarking & Optimization
 ===========================
 
 For best performance, run Verilator with the :vlopt:`-O3`
-:vlopt:`--x-assign fast <--x-assign>` :vlopt:`--x-initial fast
-<--x-initial>` :vlopt:`--noassert <--assert>` options.  The :vlopt:`-O3`
-option will require longer time to run Verilator, and :vlopt:`--x-assign
-fast <--x-assign>` :vlopt:`--x-initial fast <--x-assign>` may increase the
-risk of reset bugs in trade for performance; see the above documentation
-for these options.
+:vlopt:`--x-assign fast <--x-assign>`
+:vlopt:`--x-initial fast <--x-initial>`
+:vlopt:`--noassert <--assert>` options.  The :vlopt:`-O3`
+option will require longer time to run Verilator, and
+:vlopt:`--x-assign fast <--x-assign>`
+:vlopt:`--x-initial fast <--x-assign>`
+may increase the risk of reset bugs in trade for performance; see the above
+documentation for these options.
 
 If using Verilated multithreaded, use ``numactl`` to ensure you are using
 non-conflicting hardware resources. See :ref:`Multithreading`. Also
@@ -162,7 +164,7 @@ Line Coverage
 
 With :vlopt:`--coverage` or :vlopt:`--coverage-line`, Verilator will
 automatically add coverage analysis at each code flow change point (e.g. at
-branches).  At each such branch a unique counter is incremented.  At the
+branches).  At each such branch an unique counter is incremented.  At the
 end of a test, the counters along with the filename and line number
 corresponding to each counter are written into the coverage file.
 
