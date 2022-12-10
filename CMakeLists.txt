@@ -9,24 +9,24 @@ project(Verilator
 option(CMAKE_UNITY_BUILD
     "Builds concatenated source files, potentially sppeding up the build.")
 option(DEBUG_AND_RELEASE_AND_COVERAGE
-	"Builds both the debug and release binaries, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild.")
+    "Builds both the debug and release binaries, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild.")
 
-set(CMAKE_INSTALL_DATADIR "${CMAKE_INSTALL_PREFIX}/share/verilator")
+set(CMAKE_INSTALL_DATADIR ${CMAKE_INSTALL_PREFIX})
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CheckStructHasMember)
 include(ExternalProject)
 
 if (MSVC)
-	if (DEFINED ENV{WIN_FLEX_BISON})
-  		set(WIN_FLEX_BISON "$ENV{WIN_FLEX_BISON}")
-	endif()
-	if (EXISTS ${WIN_FLEX_BISON})
+    if (DEFINED ENV{WIN_FLEX_BISON})
+        set(WIN_FLEX_BISON "$ENV{WIN_FLEX_BISON}")
+    endif()
+    if (EXISTS ${WIN_FLEX_BISON})
         list(APPEND CMAKE_PREFIX_PATH ${WIN_FLEX_BISON})
     endif()
-	if (NOT WIN_FLEX_BISON)
-		message(FATAL_ERROR "Please install https://github.com/lexxmark/winflexbison and set WIN_FLEX_BISON environment variable")
-  	endif()
+    if (NOT WIN_FLEX_BISON)
+        message(FATAL_ERROR "Please install https://github.com/lexxmark/winflexbison and set WIN_FLEX_BISON environment variable")
+    endif()
 endif()
 
 find_package(BISON)
@@ -62,32 +62,37 @@ set(PACKAGE_VERSION ${PROJECT_VERSION})
 configure_file(include/verilated_config.h.in include/verilated_config.h @ONLY)
 
 configure_package_config_file(verilator-config.cmake.in verilator-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}
+    INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
 
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/verilator-config.cmake DESTINATION ${CMAKE_INSTALL_PREFIX})
+
 configure_package_config_file(verilator-config-version.cmake.in verilator-config-version.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}
+    INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/verilator-config-version.cmake DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 foreach (program
     verilator_gantt
-	verilator_ccache_report
-	verilator_difftree
+    verilator_ccache_report
+    verilator_difftree
     verilator_profcfunc
 )
     install(PROGRAMS bin/${program} TYPE BIN)
 endforeach()
 
-install(DIRECTORY ${CMAKE_INSTALL_PREFIX}/examples TYPE DATA FILES_MATCHING
+install(DIRECTORY examples TYPE DATA FILES_MATCHING
     PATTERN "examples/*/*.[chv]*"
     PATTERN "examples/*/Makefile*"
     PATTERN "examples/*/CMakeLists.txt"
 )
 
-install(DIRECTORY ${CMAKE_INSTALL_PREFIX}/include TYPE DATA FILES_MATCHING
+install(DIRECTORY include TYPE DATA FILES_MATCHING
     PATTERN "include/verilated_config.h"
     PATTERN "include/verilated.mk"
     PATTERN "include/*.[chv]"
+    PATTERN "include/*.cpp"
     PATTERN "include/gtkwave/*.[chv]*"
     PATTERN "include/vltstd/*.[chv]*"
 )
