@@ -29,10 +29,10 @@ Summary:
 .. option:: <file.a/.o/.so>
 
    Specifies optional object or library files to be linked in with the
-   Verilog code, as a shorthand for :vlopt:`-LDFLAGS \<file\>
-   <-LDFLAGS>`. The file path should either be absolute, or relative to
-   where the make will be executed from, or add to your makefile's VPATH
-   the appropriate directory to find the file.
+   Verilog code, as a shorthand for :vlopt:`-LDFLAGS \<file\>`. The file
+   path should either be absolute, or relative to where the make will be
+   executed from, or add to your makefile's VPATH the appropriate directory
+   to find the file.
 
    If any files are specified in this way, Verilator will include a make
    rule that uses these files when linking the module's executable.  This
