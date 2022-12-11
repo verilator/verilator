@@ -237,6 +237,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                     bodyp->unlinkFrBackWithNext();
                     // If the process is suspendable, we need a separate function (a coroutine)
                     if (procp->isSuspendable()) {
+                        funcp->slow(false);
                         subFuncp = createNewSubFuncp(scopep);
                         subFuncp->name(subFuncp->name() + "__" + cvtToStr(scopep->user2Inc()));
                         subFuncp->rtnType("VlCoroutine");
