@@ -9,6 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 scenarios(dist => 1);
+rerunnable(0);
 if ($ENV{VERILATOR_TEST_NO_ATTRIBUTES}) {
     skip("Skipping due to VERILATOR_TEST_NO_ATTRIBUTES");
 } else {
