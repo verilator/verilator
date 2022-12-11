@@ -6,14 +6,14 @@ verilator_profcfunc
 
 Verilator_profcfunc reads a profile report created by gprof.  The names of
 the functions are then transformed, assuming the user used Verilator's
---prof-cfuncs, and a report printed showing the percentage of time, etc, in
-each Verilog block.
+--prof-cfuncs, and a report printed showing the percentage of the time,
+etc., in each Verilog block.
 
 Due to rounding errors in gprof reports, the input report's percentages may
-not total to 100%.  In the verilator_profcfunc report this will get
+not total 100%.  In the verilator_profcfunc report this will get
 reported as a rounding error.
 
-For an overview of use of verilator_profcfunc, see :ref:`Profiling`.
+For an overview of the use of verilator_profcfunc, see :ref:`Profiling`.
 
 verilator_profcfunc Arguments
 -----------------------------

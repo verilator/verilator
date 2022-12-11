@@ -42,7 +42,7 @@ Breaking this command down:
 #. :vlopt:`-Wall` so Verilator has stronger lint warnings
    enabled.
 
-#. An finally, :command:`our.v` which is our SystemVerilog design file.
+#. An finally, :command:`our.v`, which is our SystemVerilog design file.
 
 And now we run it:
 
@@ -57,7 +57,7 @@ And we get as output:
      Hello World
      - our.v:2: Verilog $finish
 
-Really, you're better off using a Makefile to run the steps for you so when
-your source changes it will automatically run all of the appropriate steps.
-To aid this Verilator can create a makefile dependency file.  For examples
-that do this see the :file:`examples` directory in the distribution.
+You're better off using a Makefile to run the steps for you, so when your
+source changes, it will automatically run all of the appropriate steps.  To
+aid this, Verilator can create a makefile dependency file.  For examples
+that do this, see the :file:`examples` directory in the distribution.

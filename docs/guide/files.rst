@@ -59,13 +59,13 @@ For --cc/--sc, it creates:
    * - *{prefix}*\ .cpp
      - Model C++ file
    * - *{prefix}*\ ___024root.h
-     - Top level (SystemVerilog $root) internal header file
+     - Top-level internal header file (from SystemVerilog $root)
    * - *{prefix}*\ ___024root.cpp
-     - Top level (SystemVerilog $root) internal C++ file
+     - Top-level internal C++ file (from SystemVerilog $root)
    * - *{prefix}*\ ___024root\ *{__n}*\ .cpp
-     - Additional top level internal C++ files
+     - Additional top-level internal C++ files
    * - *{prefix}*\ ___024root\ *{__DepSet_hash__n}*\ .cpp
-     - Additional top level internal C++ files (hashed to reduce build times)
+     - Additional top-level internal C++ files (hashed to reduce build times)
    * - *{prefix}*\ ___024root__Slow\ *{__n}*\ .cpp
      - Infrequent cold routines
    * - *{prefix}*\ ___024root\ *{__DepSet_hash__n}*\ .cpp
@@ -106,7 +106,7 @@ For --hierarchy mode, it creates:
    * - *{prefix}*\ __hier.dir
      - Directory to store .dot, .vpp, .tree of top module (from --hierarchy)
 
-In certain debug and other modes, it also creates:
+In specific debug and other modes, it also creates:
 
 .. list-table::
 

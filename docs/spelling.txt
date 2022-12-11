@@ -45,6 +45,7 @@ Cochrane
 Cuan
 Cygwin
 DErrico
+DFG
 Da
 Danilo
 Dannoritzer
@@ -606,6 +607,7 @@ ifndef
 impot
 incdir
 includer
+incrementing
 inferfaces
 inhibitSim
 initarray
@@ -646,6 +648,7 @@ localparams
 localtime
 logicals
 longint
+lossy
 lsb
 lvalue
 lxt

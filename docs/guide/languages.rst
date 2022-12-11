@@ -41,7 +41,7 @@ union, var, void, priority case/if, and unique case/if.
 It also supports .name and .\* interconnection.
 
 Verilator partially supports concurrent assert and cover statements; see
-the enclosed coverage tests for the syntax which is allowed.
+the enclosed coverage tests for the allowed syntax.
 
 Verilator has limited support for class and related object-oriented
 constructs.
@@ -58,8 +58,8 @@ function call-like preprocessor defines, default define arguments,
 SystemVerilog 2017 (IEEE 1800-2017) Support
 -------------------------------------------
 
-Verilator supports the 2017 "for" loop constructs, and several minor
-cleanups IEEE made in 1800-2017.
+Verilator supports the 2017 "for" loop constructs and several cleanups IEEE
+made in 1800-2017.
 
 
 Verilog AMS Support
@@ -67,14 +67,13 @@ Verilog AMS Support
 
 Verilator implements a very small subset of Verilog AMS (Verilog Analog and
 Mixed-Signal Extensions) with the subset corresponding to those VMS
-keywords with near equivalents in the Verilog 2005 or SystemVerilog 2009
-languages.
+keywords with near-equivalents in Verilog 2005 or SystemVerilog 2017.
 
 AMS parsing is enabled with :vlopt:`--language VAMS <--language>` or
 :vlopt:`--language 1800+VAMS <--language>`.
 
-At present Verilator implements ceil, exp, floor, ln, log, pow, sqrt,
-string, and wreal.
+Verilator implements ceil, exp, floor, ln, log, pow, sqrt, string, and
+wreal.
 
 
 Synthesis Directive Assertion Support
@@ -87,12 +86,12 @@ directives.  The same applies to any :code:`//ambit synthesis`,
 :code:`//cadence` or :code:`//pragma` directives of the same form.
 
 When these synthesis directives are discovered, Verilator will either
-formally prove the directive to be true, or failing that, will insert the
+formally prove the directive to be true, or, failing that, will insert the
 appropriate code to detect failing cases at simulation runtime and print an
 "Assertion failed" error message.
 
 Verilator likewise also asserts any "unique" or "priority" SystemVerilog
-keywords on case statement, as well as "unique" on if statements.  However,
+keywords on case statements, as well as "unique" on if statements.  However,
 "priority if" is currently ignored.
 
 
@@ -109,7 +108,7 @@ With :vlopt:`--timing`, all timing controls are supported:
 
 as well as all flavors of :code:`fork`.
 
-Compiling a verilated design that makes use of these features requires a
+Compiling a Verilated design that uses these features requires a
 compiler with C++20 coroutine support, e.g. Clang 5, GCC 10, or newer.
 
 :code:`#0` delays cause Verilator to issue the :option:`ZERODLY` warning, as
@@ -125,11 +124,11 @@ always the one chosen. Such expressions cause the :option:`MINTYPMAX` warning.
 
 Another consequence of using :vlopt:`--timing` is that the :vlopt:`--main`
 option generates a main file with a proper timing eval loop, eliminating the
-need for writing any driving C++ code. You can then simply compile the
+need for writing any driving C++ code. You can simply compile the
 simulation (perhaps using :vlopt:`--build`) and run it.
 
 With :vlopt:`--no-timing`, all timing controls cause the :option:`NOTIMING`
-error, with the exception of:
+error, except:
 
 * delay statements – they are ignored (as they are in synthesis), though they
   do issue a :option:`STMTDLY` warning,
@@ -138,16 +137,15 @@ error, with the exception of:
 * net delays – they are ignored,
 * event controls at the top of the procedure,
 
-Forks cause this error as well, with the exception of:
+Forks cause this error as well, except:
 
 * forks with no statements,
 * :code:`fork..join` or :code:`fork..join_any` with one statement,
 * forks with :vlopt:`--bbox-unsup`.
 
-If neither :vlopt:`--timing` nor :vlopt:`--no-timing` is specified, all timing
-controls cause the :option:`NEEDTIMINGOPT` error, with the exception of event
-controls at the top of the process. Forks cause this error as well, with the
-exception of:
+If neither :vlopt:`--timing` nor :vlopt:`--no-timing` is specified, all
+timing controls cause the :option:`NEEDTIMINGOPT` error, except event
+controls at the top of the process. Forks cause this error as well, except:
 
 * forks with no statements,
 * :code:`fork..join` or :code:`fork..join_any` with one statement,
@@ -175,15 +173,15 @@ Synthesis Subset
 
 Verilator supports the Synthesis subset with other verification constructs
 being added over time. Verilator also simulates events as Synopsys's Design
-Compiler would; namely given a block of the form:
+Compiler would, namely given a block of the form:
 
 .. code-block:: sv
 
         always @(x) y = x & z;
 
-This will recompute y when there is even a potential for change in x or a
-change in z, that is when the flops computing x or z evaluate (which is
-what Design Compiler will synthesize.)  A compliant simulator would only
+This will recompute y when there is a potential for change in x or a change
+in z; that is when the flops computing x or z evaluate (which is what
+Design Compiler will synthesize.)  A compliant simulator will only
 calculate y if x changes.  We recommend using always_comb to make the code
 run the same everywhere.  Also avoid putting $displays in combo blocks, as
 they may print multiple times when not desired, even on compliant
@@ -196,7 +194,7 @@ Signal Naming
 To avoid conflicts with C symbol naming, any character in a signal name
 that is not alphanumeric nor a single underscore will be replaced by __0hh
 where hh is the hex code of the character. To avoid conflicts with
-Verilator's internal symbols, any double underscore are replaced with
+Verilator's internal symbols, any double underscore is replaced with
 ___05F (5F is the hex code of an underscore.)
 
 
@@ -211,14 +209,13 @@ Class
 -----
 
 Verilator class support is limited but in active development.  Verilator
-supports members, and methods. Verilator does not support class static
-members, class extend, or class parameters.
+supports members, methods, class extend, and class parameters.
 
 
 Dotted cross-hierarchy references
 ---------------------------------
 
-Verilator supports dotted references to variables, functions and tasks in
+Verilator supports dotted references to variables, functions, and tasks in
 different modules. The portion before the dot must have a constant value;
 for example a[2].b is acceptable, while a[x].b is generally not.
 
@@ -232,7 +229,7 @@ code.
 Latches
 -------
 
-Verilator is optimized for edge sensitive (flop based) designs.  It will
+Verilator is optimized for edge-sensitive (flop-based) designs.  It will
 attempt to do the correct thing for latches, but most performance
 optimizations will be disabled around the latch.
 
@@ -252,38 +249,38 @@ unsupported.
 Unknown States
 --------------
 
-Verilator is mostly a two state simulator, not a four state simulator.
-However, it has two features which uncover most initialization bugs
-(including many that a four state simulator will miss.)
+Verilator is mostly a two-state simulator, not a four-state simulator.
+However, it has two features that uncover most initialization bugs
+(including many that a four-state simulator will miss.)
 
 Identity comparisons (=== or !==) are converted to standard ==/!= when
 neither side is a constant.  This may make the expression yield a different
-result compared to a four state simulator.  An === comparison to X will
+result than a four-state simulator.  An === comparison to X will
 always be false, so that Verilog code which checks for uninitialized logic
 will not fire.
 
-Assigning X to a variable will actually assign a constant value as
-determined by the :vlopt:`--x-assign` option.  This allows runtime
-randomization, thus if the value is actually used, the random value should
-cause downstream errors.  Integers also get randomized, even though the
-Verilog 2001 specification says they initialize to zero.  Note however that
-randomization happens at initialization time and hence during a single
-simulation run, the same constant (but random) value will be used every
-time the assignment is executed.
+Assigning X to a variable will assign a constant value as determined by the
+:vlopt:`--x-assign` option.  This allows runtime randomization; thus, if
+the value is used, the random value should cause downstream errors.
+Integers also get randomized, even though the Verilog 2001 specification
+says they initialize to zero.  However, randomization happens at
+initialization time; hence, during a single simulation run, the same
+constant (but random) value will be used every time the assignment is
+executed.
 
 All variables, depending on :vlopt:`--x-initial` setting, are typically
-randomly initialized using a function.  By running several random
-simulation runs you can determine that reset is working correctly.  On the
-first run, have the function initialize variables to zero.  On the second,
-have it initialize variables to one.  On the third and following runs have
-it initialize them randomly.  If the results match, reset works.  (Note
-this is what the hardware will really do.)  In practice, just setting all
-variables to one at startup finds most problems (since typically control
-signals are active-high).
+randomly initialized using a function.  You can determine that reset is
+working correctly by running several random simulation runs.  On the first
+run, have the function initialize variables to zero.  On the second, have
+it initialize variables to one.  On the third and following runs, have it
+initialize them randomly.  If the results match, reset works.  (Note that
+this is what the hardware will do.)  In practice, setting all variables to
+one at startup finds the most problems (since control signals are typically
+active-high).
 
 :vlopt:`--x-assign` applies to variables explicitly initialized or assigned
 an X. Uninitialized clocks are initialized to zero, while all other state
-holding variables are initialized to a random value.  Event driven
+holding variables are initialized to a random value.  Event-driven
 simulators will generally trigger an edge on a transition from X to 1
 (posedge) or X to 0 (negedge). However, by default, since clocks are
 initialized to zero, Verilator will not trigger an initial negedge. Some
@@ -319,19 +316,19 @@ External logic will be needed to combine these signals with any external
 drivers.
 
 Tristate drivers are not supported inside functions and tasks; an inout
-there will be considered a two state variable that is read and written
-instead of a four state variable.
+there will be considered a two-state variable that is read and written
+instead of a four-state variable.
 
 
 Functions & Tasks
 -----------------
 
 All functions and tasks will be inlined (will not become functions in C.)
-The only support provided is for simple statements in tasks (which may
+The only support provided is simple statements in tasks (which may
 affect global variables).
 
 Recursive functions and tasks are not supported.  All inputs and outputs
-are automatic, as if they had the Verilog 2001 "automatic" keyword
+are automatic as if they had the Verilog 2001 "automatic" keyword
 prepended.  (If you don't know what this means, Verilator will do what you
 probably expect, what C does. The default behavior of Verilog is
 different.)
@@ -363,13 +360,13 @@ error for more information.
 Array Out of Bounds
 -------------------
 
-Writing a memory element that is outside the bounds specified for the array
-may cause a different memory element inside the array to be written
-instead.  For power-of-2 sized arrays, Verilator will give a width warning
-and the address.  For non-power-of-2-sizes arrays, index 0 will be written.
+Writing a memory element outside the bounds specified for the array may
+cause a different memory element inside the array to be written instead.
+For power-of-2 sized arrays, Verilator will give a width warning and the
+address.  For non-power-of-2-sizes arrays, index 0 will be written.
 
-Reading a memory element that is outside the bounds specified for the array
-will give a width warning and wrap around the power-of-2 size.  For
+Reading a memory element outside the bounds specified for the array will
+give a width warning and wrap around the power-of-2 size.  For
 non-power-of-2 sizes, it will return an unspecified constant of the
 appropriate width.
 
@@ -390,14 +387,14 @@ Force statement
 ---------------
 
 Verilator supports the procedural `force` (and corresponding `release`)
-statement. The behavior of the `force` statement however does not entirely
-comply with the IEEE 1800 SystemVerilog standard. According to the standard,
+statement. However, the behavior of the `force` statement does not entirely
+comply with IEEE 1800. According to the standard,
 when a procedural statement of the form `force a = b;` is executed, the
-simulation should behave as if from that point forwards, a continuous
-assignment `assign a = b;` have been added to override the drivers of `a`.
-More specifically: the value of `a` should be updated, whenever the value of
-`b` changes, all the way until a `release a;` statement is executed.
-Verilator instead evaluates the current value of `b` at the time the `force`
+simulation should behave as if, from that point forwards, a continuous
+assignment `assign a = b;` has been added to override the drivers of `a`.
+More specifically: the value of `a` should be updated whenever the value of
+`b` changes, until a `release a;` statement is executed.
+Verilator instead evaluates the current value of `b` when the `force`
 statement is executed, and forces `a` to that value, without updating it
 until a new `force` or `release` statement is encountered that applies to
 `a`. This non-standard behavior is nevertheless consistent with some other
@@ -407,7 +404,7 @@ simulators.
 Encrypted Verilog
 -----------------
 
-Open source simulators like Verilator are unable to use encrypted RTL
+Open-source simulators like Verilator cannot use encrypted RTL
 (i.e. IEEE P1735).  Talk to your IP vendor about delivering IP blocks via
 Verilator's :vlopt:`--protect-lib` feature.
 
@@ -448,12 +445,12 @@ This section describes specific limitations for each language keyword.
   certain limited cases.
 
 '{} operator
-  Assignment patterns with order based, default, constant integer (array)
+  Assignment patterns with an order based, default, constant integer (array)
   or member identifier (struct/union) keys are supported.  Data type keys
-  and keys which are computed from a constant expression are not supported.
+  and keys computed from a constant expression are not supported.
 
 \`uselib
-  Uselib, a vendor specific library specification method, is ignored along
+  Uselib, a vendor-specific library specification method, is ignored along
   with anything following it until the end of that line.
 
 cast operator
@@ -461,8 +458,8 @@ cast operator
   unsigned, not arrays nor structs.
 
 chandle
-  Treated as a "longint"; does not yet warn about operations that are
-  specified as illegal on chandles.
+  Treated as a "longint"; does not yet warn about operations specified as
+  illegal on chandles.
 
 disable
   Disable statements may be used only if the block being disabled is a
@@ -475,7 +472,7 @@ inside
   upper bound.  Case inside and case matches are also unsupported.
 
 interface
-  Interfaces and modports, including with generated data types are
+  Interfaces and modports, including generated data types are
   supported.  Generate blocks around modports are not supported, nor are
   virtual interfaces nor unnamed interfaces.
 
@@ -487,25 +484,25 @@ specify specparam
   All specify blocks and timing checks are ignored.
 
 uwire
-  Verilator does not perform warning checking on uwires, it treats the
+  Verilator does not perform warning checking on uwires; it treats the
   uwire keyword as if it were the normal wire keyword.
 
 $bits, $countbits, $countones, $finish, $isunknown, $onehot, $onehot0, $signed, $stime, $stop, $time, $unsigned,
   Generally supported.
 
 $dump/$dumpports and related
-  $dumpfile or $dumpports will create a VCD or FST file (which is based on
+  $dumpfile or $dumpports will create a VCD or FST file (based on
   the :vlopt:`--trace` option given when the model was Verilated). This
   will take effect starting at the next eval() call.  If you have multiple
-  Verilated designs under the same C model, then this will dump signals
+  Verilated designs under the same C model, this will dump signals
   only from the design containing the $dumpvars.
 
   $dumpvars and $dumpports module identifier is ignored; the traced
   instances will always start at the top of the design. The levels argument
-  is also ignored, use tracing_on/tracing_off pragmas instead.
+  is also ignored; use tracing_on/tracing_off pragmas instead.
 
   $dumpportson/$dumpportsoff/$dumpportsall/$dumpportslimit filename
-  argument is ignored, only a single trace file may be active at once.
+  argument is ignored; only a single trace file may be active at once.
 
   $dumpall/$dumpportsall, $dumpon/$dumpportson, $dumpoff/$dumpportsoff, and
   $dumplimit/$dumpportlimit are currently ignored.
@@ -514,7 +511,7 @@ $error, $fatal, $info, $warning.
   Generally supported.
 
 $exit, $finish, $stop
-  The rarely used optional parameter to $finish and $stop is ignored. $exit
+  The rarely used optional parameter to $finish and $stop is ignored; $exit
   is aliased to $finish.
 
 $fopen, $fclose, $fdisplay, $ferror, $feof, $fflush, $fgetc, $fgets, $fscanf, $fwrite, $fscanf, $sscanf
@@ -530,8 +527,8 @@ $random, $urandom, $urandom_range
   per object for random stability of $urandom/$urandom_range.
 
 $readmemb, $readmemh
-  Read memory commands are supported.  Note Verilator and the Verilog
-  specification does not include support for readmem to multi-dimensional
+  Read memory commands are supported.  Verilator and the Verilog
+  specification do not include support for readmem to multi-dimensional
   arrays.
 
 $test$plusargs, $value$plusargs

@@ -11,7 +11,7 @@ Authors
 When possible, please instead report bugs at `Verilator Issues
 <https://verilator.org/issues>`_.
 
-Primary author is Wilson Snyder <wsnyder@wsnyder.org>.
+The primary author is Wilson Snyder <wsnyder@wsnyder.org>.
 
 Major concepts by Paul Wasson, Duane Galbi, John Coiner, Geza Lore, Yutetsu
 Takatsukasa, and Jie Xu.
@@ -22,18 +22,18 @@ Contributors
 
 Many people have provided ideas and other assistance with Verilator.
 
-Verilator is receiving major development support from the `CHIPS Alliance
-<https://chipsalliance.org>`_, `Antmicro Ltd <https://antmicro.com>`_ and
-`Shunyao CAD <https://shunyaocad.com>`_.
+Verilator is receiving significant development support from the `CHIPS
+Alliance <https://chipsalliance.org>`_, `Antmicro Ltd
+<https://antmicro.com>`_ and `Shunyao CAD <https://shunyaocad.com>`_.
 
 Previous major corporate sponsors of Verilator, by providing significant
-contributions of time or funds included include: Atmel Corporation, Cavium
+contributions of time or funds include: Atmel Corporation, Cavium
 Inc., Compaq Corporation, Digital Equipment Corporation, Embecosm Ltd.,
 Hicamp Systems, Intel Corporation, Mindspeed Technologies Inc., MicroTune
 Inc., picoChip Designs Ltd., Sun Microsystems Inc., Nauticus Networks Inc.,
 SiCortex Inc, and Shunyao CAD.
 
-The people who have contributed major functionality are: Krzysztof
+The contributors of major functionality are: Krzysztof
 Bieganski, Byron Bradley, Jeremy Bennett, Lane Brooks, John Coiner, Duane
 Galbi, Geza Lore, Todd Strader, Stefan Wallentowitz, Paul Wasson, Jie Xu,
 and Wilson Snyder.  Major testers included Jeff Dutton, Jonathon Donaldson,
@@ -129,8 +129,9 @@ Jeff Winston, Joshua Wise, Clifford Wolf, Tobias Wolfel, Johan Wouters,
 Paul Wright, Junyi Xi, Ding Xiaoliang, Jie Xu, Mandy Xu, Yinan Xu, Luke
 Yang, Amir Yazdanbakhsh, Keyi Zhang, and Xi Zhang.
 
-Thanks to them, and all those we've missed including above, or wished to
-remain anonymous.
+Thanks to them, and all those we've missed mentioning above, and to those
+whom have wished to remain anonymous.
+
 
 Historical Origins
 ==================
@@ -140,10 +141,10 @@ Digital Equipment Corporation.  The Verilog code that was converted to C
 was then merged with a C-based CPU model of the Alpha processor and
 simulated in a C-based environment called CCLI.
 
-In 1995 Verilator started being also used for Multimedia and Network
-Processor development inside Digital.  Duane Galbi took over the active
-development of Verilator, and added several performance enhancements.  CCLI
-was still being used as the shell.
+In 1995 Verilator started being used for Multimedia and Network Processor
+development inside Digital.  Duane Galbi took over the active development
+of Verilator, and added several performance enhancements, and CCLI was
+still being used as the shell.
 
 In 1998, through the efforts of existing DECies, mainly Duane Galbi,
 Digital graciously agreed to release the source code.  (Subject to the code
@@ -168,5 +169,5 @@ fork/join, delay handling, DFG performance optimizations, and other
 improvements.
 
 Currently, various language features and performance enhancements are added
-as the need arises, with a focus on getting to complete Universal
-Verification Methodology (UVM, IEEE 1800.2-2017) support.
+as the need arises, focusing on completing Universal Verification
+Methodology (UVM, IEEE 1800.2-2017) support.

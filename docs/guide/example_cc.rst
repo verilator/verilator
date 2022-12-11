@@ -12,7 +12,7 @@ of what this C++ code is doing, see
 
 .. include:: example_common_install.rst
 
-Now, let's create an example Verilog, and C++ wrapper file:
+Now, let's create an example Verilog and C++ wrapper file:
 
 .. code-block:: bash
 
@@ -39,7 +39,7 @@ Now, let's create an example Verilog, and C++ wrapper file:
        }
      EOF
 
-Now we run Verilator on our little example.
+Now we run Verilator on our little example;
 
 .. code-block:: bash
 
@@ -47,8 +47,7 @@ Now we run Verilator on our little example.
 
 Breaking this command down:
 
-#. :vlopt:`--cc` to get C++ output (versus e.g. SystemC
-   or only linting).
+#. :vlopt:`--cc` to get C++ output (versus e.g., SystemC, or only linting).
 
 #. :vlopt:`--exe`, along with our :command:`sim_main.cpp` wrapper file, so
    the build will create an executable instead of only a library.
@@ -89,7 +88,7 @@ And we get as output:
      Hello World
      - our.v:2: Verilog $finish
 
-Really, you're better off using a Makefile to run the steps for you so when
-your source changes it will automatically run all of the appropriate steps.
-To aid this Verilator can create a makefile dependency file.  For examples
-that do this see the :file:`examples` directory in the distribution.
+You're better off using a Makefile to run the steps for you, so when your
+source changes, it will automatically run all of the appropriate steps.  To
+aid this, Verilator can create a makefile dependency file.  For examples
+that do this, see the :file:`examples` directory in the distribution.
