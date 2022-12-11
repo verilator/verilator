@@ -27,6 +27,7 @@ Verilator 5.003 devel
 * Fix return type of $countbits functions to int (#3725). [Ryszard Rozak, Antmicro Ltd]
 * Fix missing UNUSED warnings with --coverage (#3736). [alejandro-castro-ortegon]
 * Fix tracing parameters overridden with -G (#3723). [Iztok Jeras]
+* Fix make jobserver with submakes (#3758). [Gus Smith]
 * Fix wait 0.
 * Fix comparing ranged slices of unpacked arrays.
 * Fix empty string literals converting to string types (#3774). [miree]

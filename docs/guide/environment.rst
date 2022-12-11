@@ -20,6 +20,12 @@ associated programs.
    this variable to launch GNU make.  If this variable is not specified,
    "make" is used.
 
+.. option:: MAKEFLAGS
+
+   Flags created by :command:`make` to pass to submakes. Verilator searches
+   this variable to determine if a jobserver is used; see
+   :vlopt:`--build-jobs`.
+
 .. option:: OBJCACHE
 
    Optionally specifies a caching or distribution program to place in front

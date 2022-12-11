@@ -144,6 +144,10 @@ Summary:
    be a positive integer specifying the maximum number of parallel build
    jobs.
 
+   This forms the :command:`make` option ``-j`` value, unless the
+   :option:`MAKEFLAGS` environment variable contains ``-jobserver-auth``,
+   in which case Verilator assumes that make's jobserver is being used.
+
    See also :vlopt:`-j`.
 
 .. option:: --cc

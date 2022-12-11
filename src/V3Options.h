@@ -660,6 +660,7 @@ public:
     // Also add to V3Options::showVersion()
     static string getenvBuiltins(const string& var);
     static string getenvMAKE();
+    static string getenvMAKEFLAGS();
     static string getenvPERL();
     static string getenvSYSTEMC();
     static string getenvSYSTEMC_ARCH();

@@ -686,7 +686,10 @@ static string buildMakeCmd(const string& makefile, const string& target) {
     cmd << v3Global.opt.getenvMAKE();
     cmd << " -C " << v3Global.opt.makeDir();
     cmd << " -f " << makefile;
-    if (jobs > 0) cmd << " -j " << jobs;
+    // Unless using make's jobserver, do a -j
+    if (v3Global.opt.getenvMAKEFLAGS().find("-jobserver-auth") == string::npos) {
+        if (jobs > 0) cmd << " -j " << jobs;
+    }
     for (const string& flag : makeFlags) cmd << ' ' << flag;
     if (!target.empty()) cmd << ' ' << target;
 
