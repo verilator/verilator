@@ -83,7 +83,7 @@ string V3Os::getenvStr(const string& envvar, const string& defaultValue) {
     _dupenv_s((char **)&envvalue, nullptr, envvar.c_str());
     if (envvalue != nullptr) {
         const std::string result{envvalue};
-        free(envvalue);
+        free((void *)envvalue);
         ret = result;
     } else {
         ret = defaultValue;

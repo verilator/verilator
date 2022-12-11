@@ -322,7 +322,7 @@ file(TO_NATIVE_PATH ${srcdir}/bisonpre BISONPRE)
 file(TO_NATIVE_PATH ${srcdir}/flexfix FLEXFIX)
 file(TO_NATIVE_PATH ${srcdir}/../bin/verilator_includer VERILATOR_INCLUDER)
 file(TO_NATIVE_PATH ${srcdir}/vlcovgen VLCOVGEN)
-file(TO_NATIVE_PATH ${srcdir}/config_rev.pl CONFIG_REV)
+file(TO_NATIVE_PATH ${srcdir}/config_rev CONFIG_REV)
 
 configure_file(config_build.h.in config_build.h @ONLY)
 
@@ -481,6 +481,7 @@ target_compile_definitions(${verilator} PRIVATE
 target_include_directories(${verilator}
     PRIVATE
     ../include
+    ${WIN_FLEX_BISON}
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
 )

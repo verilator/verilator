@@ -25,7 +25,7 @@ if (MSVC)
         list(APPEND CMAKE_PREFIX_PATH ${WIN_FLEX_BISON})
     endif()
     if (NOT WIN_FLEX_BISON)
-        message(FATAL_ERROR "Please install https://github.com/lexxmark/winflexbison and set WIN_FLEX_BISON environment variable")
+        message(FATAL_ERROR "Please install https://github.com/lexxmark/winflexbison and set WIN_FLEX_BISON environment variable. Please use install cmake target after a successful build.")
     endif()
 endif()
 
