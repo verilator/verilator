@@ -4426,6 +4426,21 @@ public:
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 16; }
 };
+class AstCastWrap final : public AstNodeUniop {
+    // A cast which has been expanded and the LHSP does all the lifting
+    // This remains until V3Width final commit pass to suppress ENUMVALUE warnings
+public:
+    AstCastWrap(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_CastWrap(fl, lhsp) {}
+    ASTGEN_MEMBERS_AstCastWrap;
+    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAssign(lhs); }
+    string emitVerilog() override { return "(%l)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    int instrCount() const override { return 0; }
+};
 class AstCountOnes final : public AstNodeUniop {
     // Number of bits set in vector
 public:

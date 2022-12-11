@@ -1861,7 +1861,7 @@ private:
         UINFO(9, "CAST " << nodep << endl);
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         if (m_vup->prelim()) {
-            // if (debug()) nodep->dumpTree("-  CastPre: ");
+            if (debug() >= 9) nodep->dumpTree("-  CastPre: ");
             // if (debug()) nodep->backp()->dumpTree("-  CastPreUpUp: ");
             userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM}.p());
             AstNodeDType* const toDtp = nodep->dtypep()->skipRefToEnump();
@@ -1937,19 +1937,22 @@ private:
             }
             if (!newp) newp = nodep->fromp()->unlinkFrBack();
             nodep->fromp(newp);
-            // if (debug()) nodep->dumpTree("-  CastOut: ");
+            if (debug() >= 9) nodep->dumpTree("-  CastOut: ");
             // if (debug()) nodep->backp()->dumpTree("-  CastOutUpUp: ");
         }
         if (m_vup->final()) {
-            // if (debug()) nodep->dumpTree(cout, "-  CastFPit: ");
+            if (debug() >= 9) nodep->dumpTree(cout, "-  CastFPit: ");
             iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, nodep->fromp()->dtypep(),
                          EXTEND_EXP, false);
-            AstNode* const underp = nodep->fromp()->unlinkFrBack();
-            // if (debug()) underp->dumpTree("-  CastRep: ");
+            if (debug() >= 9) nodep->dumpTree("-  CastFin: ");
+            AstNodeExpr* const underp = nodep->fromp()->unlinkFrBack();
             underp->dtypeFrom(nodep);
-            nodep->replaceWith(underp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             underp->didWidth(true);
+            AstNodeExpr* const newp = new AstCastWrap{nodep->fileline(), underp};
+            newp->didWidth(true);
+            if (debug() >= 9) newp->dumpTree("-  CastRep: ");
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstCastSize* nodep) override {
@@ -1973,6 +1976,10 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         // if (debug()) nodep->dumpTree("-  CastSizeOut: ");
+    }
+    void visit(AstCastWrap* nodep) override {
+        // Inserted by V3Width only so we know has been resolved
+        UASSERT_OBJ(nodep->didWidth(), nodep, "CastWrap should have width'ed earlier");
     }
     void castSized(AstNode* nodep, AstNode* underp, int width) {
         const AstBasicDType* underDtp = VN_CAST(underp->dtypep(), BasicDType);
