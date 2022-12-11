@@ -36,7 +36,11 @@
 #endif
 #include <algorithm>
 #include <cctype>
+#if defined(_MSC_VER)
+#include <direntmsvc.h>
+#else
 #include <dirent.h>
+#endif
 #include <fcntl.h>
 #include <list>
 #include <map>
