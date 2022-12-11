@@ -37,7 +37,7 @@
 #include <algorithm>
 #include <cctype>
 #if defined(_MSC_VER)
-#include <direntmsvc.h>
+#include <direntmsvc.hpp>
 #else
 #include <dirent.h>
 #endif

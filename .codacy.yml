@@ -4,3 +4,4 @@ exclude_paths:
   - 'ci/build_verilator.sh'
   - 'include/vltstd/**'
   - 'nodist/fastcov.py'
+  - 'include/direntmsvc.hpp'

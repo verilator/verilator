@@ -41,7 +41,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 #include <climits>  // PATH_MAX (especially on FreeBSD)
 #include <cstdarg>
 #if defined(_MSC_VER)
-#include <direntmsvc.h>
+#include <direntmsvc.hpp>
 #else
 #include <dirent.h>
 #endif
