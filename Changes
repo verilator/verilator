@@ -19,7 +19,7 @@ Verilator 5.003 devel
 * Support pre_randomize and post_randomize.
 * Support $timeunit and $timeprecision.
 * Support assignment expressions.
-* Add ENUMVALUE warning when value misused for enum (#726).
+* Add ENUMVALUE warning when value misused for enum (#726) (#3777).
 * Internal AST improvements, also affect XML format (#3721). [Geza Lore]
 * Change ENDLABEL from warning into an error.
 * Deprecate verilated_fst_sc.cpp and verilated_vcd_sc.cpp.

@@ -1941,6 +1941,7 @@ private:
             // if (debug()) nodep->backp()->dumpTree("-  CastOutUpUp: ");
         }
         if (m_vup->final()) {
+            // if (debug()) nodep->dumpTree(cout, "-  CastFPit: ");
             iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, nodep->fromp()->dtypep(),
                          EXTEND_EXP, false);
             AstNode* const underp = nodep->fromp()->unlinkFrBack();
@@ -6966,28 +6967,20 @@ private:
         toDtp = toDtp->skipRefToEnump();
         fromDtp = fromDtp->skipRefToEnump();
         if (toDtp == fromDtp) return COMPATIBLE;
-        const AstNodeDType* fromBaseDtp = fromDtp;
-        while (const AstPackArrayDType* const packp = VN_CAST(fromBaseDtp, PackArrayDType)) {
-            fromBaseDtp = packp->subDTypep();
-            while (const AstRefDType* const refp = VN_CAST(fromBaseDtp, RefDType)) {
-                fromBaseDtp = refp->refDTypep();
-            }
-        }
+
+        // UNSUP unpacked struct/unions (treated like BasicDType)
+        const AstNodeDType* fromBaseDtp = computeCastableBase(fromDtp);
         const bool fromNumericable = VN_IS(fromBaseDtp, BasicDType)
                                      || VN_IS(fromBaseDtp, EnumDType)
                                      || VN_IS(fromBaseDtp, NodeUOrStructDType);
 
-        const AstNodeDType* toBaseDtp = toDtp;
-        while (const AstPackArrayDType* const packp = VN_CAST(toBaseDtp, PackArrayDType)) {
-            toBaseDtp = packp->subDTypep();
-            while (const AstRefDType* const refp = VN_CAST(toBaseDtp, RefDType)) {
-                toBaseDtp = refp->refDTypep();
-            }
-        }
+        const AstNodeDType* toBaseDtp = computeCastableBase(toDtp);
         const bool toNumericable
             = VN_IS(toBaseDtp, BasicDType) || VN_IS(toBaseDtp, NodeUOrStructDType);
-        // UNSUP unpacked struct/unions (treated like BasicDType)
-        if (toNumericable) {
+
+        if (toBaseDtp == fromBaseDtp) {
+            return COMPATIBLE;
+        } else if (toNumericable) {
             if (fromNumericable) return COMPATIBLE;
         } else if (VN_IS(toDtp, EnumDType)) {
             if (VN_IS(fromBaseDtp, EnumDType) && toDtp->sameTree(fromDtp)) return ENUM_IMPLICIT;
@@ -7009,6 +7002,20 @@ private:
             }
         }
         return castable;
+    }
+    static const AstNodeDType* computeCastableBase(const AstNodeDType* nodep) {
+        while (true) {
+            if (const AstPackArrayDType* const packp = VN_CAST(nodep, PackArrayDType)) {
+                nodep = packp->subDTypep();
+                continue;
+            } else if (const AstNodeDType* const refp = nodep->skipRefToEnump()) {
+                if (refp != nodep) {
+                    nodep = refp;
+                    continue;
+                }
+            }
+            return nodep;
+        }
     }
 
     //----------------------------------------------------------------------
