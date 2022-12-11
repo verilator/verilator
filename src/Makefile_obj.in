@@ -157,7 +157,7 @@ RAW_OBJS = \
 	V3Assert.o \
 	V3AssertPre.o \
 	V3Ast.o	\
-	V3AstNodes.o	\
+	V3AstNodes.o \
 	V3Begin.o \
 	V3Branch.o \
 	V3Broken.o \
@@ -188,7 +188,6 @@ RAW_OBJS = \
 	V3DfgPasses.o \
 	V3DfgPeephole.o \
 	V3DupFinder.o \
-	V3Timing.o \
 	V3EmitCBase.o \
 	V3EmitCConstPool.o \
 	V3EmitCFunc.o \
@@ -210,8 +209,8 @@ RAW_OBJS = \
 	V3Gate.o \
 	V3Global.o \
 	V3Graph.o \
-	V3GraphAlg.o \
 	V3GraphAcyc.o \
+	V3GraphAlg.o \
 	V3GraphPathChecker.o \
 	V3GraphTest.o \
 	V3Hash.o \
@@ -224,8 +223,8 @@ RAW_OBJS = \
 	V3LifePost.o \
 	V3LinkCells.o \
 	V3LinkDot.o \
-	V3LinkJump.o \
 	V3LinkInc.o \
+	V3LinkJump.o \
 	V3LinkLValue.o \
 	V3LinkLevel.o \
 	V3LinkParse.o \
@@ -239,7 +238,11 @@ RAW_OBJS = \
 	V3Order.o \
 	V3Os.o \
 	V3Param.o \
+	V3ParseGrammar.o \
+	V3ParseImp.o \
+	V3ParseLex.o \
 	V3Partition.o \
+	V3PreProc.o \
 	V3PreShell.o \
 	V3Premit.o \
 	V3ProtectLib.o \
@@ -260,12 +263,13 @@ RAW_OBJS = \
 	V3StatsReport.o \
 	V3String.o \
 	V3Subst.o \
+	V3TSP.o \
 	V3Table.o \
 	V3Task.o \
+	V3Timing.o \
 	V3Trace.o \
 	V3TraceDecl.o \
 	V3Tristate.o \
-	V3TSP.o \
 	V3Undriven.o \
 	V3Unknown.o \
 	V3Unroll.o \
@@ -273,13 +277,6 @@ RAW_OBJS = \
 	V3Waiver.o \
 	V3Width.o \
 	V3WidthSel.o \
-
-# Non-concatable
-NC_OBJS += \
-	V3ParseImp.o \
-	V3ParseGrammar.o \
-	V3ParseLex.o \
-	V3PreProc.o \
 
 # verilator_coverage
 VLCOV_OBJS = \
@@ -311,14 +308,11 @@ ASTGENFLAGS += $(foreach f,$(DFG_DEFS),--dfgdef $f)
 
 ifeq ($(VL_VLCOV),)
 PREDEP_H = V3Ast__gen_forward_class_decls.h
-OBJS += $(RAW_OBJS) $(NC_OBJS)
+OBJS += $(RAW_OBJS)
 else
 PREDEP_H =
 OBJS += $(VLCOV_OBJS)
 endif
-
-V3__CONCAT.cpp: $(addsuffix .cpp, $(basename $(RAW_OBJS)))
-	$(PERL) $(srcdir)/../bin/verilator_includer $^ > $@
 
 $(TGT): $(PREDEP_H) $(OBJS)
 	@echo "      Linking $@..."
