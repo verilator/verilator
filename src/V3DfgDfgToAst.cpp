@@ -100,11 +100,13 @@ AstShiftRS* makeNode<AstShiftRS, DfgShiftRS, AstNodeExpr*, AstNodeExpr*>(  //
 template <>
 AstCCast* makeNode<AstCCast, DfgCCast, AstNodeExpr*>(const DfgCCast* vtxp, AstNodeExpr*) {
     vtxp->v3fatalSrc("not implemented");
+    VL_UNREACHABLE;
     return nullptr;  // LCOV_EXCL_LINE
 }
 template <>
 AstAtoN* makeNode<AstAtoN, DfgAtoN, AstNodeExpr*>(const DfgAtoN* vtxp, AstNodeExpr*) {
     vtxp->v3fatalSrc("not implemented");
+    VL_UNREACHABLE;
     return nullptr;  // LCOV_EXCL_LINE
 }
 template <>
@@ -112,12 +114,14 @@ AstCompareNN*
 makeNode<AstCompareNN, DfgCompareNN, AstNodeExpr*, AstNodeExpr*>(const DfgCompareNN* vtxp,
                                                                  AstNodeExpr*, AstNodeExpr*) {
     vtxp->v3fatalSrc("not implemented");
+    VL_UNREACHABLE;
     return nullptr;  // LCOV_EXCL_LINE
 }
 template <>
 AstSliceSel* makeNode<AstSliceSel, DfgSliceSel, AstNodeExpr*, AstNodeExpr*, AstNodeExpr*>(
     const DfgSliceSel* vtxp, AstNodeExpr*, AstNodeExpr*, AstNodeExpr*) {
     vtxp->v3fatalSrc("not implemented");
+    VL_UNREACHABLE;
     return nullptr;  // LCOV_EXCL_LINE
 }
 // LCOV_EXCL_STOP
