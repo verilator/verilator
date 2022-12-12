@@ -41,7 +41,7 @@
 //=============================================================================
 // Static utility functions
 
-static double timescaleToDouble(const char* unitp) {
+static double timescaleToDouble(const char* unitp) VL_PURE {
     char* endp = nullptr;
     double value = std::strtod(unitp, &endp);
     // On error so we allow just "ns" to return 1e-9.
@@ -60,7 +60,7 @@ static double timescaleToDouble(const char* unitp) {
     return value;
 }
 
-static std::string doubleToTimescale(double value) {
+static std::string doubleToTimescale(double value) VL_PURE {
     const char* suffixp = "s";
     // clang-format off
     if      (value >= 1e0)   { suffixp = "s"; value *= 1e0; }

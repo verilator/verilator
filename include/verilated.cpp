@@ -595,7 +595,7 @@ double VL_ITOR_D_W(int lbits, const WDataInP lwp) VL_PURE {
     const double d = (hi + mid + lo) * std::exp2(VL_EDATASIZE * (ms_word - 2));
     return d;
 }
-double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_PURE {
+double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_MT_SAFE {
     if (!VL_SIGN_W(lbits, lwp)) return VL_ITOR_D_W(lbits, lwp);
     uint32_t pos[VL_MULS_MAX_WORDS + 1];  // Fixed size, as MSVC++ doesn't allow [words] here
     VL_NEGATE_W(VL_WORDS_I(lbits), pos, lwp);
@@ -1796,12 +1796,12 @@ std::string VL_TO_STRING_W(int words, const WDataInP obj) {
     return VL_SFORMATF_NX("'h%0x", words * VL_EDATASIZE, obj);
 }
 
-std::string VL_TOLOWER_NN(const std::string& ld) VL_MT_SAFE {
+std::string VL_TOLOWER_NN(const std::string& ld) VL_PURE {
     std::string out = ld;
     for (auto& cr : out) cr = std::tolower(cr);
     return out;
 }
-std::string VL_TOUPPER_NN(const std::string& ld) VL_MT_SAFE {
+std::string VL_TOUPPER_NN(const std::string& ld) VL_PURE {
     std::string out = ld;
     for (auto& cr : out) cr = std::toupper(cr);
     return out;
@@ -2774,12 +2774,12 @@ static struct {
     VoidPCbList s_exitCbs VL_GUARDED_BY(s_exitMutex);
 } VlCbStatic;
 
-static void addCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) {
+static void addCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) VL_MT_UNSAFE {
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
     cbs.remove(pair);  // Just in case it's a duplicate
     cbs.push_back(pair);
 }
-static void removeCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) {
+static void removeCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) VL_MT_UNSAFE {
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
     cbs.remove(pair);
 }

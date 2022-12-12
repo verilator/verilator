@@ -37,24 +37,26 @@
 /// User code may wish to replace this function, to do so, define VL_USER_FINISH.
 /// This code does not have to be thread safe.
 /// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
-extern void vl_finish(const char* filename, int linenum, const char* hier);
+extern void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE;
 
 /// Routine to call for $stop and non-fatal error
 /// User code may wish to replace this function, to do so, define VL_USER_STOP.
 /// This code does not have to be thread safe.
 /// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
-extern void vl_stop(const char* filename, int linenum, const char* hier);
+extern void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE;
 
 /// Routine to call for fatal messages
 /// User code may wish to replace this function, to do so, define VL_USER_FATAL.
 /// This code does not have to be thread safe.
 /// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
-extern void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg);
+extern void vl_fatal(const char* filename, int linenum, const char* hier,
+                     const char* msg) VL_MT_UNSAFE;
 
 /// Routine to call for warning messages
 /// User code may wish to replace this function, to do so, define VL_USER_WARN.
 /// This code does not have to be thread safe.
-extern void vl_warn(const char* filename, int linenum, const char* hier, const char* msg);
+extern void vl_warn(const char* filename, int linenum, const char* hier,
+                    const char* msg) VL_MT_UNSAFE;
 
 //=========================================================================
 // Extern functions -- Slow path
@@ -82,7 +84,7 @@ extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 // EMIT_RULE: VL_RANDOM:  oclean=dirty
 inline IData VL_RANDOM_I() VL_MT_SAFE { return vl_rand64(); }
 inline QData VL_RANDOM_Q() VL_MT_SAFE { return vl_rand64(); }
-extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);
+extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE;
 extern IData VL_RANDOM_SEEDED_II(IData& seedr) VL_MT_SAFE;
 extern IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE;
 inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
@@ -100,52 +102,52 @@ inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
 
 // These are init time only, so slow is fine
 /// Random reset a signal of given width
-extern IData VL_RAND_RESET_I(int obits);
+extern IData VL_RAND_RESET_I(int obits) VL_MT_SAFE;
 /// Random reset a signal of given width
-extern QData VL_RAND_RESET_Q(int obits);
+extern QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE;
 /// Random reset a signal of given width
-extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp);
+extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
 /// Zero reset a signal (slow - else use VL_ZERO_W)
-extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp);
+extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
 
 extern void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
                               const VerilatedContext* contextp) VL_MT_SAFE;
 
 extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP const lwp, WDataInP const rwp,
-                              bool is_modulus);
+                              bool is_modulus) VL_MT_SAFE;
 
-extern IData VL_FGETS_IXI(int obits, void* destp, IData fpi);
+extern IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE;
 
-extern void VL_FFLUSH_I(IData fdi);
-extern IData VL_FSEEK_I(IData fdi, IData offset, IData origin);
-extern IData VL_FTELL_I(IData fdi);
-extern void VL_FCLOSE_I(IData fdi);
+extern void VL_FFLUSH_I(IData fdi) VL_MT_SAFE;
+extern IData VL_FSEEK_I(IData fdi, IData offset, IData origin) VL_MT_SAFE;
+extern IData VL_FTELL_I(IData fdi) VL_MT_SAFE;
+extern void VL_FCLOSE_I(IData fdi) VL_MT_SAFE;
 
 extern IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi,
-                        IData start, IData count);
+                        IData start, IData count) VL_MT_SAFE;
 
-extern void VL_WRITEF(const char* formatp, ...);
-extern void VL_FWRITEF(IData fpi, const char* formatp, ...);
+extern void VL_WRITEF(const char* formatp, ...) VL_MT_SAFE;
+extern void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE;
 
-extern IData VL_FSCANF_IX(IData fpi, const char* formatp, ...);
-extern IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...);
-extern IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...);
-extern IData VL_SSCANF_IWX(int lbits, WDataInP const lwp, const char* formatp, ...);
+extern IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) VL_MT_SAFE;
+extern IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...) VL_MT_SAFE;
+extern IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...) VL_MT_SAFE;
+extern IData VL_SSCANF_IWX(int lbits, WDataInP const lwp, const char* formatp, ...) VL_MT_SAFE;
 
-extern void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...);
-extern void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...);
-extern void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...);
-extern void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...);
-extern void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...);
+extern void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) VL_MT_SAFE;
 
 extern void VL_STACKTRACE() VL_MT_SAFE;
 extern std::string VL_STACKTRACE_N() VL_MT_SAFE;
-extern IData VL_SYSTEM_IW(int lhswords, WDataInP const lhsp);
-extern IData VL_SYSTEM_IQ(QData lhs);
+extern IData VL_SYSTEM_IW(int lhswords, WDataInP const lhsp) VL_MT_SAFE;
+extern IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE;
 inline IData VL_SYSTEM_II(IData lhs) VL_MT_SAFE { return VL_SYSTEM_IQ(lhs); }
 
-extern IData VL_TESTPLUSARGS_I(const std::string& format);
-extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
+extern IData VL_TESTPLUSARGS_I(const std::string& format) VL_MT_SAFE;
+extern const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE;  // PLIish
 
 //=========================================================================
 // Base macros
@@ -214,14 +216,14 @@ static inline double VL_ITOR_D_Q(int, QData lhs) VL_PURE {
     return static_cast<double>(static_cast<uint64_t>(lhs));
 }
 // Return double from lhs (numeric) signed
-double VL_ISTOR_D_W(int lbits, WDataInP const lwp) VL_PURE;
-static inline double VL_ISTOR_D_I(int lbits, IData lhs) VL_PURE {
+double VL_ISTOR_D_W(int lbits, WDataInP const lwp) VL_MT_SAFE;
+static inline double VL_ISTOR_D_I(int lbits, IData lhs) VL_MT_SAFE {
     if (lbits == 32) return static_cast<double>(static_cast<int32_t>(lhs));
     VlWide<VL_WQ_WORDS_E> lwp;
     VL_SET_WI(lwp, lhs);
     return VL_ISTOR_D_W(lbits, lwp);
 }
-static inline double VL_ISTOR_D_Q(int lbits, QData lhs) VL_PURE {
+static inline double VL_ISTOR_D_Q(int lbits, QData lhs) VL_MT_SAFE {
     if (lbits == 64) return static_cast<double>(static_cast<int64_t>(lhs));
     VlWide<VL_WQ_WORDS_E> lwp;
     VL_SET_WQ(lwp, lhs);
@@ -249,7 +251,7 @@ static inline QData VL_EXTENDSIGN_Q(int lbits, QData lhs) VL_PURE {
 }
 
 // Debugging prints
-extern void _vl_debug_print_w(int lbits, WDataInP const iwp);
+extern void _vl_debug_print_w(int lbits, WDataInP const iwp) VL_MT_SAFE;
 
 //=========================================================================
 // Pli macros
@@ -1158,9 +1160,10 @@ static inline QData VL_POW_QQQ(int, int, int rbits, QData lhs, QData rhs) VL_PUR
     return out;
 }
 WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP const lwp,
-                     WDataInP const rwp);
-WDataOutP VL_POW_WWQ(int obits, int, int rbits, WDataOutP owp, WDataInP const lwp, QData rhs);
-QData VL_POW_QQW(int obits, int, int rbits, QData lhs, WDataInP const rwp);
+                     WDataInP const rwp) VL_MT_SAFE;
+WDataOutP VL_POW_WWQ(int obits, int, int rbits, WDataOutP owp, WDataInP const lwp,
+                     QData rhs) VL_MT_SAFE;
+QData VL_POW_QQW(int obits, int, int rbits, QData lhs, WDataInP const rwp) VL_MT_SAFE;
 
 #define VL_POWSS_IIQ(obits, lbits, rbits, lhs, rhs, lsign, rsign) \
     VL_POWSS_QQQ(obits, lbits, rbits, lhs, rhs, lsign, rsign)
@@ -1212,11 +1215,11 @@ static inline QData VL_POWSS_QQQ(int obits, int, int rbits, QData lhs, QData rhs
     return VL_POW_QQQ(obits, rbits, rbits, lhs, rhs);
 }
 WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP const lwp,
-                       WDataInP const rwp, bool lsign, bool rsign);
+                       WDataInP const rwp, bool lsign, bool rsign) VL_MT_SAFE;
 WDataOutP VL_POWSS_WWQ(int obits, int, int rbits, WDataOutP owp, WDataInP const lwp, QData rhs,
-                       bool lsign, bool rsign);
+                       bool lsign, bool rsign) VL_MT_SAFE;
 QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP const rwp, bool lsign,
-                   bool rsign);
+                   bool rsign) VL_MT_SAFE;
 
 //===================================================================
 // Concat/replication
@@ -1943,7 +1946,7 @@ static inline QData VL_RTOIROUND_Q_D(double lhs) VL_PURE {
 static inline IData VL_RTOIROUND_I_D(double lhs) VL_PURE {
     return static_cast<IData>(VL_RTOIROUND_Q_D(lhs));
 }
-static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) VL_PURE {
+static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) VL_MT_SAFE {
     // IEEE format: [63]=sign [62:52]=exp+1023 [51:0]=mantissa
     // This does not need to support subnormals as they are sub-integral
     lhs = VL_ROUND(lhs);
@@ -2153,7 +2156,7 @@ inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool igno
 
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
 
-extern IData VL_FGETS_NI(std::string& dest, IData fpi);
+extern IData VL_FGETS_NI(std::string& dest, IData fpi) VL_MT_SAFE;
 
 //======================================================================
 // Dist functions
@@ -2196,8 +2199,8 @@ inline std::string VL_REPLICATEN_NNI(const std::string& lhs, IData rep) VL_PURE 
 }
 
 inline IData VL_LEN_IN(const std::string& ld) { return ld.length(); }
-extern std::string VL_TOLOWER_NN(const std::string& ld);
-extern std::string VL_TOUPPER_NN(const std::string& ld);
+extern std::string VL_TOLOWER_NN(const std::string& ld) VL_PURE;
+extern std::string VL_TOUPPER_NN(const std::string& ld) VL_PURE;
 
 extern IData VL_FERROR_IN(IData fpi, std::string& outputr) VL_MT_SAFE;
 extern IData VL_FOPEN_NN(const std::string& filename, const std::string& mode) VL_MT_SAFE;

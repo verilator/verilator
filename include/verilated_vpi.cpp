@@ -2290,7 +2290,8 @@ PLI_INT32 vpi_release_handle(vpiHandle object) {
     return 1;
 }
 
-PLI_INT32 vpi_get_vlog_info(p_vpi_vlog_info vlog_info_p) VL_MT_SAFE {
+PLI_INT32 vpi_get_vlog_info(p_vpi_vlog_info vlog_info_p) {
+    // This is VL_MT_SAFE, but not marked as can't indicate it in the standardized header file
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
     const auto argc_argv = Verilated::threadContextp()->impp()->argc_argv();
