@@ -234,7 +234,7 @@
 //=========================================================================
 // C++-2011
 
-#if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK)
+#if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK) || (defined(_MSC_VER) && _MSC_VER >= 1900)
 #else
 # error "Verilator requires a C++11 or newer compiler"
 #endif

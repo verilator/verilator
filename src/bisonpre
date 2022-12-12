@@ -45,7 +45,7 @@ def process():
     if status != 0:
         unlink_outputs()
         sys.exit("bisonpre: %Error: " + Args.yacc + " version " +
-                 Bison_Version + " run failed due to errors\n")
+                 str(Bison_Version) + " run failed due to errors\n")
 
     clean_output(tmp_prefix() + ".output",
                  output_prefix() + ".output", True, False)
