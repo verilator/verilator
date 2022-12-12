@@ -80,10 +80,10 @@ string V3Os::getenvStr(const string& envvar, const string& defaultValue) {
 #if defined(_MSC_VER)
     // Note: MinGW does not offer _dupenv_s
     const char* envvalue = nullptr;
-    _dupenv_s((char **)&envvalue, nullptr, envvar.c_str());
+    _dupenv_s((char**)&envvalue, nullptr, envvar.c_str());
     if (envvalue != nullptr) {
         const std::string result{envvalue};
-        free((void *)envvalue);
+        free((void*)envvalue);
         ret = result;
     } else {
         ret = defaultValue;
