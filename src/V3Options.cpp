@@ -36,7 +36,7 @@
 #endif
 #include <algorithm>
 #include <cctype>
-#if defined(_MSC_VER)
+#ifdef _MSC_VER
 #include <dirent.hpp>
 #else
 #include <dirent.h>
