@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0103,C0114,C0116,R0914,R0912,R0915,eval-used
+# pylint: disable=C0103,C0114,C0116,C0209,R0914,R0912,R0915,eval-used
 ######################################################################
 
 import argparse
@@ -13,7 +13,7 @@ import re
 def profcfunc(filename):
     funcs = {}
 
-    with open(filename) as fh:
+    with open(filename, "r", encoding="utf8") as fh:
 
         for line in fh:
             #                  %time      cumesec   selfsec     calls     {stuff}   name
@@ -67,16 +67,15 @@ def profcfunc(filename):
     groups['design'] = collections.defaultdict(lambda: 0)
     groups['module'] = collections.defaultdict(lambda: 0)
 
-    for func in funcs:
-        pct = funcs[func]['pct']
+    for func, func_item in funcs.items():
+        pct = func_item['pct']
         vfunc = func
 
         funcarg = re.sub(r'^.*\(', '', func)
 
         design = None
-        for vde in verilated_mods:
-            if verilated_mods[vde].match(func) or verilated_mods[vde].match(
-                    funcarg):
+        for vde, vde_item in verilated_mods.items():
+            if vde_item.match(func) or vde_item.match(funcarg):
                 design = vde
                 break
 
@@ -114,12 +113,12 @@ def profcfunc(filename):
             groups['module']['C++'] += pct
 
         if vfunc not in vfuncs:
-            vfuncs[vfunc] = funcs[func]
+            vfuncs[vfunc] = func_item
             vfuncs[vfunc]['design'] = vdesign
         else:
-            vfuncs[vfunc]['pct'] += funcs[func]['pct']
-            vfuncs[vfunc]['calls'] += funcs[func]['calls']
-            vfuncs[vfunc]['sec'] += funcs[func]['sec']
+            vfuncs[vfunc]['pct'] += func_item['pct']
+            vfuncs[vfunc]['calls'] += func_item['calls']
+            vfuncs[vfunc]['sec'] += func_item['sec']
 
     for ftype in ['type', 'design', 'module']:
         missing = 100
@@ -136,9 +135,9 @@ def profcfunc(filename):
         print()
 
     design_width = 1
-    for func in vfuncs:
-        if design_width < len(vfuncs[func]['design']):
-            design_width = len(vfuncs[func]['design'])
+    for func, func_item in vfuncs.items():
+        if design_width < len(func_item['design']):
+            design_width = len(func_item['design'])
 
     print("Verilog code profile:")
     print("   These are split into three categories:")

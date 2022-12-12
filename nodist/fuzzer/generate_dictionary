@@ -45,8 +45,8 @@ def print_lines(a):
 
 def write_file(filename, contents):
     # str->str->void
-    f = open(filename, 'w')
-    f.write(contents)
+    with open(filename, "w", encoding="utf8") as fh:
+        fh.write(contents)
 
 
 def parse_line(s):

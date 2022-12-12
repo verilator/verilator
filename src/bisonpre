@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0103,C0114,C0115,C0116,R0912,R0914,R0915,R1702,W0125
+# pylint: disable=C0103,C0114,C0115,C0116,C0209,R0912,R0914,R0915,R1702,W0125
 ######################################################################
 
 import argparse
@@ -17,7 +17,7 @@ def process():
 
     bison_version_check()
     supports_report = Bison_Version >= 2.3
-    supports_counter_examples = Bison_Version >= 3.8
+    # supports_counter_examples = Bison_Version >= 3.8
 
     clean_input(Args.input, tmp_prefix() + ".y")
 
@@ -88,10 +88,10 @@ def unlink_outputs():
 
 
 def bison_version_check():
-    sp = subprocess.Popen(Args.yacc + " --version",
+    with subprocess.Popen(Args.yacc + " --version",
                           shell=True,
-                          stdout=subprocess.PIPE)
-    out = str(sp.stdout.read())
+                          stdout=subprocess.PIPE) as sp:
+        out = str(sp.stdout.read())
     match = re.search(r'([0-9]+\.[0-9]+)', out)
     if match:
         v = float(match.group(1))
@@ -405,7 +405,7 @@ def clean_input(filename, outname):
             else:
                 lines.append(line)
 
-    with open(outname, "w") as fh:
+    with open(outname, "w", encoding="utf8") as fh:
         for line in lines:
             fh.write(line)
 
