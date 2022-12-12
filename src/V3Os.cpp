@@ -40,7 +40,11 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 #include <cerrno>
 #include <climits>  // PATH_MAX (especially on FreeBSD)
 #include <cstdarg>
+#if defined(_MSC_VER)
+#include <dirent.hpp>
+#else
 #include <dirent.h>
+#endif
 #include <fstream>
 #include <memory>
 
