@@ -231,10 +231,15 @@
         } while (false); \
     } while (false)
 
+#if defined(_MSC_VER) && _MSC_VER >= 1929
+#else
+# error "Verilator requires atleast Visual Studio 2019 version 16.11.2"
+#endif
+
 //=========================================================================
 // C++-2011
 
-#if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK) || (defined(_MSC_VER) && _MSC_VER >= 1900)
+#if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK) || defined(_MSC_VER)
 #else
 # error "Verilator requires a C++11 or newer compiler"
 #endif
