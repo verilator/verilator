@@ -27,6 +27,7 @@ if (MSVC)
     if (NOT WIN_FLEX_BISON)
         message(FATAL_ERROR "Please install https://github.com/lexxmark/winflexbison and set WIN_FLEX_BISON environment variable. Please use install cmake target after a successful build.")
     endif()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20")
 endif()
 
 find_package(BISON)
