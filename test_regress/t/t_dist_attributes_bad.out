@@ -1,60 +1,60 @@
-::group::TestClass::cm_ae_NO_ANNOTATION(VerilatedMutex &)
+%Error: "TestClass::cm_ae_NO_ANNOTATION(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    []                                   TestClass::cm_ae_NO_ANNOTATION(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_safe, pure]                      TestClass::cm_ae_NO_ANNOTATION(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ae_VL_ACQUIRE(VerilatedMutex &)
+
+%Error: "TestClass::cm_ae_VL_ACQUIRE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    [acquire]                            TestClass::cm_ae_VL_ACQUIRE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_safe, pure, acquire]             TestClass::cm_ae_VL_ACQUIRE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ae_VL_ACQUIRE_SHARED(VerilatedMutex &)
+
+%Error: "TestClass::cm_ae_VL_ACQUIRE_SHARED(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    [acquire]                            TestClass::cm_ae_VL_ACQUIRE_SHARED(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_safe, pure, acquire]             TestClass::cm_ae_VL_ACQUIRE_SHARED(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ae_VL_EXCLUDES(VerilatedMutex &)
+
+%Error: "TestClass::cm_ae_VL_EXCLUDES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    [excludes]                           TestClass::cm_ae_VL_EXCLUDES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_safe, pure, excludes]            TestClass::cm_ae_VL_EXCLUDES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ae_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "TestClass::cm_ae_VL_MT_SAFE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    [mt_safe]                            TestClass::cm_ae_VL_MT_SAFE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_safe, pure]                      TestClass::cm_ae_VL_MT_SAFE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ae_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)
+
+%Error: "TestClass::cm_ae_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    [excludes]                           TestClass::cm_ae_VL_MT_SAFE_EXCLUDES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_safe, pure, excludes]            TestClass::cm_ae_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ae_VL_MT_SAFE_POSTINIT(VerilatedMutex &)
+
+%Error: "TestClass::cm_ae_VL_MT_SAFE_POSTINIT(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    [mt_safe_postinit]                   TestClass::cm_ae_VL_MT_SAFE_POSTINIT(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_safe, mt_safe_postinit, pure]    TestClass::cm_ae_VL_MT_SAFE_POSTINIT(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ae_VL_MT_START(VerilatedMutex &)
+
+%Error: "TestClass::cm_ae_VL_MT_START(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    [mt_start]                           TestClass::cm_ae_VL_MT_START(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_start, mt_safe, pure]            TestClass::cm_ae_VL_MT_START(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ae_VL_MT_UNSAFE(VerilatedMutex &)
+
+%Error: "TestClass::cm_ae_VL_MT_UNSAFE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    [mt_unsafe]                          TestClass::cm_ae_VL_MT_UNSAFE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_safe, mt_unsafe, pure]           TestClass::cm_ae_VL_MT_UNSAFE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
+
+%Error: "TestClass::cm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    [mt_unsafe_one]                      TestClass::cm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_safe, mt_unsafe_one, pure]       TestClass::cm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ae_VL_PURE(VerilatedMutex &)
+
+%Error: "TestClass::cm_ae_VL_PURE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    [pure]                               TestClass::cm_ae_VL_PURE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_safe, pure]                      TestClass::cm_ae_VL_PURE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ae_VL_RELEASE(VerilatedMutex &)
+
+%Error: "TestClass::cm_ae_VL_RELEASE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    [release]                            TestClass::cm_ae_VL_RELEASE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_safe, pure, release]             TestClass::cm_ae_VL_RELEASE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ae_VL_RELEASE_SHARED(VerilatedMutex &)
+
+%Error: "TestClass::cm_ae_VL_RELEASE_SHARED(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    [release]                            TestClass::cm_ae_VL_RELEASE_SHARED(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_safe, pure, release]             TestClass::cm_ae_VL_RELEASE_SHARED(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ae_VL_REQUIRES(VerilatedMutex &)
+
+%Error: "TestClass::cm_ae_VL_REQUIRES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:188:    [requires]                           TestClass::cm_ae_VL_REQUIRES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:132:  [mt_safe, pure, requires]            TestClass::cm_ae_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_test_caller_smethod_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "TestClass::cm_test_caller_smethod_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:141:  [mt_safe]                            TestClass::cm_test_caller_smethod_VL_MT_SAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:175:    [mt_unsafe]                            TestClass::cm_au_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:175:    [mt_unsafe_one]                        TestClass::cm_au_VL_MT_UNSAFE_ONE(VerilatedMutex &)
@@ -64,8 +64,8 @@ t/t_dist_attributes_bad.h:188:    [mt_unsafe]                            TestCla
 t/t_dist_attributes_bad.h:188:    [mt_unsafe_one]                        TestClass::cm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:193:    [mt_safe, mt_unsafe, pure]             TestClass::cm_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:193:    [mt_safe, mt_unsafe_one, pure]         TestClass::cm_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_test_caller_smethod_VL_MT_START(VerilatedMutex &)
+
+%Error: "TestClass::cm_test_caller_smethod_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:141:  [mt_start]                           TestClass::cm_test_caller_smethod_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:175:    [mt_unsafe]                            TestClass::cm_au_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:175:    [mt_unsafe_one]                        TestClass::cm_au_VL_MT_UNSAFE_ONE(VerilatedMutex &)
@@ -75,10 +75,9 @@ t/t_dist_attributes_bad.h:188:    [mt_unsafe]                            TestCla
 t/t_dist_attributes_bad.h:188:    [mt_unsafe_one]                        TestClass::cm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:193:    [mt_safe, mt_unsafe, pure]             TestClass::cm_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:193:    [mt_safe, mt_unsafe_one, pure]         TestClass::cm_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_test_caller_smethod_VL_PURE(VerilatedMutex &)
+
+%Error: "TestClass::cm_test_caller_smethod_VL_PURE(VerilatedMutex &)" is pure but calls non-pure function(s)
 t/t_dist_attributes_bad.cpp:141:  [pure]                               TestClass::cm_test_caller_smethod_VL_PURE(VerilatedMutex &)
-t/t_dist_attributes_bad.h:95:     []                                     TestClass::TestClass()
 t/t_dist_attributes_bad.h:175:    []                                     TestClass::cm_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:175:    [acquire]                              TestClass::cm_au_VL_ACQUIRE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:175:    [acquire]                              TestClass::cm_au_VL_ACQUIRE_SHARED(VerilatedMutex &)
@@ -132,8 +131,8 @@ t/t_dist_attributes_bad.h:188:    [mt_unsafe_one]                        TestCla
 t/t_dist_attributes_bad.h:188:    [release]                              TestClass::cm_ae_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:188:    [release]                              TestClass::cm_ae_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.h:188:    [requires]                             TestClass::cm_ae_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_test_caller_smethod_hdr_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "TestClass::cm_test_caller_smethod_hdr_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.h:196:    [mt_safe]                            TestClass::cm_test_caller_smethod_hdr_VL_MT_SAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:175:    [mt_unsafe]                            TestClass::cm_au_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:175:    [mt_unsafe_one]                        TestClass::cm_au_VL_MT_UNSAFE_ONE(VerilatedMutex &)
@@ -143,8 +142,8 @@ t/t_dist_attributes_bad.h:188:    [mt_unsafe]                            TestCla
 t/t_dist_attributes_bad.h:188:    [mt_unsafe_one]                        TestClass::cm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:193:    [mt_safe, mt_unsafe, pure]             TestClass::cm_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:193:    [mt_safe, mt_unsafe_one, pure]         TestClass::cm_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)
+
+%Error: "TestClass::cm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.h:196:    [mt_start]                           TestClass::cm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:175:    [mt_unsafe]                            TestClass::cm_au_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:175:    [mt_unsafe_one]                        TestClass::cm_au_VL_MT_UNSAFE_ONE(VerilatedMutex &)
@@ -154,10 +153,9 @@ t/t_dist_attributes_bad.h:188:    [mt_unsafe]                            TestCla
 t/t_dist_attributes_bad.h:188:    [mt_unsafe_one]                        TestClass::cm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:193:    [mt_safe, mt_unsafe, pure]             TestClass::cm_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:193:    [mt_safe, mt_unsafe_one, pure]         TestClass::cm_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_test_caller_smethod_hdr_VL_PURE(VerilatedMutex &)
+
+%Error: "TestClass::cm_test_caller_smethod_hdr_VL_PURE(VerilatedMutex &)" is pure but calls non-pure function(s)
 t/t_dist_attributes_bad.h:196:    [pure]                               TestClass::cm_test_caller_smethod_hdr_VL_PURE(VerilatedMutex &)
-t/t_dist_attributes_bad.h:95:     []                                     TestClass::TestClass()
 t/t_dist_attributes_bad.h:175:    []                                     TestClass::cm_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:175:    [acquire]                              TestClass::cm_au_VL_ACQUIRE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:175:    [acquire]                              TestClass::cm_au_VL_ACQUIRE_SHARED(VerilatedMutex &)
@@ -211,77 +209,76 @@ t/t_dist_attributes_bad.h:188:    [mt_unsafe_one]                        TestCla
 t/t_dist_attributes_bad.h:188:    [release]                              TestClass::cm_ae_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:188:    [release]                              TestClass::cm_ae_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.h:188:    [requires]                             TestClass::cm_ae_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ua_VL_ACQUIRE(VerilatedMutex &)
+
+%Error: "TestClass::cm_ua_VL_ACQUIRE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:179:    []                                   TestClass::cm_ua_VL_ACQUIRE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:123:  [acquire]                            TestClass::cm_ua_VL_ACQUIRE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ua_VL_ACQUIRE_SHARED(VerilatedMutex &)
+
+%Error: "TestClass::cm_ua_VL_ACQUIRE_SHARED(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:179:    []                                   TestClass::cm_ua_VL_ACQUIRE_SHARED(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:123:  [acquire]                            TestClass::cm_ua_VL_ACQUIRE_SHARED(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ua_VL_EXCLUDES(VerilatedMutex &)
+
+%Error: "TestClass::cm_ua_VL_EXCLUDES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:179:    []                                   TestClass::cm_ua_VL_EXCLUDES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:123:  [excludes]                           TestClass::cm_ua_VL_EXCLUDES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ua_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "TestClass::cm_ua_VL_MT_SAFE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:179:    []                                   TestClass::cm_ua_VL_MT_SAFE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:123:  [mt_safe]                            TestClass::cm_ua_VL_MT_SAFE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ua_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)
+
+%Error: "TestClass::cm_ua_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:179:    []                                   TestClass::cm_ua_VL_MT_SAFE_EXCLUDES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:123:  [excludes]                           TestClass::cm_ua_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ua_VL_MT_SAFE_POSTINIT(VerilatedMutex &)
+
+%Error: "TestClass::cm_ua_VL_MT_SAFE_POSTINIT(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:179:    []                                   TestClass::cm_ua_VL_MT_SAFE_POSTINIT(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:123:  [mt_safe_postinit]                   TestClass::cm_ua_VL_MT_SAFE_POSTINIT(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ua_VL_MT_START(VerilatedMutex &)
+
+%Error: "TestClass::cm_ua_VL_MT_START(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:179:    []                                   TestClass::cm_ua_VL_MT_START(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:123:  [mt_start]                           TestClass::cm_ua_VL_MT_START(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ua_VL_MT_UNSAFE(VerilatedMutex &)
+
+%Error: "TestClass::cm_ua_VL_MT_UNSAFE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:179:    []                                   TestClass::cm_ua_VL_MT_UNSAFE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:123:  [mt_unsafe]                          TestClass::cm_ua_VL_MT_UNSAFE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ua_VL_MT_UNSAFE_ONE(VerilatedMutex &)
+
+%Error: "TestClass::cm_ua_VL_MT_UNSAFE_ONE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:179:    []                                   TestClass::cm_ua_VL_MT_UNSAFE_ONE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:123:  [mt_unsafe_one]                      TestClass::cm_ua_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ua_VL_PURE(VerilatedMutex &)
+
+%Error: "TestClass::cm_ua_VL_PURE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:179:    []                                   TestClass::cm_ua_VL_PURE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:123:  [pure]                               TestClass::cm_ua_VL_PURE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ua_VL_RELEASE(VerilatedMutex &)
+
+%Error: "TestClass::cm_ua_VL_RELEASE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:179:    []                                   TestClass::cm_ua_VL_RELEASE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:123:  [release]                            TestClass::cm_ua_VL_RELEASE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ua_VL_RELEASE_SHARED(VerilatedMutex &)
+
+%Error: "TestClass::cm_ua_VL_RELEASE_SHARED(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:179:    []                                   TestClass::cm_ua_VL_RELEASE_SHARED(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:123:  [release]                            TestClass::cm_ua_VL_RELEASE_SHARED(VerilatedMutex &)
-::endgroup::
-::group::TestClass::cm_ua_VL_REQUIRES(VerilatedMutex &)
+
+%Error: "TestClass::cm_ua_VL_REQUIRES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:179:    []                                   TestClass::cm_ua_VL_REQUIRES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:123:  [requires]                           TestClass::cm_ua_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::guarded_by_test_fail()
+
+%Error: "TestClass::guarded_by_test_fail()" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.h:250:    [mt_safe]                            TestClass::guarded_by_test_fail()
 t/t_dist_attributes_bad.h:90:     []                                     GuardMe::safe_if_guarded_or_local()
 t/t_dist_attributes_bad.h:92:     []                                     GuardMe::operator int()
-::endgroup::
-::group::TestClass::icm_test_caller_smethod_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "TestClass::icm_test_caller_smethod_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:161:  [mt_safe]                            TestClass::icm_test_caller_smethod_VL_MT_SAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [mt_unsafe]                            TestClass::icm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [mt_unsafe_one]                        TestClass::icm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::icm_test_caller_smethod_VL_MT_START(VerilatedMutex &)
+
+%Error: "TestClass::icm_test_caller_smethod_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:161:  [mt_start]                           TestClass::icm_test_caller_smethod_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [mt_unsafe]                            TestClass::icm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [mt_unsafe_one]                        TestClass::icm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::icm_test_caller_smethod_VL_PURE(VerilatedMutex &)
+
+%Error: "TestClass::icm_test_caller_smethod_VL_PURE(VerilatedMutex &)" is pure but calls non-pure function(s)
 t/t_dist_attributes_bad.cpp:161:  [pure]                               TestClass::icm_test_caller_smethod_VL_PURE(VerilatedMutex &)
-t/t_dist_attributes_bad.h:95:     []                                     TestClass::TestClass()
 t/t_dist_attributes_bad.h:219:    []                                     TestClass::icm_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [acquire]                              TestClass::icm_VL_ACQUIRE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [acquire]                              TestClass::icm_VL_ACQUIRE_SHARED(VerilatedMutex &)
@@ -295,20 +292,19 @@ t/t_dist_attributes_bad.h:219:    [mt_unsafe_one]                        TestCla
 t/t_dist_attributes_bad.h:219:    [release]                              TestClass::icm_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [release]                              TestClass::icm_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [requires]                             TestClass::icm_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::icm_test_caller_smethod_hdr_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "TestClass::icm_test_caller_smethod_hdr_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.h:222:    [mt_safe]                            TestClass::icm_test_caller_smethod_hdr_VL_MT_SAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [mt_unsafe]                            TestClass::icm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [mt_unsafe_one]                        TestClass::icm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::icm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)
+
+%Error: "TestClass::icm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.h:222:    [mt_start]                           TestClass::icm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [mt_unsafe]                            TestClass::icm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [mt_unsafe_one]                        TestClass::icm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::icm_test_caller_smethod_hdr_VL_PURE(VerilatedMutex &)
+
+%Error: "TestClass::icm_test_caller_smethod_hdr_VL_PURE(VerilatedMutex &)" is pure but calls non-pure function(s)
 t/t_dist_attributes_bad.h:222:    [pure]                               TestClass::icm_test_caller_smethod_hdr_VL_PURE(VerilatedMutex &)
-t/t_dist_attributes_bad.h:95:     []                                     TestClass::TestClass()
 t/t_dist_attributes_bad.h:219:    []                                     TestClass::icm_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [acquire]                              TestClass::icm_VL_ACQUIRE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [acquire]                              TestClass::icm_VL_ACQUIRE_SHARED(VerilatedMutex &)
@@ -322,24 +318,23 @@ t/t_dist_attributes_bad.h:219:    [mt_unsafe_one]                        TestCla
 t/t_dist_attributes_bad.h:219:    [release]                              TestClass::icm_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [release]                              TestClass::icm_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.h:219:    [requires]                             TestClass::icm_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::iscm_test_caller_smethod_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "TestClass::iscm_test_caller_smethod_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:105:  [mt_safe]                            TestClass::iscm_test_caller_smethod_VL_MT_SAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    []                                     TestClass::iscm_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [mt_start]                             TestClass::iscm_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [mt_unsafe]                            TestClass::iscm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [mt_unsafe_one]                        TestClass::iscm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::iscm_test_caller_smethod_VL_MT_START(VerilatedMutex &)
+
+%Error: "TestClass::iscm_test_caller_smethod_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:105:  [mt_start]                           TestClass::iscm_test_caller_smethod_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    []                                     TestClass::iscm_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [mt_start]                             TestClass::iscm_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [mt_unsafe]                            TestClass::iscm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [mt_unsafe_one]                        TestClass::iscm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::iscm_test_caller_smethod_VL_PURE(VerilatedMutex &)
+
+%Error: "TestClass::iscm_test_caller_smethod_VL_PURE(VerilatedMutex &)" is pure but calls non-pure function(s)
 t/t_dist_attributes_bad.cpp:105:  [pure]                               TestClass::iscm_test_caller_smethod_VL_PURE(VerilatedMutex &)
-t/t_dist_attributes_bad.h:95:     []                                     TestClass::TestClass()
 t/t_dist_attributes_bad.h:154:    []                                     TestClass::iscm_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [acquire]                              TestClass::iscm_VL_ACQUIRE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [acquire]                              TestClass::iscm_VL_ACQUIRE_SHARED(VerilatedMutex &)
@@ -353,24 +348,23 @@ t/t_dist_attributes_bad.h:154:    [mt_unsafe_one]                        TestCla
 t/t_dist_attributes_bad.h:154:    [release]                              TestClass::iscm_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [release]                              TestClass::iscm_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [requires]                             TestClass::iscm_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::iscm_test_caller_smethod_hdr_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "TestClass::iscm_test_caller_smethod_hdr_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.h:157:    [mt_safe]                            TestClass::iscm_test_caller_smethod_hdr_VL_MT_SAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    []                                     TestClass::iscm_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [mt_start]                             TestClass::iscm_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [mt_unsafe]                            TestClass::iscm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [mt_unsafe_one]                        TestClass::iscm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::iscm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)
+
+%Error: "TestClass::iscm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.h:157:    [mt_start]                           TestClass::iscm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    []                                     TestClass::iscm_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [mt_start]                             TestClass::iscm_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [mt_unsafe]                            TestClass::iscm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [mt_unsafe_one]                        TestClass::iscm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::iscm_test_caller_smethod_hdr_VL_PURE(VerilatedMutex &)
+
+%Error: "TestClass::iscm_test_caller_smethod_hdr_VL_PURE(VerilatedMutex &)" is pure but calls non-pure function(s)
 t/t_dist_attributes_bad.h:157:    [pure]                               TestClass::iscm_test_caller_smethod_hdr_VL_PURE(VerilatedMutex &)
-t/t_dist_attributes_bad.h:95:     []                                     TestClass::TestClass()
 t/t_dist_attributes_bad.h:154:    []                                     TestClass::iscm_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [acquire]                              TestClass::iscm_VL_ACQUIRE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [acquire]                              TestClass::iscm_VL_ACQUIRE_SHARED(VerilatedMutex &)
@@ -384,64 +378,64 @@ t/t_dist_attributes_bad.h:154:    [mt_unsafe_one]                        TestCla
 t/t_dist_attributes_bad.h:154:    [release]                              TestClass::iscm_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [release]                              TestClass::iscm_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.h:154:    [requires]                             TestClass::iscm_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_NO_ANNOTATION(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_NO_ANNOTATION(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    []                                   TestClass::scm_ae_NO_ANNOTATION(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_safe, pure]                      TestClass::scm_ae_NO_ANNOTATION(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_VL_ACQUIRE(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_VL_ACQUIRE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    [acquire]                            TestClass::scm_ae_VL_ACQUIRE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_safe, pure, acquire]             TestClass::scm_ae_VL_ACQUIRE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_VL_ACQUIRE_SHARED(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_VL_ACQUIRE_SHARED(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    [acquire]                            TestClass::scm_ae_VL_ACQUIRE_SHARED(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_safe, pure, acquire]             TestClass::scm_ae_VL_ACQUIRE_SHARED(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_VL_EXCLUDES(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_VL_EXCLUDES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    [excludes]                           TestClass::scm_ae_VL_EXCLUDES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_safe, pure, excludes]            TestClass::scm_ae_VL_EXCLUDES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_VL_MT_SAFE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    [mt_safe]                            TestClass::scm_ae_VL_MT_SAFE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_safe, pure]                      TestClass::scm_ae_VL_MT_SAFE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    [excludes]                           TestClass::scm_ae_VL_MT_SAFE_EXCLUDES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_safe, pure, excludes]            TestClass::scm_ae_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_VL_MT_SAFE_POSTINIT(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_VL_MT_SAFE_POSTINIT(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    [mt_safe_postinit]                   TestClass::scm_ae_VL_MT_SAFE_POSTINIT(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_safe, mt_safe_postinit, pure]    TestClass::scm_ae_VL_MT_SAFE_POSTINIT(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_VL_MT_START(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_VL_MT_START(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    [mt_start]                           TestClass::scm_ae_VL_MT_START(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_start, mt_safe, pure]            TestClass::scm_ae_VL_MT_START(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_VL_MT_UNSAFE(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_VL_MT_UNSAFE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    [mt_unsafe]                          TestClass::scm_ae_VL_MT_UNSAFE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_safe, mt_unsafe, pure]           TestClass::scm_ae_VL_MT_UNSAFE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    [mt_unsafe_one]                      TestClass::scm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_safe, mt_unsafe_one, pure]       TestClass::scm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_VL_PURE(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_VL_PURE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    [pure]                               TestClass::scm_ae_VL_PURE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_safe, pure]                      TestClass::scm_ae_VL_PURE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_VL_RELEASE(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_VL_RELEASE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    [release]                            TestClass::scm_ae_VL_RELEASE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_safe, pure, release]             TestClass::scm_ae_VL_RELEASE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_VL_RELEASE_SHARED(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_VL_RELEASE_SHARED(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    [release]                            TestClass::scm_ae_VL_RELEASE_SHARED(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_safe, pure, release]             TestClass::scm_ae_VL_RELEASE_SHARED(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ae_VL_REQUIRES(VerilatedMutex &)
+
+%Error: "TestClass::scm_ae_VL_REQUIRES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:117:    [requires]                           TestClass::scm_ae_VL_REQUIRES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:70:   [mt_safe, pure, requires]            TestClass::scm_ae_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_test_caller_smethod_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "TestClass::scm_test_caller_smethod_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:79:   [mt_safe]                            TestClass::scm_test_caller_smethod_VL_MT_SAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:104:    []                                     TestClass::scm_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:104:    [mt_start]                             TestClass::scm_au_VL_MT_START(VerilatedMutex &)
@@ -471,8 +465,8 @@ t/t_dist_attributes_bad.h:117:    [mt_unsafe]                            TestCla
 t/t_dist_attributes_bad.h:117:    [mt_unsafe_one]                        TestClass::scm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:122:    [mt_safe, mt_unsafe, pure]             TestClass::scm_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:122:    [mt_safe, mt_unsafe_one, pure]         TestClass::scm_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_test_caller_smethod_VL_MT_START(VerilatedMutex &)
+
+%Error: "TestClass::scm_test_caller_smethod_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:79:   [mt_start]                           TestClass::scm_test_caller_smethod_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:104:    []                                     TestClass::scm_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:104:    [mt_start]                             TestClass::scm_au_VL_MT_START(VerilatedMutex &)
@@ -502,10 +496,9 @@ t/t_dist_attributes_bad.h:117:    [mt_unsafe]                            TestCla
 t/t_dist_attributes_bad.h:117:    [mt_unsafe_one]                        TestClass::scm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:122:    [mt_safe, mt_unsafe, pure]             TestClass::scm_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:122:    [mt_safe, mt_unsafe_one, pure]         TestClass::scm_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_test_caller_smethod_VL_PURE(VerilatedMutex &)
+
+%Error: "TestClass::scm_test_caller_smethod_VL_PURE(VerilatedMutex &)" is pure but calls non-pure function(s)
 t/t_dist_attributes_bad.cpp:79:   [pure]                               TestClass::scm_test_caller_smethod_VL_PURE(VerilatedMutex &)
-t/t_dist_attributes_bad.h:95:     []                                     TestClass::TestClass()
 t/t_dist_attributes_bad.h:104:    []                                     TestClass::scm_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:104:    [acquire]                              TestClass::scm_au_VL_ACQUIRE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:104:    [acquire]                              TestClass::scm_au_VL_ACQUIRE_SHARED(VerilatedMutex &)
@@ -559,8 +552,8 @@ t/t_dist_attributes_bad.h:117:    [mt_unsafe_one]                        TestCla
 t/t_dist_attributes_bad.h:117:    [release]                              TestClass::scm_ae_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:117:    [release]                              TestClass::scm_ae_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.h:117:    [requires]                             TestClass::scm_ae_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_test_caller_smethod_hdr_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "TestClass::scm_test_caller_smethod_hdr_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.h:125:    [mt_safe]                            TestClass::scm_test_caller_smethod_hdr_VL_MT_SAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:104:    []                                     TestClass::scm_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:104:    [mt_start]                             TestClass::scm_au_VL_MT_START(VerilatedMutex &)
@@ -590,8 +583,8 @@ t/t_dist_attributes_bad.h:117:    [mt_unsafe]                            TestCla
 t/t_dist_attributes_bad.h:117:    [mt_unsafe_one]                        TestClass::scm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:122:    [mt_safe, mt_unsafe, pure]             TestClass::scm_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:122:    [mt_safe, mt_unsafe_one, pure]         TestClass::scm_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)
+
+%Error: "TestClass::scm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.h:125:    [mt_start]                           TestClass::scm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:104:    []                                     TestClass::scm_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:104:    [mt_start]                             TestClass::scm_au_VL_MT_START(VerilatedMutex &)
@@ -621,10 +614,9 @@ t/t_dist_attributes_bad.h:117:    [mt_unsafe]                            TestCla
 t/t_dist_attributes_bad.h:117:    [mt_unsafe_one]                        TestClass::scm_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:122:    [mt_safe, mt_unsafe, pure]             TestClass::scm_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:122:    [mt_safe, mt_unsafe_one, pure]         TestClass::scm_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_test_caller_smethod_hdr_VL_PURE(VerilatedMutex &)
+
+%Error: "TestClass::scm_test_caller_smethod_hdr_VL_PURE(VerilatedMutex &)" is pure but calls non-pure function(s)
 t/t_dist_attributes_bad.h:125:    [pure]                               TestClass::scm_test_caller_smethod_hdr_VL_PURE(VerilatedMutex &)
-t/t_dist_attributes_bad.h:95:     []                                     TestClass::TestClass()
 t/t_dist_attributes_bad.h:104:    []                                     TestClass::scm_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:104:    [acquire]                              TestClass::scm_au_VL_ACQUIRE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:104:    [acquire]                              TestClass::scm_au_VL_ACQUIRE_SHARED(VerilatedMutex &)
@@ -678,74 +670,74 @@ t/t_dist_attributes_bad.h:117:    [mt_unsafe_one]                        TestCla
 t/t_dist_attributes_bad.h:117:    [release]                              TestClass::scm_ae_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:117:    [release]                              TestClass::scm_ae_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.h:117:    [requires]                             TestClass::scm_ae_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ua_VL_ACQUIRE(VerilatedMutex &)
+
+%Error: "TestClass::scm_ua_VL_ACQUIRE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:108:    []                                   TestClass::scm_ua_VL_ACQUIRE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:61:   [acquire]                            TestClass::scm_ua_VL_ACQUIRE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ua_VL_ACQUIRE_SHARED(VerilatedMutex &)
+
+%Error: "TestClass::scm_ua_VL_ACQUIRE_SHARED(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:108:    []                                   TestClass::scm_ua_VL_ACQUIRE_SHARED(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:61:   [acquire]                            TestClass::scm_ua_VL_ACQUIRE_SHARED(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ua_VL_EXCLUDES(VerilatedMutex &)
+
+%Error: "TestClass::scm_ua_VL_EXCLUDES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:108:    []                                   TestClass::scm_ua_VL_EXCLUDES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:61:   [excludes]                           TestClass::scm_ua_VL_EXCLUDES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ua_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "TestClass::scm_ua_VL_MT_SAFE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:108:    []                                   TestClass::scm_ua_VL_MT_SAFE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:61:   [mt_safe]                            TestClass::scm_ua_VL_MT_SAFE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ua_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)
+
+%Error: "TestClass::scm_ua_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:108:    []                                   TestClass::scm_ua_VL_MT_SAFE_EXCLUDES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:61:   [excludes]                           TestClass::scm_ua_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ua_VL_MT_SAFE_POSTINIT(VerilatedMutex &)
+
+%Error: "TestClass::scm_ua_VL_MT_SAFE_POSTINIT(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:108:    []                                   TestClass::scm_ua_VL_MT_SAFE_POSTINIT(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:61:   [mt_safe_postinit]                   TestClass::scm_ua_VL_MT_SAFE_POSTINIT(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ua_VL_MT_START(VerilatedMutex &)
+
+%Error: "TestClass::scm_ua_VL_MT_START(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:108:    []                                   TestClass::scm_ua_VL_MT_START(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:61:   [mt_start]                           TestClass::scm_ua_VL_MT_START(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ua_VL_MT_UNSAFE(VerilatedMutex &)
+
+%Error: "TestClass::scm_ua_VL_MT_UNSAFE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:108:    []                                   TestClass::scm_ua_VL_MT_UNSAFE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:61:   [mt_unsafe]                          TestClass::scm_ua_VL_MT_UNSAFE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ua_VL_MT_UNSAFE_ONE(VerilatedMutex &)
+
+%Error: "TestClass::scm_ua_VL_MT_UNSAFE_ONE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:108:    []                                   TestClass::scm_ua_VL_MT_UNSAFE_ONE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:61:   [mt_unsafe_one]                      TestClass::scm_ua_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ua_VL_PURE(VerilatedMutex &)
+
+%Error: "TestClass::scm_ua_VL_PURE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:108:    []                                   TestClass::scm_ua_VL_PURE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:61:   [pure]                               TestClass::scm_ua_VL_PURE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ua_VL_RELEASE(VerilatedMutex &)
+
+%Error: "TestClass::scm_ua_VL_RELEASE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:108:    []                                   TestClass::scm_ua_VL_RELEASE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:61:   [release]                            TestClass::scm_ua_VL_RELEASE(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ua_VL_RELEASE_SHARED(VerilatedMutex &)
+
+%Error: "TestClass::scm_ua_VL_RELEASE_SHARED(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:108:    []                                   TestClass::scm_ua_VL_RELEASE_SHARED(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:61:   [release]                            TestClass::scm_ua_VL_RELEASE_SHARED(VerilatedMutex &)
-::endgroup::
-::group::TestClass::scm_ua_VL_REQUIRES(VerilatedMutex &)
+
+%Error: "TestClass::scm_ua_VL_REQUIRES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:108:    []                                   TestClass::scm_ua_VL_REQUIRES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:61:   [requires]                           TestClass::scm_ua_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::ifh_test_caller_func_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "ifh_test_caller_func_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:39:   [mt_safe]                            ifh_test_caller_func_VL_MT_SAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     []                                     ifh_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_start]                             ifh_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_unsafe]                            ifh_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_unsafe_one]                        ifh_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::ifh_test_caller_func_VL_MT_START(VerilatedMutex &)
+
+%Error: "ifh_test_caller_func_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:39:   [mt_start]                           ifh_test_caller_func_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     []                                     ifh_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_start]                             ifh_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_unsafe]                            ifh_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_unsafe_one]                        ifh_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::ifh_test_caller_func_VL_PURE(VerilatedMutex &)
+
+%Error: "ifh_test_caller_func_VL_PURE(VerilatedMutex &)" is pure but calls non-pure function(s)
 t/t_dist_attributes_bad.cpp:39:   [pure]                               ifh_test_caller_func_VL_PURE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     []                                     ifh_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [acquire]                              ifh_VL_ACQUIRE(VerilatedMutex &)
@@ -760,22 +752,22 @@ t/t_dist_attributes_bad.h:80:     [mt_unsafe_one]                        ifh_VL_
 t/t_dist_attributes_bad.h:80:     [release]                              ifh_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [release]                              ifh_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [requires]                             ifh_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::ifh_test_caller_func_hdr_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "ifh_test_caller_func_hdr_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.h:83:     [mt_safe]                            ifh_test_caller_func_hdr_VL_MT_SAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     []                                     ifh_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_start]                             ifh_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_unsafe]                            ifh_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_unsafe_one]                        ifh_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::ifh_test_caller_func_hdr_VL_MT_START(VerilatedMutex &)
+
+%Error: "ifh_test_caller_func_hdr_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.h:83:     [mt_start]                           ifh_test_caller_func_hdr_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     []                                     ifh_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_start]                             ifh_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_unsafe]                            ifh_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_unsafe_one]                        ifh_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::ifh_test_caller_func_hdr_VL_PURE(VerilatedMutex &)
+
+%Error: "ifh_test_caller_func_hdr_VL_PURE(VerilatedMutex &)" is pure but calls non-pure function(s)
 t/t_dist_attributes_bad.h:83:     [pure]                               ifh_test_caller_func_hdr_VL_PURE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     []                                     ifh_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [acquire]                              ifh_VL_ACQUIRE(VerilatedMutex &)
@@ -790,64 +782,64 @@ t/t_dist_attributes_bad.h:80:     [mt_unsafe_one]                        ifh_VL_
 t/t_dist_attributes_bad.h:80:     [release]                              ifh_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [release]                              ifh_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [requires]                             ifh_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_NO_ANNOTATION(VerilatedMutex &)
+
+%Error: "nsf_ae_NO_ANNOTATION(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     []                                   nsf_ae_NO_ANNOTATION(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_safe, pure]                      nsf_ae_NO_ANNOTATION(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_VL_ACQUIRE(VerilatedMutex &)
+
+%Error: "nsf_ae_VL_ACQUIRE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     [acquire]                            nsf_ae_VL_ACQUIRE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_safe, pure, acquire]             nsf_ae_VL_ACQUIRE(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_VL_ACQUIRE_SHARED(VerilatedMutex &)
+
+%Error: "nsf_ae_VL_ACQUIRE_SHARED(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     [acquire]                            nsf_ae_VL_ACQUIRE_SHARED(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_safe, pure, acquire]             nsf_ae_VL_ACQUIRE_SHARED(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_VL_EXCLUDES(VerilatedMutex &)
+
+%Error: "nsf_ae_VL_EXCLUDES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     [excludes]                           nsf_ae_VL_EXCLUDES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_safe, pure, excludes]            nsf_ae_VL_EXCLUDES(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "nsf_ae_VL_MT_SAFE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     [mt_safe]                            nsf_ae_VL_MT_SAFE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_safe, pure]                      nsf_ae_VL_MT_SAFE(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)
+
+%Error: "nsf_ae_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     [excludes]                           nsf_ae_VL_MT_SAFE_EXCLUDES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_safe, pure, excludes]            nsf_ae_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_VL_MT_SAFE_POSTINIT(VerilatedMutex &)
+
+%Error: "nsf_ae_VL_MT_SAFE_POSTINIT(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     [mt_safe_postinit]                   nsf_ae_VL_MT_SAFE_POSTINIT(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_safe, mt_safe_postinit, pure]    nsf_ae_VL_MT_SAFE_POSTINIT(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_VL_MT_START(VerilatedMutex &)
+
+%Error: "nsf_ae_VL_MT_START(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     [mt_start]                           nsf_ae_VL_MT_START(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_start, mt_safe, pure]            nsf_ae_VL_MT_START(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_VL_MT_UNSAFE(VerilatedMutex &)
+
+%Error: "nsf_ae_VL_MT_UNSAFE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     [mt_unsafe]                          nsf_ae_VL_MT_UNSAFE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_safe, mt_unsafe, pure]           nsf_ae_VL_MT_UNSAFE(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
+
+%Error: "nsf_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     [mt_unsafe_one]                      nsf_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_safe, mt_unsafe_one, pure]       nsf_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_VL_PURE(VerilatedMutex &)
+
+%Error: "nsf_ae_VL_PURE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     [pure]                               nsf_ae_VL_PURE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_safe, pure]                      nsf_ae_VL_PURE(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_VL_RELEASE(VerilatedMutex &)
+
+%Error: "nsf_ae_VL_RELEASE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     [release]                            nsf_ae_VL_RELEASE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_safe, pure, release]             nsf_ae_VL_RELEASE(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_VL_RELEASE_SHARED(VerilatedMutex &)
+
+%Error: "nsf_ae_VL_RELEASE_SHARED(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     [release]                            nsf_ae_VL_RELEASE_SHARED(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_safe, pure, release]             nsf_ae_VL_RELEASE_SHARED(VerilatedMutex &)
-::endgroup::
-::group::nsf_ae_VL_REQUIRES(VerilatedMutex &)
+
+%Error: "nsf_ae_VL_REQUIRES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:61:     [requires]                           nsf_ae_VL_REQUIRES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:20:   [mt_safe, pure, requires]            nsf_ae_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::nsf_test_caller_func_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "nsf_test_caller_func_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:28:   [mt_safe]                            nsf_test_caller_func_VL_MT_SAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:48:     []                                     nsf_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:48:     [mt_start]                             nsf_au_VL_MT_START(VerilatedMutex &)
@@ -877,8 +869,8 @@ t/t_dist_attributes_bad.h:61:     [mt_unsafe]                            nsf_ae_
 t/t_dist_attributes_bad.h:61:     [mt_unsafe_one]                        nsf_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:66:     [mt_safe, mt_unsafe, pure]             nsf_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:66:     [mt_safe, mt_unsafe_one, pure]         nsf_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::nsf_test_caller_func_VL_MT_START(VerilatedMutex &)
+
+%Error: "nsf_test_caller_func_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:28:   [mt_start]                           nsf_test_caller_func_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:48:     []                                     nsf_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:48:     [mt_start]                             nsf_au_VL_MT_START(VerilatedMutex &)
@@ -908,8 +900,8 @@ t/t_dist_attributes_bad.h:61:     [mt_unsafe]                            nsf_ae_
 t/t_dist_attributes_bad.h:61:     [mt_unsafe_one]                        nsf_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:66:     [mt_safe, mt_unsafe, pure]             nsf_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:66:     [mt_safe, mt_unsafe_one, pure]         nsf_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::nsf_test_caller_func_VL_PURE(VerilatedMutex &)
+
+%Error: "nsf_test_caller_func_VL_PURE(VerilatedMutex &)" is pure but calls non-pure function(s)
 t/t_dist_attributes_bad.cpp:28:   [pure]                               nsf_test_caller_func_VL_PURE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:48:     []                                     nsf_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:48:     [acquire]                              nsf_au_VL_ACQUIRE(VerilatedMutex &)
@@ -964,8 +956,8 @@ t/t_dist_attributes_bad.h:61:     [mt_unsafe_one]                        nsf_ae_
 t/t_dist_attributes_bad.h:61:     [release]                              nsf_ae_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:61:     [release]                              nsf_ae_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.h:61:     [requires]                             nsf_ae_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::nsf_test_caller_func_hdr_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "nsf_test_caller_func_hdr_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.h:69:     [mt_safe]                            nsf_test_caller_func_hdr_VL_MT_SAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:48:     []                                     nsf_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:48:     [mt_start]                             nsf_au_VL_MT_START(VerilatedMutex &)
@@ -995,8 +987,8 @@ t/t_dist_attributes_bad.h:61:     [mt_unsafe]                            nsf_ae_
 t/t_dist_attributes_bad.h:61:     [mt_unsafe_one]                        nsf_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:66:     [mt_safe, mt_unsafe, pure]             nsf_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:66:     [mt_safe, mt_unsafe_one, pure]         nsf_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::nsf_test_caller_func_hdr_VL_MT_START(VerilatedMutex &)
+
+%Error: "nsf_test_caller_func_hdr_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.h:69:     [mt_start]                           nsf_test_caller_func_hdr_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:48:     []                                     nsf_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:48:     [mt_start]                             nsf_au_VL_MT_START(VerilatedMutex &)
@@ -1026,8 +1018,8 @@ t/t_dist_attributes_bad.h:61:     [mt_unsafe]                            nsf_ae_
 t/t_dist_attributes_bad.h:61:     [mt_unsafe_one]                        nsf_ae_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:66:     [mt_safe, mt_unsafe, pure]             nsf_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:66:     [mt_safe, mt_unsafe_one, pure]         nsf_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::nsf_test_caller_func_hdr_VL_PURE(VerilatedMutex &)
+
+%Error: "nsf_test_caller_func_hdr_VL_PURE(VerilatedMutex &)" is pure but calls non-pure function(s)
 t/t_dist_attributes_bad.h:69:     [pure]                               nsf_test_caller_func_hdr_VL_PURE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:48:     []                                     nsf_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:48:     [acquire]                              nsf_au_VL_ACQUIRE(VerilatedMutex &)
@@ -1082,74 +1074,74 @@ t/t_dist_attributes_bad.h:61:     [mt_unsafe_one]                        nsf_ae_
 t/t_dist_attributes_bad.h:61:     [release]                              nsf_ae_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:61:     [release]                              nsf_ae_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.h:61:     [requires]                             nsf_ae_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::nsf_ua_VL_ACQUIRE(VerilatedMutex &)
+
+%Error: "nsf_ua_VL_ACQUIRE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:52:     []                                   nsf_ua_VL_ACQUIRE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:11:   [acquire]                            nsf_ua_VL_ACQUIRE(VerilatedMutex &)
-::endgroup::
-::group::nsf_ua_VL_ACQUIRE_SHARED(VerilatedMutex &)
+
+%Error: "nsf_ua_VL_ACQUIRE_SHARED(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:52:     []                                   nsf_ua_VL_ACQUIRE_SHARED(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:11:   [acquire]                            nsf_ua_VL_ACQUIRE_SHARED(VerilatedMutex &)
-::endgroup::
-::group::nsf_ua_VL_EXCLUDES(VerilatedMutex &)
+
+%Error: "nsf_ua_VL_EXCLUDES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:52:     []                                   nsf_ua_VL_EXCLUDES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:11:   [excludes]                           nsf_ua_VL_EXCLUDES(VerilatedMutex &)
-::endgroup::
-::group::nsf_ua_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "nsf_ua_VL_MT_SAFE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:52:     []                                   nsf_ua_VL_MT_SAFE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:11:   [mt_safe]                            nsf_ua_VL_MT_SAFE(VerilatedMutex &)
-::endgroup::
-::group::nsf_ua_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)
+
+%Error: "nsf_ua_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:52:     []                                   nsf_ua_VL_MT_SAFE_EXCLUDES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:11:   [excludes]                           nsf_ua_VL_MT_SAFE_EXCLUDES(VerilatedMutex &)
-::endgroup::
-::group::nsf_ua_VL_MT_SAFE_POSTINIT(VerilatedMutex &)
+
+%Error: "nsf_ua_VL_MT_SAFE_POSTINIT(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:52:     []                                   nsf_ua_VL_MT_SAFE_POSTINIT(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:11:   [mt_safe_postinit]                   nsf_ua_VL_MT_SAFE_POSTINIT(VerilatedMutex &)
-::endgroup::
-::group::nsf_ua_VL_MT_START(VerilatedMutex &)
+
+%Error: "nsf_ua_VL_MT_START(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:52:     []                                   nsf_ua_VL_MT_START(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:11:   [mt_start]                           nsf_ua_VL_MT_START(VerilatedMutex &)
-::endgroup::
-::group::nsf_ua_VL_MT_UNSAFE(VerilatedMutex &)
+
+%Error: "nsf_ua_VL_MT_UNSAFE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:52:     []                                   nsf_ua_VL_MT_UNSAFE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:11:   [mt_unsafe]                          nsf_ua_VL_MT_UNSAFE(VerilatedMutex &)
-::endgroup::
-::group::nsf_ua_VL_MT_UNSAFE_ONE(VerilatedMutex &)
+
+%Error: "nsf_ua_VL_MT_UNSAFE_ONE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:52:     []                                   nsf_ua_VL_MT_UNSAFE_ONE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:11:   [mt_unsafe_one]                      nsf_ua_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::nsf_ua_VL_PURE(VerilatedMutex &)
+
+%Error: "nsf_ua_VL_PURE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:52:     []                                   nsf_ua_VL_PURE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:11:   [pure]                               nsf_ua_VL_PURE(VerilatedMutex &)
-::endgroup::
-::group::nsf_ua_VL_RELEASE(VerilatedMutex &)
+
+%Error: "nsf_ua_VL_RELEASE(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:52:     []                                   nsf_ua_VL_RELEASE(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:11:   [release]                            nsf_ua_VL_RELEASE(VerilatedMutex &)
-::endgroup::
-::group::nsf_ua_VL_RELEASE_SHARED(VerilatedMutex &)
+
+%Error: "nsf_ua_VL_RELEASE_SHARED(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:52:     []                                   nsf_ua_VL_RELEASE_SHARED(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:11:   [release]                            nsf_ua_VL_RELEASE_SHARED(VerilatedMutex &)
-::endgroup::
-::group::nsf_ua_VL_REQUIRES(VerilatedMutex &)
+
+%Error: "nsf_ua_VL_REQUIRES(VerilatedMutex &)" declaration does not match definition
 t/t_dist_attributes_bad.h:52:     []                                   nsf_ua_VL_REQUIRES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:11:   [requires]                           nsf_ua_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-::group::sfc_test_caller_func_VL_MT_SAFE(VerilatedMutex &)
+
+%Error: "sfc_test_caller_func_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:49:   [mt_safe]                            sfc_test_caller_func_VL_MT_SAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:46:   []                                     sfc_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:46:   [mt_start]                             sfc_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:46:   [mt_unsafe]                            sfc_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:46:   [mt_unsafe_one]                        sfc_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::sfc_test_caller_func_VL_MT_START(VerilatedMutex &)
+
+%Error: "sfc_test_caller_func_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes_bad.cpp:49:   [mt_start]                           sfc_test_caller_func_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:46:   []                                     sfc_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:46:   [mt_start]                             sfc_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:46:   [mt_unsafe]                            sfc_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:46:   [mt_unsafe_one]                        sfc_VL_MT_UNSAFE_ONE(VerilatedMutex &)
-::endgroup::
-::group::sfc_test_caller_func_VL_PURE(VerilatedMutex &)
+
+%Error: "sfc_test_caller_func_VL_PURE(VerilatedMutex &)" is pure but calls non-pure function(s)
 t/t_dist_attributes_bad.cpp:49:   [pure]                               sfc_test_caller_func_VL_PURE(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:46:   []                                     sfc_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:46:   [acquire]                              sfc_VL_ACQUIRE(VerilatedMutex &)
@@ -1164,5 +1156,4 @@ t/t_dist_attributes_bad.cpp:46:   [mt_unsafe_one]                        sfc_VL_
 t/t_dist_attributes_bad.cpp:46:   [release]                              sfc_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:46:   [release]                              sfc_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:46:   [requires]                             sfc_VL_REQUIRES(VerilatedMutex &)
-::endgroup::
-Number of functions marked as MT_SAFE calling unsafe functions: 80
+Number of functions reported unsafe: 219

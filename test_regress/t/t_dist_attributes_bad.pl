@@ -32,7 +32,7 @@ sub check {
             # With `--verilator-root` set to the current directory
             # (i.e. `test_regress`) the script will skip annotation issues in
             # headers from the `../include` directory.
-            cmd => ["python3", "$root/nodist/clang_check_attributes --gh-groups=yes --terminal-format=no --verilator-root=. --cxxflags='$clang_args' $srcfiles_str"]);
+            cmd => ["python3", "$root/nodist/clang_check_attributes --verilator-root=. --cxxflags='$clang_args' $srcfiles_str"]);
 
         files_identical($Self->{run_log_filename}, $Self->{golden_filename});
     }

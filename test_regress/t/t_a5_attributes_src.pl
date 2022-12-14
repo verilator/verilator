@@ -34,9 +34,9 @@ sub check {
         }
         run(logfile => $Self->{run_log_filename},
             tee => 1,
-            cmd => ["python3", "$root/nodist/clang_check_attributes --gh-groups=yes --terminal-format=no --verilator-root=$root --cxxflags='$clang_args' $precompile_args $srcfiles_str"]);
+            cmd => ["python3", "$root/nodist/clang_check_attributes --verilator-root=$root --cxxflags='$clang_args' $precompile_args $srcfiles_str"]);
 
-        file_grep($Self->{run_log_filename}, "Number of functions marked as MT_SAFE calling unsafe functions: 24");
+        file_grep($Self->{run_log_filename}, "Number of functions reported unsafe: 24");
     }
 
     run_clang_check();
