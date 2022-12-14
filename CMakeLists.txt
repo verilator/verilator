@@ -1,7 +1,24 @@
+#*****************************************************************************
+# DESCRIPTION: Script for build tool cmake on both unix and windows
+#
+# This file is part of Verilator.
+#
+# Code available from: https://verilator.org
+#
+#*****************************************************************************
+#
+# Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+#
+#****************************************************************************/
+
 cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW) # Use MSVC_RUNTIME_LIBRARY to select the runtime
 project(Verilator
-    VERSION 4.025.99
+    VERSION 5.003
     HOMEPAGE_URL https://verilator.org
     LANGUAGES CXX
 )

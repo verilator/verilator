@@ -290,13 +290,6 @@ SET(COVERAGE_SOURCES
     VlcMain.cpp
 )
 
-set_source_files_properties(
-    V3ParseImp.cpp
-    V3ParseGrammar.cpp
-    V3ParseLex.cpp
-    V3PreProc.cpp
-    PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE
-)
 if (MINGW)
     # Mingw hits file size limits
     set_source_files_properties(
@@ -411,14 +404,14 @@ set(ASTGENERATED_NAMES
 )
 
 foreach(astgen_name ${ASTGENERATED_NAMES})
-	add_custom_command(
-    	    OUTPUT ${astgen_name}__gen.cpp
-    	    MAIN_DEPENDENCY ${astgen_name}.cpp
-    	    DEPENDS ${ASTGEN} V3Ast.h V3AstNodes.h
-    	    COMMAND python ARGS
-	    ${ASTGEN} -I"${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h ${astgen_name}.cpp
-    	)
-	list(APPEND GENERATED_FILES ${astgen_name}__gen.cpp)
+    add_custom_command(
+        OUTPUT ${astgen_name}__gen.cpp
+        MAIN_DEPENDENCY ${astgen_name}.cpp
+        DEPENDS ${ASTGEN} V3Ast.h V3AstNodes.h
+        COMMAND python ARGS
+            ${ASTGEN} -I"${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h ${astgen_name}.cpp
+    )
+    list(APPEND GENERATED_FILES ${astgen_name}__gen.cpp)
 endforeach()
 
 #
@@ -470,7 +463,9 @@ if (CMAKE_BUILD_TYPE STREQUAL Coverage)
     add_dependencies(${verilator} vlcovgen.d${CMAKE_BUILD_TYPE})
 endif()
 
-target_compile_features(${verilator} PRIVATE cxx_std_11)
+if (NOT MSVC)
+    target_compile_features(${verilator} PRIVATE cxx_std_11)
+endif()
 
 target_compile_definitions(${verilator} PRIVATE
     YYDEBUG # Required to get nice error messages
