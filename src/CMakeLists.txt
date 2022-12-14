@@ -321,7 +321,7 @@ configure_file(config_build.h.in config_build.h @ONLY)
 
 add_custom_command(
     OUTPUT V3Ast__gen_forward_class_decls.h V3Dfg__gen_forward_class_decls.h
-    DEPENDS ./V3Ast.h ./V3AstNodes.h ${ASTGEN}
+    DEPENDS ./V3Ast.h ${ASTGEN}
     COMMAND python ARGS
     ${ASTGEN} -I"${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h --classes
 )
@@ -407,7 +407,7 @@ foreach(astgen_name ${ASTGENERATED_NAMES})
     add_custom_command(
         OUTPUT ${astgen_name}__gen.cpp
         MAIN_DEPENDENCY ${astgen_name}.cpp
-        DEPENDS ${ASTGEN} V3Ast.h V3AstNodes.h
+        DEPENDS ${ASTGEN} V3Ast.h
         COMMAND python ARGS
             ${ASTGEN} -I"${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h ${astgen_name}.cpp
     )
