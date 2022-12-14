@@ -41,7 +41,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 #include <climits>  // PATH_MAX (especially on FreeBSD)
 #include <cstdarg>
 #ifdef _MSC_VER
-# include <filesystem>
+# include <filesystem> // C++17
 # define PATH_MAX MAX_PATH
 #else
 # include <dirent.h>

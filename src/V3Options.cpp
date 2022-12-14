@@ -37,7 +37,7 @@
 #include <algorithm>
 #include <cctype>
 #ifdef _MSC_VER
-# include <filesystem>
+# include <filesystem> // C++17
 # define S_ISDIR(mode) (((mode) & _S_IFMT) == _S_IFDIR)
 #else
 # include <dirent.h>

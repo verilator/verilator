@@ -233,7 +233,7 @@
 
 #ifdef _MSC_VER
 # if _MSC_VER < 1929
-#  error "Verilator requires atleast Visual Studio 2019 version 16.11.2"
+#  error "Verilator requires at least Visual Studio 2019 version 16.11.2"
 # endif
 #endif
 
