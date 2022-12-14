@@ -302,7 +302,7 @@ struct TriggerKit {
     // The map from input sensitivity list to trigger sensitivity list
     const std::unordered_map<const AstSenTree*, AstSenTree*> m_map;
 
-    VL_UNCOPYABLE(TriggerKit);
+    // No VL_UNCOPYABLE(TriggerKit) as causes C++20 errors on MSVC
 
     // Utility that assigns the given index trigger to fire when the given variable is zero
     void addFirstIterationTriggerAssignment(AstVarScope* counterp, uint32_t /*index*/) const {

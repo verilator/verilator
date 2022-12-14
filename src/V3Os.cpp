@@ -40,7 +40,12 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 #include <cerrno>
 #include <climits>  // PATH_MAX (especially on FreeBSD)
 #include <cstdarg>
-#include <dirent.h>
+#ifdef _MSC_VER
+# include <filesystem> // C++17
+# define PATH_MAX MAX_PATH
+#else
+# include <dirent.h>
+#endif
 #include <fstream>
 #include <memory>
 
@@ -245,6 +250,14 @@ void V3Os::createDir(const string& dirname) {
 }
 
 void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
+#ifdef _MSC_VER
+    for (const auto& dirEntry : std::filesystem::directory_iterator(dir.c_str())) {
+        if (VString::wildmatch(dirEntry.path().filename().string(), regexp.c_str())) {
+            const string fullname = dir + "/" + dirEntry.path().filename().string();
+            _unlink(fullname.c_str());
+        }
+    }
+#else
     if (DIR* const dirp = opendir(dir.c_str())) {
         while (struct dirent* const direntp = readdir(dirp)) {
             if (VString::wildmatch(direntp->d_name, regexp.c_str())) {
@@ -258,6 +271,7 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
         }
         closedir(dirp);
     }
+#endif
 }
 
 //######################################################################

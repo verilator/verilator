@@ -36,7 +36,12 @@
 #endif
 #include <algorithm>
 #include <cctype>
-#include <dirent.h>
+#ifdef _MSC_VER
+# include <filesystem> // C++17
+# define S_ISDIR(mode) (((mode) & _S_IFMT) == _S_IFDIR)
+#else
+# include <dirent.h>
+#endif
 #include <fcntl.h>
 #include <list>
 #include <map>
@@ -454,11 +459,17 @@ void V3Options::fileNfsFlush(const string& filename) {
     // NFS caches stat() calls so to get up-to-date information must
     // do a open or opendir on the filename.
     // Faster to just try both rather than check if a file is a dir.
+#ifdef _MSC_VER
+    if (int fd = ::open(filename.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
+        if (fd > 0) ::close(fd);
+    }
+#else
     if (DIR* const dirp = opendir(filename.c_str())) {  // LCOV_EXCL_BR_LINE
         closedir(dirp);  // LCOV_EXCL_LINE
     } else if (int fd = ::open(filename.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
         if (fd > 0) ::close(fd);
     }
+#endif
 }
 
 string V3Options::fileExists(const string& filename) {
@@ -477,10 +488,15 @@ string V3Options::fileExists(const string& filename) {
 
         std::set<string>* setp = &(diriter->second);
 
+#ifdef _MSC_VER
+        for (const auto& dirEntry : std::filesystem::directory_iterator(dir.c_str()))
+            setp->insert(dirEntry.path().filename().string());
+#else
         if (DIR* const dirp = opendir(dir.c_str())) {
             while (struct dirent* direntp = readdir(dirp)) setp->insert(direntp->d_name);
             closedir(dirp);
         }
+#endif
     }
     // Find it
     const std::set<string>* filesetp = &(diriter->second);
