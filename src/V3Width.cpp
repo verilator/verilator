@@ -1739,10 +1739,6 @@ private:
             return;
         }
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
-        // If this typedef defines a union or struct, assure it won't be deleted from AST by V3Dead
-        if (auto* const dtype = VN_CAST(nodep->dtypep(), NodeUOrStructDType)) {
-            if (!dtype->packed()) nodep->attrPublic(true);
-        }
         userIterateChildren(nodep, nullptr);
     }
     void visit(AstParamTypeDType* nodep) override {
