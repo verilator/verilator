@@ -260,6 +260,10 @@ private:
     void visit(AstTypedef* nodep) override {
         iterateChildren(nodep);
         m_typedefsp.push_back(nodep);
+
+        // Don't let packages with only public variables disappear
+        // Normal modules may disappear, e.g. if they are parameterized then removed
+        if (nodep->attrPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
     }
     void visit(AstVarScope* nodep) override {
         iterateChildren(nodep);
@@ -312,13 +316,10 @@ private:
                 continue;
             }
             checkAll(typedefp);
-            // Don't let packages with only public variables disappear
-            // Normal modules may disappear, e.g. if they are parameterized then removed
-            if (typedefp->attrPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
         }
     }
     bool shouldDeleteTypedef(AstTypedef* typedefp) {
-        if (auto* structp = VN_AS(typedefp->subDTypep(), StructDType)) {
+        if (auto* structp = VN_CAST(typedefp->subDTypep(), StructDType)) {
             if (structp->user1() && !structp->packed()) return false;
         }
         return m_elimCells && !typedefp->attrPublic();
