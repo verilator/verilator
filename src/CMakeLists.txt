@@ -290,15 +290,6 @@ SET(COVERAGE_SOURCES
     VlcMain.cpp
 )
 
-if (MINGW)
-    # Mingw hits file size limits
-    set_source_files_properties(
-        V3Order.cpp
-        V3Partition.cpp
-        PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE
-    )
-endif()
-
 # Note about tests:
 # VlcMain.cpp #includes the following files:
 #  V3Error.cpp, V3String.cpp, V3Os.cpp and VlcTop.cpp
