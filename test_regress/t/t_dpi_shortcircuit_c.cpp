@@ -36,7 +36,7 @@
 
 #ifdef NEED_EXTERNS
 extern "C" {
-extern int dpii_clear();
+extern void dpii_clear();
 extern int dpii_count(int idx);
 extern unsigned char dpii_inc0(int idx);
 extern unsigned char dpii_inc1(int idx);
@@ -49,9 +49,8 @@ extern unsigned char dpii_incx(int idx, unsigned char value);
 #define COUNTERS 16
 static int global_count[COUNTERS];
 
-int dpii_clear() {
+void dpii_clear() {
     for (int i = 0; i < COUNTERS; ++i) global_count[i] = 0;
-    return 0;
 }
 int dpii_count(int idx) { return (idx >= 0 && idx < COUNTERS) ? global_count[idx] : -1; }
 unsigned char dpii_incx(int idx, unsigned char value) {

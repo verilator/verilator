@@ -31,9 +31,6 @@ module t (
    assign array[0] = (rand_a << 32) | (rand_a >> 32);
    assign array[1] = (rand_a << 16) | (rand_a >> 48);
 
-   // x, but with evaluation slightly delayed in DfgPeephole
-`define DFG(x) (&16'hffff ? (x) : (~x))
-
    `signal(FOLD_UNARY_CLog2,       $clog2(const_a));
    `signal(FOLD_UNARY_CountOnes,   $countones(const_a));
    `signal(FOLD_UNARY_IsUnknown,   $isunknown(const_a));
@@ -150,8 +147,10 @@ module t (
    `signal(REPLACE_CONCAT_SEL_BOTTOM_AND_ZERO_WITH_SHIFTL, {rand_a[1:0], 62'd0});
    `signal(PUSH_CONCAT_THROUGH_NOTS, {~(rand_a+64'd101), ~(rand_b+64'd101)} );
    `signal(REMOVE_CONCAT_OF_ADJOINING_SELS, {rand_a[10:3], rand_a[2:1]});
-   `signal(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_LHS, {rand_a[10:3], `DFG({rand_a[2:1], rand_b})});
-   `signal(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_RHS, {`DFG({rand_b, rand_a[10:3]}), rand_a[2:1]});
+   `signal(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_LHS_CAT, {rand_a[2:1], rand_b});
+   `signal(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_RHS_CAT, {rand_b, rand_a[10:3]});
+   `signal(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_LHS, {rand_a[10:3], {rand_a[2:1], rand_b}});
+   `signal(REPLACE_NESTED_CONCAT_OF_ADJOINING_SELS_ON_RHS, {{rand_b, rand_a[10:3]}, rand_a[2:1]});
    `signal(REMOVE_COND_WITH_FALSE_CONDITION, 1'd0 ? rand_a : rand_b);
    `signal(REMOVE_COND_WITH_TRUE_CONDITION, 1'd1 ? rand_a : rand_b);
    `signal(SWAP_COND_WITH_NOT_CONDITION, (~rand_a[0] & 1'd1) ? rand_a : rand_b);

@@ -17,13 +17,15 @@ scenarios(vlt_all => 1);
 # enough for the profiling to happen:
 top_filename("t/t_gen_alw.v");
 
+my $threads_num = $Self->{vltmt} ? 2 : 1;
+
 compile(
     make_top_shell => 0,
     make_main => 0,
     v_flags2 => ["--prof-exec --exe $Self->{t_dir}/$Self->{name}.cpp"],
     # Checks below care about thread count, so use 2 (minimum reasonable)
-    threads => $Self->{vltmt} ? 2 : 0,
-    make_flags => 'CPPFLAGS_ADD=-DVL_NO_LEGACY',
+    threads => $threads_num,
+    make_flags => "CPPFLAGS_ADD=\"-DVL_NO_LEGACY -DTEST_USE_THREADS=$threads_num\"",
     );
 
 execute(

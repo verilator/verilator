@@ -115,12 +115,10 @@ private:
         if (m_underGenerate) nodep->underGenerate(true);
         // Remember the existing symbol table scope
         if (m_classp) {
-            if (nodep->name() == "pre_randomize" || nodep->name() == "post_randomize") {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << nodep->prettyNameQ());
-            } else if (nodep->name() == "randomize") {
+            if (nodep->name() == "randomize") {
                 nodep->v3error(nodep->prettyNameQ()
-                               << " is a predefined class method; redefinition not allowed (IEEE "
-                                  "1800-2017 18.6.3)");
+                               << " is a predefined class method; redefinition not allowed"
+                                  " (IEEE 1800-2017 18.6.3)");
             }
             nodep->classMethod(true);
         }
@@ -154,21 +152,21 @@ private:
             AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
             if (AstNodeVarRef* const varrefp
                 = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
-                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::VAR_BASE,
-                                           varrefp->cloneTree(false)));
+                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
+                                           varrefp->cloneTree(false)});
             } else if (AstUnlinkedRef* const uvxrp
                        = VN_CAST(basefromp, UnlinkedRef)) {  // Maybe unlinked - so need to clone
-                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::VAR_BASE,
-                                           uvxrp->cloneTree(false)));
+                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
+                                           uvxrp->cloneTree(false)});
             } else if (auto* const fromp = VN_CAST(basefromp, LambdaArgRef)) {
-                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::VAR_BASE,
-                                           fromp->cloneTree(false)));
+                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
+                                           fromp->cloneTree(false)});
             } else if (AstMemberSel* const fromp = VN_CAST(basefromp, MemberSel)) {
-                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::MEMBER_BASE,
-                                           fromp->cloneTree(false)));
+                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::MEMBER_BASE,
+                                           fromp->cloneTree(false)});
             } else if (AstEnumItemRef* const fromp = VN_CAST(basefromp, EnumItemRef)) {
-                nodep->attrp(new AstAttrOf(nodep->fileline(), VAttrType::ENUM_BASE,
-                                           fromp->cloneTree(false)));
+                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::ENUM_BASE,
+                                           fromp->cloneTree(false)});
             } else if (VN_IS(basefromp, Replicate)) {
                 // From {...}[...] syntax in IEEE 2017
                 if (basefromp) UINFO(1, "    Related node: " << basefromp << endl);
@@ -414,9 +412,9 @@ private:
                         varoutp = varp;
                         // Tie off
                         m_modp->addStmtsp(
-                            new AstAssignW(varp->fileline(),
-                                           new AstVarRef(varp->fileline(), varp, VAccess::WRITE),
-                                           new AstConst(varp->fileline(), AstConst::BitFalse())));
+                            new AstAssignW{varp->fileline(),
+                                           new AstVarRef{varp->fileline(), varp, VAccess::WRITE},
+                                           new AstConst{varp->fileline(), AstConst::BitFalse{}}});
                     } else {
                         varp->v3error("Only inputs and outputs are allowed in udp modules");
                     }
@@ -499,7 +497,7 @@ private:
         if (nodep->modp()->modPublic()) m_modp->modPublic(true);
         //** No iteration for speed
     }
-    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:

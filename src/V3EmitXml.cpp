@@ -28,8 +28,8 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-//######################################################################
-// Emit statements and math operators
+// ######################################################################
+//  Emit statements and expressions
 
 class EmitXmlFileVisitor final : public VNVisitor {
     // NODE STATE
@@ -117,13 +117,13 @@ class EmitXmlFileVisitor final : public VNVisitor {
     void visit(AstNodeIf* nodep) override {
         outputTag(nodep, "if");
         puts(">\n");
-        iterateAndNextNull(nodep->op1p());
+        iterateAndNextNull(nodep->condp());
         puts("<begin>\n");
-        iterateAndNextNull(nodep->op2p());
+        iterateAndNextNull(nodep->thensp());
         puts("</begin>\n");
-        if (nodep->op3p()) {
+        if (nodep->elsesp()) {
             puts("<begin>\n");
-            iterateAndNextNull(nodep->op3p());
+            iterateAndNextNull(nodep->elsesp());
             puts("</begin>\n");
         }
         puts("</if>\n");
@@ -132,21 +132,21 @@ class EmitXmlFileVisitor final : public VNVisitor {
         outputTag(nodep, "while");
         puts(">\n");
         puts("<begin>\n");
-        iterateAndNextNull(nodep->op1p());
+        iterateAndNextNull(nodep->precondsp());
         puts("</begin>\n");
-        if (nodep->op2p()) {
+        if (nodep->condp()) {
             puts("<begin>\n");
-            iterateAndNextNull(nodep->op2p());
+            iterateAndNextNull(nodep->condp());
             puts("</begin>\n");
         }
-        if (nodep->op3p()) {
+        if (nodep->stmtsp()) {
             puts("<begin>\n");
-            iterateAndNextNull(nodep->op3p());
+            iterateAndNextNull(nodep->stmtsp());
             puts("</begin>\n");
         }
-        if (nodep->op4p()) {
+        if (nodep->incsp()) {
             puts("<begin>\n");
-            iterateAndNextNull(nodep->op4p());
+            iterateAndNextNull(nodep->incsp());
             puts("</begin>\n");
         }
         puts("</while>\n");
@@ -441,7 +441,7 @@ void V3EmitXml::emitxml() {
     const string filename = (v3Global.opt.xmlOutput().empty()
                                  ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".xml"
                                  : v3Global.opt.xmlOutput());
-    V3OutXmlFile of(filename);
+    V3OutXmlFile of{filename};
     of.putsHeader();
     of.puts("<!-- DESCR"
             "IPTION: Verilator output: XML representation of netlist -->\n");

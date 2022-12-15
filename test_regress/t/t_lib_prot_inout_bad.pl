@@ -17,6 +17,7 @@ compile (
                          "secret-key"
                        ],
     verilator_make_gcc => 0,
+    make_main => 0,
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

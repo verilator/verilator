@@ -16,8 +16,8 @@
 #include <verilated_vcd_c.h>
 #endif
 
-int main(int argc, char** argv, char** env) {
-    if (false && argc && argv && env) {}
+int main(int argc, char** argv) {
+    if (false && argc && argv) {}
 
     // Construct context to hold simulation time, etc
     VerilatedContext* contextp = new VerilatedContext;

@@ -71,15 +71,6 @@ class CMakeEmitter final {
         cmake_set_raw(of, name, raw_value, cache_type, docstring);
     }
 
-    // Swap all backslashes for forward slashes, because of Windows
-    static string deslash(const string& s) {
-        std::string res = s;
-        for (char& c : res) {
-            if (c == '\\') c = '/';
-        }
-        return res;
-    }
-
     static void emitOverallCMake() {
         const std::unique_ptr<std::ofstream> of{
             V3File::new_ofstream(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".cmake")};
@@ -95,9 +86,9 @@ class CMakeEmitter final {
         *of << "# which becomes available after executing `find_package(verilator).\n";
 
         *of << "\n### Constants...\n";
-        cmake_set(*of, "PERL", deslash(V3Options::getenvPERL()), "FILEPATH",
+        cmake_set(*of, "PERL", V3Options::getenvPERL(), "FILEPATH",
                   "Perl executable (from $PERL)");
-        cmake_set(*of, "VERILATOR_ROOT", deslash(V3Options::getenvVERILATOR_ROOT()), "PATH",
+        cmake_set(*of, "VERILATOR_ROOT", V3Options::getenvVERILATOR_ROOT(), "PATH",
                   "Path to Verilator kit (from $VERILATOR_ROOT)");
 
         *of << "\n### Compiler flags...\n";
@@ -116,7 +107,7 @@ class CMakeEmitter final {
         cmake_set_raw(*of, name + "_COVERAGE", v3Global.opt.coverage() ? "1" : "0");
         *of << "# Timing mode?  0/1\n";
         cmake_set_raw(*of, name + "_TIMING", v3Global.usesTiming() ? "1" : "0");
-        *of << "# Threaded output mode?  0/1/N threads (from --threads)\n";
+        *of << "# Threaded output mode?  1/N threads (from --threads)\n";
         cmake_set_raw(*of, name + "_THREADS", cvtToStr(v3Global.opt.threads()));
         *of << "# VCD Tracing output mode?  0/1 (from --trace)\n";
         cmake_set_raw(*of, name + "_TRACE_VCD",
@@ -167,10 +158,9 @@ class CMakeEmitter final {
         if (v3Global.opt.trace()) {
             global.emplace_back("${VERILATOR_ROOT}/include/" + v3Global.opt.traceSourceBase()
                                 + "_c.cpp");
-            if (v3Global.opt.systemC()) {
-                global.emplace_back("${VERILATOR_ROOT}/include/" + v3Global.opt.traceSourceLang()
-                                    + ".cpp");
-            }
+        }
+        if (v3Global.usesProbDist()) {
+            global.emplace_back("${VERILATOR_ROOT}/include/verilated_probdist.cpp");
         }
         if (v3Global.usesTiming()) {
             global.emplace_back("${VERILATOR_ROOT}/include/verilated_timing.cpp");
@@ -186,22 +176,22 @@ class CMakeEmitter final {
         }
 
         *of << "# Global classes, need linked once per executable\n";
-        cmake_set_raw(*of, name + "_GLOBAL", deslash(cmake_list(global)));
+        cmake_set_raw(*of, name + "_GLOBAL", cmake_list(global));
         *of << "# Generated module classes, non-fast-path, compile with low/medium optimization\n";
-        cmake_set_raw(*of, name + "_CLASSES_SLOW", deslash(cmake_list(classes_slow)));
+        cmake_set_raw(*of, name + "_CLASSES_SLOW", cmake_list(classes_slow));
         *of << "# Generated module classes, fast-path, compile with highest optimization\n";
-        cmake_set_raw(*of, name + "_CLASSES_FAST", deslash(cmake_list(classes_fast)));
+        cmake_set_raw(*of, name + "_CLASSES_FAST", cmake_list(classes_fast));
         *of << "# Generated support classes, non-fast-path, compile with "
                "low/medium optimization\n";
-        cmake_set_raw(*of, name + "_SUPPORT_SLOW", deslash(cmake_list(support_slow)));
+        cmake_set_raw(*of, name + "_SUPPORT_SLOW", cmake_list(support_slow));
         *of << "# Generated support classes, fast-path, compile with highest optimization\n";
-        cmake_set_raw(*of, name + "_SUPPORT_FAST", deslash(cmake_list(support_fast)));
+        cmake_set_raw(*of, name + "_SUPPORT_FAST", cmake_list(support_fast));
 
         *of << "# All dependencies\n";
-        cmake_set_raw(*of, name + "_DEPS", deslash(cmake_list(V3File::getAllDeps())));
+        cmake_set_raw(*of, name + "_DEPS", cmake_list(V3File::getAllDeps()));
 
         *of << "# User .cpp files (from .cpp's on Verilator command line)\n";
-        cmake_set_raw(*of, name + "_USER_CLASSES", deslash(cmake_list(v3Global.opt.cppFiles())));
+        cmake_set_raw(*of, name + "_USER_CLASSES", cmake_list(v3Global.opt.cppFiles()));
         if (const V3HierBlockPlan* const planp = v3Global.hierPlanp()) {
             *of << "# Verilate hierarchical blocks\n";
             // Sorted hierarchical blocks in order of leaf-first.
@@ -221,10 +211,9 @@ class CMakeEmitter final {
                 }
                 *of << "verilate(" << prefix << " PREFIX " << prefix << " TOP_MODULE "
                     << hblockp->modp()->name() << " DIRECTORY "
-                    << deslash(v3Global.opt.makeDir() + "/" + prefix) << " SOURCES ";
+                    << v3Global.opt.makeDir() + "/" + prefix << " SOURCES ";
                 for (const auto& childr : children) {
-                    *of << " "
-                        << deslash(v3Global.opt.makeDir() + "/" + childr->hierWrapper(true));
+                    *of << " " << v3Global.opt.makeDir() + "/" + childr->hierWrapper(true);
                 }
                 *of << " ";
                 const string vFile = hblockp->vFileIfNecessary();
@@ -232,7 +221,7 @@ class CMakeEmitter final {
                 const V3StringList& vFiles = v3Global.opt.vFiles();
                 for (const string& i : vFiles) *of << V3Os::filenameRealPath(i) << " ";
                 *of << " VERILATOR_ARGS ";
-                *of << "-f " << deslash(hblockp->commandArgsFileName(true))
+                *of << "-f " << hblockp->commandArgsFileName(true)
                     << " -CFLAGS -fPIC"  // hierarchical block will be static, but may be linked
                                          // with .so
                     << ")\n";
@@ -240,14 +229,13 @@ class CMakeEmitter final {
             *of << "\n# Verilate the top module that refers to lib-create wrappers of above\n";
             *of << "verilate(${TOP_TARGET_NAME} PREFIX " << v3Global.opt.prefix() << " TOP_MODULE "
                 << v3Global.rootp()->topModulep()->name() << " DIRECTORY "
-                << deslash(v3Global.opt.makeDir()) << " SOURCES ";
+                << v3Global.opt.makeDir() << " SOURCES ";
             for (const auto& itr : *planp) {
-                *of << " "
-                    << deslash(v3Global.opt.makeDir() + "/" + itr.second->hierWrapper(true));
+                *of << " " << v3Global.opt.makeDir() + "/" + itr.second->hierWrapper(true);
             }
-            *of << " " << deslash(cmake_list(v3Global.opt.vFiles()));
+            *of << " " << cmake_list(v3Global.opt.vFiles());
             *of << " VERILATOR_ARGS ";
-            *of << "-f " << deslash(planp->topCommandArgsFileName(true));
+            *of << "-f " << planp->topCommandArgsFileName(true);
             *of << ")\n";
         }
     }

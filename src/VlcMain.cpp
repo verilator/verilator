@@ -113,7 +113,7 @@ void VlcOptions::showVersion(bool verbose) {
 
 //######################################################################
 
-int main(int argc, char** argv, char** /*env*/) {
+int main(int argc, char** argv) {
     // General initialization
     std::ios::sync_with_stdio();
 

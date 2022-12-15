@@ -35,10 +35,8 @@
 #include <unordered_set>
 #include <vector>
 
-#ifdef VL_THREADED
-# include <deque>
-# include <thread>
-#endif
+#include <deque>
+#include <thread>
 
 // clang-format on
 
@@ -48,7 +46,6 @@ class VerilatedTraceBuffer;
 template <class T_Buffer>
 class VerilatedTraceOffloadBuffer;
 
-#ifdef VL_THREADED
 //=============================================================================
 // Offloaded tracing
 
@@ -110,6 +107,7 @@ public:
         CHG_QDATA = 0x5,
         CHG_WDATA = 0x6,
         CHG_DOUBLE = 0x8,
+        CHG_EVENT = 0x9,
         // TODO: full..
         TIME_CHANGE = 0xc,
         TRACE_BUFFER = 0xd,
@@ -117,7 +115,6 @@ public:
         SHUTDOWN = 0xf  // Shutdown worker thread, also marks end of buffer
     };
 };
-#endif
 
 //=============================================================================
 // VerilatedTraceConfig
@@ -186,10 +183,9 @@ private:
             , m_userp{userp} {}
     };
 
-    bool m_offload = false;  // Use the offload thread (ignored if !VL_THREADED)
-    bool m_parallel = false;  // Use parallel tracing (ignored if !VL_THREADED)
+    bool m_offload = false;  // Use the offload thread
+    bool m_parallel = false;  // Use parallel tracing
 
-#ifdef VL_THREADED
     struct ParallelWorkerData {
         const dumpCb_t m_cb;  // The callback
         void* const m_userp;  // The use pointer to pass to the callback
@@ -209,7 +205,6 @@ private:
 
     // Passed a ParallelWorkerData*, second argument is ignored
     static void parallelWorkerTask(void*, bool);
-#endif
 
 protected:
     uint32_t* m_sigs_oldvalp = nullptr;  // Previous value store
@@ -251,7 +246,6 @@ private:
     // Close the file on termination
     static void onExit(void* selfp) VL_MT_UNSAFE_ONE;
 
-#ifdef VL_THREADED
     // Number of total offload buffers that have been allocated
     uint32_t m_numOffloadBuffers = 0;
     // Size of offload buffers
@@ -282,7 +276,6 @@ private:
 
     // Shut down and join worker, if it's running, otherwise do nothing
     void shutdownOffloadWorker();
-#endif
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedTrace);
@@ -317,13 +310,8 @@ protected:
     void closeBase();
     void flushBase();
 
-#ifdef VL_THREADED
     bool offload() const { return m_offload; }
     bool parallel() const { return m_parallel; }
-#else
-    static constexpr bool offload() { return false; }
-    static constexpr bool parallel() { return false; }
-#endif
 
     //=========================================================================
     // Virtual functions to be provided by the format specific implementation
@@ -435,6 +423,7 @@ public:
     void fullQData(uint32_t* oldp, QData newval, int bits);
     void fullWData(uint32_t* oldp, const WData* newvalp, int bits);
     void fullDouble(uint32_t* oldp, double newval);
+    void fullEvent(uint32_t* oldp, VlEvent newval);
 
     // In non-offload mode, these are called directly by the trace callbacks,
     // and are called chg*. In offload mode, they are called by the worker
@@ -469,13 +458,13 @@ public:
             }
         }
     }
+    VL_ATTR_ALWINLINE void chgEvent(uint32_t* oldp, VlEvent newval) { fullEvent(oldp, newval); }
     VL_ATTR_ALWINLINE void chgDouble(uint32_t* oldp, double newval) {
         // cppcheck-suppress invalidPointerCast
         if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) fullDouble(oldp, newval);
     }
 };
 
-#ifdef VL_THREADED
 //=============================================================================
 // VerilatedTraceOffloadBuffer
 
@@ -547,7 +536,12 @@ public:
         m_offloadBufferWritep += 4;
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
+    void chgEvent(uint32_t code, VlEvent newval) {
+        m_offloadBufferWritep[0] = VerilatedTraceOffloadCommand::CHG_EVENT;
+        m_offloadBufferWritep[1] = code;
+        m_offloadBufferWritep += 2;
+        VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
+    }
 };
-#endif
 
 #endif  // guard

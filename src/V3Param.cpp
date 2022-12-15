@@ -198,7 +198,7 @@ public:
             }
             return v3EpsilonEqual(var, hierOptParamp->num().toDouble());
         } else {  // Now integer type is assumed
-            // Bitwidth of hierOptParamp is accurate because V3Width already caluclated in the
+            // Bitwidth of hierOptParamp is accurate because V3Width already calculated in the
             // previous run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted
             // to hierOptParamp width.
             V3Number varNum{pinValuep, hierOptParamp->num().width()};
@@ -211,7 +211,7 @@ public:
             } else {
                 varNum.opAssign(pinValuep->num());
             }
-            V3Number isEq(pinValuep, 1);
+            V3Number isEq{pinValuep, 1};
             isEq.opEq(varNum, hierOptParamp->num());
             return isEq.isNeqZero();
         }
@@ -342,9 +342,11 @@ class ParamProcessor final {
         //       particularly robust for type parameters. We should really have a type
         //       equivalence predicate function.
         const string key = paramValueKey(nodep);
+        // cppcheck-has-bug-suppress unreadVariable
         V3Hash hash = V3Hasher::uncachedHash(nodep);
         // Force hash collisions -- for testing only
-        if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash();
+        // cppcheck-has-bug-suppress unreadVariable
+        if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash{};
         int num;
         const auto it = m_valueMap.find(hash);
         if (it != m_valueMap.end() && it->second.second == key) {
@@ -493,7 +495,7 @@ class ParamProcessor final {
                     if (varp->isGParam()) {
                         AstConst* const constp = VN_CAST(varp->valuep(), Const);
                         // constp can be nullptr if the parameter is not used to instantiate sub
-                        // module. varp->valuep() is not contified yet in the case.
+                        // module. varp->valuep() is not constified yet in the case.
                         // nullptr means that the parameter is using some default value.
                         params.emplace(varp->name(), constp);
                     }
@@ -653,11 +655,11 @@ class ParamProcessor final {
                 AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
                 const AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
                 if (!exprp) {
-                    if (debug()) pinp->dumpTree(cout, "-nodes: ");
+                    if (debug()) pinp->dumpTree("-  ");
                     pinp->v3error("Can't convert defparam value to constant: Param "
                                   << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
-                    pinp->exprp()->replaceWith(new AstConst(
-                        pinp->fileline(), AstConst::WidthedValue(), modvarp->width(), 0));
+                    pinp->exprp()->replaceWith(new AstConst{
+                        pinp->fileline(), AstConst::WidthedValue{}, modvarp->width(), 0});
                 } else if (origp && exprp->sameTree(origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
@@ -766,9 +768,9 @@ class ParamProcessor final {
                            AstPin* pinsp, bool any_overrides) {
         // Make sure constification worked
         // Must be a separate loop, as constant conversion may have changed some pointers.
-        // if (debug()) nodep->dumpTree(cout, "-cel2: ");
+        // if (debug()) nodep->dumpTree("-  cel2: ");
         string longname = srcModpr->name() + "_";
-        if (debug() > 8 && paramsp) paramsp->dumpTreeAndNext(cout, "-cellparams: ");
+        if (debug() > 8 && paramsp) paramsp->dumpTreeAndNext(cout, "-  cellparams: ");
 
         if (srcModpr->hierBlock()) {
             longname = parameterizedHierBlockName(srcModpr, paramsp);
@@ -847,7 +849,7 @@ public:
         // and remove any recursive references
         UINFO(4, "De-parameterize: " << nodep << endl);
         // Create new module name with _'s between the constants
-        if (debug() >= 10) nodep->dumpTree(cout, "-cell: ");
+        if (debug() >= 10) nodep->dumpTree("-  cell: ");
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
         srcModpr->someInstanceName(someInstanceName + "." + nodep->name());
@@ -1096,8 +1098,8 @@ class ParamVisitor final : public VNVisitor {
     }
 
     void visit(AstUnlinkedRef* nodep) override {
-        AstVarXRef* const varxrefp = VN_CAST(nodep->op1p(), VarXRef);
-        AstNodeFTaskRef* const taskrefp = VN_CAST(nodep->op1p(), NodeFTaskRef);
+        AstVarXRef* const varxrefp = VN_CAST(nodep->refp(), VarXRef);
+        AstNodeFTaskRef* const taskrefp = VN_CAST(nodep->refp(), NodeFTaskRef);
         if (varxrefp) {
             m_unlinkedTxt = varxrefp->dotted();
         } else if (taskrefp) {
@@ -1113,7 +1115,7 @@ class ParamVisitor final : public VNVisitor {
         } else {
             taskrefp->dotted(m_unlinkedTxt);
         }
-        nodep->replaceWith(nodep->op1p()->unlinkFrBack());
+        nodep->replaceWith(nodep->refp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstCellArrayRef* nodep) override {
@@ -1220,7 +1222,7 @@ class ParamVisitor final : public VNVisitor {
             if (!itemp->isDefault()) {
                 for (AstNode* ep = itemp->condsp(); ep; ep = ep->nextp()) {
                     if (const AstConst* const ccondp = VN_CAST(ep, Const)) {
-                        V3Number match(nodep, 1);
+                        V3Number match{nodep, 1};
                         match.opEq(ccondp->num(), exprp->num());
                         if (!keepp && match.isNeqZero()) keepp = itemp->stmtsp();
                     } else {

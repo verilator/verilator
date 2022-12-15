@@ -9,7 +9,7 @@
 
 #include VM_PREFIX_INCLUDE
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     // Create contexts
     VerilatedContext* contextp{new VerilatedContext};
 

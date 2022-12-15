@@ -32,19 +32,13 @@ constexpr int VL_VALUE_STRING_MAX_WIDTH = 8192;
 //######################################################################
 // EmitCFunc
 
-bool EmitCFunc::emitSimpleOk(AstNodeMath* nodep) {
+bool EmitCFunc::emitSimpleOk(AstNodeExpr* nodep) {
     // Can we put out a simple (A + B) instead of VL_ADD_III(A,B)?
     if (nodep->emitSimpleOperator() == "") return false;
     if (nodep->isWide()) return false;
-    if (nodep->op1p()) {
-        if (nodep->op1p()->isWide()) return false;
-    }
-    if (nodep->op2p()) {
-        if (nodep->op2p()->isWide()) return false;
-    }
-    if (nodep->op3p()) {
-        if (nodep->op3p()->isWide()) return false;
-    }
+    if (nodep->op1p() && nodep->op1p()->isWide()) return false;
+    if (nodep->op2p() && nodep->op2p()->isWide()) return false;
+    if (nodep->op3p() && nodep->op3p()->isWide()) return false;
     return true;
 }
 
@@ -428,17 +422,8 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
         puts(nodep->argTypes());
         comma = true;
     }
-    for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
-        if (comma) puts(", ");
-        iterate(subnodep);
-        comma = true;
-    }
-    if (VN_IS(nodep->backp(), NodeMath) || VN_IS(nodep->backp(), CReturn)) {
-        // We should have a separate CCall for math and statement usage, but...
-        puts(")");
-    } else {
-        puts(");\n");
-    }
+    putCommaIterateNext(nodep->argsp(), comma);
+    puts(")");
 }
 
 void EmitCFunc::emitDereference(const string& pointer) {

@@ -38,7 +38,16 @@
 %Warning-PROTECTED: t/t_lint_pragma_protected_bad.v:63:17: A '`pragma protected data_block' encrypted section was detected and will be skipped.
 %Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:64:1: BASE64 line too long in `pragma protect key_bloock/data_block
 %Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:64:1: BASE64 encoding length mismatch in `pragma protect key_bloock/data_block
-%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:72:1: `pragma is missing a pragma_expression.
-   72 | `pragma
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:66:17: multiple `pragma protected encoding sections
+   66 | `pragma protect encoding = (enctype = "BASE64", line_length = 1, bytes = 4)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:66:17: line_length must be multiple of 4 for BASE64
+   66 | `pragma protect encoding = (enctype = "BASE64", line_length = 1, bytes = 4)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Warning-PROTECTED: t/t_lint_pragma_protected_bad.v:68:17: A '`pragma protected data_block' encrypted section was detected and will be skipped.
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:69:1: BASE64 line too long in `pragma protect key_bloock/data_block
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:69:1: BASE64 encoding length mismatch in `pragma protect key_bloock/data_block
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:77:1: `pragma is missing a pragma_expression.
+   77 | `pragma
       | ^~~~~~~
 %Error: Exiting due to

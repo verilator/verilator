@@ -28,8 +28,8 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-//######################################################################
-// Emit statements and math operators
+// ######################################################################
+//  Emit statements and expressions
 
 class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     // MEMBERS
@@ -381,6 +381,10 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     }
     void visit(AstStop* nodep) override { putfs(nodep, "$stop;\n"); }
     void visit(AstFinish* nodep) override { putfs(nodep, "$finish;\n"); }
+    void visit(AstStmtExpr* nodep) override {
+        iterate(nodep->exprp());
+        puts(";\n");
+    }
     void visit(AstNodeSimpleText* nodep) override {
         if (nodep->tracking() || m_trackText) {
             puts(nodep->text());
@@ -405,8 +409,8 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         iterateAndNextConstNull(nodep->exprsp());
         puts(");\n");
     }
-    void visit(AstCMath* nodep) override {
-        putfs(nodep, "$_CMATH(");
+    void visit(AstCExpr* nodep) override {
+        putfs(nodep, "$_CEXPR(");
         iterateAndNextConstNull(nodep->exprsp());
         puts(");\n");
     }
@@ -736,10 +740,7 @@ public:
 // Emit to an output file
 
 class EmitVFileVisitor final : public EmitVBaseVisitor {
-    // MEMBERS
-    V3OutFile* m_ofp;
     // METHODS
-    V3OutFile* ofp() const { return m_ofp; }
     void puts(const string& str) override { ofp()->puts(str); }
     void putbs(const string& str) override { ofp()->putbs(str); }
     void putfs(AstNode*, const string& str) override { putbs(str); }
@@ -747,9 +748,9 @@ class EmitVFileVisitor final : public EmitVBaseVisitor {
     void putsNoTracking(const string& str) override { ofp()->putsNoTracking(str); }
 
 public:
-    EmitVFileVisitor(AstNode* nodep, V3OutFile* ofp, bool trackText, bool suppressUnknown)
-        : EmitVBaseVisitor{suppressUnknown, nullptr}
-        , m_ofp{ofp} {
+    EmitVFileVisitor(AstNode* nodep, V3OutVFile* ofp, bool trackText, bool suppressUnknown)
+        : EmitVBaseVisitor{suppressUnknown, nullptr} {
+        m_ofp = ofp;
         m_trackText = trackText;
         iterate(nodep);
     }
@@ -876,7 +877,7 @@ void V3EmitV::emitvFiles() {
          filep = VN_AS(filep->nextp(), NodeFile)) {
         AstVFile* const vfilep = VN_CAST(filep, VFile);
         if (vfilep && vfilep->tblockp()) {
-            V3OutVFile of(vfilep->name());
+            V3OutVFile of{vfilep->name()};
             of.puts("// DESCR"
                     "IPTION: Verilator generated Verilog\n");
             { EmitVFileVisitor{vfilep->tblockp(), &of, true, false}; }

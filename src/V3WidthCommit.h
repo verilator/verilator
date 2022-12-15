@@ -80,11 +80,12 @@ public:
     static AstConst* newIfConstCommitSize(AstConst* nodep) {
         if (((nodep->dtypep()->width() != nodep->num().width()) || !nodep->num().sized())
             && !nodep->num().isString()) {  // Need to force the number from unsized to sized
-            V3Number num(nodep, nodep->dtypep()->width());
+            V3Number num{nodep, nodep->dtypep()->width()};
             num.opAssign(nodep->num());
             num.isSigned(nodep->isSigned());
-            AstConst* const newp = new AstConst(nodep->fileline(), num);
+            AstConst* const newp = new AstConst{nodep->fileline(), num};
             newp->dtypeFrom(nodep);
+            newp->user1(true);
             return newp;
         } else {
             return nullptr;
@@ -142,13 +143,13 @@ private:
             if (how) {
                 UINFO(9, "refclass " << refClassp << endl);
                 UINFO(9, "defclass " << defClassp << endl);
-                nodep->v3warn(E_ENCAPSULATED, nodep->prettyNameQ()
-                                                  << " is hidden as " << how
-                                                  << " within this context (IEEE 1800-2017 8.18)\n"
-                                                  << nodep->warnContextPrimary() << endl
-                                                  << nodep->warnOther()
-                                                  << "... Location of definition" << endl
-                                                  << defp->warnContextSecondary());
+                nodep->v3warn(ENCAPSULATED, nodep->prettyNameQ()
+                                                << " is hidden as " << how
+                                                << " within this context (IEEE 1800-2017 8.18)\n"
+                                                << nodep->warnContextPrimary() << endl
+                                                << nodep->warnOther()
+                                                << "... Location of definition" << endl
+                                                << defp->warnContextSecondary());
             }
         }
     }
@@ -163,17 +164,25 @@ private:
         }
     }
     void visit(AstConst* nodep) override {
+        if (nodep->user1SetOnce()) return;  // Process once
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype");
         iterate(nodep->dtypep());  // Do datatype first
         if (AstConst* const newp = newIfConstCommitSize(nodep)) {
             nodep->replaceWith(newp);
             AstNode* const oldp = nodep;
             nodep = newp;
-            // if (debug() > 4) oldp->dumpTree(cout, "  fixConstSize_old: ");
-            // if (debug() > 4) newp->dumpTree(cout, "              _new: ");
+            // if (debug() > 4) oldp->dumpTree("-  fixConstSize_old: ");
+            // if (debug() > 4) newp->dumpTree("-              _new: ");
             VL_DO_DANGLING(pushDeletep(oldp), oldp);
         }
         editDType(nodep);
+    }
+    void visit(AstCastWrap* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        UINFO(6, " Replace " << nodep << " w/ " << nodep->lhsp() << endl);
+        nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNodeDType* nodep) override {  //
         visitIterateNodeDType(nodep);

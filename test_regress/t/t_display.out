@@ -65,7 +65,7 @@ hello, from a concatenated string.
 hello, from a concatenated format string [0].
 extra argument:                    0
                    0 : pre argument after
-empty: ><
+empty: > <
 [0] Embedded tab '	' and <#013> return
 [0] Embedded
 multiline

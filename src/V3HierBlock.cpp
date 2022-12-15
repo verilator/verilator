@@ -118,7 +118,7 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const GParams& gparams, boo
             // V3Param.cpp. See also ParamVisitor::checkSupportedParam() in the file.
             if (constp->isDouble()) {
                 // 64 bit width of hex can be expressed with 16 chars.
-                // 32 chars must be long enough for hexadecial floating point
+                // 32 chars must be long enough for hexadecimal floating point
                 // considering prefix of '0x', '.', and 'P'.
                 std::vector<char> hexFpStr(32, '\0');
                 const int len = VL_SNPRINTF(hexFpStr.data(), hexFpStr.size(), "%a",
@@ -296,7 +296,7 @@ class HierBlockUsageCollectVisitor final : public VNVisitor {
         if (nodep->isGParam() && nodep->overriddenParam()) m_gparams.push_back(nodep);
     }
 
-    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
@@ -311,7 +311,7 @@ public:
 void V3HierBlockPlan::add(const AstNodeModule* modp, const std::vector<AstVar*>& gparams) {
     const iterator it = m_blocks.find(modp);
     if (it == m_blocks.end()) {
-        V3HierBlock* hblockp = new V3HierBlock(modp, gparams);
+        V3HierBlock* hblockp = new V3HierBlock{modp, gparams};
         UINFO(3, "Add " << modp->prettyNameQ() << " with " << gparams.size() << " parameters"
                         << std::endl);
         m_blocks.emplace(modp, hblockp);
@@ -377,7 +377,7 @@ V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
         const V3HierBlock* hblockp = sorted[i];
         const V3HierBlock::HierBlockSet& p = hblockp->parents();
         for (V3HierBlock::HierBlockSet::const_iterator it = p.begin(); it != p.end(); ++it) {
-            // Delete hblockp from parrents. If a parent does not have a child anymore, then it is
+            // Delete hblockp from parents. If a parent does not have a child anymore, then it is
             // a leaf too.
             const auto parentIt = childrenOfHierBlock.find(*it);
             UASSERT_OBJ(parentIt != childrenOfHierBlock.end(), (*it)->modp(), "must be included");

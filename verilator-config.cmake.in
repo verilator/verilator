@@ -79,8 +79,8 @@ endif()
 
 define_property(TARGET
   PROPERTY VERILATOR_THREADED
-  BRIEF_DOCS "Verilator multithreading enabled"
-  FULL_DOCS "Verilator multithreading enabled"
+  BRIEF_DOCS "Deprecated and has no effect (ignored)"
+  FULL_DOCS "Deprecated and has no effect (ignored)"
 )
 
 define_property(TARGET
@@ -262,11 +262,6 @@ function(verilate TARGET)
                      "${VCMAKE}" "${VCMAKE_COPY}"
                      DEPENDS "${VCMAKE}" VERBATIM)
 
-  if (${VERILATE_PREFIX}_THREADS)
-    # If any verilate() call specifies THREADS, define VL_THREADED in the final build
-    set_property(TARGET ${TARGET} PROPERTY VERILATOR_THREADED ON)
-  endif()
-
   if (${VERILATE_PREFIX}_COVERAGE)
     # If any verilate() call specifies COVERAGE, define VM_COVERAGE in the final build
     set_property(TARGET ${TARGET} PROPERTY VERILATOR_COVERAGE ON)
@@ -326,7 +321,6 @@ function(verilate TARGET)
   target_compile_definitions(${TARGET} PRIVATE
     VM_COVERAGE=$<BOOL:$<TARGET_PROPERTY:VERILATOR_COVERAGE>>
     VM_SC=$<BOOL:$<TARGET_PROPERTY:VERILATOR_SYSTEMC>>
-    $<$<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>:VL_THREADED>
     VM_TRACE=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE>>
     VM_TRACE_VCD=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_VCD>>
     VM_TRACE_FST=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_FST>>
@@ -336,11 +330,9 @@ function(verilate TARGET)
     ${${VERILATE_PREFIX}_USER_LDLIBS}
   )
 
-  if (${VERILATE_PREFIX}_THREADS OR ${VERILATE_PREFIX}_TRACE_THREADS)
-    target_link_libraries(${TARGET} PUBLIC
-      ${VERILATOR_MT_CFLAGS}
-    )
-  endif()
+  target_link_libraries(${TARGET} PUBLIC
+    ${VERILATOR_MT_CFLAGS}
+  )
 
   target_compile_features(${TARGET} PRIVATE cxx_std_11)
 

@@ -28,10 +28,8 @@
 #include "verilated_fst_c.h"
 
 // GTKWave configuration
-#ifdef VL_THREADED
-# define HAVE_LIBPTHREAD
-# define FST_WRITER_PARALLEL
-#endif
+#define HAVE_LIBPTHREAD
+#define FST_WRITER_PARALLEL
 
 // Include the GTKWave implementation directly
 #define FST_CONFIG_INCLUDE "fst_config.h"
@@ -97,7 +95,7 @@ VerilatedFst::VerilatedFst(void* /*fst*/) {}
 VerilatedFst::~VerilatedFst() {
     if (m_fst) fstWriterClose(m_fst);
     if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = nullptr);
-    if (m_strbuf) VL_DO_CLEAR(delete[] m_strbuf, m_strbuf = nullptr);
+    if (m_strbufp) VL_DO_CLEAR(delete[] m_strbufp, m_strbufp = nullptr);
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
@@ -127,7 +125,7 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     m_code2symbol.clear();
 
     // Allocate string buffer for arrays
-    if (!m_strbuf) m_strbuf = new char[maxBits() + 32];
+    if (!m_strbufp) m_strbufp = new char[maxBits() + 32];
 }
 
 void VerilatedFst::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
@@ -223,6 +221,10 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum, fstVar
     }
 }
 
+void VerilatedFst::declEvent(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                             fstVarType vartype, bool array, int arraynum) {
+    declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 0, 0);
+}
 void VerilatedFst::declBit(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
                            fstVarType vartype, bool array, int arraynum) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 0, 0);
@@ -248,14 +250,11 @@ void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum, fst
 // Get/commit trace buffer
 
 VerilatedFst::Buffer* VerilatedFst::getTraceBuffer() {
-#ifdef VL_THREADED
     if (offload()) return new OffloadBuffer{*this};
-#endif
     return new Buffer{*this};
 }
 
 void VerilatedFst::commitTraceBuffer(VerilatedFst::Buffer* bufp) {
-#ifdef VL_THREADED
     if (offload()) {
         OffloadBuffer* const offloadBufferp = static_cast<OffloadBuffer*>(bufp);
         if (offloadBufferp->m_offloadBufferWritep) {
@@ -263,7 +262,6 @@ void VerilatedFst::commitTraceBuffer(VerilatedFst::Buffer* bufp) {
             return;  // Buffer will be deleted by the offload thread
         }
     }
-#endif
     delete bufp;
 }
 
@@ -284,6 +282,12 @@ void VerilatedFst::configure(const VerilatedTraceConfig& config) {
 // Note: emit* are only ever called from one place (full* in
 // verilated_trace_imp.h, which is included in this file at the top),
 // so always inline them.
+
+VL_ATTR_ALWINLINE
+void VerilatedFstBuffer::emitEvent(uint32_t code, VlEvent newval) {
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], "1");
+}
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitBit(uint32_t code, CData newval) {
@@ -326,7 +330,7 @@ void VerilatedFstBuffer::emitQData(uint32_t code, QData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
     int words = VL_WORDS_I(bits);
-    char* wp = m_strbuf;
+    char* wp = m_strbufp;
     // Convert the most significant word
     const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
     cvtEDataToStr(wp, newvalp[--words] << (VL_EDATASIZE - bitsInMSW));
@@ -336,7 +340,7 @@ void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int bits
         cvtEDataToStr(wp, newvalp[--words]);
         wp += VL_EDATASIZE;
     }
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbuf);
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbufp);
 }
 
 VL_ATTR_ALWINLINE

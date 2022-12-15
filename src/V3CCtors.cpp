@@ -112,13 +112,14 @@ public:
             rootFuncp->name(m_basename);
             for (AstCFunc* const funcp : m_newFunctions) {
                 AstCCall* const callp = new AstCCall{m_modp->fileline(), funcp};
+                callp->dtypeSetVoid();
                 if (m_type.isClass()) {
                     callp->argTypes("vlSymsp");
                 } else {
                     if (m_type.isCoverage()) callp->argTypes("first");
                     callp->selfPointer("this");
                 }
-                rootFuncp->addStmtsp(callp);
+                rootFuncp->addStmtsp(callp->makeStmt());
             }
         }
     }
@@ -151,7 +152,7 @@ void V3CCtors::evalAsserts() {
                         AstVarRef* const vrefp
                             = new AstVarRef{varp->fileline(), varp, VAccess::READ};
                         vrefp->selfPointer("this");
-                        AstNode* newp = vrefp;
+                        AstNodeExpr* newp = vrefp;
                         if (varp->isWide()) {
                             newp = new AstWordSel{
                                 varp->fileline(), newp,
@@ -159,15 +160,14 @@ void V3CCtors::evalAsserts() {
                         }
                         const uint64_t value = VL_MASK_Q(storedWidth) & ~VL_MASK_Q(lastWordWidth);
                         newp = new AstAnd{varp->fileline(), newp,
-                                          new AstConst(varp->fileline(), AstConst::WidthedValue(),
+                                          new AstConst(varp->fileline(), AstConst::WidthedValue{},
                                                        storedWidth, value)};
                         AstNodeIf* const ifp = new AstIf{
                             varp->fileline(), newp,
                             new AstCStmt{varp->fileline(), "Verilated::overWidthError(\""
                                                                + varp->prettyName() + "\");"}};
                         ifp->branchPred(VBranchPred::BP_UNLIKELY);
-                        newp = ifp;
-                        funcp->addStmtsp(newp);
+                        funcp->addStmtsp(ifp);
                     }
                 }
             }

@@ -79,7 +79,7 @@ struct LogicClasses final {
     LogicByScope m_initial;  // initial blocks
     LogicByScope m_final;  // final blocks
     LogicByScope m_comb;  // Combinational logic (logic with implicit sensitivities)
-    LogicByScope m_clocked;  // Clocked (or sequential) logic (logic with explictit sensitivities)
+    LogicByScope m_clocked;  // Clocked (or sequential) logic (logic with explicit sensitivities)
     LogicByScope m_hybrid;  // Hybrid logic (combinational logic with some explicit sensitivities)
     LogicByScope m_postponed;  // Postponed logic ($strobe)
 

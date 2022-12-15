@@ -32,7 +32,7 @@ class SenExprBuilder final {
     AstScope* const m_scopep;  // The scope
 
     std::vector<AstVar*> m_locals;  // Trigger eval local variables
-    std::vector<AstNodeStmt*> m_inits;  // Initialization statements for prevoius values
+    std::vector<AstNodeStmt*> m_inits;  // Initialization statements for previous values
     std::vector<AstNodeStmt*> m_preUpdates;  // Pre update assignments
     std::vector<AstNodeStmt*> m_postUpdates;  // Post update assignments
 
@@ -40,7 +40,7 @@ class SenExprBuilder final {
     std::unordered_map<VNRef<AstNode>, AstVarScope*> m_curr;  // The 'current value' signals
     std::unordered_set<VNRef<AstNode>> m_hasPreUpdate;  // Whether the given sen expression already
                                                         // has an update statement in m_preUpdates
-    std::unordered_set<VNRef<AstNode>> m_hasPostUpdate;  // Likewis for m_postUpdates
+    std::unordered_set<VNRef<AstNode>> m_hasPostUpdate;  // Likewise for m_postUpdates
 
     V3UniqueNames m_currNames{"__Vtrigcurrexpr"};  // For generating unique current value
                                                    // signal names
@@ -64,7 +64,7 @@ class SenExprBuilder final {
     }
 
     // METHODS
-    AstNode* getCurr(AstNode* exprp) {
+    AstNodeExpr* getCurr(AstNodeExpr* exprp) {
         // For simple expressions like varrefs or selects, just use them directly
         if (isSimpleExpr(exprp)) return exprp->cloneTree(false);
 
@@ -89,7 +89,7 @@ class SenExprBuilder final {
         }
         return new AstVarRef{flp, currp, VAccess::READ};
     }
-    AstVarScope* getPrev(AstNode* exprp) {
+    AstVarScope* getPrev(AstNodeExpr* exprp) {
         FileLine* const flp = exprp->fileline();
         const auto rdCurr = [=]() { return getCurr(exprp); };
 
@@ -141,8 +141,7 @@ class SenExprBuilder final {
             if (AstUnpackArrayDType* const dtypep = VN_CAST(exprp->dtypep(), UnpackArrayDType)) {
                 AstCMethodHard* const cmhp = new AstCMethodHard{flp, wrPrev(), "assign", rdCurr()};
                 cmhp->dtypeSetVoid();
-                cmhp->statement(true);
-                m_postUpdates.push_back(cmhp);
+                m_postUpdates.push_back(cmhp->makeStmt());
             } else {
                 m_postUpdates.push_back(new AstAssign{flp, wrPrev(), rdCurr()});
             }
@@ -151,13 +150,13 @@ class SenExprBuilder final {
         return prevp;
     }
 
-    std::pair<AstNode*, bool> createTerm(AstSenItem* senItemp) {
+    std::pair<AstNodeExpr*, bool> createTerm(AstSenItem* senItemp) {
         FileLine* const flp = senItemp->fileline();
-        AstNode* const senp = senItemp->sensp();
+        AstNodeExpr* const senp = senItemp->sensp();
 
         const auto currp = [=]() { return getCurr(senp); };
         const auto prevp = [=]() { return new AstVarRef{flp, getPrev(senp), VAccess::READ}; };
-        const auto lsb = [=](AstNodeMath* opp) { return new AstSel{flp, opp, 0, 1}; };
+        const auto lsb = [=](AstNodeExpr* opp) { return new AstSel{flp, opp, 0, 1}; };
 
         // All event signals should be 1-bit at this point
         switch (senItemp->edgeType()) {
@@ -188,9 +187,8 @@ class SenExprBuilder final {
 
                 // Clear 'fired' state when done
                 AstCMethodHard* const clearp = new AstCMethodHard{flp, currp(), "clearFired"};
-                ifp->addThensp(clearp);
                 clearp->dtypeSetVoid();
-                clearp->statement(true);
+                ifp->addThensp(clearp->makeStmt());
 
                 // Enqueue for clearing 'triggered' state on next eval
                 AstTextBlock* const blockp = new AstTextBlock{flp};
@@ -217,14 +215,14 @@ class SenExprBuilder final {
 public:
     // Returns the expression computing the trigger, and a bool indicating that
     // this trigger should be fired on the first evaluation (at initialization)
-    std::pair<AstNode*, bool> build(const AstSenTree* senTreep) {
+    std::pair<AstNodeExpr*, bool> build(const AstSenTree* senTreep) {
         FileLine* const flp = senTreep->fileline();
-        AstNode* resultp = nullptr;
+        AstNodeExpr* resultp = nullptr;
         bool firedAtInitialization = false;
         for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
              senItemp = VN_AS(senItemp->nextp(), SenItem)) {
             const auto& pair = createTerm(senItemp);
-            if (AstNode* const termp = pair.first) {
+            if (AstNodeExpr* const termp = pair.first) {
                 resultp = resultp ? new AstOr{flp, resultp, termp} : termp;
                 firedAtInitialization |= pair.second;
             }
@@ -246,7 +244,7 @@ public:
     }
 
     // CONSTRUCTOR
-    SenExprBuilder(AstScope* scopep)
+    explicit SenExprBuilder(AstScope* scopep)
         : m_scopep{scopep} {}
 };
 

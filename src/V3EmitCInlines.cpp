@@ -43,6 +43,14 @@ class EmitCInlines final : EmitCBaseVisitor {
         if (v3Global.opt.trace()) v3Global.needTraceDumper(true);
         iterateChildren(nodep);
     }
+    void visit(AstNodeDistBiop* nodep) override {
+        v3Global.setUsesProbDist();
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeDistTriop* nodep) override {
+        v3Global.setUsesProbDist();
+        iterateChildren(nodep);
+    }
 
     //---------------------------------------
     void visit(AstNode* nodep) override { iterateChildren(nodep); }

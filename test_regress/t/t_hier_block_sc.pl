@@ -24,7 +24,7 @@ compile(
                          '--hierarchical',
                          '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"'
     ],
-    threads => $Self->{vltmt} ? 6 : 0
+    threads => $Self->{vltmt} ? 6 : 1
     );
 
 execute(

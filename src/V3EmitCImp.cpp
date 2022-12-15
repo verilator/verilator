@@ -167,7 +167,7 @@ class EmitCImp final : EmitCFunc {
             const string filename = VL_DEV_NULL;
             m_cfilesr.push_back(
                 newCFile(filename, /* slow: */ m_slow, /* source: */ true, /* add */ false));
-            m_ofp = new V3OutCFile(filename);
+            m_ofp = new V3OutCFile{filename};
         } else {
             string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(m_fileModp);
             if (!subFileName.empty()) {
@@ -178,7 +178,7 @@ class EmitCImp final : EmitCFunc {
             filename += ".cpp";
             m_cfilesr.push_back(
                 newCFile(filename, /* slow: */ m_slow, /* source: */ true, /* add */ false));
-            m_ofp = v3Global.opt.systemC() ? new V3OutScFile(filename) : new V3OutCFile(filename);
+            m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
         }
 
         ofp()->putsHeader();
@@ -543,7 +543,7 @@ class EmitCImp final : EmitCFunc {
         m_modp = modp;
 
         // Emit implementation of this module, if this is an AstClassPackage, then put the
-        // corresponding AstClass implementation in the same file as often optimziations are
+        // corresponding AstClass implementation in the same file as often optimizations are
         // possible when both are seen by the compiler
         // TODO: is the above comment still true?
 
@@ -593,9 +593,9 @@ class EmitCTrace final : EmitCFunc {
         m_cfilesr.push_back(cfilep);
 
         if (optSystemC()) {
-            m_ofp = new V3OutScFile(filename);
+            m_ofp = new V3OutScFile{filename};
         } else {
-            m_ofp = new V3OutCFile(filename);
+            m_ofp = new V3OutCFile{filename};
         }
         m_ofp->putsHeader();
         m_ofp->puts("// DESCR"
@@ -637,6 +637,8 @@ class EmitCTrace final : EmitCFunc {
             puts("tracep->declQuad");
         } else if (nodep->bitRange().ranged()) {
             puts("tracep->declBus");
+        } else if (nodep->dtypep()->basicp()->isEvent()) {
+            puts("tracep->declEvent");
         } else {
             puts("tracep->declBit");
         }
@@ -689,11 +691,11 @@ class EmitCTrace final : EmitCFunc {
             else if (kwd == VBasicDTypeKwd::SHORTINT) { fstvt = "FST_VT_SV_SHORTINT"; }
             else if (kwd == VBasicDTypeKwd::LONGINT) {  fstvt = "FST_VT_SV_LONGINT"; }
             else if (kwd == VBasicDTypeKwd::BYTE) {     fstvt = "FST_VT_SV_BYTE"; }
+            else if (kwd == VBasicDTypeKwd::EVENT) {     fstvt = "FST_VT_VCD_EVENT"; }
             else { fstvt = "FST_VT_SV_BIT"; }
             // clang-format on
             //
             // Not currently supported
-            // FST_VT_VCD_EVENT
             // FST_VT_VCD_PORT
             // FST_VT_VCD_SHORTREAL
             // FST_VT_VCD_REALTIME
@@ -779,6 +781,9 @@ class EmitCTrace final : EmitCFunc {
             puts("bufp->" + func + "SData");
         } else if (nodep->declp()->widthMin() > 1) {
             puts("bufp->" + func + "CData");
+        } else if (nodep->dtypep()->basicp()->isEvent()) {
+            puts("bufp->" + func + "Event");
+            emitWidth = false;
         } else {
             puts("bufp->" + func + "Bit");
             emitWidth = false;
@@ -937,10 +942,10 @@ void V3EmitC::emitcFiles() {
          filep = VN_AS(filep->nextp(), NodeFile)) {
         AstCFile* const cfilep = VN_CAST(filep, CFile);
         if (cfilep && cfilep->tblockp()) {
-            V3OutCFile of(cfilep->name());
+            V3OutCFile of{cfilep->name()};
             of.puts("// DESCR"
                     "IPTION: Verilator generated C++\n");
-            const EmitCFunc visitor(cfilep->tblockp(), &of, true);
+            const EmitCFunc visitor{cfilep->tblockp(), &of, true};
         }
     }
 }

@@ -7,7 +7,7 @@ Examples in the Distribution
 ============================
 
 See the ``examples/`` directory that is part of the distribution, and
-is installed (in a OS-specific place, often in e.g.
+is installed (in an OS-specific place, often in e.g.
 ``/usr/local/share/verilator/examples``).  These examples include:
 
 examples/make_hello_binary

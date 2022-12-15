@@ -46,7 +46,7 @@ constexpr int STATIC_CONST_MIN_WIDTH = 256;  // Minimum size to extract to stati
 class PremitVisitor final : public VNVisitor {
 private:
     // NODE STATE
-    //  AstNodeMath::user()     -> bool.  True if iterated already
+    //  AstNodeExpr::user()     -> bool.  True if iterated already
     //  AstShiftL::user2()      -> bool.  True if converted to conditional
     //  AstShiftR::user2()      -> bool.  True if converted to conditional
     //  *::user3()              -> Used when visiting AstNodeAssign
@@ -56,6 +56,7 @@ private:
     // STATE
     AstCFunc* m_cfuncp = nullptr;  // Current block
     AstNode* m_stmtp = nullptr;  // Current statement
+    AstCCall* m_callp = nullptr;  // Current AstCCall
     AstWhile* m_inWhilep = nullptr;  // Inside while loop, special statement additions
     AstTraceInc* m_inTracep = nullptr;  // Inside while loop, special statement additions
     bool m_assignLhs = false;  // Inside assignment lhs, don't breakup extracts
@@ -68,7 +69,7 @@ private:
         return (VN_IS(nodep->lhsp(), VarRef) && !AstVar::scVarRecurse(nodep->lhsp())
                 && VN_IS(nodep->rhsp(), Const));
     }
-    void checkNode(AstNode* nodep) {
+    void checkNode(AstNodeExpr* nodep) {
         // Consider adding a temp for this expression.
         // We need to avoid adding temps to the following:
         //   ASSIGN(x, *here*)
@@ -89,8 +90,7 @@ private:
                            && VN_AS(nodep->backp(), Sel)->widthp() == nodep) {
                     // AstSel::width must remain a constant
                 } else if ((nodep->firstAbovep() && VN_IS(nodep->firstAbovep(), ArraySel))
-                           || ((VN_IS(m_stmtp, CCall) || VN_IS(m_stmtp, CStmt))
-                               && VN_IS(nodep, ArraySel))) {
+                           || ((m_callp || VN_IS(m_stmtp, CStmt)) && VN_IS(nodep, ArraySel))) {
                     // ArraySel's are pointer refs, ignore
                 } else {
                     UINFO(4, "Cre Temp: " << nodep << endl);
@@ -116,7 +116,7 @@ private:
         }
     }
 
-    void createDeepTemp(AstNode* nodep, bool noSubst) {
+    void createDeepTemp(AstNodeExpr* nodep, bool noSubst) {
         if (nodep->user1SetOnce()) return;  // Only add another assignment for this node
 
         VNRelinker relinker;
@@ -137,17 +137,17 @@ private:
             ++m_extractedToConstPool;
         } else {
             // Keep as local temporary. Name based on hash of node for output stability.
-            varp = new AstVar(fl, VVarType::STMTTEMP, m_tempNames.get(nodep), nodep->dtypep());
+            varp = new AstVar{fl, VVarType::STMTTEMP, m_tempNames.get(nodep), nodep->dtypep()};
             m_cfuncp->addInitsp(varp);
             // Put assignment before the referencing statement
-            insertBeforeStmt(new AstAssign(fl, new AstVarRef(fl, varp, VAccess::WRITE), nodep));
+            insertBeforeStmt(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, nodep});
         }
 
         // Do not remove VarRefs to this in V3Const
         if (noSubst) varp->noSubst(true);
 
         // Replace node with VarRef to new Var
-        relinker.relink(new AstVarRef(fl, varp, VAccess::READ));
+        relinker.relink(new AstVarRef{fl, varp, VAccess::READ});
     }
 
     // VISITORS
@@ -208,10 +208,6 @@ private:
         m_stmtp = nullptr;
     }
     void visit(AstNodeStmt* nodep) override {
-        if (!nodep->isStatement()) {
-            iterateChildren(nodep);
-            return;
-        }
         UINFO(4, "  STMT  " << nodep << endl);
         startStatement(nodep);
         iterateChildren(nodep);
@@ -240,31 +236,31 @@ private:
                 && nodep->width() < (1LL << nodep->rhsp()->widthMin())) {
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
-                AstNode* constzerop;
+                AstNodeExpr* constzerop;
                 const int m1value
                     = nodep->widthMin() - 1;  // Constant of width-1; not changing dtype width
                 if (nodep->signedFlavor()) {
                     // Then over shifting gives the sign bit, not all zeros
                     // Note *NOT* clean output -- just like normal shift!
                     // Create equivalent of VL_SIGNONES_(node_width)
-                    constzerop = new AstNegate(
+                    constzerop = new AstNegate{
                         nodep->fileline(),
-                        new AstShiftR(nodep->fileline(), nodep->lhsp()->cloneTree(false),
-                                      new AstConst(nodep->fileline(), m1value), nodep->width()));
+                        new AstShiftR{nodep->fileline(), nodep->lhsp()->cloneTree(false),
+                                      new AstConst(nodep->fileline(), m1value), nodep->width()}};
                 } else {
-                    constzerop = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
-                                              nodep->width(), 0);
+                    constzerop = new AstConst{nodep->fileline(), AstConst::WidthedValue{},
+                                              nodep->width(), 0};
                 }
                 constzerop->dtypeFrom(nodep);  // unsigned
 
-                AstNode* const constwidthp
-                    = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                AstNodeExpr* const constwidthp
+                    = new AstConst(nodep->fileline(), AstConst::WidthedValue{},
                                    nodep->rhsp()->widthMin(), m1value);
                 constwidthp->dtypeFrom(nodep->rhsp());  // unsigned
-                AstCond* const newp = new AstCond(
+                AstCond* const newp = new AstCond{
                     nodep->fileline(),
-                    new AstGte(nodep->fileline(), constwidthp, nodep->rhsp()->cloneTree(false)),
-                    nodep, constzerop);
+                    new AstGte{nodep->fileline(), constwidthp, nodep->rhsp()->cloneTree(false)},
+                    nodep, constzerop};
                 replaceHandle.relink(newp);
             }
         }
@@ -337,6 +333,11 @@ private:
         }
         checkNode(nodep);
     }
+    void visit(AstCCall* nodep) override {
+        VL_RESTORER(m_callp);
+        m_callp = nodep;
+        iterateChildren(nodep);
+    }
 
     // Autoflush
     void visit(AstDisplay* nodep) override {
@@ -351,8 +352,9 @@ private:
                 // There's another display next; we can just wait to flush
             } else {
                 UINFO(4, "Autoflush " << nodep << endl);
-                nodep->addNextHere(new AstFFlush(nodep->fileline(),
-                                                 AstNode::cloneTreeNull(nodep->filep(), true)));
+                nodep->addNextHere(
+                    new AstFFlush{nodep->fileline(),
+                                  VN_AS(AstNode::cloneTreeNull(nodep->filep(), true), NodeExpr)});
             }
         }
     }
@@ -360,7 +362,7 @@ private:
         iterateChildren(nodep);
         // Any strings sent to a display must be var of string data type,
         // to avoid passing a pointer to a temporary.
-        for (AstNode* expp = nodep->exprsp(); expp; expp = expp->nextp()) {
+        for (AstNodeExpr* expp = nodep->exprsp(); expp; expp = VN_AS(expp->nextp(), NodeExpr)) {
             if (expp->dtypep()->basicp() && expp->dtypep()->basicp()->isString()
                 && !VN_IS(expp, VarRef)) {
                 createDeepTemp(expp, true);

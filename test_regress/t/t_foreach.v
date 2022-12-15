@@ -18,6 +18,8 @@ module t (/*AUTOARG*/);
    bit [31:0]      depth1_array [0:0];
    int             oned [3:1];
    int             twod [3:1][9:8];
+   string          str1;
+   string          str2;
 
    typedef struct packed {
       reg [1:0] [63:0] subarray;
@@ -149,6 +151,20 @@ module t (/*AUTOARG*/);
       `checkh(add, 6);
 
       foreach (twod[i, j]);  // Null body check
+
+      str1 = "abcd";
+      str2 = "1234";
+      foreach (str1[i]) begin
+         str2[i] = str1[i];
+      end
+      if (str1 != str2) $stop;
+
+      str1 = "";
+      add = 0;
+      foreach(str1[i]) begin
+         add++;
+      end
+      `checkh(add, 0);
 
       $write("*-* All Finished *-*\n");
       $finish;

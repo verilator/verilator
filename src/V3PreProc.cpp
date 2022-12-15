@@ -19,6 +19,7 @@
 
 #include "V3PreProc.h"
 
+#include "V3Config.h"
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3Global.h"
@@ -263,10 +264,10 @@ public:
     void configure(FileLine* filelinep) {
         // configure() separate from constructor to avoid calling abstract functions
         m_preprocp = this;  // Silly, but to make code more similar to Verilog-Perl
-        m_finFilelinep = new FileLine(filelinep->filename());
+        m_finFilelinep = new FileLine{filelinep->filename()};
         m_finFilelinep->lineno(1);
         // Create lexer
-        m_lexp = new V3PreLex(this, filelinep);
+        m_lexp = new V3PreLex{this, filelinep};
         m_lexp->m_keepComments = keepComments();
         m_lexp->m_keepWhitespace = keepWhitespace();
         m_lexp->m_pedantic = pedantic();
@@ -344,7 +345,7 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
             }
             undef(name);
         }
-        m_defines.emplace(name, VDefine(fl, value, params, cmdline));
+        m_defines.emplace(name, VDefine{fl, value, params, cmdline});
     }
 }
 
@@ -793,7 +794,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
     }
 
     // Save file contents for future error reporting
-    FileLine* const flsp = new FileLine(filename);
+    FileLine* const flsp = new FileLine{filename};
     flsp->lineno(1);
     flsp->newContent();
     for (const string& i : wholefile) flsp->contentp()->pushText(i);
@@ -843,6 +844,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
         FileLine* const fl = new FileLine{flsp};
         fl->contentLineno(eof_lineno);
         fl->column(eof_newline + 1, eof_newline + 1);
+        V3Config::applyIgnores(fl);  // As preprocessor hasn't otherwise applied yet
         fl->v3warn(EOFNEWLINE, "Missing newline at end of file (POSIX 3.206).\n"
                                    << fl->warnMore() << "... Suggest add newline.");
     }
@@ -1000,7 +1002,7 @@ int V3PreProcImp::getStateToken() {
 
         if (tok == VP_DEFREF_JOIN) {
             // Here's something fun and unspecified as yet:
-            // The existence of non-existance of a base define changes `` expansion
+            // The existence of non-existence of a base define changes `` expansion
             //  `define QA_b zzz
             //  `define Q1 `QA``_b
             //   1Q1 -> zzz
@@ -1050,7 +1052,7 @@ int V3PreProcImp::getStateToken() {
                     bool enable = defExists(m_lastSym);
                     UINFO(4, "Ifdef " << m_lastSym << (enable ? " ON" : " OFF") << endl);
                     if (state() == ps_DEFNAME_IFNDEF) enable = !enable;
-                    m_ifdefStack.push(VPreIfEntry(enable, false));
+                    m_ifdefStack.push(VPreIfEntry{enable, false});
                     if (!enable) parsingOff();
                     statePop();
                     goto next_tok;
@@ -1065,7 +1067,7 @@ int V3PreProcImp::getStateToken() {
                         // Handle `if portion
                         const bool enable = !lastIf.everOn() && defExists(m_lastSym);
                         UINFO(4, "Elsif " << m_lastSym << (enable ? " ON" : " OFF") << endl);
-                        m_ifdefStack.push(VPreIfEntry(enable, lastIf.everOn()));
+                        m_ifdefStack.push(VPreIfEntry{enable, lastIf.everOn()});
                         if (!enable) parsingOff();
                     }
                     statePop();
@@ -1247,7 +1249,7 @@ int V3PreProcImp::getStateToken() {
                 refp->nextarg(refp->nextarg() + rtn);
                 goto next_tok;
             } else if (tok == VP_STRIFY) {
-                // We must expand stringinfication, when done will return to this state
+                // We must expand stringification, when done will return to this state
                 statePush(ps_STRIFY);
                 goto next_tok;
             } else {
@@ -1380,7 +1382,7 @@ int V3PreProcImp::getStateToken() {
                 m_ifdefStack.pop();
                 const bool enable = !lastIf.everOn();
                 UINFO(4, "Else " << (enable ? " ON" : " OFF") << endl);
-                m_ifdefStack.push(VPreIfEntry(enable, lastIf.everOn()));
+                m_ifdefStack.push(VPreIfEntry{enable, lastIf.everOn()});
                 if (!lastIf.on()) parsingOn();
                 if (!enable) parsingOff();
             }
@@ -1428,7 +1430,7 @@ int V3PreProcImp::getStateToken() {
                 if (params == "0" || params == "") {  // Found, as simple substitution
                     string out;
                     if (!m_off) {
-                        VDefineRef tempref(name, "");
+                        VDefineRef tempref{name, ""};
                         out = defineSubst(&tempref);
                     }
                     // Similar code in parenthesized define (Search for END_OF_DEFARG)
@@ -1467,7 +1469,7 @@ int V3PreProcImp::getStateToken() {
                     // The CURRENT macro needs the paren saved, it's not a
                     // property of the child macro
                     if (!m_defRefs.empty()) m_defRefs.top().parenLevel(m_lexp->m_parenLevel);
-                    m_defRefs.push(VDefineRef(name, params));
+                    m_defRefs.push(VDefineRef{name, params});
                     statePush(ps_DEFPAREN);
                     m_lexp->pushStateDefArg(0);
                     goto next_tok;

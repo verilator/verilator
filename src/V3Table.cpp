@@ -100,8 +100,8 @@ public:
         v3Global.rootp()->typeTablep()->addTypesp(tableDTypep);
         // Create table initializer (with default value 0)
         AstConst* const defaultp = elemDType->isString()
-                                       ? new AstConst{m_fl, AstConst::String(), ""}
-                                       : new AstConst{m_fl, AstConst::WidthedValue(), width, 0};
+                                       ? new AstConst{m_fl, AstConst::String{}, ""}
+                                       : new AstConst{m_fl, AstConst::WidthedValue{}, width, 0};
         m_initp = new AstInitArray{m_fl, tableDTypep, defaultp};
     }
 
@@ -277,7 +277,7 @@ private:
         // Keep sensitivity list, but delete all else
         nodep->stmtsp()->unlinkFrBackWithNext()->deleteTree();
         nodep->addStmtsp(stmtsp);
-        if (debug() >= 6) nodep->dumpTree(cout, "  table_new: ");
+        if (debug() >= 6) nodep->dumpTree("-  table_new: ");
     }
 
     void createTables(AstAlways* nodep, TableBuilder& outputAssignedTableBuilder) {
@@ -336,7 +336,7 @@ private:
     AstNode* createLookupInput(FileLine* fl, AstVarScope* indexVscp) {
         // Concat inputs into a single temp variable (inside always)
         // First var in inVars becomes the LSB of the concat
-        AstNode* concatp = nullptr;
+        AstNodeExpr* concatp = nullptr;
         for (AstVarScope* invscp : m_inVarps) {
             AstVarRef* const refp = new AstVarRef{fl, invscp, VAccess::READ};
             if (concatp) {
@@ -359,8 +359,8 @@ private:
                              AstVarScope* outputAssignedTableVscp) {
         FileLine* const fl = nodep->fileline();
         for (TableOutputVar& tov : m_outVarps) {
-            AstNode* const alhsp = new AstVarRef{fl, tov.varScopep(), VAccess::WRITE};
-            AstNode* const arhsp = select(fl, tov.tabeVarScopep(), indexVscp);
+            AstNodeExpr* const alhsp = new AstVarRef{fl, tov.varScopep(), VAccess::WRITE};
+            AstNodeExpr* const arhsp = select(fl, tov.tabeVarScopep(), indexVscp);
             AstNode* outsetp = m_assignDly
                                    ? static_cast<AstNode*>(new AstAssignDly{fl, alhsp, arhsp})
                                    : static_cast<AstNode*>(new AstAssign{fl, alhsp, arhsp});
@@ -369,7 +369,7 @@ private:
             if (tov.mayBeUnassigned()) {
                 V3Number outputChgMask{nodep, static_cast<int>(m_outVarps.size()), 0};
                 outputChgMask.setBit(tov.ord(), 1);
-                AstNode* const condp
+                AstNodeExpr* const condp
                     = new AstAnd{fl, select(fl, outputAssignedTableVscp, indexVscp),
                                  new AstConst{fl, outputChgMask}};
                 outsetp = new AstIf{fl, condp, outsetp};

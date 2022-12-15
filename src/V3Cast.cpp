@@ -16,9 +16,9 @@
 // V3Cast's Transformations:
 //
 // Each module:
-//      For each math operator, if above operator requires 32 bits,
+//      For each expression, if above expression requires 32 bits,
 //      and this isn't, cast to 32 bits.
-//      Likewise for 64 bit operators.
+//      Likewise for 64 bit expressions.
 //
 // C++ rules:
 //      Integral promotions allow conversion to larger int.  Unsigned is only
@@ -63,7 +63,7 @@ private:
 
     // METHODS
 
-    void insertCast(AstNode* nodep, int needsize) {  // We'll insert ABOVE passed node
+    void insertCast(AstNodeExpr* nodep, int needsize) {  // We'll insert ABOVE passed node
         UINFO(4, "  NeedCast " << nodep << endl);
         VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
@@ -71,7 +71,7 @@ private:
         AstCCast* const castp
             = new AstCCast{nodep->fileline(), nodep, needsize, nodep->widthMin()};
         relinkHandle.relink(castp);
-        // if (debug() > 8) castp->dumpTree(cout, "-castins: ");
+        // if (debug() > 8) castp->dumpTree("-  castins: ");
         //
         ensureLower32Cast(castp);
         nodep->user1(1);  // Now must be of known size
@@ -87,7 +87,7 @@ private:
             return VL_IDATASIZE;
         }
     }
-    void ensureCast(AstNode* nodep) {
+    void ensureCast(AstNodeExpr* nodep) {
         if (castSize(nodep->backp()) != castSize(nodep) || !nodep->user1()) {
             insertCast(nodep, castSize(nodep->backp()));
         }
@@ -101,13 +101,12 @@ private:
             insertCast(nodep->lhsp(), VL_IDATASIZE);
         }
     }
-    void ensureNullChecked(AstNode* nodep) {
+    void ensureNullChecked(AstNodeExpr* nodep) {
         // TODO optimize to track null checked values and avoid where possible
         if (!VN_IS(nodep->backp(), NullCheck)) {
             VNRelinker relinkHandle;
             nodep->unlinkFrBack(&relinkHandle);
-            AstNode* const newp = new AstNullCheck{nodep->fileline(), nodep};
-            relinkHandle.relink(newp);
+            relinkHandle.relink(new AstNullCheck{nodep->fileline(), nodep});
         }
     }
 
@@ -158,7 +157,8 @@ private:
     }
     void visit(AstVarRef* nodep) override {
         const AstNode* const backp = nodep->backp();
-        if (nodep->access().isReadOnly() && !VN_IS(backp, CCast) && VN_IS(backp, NodeMath)
+        if (nodep->access().isReadOnly() && VN_IS(backp, NodeExpr) && !VN_IS(backp, CCast)
+            && !VN_IS(backp, NodeCCall) && !VN_IS(backp, CMethodHard) && !VN_IS(backp, SFormatF)
             && !VN_IS(backp, ArraySel) && !VN_IS(backp, RedXor)
             && (nodep->varp()->basicp() && !nodep->varp()->basicp()->isTriggerVec()
                 && !nodep->varp()->basicp()->isForkSync())

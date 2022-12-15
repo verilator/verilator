@@ -112,7 +112,7 @@ string AstNode::encodeName(const string& namein) {
     }
     // Shorten names
     // TODO long term use VName in place of "string name"
-    // Then we also won't need to save the table of hased values
+    // Then we also won't need to save the table of hashed values
     VName vname{out};
     return vname.hashedName();
 }
@@ -226,9 +226,9 @@ void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int line
 //  // Commenting out the section below may crash, as the tree state
 //  // between edits is not always consistent for printing
 //  cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<endl;
-//  v3Global.rootp()->dumpTree(cout, "-treeChange: ");
+//  v3Global.rootp()->dumpTree("-  treeChange: ");
 //  if (next||1) this->dumpTreeAndNext(cout, prefix);
-//  else this->dumpTree(cout, prefix);
+//  else this->dumpTree(prefix);
 //  this->checkTree();
 //  v3Global.rootp()->checkTree();
 //}
@@ -852,6 +852,7 @@ void AstNode::iterateAndNext(VNVisitor& v) {
 #ifdef VL_DEBUG  // Otherwise too hot of a function for debug
     UASSERT_OBJ(!(nodep && !nodep->m_backp), nodep, "iterateAndNext node has no back");
 #endif
+    // cppcheck-suppress knownConditionTrueFalse
     if (nodep) ASTNODE_PREFETCH(nodep->m_nextp);
     while (nodep) {  // effectively: if (!this) return;  // Callers rely on this
         if (nodep->m_nextp) ASTNODE_PREFETCH(nodep->m_nextp->m_nextp);
@@ -1001,9 +1002,9 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 //======================================================================
 // Debugging
 
-void AstNode::checkTreeIter(const AstNode* backp) const {
+void AstNode::checkTreeIter(const AstNode* prevBackp) const {
     // private: Check a tree and children
-    UASSERT_OBJ(backp == this->backp(), this, "Back node inconsistent");
+    UASSERT_OBJ(prevBackp == this->backp(), this, "Back node inconsistent");
     switch (this->type()) {
 #include "V3Ast__gen_op_checks.h"
     default: VL_UNREACHABLE;  // LCOV_EXCL_LINE

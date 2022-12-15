@@ -453,6 +453,8 @@ public:
         TIME,
         // Closer to a class type, but limited usage
         STRING,
+        // Property / Sequence argument type
+        UNTYPED,
         // Internal types for mid-steps
         SCOPEPTR,
         CHARPTR,
@@ -485,6 +487,7 @@ public:
                                             "shortint",
                                             "time",
                                             "string",
+                                            "untyped",
                                             "VerilatedScope*",
                                             "char*",
                                             "VlMTaskState",
@@ -501,11 +504,12 @@ public:
     }
     const char* dpiType() const {
         static const char* const names[]
-            = {"%E-unk",        "svBit",         "char",         "void*",           "char",
-               "int",           "%E-integer",    "svLogic",      "long long",       "double",
-               "short",         "%E-time",       "const char*",  "dpiScope",        "const char*",
-               "%E-mtaskstate", "%E-triggervec", "%E-dly-sched", "%E-trig-sched",   "%E-dyn-sched",
-               "%E-fork",       "IData",         "QData",        "%E-logic-implct", " MAX"};
+            = {"%E-unk",       "svBit",         "char",          "void*",        "char",
+               "int",          "%E-integer",    "svLogic",       "long long",    "double",
+               "short",        "%E-time",       "const char*",   "%E-untyped",   "dpiScope",
+               "const char*",  "%E-mtaskstate", "%E-triggervec", "%E-dly-sched", "%E-trig-sched",
+               "%E-dyn-sched", "%E-fork",       "IData",         "QData",        "%E-logic-implct",
+               " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -582,7 +586,7 @@ public:
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
                 || m_e == MTASKSTATE || m_e == TRIGGERVEC || m_e == DELAY_SCHEDULER
                 || m_e == TRIGGER_SCHEDULER || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC
-                || m_e == DOUBLE);
+                || m_e == DOUBLE || m_e == UNTYPED);
     }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
     bool isEvent() const { return m_e == EVENT; }
@@ -1175,9 +1179,9 @@ class VBasicTypeKey final {
 public:
     const int m_width;  // From AstNodeDType: Bit width of operation
     const int m_widthMin;  // From AstNodeDType: If unsized, bitwidth of minimum implementation
+    const VNumRange m_nrange;  // From AstBasicDType: Numeric msb/lsb (if non-opaque keyword)
     const VSigning m_numeric;  // From AstNodeDType: Node is signed
     const VBasicDTypeKwd m_keyword;  // From AstBasicDType: What keyword created basic type
-    const VNumRange m_nrange;  // From AstBasicDType: Numeric msb/lsb (if non-opaque keyword)
     bool operator==(const VBasicTypeKey& rhs) const {
         return m_width == rhs.m_width && m_widthMin == rhs.m_widthMin && m_numeric == rhs.m_numeric
                && m_keyword == rhs.m_keyword && m_nrange == rhs.m_nrange;
@@ -1199,9 +1203,9 @@ public:
                   const VNumRange& nrange)
         : m_width{width}
         , m_widthMin{widthMin}
+        , m_nrange{nrange}
         , m_numeric{numeric}
-        , m_keyword{kwd}
-        , m_nrange{nrange} {}
+        , m_keyword{kwd} {}
     ~VBasicTypeKey() = default;
 };
 
@@ -1415,8 +1419,8 @@ protected:
     };
     AstNode* m_oldp = nullptr;  // The old node that was linked to this point in the tree
     AstNode* m_backp = nullptr;
-    RelinkWhatEn m_chg = RELINK_BAD;
     AstNode** m_iterpp = nullptr;
+    RelinkWhatEn m_chg = RELINK_BAD;
 
 public:
     VNRelinker() = default;
@@ -1539,7 +1543,7 @@ class AstNode VL_NOT_FINAL {
 private:
     AstNode* cloneTreeIter();
     AstNode* cloneTreeIterList();
-    void checkTreeIter(const AstNode* backp) const VL_MT_SAFE;
+    void checkTreeIter(const AstNode* prevBackp) const VL_MT_SAFE;
     bool gateTreeIter() const;
     static bool sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext,
                              bool gateOnly);
@@ -1870,12 +1874,11 @@ public:
         return static_cast<T_NodeResult*>(addNext<AstNode, AstNode>(nodep, newp));
     }
     inline AstNode* addNext(AstNode* newp);
-    inline void addPrev(AstNode* newp);
     void addNextHere(AstNode* newp);  // Insert newp at this->nextp
     void addHereThisAsNext(AstNode* newp);  // Adds at old place of this, this becomes next
     void replaceWith(AstNode* newp);  // Replace current node in tree with new node
-    AstNode* unlinkFrBack(VNRelinker* linkerp
-                          = nullptr);  // Unlink this from whoever points to it.
+    // Unlink this from whoever points to it.
+    AstNode* unlinkFrBack(VNRelinker* linkerp = nullptr);
     // Unlink this from whoever points to it, keep entire next list with unlinked node
     AstNode* unlinkFrBackWithNext(VNRelinker* linkerp = nullptr);
     void swapWith(AstNode* bp);
@@ -1906,7 +1909,7 @@ public:
     void dumpTree(std::ostream& os = std::cout, const string& indent = "    ",
                   int maxDepth = 0) const;
     void dumpTree(const string& indent, int maxDepth = 0) const {
-        dumpTree(cout, indent, maxDepth);
+        dumpTree(std::cout, indent, maxDepth);
     }
     static void dumpTreeGdb(const AstNode* nodep);  // For GDB only
     void dumpTreeAndNext(std::ostream& os = std::cout, const string& indent = "    ",
@@ -2203,10 +2206,6 @@ AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp);
 
 // Inline method implementations
 AstNode* AstNode::addNext(AstNode* newp) { return addNext(this, newp); }
-void AstNode::addPrev(AstNode* newp) {
-    replaceWith(newp);
-    newp->addNext(this);
-}
 
 // Specialisations of privateTypeTest
 #include "V3Ast__gen_type_tests.h"  // From ./astgen
@@ -2214,11 +2213,11 @@ void AstNode::addPrev(AstNode* newp) {
 // Specializations of AstNode::mayBeUnder
 template <>
 inline bool AstNode::mayBeUnder<AstCell>(const AstNode* nodep) {
-    return !VN_IS(nodep, NodeStmt) && !VN_IS(nodep, NodeMath);
+    return !VN_IS(nodep, NodeStmt) && !VN_IS(nodep, NodeExpr);
 }
 template <>
 inline bool AstNode::mayBeUnder<AstNodeAssign>(const AstNode* nodep) {
-    return !VN_IS(nodep, NodeMath);
+    return !VN_IS(nodep, NodeExpr);
 }
 template <>
 inline bool AstNode::mayBeUnder<AstVarScope>(const AstNode* nodep) {
@@ -2226,7 +2225,7 @@ inline bool AstNode::mayBeUnder<AstVarScope>(const AstNode* nodep) {
     if (VN_IS(nodep, Var)) return false;
     if (VN_IS(nodep, Active)) return false;
     if (VN_IS(nodep, NodeStmt)) return false;
-    if (VN_IS(nodep, NodeMath)) return false;
+    if (VN_IS(nodep, NodeExpr)) return false;
     return true;
 }
 template <>
@@ -2440,9 +2439,10 @@ class VNRef final : public std::reference_wrapper<T_Node> {
 
 public:
     template <typename U>
+    // cppcheck-suppress noExplicitConstructor
     VNRef(U&& x)
         : std::reference_wrapper<T_Node>{x} {}
-
+    // cppcheck-suppress noExplicitConstructor
     VNRef(const std::reference_wrapper<T_Node>& other)
         : std::reference_wrapper<T_Node>{other} {}
 };
@@ -2508,7 +2508,7 @@ AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
 
 // AstNode subclasses
 #include "V3AstNodeDType.h"
-#include "V3AstNodeMath.h"
+#include "V3AstNodeExpr.h"
 #include "V3AstNodeOther.h"
 
 // Inline function definitions need to go last

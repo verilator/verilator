@@ -116,6 +116,20 @@ string VString::quoteStringLiteralForShell(const string& str) {
     return result;
 }
 
+string VString::escapeStringForPath(const string& str) {
+    if (str.find(R"(\\)") != string::npos)
+        return str;  // if it has been escaped already, don't do it again
+    if (str.find('/') != string::npos) return str;  // can be replaced by `__MINGW32__` or `_WIN32`
+    string result;
+    const char space = ' ';  // escape space like this `Program Files`
+    const char escape = '\\';
+    for (const char c : str) {
+        if (c == space || c == escape) result.push_back(escape);
+        result.push_back(c);
+    }
+    return result;
+}
+
 string VString::spaceUnprintable(const string& str) {
     string out;
     for (const char c : str) {
@@ -263,7 +277,7 @@ void VHashSha256::insert(const void* datap, size_t length) {
         // If there are large inserts it would be more efficient to avoid this copy
         // by copying bytes in the loop below from either m_remainder or the data
         // as appropriate.
-        tempData = m_remainder + string(static_cast<const char*>(datap), length);
+        tempData = m_remainder + std::string{static_cast<const char*>(datap), length};
         chunkLen = tempData.length();
         chunkp = reinterpret_cast<const uint8_t*>(tempData.data());
     }
@@ -286,7 +300,7 @@ void VHashSha256::insert(const void* datap, size_t length) {
         sha256Block(m_inthash, w);
     }
 
-    m_remainder = string(reinterpret_cast<const char*>(chunkp + posBegin), chunkLen - posEnd);
+    m_remainder = std::string(reinterpret_cast<const char*>(chunkp + posBegin), chunkLen - posEnd);
 }
 
 void VHashSha256::finalize() {
@@ -372,7 +386,7 @@ string VHashSha256::digestSymbol() {
 
 void VHashSha256::selfTestOne(const string& data, const string& data2, const string& exp,
                               const string& exp64) {
-    VHashSha256 digest(data);
+    VHashSha256 digest{data};
     if (data2 != "") digest.insert(data2);
     if (VL_UNCOVERABLE(digest.digestHex() != exp)) {
         std::cerr << "%Error: When hashing '" << data + data2 << "'\n"  // LCOV_EXCL_LINE
@@ -426,7 +440,7 @@ string VName::dehash(const string& in) {
         const auto begin_vhsh
             = std::search(search_begin, search_end, std::begin(VHSH), std::end(VHSH) - 1);
         if (begin_vhsh != search_end) {
-            const std::string vhsh(begin_vhsh, search_end);
+            const std::string vhsh{begin_vhsh, search_end};
             const auto& it = s_dehashMap.find(vhsh);
             UASSERT(it != s_dehashMap.end(), "String not in reverse hash map '" << vhsh << "'");
             // Is this not the first component, but the first to require dehashing?
@@ -435,13 +449,13 @@ string VName::dehash(const string& in) {
                 dehashed = in.substr(0, last_dot_pos);
             }
             // Append the unhashed part of the component.
-            dehashed += std::string(search_begin, begin_vhsh);
+            dehashed += std::string{search_begin, begin_vhsh};
             // Append the bit that was lost to truncation but retrieved from the dehash map.
             dehashed += it->second;
         }
         // This component doesn't need dehashing but a previous one might have.
         else if (!dehashed.empty()) {
-            dehashed += std::string(search_begin, search_end);
+            dehashed += std::string{search_begin, search_end};
         }
 
         if (next_dot_pos != string::npos) {
@@ -462,7 +476,7 @@ string VName::hashedName() {
         m_hashed = m_name;
         return m_hashed;
     } else {
-        VHashSha256 hash(m_name);
+        VHashSha256 hash{m_name};
         const string suffix = "__Vhsh" + hash.digestSymbol();
         if (s_minLength < s_maxLength) {
             s_dehashMap[suffix] = m_name.substr(s_minLength);

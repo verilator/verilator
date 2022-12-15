@@ -67,11 +67,11 @@ class VerilatedVpio VL_NOT_FINAL {
     // CONSTANTS
     // Magic value stored in front of object to detect double free etc
     // Must be odd, as aligned pointer can never be odd
-    static constexpr uint32_t activeMagic() { return 0xfeed100f; }
+    static constexpr uint32_t activeMagic() VL_PURE { return 0xfeed100f; }
 
     // MEM MANGLEMENT
     // Internal note: Globals may multi-construct, see verilated.cpp top.
-    static VL_THREAD_LOCAL uint8_t* t_freeHead;
+    static thread_local uint8_t* t_freeHeadp;
 
 public:
     // CONSTRUCTORS
@@ -85,9 +85,9 @@ public:
         static constexpr size_t CHUNK_SIZE = 96;
         if (VL_UNCOVERABLE(size > CHUNK_SIZE))
             VL_FATAL_MT(__FILE__, __LINE__, "", "increase CHUNK_SIZE");
-        if (VL_LIKELY(t_freeHead)) {
-            uint8_t* const newp = t_freeHead;
-            t_freeHead = *(reinterpret_cast<uint8_t**>(newp));
+        if (VL_LIKELY(t_freeHeadp)) {
+            uint8_t* const newp = t_freeHeadp;
+            t_freeHeadp = *(reinterpret_cast<uint8_t**>(newp));
             *(reinterpret_cast<uint32_t*>(newp)) = activeMagic();
             return newp + 8;
         }
@@ -106,8 +106,8 @@ public:
 #ifdef VL_VPI_IMMEDIATE_FREE  // Define to aid in finding leaky handles
         ::operator delete(oldp);
 #else
-        *(reinterpret_cast<void**>(oldp)) = t_freeHead;
-        t_freeHead = oldp;
+        *(reinterpret_cast<void**>(oldp)) = t_freeHeadp;
+        t_freeHeadp = oldp;
 #endif
     }
     // MEMBERS
@@ -205,7 +205,7 @@ public:
     const VerilatedRange* rangep() const override { return &get_range(); }
     const char* name() const override { return m_varp->name(); }
     const char* fullname() const override {
-        static VL_THREAD_LOCAL std::string t_out;
+        static thread_local std::string t_out;
         t_out = std::string{m_scopep->name()} + "." + name();
         return t_out.c_str();
     }
@@ -225,28 +225,28 @@ public:
 };
 
 class VerilatedVpioRange final : public VerilatedVpio {
-    const VerilatedRange* const m_range;
+    const VerilatedRange* const m_rangep;
 
 public:
-    explicit VerilatedVpioRange(const VerilatedRange* range)
-        : m_range{range} {}
+    explicit VerilatedVpioRange(const VerilatedRange* rangep)
+        : m_rangep{rangep} {}
     ~VerilatedVpioRange() override = default;
     static VerilatedVpioRange* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioRange*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t type() const override { return vpiRange; }
-    uint32_t size() const override { return m_range->elements(); }
-    const VerilatedRange* rangep() const override { return m_range; }
+    uint32_t size() const override { return m_rangep->elements(); }
+    const VerilatedRange* rangep() const override { return m_rangep; }
 };
 
 class VerilatedVpioRangeIter final : public VerilatedVpio {
     // Only supports 1 dimension
-    const VerilatedRange* const m_range;
+    const VerilatedRange* const m_rangep;
     bool m_done = false;
 
 public:
-    explicit VerilatedVpioRangeIter(const VerilatedRange* range)
-        : m_range{range} {}
+    explicit VerilatedVpioRangeIter(const VerilatedRange* rangep)
+        : m_rangep{rangep} {}
     ~VerilatedVpioRangeIter() override = default;
     static VerilatedVpioRangeIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioRangeIter*>(reinterpret_cast<VerilatedVpio*>(h));
@@ -258,7 +258,7 @@ public:
             return nullptr;
         }
         m_done = true;
-        return ((new VerilatedVpioRange{m_range})->castVpiHandle());
+        return ((new VerilatedVpioRange{m_rangep})->castVpiHandle());
     }
 };
 
@@ -348,7 +348,7 @@ public:
     uint32_t size() const override { return varp()->packed().elements(); }
     const VerilatedRange* rangep() const override { return &(varp()->packed()); }
     const char* fullname() const override {
-        static VL_THREAD_LOCAL std::string t_out;
+        static thread_local std::string t_out;
         constexpr size_t LEN_MAX_INDEX = 25;
         char num[LEN_MAX_INDEX];
         VL_SNPRINTF(num, LEN_MAX_INDEX, "%d", m_index);
@@ -666,7 +666,7 @@ public:
 // Statics
 // Internal note: Globals may multi-construct, see verilated.cpp top.
 
-VL_THREAD_LOCAL uint8_t* VerilatedVpio::t_freeHead = nullptr;
+thread_local uint8_t* VerilatedVpio::t_freeHeadp = nullptr;
 
 //======================================================================
 // VerilatedVpiError
@@ -708,7 +708,7 @@ public:
     }
     void setMessage(const std::string& file, PLI_INT32 line, const char* message, ...) {
         // message cannot be a const string& as va_start cannot use a reference
-        static VL_THREAD_LOCAL std::string t_filehold;
+        static thread_local std::string t_filehold;
         va_list args;
         va_start(args, message);
         VL_VSNPRINTF(m_buff, sizeof(m_buff), message, args);
@@ -732,11 +732,11 @@ public:
         }
         VL_FATAL_MT(__FILE__, __LINE__, "", "vpi_unsupported called without error info set");
     }
-    static const char* strFromVpiVal(PLI_INT32 vpiVal) VL_MT_SAFE;
-    static const char* strFromVpiObjType(PLI_INT32 vpiVal) VL_MT_SAFE;
-    static const char* strFromVpiMethod(PLI_INT32 vpiVal) VL_MT_SAFE;
-    static const char* strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_MT_SAFE;
-    static const char* strFromVpiProp(PLI_INT32 vpiVal) VL_MT_SAFE;
+    static const char* strFromVpiVal(PLI_INT32 vpiVal) VL_PURE;
+    static const char* strFromVpiObjType(PLI_INT32 vpiVal) VL_PURE;
+    static const char* strFromVpiMethod(PLI_INT32 vpiVal) VL_PURE;
+    static const char* strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_PURE;
+    static const char* strFromVpiProp(PLI_INT32 vpiVal) VL_PURE;
 };
 
 //======================================================================
@@ -775,7 +775,7 @@ VerilatedVpiError* VerilatedVpiImp::error_info() VL_MT_UNSAFE_ONE {
 //======================================================================
 // VerilatedVpiError Methods
 
-const char* VerilatedVpiError::strFromVpiVal(PLI_INT32 vpiVal) VL_MT_SAFE {
+const char* VerilatedVpiError::strFromVpiVal(PLI_INT32 vpiVal) VL_PURE {
     // clang-format off
     static const char* const names[] = {
         "*undefined*",
@@ -802,7 +802,7 @@ const char* VerilatedVpiError::strFromVpiVal(PLI_INT32 vpiVal) VL_MT_SAFE {
     if (VL_UNCOVERABLE(vpiVal < 0)) return names[0];
     return names[(vpiVal <= vpiRawFourStateVal) ? vpiVal : 0];
 }
-const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_MT_SAFE {
+const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_PURE {
     // clang-format off
     static const char* const names[] = {
         "*undefined*",
@@ -947,7 +947,7 @@ const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_MT_SAFE {
     if (VL_UNCOVERABLE(vpiVal < 0)) return names[0];
     return names[(vpiVal <= vpiAutomatics) ? vpiVal : 0];
 }
-const char* VerilatedVpiError::strFromVpiMethod(PLI_INT32 vpiVal) VL_MT_SAFE {
+const char* VerilatedVpiError::strFromVpiMethod(PLI_INT32 vpiVal) VL_PURE {
     // clang-format off
     static const char* const names[] = {
         "vpiCondition",
@@ -990,7 +990,7 @@ const char* VerilatedVpiError::strFromVpiMethod(PLI_INT32 vpiVal) VL_MT_SAFE {
     return names[vpiVal - vpiCondition];
 }
 
-const char* VerilatedVpiError::strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_MT_SAFE {
+const char* VerilatedVpiError::strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_PURE {
     // clang-format off
     static const char* const names[] = {
         "*undefined*",
@@ -1031,7 +1031,7 @@ const char* VerilatedVpiError::strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_MT_
     return names[(vpiVal <= cbAtEndOfSimTime) ? vpiVal : 0];
 }
 
-const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) VL_MT_SAFE {
+const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) VL_PURE {
     // clang-format off
     static const char* const names[] = {
         "*undefined or other*",
@@ -1701,15 +1701,15 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
                   const char* fullname) {
     if (!vl_check_format(varp, valuep, fullname, true)) return;
     // Maximum required size is for binary string, one byte per bit plus null termination
-    static VL_THREAD_LOCAL char t_outStr[VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE + 1];
+    static thread_local char t_outStr[VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE + 1];
     // cppcheck-suppress variableScope
-    static const VL_THREAD_LOCAL int t_outStrSz = sizeof(t_outStr) - 1;
+    static const thread_local int t_outStrSz = sizeof(t_outStr) - 1;
     // We used to presume vpiValue.format = vpiIntVal or if single bit vpiScalarVal
     // This may cause backward compatibility issues with older code.
     if (valuep->format == vpiVectorVal) {
         // Vector pointer must come from our memory pool
         // It only needs to persist until the next vpi_get_value
-        static VL_THREAD_LOCAL t_vpi_vecval t_out[VL_VALUE_STRING_MAX_WORDS * 2];
+        static thread_local t_vpi_vecval t_out[VL_VALUE_STRING_MAX_WORDS * 2];
         valuep->value.vector = t_out;
         if (varp->vltype() == VLVT_UINT8) {
             t_out[0].aval = *(reinterpret_cast<CData*>(varDatap));
@@ -1792,11 +1792,11 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             // align so least significant 3 bits represent octal char
             val >>= idx.rem;
             if (i == (chars - 1)) {
-                // most signifcant char, mask off non existant bits when vector
+                // most significant char, mask off nonexistent bits when vector
                 // size is not a multiple of 3
                 const unsigned int rem = varp->packed().elements() % 3;
                 if (rem) {
-                    // generate bit mask & zero non existant bits
+                    // generate bit mask & zero nonexistent bits
                     val &= (1 << rem) - 1;
                 }
             }
@@ -1842,11 +1842,11 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
         for (i = 0; i < chars; ++i) {
             char val = (datap[i >> 1] >> ((i & 1) << 2)) & 15;
             if (i == (chars - 1)) {
-                // most signifcant char, mask off non existant bits when vector
+                // most significant char, mask off nonexistent bits when vector
                 // size is not a multiple of 4
                 const unsigned int rem = varp->packed().elements() & 3;
                 if (rem) {
-                    // generate bit mask & zero non existant bits
+                    // generate bit mask & zero nonexistent bits
                     val &= (1 << rem) - 1;
                 }
             }
@@ -2269,7 +2269,7 @@ PLI_INT32 vpi_chk_error(p_vpi_error_info error_info_p) {
     VerilatedVpiImp::assertOneCheck();
     p_vpi_error_info const _error_info_p = VerilatedVpiImp::error_info()->getError();
     if (error_info_p && _error_info_p) *error_info_p = *_error_info_p;
-    if (!_error_info_p) return 0;  // no error occured
+    if (!_error_info_p) return 0;  // no error occurred
     return _error_info_p->level;  // return error severity level
 }
 
@@ -2290,7 +2290,8 @@ PLI_INT32 vpi_release_handle(vpiHandle object) {
     return 1;
 }
 
-PLI_INT32 vpi_get_vlog_info(p_vpi_vlog_info vlog_info_p) VL_MT_SAFE {
+PLI_INT32 vpi_get_vlog_info(p_vpi_vlog_info vlog_info_p) {
+    // This is VL_MT_SAFE, but not marked as can't indicate it in the standardized header file
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
     const auto argc_argv = Verilated::threadContextp()->impp()->argc_argv();

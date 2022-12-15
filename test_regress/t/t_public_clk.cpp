@@ -13,7 +13,7 @@
 #include "verilated.h"
 
 std::unique_ptr<Vt_public_clk> topp;
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     vluint64_t sim_time = 1100;
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     contextp->commandArgs(argc, argv);

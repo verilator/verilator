@@ -13,17 +13,19 @@ clean_objs();
 scenarios(simulator => 1);
 top_filename("t/t_hier_block.v");
 
+my $threads = ($Self->{vltmt} ? '-DTEST_THREADS=6' : '-DTEST_THREADS=1');
+
 if (!$Self->have_cmake) {
     $Self->skip("Test requires CMake; ignore error since not available or version too old\n");
 } else {
     run(logfile => "$Self->{obj_dir}/cmake.log",
         cmd => ['cd "' . $Self->{obj_dir} . '" && cmake ' . $Self->{t_dir} . '/t_hier_block_cmake',
             "-DCMAKE_PREFIX_PATH=$ENV{VERILATOR_ROOT}",
-            ($Self->{vltmt} ? '-DTEST_THREADS=6' : '')
+            $threads
         ]);
 
     run(logfile => "$Self->{obj_dir}/build.log",
-        cmd => ['cd "' . $Self->{obj_dir} . '" && cmake --build', '.']
+        cmd => ['cd "' . $Self->{obj_dir} . '" && cmake --build', '.', '--', "CXX_FLAGS=$threads"]
     );
 
     run(logfile => "$Self->{obj_dir}/run.log",

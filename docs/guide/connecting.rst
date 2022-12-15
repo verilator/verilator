@@ -51,8 +51,8 @@ also the instance of the top level instance in the design hierarchy (what
 you would refer to with :code:`$root` in SystemVerilog).  This meant that
 all internal variables that were implemented by Verilator in the root scope
 were accessible as members of the model class itself.  Note there were often
-many such variable due to module inlining, including :code:`/* verilator
-public_flat */` items.
+many such variable due to module inlining, including
+:code:`/* verilator public_flat */` items.
 
 This means that user code that accesses internal signals in the model
 (likely including :code:`/* verilator public_flat */` signals, as they are
@@ -406,7 +406,7 @@ accesses the above signal "readme" would be:
            printf("Value of v: %d\n", v.value.integer);  // Prints "readme"
        }
 
-       int main(int argc, char** argv, char** env) {
+       int main(int argc, char** argv) {
            Verilated::commandArgs(argc, argv);
            const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
            const std::unique_ptr<Vour> top{new Vour{contextp.get()}};

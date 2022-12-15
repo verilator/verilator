@@ -194,7 +194,7 @@ public:
 //=============================================================================
 // VlTriggerScheduler stores coroutines to be resumed by a trigger. It does not keep track of its
 // trigger, relying on calling code to resume when appropriate. Coroutines are kept in two stages
-// - 'uncommitted' and 'ready'. Whenever a coroutine is suspended, it lands in the 'uncommited'
+// - 'uncommitted' and 'ready'. Whenever a coroutine is suspended, it lands in the 'uncommitted'
 // stage. Only when commit() is called, these coroutines get moved to the 'ready' stage. That's
 // when they can be resumed. This is done to avoid resuming processes before they start waiting.
 
@@ -404,11 +404,13 @@ public:
 
     // CONSTRUCTORS
     // Construct
+    // cppcheck-suppress noExplicitConstructor
     VlCoroutine(VlPromise* promisep)
         : m_promisep{promisep} {
         m_promisep->m_corop = this;
     }
     // Move. Update the pointers each time the return object is moved
+    // cppcheck-suppress noExplicitConstructor
     VlCoroutine(VlCoroutine&& other)
         : m_promisep{std::exchange(other.m_promisep, nullptr)} {
         if (m_promisep) m_promisep->m_corop = this;

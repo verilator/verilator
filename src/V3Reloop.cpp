@@ -105,33 +105,33 @@ private:
                     m_mgIndexHi -= m_mgOffset;
                 }
 
-                AstNode* const initp = new AstAssign(fl, new AstVarRef(fl, itp, VAccess::WRITE),
-                                                     new AstConst(fl, m_mgIndexLo));
-                AstNode* const condp = new AstLte(fl, new AstVarRef(fl, itp, VAccess::READ),
-                                                  new AstConst(fl, m_mgIndexHi));
-                AstNode* const incp = new AstAssign(
-                    fl, new AstVarRef(fl, itp, VAccess::WRITE),
-                    new AstAdd(fl, new AstConst(fl, 1), new AstVarRef(fl, itp, VAccess::READ)));
-                AstWhile* const whilep = new AstWhile(fl, condp, nullptr, incp);
+                AstNode* const initp = new AstAssign{fl, new AstVarRef{fl, itp, VAccess::WRITE},
+                                                     new AstConst{fl, m_mgIndexLo}};
+                AstNodeExpr* const condp = new AstLte{fl, new AstVarRef{fl, itp, VAccess::READ},
+                                                      new AstConst{fl, m_mgIndexHi}};
+                AstNode* const incp = new AstAssign{
+                    fl, new AstVarRef{fl, itp, VAccess::WRITE},
+                    new AstAdd{fl, new AstConst{fl, 1}, new AstVarRef{fl, itp, VAccess::READ}}};
+                AstWhile* const whilep = new AstWhile{fl, condp, nullptr, incp};
                 initp->addNext(whilep);
                 bodyp->replaceWith(initp);
                 whilep->addStmtsp(bodyp);
 
                 // Replace constant index with new loop index
-                AstNode* const offsetp
+                AstNodeExpr* const offsetp
                     = m_mgOffset == 0 ? nullptr : new AstConst(fl, std::abs(m_mgOffset));
-                AstNode* const lbitp = m_mgSelLp->bitp();
-                AstNode* const lvrefp = new AstVarRef(fl, itp, VAccess::READ);
-                lbitp->replaceWith(m_mgOffset > 0 ? new AstAdd(fl, lvrefp, offsetp) : lvrefp);
+                AstNodeExpr* const lbitp = m_mgSelLp->bitp();
+                AstNodeExpr* const lvrefp = new AstVarRef{fl, itp, VAccess::READ};
+                lbitp->replaceWith(m_mgOffset > 0 ? new AstAdd{fl, lvrefp, offsetp} : lvrefp);
                 VL_DO_DANGLING(lbitp->deleteTree(), lbitp);
                 if (m_mgSelRp) {  // else constant and no replace
-                    AstNode* const rbitp = m_mgSelRp->bitp();
-                    AstNode* const rvrefp = new AstVarRef(fl, itp, VAccess::READ);
-                    rbitp->replaceWith(m_mgOffset < 0 ? new AstAdd(fl, rvrefp, offsetp) : rvrefp);
+                    AstNodeExpr* const rbitp = m_mgSelRp->bitp();
+                    AstNodeExpr* const rvrefp = new AstVarRef{fl, itp, VAccess::READ};
+                    rbitp->replaceWith(m_mgOffset < 0 ? new AstAdd{fl, rvrefp, offsetp} : rvrefp);
                     VL_DO_DANGLING(rbitp->deleteTree(), lbitp);
                 }
-                if (debug() >= 9) initp->dumpTree(cout, "-new: ");
-                if (debug() >= 9) whilep->dumpTree(cout, "-new: ");
+                if (debug() >= 9) initp->dumpTree("-  new: ");
+                if (debug() >= 9) whilep->dumpTree("-  new: ");
 
                 // Remove remaining assigns
                 for (AstNodeAssign* assp : m_mgAssignps) {
@@ -252,7 +252,7 @@ private:
     }
     //--------------------
     void visit(AstVar*) override {}  // Accelerate
-    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:

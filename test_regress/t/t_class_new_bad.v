@@ -31,6 +31,7 @@ module t (/*AUTOARG*/);
       c1 = new(3);  // Bad, called with arg
       c2 = new(3);  // Bad, called with arg
       c3 = new();  // Bad, called without arg
+      c1 = new[2];
       $stop;
    end
 endmodule

@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_interface_modport_export.v:12:4: Unsupported: extern function
+   12 |    extern function myfunc (input logic val);
+      |    ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_interface_modport_export.v:51:31: Unsupported: Out of block function declaration
+   51 |    function automatic logic ie.myfunc (input logic val);
+      |                               ^
+%Error: Exiting due to

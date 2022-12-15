@@ -103,16 +103,16 @@ class V3Stats final {
 public:
     static void addStat(const V3Statistic&);
     static void addStat(const string& stage, const string& name, double count) {
-        addStat(V3Statistic(stage, name, count));
+        addStat(V3Statistic{stage, name, count});
     }
     static void addStat(const string& name, double count) {
-        addStat(V3Statistic("*", name, count));
+        addStat(V3Statistic{"*", name, count});
     }
     static void addStatSum(const string& name, double count) {
-        addStat(V3Statistic("*", name, count, true));
+        addStat(V3Statistic{"*", name, count, true});
     }
     static void addStatPerf(const string& name, double count) {
-        addStat(V3Statistic("*", name, count, true, true));
+        addStat(V3Statistic{"*", name, count, true, true});
     }
     /// Called each stage
     static void statsStage(const string& name);

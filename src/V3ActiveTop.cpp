@@ -129,7 +129,7 @@ class ActiveTopVisitor final : public VNVisitor {
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
     //--------------------
-    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstVarScope*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

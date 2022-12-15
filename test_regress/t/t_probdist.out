@@ -1,0 +1,43 @@
+%Error: t/t_probdist.v:18:11: Unsupported or unknown PLI call: '$dist_chi_square'
+   18 |       r = $dist_chi_square(seed, 5);
+      |           ^~~~~~~~~~~~~~~~
+%Error: t/t_probdist.v:22:25: Unsupported or unknown PLI call: '$dist_chi_square'
+   22 |       repeat(20) sum += $dist_chi_square(seed, 5);
+      |                         ^~~~~~~~~~~~~~~~
+%Error: t/t_probdist.v:26:11: Unsupported or unknown PLI call: '$dist_erlang'
+   26 |       r = $dist_erlang(seed, 5, 10);
+      |           ^~~~~~~~~~~~
+%Error: t/t_probdist.v:30:25: Unsupported or unknown PLI call: '$dist_erlang'
+   30 |       repeat(20) sum += $dist_erlang(seed, 5, 10);
+      |                         ^~~~~~~~~~~~
+%Error: t/t_probdist.v:34:11: Unsupported or unknown PLI call: '$dist_exponential'
+   34 |       r = $dist_exponential(seed, 5);
+      |           ^~~~~~~~~~~~~~~~~
+%Error: t/t_probdist.v:38:25: Unsupported or unknown PLI call: '$dist_exponential'
+   38 |       repeat(20) sum += $dist_exponential(seed, 5);
+      |                         ^~~~~~~~~~~~~~~~~
+%Error: t/t_probdist.v:42:11: Unsupported or unknown PLI call: '$dist_normal'
+   42 |       r = $dist_normal(seed, 5, 10);
+      |           ^~~~~~~~~~~~
+%Error: t/t_probdist.v:46:25: Unsupported or unknown PLI call: '$dist_normal'
+   46 |       repeat(20) sum += $dist_normal(seed, 5, 10);
+      |                         ^~~~~~~~~~~~
+%Error: t/t_probdist.v:50:11: Unsupported or unknown PLI call: '$dist_poisson'
+   50 |       r = $dist_poisson(seed, 5);
+      |           ^~~~~~~~~~~~~
+%Error: t/t_probdist.v:54:25: Unsupported or unknown PLI call: '$dist_poisson'
+   54 |       repeat(20) sum += $dist_poisson(seed, 5);
+      |                         ^~~~~~~~~~~~~
+%Error: t/t_probdist.v:58:11: Unsupported or unknown PLI call: '$dist_t'
+   58 |       r = $dist_t(seed, 5);
+      |           ^~~~~~~
+%Error: t/t_probdist.v:62:25: Unsupported or unknown PLI call: '$dist_t'
+   62 |       repeat(20) sum += $dist_t(seed, 5);
+      |                         ^~~~~~~
+%Error: t/t_probdist.v:66:11: Unsupported or unknown PLI call: '$dist_uniform'
+   66 |       r = $dist_uniform(seed, 5, 10);
+      |           ^~~~~~~~~~~~~
+%Error: t/t_probdist.v:70:25: Unsupported or unknown PLI call: '$dist_uniform'
+   70 |       repeat(20) sum += $dist_uniform(seed, 5, 10);
+      |                         ^~~~~~~~~~~~~
+%Error: Exiting due to

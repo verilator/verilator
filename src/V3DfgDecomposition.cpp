@@ -89,7 +89,7 @@ class SplitIntoComponents final {
         }
     }
 
-    SplitIntoComponents(DfgGraph& dfg, std::string label)
+    SplitIntoComponents(DfgGraph& dfg, const std::string& label)
         : m_dfg{dfg}
         , m_prefix{dfg.name() + (label.empty() ? "" : "-") + label + "-component-"} {
         // Component number is stored as DfgVertex::user<size_t>()
@@ -306,7 +306,7 @@ class ExtractCyclicComponents final {
     void mergeSCCs() {
         // Ensure that component boundaries are always at variables, by merging SCCs. Merging stops
         // at variable boundaries, so we don't need to iterate variables. Constants are reachable
-        // from their sinks, or ar unused, so we don't need to iterate them either.
+        // from their sinks, or are unused, so we don't need to iterate them either.
         for (DfgVertex *vtxp = m_dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
             nextp = vtxp->verticesNext();
             DfgVertex& vtx = *vtxp;
@@ -356,6 +356,7 @@ class ExtractCyclicComponents final {
             // Unlink the source edge (source is reconnected by 'relink'
             edge.unlinkSource();
             // Apply the fixup
+            // cppcheck-has-bug-suppress constVariable
             DfgVertexVar& clone = getClone(vtx, sourceComponent);
             relink(*(clone.as<T_Vertex>()), source, idx);
         });
@@ -517,7 +518,7 @@ class ExtractCyclicComponents final {
     }
 
     // CONSTRUCTOR - entry point
-    explicit ExtractCyclicComponents(DfgGraph& dfg, std::string label)
+    explicit ExtractCyclicComponents(DfgGraph& dfg, const std::string& label)
         : m_dfg{dfg}
         , m_prefix{dfg.name() + (label.empty() ? "" : "-") + label + "-component-"} {
         // VertexState is stored as user data

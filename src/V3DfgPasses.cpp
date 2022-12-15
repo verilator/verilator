@@ -75,62 +75,69 @@ V3DfgOptimizationContext::~V3DfgOptimizationContext() {
             "Inconsistent statistics");
 }
 
-// Common subexpression elimination
+// Common sub-expression elimination
 void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
-    DfgVertex::EqualsCache equalsCache;
-    std::unordered_map<V3Hash, std::vector<DfgVertex*>> verticesWithEqualHashes;
-    verticesWithEqualHashes.reserve(dfg.size());
+    // Remove common sub-expressions
+    {
+        // Used by DfgVertex::hash
+        const auto userDataInUse = dfg.userDataInUse();
 
-    // Used by DfgVertex::hash
-    const auto userDataInUse = dfg.userDataInUse();
+        DfgVertex::EqualsCache equalsCache;
+        std::unordered_map<V3Hash, std::vector<DfgVertex*>> verticesWithEqualHashes;
+        verticesWithEqualHashes.reserve(dfg.size());
 
-    // Pre-hash variables for speed, these are all unique, so just set their hash to a unique value
-    uint32_t varHash = 0;
-    for (DfgVertexVar *vtxp = dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->verticesNext();
-        vtxp->user<V3Hash>() = V3Hash{++varHash};
-    }
-
-    // Similarly pre-hash constants for speed. While we don't combine constants, we do want
-    // expressions using the same constants to be combined, so we do need to hash equal constants
-    // to equal values.
-    for (DfgConst *vtxp = dfg.constVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->verticesNext();
-        // Get rid of unused constants while we are at it
-        if (!vtxp->hasSinks()) {
-            vtxp->unlinkDelete(dfg);
-            continue;
+        // Pre-hash variables, these are all unique, so just set their hash to a unique value
+        uint32_t varHash = 0;
+        for (DfgVertexVar *vtxp = dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+            nextp = vtxp->verticesNext();
+            vtxp->user<V3Hash>() = V3Hash{++varHash};
         }
-        vtxp->user<V3Hash>() = vtxp->num().toHash();
-    }
 
-    // Combine operation vertices
-    for (DfgVertex *vtxp = dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->verticesNext();
-        // Get rid of unused operations while we are at it
-        if (!vtxp->hasSinks()) {
-            vtxp->unlinkDelete(dfg);
-            continue;
-        }
-        const V3Hash hash = vtxp->hash();
-        if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
-        std::vector<DfgVertex*>& vec = verticesWithEqualHashes[hash];
-        bool replaced = false;
-        for (DfgVertex* const candidatep : vec) {
-            if (candidatep->equals(*vtxp, equalsCache)) {
-                ++ctx.m_eliminated;
-                vtxp->replaceWith(candidatep);
+        // Similarly pre-hash constants for speed. While we don't combine constants, we do want
+        // expressions using the same constants to be combined, so we do need to hash equal
+        // constants to equal values.
+        for (DfgConst *vtxp = dfg.constVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+            nextp = vtxp->verticesNext();
+            if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
+            // Delete unused constants while we are at it.
+            if (!vtxp->hasSinks()) {
                 vtxp->unlinkDelete(dfg);
-                replaced = true;
-                break;
+                continue;
             }
+            vtxp->user<V3Hash>() = vtxp->num().toHash() + varHash;
         }
-        if (replaced) continue;
-        vec.push_back(vtxp);
+
+        // Combine operation vertices
+        for (DfgVertex *vtxp = dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+            nextp = vtxp->verticesNext();
+            if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
+            // Delete unused nodes while we are at it.
+            if (!vtxp->hasSinks()) {
+                vtxp->unlinkDelete(dfg);
+                continue;
+            }
+            const V3Hash hash = vtxp->hash();
+            std::vector<DfgVertex*>& vec = verticesWithEqualHashes[hash];
+            bool replaced = false;
+            for (DfgVertex* const candidatep : vec) {
+                if (candidatep->equals(*vtxp, equalsCache)) {
+                    ++ctx.m_eliminated;
+                    vtxp->replaceWith(candidatep);
+                    vtxp->unlinkDelete(dfg);
+                    replaced = true;
+                    break;
+                }
+            }
+            if (replaced) continue;
+            vec.push_back(vtxp);
+        }
     }
+
+    // Prune unused nodes
+    removeUnused(dfg);
 }
 
-void V3DfgPasses::inlineVars(DfgGraph& dfg) {
+void V3DfgPasses::inlineVars(const DfgGraph& dfg) {
     for (DfgVertexVar *vtxp = dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
         nextp = vtxp->verticesNext();
         if (DfgVarPacked* const varp = vtxp->cast<DfgVarPacked>()) {
@@ -167,41 +174,46 @@ void V3DfgPasses::removeVars(DfgGraph& dfg, DfgRemoveVarsContext& ctx) {
         // Can't remove if it has consumers
         if (varp->hasSinks()) continue;
 
-        // Can't remove if read in the module and driven here (i.e.: it's an output of the DFG)
-        if (varp->hasModRefs() && varp->isDrivenByDfg()) continue;
-
-        // Can't remove if only partially driven by the DFG
-        if (varp->isDrivenByDfg() && !varp->isDrivenFullyByDfg()) continue;
-
-        // Can't remove if referenced externally, or other special reasons
-        if (varp->keep()) continue;
-
-        // If the driver of this variable has multiple non-variable sinks, then we would need
-        // a temporary when rendering the graph. Instead of introducing a temporary, keep the
-        // first variable that is driven by that driver
+        // Otherwise if it has drivers
         if (varp->isDrivenByDfg()) {
-            DfgVertex* const driverp = varp->source(0);
-            unsigned nonVarSinks = 0;
-            const DfgVarPacked* firstSinkVarp = nullptr;
-            const bool keepFirst = driverp->findSink<DfgVertex>([&](const DfgVertex& sink) {
-                if (const DfgVarPacked* const sinkVarp = sink.cast<DfgVarPacked>()) {
-                    if (!firstSinkVarp) firstSinkVarp = sinkVarp;
-                } else {
-                    ++nonVarSinks;
+            // Can't remove if read in the module and driven here (i.e.: it's an output of the DFG)
+            if (varp->hasModRefs()) continue;
+
+            // Can't remove if referenced externally, or other special reasons
+            if (varp->keep()) continue;
+
+            // If the driver of this variable is not an inlined vertex, then we would need a
+            // temporary when rendering the graph. Instead of introducing a temporary, keep the
+            // first variable that is driven by that driver. Note that we still remove if the only
+            // sinks we have are variables, as we might be able to remove all of them (we can be
+            // sure the not inlined if we have at least 2 non-variable sinks).
+            if (varp->isDrivenFullyByDfg()) {
+                DfgVertex* const driverp = varp->source(0);
+                if (!driverp->inlined()) {
+                    unsigned nonVarSinks = 0;
+                    const DfgVarPacked* firstp = nullptr;
+                    const bool found = driverp->findSink<DfgVertex>([&](const DfgVertex& sink) {
+                        if (const DfgVarPacked* const sinkVarp = sink.cast<DfgVarPacked>()) {
+                            if (!firstp) firstp = sinkVarp;
+                        } else {
+                            ++nonVarSinks;
+                        }
+                        // We can stop as soon as we found the first var, and 2 non-var sinks
+                        return firstp && nonVarSinks >= 2;
+                    });
+                    // Keep this DfgVarPacked if needed
+                    if (found && firstp == varp) continue;
                 }
-                // We can stop as soon as we found the first var, and 2 non-var sinks
-                return firstSinkVarp && nonVarSinks >= 2;
-            });
-            // Keep this DfgVarPacked if needed
-            if (keepFirst && firstSinkVarp == varp) continue;
+            }
         }
 
-        // OK, we can delete this DfgVarPacked
-        ++ctx.m_removed;
+        // OK, we can delete this DfgVarPacked from the graph.
 
-        // If not referenced outside the DFG, then also delete the referenced AstVar,
-        // as it is now unused.
-        if (!varp->hasRefs()) varp->varp()->unlinkFrBack()->deleteTree();
+        // If not referenced outside the DFG, then also delete the referenced AstVar (now unused).
+        if (!varp->hasRefs()) {
+            ++ctx.m_removed;
+            varp->varp()->unlinkFrBack()->deleteTree();
+        }
 
         // Unlink and delete vertex
         varp->unlinkDelete(dfg);
@@ -209,29 +221,53 @@ void V3DfgPasses::removeVars(DfgGraph& dfg, DfgRemoveVarsContext& ctx) {
 }
 
 void V3DfgPasses::removeUnused(DfgGraph& dfg) {
-    // Iteratively remove operation vertices
-    while (true) {
-        // Do one pass over the graph.
-        bool changed = false;
-        for (DfgVertex *vtxp = dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
-            if (!vtxp->hasSinks()) {
-                changed = true;
-                vtxp->unlinkDelete(dfg);
-            }
+    // DfgVertex::user is the next pointer of the work list elements
+    const auto userDataInUse = dfg.userDataInUse();
+
+    // Head of work list. Note that we want all next pointers in the list to be non-zero (including
+    // that of the last element). This allows as to do two important things: detect if an element
+    // is in the list by checking for a non-zero next pointer, and easy prefetching without
+    // conditionals. The address of the graph is a good sentinel as it is a valid memory address,
+    // and we can easily check for the end of the list.
+    DfgVertex* const sentinelp = reinterpret_cast<DfgVertex*>(&dfg);
+    DfgVertex* workListp = sentinelp;
+
+    // Add all unused vertices to the work list. This also allocates all DfgVertex::user.
+    for (DfgVertex *vtxp = dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+        nextp = vtxp->verticesNext();
+        if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
+        if (vtxp->hasSinks()) {
+            // This vertex is used. Allocate user, but don't add to work list.
+            vtxp->setUser<DfgVertex*>(nullptr);
+        } else {
+            // This vertex is unused. Add to work list.
+            vtxp->setUser<DfgVertex*>(workListp);
+            workListp = vtxp;
         }
-        if (!changed) break;
-        // Do another pass in the opposite direction. Alternating directions reduces
-        // the pathological complexity with left/right leaning trees.
-        changed = false;
-        for (DfgVertex *vtxp = dfg.opVerticesRbeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesPrev();
-            if (!vtxp->hasSinks()) {
-                changed = true;
-                vtxp->unlinkDelete(dfg);
-            }
-        }
-        if (!changed) break;
+    }
+
+    // Process the work list
+    while (workListp != sentinelp) {
+        // Pick up the head
+        DfgVertex* const vtxp = workListp;
+        // Detach the head
+        workListp = vtxp->getUser<DfgVertex*>();
+        // Prefetch next item
+        VL_PREFETCH_RW(workListp);
+        // If used, then nothing to do, so move on
+        if (vtxp->hasSinks()) continue;
+        // Add sources of unused vertex to work list
+        vtxp->forEachSource([&](DfgVertex& src) {
+            // We only remove actual operation vertices in this loop
+            if (src.is<DfgConst>() || src.is<DfgVertexVar>()) return;
+            // If already in work list then nothing to do
+            if (src.getUser<DfgVertex*>()) return;
+            // Actually add to work list.
+            src.setUser<DfgVertex*>(workListp);
+            workListp = &src;
+        });
+        // Remove the unused vertex
+        vtxp->unlinkDelete(dfg);
     }
 
     // Finally remove unused constants
@@ -247,7 +283,7 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
 
     int passNumber = 0;
 
-    const auto apply = [&](int dumpLevel, const string name, std::function<void()> pass) {
+    const auto apply = [&](int dumpLevel, const string& name, std::function<void()> pass) {
         pass();
         if (dumpDfg() >= dumpLevel) {
             const string strippedName = VString::removeWhitespace(name);
@@ -259,14 +295,14 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
     };
 
     if (dumpDfg() >= 8) dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "input");
-    apply(3, "input         ", [&]() {});
-    apply(4, "cse           ", [&]() { cse(dfg, ctx.m_cseContext0); });
-    apply(4, "inlineVars    ", [&]() { inlineVars(dfg); });
+    apply(3, "input           ", [&]() {});
+    apply(4, "inlineVars      ", [&]() { inlineVars(dfg); });
+    apply(4, "cse0            ", [&]() { cse(dfg, ctx.m_cseContext0); });
     if (v3Global.opt.fDfgPeephole()) {
-        apply(4, "peephole      ", [&]() { peephole(dfg, ctx.m_peepholeContext); });
+        apply(4, "peephole        ", [&]() { peephole(dfg, ctx.m_peepholeContext); });
+        // We just did CSE above, so without peephole there is no need to run it again these
+        apply(4, "cse1            ", [&]() { cse(dfg, ctx.m_cseContext1); });
     }
-    apply(4, "cse           ", [&]() { cse(dfg, ctx.m_cseContext1); });
-    apply(4, "removeVars    ", [&]() { removeVars(dfg, ctx.m_removeVarsContext); });
-    apply(3, "optimized     ", [&]() { removeUnused(dfg); });
+    apply(4, "removeVars      ", [&]() { removeVars(dfg, ctx.m_removeVarsContext); });
     if (dumpDfg() >= 8) dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "optimized");
 }

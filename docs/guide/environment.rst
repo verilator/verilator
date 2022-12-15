@@ -10,7 +10,7 @@ associated programs.
 .. option:: LD_LIBRARY_PATH
 
    A generic Linux/OS variable specifying what directories have shared
-   object (.so) files.  This path should include SystemC and any other
+   object (.so) files.  This path should include SystemC and other
    shared objects needed at simulation runtime.
 
 .. option:: MAKE
@@ -19,6 +19,12 @@ associated programs.
    :vlopt:`--build` option.  Some operating systems may require "gmake" to
    this variable to launch GNU make.  If this variable is not specified,
    "make" is used.
+
+.. option:: MAKEFLAGS
+
+   Flags created by :command:`make` to pass to submakes. Verilator searches
+   this variable to determine if a jobserver is used; see
+   :vlopt:`--build-jobs`.
 
 .. option:: OBJCACHE
 
@@ -54,14 +60,14 @@ associated programs.
 
 .. option:: SYSTEMC_INCLUDE
 
-   If set, specifies the directory containing the systemc.h header file. If
-   not specified, it will come from a default optionally specified at
+   If set, specifies the directory containing the systemc.h header file.
+   If not specified, it will come from a default optionally specified at
    configure time (before Verilator was compiled), or computed from
    SYSTEMC/include.
 
 .. option:: SYSTEMC_LIBDIR
 
-   If set, specifies the directory containing the libsystemc.a library. If
+   If set, specifies the directory containing the libsystemc.a library.  If
    not specified, it will come from a default optionally specified at
    configure time (before Verilator was compiled), or computed from
    SYSTEMC/lib-SYSTEMC_ARCH.

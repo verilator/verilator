@@ -282,17 +282,17 @@ private:
         // This ensures $display's and such remain in proper order
         // We don't prevent splitting out other non-pli statements, however.
         if (!m_pliVertexp) {
-            m_pliVertexp = new SplitPliVertex(&m_graph, nodep);  // m_graph.clear() will delete it
+            m_pliVertexp = new SplitPliVertex{&m_graph, nodep};  // m_graph.clear() will delete it
         }
         for (const auto& vtxp : m_stmtStackps) {
             // Both ways...
-            new SplitScorebdEdge(&m_graph, vtxp, m_pliVertexp);
-            new SplitScorebdEdge(&m_graph, m_pliVertexp, vtxp);
+            new SplitScorebdEdge{&m_graph, vtxp, m_pliVertexp};
+            new SplitScorebdEdge{&m_graph, m_pliVertexp, vtxp};
         }
     }
     void scoreboardPushStmt(AstNode* nodep) {
         // UINFO(9, "    push " << nodep << endl);
-        SplitLogicVertex* const vertexp = new SplitLogicVertex(&m_graph, nodep);
+        SplitLogicVertex* const vertexp = new SplitLogicVertex{&m_graph, nodep};
         m_stmtStackps.push_back(vertexp);
         UASSERT_OBJ(!nodep->user3p(), nodep, "user3p should not be used; cleared in processBlock");
         nodep->user3p(vertexp);
@@ -320,7 +320,7 @@ protected:
                 if (debug() >= 9) {
                     const SplitVarStdVertex* const stdp = static_cast<SplitVarStdVertex*>(vertexp);
                     UINFO(0, "Will prune deps on var " << stdp->nodep() << endl);
-                    stdp->nodep()->dumpTree(cout, "- ");
+                    stdp->nodep()->dumpTree("-  ");
                 }
                 for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                     SplitEdge* const oedgep = dynamic_cast<SplitEdge*>(edgep);
@@ -340,10 +340,10 @@ protected:
     // of what is before vs. after
 
     void visit(AstAssignDly* nodep) override {
+        VL_RESTORER(m_inDly);
         m_inDly = true;
         UINFO(4, "    ASSIGNDLY " << nodep << endl);
         iterateChildren(nodep);
-        m_inDly = false;
     }
     void visit(AstVarRef* nodep) override {
         if (!m_stmtStackps.empty()) {
@@ -370,7 +370,7 @@ protected:
 
                 // Create vertexes for variable
                 if (!vscp->user1p()) {
-                    SplitVarStdVertex* const vstdp = new SplitVarStdVertex(&m_graph, vscp);
+                    SplitVarStdVertex* const vstdp = new SplitVarStdVertex{&m_graph, vscp};
                     vscp->user1p(vstdp);
                 }
                 SplitVarStdVertex* const vstdp
@@ -381,15 +381,15 @@ protected:
                     UINFO(4, "     VARREFDLY: " << nodep << endl);
                     // Delayed variable is different from non-delayed variable
                     if (!vscp->user2p()) {
-                        SplitVarPostVertex* const vpostp = new SplitVarPostVertex(&m_graph, vscp);
+                        SplitVarPostVertex* const vpostp = new SplitVarPostVertex{&m_graph, vscp};
                         vscp->user2p(vpostp);
-                        new SplitPostEdge(&m_graph, vstdp, vpostp);
+                        new SplitPostEdge{&m_graph, vstdp, vpostp};
                     }
                     SplitVarPostVertex* const vpostp
                         = reinterpret_cast<SplitVarPostVertex*>(vscp->user2p());
                     // Add edges
                     for (SplitLogicVertex* vxp : m_stmtStackps) {
-                        new SplitLVEdge(&m_graph, vpostp, vxp);
+                        new SplitLVEdge{&m_graph, vpostp, vxp};
                     }
                 } else {  // Nondelayed assignment
                     if (nodep->access().isWriteOrRW()) {
@@ -397,7 +397,7 @@ protected:
                         // with all consumers of the signal
                         UINFO(4, "     VARREFLV: " << nodep << endl);
                         for (SplitLogicVertex* ivxp : m_stmtStackps) {
-                            new SplitLVEdge(&m_graph, vstdp, ivxp);
+                            new SplitLVEdge{&m_graph, vstdp, ivxp};
                         }
                     } else {
                         UINFO(4, "     VARREF:   " << nodep << endl);
@@ -446,7 +446,7 @@ public:
     // METHODS
 protected:
     void makeRvalueEdges(SplitVarStdVertex* vstdp) override {
-        for (SplitLogicVertex* vxp : m_stmtStackps) new SplitRVEdge(&m_graph, vxp, vstdp);
+        for (SplitLogicVertex* vxp : m_stmtStackps) new SplitRVEdge{&m_graph, vxp, vstdp};
     }
 
     void cleanupBlockGraph(AstNode* nodep) {
@@ -503,7 +503,7 @@ protected:
             const uint32_t color = vvertexp->color();
             UASSERT_OBJ(color, nextp, "No node color assigned");
             if (lastOfColor[color]) {
-                new SplitStrictEdge(&m_graph, lastOfColor[color], vvertexp);
+                new SplitStrictEdge{&m_graph, lastOfColor[color], vvertexp};
             }
             lastOfColor[color] = vvertexp;
         }
@@ -600,10 +600,10 @@ protected:
 
     void visit(AstAlways* nodep) override {
         UINFO(4, "   ALW   " << nodep << endl);
-        if (debug() >= 9) nodep->dumpTree(cout, "   alwIn:: ");
+        if (debug() >= 9) nodep->dumpTree("-  alwIn:: ");
         scoreboardClear();
         processBlock(nodep->stmtsp());
-        if (debug() >= 9) nodep->dumpTree(cout, "   alwOut: ");
+        if (debug() >= 9) nodep->dumpTree("-  alwOut: ");
     }
 
     void visit(AstNodeIf* nodep) override {
@@ -709,7 +709,7 @@ public:
             // We don't need to clone m_origAlwaysp->sensesp() here;
             // V3Activate already moved it to a parent node.
             AstAlways* const alwaysp
-                = new AstAlways(m_origAlwaysp->fileline(), VAlwaysKwd::ALWAYS, nullptr, nullptr);
+                = new AstAlways{m_origAlwaysp->fileline(), VAlwaysKwd::ALWAYS, nullptr, nullptr};
             // Put a placeholder node into stmtp to track our position.
             // We'll strip these out after the blocks are fully cloned.
             AstSplitPlaceholder* const placeholderp = makePlaceholderp();
@@ -725,7 +725,7 @@ public:
 
 protected:
     AstSplitPlaceholder* makePlaceholderp() {
-        return new AstSplitPlaceholder(m_origAlwaysp->fileline());
+        return new AstSplitPlaceholder{m_origAlwaysp->fileline()};
     }
 
     void visit(AstNode* nodep) override {
@@ -759,8 +759,8 @@ protected:
             // Clone this if into its set of split blocks
             AstSplitPlaceholder* const if_placeholderp = makePlaceholderp();
             AstSplitPlaceholder* const else_placeholderp = makePlaceholderp();
-            AstIf* const clonep = new AstIf(nodep->fileline(), nodep->condp()->cloneTree(true),
-                                            if_placeholderp, else_placeholderp);
+            AstIf* const clonep = new AstIf{nodep->fileline(), nodep->condp()->cloneTree(true),
+                                            if_placeholderp, else_placeholderp};
             const AstIf* const origp = VN_CAST(nodep, If);
             if (origp) {
                 // Preserve pragmas from unique if's
@@ -881,7 +881,7 @@ protected:
         for (auto it = m_stmtStackps.cbegin(); it != m_stmtStackps.cend(); ++it) {
             const AstNodeIf* const ifNodep = VN_CAST((*it)->nodep(), NodeIf);
             if (ifNodep && (m_curIfConditional != ifNodep)) continue;
-            new SplitRVEdge(&m_graph, *it, vstdp);
+            new SplitRVEdge{&m_graph, *it, vstdp};
         }
     }
 
@@ -924,7 +924,7 @@ protected:
                         const SplitNodeVertex* const nvxp = dynamic_cast<SplitNodeVertex*>(vxp);
                         UINFO(0, "Cannot prune if-node due to edge "
                                      << oedgep << " pointing to node " << nvxp->nodep() << endl);
-                        nvxp->nodep()->dumpTree(cout, "- ");
+                        nvxp->nodep()->dumpTree("-  ");
                     }
 
                     break;

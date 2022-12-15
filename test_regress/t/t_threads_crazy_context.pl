@@ -18,7 +18,7 @@ top_filename("t/t_threads_crazy.v");
 
 compile(
     verilator_flags2 => ['--cc'],
-    threads => $Self->{vltmt} ? 2 : 0,
+    threads => $Self->{vltmt} ? 2 : 1,
     context_threads => 1024
     );
 
@@ -28,8 +28,6 @@ execute(
 
 if ($Self->{vltmt}) {
     file_grep($Self->{run_log_filename}, qr/System has \d+ hardware threads but simulation thread count set to 1024\. This will likely cause significant slowdown\./);
-} else {
-    file_grep($Self->{run_log_filename}, qr/Verilator run-time library built without VL_THREADS\. Ignoring call to 'VerilatedContext::threads' with argument 1024\./);
 }
 
 ok(1);

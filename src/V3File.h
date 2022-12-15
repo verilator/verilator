@@ -195,9 +195,9 @@ class V3OutFile VL_NOT_FINAL : public V3OutFormatter {
     static constexpr std::size_t WRITE_BUFFER_SIZE_BYTES = 128 * 1024;
 
     // MEMBERS
-    std::unique_ptr<std::array<char, WRITE_BUFFER_SIZE_BYTES>> m_bufferp;  // Write buffer
-    std::size_t m_usedBytes = 0;  // Number of bytes stored in m_bufferp
     FILE* m_fp = nullptr;
+    std::size_t m_usedBytes = 0;  // Number of bytes stored in m_bufferp
+    std::unique_ptr<std::array<char, WRITE_BUFFER_SIZE_BYTES>> m_bufferp;  // Write buffer
 
 public:
     V3OutFile(const string& filename, V3OutFormatter::Language lang);
@@ -242,8 +242,9 @@ class V3OutCFile VL_NOT_FINAL : public V3OutFile {
     int m_guard = false;  // Created header guard
     int m_private;  // 1 = Most recently emitted private:, 2 = public:
 public:
-    explicit V3OutCFile(const string& filename)
-        : V3OutFile{filename, V3OutFormatter::LA_C} {
+    explicit V3OutCFile(const string& filename,
+                        V3OutFormatter::Language lang = V3OutFormatter::LA_C)
+        : V3OutFile{filename, lang} {
         resetPrivate();
     }
     ~V3OutCFile() override = default;
@@ -279,12 +280,12 @@ public:
     }
 };
 
-class V3OutVFile final : public V3OutFile {
+class V3OutVFile final : public V3OutCFile {
 public:
     explicit V3OutVFile(const string& filename)
-        : V3OutFile{filename, V3OutFormatter::LA_VERILOG} {}
+        : V3OutCFile{filename, V3OutFormatter::LA_VERILOG} {}
     ~V3OutVFile() override = default;
-    virtual void putsHeader() { puts("// Verilated -*- Verilog -*-\n"); }
+    void putsHeader() override { puts("// Verilated -*- Verilog -*-\n"); }
 };
 
 class V3OutXmlFile final : public V3OutFile {

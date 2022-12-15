@@ -30,4 +30,20 @@
                                       : ... In instance t
    27 |    initial #2 $stop;  
       |            ^
+%Error-NOTIMING: t/t_notiming.v:33:10: mailbox::put() requires --timing
+                                     : ... In instance t
+   33 |        m.put(i);
+      |          ^~~
+%Error-NOTIMING: t/t_notiming.v:34:10: mailbox::get() requires --timing
+                                     : ... In instance t
+   34 |        m.get(i);
+      |          ^~~
+%Error-NOTIMING: t/t_notiming.v:35:10: mailbox::peek() requires --timing
+                                     : ... In instance t
+   35 |        m.peek(i);
+      |          ^~~~
+%Error-NOTIMING: t/t_notiming.v:36:10: semaphore::get() requires --timing
+                                     : ... In instance t
+   36 |        s.get();
+      |          ^~~
 %Error: Exiting due to

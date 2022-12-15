@@ -90,7 +90,7 @@ public:
     void addVertex(const T_Key& key) {
         const auto itr = m_vertices.find(key);
         UASSERT(itr == m_vertices.end(), "Vertex already exists with same key");
-        Vertex* v = new Vertex(this, key);
+        Vertex* v = new Vertex{this, key};
         m_vertices[key] = v;
     }
 
@@ -118,8 +118,8 @@ public:
         // which uniquely identifies a single bidir edge. Luckily we
         // can do both efficiently.
         const uint64_t userValue = (static_cast<uint64_t>(cost) << 32) | edgeId;
-        (new V3GraphEdge(this, fp, tp, cost))->user(userValue);
-        (new V3GraphEdge(this, tp, fp, cost))->user(userValue);
+        (new V3GraphEdge{this, fp, tp, cost})->user(userValue);
+        (new V3GraphEdge{this, tp, fp, cost})->user(userValue);
     }
 
     static uint32_t getEdgeId(const V3GraphEdge* edgep) {
@@ -486,10 +486,8 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
         for (V3TSP::StateVec::iterator it = prelim_result.begin(); it != prelim_result.end();
              ++it) {
             const TspStateBase* const elemp = *it;
-            if (seen.find(elemp) == seen.end()) {
-                seen.insert(elemp);
-                resultp->push_back(elemp);
-            }
+            const auto itFoundPair = seen.insert(elemp);
+            if (itFoundPair.second) resultp->push_back(elemp);
         }
     }
 
@@ -581,11 +579,11 @@ void V3TSP::selfTestStates() {
     // Linear test -- coords all along the x-axis
     {
         V3TSP::StateVec states;
-        const TspTestState s10(10, 0);
-        const TspTestState s60(60, 0);
-        const TspTestState s20(20, 0);
-        const TspTestState s100(100, 0);
-        const TspTestState s5(5, 0);
+        const TspTestState s10{10, 0};
+        const TspTestState s60{60, 0};
+        const TspTestState s20{20, 0};
+        const TspTestState s100{100, 0};
+        const TspTestState s5{5, 0};
         states.push_back(&s10);
         states.push_back(&s60);
         states.push_back(&s20);
@@ -615,13 +613,13 @@ void V3TSP::selfTestStates() {
     // Test that tspSort() will rotate the list for minimum cost.
     {
         V3TSP::StateVec states;
-        const TspTestState a(0, 0);
-        const TspTestState b(100, 0);
-        const TspTestState c(200, 0);
-        const TspTestState d(200, 100);
-        const TspTestState e(150, 150);
-        const TspTestState f(0, 150);
-        const TspTestState g(0, 100);
+        const TspTestState a{0, 0};
+        const TspTestState b{100, 0};
+        const TspTestState c{200, 0};
+        const TspTestState d{200, 100};
+        const TspTestState e{150, 150};
+        const TspTestState f{0, 150};
+        const TspTestState g{0, 100};
 
         states.push_back(&a);
         states.push_back(&b);

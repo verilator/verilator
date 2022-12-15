@@ -62,7 +62,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h9366e49d91bfe942
+`define EXPECTED_SUM 64'h94c0495e8e279723
 
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
@@ -90,10 +90,11 @@ module Test(/*AUTOARG*/
    logic bug3509_out;
    wire  bug3399_out0;
    wire  bug3399_out1;
+   logic bug3786_out;
 
    output logic o;
 
-   logic [11:0] tmp;
+   logic [12:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -121,6 +122,7 @@ module Test(/*AUTOARG*/
       tmp[9] <= bug3509_out;
       tmp[10]<= bug3399_out0;
       tmp[11]<= bug3399_out1;
+      tmp[12]<= bug3786_out;
    end
 
    bug3182 i_bug3182(.in(d[4:0]), .out(bug3182_out));
@@ -129,6 +131,7 @@ module Test(/*AUTOARG*/
    bug3470 i_bug3470(.clk(clk), .in(d), .out(bug3470_out));
    bug3509 i_bug3509(.clk(clk), .in(d), .out(bug3509_out));
    bug3399 i_bug3399(.clk(clk), .in(d), .out0(bug3399_out0), .out1(bug3399_out1));
+   bug3786 i_bug3786(.clk(clk), .in(d), .out(bug3786_out));
 
 endmodule
 
@@ -314,4 +317,17 @@ module bug3399(input wire clk, input wire [31:0] in, inout wire out0, inout wire
 
    assign out0 = driver[0] ? d[0] : 1'bz;
    assign out1 = driver[1] ? d[1] : 1'bz;
+endmodule
+
+// Bug3786
+// When V3Expand is skipped, wide number is not split by WORDSEL.
+// Bit op tree opt. expects that bit width is 64 bit at most.
+module bug3786(input wire clk, input wire [31:0] in, inout wire out);
+   logic [127:0] d0, d1;
+   always_ff @(posedge clk) begin
+      d0 <= {d0[127:32], in};
+      d1 <= d1;
+   end
+
+   assign out = ^{d1, d0};
 endmodule

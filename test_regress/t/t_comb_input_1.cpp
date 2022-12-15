@@ -16,7 +16,7 @@
 
 #include <memory>
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     contextp->commandArgs(argc, argv);
     contextp->debug(0);

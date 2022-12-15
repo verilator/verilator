@@ -304,7 +304,7 @@ private:
     int         m_pinsBv = 65;       // main switch: --pins-bv
     int         m_reloopLimit = 40; // main switch: --reloop-limit
     VOptionBool m_skipIdentical;  // main switch: --skip-identical
-    int         m_threads = 0;      // main switch: --threads (0 == --no-threads)
+    int         m_threads = 1;      // main switch: --threads
     int         m_threadsMaxMTasks = 0;  // main switch: --threads-max-mtasks
     VTimescale  m_timeDefaultPrec;  // main switch: --timescale
     VTimescale  m_timeDefaultUnit;  // main switch: --timescale
@@ -660,12 +660,14 @@ public:
     // Also add to V3Options::showVersion()
     static string getenvBuiltins(const string& var);
     static string getenvMAKE();
+    static string getenvMAKEFLAGS();
     static string getenvPERL();
     static string getenvSYSTEMC();
     static string getenvSYSTEMC_ARCH();
     static string getenvSYSTEMC_INCLUDE();
     static string getenvSYSTEMC_LIBDIR();
     static string getenvVERILATOR_ROOT();
+    static string getStdPackagePath();
     static string getSupported(const string& var);
     static bool systemCSystemWide();
     static bool systemCFound();  // SystemC installed, or environment points to it

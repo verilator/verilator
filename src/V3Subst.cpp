@@ -119,7 +119,7 @@ public:
         m_wordUse = true;
     }
     // ACCESSORS
-    AstNode* substWhole(AstNode* errp) {
+    AstNodeExpr* substWhole(AstNode* errp) {
         if (!m_varp->isWide() && !m_whole.m_complex && m_whole.m_assignp && !m_wordAssign) {
             const AstNodeAssign* const assp = m_whole.m_assignp;
             UASSERT_OBJ(assp, errp, "Reading whole that was never assigned");
@@ -129,7 +129,7 @@ public:
         }
     }
     // Return what to substitute given word number for
-    AstNode* substWord(AstNode* errp, int word) {
+    AstNodeExpr* substWord(AstNode* errp, int word) {
         if (!m_whole.m_complex && !m_whole.m_assignp && !m_words[word].m_complex) {
             const AstNodeAssign* const assp = getWordAssignp(word);
             UASSERT_OBJ(assp, errp, "Reading a word that was never assigned, or bad word #");
@@ -238,7 +238,7 @@ private:
     // METHODS
     SubstVarEntry* getEntryp(AstVarRef* nodep) {
         if (!nodep->varp()->user1p()) {
-            SubstVarEntry* const entryp = new SubstVarEntry(nodep->varp());
+            SubstVarEntry* const entryp = new SubstVarEntry{nodep->varp()};
             m_entryps.push_back(entryp);
             nodep->varp()->user1p(entryp);
             return entryp;
@@ -252,6 +252,7 @@ private:
 
     // VISITORS
     void visit(AstNodeAssign* nodep) override {
+        VL_RESTORER(m_ops);
         m_ops = 0;
         m_assignStep++;
         iterateAndNextNull(nodep->rhsp());
@@ -286,13 +287,13 @@ private:
         }
         if (!hit) iterate(nodep->lhsp());
     }
-    void replaceSubstEtc(AstNode* nodep, AstNode* substp) {
-        if (debug() > 5) nodep->dumpTree(cout, "  substw_old: ");
-        AstNode* newp = substp->cloneTree(true);
+    void replaceSubstEtc(AstNode* nodep, AstNodeExpr* substp) {
+        if (debug() > 5) nodep->dumpTree("-  substw_old: ");
+        AstNodeExpr* newp = substp->cloneTree(true);
         if (!nodep->isQuad() && newp->isQuad()) {
-            newp = new AstCCast(newp->fileline(), newp, nodep);
+            newp = new AstCCast{newp->fileline(), newp, nodep};
         }
-        if (debug() > 5) newp->dumpTree(cout, "       w_new: ");
+        if (debug() > 5) newp->dumpTree("-       w_new: ");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         ++m_statSubsts;
@@ -307,7 +308,7 @@ private:
             const int word = constp->toUInt();
             UINFO(8, " USEword" << word << " " << varrefp << endl);
             SubstVarEntry* const entryp = getEntryp(varrefp);
-            if (AstNode* const substp = entryp->substWord(nodep, word)) {
+            if (AstNodeExpr* const substp = entryp->substWord(nodep, word)) {
                 // Check that the RHS hasn't changed value since we recorded it.
                 const SubstUseVisitor visitor{substp, entryp->getWordStep(word)};
                 if (visitor.ok()) {
@@ -334,7 +335,7 @@ private:
             if (nodep->access().isWriteOrRW()) {
                 UINFO(8, " ASSIGNcpx " << nodep << endl);
                 entryp->assignComplex();
-            } else if (AstNode* const substp = entryp->substWhole(nodep)) {
+            } else if (AstNodeExpr* const substp = entryp->substWhole(nodep)) {
                 // Check that the RHS hasn't changed value since we recorded it.
                 const SubstUseVisitor visitor{substp, entryp->getWholeStep()};
                 if (visitor.ok()) {
@@ -360,7 +361,7 @@ private:
         doDeletes();
     }
     void visit(AstNode* nodep) override {
-        m_ops++;
+        ++m_ops;
         if (!nodep->isSubstOptimizable()) m_ops = SUBST_MAX_OPS_NA;
         iterateChildren(nodep);
     }

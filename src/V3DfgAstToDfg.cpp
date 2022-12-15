@@ -39,7 +39,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace {
 
-// Create a DfgVertex out of a AstNodeMath. For most AstNodeMath subtypes, this can be done
+// Create a DfgVertex out of a AstNodeExpr. For most AstNodeExpr subtypes, this can be done
 // automatically. For the few special cases, we provide specializations below
 template <typename Vertex, typename Node>
 Vertex* makeVertex(const Node* nodep, DfgGraph& dfg) {
@@ -79,6 +79,18 @@ class AstToDfgVisitor final : public VNVisitor {
     // AstNode::user1p   // DfgVertex for this AstNode
     const VNUser1InUse m_user1InUse;
 
+    // TYPES
+    // Represents a driver during canonicalization
+    struct Driver {
+        FileLine* m_fileline;
+        DfgVertex* m_vtxp;
+        uint32_t m_lsb;
+        Driver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp)
+            : m_fileline{flp}
+            , m_vtxp{vtxp}
+            , m_lsb{lsb} {}
+    };
+
     // STATE
 
     DfgGraph* const m_dfgp;  // The graph being built
@@ -94,7 +106,10 @@ class AstToDfgVisitor final : public VNVisitor {
         nodep->foreach([this](const AstVarRef* refp) {
             // No need to (and in fact cannot) mark variables with unsupported dtypes
             if (!DfgVertex::isSupportedDType(refp->varp()->dtypep())) return;
+            // Mark vertex as having a module reference outside current DFG
             getNet(refp->varp())->setHasModRefs();
+            // Mark variable as written from non-DFG logic
+            if (refp->access().isWriteOrRW()) refp->varp()->user3(true);
         });
     }
 
@@ -132,7 +147,7 @@ class AstToDfgVisitor final : public VNVisitor {
     }
 
     // Returns true if the expression cannot (or should not) be represented by DFG
-    bool unhandled(AstNodeMath* nodep) {
+    bool unhandled(AstNodeExpr* nodep) {
         // Short-circuiting if something was already unhandled
         if (!m_foundUnhandled) {
             // Impure nodes cannot be represented
@@ -256,6 +271,21 @@ class AstToDfgVisitor final : public VNVisitor {
         return true;
     }
 
+    // Sometime assignment ranges are coalesced by V3Const,
+    // so we unpack concatenations for better error reporting.
+    void addDriver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp,
+                   std::vector<Driver>& drivers) const {
+        if (DfgConcat* const concatp = vtxp->cast<DfgConcat>()) {
+            DfgVertex* const rhsp = concatp->rhsp();
+            addDriver(rhsp->fileline(), lsb, rhsp, drivers);
+            DfgVertex* const lhsp = concatp->lhsp();
+            addDriver(lhsp->fileline(), lsb + rhsp->width(), lhsp, drivers);
+            concatp->unlinkDelete(*m_dfgp);
+        } else {
+            drivers.emplace_back(flp, lsb, vtxp);
+        }
+    }
+
     // Canonicalize packed variables
     void canonicalizePacked() {
         for (DfgVarPacked* const varp : m_varPackedps) {
@@ -267,29 +297,71 @@ class AstToDfgVisitor final : public VNVisitor {
             }
 
             // Gather (and unlink) all drivers
-            struct Driver {
-                FileLine* flp;
-                uint32_t lsb;
-                DfgVertex* vtxp;
-                Driver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp)
-                    : flp{flp}
-                    , lsb{lsb}
-                    , vtxp{vtxp} {}
-            };
             std::vector<Driver> drivers;
             drivers.reserve(varp->arity());
-            varp->forEachSourceEdge([varp, &drivers](DfgEdge& edge, size_t idx) {
-                UASSERT(edge.sourcep(), "Should not have created undriven sources");
-                drivers.emplace_back(varp->driverFileLine(idx), varp->driverLsb(idx),
-                                     edge.sourcep());
+            varp->forEachSourceEdge([this, varp, &drivers](DfgEdge& edge, size_t idx) {
+                DfgVertex* const driverp = edge.sourcep();
+                UASSERT(driverp, "Should not have created undriven sources");
+                addDriver(varp->driverFileLine(idx), varp->driverLsb(idx), driverp, drivers);
                 edge.unlinkSource();
             });
 
-            // Sort drivers by LSB
-            std::stable_sort(drivers.begin(), drivers.end(),
-                             [](const Driver& a, const Driver& b) { return a.lsb < b.lsb; });
+            const auto cmp = [](const Driver& a, const Driver& b) {
+                if (a.m_lsb != b.m_lsb) return a.m_lsb < b.m_lsb;
+                return a.m_fileline->operatorCompare(*b.m_fileline) < 0;
+            };
 
-            // TODO: bail on multidriver
+            // Sort drivers by LSB
+            std::stable_sort(drivers.begin(), drivers.end(), cmp);
+
+            // Vertices that might have become unused due to multiple driver resolution. Having
+            // multiple drivers is an error and is hence assumed to be rare, so performance is
+            // not very important, set will suffice.
+            std::set<DfgVertex*> prune;
+
+            // Fix multiply driven ranges
+            for (auto it = drivers.begin(); it != drivers.end();) {
+                Driver& a = *it++;
+                const uint32_t aWidth = a.m_vtxp->width();
+                const uint32_t aEnd = a.m_lsb + aWidth;
+                while (it != drivers.end()) {
+                    Driver& b = *it;
+                    // If no overlap, then nothing to do
+                    if (b.m_lsb >= aEnd) break;
+
+                    const uint32_t bWidth = b.m_vtxp->width();
+                    const uint32_t bEnd = b.m_lsb + bWidth;
+                    const uint32_t overlapEnd = std::min(aEnd, bEnd) - 1;
+
+                    varp->varp()->v3warn(  //
+                        MULTIDRIVEN,
+                        "Bits ["  //
+                            << overlapEnd << ":" << b.m_lsb << "] of signal "
+                            << varp->varp()->prettyNameQ()
+                            << " have multiple combinational drivers\n"
+                            << a.m_fileline->warnOther() << "... Location of first driver\n"
+                            << a.m_fileline->warnContextPrimary() << '\n'
+                            << b.m_fileline->warnOther() << "... Location of other driver\n"
+                            << b.m_fileline->warnContextSecondary() << varp->varp()->warnOther()
+                            << "... Only the first driver will be respected");
+
+                    // If the first driver completely covers the range of the second driver,
+                    // we can just delete the second driver completely, otherwise adjust the
+                    // second driver to apply from the end of the range of the first driver.
+                    if (aEnd >= bEnd) {
+                        prune.emplace(b.m_vtxp);
+                        it = drivers.erase(it);
+                    } else {
+                        const auto dtypep = DfgVertex::dtypeForWidth(bEnd - aEnd);
+                        DfgSel* const selp = new DfgSel{*m_dfgp, b.m_vtxp->fileline(), dtypep};
+                        selp->fromp(b.m_vtxp);
+                        selp->lsb(aEnd - b.m_lsb);
+                        b.m_lsb = aEnd;
+                        b.m_vtxp = selp;
+                        std::stable_sort(it, drivers.end(), cmp);
+                    }
+                }
+            }
 
             // Coalesce adjacent ranges
             for (size_t i = 0, j = 1; j < drivers.size(); ++j) {
@@ -297,15 +369,15 @@ class AstToDfgVisitor final : public VNVisitor {
                 Driver& b = drivers[j];
 
                 // Coalesce adjacent range
-                const uint32_t aWidth = a.vtxp->width();
-                const uint32_t bWidth = b.vtxp->width();
-                if (a.lsb + aWidth == b.lsb) {
+                const uint32_t aWidth = a.m_vtxp->width();
+                const uint32_t bWidth = b.m_vtxp->width();
+                if (a.m_lsb + aWidth == b.m_lsb) {
                     const auto dtypep = DfgVertex::dtypeForWidth(aWidth + bWidth);
-                    DfgConcat* const concatp = new DfgConcat{*m_dfgp, a.flp, dtypep};
-                    concatp->rhsp(a.vtxp);
-                    concatp->lhsp(b.vtxp);
-                    a.vtxp = concatp;
-                    b.vtxp = nullptr;  // Mark as moved
+                    DfgConcat* const concatp = new DfgConcat{*m_dfgp, a.m_fileline, dtypep};
+                    concatp->rhsp(a.m_vtxp);
+                    concatp->lhsp(b.m_vtxp);
+                    a.m_vtxp = concatp;
+                    b.m_vtxp = nullptr;  // Mark as moved
                     ++m_ctx.m_coalescedAssignments;
                     continue;
                 }
@@ -315,17 +387,30 @@ class AstToDfgVisitor final : public VNVisitor {
                 // Compact non-adjacent ranges within the vector
                 if (j != i) {
                     Driver& c = drivers[i];
-                    UASSERT_OBJ(!c.vtxp, c.flp, "Should have been marked moved");
+                    UASSERT_OBJ(!c.m_vtxp, c.m_fileline, "Should have been marked moved");
                     c = b;
-                    b.vtxp = nullptr;  // Mark as moved
+                    b.m_vtxp = nullptr;  // Mark as moved
                 }
             }
 
-            // Reinsert sources in order
+            // Reinsert drivers in order
             varp->resetSources();
             for (const Driver& driver : drivers) {
-                if (!driver.vtxp) break;  // Stop at end of cmpacted list
-                varp->addDriver(driver.flp, driver.lsb, driver.vtxp);
+                if (!driver.m_vtxp) break;  // Stop at end of compacted list
+                varp->addDriver(driver.m_fileline, driver.m_lsb, driver.m_vtxp);
+            }
+
+            // Prune vertices potentially unused due to resolving multiple drivers.
+            while (!prune.empty()) {
+                // Pop last vertex
+                const auto it = prune.begin();
+                DfgVertex* const vtxp = *it;
+                prune.erase(it);
+                // If used (or a variable), then done
+                if (vtxp->hasSinks() || vtxp->is<DfgVertexVar>()) continue;
+                // If unused, then add sources to work list and delete
+                vtxp->forEachSource([&](DfgVertex& src) { prune.emplace(&src); });
+                vtxp->unlinkDelete(*m_dfgp);
             }
         }
     }

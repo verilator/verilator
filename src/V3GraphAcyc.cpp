@@ -126,8 +126,8 @@ private:
     }
     V3GraphEdge* edgeFromEdge(V3GraphEdge* oldedgep, V3GraphVertex* fromp, V3GraphVertex* top) {
         // Make new breakGraph edge, with old edge as a template
-        GraphAcycEdge* const newEdgep = new GraphAcycEdge(&m_breakGraph, fromp, top,
-                                                          oldedgep->weight(), oldedgep->cutable());
+        GraphAcycEdge* const newEdgep = new GraphAcycEdge{&m_breakGraph, fromp, top,
+                                                          oldedgep->weight(), oldedgep->cutable()};
         newEdgep->userp(oldedgep->userp());  // Keep pointer to OrigEdgeList
         return newEdgep;
     }
@@ -203,7 +203,7 @@ void GraphAcyc::buildGraph(V3Graph* origGraphp) {
     for (V3GraphVertex* overtexp = origGraphp->verticesBeginp(); overtexp;
          overtexp = overtexp->verticesNextp()) {
         if (overtexp->color()) {
-            GraphAcycVertex* const avertexp = new GraphAcycVertex(&m_breakGraph, overtexp);
+            GraphAcycVertex* const avertexp = new GraphAcycVertex{&m_breakGraph, overtexp};
             overtexp->userp(avertexp);  // Stash so can look up later
         }
     }
@@ -228,8 +228,8 @@ void GraphAcyc::buildGraphIterate(V3GraphVertex* overtexp, GraphAcycVertex* aver
                     = static_cast<GraphAcycVertex*>(toVertexp->userp());
                 // Replicate the old edge into the new graph
                 // There may be multiple edges between same pairs of vertices
-                V3GraphEdge* breakEdgep = new GraphAcycEdge(&m_breakGraph, avertexp, toAVertexp,
-                                                            edgep->weight(), edgep->cutable());
+                V3GraphEdge* breakEdgep = new GraphAcycEdge{&m_breakGraph, avertexp, toAVertexp,
+                                                            edgep->weight(), edgep->cutable()};
                 addOrigEdgep(breakEdgep, edgep);  // So can find original edge
             }
         }

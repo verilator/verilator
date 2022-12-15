@@ -20,6 +20,7 @@
  `define MAILBOX_T mailbox
 `endif
 
+// verilator lint_off DECLFILENAME
 module t(/*AUTOARG*/);
    `MAILBOX_T #(int) m;
    int     msg;

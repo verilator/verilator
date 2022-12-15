@@ -28,8 +28,8 @@
 
 class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitor {
     // MEMBERS
-    bool m_inUnpacked = false;
     uint32_t m_unpackedWord = 0;
+    bool m_inUnpacked = false;
 
     // METHODS
 

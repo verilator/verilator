@@ -36,7 +36,7 @@
 
 //======================================================================
 
-/// Class for namespace-like groupng of Verilator VPI functions.
+/// Class for namespace-like grouping of Verilator VPI functions.
 
 class VerilatedVpi final {
 public:

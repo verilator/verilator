@@ -14,7 +14,7 @@
 //
 //*************************************************************************
 //
-// Convert DfgGraph back to AstModule. We recursively construct AstNodeMath expressions for each
+// Convert DfgGraph back to AstModule. We recursively construct AstNodeExpr expressions for each
 // DfgVertex which represents a storage location (e.g.: DfgVarPacked), or has multiple sinks
 // without driving a storage location (and hence needs a temporary variable to duplication). The
 // recursion stops when we reach a DfgVertex representing a storage location (e.g.: DfgVarPacked),
@@ -40,7 +40,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace {
 
-// Create an AstNodeMath out of a DfgVertex. For most AstNodeMath subtypes, this can be done
+// Create an AstNodeExpr out of a DfgVertex. For most AstNodeExpr subtypes, this can be done
 // automatically. For the few special cases, we provide specializations below
 template <typename Node, typename Vertex, typename... Ops>
 Node* makeNode(const Vertex* vtxp, Ops... ops) {
@@ -55,8 +55,8 @@ Node* makeNode(const Vertex* vtxp, Ops... ops) {
 // Vertices needing special conversion
 
 template <>
-AstCountOnes* makeNode<AstCountOnes, DfgCountOnes, AstNodeMath*>(  //
-    const DfgCountOnes* vtxp, AstNodeMath* op1) {
+AstCountOnes* makeNode<AstCountOnes, DfgCountOnes, AstNodeExpr*>(  //
+    const DfgCountOnes* vtxp, AstNodeExpr* op1) {
     AstCountOnes* const nodep = new AstCountOnes{vtxp->fileline(), op1};
     // Set dtype same as V3Width
     const int selwidth = V3Number::log2b(nodep->lhsp()->width()) + 1;
@@ -65,32 +65,32 @@ AstCountOnes* makeNode<AstCountOnes, DfgCountOnes, AstNodeMath*>(  //
 }
 
 template <>
-AstExtend* makeNode<AstExtend, DfgExtend, AstNodeMath*>(  //
-    const DfgExtend* vtxp, AstNodeMath* op1) {
+AstExtend* makeNode<AstExtend, DfgExtend, AstNodeExpr*>(  //
+    const DfgExtend* vtxp, AstNodeExpr* op1) {
     return new AstExtend{vtxp->fileline(), op1, static_cast<int>(vtxp->width())};
 }
 
 template <>
-AstExtendS* makeNode<AstExtendS, DfgExtendS, AstNodeMath*>(  //
-    const DfgExtendS* vtxp, AstNodeMath* op1) {
+AstExtendS* makeNode<AstExtendS, DfgExtendS, AstNodeExpr*>(  //
+    const DfgExtendS* vtxp, AstNodeExpr* op1) {
     return new AstExtendS{vtxp->fileline(), op1, static_cast<int>(vtxp->width())};
 }
 
 template <>
-AstShiftL* makeNode<AstShiftL, DfgShiftL, AstNodeMath*, AstNodeMath*>(  //
-    const DfgShiftL* vtxp, AstNodeMath* op1, AstNodeMath* op2) {
+AstShiftL* makeNode<AstShiftL, DfgShiftL, AstNodeExpr*, AstNodeExpr*>(  //
+    const DfgShiftL* vtxp, AstNodeExpr* op1, AstNodeExpr* op2) {
     return new AstShiftL{vtxp->fileline(), op1, op2, static_cast<int>(vtxp->width())};
 }
 
 template <>
-AstShiftR* makeNode<AstShiftR, DfgShiftR, AstNodeMath*, AstNodeMath*>(  //
-    const DfgShiftR* vtxp, AstNodeMath* op1, AstNodeMath* op2) {
+AstShiftR* makeNode<AstShiftR, DfgShiftR, AstNodeExpr*, AstNodeExpr*>(  //
+    const DfgShiftR* vtxp, AstNodeExpr* op1, AstNodeExpr* op2) {
     return new AstShiftR{vtxp->fileline(), op1, op2, static_cast<int>(vtxp->width())};
 }
 
 template <>
-AstShiftRS* makeNode<AstShiftRS, DfgShiftRS, AstNodeMath*, AstNodeMath*>(  //
-    const DfgShiftRS* vtxp, AstNodeMath* op1, AstNodeMath* op2) {
+AstShiftRS* makeNode<AstShiftRS, DfgShiftRS, AstNodeExpr*, AstNodeExpr*>(  //
+    const DfgShiftRS* vtxp, AstNodeExpr* op1, AstNodeExpr* op2) {
     return new AstShiftRS{vtxp->fileline(), op1, op2, static_cast<int>(vtxp->width())};
 }
 
@@ -98,23 +98,31 @@ AstShiftRS* makeNode<AstShiftRS, DfgShiftRS, AstNodeMath*, AstNodeMath*>(  //
 // Currently unhandled nodes - see corresponding AstToDfg functions
 // LCOV_EXCL_START
 template <>
-AstCCast* makeNode<AstCCast, DfgCCast, AstNodeMath*>(const DfgCCast* vtxp, AstNodeMath*) {
+AstCCast* makeNode<AstCCast, DfgCCast, AstNodeExpr*>(const DfgCCast* vtxp, AstNodeExpr*) {
     vtxp->v3fatalSrc("not implemented");
+    VL_UNREACHABLE;
+    return nullptr;  // LCOV_EXCL_LINE
 }
 template <>
-AstAtoN* makeNode<AstAtoN, DfgAtoN, AstNodeMath*>(const DfgAtoN* vtxp, AstNodeMath*) {
+AstAtoN* makeNode<AstAtoN, DfgAtoN, AstNodeExpr*>(const DfgAtoN* vtxp, AstNodeExpr*) {
     vtxp->v3fatalSrc("not implemented");
+    VL_UNREACHABLE;
+    return nullptr;  // LCOV_EXCL_LINE
 }
 template <>
 AstCompareNN*
-makeNode<AstCompareNN, DfgCompareNN, AstNodeMath*, AstNodeMath*>(const DfgCompareNN* vtxp,
-                                                                 AstNodeMath*, AstNodeMath*) {
+makeNode<AstCompareNN, DfgCompareNN, AstNodeExpr*, AstNodeExpr*>(const DfgCompareNN* vtxp,
+                                                                 AstNodeExpr*, AstNodeExpr*) {
     vtxp->v3fatalSrc("not implemented");
+    VL_UNREACHABLE;
+    return nullptr;  // LCOV_EXCL_LINE
 }
 template <>
-AstSliceSel* makeNode<AstSliceSel, DfgSliceSel, AstNodeMath*, AstNodeMath*, AstNodeMath*>(
-    const DfgSliceSel* vtxp, AstNodeMath*, AstNodeMath*, AstNodeMath*) {
+AstSliceSel* makeNode<AstSliceSel, DfgSliceSel, AstNodeExpr*, AstNodeExpr*, AstNodeExpr*>(
+    const DfgSliceSel* vtxp, AstNodeExpr*, AstNodeExpr*, AstNodeExpr*) {
     vtxp->v3fatalSrc("not implemented");
+    VL_UNREACHABLE;
+    return nullptr;  // LCOV_EXCL_LINE
 }
 // LCOV_EXCL_STOP
 
@@ -130,7 +138,7 @@ class DfgToAstVisitor final : DfgVisitor {
 
     AstModule* const m_modp;  // The parent/result module
     V3DfgOptimizationContext& m_ctx;  // The optimization context for stats
-    AstNodeMath* m_resultp = nullptr;  // The result node of the current traversal
+    AstNodeExpr* m_resultp = nullptr;  // The result node of the current traversal
     // Map from DfgVertex to the AstVar holding the value of that DfgVertex after conversion
     std::unordered_map<const DfgVertex*, AstVar*> m_resultVars;
     // Map from an AstVar, to the canonical AstVar that can be substituted for that AstVar
@@ -212,31 +220,20 @@ class DfgToAstVisitor final : DfgVisitor {
         return varp;
     }
 
-    AstNodeMath* convertDfgVertexToAstNodeMath(DfgVertex* vtxp) {
+    AstNodeExpr* convertDfgVertexToAstNodeExpr(DfgVertex* vtxp) {
         UASSERT_OBJ(!m_resultp, vtxp, "Result already computed");
         iterate(vtxp);
         UASSERT_OBJ(m_resultp, vtxp, "Missing result");
-        AstNodeMath* const resultp = m_resultp;
+        AstNodeExpr* const resultp = m_resultp;
         m_resultp = nullptr;
         return resultp;
     }
 
-    bool inlineVertex(DfgVertex& vtx) {
-        // Inline vertices that drive only a single node, or are special
-        if (!vtx.hasMultipleSinks()) return true;
-        if (vtx.is<DfgConst>()) return true;
-        if (vtx.is<DfgVertexVar>()) return true;
-        if (const DfgArraySel* const selp = vtx.cast<DfgArraySel>()) {
-            return selp->bitp()->is<DfgConst>();
-        }
-        return false;
-    }
-
-    AstNodeMath* convertSource(DfgVertex* vtxp) {
-        if (inlineVertex(*vtxp)) {
+    AstNodeExpr* convertSource(DfgVertex* vtxp) {
+        if (vtxp->inlined()) {
             // Inlined vertices are simply recursively converted
             UASSERT_OBJ(vtxp->hasSinks(), vtxp, "Must have one sink: " << vtxp->typeName());
-            return convertDfgVertexToAstNodeMath(vtxp);
+            return convertDfgVertexToAstNodeExpr(vtxp);
         } else {
             // Vertices that are not inlined need a variable, just return a reference
             return new AstVarRef{vtxp->fileline(), getResultVar(vtxp), VAccess::READ};
@@ -249,14 +246,14 @@ class DfgToAstVisitor final : DfgVisitor {
         };
         if (dfgVarp->isDrivenFullyByDfg()) {
             // Whole variable is driven. Render driver and assign directly to whole variable.
-            AstNodeMath* const rhsp = convertDfgVertexToAstNodeMath(dfgVarp->source(0));
+            AstNodeExpr* const rhsp = convertDfgVertexToAstNodeExpr(dfgVarp->source(0));
             addResultEquation(dfgVarp->driverFileLine(0), wRef(), rhsp);
         } else {
             // Variable is driven partially. Render each driver as a separate assignment.
             dfgVarp->forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {
                 UASSERT_OBJ(edge.sourcep(), dfgVarp, "Should have removed undriven sources");
                 // Render the rhs expression
-                AstNodeMath* const rhsp = convertDfgVertexToAstNodeMath(edge.sourcep());
+                AstNodeExpr* const rhsp = convertDfgVertexToAstNodeExpr(edge.sourcep());
                 // Create select LValue
                 FileLine* const flp = dfgVarp->driverFileLine(idx);
                 AstConst* const lsbp = new AstConst{flp, dfgVarp->driverLsb(idx)};
@@ -299,7 +296,7 @@ class DfgToAstVisitor final : DfgVisitor {
         dfgVarp->forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {
             UASSERT_OBJ(edge.sourcep(), dfgVarp, "Should have removed undriven sources");
             // Render the rhs expression
-            AstNodeMath* const rhsp = convertDfgVertexToAstNodeMath(edge.sourcep());
+            AstNodeExpr* const rhsp = convertDfgVertexToAstNodeExpr(edge.sourcep());
             // Create select LValue
             FileLine* const flp = dfgVarp->driverFileLine(idx);
             AstVarRef* const refp = new AstVarRef{flp, dfgVarp->varp(), VAccess::WRITE};
@@ -310,7 +307,7 @@ class DfgToAstVisitor final : DfgVisitor {
         });
     }
 
-    void addResultEquation(FileLine* flp, AstNode* lhsp, AstNode* rhsp) {
+    void addResultEquation(FileLine* flp, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
         m_modp->addStmtsp(new AstAssignW{flp, lhsp, rhsp});
         ++m_ctx.m_resultEquations;
     }
@@ -334,7 +331,7 @@ class DfgToAstVisitor final : DfgVisitor {
 
     void visit(DfgSel* vtxp) override {
         FileLine* const flp = vtxp->fileline();
-        AstNodeMath* const fromp = convertSource(vtxp->fromp());
+        AstNodeExpr* const fromp = convertSource(vtxp->fromp());
         AstConst* const lsbp = new AstConst{flp, vtxp->lsb()};
         AstConst* const widthp = new AstConst{flp, vtxp->width()};
         m_resultp = new AstSel{flp, fromp, lsbp, widthp};
@@ -342,8 +339,8 @@ class DfgToAstVisitor final : DfgVisitor {
 
     void visit(DfgMux* vtxp) override {
         FileLine* const flp = vtxp->fileline();
-        AstNodeMath* const fromp = convertSource(vtxp->fromp());
-        AstNodeMath* const lsbp = convertSource(vtxp->lsbp());
+        AstNodeExpr* const fromp = convertSource(vtxp->fromp());
+        AstNodeExpr* const lsbp = convertSource(vtxp->lsbp());
         AstConst* const widthp = new AstConst{flp, vtxp->width()};
         m_resultp = new AstSel{flp, fromp, lsbp, widthp};
     }
@@ -406,7 +403,7 @@ class DfgToAstVisitor final : DfgVisitor {
             nextp = vtxp->verticesNext();
 
             // If the vertex is known to be inlined, then there is nothing to do
-            if (inlineVertex(*vtxp)) continue;
+            if (vtxp->inlined()) continue;
 
             // Check if this uses a temporary, vs one of the vars rendered above
             AstVar* const resultVarp = getResultVar(vtxp);
@@ -415,9 +412,9 @@ class DfgToAstVisitor final : DfgVisitor {
                 ++m_ctx.m_intermediateVars;
                 FileLine* const flp = vtxp->fileline();
                 // Just render the logic
-                AstNodeMath* const rhsp = convertDfgVertexToAstNodeMath(vtxp);
+                AstNodeExpr* const rhsp = convertDfgVertexToAstNodeExpr(vtxp);
                 // The lhs is the temporary
-                AstNodeMath* const lhsp = new AstVarRef{flp, resultVarp, VAccess::WRITE};
+                AstNodeExpr* const lhsp = new AstVarRef{flp, resultVarp, VAccess::WRITE};
                 // Add assignment of the value to the variable
                 addResultEquation(flp, lhsp, rhsp);
             }
@@ -426,14 +423,14 @@ class DfgToAstVisitor final : DfgVisitor {
         // Remap all references to point to the canonical variables, if one exists
         VNDeleter deleter;
         m_modp->foreach([&](AstVarRef* refp) {
-            // Any variable that is written outside the DFG will have itself as the canonical
-            // var, so need not be replaced, furthermore, if a variable is traced, we don't
-            // want to update the write ref we just created above, so we only replace read only
-            // references.
-            if (!refp->access().isReadOnly()) return;
+            // Any variable that is written partially outside the DFG will have itself as the
+            // canonical var, so need not be replaced, furthermore, if a variable is traced, we
+            // don't want to update the write-refs we just created above, so we only replace
+            // read-only references to those variables to those variables we know are not written
+            // in non-DFG logic.
+            if (!refp->access().isReadOnly() || refp->varp()->user3()) return;
             const auto it = m_canonVars.find(refp->varp());
-            if (it == m_canonVars.end()) return;
-            if (it->second == refp->varp()) return;
+            if (it == m_canonVars.end() || it->second == refp->varp()) return;
             refp->replaceWith(new AstVarRef{refp->fileline(), it->second, refp->access()});
             deleter.pushDeletep(refp);
         });

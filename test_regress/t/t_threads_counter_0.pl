@@ -14,7 +14,7 @@ top_filename("t/t_threads_counter.v");
 
 compile(
     verilator_flags2 => ['--cc'],
-    threads => 0,
+    threads => 1,
     );
 
 execute(

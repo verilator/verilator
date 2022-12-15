@@ -58,7 +58,7 @@ string EmitCBaseVisitor::funcNameProtect(const AstCFunc* nodep, const AstNodeMod
 }
 
 AstCFile* EmitCBaseVisitor::newCFile(const string& filename, bool slow, bool source, bool add) {
-    AstCFile* const cfilep = new AstCFile(v3Global.rootp()->fileline(), filename);
+    AstCFile* const cfilep = new AstCFile{v3Global.rootp()->fileline(), filename};
     cfilep->slow(slow);
     cfilep->source(source);
     if (add) v3Global.rootp()->addFilesp(cfilep);
@@ -210,7 +210,7 @@ void EmitCBaseVisitor::emitVarDecl(const AstVar* nodep, bool asRef) {
             // Issue 2622.
             const bool beStatic = name.size() >= suffix.size()
                                   && name.substr(name.size() - suffix.size()) == suffix;
-            if (beStatic) puts("static VL_THREAD_LOCAL ");
+            if (beStatic) puts("static thread_local ");
         }
         puts(nodep->vlArgType(true, false, false, "", asRef));
         puts(";\n");

@@ -65,23 +65,24 @@ static void appendDefValue(const char* t, size_t l) { LEXP->appendDefValue(t, l)
 /**********************************************************************/
 %}
 
-%x CMTONEM
+%x ARGMODE
 %x CMTBEGM
 %x CMTMODE
-%x STRMODE
-%x DEFFPAR
-%x DEFFORM
-%x DEFVAL
+%x CMTONEM
 %x DEFCMT
-%x STRIFY
-%x ARGMODE
+%x DEFFORM
+%x DEFFPAR
+%x DEFVAL
+%x ENCBASE64
 %x INCMODE
-%x PRTMODE
 %x PRAGMA
 %x PRAGMAERR
 %x PRAGMAPRT
 %x PRAGMAPRTERR
-%x ENCBASE64
+%x PRTMODE
+%x QQQMODE
+%x STRIFY
+%x STRMODE
 
 /* drop: Drop Ctrl-Z - can't pass thru or may EOF the output too soon */
 
@@ -262,6 +263,23 @@ bom             [\357\273\277]
                               yyleng=0; FL_BRK;
                           } else return VP_STRING; }
 
+        /* Pass-through quote-quote-quote */
+<INITIAL>{quote}{quote}{quote}        { yy_push_state(QQQMODE); yymore(); }
+<QQQMODE><<EOF>>        { FL_FWDC; linenoInc(); yyerrorf("EOF in unterminated \"\"\" string");
+                          yyleng=0; return VP_EOF_ERROR; }
+<QQQMODE>{crnl}         { FL_FWDC; linenoInc(); yymore(); }
+<QQQMODE>{word}         { yymore(); }
+<QQQMODE>[^\"\\]        { yymore(); }
+<QQQMODE>[\\]{crnl}     { linenoInc(); yymore(); }
+<QQQMODE>[\\]{wsn}+{crnl}  { LEXP->warnBackslashSpace(); yyless(1); }
+<QQQMODE>[\\].          { yymore(); }
+<QQQMODE>.              { yymore(); }
+<QQQMODE>{quote}{quote}{quote}        { FL_FWDC; yy_pop_state();
+                          if (LEXP->m_parenLevel || LEXP->m_defQuote) {
+                              LEXP->m_defQuote=false; appendDefValue(yytext, yyleng);
+                              yyleng=0; FL_BRK;
+                          } else return VP_STRING; }
+
         /* Stringification */
 <INITIAL>{tickquote}    { FL_FWDC; yy_push_state(STRIFY); return VP_STRIFY; }
 <STRIFY><<EOF>>         { FL_FWDC; linenoInc(); yyerrorf("EOF in unterminated '\"");
@@ -319,6 +337,7 @@ bom             [\357\273\277]
 <DEFFORM>[\\]{wsn}+{crnl}  { LEXP->warnBackslashSpace(); yyless(1); }
 <DEFFORM>[\\]{crnl}     { FL_FWDC; linenoInc(); appendDefValue((char*)"\\\n", 2); FL_BRK; }  /* Include return so can maintain output line count */
 <DEFFORM>{quote}        { LEXP->m_defQuote=true; yy_push_state(STRMODE); yymore(); }  /* Legal only in default values */
+<DEFFORM>{quote}{quote}{quote}   { LEXP->m_defQuote=true; yy_push_state(QQQMODE); yymore(); }  /* Legal only in default values */
 <DEFFORM>"`\\`\""       { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }  /* Maybe illegal, otherwise in default value */
 <DEFFORM>{tickquote}    { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }  /* Maybe illegal, otherwise in default value */
 <DEFFORM>[{\[]          { FL_FWDC; LEXP->m_formalLevel++; appendDefValue(yytext, yyleng); FL_BRK; }
@@ -337,6 +356,7 @@ bom             [\357\273\277]
 <DEFVAL>[\\]{wsn}+{crnl}  { LEXP->warnBackslashSpace(); yyless(1); }
 <DEFVAL>[\\]{crnl}      { FL_FWDC; linenoInc(); appendDefValue((char*)"\\\n", 2); FL_BRK; }  /* Return, AND \ is part of define value */
 <DEFVAL>{quote}         { LEXP->m_defQuote = true; yy_push_state(STRMODE); yymore(); }
+<DEFVAL>{quote}{quote}{quote}   { LEXP->m_defQuote = true; yy_push_state(QQQMODE); yymore(); }
 <DEFVAL>[^\/\*\n\r\\\"]+        |
 <DEFVAL>[\\][^\n\r]     |
 <DEFVAL>.               { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }
@@ -364,6 +384,7 @@ bom             [\357\273\277]
                           yyleng = 0; return VP_EOF_ERROR; }
 <ARGMODE>{crnl}         { FL_FWDC; linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
 <ARGMODE>{quote}        { yy_push_state(STRMODE); yymore(); }
+<ARGMODE>{quote}{quote}{quote}    { yy_push_state(QQQMODE); yymore(); }
 <ARGMODE>"`\\`\""       { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }  /* Literal text */
 <ARGMODE>{tickquote}    { FL_FWDC; yy_push_state(STRIFY); return VP_STRIFY; }
 <ARGMODE>[{\[]          { FL_FWDC; LEXP->m_parenLevel++; appendDefValue(yytext, yyleng); FL_BRK; }

@@ -103,7 +103,7 @@ AstModule* dfgToAst(DfgGraph&, V3DfgOptimizationContext&);
 // Common subexpression elimination
 void cse(DfgGraph&, V3DfgCseContext&);
 // Inline fully driven variables
-void inlineVars(DfgGraph&);
+void inlineVars(const DfgGraph&);
 // Peephole optimizations
 void peephole(DfgGraph&, V3DfgPeepholeContext&);
 // Remove redundant variables

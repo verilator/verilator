@@ -79,7 +79,7 @@ static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
 %o 25000
 
 %s V95 V01NC V01C V05 S05 S09 S12 S17
-%s STRING ATTRMODE TABLE
+%s ATTRMODE QQQ STRING TABLE
 %s VA5 SAX VLT
 %s SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
 %s IGNORE
@@ -183,6 +183,13 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$displayb"           { FL; return yD_DISPLAYB; }
   "$displayh"           { FL; return yD_DISPLAYH; }
   "$displayo"           { FL; return yD_DISPLAYO; }
+  "$dist_chi_square"    { FL; return yD_DIST_CHI_SQUARE; }
+  "$dist_erlang"        { FL; return yD_DIST_ERLANG; }
+  "$dist_exponential"   { FL; return yD_DIST_EXPONENTIAL; }
+  "$dist_normal"        { FL; return yD_DIST_NORMAL; }
+  "$dist_poisson"       { FL; return yD_DIST_POISSON; }
+  "$dist_t"             { FL; return yD_DIST_T; }
+  "$dist_uniform"       { FL; return yD_DIST_UNIFORM; }
   "$dumpall"            { FL; return yD_DUMPALL; }
   "$dumpfile"           { FL; return yD_DUMPFILE; }
   "$dumpflush"          { FL; return yD_DUMPFLUSH; }
@@ -265,6 +272,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$skew"               { FL; return yaTIMINGSPEC; }
   "$sqrt"               { FL; return yD_SQRT; }
   "$sscanf"             { FL; return yD_SSCANF; }
+  "$stacktrace"         { FL; return yD_STACKTRACE; }
   "$stime"              { FL; return yD_STIME; }
   "$stop"               { FL; return yD_STOP; }
   "$strobe"             { FL; return yD_STROBE; }
@@ -281,7 +289,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$test$plusargs"      { FL; return yD_TESTPLUSARGS; }
   "$time"               { FL; return yD_TIME; }
   "$timeformat"         { FL; return yD_TIMEFORMAT; }
+  "$timeprecision"      { FL; return yD_TIMEPRECISION; }
   "$timeskew"           { FL; return yaTIMINGSPEC; }
+  "$timeunit"           { FL; return yD_TIMEUNIT; }
   "$typename"           { FL; return yD_TYPENAME; }
   "$ungetc"             { FL; return yD_UNGETC; }
   "$urandom"            { FL; return yD_URANDOM; }
@@ -598,7 +608,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "unique0"             { FL; return yUNIQUE0; }
   "until"               { ERROR_RSVD_WORD("SystemVerilog 2009"); }
   "until_with"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "untyped"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "untyped"             { FL; return yUNTYPED; }
   "weak"                { ERROR_RSVD_WORD("SystemVerilog 2009"); }
 }
 
@@ -883,6 +893,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           return yaSTRING;
                         }
   \"                    { yy_push_state(STRING); yymore(); }
+  \"\"\"                { yy_push_state(QQQ); yymore(); }
   {vnum}                {
                           /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
                           if (PARSEP->lexPrevToken()=='#') {
@@ -936,6 +947,19 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           return yaSTRING; }
 <STRING>{word}          { yymore(); }
 <STRING>.               { yymore(); }
+
+  /************************************************************************/
+  /* """ */
+<QQQ><<EOF>>            { FL; yylval.fl->v3error("EOF in unterminated \"\"\" string");
+                          yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
+<QQQ>\\.                { yymore(); }
+<QQQ>\n                 { yymore(); }
+<QQQ>\"\"\"             { yy_pop_state();
+                          FL; yylval.strp = PARSEP->newString(yytext + 3, yyleng - 6);
+                          return yaSTRING; }
+<QQQ>\"                 { yymore(); }
+<QQQ>{word}             { yymore(); }
+<QQQ>.                  { yymore(); }
 
   /************************************************************************/
   /* Attributes */

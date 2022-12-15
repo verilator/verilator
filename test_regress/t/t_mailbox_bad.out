@@ -1,6 +1,5 @@
-%Error: t/t_mailbox_bad.v:8:4: Can't find typedef: 'mailbox'
-    8 |    mailbox #(int) m;
-      |    ^~~~~~~
-%Error: Internal Error: t/t_mailbox_bad.v:8:14: ../V3LinkDot.cpp:#: Pin not under instance?
-    8 |    mailbox #(int) m;
-      |              ^~~
+%Error: t/t_mailbox_bad.v:12:13: Class method 'bad_method' not found in class 'mailbox__Tz1'
+                               : ... In instance t
+   12 |       if (m.bad_method() != 0) $stop;
+      |             ^~~~~~~~~~
+%Error: Exiting due to

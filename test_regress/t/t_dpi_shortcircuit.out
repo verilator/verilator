@@ -1,0 +1,18 @@
+%Error: Line 60: Bad result, got=1 expect=0
+%Error: Line 64: Bad result, got=1 expect=0
+%Error: Line 75: Bad result, got=0 expect=1
+%Error: Line 98: Bad result, got=1 expect=0
+%Error: Line 102: Bad result, got=1 expect=0
+%Error: Line 112: Bad result, got=0 expect=1
+%Error: Line 132: Bad result, got=1 expect=0
+%Error: Line 136: Bad result, got=1 expect=0
+%Error: Line 150: Bad result, got=1 expect=0
+%Error: Line 154: Bad result, got=1 expect=0
+%Error: Line 163: Bad result, got=0 expect=1
+%Error: Line 203: Bad result, got=64 expect=32
+%Error: Line 204: Bad result, got=64 expect=16
+%Error: Line 205: Bad result, got=64 expect=16
+%Error: Line 206: Bad result, got=64 expect=36
+%Error: Line 207: Bad result, got=64 expect=46
+%Error: t/t_dpi_shortcircuit.v:209: Verilog $stop
+Aborting...

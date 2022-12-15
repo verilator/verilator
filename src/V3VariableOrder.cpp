@@ -118,7 +118,7 @@ class VariableOrder final {
         V3TSP::StateVec states;
         for (const auto& pair : m2v) {
             if (pair.first.empty()) continue;
-            states.push_back(new VarTspSorter(pair.first));
+            states.push_back(new VarTspSorter{pair.first});
         }
 
         // Do the TSP sort
@@ -195,7 +195,7 @@ class VariableOrder final {
     }
 
 public:
-    static void processModule(AstNodeModule* modp) { VariableOrder().orderModuleVars(modp); }
+    static void processModule(AstNodeModule* modp) { VariableOrder{}.orderModuleVars(modp); }
 };
 
 //######################################################################

@@ -104,7 +104,7 @@ class ForceConvertVisitor final : public VNVisitor {
                 AstVarRef* const lhsp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
                 V3Number zero{m_enVscp, m_enVscp->width()};
                 zero.setAllBits0();
-                AstNodeMath* const rhsp = new AstConst{flp, zero};
+                AstNodeExpr* const rhsp = new AstConst{flp, zero};
                 AstAssign* const assignp = new AstAssign{flp, lhsp, rhsp};
                 AstActive* const activep = new AstActive{
                     flp, "force-init",
@@ -174,8 +174,8 @@ class ForceConvertVisitor final : public VNVisitor {
         pushDeletep(nodep);
 
         FileLine* const flp = nodep->fileline();
-        AstNode* const lhsp = nodep->lhsp();  // The LValue we are forcing
-        AstNode* const rhsp = nodep->rhsp();  // The value we are forcing it to
+        AstNodeExpr* const lhsp = nodep->lhsp();  // The LValue we are forcing
+        AstNodeExpr* const rhsp = nodep->rhsp();  // The value we are forcing it to
 
         // Set corresponding enable signals to ones
         V3Number ones{lhsp, lhsp->width()};
@@ -210,7 +210,7 @@ class ForceConvertVisitor final : public VNVisitor {
         pushDeletep(nodep);
 
         FileLine* const flp = nodep->fileline();
-        AstNode* const lhsp = nodep->lhsp();  // The LValue we are releasing
+        AstNodeExpr* const lhsp = nodep->lhsp();  // The LValue we are releasing
 
         // Set corresponding enable signals to zero
         V3Number zero{lhsp, lhsp->width()};

@@ -1,0 +1,5 @@
+%Error: t/t_assert_disable_bad.v:27:38: disable iff expression before property call and in its body is not legal
+                                      : ... In instance t
+   27 |    assert property (disable iff (val == 0) check(1, 1));
+      |                                      ^~
+%Error: Exiting due to

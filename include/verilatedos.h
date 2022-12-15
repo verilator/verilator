@@ -56,7 +56,7 @@
 # if !defined(_WIN32) && !defined(__MINGW32__)
 #  define VL_ATTR_WEAK __attribute__((weak))
 # endif
-# if defined(__clang__) && defined(VL_THREADED)
+# if defined(__clang__)
 #  define VL_ACQUIRE(...) __attribute__((acquire_capability(__VA_ARGS__)))
 #  define VL_ACQUIRE_SHARED(...) __attribute__((acquire_shared_capability(__VA_ARGS__)))
 #  define VL_RELEASE(...) __attribute__((release_capability(__VA_ARGS__)))
@@ -111,12 +111,12 @@
 # define VL_ATTR_WEAK  ///< Attribute that function external that is optionally defined
 #endif
 #ifndef VL_CAPABILITY
-# define VL_ACQUIRE(...)  ///< Function requires a capability/lock (-fthread-safety)
-# define VL_ACQUIRE_SHARED(...)  ///< Function aquires a shared capability/lock (-fthread-safety)
+# define VL_ACQUIRE(...)  ///< Function acquires a capability/lock (-fthread-safety)
+# define VL_ACQUIRE_SHARED(...)  ///< Function acquires a shared capability/lock (-fthread-safety)
 # define VL_RELEASE(...)  ///< Function releases a capability/lock (-fthread-safety)
 # define VL_RELEASE_SHARED(...)  ///< Function releases a shared capability/lock (-fthread-safety)
-# define VL_TRY_ACQUIRE(...)  ///< Function returns bool if aquired a capability (-fthread-safety)
-# define VL_TRY_ACQUIRE_SHARED(...)  ///< Function returns bool if aquired shared (-fthread-safety)
+# define VL_TRY_ACQUIRE(...)  ///< Function returns bool if acquired a capability (-fthread-safety)
+# define VL_TRY_ACQUIRE_SHARED(...)  ///< Function returns bool if acquired shared (-fthread-safety)
 # define VL_REQUIRES(x)  ///< Function requires a capability inbound (-fthread-safety)
 # define VL_EXCLUDES(x)  ///< Function requires not having a capability inbound (-fthread-safety)
 # define VL_CAPABILITY(x)  ///< Name of capability/lock (-fthread-safety)
@@ -139,49 +139,58 @@
 # define VL_PREFETCH_RW(p)  ///< Prefetch pointer argument with read/write intent
 #endif
 
-#if defined(VL_THREADED) && !defined(VL_CPPCHECK)
-# if defined(_MSC_VER) && _MSC_VER >= 1900
-#  define VL_THREAD_LOCAL thread_local
-# elif defined(__GNUC__)
-#  if (__cplusplus < 201103L)
-#   error "VL_THREADED/--threads support requires C++-11 or newer only; use newer compiler"
-#  endif
-# else
-#  error "Unsupported compiler for VL_THREADED: No thread-local declarator"
-# endif
-# define VL_THREAD_LOCAL thread_local  // "thread_local" when supported
-#else
-# define VL_THREAD_LOCAL  // "thread_local" when supported
-#endif
 
 #ifndef VL_NO_LEGACY
 # define VL_FUNC __func__  // Deprecated
 # define VL_THREAD  // Deprecated
+# define VL_THREAD_LOCAL thread_local  // Deprecated
 # define VL_STATIC_OR_THREAD static  // Deprecated
 #endif
 
 // Comment tag that Function is pure (and thus also VL_MT_SAFE)
-#define VL_PURE
-// Comment tag that function is threadsafe when VL_THREADED
+#if defined(__clang__)
+# define VL_PURE __attribute__((annotate("PURE")))
+#else
+# define VL_PURE
+#endif
+// Comment tag that function is threadsafe
 #if defined(__clang__)
 # define VL_MT_SAFE __attribute__((annotate("MT_SAFE")))
 #else
 # define VL_MT_SAFE
 #endif
-// Comment tag that function is threadsafe when VL_THREADED, only
+// Comment tag that function is threadsafe, only
 // during normal operation (post-init)
-#define VL_MT_SAFE_POSTINIT
+#if defined(__clang__)
+# define VL_MT_SAFE_POSTINIT __attribute__((annotate("MT_SAFE_POSTINIT")))
+#else
+# define VL_MT_SAFE_POSTINIT
+#endif
 // Attribute that function is clang threadsafe and uses given mutex
-#define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
-// Comment tag that function is not threadsafe when VL_THREADED
+#if defined(__clang__)
+# define VL_MT_SAFE_EXCLUDES(mutex) __attribute__((annotate("MT_SAFE_EXCLUDES"))) VL_EXCLUDES(mutex)
+#else
+# define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
+#endif
+// Comment tag that function is not threadsafe
 #if defined(__clang__)
 # define VL_MT_UNSAFE __attribute__((annotate("MT_UNSAFE")))
 #else
 # define VL_MT_UNSAFE
 #endif
-// Comment tag that function is not threadsafe when VL_THREADED,
+// Comment tag that function is not threadsafe
 // protected to make sure single-caller
-#define VL_MT_UNSAFE_ONE
+#if defined(__clang__)
+# define VL_MT_UNSAFE_ONE __attribute__((annotate("MT_UNSAFE_ONE")))
+#else
+# define VL_MT_UNSAFE_ONE
+#endif
+// Comment tag that function is entry point of parallelization
+#if defined(__clang__)
+# define VL_MT_START __attribute__((annotate("MT_START")))
+#else
+# define VL_MT_START
+#endif
 
 #ifndef VL_NO_LEGACY
 # define VL_ULL(c) (c##ULL)  // Add appropriate suffix to 64-bit constant (deprecated)
@@ -222,10 +231,16 @@
         } while (false); \
     } while (false)
 
+#ifdef _MSC_VER
+# if _MSC_VER < 1929
+#  error "Verilator requires at least Visual Studio 2019 version 16.11.2"
+# endif
+#endif
+
 //=========================================================================
 // C++-2011
 
-#if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK)
+#if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK) || defined(_MSC_VER)
 #else
 # error "Verilator requires a C++11 or newer compiler"
 #endif
@@ -378,9 +393,9 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 
 #define VL_BYTESIZE 8  ///< Bits in a CData / byte
 #define VL_SHORTSIZE 16  ///< Bits in a SData / short
-#define VL_IDATASIZE 32  ///< Bits in a IData / word
+#define VL_IDATASIZE 32  ///< Bits in an IData / word
 #define VL_QUADSIZE 64  ///< Bits in a QData / quadword
-#define VL_EDATASIZE 32  ///< Bits in a EData (WData entry)
+#define VL_EDATASIZE 32  ///< Bits in an EData (WData entry)
 #define VL_EDATASIZE_LOG2 5  ///< log2(VL_EDATASIZE)
 #define VL_CACHE_LINE_BYTES 64  ///< Bytes in a cache line (for alignment)
 
@@ -434,7 +449,7 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_BITWORD_E(bit) ((bit) >> VL_EDATASIZE_LOG2)  ///< Word number for a wide quantity
 #define VL_BITBIT_I(bit) ((bit) & VL_SIZEBITS_I)  ///< Bit number for a bit in a long
 #define VL_BITBIT_Q(bit) ((bit) & VL_SIZEBITS_Q)  ///< Bit number for a bit in a quad
-#define VL_BITBIT_E(bit) ((bit) & VL_SIZEBITS_E)  ///< Bit number for a bit in a EData
+#define VL_BITBIT_E(bit) ((bit) & VL_SIZEBITS_E)  ///< Bit number for a bit in an EData
 
 // Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
 #define VL_BITISSET_I(data, bit) ((data) & (VL_UL(1) << VL_BITBIT_I(bit)))
@@ -482,28 +497,28 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 //=========================================================================
 // Threading related OS-specific functions
 
-#if VL_THREADED
-# ifdef _WIN32
-#  define WIN32_LEAN_AND_MEAN
+#ifdef _WIN32
+# define WIN32_LEAN_AND_MEAN
+# ifndef NOMINMAX
 #  define NOMINMAX
-#  include "Windows.h"
-#  define VL_CPU_RELAX() YieldProcessor()
-# elif defined(__i386__) || defined(__x86_64__) || defined(VL_CPPCHECK)
+# endif
+# include "windows.h"
+# define VL_CPU_RELAX() YieldProcessor()
+#elif defined(__i386__) || defined(__x86_64__) || defined(VL_CPPCHECK)
 // For more efficient busy waiting on SMT CPUs, let the processor know
 // we're just waiting so it can let another thread run
-#  define VL_CPU_RELAX() asm volatile("rep; nop" ::: "memory")
-# elif defined(__ia64__)
-#  define VL_CPU_RELAX() asm volatile("hint @pause" ::: "memory")
-# elif defined(__aarch64__)
-#  define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
-# elif defined(__powerpc64__)
-#  define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
-# elif defined(__loongarch__)
+# define VL_CPU_RELAX() asm volatile("rep; nop" ::: "memory")
+#elif defined(__ia64__)
+# define VL_CPU_RELAX() asm volatile("hint @pause" ::: "memory")
+#elif defined(__aarch64__) || defined(__arm__)
+# define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
+#elif defined(__powerpc64__)
+# define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
+#elif defined(__loongarch__) || defined(__riscv)
 // LoongArch does not currently have a yield/pause instruction
-#  define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
-# else
-#  error "Missing VL_CPU_RELAX() definition. Or, don't use VL_THREADED"
-# endif
+# define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
+#else
+# error "Missing VL_CPU_RELAX() definition."
 #endif
 
 //=========================================================================
@@ -513,12 +528,6 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 # define VL_STRCASECMP _stricmp
 #else
 # define VL_STRCASECMP strcasecmp
-#endif
-
-#if defined(__MINGW32__) || defined(_MSC_VER)
-# define VL_LOCALTIME_R(timep, tmp) localtime_s((tmp), (timep))
-#else
-# define VL_LOCALTIME_R(timep, tmp) localtime_r((timep), (tmp))
 #endif
 
 //=========================================================================

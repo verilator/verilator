@@ -21,6 +21,7 @@ module t;
       struct_t str;
 
       e = ONE;
+      e = $random() == 0 ? ONE : TWO;
       e = e_t'(1);
       e = e;
 

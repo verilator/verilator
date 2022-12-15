@@ -31,4 +31,20 @@
                                           : ... In instance t
    27 |    initial #2 $stop;  
       |            ^
+%Error-NEEDTIMINGOPT: t/t_notiming.v:33:10: Use --timing or --no-timing to specify how mailbox::put() should be handled
+                                          : ... In instance t
+   33 |        m.put(i);
+      |          ^~~
+%Error-NEEDTIMINGOPT: t/t_notiming.v:34:10: Use --timing or --no-timing to specify how mailbox::get() should be handled
+                                          : ... In instance t
+   34 |        m.get(i);
+      |          ^~~
+%Error-NEEDTIMINGOPT: t/t_notiming.v:35:10: Use --timing or --no-timing to specify how mailbox::peek() should be handled
+                                          : ... In instance t
+   35 |        m.peek(i);
+      |          ^~~~
+%Error-NEEDTIMINGOPT: t/t_notiming.v:36:10: Use --timing or --no-timing to specify how semaphore::get() should be handled
+                                          : ... In instance t
+   36 |        s.get();
+      |          ^~~
 %Error: Exiting due to

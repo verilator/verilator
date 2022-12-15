@@ -1,0 +1,15 @@
+%Error: t/t_stream_bad.v:12:32: Expecting expression to be constant, but can't convert a RAND to constant.
+                              : ... In instance t
+   12 |    initial packed_data_32 = {<<$random{byte_in}};
+      |                                ^~~~~~~
+%Error: t/t_stream_bad.v:12:30: Slice size isn't a constant or basic data type.
+                              : ... In instance t
+   12 |    initial packed_data_32 = {<<$random{byte_in}};
+      |                              ^~
+%Warning-WIDTH: t/t_stream_bad.v:12:27: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's STREAML generates 8 bits.
+                                      : ... In instance t
+   12 |    initial packed_data_32 = {<<$random{byte_in}};
+      |                           ^
+                ... For warning description see https://verilator.org/warn/WIDTH?v=latest
+                ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
+%Error: Exiting due to

@@ -59,7 +59,7 @@ class EmitCModel final : public EmitCFunc {
 
         const string filename = v3Global.opt.makeDir() + "/" + topClassName() + ".h";
         newCFile(filename, /* slow: */ false, /* source: */ false);
-        m_ofp = v3Global.opt.systemC() ? new V3OutScFile(filename) : new V3OutCFile(filename);
+        m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
 
         ofp()->putsHeader();
         puts("// DESCRIPTION: Verilator output: Primary model header\n");
@@ -598,7 +598,7 @@ class EmitCModel final : public EmitCFunc {
 
         const string filename = v3Global.opt.makeDir() + "/" + topClassName() + ".cpp";
         newCFile(filename, /* slow: */ false, /* source: */ true);
-        m_ofp = v3Global.opt.systemC() ? new V3OutScFile(filename) : new V3OutCFile(filename);
+        m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
 
         ofp()->putsHeader();
         puts("// DESCRIPTION: Verilator output: "

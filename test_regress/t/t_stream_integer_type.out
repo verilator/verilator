@@ -72,63 +72,115 @@
                                                 : ... In instance t
   136 |          {<<32{reg_out}}      = v_packed_data_128;
       |                               ^
-%Error: t/t_stream_integer_type.v:150:33: Operator STREAML expected non-datatype RHS but 'byte' is a datatype.
-                                        : ... In instance t
-  150 |          packed_data_32    = {<<byte{byte_in}};
-      |                                 ^~~~
 %Warning-WIDTH: t/t_stream_integer_type.v:150:28: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's STREAML generates 8 bits.
                                                 : ... In instance t
   150 |          packed_data_32    = {<<byte{byte_in}};
       |                            ^
-%Error: t/t_stream_integer_type.v:151:33: Operator STREAML expected non-datatype RHS but 'shortint' is a datatype.
-                                        : ... In instance t
-  151 |          packed_data_64    = {<<shortint{shortint_in}};
-      |                                 ^~~~~~~~
 %Warning-WIDTH: t/t_stream_integer_type.v:151:28: Operator ASSIGN expects 64 bits on the Assign RHS, but Assign RHS's STREAML generates 16 bits.
                                                 : ... In instance t
   151 |          packed_data_64    = {<<shortint{shortint_in}};
       |                            ^
-%Error: t/t_stream_integer_type.v:152:33: Operator STREAML expected non-datatype RHS but 'int' is a datatype.
-                                        : ... In instance t
-  152 |          packed_data_128   = {<<int{int_in}};
-      |                                 ^~~
 %Warning-WIDTH: t/t_stream_integer_type.v:152:28: Operator ASSIGN expects 128 bits on the Assign RHS, but Assign RHS's STREAML generates 32 bits.
                                                 : ... In instance t
   152 |          packed_data_128   = {<<int{int_in}};
       |                            ^
-%Error: t/t_stream_integer_type.v:153:33: Operator STREAML expected non-datatype RHS but 'integer' is a datatype.
-                                        : ... In instance t
-  153 |          packed_data_128_i = {<<integer{integer_in}};
-      |                                 ^~~~~~~
 %Warning-WIDTH: t/t_stream_integer_type.v:153:28: Operator ASSIGN expects 128 bits on the Assign RHS, but Assign RHS's STREAML generates 32 bits.
                                                 : ... In instance t
   153 |          packed_data_128_i = {<<integer{integer_in}};
       |                            ^
-%Error: t/t_stream_integer_type.v:154:33: Operator STREAML expected non-datatype RHS but 'longint' is a datatype.
-                                        : ... In instance t
-  154 |          packed_data_256   = {<<longint{longint_in}};
-      |                                 ^~~~~~~
 %Warning-WIDTH: t/t_stream_integer_type.v:154:28: Operator ASSIGN expects 256 bits on the Assign RHS, but Assign RHS's STREAML generates 64 bits.
                                                 : ... In instance t
   154 |          packed_data_256   = {<<longint{longint_in}};
       |                            ^
-%Error: t/t_stream_integer_type.v:155:33: Operator STREAML expected non-datatype RHS but 'time' is a datatype.
-                                        : ... In instance t
-  155 |          packed_time_256   = {<<time{time_in}};
-      |                                 ^~~~
 %Warning-WIDTH: t/t_stream_integer_type.v:155:28: Operator ASSIGN expects 256 bits on the Assign RHS, but Assign RHS's STREAML generates 64 bits.
                                                 : ... In instance t
   155 |          packed_time_256   = {<<time{time_in}};
       |                            ^
-%Error: t/t_stream_integer_type.v:156:33: Operator STREAML expected non-datatype RHS but 'test_byte' is a datatype.
-                                        : ... In instance t
-  156 |          v_packed_data_32  = {<<test_byte{bit_in}};
-      |                                 ^~~~~~~~~
-%Error: t/t_stream_integer_type.v:156:31: Slice size isn't a constant or basic data type.
-                                        : ... In instance t
-  156 |          v_packed_data_32  = {<<test_byte{bit_in}};
-      |                               ^~
-%Error: Internal Error: t/t_stream_integer_type.v:156:28: ../V3Width.cpp:#: Node has no type
-                                                        : ... In instance t
+%Warning-WIDTH: t/t_stream_integer_type.v:156:28: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's STREAML generates 8 bits.
+                                                : ... In instance t
   156 |          v_packed_data_32  = {<<test_byte{bit_in}};
       |                            ^
+%Warning-WIDTH: t/t_stream_integer_type.v:157:28: Operator ASSIGN expects 64 bits on the Assign RHS, but Assign RHS's STREAML generates 16 bits.
+                                                : ... In instance t
+  157 |          v_packed_data_64  = {<<test_short{logic_in}};
+      |                            ^
+%Warning-WIDTH: t/t_stream_integer_type.v:158:28: Operator ASSIGN expects 128 bits on the Assign RHS, but Assign RHS's STREAML generates 32 bits.
+                                                : ... In instance t
+  158 |          v_packed_data_128 = {<<test_word{reg_in}};
+      |                            ^
+%Warning-WIDTH: t/t_stream_integer_type.v:160:37: Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's VARREF 'packed_data_32' generates 32 bits.
+                                                : ... In instance t
+  160 |          {<<byte{byte_out}}         = packed_data_32;
+      |                                     ^
+%Warning-WIDTH: t/t_stream_integer_type.v:161:37: Operator ASSIGN expects 16 bits on the Assign RHS, but Assign RHS's VARREF 'packed_data_64' generates 64 bits.
+                                                : ... In instance t
+  161 |          {<<shortint{shortint_out}} = packed_data_64;
+      |                                     ^
+%Warning-WIDTH: t/t_stream_integer_type.v:162:37: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'packed_data_128' generates 128 bits.
+                                                : ... In instance t
+  162 |          {<<int{int_out}}           = packed_data_128;
+      |                                     ^
+%Warning-WIDTH: t/t_stream_integer_type.v:163:37: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'packed_data_128_i' generates 128 bits.
+                                                : ... In instance t
+  163 |          {<<integer{integer_out}}   = packed_data_128_i;
+      |                                     ^
+%Warning-WIDTH: t/t_stream_integer_type.v:164:37: Operator ASSIGN expects 64 bits on the Assign RHS, but Assign RHS's VARREF 'packed_data_256' generates 256 bits.
+                                                : ... In instance t
+  164 |          {<<longint{longint_out}}   = packed_data_256;
+      |                                     ^
+%Warning-WIDTH: t/t_stream_integer_type.v:165:37: Operator ASSIGN expects 64 bits on the Assign RHS, but Assign RHS's VARREF 'packed_time_256' generates 256 bits.
+                                                : ... In instance t
+  165 |          {<<time{time_out}}         = packed_time_256;
+      |                                     ^
+%Warning-WIDTH: t/t_stream_integer_type.v:166:37: Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's VARREF 'v_packed_data_32' generates 32 bits.
+                                                : ... In instance t
+  166 |          {<<test_byte{bit_out}}     = v_packed_data_32;
+      |                                     ^
+%Warning-WIDTH: t/t_stream_integer_type.v:167:37: Operator ASSIGN expects 16 bits on the Assign RHS, but Assign RHS's VARREF 'v_packed_data_64' generates 64 bits.
+                                                : ... In instance t
+  167 |          {<<test_short{logic_out}}  = v_packed_data_64;
+      |                                     ^
+%Warning-WIDTH: t/t_stream_integer_type.v:168:37: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'v_packed_data_128' generates 128 bits.
+                                                : ... In instance t
+  168 |          {<<test_word{reg_out}}     = v_packed_data_128;
+      |                                     ^
+%Error: t/t_stream_integer_type.v:128:11: SEL is not an unpacked array, but is in an unpacked array context
+  128 |          {<<8{byte_out}}      = packed_data_32;
+      |           ^~
+%Error: t/t_stream_integer_type.v:129:11: SEL is not an unpacked array, but is in an unpacked array context
+  129 |          {<<16{shortint_out}} = packed_data_64;
+      |           ^~
+%Error: t/t_stream_integer_type.v:130:11: SEL is not an unpacked array, but is in an unpacked array context
+  130 |          {<<32{int_out}}      = packed_data_128;
+      |           ^~
+%Error: t/t_stream_integer_type.v:131:11: SEL is not an unpacked array, but is in an unpacked array context
+  131 |          {<<32{integer_out}}  = packed_data_128_i;
+      |           ^~
+%Error: t/t_stream_integer_type.v:132:11: SEL is not an unpacked array, but is in an unpacked array context
+  132 |          {<<64{longint_out}}  = packed_data_256;
+      |           ^~
+%Error: t/t_stream_integer_type.v:133:11: SEL is not an unpacked array, but is in an unpacked array context
+  133 |          {<<64{time_out}}     = packed_time_256;
+      |           ^~
+%Error: t/t_stream_integer_type.v:134:11: SEL is not an unpacked array, but is in an unpacked array context
+  134 |          {<<8{bit_out}}       = v_packed_data_32;
+      |           ^~
+%Error: t/t_stream_integer_type.v:135:11: SEL is not an unpacked array, but is in an unpacked array context
+  135 |          {<<16{logic_out}}    = v_packed_data_64;
+      |           ^~
+%Error: t/t_stream_integer_type.v:136:11: SEL is not an unpacked array, but is in an unpacked array context
+  136 |          {<<32{reg_out}}      = v_packed_data_128;
+      |           ^~
+%Error: t/t_stream_integer_type.v:160:11: SEL is not an unpacked array, but is in an unpacked array context
+  160 |          {<<byte{byte_out}}         = packed_data_32;
+      |           ^~
+%Error: t/t_stream_integer_type.v:161:11: SEL is not an unpacked array, but is in an unpacked array context
+  161 |          {<<shortint{shortint_out}} = packed_data_64;
+      |           ^~
+%Error: t/t_stream_integer_type.v:162:11: SEL is not an unpacked array, but is in an unpacked array context
+  162 |          {<<int{int_out}}           = packed_data_128;
+      |           ^~
+%Error: t/t_stream_integer_type.v:163:11: SEL is not an unpacked array, but is in an unpacked array context
+  163 |          {<<integer{integer_out}}   = packed_data_128_i;
+      |           ^~
+%Error: Exiting due to

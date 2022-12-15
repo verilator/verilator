@@ -11,6 +11,8 @@
 `define checkg(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%g' exp='%g'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 module t (/*AUTOARG*/);
+   typedef struct packed { int x, y; } point;
+   typedef struct packed { point p; int z; } point_3d;
    initial begin
       int q[$];
       int qe[$];  // Empty
@@ -19,6 +21,18 @@ module t (/*AUTOARG*/);
       int qi[$];  // Index returns
       int i;
       string v;
+      string string_q[$];
+      string string_qv[$];
+      point_3d points_q[$];  // Same as q and qv, but complex value type
+      point_3d points_qv[$];
+
+      points_q.push_back(point_3d'{point'{1, 2}, 3});
+      points_q.push_back(point_3d'{point'{2, 3}, 5});
+      points_q.push_back(point_3d'{point'{1, 4}, 5});
+
+      string_q.push_back("a");
+      string_q.push_back("A");
+      string_q.push_back("b");
 
       q = '{1, 2, 2, 4, 3};
       v = $sformatf("%p", q); `checks(v, "'{'h1, 'h2, 'h2, 'h4, 'h3} ");
@@ -44,10 +58,19 @@ module t (/*AUTOARG*/);
       v = $sformatf("%p", qv); `checks(v, "'{'h2, 'h4, 'h1, 'h3} ");
       qv = qe.unique;
       `checkh(qv.size(), 0);
+      qv = q.unique(x) with (x % 2);
+      `checkh(qv.size(), 2);
+      string_qv = string_q.unique(s) with (s.toupper);
+      `checkh(string_qv.size(), 2);
       qi = q.unique_index; qv.sort;
-      v = $sformatf("%p", qi); `checks(v, "'{'h0, 'h2, 'h3, 'h4} ");
+      // According to 7.12.1 of IEEE Std 1800-2017, it is not specified which index of duplicated value should be returned
+      `checkh(qi.size(), 4);
+      qi.delete(1);
+      v = $sformatf("%p", qi); `checks(v, "'{'h0, 'h3, 'h4} ");
       qi = qe.unique_index;
       `checkh(qi.size(), 0);
+      qi = q.unique_index(x) with (x % 3); qv.sort;
+      `checkh(qi.size(), 3);
 
       q.reverse;
       v = $sformatf("%p", q); `checks(v, "'{'h3, 'h1, 'h4, 'h2, 'h2} ");
@@ -66,8 +89,14 @@ module t (/*AUTOARG*/);
       v = $sformatf("%p", qv); `checks(v, "'{'h1, 'h3} ");
       qv = q.find_first with (item == 2);
       v = $sformatf("%p", qv); `checks(v, "'{'h2} ");
+      points_qv = points_q.find_first with (item.z == 5);
+      `checkh(points_qv[0].p.y, 3);
+      points_qv = points_q.find_first with (item.p.x == 1);
+      `checkh(points_qv[0].p.y, 2);
       qv = q.find_last with (item == 2);
       v = $sformatf("%p", qv); `checks(v, "'{'h2} ");
+      string_qv = string_q.find_last(s) with (s.tolower() == "a");
+      `checks(string_qv[0], "A");
 
       qv = q.find with (item == 20);
       `checkh(qv.size, 0);
@@ -104,8 +133,12 @@ module t (/*AUTOARG*/);
 
       qv = q.min;
       v = $sformatf("%p", qv); `checks(v, "'{'h1} ");
+      qv = q.min(x) with (x + 1);
+      v = $sformatf("%p", qv); `checks(v, "'{'h1} ");
       qv = q.max;
       v = $sformatf("%p", qv); `checks(v, "'{'h4} ");
+      qv = q.max(x) with ((x % 4) + 100);
+      v = $sformatf("%p", qv); `checks(v, "'{'h3} ");
       qv = qe.min;
       v = $sformatf("%p", qv); `checks(v, "'{}");
       qv = qe.max;

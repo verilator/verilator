@@ -47,26 +47,27 @@ private:
 
     // METHODS
 
-    AstCFunc* createDeepFunc(AstNode* nodep) {
+    AstCFunc* createDeepFunc(AstNodeStmt* nodep) {
         VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         // Create sub function
         AstScope* const scopep = m_cfuncp->scopep();
         const string name = m_cfuncp->name() + "__deep" + cvtToStr(++m_deepNum);
-        AstCFunc* const funcp = new AstCFunc(nodep->fileline(), name, scopep);
+        AstCFunc* const funcp = new AstCFunc{nodep->fileline(), name, scopep};
         funcp->slow(m_cfuncp->slow());
         funcp->isStatic(m_cfuncp->isStatic());
         funcp->isLoose(m_cfuncp->isLoose());
         funcp->addStmtsp(nodep);
         scopep->addBlocksp(funcp);
         // Call sub function at the point where the body was removed from
-        AstCCall* const callp = new AstCCall(nodep->fileline(), funcp);
+        AstCCall* const callp = new AstCCall{nodep->fileline(), funcp};
+        callp->dtypeSetVoid();
         if (VN_IS(m_modp, Class)) {
             funcp->argTypes(EmitCBaseVisitor::symClassVar());
             callp->argTypes("vlSymsp");
         }
         UINFO(6, "      New " << callp << endl);
-        relinkHandle.relink(callp);
+        relinkHandle.relink(callp->makeStmt());
         // Done
         return funcp;
     }
@@ -91,31 +92,24 @@ private:
             iterateChildren(nodep);
         }
     }
-    void visitStmt(AstNodeStmt* nodep) {
+    void visit(AstStmtExpr* nodep) override {}  // Stop recursion after introducing new function
+    void visit(AstNodeStmt* nodep) override {
         m_depth++;
-        if (m_depth > v3Global.opt.compLimitBlocks()
-            && !VN_IS(nodep, NodeCCall)) {  // Already done
+        if (m_depth > v3Global.opt.compLimitBlocks()) {  // Already done
             UINFO(4, "DeepBlocks " << m_depth << " " << nodep << endl);
             const AstNode* const backp = nodep->backp();  // Only for debug
-            if (debug() >= 9) backp->dumpTree(cout, "-   pre : ");
+            if (debug() >= 9) backp->dumpTree("-   pre : ");
             AstCFunc* const funcp = createDeepFunc(nodep);
             iterate(funcp);
-            if (debug() >= 9) backp->dumpTree(cout, "-   post: ");
-            if (debug() >= 9) funcp->dumpTree(cout, "-   func: ");
+            if (debug() >= 9) backp->dumpTree("-   post: ");
+            if (debug() >= 9) funcp->dumpTree("-   func: ");
         } else {
             iterateChildren(nodep);
         }
         m_depth--;
     }
-    void visit(AstNodeStmt* nodep) override {
-        if (!nodep->isStatement()) {
-            iterateChildren(nodep);
-        } else {
-            visitStmt(nodep);
-        }
-    }
 
-    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeExpr*) override {}  // Accelerate
     //--------------------
     void visit(AstVar*) override {}  // Don't hit varrefs under vars
     void visit(AstNode* nodep) override { iterateChildren(nodep); }

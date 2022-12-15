@@ -50,6 +50,7 @@ private:
     using ImplTypedefMap = std::map<const std::pair<void*, std::string>, AstTypedef*>;
 
     // STATE
+    AstPackage* const m_stdPackagep;  // SystemVerilog std package
     AstVar* m_varp = nullptr;  // Variable we're under
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
     std::unordered_set<FileLine*> m_filelines;  // Filelines that have been seen
@@ -181,11 +182,11 @@ private:
             FileLine* const flp = nodep->fileline();
             for (int i = left; i != (right + increment); i += increment, offset_from_init++) {
                 const string name = nodep->name() + cvtToStr(i);
-                AstNode* valuep = nullptr;
+                AstNodeExpr* valuep = nullptr;
                 if (nodep->valuep()) {
                     valuep
-                        = new AstAdd(flp, nodep->valuep()->cloneTree(true),
-                                     new AstConst(flp, AstConst::Unsized32(), offset_from_init));
+                        = new AstAdd{flp, nodep->valuep()->cloneTree(true),
+                                     new AstConst(flp, AstConst::Unsized32{}, offset_from_init)};
                 }
                 addp = AstNode::addNext(addp, new AstEnumItem{flp, name, nullptr, valuep});
             }
@@ -262,11 +263,11 @@ private:
                // AstInitial
             else if (m_valueModp) {
                 // Making an AstAssign (vs AstAssignW) to a wire is an error, suppress it
-                FileLine* const newfl = new FileLine(fl);
+                FileLine* const newfl = new FileLine{fl};
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
                 auto* const assp
-                    = new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), VAccess::WRITE),
-                                    nodep->valuep()->unlinkFrBack());
+                    = new AstAssign{newfl, new AstVarRef{newfl, nodep->name(), VAccess::WRITE},
+                                    VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)};
                 if (nodep->lifetime().isAutomatic()) {
                     nodep->addNextHere(new AstInitialAutomatic{newfl, assp});
                 } else {
@@ -274,9 +275,9 @@ private:
                 }
             }  // 4. Under blocks, it's an initial value to be under an assign
             else {
-                nodep->addNextHere(new AstAssign(fl,
-                                                 new AstVarRef(fl, nodep->name(), VAccess::WRITE),
-                                                 nodep->valuep()->unlinkFrBack()));
+                nodep->addNextHere(
+                    new AstAssign{fl, new AstVarRef{fl, nodep->name(), VAccess::WRITE},
+                                  VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)});
             }
         }
         if (nodep->isIfaceRef() && !nodep->isIfaceParent() && !v3Global.opt.topIfacesSupported()) {
@@ -371,7 +372,7 @@ private:
             // but someday we may be more general
             const bool lvalue = m_varp->isSigUserRWPublic();
             nodep->addStmtsp(
-                new AstVarRef(nodep->fileline(), m_varp, lvalue ? VAccess::WRITE : VAccess::READ));
+                new AstVarRef{nodep->fileline(), m_varp, lvalue ? VAccess::WRITE : VAccess::READ});
         }
     }
 
@@ -405,14 +406,14 @@ private:
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return;
             } else {
-                defp = new AstTypedef(nodep->fileline(), nodep->name(), nullptr, VFlagChildDType(),
-                                      dtypep);
+                defp = new AstTypedef{nodep->fileline(), nodep->name(), nullptr, VFlagChildDType{},
+                                      dtypep};
                 m_implTypedef.insert(
                     std::make_pair(std::make_pair(nodep->containerp(), defp->name()), defp));
                 backp->addNextHere(defp);
             }
         }
-        nodep->replaceWith(new AstRefDType(nodep->fileline(), defp->name()));
+        nodep->replaceWith(new AstRefDType{nodep->fileline(), defp->name()});
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
@@ -550,6 +551,32 @@ private:
         cleanFileline(nodep);
         iterateChildren(nodep);
     }
+    void visit(AstDot* nodep) override {
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+        if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "super"
+            && VN_IS(nodep->rhsp(), New)) {
+            // Look for other statements until hit function start
+            AstNode* scanp = nodep;
+            // Skip over the New's statement
+            for (; scanp && !VN_IS(scanp, StmtExpr); scanp = scanp->backp()) {}
+            if (VN_IS(scanp, StmtExpr)) {  // Ignore warning if something not understood
+                scanp = scanp->backp();
+                for (; scanp; scanp = scanp->backp()) {
+                    if (VN_IS(scanp, NodeStmt) || VN_IS(scanp, NodeModule)
+                        || VN_IS(scanp, NodeFTask))
+                        break;
+                }
+                if (!VN_IS(scanp, NodeFTask)) {
+                    nodep->rhsp()->v3error(
+                        "'super.new' not first statement in new function (IEEE 1800-2017 8.15)\n"
+                        << nodep->rhsp()->warnContextPrimary() << scanp->warnOther()
+                        << "... Location of earlier statement\n"
+                        << scanp->warnContextSecondary());
+                }
+            }
+        }
+    }
     void visit(AstPrintTimeScale* nodep) override {
         // Inlining may change hierarchy, so just save timescale where needed
         cleanFileline(nodep);
@@ -577,6 +604,10 @@ private:
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
+    void visit(AstTimeUnit* nodep) override {
+        iterateChildren(nodep);
+        nodep->timeunit(m_modp->timeunit());
+    }
     void visit(AstEventControl* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);
@@ -596,6 +627,11 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
+    void visit(AstClassOrPackageRef* nodep) override {
+        if (nodep->name() == "std" && !nodep->classOrPackagep()) {
+            nodep->classOrPackagep(m_stdPackagep);
+        }
+    }
 
     void visit(AstNode* nodep) override {
         // Default: Just iterate
@@ -605,7 +641,10 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LinkParseVisitor(AstNetlist* rootp) { iterate(rootp); }
+    explicit LinkParseVisitor(AstNetlist* rootp)
+        : m_stdPackagep{rootp->stdPackagep()} {
+        iterate(rootp);
+    }
     ~LinkParseVisitor() override = default;
 };
 

@@ -150,7 +150,7 @@ public:
                 // Redundant assignment, in same level block
                 // Don't delete it now as it will confuse iteration since it maybe WAY
                 // above our current iteration point.
-                if (debug() > 4) oldassp->dumpTree(cout, "       REMOVE/SAMEBLK ");
+                if (debug() > 4) oldassp->dumpTree("-      REMOVE/SAMEBLK: ");
                 entp->complexAssign();
                 VL_DO_DANGLING(m_statep->pushUnlinkDeletep(oldassp), oldassp);
                 ++m_statep->m_statAssnDel;
@@ -350,8 +350,8 @@ private:
         // Condition is part of PREVIOUS block
         iterateAndNextNull(nodep->condp());
         LifeBlock* const prevLifep = m_lifep;
-        LifeBlock* const ifLifep = new LifeBlock(prevLifep, m_statep);
-        LifeBlock* const elseLifep = new LifeBlock(prevLifep, m_statep);
+        LifeBlock* const ifLifep = new LifeBlock{prevLifep, m_statep};
+        LifeBlock* const elseLifep = new LifeBlock{prevLifep, m_statep};
         {
             m_lifep = ifLifep;
             iterateAndNextNull(nodep->thensp());
@@ -380,8 +380,8 @@ private:
         // it as a IF statement, and just don't allow elimination of
         // variables across the body.
         LifeBlock* const prevLifep = m_lifep;
-        LifeBlock* const condLifep = new LifeBlock(prevLifep, m_statep);
-        LifeBlock* const bodyLifep = new LifeBlock(prevLifep, m_statep);
+        LifeBlock* const condLifep = new LifeBlock{prevLifep, m_statep};
+        LifeBlock* const bodyLifep = new LifeBlock{prevLifep, m_statep};
         {
             m_lifep = condLifep;
             iterateAndNextNull(nodep->precondsp());
@@ -405,7 +405,7 @@ private:
         // It's worse though as an IF(..., JUMPGO) may change the control flow.
         // Just don't optimize blocks with labels; they're rare - so far.
         LifeBlock* const prevLifep = m_lifep;
-        LifeBlock* const bodyLifep = new LifeBlock(prevLifep, m_statep);
+        LifeBlock* const bodyLifep = new LifeBlock{prevLifep, m_statep};
         {
             VL_RESTORER(m_noopt);
             m_lifep = bodyLifep;
@@ -441,7 +441,7 @@ private:
         m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         iterateChildren(nodep);
     }
-    void visit(AstCMath* nodep) override {
+    void visit(AstCExpr* nodep) override {
         m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         iterateChildren(nodep);
     }
@@ -461,7 +461,7 @@ public:
         : m_statep{statep} {
         UINFO(4, "  LifeVisitor on " << nodep << endl);
         {
-            m_lifep = new LifeBlock(nullptr, m_statep);
+            m_lifep = new LifeBlock{nullptr, m_statep};
             iterate(nodep);
             if (m_lifep) VL_DO_CLEAR(delete m_lifep, m_lifep = nullptr);
         }
@@ -494,7 +494,7 @@ private:
     }
     void visit(AstVar*) override {}  // Accelerate
     void visit(AstNodeStmt*) override {}  // Accelerate
-    void visit(AstNodeMath*) override {}  // Accelerate
+    void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:

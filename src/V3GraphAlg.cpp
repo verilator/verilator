@@ -106,7 +106,7 @@ public:
     explicit GraphAlgRemoveTransitiveEdges(V3Graph* graphp)
         : GraphAlg<>(graphp, nullptr) {}
     void go() {
-        GraphPathChecker checker(m_graphp);
+        GraphPathChecker checker{m_graphp};
         for (V3GraphVertex* vxp = m_graphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             V3GraphEdge* deletep = nullptr;
             for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
@@ -125,7 +125,7 @@ private:
     VL_UNCOPYABLE(GraphAlgRemoveTransitiveEdges);
 };
 
-void V3Graph::removeTransitiveEdges() { GraphAlgRemoveTransitiveEdges(this).go(); }
+void V3Graph::removeTransitiveEdges() { GraphAlgRemoveTransitiveEdges{this}.go(); }
 
 //######################################################################
 //######################################################################
@@ -166,7 +166,7 @@ public:
     ~GraphAlgWeakly() = default;
 };
 
-void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgWeakly(this, edgeFuncp); }
+void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgWeakly{this, edgeFuncp}; }
 
 //######################################################################
 //######################################################################
@@ -257,7 +257,7 @@ public:
     ~GraphAlgStrongly() = default;
 };
 
-void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgStrongly(this, edgeFuncp); }
+void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgStrongly{this, edgeFuncp}; }
 
 //######################################################################
 //######################################################################
@@ -310,9 +310,9 @@ public:
     ~GraphAlgRank() = default;
 };
 
-void V3Graph::rank() { GraphAlgRank(this, &V3GraphEdge::followAlwaysTrue); }
+void V3Graph::rank() { GraphAlgRank{this, &V3GraphEdge::followAlwaysTrue}; }
 
-void V3Graph::rank(V3EdgeFuncP edgeFuncp) { GraphAlgRank(this, edgeFuncp); }
+void V3Graph::rank(V3EdgeFuncP edgeFuncp) { GraphAlgRank{this, edgeFuncp}; }
 
 //######################################################################
 //######################################################################

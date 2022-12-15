@@ -27,7 +27,7 @@
 //
 // verilated.o may exist both in --lib-create (incrementally linked .a/.so)
 // and the main module.  Both refer the same instance of static
-// variables/VL_THREAD_LOCAL in verilated.o such as Verilated, or
+// variables/thread_local in verilated.o such as Verilated, or
 // VerilatedImpData.  This is important to share that state, but the
 // sharing may cause a double-free error when shutting down because the
 // loader will insert a constructor/destructor at each reference to
@@ -67,10 +67,12 @@
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
 #endif
-
-#ifdef VL_THREADED
-# include "verilated_threads.h"
+#ifdef __linux__
+# include <execinfo.h>
+# define _VL_HAVE_STACKTRACE
 #endif
+
+#include "verilated_threads.h"
 // clang-format on
 
 #include "verilated_trace.h"
@@ -96,7 +98,7 @@ VerilatedContext* Verilated::s_lastContextp = nullptr;
 
 // Keep below together in one cache line
 // Internal note: Globals may multi-construct, see verilated.cpp top.
-VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
+thread_local Verilated::ThreadLocal Verilated::t_s;
 
 //===========================================================================
 // User definable functions
@@ -193,43 +195,27 @@ void vl_warn(const char* filename, int linenum, const char* hier, const char* ms
 // Wrapper to call certain functions via messages when multithreaded
 
 void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE {
-#ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_finish(filename, linenum, hier);
     }});
-#else
-    vl_finish(filename, linenum, hier);
-#endif
 }
 
 void VL_STOP_MT(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_SAFE {
-#ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_stop_maybe(filename, linenum, hier, maybe);
     }});
-#else
-    vl_stop_maybe(filename, linenum, hier, maybe);
-#endif
 }
 
 void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
-#ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_fatal(filename, linenum, hier, msg);
     }});
-#else
-    vl_fatal(filename, linenum, hier, msg);
-#endif
 }
 
 void VL_WARN_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
-#ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
         vl_warn(filename, linenum, hier, msg);
     }});
-#else
-    vl_warn(filename, linenum, hier, msg);
-#endif
 }
 
 //===========================================================================
@@ -252,24 +238,16 @@ std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
 }
 
 uint64_t _vl_dbg_sequence_number() VL_MT_SAFE {
-#ifdef VL_THREADED
     static std::atomic<uint64_t> sequence;
-#else
-    static uint64_t sequence = 0;
-#endif
     return ++sequence;
 }
 
 uint32_t VL_THREAD_ID() VL_MT_SAFE {
-#ifdef VL_THREADED
     // Alternative is to use std::this_thread::get_id, but that returns a
     // hard-to-read number and is very slow
     static std::atomic<uint32_t> s_nextId(0);
-    static VL_THREAD_LOCAL uint32_t t_myId = ++s_nextId;
+    static thread_local uint32_t t_myId = ++s_nextId;
     return t_myId;
-#else
-    return 0;
-#endif
 }
 
 void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
@@ -288,7 +266,6 @@ void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
     VL_PRINTF("-V{t%u,%" PRIu64 "}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
 }
 
-#ifdef VL_THREADED
 void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap, formatp);
@@ -298,14 +275,13 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
         VL_PRINTF("%s", out.c_str());
     }});
 }
-#endif
 
 //===========================================================================
 // Random -- Mostly called at init time, so not inline.
 
-static uint32_t vl_sys_rand32() VL_MT_UNSAFE {
+static uint32_t vl_sys_rand32() VL_MT_SAFE {
     // Return random 32-bits using system library.
-    // Used only to construct seed for Verilator's PNRG.
+    // Used only to construct seed for Verilator's PRNG.
     static VerilatedMutex s_mutex;
     const VerilatedLockGuard lock{s_mutex};  // Otherwise rand is unsafe
 #if defined(_WIN32) && !defined(__CYGWIN__)
@@ -317,8 +293,8 @@ static uint32_t vl_sys_rand32() VL_MT_UNSAFE {
 }
 
 uint64_t vl_rand64() VL_MT_SAFE {
-    static VL_THREAD_LOCAL uint64_t t_state[2];
-    static VL_THREAD_LOCAL uint32_t t_seedEpoch = 0;
+    static thread_local uint64_t t_state[2];
+    static thread_local uint32_t t_seedEpoch = 0;
     // For speed, we use a thread-local epoch number to know when to reseed
     // A thread always belongs to a single context, so this works out ok
     if (VL_UNLIKELY(t_seedEpoch != VerilatedContextImp::randSeedEpoch())) {
@@ -395,7 +371,7 @@ void _vl_debug_print_w(int lbits, const WDataInP iwp) VL_MT_SAFE {
 }
 
 //===========================================================================
-// Slow math
+// Slow expressions
 
 WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WDataInP rwp,
                        bool is_modulus) VL_MT_SAFE {
@@ -515,11 +491,11 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lw
     // obits==lbits, rbits can be different
     owp[0] = 1;
     for (int i = 1; i < VL_WORDS_I(obits); i++) owp[i] = 0;
-    // cppcheck-suppress variableScope
+    // cppcheck-has-bug-suppress variableScope
     VlWide<VL_MULS_MAX_WORDS> powstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastpowstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastoutstore;  // Fixed size, as MSVC++ doesn't allow [words] here
-    // cppcheck-suppress variableScope
+    // cppcheck-has-bug-suppress variableScope
     VL_ASSIGN_W(obits, powstore, lwp);
     for (int bit = 0; bit < rbits; bit++) {
         if (bit > 0) {  // power = power*power
@@ -619,7 +595,7 @@ double VL_ITOR_D_W(int lbits, const WDataInP lwp) VL_PURE {
     const double d = (hi + mid + lo) * std::exp2(VL_EDATASIZE * (ms_word - 2));
     return d;
 }
-double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_PURE {
+double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_MT_SAFE {
     if (!VL_SIGN_W(lbits, lwp)) return VL_ITOR_D_W(lbits, lwp);
     uint32_t pos[VL_MULS_MAX_WORDS + 1];  // Fixed size, as MSVC++ doesn't allow [words] here
     VL_NEGATE_W(VL_WORDS_I(lbits), pos, lwp);
@@ -762,7 +738,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
     // Note uses a single buffer internally; presumes only one usage per printf
     // Note also assumes variables < 64 are not wide, this assumption is
     // sometimes not true in low-level routines written here in verilated.cpp
-    static VL_THREAD_LOCAL char t_tmp[VL_VALUE_STRING_MAX_WIDTH];
+    static thread_local char t_tmp[VL_VALUE_STRING_MAX_WIDTH];
     const char* pctp = nullptr;  // Most recent %##.##g format
     bool inPct = false;
     bool widthSet = false;
@@ -1160,7 +1136,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     // Read a Verilog $sscanf/$fscanf style format into the output list
     // The format must be pre-processed (and lower cased) by Verilator
     // Arguments are in "width, arg-value (or WDataIn* if wide)" form
-    static VL_THREAD_LOCAL char t_tmp[VL_VALUE_STRING_MAX_WIDTH];
+    static thread_local char t_tmp[VL_VALUE_STRING_MAX_WIDTH];
     int floc = fbits - 1;
     IData got = 0;
     bool inPct = false;
@@ -1251,7 +1227,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "+-.0123456789eE");
                     if (!t_tmp[0]) goto done;
-                    // cppcheck-suppress unusedStructMember  // It's used
+                    // cppcheck-has-bug-suppress unusedStructMember, unreadVariable
                     union {
                         double r;
                         int64_t ld;
@@ -1453,7 +1429,7 @@ void VL_FCLOSE_I(IData fdi) VL_MT_SAFE {
 }
 
 void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1464,7 +1440,7 @@ void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) VL_MT_SAFE 
 }
 
 void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1475,7 +1451,7 @@ void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) VL_MT_SAFE 
 }
 
 void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1486,7 +1462,7 @@ void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) VL_MT_SAFE 
 }
 
 void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1497,7 +1473,7 @@ void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) VL_MT_SAFE 
 }
 
 void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1518,7 +1494,7 @@ void VL_SFORMAT_X(int obits_ignored, std::string& output, const char* formatp, .
 }
 
 std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1529,7 +1505,7 @@ std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE {
 }
 
 void VL_WRITEF(const char* formatp, ...) VL_MT_SAFE {
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
     va_list ap;
     va_start(ap, formatp);
@@ -1541,7 +1517,7 @@ void VL_WRITEF(const char* formatp, ...) VL_MT_SAFE {
 
 void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
-    static VL_THREAD_LOCAL std::string t_output;  // static only for speed
+    static thread_local std::string t_output;  // static only for speed
     t_output = "";
 
     va_list ap;
@@ -1651,6 +1627,34 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi
     return read_count;
 }
 
+std::string VL_STACKTRACE_N() VL_MT_SAFE {
+    static VerilatedMutex s_stackTraceMutex;
+    const VerilatedLockGuard lock{s_stackTraceMutex};
+
+    constexpr int BT_BUF_SIZE = 100;
+    void* buffer[BT_BUF_SIZE];
+    int nptrs = 0;
+    char** strings = nullptr;
+
+#ifdef _VL_HAVE_STACKTRACE
+    nptrs = backtrace(buffer, BT_BUF_SIZE);
+    strings = backtrace_symbols(buffer, nptrs);
+#endif
+
+    // cppcheck-suppress knownConditionTrueFalse
+    if (!strings) return "Unable to backtrace\n";
+
+    std::string out = "Backtrace:\n";
+    for (int j = 0; j < nptrs; j++) out += std::string{strings[j]} + std::string{"\n"};
+    free(strings);
+    return out;
+}
+
+void VL_STACKTRACE() VL_MT_SAFE {
+    const std::string out = VL_STACKTRACE_N();
+    VL_PRINTF("%s", out.c_str());
+}
+
 IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {
     VlWide<VL_WQ_WORDS_E> lhsw;
     VL_SET_WQ(lhsw, lhs);
@@ -1678,7 +1682,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
             inPct = true;
         } else if (!inPct) {  // Normal text
             prefix += *posp;
-        } else if (inPct && posp[0] == '0') {  // %0
+        } else if (*posp == '0') {  // %0
         } else {  // Format character
             switch (std::tolower(*posp)) {
             case '%':
@@ -1771,7 +1775,7 @@ IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_S
 
 const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
     const std::string& match = Verilated::threadContextp()->impp()->argPlusMatch(prefixp);
-    static VL_THREAD_LOCAL char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
+    static thread_local char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match.empty()) return nullptr;
     char* dp = t_outstr;
     for (const char* sp = match.c_str() + std::strlen(prefixp) + 1;  // +1 to skip the "+"
@@ -1792,12 +1796,12 @@ std::string VL_TO_STRING_W(int words, const WDataInP obj) {
     return VL_SFORMATF_NX("'h%0x", words * VL_EDATASIZE, obj);
 }
 
-std::string VL_TOLOWER_NN(const std::string& ld) VL_MT_SAFE {
+std::string VL_TOLOWER_NN(const std::string& ld) VL_PURE {
     std::string out = ld;
     for (auto& cr : out) cr = std::tolower(cr);
     return out;
 }
-std::string VL_TOUPPER_NN(const std::string& ld) VL_MT_SAFE {
+std::string VL_TOUPPER_NN(const std::string& ld) VL_PURE {
     std::string out = ld;
     for (auto& cr : out) cr = std::toupper(cr);
     return out;
@@ -1808,16 +1812,14 @@ std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_MT_SAFE {
     char destout[VL_VALUE_STRING_MAX_CHARS + 1];
     const int obits = lwords * VL_EDATASIZE;
     int lsb = obits - 1;
-    bool start = true;
     char* destp = destout;
     size_t len = 0;
     for (; lsb >= 0; --lsb) {
         lsb = (lsb / 8) * 8;  // Next digit
         const IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xff;
-        if (!start || charval) {
-            *destp++ = (charval == 0) ? ' ' : charval;
+        if (charval) {
+            *destp++ = static_cast<char>(charval);
             ++len;
-            start = false;  // Drop leading 0s
         }
     }
     return std::string{destout, len};
@@ -1865,7 +1867,7 @@ IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
 static const char* memhFormat(int nBits) {
     assert((nBits >= 1) && (nBits <= 32));
 
-    static VL_THREAD_LOCAL char t_buf[32];
+    static thread_local char t_buf[32];
     switch ((nBits - 1) / 4) {
     case 0: VL_SNPRINTF(t_buf, 32, "%%01x"); break;
     case 1: VL_SNPRINTF(t_buf, 32, "%%02x"); break;
@@ -1883,7 +1885,7 @@ static const char* memhFormat(int nBits) {
 static const char* formatBinary(int nBits, uint32_t bits) {
     assert((nBits >= 1) && (nBits <= 32));
 
-    static VL_THREAD_LOCAL char t_buf[64];
+    static thread_local char t_buf[64];
     for (int i = 0; i < nBits; i++) {
         const bool isOne = bits & (1 << (nBits - 1 - i));
         t_buf[i] = (isOne ? '1' : '0');
@@ -1902,7 +1904,7 @@ VlReadMem::VlReadMem(bool hex, int bits, const std::string& filename, QData star
     if (VL_UNLIKELY(!m_fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
         VL_WARN_MT(filename.c_str(), 0, "", "$readmem file not found");
-        // cppcheck-suppress resourceLeak  // m_fp is nullptr - bug in cppcheck
+        // cppcheck-has-bug-suppress resourceLeak  // m_fp is nullptr
         return;
     }
 }
@@ -2040,7 +2042,7 @@ VlWriteMem::VlWriteMem(bool hex, int bits, const std::string& filename, QData st
     m_fp = std::fopen(filename.c_str(), "w");
     if (VL_UNLIKELY(!m_fp)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "$writemem file not found");
-        // cppcheck-suppress resourceLeak  // m_fp is nullptr - bug in cppcheck
+        // cppcheck-has-bug-suppress resourceLeak  // m_fp is nullptr
         return;
     }
 }
@@ -2221,8 +2223,9 @@ static const char* vl_time_str(int scale) VL_PURE {
     return names[2 - scale];
 }
 double vl_time_multiplier(int scale) VL_PURE {
-    // Return timescale multipler -18 to +18
+    // Return timescale multiplier -18 to +18
     // For speed, this does not check for illegal values
+    // cppcheck-has-bug-suppress arrayIndexOutOfBoundsCond
     if (scale < 0) {
         static const double neg10[] = {1.0,
                                        0.1,
@@ -2243,6 +2246,7 @@ double vl_time_multiplier(int scale) VL_PURE {
                                        0.0000000000000001,
                                        0.00000000000000001,
                                        0.000000000000000001};
+        // cppcheck-has-bug-suppress arrayIndexOutOfBoundsCond
         return neg10[-scale];
     } else {
         static const double pow10[] = {1.0,
@@ -2264,6 +2268,7 @@ double vl_time_multiplier(int scale) VL_PURE {
                                        10000000000000000.0,
                                        100000000000000000.0,
                                        1000000000000000000.0};
+        // cppcheck-has-bug-suppress arrayIndexOutOfBoundsCond
         return pow10[scale];
     }
 }
@@ -2335,8 +2340,8 @@ void VerilatedContext::checkMagic(const VerilatedContext* contextp) {
 
 VerilatedContext::Serialized::Serialized() {
     constexpr int8_t picosecond = -12;
-    m_timeunit = picosecond;  // Initial value until overriden by _Vconfigure
-    m_timeprecision = picosecond;  // Initial value until overriden by _Vconfigure
+    m_timeunit = picosecond;  // Initial value until overridden by _Vconfigure
+    m_timeprecision = picosecond;  // Initial value until overridden by _Vconfigure
 }
 
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
@@ -2424,42 +2429,6 @@ void VerilatedContext::timeunit(int value) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_timeunit = value;
 }
-void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
-    if (value < 0) value = -value;  // Stored as 0..15
-    int sc_prec = 99;
-    {
-        const VerilatedLockGuard lock{m_mutex};
-        m_s.m_timeprecision = value;
-#ifdef SYSTEMC_VERSION
-        const sc_time sc_res = sc_get_time_resolution();
-        if (sc_res == sc_time(1, SC_SEC)) {
-            sc_prec = 0;
-        } else if (sc_res == sc_time(1, SC_MS)) {
-            sc_prec = 3;
-        } else if (sc_res == sc_time(1, SC_US)) {
-            sc_prec = 6;
-        } else if (sc_res == sc_time(1, SC_NS)) {
-            sc_prec = 9;
-        } else if (sc_res == sc_time(1, SC_PS)) {
-            sc_prec = 12;
-        } else if (sc_res == sc_time(1, SC_FS)) {
-            sc_prec = 15;
-        }
-    }
-    if (value != sc_prec) {
-        std::ostringstream msg;
-        msg << "SystemC's sc_set_time_resolution is 10^-" << sc_prec
-            << ", which does not match Verilog timeprecision 10^-" << value
-            << ". Suggest use 'sc_set_time_resolution(" << vl_time_str(value)
-            << ")', or Verilator '--timescale-override " << vl_time_str(sc_prec) << "/"
-            << vl_time_str(sc_prec) << "'";
-        const std::string msgs = msg.str();
-        VL_FATAL_MT("", 0, "", msgs.c_str());
-    }
-#else
-    }
-#endif
-}
 const char* VerilatedContext::timeunitString() const VL_MT_SAFE { return vl_time_str(timeunit()); }
 const char* VerilatedContext::timeprecisionString() const VL_MT_SAFE {
     return vl_time_str(timeprecision());
@@ -2474,7 +2443,6 @@ void VerilatedContext::threads(unsigned n) {
             "%Error: Cannot set simulation threads after the thread pool has been created.");
     }
 
-#if VL_THREADED
     if (m_threads == n) return;  // To avoid unnecessary warnings
     m_threads = n;
     const unsigned hardwareThreadsAvailable = std::thread::hardware_concurrency();
@@ -2483,29 +2451,25 @@ void VerilatedContext::threads(unsigned n) {
                      "to %u. This will likely cause significant slowdown.\n",
                      hardwareThreadsAvailable, m_threads);
     }
-#else
-    if (n > 1) {
-        VL_PRINTF_MT("%%Warning: Verilator run-time library built without VL_THREADS. Ignoring "
-                     "call to 'VerilatedContext::threads' with argument %u.\n",
-                     n);
-    }
-#endif
 }
 
 void VerilatedContext::commandArgs(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex) {
-    const VerilatedLockGuard lock{m_argMutex};
-    m_args.m_argVec.clear();  // Empty first, then add
-    impp()->commandArgsAddGuts(argc, argv);
+    // Not locking m_argMutex here, it is done in impp()->commandArgsAddGuts
+    // m_argMutex here is the same as in impp()->commandArgsAddGuts;
+    // due to clang limitations, it doesn't properly check it
+    impp()->commandArgsGuts(argc, argv);
 }
 void VerilatedContext::commandArgsAdd(int argc, const char** argv)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
-    const VerilatedLockGuard lock{m_argMutex};
-    impp()->commandArgsAddGuts(argc, argv);
+    // Not locking m_argMutex here, it is done in impp()->commandArgsAddGuts
+    // m_argMutex here is the same as in impp()->commandArgsAddGuts;
+    // due to clang limitations, it doesn't properly check it
+    impp()->commandArgsAddGutsLock(argc, argv);
 }
 const char* VerilatedContext::commandArgsPlusMatch(const char* prefixp)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const std::string& match = impp()->argPlusMatch(prefixp);
-    static VL_THREAD_LOCAL char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
+    static thread_local char t_outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match.empty()) return "";
     char* dp = t_outstr;
     for (const char* sp = match.c_str(); *sp && (dp - t_outstr) < (VL_VALUE_STRING_MAX_WIDTH - 2);)
@@ -2525,7 +2489,7 @@ void VerilatedContext::internalsDump() const VL_MT_SAFE {
 void VerilatedContext::addModel(VerilatedModel* modelp) {
     threadPoolp();  // Ensure thread pool is created, so m_threads cannot change any more
 
-    if (modelp->threads() > m_threads) {
+    if (VL_UNLIKELY(modelp->threads() > m_threads)) {
         std::ostringstream msg;
         msg << "VerilatedContext has " << m_threads << " threads but model '"
             << modelp->modelName() << "' (instantiated as '" << modelp->hierName()
@@ -2537,9 +2501,7 @@ void VerilatedContext::addModel(VerilatedModel* modelp) {
 
 VerilatedVirtualBase* VerilatedContext::threadPoolp() {
     if (m_threads == 1) return nullptr;
-#if VL_THREADED
     if (!m_threadPool) m_threadPool.reset(new VlThreadPool{this, m_threads - 1});
-#endif
     return m_threadPool.get();
 }
 
@@ -2551,6 +2513,18 @@ VerilatedContext::enableExecutionProfiler(VerilatedVirtualBase* (*construct)(Ver
 
 //======================================================================
 // VerilatedContextImp:: Methods - command line
+void VerilatedContextImp::commandArgsGuts(int argc, const char** argv)
+    VL_MT_SAFE_EXCLUDES(m_argMutex) {
+    const VerilatedLockGuard lock{m_argMutex};
+    m_args.m_argVec.clear();  // Empty first, then add
+    commandArgsAddGuts(argc, argv);
+}
+
+void VerilatedContextImp::commandArgsAddGutsLock(int argc, const char** argv)
+    VL_MT_SAFE_EXCLUDES(m_argMutex) {
+    const VerilatedLockGuard lock{m_argMutex};
+    commandArgsAddGuts(argc, argv);
+}
 
 void VerilatedContextImp::commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(m_argMutex) {
     if (!m_args.m_argVecLoaded) m_args.m_argVec.clear();
@@ -2700,10 +2674,8 @@ void VerilatedContext::randSeed(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock{VerilatedContextImp::s().s_randMutex};
     m_s.m_randSeed = val;
     const uint64_t newEpoch = VerilatedContextImp::s().s_randSeedEpoch + 1;
-    // Obververs must see new epoch AFTER seed updated
-#ifdef VL_THREADED
+    // Observers must see new epoch AFTER seed updated
     std::atomic_signal_fence(std::memory_order_release);
-#endif
     VerilatedContextImp::s().s_randSeedEpoch = newEpoch;
 }
 uint64_t VerilatedContextImp::randSeedDefault64() const VL_MT_SAFE {
@@ -2760,16 +2732,13 @@ VerilatedSyms::VerilatedSyms(VerilatedContext* contextp)
     : _vm_contextp__(contextp ? contextp : Verilated::threadContextp()) {
     VerilatedContext::checkMagic(_vm_contextp__);
     Verilated::threadContextp(_vm_contextp__);
-#ifdef VL_THREADED
+    // cppcheck-has-bug-suppress noCopyConstructor
     __Vm_evalMsgQp = new VerilatedEvalMsgQueue;
-#endif
 }
 
 VerilatedSyms::~VerilatedSyms() {
     VerilatedContext::checkMagic(_vm_contextp__);
-#ifdef VL_THREADED
     delete __Vm_evalMsgQp;
-#endif
 }
 
 //===========================================================================
@@ -2791,8 +2760,8 @@ void Verilated::debug(int level) VL_MT_SAFE {
 
 const char* Verilated::catName(const char* n1, const char* n2, const char* delimiter) VL_MT_SAFE {
     // Used by symbol table creation to make module names
-    static VL_THREAD_LOCAL char* t_strp = nullptr;
-    static VL_THREAD_LOCAL size_t t_len = 0;
+    static thread_local char* t_strp = nullptr;
+    static thread_local size_t t_len = 0;
     const size_t newlen = std::strlen(n1) + std::strlen(n2) + std::strlen(delimiter) + 1;
     if (VL_UNLIKELY(!t_strp || newlen > t_len)) {
         if (t_strp) delete[] t_strp;
@@ -2820,12 +2789,12 @@ static struct {
     VoidPCbList s_exitCbs VL_GUARDED_BY(s_exitMutex);
 } VlCbStatic;
 
-static void addCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) {
+static void addCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) VL_MT_UNSAFE {
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
     cbs.remove(pair);  // Just in case it's a duplicate
     cbs.push_back(pair);
 }
-static void removeCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) {
+static void removeCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) VL_MT_UNSAFE {
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
     cbs.remove(pair);
 }
@@ -2843,11 +2812,7 @@ void Verilated::removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
 }
 void Verilated::runFlushCallbacks() VL_MT_SAFE {
     // Flush routines may call flush, so avoid mutex deadlock
-#ifdef VL_THREADED
     static std::atomic<int> s_recursing;
-#else
-    static int s_recursing = 0;
-#endif
     if (!s_recursing++) {
         const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
         runCallbacks(VlCbStatic.s_flushCbs);
@@ -2870,11 +2835,7 @@ void Verilated::removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
     removeCb(cb, datap, VlCbStatic.s_exitCbs);
 }
 void Verilated::runExitCallbacks() VL_MT_SAFE {
-#ifdef VL_THREADED
     static std::atomic<int> s_recursing;
-#else
-    static int s_recursing = 0;
-#endif
     if (!s_recursing++) {
         const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
         runCallbacks(VlCbStatic.s_exitCbs);
@@ -2899,6 +2860,26 @@ void Verilated::overWidthError(const char* signame) VL_MT_SAFE {
     VL_UNREACHABLE;
 }
 
+void Verilated::scTimePrecisionError(int sc_prec, int vl_prec) VL_MT_SAFE {
+    std::ostringstream msg;
+    msg << "SystemC's sc_set_time_resolution is 10^-" << sc_prec
+        << ", which does not match Verilog timeprecision 10^-" << vl_prec
+        << ". Suggest use 'sc_set_time_resolution(" << vl_time_str(vl_prec)
+        << ")', or Verilator '--timescale-override " << vl_time_str(sc_prec) << "/"
+        << vl_time_str(sc_prec) << "'";
+    const std::string msgs = msg.str();
+    VL_FATAL_MT("", 0, "", msgs.c_str());
+    VL_UNREACHABLE;
+}
+
+void Verilated::scTraceBeforeElaborationError() VL_MT_SAFE {
+    // Slowpath - Called only when trace file opened before SystemC elaboration
+    VL_FATAL_MT("unknown", 0, "",
+                "%Error: Verilated*Sc::open(...) was called before sc_core::sc_start(). "
+                "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before opening a wave file.");
+    VL_UNREACHABLE;
+}
+
 void Verilated::mkdir(const char* dirname) VL_MT_UNSAFE {
 #if defined(_WIN32) || defined(__MINGW32__)
     ::mkdir(dirname);
@@ -2908,17 +2889,14 @@ void Verilated::mkdir(const char* dirname) VL_MT_UNSAFE {
 }
 
 void Verilated::quiesce() VL_MT_SAFE {
-#ifdef VL_THREADED
     // Wait until all threads under this evaluation are quiet
     // THREADED-TODO
-#endif
 }
 
 int Verilated::exportFuncNum(const char* namep) VL_MT_SAFE {
     return VerilatedImp::exportFind(namep);
 }
 
-#ifdef VL_THREADED
 void Verilated::endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
     VL_DEBUG_IF(VL_DBG_MSGF("End of thread mtask\n"););
     VerilatedThreadMsgQueue::flush(evalMsgQp);
@@ -2932,7 +2910,6 @@ void Verilated::endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
     VL_DEBUG_IF(VL_DBG_MSGF("End-of-eval cleanup\n"););
     evalMsgQp->process();
 }
-#endif
 
 //===========================================================================
 // VerilatedImp:: Methods
@@ -3138,7 +3115,7 @@ void VerilatedHierarchy::remove(VerilatedScope* fromp, VerilatedScope* top) {
 //===========================================================================
 // VerilatedOneThreaded:: Methods
 
-#if defined(VL_THREADED) && defined(VL_DEBUG)
+#ifdef VL_DEBUG
 void VerilatedAssertOneThread::fatal_different() VL_MT_SAFE {
     VL_FATAL_MT(__FILE__, __LINE__, "",
                 "Routine called that is single threaded, but called from"
@@ -3155,8 +3132,8 @@ void VlDeleter::deleteAll() {
         if (m_newGarbage.empty()) break;
         VerilatedLockGuard deleteLock{m_deleteMutex};
         std::swap(m_newGarbage, m_toDelete);
-        lock.unlock();  // So destuctors can enqueue new objects
-        for (VlClass* const objp : m_toDelete) delete objp;
+        lock.unlock();  // So destructors can enqueue new objects
+        for (VlDeletable* const objp : m_toDelete) delete objp;
         m_toDelete.clear();
     }
 }

@@ -100,6 +100,10 @@ public:
     static string quotePercent(const string& str) { return quoteAny(str, '%', '%'); }
     // Surround a raw string by double quote and escape if necessary
     // e.g. input abc's  becomes "\"abc\'s\""
+    static string escapeStringForPath(const string& str);
+    // Escape path in Windows
+    // e.g. input `C:\Program Files\My Program\My Program.exe` becomes
+    // `C:\\Program\ Files\\My\ Program\\My\ Program.exe`
     static string quoteStringLiteralForShell(const string& str);
     // Replace any unprintable with space
     // This includes removing tabs, so column tracking is correct
@@ -132,8 +136,8 @@ class VHashSha256 final {
     // MEMBERS
     uint32_t m_inthash[8];  // Intermediate hash, in host order
     string m_remainder;  // Unhashed data
-    bool m_final = false;  // Finalized
     size_t m_totLength = 0;  // Total all-chunk length as needed by output digest
+    bool m_final = false;  // Finalized
 public:
     // CONSTRUCTORS
     VHashSha256() {

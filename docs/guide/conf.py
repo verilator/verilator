@@ -21,7 +21,7 @@ import sphinx_rtd_theme  # pylint: disable=wrong-import-position,
 
 def get_vlt_version():
     filename = "../../Makefile"
-    with open(filename) as fh:
+    with open(filename, "r", encoding="utf8") as fh:
         for line in fh:
             match = re.search(r"PACKAGE_VERSION_NUMBER *= *([a-z0-9.]+)", line)
             if match:

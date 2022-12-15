@@ -463,7 +463,7 @@ static void process() {
         // Bits between widthMin() and width() are irrelevant, but may be non zero.
         v3Global.widthMinUsage(VWidthMinUsage::VERILOG_WIDTH);
 
-        // Make all math operations either 8, 16, 32 or 64 bits
+        // Make all expressions either 8, 16, 32 or 64 bits
         V3Clean::cleanAll(v3Global.rootp());
 
         // Move wide constants to BLOCK temps / ConstPool.
@@ -686,7 +686,10 @@ static string buildMakeCmd(const string& makefile, const string& target) {
     cmd << v3Global.opt.getenvMAKE();
     cmd << " -C " << v3Global.opt.makeDir();
     cmd << " -f " << makefile;
-    if (jobs > 0) cmd << " -j " << jobs;
+    // Unless using make's jobserver, do a -j
+    if (v3Global.opt.getenvMAKEFLAGS().find("-jobserver-auth") == string::npos) {
+        if (jobs > 0) cmd << " -j " << jobs;
+    }
     for (const string& flag : makeFlags) cmd << ' ' << flag;
     if (!target.empty()) cmd << ' ' << target;
 
@@ -721,7 +724,7 @@ static void execHierVerilation() {
 
 //######################################################################
 
-int main(int argc, char** argv, char** /*env*/) {
+int main(int argc, char** argv) {
     // General initialization
     std::ios::sync_with_stdio();
 
@@ -737,7 +740,7 @@ int main(int argc, char** argv, char** /*env*/) {
     V3PreShell::boot();
 
     // Command option parsing
-    v3Global.opt.buildDepBin(argv[0]);
+    v3Global.opt.buildDepBin(VString::escapeStringForPath(argv[0]));
     const string argString = V3Options::argString(argc - 1, argv + 1);
     v3Global.opt.parseOpts(new FileLine{FileLine::commandLineFilename()}, argc - 1, argv + 1);
 

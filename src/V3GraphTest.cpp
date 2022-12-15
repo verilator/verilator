@@ -83,24 +83,24 @@ public:
         V3Graph* gp = &m_graph;
         // Verify we break edges at a good point
         // A simple alg would make 3 breaks, below only requires b->i to break
-        V3GraphTestVertex* i = new V3GraphTestVarVertex(gp, "*INPUTS*");
-        V3GraphTestVertex* a = new V3GraphTestVarVertex(gp, "a");
-        V3GraphTestVertex* b = new V3GraphTestVarVertex(gp, "b");
-        V3GraphTestVertex* g1 = new V3GraphTestVarVertex(gp, "g1");
-        V3GraphTestVertex* g2 = new V3GraphTestVarVertex(gp, "g2");
-        V3GraphTestVertex* g3 = new V3GraphTestVarVertex(gp, "g3");
-        V3GraphTestVertex* q = new V3GraphTestVarVertex(gp, "q");
-        new V3GraphEdge(gp, i, a, 2, true);
-        new V3GraphEdge(gp, a, b, 2, true);
-        new V3GraphEdge(gp, b, g1, 2, true);
-        new V3GraphEdge(gp, b, g2, 2, true);
-        new V3GraphEdge(gp, b, g3, 2, true);
-        new V3GraphEdge(gp, g1, a, 2, true);
-        new V3GraphEdge(gp, g3, g2, 2, true);
-        new V3GraphEdge(gp, g2, g3, 2, true);
-        new V3GraphEdge(gp, g1, q, 2, true);
-        new V3GraphEdge(gp, g2, q, 2, true);
-        new V3GraphEdge(gp, g3, q, 2, true);
+        V3GraphTestVertex* i = new V3GraphTestVarVertex{gp, "*INPUTS*"};
+        V3GraphTestVertex* a = new V3GraphTestVarVertex{gp, "a"};
+        V3GraphTestVertex* b = new V3GraphTestVarVertex{gp, "b"};
+        V3GraphTestVertex* g1 = new V3GraphTestVarVertex{gp, "g1"};
+        V3GraphTestVertex* g2 = new V3GraphTestVarVertex{gp, "g2"};
+        V3GraphTestVertex* g3 = new V3GraphTestVarVertex{gp, "g3"};
+        V3GraphTestVertex* q = new V3GraphTestVarVertex{gp, "q"};
+        new V3GraphEdge{gp, i, a, 2, true};
+        new V3GraphEdge{gp, a, b, 2, true};
+        new V3GraphEdge{gp, b, g1, 2, true};
+        new V3GraphEdge{gp, b, g2, 2, true};
+        new V3GraphEdge{gp, b, g3, 2, true};
+        new V3GraphEdge{gp, g1, a, 2, true};
+        new V3GraphEdge{gp, g3, g2, 2, true};
+        new V3GraphEdge{gp, g2, g3, 2, true};
+        new V3GraphEdge{gp, g1, q, 2, true};
+        new V3GraphEdge{gp, g2, q, 2, true};
+        new V3GraphEdge{gp, g3, q, 2, true};
 
         gp->stronglyConnected(&V3GraphEdge::followAlwaysTrue);
         dumpSelf();
@@ -121,20 +121,20 @@ public:
         V3Graph* gp = &m_graph;
         // Verify we break edges at a good point
         // A simple alg would make 3 breaks, below only requires b->i to break
-        V3GraphTestVertex* i = new V3GraphTestVarVertex(gp, "*INPUTS*");
-        V3GraphTestVertex* a = new V3GraphTestVarVertex(gp, "a");
-        V3GraphTestVertex* b = new V3GraphTestVarVertex(gp, "b");
-        V3GraphTestVertex* g1 = new V3GraphTestVarVertex(gp, "g1");
-        V3GraphTestVertex* g2 = new V3GraphTestVarVertex(gp, "g2");
-        V3GraphTestVertex* g3 = new V3GraphTestVarVertex(gp, "g3");
-        new V3GraphEdge(gp, i, a, 2, true);
-        new V3GraphEdge(gp, a, b, 2, true);
-        new V3GraphEdge(gp, b, g1, 2, true);
-        new V3GraphEdge(gp, b, g2, 2, true);
-        new V3GraphEdge(gp, b, g3, 2, true);
-        new V3GraphEdge(gp, g1, a, 2, true);
-        new V3GraphEdge(gp, g2, a, 2, true);
-        new V3GraphEdge(gp, g3, a, 2, true);
+        V3GraphTestVertex* i = new V3GraphTestVarVertex{gp, "*INPUTS*"};
+        V3GraphTestVertex* a = new V3GraphTestVarVertex{gp, "a"};
+        V3GraphTestVertex* b = new V3GraphTestVarVertex{gp, "b"};
+        V3GraphTestVertex* g1 = new V3GraphTestVarVertex{gp, "g1"};
+        V3GraphTestVertex* g2 = new V3GraphTestVarVertex{gp, "g2"};
+        V3GraphTestVertex* g3 = new V3GraphTestVarVertex{gp, "g3"};
+        new V3GraphEdge{gp, i, a, 2, true};
+        new V3GraphEdge{gp, a, b, 2, true};
+        new V3GraphEdge{gp, b, g1, 2, true};
+        new V3GraphEdge{gp, b, g2, 2, true};
+        new V3GraphEdge{gp, b, g3, 2, true};
+        new V3GraphEdge{gp, g1, a, 2, true};
+        new V3GraphEdge{gp, g2, a, 2, true};
+        new V3GraphEdge{gp, g3, a, 2, true};
 
         gp->acyclic(&V3GraphEdge::followAlwaysTrue);
         gp->order();
@@ -148,20 +148,20 @@ public:
     void runTest() override {
         V3Graph* gp = &m_graph;
 
-        V3GraphTestVertex* clk = new V3GraphTestVarVertex(gp, "$clk");
+        V3GraphTestVertex* clk = new V3GraphTestVarVertex{gp, "$clk"};
 
-        V3GraphTestVertex* a = new V3GraphTestVarVertex(gp, "$a");
-        V3GraphTestVertex* a_dly = new V3GraphTestVarVertex(gp, "$a_dly");
-        V3GraphTestVertex* a_dlyblk = new V3GraphTestVarVertex(gp, "$a_dlyblk");
-        V3GraphTestVertex* b = new V3GraphTestVarVertex(gp, "$b");
-        V3GraphTestVertex* b_dly = new V3GraphTestVarVertex(gp, "$b_dly");
-        V3GraphTestVertex* b_dlyblk = new V3GraphTestVarVertex(gp, "$b_dlyblk");
-        V3GraphTestVertex* c = new V3GraphTestVarVertex(gp, "$c");
-        V3GraphTestVertex* i = new V3GraphTestVarVertex(gp, "$i");
+        V3GraphTestVertex* a = new V3GraphTestVarVertex{gp, "$a"};
+        V3GraphTestVertex* a_dly = new V3GraphTestVarVertex{gp, "$a_dly"};
+        V3GraphTestVertex* a_dlyblk = new V3GraphTestVarVertex{gp, "$a_dlyblk"};
+        V3GraphTestVertex* b = new V3GraphTestVarVertex{gp, "$b"};
+        V3GraphTestVertex* b_dly = new V3GraphTestVarVertex{gp, "$b_dly"};
+        V3GraphTestVertex* b_dlyblk = new V3GraphTestVarVertex{gp, "$b_dlyblk"};
+        V3GraphTestVertex* c = new V3GraphTestVarVertex{gp, "$c"};
+        V3GraphTestVertex* i = new V3GraphTestVarVertex{gp, "$i"};
 
-        V3GraphTestVertex* ap = new V3GraphTestVarVertex(gp, "$a_pre");
-        V3GraphTestVertex* bp = new V3GraphTestVarVertex(gp, "$b_pre");
-        V3GraphTestVertex* cp = new V3GraphTestVarVertex(gp, "$c_pre");
+        V3GraphTestVertex* ap = new V3GraphTestVarVertex{gp, "$a_pre"};
+        V3GraphTestVertex* bp = new V3GraphTestVarVertex{gp, "$b_pre"};
+        V3GraphTestVertex* cp = new V3GraphTestVarVertex{gp, "$c_pre"};
 
         V3GraphTestVertex* n;
 
@@ -176,68 +176,68 @@ public:
         // Desired order between different _DLY blocks so we can elim temporaries
         //   implemented by cutable "pre" signal dependencies
 
-        n = new V3GraphTestVertex(gp, "*INPUTS*");
+        n = new V3GraphTestVertex{gp, "*INPUTS*"};
         {
-            new V3GraphEdge(gp, n, clk, 2);
-            new V3GraphEdge(gp, n, i, 2);
+            new V3GraphEdge{gp, n, clk, 2};
+            new V3GraphEdge{gp, n, i, 2};
         }
 
-        V3GraphTestVertex* posedge = n = new V3GraphTestVertex(gp, "*posedge clk*");
-        { new V3GraphEdge(gp, clk, n, 2); }
+        V3GraphTestVertex* posedge = n = new V3GraphTestVertex{gp, "*posedge clk*"};
+        { new V3GraphEdge{gp, clk, n, 2}; }
 
         // AssignPre's     VarRefs on LHS:  generate special BLK
         //    normal:      VarRefs on LHS:  generate normal
         //    underSBlock: VarRefs on RHS:  consume 'pre' (required to save cutable tests)
-        n = new V3GraphTestVertex(gp, "a_dly<PRE=a");
+        n = new V3GraphTestVertex{gp, "a_dly<PRE=a"};
         {
-            new V3GraphEdge(gp, n, a_dlyblk, 2);  // Block ordering
-            new V3GraphEdge(gp, n, a_dly, 2);
-            new V3GraphEdge(gp, ap, n, 2, true);  // DESIRED delayed ordering (inp is required)
-            new V3GraphEdge(gp, posedge, n, 2);
+            new V3GraphEdge{gp, n, a_dlyblk, 2};  // Block ordering
+            new V3GraphEdge{gp, n, a_dly, 2};
+            new V3GraphEdge{gp, ap, n, 2, true};  // DESIRED delayed ordering (inp is required)
+            new V3GraphEdge{gp, posedge, n, 2};
         }
-        n = new V3GraphTestVertex(gp, "b_dly<PRE=b");
+        n = new V3GraphTestVertex{gp, "b_dly<PRE=b"};
         {
-            new V3GraphEdge(gp, n, b_dlyblk, 2);  // Block ordering
-            new V3GraphEdge(gp, n, b_dly, 2);
-            new V3GraphEdge(gp, bp, n, 2, true);  // DESIRED delayed ordering
-            new V3GraphEdge(gp, posedge, n, 2);
+            new V3GraphEdge{gp, n, b_dlyblk, 2};  // Block ordering
+            new V3GraphEdge{gp, n, b_dly, 2};
+            new V3GraphEdge{gp, bp, n, 2, true};  // DESIRED delayed ordering
+            new V3GraphEdge{gp, posedge, n, 2};
         }
 
         // AssignDly's     VarRefs on LHS:  consume special BLK
         //    normal:      VarRefs on LHS:  generate normal
         //    underSBlock: VarRefs on RHS:  generate 'pre' signals (cutable)
         //    SenItems:    consume CLOCK dependency
-        n = new V3GraphTestVertex(gp, "a_dly<=b|c");
+        n = new V3GraphTestVertex{gp, "a_dly<=b|c"};
         {
-            new V3GraphEdge(gp, a_dlyblk, n, 2);  // Block ordering in
-            new V3GraphEdge(gp, n, a_dly, 2);
+            new V3GraphEdge{gp, a_dlyblk, n, 2};  // Block ordering in
+            new V3GraphEdge{gp, n, a_dly, 2};
             // Note we don't include ap as we're generating a_dly
-            new V3GraphEdge(gp, n, bp, 2);  // DESIRED delayed usage
-            new V3GraphEdge(gp, n, cp, 2);  // DESIRED delayed usage
-            new V3GraphEdge(gp, posedge, n, 2);
+            new V3GraphEdge{gp, n, bp, 2};  // DESIRED delayed usage
+            new V3GraphEdge{gp, n, cp, 2};  // DESIRED delayed usage
+            new V3GraphEdge{gp, posedge, n, 2};
         }
-        n = new V3GraphTestVertex(gp, "b_dly<=a");
+        n = new V3GraphTestVertex{gp, "b_dly<=a"};
         {
-            new V3GraphEdge(gp, b_dlyblk, n, 2);  // Block ordering in
-            new V3GraphEdge(gp, n, b_dly, 2);
-            new V3GraphEdge(gp, n, ap, 2);  // DESIRED delayed usage
-            new V3GraphEdge(gp, posedge, n, 2);
+            new V3GraphEdge{gp, b_dlyblk, n, 2};  // Block ordering in
+            new V3GraphEdge{gp, n, b_dly, 2};
+            new V3GraphEdge{gp, n, ap, 2};  // DESIRED delayed usage
+            new V3GraphEdge{gp, posedge, n, 2};
         }
 
         // AssignPost's
         //    normal:      VarRefs on LHS:  generate normal
         //    underSBlock: VarRefs on RHS:  consume normal
-        n = new V3GraphTestVertex(gp, "a=POST=a_dly");
+        n = new V3GraphTestVertex{gp, "a=POST=a_dly"};
         {
-            new V3GraphEdge(gp, n, a, 3);
-            new V3GraphEdge(gp, a_dly, n, 3);
-            new V3GraphEdge(gp, posedge, n, 2);
+            new V3GraphEdge{gp, n, a, 3};
+            new V3GraphEdge{gp, a_dly, n, 3};
+            new V3GraphEdge{gp, posedge, n, 2};
         }
-        n = new V3GraphTestVertex(gp, "b=POST=b_dly");
+        n = new V3GraphTestVertex{gp, "b=POST=b_dly"};
         {
-            new V3GraphEdge(gp, n, b, 3);
-            new V3GraphEdge(gp, b_dly, n, 3);
-            new V3GraphEdge(gp, posedge, n, 2);
+            new V3GraphEdge{gp, n, b, 3};
+            new V3GraphEdge{gp, b_dly, n, 3};
+            new V3GraphEdge{gp, posedge, n, 2};
         }
 
         // COMBO
@@ -245,11 +245,11 @@ public:
         // Outbound are cutable, as we may need to evaluate multiple times
 
         {
-            n = new V3GraphTestVertex(gp, "c=a|b|i");
-            new V3GraphEdge(gp, n, c, 1, true);
-            new V3GraphEdge(gp, a, n, 1, false);
-            new V3GraphEdge(gp, b, n, 1, false);
-            new V3GraphEdge(gp, i, n, 1, false);
+            n = new V3GraphTestVertex{gp, "c=a|b|i"};
+            new V3GraphEdge{gp, n, c, 1, true};
+            new V3GraphEdge{gp, a, n, 1, false};
+            new V3GraphEdge{gp, b, n, 1, false};
+            new V3GraphEdge{gp, i, n, 1, false};
         }
 
         gp->acyclic(&V3GraphEdge::followAlwaysTrue);
@@ -294,9 +294,9 @@ void V3Graph::selfTest() {
     // Execute all of the tests
     UINFO(2, __FUNCTION__ << ": " << endl);
     // clang-format off
-    { V3GraphTestStrong test; test.run(); }
-    { V3GraphTestAcyc test; test.run(); }
-    { V3GraphTestVars test; test.run(); }
-    { V3GraphTestImport test; test.run(); }
+    { V3GraphTestStrong{}.run(); }
+    { V3GraphTestAcyc{}.run(); }
+    { V3GraphTestVars{}.run(); }
+    { V3GraphTestImport{}.run(); }
     // clang-format on
 }

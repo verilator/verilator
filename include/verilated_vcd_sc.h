@@ -64,7 +64,12 @@ public:
     }
 
     // Override VerilatedVcdC. Must be called after starting simulation.
-    void open(const char* filename) override VL_MT_SAFE;
+    void open(const char* filename) override VL_MT_SAFE {
+        if (VL_UNLIKELY(!sc_core::sc_get_curr_simcontext()->elaboration_done())) {
+            Verilated::scTraceBeforeElaborationError();
+        }
+        VerilatedVcdC::open(filename);
+    }
 
 private:
     // METHODS - Fake outs for linker
@@ -75,14 +80,16 @@ private:
 #endif
     void set_time_unit(double v, sc_time_unit tu) override {}  // LCOV_EXCL_LINE
 
-//--------------------------------------------------
-// SystemC 2.1.v1
-#define DECL_TRACE_METHOD_A(tp) void trace(const tp& object, const std::string& name) override;
-#define DECL_TRACE_METHOD_B(tp) \
-    void trace(const tp& object, const std::string& name, int width) override;
+    //--------------------------------------------------
+    // SystemC 2.1.v1
 
-    void write_comment(const std::string&) override;
-    void trace(const unsigned int&, const std::string&, const char**) override;
+    void write_comment(const std::string&) override {}
+    void trace(const unsigned int&, const std::string&, const char**) override {}
+
+#define DECL_TRACE_METHOD_A(tp) \
+    void trace(const tp& object, const std::string& name) override {}
+#define DECL_TRACE_METHOD_B(tp) \
+    void trace(const tp& object, const std::string& name, int width) override {}
 
     // clang-format off
     // Formatting matches that of sc_trace.h

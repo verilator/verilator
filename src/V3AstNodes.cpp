@@ -60,6 +60,8 @@ void AstNodeFTaskRef::cloneRelink() {
     }
 }
 
+bool AstNodeFTaskRef::isGateOptimizable() const { return m_taskp && m_taskp->isGateOptimizable(); }
+
 const char* AstNodeVarRef::broken() const {
     BROKEN_RTN(m_varp && !m_varp->brokeExists());
     BROKEN_RTN(m_varScopep && !m_varScopep->brokeExists());
@@ -123,7 +125,7 @@ const char* AstNodeUOrStructDType::broken() const {
 void AstNodeStmt::dump(std::ostream& str) const { this->AstNode::dump(str); }
 
 void AstNodeCCall::dump(std::ostream& str) const {
-    this->AstNodeStmt::dump(str);
+    this->AstNodeExpr::dump(str);
     if (funcp()) {
         str << " " << funcp()->name() << " => ";
         funcp()->dump(str);
@@ -250,23 +252,23 @@ int AstNodeUOrStructDType::widthAlignBytes() const {
     }
 }
 
-AstNodeBiop* AstEq::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
+AstNodeBiop* AstEq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
     if (lhsp->isString() && rhsp->isString()) {
-        return new AstEqN(fl, lhsp, rhsp);
+        return new AstEqN{fl, lhsp, rhsp};
     } else if (lhsp->isDouble() && rhsp->isDouble()) {
-        return new AstEqD(fl, lhsp, rhsp);
+        return new AstEqD{fl, lhsp, rhsp};
     } else {
-        return new AstEq(fl, lhsp, rhsp);
+        return new AstEq{fl, lhsp, rhsp};
     }
 }
 
-AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
+AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
     if (lhsp->isString() && rhsp->isString()) {
-        return new AstEqN(fl, lhsp, rhsp);
+        return new AstEqN{fl, lhsp, rhsp};
     } else if (lhsp->isDouble() && rhsp->isDouble()) {
-        return new AstEqD(fl, lhsp, rhsp);
+        return new AstEqD{fl, lhsp, rhsp};
     } else {
-        return new AstEqWild(fl, lhsp, rhsp);
+        return new AstEqWild{fl, lhsp, rhsp};
     }
 }
 
@@ -277,13 +279,13 @@ AstExecGraph::AstExecGraph(FileLine* fileline, const string& name)
 
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
 
-AstNode* AstInsideRange::newAndFromInside(AstNode* exprp, AstNode* lhsp, AstNode* rhsp) {
-    AstNode* const ap = new AstGte(fileline(), exprp->cloneTree(true), lhsp);
-    AstNode* const bp = new AstLte(fileline(), exprp->cloneTree(true), rhsp);
+AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,
+                                              AstNodeExpr* rhsp) {
+    AstNodeExpr* const ap = new AstGte{fileline(), exprp->cloneTree(true), lhsp};
+    AstNodeExpr* const bp = new AstLte{fileline(), exprp->cloneTree(true), rhsp};
     ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
     bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
-    AstNode* const newp = new AstAnd(fileline(), ap, bp);
-    return newp;
+    return new AstAnd{fileline(), ap, bp};
 }
 
 AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
@@ -291,11 +293,11 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
     if (literal[0] == '"') {
         // This is a string
         const string v = literal.substr(1, literal.find('"', 1) - 1);
-        return new AstConst(fl, AstConst::VerilogStringLiteral(), v);
+        return new AstConst{fl, AstConst::VerilogStringLiteral{}, v};
     } else if (literal.find_first_of(".eEpP") != string::npos) {
         // This may be a real
         const double v = VString::parseDouble(literal, &success);
-        if (success) return new AstConst(fl, AstConst::RealDouble(), v);
+        if (success) return new AstConst{fl, AstConst::RealDouble{}, v};
     }
     if (!success) {
         // This is either an integer or an error
@@ -308,18 +310,18 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
         char* endp;
         const int v = strtol(literal.c_str(), &endp, 0);
         if ((v != 0) && (endp[0] == 0)) {  // C literal
-            return new AstConst(fl, AstConst::Signed32(), v);
+            return new AstConst{fl, AstConst::Signed32{}, v};
         } else {  // Try a Verilog literal (fatals if not)
-            return new AstConst(fl, AstConst::StringToParse(), literal.c_str());
+            return new AstConst{fl, AstConst::StringToParse{}, literal.c_str()};
         }
     }
     return nullptr;
 }
 
 AstNetlist::AstNetlist()
-    : ASTGEN_SUPER_Netlist(new FileLine(FileLine::builtInFilename()))
-    , m_typeTablep{new AstTypeTable(fileline())}
-    , m_constPoolp{new AstConstPool(fileline())} {
+    : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
+    , m_typeTablep{new AstTypeTable{fileline()}}
+    , m_constPoolp{new AstConstPool{fileline()}} {
     addMiscsp(m_typeTablep);
     addMiscsp(m_constPoolp);
 }
@@ -1045,7 +1047,7 @@ AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
 
 AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
     if (VL_UNLIKELY(!m_queueIndexp)) {
-        AstQueueDType* const newp = new AstQueueDType(fl, AstNode::findUInt32DType(), nullptr);
+        AstQueueDType* const newp = new AstQueueDType{fl, AstNode::findUInt32DType(), nullptr};
         addTypesp(newp);
         m_queueIndexp = newp;
     }
@@ -1055,7 +1057,7 @@ AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
 AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd) {
     if (m_basicps[kwd]) return m_basicps[kwd];
     //
-    AstBasicDType* const new1p = new AstBasicDType(fl, kwd);
+    AstBasicDType* const new1p = new AstBasicDType{fl, kwd};
     // Because the detailed map doesn't update this map,
     // check the detailed map for this same node
     // Also adds this new node to the detailed map
@@ -1072,7 +1074,7 @@ AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd) {
 
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, int width,
                                                int widthMin, VSigning numeric) {
-    AstBasicDType* const new1p = new AstBasicDType(fl, kwd, numeric, width, widthMin);
+    AstBasicDType* const new1p = new AstBasicDType{fl, kwd, numeric, width, widthMin};
     AstBasicDType* const newp = findInsertSameDType(new1p);
     if (newp != new1p) {
         VL_DO_DANGLING(new1p->deleteTree(), new1p);
@@ -1085,7 +1087,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
                                                const VNumRange& range, int widthMin,
                                                VSigning numeric) {
-    AstBasicDType* const new1p = new AstBasicDType(fl, kwd, numeric, range, widthMin);
+    AstBasicDType* const new1p = new AstBasicDType{fl, kwd, numeric, range, widthMin};
     AstBasicDType* const newp = findInsertSameDType(new1p);
     if (newp != new1p) {
         VL_DO_DANGLING(new1p->deleteTree(), new1p);
@@ -1096,8 +1098,8 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
 }
 
 AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
-    const VBasicTypeKey key(nodep->width(), nodep->widthMin(), nodep->numeric(), nodep->keyword(),
-                            nodep->nrange());
+    const VBasicTypeKey key{nodep->width(), nodep->widthMin(), nodep->numeric(), nodep->keyword(),
+                            nodep->nrange()};
     DetailedMap& mapr = m_detailedMap;
     const auto it = mapr.find(key);
     if (it != mapr.end()) return it->second;
@@ -1109,8 +1111,8 @@ AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
 
 AstConstPool::AstConstPool(FileLine* fl)
     : ASTGEN_SUPER_ConstPool(fl)
-    , m_modp{new AstModule(fl, "@CONST-POOL@")}
-    , m_scopep{new AstScope(fl, m_modp, "@CONST-POOL@", nullptr, nullptr)} {
+    , m_modp{new AstModule{fl, "@CONST-POOL@"}}
+    , m_scopep{new AstScope{fl, m_modp, "@CONST-POOL@", nullptr, nullptr}} {
     this->modulep(m_modp);
     m_modp->addStmtsp(m_scopep);
 }
@@ -1120,14 +1122,14 @@ const char* AstConstPool::broken() const {
     return nullptr;
 }
 
-AstVarScope* AstConstPool::createNewEntry(const string& name, AstNode* initp) {
+AstVarScope* AstConstPool::createNewEntry(const string& name, AstNodeExpr* initp) {
     FileLine* const fl = initp->fileline();
-    AstVar* const varp = new AstVar(fl, VVarType::MODULETEMP, name, initp->dtypep());
+    AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, name, initp->dtypep()};
     varp->isConst(true);
     varp->isStatic(true);
     varp->valuep(initp->cloneTree(false));
     m_modp->addStmtsp(varp);
-    AstVarScope* const varScopep = new AstVarScope(fl, m_scopep, varp);
+    AstVarScope* const varScopep = new AstVarScope{fl, m_scopep, varp};
     m_scopep->addVarsp(varScopep);
     return varScopep;
 }
@@ -1191,6 +1193,7 @@ AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
         UASSERT_OBJ(VN_IS(valuep, Const), valuep, "Const pool table entry must be Const");
     }
     // Try to find an existing table with the same content
+    // cppcheck-has-bug-suppress unreadVariable
     const V3Hash hash = V3Hasher::uncachedHash(initp);
     const auto& er = m_tables.equal_range(hash.value());
     for (auto it = er.first; it != er.second; ++it) {
@@ -1220,6 +1223,7 @@ static bool sameInit(const AstConst* ap, const AstConst* bp) {
 
 AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
     // Try to find an existing constant with the same value
+    // cppcheck-has-bug-suppress unreadVariable
     const V3Hash hash = initp->num().toHash();
     const auto& er = m_consts.equal_range(hash.value());
     for (auto it = er.first; it != er.second; ++it) {
@@ -1376,8 +1380,8 @@ string AstBasicDType::prettyDTypeName() const {
     return os.str();
 }
 
-void AstNodeMath::dump(std::ostream& str) const { this->AstNode::dump(str); }
-void AstNodeUniop::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
+void AstNodeExpr::dump(std::ostream& str) const { this->AstNode::dump(str); }
+void AstNodeUniop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
 
 void AstCCast::dump(std::ostream& str) const {
     this->AstNodeUniop::dump(str);
@@ -1503,8 +1507,16 @@ void AstDisplay::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     // str << " " << displayType().ascii();
 }
+void AstEnumDType::dump(std::ostream& str) const {
+    this->AstNodeDType::dump(str);
+    str << " enum";
+}
+void AstEnumDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "enum";
+}
 void AstEnumItemRef::dump(std::ostream& str) const {
-    this->AstNodeMath::dump(str);
+    this->AstNodeExpr::dump(str);
     str << " -> ";
     if (itemp()) {
         itemp()->dump(str);
@@ -1565,17 +1577,17 @@ void AstInitArray::cloneRelink() {
         if (it->second->clonep()) it->second = it->second->clonep();
     }
 }
-void AstInitArray::addIndexValuep(uint64_t index, AstNode* newp) {
+void AstInitArray::addIndexValuep(uint64_t index, AstNodeExpr* newp) {
     const auto it = m_map.find(index);
     if (it != m_map.end()) {
         it->second->valuep(newp);
     } else {
-        AstInitItem* const itemp = new AstInitItem(fileline(), newp);
+        AstInitItem* const itemp = new AstInitItem{fileline(), newp};
         m_map.emplace(index, itemp);
         addInitsp(itemp);
     }
 }
-AstNode* AstInitArray::getIndexValuep(uint64_t index) const {
+AstNodeExpr* AstInitArray::getIndexValuep(uint64_t index) const {
     const auto it = m_map.find(index);
     if (it == m_map.end()) {
         return nullptr;
@@ -1583,8 +1595,8 @@ AstNode* AstInitArray::getIndexValuep(uint64_t index) const {
         return it->second->valuep();
     }
 }
-AstNode* AstInitArray::getIndexDefaultedValuep(uint64_t index) const {
-    AstNode* valuep = getIndexValuep(index);
+AstNodeExpr* AstInitArray::getIndexDefaultedValuep(uint64_t index) const {
+    AstNodeExpr* valuep = getIndexValuep(index);
     if (!valuep) valuep = defaultp();
     return valuep;
 }
@@ -1615,11 +1627,11 @@ void AstJumpLabel::dump(std::ostream& str) const {
     }
 }
 void AstLogOr::dump(std::ostream& str) const {
-    this->AstNodeMath::dump(str);
+    this->AstNodeExpr::dump(str);
     if (sideEffect()) str << " [SIDE]";
 }
 void AstMemberSel::dump(std::ostream& str) const {
-    this->AstNodeMath::dump(str);
+    this->AstNodeExpr::dump(str);
     str << " -> ";
     if (varp()) {
         varp()->dump(str);
@@ -1636,7 +1648,6 @@ const char* AstMemberSel::broken() const {
 }
 void AstMethodCall::dump(std::ostream& str) const {
     this->AstNodeFTaskRef::dump(str);
-    if (isStatement()) str << " [STMT]";
     str << " -> ";
     if (taskp()) {
         taskp()->dump(str);
@@ -1705,7 +1716,7 @@ void AstPrintTimeScale::dump(std::ostream& str) const {
     str << " " << timeunit();
 }
 
-void AstNodeTermop::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
+void AstNodeTermop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
 void AstTime::dump(std::ostream& str) const {
     this->AstNodeTermop::dump(str);
     str << " " << timeunit();
@@ -1757,6 +1768,10 @@ void AstRefDType::dump(std::ostream& str) const {
     } else {
         str << " -> UNLINKED";
     }
+}
+void AstRefDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "ref";
 }
 const char* AstRefDType::broken() const {
     BROKEN_RTN(m_typedefp && !m_typedefp->brokeExists());
@@ -1857,7 +1872,7 @@ const char* AstNetlist::broken() const {
 }
 AstPackage* AstNetlist::dollarUnitPkgAddp() {
     if (!m_dollarUnitPkgp) {
-        m_dollarUnitPkgp = new AstPackage(fileline(), AstPackage::dollarUnitName());
+        m_dollarUnitPkgp = new AstPackage{fileline(), AstPackage::dollarUnitName()};
         // packages are always libraries; don't want to make them a "top"
         m_dollarUnitPkgp->inLibrary(true);
         m_dollarUnitPkgp->modTrace(false);  // may reconsider later
@@ -1908,10 +1923,10 @@ void AstPackageImport::cloneRelink() {
     if (m_packagep && m_packagep->clonep()) m_packagep = m_packagep->clonep();
 }
 void AstPatMember::dump(std::ostream& str) const {
-    this->AstNodeMath::dump(str);
+    this->AstNodeExpr::dump(str);
     if (isDefault()) str << " [DEFAULT]";
 }
-void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeMath::dump(str); }
+void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
 void AstSel::dump(std::ostream& str) const {
     this->AstNodeTriop::dump(str);
     if (declRange().ranged()) {
@@ -1979,7 +1994,7 @@ bool AstWildcardArrayDType::same(const AstNode* samep) const {
     if (!asamep->subDTypep()) return false;
     return (subDTypep() == asamep->subDTypep());
 }
-bool AstWildcardArrayDType::similarDType(AstNodeDType* samep) const {
+bool AstWildcardArrayDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
     return type() == samep->type() && asamep->subDTypep()
            && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
@@ -1993,7 +2008,7 @@ bool AstUnsizedArrayDType::same(const AstNode* samep) const {
     if (!asamep->subDTypep()) return false;
     return (subDTypep() == asamep->subDTypep());
 }
-bool AstUnsizedArrayDType::similarDType(AstNodeDType* samep) const {
+bool AstUnsizedArrayDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
     return type() == samep->type() && asamep->subDTypep()
            && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
@@ -2018,7 +2033,7 @@ void AstVarScope::dump(std::ostream& str) const {
     }
 }
 void AstNodeVarRef::dump(std::ostream& str) const {
-    this->AstNodeMath::dump(str);
+    this->AstNodeExpr::dump(str);
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
     str << " " << access().arrow() << " ";
 }
@@ -2086,7 +2101,7 @@ void AstScope::dump(std::ostream& str) const {
     str << " [modp=" << reinterpret_cast<const void*>(modp()) << "]";
 }
 void AstScopeName::dump(std::ostream& str) const {
-    this->AstNodeMath::dump(str);
+    this->AstNodeExpr::dump(str);
     if (dpiExport()) str << " [DPIEX]";
     if (forFormat()) str << " [FMT]";
 }
@@ -2145,7 +2160,7 @@ void AstActive::cloneRelink() {
     if (m_sensesp->clonep()) m_sensesp = m_sensesp->clonep();
 }
 void AstNodeFTaskRef::dump(std::ostream& str) const {
-    this->AstNodeStmt::dump(str);
+    this->AstNodeExpr::dump(str);
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
     str << " -> ";
     if (dotted() != "") str << ".=" << dotted() << " ";
@@ -2248,8 +2263,15 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isVirtual()) str << " [VIRT]";
     if (isCoroutine()) str << " [CORO]";
 }
+const char* AstCAwait::broken() const {
+    BROKEN_RTN(m_sensesp && !m_sensesp->brokeExists());
+    return nullptr;
+}
+void AstCAwait::cloneRelink() {
+    if (m_sensesp && m_sensesp->clonep()) m_sensesp = m_sensesp->clonep();
+}
 void AstCAwait::dump(std::ostream& str) const {
-    this->AstNodeStmt::dump(str);
+    this->AstNodeUniop::dump(str);
     if (sensesp()) {
         str << " => ";
         sensesp()->dump(str);
@@ -2265,7 +2287,7 @@ int AstCMethodHard::instrCount() const {
             return INSTR_COUNT_LD;
         }
     }
-    return AstNodeStmt::instrCount();
+    return 0;
 }
 const char* AstCFunc::broken() const {
     BROKEN_RTN((m_scopep && !m_scopep->brokeExists()));
@@ -2282,8 +2304,8 @@ void AstCUse::dump(std::ostream& str) const {
 
 AstAlways* AstAssignW::convertToAlways() {
     const bool hasTimingControl = isTimingControl();
-    AstNode* const lhs1p = lhsp()->unlinkFrBack();
-    AstNode* const rhs1p = rhsp()->unlinkFrBack();
+    AstNodeExpr* const lhs1p = lhsp()->unlinkFrBack();
+    AstNodeExpr* const rhs1p = rhsp()->unlinkFrBack();
     AstNode* const controlp = timingControlp() ? timingControlp()->unlinkFrBack() : nullptr;
     FileLine* const flp = fileline();
     AstNode* bodysp = new AstAssign{flp, lhs1p, rhs1p, controlp};

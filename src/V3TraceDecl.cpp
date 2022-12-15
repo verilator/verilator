@@ -128,7 +128,7 @@ private:
     };
     std::vector<Signal> m_signals;  // Signals under current scope
     AstVarScope* m_traVscp = nullptr;  // Current AstVarScope we are constructing AstTraceDecls for
-    AstNode* m_traValuep = nullptr;  // Value expression for current signal
+    AstNodeExpr* m_traValuep = nullptr;  // Value expression for current signal
     string m_traName;  // Name component for current signal
 
     VDouble0 m_statSigs;  // Statistic tracking
@@ -285,7 +285,7 @@ private:
                 // Recurse into data type of the signal. The visit methods will add AstTraceDecls.
                 iterate(m_traVscp->varp()->dtypep()->skipRefToEnump());
                 // Cleanup
-                if (m_traValuep) VL_DO_DANGLING(m_traValuep->deleteTree(), m_traValuep);
+                if (m_traValuep) VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = nullptr);
             }
         }
         pathAdjustor.unwind();
@@ -489,8 +489,9 @@ public:
             // Call all sub functions for this path
             for (AstCFunc* const subFuncp : item.second) {
                 AstCCall* const callp = new AstCCall{flp, subFuncp};
+                callp->dtypeSetVoid();
                 callp->argTypes("tracep");
-                addToTopFunc(callp);
+                addToTopFunc(callp->makeStmt());
             }
         }
         pathAdjustor.unwind();
@@ -503,8 +504,9 @@ public:
             AstCFunc* const topFuncp = newCFunc(flp, "");
             for (AstCFunc* funcp : m_topFuncps) {
                 AstCCall* const callp = new AstCCall{flp, funcp};
+                callp->dtypeSetVoid();
                 callp->argTypes("tracep");
-                topFuncp->addStmtsp(callp);
+                topFuncp->addStmtsp(callp->makeStmt());
             }
             m_topFuncps.clear();
             m_topFuncps.push_back(topFuncp);

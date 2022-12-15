@@ -90,6 +90,7 @@ private:
 
         iterateChildren(nodep);
 
+        // cppcheck-has-bug-suppress unreadVariable
         const V3Hash hash = V3Hasher::uncachedHash(m_cfilep);
         m_hashValuep->addText(fl, cvtToStr(hash.value()) + ";\n");
         m_cHashValuep->addText(fl, cvtToStr(hash.value()) + "U;\n");
@@ -150,7 +151,7 @@ private:
 
         // Timescale
         if (v3Global.opt.hierChild() && v3Global.rootp()->timescaleSpecified()) {
-            // Emit timescale for hierarhical verilation if input HDL specifies timespec
+            // Emit timescale for hierarchical verilation if input HDL specifies timespec
             txtp->addText(fl, std::string{"timeunit "} + modp->timeunit().ascii() + ";\n");
             txtp->addText(fl, std::string{"timeprecision "}
                                   + +v3Global.rootp()->timeprecision().ascii() + ";\n");

@@ -322,10 +322,8 @@ class EmitCSyms final : EmitCBaseVisitor {
         // UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()
         // <<" ss"<<name<<endl);
         const int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
-        if (m_scopeNames.find(name) == m_scopeNames.end()) {
-            m_scopeNames.emplace(
-                name, ScopeData(name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER"));
-        }
+        m_scopeNames.emplace(
+            name, ScopeData(name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER"));
         if (nodep->dpiExport()) {
             UASSERT_OBJ(m_cfuncp, nodep, "ScopeName not under DPI function");
             m_scopeFuncs.insert(std::make_pair(name + " " + m_cfuncp->name(),
@@ -378,9 +376,9 @@ void EmitCSyms::emitSymHdr() {
     newCFile(filename, true /*slow*/, false /*source*/);
 
     if (v3Global.opt.systemC()) {
-        m_ofp = new V3OutScFile(filename);
+        m_ofp = new V3OutScFile{filename};
     } else {
-        m_ofp = new V3OutCFile(filename);
+        m_ofp = new V3OutCFile{filename};
     }
 
     ofp()->putsHeader();
@@ -569,9 +567,9 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
     closeSplit();
 
     if (v3Global.opt.systemC()) {
-        m_ofp = new V3OutScFile(filename);
+        m_ofp = new V3OutScFile{filename};
     } else {
-        m_ofp = new V3OutCFile(filename);
+        m_ofp = new V3OutCFile{filename};
     }
 
     m_ofpBase->puts(symClassName() + "_" + cvtToStr(m_funcNum) + "(");
@@ -650,9 +648,9 @@ void EmitCSyms::emitSymImp() {
     cfilep->support(true);
 
     if (v3Global.opt.systemC()) {
-        m_ofp = new V3OutScFile(filename);
+        m_ofp = new V3OutScFile{filename};
     } else {
-        m_ofp = new V3OutCFile(filename);
+        m_ofp = new V3OutCFile{filename};
     }
 
     m_ofpBase = m_ofp;
@@ -984,7 +982,7 @@ void EmitCSyms::emitDpiHdr() {
     const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi.h";
     AstCFile* const cfilep = newCFile(filename, false /*slow*/, false /*source*/);
     cfilep->support(true);
-    V3OutCFile hf(filename);
+    V3OutCFile hf{filename};
     m_ofp = &hf;
 
     m_ofp->putsHeader();
@@ -1029,6 +1027,7 @@ void EmitCSyms::emitDpiHdr() {
     puts("#endif\n");
 
     ofp()->putsEndGuard();
+    m_ofp = nullptr;
 }
 
 //######################################################################
@@ -1083,6 +1082,7 @@ void EmitCSyms::emitDpiImp() {
             puts("\n");
         }
     }
+    m_ofp = nullptr;
 }
 
 //######################################################################

@@ -12,13 +12,12 @@
 
 #include <memory>
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     srand48(5);
 
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-#ifdef VL_THREADED
-    contextp->threads(2);
-#endif
+    // VL_USE_THREADS define is set in t_gantt_two.pl
+    contextp->threads(TEST_USE_THREADS);
     contextp->commandArgs(argc, argv);
     contextp->debug(0);
 

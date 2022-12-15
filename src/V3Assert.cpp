@@ -59,8 +59,8 @@ private:
         nodep->displayType(VDisplayType::DT_WRITE);
         nodep->fmtp()->text(assertDisplayMessage(nodep, prefix, nodep->fmtp()->text()));
         // cppcheck-suppress nullPointer
-        AstNode* const timenewp = new AstTime{nodep->fileline(), m_modp->timeunit()};
-        if (AstNode* const timesp = nodep->fmtp()->exprsp()) {
+        AstNodeExpr* const timenewp = new AstTime{nodep->fileline(), m_modp->timeunit()};
+        if (AstNodeExpr* const timesp = nodep->fmtp()->exprsp()) {
             timesp->unlinkFrBackWithNext();
             timenewp->addNext(timesp);
         }
@@ -69,7 +69,7 @@ private:
             nodep->fmtp()->scopeNamep(new AstScopeName{nodep->fileline(), true});
         }
     }
-    AstSampled* newSampledExpr(AstNode* nodep) {
+    AstSampled* newSampledExpr(AstNodeExpr* nodep) {
         const auto sampledp = new AstSampled{nodep->fileline(), nodep};
         sampledp->dtypeFrom(nodep);
         return sampledp;
@@ -98,16 +98,16 @@ private:
         // Add a internal if to check assertions are on.
         // Don't make this a AND term, as it's unlikely to need to test this.
         FileLine* const fl = nodep->fileline();
-        AstNodeIf* const newp = new AstIf{
-            fl,
-            (force ? new AstConst{fl, AstConst::BitTrue{}}
-                   :  // If assertions are off, have constant propagation rip them out later
-                 // This allows syntax errors and such to be detected normally.
-                 (v3Global.opt.assertOn()
-                      ? static_cast<AstNode*>(
-                          new AstCMath{fl, "vlSymsp->_vm_contextp__->assertOn()", 1})
-                      : static_cast<AstNode*>(new AstConst{fl, AstConst::BitFalse{}}))),
-            nodep};
+
+        // If assertions are off, have constant propagation rip them out later
+        // This allows syntax errors and such to be detected normally.
+        AstNodeExpr* const condp
+            = force ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
+              : v3Global.opt.assertOn()
+                  ? static_cast<AstNodeExpr*>(
+                      new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1})
+                  : static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitFalse{}});
+        AstNodeIf* const newp = new AstIf{fl, condp, nodep};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if
         return newp;
@@ -133,7 +133,7 @@ private:
     void newPslAssertion(AstNodeCoverOrAssert* nodep, AstNode* failsp) {
         if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 
-        AstNode* const propp = nodep->propp()->unlinkFrBackWithNext();
+        AstNodeExpr* const propp = VN_AS(nodep->propp()->unlinkFrBackWithNext(), NodeExpr);
         AstSenTree* const sentreep = nodep->sentreep();
         const string& message = nodep->name();
         AstNode* passsp = nodep->passsp();
@@ -211,7 +211,7 @@ private:
         if (nodep->user1SetOnce()) return;
         if (nodep->uniquePragma() || nodep->unique0Pragma()) {
             const AstNodeIf* ifp = nodep;
-            AstNode* propp = nullptr;
+            AstNodeExpr* propp = nullptr;
             bool hasDefaultElse = false;
             do {
                 // If this statement ends with 'else if', then nextIf will point to the
@@ -228,7 +228,7 @@ private:
                 }
 
                 // Build a bitmask of the true predicates
-                AstNode* const predp = ifp->condp()->cloneTree(false);
+                AstNodeExpr* const predp = ifp->condp()->cloneTree(false);
                 if (propp) {
                     propp = new AstConcat{nodep->fileline(), predp, propp};
                 } else {
@@ -249,10 +249,10 @@ private:
 
             // Note: if this ends with an 'else', then we don't need to validate that one of the
             // predicates evaluates to true.
-            AstNode* const ohot
+            AstNodeExpr* const ohot
                 = ((allow_none || hasDefaultElse)
-                       ? static_cast<AstNode*>(new AstOneHot0{nodep->fileline(), propp})
-                       : static_cast<AstNode*>(new AstOneHot{nodep->fileline(), propp}));
+                       ? static_cast<AstNodeExpr*>(new AstOneHot0{nodep->fileline(), propp})
+                       : static_cast<AstNodeExpr*>(new AstOneHot{nodep->fileline(), propp}));
             AstIf* const checkifp
                 = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
                             newFireAssert(nodep, "'unique if' statement violated"), newifp};
@@ -290,11 +290,12 @@ private:
                 if (!has_default && !nodep->itemsp()) {
                     // Not parallel, but harmlessly so.
                 } else {
-                    AstNode* propp = nullptr;
+                    AstNodeExpr* propp = nullptr;
                     for (AstCaseItem* itemp = nodep->itemsp(); itemp;
                          itemp = VN_AS(itemp->nextp(), CaseItem)) {
-                        for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
-                            AstNode* onep;
+                        for (AstNodeExpr* icondp = itemp->condsp(); icondp;
+                             icondp = VN_AS(icondp->nextp(), NodeExpr)) {
+                            AstNodeExpr* onep;
                             if (AstInsideRange* const rcondp = VN_CAST(icondp, InsideRange)) {
                                 onep = rcondp->newAndFromInside(nodep->exprp(),
                                                                 rcondp->lhsp()->cloneTree(true),
@@ -319,10 +320,11 @@ private:
                     if (!propp) propp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
 
                     const bool allow_none = has_default || nodep->unique0Pragma();
-                    AstNode* const ohot
-                        = (allow_none
-                               ? static_cast<AstNode*>(new AstOneHot0{nodep->fileline(), propp})
-                               : static_cast<AstNode*>(new AstOneHot{nodep->fileline(), propp}));
+                    AstNodeExpr* const ohot
+                        = (allow_none ? static_cast<AstNodeExpr*>(
+                               new AstOneHot0{nodep->fileline(), propp})
+                                      : static_cast<AstNodeExpr*>(
+                                          new AstOneHot{nodep->fileline(), propp}));
                     AstIf* const ifp = new AstIf{
                         nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
                         newFireAssert(nodep,
@@ -345,8 +347,8 @@ private:
             ticks = VN_AS(nodep->ticksp(), Const)->toUInt();
         }
         UASSERT_OBJ(ticks >= 1, nodep, "0 tick should have been checked in V3Width");
-        AstNode* const exprp = nodep->exprp()->unlinkFrBack();
-        AstNode* inp = newSampledExpr(exprp);
+        AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
+        AstNodeExpr* inp = newSampledExpr(exprp);
         AstVar* invarp = nullptr;
         AstSenTree* const sentreep = nodep->sentreep();
         sentreep->unlinkFrBack();
@@ -361,7 +363,7 @@ private:
             AstNode* const assp = new AstAssignDly{
                 nodep->fileline(), new AstVarRef{nodep->fileline(), outvarp, VAccess::WRITE}, inp};
             alwaysp->addStmtsp(assp);
-            // if (debug() >= 9) assp->dumpTree(cout, "-ass: ");
+            // if (debug() >= 9) assp->dumpTree("-  ass: ");
             invarp = outvarp;
             inp = new AstVarRef{nodep->fileline(), invarp, VAccess::READ};
         }

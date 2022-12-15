@@ -8,13 +8,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-$Self->{vlt_all} and unsupported("Verilator unsupported, bug1623");
-
 scenarios(linter => 1);
 
 lint(
-    fails => 1,
-    expect_filename => $Self->{golden_filename},
+    # Should fail, Verilator unsupported, bug1623
+    fails => !$Self->{vlt},
+    # expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

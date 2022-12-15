@@ -173,7 +173,7 @@ class OrderBuildVisitor final : public VNVisitor {
 
     // Current AstScope being processed
     AstScope* m_scopep = nullptr;
-    // Sensitivity list for clocked logic, nullptr for combinational and hybird logic
+    // Sensitivity list for clocked logic, nullptr for combinational and hybrid logic
     AstSenTree* m_domainp = nullptr;
     // Sensitivity list for hybrid logic, nullptr for everything else
     AstSenTree* m_hybridp = nullptr;
@@ -396,15 +396,15 @@ class OrderBuildVisitor final : public VNVisitor {
     void visit(AstAssignW* nodep) override { iterateLogic(nodep); }
     void visit(AstAssignPre* nodep) override {
         UASSERT_OBJ(!m_inPre, nodep, "Should not nest");
+        VL_RESTORER(m_inPre);
         m_inPre = true;
         iterateLogic(nodep);
-        m_inPre = false;
     }
     void visit(AstAssignPost* nodep) override {
         UASSERT_OBJ(!m_inPost, nodep, "Should not nest");
+        VL_RESTORER(m_inPost);
         m_inPost = true;
         iterateLogic(nodep);
-        m_inPost = false;
     }
 
     //--- Verilator concoctions
@@ -498,7 +498,7 @@ public:
         if (iter != s_dsMap.end()) {
             return iter->second;
         } else {
-            OrderMoveDomScope* domScopep = new OrderMoveDomScope(domainp, scopep);
+            OrderMoveDomScope* domScopep = new OrderMoveDomScope{domainp, scopep};
             s_dsMap.emplace(key, domScopep);
             return domScopep;
         }
@@ -736,7 +736,7 @@ public:
     // METHODS
     OrderMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex*,
                                  const AstSenTree* domainp) override {
-        OrderMoveVertex* const resultp = new OrderMoveVertex(m_pomGraphp, lvertexp);
+        OrderMoveVertex* const resultp = new OrderMoveVertex{m_pomGraphp, lvertexp};
         AstScope* const scopep = lvertexp ? lvertexp->scopep() : nullptr;
         resultp->domScopep(OrderMoveDomScope::findCreate(domainp, scopep));
         resultp->m_pomWaitingE.pushBack(*m_pomWaitingp, resultp);
@@ -810,7 +810,7 @@ class OrderProcess final : VNDeleter {
 
     SenTreeFinder m_finder;  // Global AstSenTree manager
     AstSenTree* const m_deleteDomainp;  // Dummy AstSenTree indicating needs deletion
-    const string m_tag;  // Subtring to add to generated names
+    const string m_tag;  // Substring to add to generated names
     const bool m_slow;  // Ordering slow code
     std::vector<AstNode*> m_result;  // The result nodes (~statements) in their sequential order
 
@@ -836,7 +836,7 @@ class OrderProcess final : VNDeleter {
     void processMovePrepReady();
     void processMoveReadyOne(OrderMoveVertex* vertexp);
     void processMoveDoneOne(OrderMoveVertex* vertexp);
-    void processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* domScopep, int level);
+    void processMoveOne(OrderMoveVertex* vertexp, const OrderMoveDomScope* domScopep, int level);
     AstActive* processMoveOneLogic(const OrderLogicVertex* lvertexp, AstCFunc*& newFuncpr,
                                    int& newStmtsr);
 
@@ -1180,7 +1180,7 @@ void OrderProcess::processMoveDoneOne(OrderMoveVertex* vertexp) {
     }
 }
 
-void OrderProcess::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* domScopep,
+void OrderProcess::processMoveOne(OrderMoveVertex* vertexp, const OrderMoveDomScope* domScopep,
                                   int level) {
     UASSERT_OBJ(vertexp->domScopep() == domScopep, vertexp, "Domain mismatch; list misbuilt?");
     const OrderLogicVertex* const lvertexp = vertexp->logicp();
@@ -1242,9 +1242,10 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
             scopep->addBlocksp(newFuncpr);
             // Create top call to it
             AstCCall* const callp = new AstCCall{nodep->fileline(), newFuncpr};
+            callp->dtypeSetVoid();
             // Where will we be adding the call?
             AstActive* const newActivep = new AstActive{nodep->fileline(), name, domainp};
-            newActivep->addStmtsp(callp);
+            newActivep->addStmtsp(callp->makeStmt());
             if (!activep) {
                 activep = newActivep;
             } else {
@@ -1357,7 +1358,7 @@ void OrderProcess::processMTasks() {
         const AbstractLogicMTask* const mtaskp = static_cast<const AbstractLogicMTask*>(mtaskVxp);
 
         // Create a body for this mtask
-        AstMTaskBody* const bodyp = new AstMTaskBody(rootFlp);
+        AstMTaskBody* const bodyp = new AstMTaskBody{rootFlp};
         MTaskState& state = mtaskStates[mtaskp->id()];
         state.m_mtaskBodyp = bodyp;
 
@@ -1387,7 +1388,7 @@ void OrderProcess::processMTasks() {
         // - The ExecMTask graph and the AstMTaskBody's produced here
         //   persist until code generation time.
         V3Graph* const depGraphp = execGraphp->depGraphp();
-        state.m_execMTaskp = new ExecMTask(depGraphp, bodyp, mtaskp->id());
+        state.m_execMTaskp = new ExecMTask{depGraphp, bodyp, mtaskp->id()};
         // Cross-link each ExecMTask and MTaskBody
         //  Q: Why even have two objects?
         //  A: One is an AstNode, the other is a GraphVertex,
@@ -1398,7 +1399,7 @@ void OrderProcess::processMTasks() {
             const AbstractLogicMTask* const fromp
                 = static_cast<const AbstractLogicMTask*>(fromVxp);
             const MTaskState& fromState = mtaskStates[fromp->id()];
-            new V3GraphEdge(depGraphp, fromState.m_execMTaskp, state.m_execMTaskp, 1);
+            new V3GraphEdge{depGraphp, fromState.m_execMTaskp, state.m_execMTaskp, 1};
         }
         execGraphp->addMTaskBodiesp(bodyp);
     }

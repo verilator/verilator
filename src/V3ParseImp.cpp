@@ -196,7 +196,7 @@ double V3ParseImp::lexParseTimenum(const char* textp) {
     }
     *dp++ = '\0';
     const double d = strtod(strgp, nullptr);
-    const string suffix(sp);
+    const string suffix{sp};
 
     double divisor = 1;
     if (suffix == "s") {
@@ -240,7 +240,7 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
         got += len;
     }
     if (debug() >= 9) {
-        const string out = string(buf, got);
+        const string out = std::string{buf, got};
         cout << "   inputToLex  got=" << got << " '" << out << "'" << endl;
     }
     // Note returns 0 at EOF
@@ -274,7 +274,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     const string modname = V3Os::filenameNonExt(modfilename);
 
     UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : "") << endl);
-    m_lexFileline = new FileLine(fileline);
+    m_lexFileline = new FileLine{fileline};
     m_lexFileline->newContent();
     m_bisonLastFileline = m_lexFileline;
     m_inLibrary = inLibrary;
@@ -284,7 +284,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     if (!ok) {
         if (errmsg != "") return;  // Threw error already
         // Create fake node for later error reporting
-        AstNodeModule* const nodep = new AstNotFoundModule(fileline, modname);
+        AstNodeModule* const nodep = new AstNotFoundModule{fileline, modname};
         v3Global.rootp()->addModulesp(nodep);
         return;
     }
@@ -469,13 +469,9 @@ void V3ParseImp::tokenPipeline() {
             if (nexttok == yP_COLONCOLON) {
                 token = yaID__CC;
             } else if (nexttok == '#') {
-                const V3ParseBisonYYSType curValueHold
-                    = yylval;  // Remember value, as about to read ahead
-                {
-                    const size_t depth = tokenPipeScanParam(0);
-                    if (tokenPeekp(depth)->token == yP_COLONCOLON) token = yaID__CC;
-                }
-                yylval = curValueHold;
+                VL_RESTORER(yylval);  // Remember value, as about to read ahead
+                const size_t depth = tokenPipeScanParam(0);
+                if (tokenPeekp(depth)->token == yP_COLONCOLON) token = yaID__CC;
             }
         }
         // If add to above "else if", also add to "if (token" further above
@@ -532,14 +528,17 @@ void V3ParseImp::tokenPipelineSym() {
                    && (*(yylval.strp) == "mailbox"  // IEEE-standard class
                        || *(yylval.strp) == "process"  // IEEE-standard class
                        || *(yylval.strp) == "semaphore")) {  // IEEE-standard class
+            v3Global.setUsesStdPackage();
             yylval.scp = nullptr;
             if (token == yaID__LEX) token = yaID__aTYPE;
         } else {  // Not found
             yylval.scp = nullptr;
             if (token == yaID__CC) {
-                // IEEE does require this, but we may relax this as UVM breaks it, so allow bbox
-                // for today
-                if (!v3Global.opt.bboxUnsup()) {
+                if (!m_afterColonColon && *(yylval.strp) == "std") {
+                    v3Global.setUsesStdPackage();
+                } else if (!v3Global.opt.bboxUnsup()) {
+                    // IEEE does require this, but we may relax this as UVM breaks it, so allow
+                    // bbox for today
                     // We'll get a parser error eventually but might not be obvious
                     // is missing package, and this confuses people
                     static int warned = false;
@@ -554,6 +553,7 @@ void V3ParseImp::tokenPipelineSym() {
             }
         }
     }
+    m_afterColonColon = token == yP_COLONCOLON;
     yylval.token = token;
     // effectively returns yylval
 }
@@ -589,7 +589,7 @@ std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs) {
 // V3Parse functions
 
 V3Parse::V3Parse(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* symp) {
-    m_impp = new V3ParseImp(rootp, filterp, symp);
+    m_impp = new V3ParseImp{rootp, filterp, symp};
 }
 V3Parse::~V3Parse() {  //
     VL_DO_CLEAR(delete m_impp, m_impp = nullptr);

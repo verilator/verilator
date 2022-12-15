@@ -1,12 +1,15 @@
-%Warning-WAITCONST: t/t_timing_wait.v:47:13: Wait statement condition is constant
-   47 |      wait(0 < 1) $write("*-* All Finished *-*\n");
-      |             ^
+%Warning-WAITCONST: t/t_timing_wait.v:48:12: Wait statement condition is constant
+   48 |       wait(1);
+      |            ^
                     ... For warning description see https://verilator.org/warn/WAITCONST?v=latest
                     ... Use "/* verilator lint_off WAITCONST */" and lint_on around source to disable this message.
-%Warning-WAITCONST: t/t_timing_wait.v:51:17: Wait statement condition is constant
-   51 |    initial wait(0) $stop;
+%Warning-WAITCONST: t/t_timing_wait.v:50:14: Wait statement condition is constant
+   50 |       wait(0 < 1) $write("*-* All Finished *-*\n");
+      |              ^
+%Warning-WAITCONST: t/t_timing_wait.v:54:17: Wait statement condition is constant
+   54 |    initial wait(0) $stop;
       |                 ^
-%Warning-WAITCONST: t/t_timing_wait.v:52:19: Wait statement condition is constant
-   52 |    initial wait(1 == 0) $stop;
+%Warning-WAITCONST: t/t_timing_wait.v:55:19: Wait statement condition is constant
+   55 |    initial wait(1 == 0) $stop;
       |                   ^~
 %Error: Exiting due to

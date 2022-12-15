@@ -144,26 +144,31 @@ private:
                     for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
                         if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
-                                AstVarRef* const newp = new AstVarRef(
+                                AstVarRef* const newp = new AstVarRef{
                                     portp->fileline(), portp,
-                                    portp->isWritable() ? VAccess::WRITE : VAccess::READ);
+                                    portp->isWritable() ? VAccess::WRITE : VAccess::READ};
                                 argsp = AstNode::addNext(argsp, newp);
                             }
                         }
                     }
 
-                    AstNode* const returnp = new AstCReturn(
-                        funcp->fileline(), new AstCCall(funcp->fileline(), funcp, argsp));
+                    AstCCall* const callp = new AstCCall{funcp->fileline(), funcp, argsp};
+                    if (AstNodeDType* const dtypep = funcp->dtypep()) {
+                        callp->dtypep(dtypep);
+                    } else {
+                        callp->dtypeSetVoid();
+                    }
+                    AstNode* const returnp = new AstCReturn{funcp->fileline(), callp};
 
                     if (moreOfSame) {
-                        AstIf* const ifp = new AstIf(
+                        AstIf* const ifp = new AstIf{
                             funcp->fileline(),
-                            new AstEq(
-                                funcp->fileline(), new AstCMath(funcp->fileline(), "this", 64),
-                                new AstCMath(funcp->fileline(),
+                            new AstEq{
+                                funcp->fileline(), new AstCExpr{funcp->fileline(), "this", 64},
+                                new AstCExpr{funcp->fileline(),
                                              string("&(") + funcp->scopep()->nameVlSym() + ")",
-                                             64)),
-                            returnp);
+                                             64}},
+                            returnp};
                         newfuncp->addStmtsp(ifp);
                     } else {
                         newfuncp->addStmtsp(returnp);
@@ -176,7 +181,7 @@ private:
                 //                                   string("%%Error: ")+name+"() called with bad
                 //                                   scope", nullptr));
                 // newfuncp->addStmtsp(new AstStop(newfuncp->fileline()));
-                if (debug() >= 9) newfuncp->dumpTree(cout, "   newfunc: ");
+                if (debug() >= 9) newfuncp->dumpTree("-  newfunc: ");
             } else {
                 // Only a single function under this name, we can rename it
                 UINFO(6, "  Wrapping " << name << " just one " << topFuncp << endl);

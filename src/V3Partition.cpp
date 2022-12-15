@@ -197,7 +197,7 @@ private:
     // Set of MTaskMoveVertex's assigned to this mtask. LogicMTask does not
     // own the MTaskMoveVertex objects, we merely keep pointers to them
     // here.
-    VxList m_vertices;
+    VxList m_mvertices;
 
     // Cost estimate for this LogicMTask, derived from V3InstrCount.
     // In abstract time units.
@@ -234,7 +234,7 @@ public:
         : AbstractLogicMTask{graphp} {
         for (uint32_t& item : m_critPathCost) item = 0;
         if (mtmvVxp) {  // Else null for test
-            m_vertices.push_back(mtmvVxp);
+            m_mvertices.push_back(mtmvVxp);
             if (const OrderLogicVertex* const olvp = mtmvVxp->logicp()) {
                 m_cost += V3InstrCount::count(olvp->nodep(), true);
             }
@@ -252,10 +252,10 @@ public:
 
     void moveAllVerticesFrom(LogicMTask* otherp) {
         // splice() is constant time
-        m_vertices.splice(m_vertices.end(), otherp->m_vertices);
+        m_mvertices.splice(m_mvertices.end(), otherp->m_mvertices);
         m_cost += otherp->m_cost;
     }
-    const VxList* vertexListp() const override { return &m_vertices; }
+    const VxList* vertexListp() const override { return &m_mvertices; }
     static uint64_t incGeneration() {
         static uint64_t s_generation = 0;
         ++s_generation;
@@ -769,7 +769,7 @@ public:
         // For each node, record the critical path cost from the start
         // of the graph through the end of the node.
         std::unordered_map<const V3GraphVertex*, uint32_t> critPaths;
-        GraphStreamUnordered serialize(m_graphp);
+        GraphStreamUnordered serialize{m_graphp};
         for (const V3GraphVertex* vertexp; (vertexp = serialize.nextp());) {
             ++m_vertexCount;
             uint32_t cpCostToHere = 0;
@@ -1110,7 +1110,7 @@ private:
     }
 
 public:
-    static void selfTest() { PartPropagateCpSelfTest().go(); }
+    static void selfTest() { PartPropagateCpSelfTest{}.go(); }
 };
 
 // Merge edges from a LogicMtask.
@@ -1731,9 +1731,9 @@ private:
         V3Graph mtasks;
         LogicMTask* lastp = nullptr;
         for (unsigned i = 0; i < chain_len; ++i) {
-            LogicMTask* const mtp = new LogicMTask(&mtasks, nullptr);
+            LogicMTask* const mtp = new LogicMTask{&mtasks, nullptr};
             mtp->setCost(1);
-            if (lastp) new MTaskEdge(&mtasks, lastp, mtp, 1);
+            if (lastp) new MTaskEdge{&mtasks, lastp, mtp, 1};
             lastp = mtp;
         }
         partInitCriticalPaths(&mtasks);
@@ -1741,12 +1741,12 @@ private:
         // Since slowAsserts mode is *expected* to cause N^2 runtime, and the
         // intent of this test is to demonstrate better-than-N^2 runtime, disable
         // slowAsserts.
-        PartContraction ec(&mtasks,
+        PartContraction ec{&mtasks,
                            // Any CP limit >chain_len should work:
-                           chain_len * 2, false /* slowAsserts */);
+                           chain_len * 2, false /* slowAsserts */};
         ec.go();
 
-        PartParallelismEst check(&mtasks);
+        PartParallelismEst check{&mtasks};
         check.traverse();
 
         const uint64_t endUsecs = V3Os::timeUsecs();
@@ -1780,26 +1780,26 @@ private:
     static void selfTestX() {
         // NOTE: To get a dot file run with --debugi-V3Partition 4 or more.
         V3Graph mtasks;
-        LogicMTask* const centerp = new LogicMTask(&mtasks, nullptr);
+        LogicMTask* const centerp = new LogicMTask{&mtasks, nullptr};
         centerp->setCost(1);
         unsigned i;
         for (i = 0; i < 50; ++i) {
-            LogicMTask* const mtp = new LogicMTask(&mtasks, nullptr);
+            LogicMTask* const mtp = new LogicMTask{&mtasks, nullptr};
             mtp->setCost(1);
             // Edge from every input -> centerp
-            new MTaskEdge(&mtasks, mtp, centerp, 1);
+            new MTaskEdge{&mtasks, mtp, centerp, 1};
         }
         for (i = 0; i < 50; ++i) {
-            LogicMTask* const mtp = new LogicMTask(&mtasks, nullptr);
+            LogicMTask* const mtp = new LogicMTask{&mtasks, nullptr};
             mtp->setCost(1);
             // Edge from centerp -> every output
-            new MTaskEdge(&mtasks, centerp, mtp, 1);
+            new MTaskEdge{&mtasks, centerp, mtp, 1};
         }
 
         partInitCriticalPaths(&mtasks);
-        PartContraction(&mtasks, 20, true).go();
+        PartContraction{&mtasks, 20, true}.go();
 
-        PartParallelismEst check(&mtasks);
+        PartParallelismEst check{&mtasks};
         check.traverse();
 
         // Checking exact values here is maybe overly precise.  What we're
@@ -2033,7 +2033,7 @@ public:
         // Rank the graph. DGS is faster than V3GraphAlg's recursive rank, and also allows us to
         // set up the OrderLogicVertex -> LogicMTask map at the same time.
         {
-            GraphStreamUnordered serialize(m_mtasksp);
+            GraphStreamUnordered serialize{m_mtasksp};
             while (LogicMTask* const mtaskp
                    = const_cast<LogicMTask*>(static_cast<const LogicMTask*>(serialize.nextp()))) {
                 // Compute and assign rank
@@ -2382,7 +2382,7 @@ public:
     // Pack an MTasks from given graph into m_nThreads threads, return the schedule.
     const ThreadSchedule pack(const V3Graph& mtaskGraph) {
         // The result
-        ThreadSchedule schedule(m_nThreads);
+        ThreadSchedule schedule{m_nThreads};
 
         // Time each thread is occupied until
         std::vector<uint32_t> busyUntil(m_nThreads, 0);
@@ -2475,22 +2475,22 @@ public:
     // SELF TEST
     static void selfTest() {
         V3Graph graph;
-        ExecMTask* const t0 = new ExecMTask(&graph, nullptr, 0);
+        ExecMTask* const t0 = new ExecMTask{&graph, nullptr, 0};
         t0->cost(1000);
         t0->priority(1100);
-        ExecMTask* const t1 = new ExecMTask(&graph, nullptr, 1);
+        ExecMTask* const t1 = new ExecMTask{&graph, nullptr, 1};
         t1->cost(100);
         t1->priority(100);
-        ExecMTask* const t2 = new ExecMTask(&graph, nullptr, 2);
+        ExecMTask* const t2 = new ExecMTask{&graph, nullptr, 2};
         t2->cost(100);
         t2->priority(100);
 
-        new V3GraphEdge(&graph, t0, t1, 1);
-        new V3GraphEdge(&graph, t0, t2, 1);
+        new V3GraphEdge{&graph, t0, t1, 1};
+        new V3GraphEdge{&graph, t0, t2, 1};
 
-        PartPackMTasks packer(2,  // Threads
+        PartPackMTasks packer{2,  // Threads
                               3,  // Sandbag numerator
-                              10);  // Sandbag denom
+                              10};  // Sandbag denom
         const ThreadSchedule& schedule = packer.pack(graph);
 
         UASSERT_SELFTEST(size_t, schedule.threads.size(), 2);
@@ -2748,7 +2748,7 @@ void V3Partition::go(V3Graph* mtasksp) {
 
     // Merge nodes that could present data hazards; see comment within.
     {
-        PartFixDataHazards(m_orderGraphp, mtasksp).go();
+        PartFixDataHazards{m_orderGraphp, mtasksp}.go();
         V3Partition::debugMTaskGraphStats(mtasksp, "hazards");
         hashGraphDebug(mtasksp, "mtasksp after fixDataHazards()");
     }
@@ -2791,10 +2791,10 @@ void V3Partition::go(V3Graph* mtasksp) {
     // Some tests disable this, hence the test on threadsCoarsen().
     // Coarsening is always enabled in production.
     if (v3Global.opt.threadsCoarsen()) {
-        PartContraction(mtasksp, cpLimit,
+        PartContraction{mtasksp, cpLimit,
                         // --debugPartition is used by tests
                         // to enable slow assertions.
-                        v3Global.opt.debugPartition())
+                        v3Global.opt.debugPartition()}
             .go();
         V3Partition::debugMTaskGraphStats(mtasksp, "contraction");
     }
@@ -3011,7 +3011,7 @@ static void finalizeCosts(V3Graph* execMTaskGraphp) {
             UINFO(6, "Removing zero-cost " << mtp->name() << endl);
             for (V3GraphEdge* inp = mtp->inBeginp(); inp; inp = inp->inNextp()) {
                 for (V3GraphEdge* outp = mtp->outBeginp(); outp; outp = outp->outNextp()) {
-                    new V3GraphEdge(execMTaskGraphp, inp->fromp(), outp->top(), 1);
+                    new V3GraphEdge{execMTaskGraphp, inp->fromp(), outp->top(), 1};
                 }
             }
             VL_DO_DANGLING(mtp->unlinkDelete(execMTaskGraphp), mtp);
@@ -3052,7 +3052,7 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
 
     // Helper function to make the code a bit more legible
     const auto addStrStmt = [=](const string& stmt) -> void {  //
-        funcp->addStmtsp(new AstCStmt(fl, stmt));
+        funcp->addStmtsp(new AstCStmt{fl, stmt});
     };
 
     if (const uint32_t nDependencies = schedule.crossThreadDependencies(mtaskp)) {
@@ -3061,8 +3061,8 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
         const string name = "__Vm_mtaskstate_" + cvtToStr(mtaskp->id());
         AstBasicDType* const mtaskStateDtypep
             = v3Global.rootp()->typeTablep()->findBasicDType(fl, VBasicDTypeKwd::MTASKSTATE);
-        AstVar* const varp = new AstVar(fl, VVarType::MODULETEMP, name, mtaskStateDtypep);
-        varp->valuep(new AstConst(fl, nDependencies));
+        AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, name, mtaskStateDtypep};
+        varp->valuep(new AstConst{fl, nDependencies});
         varp->protect(false);  // Do not protect as we still have references in AstText
         modp->addStmtsp(varp);
         // For now, reference is still via text bashing
@@ -3124,7 +3124,7 @@ static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& 
         if (thread.empty()) continue;
         const uint32_t threadId = schedule.threadId(thread.front());
         const string name{"__Vthread__" + tag + "__" + cvtToStr(threadId)};
-        AstCFunc* const funcp = new AstCFunc(fl, name, nullptr, "void");
+        AstCFunc* const funcp = new AstCFunc{fl, name, nullptr, "void"};
         modp->addStmtsp(funcp);
         funcps.push_back(funcp);
         funcp->isStatic(true);  // Uses void self pointer, so static and hand rolled
@@ -3166,10 +3166,10 @@ static void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
 
     // Add thread function invocations to execGraph
     const auto addStrStmt = [=](const string& stmt) -> void {  //
-        execGraphp->addStmtsp(new AstCStmt(fl, stmt));
+        execGraphp->addStmtsp(new AstCStmt{fl, stmt});
     };
     const auto addTextStmt = [=](const string& text) -> void {
-        execGraphp->addStmtsp(new AstText(fl, text, /* tracking: */ true));
+        execGraphp->addStmtsp(new AstText{fl, text, /* tracking: */ true});
     };
 
     addStrStmt("vlSymsp->__Vm_even_cycle__" + tag + " = !vlSymsp->__Vm_even_cycle__" + tag
@@ -3181,13 +3181,14 @@ static void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
         if (i != last) {
             // The first N-1 will run on the thread pool.
             addTextStmt("vlSymsp->__Vm_threadPoolp->workerp(" + cvtToStr(i) + ")->addTask(");
-            execGraphp->addStmtsp(new AstAddrOfCFunc(fl, funcp));
+            execGraphp->addStmtsp(new AstAddrOfCFunc{fl, funcp});
             addTextStmt(", vlSelf, vlSymsp->__Vm_even_cycle__" + tag + ");\n");
         } else {
             // The last will run on the main thread.
-            AstCCall* const callp = new AstCCall(fl, funcp);
+            AstCCall* const callp = new AstCCall{fl, funcp};
+            callp->dtypeSetVoid();
             callp->argTypes("vlSelf, vlSymsp->__Vm_even_cycle__" + tag);
-            execGraphp->addStmtsp(callp);
+            execGraphp->addStmtsp(callp->makeStmt());
             addStrStmt("Verilated::mtaskId(0);\n");
         }
     }
@@ -3202,7 +3203,7 @@ static void implementExecGraph(AstExecGraph* const execGraphp) {
 
     // Schedule the mtasks: statically associate each mtask with a thread,
     // and determine the order in which each thread will runs its mtasks.
-    const ThreadSchedule& schedule = PartPackMTasks().pack(*execGraphp->depGraphp());
+    const ThreadSchedule& schedule = PartPackMTasks{}.pack(*execGraphp->depGraphp());
 
     // Create a function to be run by each thread. Note this moves all AstMTaskBody nodes form the
     // AstExecGrap into the AstCFunc created

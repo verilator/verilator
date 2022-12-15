@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- Python -*- See copyright, etc below
-# pylint: disable=C0103,C0114,C0115,C0115,C0116,R0914
+# pylint: disable=C0103,C0114,C0115,C0115,C0116,C0209,R0914
 ######################################################################
 
 import argparse
@@ -18,27 +18,25 @@ class VlHierGraph:
     def __init__(
             self,
             verilator_args,  # presently all verilator options are passed-thru
-            # ideally this script would check against options mentioned in help
-        debug=0,
+            debug=0,
             output_filename='graph.dot'):  # output filename
         self.debug = debug
         self.next_vertex_number = 0
         self.name_to_number = {}
 
-        xml_temp = tempfile.NamedTemporaryFile()
+        with tempfile.NamedTemporaryFile() as xml_temp:
+            vargs = [
+                '--xml-output',
+                xml_temp.name,
+                '--bbox-sys',  # Parse some stuff can't translate
+                '--bbox-unsup',
+                '--prefix vlxml'
+            ]  # So we know name of .xml output
+            vargs += verilator_args
+            self.run_verilator(vargs)
+            self.tree = ET.parse(xml_temp.name)
 
-        vargs = [
-            '--xml-output',
-            xml_temp.name,
-            '--bbox-sys',  # Parse some stuff can't translate
-            '--bbox-unsup',
-            '--prefix vlxml'
-        ]  # So we know name of .xml output
-        vargs += verilator_args
-        self.run_verilator(vargs)
-        self.tree = ET.parse(xml_temp.name)
-
-        with open(output_filename, "w") as fh:
+        with open(output_filename, "w", encoding="utf8") as fh:
             # For more serious purposes, use the python graphviz package instead
             fh.write("digraph {\n")
             fh.write("  dpi=300;\n")

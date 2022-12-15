@@ -76,6 +76,8 @@ public:
         if (v3Global.opt.trace() && varp()->isTrace()) return true;
         // Keep if public
         if (varp()->isSigPublic()) return true;
+        // Keep if written in non-DFG code
+        if (varp()->user3()) return true;
         // Otherwise it can be removed
         return false;
     }

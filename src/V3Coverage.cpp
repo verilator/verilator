@@ -47,9 +47,9 @@ private:
 
     struct ToggleEnt {
         const string m_comment;  // Comment for coverage dump
-        AstNode* m_varRefp;  // How to get to this element
-        AstNode* m_chgRefp;  // How to get to this element
-        ToggleEnt(const string& comment, AstNode* vp, AstNode* cp)
+        AstNodeExpr* m_varRefp;  // How to get to this element
+        AstNodeExpr* m_chgRefp;  // How to get to this element
+        ToggleEnt(const string& comment, AstNodeExpr* vp, AstNodeExpr* cp)
             : m_comment{comment}
             , m_varRefp{vp}
             , m_chgRefp{cp} {}
@@ -118,23 +118,24 @@ private:
         // Someday the user might be allowed to specify a different page suffix
         const string page = page_prefix + "/" + m_modp->prettyName();
 
-        AstCoverDecl* const declp = new AstCoverDecl(fl, page, comment, linescov, offset);
+        AstCoverDecl* const declp = new AstCoverDecl{fl, page, comment, linescov, offset};
         declp->hier(hier);
         m_modp->addStmtsp(declp);
         UINFO(9, "new " << declp << endl);
 
-        AstCoverInc* const incp = new AstCoverInc(fl, declp);
+        AstCoverInc* const incp = new AstCoverInc{fl, declp};
         if (!trace_var_name.empty() && v3Global.opt.traceCoverage()) {
-            AstVar* const varp = new AstVar(incp->fileline(), VVarType::MODULETEMP, trace_var_name,
-                                            incp->findUInt32DType());
+            FileLine* const fl_nowarn = new FileLine{incp->fileline()};
+            fl_nowarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
+            AstVar* const varp = new AstVar{fl_nowarn, VVarType::MODULETEMP, trace_var_name,
+                                            incp->findUInt32DType()};
             varp->trace(true);
-            varp->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
             m_modp->addStmtsp(varp);
             UINFO(5, "New coverage trace: " << varp << endl);
-            AstAssign* const assp = new AstAssign(
-                incp->fileline(), new AstVarRef(incp->fileline(), varp, VAccess::WRITE),
-                new AstAdd(incp->fileline(), new AstVarRef(incp->fileline(), varp, VAccess::READ),
-                           new AstConst(incp->fileline(), AstConst::WidthedValue(), 32, 1)));
+            AstAssign* const assp = new AstAssign{
+                incp->fileline(), new AstVarRef{incp->fileline(), varp, VAccess::WRITE},
+                new AstAdd{incp->fileline(), new AstVarRef{incp->fileline(), varp, VAccess::READ},
+                           new AstConst{incp->fileline(), AstConst::WidthedValue{}, 32, 1}}};
             AstNode::addNext<AstNode, AstNode>(incp, assp);
         }
         return incp;
@@ -281,18 +282,18 @@ private:
 
                 // Add signal to hold the old value
                 const string newvarname = std::string{"__Vtogcov__"} + nodep->shortName();
+                FileLine* const fl_nowarn = new FileLine{nodep->fileline()};
+                fl_nowarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
                 AstVar* const chgVarp
-                    = new AstVar(nodep->fileline(), VVarType::MODULETEMP, newvarname, nodep);
-                chgVarp->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
+                    = new AstVar{fl_nowarn, VVarType::MODULETEMP, newvarname, nodep};
                 m_modp->addStmtsp(chgVarp);
 
                 // Create bucket for each dimension * bit.
                 // This is necessarily an O(n^2) expansion, which is why
                 // we limit coverage to signals with < 256 bits.
 
-                ToggleEnt newvec{std::string{""},
-                                 new AstVarRef{nodep->fileline(), nodep, VAccess::READ},
-                                 new AstVarRef{nodep->fileline(), chgVarp, VAccess::WRITE}};
+                ToggleEnt newvec{std::string{""}, new AstVarRef{fl_nowarn, nodep, VAccess::READ},
+                                 new AstVarRef{fl_nowarn, chgVarp, VAccess::WRITE}};
                 toggleVarRecurse(nodep->dtypeSkipRefp(), 0, newvec, nodep, chgVarp);
                 newvec.cleanup();
             }
@@ -300,11 +301,11 @@ private:
     }
 
     void toggleVarBottom(const ToggleEnt& above, const AstVar* varp) {
-        AstCoverToggle* const newp = new AstCoverToggle(
+        AstCoverToggle* const newp = new AstCoverToggle{
             varp->fileline(),
             newCoverInc(varp->fileline(), "", "v_toggle", varp->name() + above.m_comment, "", 0,
                         ""),
-            above.m_varRefp->cloneTree(true), above.m_chgRefp->cloneTree(true));
+            above.m_varRefp->cloneTree(true), above.m_chgRefp->cloneTree(true)};
         m_modp->addStmtsp(newp);
     }
 

@@ -355,8 +355,8 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
 
 void V3Broken::selfTest() {
     // Exercise addNewed and deleted for coverage, as otherwise only used with VL_LEAK_CHECKS
-    FileLine* const fl = new FileLine(FileLine::commandLineFilename());
-    const AstNode* const newp = new AstBegin(fl, "[EditWrapper]", nullptr);
+    FileLine* const fl = new FileLine{FileLine::commandLineFilename()};
+    const AstNode* const newp = new AstBegin{fl, "[EditWrapper]", nullptr};
     addNewed(newp);
     deleted(newp);
     VL_DO_DANGLING(delete newp, newp);

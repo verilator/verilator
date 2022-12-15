@@ -142,7 +142,7 @@ class V3ParseImp final {
     static V3ParseImp* s_parsep;  // Current THIS, bison() isn't class based
     FileLine* m_lexFileline = nullptr;  // Filename/linenumber currently active for lexing
 
-    FileLine* m_bisonLastFileline;  // Filename/linenumber of last token
+    FileLine* m_bisonLastFileline = nullptr;  // Filename/linenumber of last token
 
     bool m_inLibrary = false;  // Currently reading a library vs. regular file
     int m_lexKwdDepth = 0;  // Inside a `begin_keywords
@@ -150,6 +150,7 @@ class V3ParseImp final {
     VOptionBool m_unconnectedDrive;  // Last unconnected drive
 
     int m_lexPrevToken = 0;  // previous parsed token (for lexer)
+    bool m_afterColonColon = false;  // The previous token was '::'
     std::deque<V3ParseBisonYYSType> m_tokensAhead;  // Tokens we parsed ahead of parser
 
     std::deque<string*> m_stringps;  // Created strings for later cleanup
@@ -233,13 +234,13 @@ public:
         return strp;
     }
     V3Number* newNumber(FileLine* flp, const char* text) {
-        V3Number* nump = new V3Number(flp, text);
+        V3Number* nump = new V3Number{flp, text};
         m_numberps.push_back(nump);
         return nump;
     }
 
     // Bison sometimes needs error context without a token, so remember last token's line
-    // Only use this if do not have and cannot get a token-relevent fileline
+    // Only use this if do not have and cannot get a token-relevant fileline
     FileLine* bisonLastFileline() const { return m_bisonLastFileline; }
 
     // Return next token, for bison, since bison isn't class based, use a global THIS

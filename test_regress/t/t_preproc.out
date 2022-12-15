@@ -1005,6 +1005,20 @@ endmodule
 
 `line 695 "t/t_preproc.v" 0
  
+
+"""First line with "quoted"\nSecond line\
+Third line"""
+"""First line
+Second line"""
+
+`line 702 "t/t_preproc.v" 0
+ 
+ 
+"""QQQ defform"""
+"""QQQ defval"""
+
+`line 707 "t/t_preproc.v" 0
+ 
  
    
 predef 0 0
@@ -1026,4 +1040,4 @@ predef 2 2
  
  
 
-`line 717 "t/t_preproc.v" 2
+`line 729 "t/t_preproc.v" 2

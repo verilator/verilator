@@ -1,17 +1,14 @@
-%Error: t/t_gen_nonconst_bad.v:8:8: Expecting expression to be constant, but can't convert a TESTPLUSARGS to constant.
-                                  : ... In instance t
-    8 |    if ($test$plusargs("BAD-non-constant")) begin
-      |        ^~~~~~~~~~~~~~
-%Error: t/t_gen_nonconst_bad.v:8:8: Generate If condition must evaluate to constant
-                                  : ... In instance t
-    8 |    if ($test$plusargs("BAD-non-constant")) begin
-      |        ^~~~~~~~~~~~~~
-%Error: t/t_gen_nonconst_bad.v:12:7: Expecting expression to be constant, but can't convert a TESTPLUSARGS to constant.
-                                   : ... In instance t
-   12 |       $test$plusargs("BAD-non-constant"): initial $stop;
-      |       ^~~~~~~~~~~~~~
-%Error: t/t_gen_nonconst_bad.v:12:41: Generate Case item does not evaluate to constant
-                                    : ... In instance t
-   12 |       $test$plusargs("BAD-non-constant"): initial $stop;
-      |                                         ^
+%Error: t/t_gen_nonconst_bad.v:8:4: Cannot find file containing module: 'nfound'
+    8 |    nfound nfound();
+      |    ^~~~~~
+%Error: t/t_gen_nonconst_bad.v:8:4: This may be because there's no search path specified with -I<dir>.
+    8 |    nfound nfound();
+      |    ^~~~~~
+        ... Looked in:
+             nfound
+             nfound.v
+             nfound.sv
+             obj_dir/nfound
+             obj_dir/nfound.v
+             obj_dir/nfound.sv
 %Error: Exiting due to

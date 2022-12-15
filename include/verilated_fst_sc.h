@@ -10,7 +10,7 @@
 //=============================================================================
 ///
 /// \file
-/// \brief Verilator tracing in FST format for SystemC header
+/// \brief Verilated tracing in FST format for SystemC header
 ///
 /// User wrapper code should use this header when creating FST SystemC
 /// traces.
@@ -19,8 +19,8 @@
 ///
 //=============================================================================
 
-#ifndef _VERILATED_FST_SC_H_
-#define _VERILATED_FST_SC_H_ 1
+#ifndef VERILATOR_VERILATED_VCD_SC_H_
+#define VERILATOR_VERILATED_VCD_SC_H_
 
 #include "verilatedos.h"
 
@@ -32,40 +32,48 @@
 //=============================================================================
 // VerilatedFstSc
 ///
-/// This class is passed to the SystemC simulation kernel, just like a
-/// documented SystemC trace format.
+/// Class representing a Verilator-friendly FST trace format registered
+/// with the SystemC simulation kernel, just like a SystemC-documented
+/// trace format.
 
 class VerilatedFstSc final : sc_trace_file, public VerilatedFstC {
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFstSc);
 
 public:
+    /// Construct a SC trace object, and register with the SystemC kernel
     VerilatedFstSc() {
         sc_get_curr_simcontext()->add_trace_file(this);
         // We want to avoid a depreciated warning, but still be back compatible.
         // Turning off the message just for this still results in an
         // annoying "to turn off" message.
-        const sc_time t1sec(1, SC_SEC);
+        const sc_time t1sec{1, SC_SEC};
         if (t1sec.to_default_time_units() != 0) {
-            const sc_time tunits(1.0 / t1sec.to_default_time_units(), SC_SEC);
+            const sc_time tunits{1.0 / t1sec.to_default_time_units(), SC_SEC};
             spTrace()->set_time_unit(tunits.to_string());
         }
         spTrace()->set_time_resolution(sc_get_time_resolution().to_string());
     }
+    /// Destruct, flush, and close the dump
     ~VerilatedFstSc() override { close(); }
 
-    // METHODS
-    /// Called by SystemC simulate()
+    // METHODS - for SC kernel
+    // Called by SystemC simulate()
     void cycle(bool delta_cycle) override {
-        if (!delta_cycle) { this->dump(sc_time_stamp().to_double()); }
+        if (!delta_cycle) this->dump(sc_time_stamp().to_double());
     }
 
     // Override VerilatedFstC. Must be called after starting simulation.
     // Note: this is not a virtual function in the base class, so no 'override'
-    virtual void open(const char* filename) VL_MT_SAFE;
+    virtual void open(const char* filename) VL_MT_SAFE {
+        if (VL_UNLIKELY(!sc_core::sc_get_curr_simcontext()->elaboration_done())) {
+            Verilated::scTraceBeforeElaborationError();
+        }
+        VerilatedFstC::open(filename);
+    }
 
 private:
-    /// Fake outs for linker
+    // METHODS - Fake outs for linker
 
 #ifdef NC_SYSTEMC
     // Cadence Incisive has these as abstract functions so we must create them
@@ -73,14 +81,16 @@ private:
 #endif
     void set_time_unit(double v, sc_time_unit tu) override {}  // LCOV_EXCL_LINE
 
-//--------------------------------------------------
-// SystemC 2.1.v1
-#define DECL_TRACE_METHOD_A(tp) void trace(const tp& object, const std::string& name) override;
-#define DECL_TRACE_METHOD_B(tp) \
-    void trace(const tp& object, const std::string& name, int width) override;
+    //--------------------------------------------------
+    // SystemC 2.1.v1
 
-    void write_comment(const std::string&) override;
-    void trace(const unsigned int&, const std::string&, const char**) override;
+    void write_comment(const std::string&) override {}
+    void trace(const unsigned int&, const std::string&, const char**) override {}
+
+#define DECL_TRACE_METHOD_A(tp) \
+    void trace(const tp& object, const std::string& name) override {}
+#define DECL_TRACE_METHOD_B(tp) \
+    void trace(const tp& object, const std::string& name, int width) override {}
 
     // clang-format off
     // Formatting matches that of sc_trace.h

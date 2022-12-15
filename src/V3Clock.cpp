@@ -46,11 +46,11 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class ConvertWriteRefsToRead final : public VNVisitor {
 private:
     // MEMBERS
-    AstNode* m_result = nullptr;
+    AstNodeExpr* m_result = nullptr;
 
     // CONSTRUCTORS
-    explicit ConvertWriteRefsToRead(AstNode* nodep) {
-        m_result = iterateSubtreeReturnEdits(nodep);
+    explicit ConvertWriteRefsToRead(AstNodeExpr* nodep) {
+        m_result = VN_AS(iterateSubtreeReturnEdits(nodep), NodeExpr);
     }
 
     // VISITORS
@@ -58,14 +58,14 @@ private:
         UASSERT_OBJ(!nodep->access().isRW(), nodep, "Cannot handle a READWRITE reference");
         if (nodep->access().isWriteOnly()) {
             nodep->replaceWith(
-                new AstVarRef(nodep->fileline(), nodep->varScopep(), VAccess::READ));
+                new AstVarRef{nodep->fileline(), nodep->varScopep(), VAccess::READ});
         }
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
-    static AstNode* main(AstNode* nodep) { return ConvertWriteRefsToRead(nodep).m_result; }
+    static AstNodeExpr* main(AstNodeExpr* nodep) { return ConvertWriteRefsToRead{nodep}.m_result; }
 };
 
 //######################################################################
@@ -82,11 +82,11 @@ private:
 
     // METHODS
 
-    AstNode* createSenseEquation(AstSenItem* nodesp) {
-        AstNode* senEqnp = nullptr;
+    AstNodeExpr* createSenseEquation(AstSenItem* nodesp) {
+        AstNodeExpr* senEqnp = nullptr;
         for (AstSenItem* senp = nodesp; senp; senp = VN_AS(senp->nextp(), SenItem)) {
             UASSERT_OBJ(senp->edgeType() == VEdgeType::ET_TRUE, senp, "Should have been lowered");
-            AstNode* const senOnep = senp->sensp()->cloneTree(false);
+            AstNodeExpr* const senOnep = senp->sensp()->cloneTree(false);
             senEqnp = senEqnp ? new AstOr{senp->fileline(), senEqnp, senOnep} : senOnep;
         }
         return senEqnp;
@@ -111,9 +111,9 @@ private:
         return newvscp;
     }
     AstIf* makeActiveIf(AstSenTree* sensesp) {
-        AstNode* const senEqnp = createSenseEquation(sensesp->sensesp());
+        AstNodeExpr* const senEqnp = createSenseEquation(sensesp->sensesp());
         UASSERT_OBJ(senEqnp, sensesp, "No sense equation, shouldn't be in sequent activation.");
-        AstIf* const newifp = new AstIf(sensesp->fileline(), senEqnp);
+        AstIf* const newifp = new AstIf{sensesp->fileline(), senEqnp};
         return newifp;
     }
     void clearLastSen() {
@@ -122,19 +122,19 @@ private:
     }
     // VISITORS
     void visit(AstCoverToggle* nodep) override {
-        // nodep->dumpTree(cout, "ct:");
+        // nodep->dumpTree("-  ct: ");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
         AstNode* const incp = nodep->incp()->unlinkFrBack();
-        AstNode* const origp = nodep->origp()->unlinkFrBack();
-        AstNode* const changeWrp = nodep->changep()->unlinkFrBack();
-        AstNode* const changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
+        AstNodeExpr* const origp = nodep->origp()->unlinkFrBack();
+        AstNodeExpr* const changeWrp = nodep->changep()->unlinkFrBack();
+        AstNodeExpr* const changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
         AstIf* const newp
-            = new AstIf(nodep->fileline(), new AstXor(nodep->fileline(), origp, changeRdp), incp);
+            = new AstIf{nodep->fileline(), new AstXor{nodep->fileline(), origp, changeRdp}, incp};
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
-        newp->addThensp(new AstAssign(nodep->fileline(), changeWrp, origp->cloneTree(false)));
+        newp->addThensp(new AstAssign{nodep->fileline(), changeWrp, origp->cloneTree(false)});
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }

@@ -110,15 +110,15 @@ public:
     void reset() { m_emitted.clear(); }
 };
 
-//######################################################################
-// Emit statements and math operators
+// ######################################################################
+//  Emit statements and expressions
 
 class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
 private:
     AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
     int m_labelNum = 0;  // Next label number
     int m_splitSize = 0;  // # of cfunc nodes placed into output file
-    bool m_inUC = false;  // Inside an AstUCStmt or AstUCMath
+    bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
     bool m_emitConstInit = false;  // Emitting constant initializer
 
     // State associated with processing $display style string formatting
@@ -167,7 +167,7 @@ public:
     void displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const string& vfmt, bool ignore,
                     char fmtLetter);
 
-    bool emitSimpleOk(AstNodeMath* nodep);
+    bool emitSimpleOk(AstNodeExpr* nodep);
     void emitIQW(AstNode* nodep) {
         // Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g
         puts(nodep->dtypep()->charIQWN());
@@ -205,6 +205,13 @@ public:
         m_emitConstInit = true;
         iterate(initp);
     }
+    void putCommaIterateNext(AstNode* nodep, bool comma = false) {
+        for (AstNode* subnodep = nodep; subnodep; subnodep = subnodep->nextp()) {
+            if (comma) puts(", ");
+            iterate(subnodep);
+            comma = true;
+        }
+    }
 
     // VISITORS
     using EmitCConstInit::visit;
@@ -221,11 +228,24 @@ public:
         if (nodep->isInline()) puts("VL_INLINE_OPT ");
         emitCFuncHeader(nodep, m_modp, /* withScope: */ true);
 
-        // TODO perhaps better to have a new AstCCtorInit so we can pass arguments
-        // rather than requiring a string here
-        if (!nodep->ctorInits().empty()) {
+        if (!nodep->baseCtors().empty()) {
             puts(": ");
-            puts(nodep->ctorInits());
+            puts(nodep->baseCtors());
+            puts("(vlSymsp");
+            // Find call to super.new to get the arguments
+            for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                AstNode* exprp;
+                if (VN_IS(stmtp, StmtExpr)) {
+                    exprp = VN_CAST(stmtp, StmtExpr)->exprp();
+                } else {
+                    exprp = stmtp;
+                }
+                if (AstCNew* const newRefp = VN_CAST(exprp, CNew)) {
+                    putCommaIterateNext(newRefp->argsp(), true);
+                    break;
+                }
+            }
+            puts(")");
         }
         puts(" {\n");
 
@@ -330,7 +350,7 @@ public:
             iterateAndNextNull(nodep->lhsp());
             puts(", ");
         } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
-                   && !VN_IS(nodep->rhsp(), CMath)  //
+                   && !VN_IS(nodep->rhsp(), CExpr)  //
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //
                    && !VN_IS(nodep->rhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), AssocSel)  //
@@ -415,18 +435,15 @@ public:
     void visit(AstCAwait* nodep) override {
         puts("co_await ");
         iterate(nodep->exprp());
-        if (nodep->isStatement()) puts(";\n");
     }
     void visit(AstCNew* nodep) override {
-        bool comma = false;
-        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", ");
-        puts("vlSymsp");  // TODO make this part of argsp, and eliminate when unnecessary
-        if (nodep->argsp()) comma = true;
-        for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
-            if (comma) puts(", ");
-            iterate(subnodep);
-            comma = true;
+        if (VN_IS(nodep->dtypep(), VoidDType)) {
+            // super.new case
+            return;
         }
+        // assignment case
+        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", vlSymsp");
+        putCommaIterateNext(nodep->argsp(), true);
         puts(")");
     }
     void visit(AstCMethodHard* nodep) override {
@@ -446,10 +463,6 @@ public:
             comma = true;
         }
         puts(")");
-        // Some are statements some are math.
-        if (nodep->isStatement()) puts(";\n");
-        UASSERT_OBJ(!nodep->isStatement() || VN_IS(nodep->dtypep(), VoidDType), nodep,
-                    "Statement of non-void data type");
     }
     void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
     void visit(AstWith* nodep) override {
@@ -780,6 +793,8 @@ public:
         iterateAndNextNull(nodep->lhsp());
         if (!nodep->lhsp()->isWide()) puts(";");
     }
+    void visit(AstStackTraceF* nodep) override { puts("VL_STACKTRACE_N()"); }
+    void visit(AstStackTraceT* nodep) override { puts("VL_STACKTRACE();\n"); }
     void visit(AstSystemT* nodep) override {
         puts("(void)VL_SYSTEM_I");
         emitIQW(nodep->lhsp());
@@ -803,6 +818,10 @@ public:
         checkMaxWords(nodep->lhsp());
         iterateAndNextNull(nodep->lhsp());
         puts(")");
+    }
+    void visit(AstStmtExpr* node) override {
+        iterate(node->exprp());
+        puts(";\n");
     }
     void visit(AstJumpBlock* nodep) override {
         nodep->labelNum(++m_labelNum);
@@ -877,7 +896,7 @@ public:
     }
     void visit(AstPrintTimeScale* nodep) override {
         puts("VL_PRINTTIMESCALE(");
-        putsQuoted(protect(nodep->name()));
+        putsQuoted(protect(nodep->prettyName()));
         puts(", ");
         putsQuoted(nodep->timeunit().ascii());
         puts(", vlSymsp->_vm_contextp__);\n");
@@ -910,6 +929,9 @@ public:
         iterateAndNextNull(nodep->widthp());
         puts(", vlSymsp->_vm_contextp__);\n");
     }
+    void visit(AstTimePrecision* nodep) override {
+        puts("vlSymsp->_vm_contextp__->timeprecision()");
+    }
     void visit(AstNodeSimpleText* nodep) override {
         const string text = m_inUC && m_useSelfForThis
                                 ? VString::replaceWord(nodep->text(), "this", "vlSelf")
@@ -931,7 +953,7 @@ public:
         putbs("");
         iterateAndNextNull(nodep->exprsp());
     }
-    void visit(AstCMath* nodep) override {
+    void visit(AstCExpr* nodep) override {
         putbs("");
         iterateAndNextNull(nodep->exprsp());
     }

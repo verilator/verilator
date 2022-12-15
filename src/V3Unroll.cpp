@@ -65,7 +65,7 @@ private:
         if (m_generate)
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Can't unroll generate for; " << reason);
         UINFO(3, "   Can't Unroll: " << reason << " :" << nodep << endl);
-        // if (debug() >= 9) nodep->dumpTree(cout, "-cant-");
+        // if (debug() >= 9) nodep->dumpTree("-  cant: ");
         V3Stats::addStatSum(std::string{"Unrolling gave up, "} + reason, 1);
         return false;
     }
@@ -151,7 +151,7 @@ private:
         } else {
             UINFO(8, "   Loop Variable: " << m_forVarp << endl);
         }
-        if (debug() >= 9) nodep->dumpTree(cout, "-   for: ");
+        if (debug() >= 9) nodep->dumpTree("-   for: ");
 
         if (!m_generate) {
             const AstAssign* const incpAssign = VN_AS(incp, Assign);
@@ -198,9 +198,9 @@ private:
         AstNode* clonep = nodep->cloneTree(true);
         UASSERT_OBJ(clonep, nodep, "Failed to clone tree");
         if (loopValue) {
-            m_varValuep = new AstConst(nodep->fileline(), *loopValue);
+            m_varValuep = new AstConst{nodep->fileline(), *loopValue};
             // Iteration requires a back, so put under temporary node
-            AstBegin* tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", clonep);
+            AstBegin* tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", clonep};
             m_varModeReplace = true;
             iterateAndNextNull(tempp->stmtsp());
             m_varModeReplace = false;
@@ -213,7 +213,7 @@ private:
         simvis.mainParamEmulate(clonep);
         if (!simvis.optimizable()) {
             UINFO(3, "Unable to simulate" << endl);
-            if (debug() >= 9) nodep->dumpTree(cout, "- _simtree: ");
+            if (debug() >= 9) nodep->dumpTree("-  _simtree: ");
             VL_DO_DANGLING(clonep->deleteTree(), clonep);
             return false;
         }
@@ -310,12 +310,12 @@ private:
                     // Replace iterator values with constant.
                     AstNode* oneloopp = stmtsp->cloneTree(true);
 
-                    m_varValuep = new AstConst(nodep->fileline(), loopValue);
+                    m_varValuep = new AstConst{nodep->fileline(), loopValue};
 
                     // Iteration requires a back, so put under temporary node
                     if (oneloopp) {
                         AstBegin* const tempp
-                            = new AstBegin(oneloopp->fileline(), "[EditWrapper]", oneloopp);
+                            = new AstBegin{oneloopp->fileline(), "[EditWrapper]", oneloopp};
                         m_varModeReplace = true;
                         iterateAndNextNull(tempp->stmtsp());
                         m_varModeReplace = false;
@@ -325,7 +325,7 @@ private:
                     if (m_generate) {
                         const string index = AstNode::encodeNumber(m_varValuep->toSInt());
                         const string nname = m_beginName + "__BRA__" + index + "__KET__";
-                        oneloopp = new AstBegin(oneloopp->fileline(), nname, oneloopp, true);
+                        oneloopp = new AstBegin{oneloopp->fileline(), nname, oneloopp, true};
                     }
                     VL_DO_CLEAR(pushDeletep(m_varValuep), m_varValuep = nullptr);
                     if (newbodysp) {
@@ -368,7 +368,7 @@ private:
         if (precondsp) VL_DO_DANGLING(pushDeletep(precondsp), precondsp);
         if (initp) VL_DO_DANGLING(pushDeletep(initp), initp);
         if (incp && !incp->backp()) VL_DO_DANGLING(pushDeletep(incp), incp);
-        if (debug() >= 9 && newbodysp) newbodysp->dumpTree(cout, "-  _new: ");
+        if (debug() >= 9 && newbodysp) newbodysp->dumpTree("-  _new: ");
         return true;
     }
 

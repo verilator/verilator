@@ -130,9 +130,9 @@ bool AstBasicDType::littleEndian() const {
 bool AstActive::hasClocked() const { return m_sensesp->hasClocked(); }
 bool AstActive::hasCombo() const { return m_sensesp->hasCombo(); }
 
-AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNode* exprsp)
+AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr* exprsp)
     : ASTGEN_SUPER_ElabDisplay(fl) {
-    addFmtp(new AstSFormatF{fl, AstSFormatF::NoFormat(), exprsp});
+    addFmtp(new AstSFormatF{fl, AstSFormatF::NoFormat{}, exprsp});
     m_displayType = dispType;
 }
 
@@ -141,8 +141,8 @@ AstCStmt::AstCStmt(FileLine* fl, const string& textStmt)
     addExprsp(new AstText{fl, textStmt, true});
 }
 
-AstCMath::AstCMath(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut)
-    : ASTGEN_SUPER_CMath(fl)
+AstCExpr::AstCExpr(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut)
+    : ASTGEN_SUPER_CExpr(fl)
     , m_cleanOut{cleanOut}
     , m_pure{true} {
     addExprsp(new AstText{fl, textStmt, true});
@@ -179,5 +179,7 @@ AstVarXRef::AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, const V
     , m_dotted{dotted} {
     dtypeFrom(varp);
 }
+
+AstStmtExpr* AstNodeExpr::makeStmt() { return new AstStmtExpr{fileline(), this}; }
 
 #endif  // Guard

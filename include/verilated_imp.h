@@ -41,10 +41,8 @@
 #include <string>
 #include <utility>
 #include <vector>
-#ifdef VL_THREADED
-# include <functional>
-# include <queue>
-#endif
+#include <functional>
+#include <queue>
 // clang-format on
 
 class VerilatedScope;
@@ -52,7 +50,6 @@ class VerilatedScope;
 //======================================================================
 // Threaded message passing
 
-#ifdef VL_THREADED
 // Message, enqueued on an mtask, and consumed on the main eval thread
 class VerilatedMsg final {
 public:
@@ -152,7 +149,7 @@ private:
     VL_UNCOPYABLE(VerilatedThreadMsgQueue);
     // METHODS
     static VerilatedThreadMsgQueue& threadton() {
-        static VL_THREAD_LOCAL VerilatedThreadMsgQueue t_s;
+        static thread_local VerilatedThreadMsgQueue t_s;
         return t_s;
     }
 
@@ -178,7 +175,6 @@ public:
         }
     }
 };
-#endif  // VL_THREADED
 
 // FILE* list constructed from a file-descriptor
 class VerilatedFpList final {
@@ -230,7 +226,7 @@ class VerilatedContextImp final : VerilatedContext {
         // Number incrementing on each reseed, 0=illegal
         int s_randSeedEpoch = 1;  // Reads ok, wish had a VL_WRITE_GUARDED_BY(s_randMutex)
     };
-    static Statics& s() {
+    static Statics& s() VL_MT_SAFE {
         static Statics s_s;
         return s_s;
     }
@@ -366,6 +362,7 @@ public:  // But only for verilated*.cpp
 private:
     VerilatedFpList fdToFpList(IData fdi) VL_REQUIRES(m_fdMutex) {
         VerilatedFpList fp;
+        // cppverilator-suppress integerOverflow shiftTooManyBitsSigned
         if ((fdi & (1 << 31)) != 0) {
             // Non-MCD case
             const IData idx = fdi & VL_MASK_I(31);
@@ -390,7 +387,9 @@ private:
 
 protected:
     // METHODS - protected
-    void commandArgsAddGuts(int argc, const char** argv);
+    void commandArgsGuts(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex);
+    void commandArgsAddGutsLock(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex);
+    void commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(m_argMutex);
     void commandArgVl(const std::string& arg);
     bool commandArgVlString(const std::string& arg, const std::string& prefix,
                             std::string& valuer);
@@ -444,7 +443,7 @@ protected:
     friend class Verilated;
 
     // MEMBERS
-    static VerilatedImpData& s() {  // Singleton
+    static VerilatedImpData& s() VL_MT_SAFE {  // Singleton
         static VerilatedImpData s_s;
         return s_s;
     }
