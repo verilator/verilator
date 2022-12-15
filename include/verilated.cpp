@@ -2454,14 +2454,17 @@ void VerilatedContext::threads(unsigned n) {
 }
 
 void VerilatedContext::commandArgs(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex) {
-    const VerilatedLockGuard lock{m_argMutex};
-    m_args.m_argVec.clear();  // Empty first, then add
-    impp()->commandArgsAddGuts(argc, argv);
+    // Not locking m_argMutex here, it is done in impp()->commandArgsAddGuts
+    // m_argMutex here is the same as in impp()->commandArgsAddGuts;
+    // due to clang limitations, it doesn't properly check it
+    impp()->commandArgsGuts(argc, argv);
 }
 void VerilatedContext::commandArgsAdd(int argc, const char** argv)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
-    const VerilatedLockGuard lock{m_argMutex};
-    impp()->commandArgsAddGuts(argc, argv);
+    // Not locking m_argMutex here, it is done in impp()->commandArgsAddGuts
+    // m_argMutex here is the same as in impp()->commandArgsAddGuts;
+    // due to clang limitations, it doesn't properly check it
+    impp()->commandArgsAddGutsLock(argc, argv);
 }
 const char* VerilatedContext::commandArgsPlusMatch(const char* prefixp)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
@@ -2510,6 +2513,18 @@ VerilatedContext::enableExecutionProfiler(VerilatedVirtualBase* (*construct)(Ver
 
 //======================================================================
 // VerilatedContextImp:: Methods - command line
+void VerilatedContextImp::commandArgsGuts(int argc, const char** argv)
+    VL_MT_SAFE_EXCLUDES(m_argMutex) {
+    const VerilatedLockGuard lock{m_argMutex};
+    m_args.m_argVec.clear();  // Empty first, then add
+    commandArgsAddGuts(argc, argv);
+}
+
+void VerilatedContextImp::commandArgsAddGutsLock(int argc, const char** argv)
+    VL_MT_SAFE_EXCLUDES(m_argMutex) {
+    const VerilatedLockGuard lock{m_argMutex};
+    commandArgsAddGuts(argc, argv);
+}
 
 void VerilatedContextImp::commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(m_argMutex) {
     if (!m_args.m_argVecLoaded) m_args.m_argVec.clear();
