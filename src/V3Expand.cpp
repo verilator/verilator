@@ -341,6 +341,18 @@ private:
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
+    bool expandWide(AstNodeAssign* nodep, AstExtend* rhsp) {
+        UINFO(8, "    Wordize ASSIGN(EXTEND) " << nodep << endl);
+        if (!doExpand(nodep)) return false;
+        AstNodeExpr* const lhsp = nodep->lhsp();
+        for (int w = 0; w < lhsp->widthWords(); ++w) {
+            addWordAssign(nodep, w, newAstWordSelClone(lhsp, w));
+        }
+        for (int w = rhsp->widthWords(); w < nodep->widthWords(); ++w) {
+            addWordAssign(nodep, w, new AstConst{nodep->fileline(), AstConst::SizedEData{}, 0});
+        }
+        return true;
+    }
 
     void visit(AstSel* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
@@ -853,6 +865,8 @@ private:
             } else if (AstArraySel* const rhsp = VN_CAST(nodep->rhsp(), ArraySel)) {
                 did = expandWide(nodep, rhsp);
             } else if (AstConcat* const rhsp = VN_CAST(nodep->rhsp(), Concat)) {
+                did = expandWide(nodep, rhsp);
+            } else if (AstExtend* const rhsp = VN_CAST(nodep->rhsp(), Extend)) {
                 did = expandWide(nodep, rhsp);
             } else if (AstReplicate* const rhsp = VN_CAST(nodep->rhsp(), Replicate)) {
                 did = expandWide(nodep, rhsp);
