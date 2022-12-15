@@ -78,13 +78,13 @@ static void makeVlToString(AstStructDType* nodep) {
         } else {
             stmt += ", ";
         }
-        stmt += itemp->name() + ":\" + ";
+        stmt += itemp->nameProtect() + ":\" + ";
         if (VN_IS(itemp->dtypep()->skipRefp(), BasicDType) && itemp->isWide()) {
             stmt += "VL_TO_STRING_W";
         } else {
             stmt += "VL_TO_STRING";
         }
-        stmt += "(obj." + itemp->name() + ");\n";
+        stmt += "(obj." + itemp->nameProtect() + ");\n";
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
     }
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "out += \"}\";\n"});

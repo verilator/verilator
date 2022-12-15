@@ -226,7 +226,7 @@ class EmitCHeader final : public EmitCConstInit {
         puts("struct " + EmitCBaseVisitor::prefixNameProtect(sdtypep) + " {\n");
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            puts(itemp->dtypep()->cType(itemp->name(), false, false));
+            puts(itemp->dtypep()->cType(itemp->nameProtect(), false, false));
             puts(";\n");
         }
         puts("};\n");

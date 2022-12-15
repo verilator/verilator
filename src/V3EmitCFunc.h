@@ -1069,7 +1069,7 @@ public:
     void visit(AstStructSel* nodep) override {
         iterateAndNextNull(nodep->fromp());
         putbs(".");
-        puts(nodep->name());
+        puts(nodep->nameProtect());
     }
     void visit(AstNullCheck* nodep) override {
         puts("VL_NULL_CHECK(");
