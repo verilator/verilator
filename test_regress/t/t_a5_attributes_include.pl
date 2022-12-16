@@ -34,7 +34,7 @@ sub check {
             tee => 1,
             cmd => ["python3", "$root/nodist/clang_check_attributes --verilator-root=$root --cxxflags='$clang_args' $srcfiles_str"]);
 
-        file_grep($Self->{run_log_filename}, "Number of functions reported unsafe: 3");
+        file_grep($Self->{run_log_filename}, "Number of functions reported unsafe: 0");
     }
 
     run_clang_check();
