@@ -104,6 +104,8 @@ struct GuardMe {
     void safe_if_guarded_or_local() {}
 
     operator int() const { return 4; }
+
+    GuardMe& operator+=(int) { return *this; }
 };
 
 class TestClass {
@@ -250,20 +252,24 @@ public:
     void guarded_by_test_pass(GuardMe& guardme_arg) VL_MT_SAFE {
         guardme_arg.safe_if_guarded_or_local();
         int a = guardme_arg;
+        guardme_arg += 4;
 
         m_mtx.lock();
         m_guardme.safe_if_guarded_or_local();
         int b = m_guardme;
+        m_guardme += 4;
         m_mtx.unlock();
 
         GuardMe guardme_local;
         guardme_local.safe_if_guarded_or_local();
         int c = guardme_local;
+        guardme_local += 4;
     }
 
     void guarded_by_test_fail() VL_MT_SAFE {
         m_guardme_unguarded.safe_if_guarded_or_local();
         int a = m_guardme_unguarded;
+        m_guardme_unguarded += 4;
     }
 };
 

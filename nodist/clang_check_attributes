@@ -318,8 +318,14 @@ class CallAnnotationsValidator:
                 def find_object_ref(node):
                     try:
                         node = next(node.get_children())
+                        if node.kind == CursorKind.DECL_REF_EXPR:
+                            # Operator on an argument or local object
+                            return node
                         if node.kind != CursorKind.MEMBER_REF_EXPR:
                             return None
+                        if node.referenced and node.referenced.kind == CursorKind.FIELD_DECL:
+                            # Operator on a member object
+                            return node
                         node = next(node.get_children())
                         if node.kind == CursorKind.UNEXPOSED_EXPR:
                             node = next(node.get_children())
