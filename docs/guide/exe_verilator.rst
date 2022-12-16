@@ -1193,7 +1193,7 @@ Summary:
    by size (plain :vlopt:`--stats` just gives a count).  See
    :vlopt:`--stats`, which is implied by this.
 
-.. option:: --structs-unpacked
+.. option:: --structs-packed
 
    Converts all unpacked structures to packed structures, and issues a
    :option:`UNPACKED` warning. Specifying this option allows for backward
