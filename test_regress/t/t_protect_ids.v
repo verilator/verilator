@@ -27,6 +27,7 @@ module secret_sub
 
    typedef struct {
       integer secret_field;
+      integer secret_field_r;
    } secret_st;
 
    integer   secret_cyc;
@@ -45,7 +46,8 @@ module secret_sub
 
    // Test loop
    always @ (posedge clk) begin
-      secret_pair.secret_field = 3;
+      secret_pair.secret_field += 1;
+      secret_pair.secret_field_r += 2;
       secret_cyc_r = $itor(secret_cyc)/10.0 - 5.0;
       secret_cyc <= dpii_a_func(secret_cyc);
       secret_r += 1.0 + $cos(secret_cyc_r);
