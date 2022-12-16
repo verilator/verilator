@@ -326,7 +326,7 @@ V3Number_test: V3Number_test.o
 %__gen.cpp:	%.cpp $(ASTGEN) $(AST_DEFS) $(DFG_DEFS)
 	$(PYTHON3) $(ASTGEN) $(ASTGENFLAGS) $*.cpp
 
-.SECONDARY: V3Const__gen.o
+.SECONDARY:
 
 %.o:	%.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
