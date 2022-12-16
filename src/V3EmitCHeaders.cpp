@@ -208,9 +208,9 @@ class EmitCHeader final : public EmitCConstInit {
             }
         }
     }
-    void emitStructDecl(const AstNodeModule* modp, AstStructDType* sdtypep, std::set<AstStructDType*> &emitted) {
-        if (emitted.count(sdtypep) > 0)
-            return;
+    void emitStructDecl(const AstNodeModule* modp, AstStructDType* sdtypep,
+                        std::set<AstStructDType*>& emitted) {
+        if (emitted.count(sdtypep) > 0) return;
         emitted.insert(sdtypep);
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {

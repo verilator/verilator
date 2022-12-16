@@ -181,9 +181,7 @@ private:
             AstStructDType* const subp = VN_CAST(itemp->skipRefp(), StructDType);
             // Recurse only into anonymous unpacked structs inside this definition,
             // other unpacked structs will be reached from another typedefs
-            if (subp && !subp->packed() && subp->name().empty()) {
-                setStructModulep(subp);
-            }
+            if (subp && !subp->packed() && subp->name().empty()) { setStructModulep(subp); }
         }
     }
     void visit(AstTypedef* nodep) override {

@@ -371,13 +371,14 @@ private:
                 for (AstMemberDType* itemp = adtypep->membersp(); itemp;
                      itemp = VN_AS(itemp->nextp(), MemberDType)) {
                     AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
-                    AstNodeExpr* const varRefp = new AstStructSel{varp->fileline(),
-                               above.m_varRefp->cloneTree(true), itemp->name()};
-                    AstNodeExpr* const chgRefp = new AstStructSel{varp->fileline(),
-                               above.m_varRefp->cloneTree(true), itemp->name()};
+                    AstNodeExpr* const varRefp = new AstStructSel{
+                        varp->fileline(), above.m_varRefp->cloneTree(true), itemp->name()};
+                    AstNodeExpr* const chgRefp = new AstStructSel{
+                        varp->fileline(), above.m_varRefp->cloneTree(true), itemp->name()};
                     varRefp->dtypep(subtypep);
                     chgRefp->dtypep(subtypep);
-                    ToggleEnt newent{above.m_comment + std::string{"."} + itemp->name(), varRefp, chgRefp};
+                    ToggleEnt newent{above.m_comment + std::string{"."} + itemp->name(), varRefp,
+                                     chgRefp};
                     toggleVarRecurse(subtypep, depth + 1, newent, varp, chgVarp);
                     newent.cleanup();
                 }
