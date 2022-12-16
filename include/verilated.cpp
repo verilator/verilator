@@ -1083,7 +1083,8 @@ static void _vl_vsss_read_str(FILE* fp, int& floc, const WDataInP fromp, const s
     // VL_DBG_MSGF(" _read got='"<<tmpp<<"'\n");
 }
 static char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp, const std::string& fstr,
-                               char* beginp, std::size_t n, const bool inhibit = false) {
+                               char* beginp, std::size_t n,
+                               const bool inhibit = false) VL_MT_SAFE {
     // Variant of _vl_vsss_read_str using the same underlying I/O functions but optimized
     // specifically for block reads of N bytes (read operations are not demarcated by
     // whitespace). In the fp case, except descriptor to have been opened in binary mode.
@@ -2790,27 +2791,38 @@ static struct {
     VoidPCbList s_exitCbs VL_GUARDED_BY(s_exitMutex);
 } VlCbStatic;
 
-static void addCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) VL_MT_UNSAFE {
+static void addCbFlush(Verilated::VoidPCb cb, void* datap)
+    VL_MT_SAFE_EXCLUDES(VlCbStatic.s_flushMutex) {
+    const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
-    cbs.remove(pair);  // Just in case it's a duplicate
-    cbs.push_back(pair);
+    VlCbStatic.s_flushCbs.remove(pair);  // Just in case it's a duplicate
+    VlCbStatic.s_flushCbs.push_back(pair);
 }
-static void removeCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) VL_MT_UNSAFE {
+static void addCbExit(Verilated::VoidPCb cb, void* datap)
+    VL_MT_SAFE_EXCLUDES(VlCbStatic.s_exitMutex) {
+    const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
-    cbs.remove(pair);
+    VlCbStatic.s_exitCbs.remove(pair);  // Just in case it's a duplicate
+    VlCbStatic.s_exitCbs.push_back(pair);
+}
+static void removeCbFlush(Verilated::VoidPCb cb, void* datap)
+    VL_MT_SAFE_EXCLUDES(VlCbStatic.s_flushMutex) {
+    const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
+    std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
+    VlCbStatic.s_flushCbs.remove(pair);
+}
+static void removeCbExit(Verilated::VoidPCb cb, void* datap)
+    VL_MT_SAFE_EXCLUDES(VlCbStatic.s_exitMutex) {
+    const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
+    std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
+    VlCbStatic.s_exitCbs.remove(pair);
 }
 static void runCallbacks(const VoidPCbList& cbs) VL_MT_SAFE {
     for (const auto& i : cbs) i.first(i.second);
 }
 
-void Verilated::addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
-    addCb(cb, datap, VlCbStatic.s_flushCbs);
-}
-void Verilated::removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
-    removeCb(cb, datap, VlCbStatic.s_flushCbs);
-}
+void Verilated::addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE { addCbFlush(cb, datap); }
+void Verilated::removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE { removeCbFlush(cb, datap); }
 void Verilated::runFlushCallbacks() VL_MT_SAFE {
     // Flush routines may call flush, so avoid mutex deadlock
     static std::atomic<int> s_recursing;
@@ -2827,14 +2839,8 @@ void Verilated::runFlushCallbacks() VL_MT_SAFE {
     VL_GCOV_DUMP();
 }
 
-void Verilated::addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
-    addCb(cb, datap, VlCbStatic.s_exitCbs);
-}
-void Verilated::removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
-    removeCb(cb, datap, VlCbStatic.s_exitCbs);
-}
+void Verilated::addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE { addCbExit(cb, datap); }
+void Verilated::removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE { removeCbExit(cb, datap); }
 void Verilated::runExitCallbacks() VL_MT_SAFE {
     static std::atomic<int> s_recursing;
     if (!s_recursing++) {
