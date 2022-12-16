@@ -344,11 +344,11 @@ private:
     bool expandWide(AstNodeAssign* nodep, AstExtend* rhsp) {
         UINFO(8, "    Wordize ASSIGN(EXTEND) " << nodep << endl);
         if (!doExpand(nodep)) return false;
-        AstNodeExpr* const lhsp = nodep->lhsp();
-        for (int w = 0; w < lhsp->widthWords(); ++w) {
-            addWordAssign(nodep, w, newAstWordSelClone(lhsp, w));
+        AstNodeExpr* const rlhsp = rhsp->lhsp();
+        for (int w = 0; w < rlhsp->widthWords(); ++w) {
+            addWordAssign(nodep, w, newAstWordSelClone(rlhsp, w));
         }
-        for (int w = rhsp->widthWords(); w < nodep->widthWords(); ++w) {
+        for (int w = rlhsp->widthWords(); w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w, new AstConst{nodep->fileline(), AstConst::SizedEData{}, 0});
         }
         return true;
