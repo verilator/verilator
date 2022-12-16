@@ -267,7 +267,7 @@ private:
     bool m_relativeIncludes = false; // main switch: --relative-includes
     bool m_reportUnoptflat = false; // main switch: --report-unoptflat
     bool m_savable = false;         // main switch: --savable
-    bool m_structsPacked = false;   // main switch: --structs-unpacked
+    bool m_structsPacked = false;   // main switch: --structs-packed
     bool m_systemC = false;         // main switch: --sc: System C instead of simple C++
     bool m_stats = false;           // main switch: --stats
     bool m_statsVars = false;       // main switch: --stats-vars
