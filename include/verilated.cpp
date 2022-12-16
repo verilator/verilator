@@ -1807,7 +1807,7 @@ std::string VL_TOUPPER_NN(const std::string& ld) VL_PURE {
     return out;
 }
 
-std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_MT_SAFE {
+std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_PURE {
     // See also _vl_vint_to_string
     char destout[VL_VALUE_STRING_MAX_CHARS + 1];
     const int obits = lwords * VL_EDATASIZE;

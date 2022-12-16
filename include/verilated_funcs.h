@@ -1706,7 +1706,7 @@ static inline WDataOutP VL_SHIFTR_WWQ(int obits, int lbits, int rbits, WDataOutP
 }
 
 static inline IData VL_SHIFTR_IIW(int obits, int, int rbits, IData lhs,
-                                  WDataInP const rwp) VL_MT_SAFE {
+                                  WDataInP const rwp) VL_PURE {
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) {
         if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
             return 0;
@@ -1715,7 +1715,7 @@ static inline IData VL_SHIFTR_IIW(int obits, int, int rbits, IData lhs,
     return VL_CLEAN_II(obits, obits, lhs >> rwp[0]);
 }
 static inline QData VL_SHIFTR_QQW(int obits, int, int rbits, QData lhs,
-                                  WDataInP const rwp) VL_MT_SAFE {
+                                  WDataInP const rwp) VL_PURE {
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) {
         if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
             return 0;
@@ -1724,11 +1724,11 @@ static inline QData VL_SHIFTR_QQW(int obits, int, int rbits, QData lhs,
     // Above checks rwp[1]==0 so not needed in below shift
     return VL_CLEAN_QQ(obits, obits, lhs >> (static_cast<QData>(rwp[0])));
 }
-static inline IData VL_SHIFTR_IIQ(int obits, int, int, IData lhs, QData rhs) VL_MT_SAFE {
+static inline IData VL_SHIFTR_IIQ(int obits, int, int, IData lhs, QData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
     return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
 }
-static inline QData VL_SHIFTR_QQQ(int obits, int, int, QData lhs, QData rhs) VL_MT_SAFE {
+static inline QData VL_SHIFTR_QQQ(int obits, int, int, QData lhs, QData rhs) VL_PURE {
     if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
     return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
 }
@@ -1803,7 +1803,7 @@ static inline WDataOutP VL_SHIFTRS_WWQ(int obits, int lbits, int rbits, WDataOut
     return VL_SHIFTRS_WWW(obits, lbits, rbits, owp, lwp, rwp);
 }
 static inline IData VL_SHIFTRS_IIW(int obits, int lbits, int rbits, IData lhs,
-                                   WDataInP const rwp) VL_MT_SAFE {
+                                   WDataInP const rwp) VL_PURE {
     EData overshift = 0;  // Huge shift 1>>32 or more
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) overshift |= rwp[i];
     if (VL_UNLIKELY(overshift || rwp[0] >= static_cast<IData>(obits))) {
@@ -1813,7 +1813,7 @@ static inline IData VL_SHIFTRS_IIW(int obits, int lbits, int rbits, IData lhs,
     return VL_SHIFTRS_III(obits, lbits, 32, lhs, rwp[0]);
 }
 static inline QData VL_SHIFTRS_QQW(int obits, int lbits, int rbits, QData lhs,
-                                   WDataInP const rwp) VL_MT_SAFE {
+                                   WDataInP const rwp) VL_PURE {
     EData overshift = 0;  // Huge shift 1>>32 or more
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) overshift |= rwp[i];
     if (VL_UNLIKELY(overshift || rwp[0] >= static_cast<IData>(obits))) {
@@ -1822,8 +1822,7 @@ static inline QData VL_SHIFTRS_QQW(int obits, int lbits, int rbits, QData lhs,
     }
     return VL_SHIFTRS_QQI(obits, lbits, 32, lhs, rwp[0]);
 }
-static inline IData VL_SHIFTRS_IIQ(int obits, int lbits, int rbits, IData lhs,
-                                   QData rhs) VL_MT_SAFE {
+static inline IData VL_SHIFTRS_IIQ(int obits, int lbits, int rbits, IData lhs, QData rhs) VL_PURE {
     VlWide<VL_WQ_WORDS_E> rwp;
     VL_SET_WQ(rwp, rhs);
     return VL_SHIFTRS_IIW(obits, lbits, rbits, lhs, rwp);
@@ -2172,7 +2171,7 @@ extern IData VL_DIST_UNIFORM(IData& seedr, IData ustart, IData uend) VL_MT_SAFE;
 //======================================================================
 // Conversion functions
 
-extern std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_MT_SAFE;
+extern std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_PURE;
 inline std::string VL_CVT_PACK_STR_NQ(QData lhs) VL_PURE {
     VlWide<VL_WQ_WORDS_E> lw;
     VL_SET_WQ(lw, lhs);
