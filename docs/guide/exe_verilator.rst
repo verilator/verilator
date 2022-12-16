@@ -1195,11 +1195,10 @@ Summary:
 
 .. option:: --structs-unpacked
 
-   Enables support for unpacked structures. Currently this is the default
-   and :vlopt:`--no-structs-unpacked <--structs-unpacked>` converts all
-   structures to packed structures, specifying this option allows for
-   backward compatibility as older versions of Verilator would always pack
-   unpacked structures.
+   Converts all unpacked structures to packed structures, and issues a
+   :option:`UNPACKED` warning. Specifying this option allows for backward
+   compatibility with versions before Verilator 5.006, when Verilator would
+   always pack unpacked structures.
 
 .. option:: -sv
 
