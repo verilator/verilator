@@ -167,7 +167,7 @@ void V3Common::commonAll() {
     }
     for (AstNode* nodep = v3Global.rootp()->typeTablep()->typesp(); nodep; nodep = nodep->nextp()) {
         if (AstStructDType* const dtypep = VN_CAST(nodep, StructDType)) {
-            if (!dtypep->packed()) { makeVlToString(dtypep); }
+            if (!dtypep->packed()) makeVlToString(dtypep);
         }
     }
     V3Global::dumpCheckGlobalTree("common", 0, dumpTree() >= 3);
