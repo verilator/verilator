@@ -397,6 +397,7 @@ PY_PROGRAMS = \
 	src/flexfix \
 	src/vlcovgen \
 	test_regress/t/*.pf \
+	nodist/clang_check_attributes \
 	nodist/code_coverage \
 	nodist/dot_importer \
 	nodist/fuzzer/actual_fail \
