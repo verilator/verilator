@@ -150,6 +150,8 @@ To make use of Verilator FST tracing you will want `GTKwave
 required at Verilator build time.
 
 
+.. _Obtain Sources:
+
 Obtain Sources
 --------------
 

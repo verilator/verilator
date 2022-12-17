@@ -30,6 +30,10 @@ include(CMakePackageConfigHelpers)
 include(CheckStructHasMember)
 include(ExternalProject)
 
+if (NOT WIN32)
+    message(WARNING "CMake support on Linux/OSX is experimental.")
+endif()
+
 if (MSVC)
     if (DEFINED ENV{WIN_FLEX_BISON})
         set(WIN_FLEX_BISON "$ENV{WIN_FLEX_BISON}")
