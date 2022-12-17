@@ -18,7 +18,7 @@ Install Python for your platform from https://www.python.org/downloads/
 Install CMake for your platform from https://cmake.org/download/ or build it from source
 If the compiler of your choice is MSVC then install https://visualstudio.microsoft.com/downloads/
 If the compiler of your choice is Clang then install https://releases.llvm.org/download.html or build it from source
-For flex and bison use https://github.com/lexxmark/winflexbison to build and install  
+For flex and bison use https://github.com/lexxmark/winflexbison to build and install
 For build on windows using msvc set environment variable WIN_FLEX_BISON to install directory
 For build on windows/linux/osx using ninja set environment variable FLEX_INCLUDE to directory
 containing FlexLexer.h and ensure flex/bison is available on the path
@@ -40,7 +40,7 @@ To build using msvc
 To build using ninja
 
 ::
-        
+
     cd verilator
     mkdir build
     cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release --install-prefix $PWD/../install -DCMAKE_MAKE_PROGRAM=<path to ninja binary> -DBISON_EXECUTABLE=<path to bison> -DFLEX_EXECUTABLE=<path to flex>
