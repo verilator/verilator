@@ -1,9 +1,6 @@
 #*****************************************************************************
+#
 # DESCRIPTION: Script for build tool cmake on both unix and windows
-#
-# This file is part of Verilator.
-#
-# Code available from: https://verilator.org
 #
 #*****************************************************************************
 #
@@ -23,11 +20,10 @@ project(Verilator
     LANGUAGES CXX
 )
 
-option(CMAKE_UNITY_BUILD
-    "Builds concatenated source files, potentially sppeding up the build.")
 option(DEBUG_AND_RELEASE_AND_COVERAGE
     "Builds both the debug and release binaries, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild.")
 
+set(PYTHON3 python)
 set(CMAKE_INSTALL_DATADIR ${CMAKE_INSTALL_PREFIX})
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -58,10 +54,7 @@ endif()
 find_package(BISON)
 find_package(FLEX)
 
-check_struct_has_member("struct stat.st_mtim" tv_nsec sys/stat.h HAVE_STAT_NSEC LANGUAGE CXX)
-
 # Build
-
 #set_property(GLOBAL PROPERTY JOB_POOLS one_job=1)
 
 if (DEBUG_AND_RELEASE_AND_COVERAGE)

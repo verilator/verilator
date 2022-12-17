@@ -1,3 +1,17 @@
+#*****************************************************************************
+#
+# DESCRIPTION: Script for build tool cmake on both unix and windows
+#
+#*****************************************************************************
+#
+# Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+#
+#****************************************************************************/
+
 #
 # Utilities
 macro (addBuildType sourceConfig newConfig)
@@ -313,7 +327,7 @@ configure_file(config_build.h.in config_build.h @ONLY)
 add_custom_command(
     OUTPUT V3Ast__gen_forward_class_decls.h V3Dfg__gen_forward_class_decls.h
     DEPENDS ./V3Ast.h ${ASTGEN}
-    COMMAND python ARGS
+    COMMAND ${PYTHON3} ARGS
     ${ASTGEN} -I"${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h --classes
 )
 list(APPEND GENERATED_FILES V3Ast__gen_forward_class_decls.h V3Dfg__gen_forward_class_decls.h)
@@ -326,7 +340,7 @@ add_custom_command(
     OUTPUT V3ParseBison.c V3ParseBison.h
     MAIN_DEPENDENCY ./verilog.y
     DEPENDS ${BISONPRE}
-    COMMAND python ARGS
+    COMMAND ${PYTHON3} ARGS
         ${BISONPRE} --yacc "${BISON_EXECUTABLE}" -d -v
             -o "${BISON_V3ParseBison_OUTPUT_SOURCE}" "${verilog_y}"
 )
@@ -349,7 +363,7 @@ add_custom_command(
     OUTPUT V3Lexer.yy.cpp
     MAIN_DEPENDENCY ${FLEX_V3Lexer_pregen_OUTPUTS}
     DEPENDS ${FLEXFIX}
-    COMMAND python ARGS
+    COMMAND ${PYTHON3} ARGS
         ${FLEXFIX} V3Lexer < "$<SHELL_PATH:${FLEX_V3Lexer_pregen_OUTPUTS}>" > "$<SHELL_PATH:${FLEX_V3Lexer_OUTPUTS}>"
 )
 add_custom_target(V3Lexer_yy_cpp${CMAKE_BUILD_TYPE} DEPENDS ${FLEX_V3Lexer_OUTPUTS})
@@ -370,7 +384,7 @@ add_custom_command(
     OUTPUT V3PreLex.yy.cpp
     MAIN_DEPENDENCY ${FLEX_V3PreLex_pregen_OUTPUTS}
     DEPENDS ${FLEXFIX}
-    COMMAND python ARGS
+    COMMAND ${PYTHON3} ARGS
         ${FLEXFIX} V3PreLex < "$<SHELL_PATH:${FLEX_V3PreLex_pregen_OUTPUTS}>" > "$<SHELL_PATH:${FLEX_V3PreLex_OUTPUTS}>"
 )
 add_custom_target(V3PreLex_yy_cpp${CMAKE_BUILD_TYPE} DEPENDS ${FLEX_V3PreLex_OUTPUTS})
@@ -384,7 +398,7 @@ add_custom_command(
     OUTPUT config_rev.h
     MAIN_DEPENDENCY ${gitHead}
     DEPENDS ${CONFIG_REV}
-    COMMAND python ARGS
+    COMMAND ${PYTHON3} ARGS
         ${CONFIG_REV} "${srcdir}" > "$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/config_rev.h>"
 )
 list(APPEND GENERATED_FILES config_rev.h)
@@ -399,7 +413,7 @@ foreach(astgen_name ${ASTGENERATED_NAMES})
         OUTPUT ${astgen_name}__gen.cpp
         MAIN_DEPENDENCY ${astgen_name}.cpp
         DEPENDS ${ASTGEN} V3Ast.h
-        COMMAND python ARGS
+        COMMAND ${PYTHON3} ARGS
             ${ASTGEN} -I"${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h ${astgen_name}.cpp
     )
     list(APPEND GENERATED_FILES ${astgen_name}__gen.cpp)
@@ -417,7 +431,7 @@ add_custom_target(
     vlcovgen.d${CMAKE_BUILD_TYPE}
     DEPENDS ../include/verilated_cov_key.h ${VLCOVGEN}
     COMMENT "Updating include/verilated_cov_key.h"
-    COMMAND python
+    COMMAND ${PYTHON3}
         ${VLCOVGEN} --srcdir ${srcdir}
 )
 
