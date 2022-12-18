@@ -84,6 +84,8 @@ set(PACKAGE_VERSION ${PROJECT_VERSION})
 
 configure_file(include/verilated_config.h.in include/verilated_config.h @ONLY)
 
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/verilated_config.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+
 configure_package_config_file(verilator-config.cmake.in verilator-config.cmake
     INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
