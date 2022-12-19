@@ -1368,7 +1368,7 @@ static inline WDataOutP VL_REPLICATE_WII(int lbits, WDataOutP owp, IData ld,
     owp[0] = ld;
     // Zeroing all words isn't strictly needed but allows compiler to know
     // it does not need to preserve data in word(s) not being written
-    for (unsigned i = 1; i < VL_WORDS_I(lbits * rep); ++i) owp[i] = 0;
+    for (unsigned i = 1; i < VL_WORDS_I(static_cast<unsigned>(lbits) * rep); ++i) owp[i] = 0;
     for (unsigned i = 1; i < rep; ++i) {
         _vl_insert_WI(owp, ld, i * lbits + lbits - 1, i * lbits);
     }
@@ -1379,7 +1379,7 @@ static inline WDataOutP VL_REPLICATE_WQI(int lbits, WDataOutP owp, QData ld,
     VL_SET_WQ(owp, ld);
     // Zeroing all words isn't strictly needed but allows compiler to know
     // it does not need to preserve data in word(s) not being written
-    for (unsigned i = 2; i < VL_WORDS_I(lbits * rep); ++i) owp[i] = 0;
+    for (unsigned i = 2; i < VL_WORDS_I(static_cast<unsigned>(lbits) * rep); ++i) owp[i] = 0;
     for (unsigned i = 1; i < rep; ++i) {
         _vl_insert_WQ(owp, ld, i * lbits + lbits - 1, i * lbits);
     }
@@ -1387,10 +1387,12 @@ static inline WDataOutP VL_REPLICATE_WQI(int lbits, WDataOutP owp, QData ld,
 }
 static inline WDataOutP VL_REPLICATE_WWI(int lbits, WDataOutP owp, WDataInP const lwp,
                                          IData rep) VL_MT_SAFE {
-    for (unsigned i = 0; i < VL_WORDS_I(lbits); ++i) owp[i] = lwp[i];
+    for (unsigned i = 0; i < VL_WORDS_I(static_cast<unsigned>(lbits)); ++i) owp[i] = lwp[i];
     // Zeroing all words isn't strictly needed but allows compiler to know
     // it does not need to preserve data in word(s) not being written
-    for (unsigned i = VL_WORDS_I(lbits); i < VL_WORDS_I(lbits * rep); ++i) owp[i] = 0;
+    for (unsigned i = VL_WORDS_I(static_cast<unsigned>(lbits));
+         i < VL_WORDS_I(static_cast<unsigned>(lbits * rep)); ++i)
+        owp[i] = 0;
     for (unsigned i = 1; i < rep; ++i) {
         _vl_insert_WW(owp, lwp, i * lbits + lbits - 1, i * lbits);
     }
