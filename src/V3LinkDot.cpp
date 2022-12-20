@@ -1176,9 +1176,6 @@ class LinkDotFindVisitor final : public VNVisitor {
         // Var: Remember its name for later resolution
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Var not under module?");
         iterateChildren(nodep);
-        if (nodep->isFuncLocal() && nodep->lifetime().isStatic()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'static' function/task variables");
-        }
         if (!m_statep->forScopeCreation()) {
             // Find under either a task or the module's vars
             const VSymEnt* foundp = m_curSymp->findIdFallback(nodep->name());

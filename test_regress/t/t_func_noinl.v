@@ -76,7 +76,7 @@ module Test (/*AUTOARG*/
    input [31:0]           inp;
    output [31:0]          outp;
 
-   function [31:0] no_inline_function;
+   function automatic [31:0] no_inline_function;
       input [31:0]        var1;
       input [31:0]        var2;
       /*verilator no_inline_task*/

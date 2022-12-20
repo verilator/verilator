@@ -6,6 +6,16 @@
 
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 
+function automatic int f_au_st_global ();
+   static int st = 0; st++; return st;
+endfunction
+
+package my_pkg;
+   function int f_no_st_pkg ();
+      static int st = 0; st++; return st;
+   endfunction
+endpackage
+
 module t (/*AUTOARG*/
    // Inputs
    clk
@@ -66,6 +76,11 @@ module t (/*AUTOARG*/
       v = f_au_st(); `checkh(v,   4);
       v = f_au_au(); `checkh(v, 3);
       v = f_au_au(); `checkh(v,   3);
+      //
+      v = f_au_st_global(); `checkh(v, 1);
+      v = f_au_st_global(); `checkh(v,   2);
+      v = my_pkg::f_no_st_pkg(); `checkh(v, 1);
+      v = my_pkg::f_no_st_pkg(); `checkh(v,   2);
       //
    end
 

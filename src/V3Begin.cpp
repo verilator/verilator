@@ -19,6 +19,7 @@
 //      Look for BEGINs
 //          BEGIN(VAR...) -> VAR ... {renamed}
 //      FOR -> WHILEs
+//      Move static function variables and their AstInitialStatic blocks before a function
 //
 // There are two scopes; named BEGINs change %m and variable scopes.
 // Unnamed BEGINs change only variable, not $display("%m") scope.
@@ -64,13 +65,14 @@ private:
     // STATE
     BeginState* const m_statep;  // Current global state
     AstNodeModule* m_modp = nullptr;  // Current module
-    const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNode* m_liftedp = nullptr;  // Local  nodes we are lifting into m_ftaskp
     string m_displayScope;  // Name of %m in $display/AstScopeName
     string m_namedScope;  // Name of begin blocks above us
     string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
     int m_ifDepth = 0;  // Current if depth
     bool m_keepBegins = false;  // True if begins should not be inlined
+    std::set<AstVar*> m_staticFuncVars;  // Static variables from m_ftaskp
 
     // METHODS
 
@@ -121,6 +123,25 @@ private:
         }
     }
 
+    void renameAndStaticsRecurse(AstNode* const nodep) {
+        // Rename references and move InitialStatic items
+        if (AstVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
+            const auto it = m_staticFuncVars.find(varrefp->varp());
+            if (it != m_staticFuncVars.end()) varrefp->name((*it)->name());
+        }
+
+        if (nodep->op1p()) renameAndStaticsRecurse(nodep->op1p());
+        if (nodep->op2p()) renameAndStaticsRecurse(nodep->op2p());
+        if (nodep->op3p()) renameAndStaticsRecurse(nodep->op3p());
+        if (nodep->op4p()) renameAndStaticsRecurse(nodep->op4p());
+        if (nodep->nextp()) renameAndStaticsRecurse(nodep->nextp());
+
+        if (VN_IS(nodep, InitialStatic)) {
+            nodep->unlinkFrBack();
+            m_ftaskp->addHereThisAsNext(nodep);
+        }
+    }
+
     // VISITORS
     void visit(AstFork* nodep) override {
         // Keep this begin to group its statements together
@@ -165,6 +186,7 @@ private:
             m_ftaskp = nodep;
             m_liftedp = nullptr;
             iterateChildren(nodep);
+            renameAndStaticsRecurse(nodep);
             if (m_liftedp) {
                 // Place lifted nodes at beginning of stmtsp, so Var nodes appear before referenced
                 if (AstNode* const stmtsp = nodep->stmtsp()) {
@@ -174,6 +196,7 @@ private:
                 nodep->addStmtsp(m_liftedp);
                 m_liftedp = nullptr;
             }
+            m_staticFuncVars.clear();
             m_ftaskp = nullptr;
         }
     }
@@ -210,7 +233,15 @@ private:
         }
     }
     void visit(AstVar* nodep) override {
-        if (m_unnamedScope != "") {
+        // If static variable, move it outside a function.
+        if (nodep->lifetime().isStatic() && m_ftaskp) {
+            const std::string newName = m_ftaskp->name() + "__Vstatic__" + nodep->name();
+            nodep->name(newName);
+            nodep->unlinkFrBack();
+            m_ftaskp->addHereThisAsNext(nodep);
+            m_staticFuncVars.insert(nodep);
+            nodep->funcLocal(false);
+        } else if (m_unnamedScope != "") {
             // Rename it
             nodep->name(dot(m_unnamedScope, nodep->name()));
             m_statep->userMarkChanged(nodep);

@@ -12,13 +12,11 @@ scenarios(simulator => 1);
 
 compile(
     verilator_flags2 => ['-Wno-IMPLICITSTATIC'],
-    fails => $Self->{vlt_all},  # Verilator unsupported, bug546
-    expect_filename => $Self->{golden_filename},
     );
 
 execute(
     check_finished => 1,
-    ) if !$Self->{vlt_all};
+    );
 
 ok(1);
 1;

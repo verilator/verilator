@@ -2067,7 +2067,7 @@ module t_case_write2_tasks ();
          endcase
       end
    endtask
-   task ozonef3;
+   task automatic ozonef3;
       input  [  31:0] foo;
       input [`FD_BITS]    fd;
       reg                 nacho;
@@ -2482,7 +2482,7 @@ module t_case_write2_tasks ();
       $fwrite(fd," dude");
    endtask
 
-   task big_case;
+   task automatic big_case;
       input  [  `FD_BITS] fd;
       input [  31:0]  foo;
       // verilator no_inline_task

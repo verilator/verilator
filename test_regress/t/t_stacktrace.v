@@ -6,7 +6,7 @@
 
 module t;
 
-   task t;
+   task automatic t;
       // verilator no_inline_task
       string trace;
 

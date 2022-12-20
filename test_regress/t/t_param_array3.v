@@ -18,12 +18,18 @@ module t;
    endfunction
 
    parameter int SUMS[3:0] = calc_sums();
+   parameter int SUMS1[3:0] = calc_sums();
 
    initial begin
       if (SUMS[0] != 4) $stop;
       if (SUMS[1] != 4+3) $stop;
       if (SUMS[2] != 4+3+2) $stop;
       if (SUMS[3] != 4+3+2+1) $stop;
+      // According to section 13.4.3 of IEEE Std 1800-2017,
+      // execution at elaboration has no effect on the initial values
+      // of the variables used either at simulation time or among
+      // multiple invocations of a function at elaboration time
+      if (SUMS1 != SUMS) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end
