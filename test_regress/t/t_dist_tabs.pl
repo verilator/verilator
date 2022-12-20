@@ -12,7 +12,7 @@ scenarios(dist => 1);
 
 my $root = "..";
 
-my $Tabs_Exempt_Re = qr!(\.out$)|(/gtkwave)|(Makefile)|(\.mk$)|(nodist/fastcov.py)!;
+my $Tabs_Exempt_Re = qr!(\.out$)|(/gtkwave)|(Makefile)|(\.mk$)|(\.mk\.in$)|(nodist/fastcov.py)!;
 #my $Wide_Exempt_Re = qr!(\.l$)|(\.y$)!;
 my $Wide_Exempt_Re = qr!.*!;  # clang-tidy generally cleans up
 
