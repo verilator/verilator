@@ -54,6 +54,7 @@
 # define VL_ATTR_PURE __attribute__((pure))
 # define VL_ATTR_UNUSED __attribute__((unused))
 # if !defined(_WIN32) && !defined(__MINGW32__)
+// All VL_ATTR_WEAK symbols must be marked with the macOS -U linker flag in verilated.mk.in
 #  define VL_ATTR_WEAK __attribute__((weak))
 # endif
 # if defined(__clang__)
