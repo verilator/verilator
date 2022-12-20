@@ -475,7 +475,7 @@ void VerilatedVcd::declare(uint32_t code, const char* name, const char* wirep, b
         m_suffixes.resize(nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE * 2, 0);
     }
 
-    // Keep upper bound on bytes a single signal cna emit into the buffer
+    // Keep upper bound on bytes a single signal can emit into the buffer
     m_maxSignalBytes = std::max<size_t>(m_maxSignalBytes, bits + 32);
     // Make sure write buffer is large enough, plus header
     bufferResize(m_maxSignalBytes + 1024);
@@ -571,7 +571,7 @@ void VerilatedVcd::declDouble(uint32_t code, const char* name, bool array, int a
 VerilatedVcd::Buffer* VerilatedVcd::getTraceBuffer() {
     VerilatedVcd::Buffer* const bufp = new Buffer{*this};
     if (parallel()) {
-        // Note: This is called from VeriltedVcd::dump, which already holds the lock
+        // Note: This is called from VerilatedVcd::dump, which already holds the lock
         // If no buffer available, allocate a new one
         if (m_freeBuffers.empty()) {
             constexpr size_t pageSize = 4096;
@@ -594,7 +594,7 @@ VerilatedVcd::Buffer* VerilatedVcd::getTraceBuffer() {
 
 void VerilatedVcd::commitTraceBuffer(VerilatedVcd::Buffer* bufp) {
     if (parallel()) {
-        // Note: This is called from VeriltedVcd::dump, which already holds the lock
+        // Note: This is called from VerilatedVcd::dump, which already holds the lock
         // Resize output buffer. Note, we use the full size of the trace buffer, as
         // this is a lot more stable than the actual occupancy of the trace buffer.
         // This helps us to avoid re-allocations due to small size changes.
@@ -695,7 +695,7 @@ void VerilatedVcdBuffer::finishLine(uint32_t code, char* writep) {
 VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitEvent(uint32_t code, VlEvent newval) {
     const bool triggered = newval.isTriggered();
-    // TODO : It seems that untriggerd events are not filtered
+    // TODO : It seems that untriggered events are not filtered
     // should be tested before this last step
     if (triggered) {
         // Don't prefetch suffix as it's a bit too late;

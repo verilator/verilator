@@ -112,10 +112,31 @@ protected:
 public:
     ASTGEN_MEMBERS_AstNodeBiComAsv;
 };
+class AstNodeDistBiop VL_NOT_FINAL : public AstNodeBiop {
+public:
+    AstNodeDistBiop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : AstNodeBiop{t, fl, lhsp, rhsp} {
+        dtypeSetSigned32();
+    }
+    ASTGEN_MEMBERS_AstNodeDistBiop;
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL_TRIG; }
+    AstNodeExpr* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
+        V3ERROR_NA;
+        return nullptr;
+    }
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        V3ERROR_NA;
+    }
+};
 class AstNodeSel VL_NOT_FINAL : public AstNodeBiop {
     // Single bit range extraction, perhaps with non-constant selection or array selection
     // @astgen alias op1 := fromp // Expression we are indexing into
-    // @astgen alias op2 := bitp // The index // TOOD: rename to idxp
+    // @astgen alias op2 := bitp // The index // TODO: rename to idxp
 protected:
     AstNodeSel(VNType t, FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
         : AstNodeBiop{t, fl, fromp, bitp} {}
@@ -291,7 +312,7 @@ public:
     bool same(const AstNode*) const override { return true; }
 };
 class AstNodeTermop VL_NOT_FINAL : public AstNodeExpr {
-    // Terminal operator -- a operator with no "inputs"
+    // Terminal operator -- an operator with no "inputs"
 protected:
     AstNodeTermop(VNType t, FileLine* fl)
         : AstNodeExpr{t, fl} {}
@@ -362,6 +383,27 @@ public:
     bool sizeMattersThs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     virtual AstNodeExpr* cloneType(AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep) = 0;
+};
+class AstNodeDistTriop VL_NOT_FINAL : public AstNodeTriop {
+public:
+    AstNodeDistTriop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
+                     AstNodeExpr* thsp)
+        : AstNodeTriop{t, fl, lhsp, rhsp, thsp} {
+        dtypeSetSigned32();
+    }
+    ASTGEN_MEMBERS_AstNodeDistTriop;
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool cleanThs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    bool sizeMattersThs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_DBL_TRIG; }
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
+                       const V3Number& ths) override {
+        V3ERROR_NA;
+    }
 };
 class AstNodeUniop VL_NOT_FINAL : public AstNodeExpr {
     // Unary expression
@@ -3557,6 +3599,40 @@ public:
     bool sizeMattersRhs() const override { return false; }
 };
 
+// === AstNodeDistBiop ===
+class AstDistChiSquare final : public AstNodeDistBiop {
+public:
+    AstDistChiSquare(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_DistChiSquare(fl, lhsp, rhsp) {}
+    ASTGEN_MEMBERS_AstDistChiSquare;
+    string emitVerilog() override { return "%f$dist_chi_square(%l, %r)"; }
+    string emitC() override { return "VL_DIST_CHI_SQUARE(%li, %ri)"; }
+};
+class AstDistExponential final : public AstNodeDistBiop {
+public:
+    AstDistExponential(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_DistExponential(fl, lhsp, rhsp) {}
+    ASTGEN_MEMBERS_AstDistExponential;
+    string emitVerilog() override { return "%f$dist_exponential(%l, %r)"; }
+    string emitC() override { return "VL_DIST_EXPONENTIAL(%li, %ri)"; }
+};
+class AstDistPoisson final : public AstNodeDistBiop {
+public:
+    AstDistPoisson(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_DistPoisson(fl, lhsp, rhsp) {}
+    ASTGEN_MEMBERS_AstDistPoisson;
+    string emitVerilog() override { return "%f$dist_poisson(%l, %r)"; }
+    string emitC() override { return "VL_DIST_POISSON(%li, %ri)"; }
+};
+class AstDistT final : public AstNodeDistBiop {
+public:
+    AstDistT(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_DistT(fl, lhsp, rhsp) {}
+    ASTGEN_MEMBERS_AstDistT;
+    string emitVerilog() override { return "%f$dist_t(%l, %r)"; }
+    string emitC() override { return "VL_DIST_T(%li, %ri)"; }
+};
+
 // === AstNodeSel ===
 class AstArraySel final : public AstNodeSel {
     void init(AstNode* fromp) {
@@ -4203,7 +4279,7 @@ public:
 
 // === AstNodeCond ===
 class AstCond final : public AstNodeCond {
-    // Conditional ?: expressoin
+    // Conditional ?: expression
 public:
     AstCond(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep)
         : ASTGEN_SUPER_Cond(fl, condp, thenp, elsep) {}
@@ -4221,6 +4297,32 @@ public:
     AstNodeExpr* cloneType(AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep) override {
         return new AstCondBound{fileline(), condp, thenp, elsep};
     }
+};
+
+// === AstNodeDistTriop ===
+class AstDistErlang final : public AstNodeDistTriop {
+public:
+    AstDistErlang(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
+        : ASTGEN_SUPER_DistErlang(fl, lhsp, rhsp, thsp) {}
+    ASTGEN_MEMBERS_AstDistErlang;
+    string emitVerilog() override { return "%f$dist_erlang(%l, %r, %t)"; }
+    string emitC() override { return "VL_DIST_ERLANG(%li, %ri, %ti)"; }
+};
+class AstDistNormal final : public AstNodeDistTriop {
+public:
+    AstDistNormal(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
+        : ASTGEN_SUPER_DistNormal(fl, lhsp, rhsp, thsp) {}
+    ASTGEN_MEMBERS_AstDistNormal;
+    string emitVerilog() override { return "%f$dist_normal(%l, %r, %t)"; }
+    string emitC() override { return "VL_DIST_NORMAL(%li, %ri, %ti)"; }
+};
+class AstDistUniform final : public AstNodeDistTriop {
+public:
+    AstDistUniform(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
+        : ASTGEN_SUPER_DistUniform(fl, lhsp, rhsp, thsp) {}
+    ASTGEN_MEMBERS_AstDistUniform;
+    string emitVerilog() override { return "%f$dist_uniform(%l, %r, %t)"; }
+    string emitC() override { return "VL_DIST_UNIFORM(%li, %ri, %ti)"; }
 };
 
 // === AstNodeUniop ===
@@ -4348,6 +4450,21 @@ public:
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 16; }
+};
+class AstCastWrap final : public AstNodeUniop {
+    // A cast which has been expanded and the LHSP does all the lifting
+    // This remains until V3Width final commit pass to suppress ENUMVALUE warnings
+public:
+    AstCastWrap(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_CastWrap(fl, lhsp) {}
+    ASTGEN_MEMBERS_AstCastWrap;
+    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAssign(lhs); }
+    string emitVerilog() override { return "(%l)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    int instrCount() const override { return 0; }
 };
 class AstCountOnes final : public AstNodeUniop {
     // Number of bits set in vector
@@ -4488,7 +4605,7 @@ public:
     int instrCount() const override { return INSTR_COUNT_DBL; }
 };
 class AstIsUnbounded final : public AstNodeUniop {
-    // True if is unmbounded ($)
+    // True if is unbounded ($)
 public:
     AstIsUnbounded(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_IsUnbounded(fl, lhsp) {

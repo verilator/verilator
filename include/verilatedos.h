@@ -57,16 +57,16 @@
 #  define VL_ATTR_WEAK __attribute__((weak))
 # endif
 # if defined(__clang__)
-#  define VL_ACQUIRE(...) __attribute__((acquire_capability(__VA_ARGS__)))
-#  define VL_ACQUIRE_SHARED(...) __attribute__((acquire_shared_capability(__VA_ARGS__)))
-#  define VL_RELEASE(...) __attribute__((release_capability(__VA_ARGS__)))
-#  define VL_RELEASE_SHARED(...) __attribute__((release_shared_capability(__VA_ARGS__)))
+#  define VL_ACQUIRE(...) __attribute__((annotate("ACQUIRE"))) __attribute__((acquire_capability(__VA_ARGS__)))
+#  define VL_ACQUIRE_SHARED(...) __attribute__((annotate("ACQUIRE_SHARED"))) __attribute__((acquire_shared_capability(__VA_ARGS__)))
+#  define VL_RELEASE(...) __attribute__((annotate("RELEASE"))) __attribute__((release_capability(__VA_ARGS__)))
+#  define VL_RELEASE_SHARED(...) __attribute__((annotate("RELEASE_SHARED"))) __attribute__((release_shared_capability(__VA_ARGS__)))
 #  define VL_TRY_ACQUIRE(...) __attribute__((try_acquire_capability(__VA_ARGS__)))
 #  define VL_TRY_ACQUIRE_SHARED(...) __attribute__((try_acquire_shared_capability(__VA_ARGS__)))
 #  define VL_CAPABILITY(x) __attribute__((capability(x)))
-#  define VL_REQUIRES(x) __attribute__((requires_capability(x)))
-#  define VL_GUARDED_BY(x) __attribute__((guarded_by(x)))
-#  define VL_EXCLUDES(x) __attribute__((locks_excluded(x)))
+#  define VL_REQUIRES(x) __attribute__((annotate("REQUIRES"))) __attribute__((requires_capability(x)))
+#  define VL_GUARDED_BY(x) __attribute__((annotate("GUARDED_BY"))) __attribute__((guarded_by(x)))
+#  define VL_EXCLUDES(x) __attribute__((annotate("EXCLUDES"))) __attribute__((locks_excluded(x)))
 #  define VL_SCOPED_CAPABILITY __attribute__((scoped_lockable))
 # endif
 # define VL_LIKELY(x) __builtin_expect(!!(x), 1)  // Prefer over C++20 [[likely]]
@@ -111,12 +111,12 @@
 # define VL_ATTR_WEAK  ///< Attribute that function external that is optionally defined
 #endif
 #ifndef VL_CAPABILITY
-# define VL_ACQUIRE(...)  ///< Function aquires a capability/lock (-fthread-safety)
-# define VL_ACQUIRE_SHARED(...)  ///< Function aquires a shared capability/lock (-fthread-safety)
+# define VL_ACQUIRE(...)  ///< Function acquires a capability/lock (-fthread-safety)
+# define VL_ACQUIRE_SHARED(...)  ///< Function acquires a shared capability/lock (-fthread-safety)
 # define VL_RELEASE(...)  ///< Function releases a capability/lock (-fthread-safety)
 # define VL_RELEASE_SHARED(...)  ///< Function releases a shared capability/lock (-fthread-safety)
-# define VL_TRY_ACQUIRE(...)  ///< Function returns bool if aquired a capability (-fthread-safety)
-# define VL_TRY_ACQUIRE_SHARED(...)  ///< Function returns bool if aquired shared (-fthread-safety)
+# define VL_TRY_ACQUIRE(...)  ///< Function returns bool if acquired a capability (-fthread-safety)
+# define VL_TRY_ACQUIRE_SHARED(...)  ///< Function returns bool if acquired shared (-fthread-safety)
 # define VL_REQUIRES(x)  ///< Function requires a capability inbound (-fthread-safety)
 # define VL_EXCLUDES(x)  ///< Function requires not having a capability inbound (-fthread-safety)
 # define VL_CAPABILITY(x)  ///< Name of capability/lock (-fthread-safety)
@@ -148,7 +148,11 @@
 #endif
 
 // Comment tag that Function is pure (and thus also VL_MT_SAFE)
-#define VL_PURE
+#if defined(__clang__)
+# define VL_PURE __attribute__((annotate("PURE")))
+#else
+# define VL_PURE
+#endif
 // Comment tag that function is threadsafe
 #if defined(__clang__)
 # define VL_MT_SAFE __attribute__((annotate("MT_SAFE")))
@@ -157,9 +161,17 @@
 #endif
 // Comment tag that function is threadsafe, only
 // during normal operation (post-init)
-#define VL_MT_SAFE_POSTINIT
+#if defined(__clang__)
+# define VL_MT_SAFE_POSTINIT __attribute__((annotate("MT_SAFE_POSTINIT")))
+#else
+# define VL_MT_SAFE_POSTINIT
+#endif
 // Attribute that function is clang threadsafe and uses given mutex
-#define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
+#if defined(__clang__)
+# define VL_MT_SAFE_EXCLUDES(mutex) __attribute__((annotate("MT_SAFE_EXCLUDES"))) VL_EXCLUDES(mutex)
+#else
+# define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
+#endif
 // Comment tag that function is not threadsafe
 #if defined(__clang__)
 # define VL_MT_UNSAFE __attribute__((annotate("MT_UNSAFE")))
@@ -168,7 +180,17 @@
 #endif
 // Comment tag that function is not threadsafe
 // protected to make sure single-caller
-#define VL_MT_UNSAFE_ONE
+#if defined(__clang__)
+# define VL_MT_UNSAFE_ONE __attribute__((annotate("MT_UNSAFE_ONE")))
+#else
+# define VL_MT_UNSAFE_ONE
+#endif
+// Comment tag that function is entry point of parallelization
+#if defined(__clang__)
+# define VL_MT_START __attribute__((annotate("MT_START")))
+#else
+# define VL_MT_START
+#endif
 
 #ifndef VL_NO_LEGACY
 # define VL_ULL(c) (c##ULL)  // Add appropriate suffix to 64-bit constant (deprecated)
@@ -209,10 +231,16 @@
         } while (false); \
     } while (false)
 
+#ifdef _MSC_VER
+# if _MSC_VER < 1929
+#  error "Verilator requires at least Visual Studio 2019 version 16.11.2"
+# endif
+#endif
+
 //=========================================================================
 // C++-2011
 
-#if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK)
+#if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK) || defined(_MSC_VER)
 #else
 # error "Verilator requires a C++11 or newer compiler"
 #endif
@@ -365,9 +393,9 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 
 #define VL_BYTESIZE 8  ///< Bits in a CData / byte
 #define VL_SHORTSIZE 16  ///< Bits in a SData / short
-#define VL_IDATASIZE 32  ///< Bits in a IData / word
+#define VL_IDATASIZE 32  ///< Bits in an IData / word
 #define VL_QUADSIZE 64  ///< Bits in a QData / quadword
-#define VL_EDATASIZE 32  ///< Bits in a EData (WData entry)
+#define VL_EDATASIZE 32  ///< Bits in an EData (WData entry)
 #define VL_EDATASIZE_LOG2 5  ///< log2(VL_EDATASIZE)
 #define VL_CACHE_LINE_BYTES 64  ///< Bytes in a cache line (for alignment)
 
@@ -421,7 +449,7 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_BITWORD_E(bit) ((bit) >> VL_EDATASIZE_LOG2)  ///< Word number for a wide quantity
 #define VL_BITBIT_I(bit) ((bit) & VL_SIZEBITS_I)  ///< Bit number for a bit in a long
 #define VL_BITBIT_Q(bit) ((bit) & VL_SIZEBITS_Q)  ///< Bit number for a bit in a quad
-#define VL_BITBIT_E(bit) ((bit) & VL_SIZEBITS_E)  ///< Bit number for a bit in a EData
+#define VL_BITBIT_E(bit) ((bit) & VL_SIZEBITS_E)  ///< Bit number for a bit in an EData
 
 // Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
 #define VL_BITISSET_I(data, bit) ((data) & (VL_UL(1) << VL_BITBIT_I(bit)))

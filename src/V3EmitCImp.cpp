@@ -552,7 +552,7 @@ class EmitCImp final : EmitCFunc {
         m_modp = modp;
 
         // Emit implementation of this module, if this is an AstClassPackage, then put the
-        // corresponding AstClass implementation in the same file as often optimziations are
+        // corresponding AstClass implementation in the same file as often optimizations are
         // possible when both are seen by the compiler
         // TODO: is the above comment still true?
 

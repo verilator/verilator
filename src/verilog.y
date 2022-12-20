@@ -776,6 +776,13 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_DISPLAYB     "$displayb"
 %token<fl>              yD_DISPLAYH     "$displayh"
 %token<fl>              yD_DISPLAYO     "$displayo"
+%token<fl>              yD_DIST_CHI_SQUARE "$dist_chi_square"
+%token<fl>              yD_DIST_ERLANG  "$dist_erlang"
+%token<fl>              yD_DIST_EXPONENTIAL "$dist_exponential"
+%token<fl>              yD_DIST_NORMAL  "$dist_normal"
+%token<fl>              yD_DIST_POISSON "$dist_poisson"
+%token<fl>              yD_DIST_T       "$dist_t"
+%token<fl>              yD_DIST_UNIFORM "$dist_uniform"
 %token<fl>              yD_DUMPALL      "$dumpall"
 %token<fl>              yD_DUMPFILE     "$dumpfile"
 %token<fl>              yD_DUMPFLUSH    "$dumpflush"
@@ -984,9 +991,9 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yP_SRIGHTEQ     ">>="
 %token<fl>              yP_SSRIGHTEQ    ">>>="
 
-// [* is not a operator, as "[ * ]" is legal
+// [* is not an operator, as "[ * ]" is legal
 // [= and [-> could be repitition operators, but to match [* we don't add them.
-// '( is not a operator, as "' (" is legal
+// '( is not an operator, as "' (" is legal
 
 //********************
 // Verilog op precedence
@@ -4036,6 +4043,13 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
                           BBUNSUP($11, "Unsupported: $countbits with more than 3 control fields"); }
         |       yD_COUNTONES '(' expr ')'               { $$ = new AstCountOnes{$1, $3}; }
         |       yD_DIMENSIONS '(' exprOrDataType ')'    { $$ = new AstAttrOf{$1, VAttrType::DIM_DIMENSIONS, $3}; }
+        |       yD_DIST_CHI_SQUARE '(' expr ',' expr ')'        { $$ = new AstDistChiSquare{$1, $3, $5}; }
+        |       yD_DIST_ERLANG '(' expr ',' expr ',' expr ')'   { $$ = new AstDistErlang{$1, $3, $5, $7}; }
+        |       yD_DIST_EXPONENTIAL '(' expr ',' expr ')'       { $$ = new AstDistExponential{$1, $3, $5}; }
+        |       yD_DIST_NORMAL '(' expr ',' expr ',' expr ')'   { $$ = new AstDistNormal{$1, $3, $5, $7}; }
+        |       yD_DIST_POISSON '(' expr ',' expr ')'   { $$ = new AstDistPoisson{$1, $3, $5}; }
+        |       yD_DIST_T '(' expr ',' expr ')'         { $$ = new AstDistT{$1, $3, $5}; }
+        |       yD_DIST_UNIFORM '(' expr ',' expr ',' expr ')'  { $$ = new AstDistUniform{$1, $3, $5, $7}; }
         |       yD_EXP '(' expr ')'                     { $$ = new AstExpD{$1, $3}; }
         |       yD_FELL '(' expr ')'                    { $$ = new AstFell{$1, $3}; }
         |       yD_FELL '(' expr ',' expr ')'           { $$ = $3; BBUNSUP($1, "Unsupported: $fell and clock arguments"); }

@@ -287,7 +287,7 @@ detailed descriptions of these arguments.
 
 =for VL_SPHINX_EXTRACT "_build/gen/args_verilator.rst"
 
-    <file.v>                    Verilog package, module and top module filenames
+    <file.v>                    Verilog package, module, and top module filenames
     <file.c/cc/cpp>             Optional C++ files to compile in
     <file.a/o/so>               Optional C++ files to link in
 
@@ -379,7 +379,7 @@ detailed descriptions of these arguments.
     --MP                        Create phony dependency targets
      +notimingchecks            Ignored
      -O0                        Disable optimizations
-     -O3                        High performance optimizations
+     -O3                        High-performance optimizations
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
     --no-order-clock-delay      Disable ordering clock enable assignments
@@ -387,14 +387,14 @@ detailed descriptions of these arguments.
     --output-split-cfuncs <statements>   Split model functions
     --output-split-ctrace <statements>   Split tracing functions
      -P                         Disable line numbers and blanks with -E
-    --pins-bv <bits>            Specify types for top level ports
-    --pins-sc-biguint           Specify types for top level ports
-    --pins-sc-uint              Specify types for top level ports
-    --pins-uint8                Specify types for top level ports
+    --pins-bv <bits>            Specify types for top-level ports
+    --pins-sc-biguint           Specify types for top-level ports
+    --pins-sc-uint              Specify types for top-level ports
+    --pins-uint8                Specify types for top-level ports
     --no-pins64                 Don't use uint64_t's for 33-64 bit sigs
     --pipe-filter <command>     Filter all input through a script
     --pp-comments               Show preprocessor comments with -E
-    --prefix <topname>          Name of top level class
+    --prefix <topname>          Name of top-level class
     --private                   Debugging; see docs
     --prof-c                    Compile C++ code with profiling
     --prof-cfuncs               Name functions for profiling
@@ -426,7 +426,7 @@ detailed descriptions of these arguments.
     --timescale <timescale>     Sets default timescale
     --timescale-override <timescale>  Overrides all timescales
     --top <topname>             Alias of --top-module
-    --top-module <topname>      Name of top level input module
+    --top-module <topname>      Name of top-level input module
     --trace                     Enable waveform creation
     --trace-coverage            Enable tracing of coverage
     --trace-depth <levels>      Depth of tracing

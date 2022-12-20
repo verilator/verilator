@@ -774,6 +774,21 @@ private:
             }
         }
     }
+    void visit(AstNodeDistBiop* nodep) override {
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckSigned32(nodep, "seed", nodep->lhsp(), BOTH);
+            iterateCheckSigned32(nodep, "RHS", nodep->rhsp(), BOTH);
+            nodep->dtypeSetSigned32();
+        }
+    }
+    void visit(AstNodeDistTriop* nodep) override {
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckSigned32(nodep, "seed", nodep->lhsp(), BOTH);
+            iterateCheckSigned32(nodep, "RHS", nodep->rhsp(), BOTH);
+            iterateCheckSigned32(nodep, "THS", nodep->thsp(), BOTH);
+            nodep->dtypeSetSigned32();
+        }
+    }
     void visit(AstNodeStream* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
@@ -1139,7 +1154,7 @@ private:
         if (nodep->didWidthAndSet()) return;
         if (m_vup && m_vup->prelim()) {
             if (VN_IS(nodep->dtypep()->skipRefToEnump(), EnumDType)) {
-                // Assume this constant was properly casted ealier
+                // Assume this constant was properly casted earlier
                 // (Otherwise it couldn't have an enum data type)
             } else if (nodep->num().isString()) {
                 nodep->dtypeSetString();
@@ -1714,7 +1729,7 @@ private:
             userIterate(nodep->subDTypep(), nullptr);
             nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
             nodep->typedefp(nullptr);  // Note until line above subDTypep() may have followed this
-            // Widths are resolved, but special iterate to check for recurstion
+            // Widths are resolved, but special iterate to check for recursion
             userIterate(nodep->subDTypep(), nullptr);
         }
         // Effectively nodep->dtypeFrom(nodep->dtypeSkipRefp());
@@ -1733,7 +1748,7 @@ private:
                                                           << refp->warnOther()
                                                           << "... Location of reference\n"
                                                           << refp->warnContextSecondary());
-            // May cause internel error but avoids infinite loop on dump
+            // May cause internal error but avoids infinite loop on dump
             refp->typedefp(nullptr);
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
@@ -1847,7 +1862,7 @@ private:
         UINFO(9, "CAST " << nodep << endl);
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         if (m_vup->prelim()) {
-            // if (debug()) nodep->dumpTree("-  CastPre: ");
+            if (debug() >= 9) nodep->dumpTree("-  CastPre: ");
             // if (debug()) nodep->backp()->dumpTree("-  CastPreUpUp: ");
             userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM}.p());
             AstNodeDType* const toDtp = nodep->dtypep()->skipRefToEnump();
@@ -1923,18 +1938,22 @@ private:
             }
             if (!newp) newp = nodep->fromp()->unlinkFrBack();
             nodep->fromp(newp);
-            // if (debug()) nodep->dumpTree("-  CastOut: ");
+            if (debug() >= 9) nodep->dumpTree("-  CastOut: ");
             // if (debug()) nodep->backp()->dumpTree("-  CastOutUpUp: ");
         }
         if (m_vup->final()) {
+            if (debug() >= 9) nodep->dumpTree(cout, "-  CastFPit: ");
             iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, nodep->fromp()->dtypep(),
                          EXTEND_EXP, false);
-            AstNode* const underp = nodep->fromp()->unlinkFrBack();
-            // if (debug()) underp->dumpTree("-  CastRep: ");
+            if (debug() >= 9) nodep->dumpTree("-  CastFin: ");
+            AstNodeExpr* const underp = nodep->fromp()->unlinkFrBack();
             underp->dtypeFrom(nodep);
-            nodep->replaceWith(underp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             underp->didWidth(true);
+            AstNodeExpr* const newp = new AstCastWrap{nodep->fileline(), underp};
+            newp->didWidth(true);
+            if (debug() >= 9) newp->dumpTree("-  CastRep: ");
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstCastSize* nodep) override {
@@ -1958,6 +1977,10 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         // if (debug()) nodep->dumpTree("-  CastSizeOut: ");
+    }
+    void visit(AstCastWrap* nodep) override {
+        // Inserted by V3Width only so we know has been resolved
+        userIterateAndNext(nodep->lhsp(), WidthVP{nodep->dtypep(), BOTH}.p());
     }
     void castSized(AstNode* nodep, AstNode* underp, int width) {
         const AstBasicDType* underDtp = VN_CAST(underp->dtypep(), BasicDType);
@@ -3818,7 +3841,7 @@ private:
             const auto it = patmap.find(memp);
             AstPatMember* patp = nullptr;
             if (it == patmap.end()) {
-                // default or deafult_type assignment
+                // default or default_type assignment
                 if (AstNodeUOrStructDType* const memp_nested_vdtypep
                     = VN_CAST(memp->virtRefDTypep(), NodeUOrStructDType)) {
                     newp = nestedvalueConcat_patternUOrStruct(memp_nested_vdtypep, defaultp, newp,
@@ -6982,28 +7005,20 @@ private:
         toDtp = toDtp->skipRefToEnump();
         fromDtp = fromDtp->skipRefToEnump();
         if (toDtp == fromDtp) return COMPATIBLE;
-        const AstNodeDType* fromBaseDtp = fromDtp;
-        while (const AstPackArrayDType* const packp = VN_CAST(fromBaseDtp, PackArrayDType)) {
-            fromBaseDtp = packp->subDTypep();
-            while (const AstRefDType* const refp = VN_CAST(fromBaseDtp, RefDType)) {
-                fromBaseDtp = refp->refDTypep();
-            }
-        }
+
+        // UNSUP unpacked struct/unions (treated like BasicDType)
+        const AstNodeDType* fromBaseDtp = computeCastableBase(fromDtp);
         const bool fromNumericable = VN_IS(fromBaseDtp, BasicDType)
                                      || VN_IS(fromBaseDtp, EnumDType)
                                      || VN_IS(fromBaseDtp, NodeUOrStructDType);
 
-        const AstNodeDType* toBaseDtp = toDtp;
-        while (const AstPackArrayDType* const packp = VN_CAST(toBaseDtp, PackArrayDType)) {
-            toBaseDtp = packp->subDTypep();
-            while (const AstRefDType* const refp = VN_CAST(toBaseDtp, RefDType)) {
-                toBaseDtp = refp->refDTypep();
-            }
-        }
+        const AstNodeDType* toBaseDtp = computeCastableBase(toDtp);
         const bool toNumericable
             = VN_IS(toBaseDtp, BasicDType) || VN_IS(toBaseDtp, NodeUOrStructDType);
-        // UNSUP unpacked struct/unions (treated like BasicDType)
-        if (toNumericable) {
+
+        if (toBaseDtp == fromBaseDtp) {
+            return COMPATIBLE;
+        } else if (toNumericable) {
             if (fromNumericable) return COMPATIBLE;
         } else if (VN_IS(toDtp, EnumDType)) {
             if (VN_IS(fromBaseDtp, EnumDType) && toDtp->sameTree(fromDtp)) return ENUM_IMPLICIT;
@@ -7025,6 +7040,20 @@ private:
             }
         }
         return castable;
+    }
+    static const AstNodeDType* computeCastableBase(const AstNodeDType* nodep) {
+        while (true) {
+            if (const AstPackArrayDType* const packp = VN_CAST(nodep, PackArrayDType)) {
+                nodep = packp->subDTypep();
+                continue;
+            } else if (const AstNodeDType* const refp = nodep->skipRefToEnump()) {
+                if (refp != nodep) {
+                    nodep = refp;
+                    continue;
+                }
+            }
+            return nodep;
+        }
     }
 
     //----------------------------------------------------------------------

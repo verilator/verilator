@@ -107,6 +107,7 @@ class V3Global final {
     bool m_dpi = false;  // Need __Dpi include files
     bool m_hasEvents = false;  // Design uses SystemVerilog named events
     bool m_hasClasses = false;  // Design uses SystemVerilog classes
+    bool m_usesProbDist = false;  // Uses $dist_*
     bool m_usesStdPackage = false;  // Design uses the std package
     bool m_usesTiming = false;  // Design uses timing constructs
     bool m_hasForceableSignals = false;  // Need to apply V3Force pass
@@ -126,7 +127,7 @@ public:
     V3Global() {}
     void boot();
     void clear();
-    void shutdown();  // Release allocated resorces
+    void shutdown();  // Release allocated resources
     // ACCESSORS (general)
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }
     VWidthMinUsage widthMinUsage() const { return m_widthMinUsage; }
@@ -153,6 +154,8 @@ public:
     void setHasEvents() { m_hasEvents = true; }
     bool hasClasses() const { return m_hasClasses; }
     void setHasClasses() { m_hasClasses = true; }
+    bool usesProbDist() const { return m_usesProbDist; }
+    void setUsesProbDist() { m_usesProbDist = true; }
     bool usesStdPackage() const { return m_usesStdPackage; }
     void setUsesStdPackage() { m_usesStdPackage = true; }
     bool usesTiming() const { return m_usesTiming; }

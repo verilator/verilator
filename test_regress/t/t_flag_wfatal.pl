@@ -14,7 +14,6 @@ top_filename("t/t_flag_wfatal.v");
 
 lint(
     verilator_flags2 => ["--lint-only -Wno-fatal"],
-    fails => 0,
     expect_filename => $Self->{golden_filename},
     );
 

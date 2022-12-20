@@ -281,7 +281,7 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
 
 static uint32_t vl_sys_rand32() VL_MT_SAFE {
     // Return random 32-bits using system library.
-    // Used only to construct seed for Verilator's PNRG.
+    // Used only to construct seed for Verilator's PRNG.
     static VerilatedMutex s_mutex;
     const VerilatedLockGuard lock{s_mutex};  // Otherwise rand is unsafe
 #if defined(_WIN32) && !defined(__CYGWIN__)
@@ -595,7 +595,7 @@ double VL_ITOR_D_W(int lbits, const WDataInP lwp) VL_PURE {
     const double d = (hi + mid + lo) * std::exp2(VL_EDATASIZE * (ms_word - 2));
     return d;
 }
-double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_PURE {
+double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_MT_SAFE {
     if (!VL_SIGN_W(lbits, lwp)) return VL_ITOR_D_W(lbits, lwp);
     uint32_t pos[VL_MULS_MAX_WORDS + 1];  // Fixed size, as MSVC++ doesn't allow [words] here
     VL_NEGATE_W(VL_WORDS_I(lbits), pos, lwp);
@@ -1083,7 +1083,8 @@ static void _vl_vsss_read_str(FILE* fp, int& floc, const WDataInP fromp, const s
     // VL_DBG_MSGF(" _read got='"<<tmpp<<"'\n");
 }
 static char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp, const std::string& fstr,
-                               char* beginp, std::size_t n, const bool inhibit = false) {
+                               char* beginp, std::size_t n,
+                               const bool inhibit = false) VL_MT_SAFE {
     // Variant of _vl_vsss_read_str using the same underlying I/O functions but optimized
     // specifically for block reads of N bytes (read operations are not demarcated by
     // whitespace). In the fp case, except descriptor to have been opened in binary mode.
@@ -1095,12 +1096,13 @@ static char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp, const 
     }
     return beginp;
 }
-static void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits, IData ld) VL_MT_SAFE {
-    for (; nbits && lsb < obits; nbits--, lsb++, ld >>= 1) { VL_ASSIGNBIT_WI(lsb, owp, ld & 1); }
+static void _vl_vsss_setbit(WDataOutP iowp, int obits, int lsb, int nbits, IData ld) VL_MT_SAFE {
+    for (; nbits && lsb < obits; nbits--, lsb++, ld >>= 1) VL_ASSIGNBIT_WI(lsb, iowp, ld & 1);
 }
 static void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp,
                            size_t posstart, size_t posend) VL_MT_SAFE {
     // Read in base "2^^baseLog2" digits from strp[posstart..posend-1] into owp of size obits.
+    VL_ZERO_W(obits, owp);
     int lsb = 0;
     for (int i = 0, pos = static_cast<int>(posend) - 1;
          i < obits && pos >= static_cast<int>(posstart); --pos) {
@@ -1796,18 +1798,18 @@ std::string VL_TO_STRING_W(int words, const WDataInP obj) {
     return VL_SFORMATF_NX("'h%0x", words * VL_EDATASIZE, obj);
 }
 
-std::string VL_TOLOWER_NN(const std::string& ld) VL_MT_SAFE {
+std::string VL_TOLOWER_NN(const std::string& ld) VL_PURE {
     std::string out = ld;
     for (auto& cr : out) cr = std::tolower(cr);
     return out;
 }
-std::string VL_TOUPPER_NN(const std::string& ld) VL_MT_SAFE {
+std::string VL_TOUPPER_NN(const std::string& ld) VL_PURE {
     std::string out = ld;
     for (auto& cr : out) cr = std::toupper(cr);
     return out;
 }
 
-std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_MT_SAFE {
+std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_PURE {
     // See also _vl_vint_to_string
     char destout[VL_VALUE_STRING_MAX_CHARS + 1];
     const int obits = lwords * VL_EDATASIZE;
@@ -2223,7 +2225,7 @@ static const char* vl_time_str(int scale) VL_PURE {
     return names[2 - scale];
 }
 double vl_time_multiplier(int scale) VL_PURE {
-    // Return timescale multipler -18 to +18
+    // Return timescale multiplier -18 to +18
     // For speed, this does not check for illegal values
     // cppcheck-has-bug-suppress arrayIndexOutOfBoundsCond
     if (scale < 0) {
@@ -2340,8 +2342,8 @@ void VerilatedContext::checkMagic(const VerilatedContext* contextp) {
 
 VerilatedContext::Serialized::Serialized() {
     constexpr int8_t picosecond = -12;
-    m_timeunit = picosecond;  // Initial value until overriden by _Vconfigure
-    m_timeprecision = picosecond;  // Initial value until overriden by _Vconfigure
+    m_timeunit = picosecond;  // Initial value until overridden by _Vconfigure
+    m_timeprecision = picosecond;  // Initial value until overridden by _Vconfigure
 }
 
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
@@ -2454,14 +2456,17 @@ void VerilatedContext::threads(unsigned n) {
 }
 
 void VerilatedContext::commandArgs(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex) {
-    const VerilatedLockGuard lock{m_argMutex};
-    m_args.m_argVec.clear();  // Empty first, then add
-    impp()->commandArgsAddGuts(argc, argv);
+    // Not locking m_argMutex here, it is done in impp()->commandArgsAddGuts
+    // m_argMutex here is the same as in impp()->commandArgsAddGuts;
+    // due to clang limitations, it doesn't properly check it
+    impp()->commandArgsGuts(argc, argv);
 }
 void VerilatedContext::commandArgsAdd(int argc, const char** argv)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
-    const VerilatedLockGuard lock{m_argMutex};
-    impp()->commandArgsAddGuts(argc, argv);
+    // Not locking m_argMutex here, it is done in impp()->commandArgsAddGuts
+    // m_argMutex here is the same as in impp()->commandArgsAddGuts;
+    // due to clang limitations, it doesn't properly check it
+    impp()->commandArgsAddGutsLock(argc, argv);
 }
 const char* VerilatedContext::commandArgsPlusMatch(const char* prefixp)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
@@ -2510,6 +2515,18 @@ VerilatedContext::enableExecutionProfiler(VerilatedVirtualBase* (*construct)(Ver
 
 //======================================================================
 // VerilatedContextImp:: Methods - command line
+void VerilatedContextImp::commandArgsGuts(int argc, const char** argv)
+    VL_MT_SAFE_EXCLUDES(m_argMutex) {
+    const VerilatedLockGuard lock{m_argMutex};
+    m_args.m_argVec.clear();  // Empty first, then add
+    commandArgsAddGuts(argc, argv);
+}
+
+void VerilatedContextImp::commandArgsAddGutsLock(int argc, const char** argv)
+    VL_MT_SAFE_EXCLUDES(m_argMutex) {
+    const VerilatedLockGuard lock{m_argMutex};
+    commandArgsAddGuts(argc, argv);
+}
 
 void VerilatedContextImp::commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(m_argMutex) {
     if (!m_args.m_argVecLoaded) m_args.m_argVec.clear();
@@ -2659,7 +2676,7 @@ void VerilatedContext::randSeed(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock{VerilatedContextImp::s().s_randMutex};
     m_s.m_randSeed = val;
     const uint64_t newEpoch = VerilatedContextImp::s().s_randSeedEpoch + 1;
-    // Obververs must see new epoch AFTER seed updated
+    // Observers must see new epoch AFTER seed updated
     std::atomic_signal_fence(std::memory_order_release);
     VerilatedContextImp::s().s_randSeedEpoch = newEpoch;
 }
@@ -2774,27 +2791,38 @@ static struct {
     VoidPCbList s_exitCbs VL_GUARDED_BY(s_exitMutex);
 } VlCbStatic;
 
-static void addCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) {
+static void addCbFlush(Verilated::VoidPCb cb, void* datap)
+    VL_MT_SAFE_EXCLUDES(VlCbStatic.s_flushMutex) {
+    const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
-    cbs.remove(pair);  // Just in case it's a duplicate
-    cbs.push_back(pair);
+    VlCbStatic.s_flushCbs.remove(pair);  // Just in case it's a duplicate
+    VlCbStatic.s_flushCbs.push_back(pair);
 }
-static void removeCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) {
+static void addCbExit(Verilated::VoidPCb cb, void* datap)
+    VL_MT_SAFE_EXCLUDES(VlCbStatic.s_exitMutex) {
+    const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
-    cbs.remove(pair);
+    VlCbStatic.s_exitCbs.remove(pair);  // Just in case it's a duplicate
+    VlCbStatic.s_exitCbs.push_back(pair);
+}
+static void removeCbFlush(Verilated::VoidPCb cb, void* datap)
+    VL_MT_SAFE_EXCLUDES(VlCbStatic.s_flushMutex) {
+    const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
+    std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
+    VlCbStatic.s_flushCbs.remove(pair);
+}
+static void removeCbExit(Verilated::VoidPCb cb, void* datap)
+    VL_MT_SAFE_EXCLUDES(VlCbStatic.s_exitMutex) {
+    const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
+    std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
+    VlCbStatic.s_exitCbs.remove(pair);
 }
 static void runCallbacks(const VoidPCbList& cbs) VL_MT_SAFE {
     for (const auto& i : cbs) i.first(i.second);
 }
 
-void Verilated::addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
-    addCb(cb, datap, VlCbStatic.s_flushCbs);
-}
-void Verilated::removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
-    removeCb(cb, datap, VlCbStatic.s_flushCbs);
-}
+void Verilated::addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE { addCbFlush(cb, datap); }
+void Verilated::removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE { removeCbFlush(cb, datap); }
 void Verilated::runFlushCallbacks() VL_MT_SAFE {
     // Flush routines may call flush, so avoid mutex deadlock
     static std::atomic<int> s_recursing;
@@ -2811,14 +2839,8 @@ void Verilated::runFlushCallbacks() VL_MT_SAFE {
     VL_GCOV_DUMP();
 }
 
-void Verilated::addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
-    addCb(cb, datap, VlCbStatic.s_exitCbs);
-}
-void Verilated::removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
-    removeCb(cb, datap, VlCbStatic.s_exitCbs);
-}
+void Verilated::addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE { addCbExit(cb, datap); }
+void Verilated::removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE { removeCbExit(cb, datap); }
 void Verilated::runExitCallbacks() VL_MT_SAFE {
     static std::atomic<int> s_recursing;
     if (!s_recursing++) {
@@ -3117,7 +3139,7 @@ void VlDeleter::deleteAll() {
         if (m_newGarbage.empty()) break;
         VerilatedLockGuard deleteLock{m_deleteMutex};
         std::swap(m_newGarbage, m_toDelete);
-        lock.unlock();  // So destuctors can enqueue new objects
+        lock.unlock();  // So destructors can enqueue new objects
         for (VlDeletable* const objp : m_toDelete) delete objp;
         m_toDelete.clear();
     }

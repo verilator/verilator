@@ -1971,13 +1971,9 @@ private:
                 tasksByRank[writerMtaskp->rank()].insert(writerMtaskp);
             }
         }
-        // Find all reader tasks for this variable, group by rank.
-        for (V3GraphEdge* edgep = varVtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            if (const auto* const logicVtxp = dynamic_cast<OrderLogicVertex*>(edgep->fromp())) {
-                LogicMTask* const readerMtaskp = static_cast<LogicMTask*>(logicVtxp->userp());
-                tasksByRank[readerMtaskp->rank()].insert(readerMtaskp);
-            }
-        }
+        // Not: Find all reader tasks for this variable, group by rank.
+        // There was "broken" code here to find readers, but fixing it to
+        // work properly harmed performance on some tests, see #3360.
     }
     void mergeSameRankTasks(const TasksByRank& tasksByRank) {
         LogicMTask* lastRecipientp = nullptr;

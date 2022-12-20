@@ -115,7 +115,7 @@ public:
     /// (I.E. all loops will occur within each color, not between them.)
     void stronglyConnected(V3EdgeFuncP edgeFuncp);
 
-    /// Assign a ordering number to all vertexes in a tree.
+    /// Assign an ordering number to all vertexes in a tree.
     /// All nodes with no inputs will get rank 1
     void rank(V3EdgeFuncP edgeFuncp);
     void rank();

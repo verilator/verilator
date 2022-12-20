@@ -183,6 +183,13 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$displayb"           { FL; return yD_DISPLAYB; }
   "$displayh"           { FL; return yD_DISPLAYH; }
   "$displayo"           { FL; return yD_DISPLAYO; }
+  "$dist_chi_square"    { FL; return yD_DIST_CHI_SQUARE; }
+  "$dist_erlang"        { FL; return yD_DIST_ERLANG; }
+  "$dist_exponential"   { FL; return yD_DIST_EXPONENTIAL; }
+  "$dist_normal"        { FL; return yD_DIST_NORMAL; }
+  "$dist_poisson"       { FL; return yD_DIST_POISSON; }
+  "$dist_t"             { FL; return yD_DIST_T; }
+  "$dist_uniform"       { FL; return yD_DIST_UNIFORM; }
   "$dumpall"            { FL; return yD_DUMPALL; }
   "$dumpfile"           { FL; return yD_DUMPFILE; }
   "$dumpflush"          { FL; return yD_DUMPFLUSH; }

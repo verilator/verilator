@@ -248,7 +248,7 @@ protected:
 public:
     /// Returns the VerilatedContext this model is instantiated under
     /// Used to get to e.g. simulation time via contextp()->time()
-    VerilatedContext* contextp() const { return &m_context; }
+    VerilatedContext* contextp() const VL_MT_SAFE { return &m_context; }
     /// Returns the hierarchical name of this module instance.
     virtual const char* hierName() const = 0;
     /// Returns the name of this model (the name of the generated model class).
@@ -440,7 +440,7 @@ public:
     void errorLimit(int val) VL_MT_SAFE;
     /// Return number of errors/assertions before stop
     int errorLimit() const VL_MT_SAFE { return m_s.m_errorLimit; }
-    /// Set to throw fatal error on $stop/non-fatal ettot
+    /// Set to throw fatal error on $stop/non-fatal error
     void fatalOnError(bool flag) VL_MT_SAFE;
     /// Return if to throw fatal error on $stop/non-fatal
     bool fatalOnError() const VL_MT_SAFE { return m_s.m_fatalOnError; }
@@ -718,7 +718,7 @@ public:
         lastContextp(contextp);
     }
     /// Return the VerilatedContext for the current thread
-    static VerilatedContext* threadContextp() {
+    static VerilatedContext* threadContextp() VL_MT_SAFE {
         if (VL_UNLIKELY(!t_s.t_contextp)) t_s.t_contextp = lastContextp();
         return t_s.t_contextp;
     }
@@ -856,7 +856,8 @@ public:
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
     // Internal: Create a new module name by concatenating two strings
     // Returns pointer to thread-local static data (overwritten on next call)
-    static const char* catName(const char* n1, const char* n2, const char* delimiter = ".");
+    static const char* catName(const char* n1, const char* n2,
+                               const char* delimiter = ".") VL_MT_SAFE;
 
     // Internal: Throw signal assertion
     static void nullPointerError(const char* filename, int linenum) VL_ATTR_NORETURN VL_MT_SAFE;

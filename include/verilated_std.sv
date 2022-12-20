@@ -10,6 +10,17 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
+///
+/// \file
+/// \brief Verilated IEEE std:: header
+///
+/// This file is included automatically by Verilator when a std::mailbox or
+/// std::semaphore is referenced.
+///
+/// This file is not part of the Verilated public-facing API.
+/// It is only for internal use.
+///
+//*************************************************************************
 
 // verilator lint_off DECLFILENAME
 // verilator lint_off TIMESCALEMOD

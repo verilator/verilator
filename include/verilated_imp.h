@@ -387,7 +387,9 @@ private:
 
 protected:
     // METHODS - protected
-    void commandArgsAddGuts(int argc, const char** argv);
+    void commandArgsGuts(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex);
+    void commandArgsAddGutsLock(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex);
+    void commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(m_argMutex);
     void commandArgVl(const std::string& arg);
     bool commandArgVlString(const std::string& arg, const std::string& prefix,
                             std::string& valuer);
@@ -441,7 +443,7 @@ protected:
     friend class Verilated;
 
     // MEMBERS
-    static VerilatedImpData& s() {  // Singleton
+    static VerilatedImpData& s() VL_MT_SAFE {  // Singleton
         static VerilatedImpData s_s;
         return s_s;
     }

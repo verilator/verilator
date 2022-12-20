@@ -204,6 +204,7 @@ VL_INST_INC_BLDDIR_FILES = \
 # Files under srcdir, instead of build time
 VL_INST_INC_SRCDIR_FILES = \
 	include/*.[chv]* \
+	include/*.sv \
 	include/gtkwave/*.[chv]* \
 	include/vltstd/*.[chv]* \
 
@@ -396,6 +397,7 @@ PY_PROGRAMS = \
 	src/flexfix \
 	src/vlcovgen \
 	test_regress/t/*.pf \
+	nodist/clang_check_attributes \
 	nodist/code_coverage \
 	nodist/dot_importer \
 	nodist/fuzzer/actual_fail \

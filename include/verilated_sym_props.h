@@ -53,14 +53,14 @@ public:
         : m_left{left}
         , m_right{right} {}
     ~VerilatedRange() = default;
-    int left() const { return m_left; }
-    int right() const { return m_right; }
-    int low() const { return (m_left < m_right) ? m_left : m_right; }
-    int high() const { return (m_left > m_right) ? m_left : m_right; }
-    int elements() const {
+    int left() const VL_PURE { return m_left; }
+    int right() const VL_PURE { return m_right; }
+    int low() const VL_PURE { return (m_left < m_right) ? m_left : m_right; }
+    int high() const VL_PURE { return (m_left > m_right) ? m_left : m_right; }
+    int elements() const VL_PURE {
         return (VL_LIKELY(m_left >= m_right) ? (m_left - m_right + 1) : (m_right - m_left + 1));
     }
-    int increment() const { return (m_left >= m_right) ? 1 : -1; }
+    int increment() const VL_PURE { return (m_left >= m_right) ? 1 : -1; }
 };
 
 //===========================================================================

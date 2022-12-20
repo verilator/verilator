@@ -19,6 +19,7 @@
 
 #include "V3PreProc.h"
 
+#include "V3Config.h"
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3Global.h"
@@ -843,6 +844,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
         FileLine* const fl = new FileLine{flsp};
         fl->contentLineno(eof_lineno);
         fl->column(eof_newline + 1, eof_newline + 1);
+        V3Config::applyIgnores(fl);  // As preprocessor hasn't otherwise applied yet
         fl->v3warn(EOFNEWLINE, "Missing newline at end of file (POSIX 3.206).\n"
                                    << fl->warnMore() << "... Suggest add newline.");
     }
@@ -1000,7 +1002,7 @@ int V3PreProcImp::getStateToken() {
 
         if (tok == VP_DEFREF_JOIN) {
             // Here's something fun and unspecified as yet:
-            // The existence of non-existance of a base define changes `` expansion
+            // The existence of non-existence of a base define changes `` expansion
             //  `define QA_b zzz
             //  `define Q1 `QA``_b
             //   1Q1 -> zzz
@@ -1247,7 +1249,7 @@ int V3PreProcImp::getStateToken() {
                 refp->nextarg(refp->nextarg() + rtn);
                 goto next_tok;
             } else if (tok == VP_STRIFY) {
-                // We must expand stringinfication, when done will return to this state
+                // We must expand stringification, when done will return to this state
                 statePush(ps_STRIFY);
                 goto next_tok;
             } else {

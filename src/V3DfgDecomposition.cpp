@@ -306,7 +306,7 @@ class ExtractCyclicComponents final {
     void mergeSCCs() {
         // Ensure that component boundaries are always at variables, by merging SCCs. Merging stops
         // at variable boundaries, so we don't need to iterate variables. Constants are reachable
-        // from their sinks, or ar unused, so we don't need to iterate them either.
+        // from their sinks, or are unused, so we don't need to iterate them either.
         for (DfgVertex *vtxp = m_dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
             nextp = vtxp->verticesNext();
             DfgVertex& vtx = *vtxp;

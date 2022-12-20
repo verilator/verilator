@@ -36,7 +36,7 @@
 class VerilatedCovImp;
 
 //=============================================================================
-/// Insert a item for coverage analysis.
+/// Insert an item for coverage analysis.
 /// The first argument is a pointer to the count to be dumped.
 /// The remaining arguments occur in pairs: A string key, and a value.
 /// The value may be a string, or another type which will be auto-converted to a string.
@@ -128,15 +128,15 @@ public:
 #define K(n) const char* key##n
 #define A(n) const char *key##n, const char *valp##n  // Argument list
 #define D(n) const char *key##n = nullptr, const char *valp##n = nullptr  // Argument list
-    void _insertp(D(0), D(1), D(2), D(3), D(4), D(5), D(6), D(7), D(8), D(9));
+    void _insertp(D(0), D(1), D(2), D(3), D(4), D(5), D(6), D(7), D(8), D(9)) VL_MT_SAFE;
     void _insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9), A(10), D(11), D(12),
-                  D(13), D(14), D(15), D(16), D(17), D(18), D(19));
+                  D(13), D(14), D(15), D(16), D(17), D(18), D(19)) VL_MT_SAFE;
     void _insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9), A(10), A(11), A(12),
                   A(13), A(14), A(15), A(16), A(17), A(18), A(19), A(20), D(21), D(22), D(23),
-                  D(24), D(25), D(26), D(27), D(28), D(29));
+                  D(24), D(25), D(26), D(27), D(28), D(29)) VL_MT_SAFE;
     // Backward compatibility for Verilator
     void _insertp(A(0), A(1), K(2), int val2, K(3), int val3, K(4), const std::string& val4, A(5),
-                  A(6), A(7));
+                  A(6), A(7)) VL_MT_SAFE;
 
 #undef K
 #undef A

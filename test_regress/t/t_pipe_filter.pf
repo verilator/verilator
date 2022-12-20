@@ -27,7 +27,7 @@ for cmd in sys.stdin:
 
         wholefile = ""
         # It's faster to slurp the whole file then scan (if needed)
-        with open(filename) as fh:
+        with open(filename, "r", encoding="utf8") as fh:
             wholefile = fh.read()
 
         if 'example_lint' in wholefile:  # else short circuit

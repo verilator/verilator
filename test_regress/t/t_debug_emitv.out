@@ -7,7 +7,7 @@ module Vt_debug_emitv_t;
     ???? // ENUMITEM 'ZERO'
     32'h0
     ???? // ENUMITEM 'ONE'
-    'sh1
+    32'h1
     ???? // REFDTYPE 'e_t'
     struct packed 
     {

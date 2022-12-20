@@ -212,9 +212,9 @@ struct VlWide final {
 
     // OPERATOR METHODS
     // Default copy assignment operators are used.
-    operator WDataOutP() { return &m_storage[0]; }  // This also allows []
-    operator WDataInP() const { return &m_storage[0]; }  // This also allows []
-    bool operator!=(const VlWide<T_Words>& that) const {
+    operator WDataOutP() VL_PURE { return &m_storage[0]; }  // This also allows []
+    operator WDataInP() const VL_PURE { return &m_storage[0]; }  // This also allows []
+    bool operator!=(const VlWide<T_Words>& that) const VL_PURE {
         for (size_t i = 0; i < T_Words; ++i) {
             if (m_storage[i] != that.m_storage[i]) return true;
         }
@@ -412,7 +412,7 @@ public:
     void sort(Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
         std::sort(m_deque.begin(), m_deque.end(), [=](const T_Value& a, const T_Value& b) {
-            // index number is meaninless with sort, as it changes
+            // index number is meaningless with sort, as it changes
             return with_func(0, a) < with_func(0, b);
         });
     }
@@ -421,7 +421,7 @@ public:
     void rsort(Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
         std::sort(m_deque.rbegin(), m_deque.rend(), [=](const T_Value& a, const T_Value& b) {
-            // index number is meaninless with sort, as it changes
+            // index number is meaningless with sort, as it changes
             return with_func(0, a) < with_func(0, b);
         });
     }

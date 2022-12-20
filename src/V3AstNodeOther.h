@@ -15,7 +15,7 @@
 //*************************************************************************
 //
 // This files contains all 'AstNode' sub-types that relate to other constructs
-// not covered by the more speficic V3AstNode*.h files.
+// not covered by the more specific V3AstNode*.h files.
 //
 //*************************************************************************
 
@@ -83,7 +83,7 @@ private:
     bool m_isHideProtected : 1;  // Verilog protected
     bool m_pure : 1;  // DPI import pure (vs. virtual pure)
     bool m_pureVirtual : 1;  // Pure virtual
-    bool m_recursive : 1;  // Recusive or part of recursion
+    bool m_recursive : 1;  // Recursive or part of recursion
     bool m_underGenerate : 1;  // Under generate (for warning)
     bool m_virtual : 1;  // Virtual method in class
     VLifetime m_lifetime;  // Lifetime
@@ -175,7 +175,7 @@ public:
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
 class AstNodeFile VL_NOT_FINAL : public AstNode {
-    // Emitted Otput file
+    // Emitted Output file
     // Parents:  NETLIST
     // @astgen op1 := tblockp : Optional[AstTextBlock]
 private:
@@ -210,7 +210,7 @@ private:
     bool m_modTrace : 1;  // Tracing this module
     bool m_inLibrary : 1;  // From a library, no error if not used, never top level
     bool m_dead : 1;  // LinkDot believes is dead; will remove in Dead visitors
-    bool m_hierBlock : 1;  // Hiearchical Block marked by HIER_BLOCK pragma
+    bool m_hierBlock : 1;  // Hierarchical Block marked by HIER_BLOCK pragma
     bool m_internal : 1;  // Internally created
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
@@ -356,7 +356,7 @@ class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := propp : AstNode
     // @astgen op2 := sentreep : Optional[AstSenTree]
     // op3 used by some sub-types only
-    // @astgen op4 := passsp: List[AstNode] // Statments when propp is passing/truthly
+    // @astgen op4 := passsp: List[AstNode] // Statements when propp is passing/truthly
     string m_name;  // Name to report
     const bool m_immediate;  // Immediate assertion/cover
 public:
@@ -1183,7 +1183,7 @@ public:
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
 };
 class AstPin final : public AstNode {
-    // A port or parameter assignment on an instantiaton
+    // A port or parameter assignment on an instantiation
     // @astgen op1 := exprp : Optional[AstNode] // NodeExpr or NodeDType (nullptr if unconnected)
 private:
     int m_pinNum;  // Pin number
@@ -2231,7 +2231,7 @@ public:
 
 // === AstNodeRange ===
 class AstBracketRange final : public AstNodeRange {
-    // Parser only concept "[lhsp]", a AstUnknownRange, QueueRange or Range,
+    // Parser only concept "[lhsp]", an AstUnknownRange, QueueRange or Range,
     // unknown until lhsp type is determined
     // @astgen op1 := elementsp : AstNode // Expr or DType
 public:
@@ -3353,7 +3353,7 @@ public:
 
 // === AstNodeCoverOrAssert ===
 class AstAssert final : public AstNodeCoverOrAssert {
-    // @astgen op3 := failsp: List[AstNode] // Statments when propp is failing/falsey
+    // @astgen op3 := failsp: List[AstNode] // Statements when propp is failing/falsey
 public:
     ASTGEN_MEMBERS_AstAssert;
     AstAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp, bool immediate,
@@ -3364,7 +3364,7 @@ public:
 };
 class AstAssertIntrinsic final : public AstNodeCoverOrAssert {
     // A $cast or other compiler inserted assert, that must run even without --assert option
-    // @astgen op3 := failsp: List[AstNode] // Statments when propp is failing/falsey
+    // @astgen op3 := failsp: List[AstNode] // Statements when propp is failing/falsey
 public:
     ASTGEN_MEMBERS_AstAssertIntrinsic;
     AstAssertIntrinsic(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp,

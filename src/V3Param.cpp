@@ -198,7 +198,7 @@ public:
             }
             return v3EpsilonEqual(var, hierOptParamp->num().toDouble());
         } else {  // Now integer type is assumed
-            // Bitwidth of hierOptParamp is accurate because V3Width already caluclated in the
+            // Bitwidth of hierOptParamp is accurate because V3Width already calculated in the
             // previous run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted
             // to hierOptParamp width.
             V3Number varNum{pinValuep, hierOptParamp->num().width()};
@@ -495,7 +495,7 @@ class ParamProcessor final {
                     if (varp->isGParam()) {
                         AstConst* const constp = VN_CAST(varp->valuep(), Const);
                         // constp can be nullptr if the parameter is not used to instantiate sub
-                        // module. varp->valuep() is not contified yet in the case.
+                        // module. varp->valuep() is not constified yet in the case.
                         // nullptr means that the parameter is using some default value.
                         params.emplace(varp->name(), constp);
                     }

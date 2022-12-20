@@ -656,7 +656,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     void aggregateTriSameStrength(AstNodeModule* nodep, AstVar* const varp, AstVar* const envarp,
                                   RefStrengthVec::iterator beginStrength,
                                   RefStrengthVec::iterator endStrength) {
-        // For each driver seperate variables (normal and __en) are created and initialized with
+        // For each driver separate variables (normal and __en) are created and initialized with
         // values. In case of normal variable, the original expression is reused. Their values are
         // aggregated using | to form one expression, which are assigned to varp end envarp.
         AstNodeExpr* orp = nullptr;

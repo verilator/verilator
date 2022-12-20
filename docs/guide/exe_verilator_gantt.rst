@@ -5,16 +5,16 @@ verilator_gantt
 ===============
 
 Verilator_gantt creates a visual representation to help analyze Verilator
-multithreaded simulation performance, by showing when each macro-task
-starts and ends, and showing when each thread is busy or idle.
+multithreaded simulation performance by showing when each macro-task
+starts, ends, and when each thread is busy or idle.
 
-For an overview of use of verilator_gantt, see :ref:`Profiling`.
+For an overview of the use of verilator_gantt, see :ref:`Profiling`.
 
 Gantt Chart VCD
 ---------------
 
 Verilated_gantt creates a value change dump (VCD) format dump file which
-may be viewed in a waveform viewer (e.g. C<GTKWave>):
+may be viewed in a waveform viewer (e.g., C<GTKWave>):
 
 .. figure:: figures/fig_gantt_min.png
 
@@ -27,9 +27,8 @@ time tick of the system's high-performance counter.
 Gantt Chart VCD Signals
 -----------------------
 
-In waveforms there are the following signals. In GTKWave, using a data
-format of "decimal" will remove the leading zeros and make the traces
-easier to read.
+In waveforms, there are the following signals. In GTKWave, use "decimal"
+data format to remove the leading zeros and make the traces easier to read.
 
 evals
   Increments each time when eval_step was measured to be active.  This
@@ -37,12 +36,12 @@ evals
 
 eval_loop
   Increments each time when the evaluation loop within eval_step was
-  measured to be active.  For best performance there is only a single
-  evaluation loop within each eval_step call, that is the eval_loop
+  measured to be active.  For best performance, there is only a single
+  evaluation loop within each eval_step call; that is, the eval_loop
   waveform looks identical to the evals waveform.
 
 measured_parallelism
-  The number of mtasks active at this time, for best performance this will
+  The number of mtasks active at this time, for best performance, this will
   match the thread count. In GTKWave, use a data format of "analog step" to
   view this signal.
 
@@ -72,7 +71,7 @@ verilator_gantt Arguments
 
 .. option:: <filename>
 
-The filename to read data from, defaults to "profile_exec.dat".
+The filename to read data from; the default is "profile_exec.dat".
 
 .. option:: --help
 
@@ -84,4 +83,4 @@ Disables creating a .vcd file.
 
 .. option:: --vcd <filename>
 
-Sets the output filename for vcd dump. Default is "verilator_gantt.vcd".
+Sets the output filename for vcd dump; the default is "verilator_gantt.vcd".

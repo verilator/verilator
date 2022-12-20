@@ -32,7 +32,7 @@ class SenExprBuilder final {
     AstScope* const m_scopep;  // The scope
 
     std::vector<AstVar*> m_locals;  // Trigger eval local variables
-    std::vector<AstNodeStmt*> m_inits;  // Initialization statements for prevoius values
+    std::vector<AstNodeStmt*> m_inits;  // Initialization statements for previous values
     std::vector<AstNodeStmt*> m_preUpdates;  // Pre update assignments
     std::vector<AstNodeStmt*> m_postUpdates;  // Post update assignments
 
@@ -40,7 +40,7 @@ class SenExprBuilder final {
     std::unordered_map<VNRef<AstNode>, AstVarScope*> m_curr;  // The 'current value' signals
     std::unordered_set<VNRef<AstNode>> m_hasPreUpdate;  // Whether the given sen expression already
                                                         // has an update statement in m_preUpdates
-    std::unordered_set<VNRef<AstNode>> m_hasPostUpdate;  // Likewis for m_postUpdates
+    std::unordered_set<VNRef<AstNode>> m_hasPostUpdate;  // Likewise for m_postUpdates
 
     V3UniqueNames m_currNames{"__Vtrigcurrexpr"};  // For generating unique current value
                                                    // signal names

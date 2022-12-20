@@ -386,7 +386,7 @@ private:
             if (m_inBBox || nodep->access().isReadOrRW()
                 || fdrv
                 // Inouts have only isWrite set, as we don't have more
-                // information and operating on module boundry, treat as
+                // information and operating on module boundary, treat as
                 // both read and writing
                 || m_inInoutPin)
                 entryp->usedWhole();

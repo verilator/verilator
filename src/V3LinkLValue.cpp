@@ -250,6 +250,21 @@ private:
             iterateAndNextNull(nodep->fmtp());
         }
     }
+    void visit(AstNodeDistBiop* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->lhsp());
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->rhsp());
+    }
+    void visit(AstNodeDistTriop* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->lhsp());
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->rhsp());
+        iterateAndNextNull(nodep->thsp());
+    }
     void prepost_visit(AstNodeTriop* nodep) {
         VL_RESTORER(m_setRefLvalue);
         {

@@ -64,7 +64,7 @@ private:
     T m_prevp = nullptr;  // Pointer to previous element, nullptr=beginning
     friend class V3List<T>;
     static V3ListEnt* baseToListEnt(void* newbasep, size_t offset) {
-        // "this" must be a element inside of *basep
+        // "this" must be an element inside of *basep
         // Use that to determine a structure offset, then apply to the new base
         // to get our new pointer information
         return (V3ListEnt*)(((uint8_t*)newbasep) + offset);
@@ -83,7 +83,7 @@ public:
     T prevp() const { return m_prevp; }
     // METHODS
     void pushBack(V3List<T>& listr, T newp) {
-        // "this" must be a element inside of *newp
+        // "this" must be an element inside of *newp
         // cppcheck-suppress thisSubtraction
         const size_t offset = (size_t)(uint8_t*)(this) - (size_t)(uint8_t*)(newp);
         m_nextp = nullptr;
@@ -93,7 +93,7 @@ public:
         listr.m_tailp = newp;
     }
     void pushFront(V3List<T>& listr, T newp) {
-        // "this" must be a element inside of *newp
+        // "this" must be an element inside of *newp
         // cppcheck-suppress thisSubtraction
         const size_t offset = (size_t)(uint8_t*)(this) - (size_t)(uint8_t*)(newp);
         m_nextp = listr.m_headp;
@@ -104,7 +104,7 @@ public:
     }
     // Unlink from side
     void unlink(V3List<T>& listr, T oldp) {
-        // "this" must be a element inside of *oldp
+        // "this" must be an element inside of *oldp
         // cppcheck-suppress thisSubtraction
         const size_t offset = (size_t)(uint8_t*)(this) - (size_t)(uint8_t*)(oldp);
         if (m_nextp) {

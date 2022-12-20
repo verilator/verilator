@@ -45,6 +45,7 @@ Cochrane
 Cuan
 Cygwin
 DErrico
+DFG
 Da
 Danilo
 Dannoritzer
@@ -225,6 +226,7 @@ Nalbantis
 Narayan
 Nauticus
 Newgard
+Nigam
 Nikana
 Niranjan
 Nitza
@@ -239,6 +241,7 @@ Patricio
 Petr
 Piechotka
 Piersall
+Platzer
 Plunkett
 Popolon
 Popov
@@ -253,6 +256,7 @@ Pullup
 Pulver
 Puri
 Questa
+Rachit
 Ralf
 Rapp
 Redhat
@@ -383,6 +387,7 @@ agrobman
 ahouska
 al
 ala
+alejandro
 algrobman
 andit
 ar
@@ -407,7 +412,6 @@ biguint
 biops
 bisonpre
 bitOpTree
-bitOpTree
 bitop
 bitstoreal
 blackbox
@@ -422,6 +426,7 @@ callValueCbs
 casex
 casez
 casted
+castro
 cb
 ccache
 ccall
@@ -462,6 +467,7 @@ cutable
 cygwin
 dM
 da
+danbone
 dat
 datadir
 datafiles
@@ -590,6 +596,7 @@ hierCMakeArgs
 hierMkArgs
 hierVer
 hx
+hyperthreading
 hyperthreads
 icecream
 idmap
@@ -600,6 +607,7 @@ ifndef
 impot
 incdir
 includer
+incrementing
 inferfaces
 inhibitSim
 initarray
@@ -640,6 +648,7 @@ localparams
 localtime
 logicals
 longint
+lossy
 lsb
 lvalue
 lxt
@@ -649,6 +658,7 @@ makefiles
 manpages
 metacomment
 metacomments
+miree
 mis
 misconnected
 misconversion
@@ -657,6 +667,7 @@ mk
 mno
 modport
 modports
+mpb
 msg
 msvc
 mtask
@@ -696,6 +707,7 @@ nullptr
 onehot
 ooo
 oprofile
+ortegon
 oversubscription
 parallelized
 param
@@ -748,6 +760,7 @@ pwd
 qrq
 radix
 randc
+randcase
 rarr
 rdtsc
 reStructuredText

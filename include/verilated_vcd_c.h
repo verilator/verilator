@@ -123,7 +123,7 @@ public:
 
     // ACCESSORS
     // Set size in bytes after which new file should be created.
-    void rolloverSize(uint64_t size) { m_rolloverSize = size; }
+    void rolloverSize(uint64_t size) VL_MT_SAFE { m_rolloverSize = size; }
 
     // METHODS - All must be thread safe
     // Open the file; call isOpen() to see if errors
@@ -168,7 +168,7 @@ void VerilatedVcd::Super::dumpvars(int level, const std::string& hier);
 // VerilatedVcdBuffer
 
 class VerilatedVcdBuffer VL_NOT_FINAL {
-    // Give the trace file ans sub-classes access to the private bits
+    // Give the trace file and sub-classes access to the private bits
     friend VerilatedVcd;
     friend VerilatedVcd::Super;
     friend VerilatedVcd::Buffer;

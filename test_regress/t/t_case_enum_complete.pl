@@ -12,7 +12,6 @@ scenarios(linter => 1);
 
 lint(
     verilator_flags2 => ["--lint-only -Wwarn-CASEINCOMPLETE"],
-    fails => 0,
     );
 
 ok(1);

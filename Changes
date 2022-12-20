@@ -8,28 +8,64 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
-Verilator 5.003 devel
+Verilator 5.005 devel
 ==========================
 
 **Minor:**
 
-* Deprecate --no-threads; use --threads 1 for single threaded (#3703). [Kamil Rakoczy, Antmicro Ltd]
+
+Verilator 5.004 2022-12-14
+==========================
+
+**Major:**
+
 * Support named properties (#3667). [Ryszard Rozak, Antmicro Ltd]
+* Add ENUMVALUE warning when value misused for enum (#726) (#3777) (#3783).
+* Deprecate --no-threads; use --threads 1 for single threaded (#3703). [Kamil Rakoczy, Antmicro Ltd]
+
+**Minor:**
+
+* Support std::semaphore and typed std::mailbox (#3708). [Krzysztof Bieganski, Antmicro Ltd]
+* Support 'with' in unique, unique_index, min, max in queues (#3772). [Ryszard Rozak, Antmicro Ltd]
+* Support events in VCD/FST traces (#3759). [Yves Mathieu]
+* Support foreach loops on strings (#3760). [Ryszard Rozak, Antmicro Ltd]
+* Support member selects in with clauses (#3775). [Ryszard Rozak, Antmicro Ltd]
+* Support super.new calls (#3789). [Ryszard Rozak, Antmicro Ltd]
 * Support randcase.
 * Support pre_randomize and post_randomize.
 * Support $timeunit and $timeprecision.
 * Support assignment expressions.
-* Add ENUMVALUE warning when value misused for enum (#726).
-* Internal AST improvements, also affect XML format (#3721). [Geza Lore]
 * Change ENDLABEL from warning into an error.
+* Internal AST improvements, also affect XML format (#3721). [Geza Lore]
 * Deprecate verilated_fst_sc.cpp and verilated_vcd_sc.cpp.
+* Disable stack size limit (#3706) (#3751). [Mariusz Glebocki]
+* Add error when use --exe with --lib-create (#3785). [Yinan Xu]
+* Fix jump handling in do while loops (#3731). [Ryszard Rozak, Antmicro Ltd]
+* Fix 'with' clause handling in functions (#3739). [Ryszard Rozak, Antmicro Ltd]
+* Fix CONTEXT compile error on mingw64 (#3741). [William D. Jones]
+* Fix MSVC compiler errors (#3742) (#3746). [Kritik Bhimani]
 * Fix CASEINCOMPLETE when covers all enum values (#3745) (#3782). [Guy-Armand Kamendje]
 * Fix return type of $countbits functions to int (#3725). [Ryszard Rozak, Antmicro Ltd]
+* Fix timing control in while-break loops (#3733) (#3769). [Ryszard Rozak, Antmicro Ltd]
+* Fix return in constructors (#3734). [Ryszard Rozak, Antmicro Ltd]
 * Fix missing UNUSED warnings with --coverage (#3736). [alejandro-castro-ortegon]
 * Fix tracing parameters overridden with -G (#3723). [Iztok Jeras]
+* Fix folding of LogAnd with non-bool operands (#3726). [Geza Lore]
+* Fix Dfg optimization issues (#3740) (#3771). [Geza Lore]
+* Fix pre/postincrement operations (#3744) (#3756). [Ryszard Rozak, Antmicro Ltd]
+* Fix cross-compile for MingW, Arm and RiscV (#3752). [Miodrag Milanović]
+* Fix $unit as base package for other packages (#3755). [Ryszard Rozak, Antmicro Ltd]
+* Fix make jobserver with submakes (#3758). [Gus Smith]
+* Fix to escape VERILATOR_ROOT file paths (#3764) (#3765). [Jiacheng Qian]
+* Fix empty string literals converting to string types (#3774). [miree]
+* Fix to remove $date from .vcd files (#3779). [Larry Doolittle]
+* Fix missing user objects in --lib-create mode (#3780) (#3784). [Yinan Xu]
+* Fix non-blocking assignments in forks (#3781) (#3800). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix forks without any delayed statements (#3792) (#3801). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix internal error in bit op tree optimization (#3793). [Yutetsu TAKATSUKASA]
+* Fix lint_off EOFNEWLINE in .vlt files (#3796). [Andrew Nolte]
 * Fix wait 0.
 * Fix comparing ranged slices of unpacked arrays.
-* Fix empty string literals converting to string types (#3774). [miree]
 
 
 Verilator 5.002 2022-10-29
@@ -74,7 +110,7 @@ Verilator 5.002 2022-10-29
 * Fix linker errors in user-facing timing functions (#3657). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix null access on optimized-out fork statements (#3658). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix VPI inline module naming mismatch (#3690) (#3694). [Jiuyang Liu]
-* Fix deadlock in timeprecision when using systemC (#3707). [Kamil Rakoczy, Antmicro Ltd]
+* Fix deadlock in timeprecision when using SystemC (#3707). [Kamil Rakoczy, Antmicro Ltd]
 * Fix width mismatch on inside operator (#3714). [Alex Torregrosa]
 
 
@@ -2986,7 +3022,7 @@ Verilator 3.502 2005-11-30 Stable
 
 * Fix local non-IO variables in public functions and tasks.
 * Fix bad lifetime optimization when same signal is assigned multiple
-  times in both branch of a if. [Danny Ding]
+  times in both branch of an if. [Danny Ding]
 
 
 Verilator 3.501 2005-11-16 Stable
@@ -3126,8 +3162,8 @@ Verilator 3.450 2005-07-12
 * $finish will no longer exit, but set Verilated::gotFinish().
   This enables support for final statements, and for other cleanup code.
   If this is undesired, redefine the vl_user_finish routine. Top level
-  loops should use Verilated::gotFinish() as a exit condition for their
-  loop, and then call top->final(). To prevent a infinite loop, a double
+  loops should use Verilated::gotFinish() as an exit condition for their
+  loop, and then call top->final(). To prevent an infinite loop, a double
   $finish will still exit; this may be removed in future releases.
 * Support SystemVerilog keywords $bits, $countones, $isunknown,
   $onehot, $onehot0, always_comb, always_ff, always_latch, finish.
@@ -3528,7 +3564,7 @@ Verilator 3.201-beta 2003-12-10
 **Major:**
 
 * BETA VERSION, USE 3.124 for stable release!
-* Version 3.2XX includes a all new back-end.
+* Version 3.2XX includes an all new back-end.
   This includes automatic inlining, flattening of signals between
   hierarchy, and complete ordering of statements. This results in
   60-300% execution speedups, though less pretty C++ output. Even
@@ -3557,7 +3593,7 @@ Verilator 3.124 2003-12-05
 
 **Major:**
 
-* A optimized executable will be made by default, in addition to a debug
+* An optimized executable will be made by default, in addition to a debug
   executable. Invoking Verilator with --debug will pick the debug version.
 
 **Minor:**

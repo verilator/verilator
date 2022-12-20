@@ -283,7 +283,7 @@ public:
         for (GateVarRefList::const_iterator it = m_rhsVarRefs.begin(); it != m_rhsVarRefs.end();
              ++it) {
             if (m_lhsVarRef && m_lhsVarRef->varScopep() == (*it)->varScopep()) {
-                clearSimple("Circular logic\n");  // Oh my, we'll get a UNOPTFLAT much later.
+                clearSimple("Circular logic\n");  // Oh my, we'll get an UNOPTFLAT much later
             }
         }
         if (debug() >= 9 && !m_isSimple) nodep->dumpTree("-    gate!Ok: ");
@@ -785,7 +785,7 @@ private:
     std::unordered_set<AstNode*> m_nodeDeleteds;  // Any node in this hash was deleted
 
     bool same(AstNode* node1p, AstNode* node2p) {
-        // Regarding the complexity of this funcition 'same':
+        // Regarding the complexity of this function 'same':
         // Applying this comparison function to a a set of n trees pairwise is O(n^2) in the
         // number of comparisons (number of pairs). AstNode::sameTree itself, is O(sizeOfTree) in
         // the worst case, which happens if the operands of sameTree are indeed identical copies,

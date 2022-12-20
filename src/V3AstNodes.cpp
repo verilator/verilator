@@ -1997,7 +1997,7 @@ bool AstWildcardArrayDType::same(const AstNode* samep) const {
     if (!asamep->subDTypep()) return false;
     return (subDTypep() == asamep->subDTypep());
 }
-bool AstWildcardArrayDType::similarDType(AstNodeDType* samep) const {
+bool AstWildcardArrayDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
     return type() == samep->type() && asamep->subDTypep()
            && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
@@ -2011,7 +2011,7 @@ bool AstUnsizedArrayDType::same(const AstNode* samep) const {
     if (!asamep->subDTypep()) return false;
     return (subDTypep() == asamep->subDTypep());
 }
-bool AstUnsizedArrayDType::similarDType(AstNodeDType* samep) const {
+bool AstUnsizedArrayDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
     return type() == samep->type() && asamep->subDTypep()
            && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());

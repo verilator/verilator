@@ -177,6 +177,13 @@ private:
         }
         editDType(nodep);
     }
+    void visit(AstCastWrap* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        UINFO(6, " Replace " << nodep << " w/ " << nodep->lhsp() << endl);
+        nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstNodeDType* nodep) override {  //
         visitIterateNodeDType(nodep);
     }
