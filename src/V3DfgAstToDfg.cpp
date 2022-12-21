@@ -277,9 +277,10 @@ class AstToDfgVisitor final : public VNVisitor {
                    std::vector<Driver>& drivers) const {
         if (DfgConcat* const concatp = vtxp->cast<DfgConcat>()) {
             DfgVertex* const rhsp = concatp->rhsp();
+            auto const rhs_width = rhsp->width();
             addDriver(rhsp->fileline(), lsb, rhsp, drivers);
             DfgVertex* const lhsp = concatp->lhsp();
-            addDriver(lhsp->fileline(), lsb + rhsp->width(), lhsp, drivers);
+            addDriver(lhsp->fileline(), lsb + rhs_width, lhsp, drivers);
             concatp->unlinkDelete(*m_dfgp);
         } else {
             drivers.emplace_back(flp, lsb, vtxp);
