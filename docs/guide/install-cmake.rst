@@ -21,24 +21,25 @@ Quick Install
    If the compiler of your choice is Clang, then install https://releases.llvm.org/download.html or build it from source.
 4. For flex and bison use https://github.com/lexxmark/winflexbison to build and install.
 5. For build on Windows using MSVC set environment variable WIN_FLEX_BISON to install directory.
-   For build on Windows/Linux/OSX using ninja set environment variable FLEX_INCLUDE to directory
-   containing FlexLexer.h and ensure flex/bison is available on the path.
+   For build on Windows/Linux/OS-X using ninja set the environment variable
+   FLEX_INCLUDE to the directory containing FlexLexer.h and ensure that flex/bison
+   is available within the PATH.
 
 To obtain verilator sources download https://github.com/verilator/verilator/archive/refs/heads/master.zip
 or clone https://github.com/verilator/verilator using git :ref:`Obtain Sources`.
 
-To build using msvc
+To build using MSVC:
 
 ::
 
-   cd verilator # directory containing source files of verilator
+   cd verilator  # directory containing source files of verilator
    mkdir build
    cmake .. -DCMAKE_BUILD_TYPE=Release --install-prefix $PWD/../install
    cmake --build . --config Release
    cmake --install . --prefix $PWD/../install
 
 
-To build using ninja
+To build using ninja:
 
 ::
 
@@ -48,13 +49,14 @@ To build using ninja
     <path to ninja binary> #execute ninja
     cmake --install . --prefix $PWD/../install
 
+
 .. _CMake Usage:
 
 Usage
 =====
 
-To use verilator set the environment variable ``VERILATOR_ROOT`` to install directory
-of the above build
+To use Verilator set the environment variable ``VERILATOR_ROOT`` to the
+install directory specified in the above build.
 
 Example
 =======
@@ -65,6 +67,6 @@ Example
     cd cmake_hello_c
     mkdir build
     cd build
-    cmake .. # cmake -G Ninja ..
+    cmake ..  # cmake -G Ninja ..
     cmake --build . --config Release # ninja
     # execute the generated binary

@@ -13,6 +13,14 @@ Verilator 5.005 devel
 
 **Minor:**
 
+* Support packed structs (#3802). [Aleksander Kiryk, Antmicro Ltd]
+* Support Windows-native builds using cmake (#3814). [Kritik Bhimani]
+* Optimize expansion of extend operators.
+* Internal multithreading tests. [Mariusz Glebocki, et al, Antmicro Ltd]
+* Fix to zero possibly uninitialized bits in replications (#3815).
+* Fix crash in DFT due to width use after free (#3817) (#3820). [Jevin Sweval]
+* Fix signed/unsigned comparison compile warning (#3822). [Kamil Rakoczy]
+* Fix OS-X weak symbols with -U linker flag (#3823). [Jevin Sweval]
 
 Verilator 5.004 2022-12-14
 ==========================
@@ -42,7 +50,7 @@ Verilator 5.004 2022-12-14
 * Add error when use --exe with --lib-create (#3785). [Yinan Xu]
 * Fix jump handling in do while loops (#3731). [Ryszard Rozak, Antmicro Ltd]
 * Fix 'with' clause handling in functions (#3739). [Ryszard Rozak, Antmicro Ltd]
-* Fix CONTEXT compile error on mingw64 (#3741). [William D. Jones]
+* Fix CONTEXT compile error on MingW (#3741). [William D. Jones]
 * Fix MSVC compiler errors (#3742) (#3746). [Kritik Bhimani]
 * Fix CASEINCOMPLETE when covers all enum values (#3745) (#3782). [Guy-Armand Kamendje]
 * Fix return type of $countbits functions to int (#3725). [Ryszard Rozak, Antmicro Ltd]
@@ -51,9 +59,9 @@ Verilator 5.004 2022-12-14
 * Fix missing UNUSED warnings with --coverage (#3736). [alejandro-castro-ortegon]
 * Fix tracing parameters overridden with -G (#3723). [Iztok Jeras]
 * Fix folding of LogAnd with non-bool operands (#3726). [Geza Lore]
-* Fix Dfg optimization issues (#3740) (#3771). [Geza Lore]
+* Fix DFG optimization issues (#3740) (#3771). [Geza Lore]
 * Fix pre/postincrement operations (#3744) (#3756). [Ryszard Rozak, Antmicro Ltd]
-* Fix cross-compile for MingW, Arm and RiscV (#3752). [Miodrag Milanović]
+* Fix cross-compile for MingW, Arm and RISC-V (#3752). [Miodrag Milanović]
 * Fix $unit as base package for other packages (#3755). [Ryszard Rozak, Antmicro Ltd]
 * Fix make jobserver with submakes (#3758). [Gus Smith]
 * Fix to escape VERILATOR_ROOT file paths (#3764) (#3765). [Jiacheng Qian]
