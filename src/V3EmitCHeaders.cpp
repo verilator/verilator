@@ -208,6 +208,44 @@ class EmitCHeader final : public EmitCConstInit {
             }
         }
     }
+    void emitStructDecl(const AstNodeModule* modp, AstStructDType* sdtypep,
+                        std::set<AstStructDType*>& emitted) {
+        if (emitted.count(sdtypep) > 0) return;
+        emitted.insert(sdtypep);
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            AstStructDType* subp = VN_CAST(itemp->skipRefp(), StructDType);
+            if (subp && !subp->packed()) {
+                // Recurse if it belongs to the current module
+                if (subp->classOrPackagep() == modp) {
+                    emitStructDecl(modp, subp, emitted);
+                    puts("\n");
+                }
+            }
+        }
+        puts("struct " + EmitCBaseVisitor::prefixNameProtect(sdtypep) + " {\n");
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            puts(itemp->dtypep()->cType(itemp->nameProtect(), false, false));
+            puts(";\n");
+        }
+        puts("};\n");
+    }
+    void emitStructs(const AstNodeModule* modp) {
+        bool first = true;
+        // Track structs that've been emitted already
+        std::set<AstStructDType*> emitted;
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            const AstTypedef* const tdefp = VN_CAST(nodep, Typedef);
+            if (!tdefp) continue;
+            AstStructDType* const sdtypep
+                = VN_CAST(tdefp->dtypep()->skipRefToEnump(), StructDType);
+            if (!sdtypep) continue;
+            if (sdtypep->packed()) continue;
+            decorateFirst(first, "\n// UNPACKED STRUCT TYPES\n");
+            emitStructDecl(modp, sdtypep, emitted);
+        }
+    }
     void emitFuncDecls(const AstNodeModule* modp, bool inClassBody) {
         std::vector<const AstCFunc*> funcsp;
 
@@ -251,6 +289,8 @@ class EmitCHeader final : public EmitCConstInit {
 
         // From `systemc_header
         emitTextSection(modp, VNType::atScHdr);
+
+        emitStructs(modp);
 
         // Open class body {{{
         puts("\nclass ");

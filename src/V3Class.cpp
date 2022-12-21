@@ -41,6 +41,7 @@ private:
 
     // MEMBERS
     string m_prefix;  // String prefix to add to name based on hier
+    AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeModule* m_classPackagep = nullptr;  // Package moving into
     const AstScope* m_classScopep = nullptr;  // Package moving scopes into
     AstScope* m_packageScopep = nullptr;  // Class package scope
@@ -92,7 +93,9 @@ private:
         VL_RESTORER(m_classPackagep);
         VL_RESTORER(m_classScopep);
         VL_RESTORER(m_packageScopep);
+        VL_RESTORER(m_modp);
         {
+            m_modp = nodep;
             m_classPackagep = packagep;
             m_classScopep = classScopep;
             m_packageScopep = scopep;
@@ -104,7 +107,9 @@ private:
     void visit(AstNodeModule* nodep) override {
         // Visit for NodeModules that are not AstClass (AstClass is-a AstNodeModule)
         VL_RESTORER(m_prefix);
+        VL_RESTORER(m_modp);
         {
+            m_modp = nodep;
             m_prefix = nodep->name() + "__03a__03a";  // ::
             iterateChildren(nodep);
         }
@@ -163,6 +168,30 @@ private:
         iterateChildren(nodep);
         if (m_packageScopep) {
             m_toScopeMoves.emplace_back(std::make_pair(nodep, m_packageScopep));
+        }
+    }
+
+    void setStructModulep(AstStructDType* const dtypep) {
+        // Give it a pointer to its package and a final name
+        dtypep->classOrPackagep(m_modp);
+        dtypep->name(dtypep->name() + "__struct" + cvtToStr(dtypep->uniqueNum()));
+
+        for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            AstStructDType* const subp = VN_CAST(itemp->skipRefp(), StructDType);
+            // Recurse only into anonymous unpacked structs inside this definition,
+            // other unpacked structs will be reached from another typedefs
+            if (subp && !subp->packed() && subp->name().empty()) { setStructModulep(subp); }
+        }
+    }
+    void visit(AstTypedef* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+
+        AstStructDType* const dtypep = VN_CAST(nodep->dtypep(), StructDType);
+        if (dtypep && !dtypep->packed()) {
+            dtypep->name(nodep->name());
+            setStructModulep(dtypep);
         }
     }
 

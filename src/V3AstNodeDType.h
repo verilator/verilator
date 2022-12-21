@@ -219,7 +219,7 @@ public:
     int uniqueNum() const { return m_uniqueNum; }
     const char* broken() const override;
     void dump(std::ostream& str) const override;
-    bool isCompound() const override { return false; }  // Because don't support unpacked
+    bool isCompound() const override { return !packed(); }
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     AstBasicDType* basicp() const override {
         return (isFourstate()
@@ -241,6 +241,7 @@ public:
     string name() const override { return m_name; }
     void name(const string& flag) override { m_name = flag; }
     bool packed() const VL_MT_SAFE { return m_packed; }
+    void packed(bool flag) { m_packed = flag; }
     // packed() but as don't support unpacked, presently all structs
     static bool packedUnsup() { return true; }
     void isFourstate(bool flag) { m_isFourstate = flag; }
@@ -1274,12 +1275,15 @@ public:
 
 // === AstNodeUOrStructDType ===
 class AstStructDType final : public AstNodeUOrStructDType {
+    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
 public:
     // VSigning below is mispurposed to indicate if packed or not
     AstStructDType(FileLine* fl, VSigning numericUnpack)
         : ASTGEN_SUPER_StructDType(fl, numericUnpack) {}
     ASTGEN_MEMBERS_AstStructDType;
     string verilogKwd() const override { return "struct"; }
+    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
+    void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
 };
 class AstUnionDType final : public AstNodeUOrStructDType {
 public:

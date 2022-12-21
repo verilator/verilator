@@ -1066,6 +1066,11 @@ public:
         putbs("->");
         puts(nodep->varp()->nameProtect());
     }
+    void visit(AstStructSel* nodep) override {
+        iterateAndNextNull(nodep->fromp());
+        putbs(".");
+        puts(nodep->nameProtect());
+    }
     void visit(AstNullCheck* nodep) override {
         puts("VL_NULL_CHECK(");
         iterateAndNextNull(nodep->lhsp());

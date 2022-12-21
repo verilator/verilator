@@ -670,6 +670,17 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
                                                  depth + 1, suffix + "[" + ivar + "]");
         const string post = "}\n";
         return below.empty() ? "" : pre + below + post;
+    } else if (VN_IS(dtypep, StructDType) && !VN_AS(dtypep, StructDType)->packed()) {
+        const auto* const sdtypep = VN_AS(dtypep, StructDType);
+        string literal;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            const std::string line
+                = emitVarResetRecurse(varp, varNameProtected + suffix + "." + itemp->nameProtect(),
+                                      itemp->dtypep(), depth + 1, "");
+            if (!line.empty()) literal += line;
+        }
+        return literal;
     } else if (basicp && basicp->keyword() == VBasicDTypeKwd::STRING) {
         // String's constructor deals with it
         return "";

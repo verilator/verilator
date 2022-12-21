@@ -38,9 +38,9 @@ module top();
     int A;
     struct {
       int B, C;
-      struct{
+      struct {
         int D, E;
-        struct{
+        struct {
           int F;
           shortint G;
         } FG1;

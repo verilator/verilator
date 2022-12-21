@@ -1778,6 +1778,31 @@ public:
     bool cleanOut() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
+class AstStructSel final : public AstNodeExpr {
+    // Unpacked struct member access
+    // Parents: math|stmt
+    // Children: varref, math
+    // @astgen op1 := fromp : AstNodeExpr
+private:
+    string m_name;  // Name of the member
+public:
+    AstStructSel(FileLine* fl, AstNodeExpr* fromp, const string& name)
+        : ASTGEN_SUPER_StructSel(fl)
+        , m_name{name} {
+        this->fromp(fromp);
+        dtypep(nullptr);  // V3Width will resolve
+    }
+    ASTGEN_MEMBERS_AstStructSel;
+    string name() const override { return m_name; }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return false; }
+    bool same(const AstNode* samep) const override {
+        const AstStructSel* const sp = static_cast<const AstStructSel*>(samep);
+        return m_name == sp->m_name;
+    }
+    int instrCount() const override { return widthInstrs(); }
+};
 class AstSysIgnore final : public AstNodeExpr {
     // @astgen op1 := exprsp : List[AstNode] // Expressions to output (???)
 public:
