@@ -12,6 +12,7 @@ Verilator User's Guide
    overview.rst
    examples.rst
    install.rst
+   install-cmake.rst
 
 
 .. toctree::
