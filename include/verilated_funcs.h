@@ -2208,7 +2208,7 @@ inline std::string VL_REPLICATEN_NNI(const std::string& lhs, IData rep) VL_PURE 
     return VL_REPLICATEN_NNQ(lhs, rep);
 }
 
-inline IData VL_LEN_IN(const std::string& ld) { return ld.length(); }
+inline IData VL_LEN_IN(const std::string& ld) { return static_cast<IData>(ld.length()); }
 extern std::string VL_TOLOWER_NN(const std::string& ld) VL_PURE;
 extern std::string VL_TOUPPER_NN(const std::string& ld) VL_PURE;
 

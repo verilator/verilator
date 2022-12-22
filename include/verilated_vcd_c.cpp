@@ -527,7 +527,7 @@ void VerilatedVcd::declare(uint32_t code, const char* name, const char* wirep, b
                 std::strlen(buf));  // Code (overwrite separator if isBit)
     entryp[length + !isBit] = '\n';  // Replace '\0' with line termination '\n'
     // Set length of suffix (used to increment write pointer)
-    entryp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1] = !isBit + length + 1;
+    entryp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1] = static_cast<char>(length + !isBit + 1);
     decl += " ";
     decl += basename;
     if (array) {

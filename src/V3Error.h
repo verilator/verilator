@@ -431,11 +431,12 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
     return value
 
 // Helper macros for VL_DEFINE_DEBUG_FUNCTIONS
-#define VL_DEFINE_DEBUG(name) \
-    VL_ATTR_UNUSED static int debug##name() { \
+// Takes an optional "name" (as __VA_ARGS__)
+#define VL_DEFINE_DEBUG(...) \
+    VL_ATTR_UNUSED static int debug##__VA_ARGS__() { \
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
-            std::string tag{VL_STRINGIFY(name)}; \
+            std::string tag{VL_STRINGIFY(__VA_ARGS__)}; \
             tag[0] = std::tolower(tag[0]); \
             const unsigned debugTag = v3Global.opt.debugLevel(tag); \
             const unsigned debugSrc = v3Global.opt.debugSrcLevel(__FILE__); \
@@ -447,11 +448,12 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
     } \
     static_assert(true, "")
 
-#define VL_DEFINE_DUMP(name) \
-    VL_ATTR_UNUSED static int dump##name() { \
+// Takes an optional "name" (as __VA_ARGS__)
+#define VL_DEFINE_DUMP(...) \
+    VL_ATTR_UNUSED static int dump##__VA_ARGS__() { \
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
-            std::string tag{VL_STRINGIFY(name)}; \
+            std::string tag{VL_STRINGIFY(__VA_ARGS__)}; \
             tag[0] = std::tolower(tag[0]); \
             const unsigned dumpTag = v3Global.opt.dumpLevel(tag); \
             const unsigned dumpSrc = v3Global.opt.dumpSrcLevel(__FILE__); \

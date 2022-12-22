@@ -1383,7 +1383,7 @@ static IData getLine(std::string& str, IData fpi, size_t maxLen) VL_MT_SAFE {
         str.push_back(c);
         if (c == '\n') break;
     }
-    return str.size();
+    return static_cast<IData>(str.size());
 }
 
 IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
@@ -1633,12 +1633,12 @@ std::string VL_STACKTRACE_N() VL_MT_SAFE {
     static VerilatedMutex s_stackTraceMutex;
     const VerilatedLockGuard lock{s_stackTraceMutex};
 
-    constexpr int BT_BUF_SIZE = 100;
-    void* buffer[BT_BUF_SIZE];
     int nptrs = 0;
     char** strings = nullptr;
 
 #ifdef _VL_HAVE_STACKTRACE
+    constexpr int BT_BUF_SIZE = 100;
+    void* buffer[BT_BUF_SIZE];
     nptrs = backtrace(buffer, BT_BUF_SIZE);
     strings = backtrace_symbols(buffer, nptrs);
 #endif
@@ -2569,7 +2569,7 @@ std::pair<int, char**> VerilatedContextImp::argc_argv() VL_MT_SAFE_EXCLUDES(m_ar
     static char** s_argvp = nullptr;
     if (VL_UNLIKELY(!s_loaded)) {
         s_loaded = true;
-        s_argc = m_args.m_argVec.size();
+        s_argc = static_cast<int>(m_args.m_argVec.size());
         s_argvp = new char*[s_argc + 1];
         int in = 0;
         for (const auto& i : m_args.m_argVec) {
