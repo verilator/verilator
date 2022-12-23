@@ -3186,7 +3186,12 @@ private:
 
     void visit(AstStmtExpr* nodep) override {
         iterateChildren(nodep);
-        if (!nodep->exprp()) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        if (!nodep->exprp()) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        // TODO if there's an ExprStmt underneath just keep lower statements
+        // (No current test case needs this)
     }
 
     // Simplify

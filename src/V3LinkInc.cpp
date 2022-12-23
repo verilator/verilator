@@ -15,7 +15,7 @@
 //*************************************************************************
 // V3LinkInc's Transformations:
 //
-//      prepost_stmt_visit
+//      prepost_expr_visit
 //        PREADD/PRESUB
 //          Create a temporary __VIncrementX variable, assign the value of
 //          the current variable value to it, substitute the current
@@ -27,7 +27,7 @@
 //          Create a temporary __VIncrementX variable, assign the value of
 //          of the current variable (after the operation) to it. Substitute
 //          The original variable with the temporary one in the statement.
-//      prepost_non_stmt_visit
+//      prepost_stmt_visit
 //        PREADD/PRESUB/POSTADD/POSTSUB
 //          Increment/decrement the current variable by the given value.
 //          The order (pre/post) doesn't matter outside statements thus
@@ -193,36 +193,33 @@ private:
     void prepost_visit(AstNodeTriop* nodep) {
         // Check if we are underneath a statement
         if (!m_insStmtp) {
-            prepost_non_stmt_visit(nodep);
-        } else {
             prepost_stmt_visit(nodep);
+        } else {
+            prepost_expr_visit(nodep);
         }
     }
-    void prepost_non_stmt_visit(AstNodeTriop* nodep) {
+    void prepost_stmt_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
 
         AstConst* const constp = VN_AS(nodep->lhsp(), Const);
         UASSERT_OBJ(nodep, constp, "Expecting CONST");
         AstConst* const newconstp = constp->cloneTree(true);
 
-        AstNodeExpr* const storetop = nodep->thsp();
-        AstNodeExpr* const valuep = nodep->rhsp();
-
-        storetop->unlinkFrBack();
-        valuep->unlinkFrBack();
+        AstNodeExpr* const storeTop = nodep->thsp()->unlinkFrBack();
+        AstNodeExpr* const valuep = nodep->rhsp()->unlinkFrBack();
 
         AstAssign* assignp;
         if (VN_IS(nodep, PreSub) || VN_IS(nodep, PostSub)) {
-            assignp = new AstAssign{nodep->fileline(), storetop,
+            assignp = new AstAssign{nodep->fileline(), storeTop,
                                     new AstSub{nodep->fileline(), valuep, newconstp}};
         } else {
-            assignp = new AstAssign{nodep->fileline(), storetop,
+            assignp = new AstAssign{nodep->fileline(), storeTop,
                                     new AstAdd{nodep->fileline(), valuep, newconstp}};
         }
         nodep->replaceWith(assignp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    void prepost_stmt_visit(AstNodeTriop* nodep) {
+    void prepost_expr_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
 
         const AstNodeVarRef* varrefp = nullptr;
