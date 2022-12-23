@@ -193,6 +193,7 @@ private:
         {
             m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->filep());
+            iterateAndNextNull(nodep->rhsp());
         }
     }
     void visit(AstSScanF* nodep) override {
@@ -203,8 +204,7 @@ private:
         }
     }
     void visit(AstSysIgnore* nodep) override {
-        // Can't know if lvalue or not; presume so as stricter
-        VL_RESTORER(m_setRefLvalue);
+        // Can't know if lvalue or not; presume not
         iterateChildren(nodep);
     }
     void visit(AstRand* nodep) override {
