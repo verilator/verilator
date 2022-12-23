@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Hierarchical verilation for large designs
+// DESCRIPTION: Verilator: Hierarchical Verilation for large designs
 //
 // Code available from: https://verilator.org
 //

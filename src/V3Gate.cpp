@@ -593,7 +593,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
         if (!logicVertexp->reducible()) continue;
         AstNode* const logicp = logicVertexp->nodep();
 
-        // Commit pendingg optimizations to driving logic, as we will re-analyse
+        // Commit pending optimizations to driving logic, as we will re-analyze
         commitElimVar(logicp);
 
         // Can we eliminate?

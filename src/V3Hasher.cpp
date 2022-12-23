@@ -300,7 +300,7 @@ private:
     }
 
     //------------------------------------------------------------
-    // AstNode direct descendents
+    // AstNode direct descendants
     void visit(AstNodeRange* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }

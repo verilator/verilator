@@ -59,7 +59,7 @@ private:
 
     // VISITs
     // TODO: Most of these visitors are here for historical reasons.
-    // TODO: ExpectDecriptor can move to data type resolution, and the rest
+    // TODO: ExpectDescriptor can move to data type resolution, and the rest
     // TODO: could move to V3LinkParse to get them out of the way of elaboration
     void visit(AstNodeModule* nodep) override {
         // Module: Create sim table for entire module and iterate

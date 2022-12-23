@@ -125,7 +125,7 @@ class DfgGraph final {
 
     // Variables and constants make up a significant proportion of vertices (40-50% was observed
     // in large designs), and they can often be treated specially in algorithms, which in turn
-    // enables significant verilation performance gains, so we keep these in separate lists for
+    // enables significant Verilation performance gains, so we keep these in separate lists for
     // direct access.
     V3List<DfgVertex*> m_varVertices;  // The variable vertices in the graph
     V3List<DfgVertex*> m_constVertices;  // The constant vertices in the graph
@@ -559,7 +559,7 @@ public:
     virtual const string srcName(size_t idx) const = 0;
 };
 
-// Specialisations of privateTypeTest
+// Specializations of privateTypeTest
 #include "V3Dfg__gen_type_tests.h"  // From ./astgen
 
 //------------------------------------------------------------------------------

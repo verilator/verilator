@@ -291,7 +291,7 @@ class ExtractCyclicComponents final {
         // Assign vertex to the target component
         vtxState.component = targetComponent;
 
-        // Visit all neighbours. We stop at variable boundaries,
+        // Visit all neighbors. We stop at variable boundaries,
         // which is where we will split the graphs
         vtx.forEachSource([=](DfgVertex& other) {
             if (other.is<DfgVertexVar>()) return;

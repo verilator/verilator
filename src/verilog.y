@@ -1560,7 +1560,7 @@ portSig<nodep>:
 // Interface headers
 
 interface_declaration:          // IEEE: interface_declaration + interface_nonansi_header + interface_ansi_header:
-        //                      // timeunits_delcarationE is instead in interface_item
+        //                      // timeunits_declarationE is instead in interface_item
                 intFront importsAndParametersE portsStarE ';'
                         interface_itemListE yENDINTERFACE endLabelE
                         { if ($2) $1->addStmtsp($2);
@@ -1648,7 +1648,7 @@ anonymous_program_item<nodep>:  // ==IEEE: anonymous_program_item
         ;
 
 program_declaration:            // IEEE: program_declaration + program_nonansi_header + program_ansi_header:
-        //                      // timeunits_delcarationE is instead in program_item
+        //                      // timeunits_declarationE is instead in program_item
                 pgmFront parameter_port_listE portsStarE ';'
         /*cont*/    program_itemListE yENDPROGRAM endLabelE
                         { $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
@@ -4029,7 +4029,7 @@ system_f_call<nodeExprp>:           // IEEE: system_tf_call (as func)
         |       system_f_call_or_t                      { $$ = $1; }
         ;
 
-systemDpiArgsE<argp>:           // IEEE: part of system_if_call for aruments of $dpi call
+systemDpiArgsE<argp>:           // IEEE: part of system_if_call for arguments of $dpi call
                 parenE                                  { $$ = nullptr; }
         |       '(' exprList ')'                        { $$ = GRAMMARP->argWrapList($2); }
         ;

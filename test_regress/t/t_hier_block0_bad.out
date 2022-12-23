@@ -1,4 +1,4 @@
-%Error: t/t_hier_block0_bad.v:20:11: 'sub0' has hier_block metacomment, hierarchical verilation supports only integer/floating point/string parameters
+%Error: t/t_hier_block0_bad.v:20:11: 'sub0' has hier_block metacomment, hierarchical Verilation supports only integer/floating point/string parameters
                                    : ... In instance t
    20 |    sub0 #(UNPACKED) i_sub0(.clk(clk), .in(8'(count)), .out(out0));
       |           ^~~~~~~~

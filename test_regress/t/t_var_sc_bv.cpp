@@ -14,7 +14,7 @@ double sc_time_stamp() { return 0; }
 void compare_signals(const sc_signal<sc_bv<256>>& ls, const sc_signal<sc_bv<256>>& rs) {
     if (ls.read() != rs.read()) {
         pass &= false;
-        VL_PRINTF("%%Error: Data missmatch in signals %s and %s\n", ls.name(), rs.name());
+        VL_PRINTF("%%Error: Data mismatch in signals %s and %s\n", ls.name(), rs.name());
     }
 }
 

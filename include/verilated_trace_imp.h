@@ -497,7 +497,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runCallbacks(const std::vector<Callback
         const unsigned threads = threadPoolp->numThreads() + 1;
         // Main thread executes all jobs with index % threads == 0
         std::vector<ParallelWorkerData*> mainThreadWorkerData;
-        // Enuque all the jobs
+        // Enqueue all the jobs
         for (unsigned i = 0; i < cbVec.size(); ++i) {
             const CallbackRecord& cbr = cbVec[i];
             // Always get the trace buffer on the main thread
@@ -793,7 +793,7 @@ static inline void cvtSDataToStr(char* dstp, SData value) {
 static inline void cvtIDataToStr(char* dstp, IData value) {
 #ifdef VL_HAVE_AVX2
     // Similar to cvtSDataToStr but the bottom 16-bits are processed in the
-    // top half of the YMM registerss
+    // top half of the YMM registers
     const __m256i a = _mm256_insert_epi32(_mm256_undefined_si256(), value, 0);
     const __m256i b = _mm256_permute4x64_epi64(a, 0);
     const __m256i s = _mm256_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2,

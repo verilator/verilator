@@ -1158,7 +1158,7 @@ static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
         // Compare initializer arrays by value. Note this is only called when they hash the same,
         // so they likely run at most once per call to 'AstConstPool::findTable'.
         // This assumes that the defaults are used in the same way.
-        // TODO when buinding the AstInitArray, remove any values matching the default
+        // TODO when building the AstInitArray, remove any values matching the default
         const auto& amapr = ap->map();
         const auto& bmapr = bp->map();
         const auto ait = amapr.cbegin();

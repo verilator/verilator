@@ -93,7 +93,7 @@ class V3Global final {
     // Globals
     AstNetlist* m_rootp = nullptr;  // Root of entire netlist,
     // created by makeInitNetlist(} so static constructors run first
-    V3HierBlockPlan* m_hierPlanp = nullptr;  // Hierarchical verilation plan,
+    V3HierBlockPlan* m_hierPlanp = nullptr;  // Hierarchical Verilation plan,
     // nullptr unless hier_block, set via hierPlanp(V3HierBlockPlan*}
     VWidthMinUsage m_widthMinUsage
         = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for

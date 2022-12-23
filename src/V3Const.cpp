@@ -2719,7 +2719,7 @@ private:
             if (nodep->isClocked()) {  // A constant can never get a pos/negedge
                 if (onlySenItemInSenTree(nodep)) {
                     if (nodep->edgeType() == VEdgeType::ET_CHANGED) {
-                        // TODO: This really is dodgy, as strictgly compliant simulators will not
+                        // TODO: This really is dodgy, as strictly compliant simulators will not
                         //       execute this block, but but t_func_check relies on it
                         nodep->replaceWith(
                             new AstSenItem{nodep->fileline(), AstSenItem::Initial{}});

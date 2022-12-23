@@ -364,7 +364,7 @@ protected:
     // assumption is that the restore is allowed to pass different arguments
     struct NonSerializedCommandArgs {
         // Medium speed
-        std::vector<std::string> m_argVec;  // Aargument list
+        std::vector<std::string> m_argVec;  // Argument list
         bool m_argVecLoaded = false;  // Ever loaded argument list
     } m_args VL_GUARDED_BY(m_argMutex);
 

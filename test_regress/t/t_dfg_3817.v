@@ -1,5 +1,5 @@
 // DESCRIPTION: Verilator: Verilog Test module for issue #3817
-// addDriver() was causing use-after-free and segfaulting during verilation
+// addDriver() was causing use-after-free and segfaulting during Verilation
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2022 by Jevin Sweval.

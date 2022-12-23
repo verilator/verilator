@@ -60,7 +60,7 @@ static const char* const VLTSAVE_TRAILER_STR = "vltsaved";
 //=============================================================================
 //=============================================================================
 //=============================================================================
-// Searalization
+// Serialization
 
 bool VerilatedDeserialize::readDiffers(const void* __restrict datap,
                                        size_t size) VL_MT_UNSAFE_ONE {

@@ -23,7 +23,7 @@ compile(  # Don't call cmake nor gmake from driver.pl. Nothing should be done he
                          '../' . $Self->{main_filename}]
     );
 
-# --no-verilate should skip verilation
+# --no-verilate should skip Verilation
 if ( -e $Self->{obj_dir} . '/Vt_flag_verilate.mk' ) {
     $Self->error('Vt_flag_verilate.mk is unexpectedly created');
 }
@@ -41,7 +41,7 @@ if ( ! -e $Self->{obj_dir} . '/Vt_flag_verilate.mk' ) {
     $Self->error('Vt_flag_verilate.mk does not exist');
 }
 
-# Just build, no verilation. .tree must not be saved even with --dump-tree option.
+# Just build, no Verilation. .tree must not be saved even with --dump-tree option.
 compile(  # Don't call cmake nor gmake from driver.pl. Just build here
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,

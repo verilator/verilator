@@ -126,7 +126,7 @@ private:
     bool m_inStringLiteral = false;
     int m_indentLevel = 0;  // Current {} indentation
     std::stack<int> m_parenVec;  // Stack of columns where last ( was
-    int m_bracketLevel = 0;  // Intenting = { block, indicates number of {'s seen.
+    int m_bracketLevel = 0;  // Indenting = { block, indicates number of {'s seen.
 
     int endLevels(const char* strg);
     void putcNoTracking(char chr);

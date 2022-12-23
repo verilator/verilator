@@ -79,7 +79,7 @@ class ParameterizedHierBlocks final {
 
     // MEMBERS
     // key:Original module name, value:HiearchyBlockOption*
-    // If a module is parameterized, the module is uniquiefied to overridden parameters.
+    // If a module is parameterized, the module is uniquified to overridden parameters.
     // This is why HierBlockOptsByOrigName is multimap.
     HierBlockOptsByOrigName m_hierBlockOptsByOrigName;
     // key:mangled module name, value:AstNodeModule*
@@ -442,7 +442,7 @@ class ParamProcessor final {
             }
         }
     }
-    // Check if parameter setting during instantiation is simple enough for hierarchical verilation
+    // Check if parameter setting during instantiation is simple enough for hierarchical Verilation
     void checkSupportedParam(AstNodeModule* modp, AstPin* pinp) const {
         // InitArray and AstParamTypeDType are not supported because that can not be set via -G
         // option.
@@ -453,7 +453,7 @@ class ParamProcessor final {
             }
             if (!supported) {
                 pinp->v3error(AstNode::prettyNameQ(modp->origName())
-                              << " has hier_block metacomment, hierarchical verilation"
+                              << " has hier_block metacomment, hierarchical Verilation"
                               << " supports only integer/floating point/string parameters");
             }
         } else {

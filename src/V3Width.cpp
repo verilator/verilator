@@ -7207,7 +7207,7 @@ AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
 //! later to do the width check.
 //! @return  Pointer to the edited node.
 AstNode* V3Width::widthGenerateParamsEdit(
-    AstNode* nodep) {  //!< [in] AST whose parameters widths are to be analysed.
+    AstNode* nodep) {  //!< [in] AST whose parameters widths are to be analyzed.
     UINFO(4, __FUNCTION__ << ": " << nodep << endl);
     // We should do it in bottom-up module order, but it works in any order.
     WidthVisitor visitor{true, true};

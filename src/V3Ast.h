@@ -2207,7 +2207,7 @@ AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp);
 // Inline method implementations
 AstNode* AstNode::addNext(AstNode* newp) { return addNext(this, newp); }
 
-// Specialisations of privateTypeTest
+// Specializations of privateTypeTest
 #include "V3Ast__gen_type_tests.h"  // From ./astgen
 
 // Specializations of AstNode::mayBeUnder

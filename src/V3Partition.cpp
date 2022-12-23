@@ -1119,7 +1119,7 @@ public:
 // of a rescore, in case its score has fallen and we need to move it up
 // toward the front of the scoreboard.
 //
-// Wait, whaaat? Shouldn't the scores only increase as we merge nodes? Well
+// Wait, what? Shouldn't the scores only increase as we merge nodes? Well
 // that's almost true. But there is one exception.
 //
 // Suppose we have A->B, B->C, and A->C.
@@ -1652,12 +1652,12 @@ private:
         // Need at least 2 edges
         if (!mtaskp->beginp(way) || !mtaskp->beginp(way)->nextp(way)) return;
 
-        std::array<LogicMTask*, PART_SIBLING_EDGE_LIMIT> neighbours;
+        std::array<LogicMTask*, PART_SIBLING_EDGE_LIMIT> neighbors;
 
         // This is a hot method, so we want so sort as efficiently as possible. We pre-load
         // all data (critical path cost and id) required for determining ordering into an aligned
         // structure. There is not enough space next to these to keep a whole pointer within 16
-        // bytes, so we store an index into the neighbours buffer instead. We can then compare
+        // bytes, so we store an index into the neighbors buffer instead. We can then compare
         // and swap these sorting records very efficiently. With this the standard library sorting
         // functions are efficient enough and using more optimized methods (e.g.: sorting networks)
         // has no measurable benefit.
@@ -1666,7 +1666,7 @@ private:
             uint32_t m_cp;
             uint8_t m_idx;
             static_assert(PART_SIBLING_EDGE_LIMIT <= std::numeric_limits<uint8_t>::max(),
-                          "m_idx must fit all indices into 'neighbours'");
+                          "m_idx must fit all indices into 'neighbors'");
             bool operator<(const SortingRecord& that) const {
                 return m_cp < that.m_cp || (m_cp == that.m_cp && m_id < that.m_id);
             }
@@ -1680,7 +1680,7 @@ private:
         for (V3GraphEdge *edgep = mtaskp->beginp(way), *nextp; edgep; edgep = nextp) {
             nextp = edgep->nextp(way);  // Fetch next first as likely cache miss
             LogicMTask* const otherp = static_cast<LogicMTask*>(edgep->furtherp(way));
-            neighbours[n] = otherp;
+            neighbors[n] = otherp;
             sortRecs[n].m_id = otherp->id();
             sortRecs[n].m_cp = otherp->critPathCost(way) + otherp->cost();
             sortRecs[n].m_idx = n;
@@ -1697,13 +1697,13 @@ private:
             const size_t end = n & ~static_cast<size_t>(1);  // Round down to even, (we want pairs)
             std::sort(sortRecs.begin(), sortRecs.begin() + n);
             for (size_t i = 0; i < end; i += 2) {
-                makeSiblingMC(neighbours[sortRecs[i].m_idx], neighbours[sortRecs[i + 1].m_idx]);
+                makeSiblingMC(neighbors[sortRecs[i].m_idx], neighbors[sortRecs[i + 1].m_idx]);
             }
         } else {
             constexpr size_t end = 2 * MAX_NONEXHAUSTIVE_PAIRS;
             std::partial_sort(sortRecs.begin(), sortRecs.begin() + end, sortRecs.begin() + n);
             for (size_t i = 0; i < end; i += 2) {
-                makeSiblingMC(neighbours[sortRecs[i].m_idx], neighbours[sortRecs[i + 1].m_idx]);
+                makeSiblingMC(neighbors[sortRecs[i].m_idx], neighbors[sortRecs[i + 1].m_idx]);
             }
         }
     }
@@ -1907,7 +1907,7 @@ private:
 //
 // ABOUT UNORDERED WRITE-READ PAIRS
 //
-//   If we don't put unordered write-read pairs into some order at verilation
+//   If we don't put unordered write-read pairs into some order at Verilation
 //   time, we risk a runtime race.
 //
 //   How do such unordered writer/reader pairs happen? Here's a partial list

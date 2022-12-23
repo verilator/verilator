@@ -217,7 +217,7 @@ class OrderBuildVisitor final : public VNVisitor {
 
         m_inClocked = senTreep->hasClocked();
 
-        // Note: We don't need to analyse the sensitivity list, as currently all sensitivity
+        // Note: We don't need to analyze the sensitivity list, as currently all sensitivity
         // lists simply reference an entry in a trigger vector, which are all set external to
         // the code being ordered.
 

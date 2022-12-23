@@ -159,7 +159,7 @@ static void process() {
     V3Dead::deadifyModules(v3Global.rootp());
     v3Global.checkTree();
 
-    // Create a hierarchical verilation plan
+    // Create a hierarchical Verilation plan
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && v3Global.opt.hierarchical()) {
         V3HierBlockPlan::createPlan(v3Global.rootp());
         // If a plan is created, further analysis is not necessary.

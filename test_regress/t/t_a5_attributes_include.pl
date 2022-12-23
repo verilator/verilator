@@ -17,7 +17,7 @@ if ($ENV{VERILATOR_TEST_NO_ATTRIBUTES}) {
 }
 sub check {
     my $root = "..";
-    # some of the files are only used in verilation
+    # some of the files are only used in Verilation
     # and are only in "include" folder
     my @srcfiles = glob("$root/include/*.cpp");
     my $srcfiles_str = join(" ", @srcfiles);

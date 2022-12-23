@@ -27,7 +27,7 @@
 // What this pass does looks as below.
 //
 //     // Original
-//     logic [1:0] unpcked_array_var[0:1] /*verilator split_var*/;
+//     logic [1:0] unpacked_array_var[0:1] /*verilator split_var*/;
 //     always_comb begin
 //        unpacked_array_var[1][0] =  unpacked_array_var[0][0]; // UNOPTFLAT warning
 //        unpacked_array_var[1][1] = ~unpacked_array_var[0][1]; // UNOPTFLAT warning
@@ -45,8 +45,8 @@
 // is initially converted to
 //
 //     // Intermediate
-//     logic [1:0] unpcked_array_var0 /*verilator split_var*/;
-//     logic [1:0] unpcked_array_var1 /*verilator split_var*/;
+//     logic [1:0] unpacked_array_var0 /*verilator split_var*/;
+//     logic [1:0] unpacked_array_var1 /*verilator split_var*/;
 //     always_comb begin
 //        unpacked_array_var1[0] =  unpacked_array_var0[0];
 //        unpacked_array_var1[1] = ~unpacked_array_var0[1];

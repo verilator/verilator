@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-# test case was causing use-after-free and segfaulting during verilation
+# test case was causing use-after-free and segfaulting during Verilation
 compile();
 
 ok(1);

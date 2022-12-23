@@ -138,7 +138,7 @@ bool areDisjoint(const std::set<const AstVar*>& a, const std::set<const AstVar*>
 struct StmtProperties {
     AstNodeExpr* m_condp = nullptr;  // The condition expression, if a conditional node
     std::set<const AstVar*> m_rdVars;  // Variables read by this statement
-    std::set<const AstVar*> m_wrVars;  // Variables writen by this statement
+    std::set<const AstVar*> m_wrVars;  // Variables written by this statement
     bool m_isFence = false;  // Nothing should move across this statement, nor should it be merged
     AstNodeStmt* m_prevWithSameCondp = nullptr;  // Previous node in same list, with same condition
     bool writesConditionVar() const {

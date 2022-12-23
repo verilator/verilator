@@ -17,7 +17,7 @@ if ($ENV{VERILATOR_TEST_NO_ATTRIBUTES}) {
 }
 sub check {
     my $root = "..";
-    # some of the files are only used in verilation
+    # some of the files are only used in Verilation
     # and are only in "include" folder
     my @srcfiles = grep { !/\/(V3Const|Vlc\w*|\w*_test|\w*_sc|\w*.yy).cpp$/ }
                    glob("$root/src/*.cpp $root/src/obj_opt/V3Const__gen.cpp");
