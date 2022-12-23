@@ -12,7 +12,7 @@ on:
   - cron: '0 0 * * 0' # weekly
 
 env:
-  CI_OS_NAME: linux
+  CI_OS_NAME: win
   CI_COMMIT: ${{ github.sha }}
   CCACHE_COMPRESS: 1
   CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -31,7 +31,14 @@ jobs:
     - uses: actions/checkout@v3
       with:
         path: repo
+    - name: Cache $CCACHE_DIR
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.CCACHE_DIR }}
+        key: msbuild-msvc-cmake
     - name: compile
+      env:
+        WIN_FLEX_BISON: ${{ github.workspace }}/.ccache
       run: ./ci/ci-win-compile.ps1
     - name: test build
       run: ./ci/ci-win-test.ps1

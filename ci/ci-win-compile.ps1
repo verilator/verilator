@@ -1,13 +1,13 @@
-git clone --depth 1 https://github.com/lexxmark/winflexbison
-cd winflexbison
-mkdir build
-cd build
-cmake .. --install-prefix $PWD/../installflexbison
-cmake --build . --config Release
-cmake --install . --prefix $PWD/../installflexbison
-cd ..
-$Env:WIN_FLEX_BISON="$PWD/installflexbison"
-cd ..
+if (-Not (Test-Path $PWD/../.ccache/win_bison.exe)) {
+	git clone --depth 1 https://github.com/lexxmark/winflexbison
+	cd winflexbison
+	mkdir build
+	cd build
+	cmake .. --install-prefix $PWD/../../../.ccache
+	cmake --build . --config Release
+	cmake --install . --prefix $PWD/../../../.ccache
+	cd ../..
+}
 mkdir build
 cd build
 cmake .. --install-prefix $PWD/../install
