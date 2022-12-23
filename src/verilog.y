@@ -243,6 +243,19 @@ public:
             fileline->v3error("Unsupported DPI type '" << str << "': Use 'DPI-C'");
         }
     }
+    // Given a list of clocking declarations, put them in clocking items
+    AstClockingItem* makeClockingItemList(FileLine* flp, const VDirection direction,
+                                          AstNodeExpr* skewp, AstNode* const clockingDeclps) {
+        AstClockingItem* itemsp = nullptr;
+        for (AstNode *nodep = clockingDeclps, *nextp; nodep; nodep = nextp) {
+            nextp = nodep->nextp();
+            if (nextp) nextp->unlinkFrBackWithNext();
+            if (itemsp && skewp) skewp = skewp->cloneTree(false);
+            AstClockingItem* itemp = new AstClockingItem{flp, direction, skewp, nodep};
+            itemsp = itemsp ? itemsp->addNext(itemp) : itemp;
+        }
+        return itemsp;
+    }
 };
 
 const VBasicDTypeKwd LOGIC = VBasicDTypeKwd::LOGIC;  // Shorthand "LOGIC"
@@ -494,6 +507,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 // for example yP_ for punctuation based operators.
 // Double underscores "yX__Y" means token X followed by Y,
 // and "yX__ETC" means X folled by everything but Y(s).
+%token<fl>              ya1STEP         "1step"
 //UNSUP %token<fl>      yACCEPT_ON      "accept_on"
 %token<fl>              yALIAS          "alias"
 %token<fl>              yALWAYS         "always"
@@ -2828,13 +2842,13 @@ delay_controlE<delayp>:
 
 delay_control<delayp>:   //== IEEE: delay_control
                 '#' delay_value
-                        { $$ = new AstDelay{$<fl>1, $2}; }
+                        { $$ = new AstDelay{$<fl>1, $2, false}; }
         |       '#' '(' minTypMax ')'
-                        { $$ = new AstDelay{$<fl>1, $3}; }
+                        { $$ = new AstDelay{$<fl>1, $3, false}; }
         |       '#' '(' minTypMax ',' minTypMax ')'
-                        { $$ = new AstDelay{$<fl>1, $3}; RISEFALLDLYUNSUP($3); DEL($5); }
+                        { $$ = new AstDelay{$<fl>1, $3, false}; RISEFALLDLYUNSUP($3); DEL($5); }
         |       '#' '(' minTypMax ',' minTypMax ',' minTypMax ')'
-                        { $$ = new AstDelay{$<fl>1, $3}; RISEFALLDLYUNSUP($3); DEL($5); DEL($7); }
+                        { $$ = new AstDelay{$<fl>1, $3, false}; RISEFALLDLYUNSUP($3); DEL($5); DEL($7); }
         ;
 
 delay_value<nodeExprp>:         // ==IEEE:delay_value
@@ -3320,6 +3334,10 @@ statement_item<nodep>:          // IEEE: statement_item
         //                      // IEEE: nonblocking_assignment
         |       fexprLvalue yP_LTE delay_or_event_controlE expr ';'
                         { $$ = new AstAssignDly{$2, $1, $4, $3}; }
+        //                      // IEEE: clocking_drive ';'
+        |       fexprLvalue yP_LTE cycle_delay expr ';'
+                        { $$ = new AstAssignDly{$2, $1, $4, $3}; }
+        //UNSUP cycle_delay fexprLvalue yP_LTE ';'      { UNSUP }
         |       yASSIGN idClassSel '=' delay_or_event_controlE expr ';'
                         { $$ = new AstAssign{$1, $2, $5, $4}; }
         |       yDEASSIGN variable_lvalue ';'
@@ -3440,8 +3458,14 @@ statement_item<nodep>:          // IEEE: statement_item
                                                           if ($2 && $2->nextp()) nextp = $2->nextp()->unlinkFrBackWithNext();
                                                           $$ = new AstEventControl{FILELINE_OR_CRE($1), $1, $2};
                                                           addNextNull($$, nextp); }
-        //UNSUP cycle_delay stmtBlock                   { UNSUP }
-        //
+        |       cycle_delay stmtBlock
+                        { AstNode* nextp = nullptr;
+                          if ($2) {
+                              if ($2->nextp()) nextp = $2->nextp()->unlinkFrBackWithNext();
+                              $1->addStmtsp($2);
+                          }
+                          $$ = $1;
+                          addNextNull($$, nextp); }
         |       seq_block                               { $$ = $1; }
         //
         //                      // IEEE: wait_statement
@@ -3451,13 +3475,6 @@ statement_item<nodep>:          // IEEE: statement_item
         //
         //                      // IEEE: procedural_assertion_statement
         |       procedural_assertion_statement          { $$ = $1; }
-        //
-        //                      // IEEE: clocking_drive ';'
-        //                      // Pattern w/o cycle_delay handled by nonblocking_assign above
-        //                      // clockvar_expression made to fexprLvalue to prevent reduce conflict
-        //                      // Note LTE in this context is highest precedence, so first on left wins
-        //UNSUP cycle_delay fexprLvalue yP_LTE ';'      { UNSUP }
-        //UNSUP fexprLvalue yP_LTE cycle_delay expr ';' { UNSUP }
         //
         //UNSUP randsequence_statement                  { $$ = $1; }
         //
@@ -5403,87 +5420,92 @@ endLabelE<strp>:
 //************************************************
 // Clocking
 
-clocking_declaration<nodep>:            // IEEE: clocking_declaration  (INCOMPLETE)
-        //UNSUP: vvv remove this -- vastly simplified grammar:
-                yDEFAULT yCLOCKING '@' '(' senitemEdge ')' ';' yENDCLOCKING
-                        { $$ = new AstClocking{$2, $5, nullptr}; }
-        //UNSUP: ^^^ remove this -- vastly simplified grammar:
-        //UNSUP clockingFront clocking_event ';'
-        //UNSUP  clocking_itemListE yENDCLOCKING endLabelE { SYMP->popScope($$); }
+clocking_declaration<nodep>:            // IEEE: clocking_declaration
+                yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
+                        { $$ = new AstClocking{$<fl>2, *$2, $3, $5, false}; }
+        |       yDEFAULT yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
+                        { $$ = new AstClocking{$<fl>2, "", $3, $5, true}; }
+        |       yDEFAULT yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
+                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, true}; }
+        |       yGLOBAL__CLOCKING yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
+                        { $$ = nullptr;
+                          BBUNSUP($<fl>2, "Unsupported: global clocking"); }
+        |       yGLOBAL__CLOCKING yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
+                        { $$ = nullptr;
+                          BBUNSUP($<fl>3, "Unsupported: global clocking"); }
         ;
 
-//UNSUPclockingFront:  // IEEE: part of class_declaration
-//UNSUP         yCLOCKING                               { PARSEP->symPushNewAnon(VAstType::CLOCKING); }
-//UNSUP |       yCLOCKING idAny/*clocking_identifier*/  { SYMP->pushNew($$); }
-//UNSUP |       yDEFAULT yCLOCKING                      { PARSEP->symPushNewAnon(VAstType::CLOCKING); }
-//UNSUP |       yDEFAULT yCLOCKING idAny/*clocking_identifier*/ { SYMP->pushNew($$); }
-//UNSUP |       yGLOBAL__CLOCKING yCLOCKING                     { PARSEP->symPushNewAnon(VAstType::CLOCKING); }
-//UNSUP |       yGLOBAL__CLOCKING yCLOCKING idAny/*clocking_identifier*/        { SYMP->pushNew($$); }
-//UNSUP ;
+clocking_event<senItemp>:       // IEEE: clocking_event
+                '@' id
+                        { $$ = new AstSenItem{$<fl>2, VEdgeType::ET_CHANGED, new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}}; }
+        |       '@' '(' event_expression ')'            { $$ = $3; }
+        ;
 
-//UNSUPclocking_event:  // ==IEEE: clocking_event
-//UNSUP         '@' id                                  { }
-//UNSUP |       '@' '(' event_expression ')'            { }
-//UNSUP ;
+clocking_itemListE<clockingItemp>:
+                /* empty */                             { $$ = nullptr; }
+        |       clocking_itemList                       { $$ = $1; }
+        ;
 
-//UNSUPclocking_itemListE:
-//UNSUP         /* empty */                             { $$ = nullptr; }
-//UNSUP |       clocking_itemList                       { $$ = $1; }
-//UNSUP ;
+clocking_itemList<clockingItemp>:  // IEEE: [ clocking_item ]
+                clocking_item                           { $$ = $1; }
+        |       clocking_itemList clocking_item         { if ($1) $$ = addNextNull($1, $2); }
+        ;
 
-//UNSUPclocking_itemList:  // IEEE: [ clocking_item ]
-//UNSUP         clocking_item                           { $$ = $1; }
-//UNSUP |       clocking_itemList clocking_item         { $$ = addNextNull($1, $2); }
-//UNSUP ;
+clocking_item<clockingItemp>:   // IEEE: clocking_item
+                yDEFAULT yINPUT clocking_skew ';'       { $$ = new AstClockingItem{$<fl>1, VDirection::INPUT, $3, nullptr}; }
+        |       yDEFAULT yOUTPUT clocking_skew ';'      { $$ = new AstClockingItem{$<fl>1, VDirection::OUTPUT, $3, nullptr}; }
+        |       yDEFAULT yINPUT clocking_skew yOUTPUT clocking_skew ';'
+                        { $$ = new AstClockingItem{$<fl>1, VDirection::INPUT, $3, nullptr};
+                          $$->addNext(new AstClockingItem{$<fl>4, VDirection::OUTPUT, $5, nullptr}); }
+        |       yINPUT clocking_skewE list_of_clocking_decl_assign ';'
+                        { $$ = GRAMMARP->makeClockingItemList($<fl>1, VDirection::INPUT, $2, $3); }
+        |       yOUTPUT clocking_skewE list_of_clocking_decl_assign ';'
+                        { $$ = GRAMMARP->makeClockingItemList($<fl>1, VDirection::OUTPUT, $2, $3); }
+        |       yINPUT clocking_skewE yOUTPUT clocking_skewE list_of_clocking_decl_assign ';'
+                        { $$ = nullptr;
+                          BBUNSUP($5, "Unsupported: Mixed input/output clocking items"); }
+        |       yINOUT list_of_clocking_decl_assign ';'
+                        { $$ = nullptr;
+                          BBUNSUP($1, "Unsupported: 'inout' clocking items"); }
+        |       assertion_item_declaration
+                        { $$ = nullptr;
+                          BBUNSUP($1, "Unsupported: assertion items in clocking blocks"); }
+        ;
 
-//UNSUPclocking_item:  // ==IEEE: clocking_item
-//UNSUP         yDEFAULT default_skew ';'               { }
-//UNSUP |       clocking_direction list_of_clocking_decl_assign ';'     { }
-//UNSUP |       assertion_item_declaration              { }
-//UNSUP ;
+list_of_clocking_decl_assign<nodep>:  // IEEE: list_of_clocking_decl_assign
+                clocking_decl_assign                    { $$ = $1; }
+        |       list_of_clocking_decl_assign ',' clocking_decl_assign
+                        { $$ = addNextNull($1, $3); }
+        ;
 
-//UNSUPdefault_skew:  // ==IEEE: default_skew
-//UNSUP         yINPUT clocking_skew                    { }
-//UNSUP |       yOUTPUT clocking_skew                   { }
-//UNSUP |       yINPUT clocking_skew yOUTPUT clocking_skew      { }
-//UNSUP ;
+clocking_decl_assign<nodep>:    // IEEE: clocking_decl_assign
+                idAny/*new-signal_identifier*/ exprEqE
+                        { AstParseRef* const refp = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1, nullptr, nullptr};
+                          $$ = refp;
+                          if ($2) $$ = new AstAssign{$<fl>2, refp, $2}; }
+        ;
 
-//UNSUPclocking_direction:  // ==IEEE: clocking_direction
-//UNSUP         yINPUT clocking_skewE                   { }
-//UNSUP |       yOUTPUT clocking_skewE                  { }
-//UNSUP |       yINPUT clocking_skewE yOUTPUT clocking_skewE    { }
-//UNSUP |       yINOUT                                  { }
-//UNSUP ;
+clocking_skewE<nodeExprp>:          // IEEE: [clocking_skew]
+                /* empty */                             { $$ = nullptr; }
+        |       clocking_skew                           { $$ = $1; }
+        ;
 
-//UNSUPlist_of_clocking_decl_assign:  // ==IEEE: list_of_clocking_decl_assign
-//UNSUP         clocking_decl_assign                    { $$ = $1; }
-//UNSUP |       list_of_clocking_decl_assign ',' clocking_decl_assign   { }
-//UNSUP ;
+clocking_skew<nodeExprp>:           // IEEE: clocking_skew
+                delay_control                           { $$ = $1->lhsp()->unlinkFrBack(); $1->deleteTree(); }
+        |      '#' ya1STEP                              { $$ = new AstConst{$<fl>1, AstConst::OneStep{}}; }
+        |      yPOSEDGE delay_controlE                  { $$ = nullptr;
+                                                          BBUNSUP($1, "Unsupported: clocking event edge override"); }
+        |      yNEGEDGE delay_controlE                  { $$ = nullptr;
+                                                          BBUNSUP($1, "Unsupported: clocking event edge override"); }
+        |      yEDGE delay_controlE                     { $$ = nullptr;
+                                                          BBUNSUP($1, "Unsupported: clocking event edge override"); }
+        ;
 
-//UNSUPclocking_decl_assign:  // ==IEEE: clocking_decl_assign
-//UNSUP         idAny/*new-signal_identifier*/ exprEqE  { $$ = $1; }
-//UNSUP ;
-
-//UNSUPclocking_skewE:  // IEEE: [clocking_skew]
-//UNSUP         /* empty */                             { $$ = nullptr; }
-//UNSUP |       clocking_skew                           { $$ = $1; }
-//UNSUP ;
-
-//UNSUPclocking_skew:  // ==IEEE: clocking_skew
-//UNSUP         yPOSEDGE                                { }
-//UNSUP |       yPOSEDGE delay_control                  { }
-//UNSUP |       yNEGEDGE                                { }
-//UNSUP |       yNEGEDGE delay_control                  { }
-//UNSUP |       yEDGE                                   { NEED_S09($<fl>1, "edge"); }
-//UNSUP |       yEDGE delay_control                     { NEED_S09($<fl>1, "edge"); }
-//UNSUP |       delay_control                           { $$ = $1; }
-//UNSUP ;
-
-//UNSUPcycle_delay:  // ==IEEE: cycle_delay
-//UNSUP         yP_POUNDPOUND yaINTNUM                  { }
-//UNSUP |       yP_POUNDPOUND id                        { }
-//UNSUP |       yP_POUNDPOUND '(' expr ')'              { }
-//UNSUP ;
+cycle_delay<delayp>:  // IEEE: cycle_delay
+               yP_POUNDPOUND yaINTNUM                   { $$ = new AstDelay{$<fl>1, new AstConst{$<fl>2, *$2}, true}; }
+        |      yP_POUNDPOUND id                         { $$ = new AstDelay{$<fl>1, new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}, true}; }
+        |      yP_POUNDPOUND '(' expr ')'               { $$ = new AstDelay{$<fl>1, $3, true}; }
+        ;
 
 //************************************************
 // Asserts

@@ -1238,6 +1238,42 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T> in, VlClassRef<U>& outr) {
     }
 }
 
+//=============================================================================
+// VlSampleQueue stores samples for input clockvars in clocking blocks. At a clocking event,
+// samples from this queue should be written to the correct input clockvar.
+
+template <typename T_Sampled>
+class VlSampleQueue final {
+    // TYPES
+    // Type representing a single value sample at a point in time
+    struct VlSample {
+        uint64_t m_timestamp;  // Timestamp at which the value was sampled
+        T_Sampled m_value;  // The sampled value
+    };
+
+    // MEMBERS
+    std::deque<VlSample> m_queue;  // Queue of samples with timestamps
+
+public:
+    // METHODS
+    // Push a new sample with the given timestamp to the end of the queue
+    void push(uint64_t time, const T_Sampled& value) { m_queue.push_back({time, value}); }
+    // Get the latest sample with its timestamp less than or equal to the given skew
+    void pop(uint64_t time, uint64_t skew, T_Sampled& value) {
+        if (time < skew) return;
+        // Find the last element not greater than (time - skew). Do a binary search, as the queue
+        // should be ordered.
+        auto it = std::lower_bound(m_queue.rbegin(), m_queue.rend(), VlSample{time - skew, {}},
+                                   [](const VlSample& sample, const VlSample& skewed) {
+                                       return sample.m_timestamp > skewed.m_timestamp;
+                                   });
+        if (it != m_queue.rend()) {
+            value = it->m_value;
+            m_queue.erase(m_queue.begin(), it.base());
+        }
+    }
+};
+
 //======================================================================
 
 #define VL_NEW(Class, ...) \

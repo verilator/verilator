@@ -5374,6 +5374,12 @@ private:
             }
         }
     }
+    void visit(AstClockingItem* nodep) override {
+        nodep->exprp()->foreach([nodep](AstVarRef* const refp) {
+            refp->access(nodep->direction().isWritable() ? VAccess::WRITE : VAccess::READ);
+        });
+        userIterateChildren(nodep, WidthVP{SELF, PRELIM}.p());
+    }
     void visit(AstWait* nodep) override {
         if (VN_IS(m_ftaskp, Func)) {
             nodep->v3error("Wait statements are not legal in functions. Suggest use a task "

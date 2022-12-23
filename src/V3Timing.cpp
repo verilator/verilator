@@ -155,8 +155,8 @@ private:
     }
     // Transform an assignment with an intra timing control into a timing control with the
     // assignment under it
-    AstNodeStmt* factorOutTimingControl(AstNodeAssign* nodep) const {
-        AstNodeStmt* stmtp = nodep;
+    AstNode* factorOutTimingControl(AstNodeAssign* nodep) const {
+        AstNode* stmtp = nodep;
         AstDelay* delayp = getLhsNetDelay(nodep);
         FileLine* const flp = nodep->fileline();
         AstNode* const controlp = nodep->timingControlp();
@@ -182,6 +182,11 @@ private:
             stmtp->replaceWith(eventControlp);
             eventControlp->addStmtsp(stmtp);
             stmtp = eventControlp;
+        } else if (auto* const beginp = VN_CAST(controlp, Begin)) {
+            // Begin from V3AssertPre
+            stmtp->replaceWith(beginp);
+            beginp->addStmtsp(stmtp);
+            stmtp = beginp;
         }
         return stmtp == nodep ? nullptr : stmtp;
     }
@@ -495,6 +500,8 @@ private:
         m_procp->user2(true);
     }
     void visit(AstDelay* nodep) override {
+        UASSERT_OBJ(!nodep->isCycleDelay(), nodep,
+                    "Cycle delays should have been handled in V3AssertPre");
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
         auto* const constp = VN_CAST(valuep, Const);

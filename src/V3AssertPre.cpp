@@ -16,6 +16,7 @@
 //  Pre steps:
 //      Attach clocks to each assertion
 //      Substitute property references by property body (IEEE Std 1800-2012, section 16.12.1).
+//      Transform clocking blocks into imperative logic
 //*************************************************************************
 
 #include "config_build.h"
@@ -24,8 +25,10 @@
 #include "V3AssertPre.h"
 
 #include "V3Ast.h"
+#include "V3Const.h"
 #include "V3Global.h"
 #include "V3Task.h"
+#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -37,16 +40,26 @@ class AssertPreVisitor final : public VNVisitor {
     // Eventually inlines calls to sequences, properties, etc.
     // We're not parsing the tree, or anything more complicated.
 private:
-    // NODE STATE/TYPES
+    // NODE STATE
+    const VNUser1InUse m_inuser1;
     // STATE
+    // Current context:
+    AstNetlist* const m_netlistp = nullptr;  // Current netlist
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstClocking* m_clockingp = nullptr;  // Current clocking block
     // Reset each module:
-    AstSenItem* m_seniDefaultp = nullptr;  // Default sensitivity (from AstDefClock)
+    AstClocking* m_defaultClockingp = nullptr;  // Default clocking for the current module
     // Reset each assertion:
     AstSenItem* m_senip = nullptr;  // Last sensitivity
     // Reset each always:
     AstSenItem* m_seniAlwaysp = nullptr;  // Last sensitivity in always
     // Reset each assertion:
     AstNodeExpr* m_disablep = nullptr;  // Last disable
+    // Other:
+    V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
+    bool m_inAssign = false;  // True if in an AssignNode
+    bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
+    bool m_inSynchDrive = false;  // True if in synchronous drive
 
     // METHODS
 
@@ -55,7 +68,7 @@ private:
         // Return nullptr for always
         AstSenTree* newp = nullptr;
         AstSenItem* senip = m_senip;
-        if (!senip) senip = m_seniDefaultp;
+        if (!senip && m_defaultClockingp) senip = m_defaultClockingp->sensesp();
         if (!senip) senip = m_seniAlwaysp;
         if (!senip) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Unclocked assertion");
@@ -139,17 +152,199 @@ private:
 
     // VISITORS
     //========== Statements
-    void visit(AstClocking* nodep) override {
+    void visit(AstClocking* const nodep) override {
+        VL_RESTORER(m_clockingp);
+        m_clockingp = nodep;
         UINFO(8, "   CLOCKING" << nodep << endl);
-        // Store the new default clock, reset on new module
-        m_seniDefaultp = nodep->sensesp();
-        // Trash it, keeping children
-        if (nodep->bodysp()) {
-            nodep->replaceWith(nodep->bodysp()->unlinkFrBack());
-        } else {
-            nodep->unlinkFrBack();
+        iterateChildren(nodep);
+    }
+    void visit(AstClockingItem* const nodep) override {
+        FileLine* const flp = nodep->fileline();
+        V3Const::constifyEdit(nodep->skewp());
+        if (!VN_IS(nodep->skewp(), Const)) {
+            nodep->skewp()->v3error("Skew must be constant (IEEE 1800-2017 14.4)");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
         }
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        AstConst* const skewp = VN_AS(nodep->skewp(), Const);
+        if (skewp->num().isNegative()) skewp->v3error("Skew cannot be negative");
+        AstNodeExpr* const exprp = nodep->exprp();
+        // Get a ref to the sampled/driven variable
+        AstVar* const varp = nodep->varp()->unlinkFrBack();
+        m_clockingp->addVarsp(varp);
+        varp->user1p(nodep);
+        if (nodep->direction() == VDirection::OUTPUT) {
+            AstVarRef* const skewedRefp = new AstVarRef{flp, varp, VAccess::READ};
+            skewedRefp->user1(true);
+            AstAssign* const assignp = new AstAssign{flp, exprp->cloneTree(false), skewedRefp};
+            if (skewp->isZero()) {
+                // Drive the var in Re-NBA (IEEE 1800-2017 14.16)
+                m_clockingp->addNextHere(new AstAlwaysReactive{
+                    flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, assignp});
+            } else if (skewp->fileline()->timingOn()) {
+                // Create a fork so that this AlwaysObserved can be retriggered before the
+                // assignment happens. Also then it can be combo, avoiding the need for creating
+                // new triggers.
+                AstFork* const forkp = new AstFork{flp, "", assignp};
+                forkp->joinType(VJoinType::JOIN_NONE);
+                // Use Observed for this to make sure we do not miss the event
+                m_clockingp->addNextHere(new AstAlwaysObserved{
+                    flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, forkp});
+                if (v3Global.opt.timing().isSetTrue()) {
+                    assignp->timingControlp(new AstDelay{flp, skewp->unlinkFrBack(), false});
+                } else if (v3Global.opt.timing().isSetFalse()) {
+                    nodep->v3warn(E_NOTIMING,
+                                  "Clocking output skew greater than #0 requires --timing");
+                } else {
+                    nodep->v3warn(E_NEEDTIMINGOPT,
+                                  "Use --timing or --no-timing to specify how "
+                                  "clocking output skew greater than #0 should be handled");
+                }
+            }
+        } else if (nodep->direction() == VDirection::INPUT) {
+            // Ref to the clockvar
+            AstVarRef* const refp = new AstVarRef{flp, varp, VAccess::WRITE};
+            refp->user1(true);
+            if (skewp->num().is1Step()) {
+                // Assign the sampled expression to the clockvar (IEEE 1800-2017 14.13)
+                AstSampled* const sampledp = new AstSampled{flp, exprp->cloneTree(false)};
+                sampledp->dtypeFrom(exprp);
+                m_clockingp->addNextHere(new AstAssignW{flp, refp, sampledp});
+            } else if (skewp->isZero()) {
+                // #0 means the var has to be sampled in Observed (IEEE 1800-2017 14.13)
+                AstAssign* const assignp = new AstAssign{flp, refp, exprp->cloneTree(false)};
+                m_clockingp->addNextHere(new AstAlwaysObserved{
+                    flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, assignp});
+            } else {
+                // Create a queue where we'll store sampled values with timestamps
+                AstSampleQueueDType* const queueDtp
+                    = new AstSampleQueueDType{flp, exprp->dtypep()};
+                m_netlistp->typeTablep()->addTypesp(queueDtp);
+                AstVar* const queueVarp = new AstVar{
+                    flp, VVarType::MODULETEMP,
+                    "__Vqueue__" + m_clockingp->name() + "__DOT__" + varp->name(), queueDtp};
+                m_clockingp->addNextHere(queueVarp);
+                // Create a process like this:
+                //     always queue.push(<sampled var>);
+                AstCMethodHard* const pushp = new AstCMethodHard{
+                    flp, new AstVarRef{flp, queueVarp, VAccess::WRITE}, "push",
+                    new AstTime(nodep->fileline(), m_modp->timeunit())};
+                pushp->addPinsp(exprp->cloneTree(false));
+                pushp->dtypeSetVoid();
+                m_clockingp->addNextHere(
+                    new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, pushp->makeStmt()});
+                // Create a process like this:
+                //     always @<clocking event> queue.pop(<skew>, /*out*/<skewed var>});
+                AstCMethodHard* const popp = new AstCMethodHard{
+                    flp, new AstVarRef{flp, queueVarp, VAccess::READWRITE}, "pop",
+                    new AstTime(nodep->fileline(), m_modp->timeunit())};
+                popp->addPinsp(skewp->unlinkFrBack());
+                popp->addPinsp(refp);
+                popp->dtypeSetVoid();
+                m_clockingp->addNextHere(
+                    new AstAlways{flp, VAlwaysKwd::ALWAYS,
+                                  new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)},
+                                  popp->makeStmt()});
+            }
+        } else {
+            nodep->v3fatal("Invalid direction");
+        }
+        pushDeletep(nodep->unlinkFrBack());
+    }
+    void visit(AstDelay* nodep) override {
+        // Only cycle delays are relevant in this stage; also only process once
+        if (!nodep->isCycleDelay()) {
+            if (m_inSynchDrive) {
+                nodep->v3error("Only cycle delays can be used in synchronous drives"
+                               " (IEEE 1800-2017 14.16)");
+            }
+            return;
+        }
+        if (m_inAssign && !m_inSynchDrive) {
+            nodep->v3error("Cycle delays not allowed as intra-assignment delays"
+                           " (IEEE 1800-2017 14.11)");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBackWithNext());
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
+        AstConst* const constp = VN_CAST(valuep, Const);
+        if (constp->isZero()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: ##0 delays");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        if (!m_defaultClockingp) {
+            nodep->v3error("Usage of cycle delays requires default clocking"
+                           " (IEEE 1800-2017 14.11)");
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        AstEventControl* const controlp = new AstEventControl{
+            nodep->fileline(),
+            new AstSenTree{flp, m_defaultClockingp->sensesp()->cloneTree(false)}, nullptr};
+        const std::string delayName = m_cycleDlyNames.get(nodep);
+        AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter",
+                                           nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+        AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, false, true};
+        beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
+        beginp->addStmtsp(new AstWhile{
+            nodep->fileline(),
+            new AstGt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}},
+            controlp,
+            new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                          new AstSub{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                     new AstConst{flp, 1}}}});
+        nodep->replaceWith(beginp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+    void visit(AstSenTree* nodep) override {
+        if (m_inSynchDrive) {
+            nodep->v3error("Event controls cannot be used in "
+                           "synchronous drives (IEEE 1800-2017 14.16)");
+        }
+    }
+    void visit(AstNodeVarRef* nodep) override {
+        if (AstClockingItem* const itemp = VN_CAST(nodep->varp()->user1p(), ClockingItem)) {
+            if (nodep->access().isReadOrRW() && !nodep->user1()
+                && itemp->direction() == VDirection::OUTPUT) {
+                nodep->v3error("Cannot read from output clockvar (IEEE 1800-2017 14.3)");
+            }
+            if (nodep->access().isWriteOrRW()) {
+                if (itemp->direction() == VDirection::OUTPUT) {
+                    if (!m_inAssignDlyLhs) {
+                        nodep->v3error("Only non-blocking assignments can write "
+                                       "to clockvars (IEEE 1800-2017 14.16)");
+                    }
+                    if (m_inAssign) m_inSynchDrive = true;
+                } else if (!nodep->user1() && itemp->direction() == VDirection::INPUT) {
+                    nodep->v3error("Cannot write to input clockvar (IEEE 1800-2017 14.3)");
+                }
+            }
+        }
+    }
+    void visit(AstNodeAssign* nodep) override {
+        if (nodep->user1()) return;
+        VL_RESTORER(m_inAssign);
+        VL_RESTORER(m_inSynchDrive);
+        m_inAssign = true;
+        m_inSynchDrive = false;
+        {
+            VL_RESTORER(m_inAssignDlyLhs);
+            m_inAssignDlyLhs = VN_IS(nodep, AssignDly);
+            iterate(nodep->lhsp());
+        }
+        iterate(nodep->rhsp());
+        if (nodep->timingControlp()) {
+            iterate(nodep->timingControlp());
+        } else if (m_inSynchDrive) {
+            AstAssign* const assignp = new AstAssign{
+                nodep->fileline(), nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack()};
+            assignp->user1(true);
+            nodep->replaceWith(assignp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        }
     }
     void visit(AstAlways* nodep) override {
         iterateAndNextNull(nodep->sensesp());
@@ -255,9 +450,20 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_defaultClockingp);
+        VL_RESTORER(m_modp);
+        m_defaultClockingp = nullptr;
+        nodep->foreach([&](AstClocking* const clockingp) {
+            if (clockingp->isDefault()) {
+                if (m_defaultClockingp) {
+                    clockingp->v3error("Only one default clocking block allowed per module"
+                                       " (IEEE 1800-2017 14.12)");
+                }
+                m_defaultClockingp = clockingp;
+            }
+        });
+        m_modp = nodep;
         iterateChildren(nodep);
-        // Reset defaults
-        m_seniDefaultp = nullptr;
     }
     void visit(AstProperty* nodep) override {
         // The body will be visited when will be substituted in place of property reference
@@ -268,7 +474,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit AssertPreVisitor(AstNetlist* nodep) {
+    explicit AssertPreVisitor(AstNetlist* nodep)
+        : m_netlistp{nodep} {
         clearAssertInfo();
         // Process
         iterate(nodep);

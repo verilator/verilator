@@ -302,6 +302,11 @@ private:
     }
 
     //-----
+    void visit(AstClockingItem* nodep) override {
+        // Prevent V3Dead from deleting clockvars that are seemingly dead before V3AssertPre. Later
+        // the vars will be moved to the containing module so if they are actually dead they will
+        // still get deleted.
+    }
     void visit(AstNode* nodep) override {
         if (nodep->isOutputter()) m_sideEffect = true;
         iterateChildren(nodep);

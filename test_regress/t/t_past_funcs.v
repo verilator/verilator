@@ -94,12 +94,9 @@ module Test2 (/*AUTOARG*/
    end
 
    default clocking @(posedge clk); endclocking
+
    assert property ($rose(dly0[0]) || dly0%2==0);
-
-   default clocking @(posedge clk); endclocking
    assert property ($fell(dly1[0]) || dly1%2==1);
-
-   default clocking @(posedge clk); endclocking
    assert property ($stable(dly2[31:4]));
    assert property (!$changed(dly2[31:4]));
 endmodule

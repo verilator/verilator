@@ -936,6 +936,13 @@ public:
         dtypeSetBit();  // Events 1 bit, objects 64 bits, so autoExtend=1 and use bit here
         initWithNumber();
     }
+    class OneStep {};
+    AstConst(FileLine* fl, OneStep)
+        : ASTGEN_SUPER_Const(fl)
+        , m_num(V3Number::OneStep{}, this) {
+        dtypeSetLogicSized(64, VSigning::UNSIGNED);
+        initWithNumber();
+    }
     ASTGEN_MEMBERS_AstConst;
     string name() const override { return num().ascii(); }  // * = Value
     const V3Number& num() const VL_MT_SAFE { return m_num; }  // * = Value
