@@ -554,6 +554,7 @@ AstNodeStmt* buildLoop(AstNetlist* netlistp, const string& name,
     FileLine* const flp = scopeTopp->fileline();
     // Create the loop condition variable
     AstVarScope* const condp = scopeTopp->createTemp("__V" + name + "Continue", 1);
+    condp->varp()->noReset(true);
     // Initialize the loop condition variable to true
     AstNodeStmt* const resp = setVar(condp, 1);
     // Add the loop
@@ -578,6 +579,7 @@ std::pair<AstVarScope*, AstNodeStmt*> makeEvalLoop(AstNetlist* netlistp, const s
     FileLine* const flp = scopeTopp->fileline();
 
     AstVarScope* const counterp = scopeTopp->createTemp("__V" + tag + "IterCount", 32);
+    counterp->varp()->noReset(true);
 
     AstNodeStmt* nodep = setVar(counterp, 0);
     nodep->addNext(buildLoop(netlistp, tag, [&](AstVarScope* continuep, AstWhile* loopp) {

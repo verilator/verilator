@@ -2092,6 +2092,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isSigPublic()) str << " [P]";
     if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOP]";
+    if (noReset()) str << " [!RST]";
     if (attrIsolateAssign()) str << " [aISO]";
     if (attrFileDescr()) str << " [aFD]";
     if (isFuncReturn()) {

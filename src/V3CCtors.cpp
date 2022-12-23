@@ -138,6 +138,7 @@ private:
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstCFunc* m_cfuncp = nullptr;  // Current function
     V3CCtorsBuilder* m_varResetp = nullptr;  // Builder of _ctor_var_reset
 
     // VISITs
@@ -172,16 +173,23 @@ private:
 
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_varResetp);
+        VL_RESTORER(m_cfuncp);
         m_varResetp = nullptr;
+        m_cfuncp = nodep;
         iterateChildren(nodep);
     }
     void visit(AstVar* nodep) override {
-        if (m_varResetp && !nodep->isIfaceParent() && !nodep->isIfaceRef() && !nodep->noReset()
-            && !nodep->isParam()
+        if (!nodep->isIfaceParent() && !nodep->isIfaceRef() && !nodep->noReset()
+            && !nodep->isParam() && !nodep->isStatementTemp()
             && !(nodep->basicp()
                  && (nodep->basicp()->isEvent() || nodep->basicp()->isTriggerVec()))) {
-            const auto vrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE};
-            m_varResetp->add(new AstCReset{nodep->fileline(), vrefp});
+            if (m_varResetp) {
+                const auto vrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE};
+                m_varResetp->add(new AstCReset{nodep->fileline(), vrefp});
+            } else if (m_cfuncp) {
+                const auto vrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE};
+                nodep->addNextHere(new AstCReset{nodep->fileline(), vrefp});
+            }
         }
     }
 

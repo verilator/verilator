@@ -108,6 +108,7 @@ private:
                 AstVar* const newVarp
                     = new AstVar{oldVarp->fileline(), oldVarp->varType(), newName, oldVarp};
                 newVarp->funcLocal(true);
+                newVarp->noReset(oldVarp->noReset());
                 funcp->addInitsp(newVarp);
 
                 // Fix up all the references within this function

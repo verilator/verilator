@@ -578,8 +578,9 @@ void EmitCFunc::emitSetVarConstant(const string& assignString, AstConst* constp)
 
 void EmitCFunc::emitVarReset(AstVar* varp) {
     AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
-    const string varNameProtected
-        = VN_IS(m_modp, Class) ? varp->nameProtect() : "vlSelf->" + varp->nameProtect();
+    const string varNameProtected = (VN_IS(m_modp, Class) || varp->isFuncLocal())
+                                        ? varp->nameProtect()
+                                        : "vlSelf->" + varp->nameProtect();
     if (varp->isIO() && m_modp->isTop() && optSystemC()) {
         // System C top I/O doesn't need loading, as the lower level subinst code does it.}
     } else if (varp->isParam()) {
@@ -697,9 +698,11 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
     } else if (basicp) {
         const bool zeroit
             = (varp->attrFileDescr()  // Zero so we don't do file IO if never $fopen
+               || varp->isFuncLocal()  // Randomization too slow
                || (basicp && basicp->isZeroInit())
                || (v3Global.opt.underlineZero() && !varp->name().empty() && varp->name()[0] == '_')
                || (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0"));
+        const bool slow = !varp->isFuncLocal() && !varp->isClassMember();
         splitSizeInc(1);
         if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
             string out;
@@ -711,7 +714,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
                 }
             } else {
-                out += zeroit ? "VL_ZERO_RESET_W(" : "VL_RAND_RESET_W(";
+                out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(") : "VL_RAND_RESET_W(";
                 out += cvtToStr(dtypep->widthMin());
                 out += ", " + varNameProtected + suffix + ");\n";
             }

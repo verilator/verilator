@@ -355,10 +355,9 @@ WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     outwp[VL_WORDS_I(obits) - 1] = VL_RAND_RESET_I(32) & VL_MASK_E(obits);
     return outwp;
 }
-
 WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
-    for (int i = 0; i < VL_WORDS_I(obits); ++i) outwp[i] = 0;
-    return outwp;
+    // Not inlined to speed up compilation of slowpath code
+    return VL_ZERO_W(obits, outwp);
 }
 
 //===========================================================================
@@ -611,7 +610,7 @@ std::string VL_DECIMAL_NW(int width, const WDataInP lwp) VL_MT_SAFE {
     const int maxdecwidth = (width + 3) * 4 / 3;
     // Or (maxdecwidth+7)/8], but can't have more than 4 BCD bits per word
     VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> bcd;
-    VL_ZERO_RESET_W(maxdecwidth, bcd);
+    VL_ZERO_W(maxdecwidth, bcd);
     VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> tmp;
     VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> tmp2;
     int from_bit = width - 1;
@@ -622,7 +621,7 @@ std::string VL_DECIMAL_NW(int width, const WDataInP lwp) VL_MT_SAFE {
         // Any digits >= 5 need an add 3 (via tmp)
         for (int nibble_bit = 0; nibble_bit < maxdecwidth; nibble_bit += 4) {
             if ((VL_BITRSHIFT_W(bcd, nibble_bit) & 0xf) >= 5) {
-                VL_ZERO_RESET_W(maxdecwidth, tmp2);
+                VL_ZERO_W(maxdecwidth, tmp2);
                 tmp2[VL_BITWORD_E(nibble_bit)] |= VL_EUL(0x3) << VL_BITBIT_E(nibble_bit);
                 VL_ASSIGN_W(maxdecwidth, tmp, bcd);
                 VL_ADD_W(VL_WORDS_I(maxdecwidth), bcd, tmp, tmp2);
@@ -1614,7 +1613,7 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi
             *datap |= ((static_cast<QData>(c) << static_cast<QData>(shift)) & VL_MASK_Q(width));
         } else {
             WDataOutP datap = &(reinterpret_cast<WDataOutP>(memp))[entry * VL_WORDS_I(width)];
-            if (shift == start_shift) VL_ZERO_RESET_W(width, datap);
+            if (shift == start_shift) VL_ZERO_W(width, datap);
             datap[VL_BITWORD_E(shift)] |= (static_cast<EData>(c) << VL_BITBIT_E(shift));
         }
         // Prep for next
@@ -1703,7 +1702,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
     const char* const dp = match.c_str() + 1 /*leading + */ + prefix.length();
     if (match.empty()) return 0;
 
-    VL_ZERO_RESET_W(rbits, rwp);
+    VL_ZERO_W(rbits, rwp);
     switch (std::tolower(fmt)) {
     case 'd': {
         int64_t lld = 0;
@@ -2025,7 +2024,7 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
                      & VL_MASK_Q(m_bits);
         } else {
             WDataOutP datap = reinterpret_cast<WDataOutP>(valuep);
-            if (!innum) VL_ZERO_RESET_W(m_bits, datap);
+            if (!innum) VL_ZERO_W(m_bits, datap);
             _vl_shiftl_inplace_w(m_bits, datap, static_cast<IData>(shift));
             datap[0] |= value;
         }
