@@ -2789,7 +2789,7 @@ private:
                         "Bad package link");
             AstClassOrPackageRef* const cpackagerefp
                 = VN_AS(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
-            if (cpackagerefp->name() == "process" || cpackagerefp->name() == "local") {
+            if (cpackagerefp->name() == "local") {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: " << AstNode::prettyNameQ(cpackagerefp->name()));
             }
