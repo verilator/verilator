@@ -32,8 +32,10 @@ module t(/*AUTOARG*/
 
    // Test loop
    always @ (posedge clk) begin
+`ifdef TEST_VERBOSE
       $write("[%0t] cyc==%0d crc=%x result=%x in=%x out=%x\n",
              $time, cyc, crc, result, in, out);
+`endif
       cyc <= cyc + 1;
       crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
       sum <= {sum[127:1], 1'b0} + result;
@@ -54,6 +56,7 @@ module t(/*AUTOARG*/
 
    function [W-1:0] reverse(input [W-1:0] val);
       integer i;
+      // Bug workaround: reverse = '0;
       for (i = 0; i < W; i = i + 1)
         reverse[W-1-i] = val[i];
    endfunction
