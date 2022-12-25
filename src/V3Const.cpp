@@ -560,9 +560,11 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                     if (leafInfo.lsb() <= leafInfo.msb()) {
                         m_bitPolarities.emplace_back(leafInfo, isXorTree() || leafInfo.polarity(),
                                                      leafInfo.lsb());
-                    } else if (isAndTree() && leafInfo.polarity()) {
-                        // If there is a constant 0 term in an And tree, we must include it. Fudge
-                        // this by adding a bit with both polarities, which will simplify to zero
+                    } else if ((isAndTree() && leafInfo.polarity())
+                               || (isOrTree() && !leafInfo.polarity())) {
+                        // If there is a constant 0 term in an And tree or 1 term in an Or tree, we
+                        // must include it. Fudge this by adding a bit with both polarities, which
+                        // will simplify to zero or one respectively.
                         m_bitPolarities.emplace_back(leafInfo, true, 0);
                         m_bitPolarities.emplace_back(leafInfo, false, 0);
                     }
