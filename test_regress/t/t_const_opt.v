@@ -62,7 +62,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h94c0495e8e279723
+`define EXPECTED_SUM 64'h82ec11efed7c1a4d
 
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
@@ -91,10 +91,11 @@ module Test(/*AUTOARG*/
    wire  bug3399_out0;
    wire  bug3399_out1;
    logic bug3786_out;
+   logic bug3824_out;
 
    output logic o;
 
-   logic [12:0] tmp;
+   logic [13:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -123,6 +124,7 @@ module Test(/*AUTOARG*/
       tmp[10]<= bug3399_out0;
       tmp[11]<= bug3399_out1;
       tmp[12]<= bug3786_out;
+      tmp[13]<= bug3824_out;
    end
 
    bug3182 i_bug3182(.in(d[4:0]), .out(bug3182_out));
@@ -132,6 +134,7 @@ module Test(/*AUTOARG*/
    bug3509 i_bug3509(.clk(clk), .in(d), .out(bug3509_out));
    bug3399 i_bug3399(.clk(clk), .in(d), .out0(bug3399_out0), .out1(bug3399_out1));
    bug3786 i_bug3786(.clk(clk), .in(d), .out(bug3786_out));
+   bug3824 i_bug3824(.clk(clk), .in(d), .out(bug3824_out));
 
 endmodule
 
@@ -330,4 +333,22 @@ module bug3786(input wire clk, input wire [31:0] in, inout wire out);
    end
 
    assign out = ^{d1, d0};
+endmodule
+
+// Bug3824
+// When a variable is shift-out, the term becomes 0.
+// Such behavior was not considered in Or-tree.
+module bug3824(input wire clk, input wire [31:0] in, output wire out);
+   logic [5:0] a;
+   always_ff @(posedge clk) a <= in[5:0];
+   logic [6:0] b;
+   assign b = {1'b0, a};
+
+   logic c;
+   assign c = ~(b[6]);  // c is always 1'b1 as b[6] is 1'b0
+
+   logic d;
+   always_ff @(posedge clk) d <= (|a) | c;  // d is always 1'b1 because of c
+
+  assign out = d;
 endmodule
