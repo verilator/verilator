@@ -561,9 +561,9 @@ class ParamProcessor final {
                            << v3Global.opt.moduleRecursionDepth());
             return;
         }
-        // Keep tree sorted by level. Note: Different parameterizations of the same recursive module
-        // end up with the same level, which we will need to fix up at the end, as we do not know
-        // up front how recursive modules are expanded, and a later expansion might re-use an
+        // Keep tree sorted by level. Note: Different parameterizations of the same recursive
+        // module end up with the same level, which we will need to fix up at the end, as we do not
+        // know up front how recursive modules are expanded, and a later expansion might re-use an
         // earlier expansion (see t_recursive_module_bug_2).
         AstNode* insertp = srcModp;
         while (VN_IS(insertp->nextp(), NodeModule)
