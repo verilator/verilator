@@ -914,7 +914,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Class not under module/package/$unit");
         UINFO(8, "   " << nodep << endl);
-        // Remove classes that have void params, as they were only used for the parametrization
+        // Remove classes that have void params, as they were only used for the parameterization
         // step and will not be instantiated
         if (m_statep->removeVoidParamedClasses()) {
             for (auto* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -2131,7 +2131,7 @@ private:
     }
 
     bool isParamedClassRef(const AstNode* nodep) {
-        // Is this a parametrized reference to a class, or a reference to class parameter
+        // Is this a parameterized reference to a class, or a reference to class parameter
         if (const auto* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
             if (classRefp->paramsp()) return true;
             const auto* classp = classRefp->classOrPackageNodep();
@@ -2334,7 +2334,7 @@ private:
                 // if (debug() >= 9) nodep->dumpTree("-  dot-lho: ");
             }
             if (m_statep->forPrimary() && isParamedClassRef(nodep->lhsp())) {
-                // Dots of paramed classes will be linked after deparametrization
+                // Dots of paramed classes will be linked after deparameterization
                 m_ds.m_dotPos = DP_NONE;
                 return;
             }
@@ -2405,7 +2405,7 @@ private:
         }
         if (nodep->name() == "this") {
             iterateChildren(nodep);
-            if (m_statep->forPrimary()) return;  // The class might be parametrized somewhere
+            if (m_statep->forPrimary()) return;  // The class might be parameterized somewhere
             const VSymEnt* classSymp = getThisClassSymp();
             if (!classSymp) {
                 nodep->v3error("'this' used outside class (IEEE 1800-2017 8.11)");

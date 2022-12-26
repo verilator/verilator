@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Implementation of Christofides' algorithm to
+// DESCRIPTION: Verilator: Implementation of Christofides algorithm to
 //              approximate the solution to the traveling salesman problem.
 //
 // Code available from: https://verilator.org

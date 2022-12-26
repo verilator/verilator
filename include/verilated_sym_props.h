@@ -182,7 +182,7 @@ public:
     }
     // Total size in bytes (note DPI limited to 4GB)
     size_t totalSize() const;
-    // Adjust a data pointer to access a given array element, NuLL if something goes bad
+    // Adjust a data pointer to access a given array element, NULL if something goes bad
     void* datapAdjustIndex(void* datap, int dim, int indx) const;
 };
 

@@ -1,5 +1,5 @@
 //
-// DESCRIPTION: Verilator: DFG optimzier equivalence testing
+// DESCRIPTION: Verilator: DFG optimizer equivalence testing
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2022 by Geza Lore.

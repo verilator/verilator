@@ -95,7 +95,7 @@ public:
     bool m_pinAnsi = false;  // In ANSI port list
     bool m_tracingParse = true;  // Tracing disable for parser
     bool m_insideProperty = false;  // Is inside property declaration
-    bool m_typedPropertyPort = false;  // True if typed property port occured on port lists
+    bool m_typedPropertyPort = false;  // True if typed property port occurred on port lists
 
     int m_pinNum = -1;  // Pin number currently parsing
     std::stack<int> m_pinStack;  // Queue of pin numbers being parsed

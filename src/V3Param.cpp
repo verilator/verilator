@@ -561,7 +561,7 @@ class ParamProcessor final {
                            << v3Global.opt.moduleRecursionDepth());
             return;
         }
-        // Keep tree sorted by level. Note: Different parametrizations of the same recursive module
+        // Keep tree sorted by level. Note: Different parameterizations of the same recursive module
         // end up with the same level, which we will need to fix up at the end, as we do not know
         // up front how recursive modules are expanded, and a later expansion might re-use an
         // earlier expansion (see t_recursive_module_bug_2).
@@ -861,7 +861,7 @@ public:
         } else if (auto* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
             classRefDeparam(classRefp, srcModpr);
         } else {
-            nodep->v3fatalSrc("Expected module parametrization");
+            nodep->v3fatalSrc("Expected module parameterization");
         }
 
         UINFO(8, "     Done with " << nodep << endl);
@@ -942,7 +942,7 @@ class ParamVisitor final : public VNVisitor {
                 } else if (const auto* classRefp = VN_CAST(cellp, ClassRefDType)) {
                     srcModp = classRefp->classp();
                 } else {
-                    cellp->v3fatalSrc("Expected module parametrization");
+                    cellp->v3fatalSrc("Expected module parameterization");
                 }
                 UASSERT_OBJ(srcModp, cellp, "Unlinked class ref");
 

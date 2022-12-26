@@ -400,7 +400,7 @@ private:
                     cost *= declp->arrayRange().ranged() ? declp->arrayRange().elements() : 1;
                     // Note: Experiments factoring in the size of declp->valuep()
                     // showed no benefit in tracing speed, even for large trees,
-                    // so we will leve those out for now.
+                    // so we will leave those out for now.
                     complexity += cost;
                 }
             }

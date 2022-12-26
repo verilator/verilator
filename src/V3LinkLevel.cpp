@@ -132,7 +132,7 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
                                              VTimescale{VTimescale::TS_DEFAULT});
     }
 
-    // Classes under package have timescale propaged in V3LinkParse
+    // Classes under package have timescale propagated in V3LinkParse
 }
 
 //######################################################################

@@ -34,7 +34,7 @@ static int debug() { return V3Error::debugDefault(); }
 #include "V3OptionParser.cpp"
 #include "V3Os.cpp"
 #include "VlcTop.cpp"
-// clanf-format on
+// clang-format on
 
 #include "VlcOptions.h"
 #include "VlcTop.h"
