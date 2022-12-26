@@ -228,7 +228,7 @@ struct SplitVarImpl {
 };  // SplitVarImpl
 
 //######################################################################
-// Utilities required in wharious placs
+// Utilities required in various placs
 
 static void warnNoSplit(const AstVar* varp, const AstNode* wherep, const char* reasonp) {
     wherep->v3warn(SPLITVAR, varp->prettyNameQ()

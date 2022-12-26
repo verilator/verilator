@@ -803,7 +803,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
     m_lexp->scanNewFile(flsp);
     addLineComment(1);  // Enter
 
-    // Filter all DOS CR's en-mass.  This avoids bugs with lexing CRs in the wrong places.
+    // Filter all DOS CR's en masse.  This avoids bugs with lexing CRs in the wrong places.
     // This will also strip them from strings, but strings aren't supposed
     // to be multi-line without a "\"
     int eof_newline = 0;  // Number of characters following last newline

@@ -515,7 +515,7 @@ struct VerilatedVpiTimedCbsCmp {
 class VerilatedVpiError;
 
 class VerilatedVpiImp final {
-    enum { CB_ENUM_MAX_VALUE = cbAtEndOfSimTime + 1 };  // Maxium callback reason
+    enum { CB_ENUM_MAX_VALUE = cbAtEndOfSimTime + 1 };  // Maximum callback reason
     using VpioCbList = std::list<VerilatedVpiCbHolder>;
     using VpioTimedCbs = std::map<std::pair<QData, uint64_t>, VerilatedVpiCbHolder>;
 
@@ -1583,7 +1583,7 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
         return vop->type();
     }
     case vpiDirection: {
-        // By forthought, the directions already are vpi enumerated
+        // By forethought, the directions already are vpi enumerated
         const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return vop->varp()->vldir();

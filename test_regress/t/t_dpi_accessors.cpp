@@ -172,7 +172,7 @@ int main() {
         logRegHex(dut->clk, "read mem32", 8, mem32, " (after clk)");
 
         // In this case, the value never changes. But we should check it is
-        // waht we expect (0x20).
+        // what we expect (0x20).
         checkResult(mem32 == 0x20, "Test of array element reading failed.");
     }
 
@@ -487,7 +487,7 @@ int main() {
         logRegHex(dut->clk, "read  mem32 [7:6,2:0]", 5, mem32_slice, " (after clk)");
 
         // We have already tested that array element writing works, so we just
-        // check that dhe slice of "mem32" after the clock is the
+        // check that the slice of "mem32" after the clock is the
         // concatenation of the top 2 and bottom 3 bits of "mem32"
         checkResult(mem32_slice == (((mem32 & 0xc0) >> 3) | (mem32 & 0x07)),
                     "Test of array element slice writing failed.");

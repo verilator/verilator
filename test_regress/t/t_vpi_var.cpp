@@ -521,7 +521,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
             int words = (i + 31) >> 5;
             TEST_MSG("========== %d ==========\n", i);
             if (callback_count_strs) {
-                // check persistance
+                // check persistence
                 if (data[i].type) {
                     v.format = data[i].type;
                 } else {

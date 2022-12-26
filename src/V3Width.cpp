@@ -2256,7 +2256,7 @@ private:
     }
     void visit(AstEnumItemRef* nodep) override {
         if (!nodep->itemp()->didWidth()) {
-            // We need to do the whole enum en-mass
+            // We need to do the whole enum en masse
             AstNode* enump = nodep->itemp();
             UASSERT_OBJ(enump, nodep, "EnumItemRef not linked");
             for (; enump; enump = enump->backp()) {

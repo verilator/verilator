@@ -249,7 +249,7 @@ private:
     bool m_ignc = false;            // main switch: --ignc
     bool m_lintOnly = false;        // main switch: --lint-only
     bool m_gmake = false;           // main switch: --make gmake
-    bool m_main = false;            // main swithc: --main
+    bool m_main = false;            // main switch: --main
     bool m_outFormatOk = false;     // main switch: --cc, --sc or --sp was specified
     bool m_pedantic = false;        // main switch: --Wpedantic
     bool m_pinsScUint = false;      // main switch: --pins-sc-uint
@@ -281,7 +281,7 @@ private:
     bool m_traceStructs = false;    // main switch: --trace-structs
     bool m_traceUnderscore = false; // main switch: --trace-underscore
     bool m_underlineZero = false;   // main switch: --underline-zero; undocumented old Verilator 2
-    bool m_verilate = true;         // main swith: --verilate
+    bool m_verilate = true;         // main switch: --verilate
     bool m_vpi = false;             // main switch: --vpi
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
     bool m_xmlOnly = false;         // main switch: --xml-only

@@ -276,7 +276,7 @@ class DfgToAstVisitor final : DfgVisitor {
             // Whole variable is driven. Just assign from the canonical variable.
             addResultEquation(dfgVarp->driverFileLine(0), wRef(), rRef());
         } else {
-            // Variable is driven partially. Asign from parts of the canonical var.
+            // Variable is driven partially. Assign from parts of the canonical var.
             dfgVarp->forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {
                 UASSERT_OBJ(edge.sourcep(), dfgVarp, "Should have removed undriven sources");
                 // Create select LValue
@@ -292,7 +292,7 @@ class DfgToAstVisitor final : DfgVisitor {
     }
 
     void convertArrayDiver(const DfgVarArray* dfgVarp) {
-        // Variable is driven partially. Asign from parts of the canonical var.
+        // Variable is driven partially. Assign from parts of the canonical var.
         dfgVarp->forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {
             UASSERT_OBJ(edge.sourcep(), dfgVarp, "Should have removed undriven sources");
             // Render the rhs expression

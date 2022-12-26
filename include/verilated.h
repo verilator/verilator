@@ -600,7 +600,7 @@ private:
     // Fastpath:
     VerilatedSyms* m_symsp = nullptr;  // Symbol table
     void** m_callbacksp = nullptr;  // Callback table pointer (Fastpath)
-    int m_funcnumMax = 0;  // Maxium function number stored (Fastpath)
+    int m_funcnumMax = 0;  // Maximum function number stored (Fastpath)
     // 4 bytes padding (on -m64), for rent.
     VerilatedVarNameMap* m_varsp = nullptr;  // Variable map
     const char* m_namep = nullptr;  // Scope name (Slowpath)
