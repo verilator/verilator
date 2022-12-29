@@ -215,6 +215,7 @@ void V3Stats::statsStage(const string& name) {
     const double wallTimeDelta = wallTime - lastWallTime;
     lastWallTime = wallTime;
     V3Stats::addStatPerf("Stage, Elapsed time (sec), " + digitName, wallTimeDelta);
+    V3Stats::addStatPerf("Stage, Elapsed time (sec), TOTAL", wallTimeDelta);
 
     const double memory = V3Os::memUsageBytes() / 1024.0 / 1024.0;
     V3Stats::addStatPerf("Stage, Memory (MB), " + digitName, memory);
