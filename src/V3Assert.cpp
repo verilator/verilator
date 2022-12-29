@@ -368,6 +368,7 @@ private:
             inp = new AstVarRef{nodep->fileline(), invarp, VAccess::READ};
         }
         nodep->replaceWith(inp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     //========== Move $sampled down to read-only variables

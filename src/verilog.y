@@ -2105,7 +2105,8 @@ struct_union_member<memberDTypep>:     // ==IEEE: struct_union_member
         //                      // UNSUP random_qualifer not propagagted until have randomize support
                 random_qualifierE data_type_or_void
         /*mid*/         { GRAMMARP->m_memDTypep = $2; }  // As a list follows, need to attach this dtype to each member.
-        /*cont*/    list_of_member_decl_assignments ';'         { $$ = $4; GRAMMARP->m_memDTypep = nullptr; }
+        /*cont*/    list_of_member_decl_assignments ';'
+                        { $$ = $4; DEL(GRAMMARP->m_memDTypep); GRAMMARP->m_memDTypep = nullptr; }
         |       vlTag                                   { $$ = nullptr; }
         ;
 
