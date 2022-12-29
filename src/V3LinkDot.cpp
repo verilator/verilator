@@ -3157,8 +3157,9 @@ private:
                     if (cextp->childDTypep() || cextp->dtypep()) continue;  // Already converted
                     AstClassOrPackageRef* const cpackagerefp
                         = VN_CAST(cextp->classOrPkgsp(), ClassOrPackageRef);
-                    if (!cpackagerefp) {
-                        cextp->v3error("Attempting to extend using a non-class ");
+                    if (VL_UNCOVERABLE(!cpackagerefp)) {
+                        // Linking the extend gives an error before this is hit
+                        cextp->v3error("Attempting to extend using non-class");  // LCOV_EXCL_LINE
                     } else {
                         VSymEnt* const foundp = m_curSymp->findIdFallback(cpackagerefp->name());
                         bool ok = false;

@@ -44,7 +44,6 @@ foreach my $s (
     'Assignment pattern with no members',
     'Assignment pattern with too many elements',
     'Attempted parameter setting of non-parameter: Param ',
-    'Attempting to extend using a non-class ',
     'Can\'t find varpin scope of ',
     'Can\'t resolve module reference: \'',
     'Cannot mix DPI import, DPI export, class methods, and/or public ',
