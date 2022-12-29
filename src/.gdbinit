@@ -28,7 +28,7 @@ document dtf
 end
 
 define watchedit
-   watch AstNode::s_editCntGbl==$arg0
+   watch *(AstNode::s_editCntGbl)==$arg0
 end
 document watchedit
   Verilator: Create watch on where an edit number is made
