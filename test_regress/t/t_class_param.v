@@ -45,6 +45,15 @@ endclass
 
 typedef Cls#(8) Cls8_t;
 
+class SelfRefClassTypeParam #(type T=logic);
+   typedef SelfRefClassTypeParam #(int) self_int_t;
+   T field;
+endclass
+
+class SelfRefClassIntParam #(int P=1);
+   typedef SelfRefClassIntParam #(10) self_int_t;
+endclass
+
 module t (/*AUTOARG*/);
 
    Cls c12;
@@ -52,12 +61,20 @@ module t (/*AUTOARG*/);
    Cls8_t c8;
    Wrap #(.P(16)) w16;
    Wrap2 #(.P(32)) w32;
+   SelfRefClassTypeParam src_logic;
+   SelfRefClassTypeParam::self_int_t src_int;
+   SelfRefClassIntParam src1;
+   SelfRefClassIntParam::self_int_t src10;
    initial begin
       c12 = new;
       c4 = new;
       c8 = new;
       w16 = new;
       w32 = new;
+      src_int = new;
+      src_logic = new;
+      src1 = new;
+      src10 = new;
       if (Cls#()::PBASE != 12) $stop;
       if (Cls#(4)::PBASE != 4) $stop;
       if (Cls8_t::PBASE != 8) $stop;
@@ -91,6 +108,11 @@ module t (/*AUTOARG*/);
       if (c4.get_member() != 4'ha) $stop;
       `checks($sformatf("%p", c12), "'{member:'haaa}");
       `checks($sformatf("%p", c4), "'{member:'ha}");
+
+      if ($bits(src_logic.field) != 1) $stop;
+      if ($bits(src_int.field) != 32) $stop;
+      if (src1.P != 1) $stop;
+      if (src10.P != 10) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

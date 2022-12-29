@@ -542,12 +542,27 @@ class ParamProcessor final {
             hash.insert(V3Os::trueRandom(64));
         }
     }
+    void replaceRefsRecurse(AstNode* const nodep, const AstClass* const oldClassp,
+                            AstClass* const newClassp) {
+        if (AstClassRefDType* const classRefp = VN_CAST(nodep, ClassRefDType)) {
+            if (classRefp->classp() == oldClassp) classRefp->classp(newClassp);
+        }
+        if (nodep->op1p()) replaceRefsRecurse(nodep->op1p(), oldClassp, newClassp);
+        if (nodep->op2p()) replaceRefsRecurse(nodep->op2p(), oldClassp, newClassp);
+        if (nodep->op3p()) replaceRefsRecurse(nodep->op3p(), oldClassp, newClassp);
+        if (nodep->op4p()) replaceRefsRecurse(nodep->op4p(), oldClassp, newClassp);
+        if (nodep->nextp()) replaceRefsRecurse(nodep->nextp(), oldClassp, newClassp);
+    }
     void deepCloneModule(AstNodeModule* srcModp, AstNode* cellp, AstPin* paramsp,
                          const string& newname, const IfaceRefRefs& ifaceRefRefs) {
         // Deep clone of new module
         // Note all module internal variables will be re-linked to the new modules by clone
         // However links outside the module (like on the upper cells) will not.
         AstNodeModule* const newmodp = srcModp->cloneTree(false);
+        if (VN_IS(srcModp, Class)) {
+            replaceRefsRecurse(newmodp->stmtsp(), VN_AS(newmodp, Class), VN_AS(srcModp, Class));
+        }
+
         newmodp->name(newname);
         newmodp->user5(false);  // We need to re-recurse this module once changed
         newmodp->recursive(false);
