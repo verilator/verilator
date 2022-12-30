@@ -23,6 +23,7 @@ my %Suppressed;
 foreach my $s (
     ' exited with ',  # Is hit; driver.pl filters out
     'EOF in unterminated string',  # Instead get normal unterminated
+    'Enum names without values only allowed on numeric types',  # Hard to hit
     'Enum ranges must be integral, per spec',  # Hard to hit
     'Return with return value isn\'t underneath a function',  # Hard to hit, get other bad return messages
     'Select from non-array ',  # Instead get type does not have a bit range
@@ -32,8 +33,6 @@ foreach my $s (
     # Not yet analyzed
     ' is not an in/out/inout/param/interface: ',
     ' loading non-variable',
-    '$fopen mode should be <= 4 characters',
-    '\'foreach\' loop variable expects simple variable name',
     '--pipe-filter protocol error, unexpected: ',
     '/*verilator sformat*/ can only be applied to last argument of ',
     'Argument needed for string.',
@@ -51,7 +50,6 @@ foreach my $s (
     'Circular logic when ordering code (non-cutable edge loop)',
     'Deferred assertions must use \'#0\' (IEEE 1800-2017 16.4)',
     'Define or directive not defined: `',
-    'Enum names without values only allowed on numeric types',
     'Exceeded limit of ',
     'Extern declaration\'s scope is not a defined class',
     'Format to $display-like function must have constant format string',
@@ -67,7 +65,6 @@ foreach my $s (
     'Modport item not found: ',
     'Modport not referenced as <interface>.',
     'Modport not referenced from underneath an interface: ',
-    'Multiple \'{ default: } clauses',
     'Non-interface used as an interface: ',
     'Not marked as function return var',
     'Parameter not found in sub-module: Param ',
@@ -88,7 +85,6 @@ foreach my $s (
     'Unknown `pragma',
     'Unknown built-in event method ',
     'Unsized numbers/parameters not allowed in streams.',
-    'Unsupported LHS tristate construct: ',
     'Unsupported RHS tristate construct: ',
     'Unsupported or syntax error: Unsized range in instance or other declaration',
     'Unsupported pullup/down (weak driver) construct.',
@@ -98,7 +94,6 @@ foreach my $s (
     'Unsupported/unknown built-in dynamic array method ',
     'Unsupported: $bits for queue',
     'Unsupported: $c can\'t generate wider than 64 bits',
-    'Unsupported: --no-structs-packed',
     'Unsupported: 4-state numbers in this context',
     'Unsupported: Concatenation to form ',
     'Unsupported: Non-variable on LHS of built-in method \'',
@@ -118,6 +113,7 @@ foreach my $s (
     'Unsupported: no_inline for tasks',
     'Unsupported: static cast to ',
     'Unsupported: super',
+    '\'foreach\' loop variable expects simple variable name',
     ) { $Suppressed{$s} = 1; }
 
 if (!-r "$root/.git") {
