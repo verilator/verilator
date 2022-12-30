@@ -703,6 +703,7 @@ int main(int argc, char** argv) {
     const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
                                                         // Note null name - we're flattening it out
                                                         ""}};
+    contextp->scopesDump();
 
 #ifdef VERILATOR
 #ifdef TEST_VERBOSE
