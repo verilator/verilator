@@ -36,7 +36,7 @@ void V3Global::boot() {
 }
 
 void V3Global::clear() {
-#ifdef VL_LEAK_CHECK
+#ifdef VL_LEAK_CHECKS
     if (m_rootp) VL_DO_CLEAR(m_rootp->deleteTree(), m_rootp = nullptr);
 #endif
 }
