@@ -672,9 +672,6 @@ static void verilate(const string& argString) {
 
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
-    // Cleanup memory for valgrind leak analysis
-    v3Global.clear();
-    FileLine::deleteAllRemaining();
 }
 
 static string buildMakeCmd(const string& makefile, const string& target) {
@@ -763,7 +760,9 @@ int main(int argc, char** argv) {
     }
 
     // Explicitly release resources
+    V3PreShell::shutdown();
     v3Global.shutdown();
+    FileLine::deleteAllRemaining();
 
     UINFO(1, "Done, Exiting...\n");
 }

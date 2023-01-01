@@ -78,6 +78,10 @@ protected:
         }
     }
 
+    void shutdown() {
+        if (s_preprocp) VL_DO_DANGLING(delete s_preprocp, s_preprocp);
+    }
+
     bool preproc(FileLine* fl, const string& modname, VInFilter* filterp, V3ParseImp* parsep,
                  const string& errmsg) {  // "" for no error
         // Preprocess the given module, putting output in vppFilename
@@ -153,6 +157,7 @@ VInFilter* V3PreShellImp::s_filterp = nullptr;
 // V3PreShell
 
 void V3PreShell::boot() { V3PreShellImp::s_preImp.boot(); }
+void V3PreShell::shutdown() { V3PreShellImp::s_preImp.shutdown(); }
 bool V3PreShell::preproc(FileLine* fl, const string& modname, VInFilter* filterp,
                          V3ParseImp* parsep, const string& errmsg) {
     return V3PreShellImp::s_preImp.preproc(fl, modname, filterp, parsep, errmsg);

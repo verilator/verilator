@@ -126,7 +126,6 @@ public:
     // CONSTRUCTORS
     V3Global() {}
     void boot();
-    void clear();
     void shutdown();  // Release allocated resources
     // ACCESSORS (general)
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }

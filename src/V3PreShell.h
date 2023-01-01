@@ -33,6 +33,7 @@ class V3PreShell final {
     // Static class for calling preprocessor
 public:
     static void boot();
+    static void shutdown();
     static bool preproc(FileLine* fl, const string& modname, VInFilter* filterp,
                         V3ParseImp* parsep, const string& errmsg);
     static void preprocInclude(FileLine* fl, const string& modname);
