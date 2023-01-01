@@ -1072,7 +1072,6 @@ void schedule(AstNetlist* netlistp) {
         = [=](std::unordered_map<const AstSenTree*, AstSenTree*> map, AstVarScope* vscp) {
               // Copy map
               auto newMap{map};
-              VNDeleter deleter;
               // Replace references in each mapped value with a reference to the given vscp
               for (auto& pair : newMap) {
                   pair.second = pair.second->cloneTree(false);
@@ -1080,7 +1079,7 @@ void schedule(AstNetlist* netlistp) {
                       UASSERT_OBJ(refp->varScopep() == actTrigVscp, refp, "Unexpected reference");
                       UASSERT_OBJ(refp->access() == VAccess::READ, refp, "Should be read ref");
                       refp->replaceWith(new AstVarRef{refp->fileline(), vscp, VAccess::READ});
-                      deleter.pushDeletep(refp);
+                      VL_DO_DANGLING(refp->deleteTree(), refp);
                   });
                   topScopep->addSenTreesp(pair.second);
               }
@@ -1160,6 +1159,7 @@ void schedule(AstNetlist* netlistp) {
             UASSERT_OBJ(refp->access().isReadOnly(), refp, "Should only read state");
             if (refp->varScopep() == actTrig.m_vscp) {
                 refp->replaceWith(new AstVarRef{refp->fileline(), trigVscp, VAccess::READ});
+                VL_DO_DANGLING(refp->deleteTree(), refp);
             }
         });
         dumpp->foreach([&](AstText* textp) {  //
