@@ -298,8 +298,8 @@ class EmitCSyms final : EmitCBaseVisitor {
             const string name = nodep->scopep()->shortName() + "__DOT__" + nodep->name();
             const string name_pretty = AstNode::prettyName(name);
             const int timeunit = m_modp->timeunit().powerOfTen();
-            m_vpiScopeCandidates.insert(
-                std::make_pair(name, ScopeData(scopeSymString(name), name_pretty, timeunit, type)));
+            m_vpiScopeCandidates.insert(std::make_pair(
+                name, ScopeData(scopeSymString(name), name_pretty, timeunit, type)));
         }
     }
     void visit(AstScope* nodep) override {
