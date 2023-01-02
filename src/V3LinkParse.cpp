@@ -123,6 +123,13 @@ private:
                 && (VN_IS(nodep->stmtsp(), GenIf))  // Begin has if underneath
                 && !nodep->stmtsp()->nextp());  // Has only one item
     }
+    bool hasStaticDeclAssignments(AstNodeFTask* nodep) {
+        for (const AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
+            const AstVar* const varp = VN_CAST(itemp, Var);
+            if (varp && varp->valuep() && !varp->lifetime().isAutomatic()) return true;
+        }
+        return false;
+    }
 
     // VISITs
     void visit(AstNodeFTask* nodep) override {
@@ -133,10 +140,26 @@ private:
             VL_RESTORER(m_lifetime);
             {
                 m_ftaskp = nodep;
-                m_lifetime = nodep->lifetime();
-                if (m_lifetime.isNone()) {
-                    // Automatic always until we support static
-                    m_lifetime = VLifetime::AUTOMATIC;
+                if (!nodep->lifetime().isNone()) {
+                    m_lifetime = nodep->lifetime();
+                } else {
+                    const AstClassOrPackageRef* const classPkgRefp
+                        = VN_AS(nodep->classOrPackagep(), ClassOrPackageRef);
+                    if (classPkgRefp && VN_IS(classPkgRefp->classOrPackageNodep(), Class)) {
+                        // Class methods are automatic by default
+                        m_lifetime = VLifetime::AUTOMATIC;
+                    } else if (nodep->dpiImport()) {
+                        // DPI-imported function don't have lifetime specifiers
+                        m_lifetime = VLifetime::NONE;
+                    }
+                    if (m_lifetime.isStatic() && hasStaticDeclAssignments(nodep)) {
+                        nodep->v3warn(
+                            IMPLICITSTATIC,
+                            "Function/task's lifetime implicitly set to static\n"
+                                << nodep->warnMore()
+                                << "... Suggest use 'function automatic' or 'function static'");
+                    }
+                    nodep->lifetime(m_lifetime);
                 }
                 iterateChildren(nodep);
             }

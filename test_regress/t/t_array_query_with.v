@@ -19,19 +19,19 @@ module t (/*AUTOARG*/
       return found.size() == 1;
    endfunction
 
-   function bit test_find_index;
+   function static bit test_find_index;
       int    q[$] = {1, 2, 3, 4};
       int    found[$] = q.find_index(x) with (x <= 2);
       return found.size() == 2;
    endfunction
 
-   function bit test_find_first_index;
+   function static bit test_find_first_index;
       int    q[] = {1, 2, 3, 4, 5, 6};
       int    first_even_idx[$] = q.find_first_index(x) with (x % 2 == 0);
       return first_even_idx[0] == 1;
    endfunction
 
-   function bit test_sort;
+   function automatic bit test_sort;
       int    q[] = {-5, 2, -3, 0, 4};
       q.sort(x) with (x >= 0 ? x : -x);
       return q[1] == 2;

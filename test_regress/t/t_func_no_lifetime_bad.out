@@ -1,0 +1,11 @@
+%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:7:14: Function/task's lifetime implicitly set to static
+                                                        : ... Suggest use 'function automatic' or 'function static'
+    7 | function int f_implicit_static();
+      |              ^~~~~~~~~~~~~~~~~
+                         ... For warning description see https://verilator.org/warn/IMPLICITSTATIC?v=latest
+                         ... Use "/* verilator lint_off IMPLICITSTATIC */" and lint_on around source to disable this message.
+%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:12:6: Function/task's lifetime implicitly set to static
+                                                        : ... Suggest use 'function automatic' or 'function static'
+   12 | task t_implicit_static();
+      |      ^~~~~~~~~~~~~~~~~
+%Error: Exiting due to

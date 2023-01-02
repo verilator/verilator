@@ -236,7 +236,7 @@ module t (/*AUTOARG*/
       end
    endfunction : print_data_error
 
-   function void print_all_data (string name = "");
+   function static void print_all_data (string name = "");
       foreach (byte_in[i]) $display(" %s byte_in[%0d]=%0h, byte_out=%0h ", name, i, byte_in[i], byte_out[i]);
       $display(" %s packed_data_32=%0h, packed_data_32_ref=%0h", name, packed_data_32, packed_data_32_ref);
 
