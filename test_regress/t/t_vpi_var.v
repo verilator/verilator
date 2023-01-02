@@ -105,12 +105,6 @@ extern "C" int mon_check();
    end 
    endgenerate
 
-   generate
-   for (i=1; i<=6; i=i+1) begin : arr2
-     arr #(.LENGTH(6)) arr();
-   end 
-   endgenerate
-
 endmodule : t
 
 module sub;

@@ -605,6 +605,12 @@ int _mon_check_putget_str(p_cb_data cb_data) {
                             = vpi_handle_by_name((PLI_BYTE8*)"verbose", data[i].scope));
         }
 
+        for (int i = 1; i <= 6; i++) {
+            char buf[32];
+            snprintf(buf, sizeof(buf), TestSimulator::rooted("subs[%d].subsub"), i);
+            CHECK_RESULT_NZ(data[i].scope = vpi_handle_by_name((PLI_BYTE8*)buf, NULL));
+        }
+
         static t_cb_data cb_data;
         static s_vpi_value v;
         TestVpiHandle count_h = VPI_HANDLE("count");
@@ -703,7 +709,6 @@ int main(int argc, char** argv) {
     const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
                                                         // Note null name - we're flattening it out
                                                         ""}};
-    contextp->scopesDump();
 
 #ifdef VERILATOR
 #ifdef TEST_VERBOSE
