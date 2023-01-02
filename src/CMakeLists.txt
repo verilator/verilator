@@ -183,7 +183,7 @@ set(COMMON_SOURCES
     V3Branch.cpp                  
     V3Broken.cpp                  
     V3CCtors.cpp
-    V3Cuse.cpp
+    V3CUse.cpp
     V3Case.cpp                    
     V3Cast.cpp                    
     V3Cdc.cpp                     
@@ -375,7 +375,7 @@ add_custom_command(
     MAIN_DEPENDENCY ./V3PreLex.l
     DEPENDS ${HEADERS}
     COMMAND ${FLEX_EXECUTABLE} ARGS
-        ${LFLAGS} -o "${FLEX_V3PreLex_pregen_OUTPUTS}" "${srcdir}/V3Prelex.l"
+        ${LFLAGS} -o "${FLEX_V3PreLex_pregen_OUTPUTS}" "${srcdir}/V3PreLex.l"
 )
 # Output used by another command
 
