@@ -564,7 +564,7 @@ lifetime, and prevents multiple ``resume`` calls in the case of
 ^^^^^^^^^^^^^^^
 
 Return value of all coroutines. Together with the promise type contained
-within, it allows for chaining coroutines – resuming coroutines from up the
+within, it allows for chaining coroutines - resuming coroutines from up the
 call stack. The calling coroutine's handle is saved in the promise object as a
 continuation, that is, the coroutine that must be resumed after the promise's
 coroutine finishes. This is necessary as C++ coroutines are stackless, meaning
@@ -585,7 +585,7 @@ simulation time is retrieved from a ``VerilatedContext`` object.
 
 This class manages processes that await events (triggers). There is one such
 object per each trigger awaited by coroutines. Coroutines ``co_await`` this
-object's ``trigger`` function. They are stored in two stages – `uncommitted`
+object's ``trigger`` function. They are stored in two stages - `uncommitted`
 and `ready`. First, they land in the `uncommitted` stage, and cannot be
 resumed. The ``resume`` function resumes all coroutines from the `ready` stage
 and moves `uncommitted` coroutines into `ready`. The ``commit`` function only
