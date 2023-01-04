@@ -296,8 +296,8 @@ class EmitCSyms final : EmitCBaseVisitor {
             const string type
                 = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
             const string name = nodep->scopep()->shortName() + "__DOT__" + nodep->name();
-            const string name_pretty = AstNode::prettyName(name, false)
-            const int timeunit = m_modp->timeunit().powerOfTen();
+            const string name_pretty = AstNode::prettyName(name, false) const int timeunit
+                = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(std::make_pair(
                 name, ScopeData(scopeSymString(name), name_pretty, timeunit, type)));
         }
@@ -310,8 +310,9 @@ class EmitCSyms final : EmitCBaseVisitor {
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
             const string type = VN_IS(nodep->modp(), Package) ? "SCOPE_OTHER" : "SCOPE_MODULE";
-            const string name_pretty = AstNode::prettyName(nodep->shortName(), false)
-            const int timeunit = m_modp->timeunit().powerOfTen();
+            const string name_pretty
+                = AstNode::prettyName(nodep->shortName(), false) const int timeunit
+                = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
                 std::make_pair(nodep->name(), ScopeData(scopeSymString(nodep->name()), name_pretty,
                                                         timeunit, type)));

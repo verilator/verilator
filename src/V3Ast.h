@@ -1665,7 +1665,8 @@ public:
     string origNameProtect() const;  // origName with --protect-id applied
     string shortName() const;  // Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);  // Name with dots removed
-    static string prettyName(const string& namein, bool removeEscaped=true);  // Name for printing out to the user
+    static string prettyName(const string& namein,
+                             bool removeEscaped = true);  // Name for printing out to the user
     static string prettyNameQ(const string& namein) {  // Quoted pretty name (for errors)
         return std::string{"'"} + prettyName(namein) + "'";
     }
