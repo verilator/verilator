@@ -62,7 +62,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h82ec11efed7c1a4d
+`define EXPECTED_SUM 64'he65eec57cf769267
 
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
@@ -344,11 +344,23 @@ module bug3824(input wire clk, input wire [31:0] in, output wire out);
    logic [6:0] b;
    assign b = {1'b0, a};
 
-   logic c;
-   assign c = ~(b[6]);  // c is always 1'b1 as b[6] is 1'b0
+   logic c_and;
+   assign c_and = (b[6]);  // c_and is always 1'b0
+   always_comb if (c_and != 1'b0) $stop;
+   logic d_and;
+   always_ff @(posedge clk) d_and <= (&a) & c_and;
 
-   logic d;
-   always_ff @(posedge clk) d <= (|a) | c;  // d is always 1'b1 because of c
+   logic c_or;
+   assign c_or = ~(b[6]);  // c_or is always 1'b1 as b[6] is 1'b0
+   always_comb if (c_or != 1'b1) $stop;
+   logic d_or;
+   always_ff @(posedge clk) d_or <= (|a) | c_or;
 
-  assign out = d;
+   logic c_xor;
+   assign c_xor = ^(b[6]);  // c_xor is always 1'b0
+   always_comb if (c_xor != 1'b0) $stop;
+   logic d_xor;
+   always_ff @(posedge clk) d_xor <= (^a) ^ c_xor;
+
+  assign out = d_and ^ d_or ^ d_xor;
 endmodule
