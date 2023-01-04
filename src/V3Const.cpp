@@ -565,6 +565,8 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                         // If there is a constant 0 term in an And tree or 1 term in an Or tree, we
                         // must include it. Fudge this by adding a bit with both polarities, which
                         // will simplify to zero or one respectively.
+                        // Note that Xor tree does not need this kind of care, polarity of Xor tree
+                        // is already cared when visitin AstNot. Taking xor with 1'b0 is nop.
                         m_bitPolarities.emplace_back(leafInfo, true, 0);
                         m_bitPolarities.emplace_back(leafInfo, false, 0);
                     }
