@@ -39,7 +39,6 @@ module t;
    // verilator lint_off IMPERFECTSCH
    // verilator lint_off IMPLICIT
    // verilator lint_off IMPORTSTAR
-   // verilator lint_off IMPURE
    // verilator lint_off INCABSPATH
    // verilator lint_off INFINITELOOP
    // verilator lint_off INITIALDLY

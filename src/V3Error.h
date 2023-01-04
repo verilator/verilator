@@ -97,7 +97,6 @@ public:
         IMPERFECTSCH,   // Imperfect schedule (disabled by default). Historical, never issued.
         IMPLICIT,       // Implicit wire
         IMPORTSTAR,     // Import::* in $unit
-        IMPURE,         // Impure function not being inlined
         INCABSPATH,     // Include has absolute path
         INFINITELOOP,   // Infinite loop
         INITIALDLY,     // Initial delayed statement
@@ -180,7 +179,7 @@ public:
             "DECLFILENAME", "DEFPARAM", "DEPRECATED",
             "ENCAPSULATED", "ENDLABEL", "ENUMVALUE", "EOFNEWLINE", "GENCLK", "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
-            "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
+            "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MODDUP",
             "MULTIDRIVEN", "MULTITOP","NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
@@ -208,8 +207,7 @@ public:
     bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BLKANDNBLK || m_e == BLKLOOPINIT
                 || m_e == CONTASSREG || m_e == ENCAPSULATED || m_e == ENDLABEL || m_e == ENUMVALUE
-                || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL
-                || m_e == PROCASSWIRE  // Says IEEE
+                || m_e == PINNOTFOUND || m_e == PKGNODECL || m_e == PROCASSWIRE  // Says IEEE
                 || m_e == ZERODLY);
     }
     // Warnings to mention manual

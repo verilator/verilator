@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Test of select from constant
+// DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2020 by Wilson Snyder.
@@ -15,6 +15,10 @@ module t (/*AUTOARG*/);
 
    initial begin
       foo();
+      if (sig == '1) begin
+         $write("*-* All Finished *-*\n");
+         $finish;
+      end
    end
 
 endmodule

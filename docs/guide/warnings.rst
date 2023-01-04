@@ -741,19 +741,6 @@ List Of Warnings
    correctly.
 
 
-.. option:: IMPURE
-
-   .. TODO better example
-
-   Warns that a task or function that has been marked with a
-   :option:`/*verilator&32;no_inline_task*/` metacomment, but it references
-   variables that are not local to the task, and Verilator cannot schedule
-   these variables correctly.
-
-   Ignoring this warning may make Verilator simulations differ from other
-   simulators.
-
-
 .. option:: INCABSPATH
 
    .. TODO better example

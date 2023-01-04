@@ -142,26 +142,8 @@ public:
     void ftaskCFuncp(AstNodeFTask* nodep, AstCFunc* cfuncp) {
         getFTaskVertex(nodep)->cFuncp(cfuncp);
     }
-    void checkPurity(AstNodeFTask* nodep) { checkPurity(nodep, getFTaskVertex(nodep)); }
 
 private:
-    void checkPurity(AstNodeFTask* nodep, TaskBaseVertex* vxp) {
-        if (nodep->recursive()) return;  // Impure, but no warning
-        if (!vxp->pure()) {
-            nodep->v3warn(
-                IMPURE, "Unsupported: External variable referenced by non-inlined function/task: "
-                            << nodep->prettyNameQ() << '\n'
-                            << nodep->warnContextPrimary() << '\n'
-                            << vxp->impureNode()->warnOther()
-                            << "... Location of the external reference: "
-                            << vxp->impureNode()->prettyNameQ() << '\n'
-                            << vxp->impureNode()->warnContextSecondary());
-        }
-        // And, we need to check all tasks this task calls
-        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            checkPurity(nodep, static_cast<TaskBaseVertex*>(edgep->top()));
-        }
-    }
     TaskFTaskVertex* getFTaskVertex(AstNodeFTask* nodep) {
         if (!nodep->user4p()) nodep->user4p(new TaskFTaskVertex{&m_callGraph, nodep});
         return static_cast<TaskFTaskVertex*>(nodep->user4u().toGraphVertex());
@@ -1457,9 +1439,6 @@ private:
                 || m_statep->ftaskNoInline(nodep)) {
                 // Clone it first, because we may have later FTaskRef's that still need
                 // the original version.
-                if (m_statep->ftaskNoInline(nodep) && !nodep->classMethod()) {
-                    m_statep->checkPurity(nodep);
-                }
                 AstNodeFTask* const clonedFuncp = nodep->cloneTree(false);
                 if (nodep->isConstructor()) m_statep->remapFuncClassp(nodep, clonedFuncp);
 
