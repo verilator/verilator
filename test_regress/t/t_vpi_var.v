@@ -95,14 +95,14 @@ extern "C" int mon_check();
    generate
    for (i=1; i<=6; i=i+1) begin : arr
      arr #(.LENGTH(i)) arr();
-   end 
+   end
    endgenerate
 
    genvar k;
    generate
    for (k=1; k<=6; k=k+1) begin : subs
       sub subsub();
-   end 
+   end
    endgenerate
 
 endmodule : t
