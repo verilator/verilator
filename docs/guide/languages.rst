@@ -130,11 +130,11 @@ simulation (perhaps using :vlopt:`--build`) and run it.
 With :vlopt:`--no-timing`, all timing controls cause the :option:`NOTIMING`
 error, except:
 
-* delay statements – they are ignored (as they are in synthesis), though they
+* delay statements - they are ignored (as they are in synthesis), though they
   do issue a :option:`STMTDLY` warning,
-* intra-assignment timing controls – they are ignored, though they do issue an
+* intra-assignment timing controls - they are ignored, though they do issue an
   :option:`ASSIGNDLY` warning,
-* net delays – they are ignored,
+* net delays - they are ignored,
 * event controls at the top of the procedure,
 
 Forks cause this error as well, except:
