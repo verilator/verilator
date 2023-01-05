@@ -355,7 +355,7 @@ AC_SUBST(CFG_CXXFLAGS_PROFILE)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++20)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++20)
 case "$(which lsb_release 2>&1 > /dev/null && lsb_release -d)" in
-*Arch*Linux* | *Ubuntu*22.04*)
+*Alpine*Linux* | *Arch*Linux* | *Ubuntu*22.04*)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++17)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++17)
 ;;
