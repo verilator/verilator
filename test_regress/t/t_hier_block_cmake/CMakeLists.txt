@@ -24,4 +24,3 @@ set(VERILATOR_OPTIONS "${VERILATOR_OPTIONS}" --hierarchical --stats --CFLAGS "-p
 
 verilate(t_hier_block_cmake VERILATOR_ARGS ${VERILATOR_OPTIONS} SOURCES
     ../t_hier_block.v )
-
