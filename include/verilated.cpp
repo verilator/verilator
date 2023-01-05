@@ -67,7 +67,7 @@
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
 #endif
-#ifdef __linux__
+#ifdef __GLIBC__
 # include <execinfo.h>
 # define _VL_HAVE_STACKTRACE
 #endif
