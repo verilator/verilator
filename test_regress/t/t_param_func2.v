@@ -29,7 +29,7 @@ endmodule
 module sub;
    parameter WIDTH = 1;
 
-   function [WIDTH-1:0] orer;
+   function automatic [WIDTH-1:0] orer;
       input [WIDTH-1:0] in;
       // IEEE provices no way to override this parameter, basically it's a localparam
       parameter MASK_W = WIDTH - 2;
@@ -39,7 +39,7 @@ module sub;
       // verilator lint_on WIDTH
    endfunction
 
-   function [WIDTH-1:0] orer2;
+   function automatic [WIDTH-1:0] orer2;
       input [WIDTH-1:0] in;
       // Same param names as other function to check we disambiguate
       // IEEE provices no way to override this parameter, basically it's a localparam

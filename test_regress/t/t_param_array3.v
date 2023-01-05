@@ -8,7 +8,7 @@ module t;
    parameter int SIZES [3:0] = '{1,2,3,4};
    typedef int calc_sums_t [3:0];
 
-   function calc_sums_t calc_sums;
+   function static calc_sums_t calc_sums;
       int sum = 0;
       for (int i=0; i<4; i++) begin
          sum = sum + SIZES[i];

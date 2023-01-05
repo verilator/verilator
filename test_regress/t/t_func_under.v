@@ -12,7 +12,7 @@ module t (/*AUTOARG*/
 
    reg [3:0] counter = 0;
    integer   l2;
-   function log2 (input [3:0] x);
+   function automatic log2 (input [3:0] x);
       integer log2 = (x < 2) ? 1 : (x < 4) ? 2 : (x < 8) ? 3 : 4;
    endfunction
    always @(posedge clk) begin
