@@ -338,7 +338,7 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
     if (modp->hierBlock()) {
         modp->v3warn(HIERBLOCK,
                      "Top module illegally marked hierarchical block, ignoring marking\n"
-                         + V3Error::warnMore()
+                         + modp->warnMore()
                          + "... Suggest remove verilator hier_block on this module");
         modp->hierBlock(false);
     }

@@ -803,18 +803,17 @@ void V3Options::notify() {
             // We always call protect() on names, we don't check if public or not
             // Hence any external references wouldn't be able to find the refed public object.
             cmdfl->v3warn(E_UNSUPPORTED, "Unsupported: Using --protect-ids with --public\n"  //
-                                             + V3Error::warnMore()
-                                             + "... Suggest remove --public.");
+                                             + cmdfl->warnMore() + "... Suggest remove --public.");
         }
         if (trace()) {
             cmdfl->v3warn(INSECURE,
                           "Using --protect-ids with --trace may expose private design details\n"
-                              + V3Error::warnMore() + "... Suggest remove --trace.");
+                              + cmdfl->warnMore() + "... Suggest remove --trace.");
         }
         if (vpi()) {
             cmdfl->v3warn(INSECURE,
                           "Using --protect-ids with --vpi may expose private design details\n"
-                              + V3Error::warnMore() + "... Suggest remove --vpi.");
+                              + cmdfl->warnMore() + "... Suggest remove --vpi.");
         }
     }
 

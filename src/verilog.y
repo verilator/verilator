@@ -343,7 +343,7 @@ static void ERRSVKWD(FileLine* fileline, const string& tokname) {
     fileline->v3error(
         std::string{"Unexpected '"} + tokname + "': '" + tokname
         + "' is a SystemVerilog keyword misused as an identifier."
-        + (!toldonce++ ? "\n" + V3Error::warnMore()
+        + (!toldonce++ ? "\n" + fileline->warnMore()
                              + "... Suggest modify the Verilog-2001 code to avoid SV keywords,"
                              + " or use `begin_keywords or --language."
                        : ""));

@@ -82,7 +82,7 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
                                  "Unsupported: Recursive multiple modules (module instantiates "
                                  "something leading back to itself): "
                                      << vvertexp->modp()->prettyNameQ() << '\n'
-                                     << V3Error::warnMore()
+                                     << vvertexp->modp()->warnMore()
                                      << "... note: self-recursion (module instantiating itself "
                                         "directly) is supported.");
         V3Error::abortIfErrors();

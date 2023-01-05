@@ -1,6 +1,6 @@
 %Warning-HIERBLOCK: t/t_hier_block1_bad.v:15:8: Top module illegally marked hierarchical block, ignoring marking
                                               : ... In instance t
-                    ... Suggest remove verilator hier_block on this module
+                                              : ... Suggest remove verilator hier_block on this module
    15 | module t ( 
       |        ^
                     ... For warning description see https://verilator.org/warn/HIERBLOCK?v=latest
