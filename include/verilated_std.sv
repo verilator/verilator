@@ -112,6 +112,3 @@ package std;
         endfunction
     endclass
 endpackage
-
-// verilator lint_off IMPORTSTAR
-import std::*;

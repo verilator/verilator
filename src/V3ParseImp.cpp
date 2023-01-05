@@ -507,6 +507,17 @@ void V3ParseImp::tokenPipelineSym() {
             // " -findtree: ", true);
             foundp = V3ParseImp::parsep()->symp()->symCurrentp()->findIdFallback(*(yylval.strp));
         }
+        if (!foundp) {
+            if (v3Global.rootp()->stdPackagep()) {
+                auto *stdsym = (VSymEnt*)v3Global.rootp()->stdPackagep()->user4p();
+                foundp = ((VSymEnt*)v3Global.rootp()->stdPackagep()->user4p())->findIdFallback(*(yylval.strp));
+            }
+            if (foundp && !v3Global.usesStdPackage()) {
+                auto *impp = new AstPackageImport(v3Global.rootp()->stdPackagep()->fileline(), v3Global.rootp()->stdPackagep(), "*");
+                unitPackage(nullptr)->addStmtsp(impp);
+                v3Global.setUsesStdPackage();
+            }
+        }
         if (foundp) {
             AstNode* const scp = foundp->nodep();
             yylval.scp = scp;
@@ -524,18 +535,11 @@ void V3ParseImp::tokenPipelineSym() {
                     token = yaID__ETC;
                 }
             }
-        } else if ((token == yaID__LEX || token == yaID__CC)
-                   && (*(yylval.strp) == "mailbox"  // IEEE-standard class
-                       || *(yylval.strp) == "process"  // IEEE-standard class
-                       || *(yylval.strp) == "semaphore")) {  // IEEE-standard class
-            v3Global.setUsesStdPackage();
-            yylval.scp = nullptr;
-            if (token == yaID__LEX) token = yaID__aTYPE;
         } else {  // Not found
             yylval.scp = nullptr;
             if (token == yaID__CC) {
                 if (!m_afterColonColon && *(yylval.strp) == "std") {
-                    v3Global.setUsesStdPackage();
+                    //v3Global.setUsesStdPackage();
                 } else if (!v3Global.opt.bboxUnsup()) {
                     // IEEE does require this, but we may relax this as UVM breaks it, so allow
                     // bbox for today

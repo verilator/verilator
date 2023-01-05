@@ -68,10 +68,6 @@ void V3Global::readFiles() {
                          "Cannot find file containing module: ");
     }
 
-    if (!usesStdPackage()) {
-        // TODO: Throw std away
-    }
-
     // Read libraries
     // To be compatible with other simulators,
     // this needs to be done after the top file is read
@@ -80,6 +76,13 @@ void V3Global::readFiles() {
         parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filename, true,
                          "Cannot find file containing library module: ");
     }
+
+    if (!usesStdPackage()) {
+        AstNodeModule *stdp = v3Global.rootp()->stdPackagep();
+        VL_DO_DANGLING(stdp->unlinkFrBack()->deleteTree(), stdp);
+        v3Global.rootp()->stdPackagep(nullptr);
+    }
+
     // v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("parse.tree"));
     V3Error::abortIfErrors();
 
