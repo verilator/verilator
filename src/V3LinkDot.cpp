@@ -1320,8 +1320,10 @@ class LinkDotFindVisitor final : public VNVisitor {
         UINFO(4, "  Link: " << nodep << endl);
         VSymEnt* const srcp = m_statep->getNodeSym(nodep->packagep());
         if (nodep->name() == "*") {
-            if (m_curSymp == m_statep->dunitEntp()) {
-                nodep->v3warn(IMPORTSTAR, "Import::* in $unit scope may pollute global namespace");
+            if (nodep->packagep() != v3Global.rootp()->stdPackagep()) {
+                if (m_curSymp == m_statep->dunitEntp()) {
+                    nodep->v3warn(IMPORTSTAR, "Import::* in $unit scope may pollute global namespace");
+                }
             }
         } else {
             VSymEnt* const impp = srcp->findIdFlat(nodep->name());

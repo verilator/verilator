@@ -602,7 +602,9 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
 V3LangCode V3Options::fileLanguage(const string& filename) {
     string ext = V3Os::filenameNonDir(filename);
     string::size_type pos;
-    if ((pos = ext.rfind('.')) != string::npos) {
+    if (filename == V3Options::getStdPackagePath()) {
+        return V3LangCode::mostRecent();
+    } else if ((pos = ext.rfind('.')) != string::npos) {
         ext.erase(0, pos + 1);
         const auto it = m_impp->m_langExts.find(ext);
         if (it != m_impp->m_langExts.end()) return it->second;

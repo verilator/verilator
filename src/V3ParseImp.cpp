@@ -509,7 +509,6 @@ void V3ParseImp::tokenPipelineSym() {
         }
         if (!foundp) {
             if (v3Global.rootp()->stdPackagep()) {
-                auto *stdsym = (VSymEnt*)v3Global.rootp()->stdPackagep()->user4p();
                 foundp = ((VSymEnt*)v3Global.rootp()->stdPackagep()->user4p())->findIdFallback(*(yylval.strp));
             }
             if (foundp && !v3Global.usesStdPackage()) {
@@ -539,7 +538,7 @@ void V3ParseImp::tokenPipelineSym() {
             yylval.scp = nullptr;
             if (token == yaID__CC) {
                 if (!m_afterColonColon && *(yylval.strp) == "std") {
-                    //v3Global.setUsesStdPackage();
+                    v3Global.setUsesStdPackage();
                 } else if (!v3Global.opt.bboxUnsup()) {
                     // IEEE does require this, but we may relax this as UVM breaks it, so allow
                     // bbox for today

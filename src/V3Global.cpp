@@ -58,7 +58,8 @@ void V3Global::readFiles() {
     V3Parse parser(v3Global.rootp(), &filter, &parseSyms);
 
     // Parse the std package
-    parser.parseFile(new FileLine{FileLine::commandLineFilename()}, V3Options::getStdPackagePath(),
+    FileLine *stdlib = new FileLine{V3Options::getStdPackagePath()};
+    parser.parseFile(stdlib, V3Options::getStdPackagePath(),
                      false, "Cannot find verilated_std.sv containing built-in std:: definitions:");
 
     // Read top module
