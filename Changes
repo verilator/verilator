@@ -15,6 +15,8 @@ Verilator 5.005 devel
 
 * Support packed structs (#3802). [Aleksander Kiryk, Antmicro Ltd]
 * Support Windows-native builds using cmake (#3814). [Kritik Bhimani]
+* Support clocking blocks (#3674). [Krzysztof Bieganski, Antmicro Ltd]
+* Add IMPLICITSTATIC warning when a ftask/function is implicitly static (#3839). [Ryszard Rozak, Antmicro Ltd]
 * Optimize expansion of extend operators.
 * Internal multithreading tests. [Mariusz Glebocki, et al, Antmicro Ltd]
 * Fix initiation of function variables (#3815). [Dan Gisselquist]
@@ -22,6 +24,11 @@ Verilator 5.005 devel
 * Fix crash in DFT due to width use after free (#3817) (#3820). [Jevin Sweval]
 * Fix signed/unsigned comparison compile warning (#3822). [Kamil Rakoczy]
 * Fix OS-X weak symbols with -U linker flag (#3823). [Jevin Sweval]
+* Fix wrong bit op tree optimization (#3824) (#3825). [Yutetsu TAKATSUKASA]
+* Fix self references when param class instantiated (#3833). [Ryszard Rozak, Antmicro Ltd]
+* Fix memory leak in V3Sched, etc. (#3834). [Geza Lore]
+* Fix compatibility with musl libc / Alpine Linux (#3845). [Sören Tempel]
+
 
 Verilator 5.004 2022-12-14
 ==========================
