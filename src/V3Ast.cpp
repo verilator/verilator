@@ -155,7 +155,7 @@ string AstNode::vcdName(const string& namein) {
     return prettyName(pretty);
 }
 
-string AstNode::prettyName(const string& namein, bool removeEscaped) {
+string AstNode::prettyName(const string& namein) {
     // This function is somewhat hot, so we short-circuit some compares
     string pretty;
     pretty = "";
@@ -187,8 +187,8 @@ string AstNode::prettyName(const string& namein, bool removeEscaped) {
                 pos += 7;
                 continue;
             }
-            if (removeEscaped && pos[0] == '_' && pos[1] == '_' && pos[2] == '0'
-                && isxdigit(pos[3]) && isxdigit(pos[4])) {
+            if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && isxdigit(pos[3])
+                && isxdigit(pos[4])) {
                 char value = 0;
                 value += 16 * (isdigit(pos[3]) ? (pos[3] - '0') : (tolower(pos[3]) - 'a' + 10));
                 value += (isdigit(pos[4]) ? (pos[4] - '0') : (tolower(pos[4]) - 'a' + 10));
