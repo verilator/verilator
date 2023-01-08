@@ -13,7 +13,7 @@ top_filename("t/t_hier_block.v");
 
 # CI environment offers 2 VCPUs, 2 thread setting causes the following warning.
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
-# So use 6 threads here though it's not optimal in performace wise, but ok.
+# So use 6 threads here though it's not optimal in performance, but ok.
 
 compile(
     v_flags2 => ['t/t_hier_block.cpp'],

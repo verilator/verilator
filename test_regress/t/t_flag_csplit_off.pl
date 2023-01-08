@@ -13,7 +13,7 @@ scenarios(vlt_all => 1);
 top_filename("t/t_flag_csplit.v");
 
 while (1) {
-    # Thi rule requires GNU make > 4.1 (or so, known broken in 3.81)
+    # This rule requires GNU make > 4.1 (or so, known broken in 3.81)
     #%__Slow.o: %__Slow.cpp
     #        $(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
     if (make_version() < 4.1) {
