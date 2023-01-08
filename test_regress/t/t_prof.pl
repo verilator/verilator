@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt_all => 1);
 
-# TODO below might no longer be requried as configure checks for -pg
+# TODO below might no longer be required as configure checks for -pg
 if ($ENV{VERILATOR_TEST_NO_GPROF}) {
     skip("Skipping due to VERILATOR_TEST_NO_GPROF");
 } else {

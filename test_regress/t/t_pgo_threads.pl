@@ -29,7 +29,7 @@ execute(
 file_grep("$Self->{obj_dir}/profile.vlt", qr/profile_data/i);
 
 compile(
-    # Intentinally no --prof-pgo here to make sure profile data can be read in
+    # Intentionally no --prof-pgo here to make sure profile data can be read in
     # without it (that is: --prof-pgo has no effect on profile_data hash names)
     v_flags2 => [" $Self->{obj_dir}/profile.vlt"],
     threads => 2

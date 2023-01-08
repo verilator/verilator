@@ -69,7 +69,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
 
   if [ "$CI_OS_NAME" = "osx" ]; then
     export VERILATOR_TEST_NO_GDB=1  # Pain to get GDB to work on OS X
-    # TODO below may no longer be requried as configure checks for -pg
+    # TODO below may no longer be required as configure checks for -pg
     export VERILATOR_TEST_NO_GPROF=1  # Apple Clang has no -pg
     # export PATH="/Applications/gtkwave.app/Contents/Resources/bin:$PATH" # fst2vcd
     file bin/verilator_bin
@@ -85,7 +85,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     "$MAKE" -j "$NPROC" -k
   elif [ "$CI_OS_NAME" = "freebsd" ]; then
     export VERILATOR_TEST_NO_GDB=1 # Disable for now, ideally should run
-    # TODO below may no longer be requried as configure checks for -pg
+    # TODO below may no longer be required as configure checks for -pg
     export VERILATOR_TEST_NO_GPROF=1 # gprof is a bit different on FreeBSD, disable
   fi
 

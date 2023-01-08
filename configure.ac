@@ -112,7 +112,7 @@ AC_MSG_CHECKING(whether to show and stop on compilation warnings)
 AC_ARG_ENABLE([ccwarn],
               [AS_HELP_STRING([--enable-ccwarn],
                               [enable showing and stopping on compilation warnings
-                               in Verilator binrary and Verilated makefiles])],
+                               in Verilator binary and Verilated makefiles])],
               [case "${enableval}" in
                 yes) CFG_WITH_CCWARN=yes ;;
                 no)  CFG_WITH_CCWARN=no ;;
@@ -351,7 +351,7 @@ AC_SUBST(CFG_CXXFLAGS_PROFILE)
 # Currently enable c++17/c++14 due to packaged SystemC dependency
 # c++17 is the newest that Verilator is regularly tested to support
 # c++11 is the oldest that Verilator supports
-# gnu is requried for Cygwin to compile verilated.h successfully
+# gnu is required for Cygwin to compile verilated.h successfully
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++20)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++20)
 case "$(which lsb_release 2>&1 > /dev/null && lsb_release -d)" in

@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt_all => 1);
 
 while (1) {
-    # Thi rule requires GNU make > 4.1 (or so, known broken in 3.81)
+    # This rule requires GNU make > 4.1 (or so, known broken in 3.81)
     #%__Slow.o: %__Slow.cpp
     #        $(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
     if (make_version() < 4.1) {
