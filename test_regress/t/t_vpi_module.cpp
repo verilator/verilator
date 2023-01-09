@@ -120,7 +120,7 @@ int mon_check() {
     CHECK_RESULT_NZ(mod2);
 
     const char* mod_a_name = vpi_get_str(vpiName, mod2);
-    CHECK_RESULT_CSTR(mod_a_name, "mod_a");
+    CHECK_RESULT_CSTR(mod_a_name, "\\mod.a ");
 
     TestVpiHandle it3 = vpi_iterate(vpiModule, mod2);
     CHECK_RESULT_NZ(it3);
@@ -129,13 +129,13 @@ int mon_check() {
     CHECK_RESULT_NZ(mod3);
 
     const char* mod_c_name = vpi_get_str(vpiName, mod3);
-    if (std::strcmp(mod_c_name, "mod_b") == 0) {
+    if (std::strcmp(mod_c_name, "\\mod_b$ ") == 0) {
         // Full visibility in other simulators, skip mod_b
         TestVpiHandle mod4 = vpi_scan(it3);
         CHECK_RESULT_NZ(mod4);
         mod_c_name = vpi_get_str(vpiName, mod4);
     }
-    CHECK_RESULT_CSTR(mod_c_name, "mod_c$");
+    CHECK_RESULT_CSTR(mod_c_name, "\\mod_c$ ");
 
     return 0;  // Ok
 }
@@ -192,6 +192,7 @@ int main(int argc, char** argv) {
     const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
                                                         // Note null name - we're flattening it out
                                                         ""}};
+    contextp->scopesDump();
 
 #ifdef VERILATOR
 #ifdef TEST_VERBOSE

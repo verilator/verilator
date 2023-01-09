@@ -206,6 +206,81 @@ string AstNode::prettyName(const string& namein) {
     return pretty;
 }
 
+string AstNode::vpiName(const string& namein) {
+    // This function is somewhat hot, so we short-circuit some compares
+    string pretty;
+    pretty = "";
+    pretty.reserve(namein.length());
+    bool inEscapedIdent = false;
+    int lastIdent = 0;
+
+    for (const char* pos = namein.c_str(); *pos;) {
+        char specialChar = 0;
+
+        if (pos[0] == '-' && pos[1] == '>') {  // ->
+            specialChar = '.';
+            pos += 2;
+        }else if (pos[0] == '_' && pos[1] == '_') {  // __
+            if (0 == std::strncmp(pos, "__BRA__", 7)) {
+                specialChar = '[';
+                pos += 7;
+            }else if (0 == std::strncmp(pos, "__KET__", 7)) {
+                specialChar = ']';
+                pos += 7;
+            }else if (0 == std::strncmp(pos, "__DOT__", 7)) {
+                specialChar = '.';
+                pos += 7;
+            }else if (0 == std::strncmp(pos, "__PVT__", 7)) {
+                pos += 7;
+                continue;
+            }else if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && isxdigit(pos[3])
+                && isxdigit(pos[4])) {
+                char value = 0;
+                value += 16 * (isdigit(pos[3]) ? (pos[3] - '0') : (tolower(pos[3]) - 'a' + 10));
+                value += (isdigit(pos[4]) ? (pos[4] - '0') : (tolower(pos[4]) - 'a' + 10));
+
+                // __ doesn't always imply escaped ident
+                if(value != '_'){
+                    inEscapedIdent = true;
+                }
+
+                pretty += value;
+                pos += 5;
+                continue;
+            }
+        }else if (pos[0] == '.'){
+            specialChar = '.';
+            ++pos;
+        }
+
+        if(specialChar){
+            if(inEscapedIdent && (specialChar == '[' || specialChar == '.')){
+                pretty += " ";
+                pretty.insert(lastIdent, "\\");
+                inEscapedIdent = false;
+            }
+
+            pretty += specialChar;
+
+            if(specialChar == ']' || specialChar == '.'){
+                lastIdent = pretty.length();
+                inEscapedIdent = false;
+            }
+        }else{
+            pretty += pos[0];
+            ++pos;
+        }
+
+    }
+    if(inEscapedIdent) {
+        pretty += " ";
+        pretty.insert(lastIdent, "\\");
+    }
+    if (pretty[0] == 'T' && pretty.substr(0, 4) == "TOP.") pretty.replace(0, 4, "");
+    if (pretty[0] == 'T' && pretty.substr(0, 5) == "TOP->") pretty.replace(0, 5, "");
+    return pretty;
+}
+
 string AstNode::prettyTypeName() const {
     if (name() == "") return typeName();
     return std::string{typeName()} + " '" + prettyName() + "'";
