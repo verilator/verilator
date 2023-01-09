@@ -160,12 +160,10 @@ class EmitCSyms final : EmitCBaseVisitor {
         // if the last identifier is escaped,
         // move to that esc in case there's a '.' in it
         string::size_type esc = scpname.rfind('\\');
-        if (esc != string::npos){
+        if (esc != string::npos) {
             string escsub = scpname.substr(esc);
             string::size_type endesc = escsub.find(' ');
-            if (endesc == escsub.length()-1 || endesc == string::npos){
-                pos = esc-1;
-            }
+            if (endesc == escsub.length() - 1 || endesc == string::npos) { pos = esc - 1; }
         }
 
         if (pos != std::string::npos) out.erase(0, pos + 1);
