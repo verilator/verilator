@@ -273,4 +273,114 @@ public:
     }
 };
 
+static void static_function() {}
+
+class StaticClass {
+public:
+    static void static_class_function() {}
+};
+
+class ConstructorCallsUnsafeLocalFunction {
+public:
+    void unsafe_function() VL_MT_UNSAFE{};
+    ConstructorCallsUnsafeLocalFunction() { unsafe_function(); }
+};
+class ConstructorCallsStaticFunctionNoAnnotation {
+public:
+    ConstructorCallsStaticFunctionNoAnnotation() { static_function(); }
+};
+
+class ConstructorCallsLocalFunction {
+public:
+    void local_function() {}
+    ConstructorCallsLocalFunction() { local_function(); }
+};
+
+class ConstructorCallsLocalFunctionCallsGlobal {
+public:
+    void local_function() { static_function(); }
+    ConstructorCallsLocalFunctionCallsGlobal() { local_function(); }
+};
+
+class SafeFunction {
+public:
+    void safe_function() VL_MT_SAFE {}
+};
+class UnsafeFunction {
+public:
+    void unsafe_function() VL_MT_UNSAFE {}
+};
+
+class ConstructorWithPointer {
+public:
+    ConstructorWithPointer(SafeFunction* p) { p->safe_function(); }
+};
+
+class ConstructorWithReference {
+public:
+    ConstructorWithReference(SafeFunction& p) { p.safe_function(); }
+};
+class ConstructorWithUnsafePointer {
+public:
+    ConstructorWithUnsafePointer(UnsafeFunction* p) { p->unsafe_function(); }
+};
+
+class ConstructorWithUnsafeReference {
+public:
+    ConstructorWithUnsafeReference(UnsafeFunction& p) { p.unsafe_function(); }
+};
+
+class ConstructorCallsLocalCallsGlobal {
+    void local_function2() { static_function(); }
+    void local_function() { local_function2(); }
+
+public:
+    ConstructorCallsLocalCallsGlobal() { local_function(); }
+};
+
+class ConstructorCallsLocalCallsClassGlobal {
+    void local_function2() { StaticClass::static_class_function(); }
+    void local_function() { local_function2(); }
+
+public:
+    ConstructorCallsLocalCallsClassGlobal() { local_function(); }
+};
+
+class TestClassConstructor {
+    void safe_function_unsafe_constructor_bad() VL_MT_SAFE {
+        ConstructorCallsUnsafeLocalFunction f{};
+    };
+    void safe_function_static_constructor_bad() VL_MT_SAFE {
+        ConstructorCallsStaticFunctionNoAnnotation f{};
+    };
+    void safe_function_local_function_global_bad() VL_MT_SAFE {
+        ConstructorCallsLocalFunctionCallsGlobal f{};
+    }
+    void safe_function_local_function_constructor_good() VL_MT_SAFE {
+        ConstructorCallsLocalFunction f{};
+    }
+    void safe_function_calls_constructor_with_pointer_good() VL_MT_SAFE {
+        SafeFunction* i = new SafeFunction{};
+        ConstructorWithPointer f{i};
+    }
+    void safe_function_calls_constructor_with_reference_good() VL_MT_SAFE {
+        SafeFunction i;
+        ConstructorWithReference f{i};
+    }
+    void safe_function_calls_constructor_with_unsafepointer_bad() VL_MT_SAFE {
+        UnsafeFunction* i = new UnsafeFunction{};
+        ConstructorWithUnsafePointer f{i};
+    }
+    void safe_function_calls_constructor_with_unsafereference_bad() VL_MT_SAFE {
+        UnsafeFunction i;
+        ConstructorWithUnsafeReference f{i};
+    }
+    void safe_function_calls_constructor_local_calls_global_bad() VL_MT_SAFE {
+        ConstructorCallsLocalCallsGlobal f{};
+    }
+    void safe_function_calls_constructor_local_calls_class_global_bad() VL_MT_SAFE {
+        ConstructorCallsLocalCallsClassGlobal f{};
+    }
+};
+
 #endif  // T_DIST_ATTRIBUTES_BAD_H_
