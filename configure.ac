@@ -532,6 +532,8 @@ AC_DEFUN([_MY_CXX_CHECK_CXX_VER],
      [_my_result=no])
    ])
 
+# Add $CFG_CXXFLAGS_STD_NEWEST only if can't compile correctly otherwise,
+# as adding std= when not needed can cause errors with the C++ std library.
 AC_MSG_CHECKING(whether $CXX supports C++11)
 _MY_CXX_CHECK_CXX_VER()
 AC_MSG_RESULT($_my_result)
