@@ -274,7 +274,9 @@ private:
         // Convert valueItem from AstCaseItem* to the expression
         // Not done earlier, as we may now have a nullptr because it's just a ";" NOP branch
         for (uint32_t i = 0; i < numCases; ++i) {
-            m_valueItem[i] = VN_AS(m_valueItem[i], CaseItem)->stmtsp();
+            if (AstCaseItem* const itemp = VN_AS(m_valueItem[i], CaseItem)) {
+                m_valueItem[i] = itemp->stmtsp();
+            }
         }
         return true;  // All is fine
     }

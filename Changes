@@ -28,6 +28,7 @@ Verilator 5.005 devel
 * Fix self references when param class instantiated (#3833). [Ryszard Rozak, Antmicro Ltd]
 * Fix memory leak in V3Sched, etc. (#3834). [Geza Lore]
 * Fix compatibility with musl libc / Alpine Linux (#3845). [Sören Tempel]
+* Fix empty case items crash (#3851). [rporter]
 
 
 Verilator 5.004 2022-12-14
