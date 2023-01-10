@@ -207,7 +207,9 @@ string AstNode::prettyName(const string& namein) {
 }
 
 string AstNode::vpiName(const string& namein) {
-    // This function is somewhat hot, so we short-circuit some compares
+    // This is slightly different from prettyName, in that when we encounter escaped characters,
+    // we change that identifier to an escaped identifier, wrapping it with '\' and ' '
+    // as specified in LRM 23.6
     string pretty;
     pretty = "";
     pretty.reserve(namein.length());
