@@ -176,7 +176,7 @@ double VString::parseDouble(const string& str, bool* successp) {
     return d;
 }
 
-static bool isWordChar(char c) { return isalnum(c) || c == '_'; }
+bool isWordChar(char c) { return isalnum(c) || c == '_'; }
 
 string VString::replaceWord(const string& str, const string& from, const string& to) {
     string result = str;

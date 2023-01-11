@@ -240,6 +240,14 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     } else {
         nodep->trace(allTracingOn(nodep->fileline()));
     }
+    switch (nodep->varType()) {
+        case VVarType::VAR:  // FALLTHRU
+        case VVarType::GPARAM:  // FALLTHRU
+        case VVarType::LPARAM:  // FALLTHRU
+        case VVarType::PORT:  // FALLTHRU
+        case VVarType::WIRE: nodep->addAttrsp(PARSEP->cloneScopedSigAttr()); break;
+        default: break;
+    }
 
     // Remember the last variable created, so we can attach attributes to it in later parsing
     GRAMMARP->m_varAttrp = nodep;

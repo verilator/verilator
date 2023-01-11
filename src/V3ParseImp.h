@@ -159,6 +159,7 @@ class V3ParseImp final {
     std::deque<string> m_ppBuffers;  // Preprocessor->lex buffer of characters to process
 
     AstNode* m_tagNodep = nullptr;  // Points to the node to set to m_tag or nullptr to not set.
+    AstNode* m_scopedSigAttr = nullptr;  // Pointer to default signal attribute
     VTimescale m_timeLastUnit;  // Last `timescale's unit
 
 public:
@@ -188,6 +189,10 @@ public:
     void lexVerilatorCmtLintSave(const FileLine* fl);
     void lexVerilatorCmtLintRestore(FileLine* fl);
     static void lexVerilatorCmtBad(FileLine* fl, const char* textp);
+    AstNode* cloneScopedSigAttr() const { return AstNode::cloneTreeNull(m_scopedSigAttr, true); }
+    void setScopedSigAttr(AstNode* attrsp);
+    void createScopedSigAttr(VAttrType vattrt);
+    void clearScopedSigAttr() { m_scopedSigAttr = nullptr; }
 
     void lexPushKeywords(int state) {
         ++m_lexKwdDepth;

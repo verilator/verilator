@@ -220,6 +220,19 @@ double V3ParseImp::lexParseTimenum(const char* textp) {
     return d / divisor;
 }
 
+void V3ParseImp::setScopedSigAttr(AstNode* attrsp) {
+    if (!m_scopedSigAttr != !attrsp) {
+        m_scopedSigAttr = attrsp;
+    } else if (m_scopedSigAttr && attrsp) {
+        attrsp->fileline()->v3error("Nested public attribute is not allowed");
+    } else {
+        attrsp->fileline()->v3error("public_off without initial public*_on");
+    }
+}
+void V3ParseImp::createScopedSigAttr(VAttrType vattrT) {
+    setScopedSigAttr(new AstAttrOf{parsep()->lexFileline(), vattrT});
+}
+
 //######################################################################
 // Parser tokenization
 

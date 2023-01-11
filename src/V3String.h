@@ -74,6 +74,8 @@ inline string ucfirst(const string& text) {
     return out;
 }
 
+extern bool isWordChar(char);
+
 //######################################################################
 // VString - String manipulation
 

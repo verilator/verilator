@@ -472,12 +472,16 @@ void V3PreProcImp::comment(const string& text) {
             // else ignore the comment we don't recognize
         }  // else no assertions
     } else if (vlcomment) {
-        string::size_type pos;
-        if ((pos = cmd.find("public_flat_rw")) != string::npos) {
+        if (VString::startsWith(cmd, "public_flat_rw")) {
             // "/*verilator public_flat_rw @(foo) */" -> "/*verilator public_flat_rw*/ @(foo)"
-            cmd = cmd.substr(pos + std::strlen("public_flat_rw"));
-            while (isspace(cmd[0])) cmd = cmd.substr(1);
-            if (!printed) insertUnreadback("/*verilator public_flat_rw*/ " + cmd + " /**/");
+            string::size_type endOfCmd = std::strlen("public_flat_rw");
+            while (isWordChar(cmd[endOfCmd])) ++endOfCmd;
+            string baseCmd = cmd.substr(0, endOfCmd);
+            string arg = cmd.substr(endOfCmd);
+            while (isspace(arg[0])) arg = arg.substr(1);
+            if (arg.size() && baseCmd == "public_flat_rw_on")
+                baseCmd += "_sns"; // different cmd for applying sensitivity
+            if (!printed) insertUnreadback("/*verilator " + baseCmd + "*/ " + arg + " /**/");
         } else {
             if (!printed) insertUnreadback("/*verilator " + cmd + "*/");
         }
