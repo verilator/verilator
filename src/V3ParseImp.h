@@ -144,6 +144,7 @@ class V3ParseImp final {
 
     FileLine* m_bisonLastFileline = nullptr;  // Filename/linenumber of last token
 
+    bool m_inPublicScope = false;  // Currently inside scoped public annotation
     bool m_inLibrary = false;  // Currently reading a library vs. regular file
     int m_lexKwdDepth = 0;  // Inside a `begin_keywords
     int m_lexKwdLast;  // Last LEX state in `begin_keywords
@@ -162,6 +163,8 @@ class V3ParseImp final {
     VTimescale m_timeLastUnit;  // Last `timescale's unit
 
 public:
+
+
     VL_DEFINE_DEBUG_FUNCTIONS;
     // Note these are an exception to using the filename as the debug type
     VL_DEFINE_DEBUG(Bison);  // Define 'unsigned debugBison()'
@@ -204,6 +207,9 @@ public:
     int lexKwdLastState() const { return m_lexKwdLast; }
     static const char* tokenName(int tok);
     static bool isStrengthToken(int tok);
+
+    bool isInPublicScope() const { return m_inPublicScope; }
+    void setInPublicScope(bool isPublic) { m_inPublicScope = isPublic; }
 
     void ppPushText(const string& text) {
         m_ppBuffers.push_back(text);
