@@ -1635,6 +1635,7 @@ class AstVar final : public AstNode {
     bool m_isForceable : 1;  // May be forced/released externally from user C code
     bool m_isWrittenByDpi : 1;  // This variable can be written by a DPI Export
     bool m_isWrittenBySuspendable : 1;  // This variable can be written by a suspendable process
+    bool m_isPublicScoped : 1; // This variable is wrapped in a VPI public scope
 
     void init() {
         m_ansi = false;
@@ -1678,6 +1679,7 @@ class AstVar final : public AstNode {
         m_isForceable = false;
         m_isWrittenByDpi = false;
         m_isWrittenBySuspendable = false;
+        m_isPublicScoped = false;
         m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
     }
 
@@ -1839,6 +1841,8 @@ public:
     void setWrittenByDpi() { m_isWrittenByDpi = true; }
     bool isWrittenBySuspendable() const { return m_isWrittenBySuspendable; }
     void setWrittenBySuspendable() { m_isWrittenBySuspendable = true; }
+    bool isPublicScoped() { return m_isPublicScoped; }
+    void setPublicScoped() { m_isPublicScoped = true; }
 
     // METHODS
     void name(const string& name) override { m_name = name; }

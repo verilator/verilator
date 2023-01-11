@@ -208,7 +208,9 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     nodep->declTyped(m_varDeclTyped);
     nodep->lifetime(m_varLifetime);
     nodep->delayp(m_netDelayp);
-    nodep->sigUserRWPublic(PARSEP->isInPublicScope());
+    if (PARSEP->isInPublicScope()) {
+        nodep->setPublicScoped();
+    }
     m_netDelayp = nullptr;
     if (GRAMMARP->m_varDecl != VVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varDecl);
     if (GRAMMARP->m_varIO != VDirection::NONE) {
