@@ -533,11 +533,13 @@ void V3ParseImp::tokenPipelineSym() {
                 } else {
                     token = yaID__ETC;
                 }
+            } else if (!m_afterColonColon && *(yylval.strp) == "std") {  // i.e. not yaID__CC
+                v3Global.setUsesStdPackage();
             }
         } else {  // Not found
             yylval.scp = nullptr;
             if (token == yaID__CC) {
-                if (!m_afterColonColon && *(yylval.strp) == "std") {
+                if (!m_afterColonColon && *(yylval.strp) == "std") { // TODO: remove this
                     v3Global.setUsesStdPackage();
                 } else if (!v3Global.opt.bboxUnsup()) {
                     // IEEE does require this, but we may relax this as UVM breaks it, so allow
