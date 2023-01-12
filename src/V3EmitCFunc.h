@@ -31,8 +31,8 @@
 // Number of VL_CONST_W_*X's in verilated.h (IE VL_CONST_W_8X is last)
 constexpr int EMITC_NUM_CONSTW = 8;
 
-//######################################################################
-// Emit lazy forward declarations
+// ######################################################################
+//  Emit lazy forward declarations
 
 class EmitCLazyDecls final : public VNVisitor {
     // NODE STATE/TYPES
@@ -358,7 +358,7 @@ public:
             // Wide functions assign into the array directly, don't need separate assign statement
             m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
             paren = false;
-        } else if (nodep->isWide()) {
+        } else if (nodep->isWide() && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
             putbs("VL_ASSIGN_W(");
             puts(cvtToStr(nodep->widthMin()) + ",");
             iterateAndNextNull(nodep->lhsp());

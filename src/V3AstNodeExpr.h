@@ -3760,10 +3760,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l%f[%r])"; }
     string emitC() override {
-        // Return the pointer to the selected word. No array index operator should be used here as
-        // the structure like VlUnpacked<VlWide<256>,6>[1] points to the 2nd elements of
-        // VlWide<256> instead of the 2nd word.
-        return "*((WData *)(&%li) + %ri)";
+        return "%li[%ri]";
     }  // Not %k, as usually it's a small constant rhsp
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }

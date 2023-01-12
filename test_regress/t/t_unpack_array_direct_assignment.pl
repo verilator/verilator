@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-top_filename("t/t_expand_word_sel.v");
+top_filename("t/t_unpack_array_no_expand.v");
 
 compile(
     verilator_flags2 => ['-fno-expand'],

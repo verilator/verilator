@@ -39,8 +39,8 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-//######################################################################
-// Expand state, as a visitor of each AstNode
+// ######################################################################
+//  Expand state, as a visitor of each AstNode
 
 class ExpandVisitor final : public VNVisitor {
 private:
@@ -848,6 +848,10 @@ private:
     }
     void visit(AstNodeAssign* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
+        if (VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+            return;  // Skip for UnpackArrayDType
+        }
+
         VL_RESTORER(m_stmtp);
         m_stmtp = nodep;
         iterateChildren(nodep);
@@ -905,8 +909,8 @@ public:
 //----------------------------------------------------------------------
 // Top loop
 
-//######################################################################
-// Expand class functions
+// ######################################################################
+//  Expand class functions
 
 void V3Expand::expandAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
