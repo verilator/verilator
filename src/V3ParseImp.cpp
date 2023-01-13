@@ -507,7 +507,7 @@ void V3ParseImp::tokenPipelineSym() {
             // " -findtree: ", true);
             foundp = V3ParseImp::parsep()->symp()->symCurrentp()->findIdFallback(*(yylval.strp));
         }
-        if (!foundp) {
+        if (!foundp && !m_afterColonColon) {
             if (v3Global.rootp()->stdPackagep()) {
                 foundp = ((VSymEnt*)v3Global.rootp()->stdPackagep()->user4p())->findIdFallback(*(yylval.strp));
             }
@@ -534,14 +534,13 @@ void V3ParseImp::tokenPipelineSym() {
                     token = yaID__ETC;
                 }
             } else if (!m_afterColonColon && *(yylval.strp) == "std") {  // i.e. not yaID__CC
+                yylval.scp = nullptr;
                 v3Global.setUsesStdPackage();
             }
         } else {  // Not found
             yylval.scp = nullptr;
             if (token == yaID__CC) {
-                if (!m_afterColonColon && *(yylval.strp) == "std") { // TODO: remove this
-                    v3Global.setUsesStdPackage();
-                } else if (!v3Global.opt.bboxUnsup()) {
+                if (!v3Global.opt.bboxUnsup()) {
                     // IEEE does require this, but we may relax this as UVM breaks it, so allow
                     // bbox for today
                     // We'll get a parser error eventually but might not be obvious
