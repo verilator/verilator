@@ -328,7 +328,7 @@ add_custom_command(
     OUTPUT V3Ast__gen_forward_class_decls.h V3Dfg__gen_forward_class_decls.h
     DEPENDS ./V3Ast.h ${ASTGEN}
     COMMAND ${PYTHON3} ARGS
-    ${ASTGEN} -I"${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h --classes
+    ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h --classes
 )
 list(APPEND GENERATED_FILES V3Ast__gen_forward_class_decls.h V3Dfg__gen_forward_class_decls.h)
 # Output used directly by the `verilator` target
