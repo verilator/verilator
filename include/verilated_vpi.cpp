@@ -1751,13 +1751,13 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
         int i;
         if (bits > t_outStrSz) {
             // limit maximum size of output to size of buffer to prevent overrun.
-            bits = t_outStrSz;
             VL_VPI_WARNING_(
                 __FILE__, __LINE__,
                 "%s: Truncating string value of %s for %s"
                 " as buffer size (%d, VL_VALUE_STRING_MAX_WORDS=%d) is less than required (%d)",
                 __func__, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, t_outStrSz,
                 VL_VALUE_STRING_MAX_WORDS, bits);
+            bits = t_outStrSz;
         }
         for (i = 0; i < bits; ++i) {
             const char val = (datap[i >> 3] >> (i & 7)) & 1;

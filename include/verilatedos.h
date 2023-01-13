@@ -426,7 +426,11 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // Verilated function size macros
 
 #define VL_MULS_MAX_WORDS 16  ///< Max size in words of MULS operation
-#define VL_VALUE_STRING_MAX_WORDS 64  ///< Max size in words of String conversion operation
+
+#ifndef VL_VALUE_STRING_MAX_WORDS
+    #define VL_VALUE_STRING_MAX_WORDS 64  ///< Max size in words of String conversion operation
+#endif
+
 #define VL_VALUE_STRING_MAX_CHARS (VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE / VL_BYTESIZE)
 
 //=========================================================================
