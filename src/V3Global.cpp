@@ -58,8 +58,10 @@ void V3Global::readFiles() {
     V3Parse parser(v3Global.rootp(), &filter, &parseSyms);
 
     // Parse the std package
-    parser.parseFile(new FileLine{V3Options::getStdPackagePath()}, V3Options::getStdPackagePath(),
-                     false, "Cannot find verilated_std.sv containing built-in std:: definitions:");
+    if (v3Global.opt.std()) {
+        parser.parseFile(new FileLine{V3Options::getStdPackagePath()}, V3Options::getStdPackagePath(),
+                         false, "Cannot find verilated_std.sv containing built-in std:: definitions:");
+    }
 
     // Read top module
     const V3StringList& vFiles = v3Global.opt.vFiles();
@@ -78,9 +80,10 @@ void V3Global::readFiles() {
     }
 
     if (!usesStdPackage()) {
-        AstNodeModule *stdp = v3Global.rootp()->stdPackagep();
-        VL_DO_DANGLING(stdp->unlinkFrBack()->deleteTree(), stdp);
-        v3Global.rootp()->stdPackagep(nullptr);
+        if (AstNodeModule *stdp = v3Global.rootp()->stdPackagep()) {
+            VL_DO_DANGLING(stdp->unlinkFrBack()->deleteTree(), stdp);
+            v3Global.rootp()->stdPackagep(nullptr);
+        }
     }
 
     // v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("parse.tree"));
