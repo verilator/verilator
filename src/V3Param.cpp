@@ -911,6 +911,7 @@ class ParamVisitor final : public VNVisitor {
     bool m_iterateModule = false;  // Iterating module body
     string m_generateHierName;  // Generate portion of hierarchy name
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
+    std::vector<AstDot*> m_dots;  // Dot references to process
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
     std::multimap<int, AstNodeModule*> m_workQueue;  // Modules left to process
 
@@ -1005,6 +1006,21 @@ class ParamVisitor final : public VNVisitor {
         // Visit parameters in the instantiation.
         iterateChildren(nodep);
         m_cellps.emplace(!isIface, nodep);
+    }
+
+    // RHSs of AstDots need a relink when LHS is a parametrized class reference
+    void relinkDots() {
+        for (AstDot* const dotp : m_dots) {
+            const AstClassOrPackageRef* const classRefp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
+            const AstClass* const lhsClassp = VN_AS(classRefp->classOrPackageNodep(), Class);
+            AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
+            for (auto* itemp = lhsClassp->membersp(); itemp; itemp = itemp->nextp()) {
+                if (itemp->name() == rhsp->name()) {
+                    rhsp->classOrPackageNodep(itemp);
+                    break;
+                }
+            }
+        }
     }
 
     // VISITORS
@@ -1111,6 +1127,25 @@ class ParamVisitor final : public VNVisitor {
             }
         }
         nodep->varp(nullptr);  // Needs relink, as may remove pointed-to var
+    }
+
+    void visit(AstDot* nodep) override {
+        iterate(nodep->lhsp());
+        // Check if it is a reference to a field of a parameterized class.
+        // If so, the RHS should be updated, when the LHS is replaced
+        // by a class with actual parameter values.
+        const AstClass* lhsClassp = nullptr;
+        const AstClassOrPackageRef* const classRefp = VN_CAST(nodep->lhsp(), ClassOrPackageRef);
+        if (classRefp) lhsClassp = VN_CAST(classRefp->classOrPackageNodep(), Class);
+        AstNode* rhsDefp = nullptr;
+        AstClassOrPackageRef* const rhsp = VN_CAST(nodep->rhsp(), ClassOrPackageRef);
+        if (rhsp) rhsDefp = rhsp->classOrPackageNodep();
+        if (lhsClassp && rhsDefp) {
+            m_dots.push_back(nodep);
+            // No need to iterate into rhsp, because there should be nothing to do
+        } else {
+            iterate(nodep->rhsp());
+        }
     }
 
     void visit(AstUnlinkedRef* nodep) override {
@@ -1272,6 +1307,8 @@ public:
         : m_processor{netlistp} {
         // Relies on modules already being in top-down-order
         iterate(netlistp);
+
+        relinkDots();
 
         // Re-sort module list to be in topological order and fix-up incorrect levels. We need to
         // do this globally at the end due to the presence of recursive modules, which might be

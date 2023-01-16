@@ -2028,7 +2028,8 @@ private:
         DotPosition m_dotPos;  // Scope part of dotted resolution
         VSymEnt* m_dotSymp;  // SymEnt for dotted AstParse lookup
         const AstDot* m_dotp;  // Current dot
-        bool m_unresolved;  // Unresolved, needs help from V3Param
+        bool m_unresolvedCell;  // Unresolved cell, needs help from V3Param
+        bool m_unresolvedClass;  // Unresolved class reference, needs help from V3Param
         AstNode* m_unlinkedScopep;  // Unresolved scope, needs corresponding VarXRef
         bool m_dotErr;  // Error found in dotted resolution, ignore upwards
         string m_dotText;  // String of dotted names found in below parseref
@@ -2040,7 +2041,8 @@ private:
             m_dotp = nullptr;
             m_dotErr = false;
             m_dotText = "";
-            m_unresolved = false;
+            m_unresolvedCell = false;
+            m_unresolvedClass = false;
             m_unlinkedScopep = nullptr;
         }
         string ascii() const {
@@ -2049,7 +2051,8 @@ private:
             sstr << "ds=" << names[m_dotPos];
             sstr << "  dse" << cvtToHex(m_dotSymp);
             sstr << "  txt=" << m_dotText;
-            sstr << "  unr=" << m_unresolved;
+            sstr << "  unrCell=" << m_unresolvedCell;
+            sstr << "  unrClass=" << m_unresolvedClass;
             return sstr.str();
         }
     } m_ds;  // State to preserve across recursions
@@ -2350,7 +2353,6 @@ private:
         // Dot(Dot(Dot(ParseRef(text), ...
         if (nodep->user3SetOnce()) return;
         UINFO(8, "     " << nodep << endl);
-        bool replaceWithRhs = true;
         const DotStates lastStates = m_ds;
         const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         {
@@ -2402,10 +2404,9 @@ private:
             }
             if (m_statep->forPrimary() && isParamedClassRef(nodep->lhsp())) {
                 // Dots of paramed classes will be linked after deparameterization
-                m_ds.m_unresolved = true;
-                replaceWithRhs = false;
+                m_ds.m_unresolvedClass = true;
             }
-            if (m_ds.m_unresolved
+            if (m_ds.m_unresolvedCell
                 && (VN_IS(nodep->lhsp(), CellRef) || VN_IS(nodep->lhsp(), CellArrayRef))) {
                 m_ds.m_unlinkedScopep = nodep->lhsp();
             }
@@ -2416,8 +2417,8 @@ private:
                 iterateAndNextNull(nodep->rhsp());
                 // if (debug() >= 9) nodep->dumpTree("-  dot-rho: ");
             }
-            if (start) {
-                if (replaceWithRhs) {
+            if (!m_ds.m_unresolvedClass) {
+                if (start) {
                     AstNode* newp;
                     if (m_ds.m_dotErr) {
                         newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
@@ -2427,23 +2428,25 @@ private:
                     if (debug() >= 9) newp->dumpTree("-  dot-out: ");
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                } else {  // Dot midpoint
+                    AstNodeExpr* newp = nodep->rhsp()->unlinkFrBack();
+                    if (m_ds.m_unresolvedCell) {
+                        AstCellRef* const crp = new AstCellRef{
+                            nodep->fileline(), nodep->name(), nodep->lhsp()->unlinkFrBack(), newp};
+                        newp = crp;
+                    }
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
-            } else {  // Dot midpoint
-                AstNodeExpr* newp = nodep->rhsp()->unlinkFrBack();
-                if (m_ds.m_unresolved) {
-                    AstCellRef* const crp = new AstCellRef{nodep->fileline(), nodep->name(),
-                                                           nodep->lhsp()->unlinkFrBack(), newp};
-                    newp = crp;
-                }
-                nodep->replaceWith(newp);
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
+        const bool unresolvedClass = m_ds.m_unresolvedClass;
         if (start) {
             m_ds = lastStates;
         } else {
             m_ds.m_dotp = lastStates.m_dotp;
         }
+        m_ds.m_unresolvedClass |= unresolvedClass;
     }
     void visit(AstSenItem* nodep) override {
         VL_RESTORER(m_inSens);
@@ -2453,7 +2456,7 @@ private:
     void visit(AstParseRef* nodep) override {
         if (nodep->user3SetOnce()) return;
         UINFO(9, "   linkPARSEREF " << m_ds.ascii() << "  n=" << nodep << endl);
-        if (m_ds.m_unresolved && !m_ds.m_unlinkedScopep) return;
+        if (m_ds.m_unresolvedClass) return;
         // m_curSymp is symbol table of outer expression
         // m_ds.m_dotSymp is symbol table relative to "."'s above now
         UASSERT_OBJ(m_ds.m_dotSymp, nodep, "nullptr lookup symbol table");
@@ -2629,7 +2632,7 @@ private:
                             varp->attrSplitVar(false);
                         }
                         m_ds.m_dotText = "";
-                        if (m_ds.m_unresolved && m_ds.m_unlinkedScopep) {
+                        if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep) {
                             const string dotted = refp->dotted();
                             const size_t pos = dotted.find("__BRA__??__KET__");
                             // Arrays of interfaces all have the same parameters
@@ -2641,7 +2644,7 @@ private:
                                 newp = new AstUnlinkedRef{nodep->fileline(), refp, refp->name(),
                                                           m_ds.m_unlinkedScopep->unlinkFrBack()};
                                 m_ds.m_unlinkedScopep = nullptr;
-                                m_ds.m_unresolved = false;
+                                m_ds.m_unresolvedCell = false;
                             }
                         } else {
                             newp = refp;
@@ -2951,19 +2954,17 @@ private:
             iterateChildren(nodep);
         }
 
-        if (m_ds.m_unresolved) {
+        if (m_ds.m_unresolvedClass) {
             // Unable to link before V3Param
-            if (m_ds.m_dotPos == DP_FINAL && m_ds.m_unlinkedScopep) {
-                AstNodeFTaskRef* const newftaskp = nodep->cloneTree(false);
-                newftaskp->dotted(m_ds.m_dotText);
-                AstNode* const newp
-                    = new AstUnlinkedRef{nodep->fileline(), newftaskp, nodep->name(),
-                                         m_ds.m_unlinkedScopep->unlinkFrBack()};
-                m_ds.m_unlinkedScopep = nullptr;
-                m_ds.m_unresolved = false;
-                nodep->replaceWith(newp);
-            }
-            // else: AstDot wasn't replaced and it will be linked after V3Param
+            return;
+        } else if (m_ds.m_unresolvedCell && m_ds.m_dotPos == DP_FINAL && m_ds.m_unlinkedScopep) {
+            AstNodeFTaskRef* const newftaskp = nodep->cloneTree(false);
+            newftaskp->dotted(m_ds.m_dotText);
+            AstNode* const newp = new AstUnlinkedRef{nodep->fileline(), newftaskp, nodep->name(),
+                                                     m_ds.m_unlinkedScopep->unlinkFrBack()};
+            m_ds.m_unlinkedScopep = nullptr;
+            m_ds.m_unresolvedCell = false;
+            nodep->replaceWith(newp);
             return;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
@@ -3118,7 +3119,7 @@ private:
             == DP_SCOPE) {  // Already under dot, so this is {modulepart} DOT {modulepart}
             UINFO(9, "  deferring until after a V3Param pass: " << nodep << endl);
             m_ds.m_dotText += "__BRA__??__KET__";
-            m_ds.m_unresolved = true;
+            m_ds.m_unresolvedCell = true;
             // And pass up m_ds.m_dotText
         }
         // Pass dot state down to fromp()
@@ -3131,7 +3132,7 @@ private:
                 iterateAndNextNull(nodep->attrp());
             }
         }
-        if (m_ds.m_unresolved && m_ds.m_dotPos == DP_SCOPE) {
+        if (m_ds.m_unresolvedCell && m_ds.m_dotPos == DP_SCOPE) {
             AstNodeExpr* const exprp = nodep->bitp()->unlinkFrBack();
             AstCellArrayRef* const newp
                 = new AstCellArrayRef{nodep->fileline(), nodep->fromp()->name(), exprp};
