@@ -26,5 +26,14 @@ file_grep_not("$Self->{obj_dir}/coverage.dat", "largeish");
 file_grep($Self->{stats}, qr/Coverage, Toggle points joined\s+(\d+)/i, 25)
     if $Self->{vlt_all};
 
+run(cmd => ["../bin/verilator_coverage",
+            "--annotate", "$Self->{obj_dir}/annotated",
+            "$Self->{obj_dir}/coverage.dat",
+            ],
+    verilator_run => 1,
+    );
+
+files_identical("$Self->{obj_dir}/annotated/$Self->{name}.v", $Self->{golden_filename});
+
 ok(1);
 1;
