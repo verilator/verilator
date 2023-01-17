@@ -3626,6 +3626,10 @@ private:
                 // Either made explicitly or V3LinkDot made implicitly
                 classp->v3fatalSrc("Can't find class's new");
             }
+            if (classp->isVirtual()) {
+                nodep->v3error(
+                    "Illegal to call 'new' using an abstract virtual class (IEEE 1800-2017 8.21)");
+            }
         } else {  // super.new case
             // in this case class and taskp() should be properly linked in V3LinkDot.cpp during
             // "super" reference resolution
@@ -3633,10 +3637,6 @@ private:
             UASSERT_OBJ(classp, nodep, "Unlinked classOrPackagep()");
             UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked taskp()");
             nodep->dtypeFrom(nodep->taskp());
-        }
-        if (classp->isVirtual()) {
-            nodep->v3error(
-                "Illegal to call 'new' using an abstract virtual class (IEEE 1800-2017 8.21)");
         }
         userIterate(nodep->taskp(), nullptr);
         processFTaskRefArgs(nodep);
