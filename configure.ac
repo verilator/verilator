@@ -543,6 +543,10 @@ if test "$_my_result" = "no" ; then
    AC_MSG_CHECKING(whether $CXX supports C++11 with $CFG_CXXFLAGS_STD_NEWEST)
    _MY_CXX_CHECK_CXX_VER()
    AC_MSG_RESULT($_my_result)
+else
+  # CFG_CXXFLAGS_STD_NEWEST is also propagated to include/verilated.mk.in
+  # make sure we use the same std flag while compiling verilator and verilated design
+  CFG_CXXFLAGS_STD_NEWEST=""
 fi
 if test "$_my_result" = "no" ; then
    AC_MSG_NOTICE([[]])
