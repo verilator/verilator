@@ -96,8 +96,10 @@ public:
     bool m_tracingParse = true;  // Tracing disable for parser
     bool m_insideProperty = false;  // Is inside property declaration
     bool m_typedPropertyPort = false;  // True if typed property port occurred on port lists
-    bool m_modportImpExpActive = false;  // Standalone ID is a tf_identifier instead of port_identifier
-    bool m_modportImpExpLastIsExport = false;  // Last import_export statement in modportPortsDecl is an export
+    bool m_modportImpExpActive
+        = false;  // Standalone ID is a tf_identifier instead of port_identifier
+    bool m_modportImpExpLastIsExport
+        = false;  // Last import_export statement in modportPortsDecl is an export
 
     int m_pinNum = -1;  // Pin number currently parsing
     std::stack<int> m_pinStack;  // Queue of pin numbers being parsed
