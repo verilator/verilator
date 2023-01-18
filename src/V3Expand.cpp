@@ -848,6 +848,10 @@ private:
     }
     void visit(AstNodeAssign* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
+        if (VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+            return;  // Skip for UnpackArrayDType
+        }
+
         VL_RESTORER(m_stmtp);
         m_stmtp = nodep;
         iterateChildren(nodep);
