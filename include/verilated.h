@@ -469,7 +469,7 @@ public:
     int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }
 
     // Time handling
-    /// Returns current simulation time.
+    /// Returns current simulation time in units of timeprecision().
     ///
     /// How Verilator runtime gets the current simulation time:
     ///
