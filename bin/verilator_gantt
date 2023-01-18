@@ -475,16 +475,16 @@ def write_vcd(filename):
 parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
-    description="""Create Gantt chart of multi-threaded execution""",
-    epilog=
-    """Verilator_gantt creates a visual representation to help analyze Verilator
+    description="""Create Gantt chart of multi-threaded execution.
+
+Verilator_gantt creates a visual representation to help analyze Verilator
 #xmultithreaded simulation performance, by showing when each macro-task
 #xstarts and ends, and showing when each thread is busy or idle.
 
 For documentation see
-https://verilator.org/guide/latest/exe_verilator_gantt.html
-
-Copyright 2018-2023 by Wilson Snyder. This program is free software; you
+https://verilator.org/guide/latest/exe_verilator_gantt.html""",
+    epilog=
+    """Copyright 2018-2023 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

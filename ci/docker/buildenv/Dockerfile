@@ -23,6 +23,7 @@ RUN apt-get update \
                         gdb \
                         git \
                         gtkwave \
+                        help2man \
                         libfl2 \
                         libfl-dev \
                         libgoogle-perftools-dev \
