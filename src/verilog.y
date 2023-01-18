@@ -96,6 +96,8 @@ public:
     bool m_tracingParse = true;  // Tracing disable for parser
     bool m_insideProperty = false;  // Is inside property declaration
     bool m_typedPropertyPort = false;  // True if typed property port occurred on port lists
+    bool m_modportImpExpActive = false;  // Standalone ID is a tf_identifier instead of port_identifier
+    bool m_modportImpExpLastIsExport = false;  // Last import_export statement in modportPortsDecl is an export
 
     int m_pinNum = -1;  // Pin number currently parsing
     std::stack<int> m_pinStack;  // Queue of pin numbers being parsed
@@ -1744,30 +1746,40 @@ modportPortsDeclList<nodep>:
 // We track the type as with the V2k series of defines, then create as each ID is seen.
 modportPortsDecl<nodep>:
         //                      // IEEE: modport_simple_ports_declaration
-                port_direction modportSimplePort        { $$ = new AstModportVarRef{$<fl>2, *$2, GRAMMARP->m_varIO}; }
+                port_direction modportSimplePortOrTFPort { $$ = new AstModportVarRef{$<fl>2, *$2, GRAMMARP->m_varIO};
+                                                           GRAMMARP->m_modportImpExpActive = false;}
         //                      // IEEE: modport_clocking_declaration
         |       yCLOCKING idAny/*clocking_identifier*/
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport clocking"); }
         //                      // IEEE: yIMPORT modport_tf_port
         //                      // IEEE: yEXPORT modport_tf_port
         //                      // modport_tf_port expanded here
-        |       yIMPORT id/*tf_identifier*/             { $$ = new AstModportFTaskRef{$<fl>2, *$2, false}; }
-        |       yEXPORT id/*tf_identifier*/             { $$ = new AstModportFTaskRef{$<fl>2, *$2, true}; }
+        |       yIMPORT id/*tf_identifier*/              { $$ = new AstModportFTaskRef{$<fl>2, *$2, false};
+                                                           GRAMMARP->m_modportImpExpActive = true;
+                                                           GRAMMARP->m_modportImpExpLastIsExport = false; }
+        |       yEXPORT id/*tf_identifier*/              { $$ = new AstModportFTaskRef{$<fl>2, *$2, true};
+                                                           GRAMMARP->m_modportImpExpActive = true;
+                                                           GRAMMARP->m_modportImpExpLastIsExport = true; }
         |       yIMPORT method_prototype
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport import with prototype"); }
         |       yEXPORT method_prototype
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport export with prototype"); }
         // Continuations of above after a comma.
         //                      // IEEE: modport_simple_ports_declaration
-        |       modportSimplePort                       { $$ = new AstModportVarRef{$<fl>1, *$1, GRAMMARP->m_varIO}; }
+        |       modportSimplePortOrTFPort                { $$ = GRAMMARP->m_modportImpExpActive ?
+                                                                static_cast<AstNode*>(
+                                                                  new AstModportFTaskRef(
+                                                                    $<fl>1, *$1, GRAMMARP->m_modportImpExpLastIsExport) ) :
+                                                                static_cast<AstNode*>(
+                                                                  new AstModportVarRef(
+                                                                    $<fl>1, *$1, GRAMMARP->m_varIO) ); }
         ;
 
-modportSimplePort<strp>:        // IEEE: modport_simple_port or modport_tf_port, depending what keyword was earlier
+modportSimplePortOrTFPort<strp>:// IEEE: modport_simple_port or modport_tf_port, depending what keyword was earlier
                 id                                      { $$ = $1; }
         //UNSUP '.' idAny '(' ')'                       { }
         //UNSUP '.' idAny '(' expr ')'                  { }
         ;
-
 //************************************************
 // Variable Declarations
 
