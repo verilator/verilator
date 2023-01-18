@@ -39,8 +39,8 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-// ######################################################################
-//  Expand state, as a visitor of each AstNode
+//######################################################################
+// Expand state, as a visitor of each AstNode
 
 class ExpandVisitor final : public VNVisitor {
 private:
@@ -909,8 +909,8 @@ public:
 //----------------------------------------------------------------------
 // Top loop
 
-// ######################################################################
-//  Expand class functions
+//######################################################################
+// Expand class functions
 
 void V3Expand::expandAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);

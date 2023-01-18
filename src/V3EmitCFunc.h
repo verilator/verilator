@@ -31,8 +31,8 @@
 // Number of VL_CONST_W_*X's in verilated.h (IE VL_CONST_W_8X is last)
 constexpr int EMITC_NUM_CONSTW = 8;
 
-// ######################################################################
-//  Emit lazy forward declarations
+//######################################################################
+// Emit lazy forward declarations
 
 class EmitCLazyDecls final : public VNVisitor {
     // NODE STATE/TYPES
