@@ -515,13 +515,24 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 # define VL_CPU_RELAX() asm volatile("rep; nop" ::: "memory")
 #elif defined(__ia64__)
 # define VL_CPU_RELAX() asm volatile("hint @pause" ::: "memory")
+#elif defined(__armel__) || defined(__ARMEL__)  // Arm, but broken, must be before __arm__
+# define VL_CPU_RELAX() asm volatile("nop" ::: "memory");
 #elif defined(__aarch64__) || defined(__arm__)
 # define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
+#elif defined(__loongarch__)  // LoongArch does not currently have yield/pause
+# define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
+#elif defined(__mips64el__) || defined(__mips__) || defined(__mips64__) || defined(__mips64)
+# define VL_CPU_RELAX() asm volatile("pause" ::: "memory")
 #elif defined(__powerpc64__)
 # define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
-#elif defined(__loongarch__) || defined(__riscv)
-// LoongArch does not currently have a yield/pause instruction
+#elif defined(__riscv)  // RiscV does not currently have yield/pause, but one is proposed
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
+#elif defined(__s390x__)
+# define VL_CPU_RELAX() asm volatile("lr 0,0" ::: "memory")
+#elif defined(__sparc__)
+# define VL_CPU_RELAX() asm volatile("rd %%ccr, %%g0" ::: "memory")
+#elif defined(VL_IGNORE_UNKNOWN_ARCH)
+# define VL_CPU_RELAX()
 #else
 # error "Missing VL_CPU_RELAX() definition."
 #endif
