@@ -1029,8 +1029,13 @@ class LinkDotFindVisitor final : public VNVisitor {
             // are common.
             for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                 if (VN_IS(stmtp, Var) || VN_IS(stmtp, Foreach)) {
-                    ++m_modBlockNum;
-                    nodep->name("unnamedblk" + cvtToStr(m_modBlockNum));
+                    std::string name;
+                    do {
+                        ++m_modBlockNum;
+                        name = "unnamedblk" + cvtToStr(m_modBlockNum);
+                        // Increment again if earlier pass of V3LinkDot claimed this name
+                    } while (m_curSymp->findIdFlat(name));
+                    nodep->name(name);
                     break;
                 }
             }
