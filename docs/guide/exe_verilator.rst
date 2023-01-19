@@ -707,9 +707,10 @@ Summary:
 .. option:: -j [<value>]
 
    Specify the level of parallelism for :vlopt:`--build` if
-   :vlopt:`--build-jobs` isn't provided. If zero, uses the number of threads
-   in the current hardware. Otherwise, the <value> must be a positive
-   integer specifying the maximum number of parallel build jobs.
+   :vlopt:`--build-jobs` isn't provided, and the internal compilation steps
+   of Verilator if :vlopt:`--verilation-jobs` isn't provided. If zero, uses
+   the number of threads in the current hardware. Otherwise, must be a
+   positive integer specifying the maximum number of parallel build jobs.
 
 .. option:: --l2-name <value>
 
@@ -1428,6 +1429,15 @@ Summary:
    When using :vlopt:`--build`, disable the generation of C++/SystemC code, and
    execute only the build. This can be useful for rebuilding the Verilated code
    produced by a previous invocation of Verilator.
+
+.. option:: --verilation-jobs [<value>]
+
+   Specify the level of parallelism for the internal compilation steps of
+   Verilator. If zero, uses the number of threads in the current hardware.
+   Otherwise, must be a positive integer specifying the maximum number of
+   parallel build jobs.
+
+   See also :vlopt:`-j`.
 
 .. option:: +verilog1995ext+<ext>
 

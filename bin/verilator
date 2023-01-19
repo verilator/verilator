@@ -362,7 +362,7 @@ detailed descriptions of these arguments.
      +incdir+<dir>              Directory to search for includes
     --inline-mult <value>       Tune module inlining
     --instr-count-dpi <value>   Assumed dynamic instruction count of DPI imports
-     -j <jobs>                  Parallelism for --build (alias to --build-jobs)
+     -j <jobs>                  Parallelism for --build-jobs/--verilation-jobs
     --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
      -LDFLAGS <flags>           Linker pre-object arguments for makefile
@@ -445,6 +445,7 @@ detailed descriptions of these arguments.
     --unused-regexp <regexp>    Tune UNUSED lint signals
      -V                         Verbose version and config
      -v <filename>              Verilog library
+    --verilation-jobs           Job threads for Verilation stage
     --no-verilate               Skip Verilation and just compile previously Verilated code
      +verilog1995ext+<ext>      Synonym for +1364-1995ext+<ext>
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
