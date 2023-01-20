@@ -1436,7 +1436,7 @@ portAndTagE<nodep>:
 
 portAndTag<nodep>:
                 port                                    { $$ = $1; }
-        |       sigAttrScope port                       { $$ = $2; }  // scope will begin starting with this port  
+        |       sigAttrScope port                       { $$ = $2; }  // scope will begin starting with this port
         |       vlTag port                              { $$ = $2; }  // Tag will associate with previous port
         ;
 
