@@ -47,7 +47,7 @@ class StatsReport final {
         os << "  " << V3Options::version() << '\n';
         os << "  Arguments: " << v3Global.opt.allArgsString() << '\n';
         os << "  Build jobs: " << v3Global.opt.buildJobs() << '\n';
-        os << "  Verilation jobs: " << v3Global.opt.verilationJobs() << '\n';
+        os << "  Verilate jobs: " << v3Global.opt.verilateJobs() << '\n';
         os << '\n';
     }
 

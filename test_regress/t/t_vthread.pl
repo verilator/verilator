@@ -45,14 +45,14 @@ gen($Self->{top_filename}, 6000);
 
 compile(
     # use --trace to generate trace files that can be parallelized
-    verilator_flags2=>["--stats --trace --verilation-jobs 2"],
+    verilator_flags2=>["--stats --trace --verilate-jobs 2"],
     );
 
 execute(
     check_finished => 1,
     );
 
-file_grep($Self->{stats}, qr/Verilation jobs: 2/);
+file_grep($Self->{stats}, qr/Verilate jobs: 2/);
 
 ok(1);
 1;

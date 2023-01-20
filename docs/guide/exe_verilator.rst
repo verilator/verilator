@@ -708,7 +708,7 @@ Summary:
 
    Specify the level of parallelism for :vlopt:`--build` if
    :vlopt:`--build-jobs` isn't provided, and the internal compilation steps
-   of Verilator if :vlopt:`--verilation-jobs` isn't provided. If zero, uses
+   of Verilator if :vlopt:`--verilate-jobs` isn't provided. If zero, uses
    the number of threads in the current hardware. Otherwise, must be a
    positive integer specifying the maximum number of parallel build jobs.
 
@@ -1430,7 +1430,7 @@ Summary:
    execute only the build. This can be useful for rebuilding the Verilated code
    produced by a previous invocation of Verilator.
 
-.. option:: --verilation-jobs [<value>]
+.. option:: --verilate-jobs [<value>]
 
    Specify the level of parallelism for the internal compilation steps of
    Verilator. If zero, uses the number of threads in the current hardware.

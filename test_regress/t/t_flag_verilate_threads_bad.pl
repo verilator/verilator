@@ -14,7 +14,7 @@ top_filename("t/t_flag_werror.v");
 
 lint(
     fails => 1,
-    verilator_flags => [qw(--verilation-jobs -1)],
+    verilator_flags => [qw(--verilate-jobs -1)],
     expect_filename => $Self->{golden_filename},
     );
 
