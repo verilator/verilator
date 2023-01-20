@@ -426,6 +426,14 @@ private:
 
     void visit(AstVar* nodep) override {
         if (!nodep->isIO()) return;
+
+        if (VN_IS(nodep->dtypep()->skipRefp(), NodeUOrStructDType)) {
+            AstBasicDType* dtypep = new AstBasicDType(nodep->fileline(), VFlagLogicPacked(), nodep->dtypep()->width());
+            v3Global.rootp()->typeTablep()->addTypesp(dtypep);
+            nodep = nodep->cloneTree(false);
+            nodep->dtypep(dtypep);
+        }
+
         if (nodep->direction() == VDirection::INPUT) {
             if (nodep->isUsedClock() || nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
                 UASSERT_OBJ(m_hasClk, nodep, "checkIfClockExists() didn't find this clock");
