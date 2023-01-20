@@ -273,6 +273,8 @@ public:
     VlQueue(VlQueue&&) = default;
     VlQueue& operator=(const VlQueue&) = default;
     VlQueue& operator=(VlQueue&&) = default;
+    bool operator==(const VlQueue& rhs) const { return m_deque == rhs.m_deque; }
+    bool operator!=(const VlQueue& rhs) const { return m_deque != rhs.m_deque; }
 
     // Standard copy constructor works. Verilog: assoca = assocb
     // Also must allow conversion from a different T_MaxSize queue
@@ -1225,6 +1227,9 @@ public:
     T_Class* operator->() const { return m_objp; }
     // For 'if (ptr)...'
     operator bool() const { return m_objp; }
+    // In SV A == B iff both are handles to the same object (IEEE 1800-2017 8.4)
+    bool operator==(const VlClassRef& rhs) const { return m_objp == rhs.m_objp; };
+    bool operator!=(const VlClassRef& rhs) const { return m_objp != rhs.m_objp; };
 };
 
 template <typename T, typename U>
