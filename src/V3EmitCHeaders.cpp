@@ -147,7 +147,7 @@ class EmitCHeader final : public EmitCConstInit {
         if (!VN_IS(modp, Class)) {  // Classes use CFuncs with isConstructor/isDestructor
             const string& name = prefixNameProtect(modp);
             putsDecoration("\n// CONSTRUCTORS\n");
-            puts(name + "(" + symClassName() + "* symsp, const char* V__name);\n");
+            puts(name + "(" + symClassName() + "* symsp, const char* v__name);\n");
             puts("~" + name + "();\n");
             puts("VL_UNCOPYABLE(" + name + ");\n");
         }
