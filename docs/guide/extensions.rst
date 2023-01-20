@@ -465,7 +465,7 @@ or "`ifdef`"'s may break other tools.
          parameter width /*verilator public_flat_rw*/ = 8;
          logic data;
 
-.. option:: /*verilator&32;public_off*/ 
+.. option:: /*verilator&32;public_off*/
 
    Terminates the previous `public*_on` directive.
 

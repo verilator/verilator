@@ -759,8 +759,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator public_flat_on*/"        { FL_FWD; PARSEP->createScopedSigAttr(VAttrType::VAR_PUBLIC_FLAT); v3Global.dpi(true); FL_BRK; }
   "/*verilator public_flat_rd_on*/"     { FL_FWD; PARSEP->createScopedSigAttr(VAttrType::VAR_PUBLIC_FLAT_RD); v3Global.dpi(true); FL_BRK; }
   "/*verilator public_flat_rw_on*/"     { FL_FWD; PARSEP->createScopedSigAttr(VAttrType::VAR_PUBLIC_FLAT_RW); v3Global.dpi(true); FL_BRK; }
-  "/*verilator public_flat_rw_on_sns*/" { FL; return yVL_PUBLIC_FLAT_RW_ON_SNS; } // sensitivity list will be added in
-  "/*verilator public_off*/"            { FL_FWD; PARSEP->clearScopedSigAttr(); FL_BRK; }  // terminates previous 'verilator public*_on'
+  "/*verilator public_flat_rw_on_sns*/" { FL; return yVL_PUBLIC_FLAT_RW_ON_SNS; } // sensitivity list will be parsed
+  "/*verilator public_off*/"            { FL_FWD; PARSEP->setScopedSigAttr(nullptr); FL_BRK; }  // terminates previous 'verilator public*_on'
   "/*verilator sc_bv*/"                 { FL; return yVL_SC_BV; }
   "/*verilator sc_clock*/"              { FL; yylval.fl->v3warn(DEPRECATED, "sc_clock is ignored"); FL_BRK; }
   "/*verilator sformat*/"               { FL; return yVL_SFORMAT; }

@@ -192,7 +192,6 @@ public:
     AstNode* cloneScopedSigAttr() const { return AstNode::cloneTreeNull(m_scopedSigAttr, true); }
     void setScopedSigAttr(AstNode* attrsp);
     void createScopedSigAttr(VAttrType vattrt);
-    void clearScopedSigAttr() { m_scopedSigAttr = nullptr; }
 
     void lexPushKeywords(int state) {
         ++m_lexKwdDepth;

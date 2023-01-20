@@ -1,0 +1,4 @@
+%Error: t/t_vpi_var_bad1.v:2:1: Nested public attribute is not allowed
+    2 | /*verilator public_on*/ 
+      | ^~~~~~~~~~~~~~~~~~~~~~~
+%Error: Exiting due to

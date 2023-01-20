@@ -2918,7 +2918,7 @@ sigAttrScope:
                                                           PARSEP->setScopedSigAttr(sigAttrsp);
                                                           v3Global.dpi(true); }
         ;
-        
+
 sigAttrListE<nodep>: // Scoped Attributes are added to explicit attributes
                 /* empty */                             { $$ = nullptr; }
         |       sigAttrList                             { $$ = $1; }
