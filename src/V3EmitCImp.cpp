@@ -250,8 +250,8 @@ class EmitCImp final : EmitCFunc {
                          "(" + modName + "* vlSelf);");
         puts("\n");
 
-        puts(modName + "::" + modName + "(" + symClassName() + "* symsp, const char* name)\n");
-        puts("    : VerilatedModule{name}\n");
+        puts(modName + "::" + modName + "(" + symClassName() + "* symsp, const char* v__name)\n");
+        puts("    : VerilatedModule{v__name}\n");
 
         ofp()->indentInc();
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
