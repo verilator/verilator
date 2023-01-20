@@ -2669,7 +2669,8 @@ private:
                 m_ds.m_dotSymp = foundp;
                 ok = m_ds.m_dotPos == DP_SCOPE;
             } else if (VN_IS(foundp->nodep(), Property)) {
-                AstFuncRef* const propRefp = new AstFuncRef{nodep->fileline(), nodep->name(), nullptr};
+                AstFuncRef* const propRefp
+                    = new AstFuncRef{nodep->fileline(), nodep->name(), nullptr};
                 nodep->replaceWith(propRefp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 ok = m_ds.m_dotPos == DP_NONE;
