@@ -11,6 +11,7 @@
 
 #include "vpi_user.h"
 
+#include <cstring>
 #include <sstream>
 
 class TestSimulator {
