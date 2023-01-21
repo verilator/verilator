@@ -10,6 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
+$Self->{sanitize} = 0;  # Test neads cleanup to reclaim all callbacks
+
 compile(
     make_top_shell => 0,
     make_main => 0,
