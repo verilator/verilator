@@ -428,9 +428,7 @@ private:
         if (!nodep->isIO()) return;
 
         if (VN_IS(nodep->dtypep()->skipRefp(), NodeUOrStructDType)) {
-            AstBasicDType* dtypep = new AstBasicDType(nodep->fileline(), VFlagLogicPacked(),
-                                                      nodep->dtypep()->width());
-            v3Global.rootp()->typeTablep()->addTypesp(dtypep);
+            AstNodeDType* dtypep = nodep->findLogicDType(nodep->width(), nodep->width(), nodep->dtypep()->numeric());
             nodep = nodep->cloneTree(false);
             nodep->dtypep(dtypep);
         }
