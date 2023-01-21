@@ -428,7 +428,8 @@ private:
         if (!nodep->isIO()) return;
 
         if (VN_IS(nodep->dtypep()->skipRefp(), NodeUOrStructDType)) {
-            AstNodeDType* dtypep = nodep->findLogicDType(nodep->width(), nodep->width(), nodep->dtypep()->numeric());
+            AstNodeDType* dtypep = nodep->findLogicDType(nodep->width(), nodep->width(),
+                                                         nodep->dtypep()->numeric());
             nodep = nodep->cloneTree(false);
             nodep->dtypep(dtypep);
         }
