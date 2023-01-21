@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `define stop $stop
-`define checkb(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='b%x exp='b%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);;
+`define check_comp(lhs, rhs, op, exp) if ((exp) != ((lhs) op (rhs))) begin $write("%%Error: %s:%0d: op comparison shall return 'b%x\n", `__FILE__, `__LINE__, (exp)); `stop; end
+// Two checks because == and != may not be derived from each other
+`define check_eq(lhs, rhs) `check_comp(lhs, rhs, ==, 1'b1) `check_comp(lhs, rhs, !=, 1'b0)
+`define check_ne(lhs, rhs) `check_comp(lhs, rhs, ==, 1'b0) `check_comp(lhs, rhs, !=, 1'b1)
 
 class Cls;
    int i;
@@ -20,13 +23,10 @@ module t;
          q2.push_back(1);
          q1.push_back(-2);
          q2.push_back(-2);
-         // Two checks because == and != may not be derived from each other
-         `checkb(q1 == q2, 1'b1)
-         `checkb(q1 != q2, 1'b0)
+         `check_eq(q1, q2)
 
          q2.push_back(3);
-         `checkb(q1 != q2, 1'b1)
-         `checkb(q1 == q2, 1'b0)
+         `check_ne(q1, q2)
       end
       begin
          string q1[$];
@@ -35,12 +35,10 @@ module t;
          q2.push_back("one");
          q1.push_back("two");
          q2.push_back("two");
-         `checkb(q1 == q2, 1'b1)
-         `checkb(q1 != q2, 1'b0)
+         `check_eq(q1, q2)
 
          q2.push_back("three");
-         `checkb(q1 != q2, 1'b1)
-         `checkb(q1 == q2, 1'b0)
+         `check_ne(q1, q2)
       end
 
       begin
@@ -50,13 +48,11 @@ module t;
          Cls q2[$];
          q1.push_back(a);
          q2.push_back(b);
-         `checkb(q1 != q2, 1'b1)
-         `checkb(q1 == q2, 1'b0)
+         `check_ne(q1, q2)
 
          q1.push_back(b);
          q2.push_front(a);
-         `checkb(q1 == q2, 1'b1)
-         `checkb(q1 != q2, 1'b0)
+         `check_eq(q1, q2)
       end
 
       $write("*-* All Finished *-*\n");
