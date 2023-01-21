@@ -19,6 +19,7 @@ Verilator 5.005 devel
 * Add IMPLICITSTATIC warning when a ftask/function is implicitly static (#3839). [Ryszard Rozak, Antmicro Ltd]
 * Optimize expansion of extend operators.
 * Internal multithreading tests. [Mariusz Glebocki, et al, Antmicro Ltd]
+* Fix VPI one-time timed callbacks (#2778). [Marlon James, et al]
 * Fix initiation of function variables (#3815). [Dan Gisselquist]
 * Fix to zero possibly uninitialized bits in replications (#3815).
 * Fix crash in DFT due to width use after free (#3817) (#3820). [Jevin Sweval]

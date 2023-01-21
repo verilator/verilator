@@ -8,16 +8,20 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-scenarios(vlt => 1);
+scenarios(simulator => 1);
 
 compile(
     make_top_shell => 0,
     make_main => 0,
+    make_pli => 1,
     verilator_flags2 => ["--exe --vpi $Self->{t_dir}/$Self->{name}.cpp"],
+    iv_flags2 => ["-g2005-sv -D USE_VPI_NOT_DPI -DIVERILOG"],
+    v_flags2 => ["+define+USE_VPI_NOT_DPI"],
     );
 
 execute(
     check_finished => 1,
+    use_libvpi => 1,
     );
 
 ok(1);
