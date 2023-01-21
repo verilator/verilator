@@ -469,7 +469,7 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: /*verilator&32;public_off*/
 
-   Terminates the previous `public*_on` directive.
+   Terminates the previous `/*verilator public*_on*/` directive; see above.
 
 .. option:: /*verilator&32;public_module*/
 
