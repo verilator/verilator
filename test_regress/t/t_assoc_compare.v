@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Verilog Test module
+// DESCRIPTION: Verilator: Check == and != operations performed on associative arrays
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2023 by Ilya Barkov.
@@ -6,6 +6,7 @@
 
 `define stop $stop
 `define check_comp(lhs, rhs, op, exp) if ((exp) != ((lhs) op (rhs))) begin $write("%%Error: %s:%0d: op comparison shall return 'b%x\n", `__FILE__, `__LINE__, (exp)); `stop; end
+// Two checks because == and != may not be derived from each other
 `define check_eq(lhs, rhs) `check_comp(lhs, rhs, ==, 1'b1) `check_comp(lhs, rhs, !=, 1'b0)
 `define check_ne(lhs, rhs) `check_comp(lhs, rhs, ==, 1'b0) `check_comp(lhs, rhs, !=, 1'b1)
 
@@ -18,7 +19,6 @@ module t;
       begin // simple case
          int assoc1[int];
          int assoc2[int];
-         // Two checks because == and != may not be derived from each other
          // Empty are equal
          `check_eq(assoc1, assoc2)
          // Make different

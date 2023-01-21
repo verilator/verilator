@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Verilog Test module
+// DESCRIPTION: Verilator: Check == and != operations performed on class objects
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2023 by Ilya Barkov.
