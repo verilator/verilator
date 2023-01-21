@@ -7,7 +7,7 @@
 // This function always returns 0, so safe to take bitwise OR with any value.
 // Calling this function stops constant folding as Verialtor does not know
 // what this function returns.
-import "DPI-C" context function int fake_dependency();
+import "DPI-C" context function int c_fake_dependency();
 
 module t(/*AUTOARG*/
    // Inputs
@@ -146,7 +146,7 @@ module bug3182(in, out);
 
    /* verilator lint_off WIDTH */
    always @(in)
-      bit_source = fake_dependency() | in;
+      bit_source = c_fake_dependency() | in;
 
    wire [5:0] tmp = bit_source; // V3Gate should inline this
    wire out =  ~(tmp >> 5) & (bit_source == 5'd10);
@@ -203,7 +203,7 @@ module bug3445(input wire clk, input wire [31:0] in, output wire out);
       st[1] <= st[0];
       st[2] <= st[1];
       st[3] <= st[2];
-      zero <= fake_dependency() > 0;
+      zero <= c_fake_dependency() > 0;
    end
 
    logic result0, result1, result2, result3;

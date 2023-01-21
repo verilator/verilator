@@ -1,4 +1,4 @@
-PROJECT_NAME           = "Verilog to Routing - ABC"
+PROJECT_NAME           = "Verilator"
 INPUT                  = ../../include
 OUTPUT_DIRECTORY       = _build/doxygen/verilated
 
