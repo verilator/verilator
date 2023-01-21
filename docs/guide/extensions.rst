@@ -448,7 +448,7 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: /*verilator&32;public_[|flat|flat_rd|flat_rw]_on [@(<edge_list>)]*/ (as scope)
 
-   Used to wrap multiple signals and parameters with the respective attribute.
+   Used to wrap multiple signals and parameters with the respective public attribute.
    See attribute above for their respective behavior. Cannot be nested. e.g:
 
       .. code-block:: sv
