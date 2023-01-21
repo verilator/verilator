@@ -458,7 +458,9 @@ or "`ifdef`"'s may break other tools.
          parameter width = 8;
          /* verilator public_off*/
          logic data;
+
    Is equivalent to:
+
       .. code-block:: sv
          logic clk /*verilator public_flat_rw*/;
          logic rst /*verilator public_flat_rw*/;
