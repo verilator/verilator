@@ -21,6 +21,7 @@ double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv) {
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
 
     VM_PREFIX* topp = new VM_PREFIX{""};  // Note null name - we're flattening it out
 

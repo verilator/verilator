@@ -38,9 +38,10 @@ double sc_time_stamp() { return main_time; }
 VM_PREFIX* topp = nullptr;
 
 int main(int argc, char* argv[]) {
-    topp = new VM_PREFIX;
-
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
+    topp = new VM_PREFIX;
 
     topp->eval();
     dpix_task();  // Missing svSetScope

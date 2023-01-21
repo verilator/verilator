@@ -15,9 +15,10 @@
 double sc_time_stamp() { return 0; }
 
 int main(int argc, char* argv[]) {
-    Vt_enum_public* topp = new Vt_enum_public;
-
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
+    Vt_enum_public* topp = new Vt_enum_public;
 
     // Make sure public tag worked
     if (Vt_enum_public_p3::ZERO == Vt_enum_public_p3::ONE) {}

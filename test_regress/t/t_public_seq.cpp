@@ -16,8 +16,8 @@ std::unique_ptr<Vt_public_seq> topp;
 int main(int argc, char** argv) {
     vluint64_t sim_time = 1100;
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->commandArgs(argc, argv);
     contextp->debug(0);
+    contextp->commandArgs(argc, argv);
     srand48(5);
     topp.reset(new Vt_public_seq("top"));
 

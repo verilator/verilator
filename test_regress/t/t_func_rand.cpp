@@ -13,9 +13,10 @@
 double sc_time_stamp() { return 0; }
 
 int main(int argc, char* argv[]) {
-    Vt_func_rand* topp = new Vt_func_rand;
-
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
+    Vt_func_rand* topp = new Vt_func_rand;
 
     printf("\nTesting\n");
     for (int i = 0; i < 10; i++) {

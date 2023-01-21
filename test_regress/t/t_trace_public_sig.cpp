@@ -26,10 +26,11 @@ double sc_time_stamp() { return (double)main_time; }
 const unsigned long long dt_2 = 3;
 
 int main(int argc, char** argv) {
-    VM_PREFIX* top = new VM_PREFIX{"top"};
-
     Verilated::debug(0);
     Verilated::traceEverOn(true);
+    Verilated::commandArgs(argc, argv);
+
+    VM_PREFIX* top = new VM_PREFIX{"top"};
 
     VerilatedVcdC* tfp = new VerilatedVcdC;
     top->trace(tfp, 99);
