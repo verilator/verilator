@@ -1,4 +1,0 @@
-export GLIBCPP_FORCE_NEW=1
-compile with -DVL_LEAK_CHECKS
-valgrind --tool=memcheck --leak-check=yes $VERILATOR_ROOT/verilator_bin_dbg -MMD --bin $VERILATOR_ROOT/verilator_bin_dbg --cc -f $VERILATOR_ROOT/test_c/../test_v/input.vc top.v --no-skip-identical 2>&1 | tee ~/d/aa
-valgrind --tool=memcheck --leak-check=yes $VERILATOR_ROOT/verilator_bin_dbg -MMD --bin $VERILATOR_ROOT/verilator_bin_dbg --cc $VERILATOR_ROOT/test_regress/t/t_case_huge.v --no-skip-identical -I$VERILATOR_ROOT/test_regress/t 2>&1 | tee ~/d/aa
