@@ -282,8 +282,9 @@ class CallAnnotationsValidator:
                 handler(child)
             self._level -= 1
 
+    @staticmethod
     def get_referenced_node_info(
-        self, node: clang.cindex.Cursor
+        node: clang.cindex.Cursor
     ) -> tuple[bool, Optional[clang.cindex.Cursor], VlAnnotations,
                Iterable[clang.cindex.Cursor]]:
         if not node.spelling and not node.displayname:

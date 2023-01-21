@@ -53,7 +53,6 @@ INSTALL_DATA = @INSTALL_DATA@
 MAKEINFO = makeinfo
 POD2TEXT = pod2text
 MKINSTALLDIRS = $(SHELL) $(srcdir)/src/mkinstalldirs
-PERL = @PERL@
 
 # Version (for docs/guide/conf.py)
 PACKAGE_VERSION_NUMBER = @PACKAGE_VERSION_NUMBER@
@@ -394,6 +393,7 @@ PY_PROGRAMS = \
 	bin/verilator_ccache_report \
 	bin/verilator_difftree \
 	bin/verilator_gantt \
+	bin/verilator_includer \
 	bin/verilator_profcfunc \
 	examples/xml_py/vl_file_copy \
 	examples/xml_py/vl_hier_graph \
