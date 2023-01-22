@@ -1400,26 +1400,17 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     void visit(DfgShiftL* vtxp) override {
-        UASSERT_OBJ(vtxp->dtypep() == vtxp->lhsp()->dtypep(), vtxp, "Mismatched width");
-
         if (foldBinary(vtxp)) return;
-
         optimizeShiftRHS(vtxp);
     }
 
     void visit(DfgShiftR* vtxp) override {
-        UASSERT_OBJ(vtxp->dtypep() == vtxp->lhsp()->dtypep(), vtxp, "Mismatched width");
-
         if (foldBinary(vtxp)) return;
-
         optimizeShiftRHS(vtxp);
     }
 
     void visit(DfgShiftRS* vtxp) override {
-        UASSERT_OBJ(vtxp->dtypep() == vtxp->lhsp()->dtypep(), vtxp, "Mismatched width");
-
         if (foldBinary(vtxp)) return;
-
         optimizeShiftRHS(vtxp);
     }
 
