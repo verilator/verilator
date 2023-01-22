@@ -603,7 +603,11 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         if (nodep->packed()) puts("packed ");
         puts("\n");
         puts("{");
-        iterateAndNextConstNull(nodep->membersp());
+        //iterateAndNextConstNull(nodep->membersp());
+        for (AstMemberDType* itemp = nodep->membersp(); itemp; itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            iterate(itemp);
+            puts(";");
+        }
         puts("}");
     }
     void visit(AstMemberDType* nodep) override {
