@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 typedef struct packed {
-    logic [31:0] crc;
-} crc_t;
+    logic [3:0] crc;
+} nibble_t;
 
 module t(
    clk
@@ -18,15 +18,21 @@ module t(
    logic [63:0] sum;
 
    // Take CRC data and apply to testblock inputs
-   crc_t in;
+   nibble_t[7:0] in;
    assign in = crc[31:0];
 
-   crc_t          out;
+   nibble_t[7:0] out;
 
    Test test(
-             .out                       (out),
+             .out0                      ({out[1], out[0]}),
+             .out1                      ({out[5], out[4], out[3], out[2]}),
+             .out2                      (out[6]),
+             .out3                      (out[7]),
              .clk                       (clk),
-             .in                        (in));
+             .in0                       (in[0]),
+             .in1                       (in[1]),
+             .in2                       ({in[5], in[4], in[3], in[2]}),
+             .in3                       ({in[7], in[6]}));
 
    // Aggregate outputs into a single result vector
    wire [63:0] result = {32'h0, out};
@@ -64,15 +70,21 @@ endmodule
 
 module Test(
    // Outputs
-   output crc_t out,
+   output nibble_t[1:0] out0,
+   output nibble_t      out1[4],
+   output nibble_t      out2,
+   output nibble_t      out3,
    // Inputs
    input clk,
-   input crc_t in
+   input nibble_t       in0,
+   input nibble_t       in1,
+   input nibble_t[3:0]  in2,
+   input nibble_t       in3[2]
    ); /*verilator hier_block*/
 
 
    always @(posedge clk) begin
-      out <= in;
+      {out3, out2, out1[0], out1[1], out1[2], out1[3], out0} <= {in3[0], in3[1], in2, in1, in0};
    end
 
 endmodule
