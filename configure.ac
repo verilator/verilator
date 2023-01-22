@@ -532,21 +532,22 @@ AC_DEFUN([_MY_CXX_CHECK_CXX_VER],
      [_my_result=no])
    ])
 
-# Add $CFG_CXXFLAGS_STD_NEWEST only if can't compile correctly otherwise,
+# Add $CFG_CXXFLAGS_STD only if can't compile correctly otherwise,
 # as adding std= when not needed can cause errors with the C++ std library.
+CFG_CXXFLAGS_STD=$CFG_CXXFLAGS_STD_NEWEST
 AC_MSG_CHECKING(whether $CXX supports C++11)
 _MY_CXX_CHECK_CXX_VER()
 AC_MSG_RESULT($_my_result)
 if test "$_my_result" = "no" ; then
-   CXXFLAGS="$CXXFLAGS $CFG_CXXFLAGS_STD_NEWEST"
-   CFG_CXX_FLAGS_CMAKE="$CFG_CXX_FLAGS_CMAKE $CFG_CXXFLAGS_STD_NEWEST"
-   AC_MSG_CHECKING(whether $CXX supports C++11 with $CFG_CXXFLAGS_STD_NEWEST)
+   CXXFLAGS="$CXXFLAGS $CFG_CXXFLAGS_STD"
+   CFG_CXX_FLAGS_CMAKE="$CFG_CXX_FLAGS_CMAKE $CFG_CXXFLAGS_STD"
+   AC_MSG_CHECKING(whether $CXX supports C++11 with $CFG_CXXFLAGS_STD)
    _MY_CXX_CHECK_CXX_VER()
    AC_MSG_RESULT($_my_result)
 else
-  # CFG_CXXFLAGS_STD_NEWEST is also propagated to include/verilated.mk.in
-  # make sure we use the same std flag while compiling verilator and verilated design
-  CFG_CXXFLAGS_STD_NEWEST=""
+   # CFG_CXXFLAGS_STD is also propagated to include/verilated.mk.in
+   # make sure we use the same std flag while compiling verilator and verilated design
+   CFG_CXXFLAGS_STD=""
 fi
 if test "$_my_result" = "no" ; then
    AC_MSG_NOTICE([[]])
@@ -555,6 +556,7 @@ if test "$_my_result" = "no" ; then
 Verilator requires a C++11 or newer compiler.]])
 
 fi
+AC_SUBST(CFG_CXXFLAGS_STD)
 
 # Checks for library functions.
 AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],
