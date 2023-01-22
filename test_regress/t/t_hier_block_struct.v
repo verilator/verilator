@@ -5,10 +5,15 @@
 // SPDX-License-Identifier: CC0-1.0
 
 typedef struct packed {
+    logic x;
+} nested_named_t;
+
+typedef struct packed {
     struct packed {
-        logic [1:0] crc;
-    } nested;
-    logic [1:0] crc;
+        logic x;
+    } nested_anonymous;
+    nested_named_t nested_named;
+    logic [1:0] x;
 } nibble_t;
 
 module t(
@@ -28,7 +33,7 @@ module t(
 
    Test test(
              .out0                      ({out[1], out[0]}),
-             .out1                      ({out[5], out[4], out[3], out[2]}),
+             .out1                      ({{out[5], out[4]}, {out[3], out[2]}}),
              .out2                      (out[6]),
              .out3                      (out[7]),
              .clk                       (clk),
@@ -74,7 +79,7 @@ endmodule
 module Test(
    // Outputs
    output nibble_t [1:0] out0,
-   output nibble_t       out1[4],
+   output nibble_t [1:0] out1[2],
    output nibble_t       out2,
    output nibble_t       out3,
    // Inputs
@@ -87,7 +92,7 @@ module Test(
 
 
    always @(posedge clk) begin
-      {out3, out2, out1[0], out1[1], out1[2], out1[3], out0} <= {in3[0], in3[1], in2, in1, in0};
+      {out3, out2, out1[0], out1[1], out0} <= {in3[0], in3[1], in2, in1, in0};
    end
 
 endmodule
