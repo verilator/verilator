@@ -73,22 +73,21 @@ endmodule
 
 module Test(
    // Outputs
-   output nibble_t out0[1:0], // FIXME
-   output nibble_t      out1[4],
-   output nibble_t      out2,
-   output nibble_t      out3,
+   output nibble_t [1:0] out0,
+   output nibble_t       out1[4],
+   output nibble_t       out2,
+   output nibble_t       out3,
    // Inputs
    input clk,
    input nibble_t       in0,
    input nibble_t       in1,
-   input nibble_t  in2[3:0], // FIXME
+   input nibble_t [3:0] in2,
    input nibble_t       in3[2]
    ); /*verilator hier_block*/
 
 
    always @(posedge clk) begin
-      // FIXME {out3, out2, out1[0], out1[1], out1[2], out1[3], out0} <= {in3[0], in3[1], in2, in1, in0};
-      {out3, out2, out1[0], out1[1], out1[2], out1[3], out0[1], out0[0]} <= {in3[0], in3[1], in2[3], in2[2], in2[1], in2[0], in1, in0};
+      {out3, out2, out1[0], out1[1], out1[2], out1[3], out0} <= {in3[0], in3[1], in2, in1, in0};
    end
 
 endmodule
