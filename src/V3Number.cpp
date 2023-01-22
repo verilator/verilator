@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -494,6 +494,10 @@ V3Number& V3Number::setMask(int nbits) {
 string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
     std::ostringstream out;
 
+    if (is1Step()) {
+        out << "1step";
+        return out.str();
+    }
     if (isDouble()) {
         out.precision(17);
         if (VL_UNCOVERABLE(width() != 64)) {

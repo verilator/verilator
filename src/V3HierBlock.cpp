@@ -1,12 +1,12 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Hierarchical verilation for large designs
+// DESCRIPTION: Verilator: Hierarchical Verilation for large designs
 //
 // Code available from: https://verilator.org
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -338,7 +338,7 @@ void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
     if (modp->hierBlock()) {
         modp->v3warn(HIERBLOCK,
                      "Top module illegally marked hierarchical block, ignoring marking\n"
-                         + V3Error::warnMore()
+                         + modp->warnMore()
                          + "... Suggest remove verilator hier_block on this module");
         modp->hierBlock(false);
     }

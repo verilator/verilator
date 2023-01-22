@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -70,7 +70,7 @@ private:
     string m_namedScope;  // Name of begin blocks above us
     string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
     int m_ifDepth = 0;  // Current if depth
-    bool m_underFork = false;  // True if the current statement is directly under a fork
+    bool m_keepBegins = false;  // True if begins should not be inlined
 
     // METHODS
 
@@ -123,10 +123,17 @@ private:
 
     // VISITORS
     void visit(AstFork* nodep) override {
-        VL_RESTORER(m_underFork);
-        m_underFork = true;
+        // Keep this begin to group its statements together
+        VL_RESTORER(m_keepBegins);
+        m_keepBegins = true;
         dotNames(nodep, "__FORK__");
         nodep->name("");
+    }
+    void visit(AstNodeAssign* nodep) override {
+        // Keep begin under assignment (in nodep->timingControlp())
+        VL_RESTORER(m_keepBegins);
+        m_keepBegins = true;
+        iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -178,15 +185,14 @@ private:
         VL_RESTORER(m_unnamedScope);
         {
             {
-                VL_RESTORER(m_underFork);
-                m_underFork = false;
+                VL_RESTORER(m_keepBegins);
+                m_keepBegins = false;
                 dotNames(nodep, "__BEGIN__");
             }
             UASSERT_OBJ(!nodep->genforp(), nodep, "GENFORs should have been expanded earlier");
 
             // Cleanup
-            if (m_underFork) {
-                // If we're under a fork, keep this begin to group its statements together
+            if (m_keepBegins) {
                 nodep->name("");
                 return;
             }
@@ -263,8 +269,8 @@ private:
     }
     // VISITORS - LINT CHECK
     void visit(AstIf* nodep) override {  // not AstNodeIf; other types not covered
-        VL_RESTORER(m_underFork);
-        m_underFork = false;
+        VL_RESTORER(m_keepBegins);
+        m_keepBegins = false;
         // Check IFDEPTH warning - could be in other transform files if desire
         VL_RESTORER(m_ifDepth);
         if (m_ifDepth == -1 || v3Global.opt.ifDepth() < 1) {  // Turned off
@@ -279,8 +285,8 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override {
-        VL_RESTORER(m_underFork);
-        m_underFork = false;
+        VL_RESTORER(m_keepBegins);
+        m_keepBegins = false;
         iterateChildren(nodep);
     }
 

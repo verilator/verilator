@@ -1,0 +1,4 @@
+%Error: t/t_sys_fopen_bad.v:14:34: $fopen mode should be <= 4 characters
+   14 |       file = $fopen("/dev/null", "somereallywidebad");
+      |                                  ^~~~~~~~~~~~~~~~~~~
+%Error: Exiting due to

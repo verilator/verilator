@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2009-2022 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2023 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -126,34 +126,18 @@ public:
     virtual PLI_INT32 dovpi_remove_cb() { return 0; }
 };
 
-class VerilatedVpioTimedCb final : public VerilatedVpio {
-    // A handle to a timed callback created with vpi_register_cb
-    // User can call vpi_remove_cb or vpi_release_handle on it
-    const uint64_t m_id;  // Unique id/sequence number to find schedule's event
-    const QData m_time;
-
-public:
-    VerilatedVpioTimedCb(uint64_t id, QData time)
-        : m_id{id}
-        , m_time{time} {}
-    ~VerilatedVpioTimedCb() override = default;
-    static VerilatedVpioTimedCb* castp(vpiHandle h) {
-        return dynamic_cast<VerilatedVpioTimedCb*>(reinterpret_cast<VerilatedVpioTimedCb*>(h));
-    }
-    uint32_t type() const override { return vpiCallback; }
-    PLI_INT32 dovpi_remove_cb() override;
-};
-
 class VerilatedVpioReasonCb final : public VerilatedVpio {
-    // A handle to a non-timed callback created with vpi_register_cb
+    // A handle to a timed or non-timed callback created with vpi_register_cb
     // User can call vpi_remove_cb or vpi_release_handle on it
     const uint64_t m_id;  // Unique id/sequence number to find schedule's event
+    const QData m_time;  // Scheduled time, or 0 = not timed
     const PLI_INT32 m_reason;  // VPI callback reason code
 
 public:
     // cppcheck-suppress uninitVar  // m_value
-    VerilatedVpioReasonCb(uint64_t id, PLI_INT32 reason)
+    VerilatedVpioReasonCb(uint64_t id, QData time, PLI_INT32 reason)
         : m_id{id}
+        , m_time{time}
         , m_reason{reason} {}
     ~VerilatedVpioReasonCb() override = default;
     static VerilatedVpioReasonCb* castp(vpiHandle h) {
@@ -474,7 +458,7 @@ using VerilatedPliCb = PLI_INT32 (*)(struct t_cb_data*);
 
 class VerilatedVpiCbHolder final {
     // Holds information needed to call a callback
-    uint64_t m_id;
+    uint64_t m_id;  // Unique id/sequence number to find schedule's event, 0 = invalid
     s_cb_data m_cbData;
     s_vpi_value m_value;
     VerilatedVpioVar m_varo;  // If a cbValueChange callback, the object we will return
@@ -515,13 +499,15 @@ struct VerilatedVpiTimedCbsCmp {
 class VerilatedVpiError;
 
 class VerilatedVpiImp final {
-    enum { CB_ENUM_MAX_VALUE = cbAtEndOfSimTime + 1 };  // Maxium callback reason
+    enum { CB_ENUM_MAX_VALUE = cbAtEndOfSimTime + 1 };  // Maximum callback reason
     using VpioCbList = std::list<VerilatedVpiCbHolder>;
-    using VpioTimedCbs = std::map<std::pair<QData, uint64_t>, VerilatedVpiCbHolder>;
+    using VpioFutureCbs = std::map<std::pair<QData, uint64_t>, VerilatedVpiCbHolder>;
 
     // All only medium-speed, so use singleton function
-    VpioCbList m_cbObjLists[CB_ENUM_MAX_VALUE];  // Callbacks for each supported reason
-    VpioTimedCbs m_timedCbs;  // Time based callbacks
+    // Callbacks that are past or at current timestamp
+    std::array<VpioCbList, CB_ENUM_MAX_VALUE> m_cbCurrentLists;
+    VpioFutureCbs m_futureCbs;  // Time based callbacks for future timestamps
+    VpioFutureCbs m_nextCbs;  // cbNextSimTime callbacks
     VerilatedVpiError* m_errorInfop = nullptr;  // Container for vpi error info
     VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
     uint64_t m_nextCallbackId = 1;  // Id to identify callback
@@ -535,7 +521,7 @@ public:
     static void assertOneCheck() { s().m_assertOne.check(); }
     static uint64_t nextCallbackId() { return ++s().m_nextCallbackId; }
 
-    static void cbReasonAdd(uint64_t id, const s_cb_data* cb_data_p) {
+    static void cbCurrentAdd(uint64_t id, const s_cb_data* cb_data_p) {
         // The passed cb_data_p was property of the user, so need to recreate
         if (VL_UNCOVERABLE(cb_data_p->reason >= CB_ENUM_MAX_VALUE)) {
             VL_FATAL_MT(__FILE__, __LINE__, "", "vpi bb reason too large");
@@ -544,82 +530,109 @@ public:
                                     cb_data_p->reason, id, cb_data_p->obj););
         VerilatedVpioVar* varop = nullptr;
         if (cb_data_p->reason == cbValueChange) varop = VerilatedVpioVar::castp(cb_data_p->obj);
-        s().m_cbObjLists[cb_data_p->reason].emplace_back(id, cb_data_p, varop);
+        s().m_cbCurrentLists[cb_data_p->reason].emplace_back(id, cb_data_p, varop);
     }
-    static void cbTimedAdd(uint64_t id, const s_cb_data* cb_data_p, QData time) {
+    static void cbFutureAdd(uint64_t id, const s_cb_data* cb_data_p, QData time) {
         // The passed cb_data_p was property of the user, so need to recreate
-        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d id=%" PRId64
-                                    " delay=%" PRIu64 "\n",
-                                    cb_data_p->reason, id, time););
-        s().m_timedCbs.emplace(std::piecewise_construct,
-                               std::forward_as_tuple(std::make_pair(time, id)),
-                               std::forward_as_tuple(id, cb_data_p, nullptr));
+        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d id=%" PRId64 " time=%" PRIu64
+                                    " obj=%p\n",
+                                    cb_data_p->reason, id, time, cb_data_p->obj););
+        s().m_futureCbs.emplace(std::piecewise_construct,
+                                std::forward_as_tuple(std::make_pair(time, id)),
+                                std::forward_as_tuple(id, cb_data_p, nullptr));
     }
-    static void cbReasonRemove(uint64_t id, uint32_t reason) {
+    static void cbNextAdd(uint64_t id, const s_cb_data* cb_data_p, QData time) {
+        // The passed cb_data_p was property of the user, so need to recreate
+        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d(NEXT) id=%" PRId64
+                                    " time=%" PRIu64 " obj=%p\n",
+                                    cb_data_p->reason, id, time, cb_data_p->obj););
+        s().m_nextCbs.emplace(std::piecewise_construct,
+                              std::forward_as_tuple(std::make_pair(time, id)),
+                              std::forward_as_tuple(id, cb_data_p, nullptr));
+    }
+    static void cbReasonRemove(uint64_t id, uint32_t reason, QData time) {
         // Id might no longer exist, if already removed due to call after event, or teardown
-        VpioCbList& cbObjList = s().m_cbObjLists[reason];
         // We do not remove it now as we may be iterating the list,
         // instead set to nullptr and will cleanup later
-        for (auto& ir : cbObjList) {
-            if (ir.id() == id) ir.invalidate();
+        // Remove from cbCurrent queue
+        for (auto& ir : s().m_cbCurrentLists[reason]) {
+            if (ir.id() == id) {
+                ir.invalidate();
+                return;  // Once found, it won't also be in m_futureCbs
+            }
+        }
+        {  // Remove from cbFuture queue
+            const auto it = s().m_futureCbs.find(std::make_pair(time, id));
+            if (it != s().m_futureCbs.end()) {
+                it->second.invalidate();
+                return;
+            }
+        }
+        {  // Remove from cbNext
+            const auto it = s().m_nextCbs.find(std::make_pair(time, id));
+            if (it != s().m_nextCbs.end()) {
+                it->second.invalidate();
+                return;
+            }
         }
     }
-    static void cbTimedRemove(uint64_t id, QData time) {
-        // Id might no longer exist, if already removed due to call after event, or teardown
-        const auto it = s().m_timedCbs.find(std::make_pair(time, id));
-        if (VL_LIKELY(it != s().m_timedCbs.end())) it->second.invalidate();
-    }
-    static void callTimedCbs() VL_MT_UNSAFE_ONE {
-        assertOneCheck();
+    static void moveFutureCbs() VL_MT_UNSAFE_ONE {
+        // For any events past current time, move from cbFuture queue to cbCurrent queue
+        if (s().m_futureCbs.empty() && s().m_nextCbs.empty()) return;
+        // VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: moveFutureCbs\n"); dumpCbs(); );
         const QData time = VL_TIME_Q();
-        for (auto it = s().m_timedCbs.begin(); it != s().m_timedCbs.end();) {
-            if (VL_UNLIKELY(it->first.first <= time)) {
-                VerilatedVpiCbHolder& ho = it->second;
-                const auto last_it = it;
-                ++it;
-                if (VL_UNLIKELY(!ho.invalid())) {
-                    VL_DEBUG_IF_PLI(
-                        VL_DBG_MSGF("- vpi: timed_callback id=%" PRId64 "\n", ho.id()););
-                    ho.invalidate();  // Timed callbacks are one-shot
-                    (ho.cb_rtnp())(ho.cb_datap());
-                }
-                s().m_timedCbs.erase(last_it);
-            } else {
-                ++it;
+        for (auto it = s().m_futureCbs.begin();  //
+             VL_UNLIKELY(it != s().m_futureCbs.end() && it->first.first <= time);) {
+            VerilatedVpiCbHolder& hor = it->second;
+            const auto last_it = it;
+            ++it;
+            if (VL_UNLIKELY(!hor.invalid())) {
+                VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: moveFutureCbs id=%" PRId64 "\n", hor.id()););
+                s().m_cbCurrentLists[hor.cb_datap()->reason].emplace_back(hor);
             }
+            s().m_futureCbs.erase(last_it);
+        }
+        for (auto it = s().m_nextCbs.begin();  //
+             VL_UNLIKELY(it != s().m_nextCbs.end() && it->first.first < time);) {
+            VerilatedVpiCbHolder& hor = it->second;
+            const auto last_it = it;
+            ++it;
+            if (VL_UNLIKELY(!hor.invalid())) {
+                VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: moveFutureCbs id=%" PRId64 "\n", hor.id()););
+                s().m_cbCurrentLists[hor.cb_datap()->reason].emplace_back(hor);
+            }
+            s().m_nextCbs.erase(last_it);
         }
     }
     static QData cbNextDeadline() {
-        const auto it = s().m_timedCbs.cbegin();
-        if (VL_LIKELY(it != s().m_timedCbs.cend())) return it->first.first;
+        const auto it = s().m_futureCbs.cbegin();
+        if (VL_LIKELY(it != s().m_futureCbs.cend())) return it->first.first;
         return ~0ULL;  // maxquad
     }
     static bool callCbs(const uint32_t reason) VL_MT_UNSAFE_ONE {
-        VpioCbList& cbObjList = s().m_cbObjLists[reason];
+        VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: callCbs reason=%u\n", reason););
+        assertOneCheck();
+        moveFutureCbs();
+        if (s().m_cbCurrentLists[reason].empty()) return false;
+        // Iterate on old list, making new list empty, to prevent looping over newly added elements
+        VpioCbList cbObjList;
+        std::swap(s().m_cbCurrentLists[reason], cbObjList);
         bool called = false;
-        if (cbObjList.empty()) return called;
-        const auto last = std::prev(cbObjList.end());  // prevent looping over newly added elements
-        for (auto it = cbObjList.begin(); true;) {
+        for (VerilatedVpiCbHolder& ihor : cbObjList) {
             // cbReasonRemove sets to nullptr, so we know on removal the old end() will still exist
-            const bool was_last = it == last;
-            if (VL_UNLIKELY(it->invalid())) {  // Deleted earlier, cleanup
-                it = cbObjList.erase(it);
-                if (was_last) break;
-                continue;
+            if (VL_LIKELY(!ihor.invalid())) {  // Not deleted earlier
+                VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: reason_callback reason=%d id=%" PRId64 "\n",
+                                            reason, ihor.id()););
+                ihor.invalidate();  // Timed callbacks are one-shot
+                (ihor.cb_rtnp())(ihor.cb_datap());
+                called = true;
             }
-            VerilatedVpiCbHolder& ho = *it;
-            VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: reason_callback reason=%d id=%" PRId64 "\n",
-                                        reason, ho.id()););
-            (ho.cb_rtnp())(ho.cb_datap());
-            called = true;
-            if (was_last) break;
-            ++it;
         }
         return called;
     }
     static bool callValueCbs() VL_MT_UNSAFE_ONE {
         assertOneCheck();
-        VpioCbList& cbObjList = s().m_cbObjLists[cbValueChange];
+        VpioCbList& cbObjList = s().m_cbCurrentLists[cbValueChange];
         bool called = false;
         std::unordered_set<VerilatedVpioVar*> update;  // set of objects to update after callbacks
         if (cbObjList.empty()) return called;
@@ -658,7 +671,7 @@ public:
         }
         return called;
     }
-
+    static void dumpCbs() VL_MT_UNSAFE_ONE;
     static VerilatedVpiError* error_info() VL_MT_UNSAFE_ONE;  // getter for vpi error info
 };
 
@@ -742,29 +755,63 @@ public:
 //======================================================================
 // VerilatedVpi implementation
 
-void VerilatedVpi::callTimedCbs() VL_MT_UNSAFE_ONE { VerilatedVpiImp::callTimedCbs(); }
-
-bool VerilatedVpi::callValueCbs() VL_MT_UNSAFE_ONE { return VerilatedVpiImp::callValueCbs(); }
-
 bool VerilatedVpi::callCbs(uint32_t reason) VL_MT_UNSAFE_ONE {
     return VerilatedVpiImp::callCbs(reason);
 }
 
+// Historical, before we had multiple kinds of timed callbacks
+void VerilatedVpi::callTimedCbs() VL_MT_UNSAFE_ONE { VerilatedVpiImp::callCbs(cbAfterDelay); }
+
+bool VerilatedVpi::callValueCbs() VL_MT_UNSAFE_ONE { return VerilatedVpiImp::callValueCbs(); }
+
 QData VerilatedVpi::cbNextDeadline() VL_MT_UNSAFE_ONE { return VerilatedVpiImp::cbNextDeadline(); }
 
-PLI_INT32 VerilatedVpioTimedCb::dovpi_remove_cb() {
-    VerilatedVpiImp::cbTimedRemove(m_id, m_time);
-    delete this;  // IEEE 37.2.2 a vpi_remove_cb does a vpi_release_handle
-    return 1;
-}
+void VerilatedVpi::dumpCbs() VL_MT_UNSAFE_ONE { VerilatedVpiImp::dumpCbs(); }
+
 PLI_INT32 VerilatedVpioReasonCb::dovpi_remove_cb() {
-    VerilatedVpiImp::cbReasonRemove(m_id, m_reason);
+    VerilatedVpiImp::cbReasonRemove(m_id, m_reason, m_time);
     delete this;  // IEEE 37.2.2 a vpi_remove_cb does a vpi_release_handle
     return 1;
 }
 
 //======================================================================
 // VerilatedVpiImp implementation
+
+void VerilatedVpiImp::dumpCbs() VL_MT_UNSAFE_ONE {
+    assertOneCheck();
+    VL_DBG_MSGF("- vpi: dumpCbs\n");
+    for (uint32_t reason = 0; reason < CB_ENUM_MAX_VALUE; ++reason) {
+        VpioCbList& cbObjList = s().m_cbCurrentLists[reason];
+        for (auto& ho : cbObjList) {
+            if (VL_UNLIKELY(!ho.invalid())) {
+                VL_DBG_MSGF("- vpi:   reason=%d=%s  id=%" PRId64 "\n", reason,
+                            VerilatedVpiError::strFromVpiCallbackReason(reason), ho.id());
+            }
+        }
+    }
+    for (auto& ifuture : s().m_nextCbs) {
+        const QData time = ifuture.first.first;
+        const uint64_t id = ifuture.first.second;
+        VerilatedVpiCbHolder& ho = ifuture.second;
+        if (VL_UNLIKELY(!ho.invalid())) {
+            VL_DBG_MSGF("- vpi:   time=%" PRId64 "(NEXT) reason=%d=%s  id=%" PRId64 "\n", time,
+                        ho.cb_datap()->reason,
+                        VerilatedVpiError::strFromVpiCallbackReason(ho.cb_datap()->reason),
+                        ho.id());
+        }
+    }
+    for (auto& ifuture : s().m_futureCbs) {
+        const QData time = ifuture.first.first;
+        const uint64_t id = ifuture.first.second;
+        VerilatedVpiCbHolder& ho = ifuture.second;
+        if (VL_UNLIKELY(!ho.invalid())) {
+            VL_DBG_MSGF("- vpi:   time=%" PRId64 " reason=%d=%s  id=%" PRId64 "\n", time,
+                        ho.cb_datap()->reason,
+                        VerilatedVpiError::strFromVpiCallbackReason(ho.cb_datap()->reason),
+                        ho.id());
+        }
+    }
+}
 
 VerilatedVpiError* VerilatedVpiImp::error_info() VL_MT_UNSAFE_ONE {
     VerilatedVpiImp::assertOneCheck();
@@ -1306,34 +1353,54 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
         VL_VPI_WARNING_(__FILE__, __LINE__, "%s : callback data pointer is null", __func__);
         return nullptr;
     }
-    switch (cb_data_p->reason) {
-    case cbAfterDelay: {
-        QData time = 0;
-        if (cb_data_p->time) time = VL_SET_QII(cb_data_p->time->high, cb_data_p->time->low);
-        const QData abstime = VL_TIME_Q() + time;
+    const PLI_INT32 reason = cb_data_p->reason;
+    switch (reason) {
+    case cbAfterDelay:  // FALLTHRU // One-shot; time relative
+    case cbAtEndOfSimTime:  // FALLTHRU // One-shot; time absolute; supported via vlt_main.cpp
+    case cbAtStartOfSimTime:  // FALLTHRU // One-shot; time absolute; supported via vlt_main.cpp
+    case cbReadOnlySynch:  // FALLTHRU // One-shot; time relative; supported via vlt_main.cpp
+    case cbReadWriteSynch: {  // One-shot; time relative; supported via vlt_main.cpp
+        const bool abs = reason == cbAtStartOfSimTime || reason == cbAtEndOfSimTime;
+        const QData time = VL_TIME_Q();
+        QData abstime = 0;
+        if (cb_data_p->time) {
+            if (abs) {
+                abstime = VL_SET_QII(cb_data_p->time->high, cb_data_p->time->low);
+            } else {
+                abstime = time + VL_SET_QII(cb_data_p->time->high, cb_data_p->time->low);
+            }
+        }
         const uint64_t id = VerilatedVpiImp::nextCallbackId();
-        VerilatedVpioTimedCb* const vop = new VerilatedVpioTimedCb{id, abstime};
-        VerilatedVpiImp::cbTimedAdd(id, cb_data_p, abstime);
+        VerilatedVpioReasonCb* const vop = new VerilatedVpioReasonCb{id, abstime, reason};
+        if (abstime <= time) {
+            VerilatedVpiImp::cbCurrentAdd(id, cb_data_p);
+        } else {
+            VerilatedVpiImp::cbFutureAdd(id, cb_data_p, abstime);
+        }
         return vop->castVpiHandle();
     }
-    case cbReadWriteSynch:  // FALLTHRU // Supported via vlt_main.cpp
-    case cbReadOnlySynch:  // FALLTHRU // Supported via vlt_main.cpp
-    case cbNextSimTime:  // FALLTHRU // Supported via vlt_main.cpp
-    case cbStartOfSimulation:  // FALLTHRU // Supported via vlt_main.cpp
-    case cbEndOfSimulation:  // FALLTHRU // Supported via vlt_main.cpp
-    case cbValueChange:  // FALLTHRU // Supported via vlt_main.cpp
-    case cbPLIError:  // FALLTHRU // NOP, but need to return handle, so make object
+    case cbNextSimTime: {  // One-shot; time always next; supported via vlt_main.cpp
+        const QData time = VL_TIME_Q();
+        const uint64_t id = VerilatedVpiImp::nextCallbackId();
+        VerilatedVpioReasonCb* const vop = new VerilatedVpioReasonCb{id, 0, reason};
+        VerilatedVpiImp::cbNextAdd(id, cb_data_p, time);
+        return vop->castVpiHandle();
+    }
+    case cbEndOfSimulation:  // FALLTHRU // One-shot; time ignored; supported via vlt_main.cpp
     case cbEnterInteractive:  // FALLTHRU // NOP, but need to return handle, so make object
     case cbExitInteractive:  // FALLTHRU // NOP, but need to return handle, so make object
-    case cbInteractiveScopeChange: {  // FALLTHRU // NOP, but need to return handle, so make object
+    case cbInteractiveScopeChange:  // FALLTHRU // NOP, but need to return handle, so make object
+    case cbPLIError:  // FALLTHRU // NOP, but need to return handle, so make object
+    case cbStartOfSimulation:  // FALLTHRU // One-shot; time ignored; supported via vlt_main.cpp
+    case cbValueChange: {  // Multi-shot; supported via vlt_main.cpp
         const uint64_t id = VerilatedVpiImp::nextCallbackId();
-        VerilatedVpioReasonCb* const vop = new VerilatedVpioReasonCb{id, cb_data_p->reason};
-        VerilatedVpiImp::cbReasonAdd(id, cb_data_p);
+        VerilatedVpioReasonCb* const vop = new VerilatedVpioReasonCb{id, 0, reason};
+        VerilatedVpiImp::cbCurrentAdd(id, cb_data_p);
         return vop->castVpiHandle();
     }
     default:
         VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Unsupported callback type %s", __func__,
-                        VerilatedVpiError::strFromVpiCallbackReason(cb_data_p->reason));
+                        VerilatedVpiError::strFromVpiCallbackReason(reason));
         return nullptr;
     }
 }
@@ -1583,7 +1650,7 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
         return vop->type();
     }
     case vpiDirection: {
-        // By forthought, the directions already are vpi enumerated
+        // By forethought, the directions already are vpi enumerated
         const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return vop->varp()->vldir();
@@ -1751,13 +1818,13 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
         int i;
         if (bits > t_outStrSz) {
             // limit maximum size of output to size of buffer to prevent overrun.
-            bits = t_outStrSz;
             VL_VPI_WARNING_(
                 __FILE__, __LINE__,
                 "%s: Truncating string value of %s for %s"
                 " as buffer size (%d, VL_VALUE_STRING_MAX_WORDS=%d) is less than required (%d)",
                 __func__, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, t_outStrSz,
                 VL_VALUE_STRING_MAX_WORDS, bits);
+            bits = t_outStrSz;
         }
         for (i = 0; i < bits; ++i) {
             const char val = (datap[i >> 3] >> (i & 7)) & 1;

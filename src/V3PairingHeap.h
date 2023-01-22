@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -27,7 +27,7 @@
 //
 // While this is written as a generic data structure, it's interface and
 // implementation is finely tuned for it's use by V3Parm_tition, and is critical
-// to verilaton performance, so be very careful changing anything or adding any
+// to Verilation performance, so be very careful changing anything or adding any
 // new operations that would impact either memory usage, or performance of the
 // existing operations. This data structure is fully deterministic, meaning
 // the order in which elements with equal keys are retrieved only depends on

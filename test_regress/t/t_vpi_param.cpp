@@ -243,8 +243,8 @@ int main(int argc, char** argv) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
     uint64_t sim_time = 1100;
-    contextp->commandArgs(argc, argv);
     contextp->debug(0);
+    contextp->commandArgs(argc, argv);
     // we're going to be checking for these errors do don't crash out
     contextp->fatalOnVpiError(0);
 

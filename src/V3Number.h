@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -97,6 +97,7 @@ private:
 public:
     bool m_sized : 1;  // True if the user specified the width, else we track it.
     bool m_signed : 1;  // True if signed value
+    bool m_is1Step : 1;  // True if 1step
     bool m_isNull : 1;  // True if "null" versus normal 0
     bool m_fromString : 1;  // True if from string literal
     bool m_autoExtend : 1;  // True if SystemVerilog extend-to-any-width
@@ -107,6 +108,7 @@ public:
         : m_type{V3NumberDataType::UNINITIALIZED}
         , m_sized{false}
         , m_signed{false}
+        , m_is1Step{false}
         , m_isNull{false}
         , m_fromString{false}
         , m_autoExtend{false} {}
@@ -118,6 +120,7 @@ public:
         , m_type{other.m_type}
         , m_sized{other.m_sized}
         , m_signed{other.m_signed}
+        , m_is1Step{other.m_is1Step}
         , m_isNull{other.m_isNull}
         , m_fromString{other.m_fromString}
         , m_autoExtend{other.m_autoExtend} {
@@ -145,6 +148,7 @@ public:
         m_type = other.m_type;
         m_sized = other.m_sized;
         m_signed = other.m_signed;
+        m_is1Step = other.m_is1Step;
         m_isNull = other.m_isNull;
         m_fromString = other.m_fromString;
         m_autoExtend = other.m_autoExtend;
@@ -156,6 +160,7 @@ public:
         , m_type{other.m_type}
         , m_sized{other.m_sized}
         , m_signed{other.m_signed}
+        , m_is1Step{other.m_is1Step}
         , m_isNull{other.m_isNull}
         , m_fromString{other.m_fromString}
         , m_autoExtend{other.m_autoExtend} {
@@ -184,6 +189,7 @@ public:
         m_type = other.m_type;
         m_sized = other.m_sized;
         m_signed = other.m_signed;
+        m_is1Step = other.m_is1Step;
         m_isNull = other.m_isNull;
         m_fromString = other.m_fromString;
         m_autoExtend = other.m_autoExtend;
@@ -489,6 +495,11 @@ public:
         setString(value);
         m_data.m_fromString = true;
     }
+    class OneStep {};
+    V3Number(OneStep, AstNode* nodep) {
+        init(nodep, 64);
+        m_data.m_is1Step = true;
+    }
     class Null {};
     V3Number(Null, AstNode* nodep) {
         init(nodep);
@@ -601,6 +612,7 @@ public:
                || m_data.type() == V3NumberDataType::DOUBLE;
     }
     bool isNegative() const VL_MT_SAFE { return !isString() && bitIs1(width() - 1); }
+    bool is1Step() const VL_MT_SAFE { return m_data.m_is1Step; }
     bool isNull() const VL_MT_SAFE { return m_data.m_isNull; }
     bool isFourState() const VL_MT_SAFE;
     bool hasZ() const {

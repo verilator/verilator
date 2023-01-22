@@ -9,11 +9,19 @@
 //
 //*************************************************************************
 
+#ifdef IS_VPI
+
+#include "vpi_user.h"
+
+#include <cstdlib>
+
+#else
+
 #include "verilated.h"
 #include "verilated_vpi.h"
 
-#include "Vt_vpi_cbs_called.h"
-#include "vpi_user.h"
+#include "Vt_vpi_repetitive_cbs.h"
+#endif
 
 #include <cstdio>
 #include <cstdlib>
@@ -25,8 +33,7 @@
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
-const std::vector<int> cbs_to_test{cbReadWriteSynch,    cbReadOnlySynch,   cbNextSimTime,
-                                   cbStartOfSimulation, cbEndOfSimulation, cbValueChange};
+const std::vector<int> cbs_to_test{cbValueChange};
 
 enum CallbackState { PRE_REGISTER, ACTIVE, ACTIVE_AGAIN, REM_REREG_ACTIVE, POST_REMOVE };
 const std::vector<CallbackState> cb_states{PRE_REGISTER, ACTIVE, ACTIVE_AGAIN, REM_REREG_ACTIVE,
@@ -46,17 +53,29 @@ std::vector<CallbackState>::const_iterator state_iter;
 
 bool got_error = false;
 
+#ifdef IS_VPI
+vpiHandle clk_h;
+#endif
+
 #ifdef TEST_VERBOSE
 bool verbose = true;
 #else
 bool verbose = false;
 #endif
 
+#ifdef IS_VPI
+#define END_TEST \
+    vpi_control(vpiStop); \
+    return 0;
+#else
+#define END_TEST return __LINE__;
+#endif
+
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
         printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", __FILE__, __LINE__); \
         got_error = true; \
-        return __LINE__; \
+        END_TEST \
     }
 
 // Use cout to avoid issues with %d/%lx etc
@@ -65,7 +84,7 @@ bool verbose = false;
         std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
                   << "   EXP = " << (exp) << std::endl; \
         got_error = true; \
-        return __LINE__; \
+        END_TEST \
     }
 
 #define STRINGIFY_CB_CASE(_cb) \
@@ -73,11 +92,6 @@ bool verbose = false;
 
 static const char* cb_reason_to_string(int cb_name) {
     switch (cb_name) {
-        STRINGIFY_CB_CASE(cbReadWriteSynch);
-        STRINGIFY_CB_CASE(cbReadOnlySynch);
-        STRINGIFY_CB_CASE(cbNextSimTime);
-        STRINGIFY_CB_CASE(cbStartOfSimulation);
-        STRINGIFY_CB_CASE(cbEndOfSimulation);
         STRINGIFY_CB_CASE(cbValueChange);
     default: return "Unsupported callback";
     }
@@ -86,6 +100,7 @@ static const char* cb_reason_to_string(int cb_name) {
 #undef STRINGIFY_CB_CASE
 
 static int the_callback(p_cb_data cb_data) {
+    vpi_printf(const_cast<char*>("     The callback\n"));
     callback_counts[cb_data->reason] = callback_counts[cb_data->reason] + 1;
     return 0;
 }
@@ -98,7 +113,12 @@ static int register_cb(const int next_state) {
     cb_data_testcase.cb_rtn = the_callback;
     cb_data_testcase.reason = cb;
 
+#ifdef IS_VPI
+    TestVpiHandle count_h = vpi_handle_by_name(const_cast<char*>("t.count"),
+                                               0);  // Needed in this scope as is in cb_data
+#else
     TestVpiHandle count_h = VPI_HANDLE("count");  // Needed in this scope as is in cb_data
+#endif
     CHECK_RESULT_NZ(count_h);
     if (cb == cbValueChange) {
         v.format = vpiSuppressVal;
@@ -170,9 +190,11 @@ static int test_callbacks(p_cb_data cb_data) {
     auto exp_count = callback_expected_counts[cb];
     CHECK_RESULT(count, exp_count);
 
+#if !defined(IS_VPI)
     bool called = callbacks_called[cb];
     bool exp_called = callbacks_expected_called[cb];
     CHECK_RESULT(called, exp_called);
+#endif
 
     // Update expected values based on state of callback in next time through main loop
     reset_expected();
@@ -213,7 +235,7 @@ static int test_callbacks(p_cb_data cb_data) {
         cb_data_n.reason = cbAfterDelay;
         t1.type = vpiSimTime;
         t1.high = 0;
-        t1.low = 1;
+        t1.low = 10;
         cb_data_n.time = &t1;
         cb_data_n.cb_rtn = test_callbacks;
         TestVpiHandle vh_test_cb = vpi_register_cb(&cb_data_n);
@@ -223,7 +245,34 @@ static int test_callbacks(p_cb_data cb_data) {
     return ret;
 }
 
-static int register_test_callback() {
+#ifdef IS_VPI
+static int toggle_clock(p_cb_data data) {
+    s_vpi_value val;
+    s_vpi_time time = {vpiSimTime, 0, 0, 0};
+
+    val.format = vpiIntVal;
+    vpi_get_value(clk_h, &val);
+    val.value.integer = !val.value.integer;
+    vpi_put_value(clk_h, &val, &time, vpiInertialDelay);
+
+    s_vpi_time cur_time = {vpiSimTime, 0, 0, 0};
+    vpi_get_time(0, &cur_time);
+
+    if (cur_time.low < 100 && !got_error) {
+        t_cb_data cb_data;
+        bzero(&cb_data, sizeof(cb_data));
+        time.low = 5;
+        cb_data.reason = cbAfterDelay;
+        cb_data.time = &time;
+        cb_data.cb_rtn = toggle_clock;
+        vpi_register_cb(&cb_data);
+    }
+
+    return 0;
+}
+#endif
+
+static int register_test_callback(p_cb_data data) {
     t_cb_data cb_data;
     bzero(&cb_data, sizeof(cb_data));
     s_vpi_time t1;
@@ -233,7 +282,7 @@ static int register_test_callback() {
     cb_data.reason = cbAfterDelay;
     t1.type = vpiSimTime;
     t1.high = 0;
-    t1.low = 1;
+    t1.low = 10;
     cb_data.time = &t1;
     cb_data.cb_rtn = test_callbacks;
     TestVpiHandle vh_test_cb = vpi_register_cb(&cb_data);
@@ -242,8 +291,48 @@ static int register_test_callback() {
     cb_iter = cbs_to_test.cbegin();
     state_iter = cb_states.cbegin();
 
+#ifdef IS_VPI
+    t1.low = 1;
+    cb_data.cb_rtn = toggle_clock;
+    TestVpiHandle vh_toggle_cb = vpi_register_cb(&cb_data);
+    CHECK_RESULT_NZ(vh_toggle_cb);
+
+    clk_h = vpi_handle_by_name(const_cast<char*>("t.clk"), 0);
+    CHECK_RESULT_NZ(clk_h);
+#endif
+
     return 0;
 }
+
+#ifdef IS_VPI
+
+static int end_of_sim_cb(p_cb_data cb_data) {
+    if (!got_error) { fprintf(stdout, "*-* All Finished *-*\n"); }
+    return 0;
+}
+
+// cver entry
+void vpi_compat_bootstrap(void) {
+    t_cb_data cb_data;
+    bzero(&cb_data, sizeof(cb_data));
+    {
+        vpi_printf(const_cast<char*>("register start-of-sim callback\n"));
+        cb_data.reason = cbStartOfSimulation;
+        cb_data.time = 0;
+        cb_data.cb_rtn = register_test_callback;
+        vpi_register_cb(&cb_data);
+    }
+    {
+        cb_data.reason = cbEndOfSimulation;
+        cb_data.time = 0;
+        cb_data.cb_rtn = end_of_sim_cb;
+        vpi_register_cb(&cb_data);
+    }
+}
+// icarus entry
+void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
+
+#else
 
 int main(int argc, char** argv) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
@@ -258,7 +347,7 @@ int main(int argc, char** argv) {
 
     if (verbose) VL_PRINTF("-- { Sim Time %" PRId64 " } --\n", contextp->time());
 
-    register_test_callback();
+    register_test_callback(nullptr);
 
     topp->eval();
     topp->clk = 0;
@@ -274,16 +363,21 @@ int main(int argc, char** argv) {
 
         for (const auto& i : cbs_to_test) {
             if (verbose) {
-                VL_PRINTF("     Calling %s (%d) callbacks\t", cb_reason_to_string(i), i);
+                VL_PRINTF("     Calling %s (%d) callbacks\n     >>>>\n", cb_reason_to_string(i),
+                          i);
             }
             if (i == cbValueChange) {
                 cbs_called = VerilatedVpi::callValueCbs();
             } else {
                 cbs_called = VerilatedVpi::callCbs(i);
             }
-            if (verbose) VL_PRINTF(" - any callbacks called? %s\n", cbs_called ? "YES" : "NO");
+            if (verbose)
+                VL_PRINTF("     <<<<\n     Any callbacks called? %s\n", cbs_called ? "YES" : "NO");
             callbacks_called[i] = cbs_called;
         }
+
+        // Always calling this so we can get code coverage on the Verilator debug routine
+        VerilatedVpi::dumpCbs();
 
         VerilatedVpi::callTimedCbs();
 
@@ -314,3 +408,5 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+
+#endif

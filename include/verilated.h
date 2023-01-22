@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -364,7 +364,7 @@ protected:
     // assumption is that the restore is allowed to pass different arguments
     struct NonSerializedCommandArgs {
         // Medium speed
-        std::vector<std::string> m_argVec;  // Aargument list
+        std::vector<std::string> m_argVec;  // Argument list
         bool m_argVecLoaded = false;  // Ever loaded argument list
     } m_args VL_GUARDED_BY(m_argMutex);
 
@@ -469,7 +469,7 @@ public:
     int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }
 
     // Time handling
-    /// Returns current simulation time.
+    /// Returns current simulation time in units of timeprecision().
     ///
     /// How Verilator runtime gets the current simulation time:
     ///
@@ -600,7 +600,7 @@ private:
     // Fastpath:
     VerilatedSyms* m_symsp = nullptr;  // Symbol table
     void** m_callbacksp = nullptr;  // Callback table pointer (Fastpath)
-    int m_funcnumMax = 0;  // Maxium function number stored (Fastpath)
+    int m_funcnumMax = 0;  // Maximum function number stored (Fastpath)
     // 4 bytes padding (on -m64), for rent.
     VerilatedVarNameMap* m_varsp = nullptr;  // Variable map
     const char* m_namep = nullptr;  // Scope name (Slowpath)

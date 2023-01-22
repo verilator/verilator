@@ -102,7 +102,7 @@ module t;
       endcase
    endfunction
 
-   function integer f_return(input [31:0] a);
+   function automatic integer f_return(input [31:0] a);
       integer out = 2;
       while (1) begin
          out = out+1;

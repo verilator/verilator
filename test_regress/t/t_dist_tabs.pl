@@ -12,7 +12,7 @@ scenarios(dist => 1);
 
 my $root = "..";
 
-my $Tabs_Exempt_Re = qr!(\.out$)|(/gtkwave)|(Makefile)|(\.mk$)|(nodist/fastcov.py)!;
+my $Tabs_Exempt_Re = qr!(\.out$)|(/gtkwave)|(Makefile)|(\.mk$)|(\.mk\.in$)|(nodist/fastcov.py)!;
 #my $Wide_Exempt_Re = qr!(\.l$)|(\.y$)!;
 my $Wide_Exempt_Re = qr!.*!;  # clang-tidy generally cleans up
 
@@ -94,7 +94,7 @@ sub _has_tabs {
     if ($filename =~ /\.out$/) {
         # Ignore golden files
     } elsif ($contents =~ /[\001\002\003\004\005\006]/) {
-        # Ignore binrary files
+        # Ignore binary files
     } elsif ($contents =~ /\t/) {
         return 1;
     }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -82,7 +82,7 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
                                  "Unsupported: Recursive multiple modules (module instantiates "
                                  "something leading back to itself): "
                                      << vvertexp->modp()->prettyNameQ() << '\n'
-                                     << V3Error::warnMore()
+                                     << vvertexp->modp()->warnMore()
                                      << "... note: self-recursion (module instantiating itself "
                                         "directly) is supported.");
         V3Error::abortIfErrors();

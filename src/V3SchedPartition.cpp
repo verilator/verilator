@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -258,7 +258,7 @@ class SchedGraphBuilder final : public VNVisitor {
 
     // Default - Any other AstActive content not handled above will hit this
     void visit(AstNode* nodep) override {  //
-        nodep->v3fatalSrc("Should behandled above");
+        nodep->v3fatalSrc("Should be handled above");
     }
     // LCOV_EXCL_STOP
 
@@ -361,7 +361,7 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
     // Partition the Pre logic
     {
         const VNUser1InUse user1InUse;  // AstVarScope::user1() -> bool: read in Active region
-        const VNUser2InUse user2InUse;  // AstVarScope::user2() -> bool: writen in Active region
+        const VNUser2InUse user2InUse;  // AstVarScope::user2() -> bool: written in Active region
 
         const auto markVars = [](AstNode* nodep) {
             nodep->foreach([](const AstNodeVarRef* vrefp) {

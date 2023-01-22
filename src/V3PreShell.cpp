@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -76,6 +76,10 @@ protected:
                 s_preprocp->defineCmdLine(prefl, "SV_COV_PARTIAL", "2");
             }
         }
+    }
+
+    void shutdown() {
+        if (s_preprocp) VL_DO_DANGLING(delete s_preprocp, s_preprocp);
     }
 
     bool preproc(FileLine* fl, const string& modname, VInFilter* filterp, V3ParseImp* parsep,
@@ -153,6 +157,7 @@ VInFilter* V3PreShellImp::s_filterp = nullptr;
 // V3PreShell
 
 void V3PreShell::boot() { V3PreShellImp::s_preImp.boot(); }
+void V3PreShell::shutdown() { V3PreShellImp::s_preImp.shutdown(); }
 bool V3PreShell::preproc(FileLine* fl, const string& modname, VInFilter* filterp,
                          V3ParseImp* parsep, const string& errmsg) {
     return V3PreShellImp::s_preImp.preproc(fl, modname, filterp, parsep, errmsg);

@@ -6,7 +6,7 @@
  *
  **************************************************************************
  *
- * Copyright 2003-2022 by Wilson Snyder.  Verilator is free software; you
+ * Copyright 2003-2023 by Wilson Snyder.  Verilator is free software; you
  * can redistribute it and/or modify it under the terms of either the
  * GNU Lesser General Public License Version 3 or the Perl Artistic License
  * Version 2.0.
@@ -637,6 +637,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
 <VA5,SAX>{
   /*     Generic unsupported warnings */
+   "1step"              { FL; return ya1STEP; }
    "above"              { ERROR_RSVD_WORD("AMS"); }
    "abs"                { ERROR_RSVD_WORD("AMS"); }
    "absdelay"           { ERROR_RSVD_WORD("AMS"); }
@@ -929,8 +930,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           return yaTIMENUM;
                         }
   1step                 {
-                          FL; yylval.cdouble = 0;  // Unsupported
-                          return yaTIMENUM;
+                          return ya1STEP;
                         }
 }
 

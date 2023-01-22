@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -354,18 +354,34 @@ private:
                 newent.cleanup();
             }
         } else if (const AstStructDType* const adtypep = VN_CAST(dtypep, StructDType)) {
-            // For now it's packed, so similar to array
-            for (AstMemberDType* itemp = adtypep->membersp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
-                AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
-                const int index_code = itemp->lsb();
-                ToggleEnt newent{above.m_comment + std::string{"."} + itemp->name(),
-                                 new AstSel{varp->fileline(), above.m_varRefp->cloneTree(true),
-                                            index_code, subtypep->width()},
-                                 new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(true),
-                                            index_code, subtypep->width()}};
-                toggleVarRecurse(subtypep, depth + 1, newent, varp, chgVarp);
-                newent.cleanup();
+            if (adtypep->packed()) {
+                for (AstMemberDType* itemp = adtypep->membersp(); itemp;
+                     itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                    AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
+                    const int index_code = itemp->lsb();
+                    ToggleEnt newent{above.m_comment + std::string{"."} + itemp->name(),
+                                     new AstSel{varp->fileline(), above.m_varRefp->cloneTree(true),
+                                                index_code, subtypep->width()},
+                                     new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(true),
+                                                index_code, subtypep->width()}};
+                    toggleVarRecurse(subtypep, depth + 1, newent, varp, chgVarp);
+                    newent.cleanup();
+                }
+            } else {
+                for (AstMemberDType* itemp = adtypep->membersp(); itemp;
+                     itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                    AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
+                    AstNodeExpr* const varRefp = new AstStructSel{
+                        varp->fileline(), above.m_varRefp->cloneTree(true), itemp->name()};
+                    AstNodeExpr* const chgRefp = new AstStructSel{
+                        varp->fileline(), above.m_varRefp->cloneTree(true), itemp->name()};
+                    varRefp->dtypep(subtypep);
+                    chgRefp->dtypep(subtypep);
+                    ToggleEnt newent{above.m_comment + std::string{"."} + itemp->name(), varRefp,
+                                     chgRefp};
+                    toggleVarRecurse(subtypep, depth + 1, newent, varp, chgVarp);
+                    newent.cleanup();
+                }
             }
         } else if (const AstUnionDType* const adtypep = VN_CAST(dtypep, UnionDType)) {
             // Arbitrarily handle only the first member of the union

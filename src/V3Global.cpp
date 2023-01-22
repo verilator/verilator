@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -35,14 +35,11 @@ void V3Global::boot() {
     m_rootp = new AstNetlist;
 }
 
-void V3Global::clear() {
-#ifdef VL_LEAK_CHECK
-    if (m_rootp) VL_DO_CLEAR(m_rootp->deleteTree(), m_rootp = nullptr);
-#endif
-}
-
 void V3Global::shutdown() {
     VL_DO_CLEAR(delete m_hierPlanp, m_hierPlanp = nullptr);  // delete nullptr is safe
+#ifdef VL_LEAK_CHECKS
+    if (m_rootp) VL_DO_CLEAR(m_rootp->deleteTree(), m_rootp = nullptr);
+#endif
 }
 
 void V3Global::checkTree() const { rootp()->checkTree(); }

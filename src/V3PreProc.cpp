@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2000-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -803,7 +803,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
     m_lexp->scanNewFile(flsp);
     addLineComment(1);  // Enter
 
-    // Filter all DOS CR's en-mass.  This avoids bugs with lexing CRs in the wrong places.
+    // Filter all DOS CR's en masse.  This avoids bugs with lexing CRs in the wrong places.
     // This will also strip them from strings, but strings aren't supposed
     // to be multi-line without a "\"
     int eof_newline = 0;  // Number of characters following last newline

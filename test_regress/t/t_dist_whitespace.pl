@@ -33,8 +33,7 @@ foreach my $file (sort keys %files) {
     }
     if ($contents =~ /[ \t]\n/
         || $contents =~ m/\n\n+$/) {  # Regexp repeated below
-        my $eol_ws_exempt = ($file =~ /(\.txt|\.html)$/
-                             || $file =~ m!^README$!
+        my $eol_ws_exempt = ($file =~ /spelling.txt$/
                              || $file =~ m!/gtkwave/!);
         next if $eol_ws_exempt;
         if ($ENV{HARNESS_UPDATE_GOLDEN}) {
@@ -50,7 +49,7 @@ foreach my $file (sort keys %files) {
         my $line_no = 0;
         foreach my $line (@lines) {
             $line_no++;
-            # Trim trailing carriage-return (ascii 0xd) and form feed (0xc),
+            # Trim trailing carriage-return (ASCII 0x0d) and form feed (0x0c),
             # as we expect a few of those
             $line =~ s/[\x{d}\x{c}]//g;
             if ($line =~ /\s$/) {
@@ -61,6 +60,16 @@ foreach my $file (sort keys %files) {
         if ($contents =~ m/\n\n+$/ && !$eol_ws_exempt) {  # Regexp repeated above
             $warns{$file} = "Trailing newlines at EOF in $file";
         }
+    }
+    # Unicode checker; should this be done in another file?
+    # No way to auto-fix.
+    # Files with \r are flagged elsewhere, right?
+    if ($contents =~ /[^[:alnum:][:punct:] \t\r\n]/) {
+        my $unicode_exempt = ($file =~ /Changes$/
+                              || $file =~ /CONTRIBUTORS$/
+                              || $file =~ /contributors.rst$/);
+        next if $unicode_exempt;
+        $warns{$file} = "Warning: non-ASCII contents in $file\n";
     }
     ++$any;
 }

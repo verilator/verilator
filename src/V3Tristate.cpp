@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -65,7 +65,7 @@
 //
 // It is possible to statically resolve all drivers when the strongest assignment has RHS marked as
 // non-tristate. If the RHS is equal to z, that assignment has to be skipped. Since the value may
-// be not known at verilation time, cases with tristates on RHS can't be handled statically.
+// be not known at Verilation time, cases with tristates on RHS can't be handled statically.
 //
 // Static resolution is split into 2 parts.
 // First part can be done before tristate propagation. It is about removing assignments that are

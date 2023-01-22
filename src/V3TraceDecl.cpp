@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -421,7 +421,28 @@ private:
                 // a much faster way to trace
                 addTraceDecl(VNumRange{}, nodep->width());
             } else if (!nodep->packed()) {
-                addIgnore("Unsupported: Unpacked struct/union");
+                if (VN_IS(nodep, UnionDType)) {
+                    addIgnore("Unsupported: Unpacked union");
+                } else {
+                    FileLine* const flp = nodep->fileline();
+                    VL_RESTORER(m_traName);
+                    string prefix{m_traName};
+                    prefix += getScopeChar(VLT_TRACE_SCOPE_STRUCT);
+                    addToSubFunc(new AstTracePushNamePrefix{flp, prefix + ' '});
+                    for (const AstMemberDType* itemp = nodep->membersp(); itemp;
+                         itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                        AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
+                        m_traName = itemp->prettyName();
+                        VL_RESTORER(m_traValuep);
+                        m_traValuep = m_traValuep->cloneTree(false);
+                        m_traName = itemp->prettyName();
+                        m_traValuep = new AstStructSel{flp, m_traValuep, itemp->name()};
+                        m_traValuep->dtypep(subtypep);
+                        iterate(subtypep);
+                        VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = nullptr);
+                    }
+                    addToSubFunc(new AstTracePopNamePrefix{flp, 1});
+                }
             } else {
                 FileLine* const flp = nodep->fileline();
                 const bool isStruct = VN_IS(nodep, StructDType);  // Otherwise union

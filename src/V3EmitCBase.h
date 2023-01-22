@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -97,6 +97,7 @@ public:
         return v3Global.opt.compLimitMembers() != 0  // Enabled
                && !varp->isStatic()  // Not a static variable
                && !varp->isSc()  // Aggregates can't be anon
+               && !VN_IS(varp->dtypep()->skipRefp(), SampleQueueDType)  // Aggregates can't be anon
                && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
     }
 

@@ -1,65 +1,65 @@
 %Error: t/t_dpi_result_type_bad.v:79:40: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    79 |    import "DPI-C" function bit [ 32:0] i_array_2_state_33();
       |                                        ^~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:80:40: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    80 |    import "DPI-C" function bit [ 63:0] i_array_2_state_64();
       |                                        ^~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:81:40: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    81 |    import "DPI-C" function bit [ 64:0] i_array_2_state_65();
       |                                        ^~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:82:40: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    82 |    import "DPI-C" function bit [127:0] i_array_2_state_128();
       |                                        ^~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:85:48: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    85 |    import "DPI-C" function array_2_state_33_t  i_array_2_state_33_t();
       |                                                ^~~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:86:48: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    86 |    import "DPI-C" function array_2_state_64_t  i_array_2_state_64_t();
       |                                                ^~~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:87:48: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    87 |    import "DPI-C" function array_2_state_65_t  i_array_2_state_65_t();
       |                                                ^~~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:88:48: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    88 |    import "DPI-C" function array_2_state_128_t i_array_2_state_128_t();
       |                                                ^~~~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:91:47: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    91 |    import "DPI-C" function struct_2_state_33  i_struct_2_state_33();
       |                                               ^~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:92:47: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    92 |    import "DPI-C" function struct_2_state_64  i_struct_2_state_64();
       |                                               ^~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:93:47: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    93 |    import "DPI-C" function struct_2_state_65  i_struct_2_state_65();
       |                                               ^~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:94:47: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    94 |    import "DPI-C" function struct_2_state_128 i_struct_2_state_128();
       |                                               ^~~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:97:46: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    97 |    import "DPI-C" function union_2_state_33  i_union_2_state_33();
       |                                              ^~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:98:46: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    98 |    import "DPI-C" function union_2_state_64  i_union_2_state_64();
       |                                              ^~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:99:46: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                       : ... Suggest make it an output argument instead?
    99 |    import "DPI-C" function union_2_state_65  i_union_2_state_65();
       |                                              ^~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:100:46: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   100 |    import "DPI-C" function union_2_state_128 i_union_2_state_128();
       |                                              ^~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:103:36: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)
@@ -198,67 +198,67 @@
   155 |    import "DPI-C" function union_4_state_128 i_union_4_state_128();
       |                                              ^~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:245:25: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   245 |    function bit [ 32:0] e_array_2_state_33();  return 0; endfunction
       |                         ^~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:246:25: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   246 |    function bit [ 63:0] e_array_2_state_64();  return 0; endfunction
       |                         ^~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:247:25: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   247 |    function bit [ 64:0] e_array_2_state_65();  return 0; endfunction
       |                         ^~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:248:25: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   248 |    function bit [127:0] e_array_2_state_128(); return 0; endfunction
       |                         ^~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:251:33: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   251 |    function array_2_state_33_t  e_array_2_state_33_t();  return 0; endfunction
       |                                 ^~~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:252:33: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   252 |    function array_2_state_64_t  e_array_2_state_64_t();  return 0; endfunction
       |                                 ^~~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:253:33: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   253 |    function array_2_state_65_t  e_array_2_state_65_t();  return 0; endfunction
       |                                 ^~~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:254:33: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   254 |    function array_2_state_128_t e_array_2_state_128_t(); return 0; endfunction
       |                                 ^~~~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:257:32: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   257 |    function struct_2_state_33  e_struct_2_state_33();  return 0; endfunction
       |                                ^~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:258:32: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   258 |    function struct_2_state_64  e_struct_2_state_64();  return 0; endfunction
       |                                ^~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:259:32: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   259 |    function struct_2_state_65  e_struct_2_state_65();  return 0; endfunction
       |                                ^~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:260:32: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   260 |    function struct_2_state_128 e_struct_2_state_128(); return 0; endfunction
       |                                ^~~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:263:31: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   263 |    function union_2_state_33  e_union_2_state_33();  return 0; endfunction
       |                               ^~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:264:31: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   264 |    function union_2_state_64  e_union_2_state_64();  return 0; endfunction
       |                               ^~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:265:31: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   265 |    function union_2_state_65  e_union_2_state_65();  return 0; endfunction
       |                               ^~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:266:31: DPI function may not return a > 32 bits wide type other than basic types.
-        ... Suggest make it an output argument instead?
+                                        : ... Suggest make it an output argument instead?
   266 |    function union_2_state_128 e_union_2_state_128(); return 0; endfunction
       |                               ^~~~~~~~~~~~~~~~~~~
 %Error: t/t_dpi_result_type_bad.v:269:21: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2017 35.5.5)

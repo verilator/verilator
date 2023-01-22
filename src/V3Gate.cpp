@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -510,6 +510,7 @@ private:
     void visit(AstCFunc* nodep) override {
         iterateNewStmt(nodep, "User C Function", "User C Function");
     }
+    void visit(AstClocking* nodep) override { iterateNewStmt(nodep, nullptr, nullptr); }
     void visit(AstSenItem* nodep) override {
         m_inSenItem = true;
         if (m_logicVertexp) {  // Already under logic; presumably a SenGate
@@ -592,7 +593,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
         if (!logicVertexp->reducible()) continue;
         AstNode* const logicp = logicVertexp->nodep();
 
-        // Commit pendingg optimizations to driving logic, as we will re-analyse
+        // Commit pending optimizations to driving logic, as we will re-analyze
         commitElimVar(logicp);
 
         // Can we eliminate?

@@ -23,9 +23,10 @@ int errors = 0;
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char* argv[]) {
-    // No need to make a model:  topp = new VM_PREFIX;
-
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
+    // No need to make a model:  topp = new VM_PREFIX;
     {
         VerilatedSave os;
         os.open("/No/such_file_as_this");

@@ -49,7 +49,7 @@ sub _has_tabs {
     if ($filename =~ /\.out$/) {
         # Ignore golden files
     } elsif ($contents =~ /[\001\002\003\004\005\006]/) {
-        # Ignore binrary files
+        # Ignore binary files
     } elsif ($contents =~ /\t/) {
         return 1;
     }

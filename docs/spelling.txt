@@ -213,6 +213,7 @@ Milanovic
 Millis
 MinW
 Mindspeed
+MingW
 Miodrag
 ModelSim
 Modport
@@ -416,6 +417,7 @@ bitop
 bitstoreal
 blackbox
 bokke
+bool
 brancoliticus
 buf
 bufif
@@ -626,6 +628,7 @@ iostream
 ish
 isunbounded
 isunknown
+jobserver
 killua
 lang
 lcov
@@ -731,6 +734,8 @@ portlists
 posedge
 posix
 postfix
+postincreemnt
+postincrement
 pragma
 pragmas
 pre
@@ -820,6 +825,7 @@ structs
 subcell
 subcells
 subexpressions
+submakes
 submodule
 submodules
 substring
@@ -932,3 +938,4 @@ ypq
 yurivict
 zdave
 Øyvind
+

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -72,6 +72,7 @@ private:
     std::vector<AstScope*> m_scopesp;
     std::vector<AstCell*> m_cellsp;
     std::vector<AstClass*> m_classesp;
+    std::vector<AstTypedef*> m_typedefsp;
 
     AssignMap m_assignMap;  // List of all simple assignments for each variable
     const bool m_elimUserVars;  // Allow removal of user's vars
@@ -234,6 +235,11 @@ private:
         if (nodep->fromp()->dtypep()) nodep->fromp()->dtypep()->user1Inc();  // classref
         checkAll(nodep);
     }
+    void visit(AstStructSel* nodep) override {
+        iterateChildren(nodep);
+        if (nodep->fromp()->dtypep()) nodep->fromp()->dtypep()->user1Inc();  // structdtype
+        checkAll(nodep);
+    }
     void visit(AstModport* nodep) override {
         iterateChildren(nodep);
         if (m_elimCells) {
@@ -253,11 +259,8 @@ private:
     }
     void visit(AstTypedef* nodep) override {
         iterateChildren(nodep);
-        if (m_elimCells && !nodep->attrPublic()) {
-            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-            return;
-        }
-        checkAll(nodep);
+        m_typedefsp.push_back(nodep);
+
         // Don't let packages with only public variables disappear
         // Normal modules may disappear, e.g. if they are parameterized then removed
         if (nodep->attrPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
@@ -299,6 +302,11 @@ private:
     }
 
     //-----
+    void visit(AstClockingItem* nodep) override {
+        // Prevent V3Dead from deleting clockvars that are seemingly dead before V3AssertPre. Later
+        // the vars will be moved to the containing module so if they are actually dead they will
+        // still get deleted.
+    }
     void visit(AstNode* nodep) override {
         if (nodep->isOutputter()) m_sideEffect = true;
         iterateChildren(nodep);
@@ -306,6 +314,22 @@ private:
     }
 
     // METHODS
+    void deadCheckTypedefs() {
+        for (AstTypedef* typedefp : m_typedefsp) {
+            if (shouldDeleteTypedef(typedefp)) {
+                VL_DO_DANGLING(pushDeletep(typedefp->unlinkFrBack()), typedefp);
+                continue;
+            }
+            checkAll(typedefp);
+        }
+    }
+    bool shouldDeleteTypedef(AstTypedef* typedefp) {
+        if (auto* structp = VN_CAST(typedefp->subDTypep(), StructDType)) {
+            if (structp->user1() && !structp->packed()) return false;
+        }
+        return m_elimCells && !typedefp->attrPublic();
+    }
+
     void deadCheckMod() {
         // Kill any unused modules
         // V3LinkCells has a graph that is capable of this too, but we need to do it
@@ -490,6 +514,7 @@ public:
             vscp->varp()->user1Inc();
         }
 
+        deadCheckTypedefs();
         deadCheckVar();
         // We only eliminate scopes when in a flattened structure
         // Otherwise we have no easy way to know if a scope is used

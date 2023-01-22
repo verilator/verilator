@@ -59,7 +59,7 @@ Did you write a patch that fixes a bug?
   Creative Commons Public Domain (CC0), unless you request otherwise or
   put a GNU/Artistic license on your file.
 
-- Most important is we get your patch. If you’d like to clean up
+- Most important is we get your patch. If you'd like to clean up
   indentation and related issues ahead of our feedback, that is
   appreciated; please see the coding conventions in `docs/internals
   <internals.rst>`__.

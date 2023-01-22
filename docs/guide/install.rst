@@ -1,4 +1,4 @@
-.. Copyright 2003-2022 by Wilson Snyder.
+.. Copyright 2003-2023 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _Installation:
@@ -91,7 +91,7 @@ To build or run Verilator, you need these standard packages:
 
 ::
 
-   sudo apt-get install git perl python3 make
+   sudo apt-get install git help2man perl python3 make
    sudo apt-get install g++  # Alternatively, clang
    sudo apt-get install libgz  # Non-Ubuntu (ignore if gives error)
    sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
@@ -125,8 +125,8 @@ Those developing Verilator itself may also want these (see internals.rst):
 ::
 
    sudo apt-get install gdb graphviz cmake clang clang-format-14 gprof lcov
-   sudo apt-get install yapf3
-   sudo pip3 install sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe
+   sudo apt-get install libclang-dev yapf3
+   sudo pip3 install clang sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe
    cpan install Pod::Perldoc
    cpan install Parallel::Forker
 
@@ -149,6 +149,8 @@ To make use of Verilator FST tracing you will want `GTKwave
 <http://gtkwave.sourceforge.net/>`__ installed, however this is not
 required at Verilator build time.
 
+
+.. _Obtain Sources:
 
 Obtain Sources
 --------------

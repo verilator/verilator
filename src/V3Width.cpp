@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -222,6 +222,7 @@ private:
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
+    AstNodeModule* m_modp = nullptr;  // Current module
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables = 0;  // Number of created data type tables
@@ -2255,7 +2256,7 @@ private:
     }
     void visit(AstEnumItemRef* nodep) override {
         if (!nodep->itemp()->didWidth()) {
-            // We need to do the whole enum en-mass
+            // We need to do the whole enum en masse
             AstNode* enump = nodep->itemp();
             UASSERT_OBJ(enump, nodep, "EnumItemRef not linked");
             for (; enump; enump = enump->backp()) {
@@ -2478,34 +2479,42 @@ private:
         UINFO(5, "   NODECLASS " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree("-  class-in: ");
         if (!nodep->packed()) {
-            nodep->v3warn(UNPACKED, "Unsupported: Unpacked struct/union");
-            if (!v3Global.opt.structsPacked()) {
-                nodep->v3warn(UNPACKED, "Unsupported: --no-structs-packed");
+            if (VN_IS(nodep, UnionDType)) {
+                nodep->v3warn(UNPACKED, "Unsupported: Unpacked union");
+            } else if (v3Global.opt.structsPacked()) {
+                nodep->packed(true);
             }
         }
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->repairMemberCache();
-        // Determine bit assignments and width
         nodep->dtypep(nodep);
-        int lsb = 0;
-        int width = 0;
         nodep->isFourstate(false);
-        // MSB is first, so go backwards
-        AstMemberDType* itemp;
-        for (itemp = nodep->membersp(); itemp && itemp->nextp();
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {}
-        for (AstMemberDType* backip; itemp; itemp = backip) {
-            if (itemp->isFourstate()) nodep->isFourstate(true);
-            backip = VN_CAST(itemp->backp(), MemberDType);
-            itemp->lsb(lsb);
-            if (VN_IS(nodep, UnionDType)) {
-                width = std::max(width, itemp->width());
-            } else {
-                lsb += itemp->width();
-                width += itemp->width();
+        // Determine bit assignments and width
+        if (VN_IS(nodep, UnionDType) || nodep->packed()) {
+            int lsb = 0;
+            int width = 0;
+            // MSB is first, so go backwards
+            AstMemberDType* itemp;
+            for (itemp = nodep->membersp(); itemp && itemp->nextp();
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {}
+            for (AstMemberDType* backip; itemp; itemp = backip) {
+                if (itemp->skipRefp()->isCompound())
+                    itemp->v3error(
+                        "Unpacked data type in packed struct/union (IEEE 1800-2017 7.2.1)");
+                if (itemp->isFourstate()) nodep->isFourstate(true);
+                backip = VN_CAST(itemp->backp(), MemberDType);
+                itemp->lsb(lsb);
+                if (VN_IS(nodep, UnionDType)) {
+                    width = std::max(width, itemp->width());
+                } else {
+                    lsb += itemp->width();
+                    width += itemp->width();
+                }
             }
+            nodep->widthForce(width, width);  // Signing stays as-is, as parsed from declaration
+        } else {
+            nodep->widthForce(1, 1);
         }
-        nodep->widthForce(width, width);  // Signing stays as-is, as parsed from declaration
         // if (debug() >= 9) nodep->dumpTree("-  class-out: ");
     }
     void visit(AstClass* nodep) override {
@@ -2525,6 +2534,11 @@ private:
         // TODO this maybe eventually required to properly resolve members,
         // though causes problems with t_class_forward.v, so for now avoided
         // userIterateChildren(nodep->classp(), nullptr);
+    }
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        m_modp = nodep;
+        userIterateChildren(nodep, nullptr);
     }
     void visit(AstClassOrPackageRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
@@ -2550,6 +2564,9 @@ private:
         nodep->dtypep(nodep);  // The member itself, not subDtype
         nodep->widthFromSub(nodep->subDTypep());
     }
+    void visit(AstStructSel* nodep) override {
+        userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
+    }
     void visit(AstMemberSel* nodep) override {
         UINFO(5, "   MEMBERSEL " << nodep << endl);
         if (debug() >= 9) nodep->dumpTree("-  mbs-in: ");
@@ -2564,6 +2581,7 @@ private:
         } else if (AstClassRefDType* const adtypep = VN_CAST(fromDtp, ClassRefDType)) {
             if (AstNode* const foundp = memberSelClass(nodep, adtypep)) {
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
+                    if (!varp->didWidth()) userIterate(varp, nullptr);
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
                     return;
@@ -2668,9 +2686,21 @@ private:
                 nodep->dtypep(memberp);
                 UINFO(9, "   MEMBERSEL(attr) -> " << nodep << endl);
                 UINFO(9, "           dt-> " << nodep->dtypep() << endl);
-            } else {
+            } else if (adtypep->packed()) {
                 AstSel* const newp = new AstSel{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                                 memberp->lsb(), memberp->width()};
+                // Must skip over the member to find the union; as the member may disappear later
+                newp->dtypep(memberp->subDTypep()->skipRefToEnump());
+                newp->didWidth(true);  // Don't replace dtype with basic type
+                UINFO(9, "   MEMBERSEL -> " << newp << endl);
+                UINFO(9, "           dt-> " << newp->dtypep() << endl);
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                // Should be able to treat it as a normal-ish nodesel - maybe.
+                // The lhsp() will be strange until this stage; create the number here?
+            } else {
+                AstStructSel* const newp = new AstStructSel{
+                    nodep->fileline(), nodep->fromp()->unlinkFrBack(), nodep->name()};
                 // Must skip over the member to find the union; as the member may disappear later
                 newp->dtypep(memberp->subDTypep()->skipRefToEnump());
                 newp->didWidth(true);  // Don't replace dtype with basic type
@@ -3597,6 +3627,10 @@ private:
                 // Either made explicitly or V3LinkDot made implicitly
                 classp->v3fatalSrc("Can't find class's new");
             }
+            if (classp->isVirtual()) {
+                nodep->v3error(
+                    "Illegal to call 'new' using an abstract virtual class (IEEE 1800-2017 8.21)");
+            }
         } else {  // super.new case
             // in this case class and taskp() should be properly linked in V3LinkDot.cpp during
             // "super" reference resolution
@@ -3604,10 +3638,6 @@ private:
             UASSERT_OBJ(classp, nodep, "Unlinked classOrPackagep()");
             UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked taskp()");
             nodep->dtypeFrom(nodep->taskp());
-        }
-        if (classp->isVirtual()) {
-            nodep->v3error(
-                "Illegal to call 'new' using an abstract virtual class (IEEE 1800-2017 8.21)");
         }
         userIterate(nodep->taskp(), nullptr);
         processFTaskRefArgs(nodep);
@@ -3703,13 +3733,14 @@ private:
                 }
             }
             AstPatMember* defaultp = nullptr;
-            for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
-                 patp = VN_AS(patp->nextp(), PatMember)) {
+            for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;) {
+                AstPatMember* const nextp = VN_AS(patp->nextp(), PatMember);
                 if (patp->isDefault()) {
                     if (defaultp) nodep->v3error("Multiple '{ default: } clauses");
                     defaultp = patp;
                     patp->unlinkFrBack();
                 }
+                patp = nextp;
             }
             while (const AstConstDType* const vdtypep = VN_CAST(dtypep, ConstDType)) {
                 dtypep = vdtypep->subDTypep()->skipRefp();
@@ -4561,7 +4592,10 @@ private:
                                || VN_IS(dtypep, WildcardArrayDType)  //
                                || VN_IS(dtypep, ClassRefDType)  //
                                || VN_IS(dtypep, DynArrayDType)  //
-                               || VN_IS(dtypep, QueueDType)) {
+                               || VN_IS(dtypep, UnpackArrayDType)  //
+                               || VN_IS(dtypep, QueueDType)
+                               || (VN_IS(dtypep, StructDType)
+                                   && !VN_AS(dtypep, StructDType)->packed())) {
                         added = true;
                         newFormat += "%@";
                         VNRelinker handle;
@@ -5342,6 +5376,12 @@ private:
                     "Edge event control not legal on real type (IEEE 1800-2017 6.12.1)");
             }
         }
+    }
+    void visit(AstClockingItem* nodep) override {
+        nodep->exprp()->foreach([nodep](AstVarRef* const refp) {
+            refp->access(nodep->direction().isWritable() ? VAccess::WRITE : VAccess::READ);
+        });
+        userIterateChildren(nodep, WidthVP{SELF, PRELIM}.p());
     }
     void visit(AstWait* nodep) override {
         if (VN_IS(m_ftaskp, Func)) {
@@ -7170,7 +7210,7 @@ AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
 //! later to do the width check.
 //! @return  Pointer to the edited node.
 AstNode* V3Width::widthGenerateParamsEdit(
-    AstNode* nodep) {  //!< [in] AST whose parameters widths are to be analysed.
+    AstNode* nodep) {  //!< [in] AST whose parameters widths are to be analyzed.
     UINFO(4, __FUNCTION__ << ": " << nodep << endl);
     // We should do it in bottom-up module order, but it works in any order.
     WidthVisitor visitor{true, true};

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -86,7 +86,7 @@ protected:
     }
 
     // Recursively traverse the graph to determine whether every control 'BLOCK' has an assignment
-    // to the output we are currently analysing (the output whose 'user() is set), if so return
+    // to the output we are currently analyzing (the output whose 'user() is set), if so return
     // true. Where a BLOCK contains a BRANCH, both the if and else sides of the branch must return
     // true for the BRANCH to evaluate to true. A BLOCK however needs only a single one of its
     // siblings to evaluate true in order to evaluate true itself. On output vertex only evaluates
@@ -243,14 +243,19 @@ public:
     // METHODS
     AstScope* scopep() { return m_scopep; }
 
-    // Make a new AstActive sensitive to the given special sensitivity class and return it
-    template <typename SenItemKind>
-    AstActive* makeSpecialActive(FileLine* const fl) {
-        AstSenTree* const senTreep = new AstSenTree{fl, new AstSenItem{fl, SenItemKind{}}};
+    // Make a new AstActive sensitive to the given sentree and return it
+    AstActive* makeActive(FileLine* const fl, AstSenTree* const senTreep) {
         auto* const activep = new AstActive{fl, "", senTreep};
         activep->sensesStorep(activep->sensesp());
         addActive(activep);
         return activep;
+    }
+
+    // Make a new AstActive sensitive to the given special sensitivity class and return it
+    template <typename SenItemKind>
+    AstActive* makeSpecialActive(FileLine* const fl) {
+        AstSenTree* const senTreep = new AstSenTree{fl, new AstSenItem{fl, SenItemKind{}}};
+        return makeActive(fl, senTreep);
     }
 
     // Return an AstActive sensitive to the given special sensitivity class (possibly pre-created)
@@ -540,6 +545,22 @@ private:
         UASSERT_OBJ(nodep->stmtsp(), nodep, "Should not be empty");
         // Make a new active for it, needs to be the only item under the active for V3Sched
         AstActive* const activep = m_namer.makeSpecialActive<AstSenItem::Combo>(nodep->fileline());
+        activep->addStmtsp(nodep->unlinkFrBack());
+    }
+    void visit(AstAlwaysObserved* nodep) override {
+        UASSERT_OBJ(nodep->sensesp(), nodep, "Should have a sentree");
+        AstSenTree* const sensesp = nodep->sensesp();
+        sensesp->unlinkFrBack();
+        // Make a new active for it, needs to be the only item under the active for V3Sched
+        AstActive* const activep = m_namer.makeActive(nodep->fileline(), sensesp);
+        activep->addStmtsp(nodep->unlinkFrBack());
+    }
+    void visit(AstAlwaysReactive* nodep) override {
+        UASSERT_OBJ(nodep->sensesp(), nodep, "Should have a sentree");
+        AstSenTree* const sensesp = nodep->sensesp();
+        sensesp->unlinkFrBack();
+        // Make a new active for it, needs to be the only item under the active for V3Sched
+        AstActive* const activep = m_namer.makeActive(nodep->fileline(), sensesp);
         activep->addStmtsp(nodep->unlinkFrBack());
     }
     void visit(AstAlwaysPublic* nodep) override {

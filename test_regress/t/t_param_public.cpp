@@ -15,9 +15,10 @@
 double sc_time_stamp() { return 0; }
 
 int main(int argc, char* argv[]) {
-    Vt_param_public* topp = new Vt_param_public;
-
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
+    Vt_param_public* topp = new Vt_param_public;
 
     // Make sure public tag worked
     if (static_cast<int>(Vt_param_public_t::TOP_PARAM) != 30) {

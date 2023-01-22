@@ -2,7 +2,7 @@
 ######################################################################
 # DESCRIPTION: Makefile commands for all verilated target files
 #
-# Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -21,7 +21,9 @@ CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
 
 # Compiler flags to enable profiling
 CFG_CXXFLAGS_PROFILE = @CFG_CXXFLAGS_PROFILE@
-# Select newest language
+# Select language required to compile (often empty)
+CFG_CXXFLAGS_STD = @CFG_CXXFLAGS_STD@
+# Select newest language (unused by this Makefile, for some test's Makefiles)
 CFG_CXXFLAGS_STD_NEWEST = @CFG_CXXFLAGS_STD_NEWEST@
 # Compiler flags to use to turn off unused and generated code warnings, such as -Wno-div-by-zero
 CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
@@ -36,7 +38,7 @@ CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
 # Programs
 
 VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
-VERILATOR_INCLUDER = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
+VERILATOR_INCLUDER = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_includer
 VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
 
 ######################################################################
@@ -45,6 +47,10 @@ VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_repo
 ifneq ($(words $(CURDIR)),1)
  $(error Unsupported: GNU Make cannot build in directories containing spaces, build elsewhere: '$(CURDIR)')
 endif
+
+######################################################################
+# OS detection
+UNAME_S := $(shell uname -s)
 
 ######################################################################
 # C Preprocessor flags
@@ -77,6 +83,12 @@ CPPFLAGS += $(OPT)
 
 CPPFLAGS += $(M32)
 LDFLAGS  += $(M32)
+
+# On macOS, specify all weak symbols as dynamic_lookup.
+# Otherwise, you get undefined symbol errors.
+ifeq ($(UNAME_S),Darwin)
+	LDFLAGS += -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv
+endif
 
 # Allow upper level user makefiles to specify flags they want.
 # These aren't ever set by Verilator, so users are free to override them.
@@ -130,7 +142,7 @@ endif
 #######################################################################
 ##### Threaded builds
 
-CPPFLAGS += $(CFG_CXXFLAGS_STD_NEWEST)
+CPPFLAGS += $(CFG_CXXFLAGS_STD)
 LDLIBS += $(CFG_LDLIBS_THREADS)
 
 ifneq ($(VM_TIMING),0)

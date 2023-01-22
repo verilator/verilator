@@ -42,12 +42,12 @@ bool check() {
 }
 
 int main() {
-    bool pass = true;
-
     Verilated::debug(0);
+
     tb = new Vt_tri_select{"tb"};
 
     // loop through every possibility and check the result
+    bool pass = true;
     for (tb->OE1 = 0; tb->OE1 < 2; tb->OE1++) {
         for (tb->OE2 = 0; tb->OE2 < 2; tb->OE2++) {
             for (tb->A1 = 0; tb->A1 < 4; tb->A1++) {

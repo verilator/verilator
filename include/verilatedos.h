@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -54,19 +54,20 @@
 # define VL_ATTR_PURE __attribute__((pure))
 # define VL_ATTR_UNUSED __attribute__((unused))
 # if !defined(_WIN32) && !defined(__MINGW32__)
+// All VL_ATTR_WEAK symbols must be marked with the macOS -U linker flag in verilated.mk.in
 #  define VL_ATTR_WEAK __attribute__((weak))
 # endif
 # if defined(__clang__)
-#  define VL_ACQUIRE(...) __attribute__((acquire_capability(__VA_ARGS__)))
-#  define VL_ACQUIRE_SHARED(...) __attribute__((acquire_shared_capability(__VA_ARGS__)))
-#  define VL_RELEASE(...) __attribute__((release_capability(__VA_ARGS__)))
-#  define VL_RELEASE_SHARED(...) __attribute__((release_shared_capability(__VA_ARGS__)))
+#  define VL_ACQUIRE(...) __attribute__((annotate("ACQUIRE"))) __attribute__((acquire_capability(__VA_ARGS__)))
+#  define VL_ACQUIRE_SHARED(...) __attribute__((annotate("ACQUIRE_SHARED"))) __attribute__((acquire_shared_capability(__VA_ARGS__)))
+#  define VL_RELEASE(...) __attribute__((annotate("RELEASE"))) __attribute__((release_capability(__VA_ARGS__)))
+#  define VL_RELEASE_SHARED(...) __attribute__((annotate("RELEASE_SHARED"))) __attribute__((release_shared_capability(__VA_ARGS__)))
 #  define VL_TRY_ACQUIRE(...) __attribute__((try_acquire_capability(__VA_ARGS__)))
 #  define VL_TRY_ACQUIRE_SHARED(...) __attribute__((try_acquire_shared_capability(__VA_ARGS__)))
 #  define VL_CAPABILITY(x) __attribute__((capability(x)))
-#  define VL_REQUIRES(x) __attribute__((requires_capability(x)))
-#  define VL_GUARDED_BY(x) __attribute__((guarded_by(x)))
-#  define VL_EXCLUDES(x) __attribute__((locks_excluded(x)))
+#  define VL_REQUIRES(x) __attribute__((annotate("REQUIRES"))) __attribute__((requires_capability(x)))
+#  define VL_GUARDED_BY(x) __attribute__((annotate("GUARDED_BY"))) __attribute__((guarded_by(x)))
+#  define VL_EXCLUDES(x) __attribute__((annotate("EXCLUDES"))) __attribute__((locks_excluded(x)))
 #  define VL_SCOPED_CAPABILITY __attribute__((scoped_lockable))
 # endif
 # define VL_LIKELY(x) __builtin_expect(!!(x), 1)  // Prefer over C++20 [[likely]]
@@ -425,7 +426,11 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // Verilated function size macros
 
 #define VL_MULS_MAX_WORDS 16  ///< Max size in words of MULS operation
-#define VL_VALUE_STRING_MAX_WORDS 64  ///< Max size in words of String conversion operation
+
+#ifndef VL_VALUE_STRING_MAX_WORDS
+    #define VL_VALUE_STRING_MAX_WORDS 64  ///< Max size in words of String conversion operation
+#endif
+
 #define VL_VALUE_STRING_MAX_CHARS (VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE / VL_BYTESIZE)
 
 //=========================================================================
@@ -510,13 +515,24 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 # define VL_CPU_RELAX() asm volatile("rep; nop" ::: "memory")
 #elif defined(__ia64__)
 # define VL_CPU_RELAX() asm volatile("hint @pause" ::: "memory")
+#elif defined(__armel__) || defined(__ARMEL__)  // Arm, but broken, must be before __arm__
+# define VL_CPU_RELAX() asm volatile("nop" ::: "memory");
 #elif defined(__aarch64__) || defined(__arm__)
 # define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
+#elif defined(__loongarch__)  // LoongArch does not currently have yield/pause
+# define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
+#elif defined(__mips64el__) || defined(__mips__) || defined(__mips64__) || defined(__mips64)
+# define VL_CPU_RELAX() asm volatile("pause" ::: "memory")
 #elif defined(__powerpc64__)
 # define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
-#elif defined(__loongarch__) || defined(__riscv)
-// LoongArch does not currently have a yield/pause instruction
+#elif defined(__riscv)  // RiscV does not currently have yield/pause, but one is proposed
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
+#elif defined(__s390x__)
+# define VL_CPU_RELAX() asm volatile("lr 0,0" ::: "memory")
+#elif defined(__sparc__)
+# define VL_CPU_RELAX() asm volatile("rd %%ccr, %%g0" ::: "memory")
+#elif defined(VL_IGNORE_UNKNOWN_ARCH)
+# define VL_CPU_RELAX()
 #else
 # error "Missing VL_CPU_RELAX() definition."
 #endif

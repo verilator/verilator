@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1400,26 +1400,17 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     void visit(DfgShiftL* vtxp) override {
-        UASSERT_OBJ(vtxp->dtypep() == vtxp->lhsp()->dtypep(), vtxp, "Mismatched width");
-
         if (foldBinary(vtxp)) return;
-
         optimizeShiftRHS(vtxp);
     }
 
     void visit(DfgShiftR* vtxp) override {
-        UASSERT_OBJ(vtxp->dtypep() == vtxp->lhsp()->dtypep(), vtxp, "Mismatched width");
-
         if (foldBinary(vtxp)) return;
-
         optimizeShiftRHS(vtxp);
     }
 
     void visit(DfgShiftRS* vtxp) override {
-        UASSERT_OBJ(vtxp->dtypep() == vtxp->lhsp()->dtypep(), vtxp, "Mismatched width");
-
         if (foldBinary(vtxp)) return;
-
         optimizeShiftRHS(vtxp);
     }
 

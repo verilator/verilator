@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -59,7 +59,7 @@ private:
 
     // VISITs
     // TODO: Most of these visitors are here for historical reasons.
-    // TODO: ExpectDecriptor can move to data type resolution, and the rest
+    // TODO: ExpectDescriptor can move to data type resolution, and the rest
     // TODO: could move to V3LinkParse to get them out of the way of elaboration
     void visit(AstNodeModule* nodep) override {
         // Module: Create sim table for entire module and iterate

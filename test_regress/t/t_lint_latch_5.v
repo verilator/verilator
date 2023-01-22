@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2021 by Julien Margetts (Originally provided by Thomas Sailer)
+// SPDX-License-Identifier: Unlicense
 
 module test
   (input  logic [1:0] a,

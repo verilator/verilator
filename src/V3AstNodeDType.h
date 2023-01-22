@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -219,7 +219,7 @@ public:
     int uniqueNum() const { return m_uniqueNum; }
     const char* broken() const override;
     void dump(std::ostream& str) const override;
-    bool isCompound() const override { return false; }  // Because don't support unpacked
+    bool isCompound() const override { return !packed(); }
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     AstBasicDType* basicp() const override {
         return (isFourstate()
@@ -241,6 +241,7 @@ public:
     string name() const override { return m_name; }
     void name(const string& flag) override { m_name = flag; }
     bool packed() const VL_MT_SAFE { return m_packed; }
+    void packed(bool flag) { m_packed = flag; }
     // packed() but as don't support unpacked, presently all structs
     static bool packedUnsup() { return true; }
     void isFourstate(bool flag) { m_isFourstate = flag; }
@@ -1121,6 +1122,50 @@ public:
         return false;
     }
 };
+class AstSampleQueueDType final : public AstNodeDType {
+    // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
+    AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
+public:
+    AstSampleQueueDType(FileLine* fl, AstNodeDType* dtp)
+        : ASTGEN_SUPER_SampleQueueDType(fl) {
+        refDTypep(dtp);
+        dtypep(dtp);
+    }
+    ASTGEN_MEMBERS_AstSampleQueueDType;
+    const char* broken() const override {
+        BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
+                     || (!m_refDTypep && childDTypep())));
+        return nullptr;
+    }
+    void cloneRelink() override {
+        if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
+    }
+    bool same(const AstNode* samep) const override {
+        const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
+        if (!asamep->subDTypep()) return false;
+        return (subDTypep() == asamep->subDTypep());
+    }
+    bool similarDType(const AstNodeDType* samep) const override {
+        const AstSampleQueueDType* const asamep = static_cast<const AstSampleQueueDType*>(samep);
+        return type() == samep->type() && asamep->subDTypep()
+               && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
+    }
+    void dumpSmall(std::ostream& str) const override;
+    AstNodeDType* getChildDTypep() const override { return childDTypep(); }
+    // op1 = Range of variable
+    AstNodeDType* subDTypep() const override { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
+    AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
+    void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
+    // METHODS
+    AstBasicDType* basicp() const override { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
+    int widthAlignBytes() const override { return sizeof(std::map<std::string, std::string>); }
+    int widthTotalBytes() const override { return sizeof(std::map<std::string, std::string>); }
+    bool isCompound() const override { return true; }
+};
 class AstUnsizedArrayDType final : public AstNodeDType {
     // Unsized/open-range Array data type, ie "some_dtype var_name []"
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
@@ -1274,12 +1319,15 @@ public:
 
 // === AstNodeUOrStructDType ===
 class AstStructDType final : public AstNodeUOrStructDType {
+    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
 public:
     // VSigning below is mispurposed to indicate if packed or not
     AstStructDType(FileLine* fl, VSigning numericUnpack)
         : ASTGEN_SUPER_StructDType(fl, numericUnpack) {}
     ASTGEN_MEMBERS_AstStructDType;
     string verilogKwd() const override { return "struct"; }
+    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
+    void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
 };
 class AstUnionDType final : public AstNodeUOrStructDType {
 public:

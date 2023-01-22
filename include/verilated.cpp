@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -67,7 +67,7 @@
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
 #endif
-#ifdef __linux__
+#ifdef __GLIBC__
 # include <execinfo.h>
 # define _VL_HAVE_STACKTRACE
 #endif
@@ -355,10 +355,9 @@ WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     outwp[VL_WORDS_I(obits) - 1] = VL_RAND_RESET_I(32) & VL_MASK_E(obits);
     return outwp;
 }
-
 WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
-    for (int i = 0; i < VL_WORDS_I(obits); ++i) outwp[i] = 0;
-    return outwp;
+    // Not inlined to speed up compilation of slowpath code
+    return VL_ZERO_W(obits, outwp);
 }
 
 //===========================================================================
@@ -611,7 +610,7 @@ std::string VL_DECIMAL_NW(int width, const WDataInP lwp) VL_MT_SAFE {
     const int maxdecwidth = (width + 3) * 4 / 3;
     // Or (maxdecwidth+7)/8], but can't have more than 4 BCD bits per word
     VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> bcd;
-    VL_ZERO_RESET_W(maxdecwidth, bcd);
+    VL_ZERO_W(maxdecwidth, bcd);
     VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> tmp;
     VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> tmp2;
     int from_bit = width - 1;
@@ -622,7 +621,7 @@ std::string VL_DECIMAL_NW(int width, const WDataInP lwp) VL_MT_SAFE {
         // Any digits >= 5 need an add 3 (via tmp)
         for (int nibble_bit = 0; nibble_bit < maxdecwidth; nibble_bit += 4) {
             if ((VL_BITRSHIFT_W(bcd, nibble_bit) & 0xf) >= 5) {
-                VL_ZERO_RESET_W(maxdecwidth, tmp2);
+                VL_ZERO_W(maxdecwidth, tmp2);
                 tmp2[VL_BITWORD_E(nibble_bit)] |= VL_EUL(0x3) << VL_BITBIT_E(nibble_bit);
                 VL_ASSIGN_W(maxdecwidth, tmp, bcd);
                 VL_ADD_W(VL_WORDS_I(maxdecwidth), bcd, tmp, tmp2);
@@ -1083,7 +1082,8 @@ static void _vl_vsss_read_str(FILE* fp, int& floc, const WDataInP fromp, const s
     // VL_DBG_MSGF(" _read got='"<<tmpp<<"'\n");
 }
 static char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp, const std::string& fstr,
-                               char* beginp, std::size_t n, const bool inhibit = false) {
+                               char* beginp, std::size_t n,
+                               const bool inhibit = false) VL_MT_SAFE {
     // Variant of _vl_vsss_read_str using the same underlying I/O functions but optimized
     // specifically for block reads of N bytes (read operations are not demarcated by
     // whitespace). In the fp case, except descriptor to have been opened in binary mode.
@@ -1095,12 +1095,13 @@ static char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp, const 
     }
     return beginp;
 }
-static void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits, IData ld) VL_MT_SAFE {
-    for (; nbits && lsb < obits; nbits--, lsb++, ld >>= 1) { VL_ASSIGNBIT_WI(lsb, owp, ld & 1); }
+static void _vl_vsss_setbit(WDataOutP iowp, int obits, int lsb, int nbits, IData ld) VL_MT_SAFE {
+    for (; nbits && lsb < obits; nbits--, lsb++, ld >>= 1) VL_ASSIGNBIT_WI(lsb, iowp, ld & 1);
 }
 static void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp,
                            size_t posstart, size_t posend) VL_MT_SAFE {
     // Read in base "2^^baseLog2" digits from strp[posstart..posend-1] into owp of size obits.
+    VL_ZERO_W(obits, owp);
     int lsb = 0;
     for (int i = 0, pos = static_cast<int>(posend) - 1;
          i < obits && pos >= static_cast<int>(posstart); --pos) {
@@ -1381,7 +1382,7 @@ static IData getLine(std::string& str, IData fpi, size_t maxLen) VL_MT_SAFE {
         str.push_back(c);
         if (c == '\n') break;
     }
-    return str.size();
+    return static_cast<IData>(str.size());
 }
 
 IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
@@ -1612,7 +1613,7 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi
             *datap |= ((static_cast<QData>(c) << static_cast<QData>(shift)) & VL_MASK_Q(width));
         } else {
             WDataOutP datap = &(reinterpret_cast<WDataOutP>(memp))[entry * VL_WORDS_I(width)];
-            if (shift == start_shift) VL_ZERO_RESET_W(width, datap);
+            if (shift == start_shift) VL_ZERO_W(width, datap);
             datap[VL_BITWORD_E(shift)] |= (static_cast<EData>(c) << VL_BITBIT_E(shift));
         }
         // Prep for next
@@ -1631,12 +1632,12 @@ std::string VL_STACKTRACE_N() VL_MT_SAFE {
     static VerilatedMutex s_stackTraceMutex;
     const VerilatedLockGuard lock{s_stackTraceMutex};
 
-    constexpr int BT_BUF_SIZE = 100;
-    void* buffer[BT_BUF_SIZE];
     int nptrs = 0;
     char** strings = nullptr;
 
 #ifdef _VL_HAVE_STACKTRACE
+    constexpr int BT_BUF_SIZE = 100;
+    void* buffer[BT_BUF_SIZE];
     nptrs = backtrace(buffer, BT_BUF_SIZE);
     strings = backtrace_symbols(buffer, nptrs);
 #endif
@@ -1701,7 +1702,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
     const char* const dp = match.c_str() + 1 /*leading + */ + prefix.length();
     if (match.empty()) return 0;
 
-    VL_ZERO_RESET_W(rbits, rwp);
+    VL_ZERO_W(rbits, rwp);
     switch (std::tolower(fmt)) {
     case 'd': {
         int64_t lld = 0;
@@ -1807,7 +1808,7 @@ std::string VL_TOUPPER_NN(const std::string& ld) VL_PURE {
     return out;
 }
 
-std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_MT_SAFE {
+std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_PURE {
     // See also _vl_vint_to_string
     char destout[VL_VALUE_STRING_MAX_CHARS + 1];
     const int obits = lwords * VL_EDATASIZE;
@@ -2023,7 +2024,7 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
                      & VL_MASK_Q(m_bits);
         } else {
             WDataOutP datap = reinterpret_cast<WDataOutP>(valuep);
-            if (!innum) VL_ZERO_RESET_W(m_bits, datap);
+            if (!innum) VL_ZERO_W(m_bits, datap);
             _vl_shiftl_inplace_w(m_bits, datap, static_cast<IData>(shift));
             datap[0] |= value;
         }
@@ -2567,7 +2568,7 @@ std::pair<int, char**> VerilatedContextImp::argc_argv() VL_MT_SAFE_EXCLUDES(m_ar
     static char** s_argvp = nullptr;
     if (VL_UNLIKELY(!s_loaded)) {
         s_loaded = true;
-        s_argc = m_args.m_argVec.size();
+        s_argc = static_cast<int>(m_args.m_argVec.size());
         s_argvp = new char*[s_argc + 1];
         int in = 0;
         for (const auto& i : m_args.m_argVec) {
@@ -2789,27 +2790,38 @@ static struct {
     VoidPCbList s_exitCbs VL_GUARDED_BY(s_exitMutex);
 } VlCbStatic;
 
-static void addCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) VL_MT_UNSAFE {
+static void addCbFlush(Verilated::VoidPCb cb, void* datap)
+    VL_MT_SAFE_EXCLUDES(VlCbStatic.s_flushMutex) {
+    const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
-    cbs.remove(pair);  // Just in case it's a duplicate
-    cbs.push_back(pair);
+    VlCbStatic.s_flushCbs.remove(pair);  // Just in case it's a duplicate
+    VlCbStatic.s_flushCbs.push_back(pair);
 }
-static void removeCb(Verilated::VoidPCb cb, void* datap, VoidPCbList& cbs) VL_MT_UNSAFE {
+static void addCbExit(Verilated::VoidPCb cb, void* datap)
+    VL_MT_SAFE_EXCLUDES(VlCbStatic.s_exitMutex) {
+    const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
     std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
-    cbs.remove(pair);
+    VlCbStatic.s_exitCbs.remove(pair);  // Just in case it's a duplicate
+    VlCbStatic.s_exitCbs.push_back(pair);
+}
+static void removeCbFlush(Verilated::VoidPCb cb, void* datap)
+    VL_MT_SAFE_EXCLUDES(VlCbStatic.s_flushMutex) {
+    const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
+    std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
+    VlCbStatic.s_flushCbs.remove(pair);
+}
+static void removeCbExit(Verilated::VoidPCb cb, void* datap)
+    VL_MT_SAFE_EXCLUDES(VlCbStatic.s_exitMutex) {
+    const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
+    std::pair<Verilated::VoidPCb, void*> pair(cb, datap);
+    VlCbStatic.s_exitCbs.remove(pair);
 }
 static void runCallbacks(const VoidPCbList& cbs) VL_MT_SAFE {
     for (const auto& i : cbs) i.first(i.second);
 }
 
-void Verilated::addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
-    addCb(cb, datap, VlCbStatic.s_flushCbs);
-}
-void Verilated::removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock{VlCbStatic.s_flushMutex};
-    removeCb(cb, datap, VlCbStatic.s_flushCbs);
-}
+void Verilated::addFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE { addCbFlush(cb, datap); }
+void Verilated::removeFlushCb(VoidPCb cb, void* datap) VL_MT_SAFE { removeCbFlush(cb, datap); }
 void Verilated::runFlushCallbacks() VL_MT_SAFE {
     // Flush routines may call flush, so avoid mutex deadlock
     static std::atomic<int> s_recursing;
@@ -2826,14 +2838,8 @@ void Verilated::runFlushCallbacks() VL_MT_SAFE {
     VL_GCOV_DUMP();
 }
 
-void Verilated::addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
-    addCb(cb, datap, VlCbStatic.s_exitCbs);
-}
-void Verilated::removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE {
-    const VerilatedLockGuard lock{VlCbStatic.s_exitMutex};
-    removeCb(cb, datap, VlCbStatic.s_exitCbs);
-}
+void Verilated::addExitCb(VoidPCb cb, void* datap) VL_MT_SAFE { addCbExit(cb, datap); }
+void Verilated::removeExitCb(VoidPCb cb, void* datap) VL_MT_SAFE { removeCbExit(cb, datap); }
 void Verilated::runExitCallbacks() VL_MT_SAFE {
     static std::atomic<int> s_recursing;
     if (!s_recursing++) {

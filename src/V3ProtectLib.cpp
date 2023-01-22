@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -151,7 +151,7 @@ private:
 
         // Timescale
         if (v3Global.opt.hierChild() && v3Global.rootp()->timescaleSpecified()) {
-            // Emit timescale for hierarchical verilation if input HDL specifies timespec
+            // Emit timescale for hierarchical Verilation if input HDL specifies timespec
             txtp->addText(fl, std::string{"timeunit "} + modp->timeunit().ascii() + ";\n");
             txtp->addText(fl, std::string{"timeprecision "}
                                   + +v3Global.rootp()->timeprecision().ascii() + ";\n");

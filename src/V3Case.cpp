@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -274,7 +274,9 @@ private:
         // Convert valueItem from AstCaseItem* to the expression
         // Not done earlier, as we may now have a nullptr because it's just a ";" NOP branch
         for (uint32_t i = 0; i < numCases; ++i) {
-            m_valueItem[i] = VN_AS(m_valueItem[i], CaseItem)->stmtsp();
+            if (AstCaseItem* const itemp = VN_AS(m_valueItem[i], CaseItem)) {
+                m_valueItem[i] = itemp->stmtsp();
+            }
         }
         return true;  // All is fine
     }

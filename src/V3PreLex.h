@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2000-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -92,6 +92,7 @@ class V3PreProcImp;
 # define yytext V3PreLextext
 # define yyerror V3PreLexerror
 # define yyerrorf V3PreLexerrorf
+# define yylex_destroy V3PreLexlex_destroy
 #endif
 
 #ifndef yyourleng
@@ -117,6 +118,7 @@ extern void yyourtext(const char* textp, size_t size);  // Must call with static
 YY_BUFFER_STATE yy_create_buffer(FILE* file, int size);
 void yy_switch_to_buffer(YY_BUFFER_STATE new_buffer);
 void yy_delete_buffer(YY_BUFFER_STATE b);
+int yylex_destroy();
 
 //======================================================================
 
@@ -190,6 +192,7 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
             m_streampStack.pop();
         }
         VL_DO_CLEAR(yy_delete_buffer(m_bufferState), m_bufferState = nullptr);
+        yylex_destroy();
     }
 
     // Called by V3PreLex.l from lexer

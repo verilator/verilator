@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -578,8 +578,9 @@ void EmitCFunc::emitSetVarConstant(const string& assignString, AstConst* constp)
 
 void EmitCFunc::emitVarReset(AstVar* varp) {
     AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
-    const string varNameProtected
-        = VN_IS(m_modp, Class) ? varp->nameProtect() : "vlSelf->" + varp->nameProtect();
+    const string varNameProtected = (VN_IS(m_modp, Class) || varp->isFuncLocal())
+                                        ? varp->nameProtect()
+                                        : "vlSelf->" + varp->nameProtect();
     if (varp->isIO() && m_modp->isTop() && optSystemC()) {
         // System C top I/O doesn't need loading, as the lower level subinst code does it.}
     } else if (varp->isParam()) {
@@ -660,6 +661,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
         return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
                                    suffix + ".atDefault()" + cvtarray);
+    } else if (VN_IS(dtypep, SampleQueueDType)) {
+        return "";
     } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                     "Should have swapped msb & lsb earlier.");
@@ -670,6 +673,17 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
                                                  depth + 1, suffix + "[" + ivar + "]");
         const string post = "}\n";
         return below.empty() ? "" : pre + below + post;
+    } else if (VN_IS(dtypep, StructDType) && !VN_AS(dtypep, StructDType)->packed()) {
+        const auto* const sdtypep = VN_AS(dtypep, StructDType);
+        string literal;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            const std::string line
+                = emitVarResetRecurse(varp, varNameProtected + suffix + "." + itemp->nameProtect(),
+                                      itemp->dtypep(), depth + 1, "");
+            if (!line.empty()) literal += line;
+        }
+        return literal;
     } else if (basicp && basicp->keyword() == VBasicDTypeKwd::STRING) {
         // String's constructor deals with it
         return "";
@@ -684,9 +698,11 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
     } else if (basicp) {
         const bool zeroit
             = (varp->attrFileDescr()  // Zero so we don't do file IO if never $fopen
+               || varp->isFuncLocal()  // Randomization too slow
                || (basicp && basicp->isZeroInit())
                || (v3Global.opt.underlineZero() && !varp->name().empty() && varp->name()[0] == '_')
                || (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0"));
+        const bool slow = !varp->isFuncLocal() && !varp->isClassMember();
         splitSizeInc(1);
         if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
             string out;
@@ -698,7 +714,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
                 }
             } else {
-                out += zeroit ? "VL_ZERO_RESET_W(" : "VL_RAND_RESET_W(";
+                out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(") : "VL_RAND_RESET_W(";
                 out += cvtToStr(dtypep->widthMin());
                 out += ", " + varNameProtected + suffix + ");\n";
             }

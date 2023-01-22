@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU Lesser
 // General Public License Version 3 or the Perl Artistic License Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
@@ -936,6 +936,13 @@ public:
         dtypeSetBit();  // Events 1 bit, objects 64 bits, so autoExtend=1 and use bit here
         initWithNumber();
     }
+    class OneStep {};
+    AstConst(FileLine* fl, OneStep)
+        : ASTGEN_SUPER_Const(fl)
+        , m_num(V3Number::OneStep{}, this) {
+        dtypeSetLogicSized(64, VSigning::UNSIGNED);
+        initWithNumber();
+    }
     ASTGEN_MEMBERS_AstConst;
     string name() const override { return num().ascii(); }  // * = Value
     const V3Number& num() const VL_MT_SAFE { return m_num; }  // * = Value
@@ -1777,6 +1784,31 @@ public:
     bool isUnlikely() const override { return true; }
     bool cleanOut() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
+};
+class AstStructSel final : public AstNodeExpr {
+    // Unpacked struct member access
+    // Parents: math|stmt
+    // Children: varref, math
+    // @astgen op1 := fromp : AstNodeExpr
+private:
+    string m_name;  // Name of the member
+public:
+    AstStructSel(FileLine* fl, AstNodeExpr* fromp, const string& name)
+        : ASTGEN_SUPER_StructSel(fl)
+        , m_name{name} {
+        this->fromp(fromp);
+        dtypep(nullptr);  // V3Width will resolve
+    }
+    ASTGEN_MEMBERS_AstStructSel;
+    string name() const override { return m_name; }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return false; }
+    bool same(const AstNode* samep) const override {
+        const AstStructSel* const sp = static_cast<const AstStructSel*>(samep);
+        return m_name == sp->m_name;
+    }
+    int instrCount() const override { return widthInstrs(); }
 };
 class AstSysIgnore final : public AstNodeExpr {
     // @astgen op1 := exprsp : List[AstNode] // Expressions to output (???)

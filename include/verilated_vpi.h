@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2009-2022 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2023 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -52,6 +52,8 @@ public:
     /// Returns time of the next registered VPI callback, or
     /// ~(0ULL) if none are registered
     static QData cbNextDeadline() VL_MT_UNSAFE_ONE;
+    /// Debug dump of callbacks
+    static void dumpCbs() VL_MT_UNSAFE_ONE;
 
     // Self test, for internal use only
     static void selfTest() VL_MT_UNSAFE_ONE;

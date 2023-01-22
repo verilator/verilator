@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1094,7 +1094,7 @@ private:
                     if (bdtypep->isDpiBitVec() && portp->width() > 32) {
                         portp->v3error("DPI function may not return a > 32 bits wide type "
                                        "other than basic types.\n"
-                                       + V3Error::warnMore()
+                                       + portp->warnMore()
                                        + "... Suggest make it an output argument instead?");
                     }
                     if (bdtypep->isDpiLogicVec()) {
@@ -1106,7 +1106,7 @@ private:
                 if (portp->isWide()) {
                     nodep->v3warn(E_UNSUPPORTED,
                                   "Unsupported: Public functions with return > 64 bits wide.\n"
-                                      + V3Error::warnMore()
+                                      + nodep->warnMore()
                                       + "... Suggest make it an output argument instead?");
                 }
             }

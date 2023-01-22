@@ -11,8 +11,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 compile(
-    expect_filename=>$Self->{golden_filename},
-    verilator_flags2=> ['--assert'],
+    expect_filename => $Self->{golden_filename},
+    verilator_flags2 => ['--assert'],
     fails => 1,
     );
 

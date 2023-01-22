@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -277,9 +277,10 @@ class AstToDfgVisitor final : public VNVisitor {
                    std::vector<Driver>& drivers) const {
         if (DfgConcat* const concatp = vtxp->cast<DfgConcat>()) {
             DfgVertex* const rhsp = concatp->rhsp();
+            auto const rhs_width = rhsp->width();
             addDriver(rhsp->fileline(), lsb, rhsp, drivers);
             DfgVertex* const lhsp = concatp->lhsp();
-            addDriver(lhsp->fileline(), lsb + rhsp->width(), lhsp, drivers);
+            addDriver(lhsp->fileline(), lsb + rhs_width, lhsp, drivers);
             concatp->unlinkDelete(*m_dfgp);
         } else {
             drivers.emplace_back(flp, lsb, vtxp);

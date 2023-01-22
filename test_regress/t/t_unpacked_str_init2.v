@@ -14,12 +14,12 @@ module t (/*AUTOARG*/);
                                       "s3", "s4", "s5", "s6", "s7", "s8", "s9",
                                       "s10", "s11", "t3", "t4", "t5", "t6"};
 
-   function string reg_x (logic [4:0] r, bit abi=1'b0);
+   function automatic string reg_x (logic [4:0] r, bit abi=1'b0);
       reg_x = abi ? REG_X[r] : $sformatf("x%0d", r);
    endfunction
 
    // the issue is triggered by a second function containing a case statement
-   function string f2 (logic [4:0] r, bit abi=0);
+   function automatic string f2 (logic [4:0] r, bit abi=0);
       case (r)
         5'd0:    f2 = $sformatf("nop");
         5'd1:    f2 = $sformatf("reg %s", reg_x(r[4:0], abi));

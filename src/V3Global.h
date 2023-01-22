@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -93,7 +93,7 @@ class V3Global final {
     // Globals
     AstNetlist* m_rootp = nullptr;  // Root of entire netlist,
     // created by makeInitNetlist(} so static constructors run first
-    V3HierBlockPlan* m_hierPlanp = nullptr;  // Hierarchical verilation plan,
+    V3HierBlockPlan* m_hierPlanp = nullptr;  // Hierarchical Verilation plan,
     // nullptr unless hier_block, set via hierPlanp(V3HierBlockPlan*}
     VWidthMinUsage m_widthMinUsage
         = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for
@@ -126,7 +126,6 @@ public:
     // CONSTRUCTORS
     V3Global() {}
     void boot();
-    void clear();
     void shutdown();  // Release allocated resources
     // ACCESSORS (general)
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -138,13 +138,16 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
                                                  rangep};
             } else if (VN_IS(nrangep, UnsizedRange)) {
                 arrayp = new AstUnsizedArrayDType{nrangep->fileline(), VFlagChildDType{}, arrayp};
+                VL_DO_DANGLING(nrangep->deleteTree(), nrangep);
             } else if (VN_IS(nrangep, BracketRange)) {
                 const AstBracketRange* const arangep = VN_AS(nrangep, BracketRange);
                 AstNode* const keyp = arangep->elementsp()->unlinkFrBack();
                 arrayp = new AstBracketArrayDType{nrangep->fileline(), VFlagChildDType{}, arrayp,
                                                   keyp};
+                VL_DO_DANGLING(nrangep->deleteTree(), nrangep);
             } else if (VN_IS(nrangep, WildcardRange)) {
                 arrayp = new AstWildcardArrayDType{nrangep->fileline(), VFlagChildDType{}, arrayp};
+                VL_DO_DANGLING(nrangep->deleteTree(), nrangep);
             } else {
                 UASSERT_OBJ(0, nrangep, "Expected range or unsized range");
             }

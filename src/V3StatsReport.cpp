@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -215,6 +215,7 @@ void V3Stats::statsStage(const string& name) {
     const double wallTimeDelta = wallTime - lastWallTime;
     lastWallTime = wallTime;
     V3Stats::addStatPerf("Stage, Elapsed time (sec), " + digitName, wallTimeDelta);
+    V3Stats::addStatPerf("Stage, Elapsed time (sec), TOTAL", wallTimeDelta);
 
     const double memory = V3Os::memUsageBytes() / 1024.0 / 1024.0;
     V3Stats::addStatPerf("Stage, Memory (MB), " + digitName, memory);

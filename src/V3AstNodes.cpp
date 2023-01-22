@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -724,6 +724,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         // + 1 below as VlQueue uses 0 to mean unlimited, 1 to mean size() max is 1
         if (adtypep->boundp()) info.m_type += ", " + cvtToStr(adtypep->boundConst() + 1);
         info.m_type += ">";
+    } else if (const auto* const adtypep = VN_CAST(dtypep, SampleQueueDType)) {
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
+        info.m_type = "VlSampleQueue<" + sub.m_type + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
         info.m_type = "VlClassRef<" + EmitCBaseVisitor::prefixNameProtect(adtypep) + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, IfaceRefDType)) {
@@ -734,6 +737,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         info.m_type = "VlUnpacked<" + sub.m_type;
         info.m_type += ", " + cvtToStr(adtypep->declRange().elements());
         info.m_type += ">";
+    } else if (VN_IS(dtypep, StructDType) && !VN_AS(dtypep, StructDType)->packed()) {
+        const auto* const sdtypep = VN_AS(dtypep, StructDType);
+        info.m_type = EmitCBaseVisitor::prefixNameProtect(sdtypep);
     } else if (const AstBasicDType* const bdtypep = dtypep->basicp()) {
         // We don't print msb()/lsb() as multidim packed would require recursion,
         // and may confuse users as C++ data is stored always with bit 0 used
@@ -1152,7 +1158,7 @@ static bool sameInit(const AstInitArray* ap, const AstInitArray* bp) {
         // Compare initializer arrays by value. Note this is only called when they hash the same,
         // so they likely run at most once per call to 'AstConstPool::findTable'.
         // This assumes that the defaults are used in the same way.
-        // TODO when buinding the AstInitArray, remove any values matching the default
+        // TODO when building the AstInitArray, remove any values matching the default
         const auto& amapr = ap->map();
         const auto& bmapr = bp->map();
         const auto ait = amapr.cbegin();
@@ -1999,6 +2005,10 @@ bool AstWildcardArrayDType::similarDType(const AstNodeDType* samep) const {
     return type() == samep->type() && asamep->subDTypep()
            && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
 }
+void AstSampleQueueDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "[*]";
+}
 void AstUnsizedArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "[]";
@@ -2082,6 +2092,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isSigPublic()) str << " [P]";
     if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOP]";
+    if (noReset()) str << " [!RST]";
     if (attrIsolateAssign()) str << " [aISO]";
     if (attrFileDescr()) str << " [aFD]";
     if (isFuncReturn()) {
@@ -2319,4 +2330,9 @@ AstAlways* AstAssignW::convertToAlways() {
     AstAlways* const newp = new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, bodysp};
     replaceWith(newp);  // User expected to then deleteTree();
     return newp;
+}
+
+void AstDelay::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (isCycleDelay()) str << " [CYCLE]";
 }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -73,6 +73,13 @@ class CUseVisitor final : public VNVisitor {
         if (nodep->user1SetOnce()) return;  // Process once
         if (nodep->virtRefDTypep()) iterate(nodep->virtRefDTypep());
         if (nodep->virtRefDType2p()) iterate(nodep->virtRefDType2p());
+
+        // Add a CUse for every struct that requires a declaration
+        AstStructDType* const stypep = VN_CAST(nodep->skipRefp(), StructDType);
+        if (stypep && stypep->classOrPackagep()) {
+            addNewUse(nodep, VUseType::INT_INCLUDE, stypep->classOrPackagep()->name());
+            iterateChildren(stypep);
+        }
     }
     void visit(AstNode* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once

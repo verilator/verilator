@@ -1,4 +1,4 @@
-.. Copyright 2003-2022 by Wilson Snyder.
+.. Copyright 2003-2023 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ######################
@@ -12,6 +12,7 @@ Verilator User's Guide
    overview.rst
    examples.rst
    install.rst
+   install-cmake.rst
 
 
 .. toctree::

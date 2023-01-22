@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -340,6 +340,18 @@ private:
             }
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
+    }
+    bool expandWide(AstNodeAssign* nodep, AstExtend* rhsp) {
+        UINFO(8, "    Wordize ASSIGN(EXTEND) " << nodep << endl);
+        if (!doExpand(nodep)) return false;
+        AstNodeExpr* const rlhsp = rhsp->lhsp();
+        for (int w = 0; w < rlhsp->widthWords(); ++w) {
+            addWordAssign(nodep, w, newAstWordSelClone(rlhsp, w));
+        }
+        for (int w = rlhsp->widthWords(); w < nodep->widthWords(); ++w) {
+            addWordAssign(nodep, w, new AstConst{nodep->fileline(), AstConst::SizedEData{}, 0});
+        }
+        return true;
     }
 
     void visit(AstSel* nodep) override {
@@ -836,6 +848,10 @@ private:
     }
     void visit(AstNodeAssign* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
+        if (VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+            return;  // Skip for UnpackArrayDType
+        }
+
         VL_RESTORER(m_stmtp);
         m_stmtp = nodep;
         iterateChildren(nodep);
@@ -853,6 +869,8 @@ private:
             } else if (AstArraySel* const rhsp = VN_CAST(nodep->rhsp(), ArraySel)) {
                 did = expandWide(nodep, rhsp);
             } else if (AstConcat* const rhsp = VN_CAST(nodep->rhsp(), Concat)) {
+                did = expandWide(nodep, rhsp);
+            } else if (AstExtend* const rhsp = VN_CAST(nodep->rhsp(), Extend)) {
                 did = expandWide(nodep, rhsp);
             } else if (AstReplicate* const rhsp = VN_CAST(nodep->rhsp(), Replicate)) {
                 did = expandWide(nodep, rhsp);

@@ -104,16 +104,13 @@ def filterf(fn1, fn2):
 parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
-    description="""Compare two Verilator debugging trees""",
-    epilog=
-    """Verilator_difftree is used for debugging Verilator tree output files.
+    description="""Compare two Verilator debugging trees.
+
+Verilator_difftree is used for debugging Verilator tree output files.
 It performs a diff between two files, or all files common between two
-directories, ignoring irrelevant pointer differences.
-
-For documentation see
-https://verilator.org/guide/latest/exe_verilator_difftree.html
-
-Copyright 2005-2022 by Wilson Snyder. This program is free software; you
+directories, ignoring irrelevant pointer differences.""",
+    epilog=
+    """Copyright 2005-2023 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

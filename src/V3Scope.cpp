@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -58,6 +58,7 @@ private:
     // STATE, for passing down one level of hierarchy (may need save/restore)
     AstCell* m_aboveCellp = nullptr;  // Cell that instantiates this module
     AstScope* m_aboveScopep = nullptr;  // Scope that instantiates this scope
+    AstClocking* m_clockingp = nullptr;  // Current clocking block
 
     std::unordered_map<AstNodeModule*, AstScope*> m_packageScopes;  // Scopes for each package
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
@@ -247,6 +248,15 @@ private:
         // We iterate under the *clone*
         iterateChildren(clonep);
     }
+    void visit(AstClocking* nodep) override {
+        VL_RESTORER(m_clockingp);
+        m_clockingp = nodep;
+        UINFO(4, "    CLOCKING " << nodep << endl);
+        iterateChildren(nodep);
+        if (nodep->varsp()) m_scopep->modp()->addStmtsp(nodep->varsp()->unlinkFrBackWithNext());
+        if (nodep->eventp()) m_scopep->modp()->addStmtsp(nodep->eventp()->unlinkFrBack());
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
     void visit(AstNodeFTask* nodep) override {
         // Add to list of blocks under this scope
         UINFO(4, "    FTASK " << nodep << endl);
@@ -265,7 +275,9 @@ private:
     }
     void visit(AstVar* nodep) override {
         // Make new scope variable
-        if (!nodep->user1p()) {
+        if (m_clockingp) {
+            nodep->name(VString::dot(m_clockingp->name(), "__DOT__", nodep->name()));
+        } else if (!nodep->user1p()) {
             AstScope* scopep = m_scopep;
             if (AstIfaceRefDType* const ifacerefp = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
                 // Attach every non-virtual interface variable its inner scope

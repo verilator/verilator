@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -97,7 +97,9 @@ private:
                 || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), VoidDType)) {
             } else {
-                setCppWidth(nodep);
+                const AstStructDType* const dtypep
+                    = VN_CAST(nodep->dtypep()->skipRefp(), StructDType);
+                if (!dtypep || dtypep->packed()) { setCppWidth(nodep); }
             }
         }
     }

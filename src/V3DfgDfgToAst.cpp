@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -276,7 +276,7 @@ class DfgToAstVisitor final : DfgVisitor {
             // Whole variable is driven. Just assign from the canonical variable.
             addResultEquation(dfgVarp->driverFileLine(0), wRef(), rRef());
         } else {
-            // Variable is driven partially. Asign from parts of the canonical var.
+            // Variable is driven partially. Assign from parts of the canonical var.
             dfgVarp->forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {
                 UASSERT_OBJ(edge.sourcep(), dfgVarp, "Should have removed undriven sources");
                 // Create select LValue
@@ -292,7 +292,7 @@ class DfgToAstVisitor final : DfgVisitor {
     }
 
     void convertArrayDiver(const DfgVarArray* dfgVarp) {
-        // Variable is driven partially. Asign from parts of the canonical var.
+        // Variable is driven partially. Assign from parts of the canonical var.
         dfgVarp->forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {
             UASSERT_OBJ(edge.sourcep(), dfgVarp, "Should have removed undriven sources");
             // Render the rhs expression

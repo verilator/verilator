@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -82,6 +82,8 @@ struct LogicClasses final {
     LogicByScope m_clocked;  // Clocked (or sequential) logic (logic with explicit sensitivities)
     LogicByScope m_hybrid;  // Hybrid logic (combinational logic with some explicit sensitivities)
     LogicByScope m_postponed;  // Postponed logic ($strobe)
+    LogicByScope m_observed;  // Observed logic (contains AstAlwaysObserved)
+    LogicByScope m_reactive;  // Reactive logic (contains AstAlwaysReactive)
 
     LogicClasses() = default;
     VL_UNCOPYABLE(LogicClasses);

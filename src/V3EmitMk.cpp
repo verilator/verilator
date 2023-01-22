@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -317,7 +317,7 @@ class EmitMkHierVerilation final {
     void emit(V3OutMkFile& of) const {
         of.puts("# Hierarchical Verilation -*- Makefile -*-\n");
         of.puts("# DESCR"
-                "IPTION: Verilator output: Makefile for hierarchical verilatrion\n");
+                "IPTION: Verilator output: Makefile for hierarchical Verilation\n");
         of.puts("#\n");
         of.puts("# The main makefile " + v3Global.opt.prefix() + ".mk calls this makefile\n");
         of.puts("\n");

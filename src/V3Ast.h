@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -2207,7 +2207,7 @@ AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp);
 // Inline method implementations
 AstNode* AstNode::addNext(AstNode* newp) { return addNext(this, newp); }
 
-// Specialisations of privateTypeTest
+// Specializations of privateTypeTest
 #include "V3Ast__gen_type_tests.h"  // From ./astgen
 
 // Specializations of AstNode::mayBeUnder

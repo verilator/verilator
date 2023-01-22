@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -803,18 +803,17 @@ void V3Options::notify() {
             // We always call protect() on names, we don't check if public or not
             // Hence any external references wouldn't be able to find the refed public object.
             cmdfl->v3warn(E_UNSUPPORTED, "Unsupported: Using --protect-ids with --public\n"  //
-                                             + V3Error::warnMore()
-                                             + "... Suggest remove --public.");
+                                             + cmdfl->warnMore() + "... Suggest remove --public.");
         }
         if (trace()) {
             cmdfl->v3warn(INSECURE,
                           "Using --protect-ids with --trace may expose private design details\n"
-                              + V3Error::warnMore() + "... Suggest remove --trace.");
+                              + cmdfl->warnMore() + "... Suggest remove --trace.");
         }
         if (vpi()) {
             cmdfl->v3warn(INSECURE,
                           "Using --protect-ids with --vpi may expose private design details\n"
-                              + V3Error::warnMore() + "... Suggest remove --vpi.");
+                              + cmdfl->warnMore() + "... Suggest remove --vpi.");
         }
     }
 
@@ -1406,7 +1405,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_statsVars = flag;
         m_stats |= flag;
     });
-    DECL_OPTION("-structs-unpacked", OnOff, &m_structsPacked);
+    DECL_OPTION("-structs-packed", OnOff, &m_structsPacked);
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2017; });
 
     DECL_OPTION("-threads-coarsen", OnOff, &m_threadsCoarsen).undocumented();  // Debug
@@ -1822,7 +1821,7 @@ void V3Options::showVersion(bool verbose) {
     if (!verbose) return;
 
     cout << endl;
-    cout << "Copyright 2003-2022 by Wilson Snyder.  Verilator is free software; you can\n";
+    cout << "Copyright 2003-2023 by Wilson Snyder.  Verilator is free software; you can\n";
     cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
     cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
     cout << "License Version 2.0.\n";

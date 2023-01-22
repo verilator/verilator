@@ -1,4 +1,4 @@
-.. Copyright 2003-2022 by Wilson Snyder.
+.. Copyright 2003-2023 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 *******************
@@ -725,6 +725,27 @@ List Of Warnings
 
    Other tools with similar warnings: Icarus Verilog's implicit, "warning:
    implicit definition of wire '...'".
+
+
+.. option:: IMPLICITSTATIC
+
+   Warns that the lifetime of a task or a function was not provided and so
+   was implicitly set to static. The warning is suppressed when no
+   variables inside the task or a function are assigned to.
+
+   This is a warning because the static default differs from C++, differs
+   from class member function/tasks.  Static is a more dangerous default
+   then automatic as static prevents the function from being reinterant,
+   which may be a source of bugs, and/or performance issues.
+
+   If the function does not require static behavior, change it to "function
+   automatic".
+
+   If the function requires static behavior, change it to "function
+   static".
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
 
 
 .. option:: IMPORTSTAR

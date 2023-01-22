@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -60,6 +60,8 @@ private:
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
     AstNodeDType* m_dtypep = nullptr;  // Current data type
+    AstNodeExpr* m_defaultInSkewp = nullptr;  // Current default input skew
+    AstNodeExpr* m_defaultOutSkewp = nullptr;  // Current default output skew
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
     int m_genblkNum = 0;  // Begin block number, 0=none seen
     VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
@@ -121,6 +123,13 @@ private:
                 && (VN_IS(nodep->stmtsp(), GenIf))  // Begin has if underneath
                 && !nodep->stmtsp()->nextp());  // Has only one item
     }
+    bool hasStaticDeclAssignments(AstNodeFTask* nodep) {
+        for (const AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
+            const AstVar* const varp = VN_CAST(itemp, Var);
+            if (varp && varp->valuep() && !varp->lifetime().isAutomatic()) return true;
+        }
+        return false;
+    }
 
     // VISITs
     void visit(AstNodeFTask* nodep) override {
@@ -131,10 +140,26 @@ private:
             VL_RESTORER(m_lifetime);
             {
                 m_ftaskp = nodep;
-                m_lifetime = nodep->lifetime();
-                if (m_lifetime.isNone()) {
-                    // Automatic always until we support static
-                    m_lifetime = VLifetime::AUTOMATIC;
+                if (!nodep->lifetime().isNone()) {
+                    m_lifetime = nodep->lifetime();
+                } else {
+                    const AstClassOrPackageRef* const classPkgRefp
+                        = VN_AS(nodep->classOrPackagep(), ClassOrPackageRef);
+                    if (classPkgRefp && VN_IS(classPkgRefp->classOrPackageNodep(), Class)) {
+                        // Class methods are automatic by default
+                        m_lifetime = VLifetime::AUTOMATIC;
+                    } else if (nodep->dpiImport()) {
+                        // DPI-imported function don't have lifetime specifiers
+                        m_lifetime = VLifetime::NONE;
+                    }
+                    if (m_lifetime.isStatic() && hasStaticDeclAssignments(nodep)) {
+                        nodep->v3warn(
+                            IMPLICITSTATIC,
+                            "Function/task's lifetime implicitly set to static\n"
+                                << nodep->warnMore()
+                                << "... Suggest use 'function automatic' or 'function static'");
+                    }
+                    nodep->lifetime(m_lifetime);
                 }
                 iterateChildren(nodep);
             }
@@ -631,6 +656,66 @@ private:
         if (nodep->name() == "std" && !nodep->classOrPackagep()) {
             nodep->classOrPackagep(m_stdPackagep);
         }
+    }
+    void visit(AstClocking* nodep) override {
+        VL_RESTORER(m_defaultInSkewp);
+        VL_RESTORER(m_defaultOutSkewp);
+        // Find default input and output skews
+        AstClockingItem* nextItemp = nodep->itemsp();
+        for (AstClockingItem* itemp = nextItemp; itemp; itemp = nextItemp) {
+            nextItemp = VN_AS(itemp->nextp(), ClockingItem);
+            if (itemp->exprp() || itemp->assignp()) continue;
+            if (itemp->skewp()) {
+                if (itemp->direction() == VDirection::INPUT) {
+                    // Disallow default redefinition; note some simulators allow this
+                    if (m_defaultInSkewp) {
+                        itemp->skewp()->v3error("Multiple default input skews not allowed");
+                    }
+                    m_defaultInSkewp = itemp->skewp();
+                } else if (itemp->direction() == VDirection::OUTPUT) {
+                    if (AstConst* const constp = VN_CAST(itemp->skewp(), Const)) {
+                        if (constp->num().is1Step()) {
+                            itemp->skewp()->v3error("1step not allowed as output skew");
+                        }
+                    }
+                    // Disallow default redefinition; note some simulators allow this
+                    if (m_defaultOutSkewp) {
+                        itemp->skewp()->v3error("Multiple default output skews not allowed");
+                    }
+                    m_defaultOutSkewp = itemp->skewp();
+                } else {
+                    itemp->v3fatalSrc("Incorrect direction");
+                }
+            }
+            pushDeletep(itemp->unlinkFrBack());
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstClockingItem* nodep) override {
+        if (nodep->direction() == VDirection::OUTPUT) {
+            if (!nodep->skewp()) {
+                if (m_defaultOutSkewp) {
+                    nodep->skewp(m_defaultOutSkewp->cloneTree(false));
+                } else {
+                    // Default is 0 (IEEE 1800-2017 14.3)
+                    nodep->skewp(new AstConst{nodep->fileline(), 0});
+                }
+            } else if (AstConst* const constp = VN_CAST(nodep->skewp(), Const)) {
+                if (constp->num().is1Step()) {
+                    nodep->skewp()->v3error("1step not allowed as output skew");
+                }
+            }
+        } else if (nodep->direction() == VDirection::INPUT) {
+            if (!nodep->skewp()) {
+                if (m_defaultInSkewp) {
+                    nodep->skewp(m_defaultInSkewp->cloneTree(false));
+                } else {
+                    // Default is 1step (IEEE 1800-2017 14.3)
+                    nodep->skewp(new AstConst{nodep->fileline(), AstConst::OneStep{}});
+                }
+            }
+        }
+        iterateChildren(nodep);
     }
 
     void visit(AstNode* nodep) override {

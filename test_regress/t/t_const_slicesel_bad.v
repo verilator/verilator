@@ -2,7 +2,7 @@
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2021 by Michael Lefebvre.
-
+// SPDX-License-Identifier: CC0-1.0
 
 module t(/*AUTOARG*/);
 

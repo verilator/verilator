@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -27,7 +27,7 @@
 // What this pass does looks as below.
 //
 //     // Original
-//     logic [1:0] unpcked_array_var[0:1] /*verilator split_var*/;
+//     logic [1:0] unpacked_array_var[0:1] /*verilator split_var*/;
 //     always_comb begin
 //        unpacked_array_var[1][0] =  unpacked_array_var[0][0]; // UNOPTFLAT warning
 //        unpacked_array_var[1][1] = ~unpacked_array_var[0][1]; // UNOPTFLAT warning
@@ -45,8 +45,8 @@
 // is initially converted to
 //
 //     // Intermediate
-//     logic [1:0] unpcked_array_var0 /*verilator split_var*/;
-//     logic [1:0] unpcked_array_var1 /*verilator split_var*/;
+//     logic [1:0] unpacked_array_var0 /*verilator split_var*/;
+//     logic [1:0] unpacked_array_var1 /*verilator split_var*/;
 //     always_comb begin
 //        unpacked_array_var1[0] =  unpacked_array_var0[0];
 //        unpacked_array_var1[1] = ~unpacked_array_var0[1];
@@ -228,7 +228,7 @@ struct SplitVarImpl {
 };  // SplitVarImpl
 
 //######################################################################
-// Utilities required in wharious placs
+// Utilities required in various placs
 
 static void warnNoSplit(const AstVar* varp, const AstNode* wherep, const char* reasonp) {
     wherep->v3warn(SPLITVAR, varp->prettyNameQ()

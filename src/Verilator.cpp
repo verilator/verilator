@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -159,7 +159,7 @@ static void process() {
     V3Dead::deadifyModules(v3Global.rootp());
     v3Global.checkTree();
 
-    // Create a hierarchical verilation plan
+    // Create a hierarchical Verilation plan
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && v3Global.opt.hierarchical()) {
         V3HierBlockPlan::createPlan(v3Global.rootp());
         // If a plan is created, further analysis is not necessary.
@@ -672,9 +672,6 @@ static void verilate(const string& argString) {
 
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
-    // Cleanup memory for valgrind leak analysis
-    v3Global.clear();
-    FileLine::deleteAllRemaining();
 }
 
 static string buildMakeCmd(const string& makefile, const string& target) {
@@ -763,7 +760,9 @@ int main(int argc, char** argv) {
     }
 
     // Explicitly release resources
+    V3PreShell::shutdown();
     v3Global.shutdown();
+    FileLine::deleteAllRemaining();
 
     UINFO(1, "Done, Exiting...\n");
 }

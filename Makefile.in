@@ -7,7 +7,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -53,7 +53,6 @@ INSTALL_DATA = @INSTALL_DATA@
 MAKEINFO = makeinfo
 POD2TEXT = pod2text
 MKINSTALLDIRS = $(SHELL) $(srcdir)/src/mkinstalldirs
-PERL = @PERL@
 
 # Version (for docs/guide/conf.py)
 PACKAGE_VERSION_NUMBER = @PACKAGE_VERSION_NUMBER@
@@ -126,7 +125,12 @@ EXAMPLES_FIRST = \
 EXAMPLES = $(EXAMPLES_FIRST) $(filter-out $(EXAMPLES_FIRST), $(sort $(wildcard examples/*)))
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
-VL_INST_MAN_FILES = verilator.1 verilator_coverage.1
+# No verilator_ccache_report.1, verilator_difftree.1 as those are not bin/ installed
+VL_INST_MAN_FILES = \
+	verilator.1 \
+	verilator_coverage.1 \
+	verilator_gantt.1 \
+	verilator_profcfunc.1 \
 
 default: all
 all: all_nomsg msg_test
@@ -179,8 +183,12 @@ docs: info
 
 info: $(INFOS)
 
-%.1: ${srcdir}/bin/%
+verilator.1: ${srcdir}/bin/verilator
 	pod2man $< $@
+verilator_coverage.1: ${srcdir}/bin/verilator_coverage
+	pod2man $< $@
+%.1: ${srcdir}/bin/%
+	help2man --no-info --no-discard-stderr --version-string=- $< -o $@
 
 .PHONY: verilator.html
 verilator.html:
@@ -193,7 +201,7 @@ verilator.pdf: Makefile
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
 VL_INST_BIN_FILES = verilator verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_coverage_bin_dbg$(EXEEXT) \
-	verilator_ccache_report verilator_coverage verilator_gantt verilator_includer verilator_profcfunc
+	verilator_ccache_report verilator_coverage verilator_difftree verilator_gantt verilator_includer verilator_profcfunc
 # Some scripts go into both the search path and pkgdatadir,
 # so they can be found by the user, and under $VERILATOR_ROOT.
 
@@ -226,6 +234,7 @@ installbin:
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/bin
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_ccache_report $(DESTDIR)$(pkgdatadir)/bin/verilator_ccache_report )
+	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_difftree $(DESTDIR)$(pkgdatadir)/bin/verilator_difftree )
 
 # Man files can either be part of the original kit, or built in current directory
 # So important we use $^ so VPATH is searched
@@ -384,6 +393,7 @@ PY_PROGRAMS = \
 	bin/verilator_ccache_report \
 	bin/verilator_difftree \
 	bin/verilator_gantt \
+	bin/verilator_includer \
 	bin/verilator_profcfunc \
 	examples/xml_py/vl_file_copy \
 	examples/xml_py/vl_hier_graph \
@@ -397,6 +407,7 @@ PY_PROGRAMS = \
 	src/flexfix \
 	src/vlcovgen \
 	test_regress/t/*.pf \
+	nodist/clang_check_attributes \
 	nodist/code_coverage \
 	nodist/dot_importer \
 	nodist/fuzzer/actual_fail \

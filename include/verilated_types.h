@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -212,9 +212,9 @@ struct VlWide final {
 
     // OPERATOR METHODS
     // Default copy assignment operators are used.
-    operator WDataOutP() { return &m_storage[0]; }  // This also allows []
-    operator WDataInP() const { return &m_storage[0]; }  // This also allows []
-    bool operator!=(const VlWide<T_Words>& that) const {
+    operator WDataOutP() VL_PURE { return &m_storage[0]; }  // This also allows []
+    operator WDataInP() const VL_PURE { return &m_storage[0]; }  // This also allows []
+    bool operator!=(const VlWide<T_Words>& that) const VL_PURE {
         for (size_t i = 0; i < T_Words; ++i) {
             if (m_storage[i] != that.m_storage[i]) return true;
         }
@@ -273,6 +273,8 @@ public:
     VlQueue(VlQueue&&) = default;
     VlQueue& operator=(const VlQueue&) = default;
     VlQueue& operator=(VlQueue&&) = default;
+    bool operator==(const VlQueue& rhs) const { return m_deque == rhs.m_deque; }
+    bool operator!=(const VlQueue& rhs) const { return m_deque != rhs.m_deque; }
 
     // Standard copy constructor works. Verilog: assoca = assocb
     // Also must allow conversion from a different T_MaxSize queue
@@ -692,6 +694,8 @@ public:
     VlAssocArray(VlAssocArray&&) = default;
     VlAssocArray& operator=(const VlAssocArray&) = default;
     VlAssocArray& operator=(VlAssocArray&&) = default;
+    bool operator==(const VlAssocArray& rhs) const { return m_map == rhs.m_map; }
+    bool operator!=(const VlAssocArray& rhs) const { return m_map != rhs.m_map; }
 
     // METHODS
     T_Value& atDefault() { return m_defaultValue; }
@@ -1225,6 +1229,9 @@ public:
     T_Class* operator->() const { return m_objp; }
     // For 'if (ptr)...'
     operator bool() const { return m_objp; }
+    // In SV A == B iff both are handles to the same object (IEEE 1800-2017 8.4)
+    bool operator==(const VlClassRef& rhs) const { return m_objp == rhs.m_objp; };
+    bool operator!=(const VlClassRef& rhs) const { return m_objp != rhs.m_objp; };
 };
 
 template <typename T, typename U>
@@ -1237,6 +1244,42 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T> in, VlClassRef<U>& outr) {
         return false;
     }
 }
+
+//=============================================================================
+// VlSampleQueue stores samples for input clockvars in clocking blocks. At a clocking event,
+// samples from this queue should be written to the correct input clockvar.
+
+template <typename T_Sampled>
+class VlSampleQueue final {
+    // TYPES
+    // Type representing a single value sample at a point in time
+    struct VlSample {
+        uint64_t m_timestamp;  // Timestamp at which the value was sampled
+        T_Sampled m_value;  // The sampled value
+    };
+
+    // MEMBERS
+    std::deque<VlSample> m_queue;  // Queue of samples with timestamps
+
+public:
+    // METHODS
+    // Push a new sample with the given timestamp to the end of the queue
+    void push(uint64_t time, const T_Sampled& value) { m_queue.push_back({time, value}); }
+    // Get the latest sample with its timestamp less than or equal to the given skew
+    void pop(uint64_t time, uint64_t skew, T_Sampled& value) {
+        if (time < skew) return;
+        // Find the last element not greater than (time - skew). Do a binary search, as the queue
+        // should be ordered.
+        auto it = std::lower_bound(m_queue.rbegin(), m_queue.rend(), VlSample{time - skew, {}},
+                                   [](const VlSample& sample, const VlSample& skewed) {
+                                       return sample.m_timestamp > skewed.m_timestamp;
+                                   });
+        if (it != m_queue.rend()) {
+            value = it->m_value;
+            m_queue.erase(m_queue.begin(), it.base());
+        }
+    }
+};
 
 //======================================================================
 

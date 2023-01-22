@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -191,7 +191,7 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum, fstVar
         if ((new_it->back() & 0x80)) {
             tmpModName = *new_it;
             tmpModName.pop_back();
-            // If the scope ends with a non-ascii character, it will be 0x80 + fstScopeType
+            // If the scope ends with a non-ASCII character, it will be 0x80 + fstScopeType
             fstWriterSetScope(m_fst, static_cast<fstScopeType>(new_it->back() & 0x7f),
                               tmpModName.c_str(), nullptr);
         } else {

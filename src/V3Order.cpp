@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -217,7 +217,7 @@ class OrderBuildVisitor final : public VNVisitor {
 
         m_inClocked = senTreep->hasClocked();
 
-        // Note: We don't need to analyse the sensitivity list, as currently all sensitivity
+        // Note: We don't need to analyze the sensitivity list, as currently all sensitivity
         // lists simply reference an entry in a trigger vector, which are all set external to
         // the code being ordered.
 
@@ -384,6 +384,12 @@ class OrderBuildVisitor final : public VNVisitor {
         m_inPost = true;
         iterateLogic(nodep);
         m_inPost = false;
+    }
+    void visit(AstAlwaysObserved* nodep) override {  //
+        iterateLogic(nodep);
+    }
+    void visit(AstAlwaysReactive* nodep) override {  //
+        iterateLogic(nodep);
     }
     void visit(AstFinal* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("AstFinal should not need ordering");

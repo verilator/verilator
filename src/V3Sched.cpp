@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -192,7 +192,13 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
                 }
             } else {
                 UASSERT_OBJ(senTreep->hasClocked(), activep, "What else could it be?");
-                result.m_clocked.emplace_back(scopep, activep);
+                if (VN_IS(activep->stmtsp(), AlwaysObserved)) {
+                    result.m_observed.emplace_back(scopep, activep);
+                } else if (VN_IS(activep->stmtsp(), AlwaysReactive)) {
+                    result.m_reactive.emplace_back(scopep, activep);
+                } else {
+                    result.m_clocked.emplace_back(scopep, activep);
+                }
             }
         });
 
@@ -330,6 +336,20 @@ struct TriggerKit {
                                      new AstConst{flp, AstConst::BitFalse{}}});
         m_funcp->stmtsp()->addHereThisAsNext(stmtp);
     }
+};
+
+//============================================================================
+// EvalKit groups items that have to be passed to createEval() for a given eval region
+
+struct EvalKit {
+    // The TRIGGERVEC AstVarScope representing the region's trigger flags
+    AstVarScope* const m_vscp = nullptr;
+    // The AstCFunc that computes the region's active triggers
+    AstCFunc* const m_triggerComputep = nullptr;
+    // The AstCFunc that dumps the region's active triggers
+    AstCFunc* const m_dumpp = nullptr;
+    // The AstCFunc that evaluates the region's logic
+    AstCFunc* const m_funcp = nullptr;
 };
 
 // Create an AstSenTree that is sensitive to the given trigger index. Must not exist yet!
@@ -534,6 +554,7 @@ AstNodeStmt* buildLoop(AstNetlist* netlistp, const string& name,
     FileLine* const flp = scopeTopp->fileline();
     // Create the loop condition variable
     AstVarScope* const condp = scopeTopp->createTemp("__V" + name + "Continue", 1);
+    condp->varp()->noReset(true);
     // Initialize the loop condition variable to true
     AstNodeStmt* const resp = setVar(condp, 1);
     // Add the loop
@@ -558,6 +579,7 @@ std::pair<AstVarScope*, AstNodeStmt*> makeEvalLoop(AstNetlist* netlistp, const s
     FileLine* const flp = scopeTopp->fileline();
 
     AstVarScope* const counterp = scopeTopp->createTemp("__V" + tag + "IterCount", 32);
+    counterp->varp()->noReset(true);
 
     AstNodeStmt* nodep = setVar(counterp, 0);
     nodep->addNext(buildLoop(netlistp, tag, [&](AstVarScope* continuep, AstWhile* loopp) {
@@ -765,15 +787,45 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
 }
 
 //============================================================================
-// Bold together parts to create the top level _eval function
+// Helpers for 'createEval'
+
+AstStmtExpr* createTriggerClearCall(FileLine* const flp, AstVarScope* const vscp) {  // Trigger
+    AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::WRITE};
+    AstCMethodHard* const callp = new AstCMethodHard{flp, refp, "clear"};
+    callp->dtypeSetVoid();
+    return callp->makeStmt();
+}
+
+AstStmtExpr* createTriggerSetCall(FileLine* const flp, AstVarScope* const toVscp,
+                                  AstVarScope* const fromVscp) {
+    AstVarRef* const lhsp = new AstVarRef{flp, toVscp, VAccess::WRITE};
+    AstVarRef* const argp = new AstVarRef{flp, fromVscp, VAccess::READ};
+    AstCMethodHard* const callp = new AstCMethodHard{flp, lhsp, "set", argp};
+    callp->dtypeSetVoid();
+    return callp->makeStmt();
+}
+
+AstStmtExpr* createTriggerAndNotCall(FileLine* const flp, AstVarScope* const lhsVscp,
+                                     AstVarScope* const aVscp, AstVarScope* const bVscp) {
+    AstVarRef* const lhsp = new AstVarRef{flp, lhsVscp, VAccess::WRITE};
+    AstVarRef* const opap = new AstVarRef{flp, aVscp, VAccess::READ};
+    AstVarRef* const opbp = new AstVarRef{flp, bVscp, VAccess::READ};
+    opap->addNext(opbp);
+    AstCMethodHard* const callp = new AstCMethodHard{flp, lhsp, "andNot", opap};
+    callp->dtypeSetVoid();
+    return callp->makeStmt();
+}
+
+//============================================================================
+// Bolt together parts to create the top level _eval function
 
 void createEval(AstNetlist* netlistp,  //
                 AstNode* icoLoop,  //
-                const TriggerKit& actTrig,  //
+                const EvalKit& actKit,  //
                 AstVarScope* preTrigsp,  //
-                AstVarScope* nbaTrigsp,  //
-                AstCFunc* actFuncp,  //
-                AstCFunc* nbaFuncp,  //
+                const EvalKit& nbaKit,  //
+                const EvalKit& obsKit,  //
+                const EvalKit& reactKit,  //
                 AstCFunc* postponedFuncp,  //
                 TimingKit& timingKit  //
 ) {
@@ -785,31 +837,16 @@ void createEval(AstNetlist* netlistp,  //
     // Start with the ico loop, if any
     if (icoLoop) funcp->addStmtsp(icoLoop);
 
-    // Create the NBA trigger dumping function, which is the same as act trigger
-    // dumping function, but referencing the nba trigger vector.
-    AstCFunc* const nbaDumpp = actTrig.m_dumpp->cloneTree(false);
-    actTrig.m_dumpp->addNextHere(nbaDumpp);
-    nbaDumpp->name("_dump_triggers__nba");
-    nbaDumpp->foreach([&](AstVarRef* refp) {
-        UASSERT_OBJ(refp->access().isReadOnly(), refp, "Should only read state");
-        if (refp->varScopep() == actTrig.m_vscp) {
-            refp->replaceWith(new AstVarRef{refp->fileline(), nbaTrigsp, VAccess::READ});
-        }
-    });
-    nbaDumpp->foreach([&](AstText* textp) {  //
-        textp->text(VString::replaceWord(textp->text(), "act", "nba"));
-    });
-
     // Create the active eval loop
     AstNodeStmt* const activeEvalLoopp
         = makeEvalLoop(
-              netlistp, "act", "Active", actTrig.m_vscp, actTrig.m_dumpp,
+              netlistp, "act", "Active", actKit.m_vscp, actKit.m_dumpp,
               [&]() {  // Trigger
                   AstNodeStmt* resultp = nullptr;
 
                   // Compute the current triggers
                   {
-                      AstCCall* const trigsp = new AstCCall{flp, actTrig.m_funcp};
+                      AstCCall* const trigsp = new AstCCall{flp, actKit.m_triggerComputep};
                       trigsp->dtypeSetVoid();
                       resultp = AstNode::addNext(resultp, trigsp->makeStmt());
                   }
@@ -822,38 +859,21 @@ void createEval(AstNetlist* netlistp,  //
                   return resultp;
               },
               [&]() {  // Body
-                  AstNodeStmt* resultp = nullptr;
-
                   // Compute the pre triggers
-                  {
-                      AstVarRef* const lhsp = new AstVarRef{flp, preTrigsp, VAccess::WRITE};
-                      AstVarRef* const opap = new AstVarRef{flp, actTrig.m_vscp, VAccess::READ};
-                      AstVarRef* const opbp = new AstVarRef{flp, nbaTrigsp, VAccess::READ};
-                      opap->addNext(opbp);
-                      AstCMethodHard* const callp = new AstCMethodHard{flp, lhsp, "andNot", opap};
-                      callp->dtypeSetVoid();
-                      resultp = AstNode::addNext(resultp, callp->makeStmt());
-                  }
-
+                  AstNodeStmt* resultp
+                      = createTriggerAndNotCall(flp, preTrigsp, actKit.m_vscp, nbaKit.m_vscp);
                   // Latch the active trigger flags under the NBA trigger flags
-                  {
-                      AstVarRef* const lhsp = new AstVarRef{flp, nbaTrigsp, VAccess::WRITE};
-                      AstVarRef* const argp = new AstVarRef{flp, actTrig.m_vscp, VAccess::READ};
-                      AstCMethodHard* const callp = new AstCMethodHard{flp, lhsp, "set", argp};
-                      callp->dtypeSetVoid();
-                      resultp = AstNode::addNext(resultp, callp->makeStmt());
-                  }
-
+                  resultp = AstNode::addNext(
+                      resultp, createTriggerSetCall(flp, nbaKit.m_vscp, actKit.m_vscp));
                   // Resume triggered timing schedulers
                   if (AstCCall* const resumep = timingKit.createResume(netlistp)) {
                       resultp = AstNode::addNext(resultp, resumep->makeStmt());
                   }
-
                   // Invoke body function
                   {
-                      AstCCall* const callp = new AstCCall{flp, actFuncp};
+                      AstCCall* const callp = new AstCCall{flp, actKit.m_funcp};
                       callp->dtypeSetVoid();
-                      return AstNode::addNext(resultp, callp->makeStmt());
+                      resultp = AstNode::addNext(resultp, callp->makeStmt());
                   }
 
                   return resultp;
@@ -861,32 +881,75 @@ void createEval(AstNetlist* netlistp,  //
               .second;
 
     // Create the NBA eval loop. This uses the Active eval loop in the trigger section.
-    AstNodeStmt* const nbaEvalLoopp
+    AstNodeStmt* topEvalLoopp
         = makeEvalLoop(
-              netlistp, "nba", "NBA", nbaTrigsp, nbaDumpp,
+              netlistp, "nba", "NBA", nbaKit.m_vscp, nbaKit.m_dumpp,
               [&]() {  // Trigger
-                  AstNodeStmt* resultp = nullptr;
-
                   // Reset NBA triggers
-                  {
-                      AstVarRef* const refp = new AstVarRef{flp, nbaTrigsp, VAccess::WRITE};
-                      AstCMethodHard* const callp = new AstCMethodHard{flp, refp, "clear"};
-                      callp->dtypeSetVoid();
-                      resultp = AstNode::addNext(resultp, callp->makeStmt());
-                  }
-
+                  AstNodeStmt* resultp = createTriggerClearCall(flp, nbaKit.m_vscp);
                   // Run the Active eval loop
-                  return AstNode::addNext(resultp, activeEvalLoopp);
+                  resultp = AstNode::addNext(resultp, activeEvalLoopp);
+                  return resultp;
               },
               [&]() {  // Body
-                  AstCCall* const callp = new AstCCall{flp, nbaFuncp};
+                  AstCCall* const callp = new AstCCall{flp, nbaKit.m_funcp};
                   callp->dtypeSetVoid();
-                  return callp->makeStmt();
+                  AstNodeStmt* resultp = callp->makeStmt();
+                  // Latch the NBA trigger flags under the following region's trigger flags
+                  AstVarScope* const nextVscp = obsKit.m_vscp ? obsKit.m_vscp : reactKit.m_vscp;
+                  if (nextVscp) {
+                      resultp = AstNode::addNext(
+                          resultp, createTriggerSetCall(flp, nextVscp, nbaKit.m_vscp));
+                  }
+                  return resultp;
               })
               .second;
 
-    // Add the NBA eval loop
-    funcp->addStmtsp(nbaEvalLoopp);
+    if (obsKit.m_funcp) {
+        // Create the Observed eval loop. This uses the NBA eval loop in the trigger section.
+        topEvalLoopp
+            = makeEvalLoop(
+                  netlistp, "obs", "Observed", obsKit.m_vscp, obsKit.m_dumpp,
+                  [&]() {  // Trigger
+                      // Reset Observed triggers
+                      AstNodeStmt* resultp = createTriggerClearCall(flp, obsKit.m_vscp);
+                      // Run the NBA eval loop
+                      resultp = AstNode::addNext(resultp, topEvalLoopp);
+                      return resultp;
+                  },
+                  [&]() {  // Body
+                      AstCCall* const callp = new AstCCall{flp, obsKit.m_funcp};
+                      callp->dtypeSetVoid();
+                      AstNodeStmt* resultp = callp->makeStmt();
+                      // Latch the Observed trigger flags under the Reactive trigger flags
+                      if (reactKit.m_vscp) {
+                          resultp = AstNode::addNext(
+                              resultp, createTriggerSetCall(flp, reactKit.m_vscp, obsKit.m_vscp));
+                      }
+                      return resultp;
+                  })
+                  .second;
+    }
+
+    if (reactKit.m_funcp) {
+        // Create the Reactive eval loop. This uses the previous eval loop in the trigger section.
+        topEvalLoopp = makeEvalLoop(
+                           netlistp, "react", "Reactive", reactKit.m_vscp, reactKit.m_dumpp,
+                           [&]() {  // Trigger
+                               // Reset Reactive triggers
+                               AstNodeStmt* resultp = createTriggerClearCall(flp, reactKit.m_vscp);
+                               // Run the previous eval loop
+                               resultp = AstNode::addNext(resultp, topEvalLoopp);
+                               return resultp;
+                           },
+                           [&]() {  // Body
+                               auto* const callp = new AstCCall{flp, reactKit.m_funcp};
+                               callp->dtypeSetVoid();
+                               return callp->makeStmt();
+                           })
+                           .second;
+    }
+    funcp->addStmtsp(topEvalLoopp);
 
     // Add the Postponed eval call
     if (postponedFuncp) {
@@ -989,6 +1052,8 @@ void schedule(AstNetlist* netlistp) {
     const auto& senTreeps = getSenTreesUsedBy({&logicRegions.m_pre,  //
                                                &logicRegions.m_act,  //
                                                &logicRegions.m_nba,  //
+                                               &logicClasses.m_observed,  //
+                                               &logicClasses.m_reactive,  //
                                                &timingKit.m_lbs});
     const TriggerKit& actTrig
         = createTriggers(netlistp, initp, senExprBuilder, senTreeps, "act", extraTriggers);
@@ -1002,13 +1067,11 @@ void schedule(AstNetlist* netlistp) {
 
     AstVarScope* const actTrigVscp = actTrig.m_vscp;
     AstVarScope* const preTrigVscp = scopeTopp->createTempLike("__VpreTriggered", actTrigVscp);
-    AstVarScope* const nbaTrigVscp = scopeTopp->createTempLike("__VnbaTriggered", actTrigVscp);
 
     const auto cloneMapWithNewTriggerReferences
         = [=](std::unordered_map<const AstSenTree*, AstSenTree*> map, AstVarScope* vscp) {
               // Copy map
               auto newMap{map};
-              VNDeleter deleter;
               // Replace references in each mapped value with a reference to the given vscp
               for (auto& pair : newMap) {
                   pair.second = pair.second->cloneTree(false);
@@ -1016,7 +1079,7 @@ void schedule(AstNetlist* netlistp) {
                       UASSERT_OBJ(refp->varScopep() == actTrigVscp, refp, "Unexpected reference");
                       UASSERT_OBJ(refp->access() == VAccess::READ, refp, "Should be read ref");
                       refp->replaceWith(new AstVarRef{refp->fileline(), vscp, VAccess::READ});
-                      deleter.pushDeletep(refp);
+                      VL_DO_DANGLING(refp->deleteTree(), refp);
                   });
                   topScopep->addSenTreesp(pair.second);
               }
@@ -1025,7 +1088,6 @@ void schedule(AstNetlist* netlistp) {
 
     const auto& actTrigMap = actTrig.m_map;
     const auto preTrigMap = cloneMapWithNewTriggerReferences(actTrigMap, preTrigVscp);
-    const auto nbaTrigMap = cloneMapWithNewTriggerReferences(actTrigMap, nbaTrigVscp);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-triggers");
 
     // Note: Experiments so far show that running the Act (or Ico) regions on
@@ -1061,37 +1123,79 @@ void schedule(AstNetlist* netlistp) {
     splitCheck(actFuncp);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-act");
 
-    // Step 10: Create the 'nba' region evaluation function
+    const EvalKit& actKit = {actTrig.m_vscp, actTrig.m_funcp, actTrig.m_dumpp, actFuncp};
 
-    // Remap sensitivities of the input logic to the triggers
-    remapSensitivities(logicRegions.m_nba, nbaTrigMap);
-    remapSensitivities(logicReplicas.m_nba, nbaTrigMap);
-    const auto& nbaTimingDomains = timingKit.remapDomains(nbaTrigMap);
+    // Orders a region's logic and creates the region eval function
+    const auto order = [&](const std::string& name,
+                           const std::vector<V3Sched::LogicByScope*>& logic) -> EvalKit {
+        AstVarScope* const trigVscp
+            = scopeTopp->createTempLike("__V" + name + "Triggered", actTrigVscp);
+        const auto trigMap = cloneMapWithNewTriggerReferences(actTrigMap, trigVscp);
+        // Remap sensitivities of the input logic to the triggers
+        for (LogicByScope* lbs : logic) remapSensitivities(*lbs, trigMap);
 
-    // Create the inverse map from trigger ref AstSenTree to original AstSenTree
-    std::unordered_map<const AstSenItem*, const AstSenTree*> trigToSenNba;
-    invertAndMergeSenTreeMap(trigToSenNba, nbaTrigMap);
+        // Create the inverse map from trigger ref AstSenTree to original AstSenTree
+        std::unordered_map<const AstSenItem*, const AstSenTree*> trigToSen;
+        invertAndMergeSenTreeMap(trigToSen, trigMap);
 
-    AstSenTree* const dpiExportTriggeredNba
-        = createTriggerSenTree(netlistp, nbaTrigVscp, dpiExportTriggerIndex);
+        AstSenTree* const dpiExportTriggered
+            = createTriggerSenTree(netlistp, trigVscp, dpiExportTriggerIndex);
 
-    AstCFunc* const nbaFuncp = V3Order::order(
-        netlistp, {&logicRegions.m_nba, &logicReplicas.m_nba}, trigToSenNba, "nba",
-        v3Global.opt.mtasks(), false, [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
-            auto it = nbaTimingDomains.find(vscp);
-            if (it != nbaTimingDomains.end()) out = it->second;
-            if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredNba);
+        const auto& timingDomains = timingKit.remapDomains(trigMap);
+        AstCFunc* const funcp = V3Order::order(
+            netlistp, logic, trigToSen, name, name == "nba" && v3Global.opt.mtasks(), false,
+            [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+                auto it = timingDomains.find(vscp);
+                if (it != timingDomains.end()) out = it->second;
+                if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
+            });
+
+        // Create the trigger dumping function, which is the same as act trigger
+        // dumping function, but referencing this region's trigger vector.
+        AstCFunc* const dumpp = actTrig.m_dumpp->cloneTree(false);
+        actTrig.m_dumpp->addNextHere(dumpp);
+        dumpp->name("_dump_triggers__" + name);
+        dumpp->foreach([&](AstVarRef* refp) {
+            UASSERT_OBJ(refp->access().isReadOnly(), refp, "Should only read state");
+            if (refp->varScopep() == actTrig.m_vscp) {
+                refp->replaceWith(new AstVarRef{refp->fileline(), trigVscp, VAccess::READ});
+                VL_DO_DANGLING(refp->deleteTree(), refp);
+            }
         });
-    splitCheck(nbaFuncp);
-    netlistp->evalNbap(nbaFuncp);  // Remember for V3LifePost
+        dumpp->foreach([&](AstText* textp) {  //
+            textp->text(VString::replaceWord(textp->text(), "act", name));
+        });
+
+        return {trigVscp, nullptr, dumpp, funcp};
+    };
+
+    // Step 10: Create the 'nba' region evaluation function
+    const EvalKit& nbaKit = order("nba", {&logicRegions.m_nba, &logicReplicas.m_nba});
+    splitCheck(nbaKit.m_funcp);
+    netlistp->evalNbap(nbaKit.m_funcp);  // Remember for V3LifePost
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-nba");
 
-    // Step 11: Create the 'postponed' region evaluation function
+    // Orders a region's logic and creates the region eval function (only if there is any logic in
+    // the region)
+    const auto orderIfNonEmpty = [&](const std::string& name, LogicByScope& lbs) -> EvalKit {
+        if (lbs.empty()) return {};
+        const auto& kit = order(name, {&lbs});
+        if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-" + name);
+        return kit;
+    };
+
+    // Step 11: Create the 'obs' region evaluation function
+    const EvalKit& obsKit = orderIfNonEmpty("obs", logicClasses.m_observed);
+
+    // Step 12: Create the 're' region evaluation function
+    const EvalKit& reactKit = orderIfNonEmpty("react", logicClasses.m_reactive);
+
+    // Step 13: Create the 'postponed' region evaluation function
     auto* const postponedFuncp = createPostponed(netlistp, logicClasses);
 
-    // Step 12: Bolt it all together to create the '_eval' function
-    createEval(netlistp, icoLoopp, actTrig, preTrigVscp, nbaTrigVscp, actFuncp, nbaFuncp,
-               postponedFuncp, timingKit);
+    // Step 14: Bolt it all together to create the '_eval' function
+    createEval(netlistp, icoLoopp, actKit, preTrigVscp, nbaKit, obsKit, reactKit, postponedFuncp,
+               timingKit);
 
     transformForks(netlistp);
 

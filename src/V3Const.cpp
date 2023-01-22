@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -560,9 +560,13 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                     if (leafInfo.lsb() <= leafInfo.msb()) {
                         m_bitPolarities.emplace_back(leafInfo, isXorTree() || leafInfo.polarity(),
                                                      leafInfo.lsb());
-                    } else if (isAndTree() && leafInfo.polarity()) {
-                        // If there is a constant 0 term in an And tree, we must include it. Fudge
-                        // this by adding a bit with both polarities, which will simplify to zero
+                    } else if ((isAndTree() && leafInfo.polarity())
+                               || (isOrTree() && !leafInfo.polarity())) {
+                        // If there is a constant 0 term in an And tree or 1 term in an Or tree, we
+                        // must include it. Fudge this by adding a bit with both polarities, which
+                        // will simplify to zero or one respectively.
+                        // Note that Xor tree does not need this kind of care, polarity of Xor tree
+                        // is already cared when visitin AstNot. Taking xor with 1'b0 is nop.
                         m_bitPolarities.emplace_back(leafInfo, true, 0);
                         m_bitPolarities.emplace_back(leafInfo, false, 0);
                     }
@@ -1377,7 +1381,7 @@ private:
         // Pure checks - if this node and all nodes under it are free of
         // side effects can do this optimization
         // Eventually we'll recurse through tree when unknown, memoizing results so far,
-        // but for now can disable en-mass until V3Purify takes effect.
+        // but for now can disable en masse until V3Purify takes effect.
         return m_doShort || VN_IS(nodep, VarRef) || VN_IS(nodep, Const);
     }
     bool isTreePureRecurse(AstNode* nodep) {
@@ -2719,7 +2723,7 @@ private:
             if (nodep->isClocked()) {  // A constant can never get a pos/negedge
                 if (onlySenItemInSenTree(nodep)) {
                     if (nodep->edgeType() == VEdgeType::ET_CHANGED) {
-                        // TODO: This really is dodgy, as strictgly compliant simulators will not
+                        // TODO: This really is dodgy, as strictly compliant simulators will not
                         //       execute this block, but but t_func_check relies on it
                         nodep->replaceWith(
                             new AstSenItem{nodep->fileline(), AstSenItem::Initial{}});
@@ -3186,7 +3190,12 @@ private:
 
     void visit(AstStmtExpr* nodep) override {
         iterateChildren(nodep);
-        if (!nodep->exprp()) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        if (!nodep->exprp()) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        // TODO if there's an ExprStmt underneath just keep lower statements
+        // (No current test case needs this)
     }
 
     // Simplify

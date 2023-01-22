@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -50,6 +50,11 @@ class EmitCGatherDependencies final : VNVisitor {
         if (const AstClassRefDType* const dtypep = VN_CAST(nodep, ClassRefDType)) {
             m_dependencies.insert(
                 EmitCBaseVisitor::prefixNameProtect(dtypep->classp()->classOrPackagep()));
+        } else if (const AstStructDType* const dtypep = VN_CAST(nodep, StructDType)) {
+            if (!dtypep->packed()) {
+                m_dependencies.insert(
+                    EmitCBaseVisitor::prefixNameProtect(dtypep->classOrPackagep()));
+            }
         }
     }
     void addSelfDependency(const string& selfPointer, AstNode* nodep) {
@@ -89,6 +94,10 @@ class EmitCGatherDependencies final : VNVisitor {
         iterateChildrenConst(nodep);
     }
     void visit(AstMemberSel* nodep) override {
+        addDTypeDependency(nodep->fromp()->dtypep());
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstStructSel* nodep) override {
         addDTypeDependency(nodep->fromp()->dtypep());
         iterateChildrenConst(nodep);
     }
@@ -241,8 +250,8 @@ class EmitCImp final : EmitCFunc {
                          "(" + modName + "* vlSelf);");
         puts("\n");
 
-        puts(modName + "::" + modName + "(" + symClassName() + "* symsp, const char* name)\n");
-        puts("    : VerilatedModule{name}\n");
+        puts(modName + "::" + modName + "(" + symClassName() + "* symsp, const char* v__name)\n");
+        puts("    : VerilatedModule{v__name}\n");
 
         ofp()->indentInc();
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {

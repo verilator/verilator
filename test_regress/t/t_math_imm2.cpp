@@ -17,6 +17,7 @@ QData MaskVal(int lbit, int hbit) {
 
 int main(int argc, char* argv[]) {
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
 
     Vt_math_imm2* sim = new Vt_math_imm2;
     int lbit, hbit;

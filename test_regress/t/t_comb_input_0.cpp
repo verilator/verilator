@@ -18,8 +18,8 @@
 
 int main(int argc, char** argv) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->commandArgs(argc, argv);
     contextp->debug(0);
+    contextp->commandArgs(argc, argv);
     srand48(5);
 
     const std::unique_ptr<Vt_comb_input_0> topp{new Vt_comb_input_0};

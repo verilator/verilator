@@ -1,8 +1,8 @@
 |Logo|
 
-*******************
-Verilator Internals
-*******************
+=====================
+ Verilator Internals
+=====================
 
 .. contents::
    :depth: 3
@@ -81,7 +81,7 @@ Key Classes Used in the Verilator Flow
 
 
 ``AstNode``
-^^^^^^^^^^^
+~~~~~~~~~~~
 
 The AST is represented at the top level by the class ``AstNode``. This
 abstract class has derived classes for the individual components (e.g.
@@ -123,7 +123,7 @@ There are notable sub-hierarchies of the ``AstNode`` sub-types, namely:
 
 
 ``VNVisitor``
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~
 
 The passes are implemented by AST visitor classes. These are implemented by
 subclasses of the abstract class, ``VNVisitor``. Each pass creates an
@@ -132,7 +132,7 @@ the pass.
 
 
 ``V3Graph``
-^^^^^^^^^^^
+~~~~~~~~~~~
 
 A number of passes use graph algorithms, and the class ``V3Graph`` is
 provided to represent those graphs. Graphs are directed, and algorithms are
@@ -142,7 +142,7 @@ documentation of this class.
 
 
 ``V3GraphVertex``
-^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~
 
 ``V3GraphVertex`` is the base class for vertices in a graph. Vertices have
 an associated ``fanout``, ``color`` and ``rank``, which may be used in
@@ -164,7 +164,7 @@ in the form:
 
 
 ``V3GraphEdge``
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
 ``V3GraphEdge`` is the base class for directed edges between pairs of
 vertices. Edges have an associated ``weight`` and may also be made
@@ -179,7 +179,7 @@ used in dot output. Typically users provided derived classes from
 
 
 ``V3GraphAlg``
-^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
 This is the base class for graph algorithms. It implements a ``bool``
 method, ``followEdge`` which algorithms can use to decide whether an edge
@@ -192,7 +192,7 @@ provided and documented in ``V3GraphAlg.cpp``.
 
 
 ``DfgGraph``
-^^^^^^^^^^^^^
+~~~~~~~~~~~~
 
 The data-flow graph-based combinational logic optimizer (DFG optimizer)
 converts an ``AstModule`` into a ``DfgGraph``. The graph represents the
@@ -208,7 +208,7 @@ writing DFG passes easier.
 
 
 ``DfgVertex``
-^^^^^^^^^^^^^
+~~~~~~~~~~~~~
 
 The ``DfgGraph`` represents combinational logic equations as a graph of
 ``DfgVertex`` vertices. Each sub-class of ``DfgVertex`` corresponds to an
@@ -243,7 +243,7 @@ without initialization or other miscellaneous constructs.
 
 
 Classes of logic
-^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~
 
 The first step in the scheduling algorithm is to gather all the logic present
 in the design, and classify it based on the conditions under which the logic
@@ -289,7 +289,7 @@ Details of this process and the hybrid logic class are described below.
 
 
 Scheduling of simple classes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 SystemVerilog ``initial`` and ``final`` blocks can be scheduled (executed) in an
 arbitrary order.
@@ -307,7 +307,7 @@ the corresponding logic constructs.
 
 
 Scheduling of clocked and combinational logic
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For performance, clocked and combinational logic needs to be ordered.
 Conceptually this minimizes the iterations through the evaluation loop
@@ -358,7 +358,7 @@ avoid this circularity problem whenever possible, this is not always possible).
 
 
 Breaking combinational loops
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Combinational loops are broken by the introduction of instances of the 'hybrid'
 logic class. As described in the previous section, combinational loops require
@@ -405,15 +405,15 @@ combinational (including hybrid) logic have settled.
 One might wonder if there can be a race condition between clocked logic
 triggered due to a combinational signal change from the previous evaluation
 pass, and a combinational loop settling due to hybrid logic, if the clocked
-logic reads the not yet settled combinationally driven signal. Such a race is
-indeed possible, but our evaluation is consistent with the SystemVerilog
-scheduling semantics (IEEE 1800-2017 chapter 4), and therefore any program that
-exhibits such a race has non-deterministic behaviour according to the
+logic reads the not yet settled combinationally driven signal. Such a race
+is indeed possible, but our evaluation is consistent with the SystemVerilog
+scheduling semantics (IEEE 1800-2017 chapter 4), and therefore any program
+that exhibits such a race has non-deterministic behavior according to the
 SystemVerilog semantics, so we accept this.
 
 
 Settling combinational logic after initialization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 At the beginning of simulation, once static initializer and ``initial`` blocks
 have been executed, we need to evaluate all combinational logic, in order to
@@ -427,7 +427,7 @@ invoked at the beginning of simulation after the `_eval_initial`.
 
 
 Partitioning logic for correct NBA updates
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``V3Order`` can order logic corresponding to non-blocking assignments (NBAs) to
 yield correct simulation results, as long as all the sensitivity expressions of
@@ -469,7 +469,7 @@ The partitioning described above is performed by ``V3Sched::partition``.
 
 
 Replication of combinational logic
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We will separately invoke ``V3Order::order`` on the 'act' and 'nba' region
 logic.
@@ -495,7 +495,7 @@ Verilator).
 
 
 Constructing the top level `_eval` function
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To construct the top level `_eval` function, which updates the state of the
 circuit to the end of the current time step, we invoke ``V3Order::order``
@@ -505,39 +505,38 @@ corresponding functions that compute the respective trigger expressions into
 the top level `_eval` function, which on the high level has the form:
 
 ::
-  void _eval() {
-    // Update combinational logic dependent on top level inputs ('ico' region)
-    while (true) {
-      _eval__triggers__ico();
-      // If no 'ico' region trigger is active
-      if (!ico_triggers.any()) break;
-      _eval_ico();
-    }
 
-
-    // Iterate 'act' and 'nba' regions together
-    while (true) {
-
-      // Iterate 'act' region, this computes all derived clocks updaed in the
-      // Active scheduling region, but does not commit any NBAs that executed
-      // in 'act' region logic.
+    void _eval() {
+      // Update combinational logic dependent on top level inputs ('ico' region)
       while (true) {
-        _eval__triggers__act();
-        // If no 'act' region trigger is active
-        if (!act_triggers.any()) break;
-        // Remember what 'act' triggers were active, 'nba' uses the same
-        latch_act_triggers_for_nba();
-        _eval_act();
+        _eval__triggers__ico();
+        // If no 'ico' region trigger is active
+        if (!ico_triggers.any()) break;
+        _eval_ico();
       }
 
+      // Iterate 'act' and 'nba' regions together
+      while (true) {
 
-      // If no 'nba' region trigger is active
-      if (!nba_triggers.any()) break;
+        // Iterate 'act' region, this computes all derived clocks updaed in the
+        // Active scheduling region, but does not commit any NBAs that executed
+        // in 'act' region logic.
+        while (true) {
+          _eval__triggers__act();
+          // If no 'act' region trigger is active
+          if (!act_triggers.any()) break;
+          // Remember what 'act' triggers were active, 'nba' uses the same
+          latch_act_triggers_for_nba();
+          _eval_act();
+        }
 
-      // Evaluate all other Active region logic, and commit NBAs
-      _eval_nba();
-    }
-  }
+        // If no 'nba' region trigger is active
+        if (!nba_triggers.any()) break;
+
+        // Evaluate all other Active region logic, and commit NBAs
+        _eval_nba();
+      }
+   }
 
 
 Timing
@@ -553,7 +552,7 @@ There are several runtime classes used for managing such coroutines defined in
 ``verilated_timing.h`` and ``verilated_timing.cpp``.
 
 ``VlCoroutineHandle``
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 
 A thin wrapper around an ``std::coroutine_handle<>``. It forces move semantics,
 destroys the coroutine if it remains suspended at the end of the design's
@@ -561,17 +560,17 @@ lifetime, and prevents multiple ``resume`` calls in the case of
 ``fork..join_any``.
 
 ``VlCoroutine``
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
 Return value of all coroutines. Together with the promise type contained
-within, it allows for chaining coroutines – resuming coroutines from up the
+within, it allows for chaining coroutines - resuming coroutines from up the
 call stack. The calling coroutine's handle is saved in the promise object as a
 continuation, that is, the coroutine that must be resumed after the promise's
 coroutine finishes. This is necessary as C++ coroutines are stackless, meaning
 each one is suspended independently of others in the call graph.
 
 ``VlDelayScheduler``
-^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~
 
 This class manages processes suspended by delays. There is one instance of this
 class per design. Coroutines ``co_await`` this object's ``delay`` function.
@@ -581,11 +580,11 @@ coroutines awaiting the current simulation time are resumed. The current
 simulation time is retrieved from a ``VerilatedContext`` object.
 
 ``VlTriggerScheduler``
-^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~
 
 This class manages processes that await events (triggers). There is one such
 object per each trigger awaited by coroutines. Coroutines ``co_await`` this
-object's ``trigger`` function. They are stored in two stages – `uncommitted`
+object's ``trigger`` function. They are stored in two stages - `uncommitted`
 and `ready`. First, they land in the `uncommitted` stage, and cannot be
 resumed. The ``resume`` function resumes all coroutines from the `ready` stage
 and moves `uncommitted` coroutines into `ready`. The ``commit`` function only
@@ -596,7 +595,7 @@ times. See the `Scheduling with timing` section for details on how this is
 used.
 
 ``VlDynamicTriggerScheduler``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Like ``VlTriggerScheduler``, ``VlDynamicTriggerScheduler`` manages processes
 that await triggers. However, it does not rely on triggers evaluated externally
@@ -605,23 +604,24 @@ evaluation. Coroutines that make use of this scheduler must adhere to a certain
 procedure:
 
 ::
-  __Vtrigger = 0;
-  <locals and inits required for trigger eval>
-  while (!__Vtrigger) {
-      co_await __VdynSched.evaluation();
-      <pre updates>;
-      __Vtrigger = <trigger eval>;
-      [optionally] co_await __VdynSched.postUpdate();
-      <post updates>;
-  }
-  co_await __VdynSched.resumption();
+
+   __Vtrigger = 0;
+   <locals and inits required for trigger eval>
+   while (!__Vtrigger) {
+       co_await __VdynSched.evaluation();
+       <pre updates>;
+       __Vtrigger = <trigger eval>;
+       [optionally] co_await __VdynSched.postUpdate();
+       <post updates>;
+   }
+   co_await __VdynSched.resumption();
 
 The coroutines get resumed at trigger evaluation time, evaluate their local
 triggers, optionally await the post update step, and if the trigger is set,
 await proper resumption in the 'act' eval step.
 
 ``VlForkSync``
-^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
 Used for synchronizing ``fork..join`` and ``fork..join_any``. Forking
 coroutines ``co_await`` its ``join`` function, and forked ones call ``done``
@@ -629,7 +629,7 @@ when they're finished. Once the required number of coroutines (set using
 ``setCounter``) finish execution, the forking coroutine is resumed.
 
 Awaitable Utilities
-^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~
 
 There are also two small utility awaitable types:
 
@@ -640,7 +640,7 @@ There are also two small utility awaitable types:
   section for more detail.
 
 Timing Pass
-^^^^^^^^^^^
+~~~~~~~~~~~
 
 The visitor in ``V3Timing.cpp`` transforms each timing control into a ``co_await``.
 
@@ -684,7 +684,7 @@ coroutines. The visitor keeps a dependency graph of functions and processes to
 handle such cases.
 
 Scheduling with timing
-^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~
 
 Timing features in Verilator are built on top of the static scheduler. Triggers
 are used for determining which delay or trigger schedulers should resume. A
@@ -711,35 +711,36 @@ All coroutines are committed and resumed in the 'act' eval loop. With timing
 features enabled, the ``_eval()`` function takes this form:
 
 ::
-  void _eval() {
-    while (true) {
-      _eval__triggers__ico();
-      if (!ico_triggers.any()) break;
-      _eval_ico();
-    }
 
-    while (true) {
-      while (true) {
-        _eval__triggers__act();
+   void _eval() {
+     while (true) {
+       _eval__triggers__ico();
+       if (!ico_triggers.any()) break;
+       _eval_ico();
+     }
 
-        // Commit all non-triggered coroutines
-        _timing_commit();
+     while (true) {
+       while (true) {
+         _eval__triggers__act();
 
-        if (!act_triggers.any()) break;
-        latch_act_triggers_for_nba();
+         // Commit all non-triggered coroutines
+         _timing_commit();
 
-        // Resume all triggered coroutines
-        _timing_resume();
+         if (!act_triggers.any()) break;
+         latch_act_triggers_for_nba();
 
-        _eval_act();
-      }
-      if (!nba_triggers.any()) break;
-      _eval_nba();
-    }
-  }
+         // Resume all triggered coroutines
+         _timing_resume();
+
+         _eval_act();
+       }
+       if (!nba_triggers.any()) break;
+       _eval_nba();
+     }
+   }
 
 Forks
-^^^^^
+~~~~~
 
 After the scheduling step, forks sub-statements are transformed into separate
 functions, and these functions are called in place of the sub-statements. These
@@ -774,7 +775,7 @@ synchronization cost is reasonable with so few nodes.
 
 
 Partitioning
-^^^^^^^^^^^^
+~~~~~~~~~~~~
 
 Our partitioner is similar to the one Vivek Sarkar described in his 1989
 paper *Partitioning and Scheduling Parallel Programs for Multiprocessors*.
@@ -783,7 +784,7 @@ Let's define some terms:
 
 
 Par Factor
-^^^^^^^^^^
+~~~~~~~~~~
 
 The available parallelism or "par-factor" of a DAG is the total cost to
 execute all nodes, divided by the cost to execute the longest critical path
@@ -793,7 +794,7 @@ synchronization is zero.
 
 
 Macro Task
-^^^^^^^^^^
+~~~~~~~~~~
 
 When the partitioner coarsens the graph, it combines nodes together.  Each
 fine-grained node represents an atomic "task"; combined nodes in the
@@ -805,7 +806,7 @@ ends.)
 
 
 Edge Contraction
-^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~
 
 Verilator's partitioner, like Sarkar's, primarily relies on "edge
 contraction" to coarsen the graph. It starts with one macro-task per atomic
@@ -813,7 +814,7 @@ task and iteratively combines pairs of edge-connected macro-tasks.
 
 
 Local Critical Path
-^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~
 
 Each node in the graph has a "local" critical path. That's the critical
 path from the start of the graph to the start of the node, plus the node's
@@ -834,7 +835,7 @@ NP-hard).
 
 
 Estimating Logic Costs
-^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~
 
 To compute the cost of any given path through the graph, Verilator
 estimates an execution cost for each task. Each macro-task has an execution
@@ -855,7 +856,7 @@ runtime costs estimates. This is an area to improve.
 
 
 Scheduling Macro-Tasks at Runtime
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After coarsening the graph, we must schedule the macro-tasks for
 runtime. Sarkar describes two options: you can dynamically schedule tasks
@@ -877,7 +878,7 @@ fragmentation.
 
 
 Locating Variables for Best Spatial Locality
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After scheduling all code, we attempt to locate variables in memory, such
 that variables accessed by a single macro-task are close together in
@@ -910,11 +911,11 @@ locality in serial mode; that is a possible area for improvement.)
 
 
 Improving Multithreaded Performance Further (a TODO list)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 Wave Scheduling
-"""""""""""""""
++++++++++++++++
 
 To allow the Verilated model to run in parallel with the testbench, it
 might be nice to support "wave" scheduling, in which work on a cycle begins
@@ -926,7 +927,7 @@ however, it's probably the best bet for hiding testbench latency.
 
 
 Efficient Dynamic Scheduling
-""""""""""""""""""""""""""""
+++++++++++++++++++++++++++++
 
 To scale to more than a few threads, we may revisit a fully dynamic
 scheduler. For large (>16 core) systems, it might make sense to dedicate an
@@ -936,7 +937,7 @@ would not be prohibitive.
 
 
 Static Scheduling with Runtime Repack
-"""""""""""""""""""""""""""""""""""""
++++++++++++++++++++++++++++++++++++++
 
 We could modify the static scheduling approach by gathering actual
 macro-task execution times at run time, and dynamically re-packing the
@@ -948,7 +949,7 @@ or nonuniform competing memory traffic or whatever.
 
 
 Clock Domain Balancing
-""""""""""""""""""""""
+++++++++++++++++++++++
 
 Right now Verilator makes no attempt to balance clock domains across
 macro-tasks. For a multi-domain model, that could lead to bad gantt chart
@@ -956,7 +957,7 @@ fragmentation. This could be improved if it's a real problem in practice.
 
 
 Other Forms of MTask Balancing
-""""""""""""""""""""""""""""""
+++++++++++++++++++++++++++++++
 
 The largest source of runtime overhead is idle CPUs, which happens due to
 variance between our predicted runtime for each MTask and its actual
@@ -980,7 +981,7 @@ scheduling, but this does not yet guide the packing into mtasks.
 
 
 Performance Regression
-""""""""""""""""""""""
+++++++++++++++++++++++
 
 It would be nice if we had a regression of large designs, with some
 diversity of design styles, to test on both single- and multithreaded
@@ -989,7 +990,7 @@ evaluate the optimizations while minimizing the impact of parasitic noise.
 
 
 Per-Instance Classes
-""""""""""""""""""""
+++++++++++++++++++++
 
 If we have multiple instances of the same module, and they partition
 differently (likely; we make no attempt to partition them the same), then
@@ -1079,7 +1080,7 @@ description of the more advanced features of ``astgen`` are provided here.
 
 
 Generating ``AstNode`` members
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Some of the member s of ``AstNode`` sub-classes are generated by ``astgen``.
 These are emitted as pre-processor macro definitions, which then need to be
@@ -1092,7 +1093,7 @@ comment sections in the body of the ``AstNode`` sub-class definitions.
 
 
 List of ``@astgen`` directives
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``@astgen`` directives in comments contained in the body of ``AstNode``
 sub-class definitions are parsed and contribute to the code generated by
@@ -1103,7 +1104,7 @@ a ``<keywords>`` dependent description of the definition. The list of
 
 
 ``op<N>`` operand  directives
-"""""""""""""""""""""""""""""
++++++++++++++++++++++++++++++
 
 The ``op1``, ``op2``, ``op3`` and ``op4`` directives are used to describe the
 name and type of the up to 4 child operands of a node. The syntax of the
@@ -1134,7 +1135,7 @@ that appends new nodes (or lists of nodes) to the child list.
 
 
 ``alias op<N>`` operand alias directives
-""""""""""""""""""""""""""""""""""""""""
+++++++++++++++++++++++++++++++++++++++++
 
 If a super-class already defined a name and type for a child node using the
 ``op<N>`` directive, but a more appropriate name exists in the context of a
@@ -1147,14 +1148,14 @@ Example: ``@astgen alias op1 := condp``
 
 
 Generating ``DfgVertex`` sub-classes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Most of the ``DfgVertex`` sub-classes are generated by ``astgen``, from the
 definitions of the corresponding ``AstNode`` vertices.
 
 
 Additional features of ``astgen``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In addition to generating ``AstNode`` members as described above,
 ``astgen`` is also use to handle some of the repetitive implementation code
@@ -1290,7 +1291,7 @@ and takes an argument type ``AstNode*``.
 
 
 Caution on Using Iterators When Child Changes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Visitors often replace one node with another node; V3Width and V3Const
 are major examples. A visitor which is the parent of such a replacement
@@ -1394,56 +1395,20 @@ For all tests to pass, you must install the following packages:
 Controlling the Test Driver
 ---------------------------
 
-Test drivers are written in PERL. All invoke the main test driver script,
-which can provide detailed help on all the features available when writing
-a test driver.
+The test driver script `driver.pl` runs tests; see the `Test Driver`
+section.  The individual test drivers are written in PERL; see `Test
+Language`.
+
+
+Manual Test Execution
+---------------------
+
+A specific regression test can be executed manually. To start the
+"EXAMPLE" test, run the following command.
 
 ::
 
-   test_regress/driver.pl --help
-
-For convenience, a summary of the most commonly used features is provided
-here. All drivers require a call to ``compile`` subroutine to compile the
-test. For run-time tests, this is followed by a call to the ``execute``
-subroutine. Both of these functions can optionally be provided with a hash
-table as argument specifying additional options.
-
-The driver.pl script assumes by default that the source Verilog file name
-matches the test script name. So a test whose driver is
-``t/t_mytest.pl`` will expect a Verilog source file ``t/t_mytest.v``.
-This can be changed using the ``top_filename`` subroutine, for example
-
-::
-
-   top_filename("t/t_myothertest.v");
-
-By default, all tests will run with major simulators (Icarus Verilog, NC,
-VCS, ModelSim, etc.) as well as Verilator, to allow results to be
-compared. However, if you wish a test only to be used with Verilator, you
-can use the following:
-
-::
-
-   scenarios(vlt => 1);
-
-Of the many options that can be set through arguments to ``compiler`` and
-``execute``, the following are particularly useful:
-
-``verilator_flags2``
-  A list of flags to be passed to verilator when compiling.
-
-``fails``
-  Set to 1 to indicate that the compilation or execution is intended to fail.
-
-For example, the following would specify that compilation requires two
-defines and is expected to fail.
-
-::
-
-   compile(
-      verilator_flags2 => ["-DSMALL_CLOCK -DGATED_COMMENT"],
-      fails => 1,
-      );
+   test_regress/t/t_EXAMPLE.pl
 
 
 Regression Testing for Developers
@@ -1492,17 +1457,6 @@ There are some traps to avoid when running regression tests
   respectively 16,384 and 4,096. The method of doing this is
   system-dependent, but on Fedora Linux it would require editing the
   ``/etc/security/limits.conf`` file as root.
-
-
-Manual Test Execution
----------------------
-
-A specific regression test can be executed manually. To start the
-"EXAMPLE" test, run the following command.
-
-::
-
-   test_regress/t/t_EXAMPLE.pl
 
 
 Continuous Integration
@@ -1562,7 +1516,7 @@ placed into the obj_dir, .tree and .dot files.
 .dot Output
 -----------
 
-Dot files are dumps of internal graphs in `Graphviz
+Dot files are dumps of internal graphs in `GraphViz
 <https://www.graphviz.org>`__ dot format. When a dot file is dumped,
 Verilator will also print a line on stdout that can be used to format the
 output, for example:
@@ -1717,17 +1671,16 @@ Similarly, the ``NETLIST`` has a list of modules referred to by its
 .tree.dot Output
 ----------------
 
-``*.tree.dot`` files are dumps of the AST Tree in `Graphviz
-<https://www.graphviz.org>`__ dot format. This can be used to
-visualize the AST Tree. The vertices correspond to ``AstNode``
-instances, and the edges represent the pointers (``op1p``,
- ``op2p``, etc) between the nodes.
+``*.tree.dot`` files are dumps of the AST Tree in `GraphViz
+<https://www.graphviz.org>`__ dot format. This can be used to visualize the
+AST Tree. The vertices correspond to ``AstNode`` instances, and the edges
+represent the pointers (``op1p``, ``op2p``, etc) between the nodes.
 
 
 Debugging with GDB
 ------------------
 
-The test_regress/driver.pl script accepts ``--debug --gdb`` to start
+The `driver.pl` script accepts ``--debug --gdb`` to start
 Verilator under gdb and break when an error is hit, or the program is about
 to exit. You can also use ``--debug --gdbbt`` to just backtrace and then
 exit gdb. To debug the Verilated executable, use ``--gdbsim``.
@@ -1810,8 +1763,7 @@ Generally, what would you do to add a new feature?
 1. File an issue (if there isn't already) so others know what you're
    working on.
 
-2. Make a testcase in the test_regress/t/t_EXAMPLE format, see
-   :ref:`Testing`.
+2. Make a testcase in the test_regress/t/t_EXAMPLE format, see `Testing`.
 
 3. If grammar changes are needed, look at the git version of VerilogPerl's
    src/VParseGrammar.y, as this grammar supports the full SystemVerilog
@@ -1822,9 +1774,9 @@ Generally, what would you do to add a new feature?
    Follow the convention described above about the AstNode type hierarchy.
    Ordering of definitions is enforced by ``astgen``.
 
-5. Now you can run "test_regress/t/t_<newtestcase>.pl --debug" and it'll
+5. Now you can run ``test_regress/t/t_<newtestcase>.pl --debug`` and it'll
    probably fail, but you'll see a
-   "test_regress/obj_dir/t_<newtestcase>/*.tree" file which you can examine
+   ``test_regress/obj_dir/t_<newtestcase>/*.tree`` file which you can examine
    to see if the parsing worked. See also the sections above on debugging.
 
 6. Modify the later visitor functions to process the new feature as needed.
@@ -1866,14 +1818,403 @@ IEEE 1800-2017 31 Timing checks
 IEEE 1800-2017 32 SDF annotation
     No longer relevant with static timing analysis tools.
 IEEE 1800-2017 33 Config
-    Little/no tool support or industry use.
+    Little industry use.
+
+
+
+Test Driver
+===========
+
+This section documents the test driver script, `driver.pl`.  driver.pl
+invokes Verilator or another simulator on each test file.  For test file
+contents description see `Test Language`.
+
+The driver reports the number of tests which pass, fail, or skipped (some
+resource required by the test is not available, such as SystemC).
+
+There are thousands of tests, and for faster completion you may want to run
+the regression tests with OBJCACHE enabled and in parallel on a machine
+with many cores.  See the -j option and OBJCACHE environment variable.
+
+
+driver.pl Non-Scenario Arguments
+--------------------------------
+
+--benchmark [<cycles>]
+  Show execution times of each step.  If an optional number is given,
+  specifies the number of simulation cycles (for tests that support it).
+
+--debug
+  Same as ``verilator --debug``: Use the debug version of Verilator which
+  enables additional assertions, debugging messages, and structure dump
+  files.
+
+--debugi(-<srcfile>) <level>
+  Same as ``verilator --debugi level``: Set Verilator internal debugging
+  level globally to the specified debug level (1-10).
+
+--dump-tree
+  Same as ``verilator --dump-tree``: Enable Verilator writing .tree debug
+  files with dumping level 3, which dumps the standard critical stages.
+  For details on the format see `.tree Output`.
+
+--gdb
+  Same as ``verilator --gdb``: Run Verilator under the debugger.
+
+--gdbbt
+  Same as ``verilator --gdbbt``: Run Verilator under the debugger, only to
+  print backtrace information.  Requires ``--debug``.
+
+--gdbsim
+  Run Verilator generated executable under the debugger.
+
+--golden
+  Update golden files, equivalent to ``export HARNESS_UPDATE_GOLDEN=1``.
+
+--hashset <set>/<numsets>
+  Split tests based on a hash of the test names into <numsets> and run only
+  tests in set number <set> (0..<numsets>-1).
+
+--help
+  Displays help message and exits.
+
+--j #
+  Run number of parallel tests, or 0 to determine the count based on the
+  number of cores installed.  Requires Perl's Parallel::Forker package.
+
+--quiet
+  Suppress all output except for failures and progress messages every 15
+  seconds.  Intended for use only in automated regressions.  See also
+  ``--rerun``, and ``--verbose`` which is not the opposite of ``--quiet``.
+
+--rerun
+  Rerun all tests that failed in this run. Reruns force the flags
+  ``--no-quiet --j 1``.
+
+--rr
+  Same as ``verilator --rr``: Run Verilator and record with ``rr``.
+
+--rrsim
+  Run Verilator generated executable and record with ``rr``.
+
+--sanitize
+  Enable address sanitizer to compile Verilated C++ code.  This may detect
+  misuses of memory, such as out-of-bound accesses, use-after-free, and
+  memory leaks.
+
+--site
+  Run site specific tests also.
+
+--stop
+  Stop on the first error.
+
+--trace
+  Set the simulator specific flags to request waveform tracing.
+
+--verbose
+  Compile and run the test in verbose mode. This means ``TEST_VERBOSE``
+  will be defined for the test (Verilog and any C++/SystemC wrapper).
+
+--verilated-debug
+  For tests using the standard C++ wrapper, enable runtime debug mode.
+
+
+driver.pl Scenario Arguments
+----------------------------
+
+The following options control which simulator is used, and which tests are
+run.  Multiple flags may be used to run multiple simulators/scenarios
+simultaneously.
+
+--atsim
+  Run ATSIM simulator tests.
+
+--dist
+  Run simulator-agnostic distribution tests.
+
+--ghdl
+  Run GHDL simulator tests.
+
+--iv
+  Run Icarus Verilog simulator tests.
+
+--ms
+  Run ModelSim simulator tests.
+
+--nc
+  Run Cadence NC-Verilog simulator tests.
+
+--vcs
+  Run Synopsys VCS simulator tests.
+
+--vlt
+  Run Verilator tests in single-threaded mode.  Default unless another
+  scenario flag is provided.
+
+--vltmt
+  Run Verilator tests in multithreaded mode.
+
+--xsim
+  Run Xilinx XSim simulator tests.
+
+
+driver.pl Environment
+---------------------
+
+HARNESS_UPDATE_GOLDEN
+  If true, update all .out golden reference files.  Typically, instead the
+  ``--golden`` option is used to update only a single test's reference.
+
+SYSTEMC
+  Root directory name of SystemC kit.  Only used if ``SYSTEMC_INCLUDE`` not
+  set.
+
+SYSTEMC_INCLUDE
+  Directory name with systemc.h in it.
+
+VERILATOR_ATSIM
+  Command to use to invoke Atsim.
+
+VERILATOR_GHDL
+  Command to use to invoke GHDL.
+
+VERILATOR_GDB
+  Command to use to invoke GDB debugger.
+
+VERILATOR_IVERILOG
+  Command to use to invoke Icarus Verilog.
+
+VERILATOR_MAKE
+  Command to use to rebuild Verilator and run single test.
+
+VERILATOR_MODELSIM
+  Command to use to invoke ModelSim.
+
+VERILATOR_NCVERILOG
+  Command to use to invoke ncverilog.
+
+VERILATOR_ROOT
+  Standard path to Verilator distribution root; see primary Verilator
+  documentation.
+
+VERILATOR_TESTS_SITE
+  Used with ``--site``, a colon-separated list of directories with tests to
+  be added to testlist.
+
+VERILATOR_VCS
+  Command to use to invoke VCS.
+
+VERILATOR_XELAB
+  Command to use to invoke XSim xelab
+
+VERILATOR_XVLOG
+  Command to use to invoke XSim xvlog
+
+
+Test Language
+=============
+
+This section describes the format of the ``test_regress/t/*.pl`` test
+language files, executed by `driver.pl`.
+
+Test Language Summary
+---------------------
+
+For convenience, a summary of the most commonly used features is provided
+here, with a reference in a later section. All test files typically have a
+call to the ``lint`` or ``compile`` subroutine to compile the test. For
+run-time tests, this is followed by a call to the ``execute``
+subroutine. Both of these functions can optionally be provided with
+arguments specifying additional options.
+
+If those complete, the script calls ``ok`` to increment the count of
+successful tests and then returns 1 as its result.
+
+The driver.pl script assumes by default that the source Verilog file name
+matches the test script name. So a test whose driver is
+``t/t_mytest.pl`` will expect a Verilog source file ``t/t_mytest.v``.
+This can be changed using the ``top_filename`` subroutine, for example
+
+::
+
+   top_filename("t/t_myothertest.v");
+
+By default, all tests will run with major simulators (Icarus Verilog, NC,
+VCS, ModelSim, etc.) as well as Verilator, to allow results to be
+compared. However, if you wish a test only to be used with Verilator, you
+can use the following:
+
+::
+
+   scenarios(vlt => 1);
+
+Of the many options that can be set through arguments to ``compiler`` and
+``execute``, the following are particularly useful:
+
+``verilator_flags2``
+  A list of flags to be passed to verilator when compiling.
+
+``fails``
+  Set to 1 to indicate that the compilation or execution is intended to fail.
+
+For example, the following would specify that compilation requires two
+defines and is expected to fail.
+
+::
+
+   compile(
+      verilator_flags2 => ["-DSMALL_CLOCK -DGATED_COMMENT"],
+      fails => 1,
+      );
+
+Hints On Writing Tests
+----------------------
+
+There is generally no need for the test to create its own main program or
+top level shell as the driver creates one automatically, however some tests
+require their own C++ or SystemC test harness. This is commonly given the
+same name as the test, but with .cpp as suffix
+(``test_regress/t/t_EXAMPLE.cpp``). This can be specified as follows:
+
+::
+
+   compile(
+      make_top_shell   => 0,
+      make_main        => 0,
+      verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"], );
+
+Tests should be self-checking, rather than producing lots of output. If a
+test succeeds it should print ``*-* All Finished *-*`` to standard output
+and terminate (in Verilog ``$finish``), if not it should just stop (in
+Verilog ``$stop``) as that signals an error.
+
+If termination should be triggered from the C++ wrapper, the following code
+can be used:
+
+::
+
+   vl_fatal(__FILE__, __LINE__, "dut", "<error message goes here>");
+   exit(1);
+
+Where it might be useful for a test to produce output, it should qualify
+this with ``TEST_VERBOSE``. For example in Verilog:
+
+::
+
+   `ifdef TEST_VERBOSE
+       $write("Conditional generate if MASK [%1d] = %d\n", g, MASK[g]);
+   `endif
+
+Or in a hand-written C++ wrapper:
+
+::
+
+   #ifdef TEST_VERBOSE
+      cout << "Read a=" << a << endl;
+   #endif
+
+A filename that should be used to check the output results is given with
+``expect_filename``. This should not generally be used to decide if a test
+has succeeded. However, in the case of tests that are designed to fail at
+compile time, it is the only option. For example:
+
+::
+
+   compile(
+      fails => 1,
+      expect_filename => $Self->{golden_filename},
+      );
+
+Note ``expect_filename`` strips some debugging information from the logfile
+when comparing.
+
+
+Test Language Compile/Lint/Run Arguments
+----------------------------------------
+
+This section describes common arguments to ``compile()``, ``lint()``, and
+``run()``.  The full list of arguments can be found by looking at the
+``driver.pl`` source code.
+
+all_run_flags
+  A list of flags to be passed when running the simulator (Verilated model
+  or one of the other simulators).
+
+check_finished
+  True to indicate successful completion of the test is indicated by the
+  string ``*-* All Finished *-*`` being printed on standard output. This is
+  the normal way for successful tests to finish.
+
+expect
+  A quoted list of strings or regular expression to be matched in the
+  output. See `Hints On Writing Tests` for more detail on how this argument
+  should be used.
+
+fails
+  True to indicate this step is expected to fail.  Tests that are expected
+  to fail generally have _bad in their filename.
+
+make_main
+  False to disable the automatic creation of a C++ test wrapper (for
+  example when a hand-written test wrapper is provided using ``verilator
+  --exe``).
+
+make_top_shell
+  False to disable the automatic creation of a top level shell to run the
+  executable (for example when a hand-written test wrapper is provided
+  using ``verilator --exe``).
+
+ms_flags / ms_flags2 / ms_run_flags
+  The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
+  only for use with the ModelSim simulator.
+
+nc_flags / nc_flags2 / nc_run_flags
+  The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
+  only for use with the Cadence NC simulator.
+
+iv_flags / iv_flags2 / iv_run_flags
+  The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
+  only for use with the Icarus Verilog simulator.
+
+v_flags
+  A list of standard Verilog simulator flags to be passed to the simulator
+  compiler (Verilator or one of the other simulators).  This list is create
+  by the driver and rarely changed, use ``v_flags2`` instead.
+
+v_flags2
+  A list of standard Verilog simulator flags to be passed to the simulator
+  compiler (Verilator or one of the other simulators). Unlike ``v_flags``,
+  these options may be overridden in some simulation files.
+
+  Similar sets of flags exist for atsim, GHDL, Cadence NC, ModelSim and
+  Synopsys VCS.
+
+vcs_flags / vcs_flags2 / vcs_run_flags
+  The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
+  only for use with the Synopsys VCS simulator.
+
+verilator_flags / verilator_flags2
+  The equivalent of ``v_flags`` and ``v_flags2``, but only for use with
+  Verilator.  If a flag is a standard flag, ``+incdir`` for example, pass
+  it with ``v_flags2`` instead.
+
+benchmarksim
+  Output the number of model evaluations and execution time of a test to
+  ``test_output_dir>/<test_name>_benchmarksim.csv``. Multiple invocations
+  of the same test file will append to to the same .csv file.
+
+xsim_flags / xsim_flags2 / xsim_run_flags
+  The equivalent of ``v_flags``, ``v_flags2`` and ``all_run_flags``, but
+  only for use with the Xilinx XSim simulator.
 
 
 Distribution
 ============
 
-Copyright 2008-2022 by Wilson Snyder. Verilator is free software; you can
+Copyright 2008-2023 by Wilson Snyder. Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.
+
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. |Logo| image:: https://www.veripool.org/img/verilator_256_200_min.png

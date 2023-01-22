@@ -21,7 +21,7 @@ module t (/*AUTOARG*/
    // associative array of an associative array
    logic [31:0] a [logic [31:0]][logic [63:0]];
 
-   task disp();
+   task static disp();
       int i = 60;
       imap[i++] = 600;
       imap[i++] = 601;

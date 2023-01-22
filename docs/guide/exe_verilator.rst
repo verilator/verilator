@@ -1,4 +1,4 @@
-.. Copyright 2003-2022 by Wilson Snyder.
+.. Copyright 2003-2023 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 verilator Arguments
@@ -1203,11 +1203,10 @@ Summary:
 
 .. option:: --structs-packed
 
-   Converts all unpacked structures to packed structures and issues an
-   :option:`UNPACKED` warning.  Currently, this is the default, and
-   :vlopt:`--no-structs-packed <--structs-packed>` will not work.
-   Specifying this option allows forward compatibility when a future
-   version of Verilator no longer always packs unpacked structures.
+   Converts all unpacked structures to packed structures, and issues an
+   :option:`UNPACKED` warning. Specifying this option allows for backward
+   compatibility with versions before Verilator 5.006, when Verilator would
+   always pack unpacked structures.
 
 .. option:: -sv
 
@@ -1503,7 +1502,7 @@ Summary:
    Disable all lint-related warning messages, and all style warnings.  This is
    equivalent to ``-Wno-ALWCOMBORDER -Wno-BSSPACE -Wno-CASEINCOMPLETE
    -Wno-CASEOVERLAP -Wno-CASEX -Wno-CASTCONST -Wno-CASEWITHX -Wno-CMPCONST -Wno-COLONPLUS
-   -Wno-IMPLICIT -Wno-LITENDIAN -Wno-PINCONNECTEMPTY
+   -Wno-IMPLICIT -Wno-IMPLICITSTATIC -Wno-LITENDIAN -Wno-PINCONNECTEMPTY
    -Wno-PINMISSING -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED
    -Wno-UNUSEDGENVAR -Wno-UNUSEDPARAM -Wno-UNUSEDSIGNAL
    -Wno-WIDTH`` plus the list shown for Wno-style.

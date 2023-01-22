@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2022 by Wilson Snyder.
+// SPDX-License-Identifier: Unlicense
 
 module flop (q, d, clk);
    // No AUTOARG; order of below is different from port order above

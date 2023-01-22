@@ -521,7 +521,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
             int words = (i + 31) >> 5;
             TEST_MSG("========== %d ==========\n", i);
             if (callback_count_strs) {
-                // check persistance
+                // check persistence
                 if (data[i].type) {
                     v.format = data[i].type;
                 } else {
@@ -697,8 +697,8 @@ int main(int argc, char** argv) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
     uint64_t sim_time = 1100;
-    contextp->commandArgs(argc, argv);
     contextp->debug(0);
+    contextp->commandArgs(argc, argv);
 
     const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
                                                         // Note null name - we're flattening it out

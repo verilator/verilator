@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Implementation of Christofides' algorithm to
+// DESCRIPTION: Verilator: Implementation of Christofides algorithm to
 //              approximate the solution to the traveling salesman problem.
 //
 // ISSUES: This isn't exactly Christofides algorithm; see the TODO
@@ -11,7 +11,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -264,7 +264,7 @@ public:
             vtxp->user(VertexState::UNMATCHED_ODD);
         }
 
-        // TODO: The true Chrisofides algorithm calls for minimum-weight
+        // TODO: The true Christofides algorithm calls for minimum-weight
         // perfect matching. Instead, we have a simple greedy algorithm
         // which might get close to the minimum, maybe, with luck?
         //

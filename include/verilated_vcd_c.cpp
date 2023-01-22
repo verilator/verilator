@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -527,7 +527,7 @@ void VerilatedVcd::declare(uint32_t code, const char* name, const char* wirep, b
                 std::strlen(buf));  // Code (overwrite separator if isBit)
     entryp[length + !isBit] = '\n';  // Replace '\0' with line termination '\n'
     // Set length of suffix (used to increment write pointer)
-    entryp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1] = !isBit + length + 1;
+    entryp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1] = static_cast<char>(length + !isBit + 1);
     decl += " ";
     decl += basename;
     if (array) {

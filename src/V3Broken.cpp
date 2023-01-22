@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -106,10 +106,11 @@ public:
                     // may be varp() and other cross links that are bad.
                     // When get this message, find what forgot to delete the
                     // node by running GDB, where for node "<e###>" use:
-                    //    watch AstNode::s_editCntGbl==####
+                    //    watch *(AstNode::s_editCntGbl)==####
                     //    run
                     //    bt
-                    std::cerr << "%Error: LeakedNode" << (withBack ? "with back pointer: " : ": ");
+                    std::cerr << "%Error: LeakedNode"
+                              << (withBack ? " with back pointer: " : ": ");
                     nodep->AstNode::dump(std::cerr);
                     std::cerr << endl;
                     V3Error::incErrors();

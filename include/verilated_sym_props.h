@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -182,7 +182,7 @@ public:
     }
     // Total size in bytes (note DPI limited to 4GB)
     size_t totalSize() const;
-    // Adjust a data pointer to access a given array element, NuLL if something goes bad
+    // Adjust a data pointer to access a given array element, NULL if something goes bad
     void* datapAdjustIndex(void* datap, int dim, int indx) const;
 };
 

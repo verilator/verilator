@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -96,6 +96,7 @@ public:
         IGNOREDRETURN,  // Ignoring return value (function as task)
         IMPERFECTSCH,   // Imperfect schedule (disabled by default). Historical, never issued.
         IMPLICIT,       // Implicit wire
+        IMPLICITSTATIC, // Implicit static function
         IMPORTSTAR,     // Import::* in $unit
         IMPURE,         // Impure function not being inlined
         INCABSPATH,     // Include has absolute path
@@ -180,7 +181,7 @@ public:
             "DECLFILENAME", "DEFPARAM", "DEPRECATED",
             "ENCAPSULATED", "ENDLABEL", "ENUMVALUE", "EOFNEWLINE", "GENCLK", "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
-            "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
+            "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MODDUP",
             "MULTIDRIVEN", "MULTITOP","NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
@@ -220,9 +221,9 @@ public:
     bool lintError() const VL_MT_SAFE {
         return (m_e == ALWCOMBORDER || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
-                || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == LATCH
-                || m_e == LITENDIAN || m_e == PINMISSING || m_e == REALCVT || m_e == UNSIGNED
-                || m_e == WIDTH);
+                || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
+                || m_e == LATCH || m_e == LITENDIAN || m_e == PINMISSING || m_e == REALCVT
+                || m_e == UNSIGNED || m_e == WIDTH);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
@@ -431,11 +432,12 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
     return value
 
 // Helper macros for VL_DEFINE_DEBUG_FUNCTIONS
-#define VL_DEFINE_DEBUG(name) \
-    VL_ATTR_UNUSED static int debug##name() { \
+// Takes an optional "name" (as __VA_ARGS__)
+#define VL_DEFINE_DEBUG(...) \
+    VL_ATTR_UNUSED static int debug##__VA_ARGS__() { \
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
-            std::string tag{VL_STRINGIFY(name)}; \
+            std::string tag{VL_STRINGIFY(__VA_ARGS__)}; \
             tag[0] = std::tolower(tag[0]); \
             const unsigned debugTag = v3Global.opt.debugLevel(tag); \
             const unsigned debugSrc = v3Global.opt.debugSrcLevel(__FILE__); \
@@ -447,11 +449,12 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
     } \
     static_assert(true, "")
 
-#define VL_DEFINE_DUMP(name) \
-    VL_ATTR_UNUSED static int dump##name() { \
+// Takes an optional "name" (as __VA_ARGS__)
+#define VL_DEFINE_DUMP(...) \
+    VL_ATTR_UNUSED static int dump##__VA_ARGS__() { \
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
-            std::string tag{VL_STRINGIFY(name)}; \
+            std::string tag{VL_STRINGIFY(__VA_ARGS__)}; \
             tag[0] = std::tolower(tag[0]); \
             const unsigned dumpTag = v3Global.opt.dumpLevel(tag); \
             const unsigned dumpSrc = v3Global.opt.dumpSrcLevel(__FILE__); \

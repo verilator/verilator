@@ -45,10 +45,11 @@ unsigned int StepSim(Vt_mem_slot* sim, unsigned int slot, unsigned int bit, unsi
 }
 
 int main(int argc, char* argv[]) {
+    Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
     Vt_mem_slot* sim = new Vt_mem_slot;
     int slot, bit, i;
-
-    Verilated::debug(0);
 
     // clear all bits in the array
     for (slot = 0; slot < 3; slot++)

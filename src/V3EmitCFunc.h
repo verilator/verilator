@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2022 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -358,7 +358,7 @@ public:
             // Wide functions assign into the array directly, don't need separate assign statement
             m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
             paren = false;
-        } else if (nodep->isWide()) {
+        } else if (nodep->isWide() && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
             putbs("VL_ASSIGN_W(");
             puts(cvtToStr(nodep->widthMin()) + ",");
             iterateAndNextNull(nodep->lhsp());
@@ -1065,6 +1065,11 @@ public:
         iterateAndNextNull(nodep->fromp());
         putbs("->");
         puts(nodep->varp()->nameProtect());
+    }
+    void visit(AstStructSel* nodep) override {
+        iterateAndNextNull(nodep->fromp());
+        putbs(".");
+        puts(nodep->nameProtect());
     }
     void visit(AstNullCheck* nodep) override {
         puts("VL_NULL_CHECK(");

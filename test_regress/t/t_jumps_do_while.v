@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   function bit test_1;
+   function automatic bit test_1;
       int iterations = 0;
       do begin
          iterations++;
@@ -20,7 +20,7 @@ module t (/*AUTOARG*/
       return iterations == 1;
    endfunction
 
-   function bit test_2;
+   function automatic bit test_2;
       int iterations = 0;
       do begin
          break;
@@ -37,7 +37,7 @@ module t (/*AUTOARG*/
       return 1'b1;
    endfunction
 
-   function bit test_4;
+   function automatic bit test_4;
       int incr = 0;
       do begin
          incr++;
@@ -48,7 +48,7 @@ module t (/*AUTOARG*/
       return incr == 1;
    endfunction
 
-   function bit test_5;
+   function automatic bit test_5;
       int incr = 0;
       do begin
          do
@@ -62,7 +62,7 @@ module t (/*AUTOARG*/
       return incr == 10;
    endfunction
 
-   function bit test_6;
+   function automatic bit test_6;
       int incr = 0;
       do begin
          do begin
@@ -78,7 +78,7 @@ module t (/*AUTOARG*/
       return incr == 10;
    endfunction
 
-   function bit test_7;
+   function automatic bit test_7;
       int incr = 0;
       do begin
          do begin
@@ -95,7 +95,7 @@ module t (/*AUTOARG*/
       return incr == 2;
    endfunction
 
-   function bit test_8;
+   function automatic bit test_8;
       int incr = 0;
       do begin
          incr++;
@@ -106,7 +106,7 @@ module t (/*AUTOARG*/
       return incr == 1;
    endfunction
 
-   function bit test_9;
+   function automatic bit test_9;
       int incr = 0;
       do begin
          incr++;
@@ -117,7 +117,7 @@ module t (/*AUTOARG*/
       return incr == 5;
    endfunction
 
-   function bit test_10;
+   function automatic bit test_10;
       do begin
          continue;
       end
@@ -125,7 +125,7 @@ module t (/*AUTOARG*/
       return 1'b1;
    endfunction
 
-   function bit test_11;
+   function automatic bit test_11;
       int incr = 0;
       do begin
          do
@@ -139,7 +139,7 @@ module t (/*AUTOARG*/
       return incr == 12;
    endfunction
 
-   function bit test_12;
+   function automatic bit test_12;
       int incr = 0;
       do begin
          do begin

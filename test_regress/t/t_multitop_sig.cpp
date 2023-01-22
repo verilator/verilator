@@ -20,9 +20,10 @@ double sc_time_stamp() { return 0; }
 int errors = 0;
 
 int main(int argc, char* argv[]) {
-    Vt_multitop_sig* topp = new Vt_multitop_sig{""};
-
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
+    Vt_multitop_sig* topp = new Vt_multitop_sig{""};
 
     {
         topp->a__02Ein = 0;

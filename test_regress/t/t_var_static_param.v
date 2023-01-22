@@ -27,6 +27,7 @@ endmodule
 
 module sub;
    parameter P = 1;
+   // verilator lint_off IMPLICITSTATIC
    function int f_no_st ();
       // This static is unique within each parameterized module
       static int st = 2; st += P; return st;
