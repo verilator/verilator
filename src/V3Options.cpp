@@ -1553,6 +1553,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-Wno-style", CbCall, []() { FileLine::globalWarnStyleOff(true); });
     DECL_OPTION("-Wno-UNUSED", CbCall, []() { FileLine::globalWarnUnusedOff(true); });
+    DECL_OPTION("-Wno-WIDTH", CbCall, []() { FileLine::globalWarnOff(V3ErrorCode::WIDTH, true); });
     DECL_OPTION("-Wwarn-", CbPartialMatch, [this, fl, &parser](const char* optp) {
         const V3ErrorCode code{optp};
         if (code == V3ErrorCode::EC_ERROR) {
@@ -1573,6 +1574,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         V3Error::pretendError(V3ErrorCode::UNUSEDGENVAR, false);
         V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, false);
         V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, false);
+    });
+    DECL_OPTION("-Wwarn-WIDTH", CbCall, []() {
+        FileLine::globalWarnOff(V3ErrorCode::WIDTH, false);
+        V3Error::pretendError(V3ErrorCode::WIDTHTRUNC, false);
+        V3Error::pretendError(V3ErrorCode::WIDTHEXPAND, false);
+        V3Error::pretendError(V3ErrorCode::WIDTHXZEXPAND, false);
+        V3Error::pretendError(V3ErrorCode::WIDTH, false);
     });
     DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
 

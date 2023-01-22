@@ -261,6 +261,11 @@ public:
 
     // Turn on/off warning messages on this line.
     void warnOn(V3ErrorCode code, bool flag) {
+        if (code == V3ErrorCode::WIDTH) {
+            warnOn(V3ErrorCode::WIDTHTRUNC, flag);
+            warnOn(V3ErrorCode::WIDTHEXPAND, flag);
+            warnOn(V3ErrorCode::WIDTHXZEXPAND, flag);
+        }
         m_msgEnIdx = singleton().msgEnSetBit(m_msgEnIdx, code, flag);
     }
     void warnOff(V3ErrorCode code, bool flag) { warnOn(code, !flag); }

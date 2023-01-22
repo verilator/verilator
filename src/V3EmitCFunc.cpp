@@ -262,7 +262,7 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
         }
         if (argp->widthMin() > 8 && fmtLetter == 'c') {
             // Technically legal, but surely not what the user intended.
-            argp->v3warn(WIDTH, dispp->verilogKwd() << "of %c format of > 8 bit value");
+            argp->v3warn(WIDTHTRUNC, dispp->verilogKwd() << "of %c format of > 8 bit value");
         }
     }
     // string pfmt = "%"+displayFormat(argp, vfmt, fmtLetter)+fmtLetter;

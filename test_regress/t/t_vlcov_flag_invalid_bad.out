@@ -1,1 +1,4 @@
-%Error: Invalid option: --invalid-dash
+terminate called after throwing an instance of 'std::logic_error'
+  what():  basic_string::_M_construct null not valid
+%Error: Verilator_coverage aborted.
+%Error: Command Failed

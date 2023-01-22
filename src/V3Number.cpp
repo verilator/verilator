@@ -703,7 +703,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
         return str;
     }  // case b/d/x/o
     case 'c': {
-        if (width() > 8) fl->v3warn(WIDTH, "$display-like format of %c format of > 8 bit value");
+        if (width() > 8) fl->v3warn(WIDTHTRUNC, "$display-like format of %c format of > 8 bit value");
         const unsigned int v = bitsValue(0, 8);
         char strc[2];
         strc[0] = v & 0xff;
@@ -2243,7 +2243,7 @@ void V3Number::opCleanThis(bool warnOnTruncation) {
     const uint32_t newValueXMsb = v.m_valueX & hiWordMask();
     if (warnOnTruncation && (newValueMsb != v.m_value || newValueXMsb != v.m_valueX)) {
         // Displaying in decimal avoids hiWordMask truncation
-        v3warn(WIDTH, "Value too large for " << width() << " bit number: " << displayed("%d"));
+        v3warn(WIDTHTRUNC, "Value too large for " << width() << " bit number: " << displayed("%d"));
     }
     m_data.num()[words() - 1] = {newValueMsb, newValueXMsb};
 }
