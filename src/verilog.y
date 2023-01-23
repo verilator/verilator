@@ -1219,7 +1219,7 @@ package_item<nodep>:            // ==IEEE: package_item
         |       anonymous_program                       { $$ = $1; }
         |       package_export_declaration              { $$ = $1; }
         |       timeunits_declaration                   { $$ = $1; }
-        |       sigAttrScope package_item               { $$ = $2; }
+        |       sigAttrScope                            { $$ = nullptr; }
         ;
 
 package_or_generate_item_declaration<nodep>:    // ==IEEE: package_or_generate_item_declaration
@@ -1395,7 +1395,7 @@ paramPortDeclOrArg<nodep>:      // IEEE: param_assignment + parameter_port_decla
         //                      // We combine the two as we can't tell which follows a comma
                 parameter_port_declarationFrontE param_assignment       { $$ = $2; }
         |       parameter_port_declarationTypeFrontE type_assignment    { $$ = $2; }
-        |       sigAttrScope paramPortDeclOrArg                         { $$ = $2; }
+        |       sigAttrScope                                            { $$ = nullptr; }
         |       vlTag                                   { $$ = nullptr; }
         ;
 
@@ -1436,7 +1436,7 @@ portAndTagE<nodep>:
 
 portAndTag<nodep>:
                 port                                    { $$ = $1; }
-        |       sigAttrScope port                       { $$ = $2; }  // scope will begin starting with this port
+        |       sigAttrScope                            { $$ = nullptr; }  // scope will begin starting with this port
         |       vlTag port                              { $$ = $2; }  // Tag will associate with previous port
         ;
 
@@ -1596,7 +1596,7 @@ interface_itemListE<nodep>:
 interface_itemList<nodep>:
                 interface_item                          { $$ = $1; }
         |       interface_itemList interface_item       { $$ = addNextNull($1, $2); }
-        |       sigAttrScope interface_item             { $$ = $2; }
+        |       sigAttrScope                            { $$ = nullptr; }
         ;
 
 interface_item<nodep>:          // IEEE: interface_item + non_port_interface_item
@@ -2515,7 +2515,7 @@ module_itemList<nodep>:         // IEEE: Part of module_declaration
 module_item<nodep>:             // ==IEEE: module_item
                 port_declaration ';'                    { $$ = $1; }
         |       non_port_module_item                    { $$ = $1; }
-        |       sigAttrScope module_item                { $$ = $2; }
+        |       sigAttrScope                            { $$ = nullptr; }
         ;
 
 non_port_module_item<nodep>:    // ==IEEE: non_port_module_item
