@@ -475,7 +475,7 @@ void V3PreProcImp::comment(const string& text) {
         if (VString::startsWith(cmd, "public_flat_rw")) {
             // "/*verilator public_flat_rw @(foo) */" -> "/*verilator public_flat_rw*/ @(foo)"
             string::size_type endOfCmd = std::strlen("public_flat_rw");
-            while (isWordChar(cmd[endOfCmd])) ++endOfCmd;
+            while (VString::isWordChar(cmd[endOfCmd])) ++endOfCmd;
             string baseCmd = cmd.substr(0, endOfCmd);
             string arg = cmd.substr(endOfCmd);
             while (isspace(arg[0])) arg = arg.substr(1);

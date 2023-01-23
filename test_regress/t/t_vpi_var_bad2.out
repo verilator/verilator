@@ -1,4 +1,0 @@
-%Error: t/t_vpi_var_bad2.v:3:1: public_off without initial public*_on
-    3 | /*verilator public_off*/ 
-      | ^~~~~~~~~~~~~~~~~~~~~~~~
-%Error: Exiting due to
