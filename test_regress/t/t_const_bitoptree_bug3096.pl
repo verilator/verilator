@@ -16,7 +16,9 @@ compile(
     v_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"],
     );
 
-execute();
+execute(
+    check_finished => 0,
+    );
 
 ok(1);
 1;
