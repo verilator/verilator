@@ -1,6 +1,0 @@
-%Error-UNSUPPORTED: t/t_class_static.v:25:18: Unsupported: 'static' function/task variables
-                                            : ... In instance t
-   25 |       static int st = 2; st++; return st;
-      |                  ^~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to

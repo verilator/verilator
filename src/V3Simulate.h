@@ -503,6 +503,15 @@ private:
         checkNodeInfo(nodep);
         iterateChildren(nodep);
     }
+    void visit(AstInitialStatic* nodep) override {
+        if (jumpingOver(nodep)) return;
+        if (!m_params) {
+            badNodeType(nodep);
+            return;
+        }
+        checkNodeInfo(nodep);
+        iterateChildren(nodep);
+    }
     void visit(AstNodeIf* nodep) override {
         if (jumpingOver(nodep)) return;
         UINFO(5, "   IF " << nodep << endl);

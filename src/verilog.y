@@ -3788,12 +3788,16 @@ for_initializationItem<nodep>:          // IEEE: variable_assignment + for_varia
         //                      // IEEE: for_variable_declaration
                 data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($1);
-                          $$ = VARDONEA($<fl>2, *$2, nullptr, nullptr);
+                          AstVar* const varp = VARDONEA($<fl>2, *$2, nullptr, nullptr);
+                          varp->lifetime(VLifetime::AUTOMATIC);
+                          $$ = varp;
                           $$->addNext(new AstAssign{$3, new AstVarRef{$<fl>2, *$2, VAccess::WRITE}, $4}); }
         //                      // IEEE-2012:
         |       yVAR data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($2);
-                          $$ = VARDONEA($<fl>3, *$3, nullptr, nullptr);
+                          AstVar* const varp = VARDONEA($<fl>3, *$3, nullptr, nullptr);
+                          varp->lifetime(VLifetime::AUTOMATIC);
+                          $$ = varp;
                           $$->addNext(new AstAssign{$4, new AstVarRef{$<fl>3, *$3, VAccess::WRITE}, $5}); }
         //                      // IEEE: variable_assignment
         //                      // UNSUP variable_lvalue below
