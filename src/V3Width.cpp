@@ -121,7 +121,7 @@ std::ostream& operator<<(std::ostream& str, const Castable& rhs) {
 #define v3widthWarn(lhs, rhs, msg) \
     v3errorEnd((V3Error::v3errorPrep((lhs) < (rhs)   ? V3ErrorCode::WIDTHTRUNC \
                                      : (lhs) > (rhs) ? V3ErrorCode::WIDTHEXPAND \
-                                                 : V3ErrorCode::WIDTH), \
+                                                     : V3ErrorCode::WIDTH), \
                 (V3Error::v3errorStr() << msg), V3Error::v3errorStr()))
 
 //######################################################################
@@ -6046,7 +6046,8 @@ private:
                      // Make it the proper size.  Careful of proper extension of 0's/1's
                      && expWidth > 32 && constp->num().isMsbXZ()) {
                 constp->v3warn(WIDTHXZEXPAND, "Unsized constant being X/Z extended to "
-                                          << expWidth << " bits: " << constp->prettyName());
+                                                  << expWidth
+                                                  << " bits: " << constp->prettyName());
                 V3Number num(constp, expWidth);
                 num.opExtendXZ(constp->num(), constp->width());
                 AstNodeExpr* const newp = new AstConst{constp->fileline(), num};
