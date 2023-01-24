@@ -10,6 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
+pli_filename("t_vpi_var.cpp");
 compile(
     make_top_shell => 0,
     make_main => 0,
