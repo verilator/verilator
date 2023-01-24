@@ -93,7 +93,7 @@ endif
 # -lfl not needed as Flex invoked with %nowrap option
 LIBS = $(CFG_LIBS) -lm
 ifeq ($(CFG_WITH_THREADED),yes)
-LIBS += -lpthread
+LIBS += -l$(CFG_LDFLAGS_THREADS)
 endif
 
 CPPFLAGS += -MMD

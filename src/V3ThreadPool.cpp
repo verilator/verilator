@@ -20,9 +20,6 @@
 
 #include "V3Error.h"
 
-// The global thread pool
-V3ThreadPool v3ThreadPool;
-
 void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE {
     VerilatedLockGuard lock{m_mutex};
     VerilatedLockGuard stoppedJobsLock{m_stoppedJobsMutex};
@@ -41,14 +38,16 @@ void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE {
     lock.lock();
     // Start new threads
     m_shutdown = false;
-    for (unsigned int i = 1; i < n; i++) {
+    for (unsigned int i = 1; i < n; ++i) {
         m_workers.emplace_back(&V3ThreadPool::startWorker, this, i);
     }
 }
 
-void V3ThreadPool::startWorker(V3ThreadPool* selfp, int id) VL_MT_SAFE { selfp->worker(id); }
+void V3ThreadPool::startWorker(V3ThreadPool* selfThreadp, int id) VL_MT_SAFE {
+    selfThreadp->workerJobLoop(id);
+}
 
-void V3ThreadPool::worker(int id) VL_MT_SAFE {
+void V3ThreadPool::workerJobLoop(int id) VL_MT_SAFE {
     while (true) {
         // Wait for a notification
         job_t job;
@@ -57,15 +56,11 @@ void V3ThreadPool::worker(int id) VL_MT_SAFE {
             m_cv.wait(lock, [&]() VL_REQUIRES(m_mutex) {
                 return !m_queue.empty() || m_shutdown || m_stoppedJobs;
             });
-
-            // Terminate if requested
-            if (m_shutdown) return;
-
+            if (m_shutdown) return;  // Terminate if requested
             if (m_stoppedJobs) {
-                check_stop_requested(&m_mutex);
+                wait_if_stop_requested(&m_mutex);
                 continue;
             }
-
             // Get the job
             UASSERT(!m_queue.empty(), "Job should be available");
 
@@ -81,7 +76,7 @@ void V3ThreadPool::worker(int id) VL_MT_SAFE {
 template <>
 void V3ThreadPool::push_job<void>(std::shared_ptr<std::promise<void>>& prom,
                                   std::function<void()>&& f) VL_MT_SAFE {
-    if (executeSynchronously()) {
+    if (willExecuteSynchronously()) {
         f();
         prom->set_value();
     } else {
@@ -90,5 +85,40 @@ void V3ThreadPool::push_job<void>(std::shared_ptr<std::promise<void>>& prom,
             f();
             prom->set_value();
         });
+    }
+}
+
+void V3ThreadPool::selfTest() {
+    VerilatedMutex commonMutex;
+    int commonValue = 0;
+
+    auto firstJob = [&](int sleep) -> void {
+        std::this_thread::sleep_for(std::chrono::milliseconds{sleep});
+        commonValue = 1;
+        s().request_exclusive_access([&]() {
+            commonValue = 10;
+            std::this_thread::sleep_for(std::chrono::milliseconds{sleep + 10});
+            UASSERT(commonValue == 10, "unexpected commonValue = " << commonValue);
+        });
+        commonValue = 100;
+    };
+    auto secondJob = [&](int sleep) -> void {
+        VerilatedLockGuard lock{commonMutex};
+        s().wait_if_stop_requested(&commonMutex);
+        std::this_thread::sleep_for(std::chrono::milliseconds{sleep});
+        commonValue = 1000;
+    };
+    std::list<std::future<void>> futures;
+
+    futures.push_back(s().enqueue<void>(std::bind(firstJob, 100)));
+    futures.push_back(s().enqueue<void>(std::bind(secondJob, 100)));
+    futures.push_back(s().enqueue<void>(std::bind(firstJob, 100)));
+    futures.push_back(s().enqueue<void>(std::bind(secondJob, 100)));
+    futures.push_back(s().enqueue<void>(std::bind(secondJob, 200)));
+    futures.push_back(s().enqueue<void>(std::bind(firstJob, 200)));
+    futures.push_back(s().enqueue<void>(std::bind(firstJob, 300)));
+    while (!futures.empty()) {
+        futures.front().get();
+        futures.pop_front();
     }
 }

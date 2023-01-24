@@ -602,7 +602,7 @@ static void verilate(const string& argString) {
     }  // LCOV_EXCL_STOP
 
     // Adjust thread pool size
-    v3ThreadPool.resize(v3Global.opt.verilateJobs());
+    V3ThreadPool::s().resize(v3Global.opt.verilateJobs());
 
     // --FRONTEND------------------
 
@@ -623,6 +623,7 @@ static void verilate(const string& argString) {
         V3Partition::selfTest();
         V3Partition::selfTestNormalizeCosts();
         V3Broken::selfTest();
+        V3ThreadPool::selfTest();
     }
 
     // Read first filename
