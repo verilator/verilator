@@ -19,8 +19,14 @@
 #include "verilated_vcd_c.h"
 #include "verilated_vpi.h"
 
+#ifdef T_VPI_VAR2
+#include "Vt_vpi_var2.h"
+#include "Vt_vpi_var2__Dpi.h"
+#else
 #include "Vt_vpi_var.h"
 #include "Vt_vpi_var__Dpi.h"
+#endif
+
 #include "svdpi.h"
 
 #endif
@@ -266,6 +272,15 @@ int _mon_check_var() {
 
     TestVpiHandle vh3 = vpi_handle_by_name((PLI_BYTE8*)"onebit", vh2);
     CHECK_RESULT_NZ(vh3);
+
+#ifdef T_VPI_VAR2
+    // test scoped attributes
+    TestVpiHandle vh_invisible1 = vpi_handle_by_name((PLI_BYTE8*)"invisible1", vh2);
+    CHECK_RESULT_Z(vh_invisible1);
+
+    TestVpiHandle vh_invisible2 = vpi_handle_by_name((PLI_BYTE8*)"invisible2", vh2);
+    CHECK_RESULT_Z(vh_invisible2);
+#endif
 
     // onebit attributes
     PLI_INT32 d;
