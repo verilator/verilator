@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_class_extends_alias_unsup.v:22:22: Unsupported: TYPEDEF 'foo_t' in AstClassExtends
+   22 |    class bar extends foo_t;
+      |                      ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
