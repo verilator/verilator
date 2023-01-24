@@ -1757,7 +1757,7 @@ List Of Warnings
    either blocks forever or never blocks.
 
 
-.. option:: WIDTH
+.. option:: WIDTHEXPAND, WIDTHTRUNC, WIDTHXZEXPAND
 
    Warns that based on the width rules of Verilog:
 
@@ -1792,7 +1792,7 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_WIDTH_1_faulty.rst
 
-   Results in:
+   Results in a WIDTHEXPAND warning:
 
    .. include:: ../../docs/gen/ex_WIDTH_1_msg.rst
 
