@@ -56,7 +56,7 @@ module chk (input clk, input rst_l, input expr);
 
    wire noxs = ((expr ^ expr) == 1'b0);
 
-   // FIXMEV5: this test is dodgy, noxs can be proven constant, so this block
+   // TODO: this test is dodgy, noxs can be proven constant, so this block
    //          should never relly trigger...
    reg    hasx;
    always @ (noxs) begin
