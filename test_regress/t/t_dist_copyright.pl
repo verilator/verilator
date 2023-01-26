@@ -57,14 +57,26 @@ my $Exempt_Files_List_Re = '^(' . join('|', (map { quotemeta $_ } @Exempt_Files_
 if (!-r "$root/.git") {
     skip("Not in a git repository");
 } else {
-    my $files = `cd $root && git ls-files --exclude-standard`;
+    my $out = `cd $root && git ls-files --exclude-standard`;
     my $year = strftime("%Y", localtime);
-
-    $files =~ s/\s+/ /g;
-    foreach my $filename (split /\s+/, $files) {
+    my %files;
+    $out =~ s/\s+/ /g;
+    foreach my $filename (split /\s+/, $out) {
         next if $filename =~ /$Exempt_Files_Re/;
         next if $filename =~ /$Exempt_Files_List_Re/;
+        $files{$filename} = 1;
+    }
+
+    my %added;
+    $out = `cd $root && git diff --name-status HEAD^^^^^`;
+    foreach my $line (split /\n/, $out) {
+        next if $line !~ /^A\s+(.*)/;
+        $added{$1} = 1;
+    }
+
+    foreach my $filename (sort keys %files) {
         my $fh = IO::File->new("<$root/$filename") or error("$! $filename");
+        next if !$fh;
         my $spdx;
         my $copyright;
         my $release;
@@ -73,13 +85,13 @@ if (!-r "$root/.git") {
                 $spdx = $line;
             } elsif ($line =~ /Copyright 20[0-9][0-9]/) {
                 $copyright = $line;
-                if ($line !~ /Wilson Snyder|Geza Lore/
-                    && !($filename =~ /test_regress/ && $line =~ /Antmicro|Todd Strader/)) {
+                if ($line =~ /Wilson Snyder/) {
+                } elsif (!$added{$filename} && $line =~ /Antmicro|Geza Lore|Todd Strader/) {
+                } elsif ($filename =~ /$Exempt_Author_Re/) {
+                } else {
                     my $yeardash = ($filename =~ m!test_regress/t!) ? $year : $year."-".$year;
-                    if ($filename !~ /$Exempt_Author_Re/) {
-                        warn "   ".$copyright;
-                        error("$filename: Please use standard 'Copyright $yeardash by Wilson Snyder'");
-                    }
+                    warn "   ".$copyright;
+                    error("$filename: Please use standard 'Copyright $yeardash by Wilson Snyder'");
                 }
             } elsif ($line =~ m!Creative Commons Public Domain!
                      || $line =~ m!freely copied and/or distributed!
