@@ -280,6 +280,16 @@ int _mon_check_var() {
 
     TestVpiHandle vh_invisible2 = vpi_handle_by_name((PLI_BYTE8*)"invisible2", vh2);
     CHECK_RESULT_Z(vh_invisible2);
+
+    TestVpiHandle vh_visibleParam1 = vpi_handle_by_name((PLI_BYTE8*)"visibleParam1", vh2);
+    CHECK_RESULT_NZ(vh_visibleParam1);
+
+    TestVpiHandle vh_invisibleParam1 = vpi_handle_by_name((PLI_BYTE8*)"invisibleParam1", vh2);
+    CHECK_RESULT_Z(vh_invisibleParam1);
+
+    TestVpiHandle vh_visibleParam2 = vpi_handle_by_name((PLI_BYTE8*)"visibleParam2", vh2);
+    CHECK_RESULT_NZ(vh_visibleParam2);
+
 #endif
 
     // onebit attributes

@@ -12,7 +12,17 @@
 import "DPI-C" context function int mon_check();
 `endif
 
-module t (/*AUTOARG*/
+module t
+#(
+/* verilator public_flat_on */
+   parameter int visibleParam1 = 0,
+/* verilator public_off */
+   parameter int invisibleParam1 = 1,
+/* verilator public_on */
+   parameter int visibleParam2 = 2
+/* verilator public_off */
+)
+(/*AUTOARG*/
    // Inputs
    clk
    );

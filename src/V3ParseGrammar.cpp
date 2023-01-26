@@ -241,7 +241,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
         nodep->trace(allTracingOn(nodep->fileline()));
     }
     if (nodep->varType().isVPIAccessible())
-        nodep->addAttrsp(PARSEP->cloneScopedSigAttr());
+        nodep->addAttrsp(GRAMMARP->cloneScopedSigAttr());
 
     // Remember the last variable created, so we can attach attributes to it in later parsing
     GRAMMARP->m_varAttrp = nodep;
