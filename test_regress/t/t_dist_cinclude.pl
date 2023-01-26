@@ -23,7 +23,7 @@ if (!-r catfile($root, ".git")) {
     my $files = `cd $root && git ls-files --exclude-standard`;
     print "ST $files\n" if $Debug;
     foreach my $file (split /\n/, $files) {
-        # next if $file =~ m!include/vltstd/vpi_user.h!;  # IEEE Standard file - can't change it
+        next if $file =~ m!include/vltstd/vpi_user.h!;  # IEEE Standard file - can't change it
         next if $file =~ m!include/gtkwave/!;  # Standard file - can't change it
         my $filename = catfile($root, $file);
         @lines = split /\n/, file_contents($filename);
