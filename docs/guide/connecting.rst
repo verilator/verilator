@@ -479,11 +479,12 @@ distribution.
 Verilated and VerilatedContext
 ==============================
 
-Multiple Verilated models may be part of the same simulation context, that
-is share a VPI interface, sense of time, and common settings.  This common
-simulation context information is stored in a ``VerilatedContext``
+Multiple C++ Verilated models may be part of the same simulation context,
+that is share a VPI interface, sense of time, and common settings.  This
+common simulation context information is stored in a ``VerilatedContext``
 structure.  If a ``VerilatedContext`` is not created prior to creating a
-model, a default global one is created automatically.
+model, a default global one is created automatically.  SystemC requires
+using only the single, default VerilatedContext.
 
 The ``Verilated::`` methods, including the ``Verilated::commandArgs`` call
 shown above, call VerilatedContext methods using the default global
