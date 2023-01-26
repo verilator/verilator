@@ -44,12 +44,15 @@ class EmitCSyms final : EmitCBaseVisitor {
         const string m_prettyName;
         const int m_timeunit;
         string m_type;
+
+        string m_defName;
         ScopeData(const string& symName, const string& prettyName, int timeunit,
-                  const string& type)
+                  const string& type, const string&defName = "")
             : m_symName{symName}
             , m_prettyName{prettyName}
             , m_timeunit{timeunit}
-            , m_type{type} {}
+            , m_type{type}
+            , m_defName{defName} {}
     };
     struct ScopeFuncData {
         AstScopeName* const m_scopep;
@@ -197,6 +200,7 @@ class EmitCSyms final : EmitCBaseVisitor {
                     m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
                 } else {
                     scopeNameit->second.m_type = scpit->second.m_type;
+                    scopeNameit->second.m_defName = scpit->second.m_defName;
                 }
             }
             string::size_type pos = scp.rfind("__DOT__");
@@ -318,7 +322,8 @@ class EmitCSyms final : EmitCBaseVisitor {
             const string name_pretty = AstNode::vpiName(name);
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(std::make_pair(
-                name, ScopeData(scopeSymString(name), name_pretty, timeunit, type)));
+                name, ScopeData(scopeSymString(name), name_pretty, timeunit, type, type == "SCOPE_MODULE" ? nodep->origModName() : "")));
+
         }
     }
     void visit(AstScope* nodep) override {
@@ -333,7 +338,7 @@ class EmitCSyms final : EmitCBaseVisitor {
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
                 std::make_pair(nodep->name(), ScopeData(scopeSymString(nodep->name()), name_pretty,
-                                                        timeunit, type)));
+                                                        timeunit, type,  type == "SCOPE_MODULE" ? nodep->modp()->origName() : "")));
         }
     }
     void visit(AstScopeName* nodep) override {
@@ -870,7 +875,10 @@ void EmitCSyms::emitSymImp() {
             putsQuoted(protect(scopeDecodeIdentifier(it->second.m_prettyName)));
             puts(", ");
             puts(cvtToStr(it->second.m_timeunit));
-            puts(", VerilatedScope::" + it->second.m_type + ");\n");
+            puts(", VerilatedScope::" + it->second.m_type);
+            puts(", ");
+            putsQuoted(it->second.m_defName);
+            puts(");\n");
             ++m_numStmts;
         }
     }

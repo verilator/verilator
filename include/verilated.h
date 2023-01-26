@@ -608,17 +608,21 @@ private:
     int8_t m_timeunit = 0;  // Timeunit in negative power-of-10
     Type m_type = SCOPE_OTHER;  // Type of the scope
 
+    const char* m_defNamep = nullptr; // defName (module name, not instance name)
+
 public:  // But internals only - called from VerilatedModule's
     VerilatedScope() = default;
     ~VerilatedScope();
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                   const char* identifier, int8_t timeunit, const Type& type) VL_MT_UNSAFE;
+                   const char* identifier, int8_t timeunit, const Type& type, const char* defName) VL_MT_UNSAFE;
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     void varInsert(int finalize, const char* namep, void* datap, bool isParam,
                    VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
+
+    const char* defname() const VL_MT_SAFE_POSTINIT { return m_defNamep; }
     int8_t timeunit() const VL_MT_SAFE_POSTINIT { return m_timeunit; }
     VerilatedSyms* symsp() const VL_MT_SAFE_POSTINIT { return m_symsp; }
     VerilatedVar* varFind(const char* namep) const VL_MT_SAFE_POSTINIT;
