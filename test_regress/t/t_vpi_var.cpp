@@ -269,6 +269,8 @@ int _mon_check_var() {
     CHECK_RESULT_CSTR(p, TestSimulator::top());
     p = vpi_get_str(vpiType, vh2);
     CHECK_RESULT_CSTR(p, "vpiModule");
+    p = vpi_get_str(vpiDefName, vh2);
+    CHECK_RESULT_CSTR(p, "t");
 
     TestVpiHandle vh3 = vpi_handle_by_name((PLI_BYTE8*)"onebit", vh2);
     CHECK_RESULT_NZ(vh3);
@@ -673,6 +675,8 @@ int _mon_check_putget_str(p_cb_data cb_data) {
         };
     } else {
         // setup and install
+        const char* p = nullptr;
+
         for (int i = 1; i <= 6; i++) {
             char buf[32];
             snprintf(buf, sizeof(buf), TestSimulator::rooted("arr[%d].arr"), i);
@@ -683,12 +687,17 @@ int _mon_check_putget_str(p_cb_data cb_data) {
                             = vpi_handle_by_name((PLI_BYTE8*)"check", data[i].scope));
             CHECK_RESULT_NZ(data[i].verbose
                             = vpi_handle_by_name((PLI_BYTE8*)"verbose", data[i].scope));
-        }
 
+            p = vpi_get_str(vpiDefName, data[i].scope);
+            CHECK_RESULT_CSTR(p, "arr");
+        }
         for (int i = 1; i <= 6; i++) {
             char buf[32];
             snprintf(buf, sizeof(buf), TestSimulator::rooted("subs[%d].subsub"), i);
             CHECK_RESULT_NZ(data[i].scope = vpi_handle_by_name((PLI_BYTE8*)buf, NULL));
+
+            p = vpi_get_str(vpiDefName, data[i].scope);
+            CHECK_RESULT_CSTR(p, "sub");
         }
 
         static t_cb_data cb_data;
