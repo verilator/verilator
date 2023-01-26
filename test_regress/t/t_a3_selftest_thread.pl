@@ -10,6 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
+top_filename("t/t_EXAMPLE.v");
+
 lint(
     v_flags => ["--lint-only --verilate-jobs 2 --debug-self-test"],
     );

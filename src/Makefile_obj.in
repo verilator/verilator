@@ -67,7 +67,6 @@ CFG_CXXFLAGS_PARSER = @CFG_CXXFLAGS_PARSER@
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
 CFG_LDFLAGS_SRC = @CFG_LDFLAGS_SRC@
 CFG_LIBS = @CFG_LIBS@
-CFG_WITH_THREADED = @CFG_WITH_THREADED@
 
 #### End of system configuration section. ####
 
@@ -92,9 +91,6 @@ endif
 
 # -lfl not needed as Flex invoked with %nowrap option
 LIBS = $(CFG_LIBS) -lm
-ifeq ($(CFG_WITH_THREADED),yes)
-LIBS += -l$(CFG_LDFLAGS_THREADS)
-endif
 
 CPPFLAGS += -MMD
 CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir) -I../../include
