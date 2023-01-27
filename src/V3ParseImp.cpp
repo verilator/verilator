@@ -534,7 +534,6 @@ void V3ParseImp::tokenPipelineSym() {
                     token = yaID__ETC;
                 }
             } else if (!m_afterColonColon && *(yylval.strp) == "std") {  // i.e. not yaID__CC
-                yylval.scp = nullptr;
                 v3Global.setUsesStdPackage();
             }
         } else {  // Not found
