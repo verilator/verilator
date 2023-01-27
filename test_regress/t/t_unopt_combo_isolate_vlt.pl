@@ -19,11 +19,11 @@ compile(
 
 if ($Self->{vlt_all}) {
     file_grep($Self->{stats}, qr/Optimizations, isolate_assignments blocks\s+5/i);
-    file_grep("$out_filename", qr/\<var loc="e,23,.*?" name="t.b" dtype_id="\d+" vartype="logic" origName="b" isolate_assignments="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,104,.*?" name="__Vfunc_t.file.get_31_16__0__Vfuncout" dtype_id="\d+" vartype="logic" origName="__Vfunc_t__DOT__file__DOT__get_31_16__0__Vfuncout" isolate_assignments="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,105,.*?" name="__Vfunc_t.file.get_31_16__0__t_crc" dtype_id="\d+" vartype="logic" origName="__Vfunc_t__DOT__file__DOT__get_31_16__0__t_crc" isolate_assignments="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,115,.*?" name="__Vtask_t.file.set_b_d__1__t_crc" dtype_id="\d+" vartype="logic" origName="__Vtask_t__DOT__file__DOT__set_b_d__1__t_crc" isolate_assignments="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,116,.*?" name="__Vtask_t.file.set_b_d__1__t_c" dtype_id="\d+" vartype="logic" origName="__Vtask_t__DOT__file__DOT__set_b_d__1__t_c" isolate_assignments="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,23,.*?" name="t.b" dtype_id="\d+" vartype="logic" origName="b" isolate_assignments="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,104,.*?" name="__Vfunc_t.file.get_31_16__0__Vfuncout" dtype_id="\d+" vartype="logic" origName="__Vfunc_t__DOT__file__DOT__get_31_16__0__Vfuncout" isolate_assignments="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,105,.*?" name="__Vfunc_t.file.get_31_16__0__t_crc" dtype_id="\d+" vartype="logic" origName="__Vfunc_t__DOT__file__DOT__get_31_16__0__t_crc" isolate_assignments="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,115,.*?" name="__Vtask_t.file.set_b_d__1__t_crc" dtype_id="\d+" vartype="logic" origName="__Vtask_t__DOT__file__DOT__set_b_d__1__t_crc" isolate_assignments="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,116,.*?" name="__Vtask_t.file.set_b_d__1__t_c" dtype_id="\d+" vartype="logic" origName="__Vtask_t__DOT__file__DOT__set_b_d__1__t_c" isolate_assignments="true"\/\>/i);
 }
 
 execute(

@@ -17,9 +17,9 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var loc="d,74,.*?" name="clk0" .*dir="input" .*vartype="logic" origName="clk0" clocker="true" public="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="d,75,.*?" name="clk1" .*dir="input" .*vartype="logic" origName="clk1" clocker="true" public="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="d,76,.*?" name="clk2" .*dir="input" .*vartype="logic" origName="clk2" clocker="true" public="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="e,74,.*?" name="clk0" .*dir="input" .*vartype="logic" origName="clk0" clocker="true" public="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="e,75,.*?" name="clk1" .*dir="input" .*vartype="logic" origName="clk1" clocker="true" public="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="e,76,.*?" name="clk2" .*dir="input" .*vartype="logic" origName="clk2" clocker="true" public="true"\/\>/i);
 }
 
 execute(
