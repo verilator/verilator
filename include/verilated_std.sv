@@ -26,6 +26,9 @@
 // verilator lint_off TIMESCALEMOD
 // verilator lint_off UNUSEDSIGNAL
 package std;
+    /* This is to make the linter work */
+    typedef class process;
+
     class mailbox #(type T);
         protected int m_bound;
         protected T m_queue[$];
