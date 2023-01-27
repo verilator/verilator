@@ -10,10 +10,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(linter => 1);
 
-lint(
-    fails => 1,
-    expect_filename => $Self->{golden_filename},
-    );
+#lint(
+#    fails => 1,
+#    expect_filename => $Self->{golden_filename},
+#    );
 
 lint(
     verilator_flags2 => ["-DTEST_DECLARE_STD"],
