@@ -12,7 +12,7 @@ scenarios(vlt => 1);
 
 lint(
     fails => 1,
-    verilator_flags2 => ["-Wno-context"],
+    verilator_flags2 => ["--no-std", "-Wno-context"],
     # The .vh file has the error, not the .v file
     expect_filename => $Self->{golden_filename},
     );

@@ -12,6 +12,7 @@ scenarios(linter => 1);
 
 lint(
     fails => $Self->{vlt_all},
+    verilator_flags2 => ['--no-std'],
     expect_filename => $Self->{golden_filename},
     );
 

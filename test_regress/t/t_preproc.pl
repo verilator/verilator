@@ -13,7 +13,7 @@ scenarios(vlt => 1);
 my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
 compile(
-    verilator_flags2 => ['-DDEF_A0 -DPREDEF_COMMAND_LINE -E'],
+    verilator_flags2 => ['--no-std', '-DDEF_A0 -DPREDEF_COMMAND_LINE -E'],
     verilator_make_gmake => 0,
     make_top_shell => 0,
     make_main => 0,

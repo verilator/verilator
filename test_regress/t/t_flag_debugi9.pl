@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt_all => 1);
 
 compile(
-    v_flags2 => ["--debug --debugi 9"],
+    v_flags2 => ["--debug --debugi 9 --no-std"],
     tee => 0,
     verilator_make_gmake => 0,
     make_top_shell => 0,

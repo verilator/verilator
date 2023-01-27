@@ -15,7 +15,7 @@ my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 top_filename("t/t_preproc_noline.v");
 
 compile(
-    verilator_flags2 => ['-E -P'],
+    verilator_flags2 => ['--no-std', '-E -P'],
     verilator_make_gmake => 0,
     make_top_shell => 0,
     make_main => 0,
