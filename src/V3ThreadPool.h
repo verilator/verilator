@@ -36,6 +36,10 @@ class V3ThreadPool final {
 
     mutable VerilatedMutex m_mutex;  // Mutex for use by m_queue
     std::queue<job_t> m_queue VL_GUARDED_BY(m_mutex);  // Queue of jobs
+    // We don't need to guard this condition_variable as
+    // both `notify_one` and `notify_all` functions are atomic,
+    // `wait` function is not atomic, but we are guarding `m_queue` that is
+    // used by this condition_variable, so clang checks that we have mutex locked
     std::condition_variable_any m_cv;  // Conditions to wake up workers
     std::list<std::thread> m_workers;  // Worker threads
     VerilatedMutex m_stoppedJobsMutex;  // Used to signal stopped jobs

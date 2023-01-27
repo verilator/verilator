@@ -20,7 +20,11 @@
 
 #include "V3Error.h"
 
+// c++11 requires definition of static constexpr as well as declaration
+constexpr unsigned int V3ThreadPool::FUTUREWAITFOR_MS;
+
 void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE {
+    // This function is not thread-safe and can result in race between threads
     VerilatedLockGuard lock{m_mutex};
     VerilatedLockGuard stoppedJobsLock{m_stoppedJobsMutex};
     UASSERT(m_queue.empty(), "Resizing busy thread pool");
