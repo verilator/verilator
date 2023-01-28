@@ -1509,6 +1509,11 @@ void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (immediate()) str << " [IMMEDIATE]";
 }
+void AstClocking::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isDefault()) str << " [DEFAULT]";
+    if (isGlobal()) str << " [GLOBAL]";
+}
 void AstDisplay::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     // str << " " << displayType().ascii();

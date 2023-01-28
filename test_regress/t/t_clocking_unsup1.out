@@ -14,10 +14,4 @@
 %Error-UNSUPPORTED: t/t_clocking_unsup1.v:18:15: Unsupported: clocking event edge override
    18 |        output edge #1 b;
       |               ^~~~
-%Error-UNSUPPORTED: t/t_clocking_unsup1.v:13:20: Unsupported: global clocking
-   13 |    global clocking cb @(posedge clk);
-      |                    ^~
-%Error-UNSUPPORTED: t/t_clocking_unsup1.v:21:11: Unsupported: global clocking
-   21 |    global clocking @(posedge clk);
-      |           ^~~~~~~~
 %Error: Exiting due to

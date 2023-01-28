@@ -18,6 +18,4 @@ module t(/*AUTOARG*/
        output edge #1 b;
    endclocking
 
-   global clocking @(posedge clk);
-   endclocking
 endmodule

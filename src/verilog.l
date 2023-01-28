@@ -236,6 +236,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fwriteb"            { FL; return yD_FWRITEB; }
   "$fwriteh"            { FL; return yD_FWRITEH; }
   "$fwriteo"            { FL; return yD_FWRITEO; }
+  "$global_clock"       { FL; return yD_GLOBAL_CLOCK; }
   "$hold"               { FL; return yaTIMINGSPEC; }
   "$hypot"              { FL; return yD_HYPOT; }
   "$itor"               { FL; return yD_ITOR; }

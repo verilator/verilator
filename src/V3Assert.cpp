@@ -350,8 +350,7 @@ private:
         AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
         AstNodeExpr* inp = newSampledExpr(exprp);
         AstVar* invarp = nullptr;
-        AstSenTree* const sentreep = nodep->sentreep();
-        sentreep->unlinkFrBack();
+        AstSenTree* const sentreep = nodep->sentreep()->unlinkFrBack();
         AstAlways* const alwaysp
             = new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, nullptr};
         m_modp->addStmtsp(alwaysp);

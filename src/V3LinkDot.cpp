@@ -1137,11 +1137,23 @@ class LinkDotFindVisitor final : public VNVisitor {
         iterate(nodep->sensesp());
         iterateAndNextNull(nodep->itemsp());
         // If the block has no name, one cannot reference the clockvars
-        if (nodep->name().empty()) return;
-        VL_RESTORER(m_curSymp);
-        m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
-        m_curSymp->fallbackp(nullptr);
-        iterateAndNextNull(nodep->itemsp());
+        VSymEnt* itSymp = nullptr;
+        if (nodep->isGlobal()  //
+            && m_statep->forPrimary()) {  // else flattening may see two globals
+            m_statep->checkDuplicate(m_curSymp, nodep, "__024global_clock");
+            itSymp
+                = m_statep->insertBlock(m_curSymp, "__024global_clock", nodep, m_classOrPackagep);
+            itSymp->fallbackp(nullptr);
+        }
+        if (!nodep->name().empty()) {
+            itSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
+            itSymp->fallbackp(nullptr);
+        }
+        if (itSymp) {
+            VL_RESTORER(m_curSymp);
+            m_curSymp = itSymp;
+            iterateAndNextNull(nodep->itemsp());
+        }
     }
     void visit(AstClockingItem* nodep) override {
         if (nodep->varp()) {

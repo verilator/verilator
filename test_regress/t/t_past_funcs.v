@@ -23,6 +23,11 @@ module t (/*AUTOARG*/
                 .clk                    (clk),
                 .in                     (in[31:0]));
 
+   Test3 test3 (/*AUTOINST*/
+                // Inputs
+                .clk                    (clk),
+                .in                     (in[31:0]));
+
    always @ (posedge clk) begin
       if (cyc!=0) begin
          cyc <= cyc + 1;
@@ -69,6 +74,10 @@ module Test (/*AUTOARG*/
    assert property (@(posedge clk) $fell(dly1) || dly1%2==1);
    assert property (@(posedge clk) !$stable(dly2));
    assert property (@(posedge clk) $changed(dly2));
+
+   global clocking @(posedge clk); endclocking
+   always @ ($global_clock) $display("%d", in);
+
 endmodule
 
 
@@ -100,4 +109,19 @@ module Test2 (/*AUTOARG*/
    assert property ($fell(dly1[0]) || dly1%2==1);
    assert property ($stable(dly2[31:4]));
    assert property (!$changed(dly2[31:4]));
+endmodule
+
+module Test3 (/*AUTOARG*/
+   // Inputs
+   clk, in
+   );
+
+   input clk;
+   input [31:0] in;
+
+   // Check the named form of global clocking
+   global clocking gck @(posedge clk); endclocking
+   always @ (gck) $display("%d", in);
+   always @ ($global_clock) $display("%d", in);
+
 endmodule

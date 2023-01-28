@@ -822,19 +822,23 @@ class AstClocking final : public AstNode {
     // @astgen op4 := eventp : Optional[AstVar]
     std::string m_name;  // Clocking block name
     const bool m_isDefault = false;  // True if default clocking
+    const bool m_isGlobal = false;  // True if global clocking
 
 public:
     AstClocking(FileLine* fl, const std::string& name, AstSenItem* sensesp,
-                AstClockingItem* itemsp, bool isDefault)
+                AstClockingItem* itemsp, bool isDefault, bool isGlobal)
         : ASTGEN_SUPER_Clocking(fl)
-        , m_isDefault{isDefault} {
+        , m_isDefault{isDefault}
+        , m_isGlobal{isGlobal} {
         m_name = name;
         this->sensesp(sensesp);
         addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstClocking;
+    void dump(std::ostream& str) const override;
     std::string name() const override { return m_name; }
     bool isDefault() const { return m_isDefault; }
+    bool isGlobal() const { return m_isGlobal; }
 };
 class AstClockingItem final : public AstNode {
     // Parents:  CLOCKING

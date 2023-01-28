@@ -844,6 +844,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_FWRITEB      "$fwriteb"
 %token<fl>              yD_FWRITEH      "$fwriteh"
 %token<fl>              yD_FWRITEO      "$fwriteo"
+%token<fl>              yD_GLOBAL_CLOCK "$global_clock"
 %token<fl>              yD_HIGH         "$high"
 %token<fl>              yD_HYPOT        "$hypot"
 %token<fl>              yD_INCREMENT    "$increment"
@@ -4101,6 +4102,8 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_FSCANF '(' expr ',' str commaVRDListE ')'    { $$ = new AstFScanF{$1, *$5, $3, $6}; }
         |       yD_FSEEK '(' idClassSel ',' expr ',' expr ')'   { $$ = new AstFSeek{$1, $3, $5, $7}; }
         |       yD_FTELL '(' idClassSel ')'             { $$ = new AstFTell{$1, $3}; }
+        |       yD_GLOBAL_CLOCK parenE
+                        { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, "__024global_clock", nullptr, nullptr}; }
         |       yD_HIGH '(' exprOrDataType ')'          { $$ = new AstAttrOf{$1, VAttrType::DIM_HIGH, $3, nullptr}; }
         |       yD_HIGH '(' exprOrDataType ',' expr ')' { $$ = new AstAttrOf{$1, VAttrType::DIM_HIGH, $3, $5}; }
         |       yD_HYPOT '(' expr ',' expr ')'          { $$ = new AstHypotD{$1, $3, $5}; }
@@ -5441,17 +5444,15 @@ endLabelE<strp>:
 
 clocking_declaration<nodep>:            // IEEE: clocking_declaration
                 yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, *$2, $3, $5, false}; }
+                        { $$ = new AstClocking{$<fl>2, *$2, $3, $5, false, false}; }
         |       yDEFAULT yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, "", $3, $5, true}; }
+                        { $$ = new AstClocking{$<fl>2, "", $3, $5, true, false}; }
         |       yDEFAULT yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, true}; }
+                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, true, false}; }
         |       yGLOBAL__CLOCKING yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = nullptr;
-                          BBUNSUP($<fl>2, "Unsupported: global clocking"); }
+                        { $$ = new AstClocking{$<fl>2, "", $3, $5, false, true}; }
         |       yGLOBAL__CLOCKING yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = nullptr;
-                          BBUNSUP($<fl>3, "Unsupported: global clocking"); }
+                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, false, true}; }
         ;
 
 clocking_event<senItemp>:       // IEEE: clocking_event
