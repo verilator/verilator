@@ -1458,6 +1458,7 @@ bool AstClass::isClassExtendedFrom(const AstClass* refClassp, const AstClass* ba
 void AstClass::dump(std::ostream& str) const {
     this->AstNodeModule::dump(str);
     if (isExtended()) str << " [EXT]";
+    if (isInterfaceClass()) str << " [IFCCLS]";
     if (isVirtual()) str << " [VIRT]";
 }
 const char* AstClass::broken() const {
@@ -1470,6 +1471,10 @@ void AstClass::cloneRelink() {
     if (m_classOrPackagep && m_classOrPackagep->clonep()) {
         m_classOrPackagep = m_classOrPackagep->clonep();
     }
+}
+void AstClassExtends::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isImplements()) str << " [IMPLEMENTS]";
 }
 AstClass* AstClassExtends::classp() const {
     const AstClassRefDType* refp = VN_CAST(dtypep(), ClassRefDType);

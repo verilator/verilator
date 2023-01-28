@@ -1,0 +1,4 @@
+%Error: t/t_implements_notfound_bad.v:7:23: Class for 'implements' not found: 'Inotfound'
+    7 | class ClsI implements Inotfound;
+      |                       ^~~~~~~~~
+%Error: Exiting due to

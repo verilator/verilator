@@ -748,6 +748,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     string m_scope;  // Scope text
     const AstNodeBlock* m_blockp = nullptr;  // Current Begin/end block
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    bool m_inInterfaceClass = false;  // Inside a class interface
     bool m_inRecursion = false;  // Inside a recursive module
     int m_paramNum = 0;  // Parameter number, for position based connection
     bool m_explicitNew = false;  // Hit a "new" function
@@ -916,6 +917,9 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Class not under module/package/$unit");
         UINFO(8, "   " << nodep << endl);
+        if (nodep->isInterfaceClass()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: interface classes");
+        }
         // Remove classes that have void params, as they were only used for the parameterization
         // step and will not be instantiated
         if (m_statep->removeVoidParamedClasses()) {
@@ -930,6 +934,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
         VL_RESTORER(m_scope);
         VL_RESTORER(m_classOrPackagep);
+        VL_RESTORER(m_inInterfaceClass);
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_paramNum);
@@ -940,6 +945,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             VSymEnt* const upperSymp = m_curSymp;
             m_scope = m_scope + "." + nodep->name();
             m_classOrPackagep = nodep;
+            m_inInterfaceClass = nodep->isInterfaceClass();
             m_curSymp = m_modSymp
                 = m_statep->insertBlock(upperSymp, nodep->name(), nodep, m_classOrPackagep);
             m_statep->insertMap(m_curSymp, m_scope);
@@ -1068,6 +1074,10 @@ class LinkDotFindVisitor final : public VNVisitor {
         VL_RESTORER(m_curSymp);
         VSymEnt* upSymp = m_curSymp;
         {
+            if (m_inInterfaceClass && !nodep->pureVirtual()) {
+                nodep->v3error("Interface class functions must be pure virtual"
+                               << " (IEEE 1800-2017 8.26)");
+            }
             // Change to appropriate package if extern declaration (vs definition)
             if (nodep->classOrPackagep()) {
                 AstClassOrPackageRef* const cpackagerefp
@@ -1190,6 +1200,11 @@ class LinkDotFindVisitor final : public VNVisitor {
         // Var: Remember its name for later resolution
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Var not under module?");
         iterateChildren(nodep);
+        if (m_inInterfaceClass && !nodep->isParam() && !nodep->isFuncLocal()
+            && !nodep->isFuncReturn()) {
+            nodep->v3error("Interface class cannot contain non-parameter members"
+                           << " (IEEE 1800-2017 8.26)");
+        }
         if (!m_statep->forScopeCreation()) {
             // Find under either a task or the module's vars
             const VSymEnt* foundp = m_curSymp->findIdFallback(nodep->name());
@@ -3226,6 +3241,16 @@ private:
                                 if (classp == nodep) {
                                     cextp->v3error("Attempting to extend class "
                                                    << nodep->prettyNameQ() << " from itself");
+                                } else if (cextp->isImplements() && !classp->isInterfaceClass()) {
+                                    cextp->v3error(
+                                        "Attempting to implement from non-interface class "
+                                        << classp->prettyNameQ() << '\n'
+                                        << "... Suggest use 'extends'");
+                                } else if (!cextp->isImplements() && !nodep->isInterfaceClass()
+                                           && classp->isInterfaceClass()) {
+                                    cextp->v3error("Attempting to extend from interface class "
+                                                   << classp->prettyNameQ() << '\n'
+                                                   << "... Suggest use 'implements'");
                                 } else {
                                     cextp->childDTypep(classRefDtypep);
                                     classp->isExtended(true);
@@ -3240,8 +3265,9 @@ private:
                             const string suggest = m_statep->suggestSymFallback(
                                 m_curSymp, cpackagerefp->name(), LinkNodeMatcherClass{});
                             cpackagerefp->v3error(
-                                "Class to extend not found: "
-                                << cpackagerefp->prettyNameQ() << '\n'
+                                "Class for '"
+                                << cextp->verilogKwd()  // extends/implements
+                                << "' not found: " << cpackagerefp->prettyNameQ() << '\n'
                                 << (suggest.empty() ? "" : cpackagerefp->warnMore() + suggest));
                         }
                     }

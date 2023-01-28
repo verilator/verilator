@@ -1,4 +1,4 @@
-%Error: t/t_class_extends_nf_bad.v:10:19: Class to extend not found: 'IsNotFound'
+%Error: t/t_class_extends_nf_bad.v:10:19: Class for 'extends' not found: 'IsNotFound'
                                         : ... Suggested alternative: 'IsFound'
    10 | class Cls extends IsNotFound;
       |                   ^~~~~~~~~~

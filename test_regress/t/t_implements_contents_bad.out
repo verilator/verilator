@@ -1,0 +1,11 @@
+%Error-UNSUPPORTED: t/t_implements_contents_bad.v:7:11: Unsupported: interface classes
+    7 | interface class Icls;
+      |           ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_implements_contents_bad.v:8:8: Interface class cannot contain non-parameter members (IEEE 1800-2017 8.26)
+    8 |    int badi;
+      |        ^~~~
+%Error: t/t_implements_contents_bad.v:9:9: Interface class functions must be pure virtual (IEEE 1800-2017 8.26)
+    9 |    task badtask;
+      |         ^~~~~~~
+%Error: Exiting due to

@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_implements_collision_bad.v:15:41: Multiple inheritance illegal on non-interface classes (IEEE 1800-2017 8.13), and unsupported for interface classes.
+   15 | interface class IclsBoth extends Icls1, Icls2;
+      |                                         ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

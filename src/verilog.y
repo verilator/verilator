@@ -94,6 +94,7 @@ public:
     bool m_varDeclTyped = false;  // Var got reg/wire for dedup check
     bool m_pinAnsi = false;  // In ANSI port list
     bool m_tracingParse = true;  // Tracing disable for parser
+    bool m_inImplements = false;  // Is inside class implements list
     bool m_insideProperty = false;  // Is inside property declaration
     bool m_typedPropertyPort = false;  // True if typed property port occurred on port lists
     bool m_modportImpExpActive
@@ -6466,8 +6467,8 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
                         }
         /*cont*/    class_itemListE yENDCLASS endLabelE
                         { $$ = $1; $1->addMembersp($2);
-                          $1->extendsp($3);
-                          $1->addMembersp($4);
+                          $1->addExtendsp($3);
+                          $1->addExtendsp($4);
                           $1->addMembersp($7);
                           SYMP->popScope($$);
                           GRAMMARP->endLabel($<fl>7, $1, $9); }
@@ -6483,9 +6484,10 @@ classFront<classp>:             // IEEE: part of class_declaration
         //                      // IEEE: part of interface_class_declaration
         |       yINTERFACE yCLASS lifetimeE idAny/*class_identifier*/
                         { $$ = new AstClass{$2, *$4};
+                          $$->isInterfaceClass(true);
                           $$->lifetime($3);
                           SYMP->pushNew($<classp>$);
-                          BBUNSUP($2, "Unsupported: interface classes");  }
+                          v3Global.setHasClasses(); }
         ;
 
 classVirtualE<cbool>:
@@ -6510,25 +6512,30 @@ classExtendsList<classExtendsp>:        // IEEE: part of class_declaration
 
 classExtendsOne<classExtendsp>:         // IEEE: part of class_declaration
                 class_typeExtImpList
-                        { $$ = new AstClassExtends{$1->fileline(), $1};
+                        { $$ = new AstClassExtends{$1->fileline(), $1, GRAMMARP->m_inImplements};
                           $<scp>$ = $<scp>1; }
         //
         |       class_typeExtImpList '(' list_of_argumentsE ')'
-                        { $$ = new AstClassExtends{$1->fileline(), $1};
+                        { $$ = new AstClassExtends{$1->fileline(), $1, GRAMMARP->m_inImplements};
                           $<scp>$ = $<scp>1;
                           if ($3) BBUNSUP($3, "Unsupported: extends with parameters"); }
         ;
 
-classImplementsE<nodep>:        // IEEE: part of class_declaration
+classImplementsE<classExtendsp>:        // IEEE: part of class_declaration
         //                      // All 1800-2012
-                /* empty */                             { $$ = nullptr; }
-        |       yIMPLEMENTS classImplementsList         { $$ = $2; }
+                /* empty */                             { $$ = nullptr; $<scp>$ = nullptr; }
+        |       yIMPLEMENTS
+        /*mid*/        { GRAMMARP->m_inImplements = true; $<scp>$ = nullptr; }
+        /*cont*/    classImplementsList
+                       { $$ = $3; $<scp>$ = $<scp>3;
+                         GRAMMARP->m_inImplements = false; }
         ;
 
-classImplementsList<nodep>:     // IEEE: part of class_declaration
+classImplementsList<classExtendsp>:     // IEEE: part of class_declaration
         //                      // All 1800-2012
-                class_typeExtImpList                    { $$ = nullptr; BBUNSUP($1, "Unsupported: implements class"); }
-        |       classImplementsList ',' class_typeExtImpList    { $$ = addNextNull($1, $3); }
+                classExtendsOne                         { $$ = $1; $<scp>$ = $<scp>1; }
+        |       classImplementsList ',' classExtendsOne
+                       { $$ = addNextNull($1, $3); $<scp>$ = $<scp>3; }
         ;
 
 class_typeExtImpList<nodep>:    // IEEE: class_type: "[package_scope] id [ parameter_value_assignment ]"
