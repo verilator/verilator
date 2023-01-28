@@ -748,7 +748,6 @@ class LinkDotFindVisitor final : public VNVisitor {
     string m_scope;  // Scope text
     const AstNodeBlock* m_blockp = nullptr;  // Current Begin/end block
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
-    bool m_inInterfaceClass = false;  // Inside a class interface
     bool m_inRecursion = false;  // Inside a recursive module
     int m_paramNum = 0;  // Parameter number, for position based connection
     bool m_explicitNew = false;  // Hit a "new" function
@@ -917,9 +916,6 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Class not under module/package/$unit");
         UINFO(8, "   " << nodep << endl);
-        if (nodep->isInterfaceClass()) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: interface classes");
-        }
         // Remove classes that have void params, as they were only used for the parameterization
         // step and will not be instantiated
         if (m_statep->removeVoidParamedClasses()) {
@@ -934,7 +930,6 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
         VL_RESTORER(m_scope);
         VL_RESTORER(m_classOrPackagep);
-        VL_RESTORER(m_inInterfaceClass);
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_paramNum);
@@ -945,7 +940,6 @@ class LinkDotFindVisitor final : public VNVisitor {
             VSymEnt* const upperSymp = m_curSymp;
             m_scope = m_scope + "." + nodep->name();
             m_classOrPackagep = nodep;
-            m_inInterfaceClass = nodep->isInterfaceClass();
             m_curSymp = m_modSymp
                 = m_statep->insertBlock(upperSymp, nodep->name(), nodep, m_classOrPackagep);
             m_statep->insertMap(m_curSymp, m_scope);
@@ -1074,9 +1068,11 @@ class LinkDotFindVisitor final : public VNVisitor {
         VL_RESTORER(m_curSymp);
         VSymEnt* upSymp = m_curSymp;
         {
-            if (m_inInterfaceClass && !nodep->pureVirtual()) {
+            if (VN_IS(m_curSymp->nodep(), Class)
+                && VN_AS(m_curSymp->nodep(), Class)->isInterfaceClass() && !nodep->pureVirtual()
+                && !nodep->isConstructor()) {
                 nodep->v3error("Interface class functions must be pure virtual"
-                               << " (IEEE 1800-2017 8.26)");
+                               << " (IEEE 1800-2017 8.26): " << nodep->prettyNameQ());
             }
             // Change to appropriate package if extern declaration (vs definition)
             if (nodep->classOrPackagep()) {
@@ -1200,10 +1196,10 @@ class LinkDotFindVisitor final : public VNVisitor {
         // Var: Remember its name for later resolution
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Var not under module?");
         iterateChildren(nodep);
-        if (m_inInterfaceClass && !nodep->isParam() && !nodep->isFuncLocal()
-            && !nodep->isFuncReturn()) {
+        if (VN_IS(m_curSymp->nodep(), Class)
+            && VN_AS(m_curSymp->nodep(), Class)->isInterfaceClass() && !nodep->isParam()) {
             nodep->v3error("Interface class cannot contain non-parameter members"
-                           << " (IEEE 1800-2017 8.26)");
+                           << " (IEEE 1800-2017 8.26): " << nodep->prettyNameQ());
         }
         if (!m_statep->forScopeCreation()) {
             // Find under either a task or the module's vars
@@ -2026,6 +2022,7 @@ private:
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     int m_modportNum = 0;  // Uniqueify modport numbers
     bool m_inSens = false;  // True if in senitem
+    std::set<std::string> m_ifClassImpNames;  // Names imported from interface class
 
     struct DotStates {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -2179,7 +2176,45 @@ private:
         } while (classSymp && !VN_IS(classSymp->nodep(), Class));
         return classSymp;
     }
-
+    void importImplementsClass(AstClass* implementsClassp, VSymEnt* interfaceSymp,
+                               AstClass* interfaceClassp) {
+        UINFO(8, "importImplementsClass to " << implementsClassp << " from " << interfaceClassp
+                                             << endl);
+        for (VSymEnt::const_iterator it = interfaceSymp->begin(); it != interfaceSymp->end();
+             ++it) {
+            if (AstNode* interfaceSubp = it->second->nodep()) {
+                UINFO(8, "  SymFunc " << interfaceSubp << endl);
+                if (VN_IS(interfaceSubp, NodeFTask)) {
+                    bool existsInChild = m_curSymp->findIdFlat(interfaceSubp->name());
+                    if (!existsInChild && !implementsClassp->isInterfaceClass()) {
+                        implementsClassp->v3error(
+                            "Class " << implementsClassp->prettyNameQ() << " implements "
+                                     << interfaceClassp->prettyNameQ()
+                                     << " but is missing implementation for "
+                                     << interfaceSubp->prettyNameQ() << " (IEEE 1800-2017 8.26)\n"
+                                     << implementsClassp->warnContextPrimary() << '\n'
+                                     << interfaceSubp->warnOther()
+                                     << "... Location of interface class's function\n"
+                                     << interfaceSubp->warnContextSecondary());
+                    }
+                    if (m_ifClassImpNames.find(interfaceSubp->name()) != m_ifClassImpNames.end()
+                        && !existsInChild) {
+                        implementsClassp->v3error(
+                            "Class " << implementsClassp->prettyNameQ() << " implements "
+                                     << interfaceClassp->prettyNameQ()
+                                     << " but missing inheritance conflict resolution for "
+                                     << interfaceSubp->prettyNameQ()
+                                     << " (IEEE 1800-2017 8.26.6.2)\n"
+                                     << implementsClassp->warnContextPrimary() << '\n'
+                                     << interfaceSubp->warnOther()
+                                     << "... Location of interface class's function\n"
+                                     << interfaceSubp->warnContextSecondary());
+                    }
+                    m_ifClassImpNames.emplace(interfaceSubp->name());
+                }
+            }
+        }
+    }
     // VISITs
     void visit(AstNetlist* nodep) override {
         // Recurse..., backward as must do packages before using packages
@@ -3186,15 +3221,21 @@ private:
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_modSymp);
+        VL_RESTORER(m_ifClassImpNames);
         {
             m_ds.init(m_curSymp);
             // Until overridden by a SCOPE
             m_ds.m_dotSymp = m_curSymp = m_modSymp = m_statep->getNodeSym(nodep);
             m_modp = nodep;
+            int next = 0;
             for (AstNode* itemp = nodep->extendsp(); itemp; itemp = itemp->nextp()) {
                 if (AstClassExtends* const cextp = VN_CAST(itemp, ClassExtends)) {
                     // Replace abstract reference with hard pointer
                     // Will need later resolution when deal with parameters
+                    if (++next == 2 && !nodep->isInterfaceClass() && !cextp->isImplements()) {
+                        cextp->v3error("Multiple inheritance illegal on non-interface classes"
+                                       " (IEEE 1800-2017 8.13)");
+                    }
                     if (cextp->childDTypep() || cextp->dtypep()) continue;  // Already converted
                     AstClassOrPackageRef* const cpackagerefp
                         = VN_CAST(cextp->classOrPkgsp(), ClassOrPackageRef);
@@ -3256,7 +3297,11 @@ private:
                                     classp->isExtended(true);
                                     nodep->isExtended(true);
                                     VSymEnt* const srcp = m_statep->getNodeSym(classp);
-                                    m_curSymp->importFromClass(m_statep->symsp(), srcp);
+                                    if (classp->isInterfaceClass()) {
+                                        importImplementsClass(nodep, srcp, classp);
+                                    } else {
+                                        m_curSymp->importFromClass(m_statep->symsp(), srcp);
+                                    }
                                     VL_DO_DANGLING(cpackagerefp->unlinkFrBack()->deleteTree(),
                                                    cpackagerefp);
                                 }

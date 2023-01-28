@@ -19,25 +19,25 @@ interface class Iext1 extends Icls1;
 endclass
 
 interface class Icls2;
-   pure virtual function int icf2;
+   pure virtual function int icf2(int in);
    pure virtual function int icfboth;
 endclass
 
-   virtual class Base implements Iext1, Icls2;
-      virtual function int icf1;
-         return 1;
-      endfunction
-      virtual function int icf101;
-         return 101;
-      endfunction
-      virtual function int icf2;
-         return 2;
-      endfunction
-      virtual function int icfboth;
-         return 3;
-      endfunction
-      pure virtual function int icfpartial;
-   endclass
+virtual class Base implements Iext1, Icls2;
+   virtual function int icf1;
+      return 1;
+   endfunction
+   virtual function int icf101;
+      return 101;
+   endfunction
+   virtual function int icf2(int in);
+      return in + 2;
+   endfunction
+   virtual function int icfboth;
+      return 3;
+   endfunction
+   pure virtual function int icfpartial;
+endclass
 
 class Cls extends Base;
    virtual function int icfpartial;
@@ -56,7 +56,7 @@ module t(/*AUTOARG*/);
       c = new;
       if (c.icf1() != 1) $stop;
       if (c.icf101() != 101) $stop;
-      if (c.icf2() != 2) $stop;
+      if (c.icf2(1000) != 1002) $stop;
       if (c.icfpartial() != 62) $stop;
 
       i1 = c;

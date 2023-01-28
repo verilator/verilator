@@ -1,5 +1,5 @@
-%Error-UNSUPPORTED: t/t_implements_new_bad.v:7:11: Unsupported: interface classes
-    7 | interface class Icls;
-      |           ^~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_implements_new_bad.v:13:11: Illegal to call 'new' using an abstract virtual class (IEEE 1800-2017 8.21)
+                                      : ... In instance t
+   13 |       c = new;   
+      |           ^~~
 %Error: Exiting due to

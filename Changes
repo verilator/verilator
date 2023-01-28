@@ -14,6 +14,7 @@ Verilator 5.007 devel
 **Minor:**
 
 * Support unpacked unions.
+* Support interface classes and class implements.
 * Support global clocking and $global_clock.
 
 

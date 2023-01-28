@@ -28,7 +28,7 @@ module t(/*AUTOARG*/);
 
    initial begin
       c = new;
-      if (c.ifcboth() != 3) $stop;
+      if (c.icfboth() != 3) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

@@ -6504,10 +6504,7 @@ classExtendsE<classExtendsp>:           // IEEE: part of class_declaration
 
 classExtendsList<classExtendsp>:        // IEEE: part of class_declaration
                 classExtendsOne                         { $$ = $1; $<scp>$ = $<scp>1; }
-        |       classExtendsList ',' classExtendsOne
-                        { $$ = $3; $<scp>$ = $<scp>3;
-                          BBUNSUP($3, "Multiple inheritance illegal on non-interface classes (IEEE 1800-2017 8.13), "
-                                      "and unsupported for interface classes."); }
+        |       classExtendsList ',' classExtendsOne    { $$ = addNextNull($1, $3); $<scp>$ = $<scp>3; }
         ;
 
 classExtendsOne<classExtendsp>:         // IEEE: part of class_declaration

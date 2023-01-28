@@ -1,7 +1,3 @@
-%Error-UNSUPPORTED: t/t_implements_noninterface_bad.v:13:11: Unsupported: interface classes
-   13 | interface class Icls;
-      |           ^~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: t/t_implements_noninterface_bad.v:10:26: Attempting to implement from non-interface class 'NotIcls'
 ... Suggest use 'extends'
    10 | class ClsBad1 implements NotIcls;
