@@ -1183,9 +1183,10 @@ class AstFell final : public AstNodeExpr {
     // @astgen op1 := exprp : AstNodeExpr
     // @astgen op2 := sentreep : Optional[AstSenTree]
 public:
-    AstFell(FileLine* fl, AstNodeExpr* exprp)
+    AstFell(FileLine* fl, AstNodeExpr* exprp, AstSenTree* sentreep)
         : ASTGEN_SUPER_Fell(fl) {
         this->exprp(exprp);
+        this->sentreep(sentreep);
     }
     ASTGEN_MEMBERS_AstFell;
     string emitVerilog() override { return "$fell(%l)"; }
@@ -1536,9 +1537,10 @@ class AstRose final : public AstNodeExpr {
     // @astgen op1 := exprp : AstNodeExpr
     // @astgen op2 := sentreep : Optional[AstSenTree]
 public:
-    AstRose(FileLine* fl, AstNodeExpr* exprp)
+    AstRose(FileLine* fl, AstNodeExpr* exprp, AstSenTree* sentreep)
         : ASTGEN_SUPER_Rose(fl) {
         this->exprp(exprp);
+        this->sentreep(sentreep);
     }
     ASTGEN_MEMBERS_AstRose;
     string emitVerilog() override { return "$rose(%l)"; }
@@ -1754,9 +1756,10 @@ class AstStable final : public AstNodeExpr {
     // @astgen op1 := exprp : AstNodeExpr
     // @astgen op2 := sentreep : Optional[AstSenTree]
 public:
-    AstStable(FileLine* fl, AstNodeExpr* exprp)
+    AstStable(FileLine* fl, AstNodeExpr* exprp, AstSenTree* sentreep)
         : ASTGEN_SUPER_Stable(fl) {
         this->exprp(exprp);
+        this->sentreep(sentreep);
     }
     ASTGEN_MEMBERS_AstStable;
     string emitVerilog() override { return "$stable(%l)"; }

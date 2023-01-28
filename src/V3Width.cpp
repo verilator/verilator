@@ -1177,6 +1177,7 @@ private:
     void visit(AstFell* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            userIterate(nodep->sentreep(), nullptr);
             nodep->dtypeSetBit();
         }
     }
@@ -1207,6 +1208,7 @@ private:
     void visit(AstRose* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            userIterate(nodep->sentreep(), nullptr);
             nodep->dtypeSetBit();
         }
     }
@@ -1221,6 +1223,7 @@ private:
     void visit(AstStable* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            userIterate(nodep->sentreep(), nullptr);
             nodep->dtypeSetBit();
         }
     }

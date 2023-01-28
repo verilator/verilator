@@ -168,6 +168,15 @@ public:
             return new AstGatePin{rangep->fileline(), exprp, rangep->cloneTree(true)};
         }
     }
+    AstSenTree* createClockSenTree(FileLine* fl, AstNodeExpr* exprp) {
+        return new AstSenTree{fl, new AstSenItem{fl, VEdgeType::ET_CHANGED, exprp}};
+    }
+    AstNodeExpr* createGlobalClockParseRef(FileLine* fl) {
+        return new AstParseRef{fl, VParseRefExp::PX_TEXT, "__024global_clock", nullptr, nullptr};
+    }
+    AstSenTree* createGlobalClockSenTree(FileLine* fl) {
+        return createClockSenTree(fl, createGlobalClockParseRef(fl));
+    }
     AstNode* createTypedef(FileLine* fl, const string& name, AstNode* attrsp, AstNodeDType* basep,
                            AstNodeRange* rangep) {
         AstNode* const nodep = new AstTypedef{fl, name, attrsp, VFlagChildDType{},
@@ -784,6 +793,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_CAST         "$cast"
 %token<fl>              yD_CEIL         "$ceil"
 %token<fl>              yD_CHANGED      "$changed"
+%token<fl>              yD_CHANGED_GCLK "$changed_gclk"
 %token<fl>              yD_CLOG2        "$clog2"
 %token<fl>              yD_COS          "$cos"
 %token<fl>              yD_COSH         "$cosh"
@@ -819,6 +829,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_FDISPLAYH    "$fdisplayh"
 %token<fl>              yD_FDISPLAYO    "$fdisplayo"
 %token<fl>              yD_FELL         "$fell"
+%token<fl>              yD_FELL_GCLK    "$fell_gclk"
 %token<fl>              yD_FEOF         "$feof"
 %token<fl>              yD_FERROR       "$ferror"
 %token<fl>              yD_FFLUSH       "$fflush"
@@ -876,6 +887,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_RIGHT        "$right"
 %token<fl>              yD_ROOT         "$root"
 %token<fl>              yD_ROSE         "$rose"
+%token<fl>              yD_ROSE_GCLK    "$rose_gclk"
 %token<fl>              yD_RTOI         "$rtoi"
 %token<fl>              yD_SAMPLED      "$sampled"
 %token<fl>              yD_SFORMAT      "$sformat"
@@ -888,6 +900,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_SQRT         "$sqrt"
 %token<fl>              yD_SSCANF       "$sscanf"
 %token<fl>              yD_STABLE       "$stable"
+%token<fl>              yD_STABLE_GCLK  "$stable_gclk"
 %token<fl>              yD_STACKTRACE   "$stacktrace"
 %token<fl>              yD_STIME        "$stime"
 %token<fl>              yD_STOP         "$stop"
@@ -4067,8 +4080,11 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_BITSTOREAL '(' expr ')'              { $$ = new AstBitsToRealD{$1, $3}; }
         |       yD_BITSTOSHORTREAL '(' expr ')'         { $$ = new AstBitsToRealD{$1, $3}; UNSUPREAL($1); }
         |       yD_CEIL '(' expr ')'                    { $$ = new AstCeilD{$1, $3}; }
-        |       yD_CHANGED '(' expr ')'                 { $$ = new AstLogNot{$1, new AstStable{$1, $3}}; }
-        |       yD_CHANGED '(' expr ',' expr ')'        { $$ = $3; BBUNSUP($1, "Unsupported: $changed and clock arguments"); }
+        |       yD_CHANGED '(' expr ')'                 { $$ = new AstLogNot{$1, new AstStable{$1, $3, nullptr}}; }
+        |       yD_CHANGED '(' expr ',' expr ')'
+                        { $$ = new AstLogNot{$1, new AstStable{$1, $3, GRAMMARP->createClockSenTree($1, $5)}}; }
+        |       yD_CHANGED_GCLK '(' expr ')'
+                        { $$ = new AstLogNot{$1, new AstStable{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}}; }
         |       yD_CLOG2 '(' expr ')'                   { $$ = new AstCLog2{$1, $3}; }
         |       yD_COS '(' expr ')'                     { $$ = new AstCosD{$1, $3}; }
         |       yD_COSH '(' expr ')'                    { $$ = new AstCoshD{$1, $3}; }
@@ -4088,8 +4104,9 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_DIST_T '(' expr ',' expr ')'         { $$ = new AstDistT{$1, $3, $5}; }
         |       yD_DIST_UNIFORM '(' expr ',' expr ',' expr ')'  { $$ = new AstDistUniform{$1, $3, $5, $7}; }
         |       yD_EXP '(' expr ')'                     { $$ = new AstExpD{$1, $3}; }
-        |       yD_FELL '(' expr ')'                    { $$ = new AstFell{$1, $3}; }
-        |       yD_FELL '(' expr ',' expr ')'           { $$ = $3; BBUNSUP($1, "Unsupported: $fell and clock arguments"); }
+        |       yD_FELL '(' expr ')'                    { $$ = new AstFell{$1, $3, nullptr}; }
+        |       yD_FELL '(' expr ',' expr ')'           { $$ = new AstFell{$1, $3, GRAMMARP->createClockSenTree($1, $5)}; }
+        |       yD_FELL_GCLK '(' expr ')'               { $$ = new AstFell{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}; }
         |       yD_FEOF '(' expr ')'                    { $$ = new AstFEof{$1, $3}; }
         |       yD_FERROR '(' idClassSel ',' idClassSel ')'     { $$ = new AstFError{$1, $3, $5}; }
         |       yD_FGETC '(' expr ')'                   { $$ = new AstFGetC{$1, $3}; }
@@ -4102,8 +4119,7 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_FSCANF '(' expr ',' str commaVRDListE ')'    { $$ = new AstFScanF{$1, *$5, $3, $6}; }
         |       yD_FSEEK '(' idClassSel ',' expr ',' expr ')'   { $$ = new AstFSeek{$1, $3, $5, $7}; }
         |       yD_FTELL '(' idClassSel ')'             { $$ = new AstFTell{$1, $3}; }
-        |       yD_GLOBAL_CLOCK parenE
-                        { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, "__024global_clock", nullptr, nullptr}; }
+        |       yD_GLOBAL_CLOCK parenE                  { $$ = GRAMMARP->createGlobalClockParseRef($1); }
         |       yD_HIGH '(' exprOrDataType ')'          { $$ = new AstAttrOf{$1, VAttrType::DIM_HIGH, $3, nullptr}; }
         |       yD_HIGH '(' exprOrDataType ',' expr ')' { $$ = new AstAttrOf{$1, VAttrType::DIM_HIGH, $3, $5}; }
         |       yD_HYPOT '(' expr ',' expr ')'          { $$ = new AstHypotD{$1, $3, $5}; }
@@ -4134,8 +4150,9 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_REWIND '(' idClassSel ')'            { $$ = new AstFSeek{$1, $3, new AstConst{$1, 0}, new AstConst{$1, 0}}; }
         |       yD_RIGHT '(' exprOrDataType ')'         { $$ = new AstAttrOf{$1, VAttrType::DIM_RIGHT, $3, nullptr}; }
         |       yD_RIGHT '(' exprOrDataType ',' expr ')'        { $$ = new AstAttrOf{$1, VAttrType::DIM_RIGHT, $3, $5}; }
-        |       yD_ROSE '(' expr ')'                    { $$ = new AstRose{$1, $3}; }
-        |       yD_ROSE '(' expr ',' expr ')'           { $$ = $3; BBUNSUP($1, "Unsupported: $rose and clock arguments"); }
+        |       yD_ROSE '(' expr ')'                    { $$ = new AstRose{$1, $3, nullptr}; }
+        |       yD_ROSE '(' expr ',' expr ')'           { $$ = new AstRose{$1, $3, GRAMMARP->createClockSenTree($1, $5)}; }
+        |       yD_ROSE_GCLK '(' expr ')'               { $$ = new AstRose{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}; }
         |       yD_RTOI '(' expr ')'                    { $$ = new AstRToIS{$1, $3}; }
         |       yD_SAMPLED '(' expr ')'                 { $$ = new AstSampled{$1, $3}; }
         |       yD_SFORMATF '(' exprDispList ')'        { $$ = new AstSFormatF{$1, AstSFormatF::NoFormat{}, $3, 'd', false}; }
@@ -4149,8 +4166,9 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_SSCANF '(' expr ',' str commaVRDListE ')'    { $$ = new AstSScanF{$1, *$5, $3, $6}; }
         |       yD_STIME parenE
                         { $$ = new AstSel{$1, new AstTime{$1, VTimescale{VTimescale::NONE}}, 0, 32}; }
-        |       yD_STABLE '(' expr ')'                  { $$ = new AstStable{$1, $3}; }
-        |       yD_STABLE '(' expr ',' expr ')'         { $$ = $3; BBUNSUP($1, "Unsupported: $stable and clock arguments"); }
+        |       yD_STABLE '(' expr ')'                  { $$ = new AstStable{$1, $3, nullptr}; }
+        |       yD_STABLE '(' expr ',' expr ')'         { $$ = new AstStable{$1, $3, GRAMMARP->createClockSenTree($1, $5)}; }
+        |       yD_STABLE_GCLK '(' expr ')'             { $$ = new AstStable{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}; }
         |       yD_TAN '(' expr ')'                     { $$ = new AstTanD{$1, $3}; }
         |       yD_TANH '(' expr ')'                    { $$ = new AstTanhD{$1, $3}; }
         |       yD_TESTPLUSARGS '(' expr ')'            { $$ = new AstTestPlusArgs{$1, $3}; }

@@ -77,6 +77,23 @@ module Test (/*AUTOARG*/
 
    global clocking @(posedge clk); endclocking
    always @ ($global_clock) $display("%d", in);
+   //
+   assert property (@(posedge clk) $rose(dly0, $global_clock) || dly0%2==0);
+   assert property (@(posedge clk) $fell(dly1, $global_clock) || dly1%2==1);
+   assert property (@(posedge clk) !$stable(dly2, $global_clock));
+   assert property (@(posedge clk) $changed(dly2, $global_clock));
+   //
+   assert property (@(posedge clk) $rose_gclk(dly0) || dly0%2==0);
+   assert property (@(posedge clk) $fell_gclk(dly1) || dly1%2==1);
+   assert property (@(posedge clk) !$stable_gclk(dly2));
+   assert property (@(posedge clk) $changed_gclk(dly2));
+
+   // global_clocking_future_functions are not supported yet:
+   // $changing_gclk     global_clocking_future_function
+   // $falling_gclk      global_clocking_future_function
+   // $future_gclk       global_clocking_future_function
+   // $rising_gclk       global_clocking_future_function
+   // $steady_gclk       global_clocking_future_function
 
 endmodule
 
