@@ -273,14 +273,16 @@ public:
             UINFO(4, "Var2 " << fnodep << endl);
             if (nodep->type() == fnodep->type()) {
                 nodep->v3error("Duplicate declaration of "
-                               << nodeTextType(fnodep) << ": " << nodep->prettyNameQ() << '\n'
+                               << nodeTextType(fnodep) << ": " << AstNode::prettyNameQ(name)
+                               << '\n'
                                << nodep->warnContextPrimary() << '\n'
                                << fnodep->warnOther() << "... Location of original declaration\n"
                                << fnodep->warnContextSecondary());
             } else {
                 nodep->v3error("Unsupported in C: "
                                << ucfirst(nodeTextType(nodep)) << " has the same name as "
-                               << nodeTextType(fnodep) << ": " << nodep->prettyNameQ() << '\n'
+                               << nodeTextType(fnodep) << ": " << AstNode::prettyNameQ(name)
+                               << '\n'
                                << nodep->warnContextPrimary() << '\n'
                                << fnodep->warnOther() << "... Location of original declaration\n"
                                << fnodep->warnContextSecondary());
