@@ -200,6 +200,7 @@ private:
     using MemberNameMap = std::map<const std::string, AstMemberDType*>;
     // MEMBERS
     string m_name;  // Name from upper typedef, if any
+    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
     MemberNameMap m_members;
     const int m_uniqueNum;
     bool m_packed;
@@ -255,6 +256,8 @@ public:
     static int lo() { return 0; }
     int hi() const { return dtypep()->width() - 1; }  // Packed classes look like arrays
     VNumRange declRange() const { return VNumRange{hi(), lo()}; }
+    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
+    void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
 };
 
 // === Concrete node types =====================================================
@@ -1319,15 +1322,12 @@ public:
 
 // === AstNodeUOrStructDType ===
 class AstStructDType final : public AstNodeUOrStructDType {
-    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
 public:
     // VSigning below is mispurposed to indicate if packed or not
     AstStructDType(FileLine* fl, VSigning numericUnpack)
         : ASTGEN_SUPER_StructDType(fl, numericUnpack) {}
     ASTGEN_MEMBERS_AstStructDType;
     string verilogKwd() const override { return "struct"; }
-    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
-    void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
 };
 class AstUnionDType final : public AstNodeUOrStructDType {
 public:

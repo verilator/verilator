@@ -324,7 +324,7 @@ private:
         }
     }
     bool shouldDeleteTypedef(AstTypedef* typedefp) {
-        if (auto* structp = VN_CAST(typedefp->subDTypep(), StructDType)) {
+        if (auto* const structp = VN_CAST(typedefp->subDTypep(), NodeUOrStructDType)) {
             if (structp->user1() && !structp->packed()) return false;
         }
         return m_elimCells && !typedefp->attrPublic();

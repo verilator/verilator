@@ -208,13 +208,13 @@ class EmitCHeader final : public EmitCConstInit {
             }
         }
     }
-    void emitStructDecl(const AstNodeModule* modp, AstStructDType* sdtypep,
-                        std::set<AstStructDType*>& emitted) {
+    void emitStructDecl(const AstNodeModule* modp, AstNodeUOrStructDType* sdtypep,
+                        std::set<AstNodeUOrStructDType*>& emitted) {
         if (emitted.count(sdtypep) > 0) return;
         emitted.insert(sdtypep);
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            AstStructDType* subp = VN_CAST(itemp->skipRefp(), StructDType);
+            AstNodeUOrStructDType* subp = VN_CAST(itemp->skipRefp(), NodeUOrStructDType);
             if (subp && !subp->packed()) {
                 // Recurse if it belongs to the current module
                 if (subp->classOrPackagep() == modp) {
@@ -223,7 +223,8 @@ class EmitCHeader final : public EmitCConstInit {
                 }
             }
         }
-        puts("struct " + EmitCBaseVisitor::prefixNameProtect(sdtypep) + " {\n");
+        puts(sdtypep->verilogKwd());  // "struct"/"union"
+        puts(" " + EmitCBaseVisitor::prefixNameProtect(sdtypep) + " {\n");
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             puts(itemp->dtypep()->cType(itemp->nameProtect(), false, false));
@@ -234,12 +235,12 @@ class EmitCHeader final : public EmitCConstInit {
     void emitStructs(const AstNodeModule* modp) {
         bool first = true;
         // Track structs that've been emitted already
-        std::set<AstStructDType*> emitted;
+        std::set<AstNodeUOrStructDType*> emitted;
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             const AstTypedef* const tdefp = VN_CAST(nodep, Typedef);
             if (!tdefp) continue;
-            AstStructDType* const sdtypep
-                = VN_CAST(tdefp->dtypep()->skipRefToEnump(), StructDType);
+            AstNodeUOrStructDType* const sdtypep
+                = VN_CAST(tdefp->dtypep()->skipRefToEnump(), NodeUOrStructDType);
             if (!sdtypep) continue;
             if (sdtypep->packed()) continue;
             decorateFirst(first, "\n// UNPACKED STRUCT TYPES\n");

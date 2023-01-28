@@ -122,7 +122,7 @@ private:
         if (AstRefDType* const refdtypep = VN_CAST(dtypep, RefDType)) {  //
             dtypep = refdtypep->skipRefp();
         }
-        if (AstStructDType* const stp = VN_CAST(dtypep, StructDType)) {
+        if (AstNodeUOrStructDType* const stp = VN_CAST(dtypep, NodeUOrStructDType)) {
             if (stp->packed()) {
                 std::ostringstream out;
                 out << "'{";
@@ -418,7 +418,7 @@ private:
         if (!VN_IS(nodep->varp()->dtypeSkipRefp(), BasicDType)
             && !VN_IS(nodep->varp()->dtypeSkipRefp(), PackArrayDType)
             && !VN_IS(nodep->varp()->dtypeSkipRefp(), UnpackArrayDType)
-            && !VN_IS(nodep->varp()->dtypeSkipRefp(), StructDType))
+            && !VN_IS(nodep->varp()->dtypeSkipRefp(), NodeUOrStructDType))
             clearOptimizable(nodep, "Array references/not basic");
         if (nodep->access().isWriteOrRW()) {
             if (m_inDlyAssign) {

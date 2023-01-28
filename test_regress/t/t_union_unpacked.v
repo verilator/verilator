@@ -1,21 +1,22 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2009 by Wilson Snyder.
+// any use, without warranty, 2023 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module x;
+module t(/*AUTOARG*/);
 
-   typedef union {
-      int         a;
-   } union_t;
-
-   union_t b;
+   union {
+      bit [7:0] val1;
+      bit [3:0] val2;
+   } u;
 
    initial begin
-      b = 1;
-      if (b != 1) $stop;
+      u.val1 = 8'h7c;
+      if (u.val1 != 8'h7c) $stop;
+      if (u.val2 != 4'hc) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end
+
 endmodule

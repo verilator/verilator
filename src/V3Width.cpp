@@ -2478,13 +2478,7 @@ private:
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         UINFO(5, "   NODECLASS " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree("-  class-in: ");
-        if (!nodep->packed()) {
-            if (VN_IS(nodep, UnionDType)) {
-                nodep->v3warn(UNPACKED, "Unsupported: Unpacked union");
-            } else if (v3Global.opt.structsPacked()) {
-                nodep->packed(true);
-            }
-        }
+        if (!nodep->packed() && v3Global.opt.structsPacked()) { nodep->packed(true); }
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->repairMemberCache();
         nodep->dtypep(nodep);
@@ -4594,7 +4588,7 @@ private:
                                || VN_IS(dtypep, DynArrayDType)  //
                                || VN_IS(dtypep, UnpackArrayDType)  //
                                || VN_IS(dtypep, QueueDType)
-                               || (VN_IS(dtypep, StructDType)
+                               || (VN_IS(dtypep, NodeUOrStructDType)
                                    && !VN_AS(dtypep, StructDType)->packed())) {
                         added = true;
                         newFormat += "%@";
