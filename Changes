@@ -17,6 +17,7 @@ Verilator 5.007 devel
 * Support interface classes and class implements.
 * Support global clocking and $global_clock.
 * Fix real parameters of infinity and NaN.
+* Fix pattern assignment to unpacked structs (#3510). [Mostafa Garnal]
 
 
 Verilator 5.006 2022-01-22

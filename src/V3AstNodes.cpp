@@ -1646,6 +1646,10 @@ void AstLogOr::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (sideEffect()) str << " [SIDE]";
 }
+void AstMemberDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "member";
+}
 void AstMemberSel::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     str << " -> ";

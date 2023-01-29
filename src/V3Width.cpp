@@ -2320,6 +2320,18 @@ private:
                          EXTEND_EXP);
         }
     }
+    void visit(AstConsPackUOrStruct* nodep) override {
+        // Type was computed when constructed in V3Width earlier
+        auto* const vdtypep = VN_AS(nodep->dtypep()->skipRefp(), NodeUOrStructDType);
+        UASSERT_OBJ(vdtypep, nodep, "ConsPackUOrStruct requires packed array parent data type");
+        userIterateChildren(nodep, WidthVP{vdtypep, BOTH}.p());
+    }
+    void visit(AstConsPackMember* nodep) override {
+        // Type was computed when constructed in V3Width earlier
+        auto* const vdtypep = VN_AS(nodep->dtypep(), MemberDType);
+        UASSERT_OBJ(vdtypep, nodep, "ConsPackMember requires member data type");
+        if (m_vup->prelim()) userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, BOTH}.p());
+    }
     void visit(AstConsDynArray* nodep) override {
         // Type computed when constructed here
         AstDynArrayDType* const vdtypep = VN_AS(m_vup->dtypep()->skipRefp(), DynArrayDType);
@@ -3835,26 +3847,45 @@ private:
             }
         }
         AstNodeExpr* newp = nullptr;
-        for (AstMemberDType* memp = vdtypep->membersp(); memp;
-             memp = VN_AS(memp->nextp(), MemberDType)) {
-            const auto it = patmap.find(memp);
-            AstPatMember* patp = nullptr;
-            if (it == patmap.end()) {
-                // default or default_type assignment
-                if (AstNodeUOrStructDType* const memp_nested_vdtypep
-                    = VN_CAST(memp->virtRefDTypep(), NodeUOrStructDType)) {
-                    newp = nestedvalueConcat_patternUOrStruct(memp_nested_vdtypep, defaultp, newp,
-                                                              nodep, dtypemap);
-                } else {
-                    patp = Defaultpatp_patternUOrStruct(nodep, memp, patp, vdtypep, defaultp,
-                                                        dtypemap);
+        if (vdtypep->packed()) {
+            for (AstMemberDType* memp = vdtypep->membersp(); memp;
+                 memp = VN_AS(memp->nextp(), MemberDType)) {
+                const auto it = patmap.find(memp);
+                AstPatMember* patp = nullptr;
+                if (it == patmap.end()) {  // default or default_type assignment
+                    if (AstNodeUOrStructDType* const memp_nested_vdtypep
+                        = VN_CAST(memp->virtRefDTypep(), NodeUOrStructDType)) {
+                        newp = nestedvalueConcat_patternUOrStruct(memp_nested_vdtypep, defaultp,
+                                                                  newp, nodep, dtypemap);
+                    } else {
+                        patp = defaultPatp_patternUOrStruct(nodep, memp, patp, vdtypep, defaultp,
+                                                            dtypemap);
+                        newp = valueConcat_patternUOrStruct(patp, newp, memp, nodep);
+                    }
+                } else {  // member assignment
+                    patp = it->second;
                     newp = valueConcat_patternUOrStruct(patp, newp, memp, nodep);
                 }
-            } else {
-                // member assignment
-                patp = it->second;
-                newp = valueConcat_patternUOrStruct(patp, newp, memp, nodep);
             }
+        } else {  // Unpacked
+            AstConsPackMember* membersp = nullptr;
+            for (AstMemberDType* memp = vdtypep->membersp(); memp;
+                 memp = VN_AS(memp->nextp(), MemberDType)) {
+                const auto it = patmap.find(memp);
+                AstPatMember* patp = nullptr;
+                if (it == patmap.end()) {  // Default or default_type assignment
+                    patp = defaultPatp_patternUOrStruct(nodep, memp, patp, vdtypep, defaultp,
+                                                        dtypemap);
+                } else {
+                    patp = it->second;  // Member assignment
+                }
+                patp->dtypep(memp);
+                AstNodeExpr* const valuep = patternMemberValueIterate(patp);
+                AstConsPackMember* const cpmp
+                    = new AstConsPackMember{patp->fileline(), memp, valuep};
+                membersp = membersp ? membersp->addNext(cpmp) : cpmp;
+            }
+            newp = new AstConsPackUOrStruct{nodep->fileline(), vdtypep, membersp};
         }
         if (newp) {
             nodep->replaceWith(newp);
@@ -3877,7 +3908,7 @@ private:
                 newp = nestedvalueConcat_patternUOrStruct(memp_multinested_vdtypep, defaultp, newp,
                                                           nodep, dtypemap);
             } else {
-                patp = Defaultpatp_patternUOrStruct(nodep, memp_nested, patp, memp_vdtypep,
+                patp = defaultPatp_patternUOrStruct(nodep, memp_nested, patp, memp_vdtypep,
                                                     defaultp, dtypemap);
                 newp = valueConcat_patternUOrStruct(patp, newp, memp_nested, nodep);
             }
@@ -3885,7 +3916,7 @@ private:
         return newp;
     }
 
-    AstPatMember* Defaultpatp_patternUOrStruct(AstPattern* nodep, AstMemberDType* memp,
+    AstPatMember* defaultPatp_patternUOrStruct(AstPattern* nodep, AstMemberDType* memp,
                                                AstPatMember* patp,
                                                AstNodeUOrStructDType* memp_vdtypep,
                                                AstPatMember* defaultp, const DTypeMap& dtypemap) {

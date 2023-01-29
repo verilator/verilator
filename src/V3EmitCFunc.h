@@ -1262,6 +1262,21 @@ public:
             puts(")");
         }
     }
+    void visit(AstConsPackUOrStruct* nodep) override {
+        putbs(nodep->dtypep()->cType("", false, false));
+        puts("{");
+        for (AstNode* memberp = nodep->membersp(); memberp; memberp = memberp->nextp()) {
+            iterate(memberp);
+            if (memberp->nextp()) { puts(", "); }
+        }
+        puts("}");
+    }
+    void visit(AstConsPackMember* nodep) override {
+        auto* const vdtypep = VN_AS(nodep->dtypep(), MemberDType);
+        putbs(vdtypep->name());
+        puts(": ");
+        iterate(nodep->rhsp());
+    }
     void visit(AstConsQueue* nodep) override {
         putbs(nodep->dtypep()->cType("", false, false));
         if (!nodep->lhsp()) {

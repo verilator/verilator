@@ -865,6 +865,7 @@ public:
         widthFromSub(subDTypep());
     }
     ASTGEN_MEMBERS_AstMemberDType;
+    void dumpSmall(std::ostream& str) const override;
     string name() const override { return m_name; }  // * = Var name
     bool hasDType() const override { return true; }
     bool maybePointedTo() const override { return true; }

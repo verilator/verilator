@@ -790,6 +790,51 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
+class AstConsPackMember final : public AstNodeExpr {
+    // Construct a packed array single emement [member1: value1]
+    // Don't need the member we are constructing, as the dtypep can get us to it
+    // @astgen op2 := rhsp : AstNodeExpr
+public:
+    explicit AstConsPackMember(FileLine* fl, AstMemberDType* dtypep, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_ConsPackMember(fl) {
+        this->dtypep(dtypep);
+        this->rhsp(rhsp);
+    }
+    ASTGEN_MEMBERS_AstConsPackMember;
+    const char* broken() const override {
+        BROKEN_RTN(dtypep() && !VN_IS(dtypep(), MemberDType));
+        return nullptr;
+    }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    int instrCount() const override { return widthInstrs(); }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+};
+class AstConsPackUOrStruct final : public AstNodeExpr {
+    // Construct a packed struct and return object, '{member1: value1, member2: value2}
+    // Don't need the class we are constructing, as the dtypep can get us to it
+    // @astgen op1 := membersp : List[AstConsPackMember]
+public:
+    explicit AstConsPackUOrStruct(FileLine* fl, AstNodeUOrStructDType* dtypep,
+                                  AstConsPackMember* membersp = nullptr)
+        : ASTGEN_SUPER_ConsPackUOrStruct(fl) {
+        this->dtypep(dtypep);
+        this->addMembersp(membersp);
+    }
+    ASTGEN_MEMBERS_AstConsPackUOrStruct;
+    const char* broken() const override {
+        BROKEN_RTN(dtypep() && !VN_IS(dtypep(), NodeUOrStructDType));
+        return nullptr;
+    }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    int instrCount() const override { return widthInstrs(); }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+};
 class AstConsQueue final : public AstNodeExpr {
     // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
     // @astgen op1 := lhsp : Optional[AstNode]
