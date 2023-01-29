@@ -5117,10 +5117,28 @@ gateRangeE<nodep>:
         ;
 
 gateBuf<nodep>:
-                gateFront variable_lvalue ',' gatePinExpr ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, $4}; DEL($1); }
-        // UNSUP                        // IEEE: Multiple output variable_lvalues
-        // UNSUP                        // Causes conflict - need to take in variable_lvalue or a gatePinExpr
+                gateFront variable_lvalue ',' exprList ')'
+                        { AstNodeExpr* inp = $4;
+                          while (inp->nextp()) inp = VN_AS(inp->nextp(), NodeExpr);
+                          $$ = new AstAssignW{$<fl>1, $2, GRAMMARP->createGatePin(inp->cloneTree(false))};
+                          for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
+                              $$->addNext(new AstAssignW{$<fl>1, outp->cloneTree(false),
+                                                         GRAMMARP->createGatePin(inp->cloneTree(false))});
+                          }
+                          DEL($1); DEL($4); }
+        ;
+gateNot<nodep>:
+                gateFront variable_lvalue ',' exprList ')'
+                        { AstNodeExpr* inp = $4;
+                          while (inp->nextp()) inp = VN_AS(inp->nextp(), NodeExpr);
+                          $$ = new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1,
+                                                                 GRAMMARP->createGatePin(inp->cloneTree(false))}};
+                          for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
+                              $$->addNext(new AstAssignW{$<fl>1, outp->cloneTree(false),
+                                                         new AstNot{$<fl>1,
+                                                                 GRAMMARP->createGatePin(inp->cloneTree(false))}});
+                          }
+                          DEL($1); DEL($4); }
         ;
 gateBufif0<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
@@ -5129,12 +5147,6 @@ gateBufif0<nodep>:
 gateBufif1<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
                         { $$ = new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, $6, $4}}; DEL($1); }
-        ;
-gateNot<nodep>:
-                gateFront variable_lvalue ',' gatePinExpr ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1, $4}}; DEL($1); }
-        // UNSUP                        // IEEE: Multiple output variable_lvalues
-        // UNSUP                        // Causes conflict - need to take in variable_lvalue or a gatePinExpr
         ;
 gateNotif0<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
