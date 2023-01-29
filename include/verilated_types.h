@@ -45,6 +45,7 @@ extern std::string VL_TO_STRING(CData lhs);
 extern std::string VL_TO_STRING(SData lhs);
 extern std::string VL_TO_STRING(IData lhs);
 extern std::string VL_TO_STRING(QData lhs);
+extern std::string VL_TO_STRING(double lhs);
 inline std::string VL_TO_STRING(const std::string& obj) { return "\"" + obj + "\""; }
 extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 

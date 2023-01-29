@@ -4592,7 +4592,7 @@ private:
                                || VN_IS(dtypep, UnpackArrayDType)  //
                                || VN_IS(dtypep, QueueDType)
                                || (VN_IS(dtypep, NodeUOrStructDType)
-                                   && !VN_AS(dtypep, StructDType)->packed())) {
+                                   && !VN_AS(dtypep, NodeUOrStructDType)->packed())) {
                         added = true;
                         newFormat += "%@";
                         VNRelinker handle;
