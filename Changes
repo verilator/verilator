@@ -13,9 +13,14 @@ Verilator 5.007 devel
 
 **Minor:**
 
+* Add --verilate-jobs option (#3889). [Kamil Rakoczy, Antmicro Ltd]
 * Support unpacked unions.
 * Support interface classes and class implements.
 * Support global clocking and $global_clock.
+* Support struct I/O in --lib-create (#3378) (#3892). [Varun Koyyalagunta]
+* Support function calls without parenthesis (#3903) (#3902). [Ryszard Rozak, Antmicro Ltd]
+* Support class extending its parameter (#3904). [Ryszard Rozak, Antmicro Ltd]
+* Support static function variables (#3830). [Ryszard Rozak, Antmicro Ltd]
 * Fix real parameters of infinity and NaN.
 * Fix pattern assignment to unpacked structs (#3510). [Mostafa Garnal]
 
