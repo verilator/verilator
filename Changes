@@ -16,6 +16,7 @@ Verilator 5.007 devel
 * Support unpacked unions.
 * Support interface classes and class implements.
 * Support global clocking and $global_clock.
+* Fix real parameters of infinity and NaN.
 
 
 Verilator 5.006 2022-01-22

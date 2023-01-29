@@ -6,7 +6,9 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define is_near_real(a,b)  (( ((a)<(b)) ? (b)-(a) : (a)-(b)) < (((a)/(b))*0.0001))
 
 module t (/*AUTOARG*/
@@ -29,6 +31,7 @@ module t (/*AUTOARG*/
    reg signed [95:0] cis96;
    real  r, r2;
    integer      cyc = 0;
+   string       s;
 
    realtime  uninit;
    initial if (uninit != 0.0) $stop;
@@ -134,6 +137,22 @@ module t (/*AUTOARG*/
       if (r != 74276402357122816493947453440.0) $stop;
       r = real'(96'shf0000000_00000000_00000000);
       if (r != -4951760157141521099596496896.0) $stop;
+
+      r = 1.23456;
+      s = $sformatf("%g", r);
+      `checks(s, "1.23456");
+      r = 1.0/0;  // inf
+      s = $sformatf("%g", r);
+      `checks(s, "inf");
+      r = -1.0/0;  // -inf
+      s = $sformatf("%g", r);
+      `checks(s, "-inf");
+      r = $sqrt(-1.0);  // NaN
+      s = $sformatf("%g", r);
+      `checks(s, "-nan");
+      r = -$sqrt(-1.0);  // NaN
+      s = $sformatf("%g", r);
+      `checks(s, "nan");
    end
 
    // Test loop

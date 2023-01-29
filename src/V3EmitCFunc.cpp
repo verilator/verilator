@@ -541,6 +541,12 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
         if (int(nodep->num().toDouble()) == nodep->num().toDouble()
             && nodep->num().toDouble() < 1000 && nodep->num().toDouble() > -1000) {
             ofp()->printf("%3.1f", nodep->num().toDouble());  // Force decimal point
+        } else if (std::isinf(nodep->num().toDouble())) {
+            if (std::signbit(nodep->num().toDouble())) puts("-");
+            ofp()->puts("std::numeric_limits<double>::infinity()");
+        } else if (std::isnan(nodep->num().toDouble())) {
+            if (std::signbit(nodep->num().toDouble())) puts("-");
+            ofp()->puts("std::numeric_limits<double>::quiet_NaN()");
         } else {
             // Not %g as will not always put in decimal point, so not obvious to compiler
             // is a real number
