@@ -1273,8 +1273,9 @@ public:
     }
     void visit(AstConsPackMember* nodep) override {
         auto* const vdtypep = VN_AS(nodep->dtypep(), MemberDType);
-        putbs(vdtypep->name());
-        puts(": ");
+        putbs(".");
+        puts(vdtypep->name());
+        puts(" = ");
         iterate(nodep->rhsp());
     }
     void visit(AstConsQueue* nodep) override {
