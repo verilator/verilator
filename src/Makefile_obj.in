@@ -94,9 +94,9 @@ LIBS = $(CFG_LIBS) -lm
 
 CPPFLAGS += -MMD
 CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir) -I../../include
-#CPPFLAGS += -DVL_LEAK_CHECKS 	# If running valgrind or other hunting tool
+#CPPFLAGS += -DVL_LEAK_CHECKS  # If running valgrind or other hunting tool
 CPPFLAGS += -MP # Only works on recent GCC versions
-ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
+ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
 CPPFLAGS += -W -Wall $(CFG_CXXFLAGS_WEXTRA) $(CFG_CXXFLAGS_SRC) -Werror
 #CPPFLAGS += -pedantic-errors
 else
@@ -114,7 +114,7 @@ ifeq ($(CFG_WITH_DEFENV),yes)
  CPPFLAGS += -DDEFENV_SYSTEMC_ARCH=\"$(SYSTEMC_ARCH)\"
  CPPFLAGS += -DDEFENV_SYSTEMC_INCLUDE=\"$(SYSTEMC_INCLUDE)\"
  CPPFLAGS += -DDEFENV_SYSTEMC_LIBDIR=\"$(SYSTEMC_LIBDIR)\"
- ifeq ($(VERILATOR_ROOT),)	# Use what we're given, or intuit
+ ifeq ($(VERILATOR_ROOT),)  # Use what we're given, or intuit
   CPPFLAGS += -DDEFENV_VERILATOR_ROOT=\"$(pkgdatadir)\"
  else
   CPPFLAGS += -DDEFENV_VERILATOR_ROOT=\"$(VERILATOR_ROOT)\"
@@ -155,7 +155,7 @@ RAW_OBJS = \
 	V3ActiveTop.o \
 	V3Assert.o \
 	V3AssertPre.o \
-	V3Ast.o	\
+	V3Ast.o \
 	V3AstNodes.o \
 	V3Begin.o \
 	V3Branch.o \
@@ -323,26 +323,26 @@ V3Number_test: V3Number_test.o
 
 #### Modules
 
-%__gen.cpp:	%.cpp $(ASTGEN) $(AST_DEFS) $(DFG_DEFS)
+%__gen.cpp: %.cpp $(ASTGEN) $(AST_DEFS) $(DFG_DEFS)
 	$(PYTHON3) $(ASTGEN) $(ASTGENFLAGS) $*.cpp
 
 .SECONDARY:
 
-%.o:	%.cpp
+%.o: %.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
-%.o:	%.c
+%.o: %.c
 	$(OBJCACHE) ${CC}  ${CFLAGS} ${CPPFLAGSWALL} -c $< -o $@
 
-V3ParseLex.o:	V3ParseLex.cpp V3Lexer.yy.cpp V3ParseBison.c
+V3ParseLex.o: V3ParseLex.cpp V3Lexer.yy.cpp V3ParseBison.c
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
-V3ParseGrammar.o:	V3ParseGrammar.cpp V3ParseBison.c
+V3ParseGrammar.o: V3ParseGrammar.cpp V3ParseBison.c
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
-V3ParseImp.o:	V3ParseImp.cpp V3ParseBison.c
+V3ParseImp.o: V3ParseImp.cpp V3ParseBison.c
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
-V3PreProc.o:	V3PreProc.cpp V3PreLex.yy.cpp
+V3PreProc.o: V3PreProc.cpp V3PreLex.yy.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
 #### Generated files
@@ -366,14 +366,14 @@ V3ParseBison.c: verilog.y $(BISONPRE)
 	@echo "If you get errors from verilog.y below, try upgrading bison to version 1.875 or newer."
 	$(PYTHON3) $(BISONPRE) --yacc ${YACC} -d -v -o V3ParseBison.c $<
 
-V3Lexer_pregen.yy.cpp:	verilog.l V3ParseBison.h $(HEADERS)
+V3Lexer_pregen.yy.cpp: verilog.l V3ParseBison.h $(HEADERS)
 	${LEX} --version
 	${LEX} ${LFLAGS} -o$@ $<
 
-V3Lexer.yy.cpp:	V3Lexer_pregen.yy.cpp $(FLEXFIX)
+V3Lexer.yy.cpp: V3Lexer_pregen.yy.cpp $(FLEXFIX)
 	$(PYTHON3) $(FLEXFIX) V3Lexer <$< >$@
 
-V3PreLex_pregen.yy.cpp:	V3PreLex.l $(HEADERS)
+V3PreLex_pregen.yy.cpp: V3PreLex.l $(HEADERS)
 	${LEX} --version
 	${LEX} ${LFLAGS} -o$@ $<
 
