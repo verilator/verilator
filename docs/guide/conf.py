@@ -89,8 +89,14 @@ source_suffix = [".rst"]
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
+try:
+    # https://reproducible-builds.org/specs/source-date-epoch/
+    doc_now = datetime.fromtimestamp(int(os.environ["SOURCE_DATE_EPOCH"]))
+    print("Using SOURCE_DATE_EPOCH")
+except Exception:
+    doc_now = datetime.now()
 # Date format to ISO
-today_fmt = datetime.now().strftime("%F")
+today_fmt = doc_now.strftime("%F")
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
