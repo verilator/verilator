@@ -158,7 +158,6 @@ string AstNode::vcdName(const string& namein) {
 string AstNode::prettyName(const string& namein) {
     // This function is somewhat hot, so we short-circuit some compares
     string pretty;
-    pretty = "";
     pretty.reserve(namein.length());
     for (const char* pos = namein.c_str(); *pos;) {
         if (pos[0] == '-' && pos[1] == '>') {  // ->
@@ -211,7 +210,6 @@ string AstNode::vpiName(const string& namein) {
     // we change that identifier to an escaped identifier, wrapping it with '\' and ' '
     // as specified in LRM 23.6
     string pretty;
-    pretty = "";
     pretty.reserve(namein.length());
     bool inEscapedIdent = false;
     int lastIdent = 0;

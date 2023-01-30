@@ -135,7 +135,7 @@ int mon_check() {
         CHECK_RESULT_NZ(mod4);
         mod_c_name = vpi_get_str(vpiName, mod4);
     }
-    CHECK_RESULT_CSTR(mod_c_name, "\\mod_c$ ");
+    CHECK_RESULT_CSTR(mod_c_name, "\\mod\\c$ ");
 
     return 0;  // Ok
 }

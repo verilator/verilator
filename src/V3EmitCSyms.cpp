@@ -157,12 +157,26 @@ class EmitCSyms final : EmitCBaseVisitor {
         // Remove hierarchy
         string::size_type pos = out.rfind('.');
 
-        // If the last identifier is escaped, move to that esc in case there's a '.' in it
-        std::string::size_type esc = scpname.rfind('\\');
-        if (esc != string::npos) {
-            string escsub = scpname.substr(esc);
-            std::string::size_type endesc = escsub.find(' ');
-            if (endesc == escsub.length() - 1 || endesc == string::npos) pos = esc - 1;
+        // If there's more than one ident and an escape, find the true last ident
+        if (pos != string::npos && scpname.find('\\') != string::npos) {
+            int i = 0;
+            // always makes progress
+            while(i < scpname.length()){
+                if(scpname[i] == '\\'){
+                    while (i < scpname.length() && scpname[i] != ' '){
+                        i++;
+                    }
+                    i++; // proc ' ', it should always be there. Then grab '.' on next cycle
+                }else{
+                    while (i < scpname.length() && scpname[i] != '.'){
+                        i++;
+                    }
+                    if (i < scpname.length()) {
+                        pos = i;
+                        i++;
+                    }
+                }
+            }
         }
 
         if (pos != std::string::npos) out.erase(0, pos + 1);

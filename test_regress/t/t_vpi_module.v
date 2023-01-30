@@ -79,7 +79,7 @@ module A(/*AUTOARG*/
            .b                           (b),
            .c                           (c));
 
-   C \mod_c$ (/*AUTOINST*/
+   C \mod\c$ (/*AUTOINST*/
            // Outputs
            .x                           (x),
            // Inputs
