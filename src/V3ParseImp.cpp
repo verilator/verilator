@@ -514,7 +514,8 @@ void V3ParseImp::tokenPipelineSym() {
                 foundp = stdsymp->findIdFallback(*(yylval.strp));
             }
             if (foundp && !v3Global.usesStdPackage()) {
-                AstPackageImport* const impp = new AstPackageImport(stdpkgp->fileline(), stdpkgp, "*");
+                AstPackageImport* const impp
+                    = new AstPackageImport(stdpkgp->fileline(), stdpkgp, "*");
                 unitPackage(stdpkgp->fileline())->addStmtsp(impp);
                 v3Global.setUsesStdPackage();
             }

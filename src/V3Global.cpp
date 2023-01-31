@@ -59,8 +59,9 @@ void V3Global::readFiles() {
 
     // Parse the std package
     if (v3Global.opt.std()) {
-        parser.parseFile(new FileLine{V3Options::getStdPackagePath()}, V3Options::getStdPackagePath(),
-                         false, "Cannot find verilated_std.sv containing built-in std:: definitions:");
+        parser.parseFile(new FileLine{V3Options::getStdPackagePath()},
+                         V3Options::getStdPackagePath(), false,
+                         "Cannot find verilated_std.sv containing built-in std:: definitions:");
     }
 
     // Read top module
@@ -81,7 +82,7 @@ void V3Global::readFiles() {
 
     // Delete the std package if unused
     if (!usesStdPackage()) {
-        if (AstNodeModule *stdp = v3Global.rootp()->stdPackagep()) {
+        if (AstNodeModule* stdp = v3Global.rootp()->stdPackagep()) {
             VL_DO_DANGLING(stdp->unlinkFrBack()->deleteTree(), stdp);
             v3Global.rootp()->stdPackagep(nullptr);
         }
