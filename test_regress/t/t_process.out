@@ -1,10 +1,24 @@
+%Error: t/t_process.v:26:11: Forward typedef used as class/package does not resolve to class/package: 'process'
+   26 |       p = process::self();
+      |           ^~~~~~~
+%Error: t/t_process.v:27:25: Forward typedef used as class/package does not resolve to class/package: 'process'
+   27 |       if (p.status() != process::RUNNING) $stop;
+      |                         ^~~~~~~
+%Error: t/t_process.v:28:25: Forward typedef used as class/package does not resolve to class/package: 'process'
+   28 |       if (p.status() == process::WAITING) $stop;
+      |                         ^~~~~~~
+%Error: t/t_process.v:29:25: Forward typedef used as class/package does not resolve to class/package: 'process'
+   29 |       if (p.status() == process::SUSPENDED) $stop;
+      |                         ^~~~~~~
+%Error: t/t_process.v:30:25: Forward typedef used as class/package does not resolve to class/package: 'process'
+   30 |       if (p.status() == process::KILLED) $stop;
+      |                         ^~~~~~~
+%Error: t/t_process.v:31:25: Forward typedef used as class/package does not resolve to class/package: 'process'
+   31 |       if (p.status() == process::FINISHED) $stop;
+      |                         ^~~~~~~
 %Error: t/t_process.v:22:4: Can't find typedef: 'process'
    22 |    process p;
       |    ^~~~~~~
-%Error-UNSUPPORTED: t/t_process.v:26:20: Unsupported: 'process'
-   26 |       p = process::self();
-      |                    ^~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Internal Error: t/t_process.v:26:11: ../V3LinkDot.cpp:#: Bad package link
    26 |       p = process::self();
       |           ^~~~~~~
