@@ -956,10 +956,10 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_PUBLIC_FLAT_RD        "/*verilator public_flat_rd*/"
 %token<fl>              yVL_PUBLIC_FLAT_RW        "/*verilator public_flat_rw*/"
 %token<fl>              yVL_PUBLIC_ON             "/*verilator public_on*/"
-%token<fl>              yVL_PUBLIC_OFF             "/*verilator public_off*/"
-%token<fl>              yVL_PUBLIC_FLAT_ON           "/*verilator public_flat_on*/"
-%token<fl>              yVL_PUBLIC_FLAT_RD_ON        "/*verilator public_flat_rd_on*/"
-%token<fl>              yVL_PUBLIC_FLAT_RW_ON        "/*verilator public_flat_rw_on*/"
+%token<fl>              yVL_PUBLIC_OFF            "/*verilator public_off*/"
+%token<fl>              yVL_PUBLIC_FLAT_ON        "/*verilator public_flat_on*/"
+%token<fl>              yVL_PUBLIC_FLAT_RD_ON     "/*verilator public_flat_rd_on*/"
+%token<fl>              yVL_PUBLIC_FLAT_RW_ON     "/*verilator public_flat_rw_on*/"
 %token<fl>              yVL_PUBLIC_FLAT_RW_ON_SNS "/*verilator public_flat_rw_on_sns*/"
 %token<fl>              yVL_PUBLIC_MODULE         "/*verilator public_module*/"
 %token<fl>              yVL_SC_BV                 "/*verilator sc_bv*/"
@@ -1440,7 +1440,7 @@ list_of_portsE<nodep>:          // IEEE: list_of_ports + list_of_port_declaratio
 
 list_of_ports<nodep>:           // IEEE: list_of_ports + list_of_port_declarations
                 portAndTag                      { $$ = $1; }
-        |       list_of_portsE ',' portAndTagE          { $$ = addNextNull($1, $3); }
+        |       list_of_portsE ',' portAndTagE  { $$ = addNextNull($1, $3); }
         ;
 
 portAndTagE<nodep>:
@@ -1458,12 +1458,13 @@ portAndTagE<nodep>:
                           $$ = $$->addNext(varp);
                           $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
         |       portAndTag                              { $$ = $1; }
+        |       portAndTag sigAttrScope                 { $$ = $1; }
         ;
 
 portAndTag<nodep>:
                 port                                    { $$ = $1; }
-        |       sigAttrScope                            { $$ = nullptr; }  // scope will begin starting with this port
         |       vlTag port                              { $$ = $2; }  // Tag will associate with previous port
+        |       sigAttrScope portAndTag                 { $$ = $2; }
         ;
 
 port<nodep>:                    // ==IEEE: port
@@ -2943,11 +2944,11 @@ sigAttrScope:
                                                           sigAttrsp->addNext(new AstAlwaysPublic{$1, $2, nullptr});
                                                           GRAMMARP->setScopedSigAttr(sigAttrsp);
                                                           v3Global.dpi(true); }
-        |       yVL_PUBLIC_ON { GRAMMARP->createScopedSigAttr(VAttrType::VAR_PUBLIC); }
-        |       yVL_PUBLIC_FLAT_ON { GRAMMARP->createScopedSigAttr(VAttrType::VAR_PUBLIC_FLAT); }
-        |       yVL_PUBLIC_FLAT_RD_ON { GRAMMARP->createScopedSigAttr(VAttrType::VAR_PUBLIC_FLAT_RD); }
-        |       yVL_PUBLIC_FLAT_RW_ON { GRAMMARP->createScopedSigAttr(VAttrType::VAR_PUBLIC_FLAT_RW); }
-        |       yVL_PUBLIC_OFF { GRAMMARP->setScopedSigAttr(nullptr); }
+        |       yVL_PUBLIC_ON                           { GRAMMARP->createScopedSigAttr(VAttrType::VAR_PUBLIC); }
+        |       yVL_PUBLIC_FLAT_ON                      { GRAMMARP->createScopedSigAttr(VAttrType::VAR_PUBLIC_FLAT); }
+        |       yVL_PUBLIC_FLAT_RD_ON                   { GRAMMARP->createScopedSigAttr(VAttrType::VAR_PUBLIC_FLAT_RD); }
+        |       yVL_PUBLIC_FLAT_RW_ON                   { GRAMMARP->createScopedSigAttr(VAttrType::VAR_PUBLIC_FLAT_RW); }
+        |       yVL_PUBLIC_OFF                          { GRAMMARP->setScopedSigAttr(nullptr); }
         ;
 
 sigAttrListE<nodep>: // Scoped Attributes are added to explicit attributes
