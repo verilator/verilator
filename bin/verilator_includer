@@ -20,8 +20,10 @@ print("#define VERILATOR_INCLUDED")
 
 re_arg_d = re.compile(r'^-D([^=]+)=(.*)')
 
+
 def include(arg):
     print("#include \"%s\"" % (arg))
+
 
 for arg in sys.argv[1:]:
     match_d = re_arg_d.match(arg)
