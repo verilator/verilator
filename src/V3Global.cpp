@@ -79,6 +79,7 @@ void V3Global::readFiles() {
                          "Cannot find file containing library module: ");
     }
 
+    // Delete the std package if unused
     if (!usesStdPackage()) {
         if (AstNodeModule *stdp = v3Global.rootp()->stdPackagep()) {
             VL_DO_DANGLING(stdp->unlinkFrBack()->deleteTree(), stdp);

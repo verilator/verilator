@@ -507,13 +507,15 @@ void V3ParseImp::tokenPipelineSym() {
             // " -findtree: ", true);
             foundp = V3ParseImp::parsep()->symp()->symCurrentp()->findIdFallback(*(yylval.strp));
         }
-        if (!foundp && !m_afterColonColon) {
-            if (v3Global.rootp()->stdPackagep()) {
-                foundp = ((VSymEnt*)v3Global.rootp()->stdPackagep()->user4p())->findIdFallback(*(yylval.strp));
+        if (!foundp && !m_afterColonColon) {  // Check if the symbol can be found in std
+            AstPackage* const stdpkgp = v3Global.rootp()->stdPackagep();
+            if (stdpkgp) {
+                VSymEnt* const stdsymp = stdpkgp->user4u().toSymEnt();
+                foundp = stdsymp->findIdFallback(*(yylval.strp));
             }
             if (foundp && !v3Global.usesStdPackage()) {
-                auto *impp = new AstPackageImport(v3Global.rootp()->stdPackagep()->fileline(), v3Global.rootp()->stdPackagep(), "*");
-                unitPackage(nullptr)->addStmtsp(impp);
+                AstPackageImport* const impp = new AstPackageImport(stdpkgp->fileline(), stdpkgp, "*");
+                unitPackage(stdpkgp->fileline())->addStmtsp(impp);
                 v3Global.setUsesStdPackage();
             }
         }
@@ -533,7 +535,7 @@ void V3ParseImp::tokenPipelineSym() {
                 } else {
                     token = yaID__ETC;
                 }
-            } else if (!m_afterColonColon && *(yylval.strp) == "std") {  // i.e. not yaID__CC
+            } else if (!m_afterColonColon && *(yylval.strp) == "std") {
                 v3Global.setUsesStdPackage();
             }
         } else {  // Not found
