@@ -607,7 +607,7 @@ int _mon_check_putget_str(p_cb_data cb_data) {
                             = vpi_handle_by_name((PLI_BYTE8*)"check", data[i].scope));
             CHECK_RESULT_NZ(data[i].verbose
                             = vpi_handle_by_name((PLI_BYTE8*)"verbose", data[i].scope));
-            
+
             p = vpi_get_str(vpiDefName, data[i].scope);
             CHECK_RESULT_CSTR(p, "arr");
         }
@@ -618,7 +618,6 @@ int _mon_check_putget_str(p_cb_data cb_data) {
 
             p = vpi_get_str(vpiDefName, data[i].scope);
             CHECK_RESULT_CSTR(p, "sub");
-
         }
 
         static t_cb_data cb_data;
