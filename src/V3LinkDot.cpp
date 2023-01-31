@@ -2350,6 +2350,7 @@ private:
         // Dot(Dot(Dot(ParseRef(text), ...
         if (nodep->user3SetOnce()) return;
         UINFO(8, "     " << nodep << endl);
+        bool replaceWithRhs = true;
         const DotStates lastStates = m_ds;
         const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         {
@@ -2401,14 +2402,13 @@ private:
             }
             if (m_statep->forPrimary() && isParamedClassRef(nodep->lhsp())) {
                 // Dots of paramed classes will be linked after deparameterization
-                m_ds.m_dotPos = DP_NONE;
-                return;
+                m_ds.m_unresolved = true;
+                replaceWithRhs = false;
             }
             if (m_ds.m_unresolved
                 && (VN_IS(nodep->lhsp(), CellRef) || VN_IS(nodep->lhsp(), CellArrayRef))) {
                 m_ds.m_unlinkedScopep = nodep->lhsp();
             }
-            if (VN_IS(nodep->lhsp(), LambdaArgRef)) m_ds.m_unlinkedScopep = nodep->lhsp();
             if (!m_ds.m_dotErr) {  // Once something wrong, give up
                 // Top 'final' dot RHS is final RHS, else it's a
                 // DOT(DOT(x,*here*),real-rhs) which we consider a RHS
@@ -2417,16 +2417,17 @@ private:
                 // if (debug() >= 9) nodep->dumpTree("-  dot-rho: ");
             }
             if (start) {
-                AstNode* newp;
-                if (m_ds.m_dotErr) {
-                    newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
-                } else {
-                    // RHS is what we're left with
-                    newp = nodep->rhsp()->unlinkFrBack();
+                if (replaceWithRhs) {
+                    AstNode* newp;
+                    if (m_ds.m_dotErr) {
+                        newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+                    } else {
+                        newp = nodep->rhsp()->unlinkFrBack();
+                    }
+                    if (debug() >= 9) newp->dumpTree("-  dot-out: ");
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
-                if (debug() >= 9) newp->dumpTree("-  dot-out: ");
-                nodep->replaceWith(newp);
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {  // Dot midpoint
                 AstNodeExpr* newp = nodep->rhsp()->unlinkFrBack();
                 if (m_ds.m_unresolved) {
@@ -2452,6 +2453,7 @@ private:
     void visit(AstParseRef* nodep) override {
         if (nodep->user3SetOnce()) return;
         UINFO(9, "   linkPARSEREF " << m_ds.ascii() << "  n=" << nodep << endl);
+        if (m_ds.m_unresolved && !m_ds.m_unlinkedScopep) return;
         // m_curSymp is symbol table of outer expression
         // m_ds.m_dotSymp is symbol table relative to "."'s above now
         UASSERT_OBJ(m_ds.m_dotSymp, nodep, "nullptr lookup symbol table");
@@ -2492,7 +2494,7 @@ private:
             // If not, treat it as normal member select
             iterateChildren(nodep);
             const auto newp = new AstLambdaArgRef{
-                nodep->fileline(), m_ds.m_unlinkedScopep->name() + "__DOT__index", true};
+                nodep->fileline(), m_ds.m_dotp->lhsp()->name() + "__DOT__index", true};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
@@ -2941,7 +2943,29 @@ private:
         if (nodep->user3SetOnce()) return;
         UINFO(8, "     " << nodep << endl);
         UINFO(8, "     " << m_ds.ascii() << endl);
-        if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
+        {
+            // Visit arguments at the beginning.
+            // They may be visitted even if the current node can't be linked now.
+            VL_RESTORER(m_ds);
+            m_ds.init(m_curSymp);
+            iterateChildren(nodep);
+        }
+
+        if (m_ds.m_unresolved) {
+            // Unable to link before V3Param
+            if (m_ds.m_dotPos == DP_FINAL && m_ds.m_unlinkedScopep) {
+                AstNodeFTaskRef* const newftaskp = nodep->cloneTree(false);
+                newftaskp->dotted(m_ds.m_dotText);
+                AstNode* const newp
+                    = new AstUnlinkedRef{nodep->fileline(), newftaskp, nodep->name(),
+                                         m_ds.m_unlinkedScopep->unlinkFrBack()};
+                m_ds.m_unlinkedScopep = nullptr;
+                m_ds.m_unresolved = false;
+                nodep->replaceWith(newp);
+            }
+            // else: AstDot wasn't replaced and it will be linked after V3Param
+            return;
+        } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                         "Bad package link");
             AstClassOrPackageRef* const cpackagerefp
@@ -2955,19 +2979,7 @@ private:
             m_ds.m_dotPos = DP_SCOPE;
             m_ds.m_dotp = nullptr;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
-            if (m_ds.m_unresolved && m_ds.m_unlinkedScopep) {
-                AstNodeFTaskRef* const newftaskp = nodep->cloneTree(false);
-                newftaskp->dotted(m_ds.m_dotText);
-                AstNode* const newp
-                    = new AstUnlinkedRef{nodep->fileline(), newftaskp, nodep->name(),
-                                         m_ds.m_unlinkedScopep->unlinkFrBack()};
-                m_ds.m_unlinkedScopep = nullptr;
-                m_ds.m_unresolved = false;
-                nodep->replaceWith(newp);
-                return;
-            } else {
-                nodep->dotted(m_ds.m_dotText);  // Maybe ""
-            }
+            nodep->dotted(m_ds.m_dotText);  // Maybe ""
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_MEMBER) {
             // Found a Var, everything following is method call.
             // {scope}.{var}.HERE {method} ( ARGS )
@@ -3097,11 +3109,6 @@ private:
                 }
             }
             taskFuncSwapCheck(nodep);
-        }
-        {
-            VL_RESTORER(m_ds);
-            m_ds.init(m_curSymp);
-            iterateChildren(nodep);
         }
     }
     void visit(AstSelBit* nodep) override {
