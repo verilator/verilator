@@ -26,7 +26,8 @@
 // verilator lint_off TIMESCALEMOD
 // verilator lint_off UNUSEDSIGNAL
 package std;
-    /* This is to make the linter work */
+    // The process class is not implemented, but it's predeclare here,
+    // so the linter could accept references to it.
     typedef class process;
 
     class mailbox #(type T);
