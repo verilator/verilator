@@ -240,7 +240,7 @@ string AstNode::vpiName(const string& namein) {
                 value += (isdigit(pos[4]) ? (pos[4] - '0') : (tolower(pos[4]) - 'a' + 10));
 
                 // __ doesn't always imply escaped ident
-                if (value != '_') { inEscapedIdent = true; }
+                if (value != '_') inEscapedIdent = true;
 
                 pretty += value;
                 pos += 5;
