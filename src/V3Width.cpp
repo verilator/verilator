@@ -714,12 +714,24 @@ private:
                                                      << vdtypep->prettyDTypeNameQ()
                                                      << " data type");
                 }
-                // Don't iterate lhsp as SELF, the potential Concat below needs
-                // the adtypep passed down to recognize the QueueDType
-                userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, BOTH}.p());
-                nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                return;
+                if (VN_IS(nodep->lhsp(), Concat)) {
+                    // Convert to concat directly, and visit(AstConst) will convert.
+                    // Don't iterate lhsp as SELF, the potential Concat below needs
+                    // the adtypep passed down to recognize the QueueDType
+                    userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, BOTH}.p());
+                    nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                } else {  // int a[] = {lhs} -> same as '{lhs}
+                    auto* const newp = new AstPattern{
+                        nodep->fileline(),
+                        new AstPatMember{nodep->lhsp()->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                         nullptr, nullptr}};
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    userIterate(newp, m_vup);
+                    return;
+                }
             }
             if (VN_IS(vdtypep, AssocArrayDType)) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Replication to form "
