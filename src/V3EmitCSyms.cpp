@@ -167,9 +167,7 @@ class EmitCSyms final : EmitCBaseVisitor {
                     ++i;  // Proc ' ', it should always be there. Then grab '.' on next cycle
                 } else {
                     while (i < scpname.length() && scpname[i] != '.') ++i;
-                    if (i < scpname.length()) {
-                        pos = i++;
-                    }
+                    if (i < scpname.length()) { pos = i++; }
                 }
             }
         }
