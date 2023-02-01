@@ -389,6 +389,8 @@ int _mon_check_varlist() {
 int _mon_check_getput() {
     TestVpiHandle vh2 = VPI_HANDLE("onebit");
     CHECK_RESULT_NZ(vh2);
+    const char* p = vpi_get_str(vpiFullName, vh2);
+    CHECK_RESULT_CSTR(p, "t.onebit");
 
     s_vpi_value v;
     v.format = vpiIntVal;
@@ -399,12 +401,53 @@ int _mon_check_getput() {
     t.type = vpiSimTime;
     t.high = 0;
     t.low = 0;
+    v.value.integer = 0;
+    vpi_put_value(vh2, &v, &t, vpiNoDelay);
+    vpi_get_value(vh2, &v);
+    CHECK_RESULT(v.value.integer, 0);
+
     v.value.integer = 1;
     vpi_put_value(vh2, &v, &t, vpiNoDelay);
-
     vpi_get_value(vh2, &v);
     CHECK_RESULT(v.value.integer, 1);
 
+    return 0;
+}
+
+int _mon_check_getput_iter() {
+    TestVpiHandle vh2 = VPI_HANDLE("sub");
+    CHECK_RESULT_NZ(vh2);
+    TestVpiHandle vh10 = vpi_iterate(vpiReg, vh2);
+    CHECK_RESULT_NZ(vh10);
+    CHECK_RESULT(vpi_get(vpiType, vh10), vpiIterator);
+
+    TestVpiHandle vh11;
+    while (1) {
+        vh11 = vpi_scan(vh10);
+        CHECK_RESULT_NZ(vh11);  // If get zero we never found the variable
+        const char* p = vpi_get_str(vpiFullName, vh11);
+#ifdef TEST_VERBOSE
+        printf("       scanned %s\n", p);
+#endif
+        if (0 == strcmp(p, "t.sub.subsig1")) break;
+    }
+    CHECK_RESULT(vpi_get(vpiType, vh11), vpiReg);
+
+    s_vpi_time t;
+    t.type = vpiSimTime;
+    t.high = 0;
+    t.low = 0;
+    s_vpi_value v;
+    v.format = vpiIntVal;
+    v.value.integer = 0;
+    vpi_put_value(vh11, &v, &t, vpiNoDelay);
+    vpi_get_value(vh11, &v);
+    CHECK_RESULT(v.value.integer, 0);
+
+    v.value.integer = 1;
+    vpi_put_value(vh11, &v, &t, vpiNoDelay);
+    vpi_get_value(vh11, &v);
+    CHECK_RESULT(v.value.integer, 1);
     return 0;
 }
 
@@ -651,6 +694,7 @@ extern "C" int mon_check() {
     if (int status = _mon_check_var()) return status;
     if (int status = _mon_check_varlist()) return status;
     if (int status = _mon_check_getput()) return status;
+    if (int status = _mon_check_getput_iter()) return status;
     if (int status = _mon_check_quad()) return status;
     if (int status = _mon_check_string()) return status;
     if (int status = _mon_check_putget_str(NULL)) return status;

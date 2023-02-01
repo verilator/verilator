@@ -100,7 +100,7 @@ extern "C" int mon_check();
 endmodule : t
 
 module sub;
-   reg subsig1 /*verilator public_flat_rd*/;
+   reg subsig1 /*verilator public_flat_rw*/;
    reg subsig2 /*verilator public_flat_rd*/;
 `ifdef IVERILOG
    // stop icarus optimizing signals away
