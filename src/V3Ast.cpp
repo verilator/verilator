@@ -216,7 +216,6 @@ string AstNode::vpiName(const string& namein) {
 
     for (const char* pos = namein.c_str(); *pos;) {
         char specialChar = 0;
-
         if (pos[0] == '-' && pos[1] == '>') {  // ->
             specialChar = '.';
             pos += 2;
