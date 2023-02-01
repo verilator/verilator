@@ -13,7 +13,6 @@ scenarios(vlt => 1);
 lint(
     fails => 1,
     # The .vh file has the error, not the .v file
-    verilator_flags2 => ['--no-std'],
     expect_filename => $Self->{golden_filename},
     );
 
