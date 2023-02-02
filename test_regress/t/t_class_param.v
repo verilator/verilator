@@ -81,6 +81,15 @@ class ClsParam #(type T);
    typedef T param_t;
 endclass
 
+class ClsWithParamField;
+   int m_field = Sum#(int)::sum;
+   int m_queue[$];
+
+   function int get(int index);
+      return m_queue[index];
+   endfunction
+endclass
+
 module t (/*AUTOARG*/);
 
    Cls c12;
@@ -93,6 +102,7 @@ module t (/*AUTOARG*/);
    SelfRefClassIntParam src1;
    SelfRefClassIntParam::self_int_t src10;
    IntQueue qi;
+   ClsWithParamField cls_param_field;
    int arr [1:0] = '{1, 2};
    initial begin
       c12 = new;
@@ -105,6 +115,7 @@ module t (/*AUTOARG*/);
       src1 = new;
       src10 = new;
       qi = new;
+      cls_param_field = new;
       if (Cls#()::PBASE != 12) $stop;
       if (Cls#(4)::PBASE != 4) $stop;
       if (Cls8_t::PBASE != 8) $stop;
@@ -152,6 +163,9 @@ module t (/*AUTOARG*/);
 
       if (ClsParam#(ClsStatic)::param_t::x != 1) $stop;
       if (ClsParam#(ClsStatic)::param_t::get_2() != 2) $stop;
+
+      cls_param_field.m_queue = '{1, 5, 7};
+      if (cls_param_field.get(2) != 7) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

@@ -2440,13 +2440,13 @@ private:
                 }
             }
         }
-        const bool unresolvedClass = m_ds.m_unresolvedClass;
         if (start) {
             m_ds = lastStates;
         } else {
+            const bool unresolvedClass = m_ds.m_unresolvedClass;
             m_ds.m_dotp = lastStates.m_dotp;
+            m_ds.m_unresolvedClass |= unresolvedClass;
         }
-        m_ds.m_unresolvedClass |= unresolvedClass;
     }
     void visit(AstSenItem* nodep) override {
         VL_RESTORER(m_inSens);
