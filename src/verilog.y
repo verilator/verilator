@@ -1623,7 +1623,6 @@ interface_itemListE<nodep>:
 interface_itemList<nodep>:
                 interface_item                          { $$ = $1; }
         |       interface_itemList interface_item       { $$ = addNextNull($1, $2); }
-        |       sigAttrScope                            { $$ = nullptr; }
         ;
 
 interface_item<nodep>:          // IEEE: interface_item + non_port_interface_item
@@ -2542,7 +2541,6 @@ module_itemList<nodep>:         // IEEE: Part of module_declaration
 module_item<nodep>:             // ==IEEE: module_item
                 port_declaration ';'                    { $$ = $1; }
         |       non_port_module_item                    { $$ = $1; }
-        |       sigAttrScope                            { $$ = nullptr; }
         ;
 
 non_port_module_item<nodep>:    // ==IEEE: non_port_module_item
@@ -2608,6 +2606,7 @@ module_common_item<nodep>:      // ==IEEE: module_common_item
         |       loop_generate_construct                 { $$ = $1; }
         |       conditional_generate_construct          { $$ = $1; }
         |       elaboration_system_task                 { $$ = $1; }
+        |       sigAttrScope                            { $$ = nullptr; }
         //
         |       error ';'                               { $$ = nullptr; }
         ;
