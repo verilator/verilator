@@ -1790,16 +1790,27 @@ List Of Warnings
 
    For example, this is a missized index:
 
-   .. include:: ../../docs/gen/ex_WIDTH_1_faulty.rst
+   .. include:: ../../docs/gen/ex_WIDTHEXPAND_1_faulty.rst
 
-   Results in:
+   Results in a WIDTHEXPAND warning:
 
-   .. include:: ../../docs/gen/ex_WIDTH_1_msg.rst
+   .. include:: ../../docs/gen/ex_WIDTHEXPAND_1_msg.rst
 
    One possible fix:
 
-   .. include:: ../../docs/gen/ex_WIDTH_1_fixed.rst
+   .. include:: ../../docs/gen/ex_WIDTHEXPAND_1_fixed.rst
 
+.. option:: WIDTHTRUNC
+
+   A more granular WIDTH warning, for when a value is truncated
+
+.. option:: WIDTHEXPAND
+
+   A more granular WIDTH warning, for when a value is zero expanded
+
+.. option:: WIDTHXZEXPAND
+
+   A more granular WIDTH warning, for when a value is xz expanded
 
 .. option:: WIDTHCONCAT
 

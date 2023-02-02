@@ -12,8 +12,8 @@
                                                 : ... In instance t
    16 |    assign mi = unk[3:2];
       |                   ^
-%Warning-WIDTH: t/t_select_bad_range5.v:16:14: Operator ASSIGNW expects 1 bits on the Assign RHS, but Assign RHS's SEL generates 2 bits.
-                                             : ... In instance t
+%Warning-WIDTHTRUNC: t/t_select_bad_range5.v:16:14: Operator ASSIGNW expects 1 bits on the Assign RHS, but Assign RHS's SEL generates 2 bits.
+                                                  : ... In instance t
    16 |    assign mi = unk[3:2];
       |              ^
 %Error: Exiting due to

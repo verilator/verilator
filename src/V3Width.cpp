@@ -118,6 +118,12 @@ std::ostream& operator<<(std::ostream& str, const Castable& rhs) {
     return str << s_det[rhs];
 }
 
+#define v3widthWarn(lhs, rhs, msg) \
+    v3errorEnd((V3Error::v3errorPrep((lhs) < (rhs)   ? V3ErrorCode::WIDTHTRUNC \
+                                     : (lhs) > (rhs) ? V3ErrorCode::WIDTHEXPAND \
+                                                     : V3ErrorCode::WIDTH), \
+                (V3Error::v3errorStr() << msg), V3Error::v3errorStr()))
+
 //######################################################################
 // Width state, as a visitor of each AstNode
 
@@ -910,15 +916,16 @@ private:
             userIterateAndNext(nodep->lsbp(), WidthVP{SELF, FINAL}.p());
             if (widthBad(nodep->lsbp(), selwidthDTypep) && nodep->lsbp()->width() != 32) {
                 if (!nodep->fileline()->warnIsOff(V3ErrorCode::WIDTH)) {
-                    nodep->v3warn(WIDTH,
-                                  "Bit extraction of var["
-                                      << (frommsb / elw) << ":" << (fromlsb / elw) << "] requires "
-                                      << (selwidth / elw) << " bit index, not "
-                                      << (nodep->lsbp()->width() / elw)
-                                      << (nodep->lsbp()->width() != nodep->lsbp()->widthMin()
-                                              ? " or " + cvtToStr(nodep->lsbp()->widthMin() / elw)
-                                              : "")
-                                      << " bits.");
+                    nodep->v3widthWarn(
+                        (selwidth / elw), (nodep->lsbp()->width() / elw),
+                        "Bit extraction of var["
+                            << (frommsb / elw) << ":" << (fromlsb / elw) << "] requires "
+                            << (selwidth / elw) << " bit index, not "
+                            << (nodep->lsbp()->width() / elw)
+                            << (nodep->lsbp()->width() != nodep->lsbp()->widthMin()
+                                    ? " or " + cvtToStr(nodep->lsbp()->widthMin() / elw)
+                                    : "")
+                            << " bits.");
                     UINFO(1, "    Related node: " << nodep << endl);
                 }
             }
@@ -988,13 +995,14 @@ private:
             AstNodeDType* const selwidthDTypep
                 = nodep->findLogicDType(selwidth, selwidth, nodep->bitp()->dtypep()->numeric());
             if (widthBad(nodep->bitp(), selwidthDTypep) && nodep->bitp()->width() != 32) {
-                nodep->v3warn(WIDTH, "Bit extraction of array["
-                                         << frommsb << ":" << fromlsb << "] requires " << selwidth
-                                         << " bit index, not " << nodep->bitp()->width()
-                                         << (nodep->bitp()->width() != nodep->bitp()->widthMin()
-                                                 ? " or " + cvtToStr(nodep->bitp()->widthMin())
-                                                 : "")
-                                         << " bits.");
+                nodep->v3widthWarn(selwidth, nodep->bitp()->width(),
+                                   "Bit extraction of array["
+                                       << frommsb << ":" << fromlsb << "] requires " << selwidth
+                                       << " bit index, not " << nodep->bitp()->width()
+                                       << (nodep->bitp()->width() != nodep->bitp()->widthMin()
+                                               ? " or " + cvtToStr(nodep->bitp()->widthMin())
+                                               : "")
+                                       << " bits.");
                 if (!nodep->fileline()->warnIsOff(V3ErrorCode::WIDTH)) {
                     UINFO(1, "    Related node: " << nodep << endl);
                     UINFO(1, "    Related dtype: " << nodep->dtypep() << endl);
@@ -6077,8 +6085,9 @@ private:
             else if (!constp->num().sized()
                      // Make it the proper size.  Careful of proper extension of 0's/1's
                      && expWidth > 32 && constp->num().isMsbXZ()) {
-                constp->v3warn(WIDTH, "Unsized constant being X/Z extended to "
-                                          << expWidth << " bits: " << constp->prettyName());
+                constp->v3warn(WIDTHXZEXPAND, "Unsized constant being X/Z extended to "
+                                                  << expWidth
+                                                  << " bits: " << constp->prettyName());
                 V3Number num(constp, expWidth);
                 num.opExtendXZ(constp->num(), constp->width());
                 AstNodeExpr* const newp = new AstConst{constp->fileline(), num};
@@ -6266,15 +6275,16 @@ private:
             if (bad) {
                 {  // if (warnOn), but not needed here
                     if (debug() > 4) nodep->backp()->dumpTree("-  back: ");
-                    nodep->v3warn(WIDTH, "Logical operator "
-                                             << nodep->prettyTypeName() << " expects 1 bit on the "
-                                             << side << ", but " << side << "'s "
-                                             << underp->prettyTypeName() << " generates "
-                                             << underp->width()
-                                             << (underp->width() != underp->widthMin()
-                                                     ? " or " + cvtToStr(underp->widthMin())
-                                                     : "")
-                                             << " bits.");
+                    nodep->v3widthWarn(1, underp->width(),
+                                       "Logical operator "
+                                           << nodep->prettyTypeName() << " expects 1 bit on the "
+                                           << side << ", but " << side << "'s "
+                                           << underp->prettyTypeName() << " generates "
+                                           << underp->width()
+                                           << (underp->width() != underp->widthMin()
+                                                   ? " or " + cvtToStr(underp->widthMin())
+                                                   : "")
+                                           << " bits.");
                 }
                 VL_DO_DANGLING(fixWidthReduce(VN_AS(underp, NodeExpr)), underp);  // Changed
             }
@@ -6448,16 +6458,18 @@ private:
             }
             if (bad && warnOn) {
                 if (debug() > 4) nodep->backp()->dumpTree("-  back: ");
-                nodep->v3warn(
-                    WIDTH, ucfirst(nodep->prettyOperatorName())
-                               << " expects " << expWidth
-                               << (expWidth != expWidthMin ? " or " + cvtToStr(expWidthMin) : "")
-                               << " bits on the " << side << ", but " << side << "'s "
-                               << underp->prettyTypeName() << " generates " << underp->width()
-                               << (underp->width() != underp->widthMin()
-                                       ? " or " + cvtToStr(underp->widthMin())
-                                       : "")
-                               << " bits.");
+
+                nodep->v3widthWarn(
+                    expWidth, underp->width(),
+                    ucfirst(nodep->prettyOperatorName())
+                        << " expects " << expWidth
+                        << (expWidth != expWidthMin ? " or " + cvtToStr(expWidthMin) : "")
+                        << " bits on the " << side << ", but " << side << "'s "
+                        << underp->prettyTypeName() << " generates " << underp->width()
+                        << (underp->width() != underp->widthMin()
+                                ? " or " + cvtToStr(underp->widthMin())
+                                : "")
+                        << " bits.");
             }
             if (bad || underp->width() != expWidth) {
                 // If we're in an NodeAssign, don't truncate the RHS if the LHS is
