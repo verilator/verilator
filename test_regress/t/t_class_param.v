@@ -70,6 +70,17 @@ class IntQueue;
    endfunction
 endclass
 
+class ClsStatic;
+   static int   x = 1;
+   static function int get_2;
+      return 2;
+   endfunction
+endclass
+
+class ClsParam #(type T);
+   typedef T param_t;
+endclass
+
 module t (/*AUTOARG*/);
 
    Cls c12;
@@ -138,6 +149,9 @@ module t (/*AUTOARG*/);
       Sum#(int)::add(arr[0]);
       if(Sum#(int)::sum != 16) $stop;
       if(Sum#(real)::sum != 0) $stop;
+
+      if (ClsParam#(ClsStatic)::param_t::x != 1) $stop;
+      if (ClsParam#(ClsStatic)::param_t::get_2() != 2) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
