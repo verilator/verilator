@@ -325,7 +325,14 @@ public:
     }
     static void abortIfWarnings();
     static void suppressThisWarning();  // Suppress next %Warn if user has it off
-    static void pretendError(V3ErrorCode code, bool flag) { s_pretendError[code] = flag; }
+    static void pretendError(V3ErrorCode code, bool flag) { 
+        if(code == V3ErrorCode::WIDTH) {
+            s_pretendError[V3ErrorCode::WIDTHTRUNC] = flag; 
+            s_pretendError[V3ErrorCode::WIDTHEXPAND] = flag; 
+            s_pretendError[V3ErrorCode::WIDTHXZEXPAND] = flag; 
+        }
+        s_pretendError[code] = flag; 
+    }
     static bool isError(V3ErrorCode code, bool supp);
     static string lineStr(const char* filename, int lineno);
     static V3ErrorCode errorCode() VL_MT_SAFE { return s_errorCode; }

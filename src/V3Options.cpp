@@ -1577,9 +1577,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-Wwarn-WIDTH", CbCall, []() {
         FileLine::globalWarnOff(V3ErrorCode::WIDTH, false);
-        V3Error::pretendError(V3ErrorCode::WIDTHTRUNC, false);
-        V3Error::pretendError(V3ErrorCode::WIDTHEXPAND, false);
-        V3Error::pretendError(V3ErrorCode::WIDTHXZEXPAND, false);
         V3Error::pretendError(V3ErrorCode::WIDTH, false);
     });
     DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
