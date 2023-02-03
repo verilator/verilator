@@ -1149,8 +1149,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_dumpLevel[optp] = std::atoi(valp);
     });
     DECL_OPTION("-E", CbOnOff, [this](bool flag) {
-      if (flag) m_std = false;
-      m_preprocOnly = flag;
+        if (flag) m_std = false;
+        m_preprocOnly = flag;
     });
     DECL_OPTION("-error-limit", CbVal, static_cast<void (*)(int)>(&V3Error::errorLimit));
     DECL_OPTION("-exe", OnOff, &m_exe);
