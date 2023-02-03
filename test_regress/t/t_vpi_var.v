@@ -28,6 +28,7 @@ extern "C" int mon_check();
    reg          onebit          /*verilator public_flat_rw @(posedge clk) */;
    reg [2:1]    twoone          /*verilator public_flat_rw @(posedge clk) */;
    reg [2:1]    fourthreetwoone[4:3] /*verilator public_flat_rw @(posedge clk) */;
+   reg LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND /*verilator public_flat_rw*/;
 
    // verilator lint_off LITENDIAN
    reg [0:61]   quads[2:3]      /*verilator public_flat_rw @(posedge clk) */;

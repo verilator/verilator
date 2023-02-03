@@ -24,6 +24,7 @@ Verilator 5.007 devel
 * Fix real parameters of infinity and NaN.
 * Fix pattern assignment to unpacked structs (#3510). [Mostafa Garnal]
 * Fix single-element replication to dynarray/unpacked/queue (#3548). [Gustav Svensk]
+* Fix very long VPI signal names (#3929). [Marlon James]
 
 
 Verilator 5.006 2023-01-22
