@@ -16,7 +16,7 @@ compile(
     # Override default flags
     v_flags => [''],
     verilator_flags => ["-E -P +incdir+t -Mdir $Self->{obj_dir}", ],
-    verilator_flags2 => ['--no-std',],
+    verilator_flags2 => ['',],
     verilator_flags3 => ['',],
     verilator_make_gmake => 0,
     make_top_shell => 0,
