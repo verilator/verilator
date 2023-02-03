@@ -273,8 +273,8 @@ public:
     }
 
     void setScopedSigAttr(AstNode* attrsp) {
-        if (m_scopedSigAttr) { // clearing set attribute
-                VL_DO_DANGLING(m_scopedSigAttr->deleteTree(), m_scopedSigAttr);
+        if (m_scopedSigAttr) {  // clearing set attribute
+            VL_DO_DANGLING(m_scopedSigAttr->deleteTree(), m_scopedSigAttr);
         }
         m_scopedSigAttr = attrsp;
     }

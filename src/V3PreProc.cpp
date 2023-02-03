@@ -480,7 +480,7 @@ void V3PreProcImp::comment(const string& text) {
             string arg = cmd.substr(endOfCmd);
             while (isspace(arg[0])) arg = arg.substr(1);
             if (arg.size() && baseCmd == "public_flat_rw_on")
-                baseCmd += "_sns"; // different cmd for applying sensitivity
+                baseCmd += "_sns";  // different cmd for applying sensitivity
             if (!printed) insertUnreadback("/*verilator " + baseCmd + "*/ " + arg + " /**/");
         } else {
             if (!printed) insertUnreadback("/*verilator " + cmd + "*/");
