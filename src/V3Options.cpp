@@ -1148,7 +1148,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-dumpi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
         m_dumpLevel[optp] = std::atoi(valp);
     });
-    DECL_OPTION("-E", Set, &m_preprocOnly);
+    DECL_OPTION("-E", CbOnOff, [this](bool flag) {
+      if (flag) m_std = false;
+      m_preprocOnly = flag;
+    });
     DECL_OPTION("-error-limit", CbVal, static_cast<void (*)(int)>(&V3Error::errorLimit));
     DECL_OPTION("-exe", OnOff, &m_exe);
     DECL_OPTION("-expand-limit", CbVal,
