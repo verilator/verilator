@@ -15,7 +15,7 @@ my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
 top_filename("t/t_enum_type_methods.v");
 
 compile(
-    verilator_flags2 => ['--debug-check', '--flatten'],
+    verilator_flags2 => ['--no-std', '--debug-check', '--flatten'],
     verilator_make_gmake => 0,
     make_top_shell => 0,
     make_main => 0,

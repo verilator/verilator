@@ -507,6 +507,19 @@ void V3ParseImp::tokenPipelineSym() {
             // " -findtree: ", true);
             foundp = V3ParseImp::parsep()->symp()->symCurrentp()->findIdFallback(*(yylval.strp));
         }
+        if (!foundp && !m_afterColonColon) {  // Check if the symbol can be found in std
+            AstPackage* const stdpkgp = v3Global.rootp()->stdPackagep();
+            if (stdpkgp) {
+                VSymEnt* const stdsymp = stdpkgp->user4u().toSymEnt();
+                foundp = stdsymp->findIdFallback(*(yylval.strp));
+            }
+            if (foundp && !v3Global.usesStdPackage()) {
+                AstPackageImport* const impp
+                    = new AstPackageImport(stdpkgp->fileline(), stdpkgp, "*");
+                unitPackage(stdpkgp->fileline())->addStmtsp(impp);
+                v3Global.setUsesStdPackage();
+            }
+        }
         if (foundp) {
             AstNode* const scp = foundp->nodep();
             yylval.scp = scp;
@@ -523,20 +536,13 @@ void V3ParseImp::tokenPipelineSym() {
                 } else {
                     token = yaID__ETC;
                 }
+            } else if (!m_afterColonColon && *(yylval.strp) == "std") {
+                v3Global.setUsesStdPackage();
             }
-        } else if ((token == yaID__LEX || token == yaID__CC)
-                   && (*(yylval.strp) == "mailbox"  // IEEE-standard class
-                       || *(yylval.strp) == "process"  // IEEE-standard class
-                       || *(yylval.strp) == "semaphore")) {  // IEEE-standard class
-            v3Global.setUsesStdPackage();
-            yylval.scp = nullptr;
-            if (token == yaID__LEX) token = yaID__aTYPE;
         } else {  // Not found
             yylval.scp = nullptr;
             if (token == yaID__CC) {
-                if (!m_afterColonColon && *(yylval.strp) == "std") {
-                    v3Global.setUsesStdPackage();
-                } else if (!v3Global.opt.bboxUnsup()) {
+                if (!v3Global.opt.bboxUnsup()) {
                     // IEEE does require this, but we may relax this as UVM breaks it, so allow
                     // bbox for today
                     // We'll get a parser error eventually but might not be obvious

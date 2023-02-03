@@ -602,7 +602,9 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
 V3LangCode V3Options::fileLanguage(const string& filename) {
     string ext = V3Os::filenameNonDir(filename);
     string::size_type pos;
-    if ((pos = ext.rfind('.')) != string::npos) {
+    if (filename == V3Options::getStdPackagePath()) {
+        return V3LangCode::mostRecent();
+    } else if ((pos = ext.rfind('.')) != string::npos) {
         ext.erase(0, pos + 1);
         const auto it = m_impp->m_langExts.find(ext);
         if (it != m_impp->m_langExts.end()) return it->second;
@@ -1145,7 +1147,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-dumpi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
         m_dumpLevel[optp] = std::atoi(valp);
     });
-    DECL_OPTION("-E", Set, &m_preprocOnly);
+    DECL_OPTION("-E", CbOnOff, [this](bool flag) {
+        if (flag) m_std = false;
+        m_preprocOnly = flag;
+    });
     DECL_OPTION("-error-limit", CbVal, static_cast<void (*)(int)>(&V3Error::errorLimit));
     DECL_OPTION("-exe", OnOff, &m_exe);
     DECL_OPTION("-expand-limit", CbVal,
@@ -1405,6 +1410,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_statsVars = flag;
         m_stats |= flag;
     });
+    DECL_OPTION("-std", OnOff, &m_std);
     DECL_OPTION("-structs-packed", OnOff, &m_structsPacked);
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2017; });
 

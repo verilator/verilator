@@ -18,10 +18,10 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var loc="e,78,.*?" name="clk0" .*dir="input" .*vartype="logic" origName="clk0" clocker="true" public="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,79,.*?" name="clk1" .*dir="input" .*vartype="logic" origName="clk1" clocker="true" public="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,80,.*?" name="clk2" .*dir="input" .*vartype="logic" origName="clk2" clocker="true" public="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,82,.*?" name="data_in" .*dir="input" .*vartype="logic" origName="data_in" clocker="false" public="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,78,.*?" name="clk0" .*dir="input" .*vartype="logic" origName="clk0" clocker="true" public="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,79,.*?" name="clk1" .*dir="input" .*vartype="logic" origName="clk1" clocker="true" public="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,80,.*?" name="clk2" .*dir="input" .*vartype="logic" origName="clk2" clocker="true" public="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,82,.*?" name="data_in" .*dir="input" .*vartype="logic" origName="data_in" clocker="false" public="true"\/\>/i);
 }
 
 execute(

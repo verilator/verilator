@@ -53,18 +53,19 @@ void V3Global::readFiles() {
     V3ParseSym parseSyms{v3Global.rootp()};  // Symbol table must be common across all parsing
 
     V3Parse parser(v3Global.rootp(), &filter, &parseSyms);
+
+    // Parse the std package
+    if (v3Global.opt.std()) {
+        parser.parseFile(new FileLine{V3Options::getStdPackagePath()},
+                         V3Options::getStdPackagePath(), false,
+                         "Cannot find verilated_std.sv containing built-in std:: definitions:");
+    }
+
     // Read top module
     const V3StringList& vFiles = v3Global.opt.vFiles();
     for (const string& filename : vFiles) {
         parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filename, false,
                          "Cannot find file containing module: ");
-    }
-
-    if (usesStdPackage()) {
-        // Parse the std package
-        parser.parseFile(new FileLine{FileLine::commandLineFilename()},
-                         V3Options::getStdPackagePath(), false,
-                         "Cannot find verilated_std.sv containing built-in std:: definitions:");
     }
 
     // Read libraries
@@ -75,6 +76,15 @@ void V3Global::readFiles() {
         parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filename, true,
                          "Cannot find file containing library module: ");
     }
+
+    // Delete the std package if unused
+    if (!usesStdPackage()) {
+        if (AstNodeModule* stdp = v3Global.rootp()->stdPackagep()) {
+            v3Global.rootp()->stdPackagep(nullptr);
+            VL_DO_DANGLING(stdp->unlinkFrBack()->deleteTree(), stdp);
+        }
+    }
+
     // v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("parse.tree"));
     V3Error::abortIfErrors();
 

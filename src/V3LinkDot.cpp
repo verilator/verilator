@@ -1395,8 +1395,11 @@ class LinkDotFindVisitor final : public VNVisitor {
         UINFO(4, "  Link: " << nodep << endl);
         VSymEnt* const srcp = m_statep->getNodeSym(nodep->packagep());
         if (nodep->name() == "*") {
-            if (m_curSymp == m_statep->dunitEntp()) {
-                nodep->v3warn(IMPORTSTAR, "Import::* in $unit scope may pollute global namespace");
+            if (nodep->packagep() != v3Global.rootp()->stdPackagep()) {
+                if (m_curSymp == m_statep->dunitEntp()) {
+                    nodep->v3warn(IMPORTSTAR,
+                                  "Import::* in $unit scope may pollute global namespace");
+                }
             }
         } else {
             VSymEnt* const impp = srcp->findIdFlat(nodep->name());
@@ -2971,7 +2974,7 @@ private:
                         "Bad package link");
             AstClassOrPackageRef* const cpackagerefp
                 = VN_AS(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
-            if (cpackagerefp->name() == "process" || cpackagerefp->name() == "local") {
+            if (cpackagerefp->name() == "local") {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: " << AstNode::prettyNameQ(cpackagerefp->name()));
             }

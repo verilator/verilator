@@ -3393,7 +3393,7 @@ private:
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
             if (nodep->fileline()->timingOn()) {
-                if (classp->name() == "semaphore"
+                if (classp->name() == "semaphore" || classp->name() == "process"
                     || VString::startsWith(classp->name(), "mailbox")) {
                     // Find the package the class is in
                     AstNode* pkgItemp = classp;

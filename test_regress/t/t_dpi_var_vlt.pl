@@ -20,10 +20,10 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var loc="e,58,.*?" name="formatted" dtype_id="\d+" dir="input" vartype="string" origName="formatted" sformat="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,81,.*?" name="t.sub.in" dtype_id="\d+" vartype="int" origName="in" public="true" public_flat_rd="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,82,.*?" name="t.sub.fr_a" dtype_id="\d+" vartype="int" origName="fr_a" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,83,.*?" name="t.sub.fr_b" dtype_id="\d+" vartype="int" origName="fr_b" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,58,.*?" name="formatted" dtype_id="\d+" dir="input" vartype="string" origName="formatted" sformat="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,81,.*?" name="t.sub.in" dtype_id="\d+" vartype="int" origName="in" public="true" public_flat_rd="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,82,.*?" name="t.sub.fr_a" dtype_id="\d+" vartype="int" origName="fr_a" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,83,.*?" name="t.sub.fr_b" dtype_id="\d+" vartype="int" origName="fr_b" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
 }
 
 execute(
