@@ -46,7 +46,7 @@ class EmitCSyms final : EmitCBaseVisitor {
         string m_type;
         string m_defName;
         ScopeData(const string& symName, const string& prettyName, int timeunit,
-                  const string& type, const string&defName = "")
+                  const string& type, const string& defName = "")
             : m_symName{symName}
             , m_prettyName{prettyName}
             , m_timeunit{timeunit}
@@ -317,9 +317,9 @@ class EmitCSyms final : EmitCBaseVisitor {
             const string name = nodep->scopep()->shortName() + "__DOT__" + nodep->name();
             const string name_pretty = AstNode::vpiName(name);
             const int timeunit = m_modp->timeunit().powerOfTen();
-            m_vpiScopeCandidates.insert(std::make_pair(
-                name, ScopeData(scopeSymString(name), name_pretty, timeunit, type, nodep->origModName())));
-
+            m_vpiScopeCandidates.insert(
+                std::make_pair(name, ScopeData(scopeSymString(name), name_pretty, timeunit, type,
+                                               nodep->origModName())));
         }
     }
     void visit(AstScope* nodep) override {
@@ -332,9 +332,9 @@ class EmitCSyms final : EmitCBaseVisitor {
             const string type = VN_IS(nodep->modp(), Package) ? "SCOPE_OTHER" : "SCOPE_MODULE";
             const string name_pretty = AstNode::vpiName(nodep->shortName());
             const int timeunit = m_modp->timeunit().powerOfTen();
-            m_vpiScopeCandidates.insert(
-                std::make_pair(nodep->name(), ScopeData(scopeSymString(nodep->name()), name_pretty,
-                                                        timeunit, type, nodep->modp()->origName())));
+            m_vpiScopeCandidates.insert(std::make_pair(
+                nodep->name(), ScopeData(scopeSymString(nodep->name()), name_pretty, timeunit,
+                                         type, nodep->modp()->origName())));
         }
     }
     void visit(AstScopeName* nodep) override {
@@ -342,8 +342,8 @@ class EmitCSyms final : EmitCBaseVisitor {
         // UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()
         // <<" ss"<<name<<endl);
         const int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
-        m_scopeNames.emplace(
-            name, ScopeData(name, nodep->scopePrettySymName(), timeunit, "SCOPE_MODULE", m_modp->origName()));
+        m_scopeNames.emplace(name, ScopeData(name, nodep->scopePrettySymName(), timeunit,
+                                             "SCOPE_MODULE", m_modp->origName()));
 
         if (nodep->dpiExport()) {
             UASSERT_OBJ(m_cfuncp, nodep, "ScopeName not under DPI function");
