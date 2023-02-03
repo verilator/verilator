@@ -415,10 +415,14 @@ int _mon_check_getput() {
 }
 
 int _mon_check_var_long_name() {
-    TestVpiHandle vh2 = VPI_HANDLE("LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND");
+    TestVpiHandle vh2 = VPI_HANDLE(
+        "LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_"
+        "a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND");
     CHECK_RESULT_NZ(vh2);
     const char* p = vpi_get_str(vpiFullName, vh2);
-    CHECK_RESULT_CSTR(p, "t.LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND");
+    CHECK_RESULT_CSTR(p, "t.LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_"
+                         "which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_"
+                         "long_name_which_will_get_hashed_LONGEND");
     return 0;
 }
 
