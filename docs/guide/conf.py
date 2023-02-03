@@ -1,6 +1,7 @@
 # pylint: disable=C0103,C0114,C0116,C0301,E0402,W0622
 #
 # Configuration file for Verilator's Sphinx documentation builder.
+# Copyright 2003-2023 by Wilson Snyder.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 # This file only contains overridden options. For a full list:
@@ -88,8 +89,14 @@ source_suffix = [".rst"]
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
+try:
+    # https://reproducible-builds.org/specs/source-date-epoch/
+    doc_now = datetime.fromtimestamp(int(os.environ["SOURCE_DATE_EPOCH"]))
+    print("Using SOURCE_DATE_EPOCH")
+except Exception:
+    doc_now = datetime.now()
 # Date format to ISO
-today_fmt = datetime.now().strftime("%F")
+today_fmt = doc_now.strftime("%F")
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True

@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2020 by Julien Margetts.
+// SPDX-License-Identifier: Unlicense
 
 module t (/*AUTOARG*/ reset, a, b, c, en, o1, o2, o3, o4, o5);
    input  reset;

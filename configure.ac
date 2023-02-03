@@ -5,12 +5,12 @@
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-# When releasing, also update header of Changes file
+# When releasing, also update header of Changes file,
 # and commit using "devel release" or "Version bump" message
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.005 devel],
+AC_INIT([Verilator],[5.007 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
@@ -354,12 +354,8 @@ AC_SUBST(CFG_CXXFLAGS_PROFILE)
 # gnu is required for Cygwin to compile verilated.h successfully
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++20)
 #_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++20)
-case "$(which lsb_release 2>&1 > /dev/null && lsb_release -d)" in
-*Alpine*Linux* | *Arch*Linux* | *Ubuntu*22.04*)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++17)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++17)
-;;
-esac
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++14)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++14)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++11)
@@ -532,21 +528,22 @@ AC_DEFUN([_MY_CXX_CHECK_CXX_VER],
      [_my_result=no])
    ])
 
-# Add $CFG_CXXFLAGS_STD_NEWEST only if can't compile correctly otherwise,
+# Add $CFG_CXXFLAGS_STD only if can't compile correctly otherwise,
 # as adding std= when not needed can cause errors with the C++ std library.
+CFG_CXXFLAGS_STD=$CFG_CXXFLAGS_STD_NEWEST
 AC_MSG_CHECKING(whether $CXX supports C++11)
 _MY_CXX_CHECK_CXX_VER()
 AC_MSG_RESULT($_my_result)
 if test "$_my_result" = "no" ; then
-   CXXFLAGS="$CXXFLAGS $CFG_CXXFLAGS_STD_NEWEST"
-   CFG_CXX_FLAGS_CMAKE="$CFG_CXX_FLAGS_CMAKE $CFG_CXXFLAGS_STD_NEWEST"
-   AC_MSG_CHECKING(whether $CXX supports C++11 with $CFG_CXXFLAGS_STD_NEWEST)
+   CXXFLAGS="$CXXFLAGS $CFG_CXXFLAGS_STD"
+   CFG_CXX_FLAGS_CMAKE="$CFG_CXX_FLAGS_CMAKE $CFG_CXXFLAGS_STD"
+   AC_MSG_CHECKING(whether $CXX supports C++11 with $CFG_CXXFLAGS_STD)
    _MY_CXX_CHECK_CXX_VER()
    AC_MSG_RESULT($_my_result)
 else
-  # CFG_CXXFLAGS_STD_NEWEST is also propagated to include/verilated.mk.in
-  # make sure we use the same std flag while compiling verilator and verilated design
-  CFG_CXXFLAGS_STD_NEWEST=""
+   # CFG_CXXFLAGS_STD is also propagated to include/verilated.mk.in
+   # make sure we use the same std flag while compiling verilator and verilated design
+   CFG_CXXFLAGS_STD=""
 fi
 if test "$_my_result" = "no" ; then
    AC_MSG_NOTICE([[]])
@@ -555,6 +552,7 @@ if test "$_my_result" = "no" ; then
 Verilator requires a C++11 or newer compiler.]])
 
 fi
+AC_SUBST(CFG_CXXFLAGS_STD)
 
 # Checks for library functions.
 AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],

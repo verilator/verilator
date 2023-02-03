@@ -17,10 +17,11 @@ unsigned long long main_time = 0;
 double sc_time_stamp() { return (double)main_time; }
 
 int main(int argc, char** argv) {
-    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX("top")};
-
     Verilated::debug(0);
     Verilated::traceEverOn(true);
+    Verilated::commandArgs(argc, argv);
+
+    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX("top")};
 
     std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};
     top->trace(tfp.get(), 99);

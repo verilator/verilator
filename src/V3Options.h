@@ -317,6 +317,7 @@ private:
     int         m_traceThreads = 0; // main switch: --trace-threads
     int         m_unrollCount = 64;  // main switch: --unroll-count
     int         m_unrollStmts = 30000;  // main switch: --unroll-stmts
+    int         m_verilateJobs = -1;  // main switch: --verilate-jobs
 
     int         m_compLimitBlocks = 0;  // compiler selection; number of nested blocks
     int         m_compLimitMembers = 64;  // compiler selection; number of members in struct before make anon array
@@ -544,6 +545,7 @@ public:
     }
     int unrollCount() const { return m_unrollCount; }
     int unrollStmts() const { return m_unrollStmts; }
+    int verilateJobs() const { return m_verilateJobs; }
 
     int compLimitBlocks() const { return m_compLimitBlocks; }
     int compLimitMembers() const { return m_compLimitMembers; }

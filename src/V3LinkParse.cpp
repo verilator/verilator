@@ -148,8 +148,8 @@ private:
                     if (classPkgRefp && VN_IS(classPkgRefp->classOrPackageNodep(), Class)) {
                         // Class methods are automatic by default
                         m_lifetime = VLifetime::AUTOMATIC;
-                    } else if (nodep->dpiImport()) {
-                        // DPI-imported function don't have lifetime specifiers
+                    } else if (nodep->dpiImport() || VN_IS(nodep, Property)) {
+                        // DPI-imported functions and properties don't have lifetime specifiers
                         m_lifetime = VLifetime::NONE;
                     }
                     if (m_lifetime.isStatic() && hasStaticDeclAssignments(nodep)) {
@@ -222,12 +222,8 @@ private:
 
     void visit(AstVar* nodep) override {
         cleanFileline(nodep);
-        if (nodep->lifetime().isNone()) {
-            if (m_ftaskp) {
-                nodep->lifetime(VLifetime::AUTOMATIC);
-            } else {
-                nodep->lifetime(m_lifetime);
-            }
+        if (nodep->lifetime().isNone() && nodep->varType() != VVarType::PORT) {
+            nodep->lifetime(m_lifetime);
         }
         if (nodep->isParam() && !nodep->valuep()
             && nodep->fileline()->language() < V3LangCode::L1800_2009) {

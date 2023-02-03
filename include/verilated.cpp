@@ -1793,6 +1793,7 @@ std::string VL_TO_STRING(CData lhs) { return VL_SFORMATF_NX("'h%0x", 8, lhs); }
 std::string VL_TO_STRING(SData lhs) { return VL_SFORMATF_NX("'h%0x", 16, lhs); }
 std::string VL_TO_STRING(IData lhs) { return VL_SFORMATF_NX("'h%0x", 32, lhs); }
 std::string VL_TO_STRING(QData lhs) { return VL_SFORMATF_NX("'h%0x", 64, lhs); }
+std::string VL_TO_STRING(double lhs) { return VL_SFORMATF_NX("%d", 64, lhs); }
 std::string VL_TO_STRING_W(int words, const WDataInP obj) {
     return VL_SFORMATF_NX("'h%0x", words * VL_EDATASIZE, obj);
 }

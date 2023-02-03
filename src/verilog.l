@@ -236,6 +236,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fwriteb"            { FL; return yD_FWRITEB; }
   "$fwriteh"            { FL; return yD_FWRITEH; }
   "$fwriteo"            { FL; return yD_FWRITEO; }
+  "$global_clock"       { FL; return yD_GLOBAL_CLOCK; }
   "$hold"               { FL; return yaTIMINGSPEC; }
   "$hypot"              { FL; return yD_HYPOT; }
   "$itor"               { FL; return yD_ITOR; }
@@ -459,12 +460,14 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /*     System Tasks */
   "$bits"               { FL; return yD_BITS; }
   "$changed"            { FL; return yD_CHANGED; }
+  "$changed_gclk"       { FL; return yD_CHANGED_GCLK; }
   "$countbits"          { FL; return yD_COUNTBITS; }
   "$countones"          { FL; return yD_COUNTONES; }
   "$dimensions"         { FL; return yD_DIMENSIONS; }
   "$error"              { FL; return yD_ERROR; }
   "$fatal"              { FL; return yD_FATAL; }
   "$fell"               { FL; return yD_FELL; }
+  "$fell_gclk"          { FL; return yD_FELL_GCLK; }
   "$high"               { FL; return yD_HIGH; }
   "$increment"          { FL; return yD_INCREMENT; }
   "$info"               { FL; return yD_INFO; }
@@ -478,8 +481,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$right"              { FL; return yD_RIGHT; }
   "$root"               { FL; return yD_ROOT; }
   "$rose"               { FL; return yD_ROSE; }
+  "$rose_gclk"          { FL; return yD_ROSE_GCLK; }
   "$size"               { FL; return yD_SIZE; }
   "$stable"             { FL; return yD_STABLE; }
+  "$stable_gclk"        { FL; return yD_STABLE_GCLK; }
   "$unpacked_dimensions" { FL; return yD_UNPACKED_DIMENSIONS; }
   "$warning"            { FL; return yD_WARNING; }
   /*     SV2005 Keywords */

@@ -118,6 +118,12 @@ std::ostream& operator<<(std::ostream& str, const Castable& rhs) {
     return str << s_det[rhs];
 }
 
+#define v3widthWarn(lhs, rhs, msg) \
+    v3errorEnd((V3Error::v3errorPrep((lhs) < (rhs)   ? V3ErrorCode::WIDTHTRUNC \
+                                     : (lhs) > (rhs) ? V3ErrorCode::WIDTHEXPAND \
+                                                     : V3ErrorCode::WIDTH), \
+                (V3Error::v3errorStr() << msg), V3Error::v3errorStr()))
+
 //######################################################################
 // Width state, as a visitor of each AstNode
 
@@ -714,12 +720,24 @@ private:
                                                      << vdtypep->prettyDTypeNameQ()
                                                      << " data type");
                 }
-                // Don't iterate lhsp as SELF, the potential Concat below needs
-                // the adtypep passed down to recognize the QueueDType
-                userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, BOTH}.p());
-                nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                return;
+                if (VN_IS(nodep->lhsp(), Concat)) {
+                    // Convert to concat directly, and visit(AstConst) will convert.
+                    // Don't iterate lhsp as SELF, the potential Concat below needs
+                    // the adtypep passed down to recognize the QueueDType
+                    userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, BOTH}.p());
+                    nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                } else {  // int a[] = {lhs} -> same as '{lhs}
+                    auto* const newp = new AstPattern{
+                        nodep->fileline(),
+                        new AstPatMember{nodep->lhsp()->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                         nullptr, nullptr}};
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    userIterate(newp, m_vup);
+                    return;
+                }
             }
             if (VN_IS(vdtypep, AssocArrayDType)) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Replication to form "
@@ -898,15 +916,16 @@ private:
             userIterateAndNext(nodep->lsbp(), WidthVP{SELF, FINAL}.p());
             if (widthBad(nodep->lsbp(), selwidthDTypep) && nodep->lsbp()->width() != 32) {
                 if (!nodep->fileline()->warnIsOff(V3ErrorCode::WIDTH)) {
-                    nodep->v3warn(WIDTH,
-                                  "Bit extraction of var["
-                                      << (frommsb / elw) << ":" << (fromlsb / elw) << "] requires "
-                                      << (selwidth / elw) << " bit index, not "
-                                      << (nodep->lsbp()->width() / elw)
-                                      << (nodep->lsbp()->width() != nodep->lsbp()->widthMin()
-                                              ? " or " + cvtToStr(nodep->lsbp()->widthMin() / elw)
-                                              : "")
-                                      << " bits.");
+                    nodep->v3widthWarn(
+                        (selwidth / elw), (nodep->lsbp()->width() / elw),
+                        "Bit extraction of var["
+                            << (frommsb / elw) << ":" << (fromlsb / elw) << "] requires "
+                            << (selwidth / elw) << " bit index, not "
+                            << (nodep->lsbp()->width() / elw)
+                            << (nodep->lsbp()->width() != nodep->lsbp()->widthMin()
+                                    ? " or " + cvtToStr(nodep->lsbp()->widthMin() / elw)
+                                    : "")
+                            << " bits.");
                     UINFO(1, "    Related node: " << nodep << endl);
                 }
             }
@@ -976,13 +995,14 @@ private:
             AstNodeDType* const selwidthDTypep
                 = nodep->findLogicDType(selwidth, selwidth, nodep->bitp()->dtypep()->numeric());
             if (widthBad(nodep->bitp(), selwidthDTypep) && nodep->bitp()->width() != 32) {
-                nodep->v3warn(WIDTH, "Bit extraction of array["
-                                         << frommsb << ":" << fromlsb << "] requires " << selwidth
-                                         << " bit index, not " << nodep->bitp()->width()
-                                         << (nodep->bitp()->width() != nodep->bitp()->widthMin()
-                                                 ? " or " + cvtToStr(nodep->bitp()->widthMin())
-                                                 : "")
-                                         << " bits.");
+                nodep->v3widthWarn(selwidth, nodep->bitp()->width(),
+                                   "Bit extraction of array["
+                                       << frommsb << ":" << fromlsb << "] requires " << selwidth
+                                       << " bit index, not " << nodep->bitp()->width()
+                                       << (nodep->bitp()->width() != nodep->bitp()->widthMin()
+                                               ? " or " + cvtToStr(nodep->bitp()->widthMin())
+                                               : "")
+                                       << " bits.");
                 if (!nodep->fileline()->warnIsOff(V3ErrorCode::WIDTH)) {
                     UINFO(1, "    Related node: " << nodep << endl);
                     UINFO(1, "    Related dtype: " << nodep->dtypep() << endl);
@@ -1177,6 +1197,7 @@ private:
     void visit(AstFell* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            userIterate(nodep->sentreep(), nullptr);
             nodep->dtypeSetBit();
         }
     }
@@ -1207,6 +1228,7 @@ private:
     void visit(AstRose* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            userIterate(nodep->sentreep(), nullptr);
             nodep->dtypeSetBit();
         }
     }
@@ -1221,6 +1243,7 @@ private:
     void visit(AstStable* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            userIterate(nodep->sentreep(), nullptr);
             nodep->dtypeSetBit();
         }
     }
@@ -2317,6 +2340,18 @@ private:
                          EXTEND_EXP);
         }
     }
+    void visit(AstConsPackUOrStruct* nodep) override {
+        // Type was computed when constructed in V3Width earlier
+        auto* const vdtypep = VN_AS(nodep->dtypep()->skipRefp(), NodeUOrStructDType);
+        UASSERT_OBJ(vdtypep, nodep, "ConsPackUOrStruct requires packed array parent data type");
+        userIterateChildren(nodep, WidthVP{vdtypep, BOTH}.p());
+    }
+    void visit(AstConsPackMember* nodep) override {
+        // Type was computed when constructed in V3Width earlier
+        auto* const vdtypep = VN_AS(nodep->dtypep(), MemberDType);
+        UASSERT_OBJ(vdtypep, nodep, "ConsPackMember requires member data type");
+        if (m_vup->prelim()) userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, BOTH}.p());
+    }
     void visit(AstConsDynArray* nodep) override {
         // Type computed when constructed here
         AstDynArrayDType* const vdtypep = VN_AS(m_vup->dtypep()->skipRefp(), DynArrayDType);
@@ -2478,13 +2513,7 @@ private:
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         UINFO(5, "   NODECLASS " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree("-  class-in: ");
-        if (!nodep->packed()) {
-            if (VN_IS(nodep, UnionDType)) {
-                nodep->v3warn(UNPACKED, "Unsupported: Unpacked union");
-            } else if (v3Global.opt.structsPacked()) {
-                nodep->packed(true);
-            }
-        }
+        if (!nodep->packed() && v3Global.opt.structsPacked()) { nodep->packed(true); }
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->repairMemberCache();
         nodep->dtypep(nodep);
@@ -3627,7 +3656,7 @@ private:
                 // Either made explicitly or V3LinkDot made implicitly
                 classp->v3fatalSrc("Can't find class's new");
             }
-            if (classp->isVirtual()) {
+            if (classp->isVirtual() || classp->isInterfaceClass()) {
                 nodep->v3error(
                     "Illegal to call 'new' using an abstract virtual class (IEEE 1800-2017 8.21)");
             }
@@ -3838,26 +3867,45 @@ private:
             }
         }
         AstNodeExpr* newp = nullptr;
-        for (AstMemberDType* memp = vdtypep->membersp(); memp;
-             memp = VN_AS(memp->nextp(), MemberDType)) {
-            const auto it = patmap.find(memp);
-            AstPatMember* patp = nullptr;
-            if (it == patmap.end()) {
-                // default or default_type assignment
-                if (AstNodeUOrStructDType* const memp_nested_vdtypep
-                    = VN_CAST(memp->virtRefDTypep(), NodeUOrStructDType)) {
-                    newp = nestedvalueConcat_patternUOrStruct(memp_nested_vdtypep, defaultp, newp,
-                                                              nodep, dtypemap);
-                } else {
-                    patp = Defaultpatp_patternUOrStruct(nodep, memp, patp, vdtypep, defaultp,
-                                                        dtypemap);
+        if (vdtypep->packed()) {
+            for (AstMemberDType* memp = vdtypep->membersp(); memp;
+                 memp = VN_AS(memp->nextp(), MemberDType)) {
+                const auto it = patmap.find(memp);
+                AstPatMember* patp = nullptr;
+                if (it == patmap.end()) {  // default or default_type assignment
+                    if (AstNodeUOrStructDType* const memp_nested_vdtypep
+                        = VN_CAST(memp->virtRefDTypep(), NodeUOrStructDType)) {
+                        newp = nestedvalueConcat_patternUOrStruct(memp_nested_vdtypep, defaultp,
+                                                                  newp, nodep, dtypemap);
+                    } else {
+                        patp = defaultPatp_patternUOrStruct(nodep, memp, patp, vdtypep, defaultp,
+                                                            dtypemap);
+                        newp = valueConcat_patternUOrStruct(patp, newp, memp, nodep);
+                    }
+                } else {  // member assignment
+                    patp = it->second;
                     newp = valueConcat_patternUOrStruct(patp, newp, memp, nodep);
                 }
-            } else {
-                // member assignment
-                patp = it->second;
-                newp = valueConcat_patternUOrStruct(patp, newp, memp, nodep);
             }
+        } else {  // Unpacked
+            AstConsPackMember* membersp = nullptr;
+            for (AstMemberDType* memp = vdtypep->membersp(); memp;
+                 memp = VN_AS(memp->nextp(), MemberDType)) {
+                const auto it = patmap.find(memp);
+                AstPatMember* patp = nullptr;
+                if (it == patmap.end()) {  // Default or default_type assignment
+                    patp = defaultPatp_patternUOrStruct(nodep, memp, patp, vdtypep, defaultp,
+                                                        dtypemap);
+                } else {
+                    patp = it->second;  // Member assignment
+                }
+                patp->dtypep(memp);
+                AstNodeExpr* const valuep = patternMemberValueIterate(patp);
+                AstConsPackMember* const cpmp
+                    = new AstConsPackMember{patp->fileline(), memp, valuep};
+                membersp = membersp ? membersp->addNext(cpmp) : cpmp;
+            }
+            newp = new AstConsPackUOrStruct{nodep->fileline(), vdtypep, membersp};
         }
         if (newp) {
             nodep->replaceWith(newp);
@@ -3880,7 +3928,7 @@ private:
                 newp = nestedvalueConcat_patternUOrStruct(memp_multinested_vdtypep, defaultp, newp,
                                                           nodep, dtypemap);
             } else {
-                patp = Defaultpatp_patternUOrStruct(nodep, memp_nested, patp, memp_vdtypep,
+                patp = defaultPatp_patternUOrStruct(nodep, memp_nested, patp, memp_vdtypep,
                                                     defaultp, dtypemap);
                 newp = valueConcat_patternUOrStruct(patp, newp, memp_nested, nodep);
             }
@@ -3888,7 +3936,7 @@ private:
         return newp;
     }
 
-    AstPatMember* Defaultpatp_patternUOrStruct(AstPattern* nodep, AstMemberDType* memp,
+    AstPatMember* defaultPatp_patternUOrStruct(AstPattern* nodep, AstMemberDType* memp,
                                                AstPatMember* patp,
                                                AstNodeUOrStructDType* memp_vdtypep,
                                                AstPatMember* defaultp, const DTypeMap& dtypemap) {
@@ -4594,8 +4642,8 @@ private:
                                || VN_IS(dtypep, DynArrayDType)  //
                                || VN_IS(dtypep, UnpackArrayDType)  //
                                || VN_IS(dtypep, QueueDType)
-                               || (VN_IS(dtypep, StructDType)
-                                   && !VN_AS(dtypep, StructDType)->packed())) {
+                               || (VN_IS(dtypep, NodeUOrStructDType)
+                                   && !VN_AS(dtypep, NodeUOrStructDType)->packed())) {
                         added = true;
                         newFormat += "%@";
                         VNRelinker handle;
@@ -6037,8 +6085,9 @@ private:
             else if (!constp->num().sized()
                      // Make it the proper size.  Careful of proper extension of 0's/1's
                      && expWidth > 32 && constp->num().isMsbXZ()) {
-                constp->v3warn(WIDTH, "Unsized constant being X/Z extended to "
-                                          << expWidth << " bits: " << constp->prettyName());
+                constp->v3warn(WIDTHXZEXPAND, "Unsized constant being X/Z extended to "
+                                                  << expWidth
+                                                  << " bits: " << constp->prettyName());
                 V3Number num(constp, expWidth);
                 num.opExtendXZ(constp->num(), constp->width());
                 AstNodeExpr* const newp = new AstConst{constp->fileline(), num};
@@ -6226,15 +6275,16 @@ private:
             if (bad) {
                 {  // if (warnOn), but not needed here
                     if (debug() > 4) nodep->backp()->dumpTree("-  back: ");
-                    nodep->v3warn(WIDTH, "Logical operator "
-                                             << nodep->prettyTypeName() << " expects 1 bit on the "
-                                             << side << ", but " << side << "'s "
-                                             << underp->prettyTypeName() << " generates "
-                                             << underp->width()
-                                             << (underp->width() != underp->widthMin()
-                                                     ? " or " + cvtToStr(underp->widthMin())
-                                                     : "")
-                                             << " bits.");
+                    nodep->v3widthWarn(1, underp->width(),
+                                       "Logical operator "
+                                           << nodep->prettyTypeName() << " expects 1 bit on the "
+                                           << side << ", but " << side << "'s "
+                                           << underp->prettyTypeName() << " generates "
+                                           << underp->width()
+                                           << (underp->width() != underp->widthMin()
+                                                   ? " or " + cvtToStr(underp->widthMin())
+                                                   : "")
+                                           << " bits.");
                 }
                 VL_DO_DANGLING(fixWidthReduce(VN_AS(underp, NodeExpr)), underp);  // Changed
             }
@@ -6408,16 +6458,18 @@ private:
             }
             if (bad && warnOn) {
                 if (debug() > 4) nodep->backp()->dumpTree("-  back: ");
-                nodep->v3warn(
-                    WIDTH, ucfirst(nodep->prettyOperatorName())
-                               << " expects " << expWidth
-                               << (expWidth != expWidthMin ? " or " + cvtToStr(expWidthMin) : "")
-                               << " bits on the " << side << ", but " << side << "'s "
-                               << underp->prettyTypeName() << " generates " << underp->width()
-                               << (underp->width() != underp->widthMin()
-                                       ? " or " + cvtToStr(underp->widthMin())
-                                       : "")
-                               << " bits.");
+
+                nodep->v3widthWarn(
+                    expWidth, underp->width(),
+                    ucfirst(nodep->prettyOperatorName())
+                        << " expects " << expWidth
+                        << (expWidth != expWidthMin ? " or " + cvtToStr(expWidthMin) : "")
+                        << " bits on the " << side << ", but " << side << "'s "
+                        << underp->prettyTypeName() << " generates " << underp->width()
+                        << (underp->width() != underp->widthMin()
+                                ? " or " + cvtToStr(underp->widthMin())
+                                : "")
+                        << " bits.");
             }
             if (bad || underp->width() != expWidth) {
                 // If we're in an NodeAssign, don't truncate the RHS if the LHS is

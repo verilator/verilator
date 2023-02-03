@@ -52,6 +52,8 @@ public:
     /// Returns time of the next registered VPI callback, or
     /// ~(0ULL) if none are registered
     static QData cbNextDeadline() VL_MT_UNSAFE_ONE;
+    /// Debug dump of callbacks
+    static void dumpCbs() VL_MT_UNSAFE_ONE;
 
     // Self test, for internal use only
     static void selfTest() VL_MT_UNSAFE_ONE;

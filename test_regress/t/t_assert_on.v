@@ -13,6 +13,7 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
       assert (0);
+      $write("*-* All Finished *-*\n");
       $finish;
    end
 

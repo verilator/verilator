@@ -28,11 +28,12 @@ VM_PREFIX* ap;
 Vt_trace_two_b* bp;
 
 int sc_main(int argc, char** argv) {
+    Verilated::debug(0);
+    Verilated::traceEverOn(true);
+    Verilated::commandArgs(argc, argv);
+
     sc_signal<bool> clk;
     sc_time sim_time(1100, SC_NS);
-    Verilated::commandArgs(argc, argv);
-    Verilated::traceEverOn(true);
-    Verilated::debug(0);
     srand48(5);
     ap = new VM_PREFIX{"topa"};
     bp = new Vt_trace_two_b{"topb"};

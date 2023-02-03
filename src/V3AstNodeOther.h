@@ -799,19 +799,24 @@ public:
     VTimescale timeunit() const { return m_timeunit; }
 };
 class AstClassExtends final : public AstNode {
+    // class extends class name, or class implements class name
     // Children: List of AstParseRef for packages/classes
     // during early parse, then moves to dtype
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     // @astgen op2 := classOrPkgsp : Optional[AstNode]
+    const bool m_isImplements = false;  // class implements
 public:
-    AstClassExtends(FileLine* fl, AstNode* classOrPkgsp)
-        : ASTGEN_SUPER_ClassExtends(fl) {
+    AstClassExtends(FileLine* fl, AstNode* classOrPkgsp, bool isImplements)
+        : ASTGEN_SUPER_ClassExtends(fl)
+        , m_isImplements{isImplements} {
         this->classOrPkgsp(classOrPkgsp);  // Only for parser
     }
     ASTGEN_MEMBERS_AstClassExtends;
+    void dump(std::ostream& str) const override;
     bool hasDType() const override { return true; }
-    string verilogKwd() const override { return "extends"; }
+    string verilogKwd() const override { return isImplements() ? "implements" : "extends"; }
     AstClass* classp() const;  // Class being extended (after link)
+    bool isImplements() const { return m_isImplements; }
 };
 class AstClocking final : public AstNode {
     // Parents:  MODULE
@@ -822,19 +827,23 @@ class AstClocking final : public AstNode {
     // @astgen op4 := eventp : Optional[AstVar]
     std::string m_name;  // Clocking block name
     const bool m_isDefault = false;  // True if default clocking
+    const bool m_isGlobal = false;  // True if global clocking
 
 public:
     AstClocking(FileLine* fl, const std::string& name, AstSenItem* sensesp,
-                AstClockingItem* itemsp, bool isDefault)
+                AstClockingItem* itemsp, bool isDefault, bool isGlobal)
         : ASTGEN_SUPER_Clocking(fl)
-        , m_isDefault{isDefault} {
+        , m_isDefault{isDefault}
+        , m_isGlobal{isGlobal} {
         m_name = name;
         this->sensesp(sensesp);
         addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstClocking;
+    void dump(std::ostream& str) const override;
     std::string name() const override { return m_name; }
     bool isDefault() const { return m_isDefault; }
+    bool isGlobal() const { return m_isGlobal; }
 };
 class AstClockingItem final : public AstNode {
     // Parents:  CLOCKING
@@ -2090,14 +2099,15 @@ public:
 
 // === AstNodeModule ===
 class AstClass final : public AstNodeModule {
-    // @astgen op4 := extendsp : Optional[AstClassExtends]
+    // @astgen op4 := extendsp : List[AstClassExtends]
     // TYPES
     using MemberNameMap = std::map<const std::string, AstNode*>;
     // MEMBERS
     MemberNameMap m_members;  // Members or method children
     AstClassPackage* m_classOrPackagep = nullptr;  // Class package this is under
-    bool m_virtual = false;  // Virtual class
     bool m_extended = false;  // Is extension or extended by other classes
+    bool m_interfaceClass = false;  // Interface class
+    bool m_virtual = false;  // Virtual class
     void insertCache(AstNode* nodep);
 
 public:
@@ -2125,6 +2135,8 @@ public:
     }
     bool isExtended() const { return m_extended; }
     void isExtended(bool flag) { m_extended = flag; }
+    bool isInterfaceClass() const { return m_interfaceClass; }
+    void isInterfaceClass(bool flag) { m_interfaceClass = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
     // Return true if this class is an extension of base class (SLOW)

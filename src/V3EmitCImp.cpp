@@ -50,7 +50,8 @@ class EmitCGatherDependencies final : VNVisitor {
         if (const AstClassRefDType* const dtypep = VN_CAST(nodep, ClassRefDType)) {
             m_dependencies.insert(
                 EmitCBaseVisitor::prefixNameProtect(dtypep->classp()->classOrPackagep()));
-        } else if (const AstStructDType* const dtypep = VN_CAST(nodep, StructDType)) {
+        } else if (const AstNodeUOrStructDType* const dtypep
+                   = VN_CAST(nodep, NodeUOrStructDType)) {
             if (!dtypep->packed()) {
                 m_dependencies.insert(
                     EmitCBaseVisitor::prefixNameProtect(dtypep->classOrPackagep()));
@@ -250,8 +251,8 @@ class EmitCImp final : EmitCFunc {
                          "(" + modName + "* vlSelf);");
         puts("\n");
 
-        puts(modName + "::" + modName + "(" + symClassName() + "* symsp, const char* name)\n");
-        puts("    : VerilatedModule{name}\n");
+        puts(modName + "::" + modName + "(" + symClassName() + "* symsp, const char* v__name)\n");
+        puts("    : VerilatedModule{v__name}\n");
 
         ofp()->indentInc();
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {

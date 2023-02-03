@@ -1,6 +1,6 @@
-%Warning-LATCH: t/t_lint_latch_bad_3.v:18:1: Latch inferred for signal 'o5' (not all control paths of combinational always assign a value)
+%Warning-LATCH: t/t_lint_latch_bad_3.v:19:1: Latch inferred for signal 'o5' (not all control paths of combinational always assign a value)
                                            : ... Suggest use of always_latch for intentional latches
-   18 | always_comb
+   19 | always_comb
       | ^~~~~~~~~~~
                 ... For warning description see https://verilator.org/warn/LATCH?v=latest
                 ... Use "/* verilator lint_off LATCH */" and lint_on around source to disable this message.

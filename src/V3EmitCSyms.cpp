@@ -156,6 +156,22 @@ class EmitCSyms final : EmitCBaseVisitor {
         string out = scpname;
         // Remove hierarchy
         string::size_type pos = out.rfind('.');
+
+        // If there's more than one ident and an escape, find the true last ident
+        if (pos != string::npos && scpname.find('\\') != string::npos) {
+            size_t i = 0;
+            // always makes progress
+            while (i < scpname.length()) {
+                if (scpname[i] == '\\') {
+                    while (i < scpname.length() && scpname[i] != ' ') ++i;
+                    ++i;  // Proc ' ', it should always be there. Then grab '.' on next cycle
+                } else {
+                    while (i < scpname.length() && scpname[i] != '.') ++i;
+                    if (i < scpname.length()) { pos = i++; }
+                }
+            }
+        }
+
         if (pos != std::string::npos) out.erase(0, pos + 1);
         // Decode all escaped characters
         while ((pos = out.find("__0")) != string::npos) {
@@ -219,9 +235,9 @@ class EmitCSyms final : EmitCBaseVisitor {
                     }
                     // UINFO(9, "For " << scopep->name() << " - " << varp->name() << "  Scp "
                     // << scpName << "Var " << varBase << endl);
-                    const string varBasePretty = AstNode::prettyName(varBase);
-                    const string scpPretty = AstNode::prettyName(scpName);
-                    const string scpSym = scopeSymString(scpName);
+                    const string varBasePretty = AstNode::prettyName(VName::dehash(varBase));
+                    const string scpPretty = AstNode::prettyName(VName::dehash(scpName));
+                    const string scpSym = scopeSymString(VName::dehash(scpName));
                     // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
                     // << scpSym << endl);
                     if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
@@ -296,10 +312,10 @@ class EmitCSyms final : EmitCBaseVisitor {
             const string type
                 = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
             const string name = nodep->scopep()->shortName() + "__DOT__" + nodep->name();
-            const string name_dedot = AstNode::dedotName(name);
+            const string name_pretty = AstNode::vpiName(name);
             const int timeunit = m_modp->timeunit().powerOfTen();
-            m_vpiScopeCandidates.insert(
-                std::make_pair(name, ScopeData(scopeSymString(name), name_dedot, timeunit, type)));
+            m_vpiScopeCandidates.insert(std::make_pair(
+                name, ScopeData(scopeSymString(name), name_pretty, timeunit, type)));
         }
     }
     void visit(AstScope* nodep) override {
@@ -310,10 +326,10 @@ class EmitCSyms final : EmitCBaseVisitor {
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
             const string type = VN_IS(nodep->modp(), Package) ? "SCOPE_OTHER" : "SCOPE_MODULE";
-            const string name_dedot = AstNode::dedotName(nodep->shortName());
+            const string name_pretty = AstNode::vpiName(nodep->shortName());
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.insert(
-                std::make_pair(nodep->name(), ScopeData(scopeSymString(nodep->name()), name_dedot,
+                std::make_pair(nodep->name(), ScopeData(scopeSymString(nodep->name()), name_pretty,
                                                         timeunit, type)));
         }
     }

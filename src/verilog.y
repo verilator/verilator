@@ -95,6 +95,7 @@ public:
     bool m_varDeclTyped = false;  // Var got reg/wire for dedup check
     bool m_pinAnsi = false;  // In ANSI port list
     bool m_tracingParse = true;  // Tracing disable for parser
+    bool m_inImplements = false;  // Is inside class implements list
     bool m_insideProperty = false;  // Is inside property declaration
     bool m_typedPropertyPort = false;  // True if typed property port occurred on port lists
     bool m_modportImpExpActive
@@ -168,6 +169,15 @@ public:
         } else {
             return new AstGatePin{rangep->fileline(), exprp, rangep->cloneTree(true)};
         }
+    }
+    AstSenTree* createClockSenTree(FileLine* fl, AstNodeExpr* exprp) {
+        return new AstSenTree{fl, new AstSenItem{fl, VEdgeType::ET_CHANGED, exprp}};
+    }
+    AstNodeExpr* createGlobalClockParseRef(FileLine* fl) {
+        return new AstParseRef{fl, VParseRefExp::PX_TEXT, "__024global_clock", nullptr, nullptr};
+    }
+    AstSenTree* createGlobalClockSenTree(FileLine* fl) {
+        return createClockSenTree(fl, createGlobalClockParseRef(fl));
     }
     AstNode* createTypedef(FileLine* fl, const string& name, AstNode* attrsp, AstNodeDType* basep,
                            AstNodeRange* rangep) {
@@ -801,6 +811,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_CAST         "$cast"
 %token<fl>              yD_CEIL         "$ceil"
 %token<fl>              yD_CHANGED      "$changed"
+%token<fl>              yD_CHANGED_GCLK "$changed_gclk"
 %token<fl>              yD_CLOG2        "$clog2"
 %token<fl>              yD_COS          "$cos"
 %token<fl>              yD_COSH         "$cosh"
@@ -836,6 +847,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_FDISPLAYH    "$fdisplayh"
 %token<fl>              yD_FDISPLAYO    "$fdisplayo"
 %token<fl>              yD_FELL         "$fell"
+%token<fl>              yD_FELL_GCLK    "$fell_gclk"
 %token<fl>              yD_FEOF         "$feof"
 %token<fl>              yD_FERROR       "$ferror"
 %token<fl>              yD_FFLUSH       "$fflush"
@@ -861,6 +873,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_FWRITEB      "$fwriteb"
 %token<fl>              yD_FWRITEH      "$fwriteh"
 %token<fl>              yD_FWRITEO      "$fwriteo"
+%token<fl>              yD_GLOBAL_CLOCK "$global_clock"
 %token<fl>              yD_HIGH         "$high"
 %token<fl>              yD_HYPOT        "$hypot"
 %token<fl>              yD_INCREMENT    "$increment"
@@ -892,6 +905,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_RIGHT        "$right"
 %token<fl>              yD_ROOT         "$root"
 %token<fl>              yD_ROSE         "$rose"
+%token<fl>              yD_ROSE_GCLK    "$rose_gclk"
 %token<fl>              yD_RTOI         "$rtoi"
 %token<fl>              yD_SAMPLED      "$sampled"
 %token<fl>              yD_SFORMAT      "$sformat"
@@ -904,6 +918,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_SQRT         "$sqrt"
 %token<fl>              yD_SSCANF       "$sscanf"
 %token<fl>              yD_STABLE       "$stable"
+%token<fl>              yD_STABLE_GCLK  "$stable_gclk"
 %token<fl>              yD_STACKTRACE   "$stacktrace"
 %token<fl>              yD_STIME        "$stime"
 %token<fl>              yD_STOP         "$stop"
@@ -3833,12 +3848,16 @@ for_initializationItem<nodep>:          // IEEE: variable_assignment + for_varia
         //                      // IEEE: for_variable_declaration
                 data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($1);
-                          $$ = VARDONEA($<fl>2, *$2, nullptr, nullptr);
+                          AstVar* const varp = VARDONEA($<fl>2, *$2, nullptr, nullptr);
+                          varp->lifetime(VLifetime::AUTOMATIC);
+                          $$ = varp;
                           $$->addNext(new AstAssign{$3, new AstVarRef{$<fl>2, *$2, VAccess::WRITE}, $4}); }
         //                      // IEEE-2012:
         |       yVAR data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($2);
-                          $$ = VARDONEA($<fl>3, *$3, nullptr, nullptr);
+                          AstVar* const varp = VARDONEA($<fl>3, *$3, nullptr, nullptr);
+                          varp->lifetime(VLifetime::AUTOMATIC);
+                          $$ = varp;
                           $$->addNext(new AstAssign{$4, new AstVarRef{$<fl>3, *$3, VAccess::WRITE}, $5}); }
         //                      // IEEE: variable_assignment
         //                      // UNSUP variable_lvalue below
@@ -4107,8 +4126,11 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_BITSTOREAL '(' expr ')'              { $$ = new AstBitsToRealD{$1, $3}; }
         |       yD_BITSTOSHORTREAL '(' expr ')'         { $$ = new AstBitsToRealD{$1, $3}; UNSUPREAL($1); }
         |       yD_CEIL '(' expr ')'                    { $$ = new AstCeilD{$1, $3}; }
-        |       yD_CHANGED '(' expr ')'                 { $$ = new AstLogNot{$1, new AstStable{$1, $3}}; }
-        |       yD_CHANGED '(' expr ',' expr ')'        { $$ = $3; BBUNSUP($1, "Unsupported: $changed and clock arguments"); }
+        |       yD_CHANGED '(' expr ')'                 { $$ = new AstLogNot{$1, new AstStable{$1, $3, nullptr}}; }
+        |       yD_CHANGED '(' expr ',' expr ')'
+                        { $$ = new AstLogNot{$1, new AstStable{$1, $3, GRAMMARP->createClockSenTree($1, $5)}}; }
+        |       yD_CHANGED_GCLK '(' expr ')'
+                        { $$ = new AstLogNot{$1, new AstStable{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}}; }
         |       yD_CLOG2 '(' expr ')'                   { $$ = new AstCLog2{$1, $3}; }
         |       yD_COS '(' expr ')'                     { $$ = new AstCosD{$1, $3}; }
         |       yD_COSH '(' expr ')'                    { $$ = new AstCoshD{$1, $3}; }
@@ -4128,8 +4150,9 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_DIST_T '(' expr ',' expr ')'         { $$ = new AstDistT{$1, $3, $5}; }
         |       yD_DIST_UNIFORM '(' expr ',' expr ',' expr ')'  { $$ = new AstDistUniform{$1, $3, $5, $7}; }
         |       yD_EXP '(' expr ')'                     { $$ = new AstExpD{$1, $3}; }
-        |       yD_FELL '(' expr ')'                    { $$ = new AstFell{$1, $3}; }
-        |       yD_FELL '(' expr ',' expr ')'           { $$ = $3; BBUNSUP($1, "Unsupported: $fell and clock arguments"); }
+        |       yD_FELL '(' expr ')'                    { $$ = new AstFell{$1, $3, nullptr}; }
+        |       yD_FELL '(' expr ',' expr ')'           { $$ = new AstFell{$1, $3, GRAMMARP->createClockSenTree($1, $5)}; }
+        |       yD_FELL_GCLK '(' expr ')'               { $$ = new AstFell{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}; }
         |       yD_FEOF '(' expr ')'                    { $$ = new AstFEof{$1, $3}; }
         |       yD_FERROR '(' idClassSel ',' idClassSel ')'     { $$ = new AstFError{$1, $3, $5}; }
         |       yD_FGETC '(' expr ')'                   { $$ = new AstFGetC{$1, $3}; }
@@ -4142,6 +4165,7 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_FSCANF '(' expr ',' str commaVRDListE ')'    { $$ = new AstFScanF{$1, *$5, $3, $6}; }
         |       yD_FSEEK '(' idClassSel ',' expr ',' expr ')'   { $$ = new AstFSeek{$1, $3, $5, $7}; }
         |       yD_FTELL '(' idClassSel ')'             { $$ = new AstFTell{$1, $3}; }
+        |       yD_GLOBAL_CLOCK parenE                  { $$ = GRAMMARP->createGlobalClockParseRef($1); }
         |       yD_HIGH '(' exprOrDataType ')'          { $$ = new AstAttrOf{$1, VAttrType::DIM_HIGH, $3, nullptr}; }
         |       yD_HIGH '(' exprOrDataType ',' expr ')' { $$ = new AstAttrOf{$1, VAttrType::DIM_HIGH, $3, $5}; }
         |       yD_HYPOT '(' expr ',' expr ')'          { $$ = new AstHypotD{$1, $3, $5}; }
@@ -4172,8 +4196,9 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_REWIND '(' idClassSel ')'            { $$ = new AstFSeek{$1, $3, new AstConst{$1, 0}, new AstConst{$1, 0}}; }
         |       yD_RIGHT '(' exprOrDataType ')'         { $$ = new AstAttrOf{$1, VAttrType::DIM_RIGHT, $3, nullptr}; }
         |       yD_RIGHT '(' exprOrDataType ',' expr ')'        { $$ = new AstAttrOf{$1, VAttrType::DIM_RIGHT, $3, $5}; }
-        |       yD_ROSE '(' expr ')'                    { $$ = new AstRose{$1, $3}; }
-        |       yD_ROSE '(' expr ',' expr ')'           { $$ = $3; BBUNSUP($1, "Unsupported: $rose and clock arguments"); }
+        |       yD_ROSE '(' expr ')'                    { $$ = new AstRose{$1, $3, nullptr}; }
+        |       yD_ROSE '(' expr ',' expr ')'           { $$ = new AstRose{$1, $3, GRAMMARP->createClockSenTree($1, $5)}; }
+        |       yD_ROSE_GCLK '(' expr ')'               { $$ = new AstRose{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}; }
         |       yD_RTOI '(' expr ')'                    { $$ = new AstRToIS{$1, $3}; }
         |       yD_SAMPLED '(' expr ')'                 { $$ = new AstSampled{$1, $3}; }
         |       yD_SFORMATF '(' exprDispList ')'        { $$ = new AstSFormatF{$1, AstSFormatF::NoFormat{}, $3, 'd', false}; }
@@ -4187,8 +4212,9 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_SSCANF '(' expr ',' str commaVRDListE ')'    { $$ = new AstSScanF{$1, *$5, $3, $6}; }
         |       yD_STIME parenE
                         { $$ = new AstSel{$1, new AstTime{$1, VTimescale{VTimescale::NONE}}, 0, 32}; }
-        |       yD_STABLE '(' expr ')'                  { $$ = new AstStable{$1, $3}; }
-        |       yD_STABLE '(' expr ',' expr ')'         { $$ = $3; BBUNSUP($1, "Unsupported: $stable and clock arguments"); }
+        |       yD_STABLE '(' expr ')'                  { $$ = new AstStable{$1, $3, nullptr}; }
+        |       yD_STABLE '(' expr ',' expr ')'         { $$ = new AstStable{$1, $3, GRAMMARP->createClockSenTree($1, $5)}; }
+        |       yD_STABLE_GCLK '(' expr ')'             { $$ = new AstStable{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}; }
         |       yD_TAN '(' expr ')'                     { $$ = new AstTanD{$1, $3}; }
         |       yD_TANH '(' expr ')'                    { $$ = new AstTanhD{$1, $3}; }
         |       yD_TESTPLUSARGS '(' expr ')'            { $$ = new AstTestPlusArgs{$1, $3}; }
@@ -5136,10 +5162,28 @@ gateRangeE<nodep>:
         ;
 
 gateBuf<nodep>:
-                gateFront variable_lvalue ',' gatePinExpr ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, $4}; DEL($1); }
-        // UNSUP                        // IEEE: Multiple output variable_lvalues
-        // UNSUP                        // Causes conflict - need to take in variable_lvalue or a gatePinExpr
+                gateFront variable_lvalue ',' exprList ')'
+                        { AstNodeExpr* inp = $4;
+                          while (inp->nextp()) inp = VN_AS(inp->nextp(), NodeExpr);
+                          $$ = new AstAssignW{$<fl>1, $2, GRAMMARP->createGatePin(inp->cloneTree(false))};
+                          for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
+                              $$->addNext(new AstAssignW{$<fl>1, outp->cloneTree(false),
+                                                         GRAMMARP->createGatePin(inp->cloneTree(false))});
+                          }
+                          DEL($1); DEL($4); }
+        ;
+gateNot<nodep>:
+                gateFront variable_lvalue ',' exprList ')'
+                        { AstNodeExpr* inp = $4;
+                          while (inp->nextp()) inp = VN_AS(inp->nextp(), NodeExpr);
+                          $$ = new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1,
+                                                                 GRAMMARP->createGatePin(inp->cloneTree(false))}};
+                          for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
+                              $$->addNext(new AstAssignW{$<fl>1, outp->cloneTree(false),
+                                                         new AstNot{$<fl>1,
+                                                                 GRAMMARP->createGatePin(inp->cloneTree(false))}});
+                          }
+                          DEL($1); DEL($4); }
         ;
 gateBufif0<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
@@ -5148,12 +5192,6 @@ gateBufif0<nodep>:
 gateBufif1<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
                         { $$ = new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, $6, $4}}; DEL($1); }
-        ;
-gateNot<nodep>:
-                gateFront variable_lvalue ',' gatePinExpr ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1, $4}}; DEL($1); }
-        // UNSUP                        // IEEE: Multiple output variable_lvalues
-        // UNSUP                        // Causes conflict - need to take in variable_lvalue or a gatePinExpr
         ;
 gateNotif0<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
@@ -5482,17 +5520,15 @@ endLabelE<strp>:
 
 clocking_declaration<nodep>:            // IEEE: clocking_declaration
                 yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, *$2, $3, $5, false}; }
+                        { $$ = new AstClocking{$<fl>2, *$2, $3, $5, false, false}; }
         |       yDEFAULT yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, "", $3, $5, true}; }
+                        { $$ = new AstClocking{$<fl>2, "", $3, $5, true, false}; }
         |       yDEFAULT yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, true}; }
+                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, true, false}; }
         |       yGLOBAL__CLOCKING yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = nullptr;
-                          BBUNSUP($<fl>2, "Unsupported: global clocking"); }
+                        { $$ = new AstClocking{$<fl>2, "", $3, $5, false, true}; }
         |       yGLOBAL__CLOCKING yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = nullptr;
-                          BBUNSUP($<fl>3, "Unsupported: global clocking"); }
+                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, false, true}; }
         ;
 
 clocking_event<senItemp>:       // IEEE: clocking_event
@@ -6488,8 +6524,8 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
                         }
         /*cont*/    class_itemListE yENDCLASS endLabelE
                         { $$ = $1; $1->addMembersp($2);
-                          $1->extendsp($3);
-                          $1->addMembersp($4);
+                          $1->addExtendsp($3);
+                          $1->addExtendsp($4);
                           $1->addMembersp($7);
                           SYMP->popScope($$);
                           GRAMMARP->endLabel($<fl>7, $1, $9); }
@@ -6505,9 +6541,10 @@ classFront<classp>:             // IEEE: part of class_declaration
         //                      // IEEE: part of interface_class_declaration
         |       yINTERFACE yCLASS lifetimeE idAny/*class_identifier*/
                         { $$ = new AstClass{$2, *$4};
+                          $$->isInterfaceClass(true);
                           $$->lifetime($3);
                           SYMP->pushNew($<classp>$);
-                          BBUNSUP($2, "Unsupported: interface classes");  }
+                          v3Global.setHasClasses(); }
         ;
 
 classVirtualE<cbool>:
@@ -6524,33 +6561,35 @@ classExtendsE<classExtendsp>:           // IEEE: part of class_declaration
 
 classExtendsList<classExtendsp>:        // IEEE: part of class_declaration
                 classExtendsOne                         { $$ = $1; $<scp>$ = $<scp>1; }
-        |       classExtendsList ',' classExtendsOne
-                        { $$ = $3; $<scp>$ = $<scp>3;
-                          BBUNSUP($3, "Multiple inheritance illegal on non-interface classes (IEEE 1800-2017 8.13), "
-                                      "and unsupported for interface classes."); }
+        |       classExtendsList ',' classExtendsOne    { $$ = addNextNull($1, $3); $<scp>$ = $<scp>3; }
         ;
 
 classExtendsOne<classExtendsp>:         // IEEE: part of class_declaration
                 class_typeExtImpList
-                        { $$ = new AstClassExtends{$1->fileline(), $1};
+                        { $$ = new AstClassExtends{$1->fileline(), $1, GRAMMARP->m_inImplements};
                           $<scp>$ = $<scp>1; }
         //
         |       class_typeExtImpList '(' list_of_argumentsE ')'
-                        { $$ = new AstClassExtends{$1->fileline(), $1};
+                        { $$ = new AstClassExtends{$1->fileline(), $1, GRAMMARP->m_inImplements};
                           $<scp>$ = $<scp>1;
                           if ($3) BBUNSUP($3, "Unsupported: extends with parameters"); }
         ;
 
-classImplementsE<nodep>:        // IEEE: part of class_declaration
+classImplementsE<classExtendsp>:        // IEEE: part of class_declaration
         //                      // All 1800-2012
-                /* empty */                             { $$ = nullptr; }
-        |       yIMPLEMENTS classImplementsList         { $$ = $2; }
+                /* empty */                             { $$ = nullptr; $<scp>$ = nullptr; }
+        |       yIMPLEMENTS
+        /*mid*/        { GRAMMARP->m_inImplements = true; $<scp>$ = nullptr; }
+        /*cont*/    classImplementsList
+                       { $$ = $3; $<scp>$ = $<scp>3;
+                         GRAMMARP->m_inImplements = false; }
         ;
 
-classImplementsList<nodep>:     // IEEE: part of class_declaration
+classImplementsList<classExtendsp>:     // IEEE: part of class_declaration
         //                      // All 1800-2012
-                class_typeExtImpList                    { $$ = nullptr; BBUNSUP($1, "Unsupported: implements class"); }
-        |       classImplementsList ',' class_typeExtImpList    { $$ = addNextNull($1, $3); }
+                classExtendsOne                         { $$ = $1; $<scp>$ = $<scp>1; }
+        |       classImplementsList ',' classExtendsOne
+                       { $$ = addNextNull($1, $3); $<scp>$ = $<scp>3; }
         ;
 
 class_typeExtImpList<nodep>:    // IEEE: class_type: "[package_scope] id [ parameter_value_assignment ]"

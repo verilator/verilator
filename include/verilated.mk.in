@@ -21,7 +21,9 @@ CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
 
 # Compiler flags to enable profiling
 CFG_CXXFLAGS_PROFILE = @CFG_CXXFLAGS_PROFILE@
-# Select newest language
+# Select language required to compile (often empty)
+CFG_CXXFLAGS_STD = @CFG_CXXFLAGS_STD@
+# Select newest language (unused by this Makefile, for some test's Makefiles)
 CFG_CXXFLAGS_STD_NEWEST = @CFG_CXXFLAGS_STD_NEWEST@
 # Compiler flags to use to turn off unused and generated code warnings, such as -Wno-div-by-zero
 CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
@@ -36,7 +38,7 @@ CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
 # Programs
 
 VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
-VERILATOR_INCLUDER = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
+VERILATOR_INCLUDER = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_includer
 VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
 
 ######################################################################
@@ -65,7 +67,7 @@ VK_CPPFLAGS_ALWAYS += \
 		-DVM_TRACE_VCD=$(VM_TRACE_VCD) \
 		$(CFG_CXXFLAGS_NO_UNUSED) \
 
-ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
+ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
 VK_CPPFLAGS_WALL += -Wall $(CFG_CXXFLAGS_WEXTRA) -Werror
 endif
 
@@ -140,7 +142,7 @@ endif
 #######################################################################
 ##### Threaded builds
 
-CPPFLAGS += $(CFG_CXXFLAGS_STD_NEWEST)
+CPPFLAGS += $(CFG_CXXFLAGS_STD)
 LDLIBS += $(CFG_LDLIBS_THREADS)
 
 ifneq ($(VM_TIMING),0)

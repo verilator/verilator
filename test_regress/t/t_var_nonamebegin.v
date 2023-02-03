@@ -67,7 +67,7 @@ module t (/*AUTOARG*/
       $finish;
    end
 
-   task tsk;
+   task automatic tsk;
       integer t1;
       $display("t1 {mod}.tsk %m");
       begin

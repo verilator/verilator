@@ -54,6 +54,42 @@ class SelfRefClassIntParam #(int P=1);
    typedef SelfRefClassIntParam #(10) self_int_t;
 endclass
 
+class Sum #(type T);
+   static int sum;
+   static function void add(T element);
+      sum += int'(element);
+      endfunction
+endclass
+
+class IntQueue;
+   int          q[$];
+   function int getSum();
+      foreach(q[i])
+        Sum#(int)::add(q[i]);
+      return Sum#(int)::sum;
+   endfunction
+endclass
+
+class ClsStatic;
+   static int   x = 1;
+   static function int get_2;
+      return 2;
+   endfunction
+endclass
+
+class ClsParam #(type T);
+   typedef T param_t;
+endclass
+
+class ClsWithParamField;
+   int m_field = Sum#(int)::sum;
+   int m_queue[$];
+
+   function int get(int index);
+      return m_queue[index];
+   endfunction
+endclass
+
 module t (/*AUTOARG*/);
 
    Cls c12;
@@ -65,6 +101,9 @@ module t (/*AUTOARG*/);
    SelfRefClassTypeParam::self_int_t src_int;
    SelfRefClassIntParam src1;
    SelfRefClassIntParam::self_int_t src10;
+   IntQueue qi;
+   ClsWithParamField cls_param_field;
+   int arr [1:0] = '{1, 2};
    initial begin
       c12 = new;
       c4 = new;
@@ -75,6 +114,8 @@ module t (/*AUTOARG*/);
       src_logic = new;
       src1 = new;
       src10 = new;
+      qi = new;
+      cls_param_field = new;
       if (Cls#()::PBASE != 12) $stop;
       if (Cls#(4)::PBASE != 4) $stop;
       if (Cls8_t::PBASE != 8) $stop;
@@ -113,6 +154,18 @@ module t (/*AUTOARG*/);
       if ($bits(src_int.field) != 32) $stop;
       if (src1.P != 1) $stop;
       if (src10.P != 10) $stop;
+
+      qi.q = '{2, 4, 6, 0, 2};
+      if (qi.getSum() != 14) $stop;
+      Sum#(int)::add(arr[0]);
+      if(Sum#(int)::sum != 16) $stop;
+      if(Sum#(real)::sum != 0) $stop;
+
+      if (ClsParam#(ClsStatic)::param_t::x != 1) $stop;
+      if (ClsParam#(ClsStatic)::param_t::get_2() != 2) $stop;
+
+      cls_param_field.m_queue = '{1, 5, 7};
+      if (cls_param_field.get(2) != 7) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

@@ -48,11 +48,11 @@ long long get_memory_usage() {
 void make_and_destroy() {
 #ifdef VL_NO_LEGACY
     VerilatedContext* contextp = new VerilatedContext;
-    VM_PREFIX* topp = new VM_PREFIX{contextp};
     contextp->debug(0);
+    VM_PREFIX* topp = new VM_PREFIX{contextp};
 #else
-    VM_PREFIX* topp = new VM_PREFIX;
     Verilated::debug(0);
+    VM_PREFIX* topp = new VM_PREFIX;
 #endif
 
     topp->eval();

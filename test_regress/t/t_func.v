@@ -9,6 +9,7 @@ module t;
    reg [31:0] rglobal;
    reg [31:0] vec [1:0];
    reg [31:0] n;
+   int        abcd;
 
    initial begin
       rglobal = 1;
@@ -60,6 +61,12 @@ module t;
       inc_and_return(32'h3);
       if (rglobal !== 32'h9) $stop;
       // verilator lint_on IGNOREDRETURN
+
+      abcd = 0;
+      set_1_to_abcd;
+      if (abcd != 1) $stop;
+      set_2_to_abcd;
+      if (abcd != 2) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
@@ -152,5 +159,13 @@ module t;
       rglobal = rglobal + inc;
       return rglobal;
    endfunction
+
+   function void set_1_to_abcd;
+      abcd = 1;
+   endfunction
+
+   task set_2_to_abcd;
+      abcd = 2;
+   endtask
 
 endmodule

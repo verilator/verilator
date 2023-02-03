@@ -737,8 +737,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         info.m_type = "VlUnpacked<" + sub.m_type;
         info.m_type += ", " + cvtToStr(adtypep->declRange().elements());
         info.m_type += ">";
-    } else if (VN_IS(dtypep, StructDType) && !VN_AS(dtypep, StructDType)->packed()) {
-        const auto* const sdtypep = VN_AS(dtypep, StructDType);
+    } else if (VN_IS(dtypep, NodeUOrStructDType) && !VN_AS(dtypep, NodeUOrStructDType)->packed()) {
+        const auto* const sdtypep = VN_AS(dtypep, NodeUOrStructDType);
         info.m_type = EmitCBaseVisitor::prefixNameProtect(sdtypep);
     } else if (const AstBasicDType* const bdtypep = dtypep->basicp()) {
         // We don't print msb()/lsb() as multidim packed would require recursion,
@@ -1458,6 +1458,7 @@ bool AstClass::isClassExtendedFrom(const AstClass* refClassp, const AstClass* ba
 void AstClass::dump(std::ostream& str) const {
     this->AstNodeModule::dump(str);
     if (isExtended()) str << " [EXT]";
+    if (isInterfaceClass()) str << " [IFCCLS]";
     if (isVirtual()) str << " [VIRT]";
 }
 const char* AstClass::broken() const {
@@ -1470,6 +1471,10 @@ void AstClass::cloneRelink() {
     if (m_classOrPackagep && m_classOrPackagep->clonep()) {
         m_classOrPackagep = m_classOrPackagep->clonep();
     }
+}
+void AstClassExtends::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isImplements()) str << " [IMPLEMENTS]";
 }
 AstClass* AstClassExtends::classp() const {
     const AstClassRefDType* refp = VN_CAST(dtypep(), ClassRefDType);
@@ -1508,6 +1513,11 @@ string AstClassRefDType::name() const { return classp() ? classp()->name() : "<u
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (immediate()) str << " [IMMEDIATE]";
+}
+void AstClocking::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isDefault()) str << " [DEFAULT]";
+    if (isGlobal()) str << " [GLOBAL]";
 }
 void AstDisplay::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
@@ -1635,6 +1645,10 @@ void AstJumpLabel::dump(std::ostream& str) const {
 void AstLogOr::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (sideEffect()) str << " [SIDE]";
+}
+void AstMemberDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "member";
 }
 void AstMemberSel::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);

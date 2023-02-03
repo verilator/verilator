@@ -18,8 +18,8 @@ int main(int argc, char** argv) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     // VL_USE_THREADS define is set in t_gantt_two.pl
     contextp->threads(TEST_USE_THREADS);
-    contextp->commandArgs(argc, argv);
     contextp->debug(0);
+    contextp->commandArgs(argc, argv);
 
     std::unique_ptr<Vt_gantt_two> topap{new Vt_gantt_two{contextp.get(), "topa"}};
     std::unique_ptr<Vt_gantt_two> topbp{new Vt_gantt_two{contextp.get(), "topb"}};

@@ -19,8 +19,8 @@
                                               : ... In instance t.i_sub3
    90 |    assign outwires[12] = inwires[13];   
       |                                 ^
-%Warning-WIDTH: t/t_split_var_1_bad.v:41:31: Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's FUNCREF 'bad_func' generates 32 bits.
-                                           : ... In instance t
+%Warning-WIDTHTRUNC: t/t_split_var_1_bad.v:41:31: Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's FUNCREF 'bad_func' generates 32 bits.
+                                                : ... In instance t
    41 |       i_sub0.cannot_split1[1] = bad_func(addr, rd_data0);
       |                               ^
 %Error: t/t_split_var_1_bad.v:79:16: Illegal assignment of constant to unpacked array

@@ -15,9 +15,10 @@ module t (/*AUTOARG*/
    reg [31:0] a;
    reg [31:0] b;
 
-   wire [2:0] bf;  buf   BF0 (bf[0], a[0]),
-                         BF1 (bf[1], a[1]),
-                         BF2 (bf[2], a[2]);
+   wire [2:0] bf;
+   buf   BF0 (bf[0], a[0]),
+     BF1 (bf[1], a[1]),
+     BF2 (bf[2], a[2]);
 
    // verilator lint_off IMPLICIT
    not   #(0.108) NT0 (nt0, a[0]);
@@ -28,6 +29,11 @@ module t (/*AUTOARG*/
    xor       (xo0, a[0], b[0]);
    xnor      (xn0, a[0], b[0], b[2]);
    // verilator lint_on IMPLICIT
+
+   wire [2:0] bfm;
+   buf   BFM (bfm[0], bfm[1], bfm[2], a[0]);
+   wire [2:0] ntm;
+   not   NTM (ntm[0], ntm[1], ntm[2], a[0]);
 
    parameter BITS=32;
    wire [BITS-1:0] ba;
@@ -85,6 +91,8 @@ module t (/*AUTOARG*/
             a <= 32'h529ab56f;
             b <= 32'h7835a237;
             if (bf !== 3'b100) $stop;
+            if (bfm != 3'b000) $stop;
+            if (ntm != 3'b111) $stop;
             if (nt0 !== 1'b1) $stop;
             if (an0 !== 1'b0) $stop;
             if (nd0 !== 1'b1) $stop;
@@ -96,6 +104,8 @@ module t (/*AUTOARG*/
          end
          if (cyc==3) begin
             if (bf !== 3'b111) $stop;
+            if (bfm != 3'b111) $stop;
+            if (ntm != 3'b000) $stop;
             if (nt0 !== 1'b0) $stop;
             if (an0 !== 1'b1) $stop;
             if (nd0 !== 1'b0) $stop;

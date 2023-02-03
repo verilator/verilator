@@ -75,7 +75,7 @@ class CUseVisitor final : public VNVisitor {
         if (nodep->virtRefDType2p()) iterate(nodep->virtRefDType2p());
 
         // Add a CUse for every struct that requires a declaration
-        AstStructDType* const stypep = VN_CAST(nodep->skipRefp(), StructDType);
+        AstNodeUOrStructDType* const stypep = VN_CAST(nodep->skipRefp(), NodeUOrStructDType);
         if (stypep && stypep->classOrPackagep()) {
             addNewUse(nodep, VUseType::INT_INCLUDE, stypep->classOrPackagep()->name());
             iterateChildren(stypep);

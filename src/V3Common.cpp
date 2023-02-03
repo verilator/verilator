@@ -61,7 +61,7 @@ static void makeVlToString(AstIface* nodep) {
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtsp(funcp);
 }
-static void makeVlToString(AstStructDType* nodep) {
+static void makeVlToString(AstNodeUOrStructDType* nodep) {
     AstNodeModule* const modp = nodep->classOrPackagep();
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
@@ -168,7 +168,7 @@ void V3Common::commonAll() {
     }
     for (AstNode* nodep = v3Global.rootp()->typeTablep()->typesp(); nodep;
          nodep = nodep->nextp()) {
-        if (AstStructDType* const dtypep = VN_CAST(nodep, StructDType)) {
+        if (AstNodeUOrStructDType* const dtypep = VN_CAST(nodep, NodeUOrStructDType)) {
             if (!dtypep->packed()) makeVlToString(dtypep);
         }
     }

@@ -1,0 +1,7 @@
+%Error: t/t_implements_collision_bad.v:15:11: Class 'IclsBoth' implements 'Icls2' but missing inheritance conflict resolution for 'icfboth' (IEEE 1800-2017 8.26.6.2)
+   15 | interface class IclsBoth extends Icls1, Icls2;
+      |           ^~~~~
+        t/t_implements_collision_bad.v:12:30: ... Location of interface class's function
+   12 |    pure virtual function int icfboth;
+      |                              ^~~~~~~
+%Error: Exiting due to

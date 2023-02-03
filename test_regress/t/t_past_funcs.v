@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2020 by Peter Monsson.
+// SPDX-License-Identifier: Unlicense
 
 module t (/*AUTOARG*/
    // Inputs
@@ -18,6 +19,11 @@ module t (/*AUTOARG*/
               .in                       (in[31:0]));
 
    Test2 test2 (/*AUTOINST*/
+                // Inputs
+                .clk                    (clk),
+                .in                     (in[31:0]));
+
+   Test3 test3 (/*AUTOINST*/
                 // Inputs
                 .clk                    (clk),
                 .in                     (in[31:0]));
@@ -68,6 +74,27 @@ module Test (/*AUTOARG*/
    assert property (@(posedge clk) $fell(dly1) || dly1%2==1);
    assert property (@(posedge clk) !$stable(dly2));
    assert property (@(posedge clk) $changed(dly2));
+
+   global clocking @(posedge clk); endclocking
+   always @ ($global_clock) $display("%d", in);
+   //
+   assert property (@(posedge clk) $rose(dly0, $global_clock) || dly0%2==0);
+   assert property (@(posedge clk) $fell(dly1, $global_clock) || dly1%2==1);
+   assert property (@(posedge clk) !$stable(dly2, $global_clock));
+   assert property (@(posedge clk) $changed(dly2, $global_clock));
+   //
+   assert property (@(posedge clk) $rose_gclk(dly0) || dly0%2==0);
+   assert property (@(posedge clk) $fell_gclk(dly1) || dly1%2==1);
+   assert property (@(posedge clk) !$stable_gclk(dly2));
+   assert property (@(posedge clk) $changed_gclk(dly2));
+
+   // global_clocking_future_functions are not supported yet:
+   // $changing_gclk     global_clocking_future_function
+   // $falling_gclk      global_clocking_future_function
+   // $future_gclk       global_clocking_future_function
+   // $rising_gclk       global_clocking_future_function
+   // $steady_gclk       global_clocking_future_function
+
 endmodule
 
 
@@ -99,4 +126,19 @@ module Test2 (/*AUTOARG*/
    assert property ($fell(dly1[0]) || dly1%2==1);
    assert property ($stable(dly2[31:4]));
    assert property (!$changed(dly2[31:4]));
+endmodule
+
+module Test3 (/*AUTOARG*/
+   // Inputs
+   clk, in
+   );
+
+   input clk;
+   input [31:0] in;
+
+   // Check the named form of global clocking
+   global clocking gck @(posedge clk); endclocking
+   always @ (gck) $display("%d", in);
+   always @ ($global_clock) $display("%d", in);
+
 endmodule

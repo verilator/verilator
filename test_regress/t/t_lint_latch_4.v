@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2021 by Julien Margetts (Originally provided by YanJiun)
+// SPDX-License-Identifier: Unlicense
 
 module test (
   input      [2:0] a,

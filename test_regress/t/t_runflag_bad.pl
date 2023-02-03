@@ -16,31 +16,31 @@ compile(
 execute(
     all_run_flags => ["+verilator+bad+flag+testing"],
     fails => 1,
-    expect_filename => $Self->{golden_filename} . "-a",
+    expect_filename => "t/" . $Self->{name} . "_a.out",
     );
 
 execute(
     all_run_flags => ["+verilator+rand+reset+-1"],
     fails => 1,
-    expect_filename => $Self->{golden_filename} . "-b"
+    expect_filename => "t/" . $Self->{name} . "_b.out",
     );
 
 execute(
     all_run_flags => ["+verilator+rand+reset+3"],
     fails => 1,
-    expect_filename => $Self->{golden_filename} . "-c"
+    expect_filename => "t/" . $Self->{name} . "_c.out",
     );
 
 execute(
     all_run_flags => ["+verilator+prof+threads+window+0"],
     fails => 1,
-    expect_filename => $Self->{golden_filename} . "-d"
+    expect_filename => "t/" . $Self->{name} . "_d.out",
     );
 
 execute(
     all_run_flags => ["+verilator+prof+threads+window+1000000000000000000000000"],
     fails => 1,
-    expect_filename => $Self->{golden_filename} . "-e"
+    expect_filename => "t/" . $Self->{name} . "_e.out",
     );
 
 ok(1);

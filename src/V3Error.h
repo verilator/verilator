@@ -148,6 +148,9 @@ public:
         VARHIDDEN,      // Hiding variable
         WAITCONST,      // Wait condition is constant
         WIDTH,          // Width mismatch
+        WIDTHTRUNC,     // Width mismatch- lhs < rhs
+        WIDTHEXPAND,    // Width mismatch- lhs > rhs
+        WIDTHXZEXPAND,  // Width mismatch- lhs > rhs xz filled
         WIDTHCONCAT,    // Unsized numbers/parameters in concatenations
         ZERODLY,        // #0 delay
         _ENUM_MAX
@@ -193,7 +196,7 @@ public:
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDPARAM", "UNUSEDSIGNAL",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT", "ZERODLY",
+            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHTRUNC", "WIDTHEXPAND", "WIDTHXZEXPAND", "WIDTHCONCAT", "ZERODLY",
             " MAX"
         };
         // clang-format on
@@ -224,7 +227,8 @@ public:
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
                 || m_e == LATCH || m_e == LITENDIAN || m_e == PINMISSING || m_e == REALCVT
-                || m_e == UNSIGNED || m_e == WIDTH);
+                || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
+                || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
@@ -238,6 +242,19 @@ public:
     // Warnings that are unused only
     bool unusedError() const VL_MT_SAFE {
         return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
+    }
+
+    bool isUnder(V3ErrorCode other) {
+        // backwards compatibility inheritance-like warnings
+        if (m_e == other) { return true; }
+        if (other == V3ErrorCode::WIDTH) {
+            return (m_e == WIDTH || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
+                    || m_e == WIDTHXZEXPAND);
+        }
+        if (other == V3ErrorCode::I_UNUSED) {
+            return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
+        }
+        return false;
     }
 
     static bool unusedMsg(const char* msgp) { return 0 == VL_STRCASECMP(msgp, "UNUSED"); }
@@ -309,7 +326,14 @@ public:
     }
     static void abortIfWarnings();
     static void suppressThisWarning();  // Suppress next %Warn if user has it off
-    static void pretendError(V3ErrorCode code, bool flag) { s_pretendError[code] = flag; }
+    static void pretendError(V3ErrorCode code, bool flag) {
+        if (code == V3ErrorCode::WIDTH) {
+            s_pretendError[V3ErrorCode::WIDTHTRUNC] = flag;
+            s_pretendError[V3ErrorCode::WIDTHEXPAND] = flag;
+            s_pretendError[V3ErrorCode::WIDTHXZEXPAND] = flag;
+        }
+        s_pretendError[code] = flag;
+    }
     static bool isError(V3ErrorCode code, bool supp);
     static string lineStr(const char* filename, int lineno);
     static V3ErrorCode errorCode() VL_MT_SAFE { return s_errorCode; }
@@ -352,7 +376,6 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 // evaluation order as otherwise we couldn't ensure v3errorPrep is called first.
 #define v3warnCode(code, msg) \
     v3errorEnd((V3Error::v3errorPrep(code), (V3Error::v3errorStr() << msg), V3Error::v3errorStr()))
-
 
 #define v3warnCodeFatal(code, msg) \
     v3errorEndFatal( \

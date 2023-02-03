@@ -6,6 +6,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 # This test makes sure that the internal check of t_hier_block.v is correct.
 # --hierarchical option is not set intentionally.
