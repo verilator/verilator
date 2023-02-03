@@ -4403,8 +4403,8 @@ public:
         case ATOOCT: return "atooct";
         case ATOBIN: return "atobin";
         case ATOREAL: return "atoreal";
-        default: V3ERROR_NA;
         }
+        V3ERROR_NA_RETURN("");
     }
     string emitVerilog() override { return "%l." + name() + "()"; }
     string emitC() override {
@@ -4414,8 +4414,8 @@ public:
         case ATOOCT: return "VL_ATOI_N(%li, 8)";
         case ATOBIN: return "VL_ATOI_N(%li, 2)";
         case ATOREAL: return "std::atof(%li.c_str())";
-        default: V3ERROR_NA;
         }
+        V3ERROR_NA_RETURN("");
     }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
