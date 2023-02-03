@@ -401,13 +401,13 @@ accesses the above signal "readme" would be:
            if (!vh1) vl_fatal(__FILE__, __LINE__, "sim_main", "No handle found");
            const char* name = vpi_get_str(vpiName, vh1);
 	   const char* type = vpi_get_str(vpiType, vh1);
-           const int   size = vpi_get(vpiSize, vh1);
+	   const int size = vpi_get(vpiSize, vh1);
            printf("register name: %s, type: %s, size: %d\n", name, type, size);  // Prints "register name: readme, type: vpiReg, size: 32"
 
            s_vpi_value v;
            v.format = vpiIntVal;
            vpi_get_value(vh1, &v);
-           printf("Value of %s: %d\n",name, v.value.integer);  // Prints "Value of readme: 0"
+           printf("Value of %s: %d\n", name, v.value.integer);  // Prints "Value of readme: 0"
        }
 
        int main(int argc, char** argv) {
