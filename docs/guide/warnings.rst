@@ -949,6 +949,14 @@ List Of Warnings
    (neither :vlopt:`--timing` nor :vlopt:`--no-timing` option was provided).
 
 
+.. option:: NESTEDATTR
+
+   Warns that a `/* verilator public_*on */` is being used within an existing
+   "Attribute scope". This can also happen if a package containing an Attribute
+   scope is imported within another scope. Verilator only remembers the previous
+   attribute applied by line number so mixing attributes is not advised.
+
+
 .. option:: NOLATCH
 
    .. TODO better example

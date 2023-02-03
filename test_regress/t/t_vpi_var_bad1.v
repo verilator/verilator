@@ -6,9 +6,9 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-/* verilator public_on */
-/* verilator public_on */
 module t();
+/* verilator public_on */
+/* verilator public_on */ // nested attribute warning
     reg x;
-endmodule
 /* verilator public_off */
+endmodule

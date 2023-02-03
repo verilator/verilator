@@ -1,4 +1,5 @@
-%Error: t/t_vpi_var_bad1.v:10:1: Nested public attribute is not allowed
-   10 | /*verilator public_on*/ 
+%Error-NESTEDATTR: t/t_vpi_var_bad1.v:11:1: Public attribute scope already declared
+   11 | /*verilator public_on*/ 
       | ^~~~~~~~~~~~~~~~~~~~~~~
+                   ... For error description see https://verilator.org/warn/NESTEDATTR?v=latest
 %Error: Exiting due to

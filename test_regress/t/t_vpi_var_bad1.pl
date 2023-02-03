@@ -13,6 +13,7 @@ scenarios(vlt => 1);
 lint(
     fails => 1,
     expect_filename => $Self->{golden_filename},
+    verilator_flags => [qw(-cc -Wall -Werror-NESTEDATTR)]
     );
 
 ok(1);
