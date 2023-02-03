@@ -446,6 +446,31 @@ or "`ifdef`"'s may break other tools.
 
    Same as :option:`public_flat_rw` configuration file option.
 
+.. option:: /*verilator&32;public_[|flat|flat_rd|flat_rw]_on [@(<edge_list>)]*/ (as scope)
+
+   Used to wrap multiple signals and parameters with the respective public attribute.
+   See attribute above for their respective behavior. Cannot be nested. e.g:
+
+      .. code-block:: sv
+         /*verilator public_flat_rw_on*/
+         logic clk;
+         logic rst;
+         parameter width = 8;
+         /* verilator public_off*/
+         logic data;
+
+   Is equivalent to:
+
+      .. code-block:: sv
+         logic clk /*verilator public_flat_rw*/;
+         logic rst /*verilator public_flat_rw*/;
+         parameter width /*verilator public_flat_rw*/ = 8;
+         logic data;
+
+.. option:: /*verilator&32;public_off*/
+
+   Terminates the previous `/*verilator public*_on*/` directive; see above.
+
 .. option:: /*verilator&32;public_module*/
 
    Used after a module statement to indicate the module should not be

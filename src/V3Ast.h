@@ -805,6 +805,10 @@ public:
     bool isTemp() const {
         return (m_e == BLOCKTEMP || m_e == MODULETEMP || m_e == STMTTEMP || m_e == XTEMP);
     }
+    bool isVPIAccessible() const {
+        return (m_e == VAR || m_e == GPARAM || m_e == LPARAM || m_e == PORT || m_e == WIRE
+                || m_e == TRI0 || m_e == TRI1);
+    }
 };
 constexpr bool operator==(const VVarType& lhs, const VVarType& rhs) VL_MT_SAFE {
     return lhs.m_e == rhs.m_e;

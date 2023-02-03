@@ -176,16 +176,14 @@ double VString::parseDouble(const string& str, bool* successp) {
     return d;
 }
 
-static bool isWordChar(char c) { return isalnum(c) || c == '_'; }
-
 string VString::replaceWord(const string& str, const string& from, const string& to) {
     string result = str;
     const size_t len = from.size();
     UASSERT_STATIC(len > 0, "Cannot replace empty string");
     for (size_t pos = 0; (pos = result.find(from, pos)) != string::npos; pos += len) {
         // Only replace whole words
-        if (((pos > 0) && isWordChar(result[pos - 1])) ||  //
-            ((pos + len < result.size()) && isWordChar(result[pos + len]))) {
+        if (((pos > 0) && VString::isWordChar(result[pos - 1])) ||  //
+            ((pos + len < result.size()) && VString::isWordChar(result[pos + len]))) {
             continue;
         }
         result.replace(pos, len, to);

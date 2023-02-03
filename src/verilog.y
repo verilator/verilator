@@ -78,6 +78,7 @@ class V3ParseGrammar {
 public:
     AstVar* m_varAttrp = nullptr;  // Current variable for attribute adding
     AstRange* m_gateRangep = nullptr;  // Current range for gate declarations
+    AstNode* m_scopedSigAttr = nullptr;  // Pointer to default signal attribute
     AstCase* m_caseAttrp = nullptr;  // Current case statement for attribute adding
     AstNodeDType* m_varDTypep = nullptr;  // Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
@@ -270,6 +271,19 @@ public:
         }
         return itemsp;
     }
+
+    void setScopedSigAttr(AstNode* attrsp) {
+        if (m_scopedSigAttr) { // clearing set attribute
+                VL_DO_DANGLING(m_scopedSigAttr->deleteTree(), m_scopedSigAttr);
+        }
+        m_scopedSigAttr = attrsp;
+    }
+
+    void createScopedSigAttr(VAttrType vattrT) {
+        setScopedSigAttr(new AstAttrOf{PARSEP->lexFileline(), vattrT});
+    }
+
+    AstNode* cloneScopedSigAttr() const { return AstNode::cloneTreeNull(m_scopedSigAttr, true); }
 };
 
 const VBasicDTypeKwd LOGIC = VBasicDTypeKwd::LOGIC;  // Shorthand "LOGIC"
@@ -937,28 +951,34 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_WRITEMEMH    "$writememh"
 %token<fl>              yD_WRITEO       "$writeo"
 
-%token<fl>              yVL_CLOCKER             "/*verilator clocker*/"
-%token<fl>              yVL_CLOCK_ENABLE        "/*verilator clock_enable*/"
-%token<fl>              yVL_COVERAGE_BLOCK_OFF  "/*verilator coverage_block_off*/"
-%token<fl>              yVL_FORCEABLE           "/*verilator forceable*/"
-%token<fl>              yVL_FULL_CASE           "/*verilator full_case*/"
-%token<fl>              yVL_HIER_BLOCK          "/*verilator hier_block*/"
-%token<fl>              yVL_INLINE_MODULE       "/*verilator inline_module*/"
-%token<fl>              yVL_ISOLATE_ASSIGNMENTS "/*verilator isolate_assignments*/"
-%token<fl>              yVL_NO_CLOCKER          "/*verilator no_clocker*/"
-%token<fl>              yVL_NO_INLINE_MODULE    "/*verilator no_inline_module*/"
-%token<fl>              yVL_NO_INLINE_TASK      "/*verilator no_inline_task*/"
-%token<fl>              yVL_PARALLEL_CASE       "/*verilator parallel_case*/"
-%token<fl>              yVL_PUBLIC              "/*verilator public*/"
-%token<fl>              yVL_PUBLIC_FLAT         "/*verilator public_flat*/"
-%token<fl>              yVL_PUBLIC_FLAT_RD      "/*verilator public_flat_rd*/"
-%token<fl>              yVL_PUBLIC_FLAT_RW      "/*verilator public_flat_rw*/"
-%token<fl>              yVL_PUBLIC_MODULE       "/*verilator public_module*/"
-%token<fl>              yVL_SC_BV               "/*verilator sc_bv*/"
-%token<fl>              yVL_SFORMAT             "/*verilator sformat*/"
-%token<fl>              yVL_SPLIT_VAR           "/*verilator split_var*/"
-%token<strp>            yVL_TAG                 "/*verilator tag*/"
-%token<fl>              yVL_TRACE_INIT_TASK     "/*verilator trace_init_task*/"
+%token<fl>              yVL_CLOCKER               "/*verilator clocker*/"
+%token<fl>              yVL_CLOCK_ENABLE          "/*verilator clock_enable*/"
+%token<fl>              yVL_COVERAGE_BLOCK_OFF    "/*verilator coverage_block_off*/"
+%token<fl>              yVL_FORCEABLE             "/*verilator forceable*/"
+%token<fl>              yVL_FULL_CASE             "/*verilator full_case*/"
+%token<fl>              yVL_HIER_BLOCK            "/*verilator hier_block*/"
+%token<fl>              yVL_INLINE_MODULE         "/*verilator inline_module*/"
+%token<fl>              yVL_ISOLATE_ASSIGNMENTS   "/*verilator isolate_assignments*/"
+%token<fl>              yVL_NO_CLOCKER            "/*verilator no_clocker*/"
+%token<fl>              yVL_NO_INLINE_MODULE      "/*verilator no_inline_module*/"
+%token<fl>              yVL_NO_INLINE_TASK        "/*verilator no_inline_task*/"
+%token<fl>              yVL_PARALLEL_CASE         "/*verilator parallel_case*/"
+%token<fl>              yVL_PUBLIC                "/*verilator public*/"
+%token<fl>              yVL_PUBLIC_FLAT           "/*verilator public_flat*/"
+%token<fl>              yVL_PUBLIC_FLAT_ON        "/*verilator public_flat_on*/"
+%token<fl>              yVL_PUBLIC_FLAT_RD        "/*verilator public_flat_rd*/"
+%token<fl>              yVL_PUBLIC_FLAT_RD_ON     "/*verilator public_flat_rd_on*/"
+%token<fl>              yVL_PUBLIC_FLAT_RW        "/*verilator public_flat_rw*/"
+%token<fl>              yVL_PUBLIC_FLAT_RW_ON     "/*verilator public_flat_rw_on*/"
+%token<fl>              yVL_PUBLIC_FLAT_RW_ON_SNS "/*verilator public_flat_rw_on_sns*/"
+%token<fl>              yVL_PUBLIC_ON             "/*verilator public_on*/"
+%token<fl>              yVL_PUBLIC_OFF            "/*verilator public_off*/"
+%token<fl>              yVL_PUBLIC_MODULE         "/*verilator public_module*/"
+%token<fl>              yVL_SC_BV                 "/*verilator sc_bv*/"
+%token<fl>              yVL_SFORMAT               "/*verilator sformat*/"
+%token<fl>              yVL_SPLIT_VAR             "/*verilator split_var*/"
+%token<strp>            yVL_TAG                   "/*verilator tag*/"
+%token<fl>              yVL_TRACE_INIT_TASK       "/*verilator trace_init_task*/"
 
 %token<fl>              yP_TICK         "'"
 %token<fl>              yP_TICKBRA      "'{"
@@ -1233,6 +1253,7 @@ package_item<nodep>:            // ==IEEE: package_item
         |       anonymous_program                       { $$ = $1; }
         |       package_export_declaration              { $$ = $1; }
         |       timeunits_declaration                   { $$ = $1; }
+        |       sigAttrScope                            { $$ = nullptr; }
         ;
 
 package_or_generate_item_declaration<nodep>:    // ==IEEE: package_or_generate_item_declaration
@@ -1344,6 +1365,7 @@ modFront<nodeModulep>:
                           PARSEP->rootp()->addModulesp($$);
                           SYMP->pushNew($$);
                           GRAMMARP->m_modp = $$; }
+        |       modFront sigAttrScope                   { $$ = $1; }
         ;
 
 importsAndParametersE<nodep>:   // IEEE: common part of module_declaration, interface_declaration, program_declaration
@@ -1402,13 +1424,18 @@ parameter_port_listE<nodep>:    // IEEE: parameter_port_list + empty == paramete
 paramPortDeclOrArgList<nodep>:  // IEEE: list_of_param_assignments + { parameter_port_declaration }
                 paramPortDeclOrArg                              { $$ = $1; }
         |       paramPortDeclOrArgList ',' paramPortDeclOrArg   { $$ = $1->addNext($3); }
+        |       paramPortDeclOrArgList sigAttrScope {$$ = $1;}
         ;
 
 paramPortDeclOrArg<nodep>:      // IEEE: param_assignment + parameter_port_declaration
         //                      // We combine the two as we can't tell which follows a comma
+                paramPortDeclOrArgSub     {$$ = $1;}
+        |       vlTag                                   { $$ = nullptr; }
+        ;
+paramPortDeclOrArgSub<nodep>:
                 parameter_port_declarationFrontE param_assignment       { $$ = $2; }
         |       parameter_port_declarationTypeFrontE type_assignment    { $$ = $2; }
-        |       vlTag                                   { $$ = nullptr; }
+        |       sigAttrScope paramPortDeclOrArgSub {$$ = $2; }
         ;
 
 portsStarE<nodep>:              // IEEE: .* + list_of_ports + list_of_port_declarations + empty
@@ -1426,7 +1453,7 @@ list_of_portsE<nodep>:          // IEEE: list_of_ports + list_of_port_declaratio
 
 list_of_ports<nodep>:           // IEEE: list_of_ports + list_of_port_declarations
                 portAndTag                      { $$ = $1; }
-        |       list_of_portsE ',' portAndTagE          { $$ = addNextNull($1, $3); }
+        |       list_of_portsE ',' portAndTagE  { $$ = addNextNull($1, $3); }
         ;
 
 portAndTagE<nodep>:
@@ -1444,11 +1471,13 @@ portAndTagE<nodep>:
                           $$ = $$->addNext(varp);
                           $$->v3warn(NULLPORT, "Null port on module (perhaps extraneous comma)"); }
         |       portAndTag                              { $$ = $1; }
+        |       portAndTag sigAttrScope                 { $$ = $1; }
         ;
 
 portAndTag<nodep>:
                 port                                    { $$ = $1; }
         |       vlTag port                              { $$ = $2; }  // Tag will associate with previous port
+        |       sigAttrScope portAndTag                 { $$ = $2; }
         ;
 
 port<nodep>:                    // ==IEEE: port
@@ -1597,6 +1626,7 @@ intFront<nodeModulep>:
                           $$->lifetime($2);
                           PARSEP->rootp()->addModulesp($$);
                           SYMP->pushNew($$); }
+        |       intFront sigAttrScope                   { $$ = $1; }
         ;
 
 interface_itemListE<nodep>:
@@ -2590,6 +2620,7 @@ module_common_item<nodep>:      // ==IEEE: module_common_item
         |       loop_generate_construct                 { $$ = $1; }
         |       conditional_generate_construct          { $$ = $1; }
         |       elaboration_system_task                 { $$ = $1; }
+        |       sigAttrScope                            { $$ = nullptr; }
         //
         |       error ';'                               { $$ = nullptr; }
         ;
@@ -2920,7 +2951,20 @@ netId<strp>:
         |       idSVKwd                                 { $$ = $1; $<fl>$ = $<fl>1; }
         ;
 
-sigAttrListE<nodep>:
+sigAttrScope:
+                yVL_PUBLIC_FLAT_RW_ON_SNS attr_event_control
+                                                        { AstNode* sigAttrsp = new AstAttrOf{$1, VAttrType::VAR_PUBLIC_FLAT_RW};
+                                                          sigAttrsp->addNext(new AstAlwaysPublic{$1, $2, nullptr});
+                                                          GRAMMARP->setScopedSigAttr(sigAttrsp);
+                                                          v3Global.dpi(true); }
+        |       yVL_PUBLIC_ON                           { GRAMMARP->createScopedSigAttr(VAttrType::VAR_PUBLIC); }
+        |       yVL_PUBLIC_FLAT_ON                      { GRAMMARP->createScopedSigAttr(VAttrType::VAR_PUBLIC_FLAT); }
+        |       yVL_PUBLIC_FLAT_RD_ON                   { GRAMMARP->createScopedSigAttr(VAttrType::VAR_PUBLIC_FLAT_RD); }
+        |       yVL_PUBLIC_FLAT_RW_ON                   { GRAMMARP->createScopedSigAttr(VAttrType::VAR_PUBLIC_FLAT_RW); }
+        |       yVL_PUBLIC_OFF                          { GRAMMARP->setScopedSigAttr(nullptr); }
+        ;
+
+sigAttrListE<nodep>: // Scoped Attributes are added to explicit attributes
                 /* empty */                             { $$ = nullptr; }
         |       sigAttrList                             { $$ = $1; }
         ;
