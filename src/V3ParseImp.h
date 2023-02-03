@@ -189,7 +189,6 @@ public:
     void lexVerilatorCmtLintRestore(FileLine* fl);
     static void lexVerilatorCmtBad(FileLine* fl, const char* textp);
 
-
     void lexPushKeywords(int state) {
         ++m_lexKwdDepth;
         m_lexKwdLast = state;
