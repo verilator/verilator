@@ -434,7 +434,7 @@ Summary:
    Preprocess the source code, but do not compile, similar to C++
    preprocessing using :command:`gcc -E`.  Output is written to standard
    out.  Beware of enabling debugging messages, as they will also go to
-   standard out.
+   standard out. See :vlopt:`--no-std`, which is implied by this.
 
    See also :vlopt:`--dump-defines`, :vlopt:`-P`, and
    :vlopt:`--pp-comments` options.
@@ -1200,6 +1200,10 @@ Summary:
    Creates more detailed statistics, including a list of all the variables
    by size (plain :vlopt:`--stats` just gives a count).  See
    :vlopt:`--stats`, which is implied by this.
+
+.. option:: --no-std
+
+   Prevents parsing standard library.
 
 .. option:: --structs-packed
 
