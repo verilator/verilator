@@ -264,12 +264,12 @@ public:
 
     void setScopedSigAttr(AstNode* attrsp) {
         if (m_scopedSigAttr && attrsp) {
-                attrsp->fileline()->v3error("Nested public attribute is not allowed");
-        } else if (attrsp) {
-                m_scopedSigAttr = attrsp;
-        } else if (m_scopedSigAttr) { // clearing set attribute
+                attrsp->fileline()->v3warn(NESTEDATTR, "Public attribute scope already declared");
+        }
+        if (m_scopedSigAttr) { // clearing set attribute
                 VL_DO_DANGLING(m_scopedSigAttr->deleteTree(), m_scopedSigAttr);
         }
+        m_scopedSigAttr = attrsp;
     }
 
     void createScopedSigAttr(VAttrType vattrT) {
