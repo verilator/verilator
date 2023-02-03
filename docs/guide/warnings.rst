@@ -74,7 +74,8 @@ List Of Warnings
 .. option:: Unsupported: ....
 
    This error indicates that the code uses a Verilog language construct
-   that is not yet supported in Verilator.  See the Limitations chapter.
+   that is not yet supported in Verilator.  See also :ref:`Language
+   Limitations`.
 
 
 .. option:: ALWCOMBORDER
