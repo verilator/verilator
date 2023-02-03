@@ -1368,6 +1368,7 @@ modFront<nodeModulep>:
                           PARSEP->rootp()->addModulesp($$);
                           SYMP->pushNew($$);
                           GRAMMARP->m_modp = $$; }
+        |       modFront sigAttrScope                   { $$ = $1; }
         ;
 
 importsAndParametersE<nodep>:   // IEEE: common part of module_declaration, interface_declaration, program_declaration
@@ -1628,6 +1629,7 @@ intFront<nodeModulep>:
                           $$->lifetime($2);
                           PARSEP->rootp()->addModulesp($$);
                           SYMP->pushNew($$); }
+        |       intFront sigAttrScope                   { $$ = $1; }
         ;
 
 interface_itemListE<nodep>:

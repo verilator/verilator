@@ -13,8 +13,8 @@ import "DPI-C" context function int mon_check();
 `endif
 
 module t
-#(
 /* verilator public_flat_on */
+#(
    parameter int visibleParam1 = 0,
 /* verilator public_off */
    parameter int invisibleParam1 = 1,
@@ -38,7 +38,7 @@ extern "C" int mon_check();
    reg          onebit;
    reg [2:1]    twoone;
    reg [2:1]    fourthreetwoone[4:3];
-
+   reg LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND;
    // verilator lint_off LITENDIAN
    reg [0:61]   quads[2:3]      /*verilator public_flat_rw @(posedge clk)*/;
 /*verilator public_off*/
@@ -111,12 +111,20 @@ extern "C" int mon_check();
    generate
    for (i=1; i<=6; i=i+1) begin : arr
      arr #(.LENGTH(i)) arr();
-   end endgenerate
+   end
+   endgenerate
+
+   genvar k;
+   generate
+   for (k=1; k<=6; k=k+1) begin : subs
+      sub subsub();
+   end
+   endgenerate
 
 endmodule : t
 
 module sub;
-   reg subsig1 /*verilator public_flat_rd*/;
+   reg subsig1 /*verilator public_flat_rw*/;
    reg subsig2 /*verilator public_flat_rd*/;
 `ifdef IVERILOG
    // stop icarus optimizing signals away
