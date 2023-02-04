@@ -489,8 +489,10 @@ string V3Options::fileExists(const string& filename) {
         std::set<string>* setp = &(diriter->second);
 
 #ifdef _MSC_VER
+      try {
         for (const auto& dirEntry : std::filesystem::directory_iterator(dir.c_str()))
             setp->insert(dirEntry.path().filename().string());
+      } catch(std::filesystem::filesystem_error const& ex) { return ""; }
 #else
         if (DIR* const dirp = opendir(dir.c_str())) {
             while (struct dirent* direntp = readdir(dirp)) setp->insert(direntp->d_name);

@@ -118,6 +118,7 @@ install(DIRECTORY include TYPE DATA FILES_MATCHING
     PATTERN "include/verilated.mk"
     PATTERN "include/*.[chv]"
     PATTERN "include/*.cpp"
+    PATTERN "include/*.sv"
     PATTERN "include/gtkwave/*.[chv]*"
     PATTERN "include/vltstd/*.[chv]*"
 )
