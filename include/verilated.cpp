@@ -2994,8 +2994,8 @@ VerilatedScope::~VerilatedScope() {
 }
 
 void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                               const char* identifier, int8_t timeunit,
-                               const Type& type) VL_MT_UNSAFE {
+                               const char* identifier, int8_t timeunit, const Type& type,
+                               const char* defName) VL_MT_UNSAFE {
     // Slowpath - called once/scope at construction
     // We don't want the space and reference-count access overhead of strings.
     m_symsp = symsp;
@@ -3011,6 +3011,7 @@ void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const 
         m_namep = namep;
     }
     m_identifierp = identifier;
+    m_defNamep = defName;
     Verilated::threadContextp()->impp()->scopeInsert(this);
 }
 
