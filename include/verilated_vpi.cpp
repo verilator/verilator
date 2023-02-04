@@ -261,7 +261,6 @@ public:
     const VerilatedScope* scopep() const { return m_scopep; }
     const char* name() const override { return m_scopep->name(); }
     const char* fullname() const override { return m_scopep->name(); }
-    const char* defname() const override { return m_scopep->defname(); }
 };
 
 class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
