@@ -138,6 +138,7 @@ void V3Number::create(const char* sourcep) {
         }
     }
 
+    bool userSized = false;
     bool unbased = false;
     char base = '\0';
     if (value_startp != sourcep) {  // Has a '
@@ -161,6 +162,7 @@ void V3Number::create(const char* sourcep) {
         }
         value_startp = cp;
 
+        userSized = widthn.length() != 0;
         if (std::atoi(widthn.c_str())) {
             if (std::atoi(widthn.c_str()) < 0
                 || std::atoi(widthn.c_str()) > v3Global.opt.maxNumWidth()) {
@@ -207,6 +209,10 @@ void V3Number::create(const char* sourcep) {
     while (*value_startp == '_' || isspace(*value_startp)) value_startp++;
     if (!*value_startp && !m_data.m_autoExtend) {
         v3error("Number is missing value digits: " << sourcep);
+    }
+    if (userSized && m_data.m_autoExtend) {
+        v3error("Syntax error: size cannot be provided with '0/'1/'x/'z: "
+                << sourcep << " (IEEE 1800-2017 5.7.1)");
     }
 
     int obit = 0;  // Start at LSB
