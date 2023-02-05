@@ -624,9 +624,14 @@ public:
         puts(")");
     }
     void visit(AstFError* nodep) override {
-        puts("VL_FERROR_IN(");
+        puts("VL_FERROR_I");
+        puts(nodep->strp()->isString() ? "N(" : "W(");
         iterateAndNextNull(nodep->filep());
         putbs(", ");
+        if (nodep->strp()->isWide()) {
+            puts(cvtToStr(nodep->strp()->widthWords()));
+            putbs(", ");
+        }
         iterateAndNextNull(nodep->strp());
         puts(")");
     }

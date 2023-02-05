@@ -4777,8 +4777,8 @@ private:
     void visit(AstFError* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
-            // We only support string types, not packed array
-            iterateCheckString(nodep, "$ferror string result", nodep->strp(), BOTH);
+            // Could be string or packed array
+            userIterateAndNext(nodep->strp(), WidthVP{SELF, BOTH}.p());
             nodep->dtypeSetLogicUnsized(32, 1, VSigning::SIGNED);  // Spec says integer return
         }
     }

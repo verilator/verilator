@@ -1411,6 +1411,12 @@ IData VL_FERROR_IN(IData, std::string& outputr) VL_MT_SAFE {
     outputr = std::string{::std::strerror(ret)};
     return ret;
 }
+IData VL_FERROR_IW(IData fpi, int obits, WDataOutP outwp) VL_MT_SAFE {
+    std::string output;
+    const IData ret = VL_FERROR_IN(fpi, output /*ref*/);
+    _vl_string_to_vint(obits, outwp, output.length(), output.c_str());
+    return ret;
+}
 
 IData VL_FOPEN_NN(const std::string& filename, const std::string& mode) {
     return Verilated::threadContextp()->impp()->fdNew(filename.c_str(), mode.c_str());
