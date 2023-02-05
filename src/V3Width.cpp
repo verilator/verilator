@@ -507,7 +507,7 @@ private:
         if (m_vup->final()) {
             AstNodeDType* const expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
             AstNodeDType* const subDTypep = expDTypep;
-            nodep->dtypeFrom(expDTypep);
+            nodep->dtypep(expDTypep);
             // Error report and change sizes for suboperands of this node.
             iterateCheck(nodep, "Conditional True", nodep->thenp(), CONTEXT_DET, FINAL, subDTypep,
                          EXTEND_EXP);
@@ -1309,7 +1309,7 @@ private:
         }
         if (m_vup->final()) {
             AstNodeDType* const expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
-            nodep->dtypeFrom(expDTypep);  // Assume user knows the rules; go with the flow
+            nodep->dtypep(expDTypep);  // Assume user knows the rules; go with the flow
             if (nodep->width() > 64) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: $c can't generate wider than 64 bits");
             }
@@ -1340,7 +1340,7 @@ private:
 
         if (m_vup->final()) {
             AstNodeDType* const expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
-            nodep->dtypeFrom(expDTypep);
+            nodep->dtypep(expDTypep);
             // rhs already finalized in iterate_shift_prelim
             iterateCheck(nodep, "LHS", nodep->lhsp(), SELF, FINAL, nodep->dtypep(), EXTEND_EXP);
             AstNode* newp = nullptr;  // No change
@@ -5804,7 +5804,7 @@ private:
         if (m_vup->final()) {
             AstNodeDType* const expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
             AstNodeDType* const subDTypep = expDTypep;
-            nodep->dtypeFrom(expDTypep);
+            nodep->dtypep(expDTypep);
             // ShiftRS converts to ShiftR, but not vice-versa
             if (VN_IS(nodep, ShiftRS)) {
                 if (AstNodeBiop* const newp = replaceWithUOrSVersion(nodep, nodep->isSigned())) {
@@ -5856,7 +5856,7 @@ private:
         if (m_vup->final()) {
             AstNodeDType* const expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
             AstNodeDType* const subDTypep = expDTypep;
-            nodep->dtypeFrom(expDTypep);
+            nodep->dtypep(expDTypep);
             // Error report and change sizes for suboperands of this node.
             iterateCheck(nodep, "LHS", nodep->lhsp(), CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
             iterateCheck(nodep, "RHS", nodep->rhsp(), CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
@@ -5906,7 +5906,7 @@ private:
             // Parent's data type was computed using the max(upper, nodep->dtype)
             AstNodeDType* const expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
             AstNodeDType* const subDTypep = expDTypep;
-            nodep->dtypeFrom(expDTypep);
+            nodep->dtypep(expDTypep);
             // We don't use LHS && RHS -- unspecified language corner, see t_math_signed5 test
             // bool expSigned = (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
             if (AstNodeBiop* const newp = replaceWithUOrSVersion(nodep, expDTypep->isSigned())) {
@@ -6032,7 +6032,7 @@ private:
             AstNodeExpr* const newp = spliceCvtD(nodep);
             nodep = newp;
         }
-        nodep->dtypeFrom(expDTypep);
+        nodep->dtypep(expDTypep);
         UINFO(4, "             _new: " << nodep << endl);
     }
 
