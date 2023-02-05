@@ -186,7 +186,7 @@ class EmitCSyms final : EmitCBaseVisitor {
 
     void varHierarchyScopes(string scp) {
         while (!scp.empty()) {
-            const auto scpit = m_vpiScopeCandidates.find(scp);
+            const auto scpit = m_vpiScopeCandidates.find(scopeSymString(scp));
             if ((scpit != m_vpiScopeCandidates.end())
                 && (m_scopeNames.find(scp) == m_scopeNames.end())) {
                 const auto scopeNameit = m_scopeNames.find(scpit->second.m_symName);
@@ -314,8 +314,9 @@ class EmitCSyms final : EmitCBaseVisitor {
             const string name = nodep->scopep()->shortName() + "__DOT__" + nodep->name();
             const string name_pretty = AstNode::vpiName(name);
             const int timeunit = m_modp->timeunit().powerOfTen();
-            m_vpiScopeCandidates.insert(std::make_pair(
-                name, ScopeData{scopeSymString(name), name_pretty, timeunit, type}));
+            m_vpiScopeCandidates.insert(
+                std::make_pair(scopeSymString(name),
+                               ScopeData{scopeSymString(name), name_pretty, timeunit, type}));
         }
     }
     void visit(AstScope* nodep) override {
@@ -328,15 +329,15 @@ class EmitCSyms final : EmitCBaseVisitor {
             const string type = VN_IS(nodep->modp(), Package) ? "SCOPE_OTHER" : "SCOPE_MODULE";
             const string name_pretty = AstNode::vpiName(nodep->shortName());
             const int timeunit = m_modp->timeunit().powerOfTen();
-            m_vpiScopeCandidates.insert(
-                std::make_pair(nodep->name(), ScopeData{scopeSymString(nodep->name()), name_pretty,
-                                                        timeunit, type}));
+            m_vpiScopeCandidates.insert(std::make_pair(
+                scopeSymString(nodep->name()),
+                ScopeData{scopeSymString(nodep->name()), name_pretty, timeunit, type}));
         }
     }
     void visit(AstScopeName* nodep) override {
         const string name = nodep->scopeSymName();
-        // UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()
-        // <<" ss"<<name<<endl);
+        // UINFO(9, "scnameins sp " << nodep->name() << " sp " << nodep->scopePrettySymName()
+        // << " ss" << name << endl);
         const int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
         m_scopeNames.emplace(
             name, ScopeData{name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER"});
