@@ -57,19 +57,15 @@ class ForceConvertVisitor final : public VNVisitor {
         AstVar* const m_rdVarp;  // New variable to replace read references with
         AstVar* const m_enVarp;  // Force enabled signal
         AstVar* const m_valVarp;  // Forced value
-        AstVar* const m_phVarp;  // Placeholder variable for release (never read)
         explicit ForceComponentsVar(AstVar* varp)
             : m_rdVarp{new AstVar{varp->fileline(), VVarType::WIRE, varp->name() + "__VforceRd",
                                   varp->dtypep()}}
             , m_enVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceEn",
                                   varp->dtypep()}}
             , m_valVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceVal",
-                                   varp->dtypep()}}
-            , m_phVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforcePh",
-                                  varp->dtypep()}} {
+                                   varp->dtypep()}} {
             m_rdVarp->addNext(m_enVarp);
             m_rdVarp->addNext(m_valVarp);
-            m_rdVarp->addNext(m_phVarp);
             varp->addNextHere(m_rdVarp);
 
             if (varp->isPrimaryIO()) {
@@ -87,15 +83,12 @@ class ForceConvertVisitor final : public VNVisitor {
         AstVarScope* const m_rdVscp;  // New variable to replace read references with
         AstVarScope* const m_enVscp;  // Force enabled signal
         AstVarScope* const m_valVscp;  // Forced value
-        AstVarScope* const m_phVscp;  // Placeholder variable for release (never read)
         explicit ForceComponentsVarScope(AstVarScope* vscp, ForceComponentsVar& fcv)
             : m_rdVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_rdVarp}}
             , m_enVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_enVarp}}
-            , m_valVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_valVarp}}
-            , m_phVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_phVarp}} {
+            , m_valVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_valVarp}} {
             m_rdVscp->addNext(m_enVscp);
             m_rdVscp->addNext(m_valVscp);
-            m_rdVscp->addNext(m_phVscp);
             vscp->addNextHere(m_rdVscp);
 
             FileLine* const flp = vscp->fileline();
