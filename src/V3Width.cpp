@@ -2151,6 +2151,7 @@ private:
             userIterateAndNext(nodep->valuep(), WidthVP{nodep->dtypep(), PRELIM}.p());
             iterateCheckAssign(nodep, "Initial value", nodep->valuep(), FINAL, nodep->dtypep());
         }
+        userIterateAndNext(nodep->delayp(), WidthVP{nodep->dtypep(), PRELIM}.p());
         UINFO(4, "varWidthed " << nodep << endl);
         // if (debug()) nodep->dumpTree("-  InitOut: ");
         nodep->didWidth(true);
