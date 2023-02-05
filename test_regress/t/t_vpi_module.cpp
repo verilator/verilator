@@ -177,7 +177,7 @@ int main(int argc, char** argv) {
     uint64_t sim_time = 1100;
     contextp->debug(0);
     contextp->commandArgs(argc, argv);
-    // we're going to be checking for these errors do don't crash out
+    // We're going to be checking for these errors so don't crash out
     contextp->fatalOnVpiError(0);
 
     {
