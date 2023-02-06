@@ -10,18 +10,20 @@ module t (/*AUTOARG*/
    );
    input clk;
    reg   _ranit;
-
+   reg follow /* verilator public */ ;
    `include "t_initial_inc.vh"
-
+   
    // surefire lint_off STMINI
    initial assign user_loaded_value = 1;
 
    initial _ranit = 0;
+   initial follow = clk;
 
    always @ (posedge clk) begin
       if (!_ranit) begin
          _ranit <= 1;
 
+         if (follow!=clk) $stop;
          // Test $time
          // surefire lint_off CWECBB
          if ($time<20) $write("time<20\n");
