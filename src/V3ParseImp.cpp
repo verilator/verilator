@@ -496,7 +496,7 @@ void V3ParseImp::tokenPipelineSym() {
         if (const VSymEnt* const look_underp = V3ParseImp::parsep()->symp()->nextId()) {
             UINFO(7, "   tokenPipelineSym: next id lookup forced under " << look_underp << endl);
             // if (debug() >= 7) V3ParseImp::parsep()->symp()->dumpSelf(cout, " -symtree: ");
-            foundp = look_underp->findIdFallback(*(yylval.strp));
+            foundp = look_underp->findIdFlat(*(yylval.strp));
             // "consume" it.  Must set again if want another token under temp scope
             V3ParseImp::parsep()->symp()->nextId(nullptr);
         } else {
