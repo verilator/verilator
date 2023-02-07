@@ -90,6 +90,20 @@ class ClsWithParamField;
    endfunction
 endclass
 
+class DictWrapper;
+   int m_dict[string];
+endclass
+
+class DictOperator #(type T) extends T;
+   function void set(string s, int x);
+      m_dict[s] = x;
+   endfunction
+
+   function int get(string s);
+      return m_dict[s];
+   endfunction
+endclass
+
 module t (/*AUTOARG*/);
 
    Cls c12;
@@ -103,6 +117,7 @@ module t (/*AUTOARG*/);
    SelfRefClassIntParam::self_int_t src10;
    IntQueue qi;
    ClsWithParamField cls_param_field;
+   DictOperator #(DictWrapper) dict_op;
    int arr [1:0] = '{1, 2};
    initial begin
       c12 = new;
@@ -116,6 +131,7 @@ module t (/*AUTOARG*/);
       src10 = new;
       qi = new;
       cls_param_field = new;
+      dict_op = new;
       if (Cls#()::PBASE != 12) $stop;
       if (Cls#(4)::PBASE != 4) $stop;
       if (Cls8_t::PBASE != 8) $stop;
@@ -166,6 +182,9 @@ module t (/*AUTOARG*/);
 
       cls_param_field.m_queue = '{1, 5, 7};
       if (cls_param_field.get(2) != 7) $stop;
+
+      dict_op.set("abcd", 1);
+      if(dict_op.get("abcd") != 1) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

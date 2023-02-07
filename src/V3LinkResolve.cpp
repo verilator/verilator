@@ -145,34 +145,13 @@ private:
     void visit(AstNodePreSel* nodep) override {
         if (!nodep->attrp()) {
             iterateChildren(nodep);
-            // Constification may change the fromp() to a constant, which will lose the
-            // variable we're extracting from (to determine MSB/LSB/endianness/etc.)
-            // So we replicate it in another node
-            // Note that V3Param knows not to replace AstVarRef's under AstAttrOf's
             AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
-            if (AstNodeVarRef* const varrefp
-                = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
-                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
-                                           varrefp->cloneTree(false)});
-            } else if (AstUnlinkedRef* const uvxrp
-                       = VN_CAST(basefromp, UnlinkedRef)) {  // Maybe unlinked - so need to clone
-                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
-                                           uvxrp->cloneTree(false)});
-            } else if (auto* const fromp = VN_CAST(basefromp, LambdaArgRef)) {
-                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
-                                           fromp->cloneTree(false)});
-            } else if (AstMemberSel* const fromp = VN_CAST(basefromp, MemberSel)) {
-                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::MEMBER_BASE,
-                                           fromp->cloneTree(false)});
-            } else if (AstEnumItemRef* const fromp = VN_CAST(basefromp, EnumItemRef)) {
-                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::ENUM_BASE,
-                                           fromp->cloneTree(false)});
-            } else if (VN_IS(basefromp, Replicate)) {
+            if (VN_IS(basefromp, Replicate)) {
                 // From {...}[...] syntax in IEEE 2017
                 if (basefromp) UINFO(1, "    Related node: " << basefromp << endl);
             } else {
-                if (basefromp) UINFO(1, "    Related node: " << basefromp << endl);
-                nodep->v3fatalSrc("Illegal bit select; no signal/member being extracted from");
+                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
+                                           basefromp->cloneTree(false)});
             }
         }
     }
