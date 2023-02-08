@@ -8,12 +8,15 @@ module t ();
 
    function automatic string foo_func();
       foo_func = "FOO";
+      foo_func = $sformatf("%sBAR", foo_func);
+      for (int i = 0; i < 4; i++)
+         foo_func = $sformatf("%s%0d", foo_func, i);
    endfunction
 
    localparam string the_foo = foo_func();
 
    initial begin
-      if (the_foo != "FOO") $stop;
+      if (the_foo != "FOOBAR0123") $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end
