@@ -26,6 +26,7 @@ Verilator 5.007 devel
 * Fix single-element replication to dynarray/unpacked/queue (#3548). [Gustav Svensk]
 * Fix very long VPI signal names (#3929). [Marlon James]
 * Fix VPI upper interface scopes not found (#3937). [David Stanford]
+* Fix virus detection false positive (#3944). [Stuart Morris]
 
 
 Verilator 5.006 2023-01-22
