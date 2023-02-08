@@ -4543,7 +4543,7 @@ public:
         dtypeSetString();
     }
     ASTGEN_MEMBERS_AstCvtPackString;
-    void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
+    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAssign(lhs); }
     string emitVerilog() override { return "%f$_CAST(%l)"; }
     string emitC() override { return "VL_CVT_PACK_STR_N%lq(%lW, %li)"; }
     bool cleanOut() const override { return true; }
