@@ -442,7 +442,8 @@ private:
                     clearOptimizable(nodep, "Var write & read");
                 }
                 vscp->user1(vscp->user1() | VU_RV);
-                const bool isConst = nodep->varp()->isParam() && nodep->varp()->valuep();
+                const bool isConst = (nodep->varp()->isConst() || nodep->varp()->isParam())
+                                     && nodep->varp()->valuep();
                 AstNodeExpr* const valuep
                     = isConst ? fetchValueNull(nodep->varp()->valuep()) : nullptr;
                 // Propagate PARAM constants for constant function analysis
