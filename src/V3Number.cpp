@@ -2201,8 +2201,8 @@ V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
             m_data.m_isNull = true;
         } else if (isString()) {
             if (VL_UNLIKELY(!lhs.isString())) {
-                // Non-compatible types, erase value.
-                m_data.str() = "";
+                // Numbers can still be strings
+                m_data.str() = lhs.toString();
             } else {
                 m_data.str() = lhs.m_data.str();
             }
