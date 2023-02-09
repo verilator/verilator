@@ -1092,7 +1092,7 @@ private:
                 } else if (!inPct) {  // Normal text
                     result += *pos;
                 } else {  // Format character
-                    if ('0' <= pos[0] && pos[0] <= '9') {
+                    if (std::isdigit(pos[0])) {
                         width += pos[0];
                         continue;
                     }
