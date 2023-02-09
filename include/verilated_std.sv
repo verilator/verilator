@@ -123,13 +123,24 @@ package std;
         endfunction
 
         function void srandom(int seed);
+            // TODO: Set the state without changing it
+            $urandom(seed);
         endfunction
 
         function string get_randstate();
-            return "";
+            // TODO: Access the real state variable of the RNG
+            string s;
+
+            s.hextoa($urandom);  // Get a random number
+            set_randstate(s);  // Pretend it's the state of RNG
+
+            return s;
         endfunction
 
         function void set_randstate(string s);
+            // Set the seed using a string
+            int seed = s.atohex();
+            srandom(seed);
         endfunction
     endclass
 
