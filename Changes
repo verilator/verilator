@@ -13,6 +13,7 @@ Verilator 5.007 devel
 
 **Minor:**
 
+* Add --annotate-points option, change multipoint on line reporting (#3876). [Nassim Corteggiani]
 * Add --verilate-jobs option (#3889). [Kamil Rakoczy, Antmicro Ltd]
 * Support unpacked unions.
 * Support interface classes and class implements.

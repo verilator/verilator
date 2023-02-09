@@ -21,38 +21,49 @@
 #include "verilatedos.h"
 
 #include <map>
+#include <set>
 #include <utility>
 #include <vector>
+
+class VlcPoint;
 
 //********************************************************************
 // VlcColumnCount - count at specific source file, line and column
 
 class VlcSourceCount final {
 private:
+    // TYPES
+    using PointsSet = std::set<const VlcPoint*>;
+
     // MEMBERS
     int m_lineno;  ///< Line number
-    int m_column;  ///< Column number
     uint64_t m_count = 0;  ///< Count
     bool m_ok = false;  ///< Coverage is above threshold
+    PointsSet m_points;  // Points on this line
 
 public:
     // CONSTRUCTORS
-    VlcSourceCount(int lineno, int column)
-        : m_lineno{lineno}
-        , m_column{column} {}
+    VlcSourceCount(int lineno)
+        : m_lineno{lineno} {}
     ~VlcSourceCount() = default;
 
     // ACCESSORS
     int lineno() const { return m_lineno; }
-    int column() const { return m_column; }
     uint64_t count() const { return m_count; }
     bool ok() const { return m_ok; }
 
     // METHODS
     void incCount(uint64_t count, bool ok) {
-        m_count += count;
-        if (ok) m_ok = true;
+        if (!m_count) {
+            m_count = count;
+            m_ok = ok;
+        } else {
+            m_count = std::min(m_count, count);
+            if (!ok) m_ok = false;
+        }
     }
+    void insertPoint(const VlcPoint* pointp) { m_points.emplace(pointp); }
+    PointsSet& points() { return m_points; }
 };
 
 //********************************************************************
@@ -61,8 +72,7 @@ public:
 class VlcSource final {
 public:
     // TYPES
-    using ColumnMap = std::map<int, VlcSourceCount>;  // Map of {column}
-    using LinenoMap = std::map<int, ColumnMap>;  // Map of {lineno}{column}
+    using LinenoMap = std::map<int, VlcSourceCount>;  // Map of {column}
 
 private:
     // MEMBERS
@@ -83,16 +93,13 @@ public:
     LinenoMap& lines() { return m_lines; }
 
     // METHODS
-    void incCount(int lineno, int column, uint64_t count, bool ok) {
-        LinenoMap::iterator lit = m_lines.find(lineno);
-        if (lit == m_lines.end()) lit = m_lines.insert(std::make_pair(lineno, ColumnMap())).first;
-        ColumnMap& cmap = lit->second;
-        ColumnMap::iterator cit = cmap.find(column);
-        if (cit == cmap.end()) {
-            cit = cmap.insert(std::make_pair(column, VlcSourceCount{lineno, column})).first;
-        }
-        VlcSourceCount& sc = cit->second;
+    void lineIncCount(int lineno, uint64_t count, bool ok, const VlcPoint* pointp) {
+        auto lit = m_lines.find(lineno);
+        if (lit == m_lines.end())
+            lit = m_lines.emplace(std::make_pair(lineno, VlcSourceCount{lineno})).first;
+        VlcSourceCount& sc = lit->second;
         sc.incCount(count, ok);
+        sc.insertPoint(pointp);
     }
 };
 

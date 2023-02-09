@@ -58,13 +58,14 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     V3OptionParser::AppendHelper DECL_OPTION{parser};
     V3OPTION_PARSER_DECL_TAGS;
 
-    DECL_OPTION("-annotate-all", OnOff, &m_annotateAll);
-    DECL_OPTION("-rank", OnOff, &m_rank);
-    DECL_OPTION("-unlink", OnOff, &m_unlink);
-    DECL_OPTION("-annotate-min", Set, &m_annotateMin);
     DECL_OPTION("-annotate", Set, &m_annotateOut);
+    DECL_OPTION("-annotate-all", OnOff, &m_annotateAll);
+    DECL_OPTION("-annotate-min", Set, &m_annotateMin);
+    DECL_OPTION("-annotate-points", OnOff, &m_annotatePoints);
     DECL_OPTION("-debug", CbCall, []() { V3Error::debugDefault(3); });
     DECL_OPTION("-debugi", CbVal, [](int v) { V3Error::debugDefault(v); });
+    DECL_OPTION("-rank", OnOff, &m_rank);
+    DECL_OPTION("-unlink", OnOff, &m_unlink);
     DECL_OPTION("-V", CbCall, []() {
         showVersion(true);
         std::exit(0);

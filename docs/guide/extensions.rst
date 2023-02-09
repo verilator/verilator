@@ -452,6 +452,7 @@ or "`ifdef`"'s may break other tools.
    See attribute above for their respective behavior. Cannot be nested. e.g:
 
       .. code-block:: sv
+
          /*verilator public_flat_rw_on*/
          logic clk;
          logic rst;
@@ -462,6 +463,7 @@ or "`ifdef`"'s may break other tools.
    Is equivalent to:
 
       .. code-block:: sv
+
          logic clk /*verilator public_flat_rw*/;
          logic rst /*verilator public_flat_rw*/;
          parameter width /*verilator public_flat_rw*/ = 8;

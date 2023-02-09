@@ -35,5 +35,15 @@ run(cmd => ["../bin/verilator_coverage",
 
 files_identical("$Self->{obj_dir}/annotated/$Self->{name}.v", $Self->{golden_filename});
 
+run(cmd => ["../bin/verilator_coverage",
+            "--annotate-points",
+            "--annotate", "$Self->{obj_dir}/annotated-points",
+            "$Self->{obj_dir}/coverage.dat",
+            ],
+    verilator_run => 1,
+    );
+
+files_identical("$Self->{obj_dir}/annotated-points/$Self->{name}.v", "t/" . $Self->{name} . "_points.out");
+
 ok(1);
 1;
