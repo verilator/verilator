@@ -1084,12 +1084,19 @@ private:
             const string format = nodep->text();
             auto pos = format.cbegin();
             bool inPct = false;
+            string width;
             for (; pos != format.cend(); ++pos) {
                 if (!inPct && pos[0] == '%') {
                     inPct = true;
+                    width = "";
                 } else if (!inPct) {  // Normal text
                     result += *pos;
                 } else {  // Format character
+                    if ('0' <= pos[0] && pos[0] <= '9') {
+                        width += pos[0];
+                        continue;
+                    }
+
                     inPct = false;
 
                     if (V3Number::displayedFmtLegal(tolower(pos[0]), false)) {
@@ -1101,7 +1108,7 @@ private:
                                 nodep, "Argument for $display like statement is not constant");
                             break;
                         }
-                        const string pformat = std::string{"%"} + pos[0];
+                        const string pformat = std::string{"%"} + width + pos[0];
                         result += constp->num().displayed(nodep, pformat);
                     } else {
                         switch (tolower(pos[0])) {
