@@ -239,28 +239,27 @@ class EmitCSyms final : EmitCBaseVisitor {
                     // UINFO(9, "For " << scopep->name() << " - " << varp->name() << "  Scp "
                     // << scpName << "Var " << varBase << endl);
 
-
-                    if (varp->isSigUserRdPublic()){     
+                    if (varp->isSigUserRdPublic()) {
                         const string varBasePretty = AstNode::prettyName(VName::dehash(varBase));
                         const string scpPretty = AstNode::prettyName(VName::dehash(scpName));
-                        const string scpSym = scopeSymString(VName::dehash(scpName));    
-                    // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
-                    // << scpSym << endl);   
+                        const string scpSym = scopeSymString(VName::dehash(scpName));
+                        // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
+                        // << scpSym << endl);
 
                         if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
-                            m_scopeNames.insert(std::make_pair(
-                                scpSym, ScopeData{scpSym, scpPretty, 0, "SCOPE_OTHER", "varsexpand"}));
+                            m_scopeNames.insert(
+                                std::make_pair(scpSym, ScopeData{scpSym, scpPretty, 0,
+                                                                 "SCOPE_OTHER", "varsexpand"}));
                         }
                         if (v3Global.opt.vpi()) varHierarchyScopes(scpName, true);
 
-                        m_scopeVars.insert(
-                            std::make_pair(scpSym + " " + varp->name(),
-                                        ScopeVarData{scpSym, varBasePretty, varp, modp, scopep}));
+                        m_scopeVars.insert(std::make_pair(
+                            scpSym + " " + varp->name(),
+                            ScopeVarData{scpSym, varBasePretty, varp, modp, scopep}));
 
-                    } else if (v3Global.opt.vpi()){
+                    } else if (v3Global.opt.vpi()) {
                         varHierarchyScopes(scpName, false);
-                    } 
-                    
+                    }
                 }
             }
         }
@@ -327,9 +326,9 @@ class EmitCSyms final : EmitCBaseVisitor {
             const string name = nodep->scopep()->shortName() + "__DOT__" + nodep->name();
             const string name_pretty = AstNode::vpiName(name);
             const int timeunit = m_modp->timeunit().powerOfTen();
-            m_vpiScopeCandidates.insert(
-                std::make_pair(scopeSymString(name), ScopeData{scopeSymString(name), name_pretty, timeunit, type,
-                                               nodep->origModName()}));
+            m_vpiScopeCandidates.insert(std::make_pair(
+                scopeSymString(name), ScopeData{scopeSymString(name), name_pretty, timeunit, type,
+                                                nodep->origModName()}));
         }
     }
     void visit(AstScope* nodep) override {
@@ -342,8 +341,9 @@ class EmitCSyms final : EmitCBaseVisitor {
             const string type = VN_IS(nodep->modp(), Package) ? "SCOPE_OTHER" : "SCOPE_MODULE";
             const string name_pretty = AstNode::vpiName(nodep->shortName());
             const int timeunit = m_modp->timeunit().powerOfTen();
-            m_vpiScopeCandidates.insert(std::make_pair(
-                scopeSymString(nodep->name()), ScopeData{scopeSymString(nodep->name()), name_pretty, timeunit,
+            m_vpiScopeCandidates.insert(
+                std::make_pair(scopeSymString(nodep->name()),
+                               ScopeData{scopeSymString(nodep->name()), name_pretty, timeunit,
                                          type, nodep->modp()->origName()}));
         }
     }
@@ -352,8 +352,8 @@ class EmitCSyms final : EmitCBaseVisitor {
         // UINFO(9, "scnameins sp " << nodep->name() << " sp " << nodep->scopePrettySymName()
         // << " ss" << name << endl);
         const int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
-        m_scopeNames.emplace(name, ScopeData{name, nodep->scopePrettySymName(), timeunit,
-                                             "SCOPE_OTHER", ""});
+        m_scopeNames.emplace(
+            name, ScopeData{name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER", ""});
 
         if (nodep->dpiExport()) {
             UASSERT_OBJ(m_cfuncp, nodep, "ScopeName not under DPI function");
@@ -371,8 +371,7 @@ class EmitCSyms final : EmitCBaseVisitor {
     void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildren(nodep);
-        if (!m_cfuncp)
-            m_modVars.emplace_back(std::make_pair(m_modp, nodep));
+        if (!m_cfuncp) m_modVars.emplace_back(std::make_pair(m_modp, nodep));
     }
     void visit(AstCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
