@@ -1999,10 +1999,13 @@ private:
     // Cleared on global
     //  *::user1p()             -> See LinkDotState
     //  *::user2p()             -> See LinkDotState
-    //  *::user3()              // bool.          Processed
+    //  *::user3()              // bool. Processed
     //  *::user4()              -> See LinkDotState
     // Cleared on Cell
-    //  AstVar::user5()         // bool.          True if pin used in this cell
+    //  AstVar::user5()         // bool. True if pin used in this cell
+    //  AstClass::user5()       // bool. True if class has a parameter
+    //                                   as a (possibly indirect) base class.
+    //                                   Used only in LDS_PRIMARY pass
     const VNUser3InUse m_inuser3;
     const VNUser5InUse m_inuser5;
 
@@ -3230,6 +3233,7 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstClass* nodep) override {
+        nodep->user3SetOnce();
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);
@@ -3261,6 +3265,16 @@ private:
                             AstClassRefDType* classRefDtypep = nullptr;
                             AstClass* classp = VN_CAST(foundp->nodep(), Class);
                             if (classp) {
+                                if (classp != nodep) {
+                                    // Case with recursive inheritance is handled later in this
+                                    // function
+                                    iterate(classp);
+                                }
+                                if (classp->user5()) {
+                                    // Has a parameter as its base class
+                                    nodep->user5(true);
+                                    return;
+                                }
                                 AstPin* paramsp = cpackagerefp->paramsp();
                                 if (paramsp) paramsp = paramsp->cloneTree(true);
                                 classRefDtypep
@@ -3271,6 +3285,7 @@ private:
                                     // Extending has to be handled after V3Param.cpp, but the type
                                     // reference has to be visited
                                     iterate(paramp);
+                                    nodep->user5(true);
                                     return;
                                 } else {
                                     AstNodeDType* const paramTypep = paramp->getChildDTypep();
