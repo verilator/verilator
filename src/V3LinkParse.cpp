@@ -248,7 +248,10 @@ private:
         // Maybe this variable has a signal attribute
         V3Config::applyVarAttr(m_modp, m_ftaskp, nodep);
 
-        if (v3Global.opt.publicFlatRW()) {
+        if (v3Global.opt.publicFlatRW()
+            || (v3Global.opt.publicDepth() && m_modp
+                && (m_modp->level() - 1) <= v3Global.opt.publicDepth())) {
+
             switch (nodep->varType()) {
             case VVarType::VAR:  // FALLTHRU
             case VVarType::GPARAM:  // FALLTHRU

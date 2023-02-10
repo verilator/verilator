@@ -1101,6 +1101,12 @@ Summary:
    marking only those signals that need public_flat_rw is typically
    significantly better performing.
 
+.. option:: --public-depth <level>
+
+   Enables public as with :vlopt:`--public-flat-rw`, but only to the specified depth of modules.
+   It operates at the module maximum level, so if a module's cells are A.B.X and A.X, the
+   a --public-depth 3 must be used to make module X public, and both A.B.X and A.X will be public.
+
 .. option:: --public-params
 
    Declares all parameters public as if they had
