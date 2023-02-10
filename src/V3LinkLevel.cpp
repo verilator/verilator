@@ -59,15 +59,23 @@ void V3LinkLevel::modSortByLevel() {
     if (tops.size() >= 2) {
         const AstNode* const secp = tops[1];  // Complain about second one, as first often intended
         if (!secp->fileline()->warnIsOff(V3ErrorCode::MULTITOP)) {
+            auto warnTopModules = [](std::string warnMore, ModVec tops)
+                                      VL_REQUIRES(V3Error::s().m_mutex) -> std::string {
+                std::stringstream ss;
+                for (AstNode* alsop : tops) {
+                    ss << warnMore << "... Top module " << alsop->prettyNameQ() << endl
+                       << alsop->warnContextSecondary();
+                }
+                return ss.str();
+            };
+
             secp->v3warn(MULTITOP, "Multiple top level modules\n"
                                        << secp->warnMore()
                                        << "... Suggest see manual; fix the duplicates, or use "
                                           "--top-module to select top."
-                                       << V3Error::warnContextNone());
-            for (AstNode* alsop : tops) {
-                std::cerr << secp->warnMore() << "... Top module " << alsop->prettyNameQ() << endl
-                          << alsop->warnContextSecondary();
-            }
+                                       << V3Error::s().warnContextNone()
+                                       << V3Error::warnAdditionalInfo()
+                                       << warnTopModules(secp->warnMore(), tops));
         }
     }
 

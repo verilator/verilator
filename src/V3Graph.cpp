@@ -129,7 +129,7 @@ V3GraphEdge* V3GraphVertex::findConnectingEdgep(GraphWay way, const V3GraphVerte
 }
 
 // cppcheck-has-bug-suppress constParameter
-void V3GraphVertex::v3errorEnd(std::ostringstream& str) const {
+void V3GraphVertex::v3errorEnd(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex) {
     std::ostringstream nsstr;
     nsstr << str.str();
     if (debug()) {
@@ -139,10 +139,11 @@ void V3GraphVertex::v3errorEnd(std::ostringstream& str) const {
     if (FileLine* const flp = fileline()) {
         flp->v3errorEnd(nsstr);
     } else {
-        V3Error::v3errorEnd(nsstr);
+        V3Error::s().v3errorEnd(nsstr);
     }
 }
-void V3GraphVertex::v3errorEndFatal(std::ostringstream& str) const {
+void V3GraphVertex::v3errorEndFatal(std::ostringstream& str) const
+    VL_REQUIRES(V3Error::s().m_mutex) {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE;

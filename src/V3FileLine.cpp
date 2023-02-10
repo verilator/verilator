@@ -322,7 +322,7 @@ string FileLine::asciiLineCol() const {
             + "-" + cvtToStr(lastColumn()) + "[" + (m_contentp ? m_contentp->ascii() : "ct0") + "+"
             + cvtToStr(m_contentLineno) + "]");
 }
-string FileLine::ascii() const VL_MT_SAFE {
+string FileLine::ascii() const {
     // For most errors especially in the parser the lastLineno is more accurate than firstLineno
     return filename() + ":" + cvtToStr(lastLineno()) + ":" + cvtToStr(firstColumn());
 }
@@ -369,7 +369,7 @@ void FileLine::warnUnusedOff(bool flag) {
     warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
 }
 
-bool FileLine::warnIsOff(V3ErrorCode code) const VL_MT_SAFE {
+bool FileLine::warnIsOff(V3ErrorCode code) const {
     if (!msgEn().test(code)) return true;
     if (!defaultFileLine().msgEn().test(code)) return true;  // Global overrides local
     if ((code.lintError() || code.styleError()) && !msgEn().test(V3ErrorCode::I_LINT)) {
@@ -380,7 +380,8 @@ bool FileLine::warnIsOff(V3ErrorCode code) const VL_MT_SAFE {
 }
 
 // cppverilator-suppress constParameter
-void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra) {
+void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
+    VL_REQUIRES(V3Error::s().m_mutex) {
     std::ostringstream nsstr;
     if (lastLineno()) nsstr << this;
     nsstr << sstr.str();
@@ -390,29 +391,33 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra) {
         lstr << std::setw(ascii().length()) << " "
              << ": " << extra;
     }
-    m_waive = V3Config::waive(this, V3Error::errorCode(), sstr.str());
-    if (warnIsOff(V3Error::errorCode()) || m_waive) {
-        V3Error::suppressThisWarning();
-    } else if (!V3Error::errorContexted()) {
+    m_waive = V3Config::waive(this, V3Error::s().errorCode(), sstr.str());
+    if (warnIsOff(V3Error::s().errorCode()) || m_waive) {
+        V3Error::s().suppressThisWarning();
+    } else if (!V3Error::s().errorContexted()) {
         nsstr << warnContextPrimary();
     }
-    if (!m_waive) V3Waiver::addEntry(V3Error::errorCode(), filename(), sstr.str());
-    V3Error::v3errorEnd(nsstr, lstr.str());
+    if (!m_waive) V3Waiver::addEntry(V3Error::s().errorCode(), filename(), sstr.str());
+    V3Error::s().v3errorEnd(nsstr, lstr.str());
 }
 
-string FileLine::warnMore() const {
+string FileLine::warnMore() const VL_REQUIRES(V3Error::s().m_mutex) {
     if (lastLineno()) {
-        return V3Error::warnMore() + string(ascii().size(), ' ') + ": ";
+        return V3Error::s().warnMore() + string(ascii().size(), ' ') + ": ";
     } else {
-        return V3Error::warnMore();
+        return V3Error::s().warnMore();
     }
 }
-string FileLine::warnOther() const VL_MT_SAFE {
+string FileLine::warnOther() const VL_REQUIRES(V3Error::s().m_mutex) {
     if (lastLineno()) {
-        return V3Error::warnMore() + ascii() + ": ";
+        return V3Error::s().warnMore() + ascii() + ": ";
     } else {
-        return V3Error::warnMore();
+        return V3Error::s().warnMore();
     }
+};
+string FileLine::warnOtherStandalone() const VL_EXCLUDES(V3Error::s().m_mutex) VL_MT_UNSAFE {
+    const VerilatedLockGuard guard{V3Error::s().m_mutex};
+    return warnOther();
 }
 
 string FileLine::source() const VL_MT_SAFE {
@@ -435,8 +440,7 @@ string FileLine::prettySource() const VL_MT_SAFE {
     return VString::spaceUnprintable(out);
 }
 
-string FileLine::warnContext(bool secondary) const VL_MT_SAFE {
-    V3Error::errorContexted(true);
+string FileLine::warnContext() const {
     if (!v3Global.opt.context()) return "";
     string out;
     if (firstLineno() == lastLineno() && firstColumn()) {
@@ -457,16 +461,18 @@ string FileLine::warnContext(bool secondary) const VL_MT_SAFE {
             out += "\n";
         }
     }
-    if (!secondary) {  // Avoid printing long paths on informational part of error
-        for (FileLine* parentFl = parent(); parentFl; parentFl = parentFl->parent()) {
-            if (parentFl->filenameIsGlobal()) break;
-            out += parentFl->warnOther() + "... note: In file included from "
-                   + parentFl->filebasename() + "\n";
-        }
-    }
     return out;
 }
 
+string FileLine::warnContextParent() const VL_REQUIRES(V3Error::s().m_mutex) {
+    string out;
+    for (FileLine* parentFl = parent(); parentFl; parentFl = parentFl->parent()) {
+        if (parentFl->filenameIsGlobal()) break;
+        out += parentFl->warnOther() + "... note: In file included from "
+               + parentFl->filebasename() + "\n";
+    }
+    return out;
+}
 #ifdef VL_LEAK_CHECKS
 std::unordered_set<FileLine*> fileLineLeakChecks;
 

@@ -185,7 +185,9 @@ public:
     // For getline()
     string m_lineChars;  ///< Characters left for next line
 
-    void v3errorEnd(std::ostringstream& str) { fileline()->v3errorEnd(str); }
+    void v3errorEnd(std::ostringstream& str) VL_REQUIRES(V3Error::s().m_mutex) {
+        fileline()->v3errorEnd(str);
+    }
 
     static const char* tokenName(int tok);
     void debugToken(int tok, const char* cmtp);

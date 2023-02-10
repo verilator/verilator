@@ -99,13 +99,13 @@ class Graph final : public V3Graph {
         // TODO: 'typeName' is an internal thing. This should be more human readable.
         if (LogicVertex* const lvtxp = dynamic_cast<LogicVertex*>(vtxp)) {
             AstNode* const logicp = lvtxp->logicp();
-            std::cerr << logicp->fileline()->warnOther()
+            std::cerr << logicp->fileline()->warnOtherStandalone()
                       << "     Example path: " << logicp->typeName() << endl;
         } else {
             VarVertex* const vvtxp = dynamic_cast<VarVertex*>(vtxp);
             UASSERT(vvtxp, "Cannot be anything else");
             AstVarScope* const vscp = vvtxp->vscp();
-            std::cerr << vscp->fileline()->warnOther()
+            std::cerr << vscp->fileline()->warnOtherStandalone()
                       << "     Example path: " << vscp->prettyName() << endl;
         }
     }
@@ -289,7 +289,7 @@ void reportLoopVars(Graph* graphp, VarVertex* vvtxp) {
             if (i == candidates.size()) break;
             const Candidate& candidate = candidates[i];
             AstVar* const varp = candidate.first->varp();
-            std::cerr << V3Error::warnMore() << "    " << varp->fileline() << " "
+            std::cerr << V3Error::warnMoreStandalone() << "    " << varp->fileline() << " "
                       << varp->prettyName() << ", width " << std::dec << varp->width()
                       << ", circular fanout " << candidate.second;
             if (V3SplitVar::canSplitVar(varp)) {
@@ -301,19 +301,19 @@ void reportLoopVars(Graph* graphp, VarVertex* vvtxp) {
     };
 
     // Widest variables
-    std::cerr << V3Error::warnMore() << "... Widest variables candidate to splitting:\n";
+    std::cerr << V3Error::warnMoreStandalone() << "... Widest variables candidate to splitting:\n";
     reportFirst10([](const Candidate& a, const Candidate& b) {
         return a.first->varp()->width() > b.first->varp()->width();
     });
 
     // Highest fanout
-    std::cerr << V3Error::warnMore() << "... Candidates with the highest fanout:\n";
+    std::cerr << V3Error::warnMoreStandalone() << "... Candidates with the highest fanout:\n";
     reportFirst10([](const Candidate& a, const Candidate& b) {  //
         return a.second > b.second;
     });
 
     if (splittable) {
-        std::cerr << V3Error::warnMore()
+        std::cerr << V3Error::warnMoreStandalone()
                   << "... Suggest add /*verilator split_var*/ to appropriate variables above."
                   << std::endl;
     }

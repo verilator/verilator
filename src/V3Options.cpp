@@ -572,26 +572,28 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
 void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
     static bool shown_notfound_msg = false;
     if (modname.find("__Vhsh") != string::npos) {
-        std::cerr << V3Error::warnMore() << "... Unsupported: Name is longer than 127 characters;"
+        std::cerr << V3Error::warnMoreStandalone()
+                  << "... Unsupported: Name is longer than 127 characters;"
                   << " automatic file lookup not supported.\n";
-        std::cerr << V3Error::warnMore() << "... Suggest putting filename with this module/package"
+        std::cerr << V3Error::warnMoreStandalone()
+                  << "... Suggest putting filename with this module/package"
                   << " onto command line instead.\n";
     } else if (!shown_notfound_msg) {
         shown_notfound_msg = true;
         if (m_impp->m_incDirUsers.empty()) {
             fl->v3error("This may be because there's no search path specified with -I<dir>.");
         }
-        std::cerr << V3Error::warnMore() << "... Looked in:" << endl;
+        std::cerr << V3Error::warnMoreStandalone() << "... Looked in:" << endl;
         for (const string& dir : m_impp->m_incDirUsers) {
             for (const string& ext : m_impp->m_libExtVs) {
                 const string fn = V3Os::filenameFromDirBase(dir, modname + ext);
-                std::cerr << V3Error::warnMore() << "     " << fn << endl;
+                std::cerr << V3Error::warnMoreStandalone() << "     " << fn << endl;
             }
         }
         for (const string& dir : m_impp->m_incDirFallbacks) {
             for (const string& ext : m_impp->m_libExtVs) {
                 const string fn = V3Os::filenameFromDirBase(dir, modname + ext);
-                std::cerr << V3Error::warnMore() << "     " << fn << endl;
+                std::cerr << V3Error::warnMoreStandalone() << "     " << fn << endl;
             }
         }
     }
