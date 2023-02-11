@@ -149,7 +149,7 @@ function(verilate TARGET)
     endif()
     list(GET VERILATE_SOURCES 0 TOPSRC)
     get_filename_component(_SRC_NAME ${TOPSRC} NAME_WE)
-    set(VERILATE_PREFIX V${_SRC_NAME})
+    string(MAKE_C_IDENTIFIER V${_SRC_NAME} VERILATE_PREFIX)
   endif()
 
   if (VERILATE_TOP_MODULE)
