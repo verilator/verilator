@@ -519,6 +519,8 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory");
 #elif defined(__aarch64__) || defined(__arm__)
 # define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
+#elif defined(__hppa__)  // HPPA does not currently have yield/pause
+# define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
 #elif defined(__loongarch__)  // LoongArch does not currently have yield/pause
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
 #elif defined(__mips64el__) || defined(__mips__) || defined(__mips64__) || defined(__mips64)
