@@ -1263,7 +1263,7 @@ package_or_generate_item_declaration<nodep>:    // ==IEEE: package_or_generate_i
         |       function_declaration                    { $$ = $1; }
         //UNSUP checker_declaration                     { $$ = $1; }
         |       dpi_import_export                       { $$ = $1; }
-        //UNSUP extern_constraint_declaration           { $$ = $1; }
+        |       extern_constraint_declaration           { $$ = $1; }
         |       class_declaration                       { $$ = $1; }
         //                      // class_constructor_declaration is part of function_declaration
         //                      // local_parameter_declaration under parameter_declaration
@@ -6877,9 +6877,10 @@ dist_item<nodep>:  // ==IEEE: dist_item + dist_weight
         |       value_range yP_COLONDIV expr            { $$ = $1; /*UNSUP-no-UVM*/ }
         ;
 
-//UNSUPextern_constraint_declaration:  // ==IEEE: extern_constraint_declaration
-//UNSUP         constraintStaticE yCONSTRAINT class_scope_id constraint_block   { }
-//UNSUP ;
+extern_constraint_declaration<nodep>:  // ==IEEE: extern_constraint_declaration
+                constraintStaticE yCONSTRAINT packageClassScopeE idAny
+                        { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: extern constraint"); }
+        ;
 
 constraintStaticE<cbool>:  // IEEE: part of extern_constraint_declaration
                 /* empty */                             { $$ = false; }

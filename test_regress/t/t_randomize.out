@@ -8,4 +8,10 @@
 %Error-UNSUPPORTED: t/t_randomize.v:32:9: Unsupported: dist
    32 |       x dist { [100:102] :/ 1, 200 := 2, 300 := 5, 400};
       |         ^~~~
+%Error-UNSUPPORTED: t/t_randomize.v:37:1: Unsupported: extern constraint
+   37 | constraint Packet::ex { header > 0 };
+      | ^~~~~~~~~~
+%Error: t/t_randomize.v:37:23: syntax error, unexpected '{'
+   37 | constraint Packet::ex { header > 0 };
+      |                       ^
 %Error: Exiting due to
