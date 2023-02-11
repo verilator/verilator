@@ -1711,7 +1711,8 @@ private:
     }
     void visit(AstTypedefFwd* nodep) override {
         VSymEnt* const foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->name());
-        if (!foundp && v3Global.opt.pedantic()) {
+        if (!foundp && v3Global.opt.pedantic()
+            && nodep->name() != "process") {  // Process is dangling as isn't implemented yet
             // We only check it was ever really defined in pedantic mode, as it
             // might have been in a header file referring to a module we never
             // needed so there are false positives

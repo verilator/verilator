@@ -17,7 +17,7 @@ else {
     top_filename("t/t_mailbox.v");
 
     compile(
-        verilator_flags2 => ["--exe --main --timing -Wall -DMAILBOX_T=std::mailbox"],
+        verilator_flags2 => ["--exe --main --timing -Wall --Wpedantic -DMAILBOX_T=std::mailbox"],
         make_main => 0,
         );
 
