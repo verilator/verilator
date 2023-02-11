@@ -57,7 +57,6 @@ foreach my $s (
     'Illegal +: or -: select; type already selected, or bad dimension: ',
     'Illegal bit or array select; type already selected, or bad dimension: ',
     'Illegal range select; type already selected, or bad dimension: ',
-    'In defparam, instance ',
     'Interface port ',
     'Member selection of non-struct/union object \'',
     'Modport item is not a function/task: ',
