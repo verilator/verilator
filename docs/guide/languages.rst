@@ -461,6 +461,10 @@ chandle
   Treated as a "longint"; does not yet warn about operations specified as
   illegal on chandles.
 
+checker
+  Treated as a "module"; does not yet warn about many constructs illegal
+  inside a checker.
+
 disable
   Disable statements may be used only if the block being disabled is a
   block the disable statement itself is inside.  This was commonly used to

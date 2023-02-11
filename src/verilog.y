@@ -562,7 +562,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yCASEX          "casex"
 %token<fl>              yCASEZ          "casez"
 %token<fl>              yCHANDLE        "chandle"
-//UNSUP %token<fl>      yCHECKER        "checker"
+%token<fl>              yCHECKER        "checker"
 %token<fl>              yCLASS          "class"
 //UNSUP %token<fl>      yCLOCK          "clock"
 %token<fl>              yCLOCKING       "clocking"
@@ -588,7 +588,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yELSE           "else"
 %token<fl>              yEND            "end"
 %token<fl>              yENDCASE        "endcase"
-//UNSUP %token<fl>      yENDCHECKER     "endchecker"
+%token<fl>              yENDCHECKER     "endchecker"
 %token<fl>              yENDCLASS       "endclass"
 %token<fl>              yENDCLOCKING    "endclocking"
 %token<fl>              yENDFUNCTION    "endfunction"
@@ -1261,7 +1261,7 @@ package_or_generate_item_declaration<nodep>:    // ==IEEE: package_or_generate_i
         |       data_declaration                        { $$ = $1; }
         |       task_declaration                        { $$ = $1; }
         |       function_declaration                    { $$ = $1; }
-        //UNSUP checker_declaration                     { $$ = $1; }
+        |       checker_declaration                     { $$ = $1; }
         |       dpi_import_export                       { $$ = $1; }
         |       extern_constraint_declaration           { $$ = $1; }
         |       class_declaration                       { $$ = $1; }
@@ -2610,19 +2610,21 @@ module_common_item<nodep>:      // ==IEEE: module_common_item
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: alias statements"); }
         |       initial_construct                       { $$ = $1; }
         |       final_construct                         { $$ = $1; }
-        //                      // IEEE: always_construct
-        //                      // Verilator only - event_control attached to always
-        |       yALWAYS       stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS, nullptr, $2}; }
-        |       yALWAYS_FF    stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_FF, nullptr, $2}; }
-        |       yALWAYS_LATCH stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_LATCH, nullptr, $2}; }
-        |       yALWAYS_COMB  stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_COMB, nullptr, $2}; }
-        //
+        |       always_construct                        { $$ = $1; }
         |       loop_generate_construct                 { $$ = $1; }
         |       conditional_generate_construct          { $$ = $1; }
         |       elaboration_system_task                 { $$ = $1; }
         |       sigAttrScope                            { $$ = nullptr; }
         //
         |       error ';'                               { $$ = nullptr; }
+        ;
+
+always_construct<nodep>:        // IEEE: == always_construct
+        //                      // Verilator only - event_control attached to always
+                yALWAYS       stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS, nullptr, $2}; }
+        |       yALWAYS_FF    stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_FF, nullptr, $2}; }
+        |       yALWAYS_LATCH stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_LATCH, nullptr, $2}; }
+        |       yALWAYS_COMB  stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_COMB, nullptr, $2}; }
         ;
 
 continuous_assign<nodep>:       // IEEE: continuous_assign
@@ -2697,17 +2699,21 @@ generate_region<nodep>:         // ==IEEE: generate_region
         |       yGENERATE yENDGENERATE                  { $$ = nullptr; }
         ;
 
-//UNSUPc_generate_region<nodep>:  // IEEE: generate_region (for checkers)
-//UNSUP         BISONPRE_COPY(generate_region,{s/~c~/c_/g})     // {copied}
-//UNSUP ;
+c_generate_region<nodep>:  // IEEE: generate_region (for checkers)
+                BISONPRE_COPY(generate_region,{s/~c~/c_/g})     // {copied}
+        ;
 
 generate_block_or_null<nodep>:  // IEEE: generate_block_or_null (called from gencase/genif/genfor)
         //      ';'             // is included in
         //                      // IEEE: generate_block
         //                      // Must always return a BEGIN node, or nullptr - see GenFor construction
-                generate_item
+                ~c~generate_item
                         { $$ = $1 ? (new AstBegin{$1->fileline(), "", $1, true, true}) : nullptr; }
-        |       genItemBegin                            { $$ = $1; }
+        |       ~c~genItemBegin                         { $$ = $1; }
+        ;
+
+c_generate_block_or_null<nodep>:  // IEEE: generate_block_or_null (for checkers)
+                BISONPRE_COPY(generate_block_or_null,{s/~c~/c_/g})      // {copied}
         ;
 
 genItemBegin<nodep>:            // IEEE: part of generate_block
@@ -2725,27 +2731,27 @@ genItemBegin<nodep>:            // IEEE: part of generate_block
                         { $$ = nullptr; GRAMMARP->endLabel($<fl>5, *$3, $5); }
         ;
 
-//UNSUPc_genItemBegin<nodep>:  // IEEE: part of generate_block (for checkers)
-//UNSUP         BISONPRE_COPY(genItemBegin,{s/~c~/c_/g})                // {copied}
-//UNSUP ;
+c_genItemBegin<nodep>:  // IEEE: part of generate_block (for checkers)
+                BISONPRE_COPY(genItemBegin,{s/~c~/c_/g})                // {copied}
+        ;
 
 genItemOrBegin<nodep>:          // Not in IEEE, but our begin isn't under generate_item
                 ~c~generate_item                        { $$ = $1; }
         |       ~c~genItemBegin                         { $$ = $1; }
         ;
 
-//UNSUPc_genItemOrBegin<nodep>:  // (for checkers)
-//UNSUP         BISONPRE_COPY(genItemOrBegin,{s/~c~/c_/g})      // {copied}
-//UNSUP ;
+c_genItemOrBegin<nodep>:  // (for checkers)
+                BISONPRE_COPY(genItemOrBegin,{s/~c~/c_/g})      // {copied}
+        ;
 
 genItemList<nodep>:
                 ~c~genItemOrBegin                       { $$ = $1; }
         |       ~c~genItemList ~c~genItemOrBegin        { $$ = addNextNull($1, $2); }
         ;
 
-//UNSUPc_genItemList<nodep>:  // (for checkers)
-//UNSUP         BISONPRE_COPY(genItemList,{s/~c~/c_/g})         // {copied}
-//UNSUP ;
+c_genItemList<nodep>:  // (for checkers)
+                BISONPRE_COPY(genItemList,{s/~c~/c_/g})         // {copied}
+        ;
 
 generate_item<nodep>:           // IEEE: module_or_interface_or_generate_item
         //                      // Only legal when in a generate under a module (or interface under a module)
@@ -2757,9 +2763,9 @@ generate_item<nodep>:           // IEEE: module_or_interface_or_generate_item
         //                      // so below in c_generate_item
         ;
 
-//UNSUPc_generate_item<nodep>:  // IEEE: generate_item (for checkers)
-//UNSUP         checker_or_generate_item                { $$ = $1; }
-//UNSUP ;
+c_generate_item<nodep>:  // IEEE: generate_item (for checkers)
+                checker_or_generate_item                { $$ = $1; }
+        ;
 
 conditional_generate_construct<nodep>:  // ==IEEE: conditional_generate_construct
                 yCASE  '(' expr ')' ~c~case_generate_itemListE yENDCASE
@@ -2770,9 +2776,9 @@ conditional_generate_construct<nodep>:  // ==IEEE: conditional_generate_construc
                         { $$ = new AstGenIf{$1, $3, $5, $7}; }
         ;
 
-//UNSUPc_conditional_generate_construct<nodep>:  // IEEE: conditional_generate_construct (for checkers)
-//UNSUP         BISONPRE_COPY(conditional_generate_construct,{s/~c~/c_/g})      // {copied}
-//UNSUP ;
+c_conditional_generate_construct<nodep>:  // IEEE: conditional_generate_construct (for checkers)
+                BISONPRE_COPY(conditional_generate_construct,{s/~c~/c_/g})      // {copied}
+        ;
 
 loop_generate_construct<nodep>: // ==IEEE: loop_generate_construct
                 yFOR '(' genvar_initialization ';' expr ';' genvar_iteration ')' ~c~generate_block_or_null
@@ -2801,9 +2807,9 @@ loop_generate_construct<nodep>: // ==IEEE: loop_generate_construct
                         }
         ;
 
-//UNSUPc_loop_generate_construct<nodep>:  // IEEE: loop_generate_construct (for checkers)
-//UNSUP         BISONPRE_COPY(loop_generate_construct,{s/~c~/c_/g})     // {copied}
-//UNSUP ;
+c_loop_generate_construct<nodep>:  // IEEE: loop_generate_construct (for checkers)
+                BISONPRE_COPY(loop_generate_construct,{s/~c~/c_/g})     // {copied}
+        ;
 
 genvar_initialization<nodep>:   // ==IEEE: genvar_initialization
                 varRefBase '=' expr                     { $$ = new AstAssign{$2, $1, $3}; }
@@ -2855,7 +2861,11 @@ genvar_iteration<nodep>:        // ==IEEE: genvar_iteration
 
 case_generate_itemListE<caseItemp>: // IEEE: [{ case_generate_itemList }]
                 /* empty */                             { $$ = nullptr; }
-        |       case_generate_itemList                  { $$ = $1; }
+        |       ~c~case_generate_itemList               { $$ = $1; }
+        ;
+
+c_case_generate_itemListE<caseItemp>:  // IEEE: { case_generate_item } (for checkers)
+                BISONPRE_COPY(case_generate_itemListE,{s/~c~/c_/g})      // {copied}
         ;
 
 case_generate_itemList<caseItemp>:  // IEEE: { case_generate_itemList }
@@ -2863,19 +2873,19 @@ case_generate_itemList<caseItemp>:  // IEEE: { case_generate_itemList }
         |       ~c~case_generate_itemList ~c~case_generate_item         { $$ = $1; $1->addNext($2); }
         ;
 
-//UNSUPc_case_generate_itemList<nodep>:  // IEEE: { case_generate_item } (for checkers)
-//UNSUP         BISONPRE_COPY(case_generate_itemList,{s/~c~/c_/g})      // {copied}
-//UNSUP ;
-
-case_generate_item<caseItemp>:      // ==IEEE: case_generate_item
-                caseCondList colon generate_block_or_null       { $$ = new AstCaseItem{$2, $1, $3}; }
-        |       yDEFAULT colon generate_block_or_null           { $$ = new AstCaseItem{$1, nullptr, $3}; }
-        |       yDEFAULT generate_block_or_null                 { $$ = new AstCaseItem{$1, nullptr, $2}; }
+c_case_generate_itemList<caseItemp>:  // IEEE: { case_generate_item } (for checkers)
+                BISONPRE_COPY(case_generate_itemList,{s/~c~/c_/g})      // {copied}
         ;
 
-//UNSUPc_case_generate_item<nodep>:  // IEEE: case_generate_item (for checkers)
-//UNSUP         BISONPRE_COPY(case_generate_item,{s/~c~/c_/g})  // {copied}
-//UNSUP ;
+case_generate_item<caseItemp>:      // ==IEEE: case_generate_item
+                caseCondList colon ~c~generate_block_or_null    { $$ = new AstCaseItem{$2, $1, $3}; }
+        |       yDEFAULT colon ~c~generate_block_or_null        { $$ = new AstCaseItem{$1, nullptr, $3}; }
+        |       yDEFAULT ~c~generate_block_or_null              { $$ = new AstCaseItem{$1, nullptr, $2}; }
+        ;
+
+c_case_generate_item<caseItemp>:  // IEEE: case_generate_item (for checkers)
+                BISONPRE_COPY(case_generate_item,{s/~c~/c_/g})  // {copied}
+        ;
 
 //************************************************
 // Assignments and register declarations
@@ -5935,7 +5945,6 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
 complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
                 expr yP_ORMINUSGT pexpr                 { $$ = new AstLogOr{$2, new AstLogNot{$2, $1}, $3}; }
         |       expr yP_OREQGT pexpr                    { $$ = new AstImplication{$2, $1, $3}; }
-        |       yNOT pexpr %prec prNEGATION             { $$ = new AstLogNot{$1, $2}; }
         |       '(' complex_pexpr ')'                   { $$ = $2; }
         //UNSUP remove above, use below:
         //
@@ -5945,7 +5954,7 @@ complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
         //                      // IEEE: '(' pexpr ')'
         //                      // Expanded below
         //
-        //UNSUP yNOT pexpr %prec prNEGATION             { }
+        |       yNOT pexpr %prec prNEGATION             { $$ = new AstLogNot{$1, $2}; }
         //UNSUP ySTRONG '(' sexpr ')'                   { }
         //UNSUP yWEAK '(' sexpr ')'                     { }
         //                      // IEEE: pexpr yOR pexpr
@@ -6249,7 +6258,8 @@ complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
 
 //UNSUPlist_of_cross_items<nodep>:  // ==IEEE: list_of_cross_items
 //UNSUP         cross_item ',' cross_item               { $$ = addNextNull($1, $3); }
-//UNSUP |       cross_item ',' cross_item ',' cross_itemList    { }
+//UNSUP |       cross_item ',' cross_item ',' cross_itemList
+//UNSUP                 { $$ = addNextNull(addNextNull($1, $3), $5); }
 //UNSUP ;
 
 //UNSUPcross_itemList<nodep>:  // IEEE: part of list_of_cross_items
@@ -6459,67 +6469,85 @@ rs_case_item<nodep>:  // ==IEEE: rs_case_item
 //**********************************************************************
 // Checker
 
-//UNSUPchecker_declaration<nodep>:  // ==IEEE: part of checker_declaration
-//UNSUP         checkerFront checker_port_listE ';'
-//UNSUP                 checker_or_generate_itemListE yENDCHECKER endLabelE
-//UNSUP                 { SYMP->popScope($$); }
-//UNSUP ;
+checker_declaration<nodep>:  // ==IEEE: part of checker_declaration
+                checkerFront checker_port_listE ';'
+                        checker_or_generate_itemListE yENDCHECKER endLabelE
+                        { $$ = $1;
+                          $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));
+                          if ($2) $1->addStmtsp($2);
+                          if ($4) $1->addStmtsp($4);
+                          GRAMMARP->m_modp = nullptr;
+                          SYMP->popScope($1);
+                          GRAMMARP->endLabel($<fl>6, $1, $6); }
+        ;
 
-//UNSUPcheckerFront<nodep>:  // IEEE: part of checker_declaration
-//UNSUP         yCHECKER idAny/*checker_identifier*/
-//UNSUP                 { SYMP->pushNew($$); }
-//UNSUP ;
+checkerFront<nodeModulep>:  // IEEE: part of checker_declaration
+                yCHECKER idAny/*checker_identifier*/
+                        { BBUNSUP($<fl>1, "Unsupported: checker");
+                          // TODO should be AstChecker not AstModule
+                          $$ = new AstModule{$<fl>2, *$2};
+                          $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
+                          $$->timeunit(PARSEP->timeLastUnit());
+                          $$->unconnectedDrive(PARSEP->unconnectedDrive());
+                          SYMP->pushNew($$);
+                          GRAMMARP->m_modp = $$; }
+        ;
 
-//UNSUPchecker_port_listE<nodep>:  // IEEE: [ ( [ checker_port_list ] ) ]
-//UNSUP //                      // checker_port_item is basically the same as property_port_item, minus yLOCAL::
-//UNSUP //                      // Want to bet 1800-2012 adds local to checkers?
-//UNSUP         property_port_listE                     { $$ = $1; }
-//UNSUP ;
+checker_port_listE<nodep>:  // IEEE: [ ( [ checker_port_list ] ) ]
+        //                      // checker_port_item is basically the same as property_port_item, minus yLOCAL::
+        //                      // Want to bet 1800-2012 adds local to checkers?
+                property_port_listE                     { $$ = $1; }
+        ;
 
-//UNSUPchecker_or_generate_itemListE<nodep>:  // IEEE: [{ checker_or_generate_itemList }]
-//UNSUP         /* empty */                             { $$ = nullptr; }
-//UNSUP |       checker_or_generate_itemList            { $$ = $1; }
-//UNSUP ;
+checker_or_generate_itemListE<nodep>:  // IEEE: [{ checker_or_generate_itemList }]
+                /* empty */                             { $$ = nullptr; }
+        |       checker_or_generate_itemList            { $$ = $1; }
+        ;
 
-//UNSUPchecker_or_generate_itemList<nodep>:  // IEEE: { checker_or_generate_itemList }
-//UNSUP         checker_or_generate_item                { $$ = $1; }
-//UNSUP |       checker_or_generate_itemList checker_or_generate_item   { $$ = addNextNull($1, $2); }
-//UNSUP ;
+checker_or_generate_itemList<nodep>:  // IEEE: { checker_or_generate_itemList }
+                checker_or_generate_item                { $$ = $1; }
+        |       checker_or_generate_itemList checker_or_generate_item   { $$ = addNextNull($1, $2); }
+        ;
 
-//UNSUPchecker_or_generate_item<nodep>:  // ==IEEE: checker_or_generate_item
-//UNSUP         checker_or_generate_item_declaration    { $$ = $1; }
-//UNSUP |       initial_construct                       { $$ = $1; }
-//UNSUP //                      // IEEE: checker_construct
-//UNSUP |       yALWAYS stmtBlock                       { }
-//UNSUP |       final_construct                         { $$ = $1; }
-//UNSUP |       assertion_item                          { $$ = $1; }
-//UNSUP |       continuous_assign                       { $$ = $1; }
-//UNSUP |       checker_generate_item                   { $$ = $1; }
-//UNSUP ;
+checker_or_generate_item<nodep>:  // ==IEEE: checker_or_generate_item
+                checker_or_generate_item_declaration    { $$ = $1; }
+        |       initial_construct                       { $$ = $1; }
+        //                      // IEEE: checker_construct
+        |       always_construct                        { $$ = $1; }
+        |       final_construct                         { $$ = $1; }
+        |       assertion_item                          { $$ = $1; }
+        |       continuous_assign                       { $$ = $1; }
+        |       checker_generate_item                   { $$ = $1; }
+        ;
 
-//UNSUPchecker_or_generate_item_declaration<nodep>:  // ==IEEE: checker_or_generate_item_declaration
-//UNSUP         data_declaration                        { $$ = $1; }
-//UNSUP |       yRAND data_declaration                  { }
-//UNSUP |       function_declaration                    { $$ = $1; }
-//UNSUP |       checker_declaration                     { $$ = $1; }
-//UNSUP |       assertion_item_declaration              { $$ = $1; }
-//UNSUP |       covergroup_declaration                  { $$ = $1; }
-//UNSUP //      // IEEE deprecated: overload_declaration
-//UNSUP |       genvar_declaration                      { $$ = $1; }
-//UNSUP |       clocking_declaration                    { $$ = $1; }
-//UNSUP |       yDEFAULT yCLOCKING id/*clocking_identifier*/ ';'        { }
-//UNSUP |       yDEFAULT yDISABLE yIFF expr/*expression_or_dist*/ ';'   { }
-//UNSUP |       ';'                                     { $$ = nullptr; }
-//UNSUP ;
+checker_or_generate_item_declaration<nodep>:  // ==IEEE: checker_or_generate_item_declaration
+                data_declaration
+                        { $$ = $1; BBUNSUP($1, "Unsupported: checker data declaration"); }
+        |       yRAND data_declaration
+                        { $$ = $2; BBUNSUP($1, "Unsupported: checker rand"); }
+        |       function_declaration                    { $$ = $1; }
+        |       checker_declaration
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: recursive checker"); }
+        |       assertion_item_declaration              { $$ = $1; }
+        //UNSUP covergroup_declaration                  { $$ = $1; }
+        //      // IEEE deprecated: overload_declaration
+        |       genvar_declaration                      { $$ = $1; }
+        |       clocking_declaration                    { $$ = $1; }
+        |       yDEFAULT yCLOCKING id/*clocking_identifier*/ ';'        { }
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: checker default clocking"); }
+        |       yDEFAULT yDISABLE yIFF expr/*expression_or_dist*/ ';'   { }
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: checker default disable iff"); }
+        |       ';'                                     { $$ = nullptr; }
+        ;
 
-//UNSUPchecker_generate_item<nodep>:  // ==IEEE: checker_generate_item
-//UNSUP //                      // Specialized for checker so need "c_" prefixes here
-//UNSUP         c_loop_generate_construct               { $$ = $1; }
-//UNSUP |       c_conditional_generate_construct        { $$ = $1; }
-//UNSUP |       c_generate_region                       { $$ = $1; }
-//UNSUP //
-//UNSUP |       elaboration_system_task                 { $$ = $1; }
-//UNSUP ;
+checker_generate_item<nodep>:  // ==IEEE: checker_generate_item
+        //                      // Specialized for checker so need "c_" prefixes here
+                c_loop_generate_construct               { $$ = $1; }
+        |       c_conditional_generate_construct        { $$ = $1; }
+        |       c_generate_region                       { $$ = $1; }
+        //
+        |       elaboration_system_task                 { $$ = $1; }
+        ;
 
 //UNSUPchecker_instantiation<nodep>:
 //UNSUP //                      // Only used for procedural_assertion_item's

@@ -594,8 +594,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <S09,S12,S17,SAX>{
   /*     Keywords */
   "accept_on"           { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "checker"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "endchecker"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "checker"             { FL; return yCHECKER; }
+  "endchecker"          { FL; return yENDCHECKER; }
   "eventually"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
   "global"              { FL; return yGLOBAL__LEX; }
   "implies"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
