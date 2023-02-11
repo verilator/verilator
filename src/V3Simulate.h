@@ -1099,7 +1099,7 @@ private:
 
                     inPct = false;
 
-                    if (V3Number::displayedFmtLegal(tolower(pos[0]), false)) {
+                    if (V3Number::displayedFmtLegal(std::tolower(pos[0]), false)) {
                         AstNode* const argp = nextArgp;
                         nextArgp = nextArgp->nextp();
                         AstConst* const constp = fetchConstNull(argp);
@@ -1111,7 +1111,7 @@ private:
                         const string pformat = std::string{"%"} + width + pos[0];
                         result += constp->num().displayed(nodep, pformat);
                     } else {
-                        switch (tolower(pos[0])) {
+                        switch (std::tolower(pos[0])) {
                         case '%': result += "%"; break;
                         case 'm':
                             // This happens prior to AstScope so we don't

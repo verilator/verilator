@@ -173,7 +173,7 @@ string V3Os::filenameSubstitute(const string& filename) {
             string::size_type endpos = pos + 1;
             while (((endpos + 1) < filename.length())
                    && (((brackets == NONE)
-                        && (isalnum(filename[endpos + 1]) || filename[endpos + 1] == '_'))
+                        && (std::isalnum(filename[endpos + 1]) || filename[endpos + 1] == '_'))
                        || ((brackets == CURLY) && (filename[endpos + 1] != '}'))
                        || ((brackets == PAREN) && (filename[endpos + 1] != ')'))))
                 ++endpos;

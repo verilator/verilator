@@ -134,10 +134,10 @@ void V3ParseImp::lexVerilatorCmtLintRestore(FileLine* fl) {
 
 void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnOff) {
     const char* sp = textp;
-    while (*sp && !isspace(*sp)) ++sp;
-    while (*sp && isspace(*sp)) ++sp;
-    while (*sp && !isspace(*sp)) ++sp;
-    while (*sp && isspace(*sp)) ++sp;
+    while (*sp && !std::isspace(*sp)) ++sp;
+    while (*sp && std::isspace(*sp)) ++sp;
+    while (*sp && !std::isspace(*sp)) ++sp;
+    while (*sp && std::isspace(*sp)) ++sp;
     string msg = sp;
     string::size_type pos;
     if ((pos = msg.find('*')) != string::npos) msg.erase(pos);
@@ -155,9 +155,9 @@ void V3ParseImp::lexVerilatorCmtBad(FileLine* fl, const char* textp) {
     if (cmtparse.substr(0, std::strlen("/*verilator")) == "/*verilator") {
         cmtparse.replace(0, std::strlen("/*verilator"), "");
     }
-    while (isspace(cmtparse[0])) cmtparse.replace(0, 1, "");
+    while (std::isspace(cmtparse[0])) cmtparse.replace(0, 1, "");
     string cmtname;
-    for (int i = 0; isalnum(cmtparse[i]); i++) { cmtname += cmtparse[i]; }
+    for (int i = 0; std::isalnum(cmtparse[i]); i++) cmtname += cmtparse[i];
     if (!v3Global.opt.isFuture(cmtname)) {
         fl->v3error("Unknown verilator comment: '" << textp << "'");
     }
@@ -191,7 +191,7 @@ double V3ParseImp::lexParseTimenum(const char* textp) {
     char* const strgp = new char[length + 1];
     char* dp = strgp;
     const char* sp = textp;
-    for (; isdigit(*sp) || *sp == '_' || *sp == '.'; ++sp) {
+    for (; std::isdigit(*sp) || *sp == '_' || *sp == '.'; ++sp) {
         if (*sp != '_') *dp++ = *sp;
     }
     *dp++ = '\0';
@@ -256,7 +256,7 @@ void V3ParseImp::preprocDumps(std::ostream& os) {
             if (noblanks) {
                 bool blank = true;
                 for (string::iterator its = buf.begin(); its != buf.end(); ++its) {
-                    if (!isspace(*its) && *its != '\n') {
+                    if (!std::isspace(*its) && *its != '\n') {
                         blank = false;
                         break;
                     }

@@ -3094,12 +3094,12 @@ private:
                 if (!inPct && ch == '%') {
                     inPct = true;
                     fmt = ch;
-                } else if (inPct && (isdigit(ch) || ch == '.' || ch == '-')) {
+                } else if (inPct && (std::isdigit(ch) || ch == '.' || ch == '-')) {
                     fmt += ch;
                 } else if (inPct) {
                     inPct = false;
                     fmt += ch;
-                    switch (tolower(ch)) {
+                    switch (std::tolower(ch)) {
                     case '%': break;  // %% - just output a %
                     case 'm': break;  // %m - auto insert "name"
                     case 'l': break;  // %l - auto insert "library"

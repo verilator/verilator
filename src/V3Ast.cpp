@@ -87,8 +87,8 @@ string AstNode::encodeName(const string& namein) {
     // Encode signal name raw from parser, then not called again on same signal
     string out;
     for (string::const_iterator pos = namein.begin(); pos != namein.end(); ++pos) {
-        if ((pos == namein.begin()) ? isalpha(pos[0])  // digits can't lead identifiers
-                                    : isalnum(pos[0])) {
+        if ((pos == namein.begin()) ? std::isalpha(pos[0])  // digits can't lead identifiers
+                                    : std::isalnum(pos[0])) {
             out += pos[0];
         } else if (pos[0] == '_') {
             if (pos[1] == '_') {
@@ -186,11 +186,14 @@ string AstNode::prettyName(const string& namein) {
                 pos += 7;
                 continue;
             }
-            if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && isxdigit(pos[3])
-                && isxdigit(pos[4])) {
+            if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && std::isxdigit(pos[3])
+                && std::isxdigit(pos[4])) {
                 char value = 0;
-                value += 16 * (isdigit(pos[3]) ? (pos[3] - '0') : (tolower(pos[3]) - 'a' + 10));
-                value += (isdigit(pos[4]) ? (pos[4] - '0') : (tolower(pos[4]) - 'a' + 10));
+                value += 16
+                         * (std::isdigit(pos[3]) ? (pos[3] - '0')
+                                                 : (std::tolower(pos[3]) - 'a' + 10));
+                value
+                    += (std::isdigit(pos[4]) ? (pos[4] - '0') : (std::tolower(pos[4]) - 'a' + 10));
                 pretty += value;
                 pos += 5;
                 continue;
@@ -232,11 +235,14 @@ string AstNode::vpiName(const string& namein) {
             } else if (0 == std::strncmp(pos, "__PVT__", 7)) {
                 pos += 7;
                 continue;
-            } else if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && isxdigit(pos[3])
-                       && isxdigit(pos[4])) {
+            } else if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && std::isxdigit(pos[3])
+                       && std::isxdigit(pos[4])) {
                 char value = 0;
-                value += 16 * (isdigit(pos[3]) ? (pos[3] - '0') : (tolower(pos[3]) - 'a' + 10));
-                value += (isdigit(pos[4]) ? (pos[4] - '0') : (tolower(pos[4]) - 'a' + 10));
+                value += 16
+                         * (std::isdigit(pos[3]) ? (pos[3] - '0')
+                                                 : (std::tolower(pos[3]) - 'a' + 10));
+                value
+                    += (std::isdigit(pos[4]) ? (pos[4] - '0') : (std::tolower(pos[4]) - 'a' + 10));
 
                 // __ doesn't always imply escaped ident
                 if (value != '_') inEscapedIdent = true;

@@ -237,20 +237,20 @@ void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr
     precr = VTimescale::NONE;
 
     const char* cp = textp;
-    for (; isspace(*cp); ++cp) {}
+    for (; std::isspace(*cp); ++cp) {}
     const char* const unitp = cp;
     for (; *cp && *cp != '/'; ++cp) {}
     const string unitStr(unitp, cp - unitp);
-    for (; isspace(*cp); ++cp) {}
+    for (; std::isspace(*cp); ++cp) {}
     string precStr;
     if (*cp == '/') {
         ++cp;
-        for (; isspace(*cp); ++cp) {}
+        for (; std::isspace(*cp); ++cp) {}
         const char* const precp = cp;
         for (; *cp && *cp != '/'; ++cp) {}
         precStr = string(precp, cp - precp);
     }
-    for (; isspace(*cp); ++cp) {}
+    for (; std::isspace(*cp); ++cp) {}
     if (*cp) {
         fl->v3error("`timescale syntax error: '" << textp << "'");
         return;
@@ -1295,8 +1295,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         fl->v3warn(DEPRECATED, "Option -O<letter> is deprecated. "
                                "Use -f<optimization> or -fno-<optimization> instead.");
         for (const char* cp = optp; *cp; ++cp) {
-            const bool flag = isupper(*cp);
-            switch (tolower(*cp)) {
+            const bool flag = std::isupper(*cp);
+            switch (std::tolower(*cp)) {
             case '0': optimize(0); break;
             case '1': optimize(1); break;
             case '2': optimize(2); break;
@@ -1648,8 +1648,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             || !std::strcmp(argv[i], "--j")) {  // Allow gnu -- switches
             ++i;
             int val = 0;
-            if (i < argc && isdigit(argv[i][0])) {
-                val = atoi(argv[i]);  // Can't be negative due to isdigit above
+            if (i < argc && std::isdigit(argv[i][0])) {
+                val = std::atoi(argv[i]);  // Can't be negative due to isdigit above
                 if (val == 0) val = std::thread::hardware_concurrency();
                 ++i;
             }
@@ -1718,7 +1718,8 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
                     ++pos;
                 }
             } else if (*pos == '/' && *(pos + 1) == '/'
-                       && (pos == line.begin() || isspace(lastch))) {  // But allow /file//path
+                       && (pos == line.begin()
+                           || std::isspace(lastch))) {  // But allow /file//path
                 break;  // Ignore to EOL
             } else if (*pos == '#' && space_begin) {  // Only # at [spaced] begin of line
                 break;  // Ignore to EOL
@@ -1728,7 +1729,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
                 // cppcheck-suppress StlMissingComparison
                 ++pos;
             } else {
-                if (!isspace(*pos)) space_begin = false;
+                if (!std::isspace(*pos)) space_begin = false;
                 oline += *pos;
             }
         }
@@ -1761,7 +1762,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
         char curr_char = whole_file[pos];
         switch (st) {
         case ST_IN_OPTION:  // Get all chars up to a white space or a "="
-            if (isspace(curr_char)) {  // End of option
+            if (std::isspace(curr_char)) {  // End of option
                 if (!arg.empty()) {  // End of word
                     args.push_back(arg);
                 }

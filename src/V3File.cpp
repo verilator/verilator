@@ -633,7 +633,7 @@ bool V3OutFormatter::tokenMatch(const char* cp, const char* cmp) {
         ++cmp;
     }
     if (*cmp) return false;
-    if (*cp && !isspace(*cp)) return false;
+    if (*cp && !std::isspace(*cp)) return false;
     return true;
 }
 
@@ -659,7 +659,7 @@ int V3OutFormatter::endLevels(const char* strg) {
     int levels = m_indentLevel;
     {
         const char* cp = strg;
-        while (isspace(*cp)) ++cp;
+        while (std::isspace(*cp)) ++cp;
         switch (*cp) {
         case '\n':  // Newlines.. No need for whitespace before it
             return 0;
@@ -669,7 +669,7 @@ int V3OutFormatter::endLevels(const char* strg) {
         {
             // label/public/private:  Deindent by 2 spaces
             const char* mp = cp;
-            for (; isalnum(*mp); ++mp) {}
+            for (; std::isalnum(*mp); ++mp) {}
             if (mp[0] == ':' && mp[1] != ':') return (levels - m_blockIndent / 2);
         }
     }
@@ -708,7 +708,7 @@ void V3OutFormatter::puts(const char* strg) {
     bool equalsForBracket = false;  // Looking for "= {"
     for (const char* cp = strg; *cp; ++cp) {
         putcNoTracking(*cp);
-        if (isalpha(*cp)) {
+        if (std::isalpha(*cp)) {
             if (wordstart && m_lang == LA_VERILOG && tokenNotStart(cp)) notstart = true;
             if (wordstart && m_lang == LA_VERILOG && !notstart && tokenStart(cp)) indentInc();
             if (wordstart && m_lang == LA_VERILOG && tokenEnd(cp)) indentDec();
@@ -870,7 +870,7 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
                 out += std::string{"&gt;"};
             } else if (c == '&') {
                 out += std::string{"&amp;"};
-            } else if (isprint(c)) {
+            } else if (std::isprint(c)) {
                 out += c;
             } else {
                 out += std::string{"&#"} + cvtToStr((unsigned int)(c & 0xff)) + ";";
@@ -887,7 +887,7 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
                 out += "\\r";
             } else if (c == '\t') {
                 out += "\\t";
-            } else if (isprint(c)) {
+            } else if (std::isprint(c)) {
                 out += c;
             } else {
                 // This will also cover \a etc
@@ -942,7 +942,7 @@ void V3OutCFile::putsGuard() {
     string var
         = VString::upcase(std::string{"VERILATED_"} + V3Os::filenameNonDir(filename()) + "_");
     for (char& c : var) {
-        if (!isalnum(c)) c = '_';
+        if (!std::isalnum(c)) c = '_';
     }
     puts("\n#ifndef " + var + "\n");
     puts("#define " + var + "  // guard\n");

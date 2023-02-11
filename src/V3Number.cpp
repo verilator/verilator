@@ -153,7 +153,7 @@ void V3Number::create(const char* sourcep) {
             if (*cp != '_') widthn += *cp;
         }
         while (*cp == '_') cp++;
-        if (*cp && tolower(*cp) == 's') {
+        if (*cp && std::tolower(*cp) == 's') {
             cp++;
             isSigned(true);
         }
@@ -191,11 +191,11 @@ void V3Number::create(const char* sourcep) {
         width(1, false);  // So we extend it
         setBit(0, 1);
         m_data.m_autoExtend = true;
-    } else if (tolower(base) == 'z') {
+    } else if (std::tolower(base) == 'z') {
         width(1, false);  // So we extend it
         setBit(0, 'z');
         m_data.m_autoExtend = true;
-    } else if (tolower(base) == 'x') {
+    } else if (std::tolower(base) == 'x') {
         width(1, false);  // So we extend it
         setBit(0, 'x');
         m_data.m_autoExtend = true;
@@ -207,7 +207,7 @@ void V3Number::create(const char* sourcep) {
     }
 
     // Ignore leading blanks
-    while (*value_startp == '_' || isspace(*value_startp)) value_startp++;
+    while (*value_startp == '_' || std::isspace(*value_startp)) ++value_startp;
     if (!*value_startp && !m_data.m_autoExtend) {
         v3error("Number is missing value digits: " << sourcep);
     }
@@ -217,7 +217,7 @@ void V3Number::create(const char* sourcep) {
     }
 
     int obit = 0;  // Start at LSB
-    if (tolower(base) == 'd') {
+    if (std::tolower(base) == 'd') {
         // Ignore leading zeros so we don't issue too many digit errors when lots of leading 0's
         while (*value_startp == '_' || *value_startp == '0') value_startp++;
         // Convert decimal number to hex
@@ -227,7 +227,7 @@ void V3Number::create(const char* sourcep) {
         int got_z = 0;
         int got_01 = 0;
         for (const char* cp = value_startp; *cp; cp++) {
-            switch (tolower(*cp)) {
+            switch (std::tolower(*cp)) {
             case '0':  // FALLTHRU
             case '1':  // FALLTHRU
             case '2':  // FALLTHRU
@@ -298,9 +298,9 @@ void V3Number::create(const char* sourcep) {
                 v3error("Too many digits for " << width() << " bit number: " << sourcep);
                 break;
             }
-            switch (tolower(base)) {
+            switch (std::tolower(base)) {
             case 'b': {
-                switch (tolower(*cp)) {
+                switch (std::tolower(*cp)) {
                 case '0': setBit(obit++, 0); break;
                 case '1': setBit(obit++, 1); break;
                 case 'z':
@@ -314,7 +314,7 @@ void V3Number::create(const char* sourcep) {
 
             case 'o':
             case 'c': {
-                switch (tolower(*cp)) {
+                switch (std::tolower(*cp)) {
                 // clang-format off
                 case '0': setBit(obit++, 0); setBit(obit++, 0);  setBit(obit++, 0);  break;
                 case '1': setBit(obit++, 1); setBit(obit++, 0);  setBit(obit++, 0);  break;
@@ -335,7 +335,7 @@ void V3Number::create(const char* sourcep) {
             }
 
             case 'h': {
-                switch (tolower(*cp)) {
+                switch (std::tolower(*cp)) {
                     // clang-format off
                 case '0': setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); break;
                 case '1': setBit(obit++,1); setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); break;
@@ -575,7 +575,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
 
 bool V3Number::displayedFmtLegal(char format, bool isScan) {
     // Is this a valid format letter?
-    switch (tolower(format)) {
+    switch (std::tolower(format)) {
     case 'b': return true;
     case 'c': return true;
     case 'd': return true;  // Unsigned decimal
@@ -619,11 +619,11 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
         ++pos;
     }
     string fmtsize;
-    for (; pos != vformat.cend() && (isdigit(pos[0]) || pos[0] == '.'); ++pos) {
+    for (; pos != vformat.cend() && (std::isdigit(pos[0]) || pos[0] == '.'); ++pos) {
         fmtsize += pos[0];
     }
     string str;
-    const char code = tolower(pos[0]);
+    const char code = std::tolower(pos[0]);
     switch (code) {
     case 'b':  // FALLTHRU
     case 'o':  // FALLTHRU
@@ -2468,15 +2468,13 @@ V3Number& V3Number::opReplN(const V3Number& lhs, uint32_t rhsval) {
 V3Number& V3Number::opToLowerN(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_STRING_ARGS1(lhs);
-    std::string out = lhs.toString();
-    for (auto& cr : out) cr = tolower(cr);
+    std::string out = VString::downcase(lhs.toString());
     return setString(out);
 }
 V3Number& V3Number::opToUpperN(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_STRING_ARGS1(lhs);
-    std::string out = lhs.toString();
-    for (auto& cr : out) cr = toupper(cr);
+    std::string out = VString::upcase(lhs.toString());
     return setString(out);
 }
 

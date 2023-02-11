@@ -210,26 +210,26 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     // will come from the same stream as the previous line.
 
     // Skip `line
-    while (*textp && isspace(*textp)) textp++;
-    while (*textp && !isspace(*textp)) textp++;
-    while (*textp && (isspace(*textp) || *textp == '"')) textp++;
+    while (*textp && std::isspace(*textp)) ++textp;
+    while (*textp && !std::isspace(*textp)) ++textp;
+    while (*textp && (std::isspace(*textp) || *textp == '"')) ++textp;
 
     // Grab linenumber
     bool fail = false;
     const char* const ln = textp;
-    while (*textp && !isspace(*textp)) textp++;
-    if (isdigit(*ln)) {
+    while (*textp && !std::isspace(*textp)) ++textp;
+    if (std::isdigit(*ln)) {
         lineno(std::atoi(ln));
     } else {
         fail = true;
     }
-    while (*textp && (isspace(*textp))) textp++;
+    while (*textp && (std::isspace(*textp))) ++textp;
     if (*textp != '"') fail = true;
-    while (*textp && (isspace(*textp) || *textp == '"')) textp++;
+    while (*textp && (std::isspace(*textp) || *textp == '"')) ++textp;
 
     // Grab filename
     const char* const fn = textp;
-    while (*textp && !(isspace(*textp) || *textp == '"')) textp++;
+    while (*textp && !(std::isspace(*textp) || *textp == '"')) ++textp;
     if (textp != fn) {
         string strfn = fn;
         strfn = strfn.substr(0, textp - fn);
@@ -239,8 +239,8 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     }
 
     // Grab level
-    while (*textp && (isspace(*textp) || *textp == '"')) textp++;
-    if (isdigit(*textp)) {
+    while (*textp && (std::isspace(*textp) || *textp == '"')) ++textp;
+    if (std::isdigit(*textp)) {
         enterExitRef = std::atoi(textp);
         if (enterExitRef >= 3) fail = true;
     } else {

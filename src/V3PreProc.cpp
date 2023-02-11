@@ -389,14 +389,14 @@ string V3PreProcImp::commentCleanup(const string& text) {
     while ((pos = cmd.find('\"')) != string::npos) cmd.replace(pos, 1, " ");
     while ((pos = cmd.find('\t')) != string::npos) cmd.replace(pos, 1, " ");
     while ((pos = cmd.find("  ")) != string::npos) cmd.replace(pos, 2, " ");
-    while (!cmd.empty() && isspace(cmd[cmd.size() - 1])) cmd.erase(cmd.size() - 1);
+    while (!cmd.empty() && std::isspace(cmd[cmd.size() - 1])) cmd.erase(cmd.size() - 1);
     return cmd;
 }
 
 bool V3PreProcImp::commentTokenMatch(string& cmdr, const char* strg) {
     int len = std::strlen(strg);
-    if (VString::startsWith(cmdr, strg) && (cmdr[len] == '\0' || isspace(cmdr[len]))) {
-        if (isspace(cmdr[len])) len++;
+    if (VString::startsWith(cmdr, strg) && (cmdr[len] == '\0' || std::isspace(cmdr[len]))) {
+        if (std::isspace(cmdr[len])) len++;
         cmdr = cmdr.substr(len);
         return true;
     } else {
@@ -419,7 +419,7 @@ void V3PreProcImp::comment(const string& text) {
         return;
     }
 
-    while (isspace(*cp)) cp++;
+    while (std::isspace(*cp)) ++cp;
 
     bool synth = false;
     bool vlcomment = false;
@@ -452,7 +452,7 @@ void V3PreProcImp::comment(const string& text) {
 
     if (!vlcomment && !synth) return;  // Short-circuit
 
-    while (isspace(*cp)) cp++;
+    while (std::isspace(*cp)) ++cp;
     string cmd = commentCleanup(string(cp));
     // cmd now is comment without extra spaces and "verilator" prefix
 
@@ -480,7 +480,7 @@ void V3PreProcImp::comment(const string& text) {
             while (VString::isWordChar(cmd[endOfCmd])) ++endOfCmd;
             string baseCmd = cmd.substr(0, endOfCmd);
             string arg = cmd.substr(endOfCmd);
-            while (isspace(arg[0])) arg = arg.substr(1);
+            while (std::isspace(arg[0])) arg = arg.substr(1);
             if (arg.size() && baseCmd == "public_flat_rw_on")
                 baseCmd += "_sns";  // different cmd for applying sensitivity
             if (!printed) insertUnreadback("/*verilator " + baseCmd + "*/ " + arg + " /**/");
@@ -560,16 +560,16 @@ string V3PreProcImp::trimWhitespace(const string& strg, bool trailing) {
     // Remove leading whitespace
     string out = strg;
     string::size_type leadspace = 0;
-    while (out.length() > leadspace && isspace(out[leadspace])) leadspace++;
+    while (out.length() > leadspace && std::isspace(out[leadspace])) ++leadspace;
     if (leadspace) out.erase(0, leadspace);
     // Remove trailing whitespace
     if (trailing) {
         string::size_type trailspace = 0;
-        while (out.length() > trailspace && isspace(out[out.length() - 1 - trailspace]))
-            trailspace++;
+        while (out.length() > trailspace && std::isspace(out[out.length() - 1 - trailspace]))
+            ++trailspace;
         // Don't remove \{space_or_newline}
         if (trailspace && out.length() > trailspace && out[out.length() - 1 - trailspace] == '\\')
-            trailspace--;
+            --trailspace;
         if (trailspace) out.erase(out.length() - trailspace, trailspace);
     }
     return out;
@@ -681,13 +681,13 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
             // UINFO(4, "CH "<<*cp<<"  an "<<argName<<endl);
             if (!quote && *cp == '\\') {
                 backslashesc = true;
-            } else if (isspace(*cp)) {
+            } else if (std::isspace(*cp)) {
                 backslashesc = false;
             }
             // We don't check for quotes; some simulators expand even inside quotes
-            if (isalpha(*cp) || *cp == '_'
+            if (std::isalpha(*cp) || *cp == '_'
                 || *cp == '$'  // Won't replace system functions, since no $ in argValueByName
-                || (argName != "" && (isdigit(*cp) || *cp == '$'))) {
+                || (argName != "" && (std::isdigit(*cp) || *cp == '$'))) {
                 argName += *cp;
                 continue;
             }

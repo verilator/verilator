@@ -212,12 +212,12 @@ private:
                 inPct = true;
                 inIgnore = false;
                 fmt = ch;
-            } else if (inPct && (isdigit(ch) || ch == '.' || ch == '-')) {
+            } else if (inPct && (std::isdigit(ch) || ch == '.' || ch == '-')) {
                 fmt += ch;
             } else if (inPct) {
                 inPct = false;
                 fmt += ch;
-                switch (tolower(ch)) {
+                switch (std::tolower(ch)) {
                 case '%':  // %% - just output a %
                     break;
                 case '*':

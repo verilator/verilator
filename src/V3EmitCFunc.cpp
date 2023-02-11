@@ -155,7 +155,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
             puts("(");
         } else {
             // Normal text
-            if (isalnum(pos[0])) needComma = true;
+            if (std::isalnum(pos[0])) needComma = true;
             COMMA;
             string s;
             s += pos[0];
@@ -329,7 +329,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstScopeName* scopenamep, const stri
             m_emitDispState.pushFormat(*pos);
         } else {  // Format character
             inPct = false;
-            switch (tolower(pos[0])) {
+            switch (std::tolower(pos[0])) {
             case '0':  // FALLTHRU
             case '1':  // FALLTHRU
             case '2':  // FALLTHRU

@@ -80,13 +80,13 @@ string VString::dot(const string& a, const string& dot, const string& b) {
 
 string VString::downcase(const string& str) {
     string out = str;
-    for (auto& cr : out) cr = tolower(cr);
+    for (auto& cr : out) cr = std::tolower(cr);
     return out;
 }
 
 string VString::upcase(const string& str) {
     string out = str;
-    for (auto& cr : out) cr = toupper(cr);
+    for (auto& cr : out) cr = std::toupper(cr);
     return out;
 }
 
@@ -133,7 +133,7 @@ string VString::escapeStringForPath(const string& str) {
 string VString::spaceUnprintable(const string& str) {
     string out;
     for (const char c : str) {
-        if (isprint(c)) {
+        if (std::isprint(c)) {
             out += c;
         } else {
             out += ' ';
@@ -146,14 +146,14 @@ string VString::removeWhitespace(const string& str) {
     string out;
     out.reserve(str.size());
     for (const char c : str) {
-        if (!isspace(c)) out += c;
+        if (!std::isspace(c)) out += c;
     }
     return out;
 }
 
 bool VString::isWhitespace(const string& str) {
     for (const char c : str) {
-        if (!isspace(c)) return false;
+        if (!std::isspace(c)) return false;
     }
     return true;
 }
