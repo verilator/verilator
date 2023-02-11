@@ -523,7 +523,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "endpackage"          { FL; return yENDPACKAGE; }
   "endprogram"          { FL; return yENDPROGRAM; }
   "endproperty"         { FL; return yENDPROPERTY; }
-  "endsequence"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "endsequence"         { FL; return yENDSEQUENCE; }
   "enum"                { FL; return yENUM; }
   "expect"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "export"              { FL; return yEXPORT; }
@@ -560,7 +560,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "randc"               { FL; return yRANDC; }
   "randcase"            { FL; return yRANDCASE; }
   "randomize"           { FL; return yRANDOMIZE; }
-  "randsequence"        { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "randsequence"        { FL; return yRANDSEQUENCE; }
   "ref"                 { FL; return yREF; }
   "restrict"            { FL; return yRESTRICT; }
   "return"              { FL; return yRETURN; }

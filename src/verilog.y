@@ -600,7 +600,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yENDPRIMITIVE   "endprimitive"
 %token<fl>              yENDPROGRAM     "endprogram"
 %token<fl>              yENDPROPERTY    "endproperty"
-//UNSUP %token<fl>      yENDSEQUENCE    "endsequence"
+%token<fl>              yENDSEQUENCE    "endsequence"
 %token<fl>              yENDSPECIFY     "endspecify"
 %token<fl>              yENDTABLE       "endtable"
 %token<fl>              yENDTASK        "endtask"
@@ -693,7 +693,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yRANDC          "randc"
 %token<fl>              yRANDCASE       "randcase"
 %token<fl>              yRANDOMIZE      "randomize"
-//UNSUP %token<fl>      yRANDSEQUENCE   "randsequence"
+%token<fl>              yRANDSEQUENCE   "randsequence"
 %token<fl>              yRCMOS          "rcmos"
 %token<fl>              yREAL           "real"
 %token<fl>              yREALTIME       "realtime"
@@ -3550,7 +3550,7 @@ statement_item<nodep>:          // IEEE: statement_item
         //                      // IEEE: procedural_assertion_statement
         |       procedural_assertion_statement          { $$ = $1; }
         //
-        //UNSUP randsequence_statement                  { $$ = $1; }
+        |       randsequence_statement                  { $$ = $1; }
         //
         //                      // IEEE: randcase_statement
         |       yRANDCASE rand_case_itemList yENDCASE   { $$ = new AstRandCase{$1, $2}; }
@@ -6343,102 +6343,118 @@ complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
 //**********************************************************************
 // Randsequence
 
-//UNSUPrandsequence_statement<nodep>:  // ==IEEE: randsequence_statement
-//UNSUP         yRANDSEQUENCE '('    ')' productionList yENDSEQUENCE    { }
-//UNSUP |       yRANDSEQUENCE '(' id/*production_identifier*/ ')' productionList yENDSEQUENCE   { }
-//UNSUP ;
+randsequence_statement<nodep>:  // ==IEEE: randsequence_statement
+                yRANDSEQUENCE '(' ')' productionList yENDSEQUENCE
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence"); }
+        |       yRANDSEQUENCE '(' id/*production_identifier*/ ')' productionList yENDSEQUENCE
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence"); }
+        ;
 
-//UNSUPproductionList<nodep>:  // IEEE: production+
-//UNSUP         production                              { $$ = $1; }
-//UNSUP |       productionList production               { $$ = addNextNull($1, $2); }
-//UNSUP ;
+productionList<nodep>:  // IEEE: production+
+                production                              { $$ = $1; }
+        |       productionList production               { $$ = addNextNull($1, $2); }
+        ;
 
-//UNSUPproduction<nodep>:  // ==IEEE: production
-//UNSUP         productionFront ':' rs_ruleList ';'     { }
-//UNSUP ;
+production<nodep>:  // ==IEEE: production
+                productionFront ':' rs_ruleList ';'
+                        { // TODO makes a function, probably want a new Ast type instead
+                          SYMP->popScope($$);
+                          $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: randsequence production"); }
+        ;
 
-//UNSUPproductionFront<nodep>:  // IEEE: part of production
-//UNSUP         function_data_type id/*production_identifier*/  { }
-//UNSUP |       /**/               id/*production_identifier*/  { $$ = $1; }
-//UNSUP |       function_data_type id/*production_identifier*/ '(' tf_port_listE ')'    { }
-//UNSUP |       /**/               id/*production_identifier*/ '(' tf_port_listE ')'    { }
-//UNSUP ;
+productionFront<nodeFTaskp>:  // IEEE: part of production
+                funcId/*production_identifier*/         { $$ = $1; }
+        |       funcId '(' tf_port_listE ')'            { $$ = $1; $$->addStmtsp($3); }
+        ;
 
-//UNSUPrs_ruleList<nodep>:  // IEEE: rs_rule+ part of production
-//UNSUP         rs_rule                                 { $$ = $1; }
-//UNSUP |       rs_ruleList '|' rs_rule                 { $$ = addNextNull($1, $3); }
-//UNSUP ;
+rs_ruleList<nodep>:  // IEEE: rs_rule+ part of production
+                rs_rule                                 { $$ = $1; }
+        |       rs_ruleList '|' rs_rule                 { $$ = addNextNull($1, $3); }
+        ;
 
-//UNSUPrs_rule<nodep>:  // ==IEEE: rs_rule
-//UNSUP         rs_production_list                      { $$ = $1; }
-//UNSUP |       rs_production_list yP_COLONEQ weight_specification      { }
-//UNSUP |       rs_production_list yP_COLONEQ weight_specification rs_code_block        { }
-//UNSUP ;
+rs_rule<nodep>:  // ==IEEE: rs_rule
+                rs_production_list                      { $$ = $1; }
+        |       rs_production_list yP_COLONEQ weight_specification
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence rule"); }
+        |       rs_production_list yP_COLONEQ weight_specification rs_code_block
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence rule"); }
+        ;
 
-//UNSUPrs_production_list<nodep>:  // ==IEEE: rs_production_list
-//UNSUP         rs_prodList                             { $$ = $1; }
-//UNSUP |       yRAND yJOIN /**/         production_item production_itemList    { }
-//UNSUP |       yRAND yJOIN '(' expr ')' production_item production_itemList    { }
-//UNSUP ;
+rs_production_list<nodep>:  // ==IEEE: rs_production_list
+                rs_prodList                             { $$ = $1; }
+        |       yRAND yJOIN /**/         production_item production_itemList
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence production list"); }
+        |       yRAND yJOIN '(' expr ')' production_item production_itemList
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence production list"); }
+        ;
 
-//UNSUPweight_specification<nodep>:  // ==IEEE: weight_specification
-//UNSUP         yaINTNUM                                { $$ = $1; }
-//UNSUP |       idClassSel/*ps_identifier*/             { $$ = $1; }
-//UNSUP |       '(' expr ')'                            { $$ = $2; }
-//UNSUP ;
+weight_specification<nodeExprp>:  // ==IEEE: weight_specification
+                intnumAsConst                           { $$ = $1; }
+        |       idClassSel/*ps_identifier*/             { $$ = $1; }
+        |       '(' expr ')'                            { $$ = $2; }
+        ;
 
-//UNSUPrs_code_block<nodep>:  // ==IEEE: rs_code_block
-//UNSUP         '{' '}'                                 { $$ = nullptr; }
-//UNSUP |       '{' rs_code_blockItemList '}'           { $$ = $2; }
-//UNSUP ;
+rs_code_block<nodep>:  // ==IEEE: rs_code_block
+                '{' '}'                                 { $$ = nullptr; }
+        |       '{' rs_code_blockItemList '}'           { $$ = $2; }
+        ;
 
-//UNSUPrs_code_blockItemList<nodep>:  // IEEE: part of rs_code_block
-//UNSUP         rs_code_blockItem                       { $$ = $1; }
-//UNSUP |       rs_code_blockItemList rs_code_blockItem         { $$ = addNextNull($1, $2); }
-//UNSUP ;
+rs_code_blockItemList<nodep>:  // IEEE: part of rs_code_block
+                rs_code_blockItem                       { $$ = $1; }
+        |       rs_code_blockItemList rs_code_blockItem         { $$ = addNextNull($1, $2); }
+        ;
 
-//UNSUPrs_code_blockItem<nodep>:  // IEEE: part of rs_code_block
-//UNSUP         data_declaration                        { $$ = $1; }
-//UNSUP |       stmt                                    { $$ = $1; }
-//UNSUP ;
+rs_code_blockItem<nodep>:  // IEEE: part of rs_code_block
+                data_declaration                        { $$ = $1; }
+        |       stmt                                    { $$ = $1; }
+        ;
 
-//UNSUPrs_prodList<nodep>:  // IEEE: rs_prod+
-//UNSUP         rs_prod                                 { $$ = $1; }
-//UNSUP |       rs_prodList rs_prod                     { $$ = addNextNull($1, $2); }
-//UNSUP ;
+rs_prodList<nodep>:  // IEEE: rs_prod+
+                rs_prod                                 { $$ = $1; }
+        |       rs_prodList rs_prod                     { $$ = addNextNull($1, $2); }
+        ;
 
-//UNSUPrs_prod<nodep>:  // ==IEEE: rs_prod
-//UNSUP         production_item                         { $$ = $1; }
-//UNSUP |       rs_code_block                           { $$ = $1; }
-//UNSUP //                      // IEEE: rs_if_else
-//UNSUP |       yIF '(' expr ')' production_item %prec prLOWER_THAN_ELSE        { }
-//UNSUP |       yIF '(' expr ')' production_item yELSE production_item          { }
-//UNSUP //                      // IEEE: rs_repeat
-//UNSUP |       yREPEAT '(' expr ')' production_item    { }
-//UNSUP //                      // IEEE: rs_case
-//UNSUP |       yCASE '(' expr ')' rs_case_itemList yENDCASE    { }
-//UNSUP ;
+rs_prod<nodep>:  // ==IEEE: rs_prod
+                production_item                         { $$ = $1; }
+        |       rs_code_block                           { $$ = $1; }
+        //                      // IEEE: rs_if_else
+        |       yIF '(' expr ')' production_item %prec prLOWER_THAN_ELSE
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence if"); }
+        |       yIF '(' expr ')' production_item yELSE production_item
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence if"); }
+        //                      // IEEE: rs_repeat
+        |       yREPEAT '(' expr ')' production_item
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence repeat"); }
+        //                      // IEEE: rs_case
+        |       yCASE '(' expr ')' rs_case_itemList yENDCASE
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence case"); }
+        ;
 
-//UNSUPproduction_itemList<nodep>:  // IEEE: production_item+
-//UNSUP         production_item                         { $$ = $1; }
-//UNSUP |       production_itemList production_item     { $$ = addNextNull($1, $2); }
-//UNSUP ;
+production_itemList<nodep>:  // IEEE: production_item+
+                production_item                         { $$ = $1; }
+        |       production_itemList production_item     { $$ = addNextNull($1, $2); }
+        ;
 
-//UNSUPproduction_item<nodep>:  // ==IEEE: production_item
-//UNSUP         id/*production_identifier*/             { $$ = $1; }
-//UNSUP |       id/*production_identifier*/ '(' list_of_argumentsE ')'  { }
-//UNSUP ;
+production_item<nodep>:  // ==IEEE: production_item
+                id/*production_identifier*/
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence production id"); }
+        |       id/*production_identifier*/ '(' list_of_argumentsE ')'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence production id"); }
+        ;
 
-//UNSUPrs_case_itemList<nodep>:  // IEEE: rs_case_item+
-//UNSUP         rs_case_item                            { $$ = $1; }
-//UNSUP |       rs_case_itemList rs_case_item           { $$ = addNextNull($1, $2); }
-//UNSUP ;
+rs_case_itemList<nodep>:  // IEEE: rs_case_item+
+                rs_case_item                            { $$ = $1; }
+        |       rs_case_itemList rs_case_item           { $$ = addNextNull($1, $2); }
+        ;
 
-//UNSUPrs_case_item<nodep>:  // ==IEEE: rs_case_item
-//UNSUP         caseCondList ':' production_item ';'    { }
-//UNSUP |       yDEFAULT production_item ';'            { }
-//UNSUP |       yDEFAULT ':' production_item ';'        { }
-//UNSUP ;
+rs_case_item<nodep>:  // ==IEEE: rs_case_item
+                caseCondList ':' production_item ';'
+                        { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: randsequence case item"); }
+        |       yDEFAULT production_item ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence case item"); }
+        |       yDEFAULT ':' production_item ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence case item"); }
+        ;
 
 //**********************************************************************
 // Checker
