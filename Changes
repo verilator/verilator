@@ -85,6 +85,7 @@ Verilator 5.006 2023-01-22
 * Fix elaboration of member selected classes (#3890). [Ilya Barkov]
 * Fix mismatched widths in DFG (#3872). [Geza Lore, Yike Zhou]
 * Fix lint for non-integral types in packed structs.
+* Fix generate case with empty body statements.
 
 
 Verilator 5.004 2022-12-14

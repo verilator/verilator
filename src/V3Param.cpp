@@ -1250,6 +1250,7 @@ class ParamVisitor final : public VNVisitor {
     }
     void visit(AstGenCase* nodep) override {
         UINFO(9, "  GENCASE " << nodep << endl);
+        bool hit = false;
         AstNode* keepp = nullptr;
         iterateAndNextNull(nodep->exprp());
         V3Case::caseLint(nodep);
@@ -1275,7 +1276,10 @@ class ParamVisitor final : public VNVisitor {
                     if (const AstConst* const ccondp = VN_CAST(ep, Const)) {
                         V3Number match{nodep, 1};
                         match.opEq(ccondp->num(), exprp->num());
-                        if (!keepp && match.isNeqZero()) keepp = itemp->stmtsp();
+                        if (!hit && match.isNeqZero()) {
+                            hit = true;
+                            keepp = itemp->stmtsp();
+                        }
                     } else {
                         itemp->v3error("Generate Case item does not evaluate to constant");
                     }
@@ -1286,7 +1290,10 @@ class ParamVisitor final : public VNVisitor {
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             if (itemp->isDefault()) {
-                if (!keepp) keepp = itemp->stmtsp();
+                if (!hit) {
+                    hit = true;
+                    keepp = itemp->stmtsp();
+                }
             }
         }
         // Replace
