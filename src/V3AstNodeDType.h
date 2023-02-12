@@ -60,6 +60,8 @@ public:
     /// are compound when methods calls operate on object, or when
     /// under another compound-requiring object e.g. class
     virtual bool isCompound() const = 0;
+    // Integral or packed, allowed inside an unpacked union/struct
+    virtual bool isIntegralOrPacked() const { return !isCompound(); }
     // (Slow) recurse down to find basic data type
     virtual AstBasicDType* basicp() const = 0;
     // recurses over typedefs/const/enum to next non-typeref type
@@ -473,6 +475,7 @@ public:
     VNumRange declRange() const { return isRanged() ? VNumRange{left(), right()} : VNumRange{}; }
     void cvtRangeConst();  // Convert to smaller representation
     bool isCompound() const override { return isString(); }
+    bool isIntegralOrPacked() const override { return keyword().isIntNumeric(); }
 };
 class AstBracketArrayDType final : public AstNodeDType {
     // Associative/Queue/Normal array data type, ie "[dtype_or_expr]"
@@ -1319,6 +1322,7 @@ public:
     std::vector<AstUnpackArrayDType*> unpackDimensions();
     void isCompound(bool flag) { m_isCompound = flag; }
     bool isCompound() const override VL_MT_SAFE { return m_isCompound; }
+    bool isIntegralOrPacked() const override { return false; }
 };
 
 // === AstNodeUOrStructDType ===

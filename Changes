@@ -84,6 +84,7 @@ Verilator 5.006 2023-01-22
 * Fix foreach unnamedblk duplicate error (#3885). [Ilya Barkov]
 * Fix elaboration of member selected classes (#3890). [Ilya Barkov]
 * Fix mismatched widths in DFG (#3872). [Geza Lore, Yike Zhou]
+* Fix lint for non-integral types in packed structs.
 
 
 Verilator 5.004 2022-12-14

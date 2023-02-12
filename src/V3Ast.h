@@ -566,7 +566,8 @@ public:
     }
     bool isIntNumeric() const {  // Enum increment supported
         return (m_e == BIT || m_e == BYTE || m_e == INT || m_e == INTEGER || m_e == LOGIC
-                || m_e == LONGINT || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64);
+                || m_e == LONGINT || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64
+                || m_e == TIME);
     }
     bool isBitLogic() const {  // Bit/logic vector types; can form a packed array
         return (m_e == LOGIC || m_e == BIT);

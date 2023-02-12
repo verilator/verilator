@@ -2512,9 +2512,9 @@ private:
     }
     void visit(AstNodeUOrStructDType* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        UINFO(5, "   NODECLASS " << nodep << endl);
+        UINFO(5, "   NODEUORS " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree("-  class-in: ");
-        if (!nodep->packed() && v3Global.opt.structsPacked()) { nodep->packed(true); }
+        if (!nodep->packed() && v3Global.opt.structsPacked()) nodep->packed(true);
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->repairMemberCache();
         nodep->dtypep(nodep);
@@ -2523,16 +2523,23 @@ private:
         if (VN_IS(nodep, UnionDType) || nodep->packed()) {
             int lsb = 0;
             int width = 0;
-            // MSB is first, so go backwards
+            // Report errors on first member first
             AstMemberDType* itemp;
+            for (itemp = nodep->membersp(); itemp; itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                AstNodeDType* const dtp = itemp->subDTypep()->skipRefp();
+                if (nodep->packed()
+                    && !dtp->isIntegralOrPacked()
+                    // Historically lax:
+                    && !v3Global.opt.structsPacked())
+                    itemp->v3error("Unpacked data type "
+                                   << dtp->prettyDTypeNameQ()
+                                   << " in packed struct/union (IEEE 1800-2017 7.2.1)");
+            }
+            // MSB is first, so loop backwards
             for (itemp = nodep->membersp(); itemp && itemp->nextp();
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {}
-            for (AstMemberDType* backip; itemp; itemp = backip) {
-                if (itemp->skipRefp()->isCompound())
-                    itemp->v3error(
-                        "Unpacked data type in packed struct/union (IEEE 1800-2017 7.2.1)");
+            for (; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
                 if (itemp->isFourstate()) nodep->isFourstate(true);
-                backip = VN_CAST(itemp->backp(), MemberDType);
                 itemp->lsb(lsb);
                 if (VN_IS(nodep, UnionDType)) {
                     width = std::max(width, itemp->width());

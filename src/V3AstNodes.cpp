@@ -675,7 +675,7 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
     return nullptr;
 }
 
-bool AstNodeDType::isFourstate() const { return basicp()->isFourstate(); }
+bool AstNodeDType::isFourstate() const { return basicp() && basicp()->isFourstate(); }
 
 class AstNodeDType::CTypeRecursed final {
 public:
