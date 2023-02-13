@@ -1735,12 +1735,19 @@ private:
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         nodep->doingWidth(true);
         if (nodep->typeofp()) {  // type(typeofp_expression)
-            // Type comes from expression's type
-            userIterateAndNext(nodep->typeofp(), WidthVP{SELF, BOTH}.p());
-            AstNode* const typeofp = nodep->typeofp();
-            nodep->typedefp(nullptr);
-            nodep->refDTypep(typeofp->dtypep());
-            VL_DO_DANGLING(typeofp->unlinkFrBack()->deleteTree(), typeofp);
+            if (AstNodeDType* typeofDtp = VN_CAST(nodep->typeofp(), NodeDType)) {
+                // It's directly a type, e.g. "type(int)"
+                typeofDtp = iterateEditMoveDTypep(nodep, typeofDtp);  // Changes typeofp
+                nodep->typedefp(nullptr);
+                nodep->refDTypep(typeofDtp);
+            } else {
+                // Type comes from expression's type, e.g. "type(variable)"
+                userIterateAndNext(nodep->typeofp(), WidthVP{SELF, BOTH}.p());
+                AstNode* const typeofp = nodep->typeofp();
+                nodep->typedefp(nullptr);
+                nodep->refDTypep(typeofp->dtypep());
+                VL_DO_DANGLING(typeofp->unlinkFrBack()->deleteTree(), typeofp);
+            }
             // We had to use AstRefDType for this construct as pointers to this type
             // in type table are still correct (which they wouldn't be if we replaced the node)
         }
