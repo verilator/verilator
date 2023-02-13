@@ -30,7 +30,7 @@ def get_vlt_version():
             if match:
                 try:
                     data = os.popen('git log -n 1 --pretty=%cs').read()
-                except:
+                except Exception:
                     data = ""  # fallback, and Sphinx will fill in today's date
                 return "Devel " + match.group(1), data
     return "unknown", "unknown"
