@@ -60,6 +60,7 @@ Verilator 5.006 2023-01-22
 * Support property calls without parenthesis (#3879) (#3893). [Ryszard Rozak, Antmicro Ltd]
 * Support import/export lists in modport (#3886). [Gökçe Aydos]
 * Support class queue equality (#3895). [Ilya Barkov]
+* Support type case and type equality comparisons.
 * Add IMPLICITSTATIC warning when a ftask/function is implicitly static (#3839). [Ryszard Rozak, Antmicro Ltd]
 * Add VL_VALUE_STRING_MAX_WORDS override (#3869). [Andrew Nolte]
 * Optimize expansion of extend operators.

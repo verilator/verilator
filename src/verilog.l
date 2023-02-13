@@ -577,7 +577,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "throughout"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "timeprecision"       { FL; return yTIMEPRECISION; }
   "timeunit"            { FL; return yTIMEUNIT; }
-  "type"                { FL; return yTYPE; }
+  "type"                { FL; return yTYPE__LEX; }
   "typedef"             { FL; return yTYPEDEF; }
   "union"               { FL; return yUNION; }
   "unique"              { FL; return yUNIQUE; }

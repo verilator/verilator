@@ -3352,6 +3352,30 @@ public:
     int instrCount() const override { return INSTR_COUNT_STR; }
     bool stringFlavor() const override { return true; }
 };
+class AstEqT final : public AstNodeBiCom {
+    // Equal (==) for data types
+public:
+    AstEqT(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_EqT(fl, lhsp, rhsp) {
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstEqT;
+    AstNodeExpr* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
+        return new AstEqT{fileline(), lhsp, rhsp};
+    }
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        V3ERROR_NA;
+    }
+    string emitVerilog() override { return "%k(%l %f== %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { return "=="; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_STR; }
+};
 class AstLogEq final : public AstNodeBiCom {
 public:
     AstLogEq(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
@@ -3466,6 +3490,30 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_STR; }
     bool stringFlavor() const override { return true; }
+};
+class AstNeqT final : public AstNodeBiCom {
+    // Not-equal (!=) for data types
+public:
+    AstNeqT(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_NeqT(fl, lhsp, rhsp) {
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstNeqT;
+    AstNodeExpr* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
+        return new AstNeqT{fileline(), lhsp, rhsp};
+    }
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        V3ERROR_NA;
+    }
+    string emitVerilog() override { return "%k(%l %f!= %r)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { return "!="; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return false; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_STR; }
 };
 
 // === AstNodeBiComAsv ===

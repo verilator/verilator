@@ -757,8 +757,10 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yTRIOR          "trior"
 %token<fl>              yTRIREG         "trireg"
 %token<fl>              yTRUE           "true"
-%token<fl>              yTYPE           "type"
 %token<fl>              yTYPEDEF        "typedef"
+%token<fl>              yTYPE__EQ       "type-then-eqneq"
+%token<fl>              yTYPE__ETC      "type"
+%token<fl>              yTYPE__LEX      "type-in-lex"
 %token<fl>              yUNION          "union"
 %token<fl>              yUNIQUE         "unique"
 %token<fl>              yUNIQUE0        "unique0"
@@ -1865,7 +1867,7 @@ parameter_declarationFront:     // IEEE: local_ or parameter_declaration w/o ass
 
 parameter_declarationTypeFront: // IEEE: local_ or parameter_declaration w/o assignment
         //                      // Front must execute first so VARDTYPE is ready before list of vars
-                varParamReset yTYPE                     { /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType{$2}); }
+                varParamReset yTYPE__ETC                { /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType{$2}); }
         ;
 
 parameter_port_declarationFrontE: // IEEE: local_ or parameter_port_declaration w/o assignment
@@ -1882,8 +1884,8 @@ parameter_port_declarationTypeFrontE: // IEEE: parameter_port_declaration w/o as
         //                      // IEEE: parameter_declaration (minus assignment)
         //                      // IEEE: local_parameter_declaration (minus assignment)
         //                      // Front must execute first so VARDTYPE is ready before list of vars
-                varParamReset yTYPE                     { /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType{$2}); }
-        |       yTYPE                                   { /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType{$1}); }
+                varParamReset yTYPE__ETC                { /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType{$2}); }
+        |       yTYPE__ETC                              { /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType{$1}); }
         ;
 
 net_declaration<nodep>:         // IEEE: net_declaration - excluding implict
@@ -2105,7 +2107,7 @@ data_typeNoRef<nodeDTypep>:             // ==IEEE: data_type, excluding class_ty
                         { $$ = new AstBasicDType{$1, VBasicDTypeKwd::CHANDLE}; }
         |       yEVENT
                         { $$ = new AstBasicDType{$1, VBasicDTypeKwd::EVENT}; v3Global.setHasEvents(); }
-        |       type_reference                          { $$ = $1; }
+        |       type_referenceDecl                      { $$ = $1; }
         //                      // IEEE: class_scope: see data_type above
         //                      // IEEE: class_type: see data_type above
         //                      // IEEE: ps_covergroup: see data_type above
@@ -2137,9 +2139,19 @@ var_data_type<nodeDTypep>:              // ==IEEE: var_data_type
         |       yVAR implicit_typeE                     { $$ = $2; }
         ;
 
-type_reference<nodeDTypep>:     // ==IEEE: type_reference
-                yTYPE '(' exprOrDataType ')'
+type_referenceBoth<nodeExprp>:          // IEEE: type_reference
+                yTYPE__ETC '(' exprOrDataType ')'
+                        { $$ = new AstAttrOf{$1, VAttrType::TYPEID, $3}; }
+        ;
+
+type_referenceDecl<nodeDTypep>:         // IEEE: type_reference (as a data type for declaration)
+                yTYPE__ETC '(' exprOrDataType ')'
                         { $$ = new AstRefDType{$1, AstRefDType::FlagTypeOfExpr{}, $3}; }
+        ;
+
+type_referenceEq<nodeExprp>:            // IEEE: type_reference (as an ==/!== expression)
+                yTYPE__EQ '(' exprOrDataType ')'
+                        { $$ = new AstAttrOf{$1, VAttrType::TYPEID, $3}; }
         ;
 
 struct_unionDecl<nodeUOrStructDTypep>:  // IEEE: part of data_type
@@ -2768,11 +2780,11 @@ c_generate_item<nodep>:  // IEEE: generate_item (for checkers)
         ;
 
 conditional_generate_construct<nodep>:  // ==IEEE: conditional_generate_construct
-                yCASE  '(' expr ')' ~c~case_generate_itemListE yENDCASE
+                yCASE '(' exprTypeCompare ')' ~c~case_generate_itemListE yENDCASE
                         { $$ = new AstGenCase{$1, $3, $5}; }
-        |       yIF '(' expr ')' ~c~generate_block_or_null      %prec prLOWER_THAN_ELSE
+        |       yIF '(' exprTypeCompare ')' ~c~generate_block_or_null %prec prLOWER_THAN_ELSE
                         { $$ = new AstGenIf{$1, $3, $5, nullptr}; }
-        |       yIF '(' expr ')' ~c~generate_block_or_null yELSE ~c~generate_block_or_null
+        |       yIF '(' exprTypeCompare ')' ~c~generate_block_or_null yELSE ~c~generate_block_or_null
                         { $$ = new AstGenIf{$1, $3, $5, $7}; }
         ;
 
@@ -3691,11 +3703,11 @@ unique_priorityE<uniqstate>:    // IEEE: unique_priority + empty
         ;
 
 caseStart<casep>:               // IEEE: part of case_statement
-                yCASE  '(' expr ')'
+                yCASE  '(' exprTypeCompare ')'
                         { $$ = GRAMMARP->m_caseAttrp = new AstCase{$1, VCaseType::CT_CASE, $3, nullptr}; }
-        |       yCASEX '(' expr ')'
+        |       yCASEX '(' exprTypeCompare ')'
                         { $$ = GRAMMARP->m_caseAttrp = new AstCase{$1, VCaseType::CT_CASEX, $3, nullptr}; }
-        |       yCASEZ '(' expr ')'
+        |       yCASEZ '(' exprTypeCompare ')'
                         { $$ = GRAMMARP->m_caseAttrp = new AstCase{$1, VCaseType::CT_CASEZ, $3, nullptr}; }
         ;
 
@@ -3764,8 +3776,8 @@ value_range<nodeExprp>:         // ==IEEE: value_range
 //UNSUP ;
 
 caseCondList<nodeExprp>:        // IEEE: part of case_item
-                expr                                    { $$ = $1; }
-        |       caseCondList ',' expr                   { $$ = $1->addNext($3); }
+                exprTypeCompare                         { $$ = $1; }
+        |       caseCondList ',' exprTypeCompare        { $$ = $1->addNext($3); }
         ;
 
 patternNoExpr<nodep>:           // IEEE: pattern **Excluding Expr*
@@ -4709,6 +4721,11 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         |       ~l~expr yP_SSRIGHT ~r~expr              { $$ = new AstShiftRS{$2, $1, $3}; }
         |       ~l~expr yP_LTMINUSGT ~r~expr            { $$ = new AstLogEq{$2, $1, $3}; }
         //
+        //                      // IEEE: expression binary_operator expression (type compare see IEEE footnote)
+        |       type_referenceEq yP_CASEEQUAL type_referenceBoth     { $$ = new AstEqT{$2, $1, $3}; }
+        |       type_referenceEq yP_CASENOTEQUAL type_referenceBoth  { $$ = new AstNeqT{$2, $1, $3}; }
+        |       type_referenceEq yP_EQUAL type_referenceBoth         { $$ = new AstEqT{$2, $1, $3}; }
+        |       type_referenceEq yP_NOTEQUAL type_referenceBoth      { $$ = new AstNeqT{$2, $1, $3}; }
         //                      // IEEE: expr yP_MINUSGT expr  (1800-2009)
         //                      // Conflicts with constraint_expression:"expr yP_MINUSGT constraint_set"
         //                      // To duplicating expr for constraints, just allow the more general form
@@ -4771,7 +4788,7 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //                      // expanded from casting_type
         |       simple_type yP_TICK '(' expr ')'
                         { $$ = new AstCast{$1->fileline(), $4, VFlagChildDType{}, $1}; }
-        |       yTYPE '(' exprOrDataType ')' yP_TICK '(' expr ')'
+        |       yTYPE__ETC '(' exprOrDataType ')' yP_TICK '(' expr ')'
                         { $$ = new AstCast{$1, $7, VFlagChildDType{},
                                            new AstRefDType{$1, AstRefDType::FlagTypeOfExpr{}, $3}}; }
         |       ySIGNED yP_TICK '(' expr ')'            { $$ = new AstSigned{$1, $4}; }
@@ -4944,6 +4961,11 @@ fexprScope<nodeExprp>:              // exprScope, For use as first part of state
 exprStrText<nodep>:
                 exprNoStr                               { $$ = $1; }
         |       strAsText                               { $$ = $1; }
+        ;
+
+exprTypeCompare<nodeExprp>:
+                expr                                    { $$ = $1; }
+        |       type_referenceBoth                      { $$ = $1; }
         ;
 
 cStrList<nodep>:

@@ -374,6 +374,32 @@ size_t V3ParseImp::tokenPipeScanParam(size_t depth) {
     return depth;
 }
 
+size_t V3ParseImp::tokenPipeScanType(size_t depth) {
+    // Search around IEEE type_reference to see if is expression
+    // Return location of following token, or input if not found
+    // yTYPE__ETC '(' ... ')'  ['==' '===' '!=' '!===']
+    if (tokenPeekp(depth)->token != '(') return depth;
+    depth += 1;  // Past the (
+    int parens = 1;  // Count first (
+    while (true) {
+        const int tok = tokenPeekp(depth)->token;
+        if (tok == 0) {
+            UINFO(9, "tokenPipeScanType hit EOF; probably syntax error to come");
+            break;
+        } else if (tok == '(') {
+            ++parens;
+        } else if (tok == ')') {
+            --parens;
+            if (parens == 0) {
+                ++depth;
+                break;
+            }
+        }
+        ++depth;
+    }
+    return depth;
+}
+
 void V3ParseImp::tokenPipeline() {
     // called from bison's "yylex", has a "this"
     if (m_tokensAhead.empty()) tokenPull();  // corrupts yylval
@@ -388,6 +414,7 @@ void V3ParseImp::tokenPipeline() {
         || token == yLOCAL__LEX  //
         || token == yNEW__LEX  //
         || token == ySTATIC__LEX  //
+        || token == yTYPE__LEX  //
         || token == yVIRTUAL__LEX  //
         || token == yWITH__LEX  //
         || token == yaID__LEX  //
@@ -442,6 +469,18 @@ void V3ParseImp::tokenPipeline() {
                 token = ySTATIC__CONSTRAINT;
             } else {
                 token = ySTATIC__ETC;
+            }
+        } else if (token == yTYPE__LEX) {
+            VL_RESTORER(yylval);  // Remember value, as about to read ahead
+            const size_t depth = tokenPipeScanType(0);
+            const int postToken = tokenPeekp(depth)->token;
+            if (  // v-- token                v-- postToken
+                  // yTYPE__EQ '(' .... ')' EQ_OPERATOR yTYPE_ETC '(' ... ')'
+                postToken == yP_EQUAL || postToken == yP_NOTEQUAL || postToken == yP_CASEEQUAL
+                || postToken == yP_CASENOTEQUAL) {
+                token = yTYPE__EQ;
+            } else {
+                token = yTYPE__ETC;
             }
         } else if (token == yVIRTUAL__LEX) {
             if (nexttok == yCLASS) {

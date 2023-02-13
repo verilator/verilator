@@ -106,6 +106,7 @@ std::ostream& operator<<(std::ostream& str, const Determ& rhs) {
 
 enum Castable : uint8_t {
     UNSUPPORTED,
+    SAMEISH,
     COMPATIBLE,
     ENUM_EXPLICIT,
     ENUM_IMPLICIT,
@@ -114,7 +115,7 @@ enum Castable : uint8_t {
 };
 std::ostream& operator<<(std::ostream& str, const Castable& rhs) {
     static const char* const s_det[]
-        = {"UNSUP", "COMPAT", "ENUM_EXP", "ENUM_IMP", "DYN_CLS", "INCOMPAT"};
+        = {"UNSUP", "IDENT", "COMPAT", "ENUM_EXP", "ENUM_IMP", "DYN_CLS", "INCOMPAT"};
     return str << s_det[rhs];
 }
 
@@ -314,6 +315,9 @@ private:
     void visit(AstLteN* nodep) override { visit_cmp_string(nodep); }
     void visit(AstGtN* nodep) override { visit_cmp_string(nodep); }
     void visit(AstGteN* nodep) override { visit_cmp_string(nodep); }
+    // ...    Data type compares
+    void visit(AstEqT* nodep) override { visit_cmp_type(nodep); }
+    void visit(AstNeqT* nodep) override { visit_cmp_type(nodep); }
 
     // Widths: out width = lhs width = rhs width
     // Signed: Output signed iff LHS & RHS signed.
@@ -1569,6 +1573,10 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             break;
         }
+        case VAttrType::TYPEID:
+            // Soon to be handled in AstEqT
+            nodep->dtypeSetSigned32();
+            break;
         default: {
             // Everything else resolved earlier
             nodep->dtypeSetLogicUnsized(32, 1, VSigning::UNSIGNED);  // Approximation, unsized 32
@@ -1841,7 +1849,7 @@ private:
                                               nodep->fromp()->unlinkFrBack()},
                                 new AstConst{fl, AstConst::Signed32{}, 1}},
                 new AstConst{fl, AstConst::Signed32{}, 0}};
-        } else if (castable == COMPATIBLE) {
+        } else if (castable == SAMEISH || castable == COMPATIBLE) {
             nodep->v3warn(CASTCONST, "$cast will always return one as "
                                          << toDtp->prettyDTypeNameQ()
                                          << " is always castable from "
@@ -1904,7 +1912,7 @@ private:
                                                  << toDtp->prettyDTypeNameQ() << " from "
                                                  << fromDtp->prettyDTypeNameQ());
                 bad = true;
-            } else if (castable == COMPATIBLE || castable == ENUM_IMPLICIT
+            } else if (castable == SAMEISH || castable == COMPATIBLE || castable == ENUM_IMPLICIT
                        || castable == ENUM_EXPLICIT) {
                 ;  // Continue
             } else if (castable == DYNAMIC_CLASS) {
@@ -4246,6 +4254,45 @@ private:
             }
         }
 
+        // Deal with case(type(data_type))
+        if (AstAttrOf* const exprap = VN_CAST(nodep->exprp(), AttrOf)) {
+            if (exprap->attrType() == VAttrType::TYPEID) {
+                AstNodeDType* const exprDtp = VN_AS(exprap->fromp(), NodeDType);
+                UINFO(9, "case type exprDtp " << exprDtp << endl);
+                // V3Param may have a pointer to this case statement, and we need
+                // dotted references to remain properly named, so rather than
+                // removing we convert it to a "normal" expression "case (1) ..."
+                FileLine* const newfl = nodep->fileline();
+                newfl->warnOff(V3ErrorCode::CASEINCOMPLETE, true);  // Side effect of transform
+                newfl->warnOff(V3ErrorCode::CASEOVERLAP, true);  // Side effect of transform
+                nodep->fileline(newfl);
+                for (AstCaseItem* itemp = nodep->itemsp(); itemp;
+                     itemp = VN_AS(itemp->nextp(), CaseItem)) {
+                    if (!itemp->isDefault()) {
+                        bool hit = false;
+                        for (AstNode* condp = itemp->condsp(); condp; condp = condp->nextp()) {
+                            const AstAttrOf* const condAttrp = VN_CAST(condp, AttrOf);
+                            if (!condAttrp) {
+                                condp->v3error(
+                                    "Case(type) statement requires items that have type() items");
+                            } else {
+                                AstNodeDType* const condDtp = VN_AS(condAttrp->fromp(), NodeDType);
+                                if (computeCastable(exprDtp, condDtp, nodep) == SAMEISH) {
+                                    hit = true;
+                                    break;
+                                }
+                            }
+                        }
+                        pushDeletep(itemp->condsp()->unlinkFrBackWithNext());
+                        // Item condition becomes constant 1 if hits else 0
+                        itemp->addCondsp(new AstConst{newfl, AstConst::BitTrue{}, hit});
+                    }
+                }
+                VL_DO_DANGLING(pushDeletep(exprap->unlinkFrBack()), exprap);
+                nodep->exprp(new AstConst{newfl, AstConst::BitTrue{}});
+            }
+        }
+
         // Take width as maximum across all items, if any is real whole thing is real
         AstNodeDType* subDTypep = nodep->exprp()->dtypep();
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
@@ -5729,6 +5776,32 @@ private:
             nodep->dtypeSetBit();
         }
     }
+    void visit_cmp_type(AstNodeBiop* nodep) {
+        // CALLER: EqT, LtT
+        // Widths: 1 bit out
+        // Data type compare (not output)
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
+            userIterateAndNext(nodep->rhsp(), WidthVP{SELF, BOTH}.p());
+            const AstAttrOf* const lhsap = VN_AS(nodep->lhsp(), AttrOf);
+            const AstAttrOf* const rhsap = VN_AS(nodep->rhsp(), AttrOf);
+            UASSERT_OBJ(lhsap->attrType() == VAttrType::TYPEID, lhsap,
+                        "Type compare expects type reference");
+            UASSERT_OBJ(rhsap->attrType() == VAttrType::TYPEID, rhsap,
+                        "Type compare expects type reference");
+            AstNodeDType* const lhsDtp = VN_AS(lhsap->fromp(), NodeDType);
+            AstNodeDType* const rhsDtp = VN_AS(rhsap->fromp(), NodeDType);
+            UINFO(9, "==type lhsDtp " << lhsDtp << endl);
+            UINFO(9, "==type rhsDtp " << lhsDtp << endl);
+            const bool invert = VN_IS(nodep, NeqT);
+            const bool identical = computeCastable(lhsDtp, rhsDtp, nodep) == SAMEISH;
+            UINFO(9, "== " << identical << endl);
+            const bool eq = invert ^ identical;
+            AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitTrue{}, eq};
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
+    }
 
     void visit_negate_not(AstNodeUniop* nodep, bool real_ok) {
         // CALLER: (real_ok=false) Not
@@ -6346,8 +6419,8 @@ private:
                 if (const AstEnumDType* const expEnump
                     = VN_CAST(expDTypep->skipRefToEnump(), EnumDType)) {
                     const auto castable = computeCastable(expEnump, underp->dtypep(), underp);
-                    if (castable != COMPATIBLE && castable != ENUM_IMPLICIT && !VN_IS(underp, Cast)
-                        && !VN_IS(underp, CastDynamic) && !m_enumItemp
+                    if (castable != SAMEISH && castable != COMPATIBLE && castable != ENUM_IMPLICIT
+                        && !VN_IS(underp, Cast) && !VN_IS(underp, CastDynamic) && !m_enumItemp
                         && !nodep->fileline()->warnIsOff(V3ErrorCode::ENUMVALUE) && warnOn) {
                         underp->v3warn(ENUMVALUE,
                                        "Implicit conversion to enum "
@@ -7080,10 +7153,11 @@ private:
         const Castable castable = UNSUPPORTED;
         toDtp = toDtp->skipRefToEnump();
         fromDtp = fromDtp->skipRefToEnump();
-        if (toDtp == fromDtp) return COMPATIBLE;
-
+        if (toDtp == fromDtp) return SAMEISH;
+        if (toDtp->similarDType(fromDtp)) return SAMEISH;
         // UNSUP unpacked struct/unions (treated like BasicDType)
         const AstNodeDType* fromBaseDtp = computeCastableBase(fromDtp);
+
         const bool fromNumericable = VN_IS(fromBaseDtp, BasicDType)
                                      || VN_IS(fromBaseDtp, EnumDType)
                                      || VN_IS(fromBaseDtp, NodeUOrStructDType);

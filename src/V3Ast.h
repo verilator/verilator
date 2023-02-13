@@ -379,6 +379,7 @@ public:
         ENUM_NAME,                      // V3Width processes
         ENUM_VALID,                     // V3Width processes
         //
+        TYPEID,                         // V3Width processes
         TYPENAME,                       // V3Width processes
         //
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
@@ -406,7 +407,7 @@ public:
             "DT_PUBLIC",
             "ENUM_FIRST", "ENUM_LAST", "ENUM_NUM",
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
-            "TYPENAME",
+            "TYPEID", "TYPENAME",
             "VAR_BASE", "VAR_CLOCK_ENABLE", "VAR_FORCEABLE", "VAR_PUBLIC",
             "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
             "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT", "VAR_CLOCKER",
