@@ -58,6 +58,7 @@ class SliceVisitor final : public VNVisitor {
     // STATE
     AstNode* m_assignp = nullptr;  // Assignment we are under
     bool m_assignError = false;  // True if the current assign already has an error
+    bool m_okInitArray = false;  // Allow InitArray children
 
     // METHODS
     AstNodeExpr* cloneAndSel(AstNode* nodep, int elements, int offset) {
@@ -163,8 +164,14 @@ class SliceVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstConsPackUOrStruct* nodep) override {
+        VL_RESTORER(m_okInitArray);
+        m_okInitArray = true;
+        iterateChildren(nodep);
+    }
     void visit(AstInitArray* nodep) override {
-        UASSERT_OBJ(!m_assignp, nodep, "Array initialization should have been removed earlier");
+        UASSERT_OBJ(!m_assignp || m_okInitArray, nodep,
+                    "Array initialization should have been removed earlier");
     }
 
     void expandBiOp(AstNodeBiop* nodep) {

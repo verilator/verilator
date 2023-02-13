@@ -46,6 +46,7 @@ Verilator 5.007 devel
 * Fix class field linking when a super classes is a param (#3949). [Ryszard Rozak, Antmicro Ltd]
 * Fix CMake bad C identifiers (#3948) (#3951). [Zixi Li]
 * Fix build on HP PA architecture. (#3954) [John David Anglin]
+* Fix packed array structure replication.
 
 
 Verilator 5.006 2023-01-22
