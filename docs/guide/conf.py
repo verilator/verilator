@@ -23,7 +23,8 @@ def get_vlt_version():
     filename = "../../Makefile"
     with open(filename, "r", encoding="utf8") as fh:
         for line in fh:
-            match = re.search(r"PACKAGE_VERSION *= *([a-z0-9.]+) +([-0-9]+)", line)
+            match = re.search(r"PACKAGE_VERSION *= *([a-z0-9.]+) +([-0-9]+)",
+                              line)
             if match:
                 return match.group(1), match.group(2)
             match = re.search(r"PACKAGE_VERSION *= *([a-z0-9.]+) +devel", line)
