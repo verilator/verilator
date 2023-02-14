@@ -2191,13 +2191,16 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
         //                      // So this is different from variable_decl_assignment
                 id variable_dimensionListE
                         { $$ = new AstMemberDType{$<fl>1, *$1, VFlagChildDType{},
-                                                  GRAMMARP->createArray(AstNodeDType::cloneTreeNull(GRAMMARP->m_memDTypep, true), $2, false)};
+                                                  GRAMMARP->createArray(AstNodeDType::cloneTreeNull(GRAMMARP->m_memDTypep, true), $2, false),
+                                                  nullptr};
                           PARSEP->tagNodep($$);
-                          }
+                        }
         |       id variable_dimensionListE '=' variable_declExpr
-                        { BBUNSUP($4, "Unsupported: Initial values in struct/union members.");
-                          // But still need error if packed according to IEEE 7.2.2
-                          $$ = nullptr; }
+                        { $$ = new AstMemberDType{$<fl>1, *$1, VFlagChildDType{},
+                                                  GRAMMARP->createArray(AstNodeDType::cloneTreeNull(GRAMMARP->m_memDTypep, true), $2, false),
+                                                  $4};
+                          PARSEP->tagNodep($$);
+                        }
         |       idSVKwd                                 { $$ = nullptr; }
         //
         //                      // IEEE: "dynamic_array_variable_identifier '[' ']' [ '=' dynamic_array_new ]"

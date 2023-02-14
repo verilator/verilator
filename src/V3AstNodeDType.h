@@ -845,6 +845,7 @@ class AstMemberDType final : public AstNodeDType {
     // A member of a struct/union
     // PARENT: AstNodeUOrStructDType
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
+    // @astgen op3 := valuep : Optional[AstNode]
 private:
     AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
     string m_name;  // Name of variable
@@ -852,10 +853,12 @@ private:
     int m_lsb = -1;  // Within this level's packed struct, the LSB of the first bit of the member
     // UNSUP: int m_randType;    // Randomization type (IEEE)
 public:
-    AstMemberDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp)
+    AstMemberDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp,
+                   AstNode* valuep)
         : ASTGEN_SUPER_MemberDType(fl)
         , m_name{name} {
         childDTypep(dtp);  // Only for parser
+        this->valuep(valuep);
         dtypep(nullptr);  // V3Width will resolve
         refDTypep(nullptr);
     }

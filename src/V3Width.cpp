@@ -2534,22 +2534,33 @@ private:
         nodep->repairMemberCache();
         nodep->dtypep(nodep);
         nodep->isFourstate(false);
+        // Error checks
+        for (AstMemberDType* itemp = nodep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            AstNodeDType* const dtp = itemp->subDTypep()->skipRefp();
+            if (nodep->packed()
+                && !dtp->isIntegralOrPacked()
+                // Historically lax:
+                && !v3Global.opt.structsPacked())
+                itemp->v3error("Unpacked data type "
+                               << dtp->prettyDTypeNameQ()
+                               << " in packed struct/union (IEEE 1800-2017 7.2.1)");
+            if ((VN_IS(nodep, UnionDType) || nodep->packed()) && itemp->valuep()) {
+                itemp->v3error("Initial values not allowed in packed struct/union"
+                               " (IEEE 1800-2017 7.2.1)");
+                pushDeletep(itemp->valuep()->unlinkFrBack());
+            } else if (itemp->valuep()) {
+                itemp->valuep()->v3warn(E_UNSUPPORTED,
+                                        "Unsupported: Initial values in struct/union members");
+                pushDeletep(itemp->valuep()->unlinkFrBack());
+            }
+        }
         // Determine bit assignments and width
         if (VN_IS(nodep, UnionDType) || nodep->packed()) {
             int lsb = 0;
             int width = 0;
             // Report errors on first member first
             AstMemberDType* itemp;
-            for (itemp = nodep->membersp(); itemp; itemp = VN_AS(itemp->nextp(), MemberDType)) {
-                AstNodeDType* const dtp = itemp->subDTypep()->skipRefp();
-                if (nodep->packed()
-                    && !dtp->isIntegralOrPacked()
-                    // Historically lax:
-                    && !v3Global.opt.structsPacked())
-                    itemp->v3error("Unpacked data type "
-                                   << dtp->prettyDTypeNameQ()
-                                   << " in packed struct/union (IEEE 1800-2017 7.2.1)");
-            }
             // MSB is first, so loop backwards
             for (itemp = nodep->membersp(); itemp && itemp->nextp();
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {}
@@ -2615,6 +2626,10 @@ private:
         nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);  // The member itself, not subDtype
         nodep->widthFromSub(nodep->subDTypep());
+        if (nodep->valuep()) {
+            userIterateAndNext(nodep->valuep(), WidthVP{nodep->dtypep(), PRELIM}.p());
+            iterateCheckAssign(nodep, "Initial value", nodep->valuep(), FINAL, nodep->dtypep());
+        }
     }
     void visit(AstStructSel* nodep) override {
         userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());

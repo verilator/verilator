@@ -26,7 +26,6 @@ foreach my $s (
     'Enum names without values only allowed on numeric types',  # Hard to hit
     'Enum ranges must be integral, per spec',  # Hard to hit
     'Return with return value isn\'t underneath a function',  # Hard to hit, get other bad return messages
-    'Select from non-array ',  # Instead get type does not have a bit range
     'Syntax error parsing real: \'',  # Instead can't lex the number
     'Unsupported: Ranges ignored in port-lists',  # Hard to hit
     'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
@@ -53,7 +52,6 @@ foreach my $s (
     'Exceeded limit of ',
     'Extern declaration\'s scope is not a defined class',
     'Format to $display-like function must have constant format string',
-    'Forward typedef used as class/package does not resolve to class/package: ',
     'Illegal +: or -: select; type already selected, or bad dimension: ',
     'Illegal bit or array select; type already selected, or bad dimension: ',
     'Illegal range select; type already selected, or bad dimension: ',
