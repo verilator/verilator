@@ -318,9 +318,11 @@ List Of Warnings
 
 .. option:: CDCRSTLOGIC
 
-   With :vlopt:`--cdc` only, it warns that asynchronous flop reset terms come
-   from other than primary inputs or flopped outputs, creating the
-   potential for reset glitches.
+   Historical, never issued since version 5.008.
+
+   Warned with a no longer supported clock domain crossing option that
+   asynchronous flop reset terms came from other than primary inputs or
+   flopped outputs, creating the potential for reset glitches.
 
 
 .. option:: CLKDATA

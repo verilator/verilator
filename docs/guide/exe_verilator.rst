@@ -155,18 +155,6 @@ Summary:
    Specify C++ without SystemC output mode; see also the :vlopt:`--sc`
    option.
 
-.. option:: --cdc
-
-   Permanently experimental.  Perform some clock domain crossing checks and
-   issue related warnings (CDCRSTLOGIC) and then exit; if warnings other
-   than CDC warnings are needed, make a second run with
-   :vlopt:`--lint-only`.  Additional warning information is also written to
-   the file :file:`<prefix>__cdc.txt`.
-
-   Currently only checks some items that other CDC tools missed; if you are
-   interested in adding more traditional CDC checks, please contact the
-   authors.
-
 .. option:: -CFLAGS <flags>
 
    Add specified C compiler argument to the generated makefiles. For

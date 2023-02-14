@@ -776,13 +776,9 @@ void V3Options::notify() {
     FileLine* const cmdfl = new FileLine{FileLine::commandLineFilename()};
 
     if (!outFormatOk() && v3Global.opt.main()) ccSet();  // --main implies --cc if not provided
-    if (!outFormatOk() && !cdc() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !xmlOnly()) {
-        v3fatal("verilator: Need --binary, --cc, --sc, --cdc, --dpi-hdr-only, --lint-only, "
+    if (!outFormatOk() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !xmlOnly()) {
+        v3fatal("verilator: Need --binary, --cc, --sc, --dpi-hdr-only, --lint-only, "
                 "--xml-only or --E option");
-    }
-
-    if (cdc()) {
-        cmdfl->v3warn(DEPRECATED, "Option --cdc is deprecated and is planned for removal");
     }
 
     if (m_build && (m_gmake || m_cmake)) {
@@ -826,16 +822,14 @@ void V3Options::notify() {
     // Default some options if not turned on or off
     if (v3Global.opt.skipIdentical().isDefault()) {
         v3Global.opt.m_skipIdentical.setTrueOrFalse(  //
-            !v3Global.opt.cdc()  //
-            && !v3Global.opt.dpiHdrOnly()  //
+            !v3Global.opt.dpiHdrOnly()  //
             && !v3Global.opt.lintOnly()  //
             && !v3Global.opt.preprocOnly()  //
             && !v3Global.opt.xmlOnly());
     }
     if (v3Global.opt.makeDepend().isDefault()) {
         v3Global.opt.m_makeDepend.setTrueOrFalse(  //
-            !v3Global.opt.cdc()  //
-            && !v3Global.opt.dpiHdrOnly()  //
+            !v3Global.opt.dpiHdrOnly()  //
             && !v3Global.opt.lintOnly()  //
             && !v3Global.opt.preprocOnly()  //
             && !v3Global.opt.xmlOnly());
@@ -1085,7 +1079,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     DECL_OPTION("-CFLAGS", CbVal, callStrSetter(&V3Options::addCFlags));
     DECL_OPTION("-cc", CbCall, [this]() { ccSet(); });
-    DECL_OPTION("-cdc", OnOff, &m_cdc);
     DECL_OPTION("-clk", CbVal, callStrSetter(&V3Options::addClocker));
     DECL_OPTION("-no-clk", CbVal, callStrSetter(&V3Options::addNoClocker));
     DECL_OPTION("-comp-limit-blocks", Set, &m_compLimitBlocks).undocumented();

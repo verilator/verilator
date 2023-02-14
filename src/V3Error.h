@@ -82,7 +82,7 @@ public:
         CASEWITHX,      // Case with X values
         CASEX,          // Casex
         CASTCONST,      // Cast is constant
-        CDCRSTLOGIC,    // Logic in async reset path
+        CDCRSTLOGIC,    // Logic in async reset path. Historical, never issued.
         CLKDATA,        // Clock used as data. Historical, never issued.
         CMPCONST,       // Comparison is constant due to limited range
         COLONPLUS,      // :+ instead of +:

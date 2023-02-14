@@ -27,6 +27,7 @@ Verilator 5.007 devel
 * Support class extending its parameter (#3904). [Ryszard Rozak, Antmicro Ltd]
 * Support static function variables (#3830). [Ryszard Rozak, Antmicro Ltd]
 * Support vpiDefName (#3906) (#3931). [Andrew Nolte]
+* Removed deprecated --cdc option.
 * Fix real parameters of infinity and NaN.
 * Fix pattern assignment to unpacked structs (#3510). [Mostafa Garnal]
 * Fix single-element replication to dynarray/unpacked/queue (#3548). [Gustav Svensk]

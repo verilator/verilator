@@ -164,7 +164,6 @@ RAW_OBJS = \
 	V3CUse.o \
 	V3Case.o \
 	V3Cast.o \
-	V3Cdc.o \
 	V3Class.o \
 	V3Clean.o \
 	V3Clock.o \

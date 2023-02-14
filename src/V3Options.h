@@ -224,7 +224,6 @@ private:
     bool m_bboxSys = false;         // main switch: --bbox-sys
     bool m_bboxUnsup = false;       // main switch: --bbox-unsup
     bool m_build = false;           // main switch: --build
-    bool m_cdc = false;             // main switch: --cdc
     bool m_cmake = false;           // main switch: --make cmake
     bool m_context = true;          // main switch: --Wcontext
     bool m_coverageLine = false;    // main switch: --coverage-block
@@ -441,7 +440,6 @@ public:
     bool build() const { return m_build; }
     string buildDepBin() const { return m_buildDepBin; }
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }
-    bool cdc() const { return m_cdc; }
     bool cmake() const { return m_cmake; }
     bool context() const VL_MT_SAFE { return m_context; }
     bool coverage() const VL_MT_SAFE {

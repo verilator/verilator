@@ -26,7 +26,6 @@
 #include "V3CUse.h"
 #include "V3Case.h"
 #include "V3Cast.h"
-#include "V3Cdc.h"
 #include "V3Class.h"
 #include "V3Clean.h"
 #include "V3Clock.h"
@@ -372,13 +371,6 @@ static void process() {
         V3Const::constifyAll(v3Global.rootp());
         V3Dead::deadifyAllScoped(v3Global.rootp());
 
-        // Clock domain crossing analysis
-        if (v3Global.opt.cdc()) {
-            V3Cdc::cdcAll(v3Global.rootp());
-            V3Error::abortIfErrors();
-            return;
-        }
-
         // Reorder assignments in pipelined blocks
         if (v3Global.opt.fReorder()) V3Split::splitReorderAll(v3Global.rootp());
 
@@ -579,8 +571,6 @@ static void process() {
         if (v3Global.opt.cmake()) V3EmitCMake::emit();
         if (v3Global.opt.gmake()) V3EmitMk::emitmk();
     }
-
-    // Note early return above when opt.cdc()
 }
 
 static void verilate(const string& argString) {
