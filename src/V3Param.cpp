@@ -820,10 +820,16 @@ class ParamProcessor final {
         }
 
         for (auto* stmtp = srcModpr->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (auto* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
+            if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
                 if (VN_IS(dtypep->subDTypep(), VoidDType)) {
                     nodep->v3error("Missing type parameter: " << dtypep->prettyNameQ());
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                }
+            }
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (VN_IS(srcModpr, Class) && varp->isParam() && !varp->valuep()) {
+                    nodep->v3error("Class parameter without initial value is never given value"
+                                   << " (IEEE 1800-2017 6.20.1): " << varp->prettyNameQ());
                 }
             }
         }
@@ -911,6 +917,7 @@ class ParamVisitor final : public VNVisitor {
     bool m_iterateModule = false;  // Iterating module body
     string m_generateHierName;  // Generate portion of hierarchy name
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
+    AstNodeModule* m_modp;  // Module iterating
     std::vector<AstDot*> m_dots;  // Dot references to process
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
     std::multimap<int, AstNodeModule*> m_workQueue;  // Modules left to process
@@ -941,7 +948,11 @@ class ParamVisitor final : public VNVisitor {
             if (modp->someInstanceName().empty()) modp->someInstanceName(modp->origName());
 
             // Iterate the body
-            iterateChildren(modp);
+            {
+                VL_RESTORER(m_modp);
+                m_modp = modp;
+                iterateChildren(modp);
+            }
 
             // Process interface cells, then non-interface cells, which may reference an interface
             // cell.
@@ -1053,7 +1064,7 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->user5SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isParam()) {
-            if (!nodep->valuep()) {
+            if (!nodep->valuep() && !VN_IS(m_modp, Class)) {
                 nodep->v3error("Parameter without initial value is never given value"
                                << " (IEEE 1800-2017 6.20.1): " << nodep->prettyNameQ());
             } else {

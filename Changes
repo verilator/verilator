@@ -21,6 +21,7 @@ Verilator 5.007 devel
 * Support unpacked unions.
 * Support interface classes and class implements.
 * Support global clocking and $global_clock.
+* Support class parameters without initial values.
 * Support struct I/O in --lib-create (#3378) (#3892). [Varun Koyyalagunta]
 * Support function calls without parenthesis (#3903) (#3902). [Ryszard Rozak, Antmicro Ltd]
 * Support class extending its parameter (#3904). [Ryszard Rozak, Antmicro Ltd]
