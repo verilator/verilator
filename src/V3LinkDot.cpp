@@ -3255,6 +3255,10 @@ private:
                                        " (IEEE 1800-2017 8.13)");
                     }
                     if (cextp->childDTypep() || cextp->dtypep()) continue;  // Already converted
+                    if (VN_IS(cextp->classOrPkgsp(), Dot)) {
+                        itemp->v3warn(E_UNSUPPORTED, "Unsupported: Hierarchical class references");
+                        continue;
+                    }
                     AstClassOrPackageRef* const cpackagerefp
                         = VN_CAST(cextp->classOrPkgsp(), ClassOrPackageRef);
                     if (VL_UNCOVERABLE(!cpackagerefp)) {

@@ -6643,11 +6643,6 @@ classExtendsOne<classExtendsp>:         // IEEE: part of class_declaration
                 class_typeExtImpList
                         { $$ = new AstClassExtends{$1->fileline(), $1, GRAMMARP->m_inImplements};
                           $<scp>$ = $<scp>1; }
-        //
-        |       class_typeExtImpList '(' list_of_argumentsE ')'
-                        { $$ = new AstClassExtends{$1->fileline(), $1, GRAMMARP->m_inImplements};
-                          $<scp>$ = $<scp>1;
-                          if ($3) BBUNSUP($3, "Unsupported: extends with parameters"); }
         ;
 
 classImplementsE<classExtendsp>:        // IEEE: part of class_declaration
@@ -6667,24 +6662,27 @@ classImplementsList<classExtendsp>:     // IEEE: part of class_declaration
                        { $$ = addNextNull($1, $3); $<scp>$ = $<scp>3; }
         ;
 
-class_typeExtImpList<nodep>:    // IEEE: class_type: "[package_scope] id [ parameter_value_assignment ]"
+class_typeExtImpList<nodeExprp>:  // IEEE: class_type: "[package_scope] id [ parameter_value_assignment ]"
         //                      // but allow yaID__aTYPE for extends/implements
         //                      // If you follow the rules down, class_type is really a list via ps_class_identifier
                 class_typeExtImpOne                     { $$ = $1; $<scp>$ = $<scp>1; }
         |       class_typeExtImpList yP_COLONCOLON class_typeExtImpOne
-                        { $$ = $3; $<scp>$ = $<scp>1;
-                          // Cannot just add as next() as that breaks implements lists
-                          //UNSUP $$ = new AstDot{$<fl>1, true, $1, $3};
-                          BBUNSUP($2, "Unsupported: Hierarchical class references"); }
+                        { $$ = new AstDot{$<fl>1, true, $1, $3};
+                          $<scp>$ = $<scp>3; }
         ;
 
-class_typeExtImpOne<nodep>:     // part of IEEE: class_type, where we either get a package_scope component or class
+class_typeExtImpOne<nodeExprp>:  // part of IEEE: class_type, where we either get a package_scope component or class
         //                      // If you follow the rules down, class_type is really a list via ps_class_identifier
         //                      // Not listed in IEEE, but see bug627 any parameter type maybe a class
         //                      // If idAny below is a class, parameter_value is legal
         //                      // If idAny below is a package, parameter_value is not legal
         //                      // If idAny below is otherwise, not legal
                 idAny
+        /*mid*/         { /* no nextId as not refing it above this*/ }
+        /*cont*/    parameter_value_assignmentE
+                        { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, $3};
+                          $<scp>$ = $<scp>1; }
+        |       idCC
         /*mid*/         { /* no nextId as not refing it above this*/ }
         /*cont*/    parameter_value_assignmentE
                         { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, $3};
