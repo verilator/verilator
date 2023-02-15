@@ -1826,8 +1826,8 @@ modportPortsDecl<nodep>:
 
 modportSimplePortOrTFPort<strp>:// IEEE: modport_simple_port or modport_tf_port, depending what keyword was earlier
                 id                                      { $$ = $1; }
-        //UNSUP '.' idAny '(' ')'                       { }
-        //UNSUP '.' idAny '(' expr ')'                  { }
+        |       '.' idAny '(' ')'                       { $$ = $2; BBUNSUP($<fl>1, "Unsupported: Modport dotted port name"); }
+        |       '.' idAny '(' expr ')'                  { $$ = $2; BBUNSUP($<fl>1, "Unsupported: Modport dotted port name"); }
         ;
 //************************************************
 // Variable Declarations
@@ -2665,7 +2665,8 @@ module_or_generate_item_declaration<nodep>:     // ==IEEE: module_or_generate_it
         |       clocking_declaration                    { $$ = $1; }
         |       yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: default clocking identifier"); }
-        //UNSUP yDEFAULT yDISABLE yIFF expr/*expression_or_dist*/ ';'   { }
+        |       yDEFAULT yDISABLE yIFF expr/*expression_or_dist*/ ';'
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: default disable iff"); }
         ;
 
 aliasEqList:                    // IEEE: part of net_alias
@@ -2918,7 +2919,8 @@ delay_or_event_controlE<nodep>:  // IEEE: delay_or_event_control plus empty
                 /* empty */                             { $$ = nullptr; }
         |        delay_control                          { $$ = $1; }
         |        event_control                          { $$ = $1; }
-//UNSUP        |        yREPEAT '(' expr ')' event_control        { }
+        |        yREPEAT '(' expr ')' event_control
+                        { $$ = $5; BBUNSUP($1, "Unsupported: repeat event control"); }
         ;
 
 delay_controlE<delayp>:
@@ -3025,11 +3027,6 @@ rangeList<nodeRangep>:          // IEEE: {packed_dimension}
                 anyrange                                { $$ = $1; }
         |       rangeList anyrange                      { $$ = $1->addNext($2); }
         ;
-
-//UNSUPbit_selectE<fl>:  // IEEE: constant_bit_select (IEEE included empty)
-//UNSUP         /* empty */                             { $$ = nullptr; }
-//UNSUP |       '[' constExpr ']'                       { $<fl>$ = $<fl>1; $$ = "[" + $2 + "]"; }
-//UNSUP ;
 
 // IEEE: select
 // Merged into more general idArray
@@ -5085,18 +5082,26 @@ stream_concatenation<nodeExprp>:    // ==IEEE: stream_concatenation
 stream_expression<nodeExprp>:   // ==IEEE: stream_expression
         //                      // IEEE: array_range_expression expanded below
                 expr                                    { $$ = $1; }
-        //UNSUP expr yWITH__BRA '[' expr ']'            { UNSUP }
-        //UNSUP expr yWITH__BRA '[' expr ':' expr ']'   { UNSUP }
-        //UNSUP expr yWITH__BRA '[' expr yP_PLUSCOLON  expr ']' { UNSUP }
-        //UNSUP expr yWITH__BRA '[' expr yP_MINUSCOLON expr ']' { UNSUP }
+        |       expr yWITH__BRA '[' expr ']'
+                        { $$ = $1; BBUNSUP($2, "Unsupported: with[] stream expression"); }
+        |       expr yWITH__BRA '[' expr ':' expr ']'
+                        { $$ = $1; BBUNSUP($2, "Unsupported: with[] stream expression"); }
+        |       expr yWITH__BRA '[' expr yP_PLUSCOLON  expr ']'
+                        { $$ = $1; BBUNSUP($2, "Unsupported: with[] stream expression"); }
+        |       expr yWITH__BRA '[' expr yP_MINUSCOLON expr ']'
+                        { $$ = $1; BBUNSUP($2, "Unsupported: with[] stream expression"); }
         ;
 
 stream_expressionOrDataType<nodep>:     // IEEE: from streaming_concatenation
                 exprOrDataType                          { $$ = $1; }
-        //UNSUP expr yWITH__BRA '[' expr ']'            { UNSUP }
-        //UNSUP expr yWITH__BRA '[' expr ':' expr ']'   { UNSUP }
-        //UNSUP expr yWITH__BRA '[' expr yP_PLUSCOLON  expr ']' { UNSUP }
-        //UNSUP expr yWITH__BRA '[' expr yP_MINUSCOLON expr ']' { UNSUP }
+        |       expr yWITH__BRA '[' expr ']'
+                        { $$ = $1; BBUNSUP($2, "Unsupported: with[] stream expression"); }
+        |       expr yWITH__BRA '[' expr ':' expr ']'
+                        { $$ = $1; BBUNSUP($2, "Unsupported: with[] stream expression"); }
+        |       expr yWITH__BRA '[' expr yP_PLUSCOLON  expr ']'
+                        { $$ = $1; BBUNSUP($2, "Unsupported: with[] stream expression"); }
+        |       expr yWITH__BRA '[' expr yP_MINUSCOLON expr ']'
+                        { $$ = $1; BBUNSUP($2, "Unsupported: with[] stream expression"); }
         ;
 
 //************************************************
