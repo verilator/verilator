@@ -97,7 +97,7 @@ public:
     bool m_tracingParse = true;  // Tracing disable for parser
     bool m_inImplements = false;  // Is inside class implements list
     bool m_insideProperty = false;  // Is inside property declaration
-    bool m_typedPropertyPort = false;  // True if typed property port occurred on port lists
+    bool m_typedPropertyPort = false;  // Typed property port occurred on port lists
     bool m_modportImpExpActive
         = false;  // Standalone ID is a tf_identifier instead of port_identifier
     bool m_modportImpExpLastIsExport
@@ -5795,19 +5795,19 @@ property_port_item<nodep>:  // IEEE: property_port_item/sequence_port_item
         ;
 
 property_port_itemFront: // IEEE: part of property_port_item/sequence_port_item
-                property_port_itemDirE property_formal_typeNoDt { VARDTYPE($2); }
-//UNSUP //                      // data_type_or_implicit
+                property_port_itemDirE property_formal_typeNoDt  { VARDTYPE($2); }
+        //                      // data_type_or_implicit
         |       property_port_itemDirE data_type
                         { VARDTYPE($2); GRAMMARP->m_typedPropertyPort = true; }
-//UNSUP |       property_port_itemDirE yVAR data_type           { VARDTYPE($3); }
-//UNSUP |       property_port_itemDirE yVAR implicit_typeE      { VARDTYPE($3); }
-//UNSUP |       property_port_itemDirE signingE rangeList       { VARDTYPE(SPACED($2, $3)); }
+        |       property_port_itemDirE yVAR data_type
+                        { VARDTYPE($3); GRAMMARP->m_typedPropertyPort = true; }
+        |       property_port_itemDirE yVAR implicit_typeE      { VARDTYPE($3); }
         |       property_port_itemDirE implicit_typeE           { VARDTYPE($2); }
         ;
 
 property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequence_port_item/checker_port_direction
                 id variable_dimensionListE         { $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
-//UNSUP |       portSig variable_dimensionListE '=' property_actual_arg
+//UNSUP |       id variable_dimensionListE '=' property_actual_arg
 //UNSUP                 { VARDONE($<fl>1, $1, $2, $4); PINNUMINC(); }
         ;
 

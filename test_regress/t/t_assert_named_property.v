@@ -22,11 +22,13 @@ module t (/*AUTOARG*/
         cyc % 2 == cyc_mod_2 |=> val == expected;
    endproperty
 
-   property check_if_1(int cyc_mod_2);
+   // Also checks parsing 'var datatype'
+   property check_if_1(var int cyc_mod_2);
       check(cyc_mod_2, 1);
    endproperty
 
-   property check_if_gt_5(int cyc);
+   // Also checks parsing 'signing range'
+   property check_if_gt_5(signed [31:0] cyc);
       @(posedge clk)
         cyc > 5;
    endproperty
