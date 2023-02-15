@@ -48,7 +48,7 @@ public:
 
     // METHODS
     uint32_t value() const VL_MT_SAFE { return m_value; }
-    std::string toString() const VL_MT_SAFE;
+    std::string toString() const;
 
     // OPERATORS
     // Comparisons

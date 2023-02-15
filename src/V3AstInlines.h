@@ -33,10 +33,10 @@ bool AstNode::width1() const {  // V3Const uses to know it can optimize
 int AstNode::widthInstrs() const {
     return (!dtypep() ? 1 : (dtypep()->isWide() ? dtypep()->widthWords() : 1));
 }
-bool AstNode::isDouble() const VL_MT_SAFE {
+bool AstNode::isDouble() const {
     return dtypep() && VN_IS(dtypep(), BasicDType) && VN_AS(dtypep(), BasicDType)->isDouble();
 }
-bool AstNode::isString() const VL_MT_SAFE {
+bool AstNode::isString() const {
     return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isString();
 }
 bool AstNode::isSigned() const { return dtypep() && dtypep()->isSigned(); }
@@ -61,12 +61,12 @@ bool AstNode::sameGateTree(const AstNode* node2p) const {
     return sameTreeIter(this, node2p, true, true);
 }
 
-int AstNodeArrayDType::left() const VL_MT_SAFE { return rangep()->leftConst(); }
-int AstNodeArrayDType::right() const VL_MT_SAFE { return rangep()->rightConst(); }
-int AstNodeArrayDType::hi() const VL_MT_SAFE { return rangep()->hiConst(); }
-int AstNodeArrayDType::lo() const VL_MT_SAFE { return rangep()->loConst(); }
-int AstNodeArrayDType::elementsConst() const VL_MT_SAFE { return rangep()->elementsConst(); }
-VNumRange AstNodeArrayDType::declRange() const VL_MT_SAFE { return VNumRange{left(), right()}; }
+int AstNodeArrayDType::left() const { return rangep()->leftConst(); }
+int AstNodeArrayDType::right() const { return rangep()->rightConst(); }
+int AstNodeArrayDType::hi() const { return rangep()->hiConst(); }
+int AstNodeArrayDType::lo() const { return rangep()->loConst(); }
+int AstNodeArrayDType::elementsConst() const { return rangep()->elementsConst(); }
+VNumRange AstNodeArrayDType::declRange() const { return VNumRange{left(), right()}; }
 
 AstRange::AstRange(FileLine* fl, int left, int right)
     : ASTGEN_SUPER_Range(fl) {
@@ -87,7 +87,7 @@ int AstRange::rightConst() const {
     return (constp ? constp->toSInt() : 0);
 }
 
-int AstQueueDType::boundConst() const VL_MT_SAFE {
+int AstQueueDType::boundConst() const {
     AstConst* const constp = VN_CAST(boundp(), Const);
     return (constp ? constp->toSInt() : 0);
 }

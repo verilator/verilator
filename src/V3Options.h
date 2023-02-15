@@ -405,9 +405,9 @@ public:
     ~V3Options();
     void setDebugMode(int level);
     unsigned debugLevel(const string& tag) const VL_MT_SAFE;
-    unsigned debugSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
+    unsigned debugSrcLevel(const string& srcfile_path) const;
     unsigned dumpLevel(const string& tag) const VL_MT_SAFE;
-    unsigned dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
+    unsigned dumpSrcLevel(const string& srcfile_path) const;
 
     // METHODS
     void addCppFile(const string& filename);

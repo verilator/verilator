@@ -1600,7 +1600,7 @@ protected:
 public:
     // ACCESSORS
     VNType type() const VL_MT_SAFE { return m_type; }
-    const char* typeName() const VL_MT_SAFE { return type().ascii(); }  // See also prettyTypeName
+    const char* typeName() const { return type().ascii(); }  // See also prettyTypeName
     AstNode* nextp() const VL_MT_SAFE { return m_nextp; }
     AstNode* backp() const VL_MT_SAFE { return m_backp; }
     AstNode* abovep() const;  // Parent node above, only when no nextp() as otherwise slow
@@ -1663,7 +1663,7 @@ public:
     virtual void tag(const string& text) {}
     virtual string tag() const { return ""; }
     virtual string verilogKwd() const { return ""; }
-    string nameProtect() const VL_MT_SAFE;  // Name with --protect-id applied
+    string nameProtect() const;  // Name with --protect-id applied
     string origNameProtect() const;  // origName with --protect-id applied
     string shortName() const;  // Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);  // Name with dots removed
@@ -1676,7 +1676,7 @@ public:
     encodeName(const string& namein);  // Encode user name into internal C representation
     static string encodeNumber(int64_t num);  // Encode number into internal C representation
     static string vcdName(const string& namein);  // Name for printing out to vcd files
-    string prettyName() const VL_MT_SAFE { return prettyName(name()); }
+    string prettyName() const { return prettyName(name()); }
     string prettyNameQ() const { return prettyNameQ(name()); }
     string prettyTypeName() const;  // "VARREF" for error messages (NOT dtype's pretty name)
     virtual string prettyOperatorName() const { return "operator " + prettyTypeName(); }

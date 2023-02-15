@@ -704,7 +704,7 @@ public:
     }
 };
 
-string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const VL_MT_SAFE {
+string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const {
     const CTypeRecursed info = cTypeRecurse(false);
     return info.render(name, isRef);
 }
@@ -846,7 +846,7 @@ int AstNodeDType::widthPow2() const {
     return 1;
 }
 
-bool AstNodeDType::isLiteralType() const VL_MT_SAFE {
+bool AstNodeDType::isLiteralType() const {
     if (const auto* const dtypep = VN_CAST(skipRefp(), BasicDType)) {
         return dtypep->keyword().isLiteralType();
     } else if (const auto* const dtypep = VN_CAST(skipRefp(), UnpackArrayDType)) {

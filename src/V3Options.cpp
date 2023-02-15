@@ -1927,7 +1927,7 @@ unsigned V3Options::debugLevel(const string& tag) const VL_MT_SAFE {
     return iter != m_debugLevel.end() ? iter->second : V3Error::debugDefault();
 }
 
-unsigned V3Options::debugSrcLevel(const string& srcfile_path) const VL_MT_SAFE {
+unsigned V3Options::debugSrcLevel(const string& srcfile_path) const {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means we need to strip the filenames: ../Foo.cpp -> Foo
     return debugLevel(V3Os::filenameNonDirExt(srcfile_path));
@@ -1938,7 +1938,7 @@ unsigned V3Options::dumpLevel(const string& tag) const VL_MT_SAFE {
     return iter != m_dumpLevel.end() ? iter->second : 0;
 }
 
-unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE {
+unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means we need to strip the filenames: ../Foo.cpp -> Foo
     return dumpLevel(V3Os::filenameNonDirExt(srcfile_path));

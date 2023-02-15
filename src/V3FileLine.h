@@ -112,7 +112,7 @@ class VFileContent final {
 
 public:
     void pushText(const string& text);  // Add arbitrary text (need not be line-by-line)
-    string getLine(int lineno) const VL_MT_SAFE;
+    string getLine(int lineno) const;
     string ascii() const { return "ct" + cvtToStr(m_id); }
 };
 std::ostream& operator<<(std::ostream& os, VFileContent* contentp);
@@ -238,21 +238,21 @@ public:
     // If not otherwise more specific, use last lineno for errors etc,
     // as the parser errors etc generally make more sense pointing at the last parse point
     int lineno() const VL_MT_SAFE { return m_lastLineno; }
-    string source() const VL_MT_SAFE;
-    string prettySource() const VL_MT_SAFE;  // Source, w/stripped unprintables and newlines
+    string source() const;
+    string prettySource() const;  // Source, w/stripped unprintables and newlines
     FileLine* parent() const VL_MT_SAFE { return m_parent; }
     V3LangCode language() const { return singleton().numberToLang(filenameno()); }
     string ascii() const;
     string asciiLineCol() const;
     int filenameno() const VL_MT_SAFE { return m_filenameno; }
-    string filename() const VL_MT_SAFE { return singleton().numberToName(filenameno()); }
+    string filename() const { return singleton().numberToName(filenameno()); }
     bool filenameIsGlobal() const VL_MT_SAFE {
         return (filename() == commandLineFilename() || filename() == builtInFilename());
     }
-    string filenameLetters() const VL_MT_SAFE {
+    string filenameLetters() const {
         return FileLineSingleton::filenameLetters(filenameno());
     }
-    string filebasename() const VL_MT_SAFE;
+    string filebasename() const;
     string filebasenameNoExt() const;
     string firstColumnLetters() const VL_MT_SAFE;
     string profileFuncname() const;
@@ -362,7 +362,7 @@ public:
 private:
     string warnContext() const;
     string warnContextParent() const VL_REQUIRES(V3Error::s().m_mutex);
-    const MsgEnBitSet& msgEn() const VL_MT_SAFE { return singleton().msgEn(m_msgEnIdx); }
+    const MsgEnBitSet& msgEn() const { return singleton().msgEn(m_msgEnIdx); }
 };
 std::ostream& operator<<(std::ostream& os, FileLine* fileline);
 
