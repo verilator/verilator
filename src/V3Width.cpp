@@ -232,7 +232,7 @@ private:
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
-    AstNodeModule* m_modp = nullptr;  // Current module
+    AstPackage* m_pkgp = nullptr;  // Current package
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables = 0;  // Number of created data type tables
@@ -2618,6 +2618,11 @@ private:
         userIterateAndNext(nodep->extendsp(), nullptr);
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->repairCache();
+    }
+    void visit(AstPackage* nodep) override {
+        VL_RESTORER(m_pkgp);
+        m_pkgp = nodep;
+        userIterateChildren(nodep, nullptr);
     }
     void visit(AstThisRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
@@ -5316,6 +5321,16 @@ private:
         } else if (nodep->classMethod() && nodep->name() == "constraint_mode") {
             nodep->v3error("The 'constraint_mode' method is built-in and cannot be overridden"
                            " (IEEE 1800-2017 18.9)");
+        }
+        if (nodep->fileline()->timingOn()) {
+            if (m_pkgp && m_pkgp->name() == "std") {
+                if (nodep->name() == "self" || nodep->name() == "await") {
+                    AstConst* const constp = new AstConst{nodep->fileline(), AstConst::Null{}};
+                    AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), constp};
+                    awaitp->didWidth(true); // Don't do width for this await
+                    nodep->addStmtsp(awaitp);
+                }
+            }
         }
         // Function hasn't been widthed, so make it so.
         // Would use user1 etc, but V3Width called from too many places to spend a user
