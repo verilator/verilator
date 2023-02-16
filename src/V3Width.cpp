@@ -6209,7 +6209,8 @@ private:
 
     void checkClassAssign(AstNode* nodep, const char* side, AstNode* rhsp,
                           AstNodeDType* lhsDTypep) {
-        if (VN_IS(lhsDTypep, ClassRefDType) && !VN_IS(rhsp->dtypep(), ClassRefDType)) {
+        if (VN_IS(lhsDTypep, ClassRefDType)
+            && !(rhsp->dtypep() && VN_IS(rhsp->dtypep()->skipRefp(), ClassRefDType))) {
             if (auto* const constp = VN_CAST(rhsp, Const)) {
                 if (constp->num().isNull()) return;
             }
