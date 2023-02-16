@@ -547,7 +547,10 @@ class ParamProcessor final {
                             AstClass* const newClassp) {
         if (AstClassRefDType* const classRefp = VN_CAST(nodep, ClassRefDType)) {
             if (classRefp->classp() == oldClassp) classRefp->classp(newClassp);
+        } else if (AstClassOrPackageRef* const classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
+            if (classRefp->classOrPackagep() == oldClassp) classRefp->classOrPackagep(newClassp);
         }
+
         if (nodep->op1p()) replaceRefsRecurse(nodep->op1p(), oldClassp, newClassp);
         if (nodep->op2p()) replaceRefsRecurse(nodep->op2p(), oldClassp, newClassp);
         if (nodep->op3p()) replaceRefsRecurse(nodep->op3p(), oldClassp, newClassp);

@@ -104,6 +104,22 @@ class DictOperator #(type T) extends T;
    endfunction
 endclass
 
+class Getter1 #(int T=0);
+   static function int get_1();
+      return Getter1#(1)::T;
+   endfunction
+endclass
+
+class Getter2 #(int T=5);
+   static function int get_T();
+      return T;
+   endfunction
+
+   static function int get_2();
+      return Getter2#(2)::get_T();
+   endfunction
+endclass
+
 module t (/*AUTOARG*/);
 
    Cls c12;
@@ -118,6 +134,9 @@ module t (/*AUTOARG*/);
    IntQueue qi;
    ClsWithParamField cls_param_field;
    DictOperator #(DictWrapper) dict_op;
+   Getter1 getter1;
+   Getter1 #(1) getter1_param_1;
+   Getter2 getter2;
    int arr [1:0] = '{1, 2};
    initial begin
       c12 = new;
@@ -132,6 +151,10 @@ module t (/*AUTOARG*/);
       qi = new;
       cls_param_field = new;
       dict_op = new;
+      getter1 = new;
+      getter1_param_1 = new;
+      getter2 = new;
+
       if (Cls#()::PBASE != 12) $stop;
       if (Cls#(4)::PBASE != 4) $stop;
       if (Cls8_t::PBASE != 8) $stop;
@@ -185,6 +208,14 @@ module t (/*AUTOARG*/);
 
       dict_op.set("abcd", 1);
       if(dict_op.get("abcd") != 1) $stop;
+
+      if (getter1.get_1() != 1) $stop;
+      if (Getter1::get_1() != 1) $stop;
+      if (getter1_param_1.get_1() != 1) $stop;
+
+      if (getter2.get_2() != 2) $stop;
+      if (Getter2::get_2() != 2) $stop;
+      if (Getter2#(2)::get_2() != 2) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
