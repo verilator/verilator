@@ -3474,7 +3474,7 @@ private:
         VL_DANGLING(index_exprp);  // May have been edited
         return VN_AS(nodep->pinsp(), Arg)->exprp();
     }
-    void methodCallWarnTiming(AstMethodCall* const nodep, const std::string& className) {
+    void methodCallWarnTiming(AstNodeFTaskRef* const nodep, const std::string& className) {
         if (v3Global.opt.timing().isSetFalse()) {
             nodep->v3warn(E_NOTIMING,
                           className << "::" << nodep->name() << "() requires --timing");
@@ -3498,11 +3498,7 @@ private:
                 if (classp->name() == "semaphore" || classp->name() == "process"
                     || VString::startsWith(classp->name(), "mailbox")) {
                     // Find the package the class is in
-                    AstNode* pkgItemp = classp;
-                    while (pkgItemp->backp() && pkgItemp->backp()->nextp() == pkgItemp) {
-                        pkgItemp = pkgItemp->backp();
-                    }
-                    AstPackage* const packagep = VN_CAST(pkgItemp->backp(), Package);
+                    AstPackage* const packagep = findItemPackage(classp);
                     // Check if it's std
                     if (packagep && packagep->name() == "std") {
                         if (classp->name() == "process" &&
@@ -5396,9 +5392,26 @@ private:
         }
     }
 
+    AstPackage* findItemPackage(AstNode* pkgItemp) {
+        while (pkgItemp->backp() && pkgItemp->backp()->nextp() == pkgItemp) {
+            pkgItemp = pkgItemp->backp();
+        }
+        return VN_CAST(pkgItemp->backp(), Package);
+    }
     void visit(AstFuncRef* nodep) override {
         visit(static_cast<AstNodeFTaskRef*>(nodep));
         nodep->dtypeFrom(nodep->taskp());
+        if (nodep->fileline()->timingOn()) {
+            AstNodeModule* const classp = nodep->classOrPackagep();
+            if (nodep->name() == "self" && classp->name() == "process") {
+                // Find the package the class is in
+                AstPackage* const packagep = findItemPackage(classp);
+                // Check if it's std
+                if (packagep && packagep->name() == "std") {
+                    methodCallWarnTiming(nodep, "process");
+                }
+            }
+        }
         // if (debug()) nodep->dumpTree("-  FuncOut: ");
     }
     // Returns true if dtypep0 and dtypep1 have same dimensions
