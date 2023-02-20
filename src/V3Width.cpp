@@ -5204,10 +5204,7 @@ private:
         // Grab width from the output variable (if it's a function)
         if (nodep->didWidth()) return;
         if (nodep->doingWidth()) {
-            UINFO(5, "Recursive function or task call: " << nodep);
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Recursive function or task call: "
-                                             << nodep->prettyNameQ());
-            nodep->recursive(true);
+            // Possibly recursive function
             nodep->didWidth(true);
             return;
         }
@@ -5250,10 +5247,7 @@ private:
     void visit(AstProperty* nodep) override {
         if (nodep->didWidth()) return;
         if (nodep->doingWidth()) {
-            UINFO(5, "Recursive property call: " << nodep);
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Recursive property call: " << nodep->prettyNameQ());
-            nodep->recursive(true);
+            // Possibly recursive property
             nodep->didWidth(true);
             return;
         }

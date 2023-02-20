@@ -120,6 +120,15 @@ class Getter2 #(int T=5);
    endfunction
 endclass
 
+class Getter3 #(int T=5);
+   static function int get_3();
+      if (T == 3)
+        return 3;
+      else
+        return Getter3#(3)::get_3();
+   endfunction
+endclass
+
 module t (/*AUTOARG*/);
 
    Cls c12;
@@ -137,6 +146,7 @@ module t (/*AUTOARG*/);
    Getter1 getter1;
    Getter1 #(1) getter1_param_1;
    Getter2 getter2;
+   Getter3 getter3;
    int arr [1:0] = '{1, 2};
    initial begin
       c12 = new;
@@ -154,6 +164,7 @@ module t (/*AUTOARG*/);
       getter1 = new;
       getter1_param_1 = new;
       getter2 = new;
+      getter3 = new;
 
       if (Cls#()::PBASE != 12) $stop;
       if (Cls#(4)::PBASE != 4) $stop;
@@ -216,6 +227,10 @@ module t (/*AUTOARG*/);
       if (getter2.get_2() != 2) $stop;
       if (Getter2::get_2() != 2) $stop;
       if (Getter2#(2)::get_2() != 2) $stop;
+
+      if (getter3.get_3() != 3) $stop;
+      if (Getter3::get_3() != 3) $stop;
+      if (Getter3#(3)::get_3() != 3) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

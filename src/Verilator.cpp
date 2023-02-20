@@ -195,6 +195,9 @@ static void process() {
     // Must be before first constification pass drops dead code
     V3Undriven::undrivenAll(v3Global.rootp());
 
+    // Propagate constants into expressions
+    if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAllLint(v3Global.rootp());
+
     // Assertion insertion
     //    After we've added block coverage, but before other nasty transforms
     V3AssertPre::assertPreAll(v3Global.rootp());
@@ -207,9 +210,6 @@ static void process() {
         // Must do this after we know parameters and dtypes (as don't clone dtype decls)
         V3LinkLevel::wrapTop(v3Global.rootp());
     }
-
-    // Propagate constants into expressions
-    if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAllLint(v3Global.rootp());
 
     if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Split packed variables into multiple pieces to resolve UNOPTFLAT.

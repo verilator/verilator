@@ -41,7 +41,11 @@ class AssertPreVisitor final : public VNVisitor {
     // We're not parsing the tree, or anything more complicated.
 private:
     // NODE STATE
+    //   AstNodeFTask::user2 -> 1 if the children of the node are currently visited.
+    //   AstNodeFTask::user3 -> 1 if the node was visited.
     const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
     // STATE
     // Current context:
     AstNetlist* const m_netlistp = nullptr;  // Current netlist
@@ -104,10 +108,21 @@ private:
     AstPropSpec* substitutePropertyCall(AstPropSpec* nodep) {
         if (AstFuncRef* const funcrefp = VN_CAST(nodep->propp(), FuncRef)) {
             if (AstProperty* const propp = VN_CAST(funcrefp->taskp(), Property)) {
+                if (propp->user2()) {
+                    UINFO(5, "Recursive property call: " << propp);
+                    propp->v3warn(E_UNSUPPORTED, "Unsupported: Recursive property call: "
+                                                     << propp->prettyNameQ());
+                    propp->recursive(true);
+                    // Return a stub property to avoid other errors
+                    return new AstPropSpec{propp->fileline(), nullptr, nullptr,
+                                           new AstConst{propp->fileline(), AstConst::BitTrue{}}};
+                }
+                propp->user2(true);
                 AstPropSpec* propExprp = getPropertyExprp(propp);
                 // Substitute inner property call before copying in order to not doing the same for
                 // each call of outer property call.
                 propExprp = substitutePropertyCall(propExprp);
+                propp->user2(false);
                 // Clone subtree after substitution. It is needed, because property might be called
                 // multiple times with different arguments.
                 propExprp = propExprp->cloneTree(false);
@@ -456,6 +471,11 @@ private:
         nodep->replaceWith(blockp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
+    void visit(AstProperty* nodep) override {
+        // The body will be visited when will be substituted in place of property reference
+        // (AstFuncRef)
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_defaultClockingp);
         VL_RESTORER(m_modp);
@@ -472,10 +492,23 @@ private:
         m_modp = nodep;
         iterateChildren(nodep);
     }
-    void visit(AstProperty* nodep) override {
-        // The body will be visited when will be substituted in place of property reference
-        // (AstFuncRef)
-        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    void visit(AstNodeFTask* nodep) override {
+        if (nodep->user2()) {
+            UINFO(5, "Recursive function or task call: " << nodep);
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Recursive function or task call: "
+                                             << nodep->prettyNameQ());
+            nodep->recursive(true);
+            return;
+        }
+        if (nodep->user3()) return;
+        nodep->user3(true);
+        nodep->user2(true);
+        iterateChildren(nodep);
+        nodep->user2(false);
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        iterate(nodep->taskp());
+        iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
