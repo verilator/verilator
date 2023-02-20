@@ -7,7 +7,7 @@
 // used in the test module to set the value of MSB. A number of warnings and
 // errors follow, starting with:
 //
-// %Warning-LITENDIAN: t/t_param_module.v:42: Little bit endian vector: MSB
+// %Warning-LITENDIAN: t/t_param_module.v:42: Big bit endian vector: MSB
 // < LSB of bit range: -17:0
 //
 // This file ONLY is placed into the Public Domain, for any use, without
