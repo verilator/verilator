@@ -1530,6 +1530,8 @@ Summary:
    :command:`gcc -Wpedantic`.  Rarely used, and intended only for strict
    compliance tests.
 
+   This option changes :option:`ASSIGNIN` from an error to a warning.
+
 .. option:: -Wwarn-<message>
 
    Enables the specified warning message.
