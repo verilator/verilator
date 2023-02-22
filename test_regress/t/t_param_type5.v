@@ -13,7 +13,7 @@ module t #(parameter int A = 0, B = 1, C = 2, type D = int, E = string);
    E str1 = "abc";
    I str2 = "";
    initial begin
-      ParamClass param_class = new;
+      automatic ParamClass param_class = new;
       if ($typename(B) != "int") $stop;
       if ($typename(C) != "int") $stop;
       if (str1.len() != 3) $stop;
