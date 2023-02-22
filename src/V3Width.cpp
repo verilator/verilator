@@ -3503,7 +3503,7 @@ private:
                 if (classp->name() == "semaphore" || classp->name() == "process"
                     || VString::startsWith(classp->name(), "mailbox")) {
                     // Find the package the class is in
-                    AstPackage* const packagep = findItemPackage(classp);
+                    AstPackage* const packagep = getItemPackage(classp);
                     // Check if it's std
                     if (packagep && packagep->name() == "std") {
                         if (classp->name() == "process" &&
@@ -5315,22 +5315,13 @@ private:
             nodep->didWidth(true);
             return;
         }
+        if (m_pkgp && m_pkgp->name() == "std") { nodep->isFromStd(true); }
         if (nodep->classMethod() && nodep->name() == "rand_mode") {
             nodep->v3error("The 'rand_mode' method is built-in and cannot be overridden"
                            " (IEEE 1800-2017 18.8)");
         } else if (nodep->classMethod() && nodep->name() == "constraint_mode") {
             nodep->v3error("The 'constraint_mode' method is built-in and cannot be overridden"
                            " (IEEE 1800-2017 18.9)");
-        }
-        if (nodep->fileline()->timingOn()) {
-            if (m_pkgp && m_pkgp->name() == "std") {
-                if (nodep->name() == "self" || nodep->name() == "await") {
-                    AstConst* const constp = new AstConst{nodep->fileline(), AstConst::Null{}};
-                    AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), constp};
-                    awaitp->didWidth(true); // Don't do width for this await
-                    nodep->addStmtsp(awaitp);
-                }
-            }
         }
         // Function hasn't been widthed, so make it so.
         // Would use user1 etc, but V3Width called from too many places to spend a user
@@ -5407,7 +5398,7 @@ private:
         }
     }
 
-    AstPackage* findItemPackage(AstNode* pkgItemp) {
+    AstPackage* getItemPackage(AstNode* pkgItemp) {
         while (pkgItemp->backp() && pkgItemp->backp()->nextp() == pkgItemp) {
             pkgItemp = pkgItemp->backp();
         }
@@ -5420,7 +5411,7 @@ private:
             AstNodeModule* const classp = nodep->classOrPackagep();
             if (nodep->name() == "self" && classp->name() == "process") {
                 // Find the package the class is in
-                AstPackage* const packagep = findItemPackage(classp);
+                AstPackage* const packagep = getItemPackage(classp);
                 // Check if it's std
                 if (packagep && packagep->name() == "std") {
                     methodCallWarnTiming(nodep, "process");

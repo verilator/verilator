@@ -86,6 +86,7 @@ private:
     bool m_recursive : 1;  // Recursive or part of recursion
     bool m_underGenerate : 1;  // Under generate (for warning)
     bool m_virtual : 1;  // Virtual method in class
+    bool m_fromStd : 1;
     VLifetime m_lifetime;  // Lifetime
 protected:
     AstNodeFTask(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)
@@ -110,7 +111,8 @@ protected:
         , m_pureVirtual{false}
         , m_recursive{false}
         , m_underGenerate{false}
-        , m_virtual{false} {
+        , m_virtual{false}
+        , m_fromStd{false} {
         addStmtsp(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
     }
@@ -170,6 +172,8 @@ public:
     bool underGenerate() const { return m_underGenerate; }
     void isVirtual(bool flag) { m_virtual = flag; }
     bool isVirtual() const { return m_virtual; }
+    void isFromStd(bool flag) { m_fromStd = flag; }
+    bool isFromStd() const { return m_fromStd; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
@@ -576,6 +580,7 @@ private:
     bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
     bool m_dpiTraceInit : 1;  // DPI trace_init
+    bool m_isSuspendable : 1; // Makes the caller suspendable
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
@@ -595,6 +600,7 @@ public:
         m_isLoose = false;
         m_isInline = false;
         m_isVirtual = false;
+        m_isSuspendable = false;
         m_entryPoint = false;
         m_pure = false;
         m_dpiContext = false;
@@ -663,6 +669,8 @@ public:
     void isInline(bool flag) { m_isInline = flag; }
     bool isVirtual() const { return m_isVirtual; }
     void isVirtual(bool flag) { m_isVirtual = flag; }
+    bool isSuspendable() const { return m_isSuspendable; }
+    void isSuspendable(bool flag) { m_isSuspendable = flag; }
     bool entryPoint() const { return m_entryPoint; }
     void entryPoint(bool flag) { m_entryPoint = flag; }
     bool pure() const { return m_pure; }

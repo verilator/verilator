@@ -550,6 +550,14 @@ private:
             ccallp = cnewp;
             // Parent AstNew will replace with this CNew
             cnewpr = cnewp;
+        } else if (refp->taskp()->isFromStd() && refp->taskp()->name() == "self") {
+            // TODO: Maybe AstProcessSelf?
+            ccallp = new AstCCall{refp->fileline(), cfuncp};
+            ccallp->dtypeSetVoid();
+            AstCAwait *cawaitp = new AstCAwait{refp->fileline(), ccallp};
+            cawaitp->dtypeSetVoid();
+            beginp->addNext(cawaitp->makeStmt());
+
         } else if (const AstMethodCall* const mrefp = VN_CAST(refp, MethodCall)) {
             ccallp = new AstCMethodCall{refp->fileline(), mrefp->fromp()->unlinkFrBack(), cfuncp};
             ccallp->dtypeSetVoid();
@@ -1166,6 +1174,11 @@ private:
         AstCFunc* const cfuncp = new AstCFunc{
             nodep->fileline(), name, m_scopep,
             ((nodep->taskPublic() && rtnvarp) ? rtnvarp->cPubArgType(true, true) : "")};
+        if (nodep->isFromStd() && nodep->name() == "self") {
+            cfuncp->rtnType("VlCoroutine");
+            // We made it a coroutine, so add a co_return at the end.
+            cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
+        }
         // It's ok to combine imports because this is just a wrapper;
         // duplicate wrappers can get merged.
         cfuncp->dontCombine(!nodep->dpiImport());
