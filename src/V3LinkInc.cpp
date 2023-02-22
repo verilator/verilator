@@ -42,8 +42,8 @@
 #include "V3LinkInc.h"
 
 #include "V3Ast.h"
-#include "V3Global.h"
 #include "V3AstTypeSets.h"
+#include "V3Global.h"
 
 #include <algorithm>
 
@@ -206,7 +206,8 @@ private:
         // write, but doing so would double any side-effects, so as a safety measure all
         // statements which could have side-effects are banned at the moment.
         if (MutatorAstSet::contains(nodep->rhsp())) {
-            nodep->rhsp()->v3warn(E_UNSUPPORTED, "Unsupported: Statement might contain "
+            nodep->rhsp()->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Statement might contain "
                                   "side-effects. Incrementation/decrementation is unsupported "
                                   "in this context.");
             return;
@@ -237,7 +238,8 @@ private:
         // write, but doing so would double any side-effects, so as a safety measure all
         // statements which could have side-effects are banned at the moment.
         if (MutatorAstSet::contains(nodep->rhsp())) {
-            nodep->rhsp()->v3warn(E_UNSUPPORTED, "Unsupported: Statement might contain "
+            nodep->rhsp()->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Statement might contain "
                                   "side-effects. Incrementation/decrementation is unsupported "
                                   "in this context.");
             return;

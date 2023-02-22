@@ -12,9 +12,8 @@
 template <class T, class... tail>
 class AstNodeTypeSet VL_NOT_FINAL {
 public:
-    static bool contains(AstNode *nodep) {
-        if (AstNode::privateIs<T, decltype(nodep)>(nodep))
-            return true;
+    static bool contains(AstNode* nodep) {
+        if (AstNode::privateIs<T, decltype(nodep)>(nodep)) return true;
         return AstNodeTypeSet<tail...>::contains(nodep);
     };
 };
@@ -22,9 +21,8 @@ public:
 template <class T>
 class AstNodeTypeSet<T> VL_NOT_FINAL {
 public:
-    static bool contains(AstNode *nodep) {
-        if (AstNode::privateIs<T, decltype(nodep)>(nodep))
-            return true;
+    static bool contains(AstNode* nodep) {
+        if (AstNode::privateIs<T, decltype(nodep)>(nodep)) return true;
         return false;
     };
 };
@@ -35,8 +33,9 @@ class AstTreeWithTypeSet VL_NOT_FINAL : VNVisitor {
 private:
     bool _found;
 
-    AstTreeWithTypeSet() : _found(false) {}
-    void visit(AstNode *nodep) override {
+    AstTreeWithTypeSet()
+        : _found(false) {}
+    void visit(AstNode* nodep) override {
         if (AstNodeTypeSet<types...>::contains(nodep)) {
             _found = true;
             return;
@@ -48,7 +47,7 @@ private:
     bool found() { return _found; }
 
 public:
-    static bool contains(AstNode *nodep) {
+    static bool contains(AstNode* nodep) {
         auto set = AstTreeWithTypeSet<types...>();
         set.iterate(nodep);
         return set.found();
@@ -56,18 +55,11 @@ public:
 };
 
 // Set of all ASTs which may possibly introduce side-effects
-using MutatorAstSet = AstTreeWithTypeSet<
-    AstAssign,
-    AstTaskRef,    /* Remove when we support checking tasks */
-    AstFuncRef,    /* Remove when we support checking functions */
-    AstMethodCall, /* Remove when we support checking methods */
-    AstPostAdd,
-    AstPostSub,
-    AstPreAdd,
-    AstPreSub,
-    AstDisplay,
-    AstNew,
-    AstNewCopy
->;
+using MutatorAstSet
+    = AstTreeWithTypeSet<AstAssign, AstTaskRef, /* Remove when we support checking tasks */
+                         AstFuncRef, /* Remove when we support checking functions */
+                         AstMethodCall, /* Remove when we support checking methods */
+                         AstPostAdd, AstPostSub, AstPreAdd, AstPreSub, AstDisplay, AstNew,
+                         AstNewCopy>;
 
 #endif /* VERILATOR_PUREGUARD_H_ */
