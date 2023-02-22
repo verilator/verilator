@@ -1876,9 +1876,11 @@ parameter_port_declarationFrontE: // IEEE: local_ or parameter_port_declaration 
         //                      // Front must execute first so VARDTYPE is ready before list of vars
                 varParamReset implicit_typeE            { /*VARRESET-in-varParam*/ VARDTYPE($2); }
         |       varParamReset data_type                 { /*VARRESET-in-varParam*/ VARDTYPE($2); }
-        |       implicit_typeE                          { /*VARRESET-in-varParam
-                                                          Keep previous type to handle subsequent declarations.
-                                                          This rule is also used when the previous parameter is a type parameter*/ }
+        |       implicit_typeE
+                        { /*VARRESET-in-varParam*/
+                          // Keep previous type to handle subsequent declarations.
+                          // This rule is also used when the previous parameter is a type parameter
+                        }
         |       data_type                               { /*VARRESET-in-varParam*/ VARDTYPE($1); }
         ;
 
