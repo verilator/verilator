@@ -42,7 +42,6 @@
 #include "V3LinkInc.h"
 
 #include "V3Ast.h"
-#include "V3AstTypeSets.h"
 #include "V3Global.h"
 
 #include <algorithm>
@@ -205,11 +204,9 @@ private:
         // Currently we can't reference the target, so we just copy the AST both for read and
         // write, but doing so would double any side-effects, so as a safety measure all
         // statements which could have side-effects are banned at the moment.
-        if (MutatorAstSet::contains(nodep->rhsp())) {
+        if (!nodep->rhsp()->isTreePureRecurse()) {
             nodep->rhsp()->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: Statement might contain "
-                                  "side-effects. Incrementation/decrementation is unsupported "
-                                  "in this context.");
+                                  "Unsupported: Inc/Dec of expression with side-effects");
             return;
         }
 
@@ -237,11 +234,9 @@ private:
         // Currently we can't reference the target, so we just copy the AST both for read and
         // write, but doing so would double any side-effects, so as a safety measure all
         // statements which could have side-effects are banned at the moment.
-        if (MutatorAstSet::contains(nodep->rhsp())) {
+        if (!nodep->rhsp()->isTreePureRecurse()) {
             nodep->rhsp()->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: Statement might contain "
-                                  "side-effects. Incrementation/decrementation is unsupported "
-                                  "in this context.");
+                                  "Unsupported: Inc/Dec of expression with side-effects");
             return;
         }
 
