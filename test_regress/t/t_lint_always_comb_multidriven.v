@@ -68,8 +68,8 @@ module t (/*AUTOARG*/
 
    generate
       for (g=0; g<2; ++g) begin
-     	 always_comb gen_arr_packed[g] = d;
-     	 always_comb gen_arr_unpacked[g] = d;
+         always_comb gen_arr_packed[g] = d;
+         always_comb gen_arr_unpacked[g] = d;
       end
    endgenerate
 

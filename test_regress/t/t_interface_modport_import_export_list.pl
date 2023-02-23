@@ -10,9 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-compile(
-	fails=>0,
-);
+compile();
 
 ok(1);
 1;

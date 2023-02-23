@@ -400,8 +400,8 @@ accesses the above signal "readme" would be:
            vpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"TOP.our.readme", NULL);
            if (!vh1) vl_fatal(__FILE__, __LINE__, "sim_main", "No handle found");
            const char* name = vpi_get_str(vpiName, vh1);
-	   const char* type = vpi_get_str(vpiType, vh1);
-	   const int size = vpi_get(vpiSize, vh1);
+           const char* type = vpi_get_str(vpiType, vh1);
+           const int size = vpi_get(vpiSize, vh1);
            printf("register name: %s, type: %s, size: %d\n", name, type, size);  // Prints "register name: readme, type: vpiReg, size: 32"
 
            s_vpi_value v;
