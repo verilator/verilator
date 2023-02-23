@@ -47,7 +47,8 @@ Verilator 5.007 devel
 * Fix constant format field widths (#3946). [Todd Strader]
 * Fix class field linking when a super classes is a param (#3949). [Ryszard Rozak, Antmicro Ltd]
 * Fix CMake bad C identifiers (#3948) (#3951). [Zixi Li]
-* Fix build on HP PA architecture. (#3954) [John David Anglin]
+* Fix build on HP PA architecture (#3954). [John David Anglin]
+* Fix missing error on negative replicate (#3963). [Benjamin Menküc]
 * Fix packed array structure replication.
 
 
