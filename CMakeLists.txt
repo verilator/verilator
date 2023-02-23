@@ -99,6 +99,7 @@ configure_package_config_file(verilator-config-version.cmake.in verilator-config
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/verilator-config-version.cmake DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 foreach (program
+    verilator
     verilator_gantt
     verilator_ccache_report
     verilator_difftree
