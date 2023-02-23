@@ -1,0 +1,10 @@
+Current realtime:              5000000 ==           5000000000
+Current realtime:             10000001 ==             10000001
+Current realtime:             15000000 ==             15000000
+FULL_TIME: 5000000.000000
+Current realtime:             20000000 ==             20000000
+FIT_TIME: 5000000 -- 5000000.000000
+Current realtime:             25000000 ==             25000000
+TRUNCATED_TIME:  805696 -- 805696.000000
+Current realtime:             25805696 ==             25805696
+*-* All Finished *-*
