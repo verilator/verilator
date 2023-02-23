@@ -21,8 +21,8 @@ int main(int argc, char** argv) {
     contextp->debug(0);
     contextp->commandArgs(argc, argv);
 
-    std::unique_ptr<Vt_gantt_two> topap{new Vt_gantt_two{contextp.get(), "topa"}};
-    std::unique_ptr<Vt_gantt_two> topbp{new Vt_gantt_two{contextp.get(), "topb"}};
+    std::unique_ptr<VM_PREFIX> topap{new VM_PREFIX{contextp.get(), "topa"}};
+    std::unique_ptr<VM_PREFIX> topbp{new VM_PREFIX{contextp.get(), "topb"}};
 
     topap->clk = false;
     topap->eval();

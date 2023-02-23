@@ -16,7 +16,7 @@
 void toggle_other_clk(svBit val) { set_other_clk(val); }
 
 int main(int argc, char* argv[]) {
-    Vt_order_dpi_export_2* const tb = new Vt_order_dpi_export_2;
+    VM_PREFIX* const tb = new VM_PREFIX;
     tb->contextp()->commandArgs(argc, argv);
     bool clk = true;
 

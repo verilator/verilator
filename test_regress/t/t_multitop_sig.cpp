@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     Verilated::debug(0);
     Verilated::commandArgs(argc, argv);
 
-    Vt_multitop_sig* topp = new Vt_multitop_sig{""};
+    VM_PREFIX* topp = new VM_PREFIX{""};
 
     {
         topp->a__02Ein = 0;

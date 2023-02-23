@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
     Verilated::debug(0);
     Verilated::commandArgs(argc, argv);
 
-    Vt_mem_slot* sim = new Vt_mem_slot;
+    VM_PREFIX* sim = new VM_PREFIX;
     int slot, bit, i;
 
     // clear all bits in the array

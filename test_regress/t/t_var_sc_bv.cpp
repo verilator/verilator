@@ -54,7 +54,7 @@ int main()
 #endif
 {
     Verilated::debug(0);
-    tb = new VM_PREFIX("tb");
+    tb = new VM_PREFIX{"tb"};
 
     VlWide<8> /*255:0*/ input_var;
     VlWide<8> /*255:0*/ out_var;
