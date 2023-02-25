@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
     Verilated::debug(0);
     Verilated::commandArgs(argc, argv);
 
-    Vt_param_public* topp = new Vt_param_public;
+    VM_PREFIX* topp = new VM_PREFIX;
 
     // Make sure public tag worked
     if (static_cast<int>(Vt_param_public_t::TOP_PARAM) != 30) {

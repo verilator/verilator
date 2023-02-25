@@ -14,7 +14,7 @@
 #include <iostream>
 
 int main(int argc, char* argv[]) {
-    Vt_const_bitoptree_bug3096* const tb = new Vt_const_bitoptree_bug3096;
+    VM_PREFIX* const tb = new VM_PREFIX;
 
     tb->instr_i = 0x08c0006f;
     tb->eval();

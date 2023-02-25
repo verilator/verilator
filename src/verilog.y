@@ -1876,7 +1876,11 @@ parameter_port_declarationFrontE: // IEEE: local_ or parameter_port_declaration 
         //                      // Front must execute first so VARDTYPE is ready before list of vars
                 varParamReset implicit_typeE            { /*VARRESET-in-varParam*/ VARDTYPE($2); }
         |       varParamReset data_type                 { /*VARRESET-in-varParam*/ VARDTYPE($2); }
-        |       implicit_typeE                          { /*VARRESET-in-varParam*/ VARDTYPE($1); }
+        |       implicit_typeE
+                        { /*VARRESET-in-varParam*/
+                          // Keep previous type to handle subsequent declarations.
+                          // This rule is also used when the previous parameter is a type parameter
+                        }
         |       data_type                               { /*VARRESET-in-varParam*/ VARDTYPE($1); }
         ;
 
@@ -3058,14 +3062,7 @@ param_assignment<varp>:         // ==IEEE: param_assignment
         //                      // IEEE: constant_param_expression
         //                      // constant_param_expression: '$' is in expr
                 id/*new-parameter*/ variable_dimensionListE sigAttrListE exprOrDataTypeEqE
-                        { // To handle  #(type A=int, B=A) and properly imply B
-                          // as a type (for parsing) we need to detect "A" is a type
-                          if (AstNodeDType* const refp = VN_CAST($4, NodeDType)) {
-                            if (VSymEnt* const foundp = SYMP->symCurrentp()->findIdFallback(refp->name())) {
-                                UINFO(9, "declaring type via param assignment" << foundp->nodep() << endl);
-                                VARDTYPE(new AstParseTypeDType{$<fl>1});
-                                SYMP->reinsert(foundp->nodep()->cloneTree(false), nullptr, *$1); }}
-                          $$ = VARDONEA($<fl>1, *$1, $2, $3);
+                        { $$ = VARDONEA($<fl>1, *$1, $2, $3);
                           if ($4) $$->valuep($4); }
         ;
 

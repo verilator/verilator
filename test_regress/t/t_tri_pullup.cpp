@@ -46,7 +46,7 @@ bool check() {
 int main() {
     Verilated::debug(0);
 
-    tb = new Vt_tri_pullup{"tb"};
+    tb = new VM_PREFIX{"tb"};
 
     // loop through every possibility and check the result
     bool pass = true;

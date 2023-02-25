@@ -1435,15 +1435,19 @@ V3Number& V3Number::opRepl(const V3Number& lhs,
     // i op repl, L(i)*value(rhs) bit return
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
-    setZero();
-    if (rhsval > 8192) {
+    if (rhsval > (1UL << 24)) {
+        v3error("More than a 16 Mbit replication, perhaps the replication factor"
+                " was two's-complement negative: "
+                << rhsval);
+    } else if (rhsval > 8192) {
         v3warn(WIDTHCONCAT, "More than a 8k bit replication is probably wrong: " << rhsval);
     }
+    setZero();
     int obit = 0;
-    for (unsigned times = 0; times < rhsval; times++) {
-        for (int bit = 0; bit < lhs.width(); bit++) {
+    for (unsigned times = 0; times < rhsval; ++times) {
+        for (int bit = 0; bit < lhs.width(); ++bit) {
             setBit(obit, lhs.bitIs(bit));
-            obit++;
+            ++obit;
         }
     }
     return *this;

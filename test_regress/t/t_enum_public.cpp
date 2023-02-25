@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
     Verilated::debug(0);
     Verilated::commandArgs(argc, argv);
 
-    Vt_enum_public* topp = new Vt_enum_public;
+    VM_PREFIX* topp = new VM_PREFIX;
 
     // Make sure public tag worked
     if (Vt_enum_public_p3::ZERO == Vt_enum_public_p3::ONE) {}

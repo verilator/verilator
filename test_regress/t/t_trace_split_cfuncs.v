@@ -6,9 +6,9 @@
 
 module t ();
 
-	initial begin
-		$dumpfile("dump.vcd");
-		$dumpvars();
-	end
+   initial begin
+      $dumpfile("dump.vcd");
+      $dumpvars();
+   end
 
 endmodule

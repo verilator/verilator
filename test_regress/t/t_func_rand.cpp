@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
     Verilated::debug(0);
     Verilated::commandArgs(argc, argv);
 
-    Vt_func_rand* topp = new Vt_func_rand;
+    VM_PREFIX* topp = new VM_PREFIX;
 
     printf("\nTesting\n");
     for (int i = 0; i < 10; i++) {

@@ -52,7 +52,7 @@ if (!-r catfile($root, ".git")) {
         }
     }
     if (keys %names) {
-		error("Files like stdint.h instead of cstdint:\n    ", join("\n    ", sort keys %names));
+        error("Files like stdint.h instead of cstdint:\n    ", join("\n    ", sort keys %names));
     }
 }
 

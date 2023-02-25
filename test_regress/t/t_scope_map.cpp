@@ -20,7 +20,7 @@ const unsigned long long dt_2 = 3;
 int main(int argc, char** argv) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
-    Vt_scope_map* top = new Vt_scope_map{contextp.get(), "top"};
+    VM_PREFIX* top = new VM_PREFIX{contextp.get(), "top"};
 
     contextp->debug(0);
     contextp->traceEverOn(true);

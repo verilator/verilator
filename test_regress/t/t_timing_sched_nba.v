@@ -19,7 +19,9 @@ module t;
 
    int a2 = 0;
    always_comb begin
+       // verilator lint_off MULTIDRIVEN
        a2 = a1 << 1;
+       // verilator lint_on MULTIDRIVEN
 `ifdef TEST_VERBOSE
        $display("[%0t] a2 = %0d", $time, a2);
 `endif
@@ -27,7 +29,9 @@ module t;
 
    int b2 = 0;
    always_comb begin
+       // verilator lint_off MULTIDRIVEN
        b2 = b1 << 2;
+       // verilator lint_on MULTIDRIVEN
 `ifdef TEST_VERBOSE
        $display("[%0t] b2 = %0d", $time, b2);
 `endif

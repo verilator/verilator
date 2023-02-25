@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
     Verilated::traceEverOn(true);
     Verilated::commandArgs(argc, argv);
 
-    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX("top")};
+    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{"top"}};
 
     std::unique_ptr<VerilatedFstC> tfp{new VerilatedFstC};
     top->trace(tfp.get(), 99);
