@@ -5497,7 +5497,7 @@ private:
         } else {
             userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
             if (nodep->edgeType().anEdge()) {
-                AstNodeDType* sensDtp = nodep->sensp()->dtypep()->skipRefp();
+                AstNodeDType* const sensDtp = nodep->sensp()->dtypep()->skipRefp();
                 if (sensDtp->isDouble()) {
                     nodep->sensp()->v3error(
                         "Edge event control not legal on real type (IEEE 1800-2017 6.12.1)");
