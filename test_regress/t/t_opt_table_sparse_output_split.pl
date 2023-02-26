@@ -23,7 +23,7 @@ if ($Self->{vlt_all}) {
 }
 
 # Splitting should set VM_PARALLEL_BUILDS to 1 by default
-file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}_classes.mk", qr/VM_PARALLEL_BUILDS\s*=\s*1/);
+file_grep("$Self->{obj_dir}/$Self->{vm_prefix}_classes.mk", qr/VM_PARALLEL_BUILDS\s*=\s*1/);
 
 check_splits(2);
 

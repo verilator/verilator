@@ -35,11 +35,11 @@ compile(
 if ($^O eq "darwin") {
   run(cmd => ["cd $Self->{obj_dir}"
               . " && install_name_tool -add_rpath \@executable_path/."
-              . " $Self->{VM_PREFIX}"],
+              . " $Self->{vm_prefix}"],
       check_finished => 0);
   run(cmd => ["cd $Self->{obj_dir}"
               . " && install_name_tool -change t_flag_ldflags_so.so"
-              . " \@rpath/t_flag_ldflags_so.so $Self->{VM_PREFIX}"],
+              . " \@rpath/t_flag_ldflags_so.so $Self->{vm_prefix}"],
       check_finished => 0);
 }
 

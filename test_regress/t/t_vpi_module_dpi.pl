@@ -13,7 +13,7 @@ scenarios(simulator => 1);
 skip("Known compiler limitation")
     if $Self->cxx_version =~ /\(GCC\) 4.4/;
 
-VM_PREFIX("Vt_vpi_module");
+vm_prefix("Vt_vpi_module");
 top_filename("t/t_vpi_module.v");
 pli_filename("t_vpi_module.cpp");
 

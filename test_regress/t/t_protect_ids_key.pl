@@ -22,7 +22,7 @@ execute(
     );
 
 # Since using a named key, we can check for always identical map
-files_identical("$Self->{obj_dir}/$Self->{VM_PREFIX}__idmap.xml", $Self->{golden_filename});
+files_identical("$Self->{obj_dir}/$Self->{vm_prefix}__idmap.xml", $Self->{golden_filename});
 
 ok(1);
 1;

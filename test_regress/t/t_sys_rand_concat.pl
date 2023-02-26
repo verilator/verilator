@@ -17,7 +17,7 @@ execute(
     check_finished => 1,
     );
 
-for my $file (glob_all("$Self->{obj_dir}/$Self->{VM_PREFIX}___024root__DepSet*__Slow.cpp")) {
+for my $file (glob_all("$Self->{obj_dir}/$Self->{vm_prefix}___024root__DepSet*__Slow.cpp")) {
     file_grep_not($file, qr/(<<|>>)/x);
 }
 

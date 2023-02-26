@@ -32,9 +32,9 @@ while (1) {
         tee => $self->{verbose},
         cmd=>[$ENV{MAKE},
               "-C " . $Self->{obj_dir},
-              "-f $Self->{VM_PREFIX}.mk",
+              "-f $Self->{vm_prefix}.mk",
               "-j 4",
-              "VM_PREFIX=$Self->{VM_PREFIX}",
+              "VM_PREFIX=$Self->{vm_prefix}",
               "TEST_OBJ_DIR=$Self->{obj_dir}",
               "CPPFLAGS_DRIVER=-D".uc($Self->{name}),
               ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1" : ""),
@@ -48,7 +48,7 @@ while (1) {
         );
 
     # Never spliting, so should set VM_PARALLEL_BUILDS to 0 by default
-    file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}_classes.mk", qr/VM_PARALLEL_BUILDS\s*=\s*0/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}_classes.mk", qr/VM_PARALLEL_BUILDS\s*=\s*0/);
     check_no_splits();
     check_all_file();
     check_gcc_flags("$Self->{obj_dir}/vlt_gcc.log");

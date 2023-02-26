@@ -19,7 +19,7 @@ execute(
     expect_filename => $Self->{golden_filename},
     );
 
-file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}__stats.txt",
+file_grep("$Self->{obj_dir}/$Self->{vm_prefix}__stats.txt",
           qr/Node count, DISPLAY \s+ 44 \s+ 27 \s+ 27 \s+ 6/);
 
 ok(1);

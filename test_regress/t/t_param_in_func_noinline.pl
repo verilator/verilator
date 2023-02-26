@@ -25,8 +25,8 @@ if ($Self->{vlt_all}) {
 
 # Shouldn't have any references to the parameter array
 foreach my $file (
-      glob_all("$Self->{obj_dir}/$Self->{VM_PREFIX}*.h"),
-      glob_all("$Self->{obj_dir}/$Self->{VM_PREFIX}*.cpp")
+      glob_all("$Self->{obj_dir}/$Self->{vm_prefix}*.h"),
+      glob_all("$Self->{obj_dir}/$Self->{vm_prefix}*.cpp")
     ) {
     file_grep_not($file, qr/digits/i);
 }

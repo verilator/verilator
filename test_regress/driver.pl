@@ -676,12 +676,12 @@ sub new {
 
     $self->{vlt_all} = $self->{vlt} || $self->{vltmt};  # Any Verilator scenario
 
-    $self->{VM_PREFIX} ||= "V" . $self->{name};
+    $self->{vm_prefix} ||= "V" . $self->{name};
     $self->{stats} ||= "$self->{obj_dir}/V" . $self->{name} . "__stats.txt";
     $self->{status_filename} ||= "$self->{obj_dir}/V" . $self->{name} . ".status";
     $self->{run_log_filename} ||= "$self->{obj_dir}/vlt_sim.log";
     $self->{coverage_filename} ||= "$self->{obj_dir}/coverage.dat";
-    $self->{main_filename} ||= "$self->{obj_dir}/$self->{VM_PREFIX}__main.cpp";
+    $self->{main_filename} ||= "$self->{obj_dir}/$self->{vm_prefix}__main.cpp";
     ($self->{top_filename} ||= $self->{pl_filename}) =~ s/\.pl$//;
     ($self->{golden_filename} ||= $self->{pl_filename}) =~ s/\.pl$/.out/;
     if (-e ($self->{top_filename} . ".vhd")) {  # If VHDL file exists
@@ -693,7 +693,7 @@ sub new {
     if (!$self->{make_top_shell}) {
         $self->{top_shell_filename} = $self->{top_filename};
     } else {
-        $self->{top_shell_filename} = "$self->{obj_dir}/$self->{VM_PREFIX}__top.v";
+        $self->{top_shell_filename} = "$self->{obj_dir}/$self->{vm_prefix}__top.v";
     }
     $self->{pli_filename} ||= $self->{name} . ".cpp";
 
@@ -926,7 +926,7 @@ sub compile_vlt_flags {
         $param{make_main} && $param{verilator_make_gmake};
 
     my @cmdargs = (
-                   "--prefix " . $param{VM_PREFIX},
+                   "--prefix " . $param{vm_prefix},
                    @verilator_flags,
                    @{$param{verilator_flags2}},
                    @{$param{verilator_flags3}},
@@ -983,7 +983,7 @@ sub compile {
         = $self->{top_shell_filename} = "";
     } else {
         $param{top_shell_filename}
-        = $self->{top_shell_filename} = "$self->{obj_dir}/$self->{VM_PREFIX}__top." . $self->v_suffix;
+        = $self->{top_shell_filename} = "$self->{obj_dir}/$self->{vm_prefix}__top." . $self->v_suffix;
     }
 
     if ($param{atsim}) {
@@ -1174,13 +1174,13 @@ sub compile {
                                 "-C " . $self->{obj_dir},
                                 "-f " . $FindBin::RealBin . "/Makefile_obj",
                                 ($self->{verbose} ? "" : "--no-print-directory"),
-                                "VM_PREFIX=$self->{VM_PREFIX}",
+                                "VM_PREFIX=$self->{vm_prefix}",
                                 "TEST_OBJ_DIR=$self->{obj_dir}",
                                 "CPPFLAGS_DRIVER=-D" . uc($self->{name}),
                                 ($self->{verbose} ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1" : ""),
                                 ($param{benchmark} ? "" : "OPT_FAST=-O0"),
                                 ($param{benchmark} ? "" : "OPT_GLOBAL=-O0"),
-                                "$self->{VM_PREFIX}",  # bypass default rule, as we don't need archive
+                                "$self->{vm_prefix}",  # bypass default rule, as we don't need archive
                                 ($param{make_flags} || ""),
                         ]);
         }
@@ -1327,7 +1327,7 @@ sub execute {
     elsif ($param{vlt_all}
         #&& (!$param{needs_v4} || -r "$ENV{VERILATOR_ROOT}/src/V3Gate.cpp")
         ) {
-        $param{executable} ||= "$self->{obj_dir}/$param{VM_PREFIX}";
+        $param{executable} ||= "$self->{obj_dir}/$param{vm_prefix}";
         my $debugger = "";
         if ($opt_gdbsim) {
             $debugger = ($ENV{VERILATOR_GDB} || "gdb") . " ";
@@ -1549,10 +1549,10 @@ sub wno_unopthreads_for_few_cores {
     return "";
 }
 
-sub VM_PREFIX {
+sub vm_prefix {
     my $self = (ref $_[0] ? shift : $Self);
-    $self->{VM_PREFIX} = shift if defined $_[0];
-    return $self->{VM_PREFIX};
+    $self->{vm_prefix} = shift if defined $_[0];
+    return $self->{vm_prefix};
 }
 
 #----------------------------------------------------------------------
@@ -1760,8 +1760,8 @@ sub _make_main {
     print $fh "#include \"verilatedos.h\"\n";
 
     print $fh "// Generated header\n";
-    my $VM_PREFIX = $self->{VM_PREFIX};
-    print $fh "#include \"$VM_PREFIX.h\"\n";
+    my $vm_prefix = $self->{vm_prefix};
+    print $fh "#include \"${vm_prefix}.h\"\n";
 
     print $fh "// General headers\n";
     print $fh "#include \"verilated.h\"\n";
@@ -1772,7 +1772,7 @@ sub _make_main {
     print $fh "#include \"verilated_vcd_sc.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-sc';
     print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
 
-    print $fh "std::unique_ptr<$VM_PREFIX> topp;\n";
+    print $fh "std::unique_ptr<${vm_prefix}> topp;\n";
 
     if ($self->{savable}) {
         $fh->print("\n");
@@ -1813,7 +1813,7 @@ sub _make_main {
     print $fh "    srand48(5);\n";  # Ensure determinism
     print $fh "    contextp->randReset(" . $self->{verilated_randReset} . ");\n"
         if defined $self->{verilated_randReset};
-    print $fh "    topp.reset(new $VM_PREFIX(\"top\"));\n";
+    print $fh "    topp.reset(new ${vm_prefix}(\"top\"));\n";
     print $fh "    contextp->internalsDump()\n;" if $self->{verilated_debug};
 
     my $set;
