@@ -5496,9 +5496,15 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
             userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
-            if (nodep->edgeType().anEdge() && nodep->sensp()->dtypep()->skipRefp()->isDouble()) {
-                nodep->sensp()->v3error(
-                    "Edge event control not legal on real type (IEEE 1800-2017 6.12.1)");
+            if (nodep->edgeType().anEdge()) {
+                AstNodeDType* sensDtp = nodep->sensp()->dtypep()->skipRefp();
+                if (sensDtp->isDouble()) {
+                    nodep->sensp()->v3error(
+                        "Edge event control not legal on real type (IEEE 1800-2017 6.12.1)");
+                } else if (sensDtp->basicp() && !sensDtp->basicp()->keyword().isIntNumeric()) {
+                    nodep->sensp()->v3error("Edge event control not legal on non-integral type "
+                                            "(IEEE 1800-2017 9.4.2)");
+                }
             }
         }
     }
