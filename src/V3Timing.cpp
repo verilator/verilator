@@ -541,6 +541,7 @@ private:
     void visit(AstEventControl* nodep) override {
         // Do not allow waiting on local named events, as they get enqueued for clearing, but can
         // go out of scope before that happens
+        if (!nodep->sensesp()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: no sense equation (@*)");
         if (nodep->sensesp()->exists([](const AstNodeVarRef* refp) {
                 AstBasicDType* const dtypep = refp->dtypep()->skipRefp()->basicp();
                 return dtypep && dtypep->isEvent() && refp->varp()->isFuncLocal();
