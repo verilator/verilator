@@ -2920,34 +2920,47 @@ private:
             VAttrType attrType;
             if (nodep->name() == "name") {
                 attrType = VAttrType::ENUM_NAME;
+                methodOkArguments(nodep, 0, 0);
             } else if (nodep->name() == "next") {
                 attrType = VAttrType::ENUM_NEXT;
+                methodOkArguments(nodep, 0, 1);
             } else if (nodep->name() == "prev") {
                 attrType = VAttrType::ENUM_PREV;
+                methodOkArguments(nodep, 0, 1);
             } else {
                 nodep->v3fatalSrc("Bad case");
             }
 
-            if (nodep->name() == "name") {
-                methodOkArguments(nodep, 0, 0);
-            } else if (nodep->pinsp() && !(VN_IS(VN_AS(nodep->pinsp(), Arg)->exprp(), Const))) {
-                nodep->pinsp()->v3fatalSrc("Unsupported: enum next/prev with non-const argument");
-            } else if (nodep->pinsp()
-                       && !(VN_IS(VN_AS(nodep->pinsp(), Arg)->exprp(), Const)
-                            && VN_AS(VN_AS(nodep->pinsp(), Arg)->exprp(), Const)->toUInt() == 1
-                            && !nodep->pinsp()->nextp())) {
-                // Unroll of enumVar.next(k) to enumVar.next(1).next(k - 1)
-                AstMethodCall* const clonep = nodep->cloneTree(false);
-                VN_AS(VN_AS(clonep->pinsp(), Arg)->exprp(), Const)->num().setLong(1);
-                const uint32_t stepWidth
-                    = VN_AS(VN_AS(nodep->pinsp(), Arg)->exprp(), Const)->toUInt();
-                AstConst* const constp = new AstConst(nodep->fileline(), stepWidth - 1);
-                AstArg* const argp = new AstArg{nodep->fileline(), "", constp};
-                AstMethodCall* const newp
-                    = new AstMethodCall{nodep->fileline(), clonep, nodep->name(), argp};
-                nodep->replaceWith(newp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                return;
+            if (nodep->name() != "name" && nodep->pinsp()) {
+                if (!VN_IS(VN_AS(nodep->pinsp(), Arg)->exprp(), Const)) {
+                    nodep->pinsp()->v3fatalSrc(
+                        "Unsupported: enum next/prev with non-const argument");
+                } else {
+                    const uint32_t stepWidth
+                        = VN_AS(VN_AS(nodep->pinsp(), Arg)->exprp(), Const)->toUInt();
+                    if (stepWidth == 0) {
+                        // Step of 0 "legalizes" like $cast, use .next.prev
+                        AstMethodCall* const newp = new AstMethodCall{
+                            nodep->fileline(),
+                            new AstMethodCall{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                              "next", nullptr},
+                            "prev", nullptr};
+                        nodep->replaceWith(newp);
+                        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                        return;
+                    } else if (stepWidth != 1) {
+                        // Unroll of enumVar.next(k) to enumVar.next(1).next(k - 1)
+                        AstMethodCall* const clonep = nodep->cloneTree(false);
+                        VN_AS(VN_AS(clonep->pinsp(), Arg)->exprp(), Const)->num().setLong(1);
+                        AstConst* const constp = new AstConst(nodep->fileline(), stepWidth - 1);
+                        AstArg* const argp = new AstArg{nodep->fileline(), "", constp};
+                        AstMethodCall* const newp
+                            = new AstMethodCall{nodep->fileline(), clonep, nodep->name(), argp};
+                        nodep->replaceWith(newp);
+                        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                        return;
+                    }
+                }
             }
             // Need a runtime lookup table.  Yuk.
             const uint64_t msbdim = enumMaxValue(nodep, adtypep);
