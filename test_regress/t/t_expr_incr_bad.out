@@ -1,5 +1,5 @@
-%Error-UNSUPPORTED: t/t_expr_incr_bad.v:17:12: Unsupported: Inc/Dec of expression with side-effects
-   17 |         arr[postincrement_i()]++;
-      |            ^
+%Error-UNSUPPORTED: t/t_expr_incr_bad.v:17:34: Unsupported: Inc/Dec of expression with side-effects
+   17 |         $display("Value: %d", arr[postincrement_i()]++);
+      |                                  ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to
