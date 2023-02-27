@@ -2982,7 +2982,7 @@ VerilatedModule::~VerilatedModule() {
 // VerilatedVar:: Methods
 
 // cppcheck-suppress unusedFunction  // Used by applications
-uint32_t VerilatedVarProps::entSize() const {
+uint32_t VerilatedVarProps::entSize() const VL_MT_SAFE {
     uint32_t size = 1;
     switch (vltype()) {
     case VLVT_PTR: size = sizeof(void*); break;
@@ -3002,7 +3002,7 @@ size_t VerilatedVarProps::totalSize() const {
     return size;
 }
 
-void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const {
+void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const VL_MT_SAFE {
     if (VL_UNLIKELY(dim <= 0 || dim > udims())) return nullptr;
     if (VL_UNLIKELY(indx < low(dim) || indx > high(dim))) return nullptr;
     const int indxAdj = indx - low(dim);
@@ -3121,7 +3121,7 @@ void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
     return nullptr;
 }
 
-void* VerilatedScope::exportFindError(int funcnum) const {
+void* VerilatedScope::exportFindError(int funcnum) const VL_MT_SAFE {
     // Slowpath - Called only when find has failed
     const std::string msg
         = (std::string{"Testbench C called '"} + VerilatedImp::exportName(funcnum)

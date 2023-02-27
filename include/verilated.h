@@ -647,7 +647,7 @@ public:  // But internals only - called from VerilatedModule's
     VerilatedVar* varFind(const char* namep) const VL_MT_SAFE_POSTINIT;
     VerilatedVarNameMap* varsp() const VL_MT_SAFE_POSTINIT { return m_varsp; }
     void scopeDump() const;
-    void* exportFindError(int funcnum) const;
+    void* exportFindError(int funcnum) const VL_MT_SAFE;
     static void* exportFindNullError(int funcnum) VL_MT_SAFE;
     static void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE {
         if (VL_UNLIKELY(!scopep)) return exportFindNullError(funcnum);
