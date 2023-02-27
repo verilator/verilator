@@ -141,13 +141,13 @@ public:
     VerilatedVarFlags vldir() const {
         return static_cast<VerilatedVarFlags>(static_cast<int>(m_vlflags) & VLVF_MASK_DIR);
     }
-    uint32_t entSize() const;
+    uint32_t entSize() const VL_MT_SAFE;
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
     // DPI compatible C standard layout
     bool isDpiCLayout() const { return ((m_vlflags & VLVF_DPI_CLAY) != 0); }
     int udims() const VL_MT_SAFE { return m_udims; }
     int dims() const { return m_pdims + m_udims; }
-    const VerilatedRange& packed() const { return m_packed; }
+    const VerilatedRange& packed() const VL_MT_SAFE { return m_packed; }
     const VerilatedRange& unpacked() const { return m_unpacked[0]; }
     // DPI accessors
     int left(int dim) const VL_MT_SAFE {
@@ -183,7 +183,7 @@ public:
     // Total size in bytes (note DPI limited to 4GB)
     size_t totalSize() const;
     // Adjust a data pointer to access a given array element, NULL if something goes bad
-    void* datapAdjustIndex(void* datap, int dim, int indx) const;
+    void* datapAdjustIndex(void* datap, int dim, int indx) const VL_MT_SAFE;
 };
 
 //===========================================================================
@@ -218,7 +218,7 @@ public:
     int increment(int dim) const { return m_propsp->increment(dim); }
     int elements(int dim) const { return m_propsp->elements(dim); }
     size_t totalSize() const { return m_propsp->totalSize(); }
-    void* datapAdjustIndex(void* datap, int dim, int indx) const {
+    void* datapAdjustIndex(void* datap, int dim, int indx) const VL_MT_SAFE {
         return m_propsp->datapAdjustIndex(datap, dim, indx);
     }
 };
