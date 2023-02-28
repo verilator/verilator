@@ -408,7 +408,8 @@ private:
                 }
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
                     && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
-                    && nodep->fileline() != entryp->getNodeFileLinep() && !entryp->isUnderGen()) {
+                    && nodep->fileline() != entryp->getNodeFileLinep() && !entryp->isUnderGen()
+                    && entryp->getNodep()) {
                     if (m_alwaysCombp
                         && (!entryp->isDrivenAlwaysCombWhole()
                             || (entryp->isDrivenAlwaysCombWhole()
