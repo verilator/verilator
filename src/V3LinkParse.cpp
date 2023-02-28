@@ -257,11 +257,11 @@ private:
             default: break;
             }
         }
-        
+
         if (v3Global.opt.publicParams()) {
             switch (nodep->varType()) {
             case VVarType::GPARAM:  // FALLTHRU
-            case VVarType::LPARAM:  nodep->sigUserRWPublic(true); break;
+            case VVarType::LPARAM: nodep->sigUserRWPublic(true); break;
             default: break;
             }
         }

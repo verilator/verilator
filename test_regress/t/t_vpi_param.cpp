@@ -32,7 +32,6 @@
 #error "Bad test"
 #endif
 
-
 #endif
 
 #include <cstdio>
