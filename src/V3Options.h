@@ -263,6 +263,7 @@ private:
     bool m_protectIds = false;      // main switch: --protect-ids
     bool m_public = false;          // main switch: --public
     bool m_publicFlatRW = false;    // main switch: --public-flat-rw
+    bool m_public_params = false;   // main switch: --public-params
     bool m_quietExit = false;       // main switch: --quiet-exit
     bool m_relativeIncludes = false; // main switch: --relative-includes
     bool m_reportUnoptflat = false; // main switch: --report-unoptflat
@@ -494,6 +495,7 @@ public:
     bool usesProfiler() const { return profExec() || profPgo(); }
     bool protectIds() const VL_MT_SAFE { return m_protectIds; }
     bool allPublic() const { return m_public; }
+    bool publicParams() const { return m_public_params; }
     bool publicFlatRW() const { return m_publicFlatRW; }
     bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }

@@ -21,9 +21,17 @@
 #include "verilated_vcd_c.h"
 #include "verilated_vpi.h"
 
+#include "svdpi.h"
+
+#ifdef T_VPI_PARAM
 #include "Vt_vpi_param.h"
 #include "Vt_vpi_param__Dpi.h"
-#include "svdpi.h"
+#elif defined(T_VPI_PUBLIC_PARAMS)
+#include "Vt_vpi_public_params.h"
+#else
+#error "Bad test"
+#endif
+
 
 #endif
 

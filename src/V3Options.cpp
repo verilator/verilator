@@ -1392,7 +1392,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_publicFlatRW = flag;
         v3Global.dpi(true);
     });
-
+    DECL_OPTION("-public-params", CbOnOff, [this](bool flag) {
+        m_public_params = flag;
+        v3Global.dpi(true);
+    });
     DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
 
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
