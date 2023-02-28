@@ -201,6 +201,15 @@ private:
     void prepost_stmt_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
 
+        // Currently we can't reference the target, so we just copy the AST both for read and
+        // write, but doing so would double any side-effects, so as a safety measure all
+        // statements which could have side-effects are banned at the moment.
+        if (!nodep->rhsp()->isTreePureRecurse()) {
+            nodep->rhsp()->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Inc/Dec of expression with side-effects");
+            return;
+        }
+
         AstConst* const constp = VN_AS(nodep->lhsp(), Const);
         UASSERT_OBJ(nodep, constp, "Expecting CONST");
         AstConst* const newconstp = constp->cloneTree(true);
@@ -221,6 +230,15 @@ private:
     }
     void prepost_expr_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
+
+        // Currently we can't reference the target, so we just copy the AST both for read and
+        // write, but doing so would double any side-effects, so as a safety measure all
+        // statements which could have side-effects are banned at the moment.
+        if (!nodep->rhsp()->isTreePureRecurse()) {
+            nodep->rhsp()->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Inc/Dec of expression with side-effects");
+            return;
+        }
 
         const AstNodeVarRef* varrefp = nullptr;
         if (m_unsupportedHere || !(varrefp = VN_CAST(nodep->rhsp(), VarRef))) {

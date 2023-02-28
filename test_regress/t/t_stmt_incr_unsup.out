@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_stmt_incr_unsup.v:17:12: Unsupported: Inc/Dec of expression with side-effects
+   17 |         arr[postincrement_i()]++;
+      |            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

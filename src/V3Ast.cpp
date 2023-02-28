@@ -1263,6 +1263,16 @@ void AstNode::dumpTreeDotFile(const string& filename, bool append, bool doDump) 
     }
 }
 
+bool AstNode::isTreePureRecurse() const {
+    // Should memoize this if call commonly
+    if (!this->isPure()) return false;
+    if (this->op1p() && !this->op1p()->isTreePureRecurse()) return false;
+    if (this->op2p() && !this->op2p()->isTreePureRecurse()) return false;
+    if (this->op3p() && !this->op3p()->isTreePureRecurse()) return false;
+    if (this->op4p() && !this->op4p()->isTreePureRecurse()) return false;
+    return true;
+}
+
 void AstNode::v3errorEndFatal(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex) {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE
