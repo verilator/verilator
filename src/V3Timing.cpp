@@ -515,7 +515,9 @@ private:
                     flp,
                     new AstMulD{flp, valuep,
                                 new AstConst{flp, AstConst::RealDouble{}, m_timescaleFactor}}};
+                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
             } else {
+                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
                 valuep = new AstMul{flp, valuep,
                                     new AstConst{flp, AstConst::Unsized64{},
                                                  static_cast<uint64_t>(m_timescaleFactor)}};

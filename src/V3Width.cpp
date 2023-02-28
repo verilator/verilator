@@ -1952,14 +1952,8 @@ private:
                         newp = new AstIToRD{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
                     }
                 } else if (!basicp->isDouble() && nodep->fromp()->isDouble()) {
-                    if (basicp->isSigned()) {
-                        newp
-                            = new AstRToIRoundS{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
-                    } else {
-                        newp = new AstUnsigned{
-                            nodep->fileline(),
-                            new AstRToIS{nodep->fileline(), nodep->fromp()->unlinkFrBack()}};
-                    }
+                    newp = new AstRToIRoundS{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
+                    newp->dtypeChgSigned(basicp->isSigned());
                 } else if (basicp->isSigned() && !nodep->fromp()->isSigned()) {
                     newp = new AstSigned{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
                 } else if (!basicp->isSigned() && nodep->fromp()->isSigned()) {
