@@ -60,6 +60,12 @@ void AstNodeFTaskRef::cloneRelink() {
     }
 }
 
+bool AstNodeFTaskRef::isPure() const {
+    // TODO: For non-DPI functions we could traverse the AST of function's body to determine
+    // pureness.
+    return this->taskp() && this->taskp()->dpiImport() && this->taskp()->pure();
+}
+
 bool AstNodeFTaskRef::isGateOptimizable() const { return m_taskp && m_taskp->isGateOptimizable(); }
 
 const char* AstNodeVarRef::broken() const {
