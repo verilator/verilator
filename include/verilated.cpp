@@ -1868,6 +1868,33 @@ IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
     if (errno != 0) v = 0;
     return static_cast<IData>(v);
 }
+IData VL_NTOI_I(int obits, const std::string& str) VL_PURE { return VL_NTOI_Q(obits, str); }
+QData VL_NTOI_Q(int obits, const std::string& str) VL_PURE {
+    QData out = 0;
+    const size_t procLen = std::min(str.length(), static_cast<size_t>(8));
+    const char* const datap = str.data();
+    int pos = static_cast<int>(str.length()) - 1;
+    int bit = 0;
+    while (bit < obits && pos >= 0) {
+        out |= static_cast<QData>(datap[pos]) << VL_BITBIT_Q(bit);
+        bit += 8;
+        --pos;
+    }
+    return out & VL_MASK_Q(obits);
+}
+void VL_NTOI_W(int obits, WDataOutP owp, const std::string& str) VL_PURE {
+    const int words = VL_WORDS_I(obits);
+    for (int i = 0; i < words; ++i) owp[i] = 0;
+    const char* const datap = str.data();
+    int pos = static_cast<int>(str.length()) - 1;
+    int bit = 0;
+    while (bit < obits && pos >= 0) {
+        owp[VL_BITWORD_I(bit)] |= static_cast<EData>(datap[pos]) << VL_BITBIT_I(bit);
+        bit += 8;
+        --pos;
+    }
+    owp[words - 1] &= VL_MASK_E(obits);
+}
 
 //===========================================================================
 // Readmem/writemem

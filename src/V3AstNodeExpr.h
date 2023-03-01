@@ -4773,6 +4773,21 @@ public:
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
 };
+class AstNToI final : public AstNodeUniop {
+    // String to any-size integral
+public:
+    AstNToI(FileLine* fl, AstNodeExpr* lhsp, AstNodeDType* dtypep = nullptr)
+        : ASTGEN_SUPER_NToI(fl, lhsp) {
+        this->dtypep(dtypep);
+    }
+    ASTGEN_MEMBERS_AstNToI;
+    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNToI(lhs); }
+    string emitVerilog() override { return "'(%l)"; }
+    string emitC() override { return "VL_NTOI_%nq(%nw, %P, %li)"; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+};
 class AstNegate final : public AstNodeUniop {
 public:
     AstNegate(FileLine* fl, AstNodeExpr* lhsp)

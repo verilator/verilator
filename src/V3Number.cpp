@@ -2212,7 +2212,7 @@ V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
                 m_data.str() = lhs.m_data.str();
             }
         } else if (VL_UNLIKELY(lhs.isString())) {
-            // Non-compatible types, erase value.
+            // Non-compatible types, see also opAToN()
             setZero();
         } else {
             // Also handles double as is just bits
@@ -2220,6 +2220,20 @@ V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
                 setBit(bit, ignoreXZ ? lhs.bitIs1(bit) : lhs.bitIs(bit));
             }
         }
+    }
+    return *this;
+}
+
+V3Number& V3Number::opNToI(const V3Number& lhs) {
+    // String to packed number
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    setZero();
+    const string& str = lhs.toString();
+    for (size_t n = 0; n < str.length(); ++n) {
+        const char c = str[str.length() - 1 - n];
+        for (size_t cbit = 0; cbit < 8; ++cbit)
+            setBit(n * 8 + cbit, VL_BITISSET_I(c, cbit) ? 1 : 0);
     }
     return *this;
 }

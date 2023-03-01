@@ -463,6 +463,13 @@ private:
             }
         }
     }
+    void visit(AstNToI* nodep) override {
+        // Created here, should be already sized
+        if (m_vup->prelim()) {
+            UASSERT_OBJ(nodep->dtypep(), nodep, "NToI should be sized when created");
+            iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
+        }
+    }
 
     // Widths: Constant, terminal
     void visit(AstTime* nodep) override { nodep->dtypeSetUInt64(); }
@@ -1935,7 +1942,9 @@ private:
             AstNodeExpr* newp = nullptr;
             if (bad) {
             } else if (const AstBasicDType* const basicp = toDtp->basicp()) {
-                if (!basicp->isDouble() && !fromDtp->isDouble()) {
+                if (!basicp->isString() && fromDtp->isString()) {
+                    newp = new AstNToI{nodep->fileline(), nodep->fromp()->unlinkFrBack(), toDtp};
+                } else if (!basicp->isDouble() && !fromDtp->isDouble()) {
                     AstNodeDType* const origDTypep = nodep->dtypep();
                     const int width = toDtp->width();
                     castSized(nodep, nodep->fromp(), width);
@@ -1945,7 +1954,8 @@ private:
                     iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, fromDtp, EXTEND_EXP,
                                  false);
                 }
-                if (basicp->isDouble() && !nodep->fromp()->isDouble()) {
+                if (newp) {
+                } else if (basicp->isDouble() && !nodep->fromp()->isDouble()) {
                     if (nodep->fromp()->isSigned()) {
                         newp = new AstISToRD{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
                     } else {

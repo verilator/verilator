@@ -762,6 +762,7 @@ public:
 
     // "N" - string operations
     V3Number& opAtoN(const V3Number& lhs, int base);
+    V3Number& opNToI(const V3Number& lhs);
     V3Number& opPutcN(const V3Number& lhs, const V3Number& rhs, const V3Number& ths);
     V3Number& opGetcN(const V3Number& lhs, const V3Number& rhs);
     V3Number& opSubstrN(const V3Number& lhs, const V3Number& rhs, const V3Number& ths);
