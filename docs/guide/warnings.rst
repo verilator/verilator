@@ -850,14 +850,14 @@ List Of Warnings
 
    .. TODO better example
 
-   Warns that a packed vector is declared with little endian bit numbering
-   (i.e. [0:7]).  Big endian bit numbering is now the overwhelming
-   standard, and little numbering is now thus often due to simple oversight
+   Warns that a packed vector is declared with big endian bit numbering
+   (i.e. [0:7]).  Little endian bit numbering is now the overwhelming
+   standard, and big numbering is now thus often due to simple oversight
    instead of intent.
 
-   It also warns that an instance is declared with little endian range
-   (i.e. [0:7] or [7]) and is connected to an N-wide signal. Based on IEEE
-   the bits will likely be backward from what people may expect
+   It also warns that an instance is declared with big endian range
+   (i.e. [0:7] or [7]) and is connected to an N-wide signal.
+   The bits will likely be backward from what people may expect
    (i.e., instance [0] will connect to signal bit [N-1] not bit [0]).
 
    Ignoring this warning will only suppress the lint check; it will
