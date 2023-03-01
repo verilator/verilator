@@ -3354,6 +3354,8 @@ private:
                     }
                 }
             }
+            m_ds.m_dotSymp = m_curSymp;
+
             iterateChildren(nodep);
         }
         // V3Width when determines types needs to find enum values and such
