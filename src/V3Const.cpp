@@ -3140,9 +3140,9 @@ private:
         }
     }
     void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_underRecFunc);
         if (nodep->recursive()) m_underRecFunc = true;
         iterateChildren(nodep);
-        m_underRecFunc = false;
     }
 
     void visit(AstFuncRef* nodep) override {
