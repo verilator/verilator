@@ -131,6 +131,56 @@ public:
         of.putsHeader();
     }
 
+    // Find and insert before all occurences of any individual character in set
+    string insertBefore(const string &original, const string &findAllFromSet, const string &insertBefore) {
+            string s = original;
+            size_t pos = 0;
+            size_t n;
+            while((n = s.find_first_of(findAllFromSet, pos)) != string::npos) {
+                s = s.insert(n, insertBefore);
+                pos = n + findAllFromSet.length() + insertBefore.length();
+            }
+            return s;
+    }
+
+    string makefileEscapeSpecialCharacters(const string &original) {
+        string s = original;
+        // sed -e 's@\@\\#@g'   => '\' -> '\\'
+        // This is for the benefit of the makefile and the shell beyond
+        // This must be done first as we're going to insert additional backslashes that are
+        //   not from the original input sequence.
+        // This is done because while make and the shell are lenient with unnecessary escape
+        //   sequences being passed through as-is potentially the character following it needs
+        //   to be escaped, if we don't do this the original input intention is lost, making
+        //   it impossible to distinguish.
+        s = insertBefore(s, "\\", "\\");
+
+        // sed -e 's@ @\\ @g'   => ' ' -> '\ '
+        // This is for the benefit of the shell beyond the makefile and the makefile word splitter
+        s = insertBefore(s, " ", "\\");
+
+        // sed -e 's@\$@\\#@g'  => '$' -> '\$'
+        // sed -e 's@`@\`#@g'   => '`' -> '\`'
+        // This is for the benefit of the shell beyond the makefile
+        s = insertBefore(s, "$`", "\\");
+
+        // sed -e 's@#@\\#@g'   => '#' -> '\#'
+        // sed -e 's@%@\\%@g'   => '%' -> '\%'  NOT DONE HERE
+        //   Simple escaping of percent sign did not achieve any useful outcome, the invoked command
+        //   saw an additional escape character that was not present in the original input.
+        // This is for the benefit of the makefile (comment marker)
+        s = insertBefore(s, "#", "\\");
+
+        // sed -e 's@\$@\$\$@g' => '$' -> '$$'
+        // This is for the benefit of the makefile interpolation dollar was processed twice in this
+        //  C++ method,
+        //   one method for the shell (backslash prefix),
+        //   one method for the makefile (dollar prefix)
+        s = insertBefore(s, "$", "$");
+
+        return s;
+    }
+
     void emitOverallMake() {
         // Generate the makefile
         V3OutMkFile of{v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".mk"};
@@ -190,13 +240,13 @@ public:
         of.puts("VM_USER_CFLAGS = \\\n");
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
         const V3StringList& cFlags = v3Global.opt.cFlags();
-        for (const string& i : cFlags) of.puts("\t" + i + " \\\n");
+        for (const string& i : cFlags) of.puts("\t" + makefileEscapeSpecialCharacters(i) + " \\\n");
         of.puts("\n");
 
         of.puts("# User LDLIBS (from -LDFLAGS on Verilator command line)\n");
         of.puts("VM_USER_LDLIBS = \\\n");
         const V3StringList& ldLibs = v3Global.opt.ldLibs();
-        for (const string& i : ldLibs) of.puts("\t" + i + " \\\n");
+        for (const string& i : ldLibs) of.puts("\t" + makefileEscapeSpecialCharacters(i) + " \\\n");
         of.puts("\n");
 
         V3StringSet dirs;
@@ -212,7 +262,7 @@ public:
 
         of.puts("# User .cpp directories (from .cpp's on Verilator command line)\n");
         of.puts("VM_USER_DIR = \\\n");
-        for (const auto& i : dirs) of.puts("\t" + i + " \\\n");
+        for (const auto& i : dirs) of.puts("\t" + makefileEscapeSpecialCharacters(i) + " \\\n");
         of.puts("\n");
 
         of.puts("\n### Default rules...\n");
