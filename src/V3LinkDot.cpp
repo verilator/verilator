@@ -2195,7 +2195,8 @@ private:
             if (AstNode* interfaceSubp = it->second->nodep()) {
                 UINFO(8, "  SymFunc " << interfaceSubp << endl);
                 if (VN_IS(interfaceSubp, NodeFTask)) {
-                    bool existsInChild = m_curSymp->findIdFlat(interfaceSubp->name());
+                    const VSymEnt* const foundp = m_curSymp->findIdFlat(interfaceSubp->name());
+                    bool existsInChild = foundp && !foundp->imported();
                     if (!existsInChild && !implementsClassp->isInterfaceClass()) {
                         implementsClassp->v3error(
                             "Class " << implementsClassp->prettyNameQ() << " implements "
@@ -2207,8 +2208,7 @@ private:
                                      << "... Location of interface class's function\n"
                                      << interfaceSubp->warnContextSecondary());
                     }
-                    if (m_ifClassImpNames.find(interfaceSubp->name()) != m_ifClassImpNames.end()
-                        && !existsInChild) {
+                    if (!existsInChild && m_ifClassImpNames.find(interfaceSubp->name()) != m_ifClassImpNames.end()) {
                         implementsClassp->v3error(
                             "Class " << implementsClassp->prettyNameQ() << " implements "
                                      << interfaceClassp->prettyNameQ()
@@ -3332,7 +3332,8 @@ private:
                                     VSymEnt* const srcp = m_statep->getNodeSym(classp);
                                     if (classp->isInterfaceClass()) {
                                         importImplementsClass(nodep, srcp, classp);
-                                    } else {
+                                    }
+                                    if (!cextp->isImplements()) {
                                         m_curSymp->importFromClass(m_statep->symsp(), srcp);
                                     }
                                     VL_DO_DANGLING(cpackagerefp->unlinkFrBack()->deleteTree(),
