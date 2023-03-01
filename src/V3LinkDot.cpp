@@ -2208,7 +2208,9 @@ private:
                                      << "... Location of interface class's function\n"
                                      << interfaceSubp->warnContextSecondary());
                     }
-                    if (!existsInChild && m_ifClassImpNames.find(interfaceSubp->name()) != m_ifClassImpNames.end()) {
+                    if (!existsInChild
+                        && m_ifClassImpNames.find(interfaceSubp->name())
+                               != m_ifClassImpNames.end()) {
                         implementsClassp->v3error(
                             "Class " << implementsClassp->prettyNameQ() << " implements "
                                      << interfaceClassp->prettyNameQ()
