@@ -2940,7 +2940,7 @@ delay_control<delayp>:   //== IEEE: delay_control
         |       '#' '(' minTypMax ',' minTypMax ')'
                         { $$ = new AstDelay{$<fl>1, $3, false}; RISEFALLDLYUNSUP($3); DEL($5); }
         |       '#' '(' minTypMax ',' minTypMax ',' minTypMax ')'
-                        { $$ = new AstDelay{$<fl>1, $3, false}; RISEFALLDLYUNSUP($3); DEL($5); DEL($7); }
+                        { $$ = new AstDelay{$<fl>1, $3, false}; RISEFALLDLYUNSUP($5); DEL($3); DEL($7); }
         ;
 
 delay_value<nodeExprp>:         // ==IEEE:delay_value
@@ -4785,7 +4785,7 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //                      // IEEE: '(' mintypmax_expression ')'
         |       ~noPar__IGNORE~'(' expr ')'             { $$ = $2; }
         |       ~noPar__IGNORE~'(' expr ':' expr ':' expr ')'
-                        { $$ = $2; BBUNSUP($1, "Unsupported: min typ max expressions"); }
+                        { $$ = $4; MINTYPMAXDLYUNSUP($4); DEL($2); DEL($6); }
         //                      // PSL rule
         |       '_' '(' expr ')'                        { $$ = $3; }    // Arbitrary Verilog inside PSL
         //
