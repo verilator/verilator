@@ -2288,10 +2288,17 @@ private:
         if (nodep->valuep()) {  // else the value will be assigned sequentially
             // Default type is int, but common to assign narrower values, so minwidth from value
             userIterateAndNext(nodep->valuep(), WidthVP{CONTEXT_DET, PRELIM}.p());
+            bool warnOn = true;
+            if (const AstConst* const constp = VN_CAST(nodep->valuep(), Const)) {
+                if (static_cast<int>(constp->num().mostSetBitP1()) > nodep->width()) {
+                    constp->v3error("Enum value exceeds width of enum type (IEEE 1800-2017 6.19)");
+                    warnOn = false;  // Prevent normal WIDTHTRUNC
+                }
+            }
             // Minwidth does not come from value, as spec says set based on parent
             // and if we keep minwidth we'll consider it unsized which is incorrect
             iterateCheck(nodep, "Enum value", nodep->valuep(), CONTEXT_DET, FINAL, nodep->dtypep(),
-                         EXTEND_EXP);
+                         EXTEND_EXP, warnOn);
             // Always create a cast, to avoid later ENUMVALUE warnings
             nodep->valuep(new AstCast{nodep->valuep()->fileline(), nodep->valuep()->unlinkFrBack(),
                                       nodep->dtypep()});
