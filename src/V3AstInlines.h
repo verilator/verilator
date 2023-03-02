@@ -25,7 +25,7 @@
 //######################################################################
 // Inline METHODS
 
-int AstNode::width() const { return dtypep() ? dtypep()->width() : 0; }
+int AstNode::width() const VL_MT_STABLE_TREE { return dtypep() ? dtypep()->width() : 0; }
 int AstNode::widthMin() const { return dtypep() ? dtypep()->widthMin() : 0; }
 bool AstNode::width1() const {  // V3Const uses to know it can optimize
     return dtypep() && dtypep()->width() == 1;
@@ -33,13 +33,13 @@ bool AstNode::width1() const {  // V3Const uses to know it can optimize
 int AstNode::widthInstrs() const {
     return (!dtypep() ? 1 : (dtypep()->isWide() ? dtypep()->widthWords() : 1));
 }
-bool AstNode::isDouble() const VL_MT_SAFE {
+bool AstNode::isDouble() const VL_MT_STABLE_TREE {
     return dtypep() && VN_IS(dtypep(), BasicDType) && VN_AS(dtypep(), BasicDType)->isDouble();
 }
-bool AstNode::isString() const VL_MT_SAFE {
+bool AstNode::isString() const VL_MT_STABLE_TREE {
     return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isString();
 }
-bool AstNode::isSigned() const { return dtypep() && dtypep()->isSigned(); }
+bool AstNode::isSigned() const VL_MT_STABLE_TREE { return dtypep() && dtypep()->isSigned(); }
 
 bool AstNode::isZero() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->num().isEqZero());
@@ -61,12 +61,16 @@ bool AstNode::sameGateTree(const AstNode* node2p) const {
     return sameTreeIter(this, node2p, true, true);
 }
 
-int AstNodeArrayDType::left() const VL_MT_SAFE { return rangep()->leftConst(); }
-int AstNodeArrayDType::right() const VL_MT_SAFE { return rangep()->rightConst(); }
-int AstNodeArrayDType::hi() const VL_MT_SAFE { return rangep()->hiConst(); }
-int AstNodeArrayDType::lo() const VL_MT_SAFE { return rangep()->loConst(); }
-int AstNodeArrayDType::elementsConst() const VL_MT_SAFE { return rangep()->elementsConst(); }
-VNumRange AstNodeArrayDType::declRange() const VL_MT_SAFE { return VNumRange{left(), right()}; }
+int AstNodeArrayDType::left() const VL_MT_STABLE_TREE { return rangep()->leftConst(); }
+int AstNodeArrayDType::right() const VL_MT_STABLE_TREE { return rangep()->rightConst(); }
+int AstNodeArrayDType::hi() const VL_MT_STABLE_TREE { return rangep()->hiConst(); }
+int AstNodeArrayDType::lo() const VL_MT_STABLE_TREE { return rangep()->loConst(); }
+int AstNodeArrayDType::elementsConst() const VL_MT_STABLE_TREE {
+    return rangep()->elementsConst();
+}
+VNumRange AstNodeArrayDType::declRange() const VL_MT_STABLE_TREE {
+    return VNumRange{left(), right()};
+}
 
 AstRange::AstRange(FileLine* fl, int left, int right)
     : ASTGEN_SUPER_Range(fl) {
@@ -78,16 +82,16 @@ AstRange::AstRange(FileLine* fl, const VNumRange& range)
     leftp(new AstConst{fl, static_cast<uint32_t>(range.left())});
     rightp(new AstConst{fl, static_cast<uint32_t>(range.right())});
 }
-int AstRange::leftConst() const VL_MT_SAFE {
+int AstRange::leftConst() const VL_MT_STABLE_TREE {
     AstConst* const constp = VN_CAST(leftp(), Const);
     return (constp ? constp->toSInt() : 0);
 }
-int AstRange::rightConst() const VL_MT_SAFE {
+int AstRange::rightConst() const VL_MT_STABLE_TREE {
     AstConst* const constp = VN_CAST(rightp(), Const);
     return (constp ? constp->toSInt() : 0);
 }
 
-int AstQueueDType::boundConst() const VL_MT_SAFE {
+int AstQueueDType::boundConst() const VL_MT_STABLE_TREE {
     AstConst* const constp = VN_CAST(boundp(), Const);
     return (constp ? constp->toSInt() : 0);
 }

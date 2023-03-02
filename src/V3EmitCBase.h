@@ -40,7 +40,7 @@ public:
     EmitCParentModule();
     VL_UNCOPYABLE(EmitCParentModule);
 
-    static const AstNodeModule* get(const AstNode* nodep) VL_MT_SAFE {
+    static const AstNodeModule* get(const AstNode* nodep) VL_MT_STABLE_TREE {
         return VN_AS(nodep->user4p(), NodeModule);
     }
 };
@@ -78,15 +78,13 @@ public:
         return className + "* const __restrict vlSelf VL_ATTR_UNUSED = static_cast<" + className
                + "*>(voidSelf);\n";
     }
-    static string symClassName() VL_MT_SAFE {
-        return v3Global.opt.prefix() + "_" + protect("_Syms");
-    }
+    static string symClassName() { return v3Global.opt.prefix() + "_" + protect("_Syms"); }
     static string symClassVar() { return symClassName() + "* __restrict vlSymsp"; }
     static string symClassAssign() {
         return symClassName() + "* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;\n";
     }
     static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp = nullptr);
-    static string prefixNameProtect(const AstNode* nodep) VL_MT_SAFE {  // C++ name with prefix
+    static string prefixNameProtect(const AstNode* nodep) {  // C++ name with prefix
         return v3Global.opt.modPrefix() + "_" + protect(nodep->name());
     }
     static string topClassName() VL_MT_SAFE {  // Return name of top wrapper module

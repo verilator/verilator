@@ -41,7 +41,7 @@ std::string cvtToStr(const T& t) VL_PURE {
 }
 template <class T>
 typename std::enable_if<std::is_pointer<T>::value, std::string>::type
-cvtToHex(const T tp) VL_MT_SAFE {
+cvtToHex(const T tp) VL_PURE {
     std::ostringstream os;
     os << static_cast<const void*>(tp);
     return os.str();

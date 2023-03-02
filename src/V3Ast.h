@@ -1545,7 +1545,7 @@ class AstNode VL_NOT_FINAL {
 private:
     AstNode* cloneTreeIter();
     AstNode* cloneTreeIterList();
-    void checkTreeIter(const AstNode* prevBackp) const VL_MT_SAFE;
+    void checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE_TREE;
     bool gateTreeIter() const;
     static bool sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext,
                              bool gateOnly);
@@ -1601,14 +1601,14 @@ public:
     // ACCESSORS
     VNType type() const VL_MT_SAFE { return m_type; }
     const char* typeName() const VL_MT_SAFE { return type().ascii(); }  // See also prettyTypeName
-    AstNode* nextp() const VL_MT_SAFE { return m_nextp; }
-    AstNode* backp() const VL_MT_SAFE { return m_backp; }
+    AstNode* nextp() const VL_MT_STABLE_TREE { return m_nextp; }
+    AstNode* backp() const VL_MT_STABLE_TREE { return m_backp; }
     AstNode* abovep() const;  // Parent node above, only when no nextp() as otherwise slow
-    AstNode* op1p() const VL_MT_SAFE { return m_op1p; }
-    AstNode* op2p() const VL_MT_SAFE { return m_op2p; }
-    AstNode* op3p() const VL_MT_SAFE { return m_op3p; }
-    AstNode* op4p() const VL_MT_SAFE { return m_op4p; }
-    AstNodeDType* dtypep() const VL_MT_SAFE { return m_dtypep; }
+    AstNode* op1p() const VL_MT_STABLE_TREE { return m_op1p; }
+    AstNode* op2p() const VL_MT_STABLE_TREE { return m_op2p; }
+    AstNode* op3p() const VL_MT_STABLE_TREE { return m_op3p; }
+    AstNode* op4p() const VL_MT_STABLE_TREE { return m_op4p; }
+    AstNodeDType* dtypep() const VL_MT_STABLE_TREE { return m_dtypep; }
     AstNode* clonep() const { return ((m_cloneCnt == s_cloneCntGbl) ? m_clonep : nullptr); }
     AstNode* firstAbovep() const {  // Returns nullptr when second or later in list
         return ((backp() && backp()->nextp() != this) ? backp() : nullptr);
@@ -1697,25 +1697,27 @@ public:
     void protect(bool flag) { m_flags.protect = flag; }
 
     // TODO stomp these width functions out, and call via dtypep() instead
-    inline int width() const VL_MT_SAFE;
+    inline int width() const VL_MT_STABLE_TREE;
     inline int widthMin() const;
     int widthMinV() const {
         return v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH ? widthMin() : width();
     }
     int widthWords() const { return VL_WORDS_I(width()); }
-    bool isQuad() const VL_MT_SAFE { return (width() > VL_IDATASIZE && width() <= VL_QUADSIZE); }
-    bool isWide() const VL_MT_SAFE { return (width() > VL_QUADSIZE); }
-    inline bool isDouble() const VL_MT_SAFE;
-    inline bool isSigned() const VL_MT_SAFE;
-    inline bool isString() const VL_MT_SAFE;
+    bool isQuad() const VL_MT_STABLE_TREE {
+        return (width() > VL_IDATASIZE && width() <= VL_QUADSIZE);
+    }
+    bool isWide() const VL_MT_STABLE_TREE { return (width() > VL_QUADSIZE); }
+    inline bool isDouble() const VL_MT_STABLE_TREE;
+    inline bool isSigned() const VL_MT_STABLE_TREE;
+    inline bool isString() const VL_MT_STABLE_TREE;
 
     // clang-format off
-    VNUser      user1u() const VL_MT_SAFE {
+    VNUser      user1u() const VL_MT_STABLE_TREE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser1InUse::s_userBusy, "userp set w/o busy");
         return ((m_user1Cnt==VNUser1InUse::s_userCntGbl) ? m_user1u : VNUser{0});
     }
-    AstNode*    user1p() const VL_MT_SAFE { return user1u().toNodep(); }
+    AstNode*    user1p() const VL_MT_STABLE_TREE { return user1u().toNodep(); }
     void        user1u(const VNUser& user) { m_user1u=user; m_user1Cnt=VNUser1InUse::s_userCntGbl; }
     void        user1p(void* userp) { user1u(VNUser{userp}); }
     int         user1() const { return user1u().toInt(); }
@@ -1724,12 +1726,12 @@ public:
     int         user1SetOnce() { int v=user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
     static void user1ClearTree() { VNUser1InUse::clear(); }  // Clear userp()'s across the entire tree
 
-    VNUser      user2u() const VL_MT_SAFE {
+    VNUser      user2u() const VL_MT_STABLE_TREE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser2InUse::s_userBusy, "userp set w/o busy");
         return ((m_user2Cnt==VNUser2InUse::s_userCntGbl) ? m_user2u : VNUser{0});
     }
-    AstNode*    user2p() const VL_MT_SAFE { return user2u().toNodep(); }
+    AstNode*    user2p() const VL_MT_STABLE_TREE { return user2u().toNodep(); }
     void        user2u(const VNUser& user) { m_user2u=user; m_user2Cnt=VNUser2InUse::s_userCntGbl; }
     void        user2p(void* userp) { user2u(VNUser{userp}); }
     int         user2() const { return user2u().toInt(); }
@@ -1738,12 +1740,12 @@ public:
     int         user2SetOnce() { int v=user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
     static void user2ClearTree() { VNUser2InUse::clear(); }  // Clear userp()'s across the entire tree
 
-    VNUser      user3u() const VL_MT_SAFE {
+    VNUser      user3u() const VL_MT_STABLE_TREE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser3InUse::s_userBusy, "userp set w/o busy");
         return ((m_user3Cnt==VNUser3InUse::s_userCntGbl) ? m_user3u : VNUser{0});
     }
-    AstNode*    user3p() const VL_MT_SAFE { return user3u().toNodep(); }
+    AstNode*    user3p() const VL_MT_STABLE_TREE { return user3u().toNodep(); }
     void        user3u(const VNUser& user) { m_user3u=user; m_user3Cnt=VNUser3InUse::s_userCntGbl; }
     void        user3p(void* userp) { user3u(VNUser{userp}); }
     int         user3() const { return user3u().toInt(); }
@@ -1752,12 +1754,12 @@ public:
     int         user3SetOnce() { int v=user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
     static void user3ClearTree() { VNUser3InUse::clear(); }  // Clear userp()'s across the entire tree
 
-    VNUser      user4u() const VL_MT_SAFE {
+    VNUser      user4u() const VL_MT_STABLE_TREE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser4InUse::s_userBusy, "userp set w/o busy");
         return ((m_user4Cnt==VNUser4InUse::s_userCntGbl) ? m_user4u : VNUser{0});
     }
-    AstNode*    user4p() const VL_MT_SAFE { return user4u().toNodep(); }
+    AstNode*    user4p() const VL_MT_STABLE_TREE { return user4u().toNodep(); }
     void        user4u(const VNUser& user) { m_user4u=user; m_user4Cnt=VNUser4InUse::s_userCntGbl; }
     void        user4p(void* userp) { user4u(VNUser{userp}); }
     int         user4() const { return user4u().toInt(); }
@@ -1766,12 +1768,12 @@ public:
     int         user4SetOnce() { int v=user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
     static void user4ClearTree() { VNUser4InUse::clear(); }  // Clear userp()'s across the entire tree
 
-    VNUser      user5u() const VL_MT_SAFE {
+    VNUser      user5u() const VL_MT_STABLE_TREE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser5InUse::s_userBusy, "userp set w/o busy");
         return ((m_user5Cnt==VNUser5InUse::s_userCntGbl) ? m_user5u : VNUser{0});
     }
-    AstNode*    user5p() const VL_MT_SAFE { return user5u().toNodep(); }
+    AstNode*    user5p() const VL_MT_STABLE_TREE { return user5u().toNodep(); }
     void        user5u(const VNUser& user) { m_user5u=user; m_user5Cnt=VNUser5InUse::s_userCntGbl; }
     void        user5p(void* userp) { user5u(VNUser{userp}); }
     int         user5() const { return user5u().toInt(); }
@@ -1907,7 +1909,7 @@ public:
     // Does tree of this == node2p?, not allowing non-isGateOptimizable
     inline bool sameGateTree(const AstNode* node2p) const;
     void deleteTree();  // Always deletes the next link
-    void checkTree() const VL_MT_SAFE {
+    void checkTree() const VL_MT_STABLE_TREE {
         if (v3Global.opt.debugCheck()) checkTreeIter(backp());
     }
     void checkIter() const;
@@ -2035,7 +2037,7 @@ public:
 
     // For use via the VN_AS macro only
     template <typename T, typename E>
-    static T* privateAs(AstNode* nodep) VL_MT_SAFE {
+    static T* privateAs(AstNode* nodep) VL_PURE {
         static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
         UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
@@ -2044,7 +2046,7 @@ public:
         return reinterpret_cast<T*>(nodep);
     }
     template <typename T, typename E>
-    static const T* privateAs(const AstNode* nodep) VL_MT_SAFE {
+    static const T* privateAs(const AstNode* nodep) VL_PURE {
         static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
         UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,

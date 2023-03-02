@@ -63,9 +63,9 @@ public:
     // Integral or packed, allowed inside an unpacked union/struct
     virtual bool isIntegralOrPacked() const { return !isCompound(); }
     // (Slow) recurse down to find basic data type
-    virtual AstBasicDType* basicp() const VL_MT_SAFE = 0;
+    virtual AstBasicDType* basicp() const VL_MT_STABLE_TREE = 0;
     // recurses over typedefs/const/enum to next non-typeref type
-    virtual AstNodeDType* skipRefp() const VL_MT_SAFE = 0;
+    virtual AstNodeDType* skipRefp() const VL_MT_STABLE_TREE = 0;
     // recurses over typedefs to next non-typeref-or-const type
     virtual AstNodeDType* skipRefToConstp() const = 0;
     // recurses over typedefs/const to next non-typeref-or-enum/struct type
@@ -126,12 +126,13 @@ public:
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I");
     }
-    string cType(const string& name, bool forFunc, bool isRef) const VL_MT_SAFE;
-    bool isLiteralType() const VL_MT_SAFE;  // Represents a C++ LiteralType? (can be constexpr)
+    string cType(const string& name, bool forFunc, bool isRef) const VL_MT_STABLE_TREE;
+    // Represents a C++ LiteralType? (can be constexpr)
+    bool isLiteralType() const VL_MT_STABLE_TREE;
 
 private:
     class CTypeRecursed;
-    CTypeRecursed cTypeRecurse(bool compound) const VL_MT_SAFE;
+    CTypeRecursed cTypeRecurse(bool compound) const VL_MT_STABLE_TREE;
 };
 class AstNodeArrayDType VL_NOT_FINAL : public AstNodeDType {
     // Array data type, ie "some_dtype var_name [2:0]"
@@ -170,29 +171,29 @@ public:
                 && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
-    AstBasicDType* basicp() const override VL_MT_SAFE {
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE {
         return subDTypep()->basicp();
     }  // (Slow) recurse down to find basic data type
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     int widthTotalBytes() const override {
         return elementsConst() * subDTypep()->widthTotalBytes();
     }
-    inline int left() const VL_MT_SAFE;
-    inline int right() const VL_MT_SAFE;
-    inline int hi() const VL_MT_SAFE;
-    inline int lo() const VL_MT_SAFE;
-    inline int elementsConst() const VL_MT_SAFE;
-    inline VNumRange declRange() const VL_MT_SAFE;
+    inline int left() const VL_MT_STABLE_TREE;
+    inline int right() const VL_MT_STABLE_TREE;
+    inline int hi() const VL_MT_STABLE_TREE;
+    inline int lo() const VL_MT_STABLE_TREE;
+    inline int elementsConst() const VL_MT_STABLE_TREE;
+    inline VNumRange declRange() const VL_MT_STABLE_TREE;
 };
 class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     // A struct or union; common handling
@@ -224,14 +225,14 @@ public:
     void dump(std::ostream& str) const override;
     bool isCompound() const override { return !packed(); }
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
-    AstBasicDType* basicp() const override VL_MT_SAFE {
+    AstBasicDType* basicp() const override {
         return (isFourstate()
                     ? VN_AS(findLogicRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
                             BasicDType)
                     : VN_AS(findBitRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
                             BasicDType));
     }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
@@ -336,7 +337,7 @@ public:
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* getChild2DTypep() const override { return keyChildDTypep(); }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
@@ -345,13 +346,13 @@ public:
     AstNodeDType* virtRefDType2p() const override { return m_keyDTypep; }
     void virtRefDType2p(AstNodeDType* nodep) override { keyDTypep(nodep); }
     //
-    AstNodeDType* keyDTypep() const VL_MT_SAFE {
+    AstNodeDType* keyDTypep() const VL_MT_STABLE_TREE {
         return m_keyDTypep ? m_keyDTypep : keyChildDTypep();
     }
     void keyDTypep(AstNodeDType* nodep) { m_keyDTypep = nodep; }
     // METHODS
-    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
@@ -423,8 +424,8 @@ public:
         }
     }
     // METHODS
-    AstBasicDType* basicp() const override VL_MT_SAFE { return (AstBasicDType*)this; }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return (AstBasicDType*)this; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
@@ -491,13 +492,13 @@ public:
     }
     ASTGEN_MEMBERS_AstBracketArrayDType;
     bool similarDType(const AstNodeDType* samep) const override { V3ERROR_NA_RETURN(false); }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE { return childDTypep(); }
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE { return childDTypep(); }
     // METHODS
     // Will be removed in V3Width, which relies on this
     // being a child not a dtype pointed node
     bool maybePointedTo() const override { return false; }
-    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { V3ERROR_NA_RETURN(0); }
@@ -531,8 +532,8 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     string name() const override;
-    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return 0; }
@@ -578,15 +579,15 @@ public:
         return skipRefp()->similarDType(samep->skipRefp());
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
-    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return subDTypep()->skipRefp(); }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return subDTypep()->skipRefp(); }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return subDTypep()->skipRefToEnump(); }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
@@ -627,15 +628,15 @@ public:
         return type() == samep->type() && same(samep);
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE {
         return dtypep() ? dtypep() : childDTypep();
     }
     void* containerp() const { return m_containerp; }
     // METHODS
     // op1 = Range of variable
     AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }
-    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return dtypep()->widthAlignBytes(); }
@@ -683,15 +684,15 @@ public:
     string prettyDTypeName() const override;
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
-    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
@@ -714,9 +715,9 @@ public:
     AstNodeDType* virtRefDTypep() const override { return nullptr; }
     void virtRefDTypep(AstNodeDType* nodep) override {}
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
-    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return nullptr; }
     // cppcheck-suppress csyleCast
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
@@ -760,7 +761,7 @@ public:
     }
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
@@ -771,8 +772,8 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     // METHODS
-    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return subDTypep()->skipRefp(); }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return subDTypep()->skipRefp(); }
     AstNodeDType* skipRefToConstp() const override { return subDTypep()->skipRefToConstp(); }
     // cppcheck-suppress csyleCast
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
@@ -824,8 +825,8 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     void cloneRelink() override;
-    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
@@ -889,7 +890,7 @@ public:
         if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
@@ -899,10 +900,10 @@ public:
     //
     // (Slow) recurse down to find basic data type (Note don't need virtual -
     // AstVar isn't a NodeDType)
-    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return subDTypep()->basicp(); }
     // op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
     AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return subDTypep()->skipRefp(); }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return subDTypep()->skipRefp(); }
     AstNodeDType* skipRefToConstp() const override { return subDTypep()->skipRefToConstp(); }
     AstNodeDType* skipRefToEnump() const override { return subDTypep()->skipRefToEnump(); }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
@@ -939,11 +940,11 @@ public:
     ASTGEN_MEMBERS_AstParamTypeDType;
     void dump(std::ostream& str = std::cout) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE {
         return dtypep() ? dtypep() : childDTypep();
     }
-    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return subDTypep()->skipRefp(); }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return subDTypep()->skipRefp(); }
     AstNodeDType* skipRefToConstp() const override { return subDTypep()->skipRefToConstp(); }
     AstNodeDType* skipRefToEnump() const override { return subDTypep()->skipRefToEnump(); }
     bool similarDType(const AstNodeDType* samep) const override {
@@ -977,8 +978,8 @@ public:
     AstNodeDType* dtypep() const { return nullptr; }
     // METHODS
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
-    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return nullptr; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return nullptr; }
     // cppcheck-suppress csyleCast
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
@@ -1032,17 +1033,17 @@ public:
     void dumpSmall(std::ostream& str) const override;
     string prettyDTypeName() const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
-    inline int boundConst() const VL_MT_SAFE;
+    inline int boundConst() const VL_MT_STABLE_TREE;
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
-    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return nullptr; }
     // cppcheck-suppress csyleCast
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
@@ -1096,11 +1097,11 @@ public:
     string prettyDTypeName() const override {
         return subDTypep() ? prettyName(subDTypep()->name()) : prettyName();
     }
-    AstBasicDType* basicp() const override VL_MT_SAFE {
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE {
         return subDTypep() ? subDTypep()->basicp() : nullptr;
     }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE;
-    AstNodeDType* skipRefp() const override VL_MT_SAFE {
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE;
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE {
         // Skip past both the Ref and the Typedef
         if (subDTypep()) {
             return subDTypep()->skipRefp();
@@ -1173,15 +1174,15 @@ public:
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     // op1 = Range of variable
-    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
-    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return sizeof(std::map<std::string, std::string>); }
@@ -1213,15 +1214,15 @@ public:
     bool similarDType(const AstNodeDType* samep) const override;
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
-    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
@@ -1244,9 +1245,9 @@ public:
     AstNodeDType* virtRefDTypep() const override { return nullptr; }
     void virtRefDTypep(AstNodeDType* nodep) override {}
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
-    AstBasicDType* basicp() const override VL_MT_SAFE { return nullptr; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return nullptr; }
     // cppcheck-suppress csyleCast
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
@@ -1280,15 +1281,15 @@ public:
     bool similarDType(const AstNodeDType* samep) const override;
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE {
+    AstNodeDType* subDTypep() const override VL_MT_STABLE_TREE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
-    AstBasicDType* basicp() const override VL_MT_SAFE { return subDTypep()->basicp(); }
-    AstNodeDType* skipRefp() const override VL_MT_SAFE { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_STABLE_TREE { return subDTypep()->basicp(); }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE_TREE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return sizeof(std::map<std::string, std::string>); }

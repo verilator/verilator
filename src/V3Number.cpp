@@ -604,11 +604,11 @@ string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& i
     return left ? (in + padding) : (padding + in);
 }
 
-string V3Number::displayed(AstNode* nodep, const string& vformat) const {
+string V3Number::displayed(AstNode* nodep, const string& vformat) const VL_MT_SAFE {
     return displayed(nodep->fileline(), vformat);
 }
 
-string V3Number::displayed(FileLine* fl, const string& vformat) const {
+string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_SAFE {
     auto pos = vformat.cbegin();
     UASSERT(pos != vformat.cend() && pos[0] == '%',
             "$display-like function with non format argument " << *this);
@@ -913,7 +913,7 @@ uint32_t V3Number::toUInt() const VL_MT_SAFE {
     return m_data.num()[0].m_value;
 }
 
-double V3Number::toDouble() const {
+double V3Number::toDouble() const VL_MT_SAFE {
     if (VL_UNCOVERABLE(!isDouble() || width() != 64)) {
         v3fatalSrc("Real operation on wrong sized/non-real number");
     }
@@ -996,14 +996,14 @@ uint8_t V3Number::dataByte(int byte) const {
     return (edataWord(byte / (VL_EDATASIZE / 8)) >> ((byte * 8) % VL_EDATASIZE)) & 0xff;
 }
 
-bool V3Number::isAllZ() const {
+bool V3Number::isAllZ() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
     for (int i = 0; i < width(); i++) {
         if (!bitIsZ(i)) return false;
     }
     return true;
 }
-bool V3Number::isAllX() const {
+bool V3Number::isAllX() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
     uint32_t mask = hiWordMask();
     for (int i = words() - 1; i >= 0; --i) {
@@ -1057,7 +1057,7 @@ bool V3Number::isFourState() const {
     }
     return false;
 }
-bool V3Number::isAnyX() const {
+bool V3Number::isAnyX() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
     for (int bit = 0; bit < width(); bit++) {
         if (bitIsX(bit)) return true;
@@ -1065,7 +1065,7 @@ bool V3Number::isAnyX() const {
     return false;
 }
 bool V3Number::isAnyXZ() const { return isAnyX() || isAnyZ(); }
-bool V3Number::isAnyZ() const {
+bool V3Number::isAnyZ() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
     for (int bit = 0; bit < width(); bit++) {
         if (bitIsZ(bit)) return true;
@@ -1082,7 +1082,7 @@ bool V3Number::isLtXZ(const V3Number& rhs) const {
     }
     return false;
 }
-int V3Number::countX(int lsb, int nbits) const {
+int V3Number::countX(int lsb, int nbits) const VL_MT_SAFE {
     int count = 0;
     for (int bitn = 0; bitn < nbits; ++bitn) {
         if (lsb + bitn >= width()) return count;
@@ -1090,7 +1090,7 @@ int V3Number::countX(int lsb, int nbits) const {
     }
     return count;
 }
-int V3Number::countZ(int lsb, int nbits) const {
+int V3Number::countZ(int lsb, int nbits) const VL_MT_SAFE {
     int count = 0;
     for (int bitn = 0; bitn < nbits; ++bitn) {
         if (lsb + bitn >= width()) return count;

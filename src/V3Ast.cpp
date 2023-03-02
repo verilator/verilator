@@ -1079,7 +1079,7 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 //======================================================================
 // Debugging
 
-void AstNode::checkTreeIter(const AstNode* prevBackp) const {
+void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE_TREE {
     // private: Check a tree and children
     UASSERT_OBJ(prevBackp == this->backp(), this, "Back node inconsistent");
     switch (this->type()) {

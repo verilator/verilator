@@ -35,7 +35,7 @@
 
 class V3File final {
 public:
-    static std::ifstream* new_ifstream(const string& filename) VL_MT_SAFE {
+    static std::ifstream* new_ifstream(const string& filename) {
         addSrcDepend(filename);
         return new_ifstream_nodepend(filename);
     }
@@ -61,8 +61,8 @@ public:
     }
 
     // Dependencies
-    static void addSrcDepend(const string& filename) VL_MT_SAFE;
-    static void addTgtDepend(const string& filename) VL_MT_SAFE;
+    static void addSrcDepend(const string& filename);
+    static void addTgtDepend(const string& filename);
     static void writeDepend(const string& filename);
     static std::vector<string> getAllDeps();
     static void writeTimes(const string& filename, const string& cmdlineIn);

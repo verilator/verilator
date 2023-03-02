@@ -644,7 +644,9 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    AstNodeDType* subDTypep() const VL_MT_STABLE_TREE {
+        return dtypep() ? dtypep() : childDTypep();
+    }
 };
 class AstCastParse final : public AstNodeExpr {
     // Cast to appropriate type, where we haven't determined yet what the data type is
@@ -1574,7 +1576,9 @@ public:
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    AstNodeDType* subDTypep() const VL_MT_STABLE_TREE {
+        return dtypep() ? dtypep() : childDTypep();
+    }
 };
 class AstRand final : public AstNodeExpr {
     // $random/$random(seed) or $urandom/$urandom(seed)
@@ -1972,7 +1976,9 @@ public:
     bool same(const AstNode* /*samep*/) const override { return true; }
     bool cleanOut() const override { return true; }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    AstNodeDType* subDTypep() const VL_MT_STABLE_TREE {
+        return dtypep() ? dtypep() : childDTypep();
+    }
 };
 class AstTimePrecision final : public AstNodeExpr {
     // Verilog $timeprecision
