@@ -1130,6 +1130,8 @@ class AstNetlist final : public AstNode {
     // @astgen op3 := miscsp : List[AstNode]
 
     AstTypeTable* const m_typeTablep;  // Reference to top type table, for faster lookup
+    using AstTableMap = std::map<std::pair<const AstNodeDType*, VAttrType>, AstVar*>;
+    AstTableMap* const m_tableMapp;
     AstConstPool* const m_constPoolp;  // Reference to constant pool, for faster lookup
     AstPackage* m_dollarUnitPkgp = nullptr;  // $unit
     AstPackage* m_stdPackagep = nullptr;  // SystemVerilog std package
@@ -1155,6 +1157,7 @@ public:
         return modulesp();  // First one in the list, for now
     }
     AstTypeTable* typeTablep() { return m_typeTablep; }
+    AstTableMap* tableMapp() {return m_tableMapp;}
     AstConstPool* constPoolp() { return m_constPoolp; }
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     AstPackage* dollarUnitPkgAddp();

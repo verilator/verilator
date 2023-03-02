@@ -328,7 +328,8 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
 AstNetlist::AstNetlist()
     : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
     , m_typeTablep{new AstTypeTable{fileline()}}
-    , m_constPoolp{new AstConstPool{fileline()}} {
+    , m_constPoolp{new AstConstPool{fileline()}}
+    , m_tableMapp{new AstTableMap{}} {
     addMiscsp(m_typeTablep);
     addMiscsp(m_constPoolp);
 }

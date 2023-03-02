@@ -218,7 +218,6 @@ public:
 class WidthVisitor final : public VNVisitor {
 private:
     // TYPES
-    using TableMap = std::map<std::pair<const AstNodeDType*, VAttrType>, AstVar*>;
     using PatVecMap = std::map<int, AstPatMember*>;
     using DTypeMap = std::map<const std::string, AstPatMember*>;
 
@@ -236,7 +235,7 @@ private:
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables = 0;  // Number of created data type tables
-    TableMap m_tableMap;  // Created tables so can remove duplicates
+
     std::map<const AstNodeDType*, AstQueueDType*>
         m_queueDTypeIndexed;  // Queues with given index type
 
@@ -7036,8 +7035,8 @@ private:
     }
     AstVar* dimensionVarp(AstNodeDType* nodep, VAttrType attrType, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
-        const auto pos = m_tableMap.find(std::make_pair(nodep, attrType));
-        if (pos != m_tableMap.end()) return pos->second;
+        const auto pos = v3Global.rootp()->tableMapp()->find(std::make_pair(nodep, attrType));
+        if (pos != v3Global.rootp()->tableMapp()->end()) return pos->second;
         AstNodeArrayDType* const vardtypep
             = new AstUnpackArrayDType{nodep->fileline(), nodep->findSigned32DType(),
                                       new AstRange(nodep->fileline(), msbdim, 0)};
@@ -7058,7 +7057,7 @@ private:
             initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, i));
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.emplace(std::make_pair(nodep, attrType), varp);
+        v3Global.rootp()->tableMapp()->emplace(std::make_pair(nodep, attrType), varp);
         return varp;
     }
     uint64_t enumMaxValue(const AstNode* errNodep, const AstEnumDType* adtypep) {
@@ -7083,8 +7082,8 @@ private:
     }
     AstVar* enumVarp(AstEnumDType* nodep, VAttrType attrType, bool assoc, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
-        const auto pos = m_tableMap.find(std::make_pair(nodep, attrType));
-        if (pos != m_tableMap.end()) return pos->second;
+        const auto pos = v3Global.rootp()->tableMapp()->find(std::make_pair(nodep, attrType));
+        if (pos != v3Global.rootp()->tableMapp()->end()) return pos->second;
         UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " assoc=" << assoc
                                             << " max=" << msbdim << " for " << nodep << endl);
         AstNodeDType* basep;
@@ -7165,7 +7164,7 @@ private:
             }
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.emplace(std::make_pair(nodep, attrType), varp);
+        v3Global.rootp()->tableMapp()->emplace(std::make_pair(nodep, attrType), varp);
         return varp;
     }
 
