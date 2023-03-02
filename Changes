@@ -18,6 +18,8 @@ Verilator 5.007 devel
 * Add WIDTHEXPAND and WIDTHTRUNC warnings to replace WIDTH (#3900). [Andrew Nolte]
 * Add SOURCE_DATE_EPOCH for docs/guide/conf.py (#3918). [Larry Doolittle]
 * Add /*verilator public[flat|flat_rd|flat_rw| ]*/ metacomments (#3894). [Joseph Nwabueze]
+* Add lint warning on always_comb multidriven (#3888) (#3939). [Adam Bagley]
+* Add warning on ++/-- over expressions with potential side effects (#3976). [Krzysztof Boroński]
 * Add error on mixing .name and by-port instantiations.
 * Support unpacked unions.
 * Support interface classes and class implements.
@@ -29,6 +31,7 @@ Verilator 5.007 devel
 * Support class extending its parameter (#3904). [Ryszard Rozak, Antmicro Ltd]
 * Support static function variables (#3830). [Ryszard Rozak, Antmicro Ltd]
 * Support vpiDefName (#3906) (#3931). [Andrew Nolte]
+* Support recursive methods (#3987). [Ryszard Rozak, Antmicro Ltd]
 * Removed deprecated --cdc option.
 * Fix real parameters of infinity and NaN.
 * Fix pattern assignment to unpacked structs (#3510). [Mostafa Garnal]
@@ -50,7 +53,14 @@ Verilator 5.007 devel
 * Fix class field linking when a super classes is a param (#3949). [Ryszard Rozak, Antmicro Ltd]
 * Fix CMake bad C identifiers (#3948) (#3951). [Zixi Li]
 * Fix build on HP PA architecture (#3954). [John David Anglin]
+* Fix date on the front page of verilator.pdf (#3956) (#3957). [Larry Doolittle]
+* Fix dicts declared with ref type (#3960). [Ryszard Rozak, Antmicro Ltd]
 * Fix missing error on negative replicate (#3963). [Benjamin Menküc]
+* Fix self references to parameterized classes (#3962). [Ryszard Rozak, Antmicro Ltd]
+* Fix LITENDIAN warning is backwards (#3966) (#3967). [Cameron Kirk]
+* Fix subsequent parameter declarations (#3969). [Ryszard Rozak, Antmicro Ltd]
+* Fix timing delays to not truncate below 64 bits (#3973) (#3982). [Felix Neumärker]
+* Fix cmake on macOS to mark weak symbols with -U linker flag (#3978) (#3979). [Peter Debacker]
 * Fix packed array structure replication.
 * Fix enum.next(0) and enum.prev(0).
 
