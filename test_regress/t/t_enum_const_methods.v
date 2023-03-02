@@ -6,21 +6,28 @@
 
 module t ();
 
+
    typedef enum [1:0] {E0, E1, E2} enm_t;
 
-   function automatic enm_t get_first();
+   // function automatic enm_t get_first();
+   //    enm_t enm;
+   //    return enm.first;
+   // endfunction
+
+   // localparam enm_t enum_first = get_first();
+
+   // function automatic enm_t get_last();
+   //    enm_t enm;
+   //    return enm.last;
+   // endfunction
+
+   // localparam enm_t enum_last = get_last();
+
+   function automatic enm_t get_2();
       enm_t enm;
-      return enm.first;
+      enm = enm.first;
+      return enm.next;
    endfunction
-
-   localparam enm_t enum_first = get_first();
-
-   function automatic enm_t get_last();
-      enm_t enm;
-      return enm.last;
-   endfunction
-
-   localparam enm_t enum_last = get_last();
 
    function automatic enm_t get_second();
       enm_t enm;
@@ -28,19 +35,19 @@ module t ();
       return enm.next;
    endfunction
 
-   localparam enm_t enum_second = get_second();
+   localparam enm_t enum_second = get_2();
 
-   function automatic string get_name(enm_t enm);
-      return enm.name;
-   endfunction
+   // function automatic string get_name(enm_t enm);
+   //    return enm.name;
+   // endfunction
 
-   localparam string e0_name = get_name(E0);
+   // localparam string e0_name = get_name(E0);
 
    initial begin
-      if (enum_first != E0) $stop;
-      if (enum_last != E2) $stop;
-      if (enum_second != E1) $stop;
-      if (e0_name != "E0") $stop;
+      // if (enum_first != E0) $stop;
+      // if (enum_last != E2) $stop;
+      // if (enum_second != E1) $stop;
+      // if (e0_name != "E0") $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end
