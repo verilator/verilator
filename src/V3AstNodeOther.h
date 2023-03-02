@@ -1233,7 +1233,8 @@ private:
     AstVar* m_modVarp = nullptr;  // Input/output this pin connects to on submodule.
     AstParamTypeDType* m_modPTypep = nullptr;  // Param type this pin connects to on submodule.
     bool m_param = false;  // Pin connects to parameter
-    bool m_svImplicit = false;  // Pin is SystemVerilog .name'ed
+    bool m_svDotName = false;  // Pin is SystemVerilog .name'ed
+    bool m_svImplicit = false;  // Pin is SystemVerilog .name'ed, allow implicit
 public:
     AstPin(FileLine* fl, int pinNum, const string& name, AstNode* exprp)
         : ASTGEN_SUPER_Pin(fl)
@@ -1257,6 +1258,8 @@ public:
     void modPTypep(AstParamTypeDType* nodep) { m_modPTypep = nodep; }
     bool param() const { return m_param; }
     void param(bool flag) { m_param = flag; }
+    bool svDotName() const { return m_svDotName; }
+    void svDotName(bool flag) { m_svDotName = flag; }
     bool svImplicit() const { return m_svImplicit; }
     void svImplicit(bool flag) { m_svImplicit = flag; }
 };

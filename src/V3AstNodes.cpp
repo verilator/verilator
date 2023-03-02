@@ -1724,6 +1724,7 @@ void AstPin::dump(std::ostream& str) const {
     } else {
         str << " ->UNLINKED";
     }
+    if (svDotName()) str << " [.n]";
     if (svImplicit()) str << " [.SV]";
 }
 const char* AstPin::broken() const {

@@ -352,8 +352,10 @@ private:
         }
         // Convert .* to list of pins
         bool pinStar = false;
+        bool pinDotName = false;
         for (AstPin *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
             nextp = VN_AS(pinp->nextp(), Pin);
+            if (pinp->svDotName()) pinDotName = true;
             if (pinp->dotStar()) {
                 if (pinStar) pinp->v3error("Duplicate .* in an instance (IEEE 1800-2017 23.3.2)");
                 pinStar = true;
@@ -374,8 +376,8 @@ private:
             // Note what pins exist
             std::unordered_set<string> ports;  // Symbol table of all connected port names
             for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-                if (pinStar && pinp->name().substr(0, 11) == "__pinNumber") {
-                    pinp->v3error("Connect by position is illegal in .* connected instances"
+                if ((pinStar || pinDotName) && pinp->name().substr(0, 11) == "__pinNumber") {
+                    pinp->v3error("Mixing positional and .*/named instantiation connection"
                                   " (IEEE 1800-2017 23.3.2)");
                 }
                 if (!pinp->exprp()) {
@@ -404,6 +406,7 @@ private:
                                 nodep->fileline(), 0, portp->name(),
                                 new AstParseRef{nodep->fileline(), VParseRefExp::PX_TEXT,
                                                 portp->name(), nullptr, nullptr}};
+                            newp->svDotName(true);
                             newp->svImplicit(true);
                             nodep->addPinsp(newp);
                         } else {  // warn on the CELL that needs it, not the port

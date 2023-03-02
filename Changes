@@ -18,6 +18,7 @@ Verilator 5.007 devel
 * Add WIDTHEXPAND and WIDTHTRUNC warnings to replace WIDTH (#3900). [Andrew Nolte]
 * Add SOURCE_DATE_EPOCH for docs/guide/conf.py (#3918). [Larry Doolittle]
 * Add /*verilator public[flat|flat_rd|flat_rw| ]*/ metacomments (#3894). [Joseph Nwabueze]
+* Add error on mixing .name and by-port instantiations.
 * Support unpacked unions.
 * Support interface classes and class implements.
 * Support global clocking and $global_clock.

@@ -3194,18 +3194,22 @@ cellparamItemE<pinp>:           // IEEE: named_parameter_assignment + empty
         //                      // Note empty can match either () or (,); V3LinkCells cleans up ()
                 /* empty: ',,' is legal */              { $$ = new AstPin{CRELINE(), PINNUMINC(), "", nullptr}; }
         |       yP_DOTSTAR                              { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
-        |       '.' idAny '(' ')'                       { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, nullptr}; }
+        |       '.' idAny '(' ')'
+                        { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, nullptr};
+                          $$->svDotName(true); }
         |       '.' idSVKwd
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2,
                                           new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}};
-                          $$->svImplicit(true); }
+                          $$->svDotName(true); $$->svImplicit(true); }
         |       '.' idAny
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2,
                                           new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}};
-                          $$->svImplicit(true); }
+                          $$->svDotName(true); $$->svImplicit(true); }
         //                      // mintypmax is expanded here, as it might be a UDP or gate primitive
         //                      // data_type for 'parameter type' hookups
-        |       '.' idAny '(' exprOrDataType ')'        { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, $4}; }
+        |       '.' idAny '(' exprOrDataType ')'
+                        { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, $4};
+                          $$->svDotName(true); }
         //UNSUP '.' idAny '(' exprOrDataType/*expr*/ ':' expr ')'               { }
         //UNSUP '.' idAny '(' exprOrDataType/*expr*/ ':' expr ':' expr ')'      { }
         //                      // data_type for 'parameter type' hookups
@@ -3218,18 +3222,22 @@ cellpinItemE<pinp>:             // IEEE: named_port_connection + empty
         //                      // Note empty can match either () or (,); V3LinkCells cleans up ()
                 /* empty: ',,' is legal */              { $$ = new AstPin{CRELINE(), PINNUMINC(), "", nullptr}; }
         |       yP_DOTSTAR                              { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
-        |       '.' idAny '(' ')'                       { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, nullptr}; }
+        |       '.' idAny '(' ')'
+                        { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, nullptr};
+                          $$->svDotName(true); }
         |       '.' idSVKwd
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2,
                                           new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}};
-                          $$->svImplicit(true);}
+                          $$->svDotName(true); $$->svImplicit(true); }
         |       '.' idAny
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2,
                                           new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}};
-                          $$->svImplicit(true);}
+                          $$->svDotName(true); $$->svImplicit(true); }
         //                      // mintypmax is expanded here, as it might be a UDP or gate primitive
         //UNSUP               pev_expr below
-        |       '.' idAny '(' expr ')'                  { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, $4}; }
+        |       '.' idAny '(' expr ')'
+                        { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, $4};
+                          $$->svDotName(true); }
         //UNSUP '.' idAny '(' pev_expr ':' expr ')'     { }
         //UNSUP '.' idAny '(' pev_expr ':' expr ':' expr ')' { }
         //
