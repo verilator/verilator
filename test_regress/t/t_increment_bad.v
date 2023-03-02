@@ -25,8 +25,6 @@ module t (/*AUTOARG*/
       if (0 -> ++b);
 
       pos = (a > 0) ? a++ : --b;
-
-      pos = array[0][0]++;
    end
 
    assert property (@(posedge clk) a++ >= 0);

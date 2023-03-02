@@ -78,7 +78,7 @@ public:
 
 class LatchDetectGraph final : public V3Graph {
 protected:
-    LatchDetectGraphVertex* m_curVertexp = nullptr;  // Current latch detection graph vertex
+    LatchDetectGraphVertex* m_curVertexp = nullptr;  // Current la tch detection graph vertex
     std::vector<AstVarRef*> m_outputs;  // Vector of lvalues encountered on this pass
 
     static LatchDetectGraphVertex* castVertexp(void* vertexp) {

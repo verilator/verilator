@@ -43,6 +43,7 @@
 
 #include "V3Ast.h"
 #include "V3Global.h"
+#include "V3Width.h"
 
 #include <algorithm>
 
@@ -240,8 +241,12 @@ private:
             return;
         }
 
-        const AstNodeVarRef* varrefp = nullptr;
-        if (m_unsupportedHere || !(varrefp = VN_CAST(nodep->rhsp(), VarRef))) {
+        AstNodeExpr* exprefp = nodep->rhsp();
+        AstNodeExpr* storeTop = nodep->thsp();
+
+        exprefp = VN_AS(V3Width::widthParamsEdit(exprefp), NodeExpr);
+
+        if (m_unsupportedHere || !exprefp->hasDType()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Incrementation in this context.");
             return;
         }
@@ -249,14 +254,18 @@ private:
         AstConst* const constp = VN_AS(nodep->lhsp(), Const);
         UASSERT_OBJ(nodep, constp, "Expecting CONST");
         const AstNode* const backp = nodep->backp();
-        AstConst* const newconstp = constp->cloneTree(true);
+        AstConst* const newconstp = constp->cloneTree(false);
 
         // Prepare a temporary variable
         FileLine* const fl = backp->fileline();
         const string name = string("__Vincrement") + cvtToStr(++m_modIncrementsNum);
-        AstVar* const varp = new AstVar{fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
-                                        varrefp->varp()->subDTypep()->cloneTree(true)};
+
+        auto reftp = new AstRefDType(fl, AstRefDType::FlagTypeOfExpr{}, exprefp->cloneTree(false));
+        AstVar* const varp = new AstVar{fl, VVarType::STMTTEMP, name, VFlagChildDType{}, reftp};
         if (m_ftaskp) varp->funcLocal(true);
+
+        exprefp = exprefp->unlinkFrBack();
+        storeTop = storeTop->unlinkFrBack();
 
         // Declare the variable
         insertBeforeStmt(nodep, varp);
@@ -264,30 +273,28 @@ private:
         // Define what operation will we be doing
         AstNodeExpr* operp;
         if (VN_IS(nodep, PostSub) || VN_IS(nodep, PreSub)) {
-            operp = new AstSub{fl, new AstVarRef{fl, varrefp->varp(), VAccess::READ}, newconstp};
+            operp = new AstSub{fl, exprefp->cloneTree(true), newconstp};
         } else {
-            operp = new AstAdd{fl, new AstVarRef{fl, varrefp->varp(), VAccess::READ}, newconstp};
+            operp = new AstAdd{fl, exprefp->cloneTree(true), newconstp};
         }
 
         if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PreSub)) {
             // PreAdd/PreSub operations
-            // Immediately after declaration - increment it by one
-            varp->addNextHere(new AstAssign{fl, new AstVarRef{fl, varrefp->varp(), VAccess::WRITE},
-                                            new AstVarRef{fl, varp, VAccess::READ}});
-            // Immediately after incrementing - assign it to the original variable
+            // 2. After incrementing, assign it to the original variable
+            varp->addNextHere(new AstAssign{fl, storeTop, new AstVarRef{fl, varp, VAccess::READ}});
+            // 1. Increment temp var by one
             varp->addNextHere(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, operp});
         } else {
             // PostAdd/PostSub operations
-            // assign the original variable to the temporary one
-            varp->addNextHere(
-                new AstAssign{fl, new AstVarRef{fl, varrefp->varp(), VAccess::WRITE}, operp});
-            // Increment the original variable by one
+            // 2. Increment the original variable by one
+            varp->addNextHere(new AstAssign{fl, storeTop, operp});
+            // 1. Set the temporary variable to original variable's value
             varp->addNextHere(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
-                                            new AstVarRef{fl, varrefp->varp(), VAccess::READ}});
+                                            exprefp->cloneTree(true)});
         }
 
         // Replace the node with the temporary
-        nodep->replaceWith(new AstVarRef{varrefp->fileline(), varp, VAccess::READ});
+        nodep->replaceWith(new AstVarRef{exprefp->fileline(), varp, VAccess::READ});
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }

@@ -17,10 +17,7 @@
 %Error-UNSUPPORTED: t/t_increment_bad.v:27:29: Unsupported: Incrementation in this context.
    27 |       pos = (a > 0) ? a++ : --b;
       |                             ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:29:24: Unsupported: Incrementation in this context.
-   29 |       pos = array[0][0]++;
-      |                        ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:32:37: Unsupported: Incrementation in this context.
-   32 |    assert property (@(posedge clk) a++ >= 0);
+%Error-UNSUPPORTED: t/t_increment_bad.v:30:37: Unsupported: Incrementation in this context.
+   30 |    assert property (@(posedge clk) a++ >= 0);
       |                                     ^~
 %Error: Exiting due to
