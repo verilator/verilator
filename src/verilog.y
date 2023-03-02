@@ -6608,7 +6608,7 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
                           $1->addExtendsp($4);
                           $1->addMembersp($7);
                           SYMP->popScope($$);
-                          GRAMMARP->endLabel($<fl>7, $1, $9); }
+                          GRAMMARP->endLabel($<fl>9, $1, $9); }
         ;
 
 classFront<classp>:             // IEEE: part of class_declaration
