@@ -61,6 +61,7 @@ Verilator 5.007 devel
 * Fix subsequent parameter declarations (#3969). [Ryszard Rozak, Antmicro Ltd]
 * Fix timing delays to not truncate below 64 bits (#3973) (#3982). [Felix Neumärker]
 * Fix cmake on macOS to mark weak symbols with -U linker flag (#3978) (#3979). [Peter Debacker]
+* Fix UNDRIVEN warning seg fault (#3989). [Felix Neumärker]
 * Fix packed array structure replication.
 * Fix enum.next(0) and enum.prev(0).
 
