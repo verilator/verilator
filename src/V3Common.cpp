@@ -79,7 +79,7 @@ static void makeVlToString(AstNodeUOrStructDType* nodep) {
         } else {
             stmt += ", ";
         }
-        stmt += itemp->nameProtect() + ":\" + ";
+        stmt += VIdProtect::protect(itemp->prettyName()) + ":\" + ";
         if (VN_IS(itemp->dtypep()->skipRefp(), BasicDType) && itemp->isWide()) {
             stmt += "VL_TO_STRING_W";
         } else {

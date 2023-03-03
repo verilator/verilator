@@ -1392,6 +1392,7 @@ public:
     const char* broken() const override;
     void dump(std::ostream& str) const override;
     string name() const override { return m_name; }
+    void name(const string& name) override { m_name = name; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }
@@ -1850,6 +1851,7 @@ public:
     }
     ASTGEN_MEMBERS_AstStructSel;
     string name() const override { return m_name; }
+    void name(const string& name) override { m_name = name; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }
