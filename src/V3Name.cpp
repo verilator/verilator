@@ -107,12 +107,6 @@ private:
             iterateChildren(nodep);
         }
     }
-    void visit(AstMemberSel* nodep) override {
-        if (!nodep->user1()) {
-            rename(nodep, false);
-            iterateChildren(nodep);
-        }
-    }
     void visit(AstScope* nodep) override {
         if (!nodep->user1SetOnce()) {
             if (nodep->aboveScopep()) iterate(nodep->aboveScopep());
