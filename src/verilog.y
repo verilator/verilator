@@ -358,7 +358,7 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 // Apply a strength to a list of nodes under beginp
 #define STRENGTH_LIST(beginp, strengthSpecNodep, typeToCast) \
     { \
-        if (AstStrengthSpec* specp = VN_CAST(strengthSpecNodep, StrengthSpec)) { \
+        if (AstStrengthSpec* const specp = VN_CAST(strengthSpecNodep, StrengthSpec)) { \
             for (auto* nodep = beginp; nodep; nodep = nodep->nextp()) { \
                 auto* const assignp = VN_AS(nodep, typeToCast); \
                 assignp->strengthSpecp(nodep == beginp ? specp : specp->cloneTree(false)); \
@@ -643,7 +643,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yINSIDE         "inside"
 %token<fl>              yINT            "int"
 %token<fl>              yINTEGER        "integer"
-//UNSUP %token<fl>      yINTERCONNECT   "interconnect"
+%token<fl>              yINTERCONNECT   "interconnect"
 %token<fl>              yINTERFACE      "interface"
 //UNSUP %token<fl>      yINTERSECT      "intersect"
 %token<fl>              yJOIN           "join"
@@ -1507,6 +1507,14 @@ port<nodep>:                    // ==IEEE: port
         |       portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig rangeListE sigAttrListE
                         { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: generic interfaces"); }
         //
+        |       portDirNetE yINTERCONNECT signingE rangeListE portSig variable_dimensionListE sigAttrListE
+                        { $$ = $5;
+                          BBUNSUP($<fl>2, "Unsupported: interconnect");
+                          AstNodeDType* const dtp = GRAMMARP->addRange(
+                                    new AstBasicDType{$2, LOGIC_IMPLICIT, $3}, $4, true);
+                          VARDTYPE(dtp);
+                          addNextNull($$, VARDONEP($$, $6, $7)); }
+        //
         //                      // IEEE: ansi_port_declaration, with [port_direction] removed
         //                      //   IEEE: [ net_port_header | interface_port_header ]
         //                      //         port_identifier { unpacked_dimension } [ '=' constant_expression ]
@@ -1905,7 +1913,12 @@ net_declarationFront:           // IEEE: beginning of net_declaration
                         { VARDTYPE_NDECL($5);
                           GRAMMARP->setNetStrength(VN_CAST($3, StrengthSpec));
                         }
-        //UNSUP net_declRESET yINTERCONNECT signingE rangeListE { VARNET($2); VARDTYPE(x); }
+        |       net_declRESET yINTERCONNECT signingE rangeListE
+                        { BBUNSUP($<fl>2, "Unsupported: interconnect");
+                          VARDECL(WIRE);
+                          AstNodeDType* const dtp = GRAMMARP->addRange(
+                                    new AstBasicDType{$2, LOGIC_IMPLICIT, $3}, $4, true);
+                          VARDTYPE_NDECL(dtp); }
         ;
 
 net_declRESET:
