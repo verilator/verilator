@@ -1394,7 +1394,7 @@ parameter_value_assignmentE<pinp>:      // IEEE: [ parameter_value_assignment ]
         ;
 
 parameter_value_assignment<pinp>:       // IEEE: parameter_value_assignment
-                '#' '(' cellparamList ')'               { $$ = $3; }
+                '#' '(' cellparamListE ')'              { $$ = $3; }
         //                      // Parentheses are optional around a single parameter
         |       '#' yaINTNUM                            { $$ = new AstPin{$<fl>2, 1, "", new AstConst{$<fl>2, *$2}}; }
         |       '#' yaFLOATNUM                          { $$ = new AstPin{$<fl>2, 1, "",
@@ -1408,7 +1408,7 @@ parameter_value_assignment<pinp>:       // IEEE: parameter_value_assignment
 
 parameter_value_assignmentClass<pinp>:  // IEEE: [ parameter_value_assignment ] (for classes)
         //                      // Like parameter_value_assignment, but for classes only, which always have #()
-                '#' '(' cellparamList ')'               { $$ = $3; }
+                '#' '(' cellparamListE ')'              { $$ = $3; }
         ;
 
 parameter_port_listE<nodep>:    // IEEE: parameter_port_list + empty == parameter_value_assignment
@@ -3160,11 +3160,11 @@ instnameList<nodep>:
         ;
 
 instnameParen<nodep>:
-                id instRangeListE '(' cellpinList ')'
+                id instRangeListE '(' cellpinListE ')'
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, $4, $2); }
         |       id instRangeListE
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, nullptr, $2); }
-        //UNSUP instRangeListE '(' cellpinList ')'      { UNSUP } // UDP
+        //UNSUP instRangeListE '(' cellpinListE ')'      { UNSUP } // UDP
         //                      // Adding above and switching to the Verilog-Perl syntax
         //                      // causes a shift conflict due to use of idClassSel inside exprScope.
         //                      // It also breaks allowing "id foo;" instantiation syntax.
@@ -3187,22 +3187,22 @@ instRange<nodeRangep>:
                         { $$ = new AstRange{$1, $2, $4}; }
         ;
 
-cellparamList<pinp>:
-                { GRAMMARP->pinPush(); } cellparamItList        { $$ = $2; GRAMMARP->pinPop(CRELINE()); }
+cellparamListE<pinp>:
+                { GRAMMARP->pinPush(); } cellparamItListE   { $$ = $2; GRAMMARP->pinPop(CRELINE()); }
         ;
 
-cellpinList<pinp>:
-                {VARRESET_LIST(UNKNOWN);} cellpinItList { $$ = $2; VARRESET_NONLIST(UNKNOWN); }
+cellpinListE<pinp>:
+                { VARRESET_LIST(UNKNOWN); } cellpinItListE   { $$ = $2; VARRESET_NONLIST(UNKNOWN); }
         ;
 
-cellparamItList<pinp>:          // IEEE: list_of_parameter_assignmente
+cellparamItListE<pinp>:         // IEEE: list_of_parameter_assignmente
                 cellparamItemE                          { $$ = $1; }
-        |       cellparamItList ',' cellparamItemE      { $$ = addNextNull($1, $3); }
+        |       cellparamItListE ',' cellparamItemE     { $$ = addNextNull($1, $3); }
         ;
 
-cellpinItList<pinp>:            // IEEE: list_of_port_connections
+cellpinItListE<pinp>:           // IEEE: list_of_port_connections
                 cellpinItemE                            { $$ = $1; }
-        |       cellpinItList ',' cellpinItemE          { $$ = addNextNull($1, $3); }
+        |       cellpinItListE ',' cellpinItemE         { $$ = addNextNull($1, $3); }
         ;
 
 cellparamItemE<pinp>:           // IEEE: named_parameter_assignment + empty
@@ -6602,8 +6602,8 @@ checker_generate_item<nodep>:  // ==IEEE: checker_generate_item
 //UNSUPchecker_instantiation<nodep>:
 //UNSUP //                      // Only used for procedural_assertion_item's
 //UNSUP //                      // Version in concurrent_assertion_item looks like etcInst
-//UNSUP //                      // Thus instead of *_checker_port_connection we can use etcInst's cellpinList
-//UNSUP         id/*checker_identifier*/ id '(' cellpinList ')' ';'     { }
+//UNSUP //                      // Thus instead of *_checker_port_connection we can use etcInst's cellpinListE
+//UNSUP         id/*checker_identifier*/ id '(' cellpinListE ')' ';'     { }
 //UNSUP ;
 
 //**********************************************************************

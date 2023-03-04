@@ -210,11 +210,11 @@ module t (/*AUTOARG*/);
       if(dict_op.get("abcd") != 1) $stop;
 
       if (getter1.get_1() != 1) $stop;
-      if (Getter1::get_1() != 1) $stop;
+      if (Getter1#()::get_1() != 1) $stop;
       if (getter1_param_1.get_1() != 1) $stop;
 
       if (getter2.get_2() != 2) $stop;
-      if (Getter2::get_2() != 2) $stop;
+      if (Getter2#()::get_2() != 2) $stop;
       if (Getter2#(2)::get_2() != 2) $stop;
 
       $write("*-* All Finished *-*\n");

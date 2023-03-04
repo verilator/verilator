@@ -225,6 +225,7 @@ private:
         if (nodep->lifetime().isNone() && nodep->varType() != VVarType::PORT) {
             nodep->lifetime(m_lifetime);
         }
+        if (nodep->isGParam() && m_modp) m_modp->hasGParam(true);
         if (nodep->isParam() && !nodep->valuep()
             && nodep->fileline()->language() < V3LangCode::L1800_2009) {
             nodep->v3error("Parameter requires default value, or use IEEE 1800-2009 or later.");

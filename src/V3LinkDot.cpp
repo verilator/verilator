@@ -2227,6 +2227,7 @@ private:
             }
         }
     }
+
     // VISITs
     void visit(AstNetlist* nodep) override {
         // Recurse..., backward as must do packages before using packages
@@ -2822,8 +2823,15 @@ private:
             UINFO(4, "(Backto) Link ClassOrPackageRef: " << nodep << endl);
             iterateChildren(nodep);
         }
+        if (m_statep->forPrimary() && VN_IS(nodep->classOrPackagep(), Class) && !nodep->paramsp()
+            && nodep->classOrPackagep()->hasGParam()
+            // Don't warn on typedefs, which are hard to know if there's a param somewhere buried
+            && VN_IS(nodep->classOrPackageNodep(), Class)) {
+            nodep->v3error("Reference to parameterized class without #() (IEEE 1800-2017 8.25.1)\n"
+                           << nodep->warnMore() << "... Suggest use '"
+                           << nodep->classOrPackageNodep()->prettyName() << "#()'");
+        }
     }
-
     void visit(AstVarRef* nodep) override {
         // VarRef: Resolve its reference
         // ParseRefs are used the first pass (forPrimary) so we shouldn't get can't find

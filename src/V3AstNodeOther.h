@@ -210,6 +210,7 @@ private:
     bool m_modTrace : 1;  // Tracing this module
     bool m_inLibrary : 1;  // From a library, no error if not used, never top level
     bool m_dead : 1;  // LinkDot believes is dead; will remove in Dead visitors
+    bool m_hasGParam : 1;  // Has global parameter (for link)
     bool m_hierBlock : 1;  // Hierarchical Block marked by HIER_BLOCK pragma
     bool m_internal : 1;  // Internally created
     bool m_recursive : 1;  // Recursive module
@@ -223,6 +224,7 @@ protected:
         , m_modTrace{false}
         , m_inLibrary{false}
         , m_dead{false}
+        , m_hasGParam{false}
         , m_hierBlock{false}
         , m_internal{false}
         , m_recursive{false}
@@ -250,6 +252,8 @@ public:
     bool modTrace() const { return m_modTrace; }
     void dead(bool flag) { m_dead = flag; }
     bool dead() const { return m_dead; }
+    void hasGParam(bool flag) { m_hasGParam = flag; }
+    bool hasGParam() const { return m_hasGParam; }
     void hierBlock(bool flag) { m_hierBlock = flag; }
     bool hierBlock() const { return m_hierBlock; }
     void internal(bool flag) { m_internal = flag; }
