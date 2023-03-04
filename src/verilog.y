@@ -661,7 +661,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yMODULE         "module"
 %token<fl>              yNAND           "nand"
 %token<fl>              yNEGEDGE        "negedge"
-//UNSUP %token<fl>      yNETTYPE        "nettype"
+%token<fl>              yNETTYPE        "nettype"
 %token<fl>              yNEW__ETC       "new"
 %token<fl>              yNEW__LEX       "new-in-lex"
 %token<fl>              yNEW__PAREN     "new-then-paren"
@@ -1190,7 +1190,7 @@ description:                    // ==IEEE: description
         |       package_declaration                     { }
         |       package_item                            { if ($1) PARSEP->unitPackage($1->fileline())->addStmtsp($1); }
         |       bind_directive                          { if ($1) PARSEP->unitPackage($1->fileline())->addStmtsp($1); }
-        //      unsupported     // IEEE: config_declaration
+        //UNSUP config_declaration                      { }
         //                      // Verilator only
         |       yaT_RESETALL                            { }  // Else, under design, and illegal based on IEEE 22.3
         |       yaT_NOUNCONNECTED                       { PARSEP->unconnectedDrive(VOptionBool::OPT_DEFAULT_FALSE); }
@@ -2398,7 +2398,7 @@ data_declaration<nodep>:        // ==IEEE: data_declaration
         //                      // "yVIRTUAL yID yID" looks just like a data_declaration
         //                      // Therefore the virtual_interface_declaration term isn't used
         //                      // 1800-2009:
-        //UNSUP net_type_declaration                    { $$ = $1; }
+        |       net_type_declaration                    { $$ = $1; }
         |       vlTag                                   { $$ = nullptr; }
         ;
 
@@ -2490,12 +2490,15 @@ data_declarationVarFrontClass:  // IEEE: part of data_declaration (for class_pro
         //                      // = class_new is in variable_decl_assignment
         ;
 
-//UNSUPnet_type_declaration:            // IEEE: net_type_declaration
-//UNSUP         yNETTYPE data_type idAny/*net_type_identifier*/ ';' { }
-//UNSUP //                      // package_scope part of data_type
-//UNSUP |       yNETTYPE data_type idAny yWITH__ETC packageClassScope id/*tf_identifier*/ ';' { }
-//UNSUP |       yNETTYPE packageClassScope id/*net_type_identifier*/ idAny/*net_type_identifier*/ ';' { }
-//UNSUP ;
+net_type_declaration<nodep>:  // IEEE: net_type_declaration
+                yNETTYPE data_type idAny/*net_type_identifier*/ ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
+        //                      // package_scope part of data_type
+        |       yNETTYPE data_type idAny yWITH__ETC packageClassScopeE id/*tf_identifier*/ ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
+        |       yNETTYPE packageClassScopeE id/*net_type_identifier*/ idAny/*net_type_identifier*/ ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
+        ;
 
 implicit_typeE<nodeDTypep>:             // IEEE: part of *data_type_or_implicit
         //                      // Also expanded in data_declaration

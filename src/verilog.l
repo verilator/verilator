@@ -622,7 +622,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /*     Keywords */
   "implements"          { FL; return yIMPLEMENTS; }
   "interconnect"        { FL; return yINTERCONNECT; }
-  "nettype"             { ERROR_RSVD_WORD("SystemVerilog 2012"); }
+  "nettype"             { FL; return yNETTYPE; }
   "soft"                { FL; return ySOFT; }
 }
 
