@@ -161,7 +161,7 @@ class EmitCHeader final : public EmitCConstInit {
             puts("void " + protect("__Vconfigure") + "(bool first);\n");
         }
 
-        if (v3Global.opt.coverage()) {
+        if (v3Global.opt.coverage() && !VN_IS(modp, Class)) {
             decorateFirst(first, section);
             puts("void __vlCoverInsert(");
             puts(v3Global.opt.threads() ? "std::atomic<uint32_t>" : "uint32_t");

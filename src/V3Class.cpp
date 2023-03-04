@@ -156,6 +156,11 @@ private:
         //    m_toScopeMoves.push_back(std::make_pair(nodep, m_classScopep));
         //}
     }
+    void visit(AstCoverDecl* nodep) override {
+        // Need to declare coverage in package, where we have access to symbol table
+        iterateChildren(nodep);
+        if (m_classPackagep) m_classPackagep->addStmtsp(nodep->unlinkFrBack());
+    }
     void visit(AstInitial* nodep) override {
         // But not AstInitialAutomatic, which remains under the class
         iterateChildren(nodep);

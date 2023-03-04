@@ -21,6 +21,7 @@ Verilator 5.007 devel
 * Add lint warning on always_comb multidriven (#3888) (#3939). [Adam Bagley]
 * Add warning on ++/-- over expressions with potential side effects (#3976). [Krzysztof Boroński]
 * Add error on mixing .name and by-port instantiations.
+* Removed deprecated --cdc option.
 * Support unpacked unions.
 * Support interface classes and class implements.
 * Support global clocking and $global_clock.
@@ -32,7 +33,6 @@ Verilator 5.007 devel
 * Support static function variables (#3830). [Ryszard Rozak, Antmicro Ltd]
 * Support vpiDefName (#3906) (#3931). [Andrew Nolte]
 * Support recursive methods (#3987). [Ryszard Rozak, Antmicro Ltd]
-* Removed deprecated --cdc option.
 * Fix real parameters of infinity and NaN.
 * Fix pattern assignment to unpacked structs (#3510). [Mostafa Garnal]
 * Fix single-element replication to dynarray/unpacked/queue (#3548). [Gustav Svensk]
@@ -62,6 +62,7 @@ Verilator 5.007 devel
 * Fix timing delays to not truncate below 64 bits (#3973) (#3982). [Felix Neumärker]
 * Fix cmake on macOS to mark weak symbols with -U linker flag (#3978) (#3979). [Peter Debacker]
 * Fix UNDRIVEN warning seg fault (#3989). [Felix Neumärker]
+* Fix coverage of class methods (#3998). [Tim Paine]
 * Fix packed array structure replication.
 * Fix enum.next(0) and enum.prev(0).
 

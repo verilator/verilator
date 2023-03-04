@@ -1169,7 +1169,9 @@ public:
     explicit VlClassRef(VlNull){};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
-        : m_objp{new T_Class{std::forward<T_Args>(args)...}} {
+        // () required here to avoid narrowing conversion warnings,
+        // when a new() has an e.g. CData type and passed a 1U.
+        : m_objp{new T_Class(std::forward<T_Args>(args)...)} {
         m_objp->m_deleterp = &deleter;
         refCountInc();
     }

@@ -155,6 +155,9 @@ private:
             V3CCtorsBuilder configure_coverage{nodep, "_configure_coverage", VCtorType::COVERAGE};
             for (AstNode* np = nodep->stmtsp(); np; np = np->nextp()) {
                 if (AstCoverDecl* const coverp = VN_CAST(np, CoverDecl)) {
+                    // ... else we don't have a static VlSym to be able to coverage insert
+                    UASSERT_OBJ(!VN_IS(nodep, Class), coverp,
+                                "CoverDecl should be in class's package, not class itself");
                     np = coverp->backp();
                     configure_coverage.add(coverp->unlinkFrBack());
                 }

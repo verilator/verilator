@@ -248,6 +248,39 @@
            end
         endmodule
         
+        class Cls;
+           bit m_toggle;
+%000001    function new(bit toggle);
+-000001  point: comment=block
+%000001       m_toggle = toggle;
+-000001  point: comment=block
+%000000       if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
+-000001  point: comment=if
+-000000  point: comment=else
+%000001          $write("");
+-000001  point: comment=if
+              end
+           endfunction
+ 000011    static function void fstatic(bit toggle);
++000011  point: comment=block
+%000000       if (1) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
++000011  point: comment=if
+-000000  point: comment=else
+ 000011          $write("");
++000011  point: comment=if
+              end
+           endfunction
+ 000011    function void fauto();
++000011  point: comment=block
+%000000       if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
++000011  point: comment=if
+-000000  point: comment=else
+ 000011          $write("");
++000011  point: comment=if
+              end
+           endfunction
+        endclass
+        
         module tsk (/*AUTOARG*/
            // Inputs
            clk, toggle
@@ -280,6 +313,15 @@
 %000001             $write("[%0t] Got external pulse\n", $time);
 -000001  point: comment=if
                  end
+              end
+ 000011       begin
++000011  point: comment=block
+%000001          Cls c = new(1'b1);
+-000001  point: comment=block
+ 000011          c.fauto();
++000011  point: comment=block
+ 000011          Cls::fstatic(1'b1);
++000011  point: comment=block
               end
            endtask
         
