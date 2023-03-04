@@ -5,12 +5,12 @@
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-# When releasing, also update header of Changes file
+# When releasing, also update header of Changes file,
 # and commit using "devel release" or "Version bump" message
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.006 2023-01-22],
+AC_INIT([Verilator],[5.008 2023-03-04],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 

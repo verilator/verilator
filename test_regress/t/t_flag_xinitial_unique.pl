@@ -18,7 +18,7 @@ execute(
     check_finished => 1,
     );
 
-my @files = glob_all("$Self->{obj_dir}/$Self->{VM_PREFIX}___024root__DepSet_*__Slow.cpp");
+my @files = glob_all("$Self->{obj_dir}/$Self->{vm_prefix}___024root__DepSet_*__Slow.cpp");
 file_grep_any(\@files, qr/VL_RAND_RESET/);
 
 ok(1);

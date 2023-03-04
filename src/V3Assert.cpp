@@ -43,6 +43,7 @@ private:
     AstVar* m_monitorOffVarp = nullptr;  // $monitoroff variable
     unsigned m_modPastNum = 0;  // Module past numbering
     unsigned m_modStrobeNum = 0;  // Module $strobe numbering
+    const AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
     VDouble0 m_statCover;  // Statistic tracking
     VDouble0 m_statAsNotImm;  // Statistic tracking
     VDouble0 m_statAsImm;  // Statistic tracking
@@ -145,6 +146,11 @@ private:
         } else {
             UASSERT_OBJ(sentreep, nodep, "Concurrent assertions must have sensitivity");
             sentreep->unlinkFrBack();
+            if (m_procedurep) {
+                // To support this need queue of asserts to activate
+                nodep->v3error("Unsupported: Procedural concurent assertion with"
+                               " clocking event inside always (IEEE 1800-2917 16.14.6)");
+            }
         }
         //
         AstNode* bodysp = nullptr;
@@ -350,8 +356,7 @@ private:
         AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
         AstNodeExpr* inp = newSampledExpr(exprp);
         AstVar* invarp = nullptr;
-        AstSenTree* const sentreep = nodep->sentreep();
-        sentreep->unlinkFrBack();
+        AstSenTree* const sentreep = nodep->sentreep()->unlinkFrBack();
         AstAlways* const alwaysp
             = new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, nullptr};
         m_modp->addStmtsp(alwaysp);
@@ -495,6 +500,11 @@ private:
             m_modStrobeNum = 0;
             iterateChildren(nodep);
         }
+    }
+    void visit(AstNodeProcedure* nodep) override {
+        VL_RESTORER(m_procedurep);
+        m_procedurep = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstBegin* nodep) override {
         // This code is needed rather than a visitor in V3Begin,

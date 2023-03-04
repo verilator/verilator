@@ -47,6 +47,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <deque>
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -175,6 +176,19 @@ public:
     void unlock() VL_RELEASE() VL_MT_SAFE { m_mutex.unlock(); }
     /// Try to acquire mutex.  Returns true on success, and false on failure.
     bool try_lock() VL_TRY_ACQUIRE(true) VL_MT_SAFE { return m_mutex.try_lock(); }
+    /// Acquire/lock mutex and check for stop request
+    /// It tries to lock the mutex and if it fails, it check if stop request was send.
+    /// It returns after locking mutex.
+    /// This function should be extracted to V3ThreadPool, but due to clang thread-safety
+    /// limitations it needs to be placed here.
+    void lockCheckStopRequest(std::function<void()> checkStopRequestFunction)
+        VL_ACQUIRE() VL_MT_SAFE {
+        while (true) {
+            checkStopRequestFunction();
+            if (m_mutex.try_lock()) return;
+            VL_CPU_RELAX();
+        }
+    }
 };
 
 /// Lock guard for mutex (ala std::unique_lock), wrapped to allow -fthread_safety checks
@@ -192,10 +206,19 @@ public:
     }
     /// Destruct and unlock the mutex
     ~VerilatedLockGuard() VL_RELEASE() { m_mutexr.unlock(); }
-    /// Unlock the mutex
-    void lock() VL_ACQUIRE() VL_MT_SAFE { m_mutexr.lock(); }
     /// Lock the mutex
+    void lock() VL_ACQUIRE() VL_MT_SAFE { m_mutexr.lock(); }
+    /// Unlock the mutex
     void unlock() VL_RELEASE() VL_MT_SAFE { m_mutexr.unlock(); }
+    /// Acquire/lock mutex and check for stop request.
+    /// It tries to lock the mutex and if it fails, it check if stop request was send.
+    /// It returns after locking mutex.
+    /// This function should be extracted to V3ThreadPool, but due to clang thread-safety
+    /// limitations it needs to be placed here.
+    void lockCheckStopRequest(std::function<void()> checkStopRequestFunction)
+        VL_ACQUIRE() VL_MT_SAFE {
+        m_mutexr.lockCheckStopRequest(checkStopRequestFunction);
+    }
 };
 
 // Internals: Remember the calling thread at construction time, and make
@@ -624,7 +647,7 @@ public:  // But internals only - called from VerilatedModule's
     VerilatedVar* varFind(const char* namep) const VL_MT_SAFE_POSTINIT;
     VerilatedVarNameMap* varsp() const VL_MT_SAFE_POSTINIT { return m_varsp; }
     void scopeDump() const;
-    void* exportFindError(int funcnum) const;
+    void* exportFindError(int funcnum) const VL_MT_SAFE;
     static void* exportFindNullError(int funcnum) VL_MT_SAFE;
     static void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE {
         if (VL_UNLIKELY(!scopep)) return exportFindNullError(funcnum);

@@ -47,7 +47,6 @@ set(HEADERS
     V3Case.h
     V3Cast.h
     V3CCtors.h
-    V3Cdc.h
     V3Class.h
     V3Clean.h
     V3Clock.h
@@ -150,6 +149,7 @@ set(HEADERS
     V3SymTable.h
     V3Table.h
     V3Task.h
+    V3ThreadPool.h
     V3Timing.h
     V3Trace.h
     V3TraceDecl.h
@@ -186,7 +186,6 @@ set(COMMON_SOURCES
     V3CUse.cpp
     V3Case.cpp
     V3Cast.cpp
-    V3Cdc.cpp
     V3Class.cpp
     V3Clean.cpp
     V3Clock.cpp
@@ -283,6 +282,7 @@ set(COMMON_SOURCES
     V3Subst.cpp
     V3Table.cpp
     V3Task.cpp
+    V3ThreadPool.cpp
     V3Trace.cpp
     V3TraceDecl.cpp
     V3Tristate.cpp

@@ -155,18 +155,6 @@ Summary:
    Specify C++ without SystemC output mode; see also the :vlopt:`--sc`
    option.
 
-.. option:: --cdc
-
-   Permanently experimental.  Perform some clock domain crossing checks and
-   issue related warnings (CDCRSTLOGIC) and then exit; if warnings other
-   than CDC warnings are needed, make a second run with
-   :vlopt:`--lint-only`.  Additional warning information is also written to
-   the file :file:`<prefix>__cdc.txt`.
-
-   Currently only checks some items that other CDC tools missed; if you are
-   interested in adding more traditional CDC checks, please contact the
-   authors.
-
 .. option:: -CFLAGS <flags>
 
    Add specified C compiler argument to the generated makefiles. For
@@ -434,7 +422,7 @@ Summary:
    Preprocess the source code, but do not compile, similar to C++
    preprocessing using :command:`gcc -E`.  Output is written to standard
    out.  Beware of enabling debugging messages, as they will also go to
-   standard out.
+   standard out. See :vlopt:`--no-std`, which is implied by this.
 
    See also :vlopt:`--dump-defines`, :vlopt:`-P`, and
    :vlopt:`--pp-comments` options.
@@ -707,9 +695,10 @@ Summary:
 .. option:: -j [<value>]
 
    Specify the level of parallelism for :vlopt:`--build` if
-   :vlopt:`--build-jobs` isn't provided. If zero, uses the number of threads
-   in the current hardware. Otherwise, the <value> must be a positive
-   integer specifying the maximum number of parallel build jobs.
+   :vlopt:`--build-jobs` isn't provided, and the internal compilation steps
+   of Verilator if :vlopt:`--verilate-jobs` isn't provided. If zero, uses
+   the number of threads in the current hardware. Otherwise, must be a
+   positive integer specifying the maximum number of parallel build jobs.
 
 .. option:: --l2-name <value>
 
@@ -1201,6 +1190,10 @@ Summary:
    by size (plain :vlopt:`--stats` just gives a count).  See
    :vlopt:`--stats`, which is implied by this.
 
+.. option:: --no-std
+
+   Prevents parsing standard library.
+
 .. option:: --structs-packed
 
    Converts all unpacked structures to packed structures, and issues an
@@ -1429,6 +1422,15 @@ Summary:
    execute only the build. This can be useful for rebuilding the Verilated code
    produced by a previous invocation of Verilator.
 
+.. option:: --verilate-jobs [<value>]
+
+   Specify the level of parallelism for the internal compilation steps of
+   Verilator. If zero, uses the number of threads in the current hardware.
+   Otherwise, must be a positive integer specifying the maximum number of
+   parallel build jobs.
+
+   See also :vlopt:`-j`.
+
 .. option:: +verilog1995ext+<ext>
 
    Synonym for :vlopt:`+1364-1995ext+\<ext\>`.
@@ -1527,6 +1529,8 @@ Summary:
    defined with :vlopt:`--default-language`, etc.  Similar to
    :command:`gcc -Wpedantic`.  Rarely used, and intended only for strict
    compliance tests.
+
+   This option changes :option:`ASSIGNIN` from an error to a warning.
 
 .. option:: -Wwarn-<message>
 

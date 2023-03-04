@@ -16,6 +16,7 @@ compile(
     );
 
 execute(
+    check_finished => 0,
     );
 
 ok(1);

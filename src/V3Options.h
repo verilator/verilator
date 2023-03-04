@@ -224,7 +224,6 @@ private:
     bool m_bboxSys = false;         // main switch: --bbox-sys
     bool m_bboxUnsup = false;       // main switch: --bbox-unsup
     bool m_build = false;           // main switch: --build
-    bool m_cdc = false;             // main switch: --cdc
     bool m_cmake = false;           // main switch: --make cmake
     bool m_context = true;          // main switch: --Wcontext
     bool m_coverageLine = false;    // main switch: --coverage-block
@@ -267,6 +266,7 @@ private:
     bool m_relativeIncludes = false; // main switch: --relative-includes
     bool m_reportUnoptflat = false; // main switch: --report-unoptflat
     bool m_savable = false;         // main switch: --savable
+    bool m_std = true;              // main switch: --std
     bool m_structsPacked = false;   // main switch: --structs-packed
     bool m_systemC = false;         // main switch: --sc: System C instead of simple C++
     bool m_stats = false;           // main switch: --stats
@@ -317,6 +317,7 @@ private:
     int         m_traceThreads = 0; // main switch: --trace-threads
     int         m_unrollCount = 64;  // main switch: --unroll-count
     int         m_unrollStmts = 30000;  // main switch: --unroll-stmts
+    int         m_verilateJobs = -1;  // main switch: --verilate-jobs
 
     int         m_compLimitBlocks = 0;  // compiler selection; number of nested blocks
     int         m_compLimitMembers = 64;  // compiler selection; number of members in struct before make anon array
@@ -430,6 +431,7 @@ public:
     bool savable() const VL_MT_SAFE { return m_savable; }
     bool stats() const { return m_stats; }
     bool statsVars() const { return m_statsVars; }
+    bool std() const { return m_std; }
     bool structsPacked() const { return m_structsPacked; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
     bool autoflush() const { return m_autoflush; }
@@ -438,7 +440,6 @@ public:
     bool build() const { return m_build; }
     string buildDepBin() const { return m_buildDepBin; }
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }
-    bool cdc() const { return m_cdc; }
     bool cmake() const { return m_cmake; }
     bool context() const VL_MT_SAFE { return m_context; }
     bool coverage() const VL_MT_SAFE {
@@ -544,6 +545,7 @@ public:
     }
     int unrollCount() const { return m_unrollCount; }
     int unrollStmts() const { return m_unrollStmts; }
+    int verilateJobs() const { return m_verilateJobs; }
 
     int compLimitBlocks() const { return m_compLimitBlocks; }
     int compLimitMembers() const { return m_compLimitMembers; }

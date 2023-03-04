@@ -12,7 +12,8 @@ scenarios(dist => 1);
 
 my $root = "..";
 
-my $Tabs_Exempt_Re = qr!(\.out$)|(/gtkwave)|(Makefile)|(\.mk$)|(\.mk\.in$)|(nodist/fastcov.py)!;
+my $Make_Style_Re = qr!(Makefile)|(\.mk$)|(\.mk\.in$)!;
+my $Tabs_Exempt_Re = qr!(\.out$)|(/gtkwave)|(Makefile)|(\.mk$)|(\.mk\.in$)!;
 #my $Wide_Exempt_Re = qr!(\.l$)|(\.y$)!;
 my $Wide_Exempt_Re = qr!.*!;  # clang-tidy generally cleans up
 
@@ -31,10 +32,17 @@ if (!-r "$root/.git") {
         my $btab;
         my $lineno = 0;
         foreach my $line ((split /\n/, $diff), "+++ b/_the_end") {
+            $fline = $line;
+            $fline =~ s!^(\+)#\t!$1!;  # special case, lines starting with #\t are OK in Makefiles
             if ($line =~ m!^\+\+\+ b/(.*)!) {
+                if ($file && !$astab && $bstab
+                    && $file =~ $Make_Style_Re) {
+                    $summary = "File modifications add new stray tabs (please untabify the patch):";
+                    $warns{$file} = "File modification adds new stray tabs (please untabify the patch): $file";
+                }
                 if ($file && !$atab && $btab
                     && $file !~ $Tabs_Exempt_Re) {
-                    $summary = "File modifications adds new tabs (please untabify the patch):";
+                    $summary = "File modifications add new tabs (please untabify the patch):";
                     $warns{$file} = "File modification adds new tabs (please untabify the patch): $file";
                 }
                 # Next
@@ -52,6 +60,14 @@ if (!-r "$root/.git") {
                     print "  Had tabs\n" if $Self->{verbose} && !$atab;
                     $atab = 1;
                 }
+            }
+            elsif ($fline =~ m!^-.+[^\t]\t!) {
+                print "  Had stray tabs\n" if $Self->{verbose} && !$astab;
+                $astab = 1;
+            }
+            elsif ($fline =~ m!^+.+[^\t]\t!) {
+                print "  Inserts stray tabs\n" if $Self->{verbose} && !$bstab;
+                $bstab = 1;
             }
             elsif ($line =~ m!^-.*\t!) {
                 print "  Had tabs\n" if $Self->{verbose} && !$atab;

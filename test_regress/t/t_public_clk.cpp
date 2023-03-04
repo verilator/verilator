@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
     contextp->debug(0);
     contextp->commandArgs(argc, argv);
     srand48(5);
-    topp.reset(new Vt_public_clk("top"));
+    topp.reset(new VM_PREFIX{"top"});
 
     topp->rootp->t__DOT__clk = 0;
     topp->eval();

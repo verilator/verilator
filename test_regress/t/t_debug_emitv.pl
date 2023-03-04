@@ -16,7 +16,7 @@ lint(
     v_flags => ["--lint-only --dumpi-tree 9 --dumpi-V3EmitV 9 --debug-emitv"],
     );
 
-files_identical(glob_one("$Self->{obj_dir}/$Self->{VM_PREFIX}_*_width.tree.v"), $Self->{golden_filename});
+files_identical(glob_one("$Self->{obj_dir}/$Self->{vm_prefix}_*_width.tree.v"), $Self->{golden_filename});
 
 ok(1);
 1;

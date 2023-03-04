@@ -67,7 +67,7 @@ VK_CPPFLAGS_ALWAYS += \
 		-DVM_TRACE_VCD=$(VM_TRACE_VCD) \
 		$(CFG_CXXFLAGS_NO_UNUSED) \
 
-ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
+ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
 VK_CPPFLAGS_WALL += -Wall $(CFG_CXXFLAGS_WEXTRA) -Werror
 endif
 

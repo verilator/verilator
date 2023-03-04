@@ -26,6 +26,10 @@
 // verilator lint_off TIMESCALEMOD
 // verilator lint_off UNUSEDSIGNAL
 package std;
+    // The process class is not implemented, but it's predeclared here,
+    // so the linter accepts references to it.
+    typedef class process;
+
     class mailbox #(type T);
         protected int m_bound;
         protected T m_queue[$];
@@ -112,6 +116,3 @@ package std;
         endfunction
     endclass
 endpackage
-
-// verilator lint_off IMPORTSTAR
-import std::*;

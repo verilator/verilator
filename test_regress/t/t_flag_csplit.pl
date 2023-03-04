@@ -30,9 +30,9 @@ while (1) {
         tee => $self->{verbose},
         cmd=>[$ENV{MAKE},
               "-C " . $Self->{obj_dir},
-              "-f $Self->{VM_PREFIX}.mk",
+              "-f $Self->{vm_prefix}.mk",
               "-j 4",
-              "VM_PREFIX=$Self->{VM_PREFIX}",
+              "VM_PREFIX=$Self->{vm_prefix}",
               "TEST_OBJ_DIR=$Self->{obj_dir}",
               "CPPFLAGS_DRIVER=-D".uc($Self->{name}),
               ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1" : ""),
@@ -47,7 +47,7 @@ while (1) {
         );
 
     # Splitting should set VM_PARALLEL_BUILDS to 1 by default
-    file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}_classes.mk", qr/VM_PARALLEL_BUILDS\s*=\s*1/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}_classes.mk", qr/VM_PARALLEL_BUILDS\s*=\s*1/);
     check_splits();
     check_no_all_file();
     check_gcc_flags("$Self->{obj_dir}/vlt_gcc.log");
@@ -113,7 +113,7 @@ sub check_gcc_flags {
     while (defined(my $line = $fh->getline)) {
         chomp $line;
         print ":log: $line\n" if $Self->{verbose};
-        if ($line =~ /$Self->{VM_PREFIX}\S*\.cpp/) {
+        if ($line =~ /$Self->{vm_prefix}\S*\.cpp/) {
             my $filetype = ($line =~ /Slow|Syms/) ? "slow" : "fast";
             my $opt = ($line !~ /-O2/) ? "slow" : "fast";
             print "$filetype, $opt, $line\n" if $Self->{verbose};

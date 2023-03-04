@@ -25,6 +25,7 @@ execute(
 inline_checks();
 
 run(cmd => ["../bin/verilator_coverage",
+            "--annotate-points",
             "--annotate", "$Self->{obj_dir}/annotated",
             "$Self->{obj_dir}/coverage.dat"],
     verilator_run => 1,

@@ -60,6 +60,8 @@ public:
     /// are compound when methods calls operate on object, or when
     /// under another compound-requiring object e.g. class
     virtual bool isCompound() const = 0;
+    // Integral or packed, allowed inside an unpacked union/struct
+    virtual bool isIntegralOrPacked() const { return !isCompound(); }
     // (Slow) recurse down to find basic data type
     virtual AstBasicDType* basicp() const = 0;
     // recurses over typedefs/const/enum to next non-typeref type
@@ -200,6 +202,7 @@ private:
     using MemberNameMap = std::map<const std::string, AstMemberDType*>;
     // MEMBERS
     string m_name;  // Name from upper typedef, if any
+    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
     MemberNameMap m_members;
     const int m_uniqueNum;
     bool m_packed;
@@ -255,6 +258,8 @@ public:
     static int lo() { return 0; }
     int hi() const { return dtypep()->width() - 1; }  // Packed classes look like arrays
     VNumRange declRange() const { return VNumRange{hi(), lo()}; }
+    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
+    void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
 };
 
 // === Concrete node types =====================================================
@@ -470,6 +475,7 @@ public:
     VNumRange declRange() const { return isRanged() ? VNumRange{left(), right()} : VNumRange{}; }
     void cvtRangeConst();  // Convert to smaller representation
     bool isCompound() const override { return isString(); }
+    bool isIntegralOrPacked() const override { return keyword().isIntNumeric(); }
 };
 class AstBracketArrayDType final : public AstNodeDType {
     // Associative/Queue/Normal array data type, ie "[dtype_or_expr]"
@@ -839,6 +845,7 @@ class AstMemberDType final : public AstNodeDType {
     // A member of a struct/union
     // PARENT: AstNodeUOrStructDType
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
+    // @astgen op3 := valuep : Optional[AstNode]
 private:
     AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
     string m_name;  // Name of variable
@@ -846,10 +853,12 @@ private:
     int m_lsb = -1;  // Within this level's packed struct, the LSB of the first bit of the member
     // UNSUP: int m_randType;    // Randomization type (IEEE)
 public:
-    AstMemberDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp)
+    AstMemberDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp,
+                   AstNode* valuep)
         : ASTGEN_SUPER_MemberDType(fl)
         , m_name{name} {
         childDTypep(dtp);  // Only for parser
+        this->valuep(valuep);
         dtypep(nullptr);  // V3Width will resolve
         refDTypep(nullptr);
     }
@@ -862,6 +871,7 @@ public:
         widthFromSub(subDTypep());
     }
     ASTGEN_MEMBERS_AstMemberDType;
+    void dumpSmall(std::ostream& str) const override;
     string name() const override { return m_name; }  // * = Var name
     bool hasDType() const override { return true; }
     bool maybePointedTo() const override { return true; }
@@ -1315,19 +1325,17 @@ public:
     std::vector<AstUnpackArrayDType*> unpackDimensions();
     void isCompound(bool flag) { m_isCompound = flag; }
     bool isCompound() const override VL_MT_SAFE { return m_isCompound; }
+    bool isIntegralOrPacked() const override { return false; }
 };
 
 // === AstNodeUOrStructDType ===
 class AstStructDType final : public AstNodeUOrStructDType {
-    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
 public:
     // VSigning below is mispurposed to indicate if packed or not
     AstStructDType(FileLine* fl, VSigning numericUnpack)
         : ASTGEN_SUPER_StructDType(fl, numericUnpack) {}
     ASTGEN_MEMBERS_AstStructDType;
     string verilogKwd() const override { return "struct"; }
-    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
-    void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
 };
 class AstUnionDType final : public AstNodeUOrStructDType {
 public:

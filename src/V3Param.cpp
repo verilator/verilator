@@ -547,7 +547,10 @@ class ParamProcessor final {
                             AstClass* const newClassp) {
         if (AstClassRefDType* const classRefp = VN_CAST(nodep, ClassRefDType)) {
             if (classRefp->classp() == oldClassp) classRefp->classp(newClassp);
+        } else if (AstClassOrPackageRef* const classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
+            if (classRefp->classOrPackagep() == oldClassp) classRefp->classOrPackagep(newClassp);
         }
+
         if (nodep->op1p()) replaceRefsRecurse(nodep->op1p(), oldClassp, newClassp);
         if (nodep->op2p()) replaceRefsRecurse(nodep->op2p(), oldClassp, newClassp);
         if (nodep->op3p()) replaceRefsRecurse(nodep->op3p(), oldClassp, newClassp);
@@ -820,10 +823,16 @@ class ParamProcessor final {
         }
 
         for (auto* stmtp = srcModpr->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (auto* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
+            if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
                 if (VN_IS(dtypep->subDTypep(), VoidDType)) {
                     nodep->v3error("Missing type parameter: " << dtypep->prettyNameQ());
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                }
+            }
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (VN_IS(srcModpr, Class) && varp->isParam() && !varp->valuep()) {
+                    nodep->v3error("Class parameter without initial value is never given value"
+                                   << " (IEEE 1800-2017 6.20.1): " << varp->prettyNameQ());
                 }
             }
         }
@@ -911,6 +920,8 @@ class ParamVisitor final : public VNVisitor {
     bool m_iterateModule = false;  // Iterating module body
     string m_generateHierName;  // Generate portion of hierarchy name
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
+    AstNodeModule* m_modp;  // Module iterating
+    std::vector<AstDot*> m_dots;  // Dot references to process
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
     std::multimap<int, AstNodeModule*> m_workQueue;  // Modules left to process
 
@@ -940,7 +951,11 @@ class ParamVisitor final : public VNVisitor {
             if (modp->someInstanceName().empty()) modp->someInstanceName(modp->origName());
 
             // Iterate the body
-            iterateChildren(modp);
+            {
+                VL_RESTORER(m_modp);
+                m_modp = modp;
+                iterateChildren(modp);
+            }
 
             // Process interface cells, then non-interface cells, which may reference an interface
             // cell.
@@ -1007,6 +1022,21 @@ class ParamVisitor final : public VNVisitor {
         m_cellps.emplace(!isIface, nodep);
     }
 
+    // RHSs of AstDots need a relink when LHS is a parametrized class reference
+    void relinkDots() {
+        for (AstDot* const dotp : m_dots) {
+            const AstClassOrPackageRef* const classRefp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
+            const AstClass* const lhsClassp = VN_AS(classRefp->classOrPackageNodep(), Class);
+            AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
+            for (auto* itemp = lhsClassp->membersp(); itemp; itemp = itemp->nextp()) {
+                if (itemp->name() == rhsp->name()) {
+                    rhsp->classOrPackageNodep(itemp);
+                    break;
+                }
+            }
+        }
+    }
+
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         if (nodep->recursiveClone()) nodep->dead(true);  // Fake, made for recursive elimination
@@ -1037,7 +1067,7 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->user5SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isParam()) {
-            if (!nodep->valuep()) {
+            if (!nodep->valuep() && !VN_IS(m_modp, Class)) {
                 nodep->v3error("Parameter without initial value is never given value"
                                << " (IEEE 1800-2017 6.20.1): " << nodep->prettyNameQ());
             } else {
@@ -1111,6 +1141,25 @@ class ParamVisitor final : public VNVisitor {
             }
         }
         nodep->varp(nullptr);  // Needs relink, as may remove pointed-to var
+    }
+
+    void visit(AstDot* nodep) override {
+        iterate(nodep->lhsp());
+        // Check if it is a reference to a field of a parameterized class.
+        // If so, the RHS should be updated, when the LHS is replaced
+        // by a class with actual parameter values.
+        const AstClass* lhsClassp = nullptr;
+        const AstClassOrPackageRef* const classRefp = VN_CAST(nodep->lhsp(), ClassOrPackageRef);
+        if (classRefp) lhsClassp = VN_CAST(classRefp->classOrPackageNodep(), Class);
+        AstNode* rhsDefp = nullptr;
+        AstClassOrPackageRef* const rhsp = VN_CAST(nodep->rhsp(), ClassOrPackageRef);
+        if (rhsp) rhsDefp = rhsp->classOrPackageNodep();
+        if (lhsClassp && rhsDefp) {
+            m_dots.push_back(nodep);
+            // No need to iterate into rhsp, because there should be nothing to do
+        } else {
+            iterate(nodep->rhsp());
+        }
     }
 
     void visit(AstUnlinkedRef* nodep) override {
@@ -1215,6 +1264,7 @@ class ParamVisitor final : public VNVisitor {
     }
     void visit(AstGenCase* nodep) override {
         UINFO(9, "  GENCASE " << nodep << endl);
+        bool hit = false;
         AstNode* keepp = nullptr;
         iterateAndNextNull(nodep->exprp());
         V3Case::caseLint(nodep);
@@ -1240,7 +1290,10 @@ class ParamVisitor final : public VNVisitor {
                     if (const AstConst* const ccondp = VN_CAST(ep, Const)) {
                         V3Number match{nodep, 1};
                         match.opEq(ccondp->num(), exprp->num());
-                        if (!keepp && match.isNeqZero()) keepp = itemp->stmtsp();
+                        if (!hit && match.isNeqZero()) {
+                            hit = true;
+                            keepp = itemp->stmtsp();
+                        }
                     } else {
                         itemp->v3error("Generate Case item does not evaluate to constant");
                     }
@@ -1251,7 +1304,10 @@ class ParamVisitor final : public VNVisitor {
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             if (itemp->isDefault()) {
-                if (!keepp) keepp = itemp->stmtsp();
+                if (!hit) {
+                    hit = true;
+                    keepp = itemp->stmtsp();
+                }
             }
         }
         // Replace
@@ -1272,6 +1328,8 @@ public:
         : m_processor{netlistp} {
         // Relies on modules already being in top-down-order
         iterate(netlistp);
+
+        relinkDots();
 
         // Re-sort module list to be in topological order and fix-up incorrect levels. We need to
         // do this globally at the end due to the presence of recursive modules, which might be

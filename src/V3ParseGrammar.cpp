@@ -240,6 +240,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     } else {
         nodep->trace(allTracingOn(nodep->fileline()));
     }
+    if (nodep->varType().isVPIAccessible()) { nodep->addAttrsp(GRAMMARP->cloneScopedSigAttr()); }
 
     // Remember the last variable created, so we can attach attributes to it in later parsing
     GRAMMARP->m_varAttrp = nodep;
@@ -256,7 +257,7 @@ string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
     int octal_digits = 0;
     for (string::const_iterator cp = text.begin(); cp != text.end(); ++cp) {
         if (quoted) {
-            if (isdigit(*cp)) {
+            if (std::isdigit(*cp)) {
                 octal_val = octal_val * 8 + (*cp - '0');
                 if (++octal_digits == 3) {
                     octal_digits = 0;
@@ -285,13 +286,13 @@ string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
                     newtext += '\t';
                 } else if (*cp == 'v') {
                     newtext += '\v';  // SystemVerilog 3.1
-                } else if (*cp == 'x' && isxdigit(cp[1])
-                           && isxdigit(cp[2])) {  // SystemVerilog 3.1
-#define vl_decodexdigit(c) ((isdigit(c) ? ((c) - '0') : (tolower((c)) - 'a' + 10)))
+                } else if (*cp == 'x' && std::isxdigit(cp[1])
+                           && std::isxdigit(cp[2])) {  // SystemVerilog 3.1
+#define vl_decodexdigit(c) ((std::isdigit(c) ? ((c) - '0') : (std::tolower((c)) - 'a' + 10)))
                     newtext
                         += static_cast<char>(16 * vl_decodexdigit(cp[1]) + vl_decodexdigit(cp[2]));
                     cp += 2;
-                } else if (isalnum(*cp)) {
+                } else if (std::isalnum(*cp)) {
                     fileline->v3error("Unknown escape sequence: \\" << *cp);
                     break;
                 } else {

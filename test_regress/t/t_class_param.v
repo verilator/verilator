@@ -54,6 +54,72 @@ class SelfRefClassIntParam #(int P=1);
    typedef SelfRefClassIntParam #(10) self_int_t;
 endclass
 
+class Sum #(type T);
+   static int sum;
+   static function void add(T element);
+      sum += int'(element);
+      endfunction
+endclass
+
+class IntQueue;
+   int          q[$];
+   function int getSum();
+      foreach(q[i])
+        Sum#(int)::add(q[i]);
+      return Sum#(int)::sum;
+   endfunction
+endclass
+
+class ClsStatic;
+   static int   x = 1;
+   static function int get_2;
+      return 2;
+   endfunction
+endclass
+
+class ClsParam #(type T);
+   typedef T param_t;
+endclass
+
+class ClsWithParamField;
+   int m_field = Sum#(int)::sum;
+   int m_queue[$];
+
+   function int get(int index);
+      return m_queue[index];
+   endfunction
+endclass
+
+class DictWrapper;
+   int m_dict[string];
+endclass
+
+class DictOperator #(type T) extends T;
+   function void set(string s, int x);
+      m_dict[s] = x;
+   endfunction
+
+   function int get(string s);
+      return m_dict[s];
+   endfunction
+endclass
+
+class Getter1 #(int T=0);
+   static function int get_1();
+      return Getter1#(1)::T;
+   endfunction
+endclass
+
+class Getter2 #(int T=5);
+   static function int get_T();
+      return T;
+   endfunction
+
+   static function int get_2();
+      return Getter2#(2)::get_T();
+   endfunction
+endclass
+
 module t (/*AUTOARG*/);
 
    Cls c12;
@@ -65,6 +131,13 @@ module t (/*AUTOARG*/);
    SelfRefClassTypeParam::self_int_t src_int;
    SelfRefClassIntParam src1;
    SelfRefClassIntParam::self_int_t src10;
+   IntQueue qi;
+   ClsWithParamField cls_param_field;
+   DictOperator #(DictWrapper) dict_op;
+   Getter1 getter1;
+   Getter1 #(1) getter1_param_1;
+   Getter2 getter2;
+   int arr [1:0] = '{1, 2};
    initial begin
       c12 = new;
       c4 = new;
@@ -75,6 +148,13 @@ module t (/*AUTOARG*/);
       src_logic = new;
       src1 = new;
       src10 = new;
+      qi = new;
+      cls_param_field = new;
+      dict_op = new;
+      getter1 = new;
+      getter1_param_1 = new;
+      getter2 = new;
+
       if (Cls#()::PBASE != 12) $stop;
       if (Cls#(4)::PBASE != 4) $stop;
       if (Cls8_t::PBASE != 8) $stop;
@@ -113,6 +193,29 @@ module t (/*AUTOARG*/);
       if ($bits(src_int.field) != 32) $stop;
       if (src1.P != 1) $stop;
       if (src10.P != 10) $stop;
+
+      qi.q = '{2, 4, 6, 0, 2};
+      if (qi.getSum() != 14) $stop;
+      Sum#(int)::add(arr[0]);
+      if(Sum#(int)::sum != 16) $stop;
+      if(Sum#(real)::sum != 0) $stop;
+
+      if (ClsParam#(ClsStatic)::param_t::x != 1) $stop;
+      if (ClsParam#(ClsStatic)::param_t::get_2() != 2) $stop;
+
+      cls_param_field.m_queue = '{1, 5, 7};
+      if (cls_param_field.get(2) != 7) $stop;
+
+      dict_op.set("abcd", 1);
+      if(dict_op.get("abcd") != 1) $stop;
+
+      if (getter1.get_1() != 1) $stop;
+      if (Getter1#()::get_1() != 1) $stop;
+      if (getter1_param_1.get_1() != 1) $stop;
+
+      if (getter2.get_2() != 2) $stop;
+      if (Getter2#()::get_2() != 2) $stop;
+      if (Getter2#(2)::get_2() != 2) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

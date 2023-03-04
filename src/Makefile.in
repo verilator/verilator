@@ -50,7 +50,7 @@ obj_dbg:
 .PHONY: ../bin/verilator_bin$(EXEEXT) ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT)
 
 opt: ../bin/verilator_bin$(EXEEXT)
-ifeq ($(VERILATOR_NO_OPT_BUILD),1)	# Faster laptop development... One build
+ifeq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... One build
 ../bin/verilator_bin$(EXEEXT): ../bin/verilator_bin_dbg$(EXEEXT)
 	-cp -p $< $@.tmp
 	-mv -f $@.tmp $@
@@ -70,7 +70,7 @@ dbg: ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj
 
 ifneq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... don't rebuild each commit
- ifneq ($(UNDER_GIT),)	# If local git tree... else don't burden users
+ ifneq ($(UNDER_GIT),)  # If local git tree... else don't burden users
 GIT_CHANGE_DEP = ${srcdir}/../.git/logs/HEAD
  endif
 endif
@@ -78,7 +78,7 @@ endif
 prefiles::
 prefiles:: config_rev.h
 # This output goes into srcdir if locally configured, as we need to distribute it as part of the kit.
-config_rev.h:	${srcdir}/config_rev $(GIT_CHANGE_DEP)
+config_rev.h: ${srcdir}/config_rev $(GIT_CHANGE_DEP)
 	$(PYTHON3) ${srcdir}/config_rev ${srcdir} >$@
 
 # Human convenience

@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_event_control_star.v:19:14: Unsupported: no sense equation (@*)
+   19 |      @* a = c;   
+      |              ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Verilator internal fault, sorry. Suggest trying --debug --gdbbt
+%Error: Command Failed

@@ -266,7 +266,7 @@ public:
             }
         }
         if (scopes == "") scopes = "<no instances found>";
-        std::cerr << V3Error::warnMore() << "... Known scopes under '" << prettyName
+        std::cerr << V3Error::warnMoreStandalone() << "... Known scopes under '" << prettyName
                   << "': " << scopes << endl;
         if (debug()) dumpSelf(std::cerr, "       KnownScope: ", 1);
     }

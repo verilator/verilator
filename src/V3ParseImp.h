@@ -303,6 +303,7 @@ private:
     void tokenPipeline();  // Internal; called from tokenToBison
     void tokenPipelineSym();
     size_t tokenPipeScanParam(size_t depth);
+    size_t tokenPipeScanType(size_t depth);
     const V3ParseBisonYYSType* tokenPeekp(size_t depth);
     void preprocDumps(std::ostream& os);
 };

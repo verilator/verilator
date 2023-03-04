@@ -19,7 +19,7 @@ execute(
     check_finished => 1,
     );
 
-for my $file (glob_all("$Self->{obj_dir}/$Self->{VM_PREFIX}*.cpp")) {
+for my $file (glob_all("$Self->{obj_dir}/$Self->{vm_prefix}*.cpp")) {
     # Check that these simple expressions are not stored in temp variables
     file_grep_not($file, qr/__Vtrigcurr__expression_.* = vlSelf->clk;/);
     file_grep_not($file, qr/__Vtrigcurr__expression_.* = vlSelf->t__DOT__q.at\(0U\);/);

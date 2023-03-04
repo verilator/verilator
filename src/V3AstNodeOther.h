@@ -210,6 +210,7 @@ private:
     bool m_modTrace : 1;  // Tracing this module
     bool m_inLibrary : 1;  // From a library, no error if not used, never top level
     bool m_dead : 1;  // LinkDot believes is dead; will remove in Dead visitors
+    bool m_hasGParam : 1;  // Has global parameter (for link)
     bool m_hierBlock : 1;  // Hierarchical Block marked by HIER_BLOCK pragma
     bool m_internal : 1;  // Internally created
     bool m_recursive : 1;  // Recursive module
@@ -223,6 +224,7 @@ protected:
         , m_modTrace{false}
         , m_inLibrary{false}
         , m_dead{false}
+        , m_hasGParam{false}
         , m_hierBlock{false}
         , m_internal{false}
         , m_recursive{false}
@@ -250,6 +252,8 @@ public:
     bool modTrace() const { return m_modTrace; }
     void dead(bool flag) { m_dead = flag; }
     bool dead() const { return m_dead; }
+    void hasGParam(bool flag) { m_hasGParam = flag; }
+    bool hasGParam() const { return m_hasGParam; }
     void hierBlock(bool flag) { m_hierBlock = flag; }
     bool hierBlock() const { return m_hierBlock; }
     void internal(bool flag) { m_internal = flag; }
@@ -799,19 +803,24 @@ public:
     VTimescale timeunit() const { return m_timeunit; }
 };
 class AstClassExtends final : public AstNode {
+    // class extends class name, or class implements class name
     // Children: List of AstParseRef for packages/classes
     // during early parse, then moves to dtype
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     // @astgen op2 := classOrPkgsp : Optional[AstNode]
+    const bool m_isImplements = false;  // class implements
 public:
-    AstClassExtends(FileLine* fl, AstNode* classOrPkgsp)
-        : ASTGEN_SUPER_ClassExtends(fl) {
+    AstClassExtends(FileLine* fl, AstNode* classOrPkgsp, bool isImplements)
+        : ASTGEN_SUPER_ClassExtends(fl)
+        , m_isImplements{isImplements} {
         this->classOrPkgsp(classOrPkgsp);  // Only for parser
     }
     ASTGEN_MEMBERS_AstClassExtends;
+    void dump(std::ostream& str) const override;
     bool hasDType() const override { return true; }
-    string verilogKwd() const override { return "extends"; }
+    string verilogKwd() const override { return isImplements() ? "implements" : "extends"; }
     AstClass* classp() const;  // Class being extended (after link)
+    bool isImplements() const { return m_isImplements; }
 };
 class AstClocking final : public AstNode {
     // Parents:  MODULE
@@ -822,19 +831,23 @@ class AstClocking final : public AstNode {
     // @astgen op4 := eventp : Optional[AstVar]
     std::string m_name;  // Clocking block name
     const bool m_isDefault = false;  // True if default clocking
+    const bool m_isGlobal = false;  // True if global clocking
 
 public:
     AstClocking(FileLine* fl, const std::string& name, AstSenItem* sensesp,
-                AstClockingItem* itemsp, bool isDefault)
+                AstClockingItem* itemsp, bool isDefault, bool isGlobal)
         : ASTGEN_SUPER_Clocking(fl)
-        , m_isDefault{isDefault} {
+        , m_isDefault{isDefault}
+        , m_isGlobal{isGlobal} {
         m_name = name;
         this->sensesp(sensesp);
         addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstClocking;
+    void dump(std::ostream& str) const override;
     std::string name() const override { return m_name; }
     bool isDefault() const { return m_isDefault; }
+    bool isGlobal() const { return m_isGlobal; }
 };
 class AstClockingItem final : public AstNode {
     // Parents:  CLOCKING
@@ -1224,7 +1237,8 @@ private:
     AstVar* m_modVarp = nullptr;  // Input/output this pin connects to on submodule.
     AstParamTypeDType* m_modPTypep = nullptr;  // Param type this pin connects to on submodule.
     bool m_param = false;  // Pin connects to parameter
-    bool m_svImplicit = false;  // Pin is SystemVerilog .name'ed
+    bool m_svDotName = false;  // Pin is SystemVerilog .name'ed
+    bool m_svImplicit = false;  // Pin is SystemVerilog .name'ed, allow implicit
 public:
     AstPin(FileLine* fl, int pinNum, const string& name, AstNode* exprp)
         : ASTGEN_SUPER_Pin(fl)
@@ -1248,6 +1262,8 @@ public:
     void modPTypep(AstParamTypeDType* nodep) { m_modPTypep = nodep; }
     bool param() const { return m_param; }
     void param(bool flag) { m_param = flag; }
+    bool svDotName() const { return m_svDotName; }
+    void svDotName(bool flag) { m_svDotName = flag; }
     bool svImplicit() const { return m_svImplicit; }
     void svImplicit(bool flag) { m_svImplicit = flag; }
 };
@@ -2090,14 +2106,15 @@ public:
 
 // === AstNodeModule ===
 class AstClass final : public AstNodeModule {
-    // @astgen op4 := extendsp : Optional[AstClassExtends]
+    // @astgen op4 := extendsp : List[AstClassExtends]
     // TYPES
     using MemberNameMap = std::map<const std::string, AstNode*>;
     // MEMBERS
     MemberNameMap m_members;  // Members or method children
     AstClassPackage* m_classOrPackagep = nullptr;  // Class package this is under
-    bool m_virtual = false;  // Virtual class
     bool m_extended = false;  // Is extension or extended by other classes
+    bool m_interfaceClass = false;  // Interface class
+    bool m_virtual = false;  // Virtual class
     void insertCache(AstNode* nodep);
 
 public:
@@ -2125,6 +2142,8 @@ public:
     }
     bool isExtended() const { return m_extended; }
     void isExtended(bool flag) { m_extended = flag; }
+    bool isInterfaceClass() const { return m_interfaceClass; }
+    void isInterfaceClass(bool flag) { m_interfaceClass = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
     // Return true if this class is an extension of base class (SLOW)

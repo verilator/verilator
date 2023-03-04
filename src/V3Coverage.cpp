@@ -124,7 +124,10 @@ private:
         UINFO(9, "new " << declp << endl);
 
         AstCoverInc* const incp = new AstCoverInc{fl, declp};
-        if (!trace_var_name.empty() && v3Global.opt.traceCoverage()) {
+        if (!trace_var_name.empty()
+            && v3Global.opt.traceCoverage()
+            // No module handle to trace inside classes
+            && !VN_IS(m_modp, Class)) {
             FileLine* const fl_nowarn = new FileLine{incp->fileline()};
             fl_nowarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
             AstVar* const varp = new AstVar{fl_nowarn, VVarType::MODULETEMP, trace_var_name,

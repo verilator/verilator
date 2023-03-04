@@ -6,7 +6,11 @@
 
 module t (/*AUTOARG*/);
    wire ok = 1'b0;
-   sub sub (.ok(ok), , .nc());
+   // verilator lint_off UNDRIVEN
+   wire nc;
+   // verilator lint_on UNDRIVEN
+
+   sub sub (ok, , nc);
 endmodule
 
 module sub (input ok, input none, input nc, input missing);

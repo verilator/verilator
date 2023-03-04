@@ -42,8 +42,8 @@ def diff_dir(a, b):
             continue
         a = files[base]['a']
         b = files[base]['b']
-        print("=" * 70)
-        print("= %s <-> %s" % (a, b))
+        print("=" * 70, flush=True)
+        print("= %s <-> %s" % (a, b), flush=True)
         diff_file(a, b)
         anyfile = True
     if not anyfile:

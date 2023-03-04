@@ -6,13 +6,13 @@
 
 module t ();
 
-	function automatic void func();
-	endfunction
-	export "DPI-C" function func;
+   function automatic void func();
+   endfunction
+   export "DPI-C" function func;
 
-	initial begin
-		$dumpfile("dump.vcd");
-		$dumpvars();
-	end
+   initial begin
+      $dumpfile("dump.vcd");
+      $dumpvars();
+   end
 
 endmodule

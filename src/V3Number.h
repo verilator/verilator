@@ -566,8 +566,9 @@ private:
     }
 
 public:
-    void v3errorEnd(const std::ostringstream& sstr) const;
-    void v3errorEndFatal(const std::ostringstream& sstr) const VL_ATTR_NORETURN;
+    void v3errorEnd(const std::ostringstream& sstr) const VL_REQUIRES(V3Error::s().m_mutex);
+    void v3errorEndFatal(const std::ostringstream& sstr) const VL_ATTR_NORETURN
+        VL_REQUIRES(V3Error::s().m_mutex);
     void width(int width, bool sized = true) {
         m_data.m_sized = sized;
         m_data.resize(width);
@@ -761,6 +762,7 @@ public:
 
     // "N" - string operations
     V3Number& opAtoN(const V3Number& lhs, int base);
+    V3Number& opNToI(const V3Number& lhs);
     V3Number& opPutcN(const V3Number& lhs, const V3Number& rhs, const V3Number& ths);
     V3Number& opGetcN(const V3Number& lhs, const V3Number& rhs);
     V3Number& opSubstrN(const V3Number& lhs, const V3Number& rhs, const V3Number& ths);

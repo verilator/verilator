@@ -31,7 +31,7 @@ extern "C" int mon_check();
 
    wire           a, b, x;
 
-   A mod_a(/*AUTOINST*/
+   A \mod.a (/*AUTOINST*/
            // Outputs
            .x                           (x),
            // Inputs
@@ -72,14 +72,14 @@ module A(/*AUTOARG*/
 
    wire   y, c;
 
-   B mod_b(/*AUTOINST*/
+   B \mod_b$ (/*AUTOINST*/
            // Outputs
            .y                           (y),
            // Inputs
            .b                           (b),
            .c                           (c));
 
-   C \mod_c. (/*AUTOINST*/
+   C \mod\c$ (/*AUTOINST*/
            // Outputs
            .x                           (x),
            // Inputs

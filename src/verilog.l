@@ -236,6 +236,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fwriteb"            { FL; return yD_FWRITEB; }
   "$fwriteh"            { FL; return yD_FWRITEH; }
   "$fwriteo"            { FL; return yD_FWRITEO; }
+  "$global_clock"       { FL; return yD_GLOBAL_CLOCK; }
   "$hold"               { FL; return yaTIMINGSPEC; }
   "$hypot"              { FL; return yD_HYPOT; }
   "$itor"               { FL; return yD_ITOR; }
@@ -459,12 +460,14 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /*     System Tasks */
   "$bits"               { FL; return yD_BITS; }
   "$changed"            { FL; return yD_CHANGED; }
+  "$changed_gclk"       { FL; return yD_CHANGED_GCLK; }
   "$countbits"          { FL; return yD_COUNTBITS; }
   "$countones"          { FL; return yD_COUNTONES; }
   "$dimensions"         { FL; return yD_DIMENSIONS; }
   "$error"              { FL; return yD_ERROR; }
   "$fatal"              { FL; return yD_FATAL; }
   "$fell"               { FL; return yD_FELL; }
+  "$fell_gclk"          { FL; return yD_FELL_GCLK; }
   "$high"               { FL; return yD_HIGH; }
   "$increment"          { FL; return yD_INCREMENT; }
   "$info"               { FL; return yD_INFO; }
@@ -478,8 +481,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$right"              { FL; return yD_RIGHT; }
   "$root"               { FL; return yD_ROOT; }
   "$rose"               { FL; return yD_ROSE; }
+  "$rose_gclk"          { FL; return yD_ROSE_GCLK; }
   "$size"               { FL; return yD_SIZE; }
   "$stable"             { FL; return yD_STABLE; }
+  "$stable_gclk"        { FL; return yD_STABLE_GCLK; }
   "$unpacked_dimensions" { FL; return yD_UNPACKED_DIMENSIONS; }
   "$warning"            { FL; return yD_WARNING; }
   /*     SV2005 Keywords */
@@ -518,7 +523,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "endpackage"          { FL; return yENDPACKAGE; }
   "endprogram"          { FL; return yENDPROGRAM; }
   "endproperty"         { FL; return yENDPROPERTY; }
-  "endsequence"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "endsequence"         { FL; return yENDSEQUENCE; }
   "enum"                { FL; return yENUM; }
   "expect"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "export"              { FL; return yEXPORT; }
@@ -555,7 +560,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "randc"               { FL; return yRANDC; }
   "randcase"            { FL; return yRANDCASE; }
   "randomize"           { FL; return yRANDOMIZE; }
-  "randsequence"        { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "randsequence"        { FL; return yRANDSEQUENCE; }
   "ref"                 { FL; return yREF; }
   "restrict"            { FL; return yRESTRICT; }
   "return"              { FL; return yRETURN; }
@@ -572,7 +577,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "throughout"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "timeprecision"       { FL; return yTIMEPRECISION; }
   "timeunit"            { FL; return yTIMEUNIT; }
-  "type"                { FL; return yTYPE; }
+  "type"                { FL; return yTYPE__LEX; }
   "typedef"             { FL; return yTYPEDEF; }
   "union"               { FL; return yUNION; }
   "unique"              { FL; return yUNIQUE; }
@@ -589,8 +594,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <S09,S12,S17,SAX>{
   /*     Keywords */
   "accept_on"           { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "checker"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "endchecker"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "checker"             { FL; return yCHECKER; }
+  "endchecker"          { FL; return yENDCHECKER; }
   "eventually"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
   "global"              { FL; return yGLOBAL__LEX; }
   "implies"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
@@ -616,8 +621,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <S12,S17,SAX>{
   /*     Keywords */
   "implements"          { FL; return yIMPLEMENTS; }
-  "interconnect"        { ERROR_RSVD_WORD("SystemVerilog 2012"); }
-  "nettype"             { ERROR_RSVD_WORD("SystemVerilog 2012"); }
+  "interconnect"        { FL; return yINTERCONNECT; }
+  "nettype"             { FL; return yNETTYPE; }
   "soft"                { FL; return ySOFT; }
 }
 
@@ -752,9 +757,15 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator parallel_case*/"         { FL; return yVL_PARALLEL_CASE; }
   "/*verilator public*/"                { FL; return yVL_PUBLIC; }
   "/*verilator public_flat*/"           { FL; return yVL_PUBLIC_FLAT; }
+  "/*verilator public_flat_on*/"        { FL; return yVL_PUBLIC_FLAT_ON; }
   "/*verilator public_flat_rd*/"        { FL; return yVL_PUBLIC_FLAT_RD; }
+  "/*verilator public_flat_rd_on*/"     { FL; return yVL_PUBLIC_FLAT_RD_ON; }
   "/*verilator public_flat_rw*/"        { FL; return yVL_PUBLIC_FLAT_RW; }  // The @(edge) is converted by the preproc
+  "/*verilator public_flat_rw_on*/"     { FL; return yVL_PUBLIC_FLAT_RW_ON; }
+  "/*verilator public_flat_rw_on_sns*/" { FL; return yVL_PUBLIC_FLAT_RW_ON_SNS; }
   "/*verilator public_module*/"         { FL; return yVL_PUBLIC_MODULE; }
+  "/*verilator public_on*/"             { FL; return yVL_PUBLIC_ON; }
+  "/*verilator public_off*/"            { FL; return yVL_PUBLIC_OFF; }  // terminates previous 'verilator public*_on'
   "/*verilator sc_bv*/"                 { FL; return yVL_SC_BV; }
   "/*verilator sc_clock*/"              { FL; yylval.fl->v3warn(DEPRECATED, "sc_clock is ignored"); FL_BRK; }
   "/*verilator sformat*/"               { FL; return yVL_SFORMAT; }
@@ -899,7 +910,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
                           if (PARSEP->lexPrevToken()=='#') {
                               int shortlen = 0;
-                              while (isdigit(yytext[shortlen])) ++shortlen;
+                              while (std::isdigit(yytext[shortlen])) ++shortlen;
                               if (shortlen) {
                                   // Push rest past numbers for later parse
                                   PARSEP->lexUnputString(yytext + shortlen, yyleng - shortlen);

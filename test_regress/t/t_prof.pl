@@ -36,7 +36,7 @@ sub dotest {
     $gmon_path or error("Profiler did not create a gmon.out");
     (my $gmon_base = $gmon_path) =~ s!.*[/\\]!!;
 
-    run(cmd => ["cd $Self->{obj_dir} && gprof $Self->{VM_PREFIX} $gmon_base > gprof.out"],
+    run(cmd => ["cd $Self->{obj_dir} && gprof $Self->{vm_prefix} $gmon_base > gprof.out"],
         check_finished => 0);
 
     run(cmd => ["cd $Self->{obj_dir} && $ENV{VERILATOR_ROOT}/bin/verilator_profcfunc gprof.out > cfuncs.out"],

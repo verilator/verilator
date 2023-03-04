@@ -1,0 +1,4 @@
+%Error: t/t_implements_noinherit_bad.v:14:16: Can't find definition of variable: 'IP'
+   14 |       $display(IP);  
+      |                ^~
+%Error: Exiting due to

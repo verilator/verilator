@@ -31,7 +31,7 @@ CPPFLAGS += -DVL_DEBUG=1
 # Turn on some more compiler lint flags (when configured appropriately)
 # For testing inside Verilator, "configure --enable-ccwarn" will do this
 # automatically; otherwise you may want this unconditionally enabled
-ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
+ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
 USER_CPPFLAGS_WALL += -W -Werror -Wall
 endif
 

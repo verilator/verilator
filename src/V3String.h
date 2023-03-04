@@ -70,7 +70,7 @@ inline uint32_t cvtToHash(const void* vp) {
 
 inline string ucfirst(const string& text) {
     string out = text;
-    out[0] = toupper(out[0]);
+    out[0] = std::toupper(out[0]);
     return out;
 }
 
@@ -122,6 +122,8 @@ public:
     static bool startsWith(const string& str, const string& prefix);
     // Predicate to check if 'str' ends with 'suffix'
     static bool endsWith(const string& str, const string& suffix);
+    // Return true if char is valid character in word
+    static bool isWordChar(char c) { return isalnum(c) || c == '_'; }
 };
 
 //######################################################################

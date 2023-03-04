@@ -1,0 +1,11 @@
+%Error-UNSUPPORTED: t/t_nettype.v:24:4: Unsupported: nettype
+   24 |    nettype real real1_n with Pkg::resolver;
+      |    ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_nettype.v:28:4: Unsupported: nettype
+   28 |    nettype real real2_n with local_resolver;
+      |    ^~~~~~~
+%Error-UNSUPPORTED: t/t_nettype.v:33:4: Unsupported: nettype
+   33 |    nettype real2_n real3_n;
+      |    ^~~~~~~
+%Error: Exiting due to

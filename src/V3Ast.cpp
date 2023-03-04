@@ -87,8 +87,8 @@ string AstNode::encodeName(const string& namein) {
     // Encode signal name raw from parser, then not called again on same signal
     string out;
     for (string::const_iterator pos = namein.begin(); pos != namein.end(); ++pos) {
-        if ((pos == namein.begin()) ? isalpha(pos[0])  // digits can't lead identifiers
-                                    : isalnum(pos[0])) {
+        if ((pos == namein.begin()) ? std::isalpha(pos[0])  // digits can't lead identifiers
+                                    : std::isalnum(pos[0])) {
             out += pos[0];
         } else if (pos[0] == '_') {
             if (pos[1] == '_') {
@@ -158,7 +158,6 @@ string AstNode::vcdName(const string& namein) {
 string AstNode::prettyName(const string& namein) {
     // This function is somewhat hot, so we short-circuit some compares
     string pretty;
-    pretty = "";
     pretty.reserve(namein.length());
     for (const char* pos = namein.c_str(); *pos;) {
         if (pos[0] == '-' && pos[1] == '>') {  // ->
@@ -187,11 +186,14 @@ string AstNode::prettyName(const string& namein) {
                 pos += 7;
                 continue;
             }
-            if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && isxdigit(pos[3])
-                && isxdigit(pos[4])) {
+            if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && std::isxdigit(pos[3])
+                && std::isxdigit(pos[4])) {
                 char value = 0;
-                value += 16 * (isdigit(pos[3]) ? (pos[3] - '0') : (tolower(pos[3]) - 'a' + 10));
-                value += (isdigit(pos[4]) ? (pos[4] - '0') : (tolower(pos[4]) - 'a' + 10));
+                value += 16
+                         * (std::isdigit(pos[3]) ? (pos[3] - '0')
+                                                 : (std::tolower(pos[3]) - 'a' + 10));
+                value
+                    += (std::isdigit(pos[4]) ? (pos[4] - '0') : (std::tolower(pos[4]) - 'a' + 10));
                 pretty += value;
                 pos += 5;
                 continue;
@@ -200,6 +202,81 @@ string AstNode::prettyName(const string& namein) {
         // Default
         pretty += pos[0];
         ++pos;
+    }
+    if (pretty[0] == 'T' && pretty.substr(0, 4) == "TOP.") pretty.replace(0, 4, "");
+    if (pretty[0] == 'T' && pretty.substr(0, 5) == "TOP->") pretty.replace(0, 5, "");
+    return pretty;
+}
+
+string AstNode::vpiName(const string& namein) {
+    // This is slightly different from prettyName, in that when we encounter escaped characters,
+    // we change that identifier to an escaped identifier, wrapping it with '\' and ' '
+    // as specified in LRM 23.6
+    string pretty;
+    pretty.reserve(namein.length());
+    bool inEscapedIdent = false;
+    int lastIdent = 0;
+
+    for (const char* pos = namein.c_str(); *pos;) {
+        char specialChar = 0;
+        if (pos[0] == '-' && pos[1] == '>') {  // ->
+            specialChar = '.';
+            pos += 2;
+        } else if (pos[0] == '_' && pos[1] == '_') {  // __
+            if (0 == std::strncmp(pos, "__BRA__", 7)) {
+                specialChar = '[';
+                pos += 7;
+            } else if (0 == std::strncmp(pos, "__KET__", 7)) {
+                specialChar = ']';
+                pos += 7;
+            } else if (0 == std::strncmp(pos, "__DOT__", 7)) {
+                specialChar = '.';
+                pos += 7;
+            } else if (0 == std::strncmp(pos, "__PVT__", 7)) {
+                pos += 7;
+                continue;
+            } else if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && std::isxdigit(pos[3])
+                       && std::isxdigit(pos[4])) {
+                char value = 0;
+                value += 16
+                         * (std::isdigit(pos[3]) ? (pos[3] - '0')
+                                                 : (std::tolower(pos[3]) - 'a' + 10));
+                value
+                    += (std::isdigit(pos[4]) ? (pos[4] - '0') : (std::tolower(pos[4]) - 'a' + 10));
+
+                // __ doesn't always imply escaped ident
+                if (value != '_') inEscapedIdent = true;
+
+                pretty += value;
+                pos += 5;
+                continue;
+            }
+        } else if (pos[0] == '.') {
+            specialChar = '.';
+            ++pos;
+        }
+
+        if (specialChar) {
+            if (inEscapedIdent && (specialChar == '[' || specialChar == '.')) {
+                pretty += " ";
+                pretty.insert(lastIdent, "\\");
+                inEscapedIdent = false;
+            }
+
+            pretty += specialChar;
+
+            if (specialChar == ']' || specialChar == '.') {
+                lastIdent = pretty.length();
+                inEscapedIdent = false;
+            }
+        } else {
+            pretty += pos[0];
+            ++pos;
+        }
+    }
+    if (inEscapedIdent) {
+        pretty += " ";
+        pretty.insert(lastIdent, "\\");
     }
     if (pretty[0] == 'T' && pretty.substr(0, 4) == "TOP.") pretty.replace(0, 4, "");
     if (pretty[0] == 'T' && pretty.substr(0, 5) == "TOP->") pretty.replace(0, 5, "");
@@ -1186,7 +1263,17 @@ void AstNode::dumpTreeDotFile(const string& filename, bool append, bool doDump) 
     }
 }
 
-void AstNode::v3errorEndFatal(std::ostringstream& str) const VL_MT_SAFE {
+bool AstNode::isTreePureRecurse() const {
+    // Should memoize this if call commonly
+    if (!this->isPure()) return false;
+    if (this->op1p() && !this->op1p()->isTreePureRecurse()) return false;
+    if (this->op2p() && !this->op2p()->isTreePureRecurse()) return false;
+    if (this->op3p() && !this->op3p()->isTreePureRecurse()) return false;
+    if (this->op4p() && !this->op4p()->isTreePureRecurse()) return false;
+    return true;
+}
+
+void AstNode::v3errorEndFatal(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex) {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE;
@@ -1216,9 +1303,9 @@ string AstNode::instanceStr() const {
 
     return "";
 }
-void AstNode::v3errorEnd(std::ostringstream& str) const {
+void AstNode::v3errorEnd(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex) {
     if (!m_fileline) {
-        V3Error::v3errorEnd(str, instanceStr());
+        V3Error::s().v3errorEnd(str, instanceStr());
     } else {
         std::ostringstream nsstr;
         nsstr << str.str();
@@ -1231,8 +1318,8 @@ void AstNode::v3errorEnd(std::ostringstream& str) const {
         // Don't look for instance name when warning is disabled.
         // In case of large number of warnings, this can
         // take significant amount of time
-        m_fileline->v3errorEnd(nsstr,
-                               m_fileline->warnIsOff(V3Error::errorCode()) ? "" : instanceStr());
+        m_fileline->v3errorEnd(
+            nsstr, m_fileline->warnIsOff(V3Error::s().errorCode()) ? "" : instanceStr());
     }
 }
 

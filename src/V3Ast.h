@@ -371,7 +371,6 @@ public:
         //
         DT_PUBLIC,                      // V3LinkParse moves to AstTypedef::attrPublic
         //
-        ENUM_BASE,                      // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         ENUM_FIRST,                     // V3Width processes
         ENUM_LAST,                      // V3Width processes
         ENUM_NUM,                       // V3Width processes
@@ -380,8 +379,7 @@ public:
         ENUM_NAME,                      // V3Width processes
         ENUM_VALID,                     // V3Width processes
         //
-        MEMBER_BASE,                    // V3LinkResolve creates for AstPreSel, V3LinkParam removes
-        //
+        TYPEID,                         // V3Width processes
         TYPENAME,                       // V3Width processes
         //
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
@@ -407,10 +405,9 @@ public:
             "DIM_BITS", "DIM_DIMENSIONS", "DIM_HIGH", "DIM_INCREMENT", "DIM_LEFT",
             "DIM_LOW", "DIM_RIGHT", "DIM_SIZE", "DIM_UNPK_DIMENSIONS",
             "DT_PUBLIC",
-            "ENUM_BASE", "ENUM_FIRST", "ENUM_LAST", "ENUM_NUM",
+            "ENUM_FIRST", "ENUM_LAST", "ENUM_NUM",
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
-            "MEMBER_BASE",
-            "TYPENAME",
+            "TYPEID", "TYPENAME",
             "VAR_BASE", "VAR_CLOCK_ENABLE", "VAR_FORCEABLE", "VAR_PUBLIC",
             "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
             "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT", "VAR_CLOCKER",
@@ -570,7 +567,8 @@ public:
     }
     bool isIntNumeric() const {  // Enum increment supported
         return (m_e == BIT || m_e == BYTE || m_e == INT || m_e == INTEGER || m_e == LOGIC
-                || m_e == LONGINT || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64);
+                || m_e == LONGINT || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64
+                || m_e == TIME);
     }
     bool isBitLogic() const {  // Bit/logic vector types; can form a packed array
         return (m_e == LOGIC || m_e == BIT);
@@ -804,6 +802,10 @@ public:
     }
     bool isTemp() const {
         return (m_e == BLOCKTEMP || m_e == MODULETEMP || m_e == STMTTEMP || m_e == XTEMP);
+    }
+    bool isVPIAccessible() const {
+        return (m_e == VAR || m_e == GPARAM || m_e == LPARAM || m_e == PORT || m_e == WIRE
+                || m_e == TRI0 || m_e == TRI1);
     }
 };
 constexpr bool operator==(const VVarType& lhs, const VVarType& rhs) VL_MT_SAFE {
@@ -1666,6 +1668,7 @@ public:
     string shortName() const;  // Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);  // Name with dots removed
     static string prettyName(const string& namein);  // Name for printing out to the user
+    static string vpiName(const string& namein);  // Name for vpi access
     static string prettyNameQ(const string& namein) {  // Quoted pretty name (for errors)
         return std::string{"'"} + prettyName(namein) + "'";
     }
@@ -1852,12 +1855,15 @@ public:
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     // METHODS - dump and error
-    void v3errorEnd(std::ostringstream& str) const VL_MT_SAFE;
-    void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN VL_MT_SAFE;
-    string warnContextPrimary() const { return fileline()->warnContextPrimary(); }
+    void v3errorEnd(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex);
+    void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN
+        VL_REQUIRES(V3Error::s().m_mutex);
+    string warnContextPrimary() const VL_REQUIRES(V3Error::s().m_mutex) {
+        return fileline()->warnContextPrimary();
+    }
     string warnContextSecondary() const { return fileline()->warnContextSecondary(); }
-    string warnMore() const { return fileline()->warnMore(); }
-    string warnOther() const { return fileline()->warnOther(); }
+    string warnMore() const VL_REQUIRES(V3Error::s().m_mutex) { return fileline()->warnMore(); }
+    string warnOther() const VL_REQUIRES(V3Error::s().m_mutex) { return fileline()->warnOther(); }
 
     virtual void dump(std::ostream& str = std::cout) const;
     static void dumpGdb(const AstNode* nodep);  // For GDB only
@@ -1919,6 +1925,8 @@ public:
     static void dumpTreeFileGdb(const AstNode* nodep, const char* filenamep = nullptr);
     void dumpTreeDot(std::ostream& os = std::cout) const;
     void dumpTreeDotFile(const string& filename, bool append = false, bool doDump = true);
+
+    bool isTreePureRecurse() const;
 
     // METHODS - queries
     // Changes control flow, disable some optimizations

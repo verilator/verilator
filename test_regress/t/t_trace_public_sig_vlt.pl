@@ -22,7 +22,7 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var loc="e,47,.*?" name="GSR" dtype_id="1" vartype="logic" origName="GSR" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var loc="f,47,.*?" name="GSR" dtype_id="1" vartype="logic" origName="GSR" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
 }
 
 execute(

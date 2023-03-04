@@ -87,7 +87,8 @@ private:
     }
     void computeCppWidth(AstNode* nodep) {
         if (!nodep->user2() && nodep->hasDType()) {
-            if (VN_IS(nodep, Var)
+            if (VN_IS(nodep, Var)  //
+                || VN_IS(nodep, ConsPackMember)  //
                 || VN_IS(nodep, NodeDType)  // Don't want to change variable widths!
                 || VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)  // Or arrays
                 || VN_IS(nodep->dtypep()->skipRefp(), WildcardArrayDType)
@@ -97,9 +98,9 @@ private:
                 || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), VoidDType)) {
             } else {
-                const AstStructDType* const dtypep
-                    = VN_CAST(nodep->dtypep()->skipRefp(), StructDType);
-                if (!dtypep || dtypep->packed()) { setCppWidth(nodep); }
+                const AstNodeUOrStructDType* const dtypep
+                    = VN_CAST(nodep->dtypep()->skipRefp(), NodeUOrStructDType);
+                if (!dtypep || dtypep->packed()) setCppWidth(nodep);
             }
         }
     }

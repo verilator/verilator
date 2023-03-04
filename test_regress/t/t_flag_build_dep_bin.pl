@@ -14,7 +14,7 @@ compile(
     v_flags2 => ['--build-dep-bin', 'path_to_exe'],
     );
 
-file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}__ver.d", qr/path_to_exe/);
+file_grep("$Self->{obj_dir}/$Self->{vm_prefix}__ver.d", qr/path_to_exe/);
 
 ok(1);
 1;

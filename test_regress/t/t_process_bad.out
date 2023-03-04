@@ -1,10 +1,9 @@
+%Error: t/t_process_bad.v:12:11: Forward typedef used as class/package does not resolve to class/package: 'process'
+   12 |       p = process::self();
+      |           ^~~~~~~
 %Error: t/t_process_bad.v:8:4: Can't find typedef: 'process'
     8 |    process p;
       |    ^~~~~~~
-%Error-UNSUPPORTED: t/t_process_bad.v:12:20: Unsupported: 'process'
-   12 |       p = process::self();
-      |                    ^~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Internal Error: t/t_process_bad.v:12:11: ../V3LinkDot.cpp:#: Bad package link
    12 |       p = process::self();
       |           ^~~~~~~

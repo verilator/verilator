@@ -14,7 +14,7 @@
 #include <svdpi.h>
 
 int main(int argc, char* argv[]) {
-    Vt_order_dpi_export_5* const tb = new Vt_order_dpi_export_5;
+    VM_PREFIX* const tb = new VM_PREFIX;
     tb->contextp()->commandArgs(argc, argv);
     bool clk = true;
 

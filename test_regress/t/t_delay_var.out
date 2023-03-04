@@ -1,0 +1,5 @@
+%Error-ZERODLY: t/t_delay_var.v:20:7: Unsupported: #0 delays do not schedule process resumption in the Inactive region
+   20 |       #0 in = 1'b1;
+      |       ^
+                ... For error description see https://verilator.org/warn/ZERODLY?v=latest
+%Error: Exiting due to

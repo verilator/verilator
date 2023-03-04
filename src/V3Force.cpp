@@ -55,21 +55,17 @@ class ForceConvertVisitor final : public VNVisitor {
     // TYPES
     struct ForceComponentsVar {
         AstVar* const m_rdVarp;  // New variable to replace read references with
-        AstVar* const m_enVarp;  // Force enabled signal
         AstVar* const m_valVarp;  // Forced value
-        AstVar* const m_phVarp;  // Placeholder variable for release (never read)
+        AstVar* const m_enVarp;  // Force enabled signal
         explicit ForceComponentsVar(AstVar* varp)
             : m_rdVarp{new AstVar{varp->fileline(), VVarType::WIRE, varp->name() + "__VforceRd",
                                   varp->dtypep()}}
-            , m_enVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceEn",
-                                  varp->dtypep()}}
             , m_valVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceVal",
                                    varp->dtypep()}}
-            , m_phVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforcePh",
-                                  varp->dtypep()}} {
+            , m_enVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceEn",
+                                  (isRangedDType(varp) ? varp->dtypep() : varp->findBitDType())}} {
             m_rdVarp->addNext(m_enVarp);
             m_rdVarp->addNext(m_valVarp);
-            m_rdVarp->addNext(m_phVarp);
             varp->addNextHere(m_rdVarp);
 
             if (varp->isPrimaryIO()) {
@@ -87,15 +83,12 @@ class ForceConvertVisitor final : public VNVisitor {
         AstVarScope* const m_rdVscp;  // New variable to replace read references with
         AstVarScope* const m_enVscp;  // Force enabled signal
         AstVarScope* const m_valVscp;  // Forced value
-        AstVarScope* const m_phVscp;  // Placeholder variable for release (never read)
         explicit ForceComponentsVarScope(AstVarScope* vscp, ForceComponentsVar& fcv)
             : m_rdVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_rdVarp}}
             , m_enVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_enVarp}}
-            , m_valVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_valVarp}}
-            , m_phVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_phVarp}} {
+            , m_valVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_valVarp}} {
             m_rdVscp->addNext(m_enVscp);
             m_rdVscp->addNext(m_valVscp);
-            m_rdVscp->addNext(m_phVscp);
             vscp->addNextHere(m_rdVscp);
 
             FileLine* const flp = vscp->fileline();
@@ -118,12 +111,20 @@ class ForceConvertVisitor final : public VNVisitor {
                 AstVarRef* const lhsp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
                 AstVarRef* const origp = new AstVarRef{flp, vscp, VAccess::READ};
                 origp->user2(1);  // Don't replace this read ref with the read signal
-                AstOr* const rhsp = new AstOr{
-                    flp,
-                    new AstAnd{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
-                               new AstVarRef{flp, m_valVscp, VAccess::READ}},
-                    new AstAnd{flp, new AstNot{flp, new AstVarRef{flp, m_enVscp, VAccess::READ}},
-                               origp}};
+                AstNodeExpr* rhsp;
+                if (isRangedDType(vscp)) {
+                    rhsp = new AstOr{
+                        flp,
+                        new AstAnd{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
+                                   new AstVarRef{flp, m_valVscp, VAccess::READ}},
+                        new AstAnd{flp,
+                                   new AstNot{flp, new AstVarRef{flp, m_enVscp, VAccess::READ}},
+                                   origp}};
+                } else {
+                    rhsp = new AstCond{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
+                                       new AstVarRef{flp, m_valVscp, VAccess::READ}, origp};
+                }
+
                 AstActive* const activep
                     = new AstActive{flp, "force-comb",
                                     new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}}};
@@ -144,6 +145,12 @@ class ForceConvertVisitor final : public VNVisitor {
     AstUser1Allocator<AstVarScope, ForceComponentsVarScope> m_forceComponentsVarScope;
 
     // METHODS
+    static bool isRangedDType(AstNode* nodep) {
+        // If ranged we need a multibit enable to support bit-by-bit part-select forces,
+        // otherwise forcing a real or other opaque dtype and need a single bit enable.
+        const AstBasicDType* const basicp = nodep->dtypep()->skipRefp()->basicp();
+        return basicp && basicp->isRanged();
+    }
     const ForceComponentsVarScope& getForceComponents(AstVarScope* vscp) {
         AstVar* const varp = vscp->varp();
         return m_forceComponentsVarScope(vscp, vscp, m_forceComponentsVar(varp, varp));
@@ -178,7 +185,7 @@ class ForceConvertVisitor final : public VNVisitor {
         AstNodeExpr* const rhsp = nodep->rhsp();  // The value we are forcing it to
 
         // Set corresponding enable signals to ones
-        V3Number ones{lhsp, lhsp->width()};
+        V3Number ones{lhsp, isRangedDType(lhsp) ? lhsp->width() : 1};
         ones.setAllBits1();
         AstAssign* const setEnp
             = new AstAssign{flp, lhsp->cloneTree(false), new AstConst{rhsp->fileline(), ones}};
@@ -213,7 +220,7 @@ class ForceConvertVisitor final : public VNVisitor {
         AstNodeExpr* const lhsp = nodep->lhsp();  // The LValue we are releasing
 
         // Set corresponding enable signals to zero
-        V3Number zero{lhsp, lhsp->width()};
+        V3Number zero{lhsp, isRangedDType(lhsp) ? lhsp->width() : 1};
         zero.setAllBits0();
         AstAssign* const resetEnp
             = new AstAssign{flp, lhsp->cloneTree(false), new AstConst{lhsp->fileline(), zero}};

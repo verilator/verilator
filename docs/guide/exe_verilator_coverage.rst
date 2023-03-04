@@ -6,10 +6,10 @@ verilator_coverage
 
 Verilator_coverage processes Verilated model-generated coverage reports.
 
-With --annotate, it reads the specified coverage data file and generates
-annotated source code with coverage metrics annotated.  If multiple
-coverage points exist on the same source code line, additional lines will
-be inserted to report the additional points.
+With `--annotate`, it reads the specified coverage data file and generates
+annotated source code with coverage metrics annotated.  With
+`--annotate-points` the coverage points corresponding to each line are also
+shown.
 
 Additional Verilog-XL-style standard arguments specify the search paths
 necessary to find the source code on which the coverage analysis was
@@ -58,6 +58,18 @@ to read multiple inputs.  If no data file is specified, by default,
 Specifies the directory name to which source files with annotated coverage
 data should be written.
 
+Converting from the Verilator coverage data format to the info format is
+lossy; the info will have all forms of coverage merged line coverage, and
+if there are multiple coverage points on a single line they will merge.
+The minimum coverage across all merged points will be used to report
+coverage of the line.
+
+The first character of the line shows a summary of the coverage; this
+allows use of grep to filter the report.  `%` indicates at least one point
+on the line was below the coverage limit.  `+` indicates an
+:option:`--annotate-points` point was at or above the limit, and `-` that
+the point was below the limit.
+
 .. option:: --annotate-all
 
 Specifies all files should be shown.  By default, only those source files
@@ -69,6 +81,13 @@ Specifies if the coverage point does not include the count number of
 coverage hits, then the coverage point will be considered above the
 threshold, and the coverage report will put a "%" to indicate the coverage
 is insufficient.  Defaults to 10.
+
+.. option:: --annotate-points
+
+Specifies all coverage points should be shown after each line of text.  By
+default, only source lines are shown.
+
+with low coverage are written to the output directory.
 
 .. option:: --help
 

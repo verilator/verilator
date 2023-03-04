@@ -20,8 +20,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "verilated_threads.h"
+
 // Limited V3 headers here - this is a base class for Vlc etc
 #include "V3String.h"
+#ifndef V3ERROR_NO_GLOBAL_
+#include "V3ThreadPool.h"
+#endif
 
 #include <array>
 #include <bitset>
@@ -77,7 +82,7 @@ public:
         CASEWITHX,      // Case with X values
         CASEX,          // Casex
         CASTCONST,      // Cast is constant
-        CDCRSTLOGIC,    // Logic in async reset path
+        CDCRSTLOGIC,    // Logic in async reset path. Historical, never issued.
         CLKDATA,        // Clock used as data. Historical, never issued.
         CMPCONST,       // Comparison is constant due to limited range
         COLONPLUS,      // :+ instead of +:
@@ -147,6 +152,9 @@ public:
         VARHIDDEN,      // Hiding variable
         WAITCONST,      // Wait condition is constant
         WIDTH,          // Width mismatch
+        WIDTHTRUNC,     // Width mismatch- lhs < rhs
+        WIDTHEXPAND,    // Width mismatch- lhs > rhs
+        WIDTHXZEXPAND,  // Width mismatch- lhs > rhs xz filled
         WIDTHCONCAT,    // Unsized numbers/parameters in concatenations
         ZERODLY,        // #0 delay
         _ENUM_MAX
@@ -184,7 +192,7 @@ public:
             "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MODDUP",
-            "MULTIDRIVEN", "MULTITOP","NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
+            "MULTIDRIVEN", "MULTITOP", "NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
             "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
@@ -192,7 +200,7 @@ public:
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDPARAM", "UNUSEDSIGNAL",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT", "ZERODLY",
+            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHTRUNC", "WIDTHEXPAND", "WIDTHXZEXPAND", "WIDTHCONCAT", "ZERODLY",
             " MAX"
         };
         // clang-format on
@@ -223,7 +231,8 @@ public:
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
                 || m_e == LATCH || m_e == LITENDIAN || m_e == PINMISSING || m_e == REALCVT
-                || m_e == UNSIGNED || m_e == WIDTH);
+                || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
+                || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
@@ -238,6 +247,20 @@ public:
     bool unusedError() const VL_MT_SAFE {
         return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
     }
+
+    bool isUnder(V3ErrorCode other) {
+        // backwards compatibility inheritance-like warnings
+        if (m_e == other) { return true; }
+        if (other == V3ErrorCode::WIDTH) {
+            return (m_e == WIDTH || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
+                    || m_e == WIDTHXZEXPAND);
+        }
+        if (other == V3ErrorCode::I_UNUSED) {
+            return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
+        }
+        return false;
+    }
+
     static bool unusedMsg(const char* msgp) { return 0 == VL_STRCASECMP(msgp, "UNUSED"); }
 };
 constexpr bool operator==(const V3ErrorCode& lhs, const V3ErrorCode& rhs) {
@@ -250,71 +273,224 @@ inline std::ostream& operator<<(std::ostream& os, const V3ErrorCode& rhs) {
 }
 
 // ######################################################################
-
-class V3Error final {
-    // Base class for any object that wants debugging and error reporting
-
+class V3ErrorGuarded final {
+    // Should only be used by V3ErrorGuarded::m_mutex is already locked
+    // contains guarded members
+public:
     using MessagesSet = std::set<std::string>;
     using ErrorExitCb = void (*)(void);
 
 private:
-    static bool s_describedWarnings;  // Told user how to disable warns
-    static bool s_describedWeb;  // Told user to see web
-    static std::array<bool, V3ErrorCode::_ENUM_MAX>
-        s_describedEachWarn;  // Told user specifics about this warning
-    static std::array<bool, V3ErrorCode::_ENUM_MAX>
-        s_pretendError;  // Pretend this warning is an error
-    static int s_debugDefault;  // Option: --debugi Default debugging level
-    static int s_errorLimit;  // Option: --error-limit Number of errors before exit
-    static bool s_warnFatal;  // Option: --warnFatal Warnings are fatal
-    static int s_errCount;  // Error count
-    static int s_warnCount;  // Warning count
-    static int s_tellManual;  // Tell user to see manual, 0=not yet, 1=doit, 2=disable
-    static std::ostringstream s_errorStr;  // Error string being formed
-    static V3ErrorCode s_errorCode;  // Error string being formed will abort
-    static bool s_errorContexted;  // Error being formed got context
-    static bool s_errorSuppressed;  // Error being formed should be suppressed
-    static MessagesSet s_messages;  // What errors we've outputted
-    static ErrorExitCb s_errorExitCb;  // Callback when error occurs for dumping
-
     static constexpr unsigned MAX_ERRORS = 50;  // Fatal after this may errors
 
+    bool m_describedWarnings VL_GUARDED_BY(m_mutex) = false;  // Told user how to disable warns
+    // Tell user to see manual, 0=not yet, 1=doit, 2=disable
+    int m_tellManual VL_GUARDED_BY(m_mutex) = 0;
+    V3ErrorCode m_errorCode VL_GUARDED_BY(m_mutex)
+        = V3ErrorCode::EC_FATAL;  // Error string being formed will abort
+    bool m_errorSuppressed VL_GUARDED_BY(m_mutex)
+        = false;  // Error being formed should be suppressed
+    MessagesSet m_messages VL_GUARDED_BY(m_mutex);  // What errors we've outputted
+    ErrorExitCb m_errorExitCb VL_GUARDED_BY(m_mutex)
+        = nullptr;  // Callback when error occurs for dumping
+    bool m_errorContexted VL_GUARDED_BY(m_mutex) = false;  // Error being formed got context
+    int m_warnCount VL_GUARDED_BY(m_mutex) = 0;  // Warning count
+    int m_errCount VL_GUARDED_BY(m_mutex) = 0;  // Error count
+    // Pretend this warning is an error
+    std::array<bool, V3ErrorCode::_ENUM_MAX> m_pretendError VL_GUARDED_BY(m_mutex);
+    bool m_describedWeb VL_GUARDED_BY(m_mutex) = false;  // Told user to see web
+    // Told user specifics about this warning
+    std::array<bool, V3ErrorCode::_ENUM_MAX> m_describedEachWarn VL_GUARDED_BY(m_mutex);
+    int m_debugDefault = 0;  // Option: --debugi Default debugging level
+    int m_errorLimit VL_GUARDED_BY(m_mutex)
+        = MAX_ERRORS;  // Option: --error-limit Number of errors before exit
+    bool m_warnFatal VL_GUARDED_BY(m_mutex) = true;  // Option: --warnFatal Warnings are fatal
+    std::ostringstream m_errorStr VL_GUARDED_BY(m_mutex);  // Error string being formed
+public:
+    VerilatedMutex m_mutex;  // Make sure only single thread is in class
+
+    string msgPrefix() VL_REQUIRES(m_mutex);  // returns %Error/%Warn
+    string warnMore() VL_REQUIRES(m_mutex);
+    void execErrorExitCb() VL_REQUIRES(m_mutex) {
+        if (m_errorExitCb) m_errorExitCb();
+    }
+    void errorExitCb(ErrorExitCb cb) VL_REQUIRES(m_mutex) { m_errorExitCb = cb; }
+    ErrorExitCb errorExitCb() VL_REQUIRES(m_mutex) { return m_errorExitCb; }
+    bool isError(V3ErrorCode code, bool supp) VL_REQUIRES(m_mutex);
+    void vlAbortOrExit() VL_REQUIRES(m_mutex);
+    void errorContexted(bool flag) VL_REQUIRES(m_mutex) { m_errorContexted = flag; }
+    void incWarnings() VL_REQUIRES(m_mutex) { m_warnCount++; }
+    void incErrors() VL_REQUIRES(m_mutex) {
+        m_errCount++;
+        if (errorCount() == errorLimit()) {  // Not >= as would otherwise recurse
+            v3errorEnd(
+                (v3errorPrep(V3ErrorCode::EC_FATALEXIT),
+                 (v3errorStr() << "Exiting due to too many errors encountered; --error-limit="
+                               << errorCount() << endl),
+                 v3errorStr()));
+            assert(0);  // LCOV_EXCL_LINE
+            VL_UNREACHABLE;
+        }
+    }
+    int errorCount() VL_REQUIRES(m_mutex) { return m_errCount; }
+    bool pretendError(int errorCode) VL_REQUIRES(m_mutex) { return m_pretendError[errorCode]; }
+    void pretendError(V3ErrorCode code, bool flag) VL_REQUIRES(m_mutex) {
+        if (code == V3ErrorCode::WIDTH) {
+            m_pretendError[V3ErrorCode::WIDTHTRUNC] = flag;
+            m_pretendError[V3ErrorCode::WIDTHEXPAND] = flag;
+            m_pretendError[V3ErrorCode::WIDTHXZEXPAND] = flag;
+        }
+        m_pretendError[code] = flag;
+    }
+    void debugDefault(int level) VL_MT_UNSAFE { m_debugDefault = level; }
+    int debugDefault() VL_MT_SAFE { return m_debugDefault; }
+    void errorLimit(int level) VL_REQUIRES(m_mutex) { m_errorLimit = level; }
+    int errorLimit() VL_REQUIRES(m_mutex) { return m_errorLimit; }
+    void warnFatal(bool flag) VL_REQUIRES(m_mutex) { m_warnFatal = flag; }
+    bool warnFatal() VL_REQUIRES(m_mutex) { return m_warnFatal; }
+    void v3errorPrep(V3ErrorCode code) VL_REQUIRES(m_mutex) {
+        m_errorStr.str("");
+        m_errorCode = code;
+        m_errorContexted = false;
+        m_errorSuppressed = false;
+    }
+    std::ostringstream& v3errorStr() VL_REQUIRES(m_mutex) { return m_errorStr; }
+    V3ErrorCode errorCode() VL_REQUIRES(m_mutex) { return m_errorCode; }
+    bool errorContexted() VL_REQUIRES(m_mutex) { return m_errorContexted; }
+    int warnCount() VL_REQUIRES(m_mutex) { return m_warnCount; }
+    bool errorSuppressed() VL_REQUIRES(m_mutex) { return m_errorSuppressed; }
+    void errorSuppressed(bool flag) VL_REQUIRES(m_mutex) { m_errorSuppressed = flag; }
+    bool describedWeb() VL_REQUIRES(m_mutex) { return m_describedWeb; }
+    void describedWeb(bool flag) VL_REQUIRES(m_mutex) { m_describedWeb = flag; }
+    bool describedEachWarn(V3ErrorCode code) VL_REQUIRES(m_mutex) {
+        return m_describedEachWarn[code];
+    }
+    void describedEachWarn(V3ErrorCode code, bool flag) VL_REQUIRES(m_mutex) {
+        m_describedEachWarn[code] = flag;
+    }
+    bool describedWarnings() VL_REQUIRES(m_mutex) { return m_describedWarnings; }
+    void describedWarnings(bool flag) VL_REQUIRES(m_mutex) { m_describedWarnings = flag; }
+    int tellManual() VL_REQUIRES(m_mutex) { return m_tellManual; }
+    void tellManual(int level) VL_REQUIRES(m_mutex) { m_tellManual = level; }
+    void v3errorEnd(std::ostringstream& sstr, const string& extra = "") VL_REQUIRES(m_mutex);
+    void suppressThisWarning() VL_REQUIRES(m_mutex);
+    string warnContextNone() VL_REQUIRES(m_mutex) {
+        errorContexted(true);
+        return "";
+    }
+};
+
+// ######################################################################
+class V3Error final {
+    // Base class for any object that wants debugging and error reporting
+private:
+    // CONSTRUCTORS
     V3Error() {
         std::cerr << ("Static class");
         V3Error::vlAbort();
     }
 
 public:
-    // CONSTRUCTORS
+    static V3ErrorGuarded& s() VL_MT_SAFE {  // Singleton
+        static V3ErrorGuarded s_s;
+        return s_s;
+    }
+
     // ACCESSORS
-    static void debugDefault(int level) { s_debugDefault = level; }
-    static int debugDefault() VL_MT_SAFE { return s_debugDefault; }
-    static void errorLimit(int level) { s_errorLimit = level; }
-    static int errorLimit() VL_MT_SAFE { return s_errorLimit; }
-    static void warnFatal(bool flag) { s_warnFatal = flag; }
-    static bool warnFatal() { return s_warnFatal; }
-    static string msgPrefix();  // returns %Error/%Warn
-    static int errorCount() VL_MT_SAFE { return s_errCount; }
-    static int warnCount() { return s_warnCount; }
-    static bool errorContexted() VL_MT_SAFE { return s_errorContexted; }
-    static void errorContexted(bool flag) { s_errorContexted = flag; }
+    static void debugDefault(int level) VL_MT_UNSAFE { s().debugDefault(level); }
+    static int debugDefault() VL_MT_SAFE { return s().debugDefault(); }
+    static void errorLimit(int level) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        s().errorLimit(level);
+    }
+    static int errorLimit() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        return s().errorLimit();
+    }
+    static void warnFatal(bool flag) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        s().warnFatal(flag);
+    }
+    static bool warnFatal() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        return s().warnFatal();
+    }
+    // returns %Error/%Warn
+    static string msgPrefix() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        return s().msgPrefix();
+    }
+    static int errorCount() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        return s().errorCount();
+    }
+    static bool pretendError(int errorCode) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        return s().pretendError(errorCode);
+    }
+    static int warnCount() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        return s().warnCount();
+    }
+    static bool errorContexted() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        return s().errorContexted();
+    }
+    static void errorContexted(bool flag) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        s().errorContexted(flag);
+    }
+    static void describedEachWarn(V3ErrorCode code, bool flag) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        s().describedEachWarn(code, flag);
+    }
     // METHODS
-    static void incErrors();
-    static void incWarnings() { s_warnCount++; }
+    static void incErrors() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        s().incErrors();
+    }
+    static void incWarnings() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        s().incWarnings();
+    }
     static void init();
     static void abortIfErrors() {
         if (errorCount()) abortIfWarnings();
     }
     static void abortIfWarnings();
-    static void suppressThisWarning();  // Suppress next %Warn if user has it off
-    static void pretendError(V3ErrorCode code, bool flag) { s_pretendError[code] = flag; }
-    static bool isError(V3ErrorCode code, bool supp);
-    static string lineStr(const char* filename, int lineno);
-    static V3ErrorCode errorCode() VL_MT_SAFE { return s_errorCode; }
-    static void errorExitCb(ErrorExitCb cb) { s_errorExitCb = cb; }
+    // Suppress next %Warn if user has it off
+    static void suppressThisWarning() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        s().suppressThisWarning();
+    }
+    static void pretendError(V3ErrorCode code, bool flag) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        s().pretendError(code, flag);
+    }
+    static string lineStr(const char* filename, int lineno) VL_PURE;
+    static V3ErrorCode errorCode() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        return s().errorCode();
+    }
+    static void errorExitCb(V3ErrorGuarded::ErrorExitCb cb) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        s().errorExitCb(cb);
+    }
 
     // When printing an error/warning, print prefix for multiline message
-    static string warnMore();
+    static string warnMore() VL_REQUIRES(s().m_mutex) { return s().warnMore(); }
+    // This function should only be used when it is impossible to
+    // generate whole error message inside v3warn macros and it needs to be
+    // streamed directly to cerr.
+    // Use with caution as this function isn't MT_SAFE.
+    static string warnMoreStandalone() VL_EXCLUDES(s().m_mutex) VL_MT_UNSAFE {
+        const VerilatedLockGuard guard{s().m_mutex};
+        return s().warnMore();
+    }
+    // This function marks place in error message from which point message
+    // should be printed after information on the error code.
+    // The post-processing is done in v3errorEnd function.
+    static string warnAdditionalInfo() VL_MT_SAFE { return "__WARNADDITIONALINFO__"; }
     /// When building an error, don't show context info
     static string warnContextNone() {
         V3Error::errorContexted(true);
@@ -323,36 +499,66 @@ public:
 
     // Internals for v3error()/v3fatal() macros only
     // Error end takes the string stream to output, be careful to seek() as needed
-    static void v3errorPrep(V3ErrorCode code) {
-        s_errorStr.str("");
-        s_errorCode = code;
-        s_errorContexted = false;
-        s_errorSuppressed = false;
+    static void v3errorPrep(V3ErrorCode code) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        s().v3errorPrep(code);
     }
-    static std::ostringstream& v3errorStr() { return s_errorStr; }
-    static void vlAbortOrExit();
+    static std::ostringstream& v3errorStr() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const VerilatedLockGuard guard{s().m_mutex};
+        return s().v3errorStr();
+    }
     static void vlAbort();
     // static, but often overridden in classes.
-    static void v3errorEnd(std::ostringstream& sstr, const string& extra = "");
+    static void v3errorEnd(std::ostringstream& sstr, const string& extra = "")
+        VL_MT_SAFE_EXCLUDES(s().m_mutex) VL_MT_SAFE {
+        const VerilatedLockGuard guard{s().m_mutex};
+        s().v3errorEnd(sstr, extra);
+    }
+    // We can't call 's().v3errorEnd' directly in 'v3ErrorEnd'/'v3errorEndFatal',
+    // due to bug in GCC (tested on 11.3.0 version with --enable-m32)
+    // causing internal error when backtrace is printed.
+    // Instead use this wrapper.
+    static void v3errorEndGuardedCall(std::ostringstream& sstr, const string& extra = "")
+        VL_REQUIRES(s().m_mutex) VL_MT_SAFE {
+        s().v3errorEnd(sstr, extra);
+    }
 };
 
 // Global versions, so that if the class doesn't define a operator, we get the functions anyways.
-inline void v3errorEnd(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
-inline void v3errorEndFatal(std::ostringstream& sstr) {
-    V3Error::v3errorEnd(sstr);
+inline void v3errorEnd(std::ostringstream& sstr) VL_REQUIRES(V3Error::s().m_mutex) VL_MT_SAFE {
+    V3Error::v3errorEndGuardedCall(sstr);
+}
+inline void v3errorEndFatal(std::ostringstream& sstr)
+    VL_REQUIRES(V3Error::s().m_mutex) VL_MT_SAFE {
+    V3Error::v3errorEndGuardedCall(sstr);
     assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE;
 }
+
+#ifndef V3ERROR_NO_GLOBAL_
+#define V3ErrorLockAndCheckStopRequested \
+    V3Error::s().m_mutex.lockCheckStopRequest( \
+        []() -> void { V3ThreadPool::s().waitIfStopRequested(); })
+#else
+#define V3ErrorLockAndCheckStopRequested V3Error::s().m_mutex.lock()
+#endif
 
 // Theses allow errors using << operators: v3error("foo"<<"bar");
 // Careful, you can't put () around msg, as you would in most macro definitions
 // Note the commas are the comma operator, not separating arguments. These are needed to ensure
 // evaluation order as otherwise we couldn't ensure v3errorPrep is called first.
+// Note: due to limitations of clang thread-safety analysis, we can't use
+// lock guard here, instead we are locking the mutex as first operation in temporary,
+// but we are unlocking the mutex after function using comma operator.
+// This way macros should also work when they are in 'if' stmt without '{}'.
 #define v3warnCode(code, msg) \
-    v3errorEnd((V3Error::v3errorPrep(code), (V3Error::v3errorStr() << msg), V3Error::v3errorStr()))
+    v3errorEnd((V3ErrorLockAndCheckStopRequested, V3Error::s().v3errorPrep(code), \
+                (V3Error::s().v3errorStr() << msg), V3Error::s().v3errorStr())), \
+        V3Error::s().m_mutex.unlock()
 #define v3warnCodeFatal(code, msg) \
-    v3errorEndFatal( \
-        (V3Error::v3errorPrep(code), (V3Error::v3errorStr() << msg), V3Error::v3errorStr()))
+    v3errorEndFatal((V3ErrorLockAndCheckStopRequested, V3Error::s().v3errorPrep(code), \
+                     (V3Error::s().v3errorStr() << msg), V3Error::s().v3errorStr())), \
+        V3Error::s().m_mutex.unlock()
 #define v3warn(code, msg) v3warnCode(V3ErrorCode::code, msg)
 #define v3info(msg) v3warnCode(V3ErrorCode::EC_INFO, msg)
 #define v3error(msg) v3warnCode(V3ErrorCode::EC_ERROR, msg)
@@ -365,8 +571,10 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
                     __FILE__ << ":" << std::dec << __LINE__ << ": " << msg)
 // Use this when normal v3fatal is called in static method that overrides fileline.
 #define v3fatalStatic(msg) \
-    (::v3errorEndFatal((V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), \
-                        (V3Error::v3errorStr() << msg), V3Error::v3errorStr())))
+    (::v3errorEndFatal((V3ErrorLockAndCheckStopRequested, \
+                        V3Error::s().v3errorPrep(V3ErrorCode::EC_FATAL), \
+                        (V3Error::s().v3errorStr() << msg), V3Error::s().v3errorStr()))), \
+        V3Error::s().m_mutex.unlock()
 
 #define UINFO(level, stmsg) \
     do { \

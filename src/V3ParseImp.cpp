@@ -134,10 +134,10 @@ void V3ParseImp::lexVerilatorCmtLintRestore(FileLine* fl) {
 
 void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnOff) {
     const char* sp = textp;
-    while (*sp && !isspace(*sp)) ++sp;
-    while (*sp && isspace(*sp)) ++sp;
-    while (*sp && !isspace(*sp)) ++sp;
-    while (*sp && isspace(*sp)) ++sp;
+    while (*sp && !std::isspace(*sp)) ++sp;
+    while (*sp && std::isspace(*sp)) ++sp;
+    while (*sp && !std::isspace(*sp)) ++sp;
+    while (*sp && std::isspace(*sp)) ++sp;
     string msg = sp;
     string::size_type pos;
     if ((pos = msg.find('*')) != string::npos) msg.erase(pos);
@@ -155,9 +155,9 @@ void V3ParseImp::lexVerilatorCmtBad(FileLine* fl, const char* textp) {
     if (cmtparse.substr(0, std::strlen("/*verilator")) == "/*verilator") {
         cmtparse.replace(0, std::strlen("/*verilator"), "");
     }
-    while (isspace(cmtparse[0])) cmtparse.replace(0, 1, "");
+    while (std::isspace(cmtparse[0])) cmtparse.replace(0, 1, "");
     string cmtname;
-    for (int i = 0; isalnum(cmtparse[i]); i++) { cmtname += cmtparse[i]; }
+    for (int i = 0; std::isalnum(cmtparse[i]); i++) cmtname += cmtparse[i];
     if (!v3Global.opt.isFuture(cmtname)) {
         fl->v3error("Unknown verilator comment: '" << textp << "'");
     }
@@ -191,7 +191,7 @@ double V3ParseImp::lexParseTimenum(const char* textp) {
     char* const strgp = new char[length + 1];
     char* dp = strgp;
     const char* sp = textp;
-    for (; isdigit(*sp) || *sp == '_' || *sp == '.'; ++sp) {
+    for (; std::isdigit(*sp) || *sp == '_' || *sp == '.'; ++sp) {
         if (*sp != '_') *dp++ = *sp;
     }
     *dp++ = '\0';
@@ -256,7 +256,7 @@ void V3ParseImp::preprocDumps(std::ostream& os) {
             if (noblanks) {
                 bool blank = true;
                 for (string::iterator its = buf.begin(); its != buf.end(); ++its) {
-                    if (!isspace(*its) && *its != '\n') {
+                    if (!std::isspace(*its) && *its != '\n') {
                         blank = false;
                         break;
                     }
@@ -374,6 +374,32 @@ size_t V3ParseImp::tokenPipeScanParam(size_t depth) {
     return depth;
 }
 
+size_t V3ParseImp::tokenPipeScanType(size_t depth) {
+    // Search around IEEE type_reference to see if is expression
+    // Return location of following token, or input if not found
+    // yTYPE__ETC '(' ... ')'  ['==' '===' '!=' '!===']
+    if (tokenPeekp(depth)->token != '(') return depth;
+    depth += 1;  // Past the (
+    int parens = 1;  // Count first (
+    while (true) {
+        const int tok = tokenPeekp(depth)->token;
+        if (tok == 0) {
+            UINFO(9, "tokenPipeScanType hit EOF; probably syntax error to come");
+            break;
+        } else if (tok == '(') {
+            ++parens;
+        } else if (tok == ')') {
+            --parens;
+            if (parens == 0) {
+                ++depth;
+                break;
+            }
+        }
+        ++depth;
+    }
+    return depth;
+}
+
 void V3ParseImp::tokenPipeline() {
     // called from bison's "yylex", has a "this"
     if (m_tokensAhead.empty()) tokenPull();  // corrupts yylval
@@ -388,6 +414,7 @@ void V3ParseImp::tokenPipeline() {
         || token == yLOCAL__LEX  //
         || token == yNEW__LEX  //
         || token == ySTATIC__LEX  //
+        || token == yTYPE__LEX  //
         || token == yVIRTUAL__LEX  //
         || token == yWITH__LEX  //
         || token == yaID__LEX  //
@@ -443,6 +470,18 @@ void V3ParseImp::tokenPipeline() {
             } else {
                 token = ySTATIC__ETC;
             }
+        } else if (token == yTYPE__LEX) {
+            VL_RESTORER(yylval);  // Remember value, as about to read ahead
+            const size_t depth = tokenPipeScanType(0);
+            const int postToken = tokenPeekp(depth)->token;
+            if (  // v-- token                v-- postToken
+                  // yTYPE__EQ '(' .... ')' EQ_OPERATOR yTYPE_ETC '(' ... ')'
+                postToken == yP_EQUAL || postToken == yP_NOTEQUAL || postToken == yP_CASEEQUAL
+                || postToken == yP_CASENOTEQUAL) {
+                token = yTYPE__EQ;
+            } else {
+                token = yTYPE__ETC;
+            }
         } else if (token == yVIRTUAL__LEX) {
             if (nexttok == yCLASS) {
                 token = yVIRTUAL__CLASS;
@@ -496,7 +535,7 @@ void V3ParseImp::tokenPipelineSym() {
         if (const VSymEnt* const look_underp = V3ParseImp::parsep()->symp()->nextId()) {
             UINFO(7, "   tokenPipelineSym: next id lookup forced under " << look_underp << endl);
             // if (debug() >= 7) V3ParseImp::parsep()->symp()->dumpSelf(cout, " -symtree: ");
-            foundp = look_underp->findIdFallback(*(yylval.strp));
+            foundp = look_underp->findIdFlat(*(yylval.strp));
             // "consume" it.  Must set again if want another token under temp scope
             V3ParseImp::parsep()->symp()->nextId(nullptr);
         } else {
@@ -506,6 +545,19 @@ void V3ParseImp::tokenPipelineSym() {
             // if (debug()>=9) V3ParseImp::parsep()->symp()->symCurrentp()->dumpSelf(cout,
             // " -findtree: ", true);
             foundp = V3ParseImp::parsep()->symp()->symCurrentp()->findIdFallback(*(yylval.strp));
+        }
+        if (!foundp && !m_afterColonColon) {  // Check if the symbol can be found in std
+            AstPackage* const stdpkgp = v3Global.rootp()->stdPackagep();
+            if (stdpkgp) {
+                VSymEnt* const stdsymp = stdpkgp->user4u().toSymEnt();
+                foundp = stdsymp->findIdFallback(*(yylval.strp));
+            }
+            if (foundp && !v3Global.usesStdPackage()) {
+                AstPackageImport* const impp
+                    = new AstPackageImport(stdpkgp->fileline(), stdpkgp, "*");
+                unitPackage(stdpkgp->fileline())->addStmtsp(impp);
+                v3Global.setUsesStdPackage();
+            }
         }
         if (foundp) {
             AstNode* const scp = foundp->nodep();
@@ -523,20 +575,13 @@ void V3ParseImp::tokenPipelineSym() {
                 } else {
                     token = yaID__ETC;
                 }
+            } else if (!m_afterColonColon && *(yylval.strp) == "std") {
+                v3Global.setUsesStdPackage();
             }
-        } else if ((token == yaID__LEX || token == yaID__CC)
-                   && (*(yylval.strp) == "mailbox"  // IEEE-standard class
-                       || *(yylval.strp) == "process"  // IEEE-standard class
-                       || *(yylval.strp) == "semaphore")) {  // IEEE-standard class
-            v3Global.setUsesStdPackage();
-            yylval.scp = nullptr;
-            if (token == yaID__LEX) token = yaID__aTYPE;
         } else {  // Not found
             yylval.scp = nullptr;
             if (token == yaID__CC) {
-                if (!m_afterColonColon && *(yylval.strp) == "std") {
-                    v3Global.setUsesStdPackage();
-                } else if (!v3Global.opt.bboxUnsup()) {
+                if (!v3Global.opt.bboxUnsup()) {
                     // IEEE does require this, but we may relax this as UVM breaks it, so allow
                     // bbox for today
                     // We'll get a parser error eventually but might not be obvious

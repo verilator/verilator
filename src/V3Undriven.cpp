@@ -46,8 +46,15 @@ class UndrivenVarEntry final {
     AstVar* const m_varp;  // Variable this tracks
     std::vector<bool> m_wholeFlags;  // Used/Driven on whole vector
     std::vector<bool> m_bitFlags;  // Used/Driven on each subbit
+    const AstAlways* m_alwCombp
+        = nullptr;  // always_comb of var if driven within always_comb, else nullptr
+    const FileLine* m_alwCombFileLinep = nullptr;  // File line of always_comb of var if driven
+                                                   // within always_comb, else nullptr
+    const AstNodeVarRef* m_nodep = nullptr;  // varref if driven, else nullptr
+    const FileLine* m_nodeFileLinep = nullptr;  // File line of varref if driven, else nullptr
+    bool m_underGen = false;  // Under a generate
 
-    enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAGS_PER_BIT = 2 };
+    enum : uint8_t { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAG_DRIVEN_ALWCOMB = 2, FLAGS_PER_BIT = 3 };
 
 public:
     // CONSTRUCTORS
@@ -117,6 +124,24 @@ public:
         UINFO(9, "set d[*] " << m_varp->name() << endl);
         m_wholeFlags[FLAG_DRIVEN] = true;
     }
+    void drivenWhole(const AstNodeVarRef* nodep, const FileLine* fileLinep) {
+        drivenWhole();
+        m_nodep = nodep;
+        m_nodeFileLinep = fileLinep;
+    }
+    void drivenAlwaysCombWhole(const AstAlways* alwCombp, const FileLine* fileLinep) {
+        m_wholeFlags[FLAG_DRIVEN_ALWCOMB] = true;
+        m_alwCombp = alwCombp;
+        m_alwCombFileLinep = fileLinep;
+    }
+    void underGenerate() { m_underGen = true; }
+    bool isUnderGen() const { return m_underGen; }
+    bool isDrivenWhole() const { return m_wholeFlags[FLAG_DRIVEN]; }
+    bool isDrivenAlwaysCombWhole() const { return m_wholeFlags[FLAG_DRIVEN_ALWCOMB]; }
+    const AstNodeVarRef* getNodep() const { return m_nodep; }
+    const FileLine* getNodeFileLinep() const { return m_nodeFileLinep; }
+    const AstAlways* getAlwCombp() const { return m_alwCombp; }
+    const FileLine* getAlwCombFileLinep() const { return m_alwCombFileLinep; }
     void usedBit(int bit, int width) {
         UINFO(9, "set u[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name() << endl);
         for (int i = 0; i < width; i++) {
@@ -304,7 +329,7 @@ private:
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
             // For assigns and non-combo always, do just usr==1, to look
             // for module-wide undriven etc.
-            // For non-combo always, run both usr==1 for above, and also
+            // For combo always, run both usr==1 for above, and also
             // usr==2 for always-only checks.
             UndrivenVarEntry* const entryp = getEntryp(nodep, usr);
             if (nodep->isNonOutput() || nodep->isSigPublic() || nodep->isSigUserRWPublic()
@@ -381,7 +406,44 @@ private:
                     UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp) << endl);
                     warnAlwCombOrder(nodep);
                 }
-                entryp->drivenWhole();
+                if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
+                    && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
+                    && nodep->fileline() != entryp->getNodeFileLinep() && !entryp->isUnderGen()
+                    && entryp->getNodep()) {
+                    if (m_alwaysCombp
+                        && (!entryp->isDrivenAlwaysCombWhole()
+                            || (entryp->isDrivenAlwaysCombWhole()
+                                && m_alwaysCombp != entryp->getAlwCombp()
+                                && m_alwaysCombp->fileline() != entryp->getAlwCombFileLinep()))) {
+                        nodep->v3warn(
+                            MULTIDRIVEN,
+                            "Variable written to in always_comb also written by other process"
+                                << " (IEEE 1800-2017 9.2.2.2): " << nodep->prettyNameQ() << '\n'
+                                << nodep->warnOther() << '\n'
+                                << nodep->warnContextPrimary() << '\n'
+                                << entryp->getNodep()->warnOther()
+                                << "... Location of other write\n"
+                                << entryp->getNodep()->warnContextSecondary());
+                    }
+                    if (!m_alwaysCombp && entryp->isDrivenAlwaysCombWhole()) {
+                        nodep->v3warn(MULTIDRIVEN,
+                                      "Variable also written to in always_comb"
+                                          << " (IEEE 1800-2017 9.2.2.2): " << nodep->prettyNameQ()
+                                          << '\n'
+                                          << nodep->warnOther() << '\n'
+                                          << nodep->warnContextPrimary() << '\n'
+                                          << entryp->getNodep()->warnOther()
+                                          << "... Location of always_comb write\n"
+                                          << entryp->getNodep()->warnContextSecondary());
+                    }
+                }
+                entryp->drivenWhole(nodep, nodep->fileline());
+                if (m_alwaysCombp && entryp->isDrivenAlwaysCombWhole()
+                    && m_alwaysCombp != entryp->getAlwCombp()
+                    && m_alwaysCombp->fileline() == entryp->getAlwCombFileLinep())
+                    entryp->underGenerate();
+                if (m_alwaysCombp)
+                    entryp->drivenAlwaysCombWhole(m_alwaysCombp, m_alwaysCombp->fileline());
             }
             if (m_inBBox || nodep->access().isReadOrRW()
                 || fdrv

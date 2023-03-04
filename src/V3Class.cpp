@@ -156,6 +156,11 @@ private:
         //    m_toScopeMoves.push_back(std::make_pair(nodep, m_classScopep));
         //}
     }
+    void visit(AstCoverDecl* nodep) override {
+        // Need to declare coverage in package, where we have access to symbol table
+        iterateChildren(nodep);
+        if (m_classPackagep) m_classPackagep->addStmtsp(nodep->unlinkFrBack());
+    }
     void visit(AstInitial* nodep) override {
         // But not AstInitialAutomatic, which remains under the class
         iterateChildren(nodep);
@@ -171,24 +176,25 @@ private:
         }
     }
 
-    void setStructModulep(AstStructDType* const dtypep) {
+    void setStructModulep(AstNodeUOrStructDType* const dtypep) {
         // Give it a pointer to its package and a final name
         dtypep->classOrPackagep(m_modp);
-        dtypep->name(dtypep->name() + "__struct" + cvtToStr(dtypep->uniqueNum()));
+        dtypep->name(dtypep->name() + (VN_IS(dtypep, UnionDType) ? "__union" : "__struct")
+                     + cvtToStr(dtypep->uniqueNum()));
 
         for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            AstStructDType* const subp = VN_CAST(itemp->skipRefp(), StructDType);
+            AstNodeUOrStructDType* const subp = VN_CAST(itemp->skipRefp(), NodeUOrStructDType);
             // Recurse only into anonymous unpacked structs inside this definition,
             // other unpacked structs will be reached from another typedefs
-            if (subp && !subp->packed() && subp->name().empty()) { setStructModulep(subp); }
+            if (subp && !subp->packed() && subp->name().empty()) setStructModulep(subp);
         }
     }
     void visit(AstTypedef* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
 
-        AstStructDType* const dtypep = VN_CAST(nodep->dtypep(), StructDType);
+        AstNodeUOrStructDType* const dtypep = VN_CAST(nodep->dtypep(), NodeUOrStructDType);
         if (dtypep && !dtypep->packed()) {
             dtypep->name(nodep->name());
             setStructModulep(dtypep);

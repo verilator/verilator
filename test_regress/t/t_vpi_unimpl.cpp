@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
     uint64_t sim_time = 1100;
     contextp->commandArgs(argc, argv);
     // contextp->debug(9);
-    // we're going to be checking for these errors do don't crash out
+    // We're going to be checking for these errors so don't crash out
     contextp->fatalOnVpiError(0);
 
     const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),

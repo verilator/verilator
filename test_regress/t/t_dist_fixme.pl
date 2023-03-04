@@ -26,21 +26,11 @@ if (!-r "$root/.git") {
     $files =~ s/\s+/ /g;
     my @batch;
     my $n = 0;
+    my $re = qr/(FIX[M]E|BO[Z]O)/;
     foreach my $file (split /\s+/, $files) {
-        $batch[$n] .= $file . " ";
-        ++$n if (length($batch[$n]) > 10000);
-    }
-
-    foreach my $bfiles (@batch) {
-        my $cmd = "cd $root && grep -n -P '(FIX" . "ME|BO" . "ZO)' $bfiles | sort";
-        my $grep = `$cmd`;
-        if ($grep ne "") {
-            print "$grep\n";
-            foreach my $line (split /\n/, $grep) {
-                print "L $line\n";
-                # FIXMEV5 for use in develop-v5 branch until merged to master
-                $names{$1} = 1 if $line =~ /^([^:]+)/ && $line !~ /FIXMEV5/;
-            }
+        my $wholefile = file_contents($root . "/" . $file);
+        if ($wholefile =~ /$re/) {
+            $names{$file} = 1;
         }
     }
     if (scalar(%names) >= 1) {

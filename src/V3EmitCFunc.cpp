@@ -155,7 +155,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
             puts("(");
         } else {
             // Normal text
-            if (isalnum(pos[0])) needComma = true;
+            if (std::isalnum(pos[0])) needComma = true;
             COMMA;
             string s;
             s += pos[0];
@@ -262,7 +262,7 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
         }
         if (argp->widthMin() > 8 && fmtLetter == 'c') {
             // Technically legal, but surely not what the user intended.
-            argp->v3warn(WIDTH, dispp->verilogKwd() << "of %c format of > 8 bit value");
+            argp->v3warn(WIDTHTRUNC, dispp->verilogKwd() << "of %c format of > 8 bit value");
         }
     }
     // string pfmt = "%"+displayFormat(argp, vfmt, fmtLetter)+fmtLetter;
@@ -329,7 +329,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstScopeName* scopenamep, const stri
             m_emitDispState.pushFormat(*pos);
         } else {  // Format character
             inPct = false;
-            switch (tolower(pos[0])) {
+            switch (std::tolower(pos[0])) {
             case '0':  // FALLTHRU
             case '1':  // FALLTHRU
             case '2':  // FALLTHRU
@@ -541,6 +541,12 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
         if (int(nodep->num().toDouble()) == nodep->num().toDouble()
             && nodep->num().toDouble() < 1000 && nodep->num().toDouble() > -1000) {
             ofp()->printf("%3.1f", nodep->num().toDouble());  // Force decimal point
+        } else if (std::isinf(nodep->num().toDouble())) {
+            if (std::signbit(nodep->num().toDouble())) puts("-");
+            ofp()->puts("std::numeric_limits<double>::infinity()");
+        } else if (std::isnan(nodep->num().toDouble())) {
+            if (std::signbit(nodep->num().toDouble())) puts("-");
+            ofp()->puts("std::numeric_limits<double>::quiet_NaN()");
         } else {
             // Not %g as will not always put in decimal point, so not obvious to compiler
             // is a real number
@@ -673,8 +679,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
                                                  depth + 1, suffix + "[" + ivar + "]");
         const string post = "}\n";
         return below.empty() ? "" : pre + below + post;
-    } else if (VN_IS(dtypep, StructDType) && !VN_AS(dtypep, StructDType)->packed()) {
-        const auto* const sdtypep = VN_AS(dtypep, StructDType);
+    } else if (VN_IS(dtypep, NodeUOrStructDType) && !VN_AS(dtypep, NodeUOrStructDType)->packed()) {
+        const auto* const sdtypep = VN_AS(dtypep, NodeUOrStructDType);
         string literal;
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {

@@ -2066,7 +2066,7 @@ module t_case_write1_tasks ();
          endcase
       end
    endtask
-   task ozonef3;
+   task automatic ozonef3;
       input  [  31:0] foo;
       inout [STRLEN*8: 1] foobar;
       reg                 nacho;
@@ -2475,7 +2475,7 @@ module t_case_write1_tasks ();
          endcase
       end
    endtask
-   task dude;
+   task automatic dude;
       inout  [STRLEN*8: 1] foobar;
       reg [   7:0]         temp;
       integer              i;
@@ -2497,7 +2497,7 @@ module t_case_write1_tasks ();
       end
    endtask
 
-   task big_case;
+   task automatic big_case;
       input  [  31:0] fd;
       input [  31:0]  foo;
       reg [STRLEN*8: 1] foobar;

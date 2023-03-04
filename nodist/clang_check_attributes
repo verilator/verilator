@@ -239,6 +239,7 @@ class CallAnnotationsValidator:
         self._call_location: Optional[FunctionInfo] = None
         self._caller: Optional[FunctionInfo] = None
         self._level: int = 0
+        self._constructor_context: int = 0
 
     def compile_and_analyze_file(self, source_file: str,
                                  compiler_args: list[str],
@@ -300,6 +301,67 @@ class CallAnnotationsValidator:
         annotations = VlAnnotations.from_nodes_list(children)
         return (True, refd, annotations, children)
 
+    def check_mt_safe_call(self, node: clang.cindex.Cursor,
+                           refd: clang.cindex.Cursor,
+                           annotations: VlAnnotations):
+        is_mt_safe = False
+
+        if annotations.is_mt_safe_call():
+            is_mt_safe = True
+        elif not annotations.is_mt_unsafe_call():
+            # Check whether the object the method is called on is mt-safe
+            def find_object_ref(node):
+                try:
+                    node = next(node.get_children())
+                    if node.kind == CursorKind.DECL_REF_EXPR:
+                        # Operator on an argument or local object
+                        return node
+                    if node.kind != CursorKind.MEMBER_REF_EXPR:
+                        return None
+                    if node.referenced and node.referenced.kind == CursorKind.FIELD_DECL:
+                        # Operator on a member object
+                        return node
+                    node = next(node.get_children())
+                    if node.kind == CursorKind.UNEXPOSED_EXPR:
+                        node = next(node.get_children())
+                    return node
+                except StopIteration:
+                    return None
+
+            refn = find_object_ref(node)
+            if self._constructor_context and not refn:
+                # we are in constructor and no object reference means
+                # we are calling local method. It is MT safe
+                # only if this method is also only calling local methods or
+                # MT-safe methods
+                self.iterate_children(refd.get_children(),
+                                      self.dispatch_node_inside_definition)
+                is_mt_safe = True
+            # class/struct member
+            elif refn and refn.kind == CursorKind.MEMBER_REF_EXPR and refn.referenced:
+                refn = refn.referenced
+                refna = VlAnnotations.from_nodes_list(refn.get_children())
+                if refna.guarded or self._constructor_context:
+                    is_mt_safe = True
+            # variable
+            elif refn and refn.kind == CursorKind.DECL_REF_EXPR and refn.referenced:
+                # This is probably a local or an argument.
+                # Calling methods on local pointers or references is MT-safe,
+                # but on argument pointers or references is not.
+                if "*" not in refn.type.spelling and "&" not in refn.type.spelling:
+                    is_mt_safe = True
+                # local variable
+                if refn.referenced.kind == CursorKind.VAR_DECL:
+                    is_mt_safe = True
+            elif refn and refn.kind == CursorKind.CALL_EXPR:
+                if self._constructor_context:
+                    # call to local function from constructor context
+                    # safe if this function also calling local methods or
+                    # MT-safe methods
+                    self.dispatch_call_node(refn)
+                    is_mt_safe = True
+        return is_mt_safe
+
     # Call handling
 
     def process_method_call(self, node: clang.cindex.Cursor,
@@ -310,43 +372,7 @@ class CallAnnotationsValidator:
 
         # MT-safe context
         if ctx.is_mt_safe_context():
-            is_mt_safe = False
-
-            if annotations.is_mt_safe_call():
-                is_mt_safe = True
-            elif not annotations.is_mt_unsafe_call():
-                # Check whether the object the method is called on is mt-safe
-                def find_object_ref(node):
-                    try:
-                        node = next(node.get_children())
-                        if node.kind == CursorKind.DECL_REF_EXPR:
-                            # Operator on an argument or local object
-                            return node
-                        if node.kind != CursorKind.MEMBER_REF_EXPR:
-                            return None
-                        if node.referenced and node.referenced.kind == CursorKind.FIELD_DECL:
-                            # Operator on a member object
-                            return node
-                        node = next(node.get_children())
-                        if node.kind == CursorKind.UNEXPOSED_EXPR:
-                            node = next(node.get_children())
-                        return node
-                    except StopIteration:
-                        return None
-
-                refn = find_object_ref(node)
-                # class/struct member
-                if refn and refn.kind == CursorKind.MEMBER_REF_EXPR and refn.referenced:
-                    refn = refn.referenced
-                    refna = VlAnnotations.from_nodes_list(refn.get_children())
-                    if refna.guarded:
-                        is_mt_safe = True
-                # variable
-                elif refn and refn.kind == CursorKind.DECL_REF_EXPR and refn.referenced:
-                    # This is probably a local or an argument. Assume it's safe.
-                    is_mt_safe = True
-
-            if not is_mt_safe:
+            if not self.check_mt_safe_call(node, refd, annotations):
                 self.emit_diagnostic(
                     FunctionInfo.from_node(refd, refd, annotations),
                     DiagnosticKind.NON_MT_SAFE_CALL_IN_MT_SAFE_CTX)
@@ -380,7 +406,13 @@ class CallAnnotationsValidator:
         assert self._call_location
         ctx = self._call_location.annotations
 
-        # Constructors are always OK in MT-safe context.
+        # Constructors are OK in MT-safe context
+        # only if they call local methods or MT-safe functions.
+        if ctx.is_mt_safe_context() or self._constructor_context:
+            self._constructor_context += 1
+            self.iterate_children(refd.get_children(),
+                                  self.dispatch_node_inside_definition)
+            self._constructor_context -= 1
 
         # pure context
         if ctx.is_pure_context():
@@ -412,6 +444,8 @@ class CallAnnotationsValidator:
                 or refd.kind == CursorKind.CXX_METHOD
                 and refd.is_static_method()):
             self.process_function_call(refd, annotations)
+            self.iterate_children(node.get_children(),
+                                  self.dispatch_node_inside_definition)
             return
         # Function pointer
         if refd.kind in [
@@ -419,18 +453,26 @@ class CallAnnotationsValidator:
                 CursorKind.PARM_DECL
         ]:
             self.process_function_call(refd, annotations)
+            self.iterate_children(node.get_children(),
+                                  self.dispatch_node_inside_definition)
             return
         # Non-static class methods
         if refd.kind == CursorKind.CXX_METHOD:
             self.process_method_call(node, refd, annotations)
+            self.iterate_children(node.get_children(),
+                                  self.dispatch_node_inside_definition)
             return
         # Conversion method (e.g. `operator int()`)
         if refd.kind == CursorKind.CONVERSION_FUNCTION:
             self.process_method_call(node, refd, annotations)
+            self.iterate_children(node.get_children(),
+                                  self.dispatch_node_inside_definition)
             return
         # Constructors
         if refd.kind == CursorKind.CONSTRUCTOR:
             self.process_constructor_call(refd, annotations)
+            self.iterate_children(node.get_children(),
+                                  self.dispatch_node_inside_definition)
             return
 
         # Ignore other callables
@@ -461,9 +503,6 @@ class CallAnnotationsValidator:
 
         assert refd is not None
 
-        prev_caller = self._caller
-        prev_call_location = self._call_location
-
         def_annotations = VlAnnotations.from_nodes_list(node_children)
 
         if not (def_annotations.is_empty() or def_annotations == annotations):
@@ -485,8 +524,7 @@ class CallAnnotationsValidator:
         self.iterate_children(node_children,
                               self.dispatch_node_inside_definition)
 
-        self._call_location = prev_call_location
-        self._caller = prev_caller
+        self._call_location = None
 
         return None
 
@@ -704,8 +742,7 @@ class TopDownSummaryPrinter():
         info: FunctionInfo
         calees: set[FunctionInfo]
         mismatch: Optional[FunctionInfo] = None
-        non_mt_safe_call_in_mt_safe: Optional[FunctionInfo] = None
-        non_pure_call_in_pure: Optional[FunctionInfo] = None
+        reason: Optional[DiagnosticKind] = None
 
     def __init__(self):
         self._is_first_group = True
@@ -727,15 +764,12 @@ class TopDownSummaryPrinter():
         if func is None:
             func = TopDownSummaryPrinter.FunctionCallees(diag.source, set())
             self._funcs[usr] = func
+        func.reason = diag.kind
         if diag.kind == DiagnosticKind.ANNOTATIONS_DEF_DECL_MISMATCH:
             func.mismatch = diag.target
         else:
             func.calees.add(diag.target)
             self._unsafe_in_safe.add(diag.target.usr)
-            if diag.kind == DiagnosticKind.NON_MT_SAFE_CALL_IN_MT_SAFE_CTX:
-                func.non_mt_safe_call_in_mt_safe = diag.target
-            elif diag.kind == DiagnosticKind.NON_PURE_CALL_IN_PURE_CTX:
-                func.non_pure_call_in_pure = diag.target
 
     def print_summary(self, root_dir: str):
         row_groups: dict[str, list[list[str]]] = {}
@@ -748,11 +782,11 @@ class TopDownSummaryPrinter():
 
             row_group = []
             name = f"\"{func_info.name}\" "
-            if func.mismatch:
+            if func.reason == DiagnosticKind.ANNOTATIONS_DEF_DECL_MISMATCH:
                 name += "declaration does not match definition"
-            elif func.non_mt_safe_call_in_mt_safe:
+            elif func.reason == DiagnosticKind.NON_MT_SAFE_CALL_IN_MT_SAFE_CTX:
                 name += "is mtsafe but calls non-mtsafe function(s)"
-            elif func.non_pure_call_in_pure:
+            elif func.reason == DiagnosticKind.NON_PURE_CALL_IN_PURE_CTX:
                 name += "is pure but calls non-pure function(s)"
             else:
                 name += "for unknown reason (please add description)"

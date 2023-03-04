@@ -35,7 +35,7 @@ execute(
 
 # 'to="PS"' indicates means we probably mis-protected something already protected
 # Use --debug-protect to assist debugging these
-file_grep_not("$Self->{obj_dir}/$Self->{VM_PREFIX}__idmap.xml", qr/to="PS/);
+file_grep_not("$Self->{obj_dir}/$Self->{vm_prefix}__idmap.xml", qr/to="PS/);
 
 if ($Self->{vlt_all}) {
     # Check for secret in any outputs

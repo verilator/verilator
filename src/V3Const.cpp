@@ -900,6 +900,7 @@ private:
     bool m_doV = false;  // Verilog, not C++ conversion
     bool m_doGenerate = false;  // Postpone width checking inside generate
     bool m_hasJumpDelay = false;  // JumpGo or Delay under this while
+    bool m_underRecFunc = false;  // Under a recursive function
     AstNodeModule* m_modp = nullptr;  // Current module
     const AstArraySel* m_selp = nullptr;  // Current select
     const AstNode* m_scopep = nullptr;  // Current scope
@@ -1384,15 +1385,6 @@ private:
         // but for now can disable en masse until V3Purify takes effect.
         return m_doShort || VN_IS(nodep, VarRef) || VN_IS(nodep, Const);
     }
-    bool isTreePureRecurse(AstNode* nodep) {
-        // Should memoize this if call commonly
-        if (!nodep->isPure()) return false;
-        if (nodep->op1p() && !isTreePureRecurse(nodep->op1p())) return false;
-        if (nodep->op2p() && !isTreePureRecurse(nodep->op2p())) return false;
-        if (nodep->op3p() && !isTreePureRecurse(nodep->op3p())) return false;
-        if (nodep->op4p() && !isTreePureRecurse(nodep->op4p())) return false;
-        return true;
-    }
 
     // Extraction checks
     bool warnSelect(AstSel* nodep) {
@@ -1466,6 +1458,7 @@ private:
         if (!thensp->lhsp()->sameGateTree(elsesp->lhsp())) return false;
         if (!thensp->rhsp()->gateTree()) return false;
         if (!elsesp->rhsp()->gateTree()) return false;
+        if (m_underRecFunc) return false;  // This optimization may lead to infinite recursion
         return true;
     }
     bool operandIfIf(const AstNodeIf* nodep) {
@@ -2954,7 +2947,7 @@ private:
                 }
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             } else if (!afterComment(nodep->thensp()) && !afterComment(nodep->elsesp())) {
-                if (!isTreePureRecurse(nodep->condp())) {
+                if (!nodep->condp()->isTreePureRecurse()) {
                     // Condition has side effect - leave - perhaps in
                     // future simplify to remove all but side effect terms
                 } else {
@@ -3094,12 +3087,12 @@ private:
                 if (!inPct && ch == '%') {
                     inPct = true;
                     fmt = ch;
-                } else if (inPct && (isdigit(ch) || ch == '.' || ch == '-')) {
+                } else if (inPct && (std::isdigit(ch) || ch == '.' || ch == '-')) {
                     fmt += ch;
                 } else if (inPct) {
                     inPct = false;
                     fmt += ch;
-                    switch (tolower(ch)) {
+                    switch (std::tolower(ch)) {
                     case '%': break;  // %% - just output a %
                     case 'm': break;  // %m - auto insert "name"
                     case 'l': break;  // %l - auto insert "library"
@@ -3136,6 +3129,11 @@ private:
             // Just a simple constant string - the formatting is pointless
             VL_DO_DANGLING(replaceConstString(nodep, nodep->name()), nodep);
         }
+    }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_underRecFunc);
+        if (nodep->recursive()) m_underRecFunc = true;
+        iterateChildren(nodep);
     }
 
     void visit(AstFuncRef* nodep) override {

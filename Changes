@@ -8,7 +8,66 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
-Verilator 5.006 2022-01-22
+Verilator 5.008 2023-03-04
+==========================
+
+**Minor:**
+
+* Add --annotate-points option, change multipoint on line reporting (#3876). [Nassim Corteggiani]
+* Add --verilate-jobs option (#3889). [Kamil Rakoczy, Antmicro Ltd]
+* Add WIDTHEXPAND and WIDTHTRUNC warnings to replace WIDTH (#3900). [Andrew Nolte]
+* Add SOURCE_DATE_EPOCH for docs/guide/conf.py (#3918). [Larry Doolittle]
+* Add /*verilator public[flat|flat_rd|flat_rw| ]*/ metacomments (#3894). [Joseph Nwabueze]
+* Add lint warning on always_comb multidriven (#3888) (#3939). [Adam Bagley]
+* Add warning on ++/-- over expressions with potential side effects (#3976). [Krzysztof Boroński]
+* Add error on mixing .name and by-port instantiations.
+* Removed deprecated --cdc option.
+* Support unpacked unions.
+* Support interface classes and class implements.
+* Support global clocking and $global_clock.
+* Support class parameters without initial values.
+* Support cast to numbers from strings.
+* Support struct I/O in --lib-create (#3378) (#3892). [Varun Koyyalagunta]
+* Support function calls without parenthesis (#3903) (#3902). [Ryszard Rozak, Antmicro Ltd]
+* Support class extending its parameter (#3904). [Ryszard Rozak, Antmicro Ltd]
+* Support static function variables (#3830). [Ryszard Rozak, Antmicro Ltd]
+* Support vpiDefName (#3906) (#3931). [Andrew Nolte]
+* Support recursive methods (#3987). [Ryszard Rozak, Antmicro Ltd]
+* Fix real parameters of infinity and NaN.
+* Fix pattern assignment to unpacked structs (#3510). [Mostafa Garnal]
+* Fix single-element replication to dynarray/unpacked/queue (#3548). [Gustav Svensk]
+* Fix constant enum methods (#3621). [Todd Strader]
+* Fix inconsistent naming of generate scope arrays (#3840). [Andrew Nolte]
+* Fix namespace fallback resolution (#3863) (#3942). [Aleksander Kiryk, Antmicro Ltd]
+* Fix std:: to be parsed first (#3864) (#3928). [Aleksander Kiryk, Antmicro Ltd]
+* Fix cmake warning if multiple SOURCES w/o PREFIX (#3916) (#3927). [Yoda Lee]
+* Fix paramaterized class function linkage (#3917). [Ryszard Rozak]
+* Fix static members of type aliases of a parametrized class (#3922). [Ryszard Rozak, Antmicro Ltd]
+* Fix class extend parameter dot case (#3926). [Ryszard Rozak, Antmicro Ltd]
+* Fix MsWin missing directory exception, and ::std (#3928) (#3933) (#3935). [Kritik Bhimani]
+* Fix very long VPI signal names (#3929). [Marlon James]
+* Fix VPI upper interface scopes not found (#3937). [David Stanford]
+* Fix virus detection false positive (#3944). [Stuart Morris]
+* Fix constant string function assignment (#3945). [Todd Strader]
+* Fix constant format field widths (#3946). [Todd Strader]
+* Fix class field linking when a super classes is a param (#3949). [Ryszard Rozak, Antmicro Ltd]
+* Fix CMake bad C identifiers (#3948) (#3951). [Zixi Li]
+* Fix build on HP PA architecture (#3954). [John David Anglin]
+* Fix date on the front page of verilator.pdf (#3956) (#3957). [Larry Doolittle]
+* Fix dicts declared with ref type (#3960). [Ryszard Rozak, Antmicro Ltd]
+* Fix missing error on negative replicate (#3963). [Benjamin Menküc]
+* Fix self references to parameterized classes (#3962). [Ryszard Rozak, Antmicro Ltd]
+* Fix LITENDIAN warning is backwards (#3966) (#3967). [Cameron Kirk]
+* Fix subsequent parameter declarations (#3969). [Ryszard Rozak, Antmicro Ltd]
+* Fix timing delays to not truncate below 64 bits (#3973) (#3982). [Felix Neumärker]
+* Fix cmake on macOS to mark weak symbols with -U linker flag (#3978) (#3979). [Peter Debacker]
+* Fix UNDRIVEN warning seg fault (#3989). [Felix Neumärker]
+* Fix coverage of class methods (#3998). [Tim Paine]
+* Fix packed array structure replication.
+* Fix enum.next(0) and enum.prev(0).
+
+
+Verilator 5.006 2023-01-22
 ==========================
 
 **Minor:**
@@ -20,6 +79,7 @@ Verilator 5.006 2022-01-22
 * Support property calls without parenthesis (#3879) (#3893). [Ryszard Rozak, Antmicro Ltd]
 * Support import/export lists in modport (#3886). [Gökçe Aydos]
 * Support class queue equality (#3895). [Ilya Barkov]
+* Support type case and type equality comparisons.
 * Add IMPLICITSTATIC warning when a ftask/function is implicitly static (#3839). [Ryszard Rozak, Antmicro Ltd]
 * Add VL_VALUE_STRING_MAX_WORDS override (#3869). [Andrew Nolte]
 * Optimize expansion of extend operators.
@@ -44,6 +104,8 @@ Verilator 5.006 2022-01-22
 * Fix foreach unnamedblk duplicate error (#3885). [Ilya Barkov]
 * Fix elaboration of member selected classes (#3890). [Ilya Barkov]
 * Fix mismatched widths in DFG (#3872). [Geza Lore, Yike Zhou]
+* Fix lint for non-integral types in packed structs.
+* Fix generate case with empty body statements.
 
 
 Verilator 5.004 2022-12-14

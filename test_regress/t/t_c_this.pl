@@ -19,7 +19,7 @@ if ($Self->{vlt_all}) {
     my $has_xthis  = 0;
     my $has_thisx  = 0;
     my $has_xthisx = 0;
-    for my $file (glob_all("$Self->{obj_dir}/$Self->{VM_PREFIX}___024root__DepSet_*__0.cpp")) {
+    for my $file (glob_all("$Self->{obj_dir}/$Self->{vm_prefix}___024root__DepSet_*__0.cpp")) {
         my $text = file_contents($file);
         $has_this   = 1 if ($text =~ m/\bthis->clk\b/);
         $has_xthis  = 1 if ($text =~ m/\bxthis\b/);

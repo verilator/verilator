@@ -122,7 +122,7 @@ private:
         if (AstRefDType* const refdtypep = VN_CAST(dtypep, RefDType)) {  //
             dtypep = refdtypep->skipRefp();
         }
-        if (AstStructDType* const stp = VN_CAST(dtypep, StructDType)) {
+        if (AstNodeUOrStructDType* const stp = VN_CAST(dtypep, NodeUOrStructDType)) {
             if (stp->packed()) {
                 std::ostringstream out;
                 out << "'{";
@@ -418,7 +418,7 @@ private:
         if (!VN_IS(nodep->varp()->dtypeSkipRefp(), BasicDType)
             && !VN_IS(nodep->varp()->dtypeSkipRefp(), PackArrayDType)
             && !VN_IS(nodep->varp()->dtypeSkipRefp(), UnpackArrayDType)
-            && !VN_IS(nodep->varp()->dtypeSkipRefp(), StructDType))
+            && !VN_IS(nodep->varp()->dtypeSkipRefp(), NodeUOrStructDType))
             clearOptimizable(nodep, "Array references/not basic");
         if (nodep->access().isWriteOrRW()) {
             if (m_inDlyAssign) {
@@ -442,7 +442,8 @@ private:
                     clearOptimizable(nodep, "Var write & read");
                 }
                 vscp->user1(vscp->user1() | VU_RV);
-                const bool isConst = nodep->varp()->isParam() && nodep->varp()->valuep();
+                const bool isConst = (nodep->varp()->isConst() || nodep->varp()->isParam())
+                                     && nodep->varp()->valuep();
                 AstNodeExpr* const valuep
                     = isConst ? fetchValueNull(nodep->varp()->valuep()) : nullptr;
                 // Propagate PARAM constants for constant function analysis
@@ -499,6 +500,15 @@ private:
             nodep->v3error(
                 "Constant function may not be declared under generate (IEEE 1800-2017 13.4.3)");
             clearOptimizable(nodep, "Constant function called under generate");
+        }
+        checkNodeInfo(nodep);
+        iterateChildren(nodep);
+    }
+    void visit(AstInitialStatic* nodep) override {
+        if (jumpingOver(nodep)) return;
+        if (!m_params) {
+            badNodeType(nodep);
+            return;
         }
         checkNodeInfo(nodep);
         iterateChildren(nodep);
@@ -1074,15 +1084,22 @@ private:
             const string format = nodep->text();
             auto pos = format.cbegin();
             bool inPct = false;
+            string width;
             for (; pos != format.cend(); ++pos) {
                 if (!inPct && pos[0] == '%') {
                     inPct = true;
+                    width = "";
                 } else if (!inPct) {  // Normal text
                     result += *pos;
                 } else {  // Format character
+                    if (std::isdigit(pos[0])) {
+                        width += pos[0];
+                        continue;
+                    }
+
                     inPct = false;
 
-                    if (V3Number::displayedFmtLegal(tolower(pos[0]), false)) {
+                    if (V3Number::displayedFmtLegal(std::tolower(pos[0]), false)) {
                         AstNode* const argp = nextArgp;
                         nextArgp = nextArgp->nextp();
                         AstConst* const constp = fetchConstNull(argp);
@@ -1091,10 +1108,10 @@ private:
                                 nodep, "Argument for $display like statement is not constant");
                             break;
                         }
-                        const string pformat = std::string{"%"} + pos[0];
+                        const string pformat = std::string{"%"} + width + pos[0];
                         result += constp->num().displayed(nodep, pformat);
                     } else {
-                        switch (tolower(pos[0])) {
+                        switch (std::tolower(pos[0])) {
                         case '%': result += "%"; break;
                         case 'm':
                             // This happens prior to AstScope so we don't

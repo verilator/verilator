@@ -37,6 +37,7 @@ class VlcOptions final {
     string m_annotateOut;       // main switch: --annotate I<output_directory>
     bool m_annotateAll = false;  // main switch: --annotate-all
     int m_annotateMin = 10;     // main switch: --annotate-min I<count>
+    bool m_annotatePoints = false;  // main switch: --annotate-points
     VlStringSet m_readFiles;    // main switch: --read
     bool m_rank = false;        // main switch: --rank
     bool m_unlink = false;      // main switch: --unlink
@@ -62,6 +63,7 @@ public:
     string annotateOut() const { return m_annotateOut; }
     bool annotateAll() const { return m_annotateAll; }
     int annotateMin() const { return m_annotateMin; }
+    bool annotatePoints() const { return m_annotatePoints; }
     bool rank() const { return m_rank; }
     bool unlink() const { return m_unlink; }
     string writeFile() const { return m_writeFile; }

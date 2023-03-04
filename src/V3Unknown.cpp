@@ -439,7 +439,7 @@ private:
             } else if (VN_IS(basefromp, Const)) {
                 // If it's a PARAMETER[bit], then basefromp may be a constant instead of a varrefp
             } else {
-                nodep->v3fatalSrc("No VarRef or Const under ArraySel");
+                // Normally one of above, but might have MEMBERSEL or otherwise
             }
             // Find range of dtype we are selecting from
             int declElements = -1;

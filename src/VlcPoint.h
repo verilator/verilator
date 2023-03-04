@@ -54,6 +54,11 @@ public:
     void countInc(uint64_t inc) { m_count += inc; }
     uint64_t count() const { return m_count; }
     void testsCoveringInc() { m_testsCovering++; }
+    bool ok(unsigned annotateMin) const {
+        const std::string threshStr = thresh();
+        unsigned threshi = !threshStr.empty() ? std::atoi(threshStr.c_str()) : annotateMin;
+        return m_count >= threshi;
+    }
     // KEY ACCESSORS
     string filename() const { return keyExtract(VL_CIK_FILENAME); }
     string comment() const { return keyExtract(VL_CIK_COMMENT); }
@@ -79,15 +84,21 @@ public:
         }
         return "";
     }
-    static void dumpHeader() {
-        cout << "Points:\n";
-        cout << "  Num,    TestsCover,    Count,  Name\n";
+    static void dumpHeader(std::ostream& os) {
+        os << "Points:\n";
+        os << "  Num,    TestsCover,    Count,  Name\n";
     }
-    void dump() const {
-        cout << "  " << std::setw(8) << std::setfill('0') << pointNum();
-        cout << ",  " << std::setw(7) << std::setfill(' ') << testsCovering();
-        cout << ",  " << std::setw(7) << std::setfill(' ') << count();
-        cout << ",  \"" << name() << "\"\n";
+    void dump(std::ostream& os) const {
+        os << "  " << std::setw(8) << std::setfill('0') << pointNum();
+        os << ",  " << std::setw(7) << std::setfill(' ') << testsCovering();
+        os << ",  " << std::setw(7) << std::setfill(' ') << count();
+        os << ",  \"" << name() << "\"\n";
+    }
+    void dumpAnnotate(std::ostream& os, unsigned annotateMin) const {
+        os << (ok(annotateMin) ? "+" : "-");
+        os << std::setw(6) << std::setfill('0') << count();
+        os << "  point: comment=" << comment();
+        os << "\n";
     }
 };
 
@@ -118,10 +129,10 @@ public:
     // METHODS
     void dump() {
         UINFO(2, "dumpPoints...\n");
-        VlcPoint::dumpHeader();
+        VlcPoint::dumpHeader(cout);
         for (const auto& i : *this) {
             const VlcPoint& point = pointNumber(i.second);
-            point.dump();
+            point.dump(cout);
         }
     }
     VlcPoint& pointNumber(uint64_t num) { return m_points[num]; }

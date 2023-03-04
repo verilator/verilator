@@ -116,20 +116,8 @@ void VlcTop::writeInfo(const string& filename) {
         os << "SF:" << source.name() << '\n';
         VlcSource::LinenoMap& lines = source.lines();
         for (auto& li : lines) {
-            const int lineno = li.first;
-            VlcSource::ColumnMap& cmap = li.second;
-            bool first = true;
-            uint64_t min_count = 0;  // Minimum across all columns on line
-            for (auto& ci : cmap) {
-                VlcSourceCount& col = ci.second;
-                if (first) {
-                    min_count = col.count();
-                    first = false;
-                } else {
-                    min_count = std::min(min_count, col.count());
-                }
-            }
-            os << "DA:" << lineno << "," << min_count << "\n";
+            const VlcSourceCount& sc = li.second;
+            os << "DA:" << sc.lineno() << "," << sc.count() << "\n";
         }
         os << "end_of_record\n";
     }
@@ -206,14 +194,11 @@ void VlcTop::annotateCalc() {
         const int lineno = point.lineno();
         if (!filename.empty() && lineno != 0) {
             VlcSource& source = sources().findNewSource(filename);
-            const string threshStr = point.thresh();
-            unsigned thresh
-                = (!threshStr.empty()) ? std::atoi(threshStr.c_str()) : opt.annotateMin();
-            const bool ok = (point.count() >= thresh);
+            const bool ok = point.ok(opt.annotateMin());
             UINFO(9, "AnnoCalc count " << filename << ":" << lineno << ":" << point.column() << " "
                                        << point.count() << " " << point.linescov() << '\n');
             // Base coverage
-            source.incCount(lineno, point.column(), point.count(), ok);
+            source.lineIncCount(lineno, point.count(), ok, &point);
             // Additional lines covered by this statement
             bool range = false;
             int start = 0;
@@ -222,7 +207,7 @@ void VlcTop::annotateCalc() {
             for (const char* covp = linescov.c_str(); true; ++covp) {
                 if (!*covp || *covp == ',') {  // Ending
                     for (int lni = start; start && lni <= end; ++lni) {
-                        source.incCount(lni, point.column(), point.count(), ok);
+                        source.lineIncCount(lni, point.count(), ok, &point);
                     }
                     if (!*covp) break;
                     start = 0;  // Prep for next
@@ -253,16 +238,13 @@ void VlcTop::annotateCalcNeeded() {
         if (opt.annotateAll()) source.needed(true);
         VlcSource::LinenoMap& lines = source.lines();
         for (auto& li : lines) {
-            VlcSource::ColumnMap& cmap = li.second;
-            for (auto& ci : cmap) {
-                VlcSourceCount& col = ci.second;
-                // UINFO(0,"Source "<<source.name()<<":"<<col.lineno()<<":"<<col.column()<<endl);
-                ++totCases;
-                if (col.ok()) {
-                    ++totOk;
-                } else {
-                    source.needed(true);
-                }
+            VlcSourceCount& sc = li.second;
+            // UINFO(0, "Source "<<source.name()<<":"<<sc.lineno()<<":"<<sc.column()<<endl);
+            ++totCases;
+            if (sc.ok()) {
+                ++totOk;
+            } else {
+                source.needed(true);
             }
         }
     }
@@ -295,39 +277,28 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
             return;
         }
 
-        os << "\t// verilator_coverage annotation\n";
+        os << "//      // verilator_coverage annotation\n";
 
         int lineno = 0;
         while (!is.eof()) {
             lineno++;
             string line = V3Os::getline(is);
 
-            bool first = true;
-
             VlcSource::LinenoMap& lines = source.lines();
             const auto lit = lines.find(lineno);
-            if (lit != lines.end()) {
-                VlcSource::ColumnMap& cmap = lit->second;
-                for (auto& ci : cmap) {
-                    VlcSourceCount& col = ci.second;
-                    // UINFO(0,"Source
-                    // "<<source.name()<<":"<<col.lineno()<<":"<<col.column()<<endl);
-                    os << (col.ok() ? " " : "%") << std::setfill('0') << std::setw(6)
-                       << col.count() << "\t" << line << '\n';
-                    if (first) {
-                        first = false;
-                        // Multiple columns on same line; print line just once
-                        string indent;
-                        for (string::const_iterator pos = line.begin();
-                             pos != line.end() && std::isspace(*pos); ++pos) {
-                            indent += *pos;
-                        }
-                        line = indent + "verilator_coverage: (next point on previous line)\n";
-                    }
+            if (lit == lines.end()) {
+                os << "        " << line << '\n';
+            } else if (lit != lines.end()) {
+                VlcSourceCount& sc = lit->second;
+                // UINFO(0,"Source
+                // "<<source.name()<<":"<<sc.lineno()<<":"<<sc.column()<<endl);
+                os << (sc.ok() ? " " : "%") << std::setfill('0') << std::setw(6) << sc.count()
+                   << " " << line << '\n';
+
+                if (opt.annotatePoints()) {
+                    for (auto& pit : sc.points()) pit->dumpAnnotate(os, opt.annotateMin());
                 }
             }
-
-            if (first) os << "\t" << line << '\n';
         }
     }
 }

@@ -237,20 +237,20 @@ void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr
     precr = VTimescale::NONE;
 
     const char* cp = textp;
-    for (; isspace(*cp); ++cp) {}
+    for (; std::isspace(*cp); ++cp) {}
     const char* const unitp = cp;
     for (; *cp && *cp != '/'; ++cp) {}
     const string unitStr(unitp, cp - unitp);
-    for (; isspace(*cp); ++cp) {}
+    for (; std::isspace(*cp); ++cp) {}
     string precStr;
     if (*cp == '/') {
         ++cp;
-        for (; isspace(*cp); ++cp) {}
+        for (; std::isspace(*cp); ++cp) {}
         const char* const precp = cp;
         for (; *cp && *cp != '/'; ++cp) {}
         precStr = string(precp, cp - precp);
     }
-    for (; isspace(*cp); ++cp) {}
+    for (; std::isspace(*cp); ++cp) {}
     if (*cp) {
         fl->v3error("`timescale syntax error: '" << textp << "'");
         return;
@@ -489,8 +489,10 @@ string V3Options::fileExists(const string& filename) {
         std::set<string>* setp = &(diriter->second);
 
 #ifdef _MSC_VER
-        for (const auto& dirEntry : std::filesystem::directory_iterator(dir.c_str()))
-            setp->insert(dirEntry.path().filename().string());
+        try {
+            for (const auto& dirEntry : std::filesystem::directory_iterator(dir.c_str()))
+                setp->insert(dirEntry.path().filename().string());
+        } catch (std::filesystem::filesystem_error const& ex) { return ""; }
 #else
         if (DIR* const dirp = opendir(dir.c_str())) {
             while (struct dirent* direntp = readdir(dirp)) setp->insert(direntp->d_name);
@@ -570,26 +572,28 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
 void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
     static bool shown_notfound_msg = false;
     if (modname.find("__Vhsh") != string::npos) {
-        std::cerr << V3Error::warnMore() << "... Unsupported: Name is longer than 127 characters;"
+        std::cerr << V3Error::warnMoreStandalone()
+                  << "... Unsupported: Name is longer than 127 characters;"
                   << " automatic file lookup not supported.\n";
-        std::cerr << V3Error::warnMore() << "... Suggest putting filename with this module/package"
+        std::cerr << V3Error::warnMoreStandalone()
+                  << "... Suggest putting filename with this module/package"
                   << " onto command line instead.\n";
     } else if (!shown_notfound_msg) {
         shown_notfound_msg = true;
         if (m_impp->m_incDirUsers.empty()) {
             fl->v3error("This may be because there's no search path specified with -I<dir>.");
         }
-        std::cerr << V3Error::warnMore() << "... Looked in:" << endl;
+        std::cerr << V3Error::warnMoreStandalone() << "... Looked in:" << endl;
         for (const string& dir : m_impp->m_incDirUsers) {
             for (const string& ext : m_impp->m_libExtVs) {
                 const string fn = V3Os::filenameFromDirBase(dir, modname + ext);
-                std::cerr << V3Error::warnMore() << "     " << fn << endl;
+                std::cerr << V3Error::warnMoreStandalone() << "     " << fn << endl;
             }
         }
         for (const string& dir : m_impp->m_incDirFallbacks) {
             for (const string& ext : m_impp->m_libExtVs) {
                 const string fn = V3Os::filenameFromDirBase(dir, modname + ext);
-                std::cerr << V3Error::warnMore() << "     " << fn << endl;
+                std::cerr << V3Error::warnMoreStandalone() << "     " << fn << endl;
             }
         }
     }
@@ -602,7 +606,9 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
 V3LangCode V3Options::fileLanguage(const string& filename) {
     string ext = V3Os::filenameNonDir(filename);
     string::size_type pos;
-    if ((pos = ext.rfind('.')) != string::npos) {
+    if (filename == V3Options::getStdPackagePath()) {
+        return V3LangCode::mostRecent();
+    } else if ((pos = ext.rfind('.')) != string::npos) {
         ext.erase(0, pos + 1);
         const auto it = m_impp->m_langExts.find(ext);
         if (it != m_impp->m_langExts.end()) return it->second;
@@ -770,13 +776,9 @@ void V3Options::notify() {
     FileLine* const cmdfl = new FileLine{FileLine::commandLineFilename()};
 
     if (!outFormatOk() && v3Global.opt.main()) ccSet();  // --main implies --cc if not provided
-    if (!outFormatOk() && !cdc() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !xmlOnly()) {
-        v3fatal("verilator: Need --binary, --cc, --sc, --cdc, --dpi-hdr-only, --lint-only, "
+    if (!outFormatOk() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !xmlOnly()) {
+        v3fatal("verilator: Need --binary, --cc, --sc, --dpi-hdr-only, --lint-only, "
                 "--xml-only or --E option");
-    }
-
-    if (cdc()) {
-        cmdfl->v3warn(DEPRECATED, "Option --cdc is deprecated and is planned for removal");
     }
 
     if (m_build && (m_gmake || m_cmake)) {
@@ -820,16 +822,14 @@ void V3Options::notify() {
     // Default some options if not turned on or off
     if (v3Global.opt.skipIdentical().isDefault()) {
         v3Global.opt.m_skipIdentical.setTrueOrFalse(  //
-            !v3Global.opt.cdc()  //
-            && !v3Global.opt.dpiHdrOnly()  //
+            !v3Global.opt.dpiHdrOnly()  //
             && !v3Global.opt.lintOnly()  //
             && !v3Global.opt.preprocOnly()  //
             && !v3Global.opt.xmlOnly());
     }
     if (v3Global.opt.makeDepend().isDefault()) {
         v3Global.opt.m_makeDepend.setTrueOrFalse(  //
-            !v3Global.opt.cdc()  //
-            && !v3Global.opt.dpiHdrOnly()  //
+            !v3Global.opt.dpiHdrOnly()  //
             && !v3Global.opt.lintOnly()  //
             && !v3Global.opt.preprocOnly()  //
             && !v3Global.opt.xmlOnly());
@@ -1079,7 +1079,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
     DECL_OPTION("-CFLAGS", CbVal, callStrSetter(&V3Options::addCFlags));
     DECL_OPTION("-cc", CbCall, [this]() { ccSet(); });
-    DECL_OPTION("-cdc", OnOff, &m_cdc);
     DECL_OPTION("-clk", CbVal, callStrSetter(&V3Options::addClocker));
     DECL_OPTION("-no-clk", CbVal, callStrSetter(&V3Options::addNoClocker));
     DECL_OPTION("-comp-limit-blocks", Set, &m_compLimitBlocks).undocumented();
@@ -1145,7 +1144,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-dumpi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
         m_dumpLevel[optp] = std::atoi(valp);
     });
-    DECL_OPTION("-E", Set, &m_preprocOnly);
+    DECL_OPTION("-E", CbOnOff, [this](bool flag) {
+        if (flag) m_std = false;
+        m_preprocOnly = flag;
+    });
     DECL_OPTION("-error-limit", CbVal, static_cast<void (*)(int)>(&V3Error::errorLimit));
     DECL_OPTION("-exe", OnOff, &m_exe);
     DECL_OPTION("-expand-limit", CbVal,
@@ -1286,8 +1288,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         fl->v3warn(DEPRECATED, "Option -O<letter> is deprecated. "
                                "Use -f<optimization> or -fno-<optimization> instead.");
         for (const char* cp = optp; *cp; ++cp) {
-            const bool flag = isupper(*cp);
-            switch (tolower(*cp)) {
+            const bool flag = std::isupper(*cp);
+            switch (std::tolower(*cp)) {
             case '0': optimize(0); break;
             case '1': optimize(1); break;
             case '2': optimize(2); break;
@@ -1405,6 +1407,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_statsVars = flag;
         m_stats |= flag;
     });
+    DECL_OPTION("-std", OnOff, &m_std);
     DECL_OPTION("-structs-packed", OnOff, &m_structsPacked);
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2017; });
 
@@ -1505,6 +1508,17 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-v", CbVal, [this, &optdir](const char* valp) {
         V3Options::addLibraryFile(parseFileArg(optdir, valp));
     });
+    DECL_OPTION("-verilate-jobs", CbVal, [this, fl](const char* valp) {
+        int val = std::atoi(valp);
+        if (val < 0) {
+            fl->v3error("--verilate-jobs requires a non-negative integer, but '"
+                        << valp << "' was passed");
+            val = 1;
+        } else if (val == 0) {
+            val = std::thread::hardware_concurrency();
+        }
+        m_verilateJobs = val;
+    });
     DECL_OPTION("-verilate", OnOff, &m_verilate);
     DECL_OPTION("-version", CbCall, [this]() {
         showVersion(false);
@@ -1512,7 +1526,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-vpi", OnOff, &m_vpi);
 
-    DECL_OPTION("-Wpedantic", OnOff, &m_pedantic);
+    DECL_OPTION("-Wpedantic", CbCall, [this]() {
+        m_pedantic = true;
+        V3Error::pretendError(V3ErrorCode::ASSIGNIN, false);
+    });
     DECL_OPTION("-Wall", CbCall, []() {
         FileLine::globalWarnLintOff(false);
         FileLine::globalWarnStyleOff(false);
@@ -1553,6 +1570,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-Wno-style", CbCall, []() { FileLine::globalWarnStyleOff(true); });
     DECL_OPTION("-Wno-UNUSED", CbCall, []() { FileLine::globalWarnUnusedOff(true); });
+    DECL_OPTION("-Wno-WIDTH", CbCall, []() { FileLine::globalWarnOff(V3ErrorCode::WIDTH, true); });
     DECL_OPTION("-Wwarn-", CbPartialMatch, [this, fl, &parser](const char* optp) {
         const V3ErrorCode code{optp};
         if (code == V3ErrorCode::EC_ERROR) {
@@ -1573,6 +1591,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         V3Error::pretendError(V3ErrorCode::UNUSEDGENVAR, false);
         V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, false);
         V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, false);
+    });
+    DECL_OPTION("-Wwarn-WIDTH", CbCall, []() {
+        FileLine::globalWarnOff(V3ErrorCode::WIDTH, false);
+        V3Error::pretendError(V3ErrorCode::WIDTH, false);
     });
     DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
 
@@ -1622,12 +1644,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             || !std::strcmp(argv[i], "--j")) {  // Allow gnu -- switches
             ++i;
             int val = 0;
-            if (i < argc && isdigit(argv[i][0])) {
-                val = atoi(argv[i]);  // Can't be negative due to isdigit above
+            if (i < argc && std::isdigit(argv[i][0])) {
+                val = std::atoi(argv[i]);  // Can't be negative due to isdigit above
                 if (val == 0) val = std::thread::hardware_concurrency();
                 ++i;
             }
             if (m_buildJobs == -1) m_buildJobs = val;
+            if (m_verilateJobs == -1) m_verilateJobs = val;
         } else if (argv[i][0] == '-' || argv[i][0] == '+') {
             const char* argvNoDashp = (argv[i][1] == '-') ? (argv[i] + 2) : (argv[i] + 1);
             if (const int consumed = parser.parse(i, argc, argv)) {
@@ -1660,6 +1683,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         }
     }
     if (m_buildJobs == -1) m_buildJobs = 1;
+    if (m_verilateJobs == -1) m_verilateJobs = 1;
 }
 
 //======================================================================
@@ -1690,7 +1714,8 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
                     ++pos;
                 }
             } else if (*pos == '/' && *(pos + 1) == '/'
-                       && (pos == line.begin() || isspace(lastch))) {  // But allow /file//path
+                       && (pos == line.begin()
+                           || std::isspace(lastch))) {  // But allow /file//path
                 break;  // Ignore to EOL
             } else if (*pos == '#' && space_begin) {  // Only # at [spaced] begin of line
                 break;  // Ignore to EOL
@@ -1700,7 +1725,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
                 // cppcheck-suppress StlMissingComparison
                 ++pos;
             } else {
-                if (!isspace(*pos)) space_begin = false;
+                if (!std::isspace(*pos)) space_begin = false;
                 oline += *pos;
             }
         }
@@ -1733,7 +1758,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
         char curr_char = whole_file[pos];
         switch (st) {
         case ST_IN_OPTION:  // Get all chars up to a white space or a "="
-            if (isspace(curr_char)) {  // End of option
+            if (std::isspace(curr_char)) {  // End of option
                 if (!arg.empty()) {  // End of word
                     args.push_back(arg);
                 }

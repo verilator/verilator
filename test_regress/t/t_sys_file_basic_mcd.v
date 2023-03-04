@@ -4,16 +4,17 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 
 module t;
 `define STR(__s) `"__s`"
 
-  task automatic fail(string s); begin
+  task automatic fail(string s);
     $display({"FAIL! Reason: ", s});
     $stop;
-  end endtask
+  endtask
 
-  task automatic test1; begin
+  task automatic test1;
     int fd[30], fd_fail, fd_success, fd_close, tmp;
     for (int i = 0; i < 30; i++) begin
       // Attempt to allocate 30 MCD descriptors; returned descriptors
@@ -45,9 +46,9 @@ module t;
       fd_close  = fd[i];
       $fclose(fd_close);
     end
-  end endtask
+  endtask
 
-  task automatic test2; begin
+  task automatic test2;
     // Validate basic MCD functionality.
 
     integer fd[3], fd_all, tmp;
@@ -65,14 +66,29 @@ module t;
     $fwrite(fd_all, "All other countries are inferior.\n");
     $fwrite(fd_all, "Woe betide those to stand against the mighty Scottish nation.\n");
     $fclose(fd_all);
-  end endtask
+  endtask
 
-  task automatic test3; begin
+  task automatic test3;
+    int result;
     // Write some things to standard output.
     $fwrite(32'h8000_0001, "Sean Connery was the best Bond.\n");
-  end endtask
+    $fwrite(32'h8000_0001);
+    $fstrobe(32'h8000_0001);
 
-  task automatic test4; begin
+    result = $fseek(32'hffffffff, 0, 0);
+    `checkd(result, -1);
+
+    result = $ftell(32'hffffffff);
+    `checkd(result, -1);
+
+    result = $rewind(32'hffffffff);
+    `checkd(result, -1);
+
+    result = $feof(0);
+    `checkd(result, 1);
+  endtask
+
+  task automatic test4;
     int fd;
     // Wide filename
     fd = $fopen({`STR(`TEST_OBJ_DIR),
@@ -80,16 +96,16 @@ module t;
                  "except_to_purposefully_break_my_beautiful_code.dat"});
     if (fd == 0) fail("Long filename could not be opened.");
     $fclose(fd);
-  end endtask
+  endtask
 
-  task automatic test5; begin
+  task automatic test5;
     int fd_all;
     fd_all = $fopen({`STR(`TEST_OBJ_DIR), "/t_sys_file_basic_mcd_test5.dat"});
     if (fd_all == 0) fail("could not be opened.");
     fd_all |= 1;
     $fdisplay(fd_all, "To file and to stdout");
     $fclose(fd_all);
-  end endtask
+  endtask
 
   initial begin
 

@@ -6,6 +6,7 @@
 
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 
 module t(/*AUTOARG*/
    // Inputs
@@ -20,6 +21,8 @@ module t(/*AUTOARG*/
 
    int        never_driven;
    int        never_forced;
+
+   real       r;
 
    task force_bus;
       force bus[1:0] = 2'b10;
@@ -93,6 +96,25 @@ module t(/*AUTOARG*/
       else if (cyc == 34) begin
          `checkh(in, 4'b0101);
          `checkh(bus, 4'b0101);
+      end
+      //
+      else if (cyc == 40) begin
+         r <= 1.25;
+      end
+      else if (cyc == 41) begin
+         `checkr(r, 1.25);
+      end
+      else if (cyc == 42) begin
+         force r = 2.5;
+      end
+      else if (cyc == 43) begin
+         `checkr(r, 2.5);
+      end
+      else if (cyc == 44) begin
+         release r;
+      end
+      else if (cyc == 45) begin
+         `checkr(r, 1.25);
       end
       //
       else if (cyc == 99) begin

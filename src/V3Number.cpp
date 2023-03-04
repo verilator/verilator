@@ -76,7 +76,7 @@ constexpr int MAX_SPRINTF_DOUBLE_SIZE
 //======================================================================
 // Errors
 
-void V3Number::v3errorEnd(const std::ostringstream& str) const VL_MT_SAFE {
+void V3Number::v3errorEnd(const std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex) {
     std::ostringstream nsstr;
     nsstr << str.str();
     if (m_nodep) {
@@ -84,11 +84,12 @@ void V3Number::v3errorEnd(const std::ostringstream& str) const VL_MT_SAFE {
     } else if (m_fileline) {
         m_fileline->v3errorEnd(nsstr);
     } else {
-        V3Error::v3errorEnd(nsstr);
+        V3Error::s().v3errorEnd(nsstr);
     }
 }
 
-void V3Number::v3errorEndFatal(const std::ostringstream& str) const VL_MT_SAFE {
+void V3Number::v3errorEndFatal(const std::ostringstream& str) const
+    VL_REQUIRES(V3Error::s().m_mutex) {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE;
@@ -138,6 +139,7 @@ void V3Number::create(const char* sourcep) {
         }
     }
 
+    bool userSized = false;
     bool unbased = false;
     char base = '\0';
     if (value_startp != sourcep) {  // Has a '
@@ -151,7 +153,7 @@ void V3Number::create(const char* sourcep) {
             if (*cp != '_') widthn += *cp;
         }
         while (*cp == '_') cp++;
-        if (*cp && tolower(*cp) == 's') {
+        if (*cp && std::tolower(*cp) == 's') {
             cp++;
             isSigned(true);
         }
@@ -161,6 +163,7 @@ void V3Number::create(const char* sourcep) {
         }
         value_startp = cp;
 
+        userSized = widthn.length() != 0;
         if (std::atoi(widthn.c_str())) {
             if (std::atoi(widthn.c_str()) < 0
                 || std::atoi(widthn.c_str()) > v3Global.opt.maxNumWidth()) {
@@ -188,11 +191,11 @@ void V3Number::create(const char* sourcep) {
         width(1, false);  // So we extend it
         setBit(0, 1);
         m_data.m_autoExtend = true;
-    } else if (tolower(base) == 'z') {
+    } else if (std::tolower(base) == 'z') {
         width(1, false);  // So we extend it
         setBit(0, 'z');
         m_data.m_autoExtend = true;
-    } else if (tolower(base) == 'x') {
+    } else if (std::tolower(base) == 'x') {
         width(1, false);  // So we extend it
         setBit(0, 'x');
         m_data.m_autoExtend = true;
@@ -204,13 +207,17 @@ void V3Number::create(const char* sourcep) {
     }
 
     // Ignore leading blanks
-    while (*value_startp == '_' || isspace(*value_startp)) value_startp++;
+    while (*value_startp == '_' || std::isspace(*value_startp)) ++value_startp;
     if (!*value_startp && !m_data.m_autoExtend) {
         v3error("Number is missing value digits: " << sourcep);
     }
+    if (userSized && m_data.m_autoExtend) {
+        v3error("Syntax error: size cannot be provided with '0/'1/'x/'z: "
+                << sourcep << " (IEEE 1800-2017 5.7.1)");
+    }
 
     int obit = 0;  // Start at LSB
-    if (tolower(base) == 'd') {
+    if (std::tolower(base) == 'd') {
         // Ignore leading zeros so we don't issue too many digit errors when lots of leading 0's
         while (*value_startp == '_' || *value_startp == '0') value_startp++;
         // Convert decimal number to hex
@@ -220,7 +227,7 @@ void V3Number::create(const char* sourcep) {
         int got_z = 0;
         int got_01 = 0;
         for (const char* cp = value_startp; *cp; cp++) {
-            switch (tolower(*cp)) {
+            switch (std::tolower(*cp)) {
             case '0':  // FALLTHRU
             case '1':  // FALLTHRU
             case '2':  // FALLTHRU
@@ -291,9 +298,9 @@ void V3Number::create(const char* sourcep) {
                 v3error("Too many digits for " << width() << " bit number: " << sourcep);
                 break;
             }
-            switch (tolower(base)) {
+            switch (std::tolower(base)) {
             case 'b': {
-                switch (tolower(*cp)) {
+                switch (std::tolower(*cp)) {
                 case '0': setBit(obit++, 0); break;
                 case '1': setBit(obit++, 1); break;
                 case 'z':
@@ -307,7 +314,7 @@ void V3Number::create(const char* sourcep) {
 
             case 'o':
             case 'c': {
-                switch (tolower(*cp)) {
+                switch (std::tolower(*cp)) {
                 // clang-format off
                 case '0': setBit(obit++, 0); setBit(obit++, 0);  setBit(obit++, 0);  break;
                 case '1': setBit(obit++, 1); setBit(obit++, 0);  setBit(obit++, 0);  break;
@@ -328,7 +335,7 @@ void V3Number::create(const char* sourcep) {
             }
 
             case 'h': {
-                switch (tolower(*cp)) {
+                switch (std::tolower(*cp)) {
                     // clang-format off
                 case '0': setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); break;
                 case '1': setBit(obit++,1); setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); break;
@@ -568,7 +575,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
 
 bool V3Number::displayedFmtLegal(char format, bool isScan) {
     // Is this a valid format letter?
-    switch (tolower(format)) {
+    switch (std::tolower(format)) {
     case 'b': return true;
     case 'c': return true;
     case 'd': return true;  // Unsigned decimal
@@ -612,11 +619,11 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
         ++pos;
     }
     string fmtsize;
-    for (; pos != vformat.cend() && (isdigit(pos[0]) || pos[0] == '.'); ++pos) {
+    for (; pos != vformat.cend() && (std::isdigit(pos[0]) || pos[0] == '.'); ++pos) {
         fmtsize += pos[0];
     }
     string str;
-    const char code = tolower(pos[0]);
+    const char code = std::tolower(pos[0]);
     switch (code) {
     case 'b':  // FALLTHRU
     case 'o':  // FALLTHRU
@@ -703,7 +710,8 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
         return str;
     }  // case b/d/x/o
     case 'c': {
-        if (width() > 8) fl->v3warn(WIDTH, "$display-like format of %c format of > 8 bit value");
+        if (width() > 8)
+            fl->v3warn(WIDTHTRUNC, "$display-like format of %c format of > 8 bit value");
         const unsigned int v = bitsValue(0, 8);
         char strc[2];
         strc[0] = v & 0xff;
@@ -1427,15 +1435,19 @@ V3Number& V3Number::opRepl(const V3Number& lhs,
     // i op repl, L(i)*value(rhs) bit return
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
-    setZero();
-    if (rhsval > 8192) {
+    if (rhsval > (1UL << 24)) {
+        v3error("More than a 16 Mbit replication, perhaps the replication factor"
+                " was two's-complement negative: "
+                << rhsval);
+    } else if (rhsval > 8192) {
         v3warn(WIDTHCONCAT, "More than a 8k bit replication is probably wrong: " << rhsval);
     }
+    setZero();
     int obit = 0;
-    for (unsigned times = 0; times < rhsval; times++) {
-        for (int bit = 0; bit < lhs.width(); bit++) {
+    for (unsigned times = 0; times < rhsval; ++times) {
+        for (int bit = 0; bit < lhs.width(); ++bit) {
             setBit(obit, lhs.bitIs(bit));
-            obit++;
+            ++obit;
         }
     }
     return *this;
@@ -2194,13 +2206,13 @@ V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
             m_data.m_isNull = true;
         } else if (isString()) {
             if (VL_UNLIKELY(!lhs.isString())) {
-                // Non-compatible types, erase value.
-                m_data.str() = "";
+                // Numbers can still be strings
+                m_data.str() = lhs.toString();
             } else {
                 m_data.str() = lhs.m_data.str();
             }
         } else if (VL_UNLIKELY(lhs.isString())) {
-            // Non-compatible types, erase value.
+            // Non-compatible types, see also opAToN()
             setZero();
         } else {
             // Also handles double as is just bits
@@ -2208,6 +2220,20 @@ V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
                 setBit(bit, ignoreXZ ? lhs.bitIs1(bit) : lhs.bitIs(bit));
             }
         }
+    }
+    return *this;
+}
+
+V3Number& V3Number::opNToI(const V3Number& lhs) {
+    // String to packed number
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    setZero();
+    const string& str = lhs.toString();
+    for (size_t n = 0; n < str.length(); ++n) {
+        const char c = str[str.length() - 1 - n];
+        for (size_t cbit = 0; cbit < 8; ++cbit)
+            setBit(n * 8 + cbit, VL_BITISSET_I(c, cbit) ? 1 : 0);
     }
     return *this;
 }
@@ -2243,7 +2269,8 @@ void V3Number::opCleanThis(bool warnOnTruncation) {
     const uint32_t newValueXMsb = v.m_valueX & hiWordMask();
     if (warnOnTruncation && (newValueMsb != v.m_value || newValueXMsb != v.m_valueX)) {
         // Displaying in decimal avoids hiWordMask truncation
-        v3warn(WIDTH, "Value too large for " << width() << " bit number: " << displayed("%d"));
+        v3warn(WIDTHTRUNC,
+               "Value too large for " << width() << " bit number: " << displayed("%d"));
     }
     m_data.num()[words() - 1] = {newValueMsb, newValueXMsb};
 }
@@ -2459,15 +2486,13 @@ V3Number& V3Number::opReplN(const V3Number& lhs, uint32_t rhsval) {
 V3Number& V3Number::opToLowerN(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_STRING_ARGS1(lhs);
-    std::string out = lhs.toString();
-    for (auto& cr : out) cr = tolower(cr);
+    std::string out = VString::downcase(lhs.toString());
     return setString(out);
 }
 V3Number& V3Number::opToUpperN(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_STRING_ARGS1(lhs);
-    std::string out = lhs.toString();
-    for (auto& cr : out) cr = toupper(cr);
+    std::string out = VString::upcase(lhs.toString());
     return setString(out);
 }
 

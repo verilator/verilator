@@ -10,7 +10,6 @@
 # ----------------------------------------------------------------------
 # -- Path setup
 
-from datetime import datetime
 import os
 import re
 import sys
@@ -24,10 +23,18 @@ def get_vlt_version():
     filename = "../../Makefile"
     with open(filename, "r", encoding="utf8") as fh:
         for line in fh:
-            match = re.search(r"PACKAGE_VERSION_NUMBER *= *([a-z0-9.]+)", line)
+            match = re.search(r"PACKAGE_VERSION *= *([a-z0-9.]+) +([-0-9]+)",
+                              line)
             if match:
-                return match.group(1)
-    return "unknown"
+                return match.group(1), match.group(2)
+            match = re.search(r"PACKAGE_VERSION *= *([a-z0-9.]+) +devel", line)
+            if match:
+                try:
+                    data = os.popen('git log -n 1 --pretty=%cs').read()
+                except Exception:
+                    data = ""  # fallback, and Sphinx will fill in today's date
+                return "Devel " + match.group(1), data
+    return "unknown", "unknown"
 
 
 def setup(app):
@@ -44,8 +51,8 @@ author = 'Wilson Snyder'
 # The master toctree document.
 master_doc = "index"
 
-version = get_vlt_version()
-release = get_vlt_version()
+version, today_fmt = get_vlt_version()
+release = version
 
 rst_prolog = """
 .. role:: vlopt(option)
@@ -88,9 +95,6 @@ source_suffix = [".rst"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-
-# Date format to ISO
-today_fmt = datetime.now().strftime("%F")
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True

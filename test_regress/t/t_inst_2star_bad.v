@@ -7,12 +7,15 @@
 module t (/*AUTOARG*/);
 
    wire foo;
+   wire bar;
 
    sub sub (.*, .*);
 
    sub sub (foo, .*);
 
+   sub sub (foo, .bar);
+
 endmodule
 
-module sub (input foo);
+module sub (input foo, input bar);
 endmodule

@@ -16,14 +16,14 @@ class Packet;
          header < (64'h1 << length);
       }
    }
-   constraint b {
+   constraint c {
       header >= length - 10;
       header <= length;
    }
-   constraint c {
+   constraint d {
       foreach (in_use[i]) {
          !(start_offset <= in_use[i].Xend_offsetX &&
-           start_offset + len - 1 >= in_use[i].Xstart_offsetX);
+           start_offset + length - 1 >= in_use[i].Xstart_offsetX);
       }
    }
    constraint order { solve length before header; }
@@ -33,6 +33,8 @@ class Packet;
    }
 
 endclass
+
+constraint Packet::ex { header > 0 };
 
 module t (/*AUTOARG*/);
 

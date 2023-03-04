@@ -74,7 +74,8 @@ public:
     static const char* rooted(const char* obj) {
         static std::string buf;
         std::ostringstream os;
-        os << top() << "." << obj;
+        os << top();
+        if (*obj) os << "." << obj;
         buf = os.str();
         return buf.c_str();
     }

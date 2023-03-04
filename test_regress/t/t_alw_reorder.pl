@@ -19,8 +19,8 @@ file_grep($Self->{stats}, qr/Optimizations, Split always\s+(\d+)/i, 0);
 # Equally important: twin test t_alw_noreorder should see dly vars,
 #  is identical to this test except for disabling the reorder step.
 foreach my $file (
-      glob_all("$Self->{obj_dir}/$Self->{VM_PREFIX}*.h"),
-      glob_all("$Self->{obj_dir}/$Self->{VM_PREFIX}*.cpp")
+      glob_all("$Self->{obj_dir}/$Self->{vm_prefix}*.h"),
+      glob_all("$Self->{obj_dir}/$Self->{vm_prefix}*.cpp")
     ) {
     file_grep_not($file, qr/dly__t__DOT__v1/i);
     file_grep_not($file, qr/dly__t__DOT__v2/i);

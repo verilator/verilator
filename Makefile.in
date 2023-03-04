@@ -15,13 +15,13 @@
 #
 #****************************************************************************/
 #
-# make all	to compile and build Verilator.
-# make install	to install it.
-# make TAGS	to update tags tables.
+# make all      to compile and build Verilator.
+# make install  to install it.
+# make TAGS     to update tags tables.
 #
 # make clean  or  make mostlyclean
 #      Delete all files from the current directory that are normally
-#      created by building the program.	 Don't delete the files that
+#      created by building the program.  Don't delete the files that
 #      record the configuration.  Also preserve files that could be made
 #      by building, but normally aren't because the distribution comes
 #      with them.
@@ -153,7 +153,7 @@ msg_test: all_nomsg
 	@echo
 
 .PHONY: test
-ifeq ($(CFG_WITH_LONGTESTS),yes)	# Local... Else don't burden users
+ifeq ($(CFG_WITH_LONGTESTS),yes)  # Local... Else don't burden users
 test: smoke-test test_regress
 # examples is part of test_regress's test_regress/t/t_a2_examples.pl
 # (because that allows it to run in parallel with other test_regress's)
@@ -462,7 +462,7 @@ config.status: configure
 	./config.status --recheck
 
 configure: configure.ac
-ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
+ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
 	autoconf --warnings=all
 else
 	autoconf
@@ -501,7 +501,7 @@ distclean maintainer-clean::
 TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/*.in \
 	${srcdir}/*.in ${srcdir}/*.pod
 
-TAGS:	$(TAGFILES)
+TAGS: $(TAGFILES)
 	etags $(TAGFILES)
 
 .PHONY: doxygen

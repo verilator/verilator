@@ -515,7 +515,9 @@ private:
                     flp,
                     new AstMulD{flp, valuep,
                                 new AstConst{flp, AstConst::RealDouble{}, m_timescaleFactor}}};
+                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
             } else {
+                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
                 valuep = new AstMul{flp, valuep,
                                     new AstConst{flp, AstConst::Unsized64{},
                                                  static_cast<uint64_t>(m_timescaleFactor)}};
@@ -541,6 +543,7 @@ private:
     void visit(AstEventControl* nodep) override {
         // Do not allow waiting on local named events, as they get enqueued for clearing, but can
         // go out of scope before that happens
+        if (!nodep->sensesp()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: no sense equation (@*)");
         if (nodep->sensesp()->exists([](const AstNodeVarRef* refp) {
                 AstBasicDType* const dtypep = refp->dtypep()->skipRefp()->basicp();
                 return dtypep && dtypep->isEvent() && refp->varp()->isFuncLocal();

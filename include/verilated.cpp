@@ -1411,6 +1411,12 @@ IData VL_FERROR_IN(IData, std::string& outputr) VL_MT_SAFE {
     outputr = std::string{::std::strerror(ret)};
     return ret;
 }
+IData VL_FERROR_IW(IData fpi, int obits, WDataOutP outwp) VL_MT_SAFE {
+    std::string output;
+    const IData ret = VL_FERROR_IN(fpi, output /*ref*/);
+    _vl_string_to_vint(obits, outwp, output.length(), output.c_str());
+    return ret;
+}
 
 IData VL_FOPEN_NN(const std::string& filename, const std::string& mode) {
     return Verilated::threadContextp()->impp()->fdNew(filename.c_str(), mode.c_str());
@@ -1793,6 +1799,7 @@ std::string VL_TO_STRING(CData lhs) { return VL_SFORMATF_NX("'h%0x", 8, lhs); }
 std::string VL_TO_STRING(SData lhs) { return VL_SFORMATF_NX("'h%0x", 16, lhs); }
 std::string VL_TO_STRING(IData lhs) { return VL_SFORMATF_NX("'h%0x", 32, lhs); }
 std::string VL_TO_STRING(QData lhs) { return VL_SFORMATF_NX("'h%0x", 64, lhs); }
+std::string VL_TO_STRING(double lhs) { return VL_SFORMATF_NX("%d", 64, lhs); }
 std::string VL_TO_STRING_W(int words, const WDataInP obj) {
     return VL_SFORMATF_NX("'h%0x", words * VL_EDATASIZE, obj);
 }
@@ -1860,6 +1867,33 @@ IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
     auto v = std::strtol(str_mod.c_str(), nullptr, base);
     if (errno != 0) v = 0;
     return static_cast<IData>(v);
+}
+IData VL_NTOI_I(int obits, const std::string& str) VL_PURE { return VL_NTOI_Q(obits, str); }
+QData VL_NTOI_Q(int obits, const std::string& str) VL_PURE {
+    QData out = 0;
+    const size_t procLen = std::min(str.length(), static_cast<size_t>(8));
+    const char* const datap = str.data();
+    int pos = static_cast<int>(str.length()) - 1;
+    int bit = 0;
+    while (bit < obits && pos >= 0) {
+        out |= static_cast<QData>(datap[pos]) << VL_BITBIT_Q(bit);
+        bit += 8;
+        --pos;
+    }
+    return out & VL_MASK_Q(obits);
+}
+void VL_NTOI_W(int obits, WDataOutP owp, const std::string& str) VL_PURE {
+    const int words = VL_WORDS_I(obits);
+    for (int i = 0; i < words; ++i) owp[i] = 0;
+    const char* const datap = str.data();
+    int pos = static_cast<int>(str.length()) - 1;
+    int bit = 0;
+    while (bit < obits && pos >= 0) {
+        owp[VL_BITWORD_I(bit)] |= static_cast<EData>(datap[pos]) << VL_BITBIT_I(bit);
+        bit += 8;
+        --pos;
+    }
+    owp[words - 1] &= VL_MASK_E(obits);
 }
 
 //===========================================================================
@@ -2948,7 +2982,7 @@ VerilatedModule::~VerilatedModule() {
 // VerilatedVar:: Methods
 
 // cppcheck-suppress unusedFunction  // Used by applications
-uint32_t VerilatedVarProps::entSize() const {
+uint32_t VerilatedVarProps::entSize() const VL_MT_SAFE {
     uint32_t size = 1;
     switch (vltype()) {
     case VLVT_PTR: size = sizeof(void*); break;
@@ -2968,7 +3002,7 @@ size_t VerilatedVarProps::totalSize() const {
     return size;
 }
 
-void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const {
+void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const VL_MT_SAFE {
     if (VL_UNLIKELY(dim <= 0 || dim > udims())) return nullptr;
     if (VL_UNLIKELY(indx < low(dim) || indx > high(dim))) return nullptr;
     const int indxAdj = indx - low(dim);
@@ -3087,7 +3121,7 @@ void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
     return nullptr;
 }
 
-void* VerilatedScope::exportFindError(int funcnum) const {
+void* VerilatedScope::exportFindError(int funcnum) const VL_MT_SAFE {
     // Slowpath - Called only when find has failed
     const std::string msg
         = (std::string{"Testbench C called '"} + VerilatedImp::exportName(funcnum)

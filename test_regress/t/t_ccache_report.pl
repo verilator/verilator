@@ -27,7 +27,7 @@ else {
         make_flags => "ccache-report"
         );
 
-    my $report = "$Self->{obj_dir}/$Self->{VM_PREFIX}__ccache_report.txt";
+    my $report = "$Self->{obj_dir}/$Self->{vm_prefix}__ccache_report.txt";
 
     # We do not actually want to make this test depend on whether the file was
     # cached or not, so trim the report to ignore actual caching behaviour
@@ -38,8 +38,8 @@ else {
     run(
         logfile => "$Self->{obj_dir}/rebuild.log",
         cmd => ["make", "-C", $Self->{obj_dir},
-                        "-f", "$Self->{VM_PREFIX}.mk",
-                        $Self->{VM_PREFIX}, "ccache-report"]
+                        "-f", "$Self->{vm_prefix}.mk",
+                        $Self->{vm_prefix}, "ccache-report"]
         );
 
     files_identical($report, "t/$Self->{name}__ccache_report_rebuild.out");

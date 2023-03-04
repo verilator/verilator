@@ -10,7 +10,7 @@ module t (/*AUTOARG*/);
           e0,
           e1,
           e2,
-	  e3
+          e3
         } EN;
 
    initial begin

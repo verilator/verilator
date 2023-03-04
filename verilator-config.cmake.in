@@ -19,7 +19,8 @@
 #
 ######################################################################
 
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.12)
+cmake_policy(SET CMP0074 NEW)
 
 # Prefer VERILATOR_ROOT from environment
 if (DEFINED ENV{VERILATOR_ROOT})
@@ -75,6 +76,10 @@ if (NOT CMAKE_CXX_COMPILER_ID MATCHES MSVC)
       endif()
     endforeach()
   endif()
+endif()
+
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang")
+  add_link_options(-Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv)
 endif()
 
 define_property(TARGET
@@ -142,9 +147,13 @@ function(verilate TARGET)
   endif()
 
   if (NOT VERILATE_PREFIX)
+    list(LENGTH VERILATE_SOURCES NUM_SOURCES)
+    if (${NUM_SOURCES} GREATER 1)
+      message(WARNING "Specify PREFIX if there are multiple SOURCES")
+    endif()
     list(GET VERILATE_SOURCES 0 TOPSRC)
     get_filename_component(_SRC_NAME ${TOPSRC} NAME_WE)
-    set(VERILATE_PREFIX V${_SRC_NAME})
+    string(MAKE_C_IDENTIFIER V${_SRC_NAME} VERILATE_PREFIX)
   endif()
 
   if (VERILATE_TOP_MODULE)

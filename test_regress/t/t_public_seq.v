@@ -37,6 +37,8 @@ module t (
    end
 
    always_ff @(posedge dummy_clk) begin
+      // verilator lint_off MULTIDRIVEN
       comb_byte = ~pub_byte;
+      // verilator lint_on MULTIDRIVEN
    end
 endmodule

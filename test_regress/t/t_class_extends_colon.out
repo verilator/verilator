@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_class_extends_colon.v:20:21: Unsupported: Hierarchical class references
+   20 | class Cls12 extends Pkg::Icls1;
+      |                     ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

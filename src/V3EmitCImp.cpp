@@ -50,7 +50,8 @@ class EmitCGatherDependencies final : VNVisitor {
         if (const AstClassRefDType* const dtypep = VN_CAST(nodep, ClassRefDType)) {
             m_dependencies.insert(
                 EmitCBaseVisitor::prefixNameProtect(dtypep->classp()->classOrPackagep()));
-        } else if (const AstStructDType* const dtypep = VN_CAST(nodep, StructDType)) {
+        } else if (const AstNodeUOrStructDType* const dtypep
+                   = VN_CAST(nodep, NodeUOrStructDType)) {
             if (!dtypep->packed()) {
                 m_dependencies.insert(
                     EmitCBaseVisitor::prefixNameProtect(dtypep->classOrPackagep()));
@@ -454,9 +455,9 @@ class EmitCImp final : EmitCFunc {
                 emitCtorImp(modp);
                 emitConfigureImp(modp);
                 emitDestructorImp(modp);
+                emitCoverageImp();
             }
             emitSavableImp(modp);
-            emitCoverageImp();
         } else {
             // From `systemc_implementation
             emitTextSection(modp, VNType::atScImp);

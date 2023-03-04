@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     contextp->commandArgs(argc, argv);
     srand48(5);
 
-    const std::unique_ptr<Vt_comb_input_0> topp{new Vt_comb_input_0};
+    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX};
     topp->inc = 1;
     topp->clk = false;
     topp->eval();

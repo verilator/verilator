@@ -34,12 +34,16 @@ module t (/*AUTOARG*/
       else if (cyc == 1) begin
          `checks(e.name, "E01");
          `checkh(e.next, ELARGE);
+         `checkh(e.next(0), E01);
+         `checkh(e.prev(0), E01);
          e <= ELARGE;
       end
       else if (cyc == 3) begin
          `checks(e.name, "ELARGE");
          `checkh(e.next, E01);
          `checkh(e.prev, E01);
+         `checkh(e.next(0), ELARGE);
+         `checkh(e.prev(0), ELARGE);
          e <= E01;
       end
       //

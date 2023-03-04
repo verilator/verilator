@@ -74,7 +74,8 @@ List Of Warnings
 .. option:: Unsupported: ....
 
    This error indicates that the code uses a Verilog language construct
-   that is not yet supported in Verilator.  See the Limitations chapter.
+   that is not yet supported in Verilator.  See also :ref:`Language
+   Limitations`.
 
 
 .. option:: ALWCOMBORDER
@@ -317,9 +318,11 @@ List Of Warnings
 
 .. option:: CDCRSTLOGIC
 
-   With :vlopt:`--cdc` only, it warns that asynchronous flop reset terms come
-   from other than primary inputs or flopped outputs, creating the
-   potential for reset glitches.
+   Historical, never issued since version 5.008.
+
+   Warned with a no longer supported clock domain crossing option that
+   asynchronous flop reset terms came from other than primary inputs or
+   flopped outputs, creating the potential for reset glitches.
 
 
 .. option:: CLKDATA
@@ -847,14 +850,14 @@ List Of Warnings
 
    .. TODO better example
 
-   Warns that a packed vector is declared with little endian bit numbering
-   (i.e. [0:7]).  Big endian bit numbering is now the overwhelming
-   standard, and little numbering is now thus often due to simple oversight
+   Warns that a packed vector is declared with big endian bit numbering
+   (i.e. [0:7]).  Little endian bit numbering is now the overwhelming
+   standard, and big numbering is now thus often due to simple oversight
    instead of intent.
 
-   It also warns that an instance is declared with little endian range
-   (i.e. [0:7] or [7]) and is connected to an N-wide signal. Based on IEEE
-   the bits will likely be backward from what people may expect
+   It also warns that an instance is declared with big endian range
+   (i.e. [0:7] or [7]) and is connected to an N-wide signal.
+   The bits will likely be backward from what people may expect
    (i.e., instance [0] will connect to signal bit [N-1] not bit [0]).
 
    Ignoring this warning will only suppress the lint check; it will
@@ -1790,16 +1793,27 @@ List Of Warnings
 
    For example, this is a missized index:
 
-   .. include:: ../../docs/gen/ex_WIDTH_1_faulty.rst
+   .. include:: ../../docs/gen/ex_WIDTHEXPAND_1_faulty.rst
 
-   Results in:
+   Results in a WIDTHEXPAND warning:
 
-   .. include:: ../../docs/gen/ex_WIDTH_1_msg.rst
+   .. include:: ../../docs/gen/ex_WIDTHEXPAND_1_msg.rst
 
    One possible fix:
 
-   .. include:: ../../docs/gen/ex_WIDTH_1_fixed.rst
+   .. include:: ../../docs/gen/ex_WIDTHEXPAND_1_fixed.rst
 
+.. option:: WIDTHTRUNC
+
+   A more granular WIDTH warning, for when a value is truncated
+
+.. option:: WIDTHEXPAND
+
+   A more granular WIDTH warning, for when a value is zero expanded
+
+.. option:: WIDTHXZEXPAND
+
+   A more granular WIDTH warning, for when a value is xz expanded
 
 .. option:: WIDTHCONCAT
 

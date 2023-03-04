@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_class_extends2.v:18:19: Unsupported: Hierarchical class references
+   18 | class Ext extends Pkg::Base0;
+      |                   ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
