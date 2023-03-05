@@ -3702,9 +3702,9 @@ sinc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression (for sequence
                 BISONPRE_COPY(inc_or_dec_expression,{s/~l~/s/g})        // {copied}
         ;
 
-//UNSUPpinc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression (for property_expression)
-//UNSUP         BISONPRE_COPY(inc_or_dec_expression,{s/~l~/p/g})        // {copied}
-//UNSUP ;
+pinc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression (for property_expression)
+                BISONPRE_COPY(inc_or_dec_expression,{s/~l~/p/g})        // {copied}
+        ;
 
 //UNSUPev_inc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression (for ev_expr)
 //UNSUP         BISONPRE_COPY(inc_or_dec_expression,{s/~l~/ev_/g})      // {copied}
@@ -4935,9 +4935,9 @@ sexprOkLvalue<nodeExprp>:  // exprOkLValue, For use by sequence_expr
                 BISONPRE_COPY(exprOkLvalue,{s/~l~/s/g}) // {copied}
         ;
 
-//UNSUPpexprOkLvalue<nodeExprp>:  // exprOkLValue, For use by property_expr
-//UNSUP         BISONPRE_COPY(exprOkLvalue,{s/~l~/p/g}) // {copied}
-//UNSUP ;
+pexprOkLvalue<nodeExprp>:  // exprOkLValue, For use by property_expr
+                BISONPRE_COPY(exprOkLvalue,{s/~l~/p/g}) // {copied}
+        ;
 
 //UNSUPev_exprOkLvalue<nodeExprp>:  // exprOkLValue, For use by ev_expr
 //UNSUP         BISONPRE_COPY(exprOkLvalue,{s/~l~/ev_/g})       // {copied}
@@ -4978,9 +4978,9 @@ sexprScope<nodeExprp>:  // exprScope, For use by sequence_expr
                 BISONPRE_COPY(exprScope,{s/~l~/s/g})    // {copied}
         ;
 
-//UNSUPpexprScope<nodeExprp>:  // exprScope, For use by property_expr
-//UNSUP         BISONPRE_COPY(exprScope,{s/~l~/p/g})    // {copied}
-//UNSUP ;
+pexprScope<nodeExprp>:  // exprScope, For use by property_expr
+                BISONPRE_COPY(exprScope,{s/~l~/p/g})    // {copied}
+        ;
 
 //UNSUPev_exprScope<nodeExprp>:  // exprScope, For use by ev_expr
 //UNSUP         BISONPRE_COPY(exprScope,{s/~l~/ev_/g})  // {copied}
@@ -5992,23 +5992,6 @@ property_spec<propSpecp>:               // IEEE: property_spec
 //UNSUP ;
 
 pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regexps just add an "p" to expr.)
-        //UNSUP: This rule has been super-specialized to what is supported now
-        //UNSUP remove below
-        //
-        // This rule is divided between expr and complex_pexpr to avoid an ambiguity in SystemVerilog grammar.
-        // Both pexpr and expr can consist of parentheses, and so a pexpr "((expr))" can be reduced in two ways:
-        // 1. ((expr)) -> (pexpr) -> pexpr
-        // 2. ((expr)) -> (expr)  -> pexpr
-        // The division below forces YACC to always assume the parentheses reduce to expr, unless they enclose
-        // operators that can only appear in a pexpr.
-        //
-                complex_pexpr                           { $$ = $1; }
-        |       expr                                    { $$ = $1; }
-        ;
-
-complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
-                '(' complex_pexpr ')'                   { $$ = $2; }
-        //UNSUP remove above, use below:
         //
         //                      // IEEE: sequence_expr
         //                      // Expanded below
@@ -6016,7 +5999,7 @@ complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
         //                      // IEEE: '(' pexpr ')'
         //                      // Expanded below
         //
-        |       yNOT pexpr %prec prNEGATION             { $$ = new AstLogNot{$1, $2}; }
+                yNOT pexpr %prec prNEGATION             { $$ = new AstLogNot{$1, $2}; }
         |       ySTRONG '(' sexpr ')'
                         { $$ = $3; BBUNSUP($2, "Unsupported: strong (in property expression)"); }
         |       yWEAK '(' sexpr ')'
@@ -6068,10 +6051,10 @@ complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
         //UNSUP clocking_event yDISABLE yIFF '(' expr ')' pexpr %prec prSEQ_CLOCKING    { }
         //
         //============= sexpr rules copied for property_expr
-        //UNSUP BISONPRE_COPY_ONCE(sexpr,{s/~p~s/p/g; })        // {copied}
+        |       BISONPRE_COPY_ONCE(sexpr,{s/~p~s/p/g; })        // {copied}
         //
         //============= expr rules copied for property_expr
-        //UNSUP BISONPRE_COPY_ONCE(expr,{s/~l~/p/g; s/~p~/p/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g; })  // {copied}
+        |       BISONPRE_COPY_ONCE(expr,{s/~l~/p/g; s/~p~/p/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g; })  // {copied}
         ;
 
 sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as regexps just add an "s" to expr.)
