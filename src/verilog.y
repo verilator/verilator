@@ -3698,19 +3698,19 @@ finc_or_dec_expression<nodeExprp>:  // ==IEEE: inc_or_dec_expression
                 BISONPRE_COPY(inc_or_dec_expression,{s/~l~/f/g})        // {copied}
         ;
 
-//UNSUPsinc_or_dec_expression<nodep>:  // IEEE: inc_or_dec_expression (for sequence_expression)
+//UNSUPsinc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression (for sequence_expression)
 //UNSUP         BISONPRE_COPY(inc_or_dec_expression,{s/~l~/s/g})        // {copied}
 //UNSUP ;
 
-//UNSUPpinc_or_dec_expression<nodep>:  // IEEE: inc_or_dec_expression (for property_expression)
+//UNSUPpinc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression (for property_expression)
 //UNSUP         BISONPRE_COPY(inc_or_dec_expression,{s/~l~/p/g})        // {copied}
 //UNSUP ;
 
-//UNSUPev_inc_or_dec_expression<nodep>:  // IEEE: inc_or_dec_expression (for ev_expr)
+//UNSUPev_inc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression (for ev_expr)
 //UNSUP         BISONPRE_COPY(inc_or_dec_expression,{s/~l~/ev_/g})      // {copied}
 //UNSUP ;
 
-//UNSUPpev_inc_or_dec_expression<nodep>:  // IEEE: inc_or_dec_expression (for pev_expr)
+//UNSUPpev_inc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression (for pev_expr)
 //UNSUP         BISONPRE_COPY(inc_or_dec_expression,{s/~l~/pev_/g})     // {copied}
 //UNSUP ;
 
@@ -3751,7 +3751,7 @@ caseAttrE:
         |       caseAttrE yVL_PARALLEL_CASE             { GRAMMARP->m_caseAttrp->parallelPragma(true); }
         ;
 
-//UNSUPcase_patternListE<nodep>:  // IEEE: case_pattern_item
+//UNSUPcase_patternListE<caseItemp>:  // IEEE: case_pattern_item
 //UNSUP //      &&& is part of expr so aliases to case_itemList
 //UNSUP         case_itemListE                          { $$ = $1; }
 //UNSUP ;
@@ -3804,7 +3804,7 @@ value_range<nodeExprp>:         // ==IEEE: value_range
         |       '[' expr ':' expr ']'                   { $$ = new AstInsideRange{$1, $2, $4}; }
         ;
 
-//UNSUPcovergroup_value_range<nodep>:  // ==IEEE-2012: covergroup_value_range
+//UNSUPcovergroup_value_range<nodeExprp>:  // ==IEEE-2012: covergroup_value_range
 //UNSUP         cgexpr                                  { $$ = $1; }
 //UNSUP |       '[' cgexpr ':' cgexpr ']'               { }
 //UNSUP ;
@@ -4311,7 +4311,7 @@ elaboration_system_task_guts<nodep>:    // IEEE: part of elaboration_system_task
         |       yD_FATAL '(' expr ',' exprListE ')'     { $$ = new AstElabDisplay{$1, VDisplayType::DT_FATAL, $5}; DEL($3); }
         ;
 
-//UNSUPproperty_actual_arg<nodep>:  // ==IEEE: property_actual_arg
+//UNSUPproperty_actual_arg<nodeExprp>:  // ==IEEE: property_actual_arg
 //UNSUP //                      // IEEE: property_expr
 //UNSUP //                      // IEEE: sequence_actual_arg
 //UNSUP         pev_expr                                { $$ = $1; }
@@ -4872,7 +4872,7 @@ fexpr<nodeExprp>:                   // For use as first part of statement (disam
                 BISONPRE_COPY(expr,{s/~l~/f/g; s/~r~/f/g; s/~f__IGNORE~/__IGNORE/g;})   // {copied}
         ;
 
-//UNSUPev_expr<nodep>:  // IEEE: event_expression
+//UNSUPev_expr<nodeExprp>:  // IEEE: event_expression
 //UNSUP //                      // for yOR/, see event_expression
 //UNSUP //
 //UNSUP //                      // IEEE: [ edge_identifier ] expression [ yIFF expression ]
@@ -4890,7 +4890,7 @@ fexpr<nodeExprp>:                   // For use as first part of statement (disam
 //UNSUP //
 //UNSUP //---------------------
 //UNSUP //                      // IEEE: expr
-//UNSUP |       BISONPRE_COPY(expr,{s/~l~/ev_/g; s/~r~/ev_/g; s/~p~/ev_/g; s/~noPar__IGNORE~/yP_PAR__IGNORE /g;})       // {copied}
+//UNSUP |       BISONPRE_COPY(expr,{s/~l~/ev_/g; s/~r~/ev_/g; s/~p~/ev_/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g;})       // {copied}
 //UNSUP //
 //UNSUP //                      // IEEE: '(' event_expression ')'
 //UNSUP //                      // expr:'(' x ')' conflicts with event_expression:'(' event_expression ')'
@@ -4931,19 +4931,19 @@ fexprOkLvalue<nodeExprp>:           // exprOkLValue, For use as first part of st
                 BISONPRE_COPY(exprOkLvalue,{s/~l~/f/g}) // {copied}
         ;
 
-//UNSUPsexprOkLvalue<nodep>:  // exprOkLValue, For use by sequence_expr
+//UNSUPsexprOkLvalue<nodeExprp>:  // exprOkLValue, For use by sequence_expr
 //UNSUP         BISONPRE_COPY(exprOkLvalue,{s/~l~/s/g}) // {copied}
 //UNSUP ;
 
-//UNSUPpexprOkLvalue<nodep>:  // exprOkLValue, For use by property_expr
+//UNSUPpexprOkLvalue<nodeExprp>:  // exprOkLValue, For use by property_expr
 //UNSUP         BISONPRE_COPY(exprOkLvalue,{s/~l~/p/g}) // {copied}
 //UNSUP ;
 
-//UNSUPev_exprOkLvalue<nodep>:  // exprOkLValue, For use by ev_expr
+//UNSUPev_exprOkLvalue<nodeExprp>:  // exprOkLValue, For use by ev_expr
 //UNSUP         BISONPRE_COPY(exprOkLvalue,{s/~l~/ev_/g})       // {copied}
 //UNSUP ;
 
-//UNSUPpev_exprOkLvalue<nodep>:  // exprOkLValue, For use by ev_expr
+//UNSUPpev_exprOkLvalue<nodeExprp>:  // exprOkLValue, For use by ev_expr
 //UNSUP         BISONPRE_COPY(exprOkLvalue,{s/~l~/pev_/g})      // {copied}
 //UNSUP ;
 
@@ -4974,19 +4974,19 @@ fexprScope<nodeExprp>:              // exprScope, For use as first part of state
                 BISONPRE_COPY(exprScope,{s/~l~/f/g})    // {copied}
         ;
 
-//UNSUPsexprScope<nodep>:  // exprScope, For use by sequence_expr
+//UNSUPsexprScope<nodeExprp>:  // exprScope, For use by sequence_expr
 //UNSUP         BISONPRE_COPY(exprScope,{s/~l~/s/g})    // {copied}
 //UNSUP ;
 
-//UNSUPpexprScope<nodep>:  // exprScope, For use by property_expr
+//UNSUPpexprScope<nodeExprp>:  // exprScope, For use by property_expr
 //UNSUP         BISONPRE_COPY(exprScope,{s/~l~/p/g})    // {copied}
 //UNSUP ;
 
-//UNSUPev_exprScope<nodep>:  // exprScope, For use by ev_expr
+//UNSUPev_exprScope<nodeExprp>:  // exprScope, For use by ev_expr
 //UNSUP         BISONPRE_COPY(exprScope,{s/~l~/ev_/g})  // {copied}
 //UNSUP ;
 
-//UNSUPpev_exprScope<nodep>:  // exprScope, For use by ev_expr
+//UNSUPpev_exprScope<nodeExprp>:  // exprScope, For use by ev_expr
 //UNSUP         BISONPRE_COPY(exprScope,{s/~l~/pev_/g}) // {copied}
 //UNSUP ;
 
@@ -5051,7 +5051,7 @@ argsExprListE<nodeExprp>:       // IEEE: part of list_of_arguments
         |       argsExprListE ',' argsExprOneE          { $$ = $1->addNext($3); }
         ;
 
-//UNSUPpev_argsExprListE<nodep>:  // IEEE: part of list_of_arguments - pev_expr at bottom
+//UNSUPpev_argsExprListE<nodeExprp>:  // IEEE: part of list_of_arguments - pev_expr at bottom
 //UNSUP         pev_argsExprOneE                        { $$ = $1; }
 //UNSUP |       pev_argsExprListE ',' pev_argsExprOneE  { $$ = addNextNull($1, $3); }
 //UNSUP ;
@@ -5061,7 +5061,7 @@ argsExprOneE<nodeExprp>:        // IEEE: part of list_of_arguments
         |       expr                                    { $$ = new AstArg{$1->fileline(), "", $1}; }
         ;
 
-//UNSUPpev_argsExprOneE<nodep>:  // IEEE: part of list_of_arguments - pev_expr at bottom
+//UNSUPpev_argsExprOneE<nodeExprp>:  // IEEE: part of list_of_arguments - pev_expr at bottom
 //UNSUP         /*empty*/                               { $$ = nullptr; }       // ,, is legal in list_of_arguments
 //UNSUP |       pev_expr                                { $$ = $1; }
 //UNSUP ;
@@ -5071,7 +5071,7 @@ argsDottedList<nodeExprp>:      // IEEE: part of list_of_arguments
         |       argsDottedList ',' argsDotted           { $$ = addNextNull($1, $3); }
         ;
 
-//UNSUPpev_argsDottedList<nodep>:  // IEEE: part of list_of_arguments - pev_expr at bottom
+//UNSUPpev_argsDottedList<nodeExprp>:  // IEEE: part of list_of_arguments - pev_expr at bottom
 //UNSUP         pev_argsDotted                          { $$ = $1; }
 //UNSUP |       pev_argsDottedList ',' pev_argsDotted   { $$ = addNextNull($1, $3); }
 //UNSUP ;
@@ -5081,7 +5081,7 @@ argsDotted<nodeExprp>:          // IEEE: part of list_of_arguments
         |       '.' idAny '(' expr ')'                  { $$ = new AstArg{$<fl>2, *$2, $4}; }
         ;
 
-//UNSUPpev_argsDotted<nodep>:  // IEEE: part of list_of_arguments - pev_expr at bottom
+//UNSUPpev_argsDotted<nodeExprp>:  // IEEE: part of list_of_arguments - pev_expr at bottom
 //UNSUP         '.' idAny '(' ')'                       { $$ = new AstArg{$<fl>2, *$2, nullptr}; }
 //UNSUP |       '.' idAny '(' pev_expr ')'              { $$ = new AstArg{$<fl>2, *$2, $4}; }
 //UNSUP ;
@@ -5469,7 +5469,7 @@ variable_lvalueConcList<nodeExprp>: // IEEE: part of variable_lvalue: '{' variab
         |       variable_lvalueConcList ',' variable_lvalue     { $$ = new AstConcat{$2, $1, $3}; }
         ;
 
-//UNSUPvariable_lvalueList<nodep>:  // IEEE: part of variable_lvalue: variable_lvalue { ',' variable_lvalue }
+//UNSUPvariable_lvalueList<nodeExprp>:  // IEEE: part of variable_lvalue: variable_lvalue { ',' variable_lvalue }
 //UNSUP         variable_lvalue                         { $$ = $1; }
 //UNSUP |       variable_lvalueList ',' variable_lvalue { $$ = addNextNull($1, $3); }
 //UNSUP ;
@@ -5864,7 +5864,7 @@ property_declarationBody<nodep>:  // IEEE: part of property_declaration
         |       property_spec ';'             { $$ = $1; }
         ;
 
-//UNSUPassertion_variable_declarationList: // IEEE: part of assertion_variable_declaration
+//UNSUPassertion_variable_declarationList<nodep>: // IEEE: part of assertion_variable_declaration
 //UNSUP         assertion_variable_declaration          { $$ = $1; }
 //UNSUP |       assertion_variable_declarationList assertion_variable_declaration       { }
 //UNSUP ;
@@ -5988,7 +5988,7 @@ property_spec<propSpecp>:               // IEEE: property_spec
 //UNSUP |       BISONPRE_COPY_ONCE(sexpr,{s/~p~s/pev_/g; })     // {copied}
 //UNSUP //
 //UNSUP //============= expr rules copied for pev_expr
-//UNSUP |       BISONPRE_COPY_ONCE(expr,{s/~l~/pev_/g; s/~p~/pev_/g; s/~noPar__IGNORE~/yP_PAR__IGNORE /g; })    // {copied}
+//UNSUP |       BISONPRE_COPY_ONCE(expr,{s/~l~/pev_/g; s/~p~/pev_/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g; })    // {copied}
 //UNSUP ;
 
 pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regexps just add an "p" to expr.)
@@ -6069,10 +6069,10 @@ complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
         //UNSUP BISONPRE_COPY_ONCE(sexpr,{s/~p~s/p/g; })        // {copied}
         //
         //============= expr rules copied for property_expr
-        //UNSUP BISONPRE_COPY_ONCE(expr,{s/~l~/p/g; s/~p~/p/g; s/~noPar__IGNORE~/yP_PAR__IGNORE /g; })  // {copied}
+        //UNSUP BISONPRE_COPY_ONCE(expr,{s/~l~/p/g; s/~p~/p/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g; })  // {copied}
         ;
 
-//UNSUPsexpr<nodep>:  // ==IEEE: sequence_expr  (The name sexpr is important as regexps just add an "s" to expr.)
+//UNSUPsexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as regexps just add an "s" to expr.)
 //UNSUP //                      // ********* RULES COPIED IN sequence_exprProp
 //UNSUP //                      // For precedence, see IEEE 17.7.1
 //UNSUP //
@@ -6116,7 +6116,7 @@ complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
 //UNSUP |       clocking_event ~p~sexpr %prec prSEQ_CLOCKING    { }
 //UNSUP //
 //UNSUP //============= expr rules copied for sequence_expr
-//UNSUP |       BISONPRE_COPY_ONCE(expr,{s/~l~/s/g; s/~p~/s/g; s/~noPar__IGNORE~/yP_PAR__IGNORE /g; })  // {copied}
+//UNSUP |       BISONPRE_COPY_ONCE(expr,{s/~l~/s/g; s/~p~/s/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g; })  // {copied}
 //UNSUP ;
 
 //UNSUPcycle_delay_range<nodep>:  // IEEE: ==cycle_delay_range
@@ -6195,7 +6195,7 @@ complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
 //UNSUP                   PARSEP->covergroupCb($<fl>1, $1, $2); }
 //UNSUP ;
 
-//UNSUPcgexpr<nodep>:  // IEEE-2012: covergroup_expression, before that just expression
+//UNSUPcgexpr<nodeExprp>:  // IEEE-2012: covergroup_expression, before that just expression
 //UNSUP         expr                                    { $$ = $1; }
 //UNSUP ;
 
