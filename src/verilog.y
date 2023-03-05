@@ -3228,12 +3228,23 @@ cellparamItemE<pinp>:           // IEEE: named_parameter_assignment + empty
         |       '.' idAny '(' exprOrDataType ')'
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, $4};
                           $$->svDotName(true); }
-        //UNSUP '.' idAny '(' exprOrDataType/*expr*/ ':' expr ')'               { }
-        //UNSUP '.' idAny '(' exprOrDataType/*expr*/ ':' expr ':' expr ')'      { }
+        //UNSUP | '.' idAny '(' exprOrDataType/*expr*/ ':' expr ')'
+        //UNSUP          { MINTYPMAXDLYUNSUP($4); DEL($4);
+        //UNSUP            $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, $6};
+        //UNSUP            $$->svDotName(true); }
+        //UNSUP | '.' idAny '(' exprOrDataType/*expr*/ ':' expr ':' expr ')'
+        //UNSUP          { MINTYPMAXDLYUNSUP($4); DEL($4); DEL($8);
+        //UNSUP            $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, $6};
+        //UNSUP            $$->svDotName(true); }
         //                      // data_type for 'parameter type' hookups
-        |       exprOrDataType                          { $$ = new AstPin{FILELINE_OR_CRE($1), PINNUMINC(), "", $1}; }
-        //UNSUP exprOrDataType/*expr*/ ':' expr         { }
-        //UNSUP exprOrDataType/*expr*/ ':' expr ':' expr        { }
+        |       exprOrDataType
+                        { $$ = new AstPin{FILELINE_OR_CRE($1), PINNUMINC(), "", $1}; }
+        //UNSUP | exprOrDataType/*expr*/ ':' expr
+        //UNSUP          { MINTYPMAXDLYUNSUP($1); DEL($1);
+        //UNSUP            $$ = new AstPin{FILELINE_OR_CRE($3), PINNUMINC(), "", $3}; }
+        //UNSUP | exprOrDataType/*expr*/ ':' expr ':' expr
+        //UNSUP          { MINTYPMAXDLYUNSUP($1); DEL($1); DEL($5);
+        //UNSUP            $$ = new AstPin{FILELINE_OR_CRE($3), PINNUMINC(), "", $3}; }
         ;
 
 cellpinItemE<pinp>:             // IEEE: named_port_connection + empty
