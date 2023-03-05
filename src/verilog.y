@@ -722,7 +722,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              ySTATIC__ETC    "static"
 %token<fl>              ySTATIC__LEX    "static-in-lex"
 %token<fl>              ySTRING         "string"
-//UNSUP %token<fl>      ySTRONG         "strong"
+%token<fl>              ySTRONG         "strong"
 %token<fl>              ySTRONG0        "strong0"
 %token<fl>              ySTRONG1        "strong1"
 %token<fl>              ySTRUCT         "struct"
@@ -779,7 +779,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yWAIT           "wait"
 //UNSUP %token<fl>      yWAIT_ORDER     "wait_order"
 %token<fl>              yWAND           "wand"
-//UNSUP %token<fl>      yWEAK           "weak"
+%token<fl>              yWEAK           "weak"
 %token<fl>              yWEAK0          "weak0"
 %token<fl>              yWEAK1          "weak1"
 %token<fl>              yWHILE          "while"
@@ -1005,7 +1005,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 
 %token<fl>              yP_COLON__BEGIN ":-begin"
 %token<fl>              yP_COLON__FORK  ":-fork"
-//UNSUP %token<fl>      yP_PAR__IGNORE  "(-ignored"     // Used when sequence_expr:expr:( is ignored
+%token<fl>              yP_PAR__IGNORE  "(-ignored"     // Used when sequence_expr:expr:( is ignored
 %token<fl>              yP_PAR__STRENGTH "(-for-strength"
 
 %token<fl>              yP_LTMINUSGT    "<->"
@@ -3698,9 +3698,9 @@ finc_or_dec_expression<nodeExprp>:  // ==IEEE: inc_or_dec_expression
                 BISONPRE_COPY(inc_or_dec_expression,{s/~l~/f/g})        // {copied}
         ;
 
-//UNSUPsinc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression (for sequence_expression)
-//UNSUP         BISONPRE_COPY(inc_or_dec_expression,{s/~l~/s/g})        // {copied}
-//UNSUP ;
+sinc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression (for sequence_expression)
+                BISONPRE_COPY(inc_or_dec_expression,{s/~l~/s/g})        // {copied}
+        ;
 
 //UNSUPpinc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression (for property_expression)
 //UNSUP         BISONPRE_COPY(inc_or_dec_expression,{s/~l~/p/g})        // {copied}
@@ -4931,9 +4931,9 @@ fexprOkLvalue<nodeExprp>:           // exprOkLValue, For use as first part of st
                 BISONPRE_COPY(exprOkLvalue,{s/~l~/f/g}) // {copied}
         ;
 
-//UNSUPsexprOkLvalue<nodeExprp>:  // exprOkLValue, For use by sequence_expr
-//UNSUP         BISONPRE_COPY(exprOkLvalue,{s/~l~/s/g}) // {copied}
-//UNSUP ;
+sexprOkLvalue<nodeExprp>:  // exprOkLValue, For use by sequence_expr
+                BISONPRE_COPY(exprOkLvalue,{s/~l~/s/g}) // {copied}
+        ;
 
 //UNSUPpexprOkLvalue<nodeExprp>:  // exprOkLValue, For use by property_expr
 //UNSUP         BISONPRE_COPY(exprOkLvalue,{s/~l~/p/g}) // {copied}
@@ -4974,9 +4974,9 @@ fexprScope<nodeExprp>:              // exprScope, For use as first part of state
                 BISONPRE_COPY(exprScope,{s/~l~/f/g})    // {copied}
         ;
 
-//UNSUPsexprScope<nodeExprp>:  // exprScope, For use by sequence_expr
-//UNSUP         BISONPRE_COPY(exprScope,{s/~l~/s/g})    // {copied}
-//UNSUP ;
+sexprScope<nodeExprp>:  // exprScope, For use by sequence_expr
+                BISONPRE_COPY(exprScope,{s/~l~/s/g})    // {copied}
+        ;
 
 //UNSUPpexprScope<nodeExprp>:  // exprScope, For use by property_expr
 //UNSUP         BISONPRE_COPY(exprScope,{s/~l~/p/g})    // {copied}
@@ -6017,8 +6017,10 @@ complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
         //                      // Expanded below
         //
         |       yNOT pexpr %prec prNEGATION             { $$ = new AstLogNot{$1, $2}; }
-        //UNSUP ySTRONG '(' sexpr ')'                   { }
-        //UNSUP yWEAK '(' sexpr ')'                     { }
+        |       ySTRONG '(' sexpr ')'
+                        { $$ = $3; BBUNSUP($2, "Unsupported: strong (in property expression)"); }
+        |       yWEAK '(' sexpr ')'
+                        { $$ = $3; BBUNSUP($2, "Unsupported: weak (in property expression)"); }
         //                      // IEEE: pexpr yOR pexpr
         //                      // IEEE: pexpr yAND pexpr
         //                      // Under ~p~sexpr and/or ~p~sexpr
@@ -6072,52 +6074,52 @@ complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
         //UNSUP BISONPRE_COPY_ONCE(expr,{s/~l~/p/g; s/~p~/p/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g; })  // {copied}
         ;
 
-//UNSUPsexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as regexps just add an "s" to expr.)
-//UNSUP //                      // ********* RULES COPIED IN sequence_exprProp
-//UNSUP //                      // For precedence, see IEEE 17.7.1
-//UNSUP //
-//UNSUP //                      // IEEE: "cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }"
-//UNSUP //                      // IEEE: "sequence_expr cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }"
-//UNSUP //                      // Both rules basically mean we can repeat sequences, so make it simpler:
-//UNSUP         cycle_delay_range sexpr  %prec yP_POUNDPOUND    { }
-//UNSUP |       ~p~sexpr cycle_delay_range sexpr %prec prPOUNDPOUND_MULTI       { }
-//UNSUP //
-//UNSUP //                      // IEEE: expression_or_dist [ boolean_abbrev ]
-//UNSUP //                      // Note expression_or_dist includes "expr"!
-//UNSUP //                      // sexpr/*sexpression_or_dist*/  --- Hardcoded below
-//UNSUP |       ~p~sexpr/*sexpression_or_dist*/ boolean_abbrev  { }
-//UNSUP //
-//UNSUP //                      // IEEE: "sequence_instance [ sequence_abbrev ]"
-//UNSUP //                      // version without sequence_abbrev looks just like normal function call
-//UNSUP //                      // version w/sequence_abbrev matches above;
-//UNSUP //                      // expression_or_dist:expr:func boolean_abbrev:sequence_abbrev
-//UNSUP //
-//UNSUP //                      // IEEE: '(' expression_or_dist {',' sequence_match_item } ')' [ boolean_abbrev ]
-//UNSUP //                      // IEEE: '(' sexpr {',' sequence_match_item } ')' [ sequence_abbrev ]
-//UNSUP //                      // As sequence_expr includes expression_or_dist, and boolean_abbrev includes sequence_abbrev:
-//UNSUP //                      // '(' sequence_expr {',' sequence_match_item } ')' [ boolean_abbrev ]
-//UNSUP //                      // "'(' sexpr ')' boolean_abbrev" matches "[sexpr:'(' expr ')'] boolean_abbrev" so we can drop it
-//UNSUP |       '(' ~p~sexpr ')'                        { $<fl>$ = $<fl>1; $$ = ...; }
-//UNSUP |       '(' ~p~sexpr ',' sequence_match_itemList ')'    { }
-//UNSUP //
-//UNSUP //                      // AND/OR are between pexprs OR sexprs
-//UNSUP |       ~p~sexpr yAND ~p~sexpr                  { $<fl>$ = $<fl>1; $$ = ...; }
-//UNSUP |       ~p~sexpr yOR ~p~sexpr                   { $<fl>$ = $<fl>1; $$ = ...; }
-//UNSUP //                      // Intersect always has an sexpr rhs
-//UNSUP |       ~p~sexpr yINTERSECT sexpr               { $<fl>$ = $<fl>1; $$ = ...; }
-//UNSUP //
-//UNSUP |       yFIRST_MATCH '(' sexpr ')'              { }
-//UNSUP |       yFIRST_MATCH '(' sexpr ',' sequence_match_itemList ')'  { }
-//UNSUP |       ~p~sexpr/*sexpression_or_dist*/ yTHROUGHOUT sexpr               { }
-//UNSUP //                      // Below pexpr's are really sequence_expr, but avoid conflict
-//UNSUP //                      // IEEE: sexpr yWITHIN sexpr
-//UNSUP |       ~p~sexpr yWITHIN sexpr                  { $<fl>$ = $<fl>1; $$ = ...; }
-//UNSUP //                      // Note concurrent_assertion had duplicate rule for below
-//UNSUP |       clocking_event ~p~sexpr %prec prSEQ_CLOCKING    { }
-//UNSUP //
-//UNSUP //============= expr rules copied for sequence_expr
-//UNSUP |       BISONPRE_COPY_ONCE(expr,{s/~l~/s/g; s/~p~/s/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g; })  // {copied}
-//UNSUP ;
+sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as regexps just add an "s" to expr.)
+        //                      // ********* RULES COPIED IN sequence_exprProp
+        //                      // For precedence, see IEEE 17.7.1
+        //
+        //                      // IEEE: "cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }"
+        //                      // IEEE: "sequence_expr cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }"
+        //                      // Both rules basically mean we can repeat sequences, so make it simpler:
+        //UNSUP cycle_delay_range sexpr  %prec yP_POUNDPOUND    { }
+        //UNSUP ~p~sexpr cycle_delay_range sexpr %prec prPOUNDPOUND_MULTI       { }
+        //
+        //                      // IEEE: expression_or_dist [ boolean_abbrev ]
+        //                      // Note expression_or_dist includes "expr"!
+        //                      // sexpr/*sexpression_or_dist*/  --- Hardcoded below
+        //UNSUP ~p~sexpr/*sexpression_or_dist*/ boolean_abbrev  { }
+        //
+        //                      // IEEE: "sequence_instance [ sequence_abbrev ]"
+        //                      // version without sequence_abbrev looks just like normal function call
+        //                      // version w/sequence_abbrev matches above;
+        //                      // expression_or_dist:expr:func boolean_abbrev:sequence_abbrev
+        //
+        //                      // IEEE: '(' expression_or_dist {',' sequence_match_item } ')' [ boolean_abbrev ]
+        //                      // IEEE: '(' sexpr {',' sequence_match_item } ')' [ sequence_abbrev ]
+        //                      // As sequence_expr includes expression_or_dist, and boolean_abbrev includes sequence_abbrev:
+        //                      // '(' sequence_expr {',' sequence_match_item } ')' [ boolean_abbrev ]
+        //                      // "'(' sexpr ')' boolean_abbrev" matches "[sexpr:'(' expr ')'] boolean_abbrev" so we can drop it
+                '(' ~p~sexpr ')'                        { $$ = $2; }
+        //UNSUP '(' ~p~sexpr ',' sequence_match_itemList ')'    { }
+        //
+        //                      // AND/OR are between pexprs OR sexprs
+        //UNSUP ~p~sexpr yAND ~p~sexpr                  { $$ = new AstLogAnd{$2, $1, $3}; }
+        //UNSUP ~p~sexpr yOR ~p~sexpr                   { $$ = new AstLogOr{$2, $1, $3}; }
+        //                      // Intersect always has an sexpr rhs
+        //UNSUP ~p~sexpr yINTERSECT sexpr               { $<fl>$ = $<fl>1; $$ = ...; }
+        //
+        //UNSUP yFIRST_MATCH '(' sexpr ')'              { }
+        //UNSUP yFIRST_MATCH '(' sexpr ',' sequence_match_itemList ')'  { }
+        //UNSUP ~p~sexpr/*sexpression_or_dist*/ yTHROUGHOUT sexpr               { }
+        //                      // Below pexpr's are really sequence_expr, but avoid conflict
+        //                      // IEEE: sexpr yWITHIN sexpr
+        //UNSUP ~p~sexpr yWITHIN sexpr                  { $<fl>$ = $<fl>1; $$ = ...; }
+        //                      // Note concurrent_assertion had duplicate rule for below
+        //UNSUP clocking_event ~p~sexpr %prec prSEQ_CLOCKING    { }
+        //
+        //============= expr rules copied for sequence_expr
+        |       BISONPRE_COPY_ONCE(expr,{s/~l~/s/g; s/~p~/s/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g; })  // {copied}
+        ;
 
 //UNSUPcycle_delay_range<nodep>:  // IEEE: ==cycle_delay_range
 //UNSUP //                      // These three terms in 1800-2005 ONLY
