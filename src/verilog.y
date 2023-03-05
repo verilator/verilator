@@ -6007,9 +6007,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         ;
 
 complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
-                expr yP_ORMINUSGT pexpr                 { $$ = new AstLogOr{$2, new AstLogNot{$2, $1}, $3}; }
-        |       expr yP_OREQGT pexpr                    { $$ = new AstImplication{$2, $1, $3}; }
-        |       '(' complex_pexpr ')'                   { $$ = $2; }
+                '(' complex_pexpr ')'                   { $$ = $2; }
         //UNSUP remove above, use below:
         //
         //                      // IEEE: sequence_expr
@@ -6027,8 +6025,8 @@ complex_pexpr<nodeExprp>:  // IEEE: part of property_expr, see comments there
         //
         //                      // IEEE: "sequence_expr yP_ORMINUSGT pexpr"
         //                      // Instead we use pexpr to prevent conflicts
-        //UNSUP ~o~pexpr yP_ORMINUSGT pexpr             { }
-        //UNSUP ~o~pexpr yP_OREQGT pexpr                { }
+        |       ~o~pexpr yP_ORMINUSGT pexpr             { $$ = new AstLogOr{$2, new AstLogNot{$2, $1}, $3}; }
+        |       ~o~pexpr yP_OREQGT pexpr                { $$ = new AstImplication{$2, $1, $3}; }
         //
         //                      // IEEE-2009: property_statement
         //                      // IEEE-2012: yIF and yCASE
