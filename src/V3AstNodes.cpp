@@ -1759,7 +1759,7 @@ void AstTypedef::dump(std::ostream& str) const {
 void AstNodeRange::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstRange::dump(std::ostream& str) const {
     this->AstNodeRange::dump(str);
-    if (littleEndian()) str << " [LITTLE]";
+    if (ascending()) str << " [ASCENDING]";
 }
 void AstParamTypeDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);

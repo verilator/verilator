@@ -90,7 +90,7 @@ class SliceVisitor final : public VNVisitor {
         AstNodeExpr* newp;
         if (const AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
             UINFO(9, "  cloneInitArray(" << elements << "," << offset << ") " << nodep << endl);
-            const int leOffset = !arrayp->rangep()->littleEndian()
+            const int leOffset = !arrayp->rangep()->ascending()
                                      ? arrayp->rangep()->elementsConst() - 1 - offset
                                      : offset;
             AstNodeExpr* const itemp = initp->getIndexDefaultedValuep(leOffset);
@@ -107,14 +107,14 @@ class SliceVisitor final : public VNVisitor {
         } else if (const AstSliceSel* const snodep = VN_CAST(nodep, SliceSel)) {
             UINFO(9, "  cloneSliceSel(" << elements << "," << offset << ") " << nodep << endl);
             const int leOffset = (snodep->declRange().lo()
-                                  + (!snodep->declRange().littleEndian()
+                                  + (!snodep->declRange().ascending()
                                          ? snodep->declRange().elements() - 1 - offset
                                          : offset));
             newp = new AstArraySel{nodep->fileline(), snodep->fromp()->cloneTree(false), leOffset};
         } else if (VN_IS(nodep, ArraySel) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel)
                    || VN_IS(nodep, CMethodHard) || VN_IS(nodep, MemberSel)) {
             UINFO(9, "  cloneSel(" << elements << "," << offset << ") " << nodep << endl);
-            const int leOffset = !arrayp->rangep()->littleEndian()
+            const int leOffset = !arrayp->rangep()->ascending()
                                      ? arrayp->rangep()->elementsConst() - 1 - offset
                                      : offset;
             newp = new AstArraySel{nodep->fileline(), VN_AS(nodep, NodeExpr)->cloneTree(false),
@@ -139,9 +139,9 @@ class SliceVisitor final : public VNVisitor {
             if (debug() >= 9) nodep->dumpTree("-  Deslice-In: ");
             AstNodeDType* const dtp = nodep->lhsp()->dtypep()->skipRefp();
             if (const AstUnpackArrayDType* const arrayp = VN_CAST(dtp, UnpackArrayDType)) {
-                // Left and right could have different msb/lsbs/endianness, but #elements is common
-                // and all variables are realigned to start at zero
-                // Assign of a little endian'ed slice to a big endian one must reverse the elements
+                // Left and right could have different ascending/descending range,
+                // but #elements is common and all variables are realigned to start at zero
+                // Assign of an ascending range slice to a descending range one must reverse the elements
                 AstNodeAssign* newlistp = nullptr;
                 const int elements = arrayp->rangep()->elementsConst();
                 for (int offset = 0; offset < elements; ++offset) {

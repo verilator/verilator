@@ -109,7 +109,7 @@ public:
         INITIALDLY,     // Initial delayed statement
         INSECURE,       // Insecure options
         LATCH,          // Latch detected outside of always_latch block
-        ASCENDINGRANGE,      // Little bit endian vector
+        ASCENDINGRANGE, // Ascending bit range vector
         MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks

@@ -858,11 +858,11 @@ private:
                                << std::hex << width);
             }
             // Note width() not set on range; use elementsConst()
-            if (nodep->littleEndian() && !VN_IS(nodep->backp(), UnpackArrayDType)
+            if (nodep->ascending() && !VN_IS(nodep->backp(), UnpackArrayDType)
                 && !VN_IS(nodep->backp(), Cell)) {  // For cells we warn in V3Inst
-                nodep->v3warn(ASCENDINGRANGE, "Big bit endian vector: left < right of bit range: ["
-                                             << nodep->leftConst() << ":" << nodep->rightConst()
-                                             << "]");
+                nodep->v3warn(ASCENDINGRANGE, "Ascending bit range vector: left < right of bit range: ["
+                                                  << nodep->leftConst() << ":" << nodep->rightConst()
+                                                  << "]");
             }
         }
     }
@@ -1101,14 +1101,14 @@ private:
                 // Add subtracted value to get the original range
                 const VNumRange declRange{nodep->declRange().hi() + subtracted,
                                           nodep->declRange().lo() + subtracted,
-                                          nodep->declRange().littleEndian()};
+                                          nodep->declRange().ascending()};
                 if ((declRange.hi() > adtypep->declRange().hi())
                     || declRange.lo() < adtypep->declRange().lo()) {
                     // Other simulators warn too
                     nodep->v3error("Slice selection index '" << declRange << "'"
                                                              << " outside data type's '"
                                                              << adtypep->declRange() << "'");
-                } else if ((declRange.littleEndian() != adtypep->declRange().littleEndian())
+                } else if ((declRange.ascending() != adtypep->declRange().ascending())
                            && declRange.hi() != declRange.lo()) {
                     nodep->v3error("Slice selection '"
                                    << declRange << "'"
@@ -6351,7 +6351,7 @@ private:
                             constp->fileline(), lhsDTypep,
                             new AstConst{constp->fileline(), AstConst::WidthedValue{}, 8, 0}};
                         for (int aindex = arrayp->lo(); aindex <= arrayp->hi(); ++aindex) {
-                            int cindex = arrayp->declRange().littleEndian()
+                            int cindex = arrayp->declRange().ascending()
                                              ? (arrayp->hi() - aindex)
                                              : (aindex - arrayp->lo());
                             V3Number selected{constp, 8};
@@ -6970,7 +6970,7 @@ private:
         case VAttrType::DIM_LOW: val = !declRange.ranged() ? 0 : declRange.lo(); break;
         case VAttrType::DIM_RIGHT: val = !declRange.ranged() ? 0 : declRange.right(); break;
         case VAttrType::DIM_INCREMENT:
-            val = (declRange.ranged() && declRange.littleEndian()) ? -1 : 1;
+            val = (declRange.ranged() && declRange.ascending()) ? -1 : 1;
             break;
         case VAttrType::DIM_SIZE: val = !declRange.ranged() ? 0 : declRange.elements(); break;
         default: nodep->v3fatalSrc("Missing DIM ATTR type case"); break;

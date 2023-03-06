@@ -2349,7 +2349,7 @@ public:
         return l > r ? r : l;
     }
     int elementsConst() const VL_MT_STABLE { return hiConst() - loConst() + 1; }
-    bool littleEndian() const { return leftConst() < rightConst(); }
+    bool ascending() const { return leftConst() < rightConst(); }
     void dump(std::ostream& str) const override;
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     bool same(const AstNode* /*samep*/) const override { return true; }

@@ -101,7 +101,7 @@ private:
                 if (lsb == msb) {
                     bits += cvtToStr(lsb + bdtypep->lo());
                 } else {
-                    if (bdtypep->littleEndian()) {
+                    if (bdtypep->ascending()) {
                         bits
                             += cvtToStr(lsb + bdtypep->lo()) + ":" + cvtToStr(msb + bdtypep->lo());
                     } else {

@@ -468,9 +468,9 @@ public:
     inline int hi() const;
     inline int lo() const;
     inline int elements() const;
-    int left() const { return littleEndian() ? lo() : hi(); }  // How to show a declaration
-    int right() const { return littleEndian() ? hi() : lo(); }
-    inline bool littleEndian() const;
+    int left() const { return ascending() ? lo() : hi(); }  // How to show a declaration
+    int right() const { return ascending() ? hi() : lo(); }
+    inline bool ascending() const;
     bool implicit() const { return keyword() == VBasicDTypeKwd::LOGIC_IMPLICIT; }
     bool untyped() const { return keyword() == VBasicDTypeKwd::UNTYPED; }
     VNumRange declRange() const { return isRanged() ? VNumRange{left(), right()} : VNumRange{}; }

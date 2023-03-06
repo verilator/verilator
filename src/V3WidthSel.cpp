@@ -19,7 +19,7 @@
 //          Replace SELEXTRACT with SEL
 //          Replace SELBIT with SEL or ARRAYSEL
 //
-// This code was once in V3LinkResolve, but little endian bit vectors won't
+// This code was once in V3LinkResolve, but ascending bit range vectors won't
 // work that early.  It was considered for V3Width and V3Param, but is
 // fairly ugly both places as the nodes change in too strongly
 // interconnected ways.
@@ -162,7 +162,7 @@ private:
             // vector without range, or 0 lsb is ok, for example a INTEGER x; y = x[21:0];
             return underp;
         } else {
-            if (fromRange.littleEndian()) {
+            if (fromRange.ascending()) {
                 // reg [1:3] was swapped to [3:1] (lsbEndianedp==3) and needs a SUB(3,under)
                 return newSubNeg(fromRange.hi(), underp);
             } else {
@@ -180,7 +180,7 @@ private:
         } else {
             // Need a slice data type, which is an array of the extracted
             // type, but with (presumably) different size
-            const VNumRange newRange{msb, lsb, nodep->declRange().littleEndian()};
+            const VNumRange newRange{msb, lsb, nodep->declRange().ascending()};
             AstNodeDType* const vardtypep
                 = new AstPackArrayDType{nodep->fileline(),
                                         nodep->subDTypep(),  // Need to strip off array reference
@@ -227,7 +227,7 @@ private:
         } else if (const AstPackArrayDType* const adtypep = VN_CAST(ddtypep, PackArrayDType)) {
             // SELBIT(array, index) -> SEL(array, index*width-of-subindex, width-of-subindex)
             AstNodeExpr* subp = rhsp;
-            if (fromRange.littleEndian()) {
+            if (fromRange.ascending()) {
                 subp = newSubNeg(fromRange.hi(), subp);
             } else {
                 subp = newSubNeg(subp, fromRange.lo());
@@ -375,8 +375,8 @@ private:
                         adtypep,
                         "Array extraction with width miscomputed " << adtypep->width() << "/"
                                                                    << fromRange.elements());
-            if (fromRange.littleEndian()) {
-                // Below code assumes big bit endian; just works out if we swap
+            if (fromRange.ascending()) {
+                // Below code assumes descending bit range; just works out if we swap
                 const int x = msb;
                 msb = lsb;
                 lsb = x;
@@ -405,8 +405,8 @@ private:
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (VN_IS(ddtypep, BasicDType)) {
-            if (fromRange.littleEndian()) {
-                // Below code assumes big bit endian; just works out if we swap
+            if (fromRange.ascending()) {
+                // Below code assumes descending bit range; just works out if we swap
                 const int x = msb;
                 msb = lsb;
                 lsb = x;
@@ -432,7 +432,7 @@ private:
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (VN_IS(ddtypep, NodeUOrStructDType)) {
-            // Classes aren't little endian
+            // Classes don't have an ascending range
             if (lsb > msb) {
                 nodep->v3warn(
                     SELRANGE,
@@ -521,7 +521,7 @@ private:
                 const int32_t msb = VN_IS(nodep, SelPlus) ? rhs + width - 1 : rhs;
                 const int32_t lsb = VN_IS(nodep, SelPlus) ? rhs : rhs - width + 1;
                 AstSliceSel* const newp = new AstSliceSel{
-                    nodep->fileline(), fromp, VNumRange{msb, lsb, fromRange.littleEndian()}};
+                    nodep->fileline(), fromp, VNumRange{msb, lsb, fromRange.ascending()}};
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {
@@ -539,7 +539,7 @@ private:
             }
             AstNodeExpr* newlsbp = nullptr;
             if (VN_IS(nodep, SelPlus)) {
-                if (fromRange.littleEndian()) {
+                if (fromRange.ascending()) {
                     // SELPLUS(from,lsb,width) -> SEL(from, (vector_msb-width+1)-sel, width)
                     newlsbp = newSubNeg((fromRange.hi() - width + 1), rhsp);
                 } else {
@@ -547,7 +547,7 @@ private:
                     newlsbp = newSubNeg(rhsp, fromRange.lo());
                 }
             } else if (VN_IS(nodep, SelMinus)) {
-                if (fromRange.littleEndian()) {
+                if (fromRange.ascending()) {
                     // SELMINUS(from,msb,width) -> SEL(from, msb-[bit])
                     newlsbp = newSubNeg(fromRange.hi(), rhsp);
                 } else {

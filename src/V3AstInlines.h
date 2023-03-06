@@ -123,8 +123,8 @@ int AstBasicDType::lo() const { return (rangep() ? rangep()->loConst() : m.m_nra
 int AstBasicDType::elements() const {
     return (rangep() ? rangep()->elementsConst() : m.m_nrange.elements());
 }
-bool AstBasicDType::littleEndian() const {
-    return (rangep() ? rangep()->littleEndian() : m.m_nrange.littleEndian());
+bool AstBasicDType::ascending() const {
+    return (rangep() ? rangep()->ascending() : m.m_nrange.ascending());
 }
 
 bool AstActive::hasClocked() const { return m_sensesp->hasClocked(); }
