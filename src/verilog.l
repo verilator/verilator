@@ -593,28 +593,28 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* SystemVerilog 2009 */
 <S09,S12,S17,SAX>{
   /*     Keywords */
-  "accept_on"           { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "accept_on"           { FL; return yACCEPT_ON; }
   "checker"             { FL; return yCHECKER; }
   "endchecker"          { FL; return yENDCHECKER; }
-  "eventually"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "eventually"          { FL; return yEVENTUALLY; }
   "global"              { FL; return yGLOBAL__LEX; }
-  "implies"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "implies"             { FL; return yIMPLIES; }
   "let"                 { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "nexttime"            { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "reject_on"           { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "s_always"            { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "s_eventually"        { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "s_nexttime"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "s_until"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "s_until_with"        { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "strong"              { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "sync_accept_on"      { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "sync_reject_on"      { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "nexttime"            { FL; return yNEXTTIME; }
+  "reject_on"           { FL; return yREJECT_ON; }
+  "s_always"            { FL; return yS_ALWAYS; }
+  "s_eventually"        { FL; return yS_EVENTUALLY; }
+  "s_nexttime"          { FL; return yS_NEXTTIME; }
+  "s_until"             { FL; return yS_UNTIL; }
+  "s_until_with"        { FL; return yS_UNTIL_WITH; }
+  "strong"              { FL; return ySTRONG; }
+  "sync_accept_on"      { FL; return ySYNC_ACCEPT_ON; }
+  "sync_reject_on"      { FL; return ySYNC_REJECT_ON; }
   "unique0"             { FL; return yUNIQUE0; }
-  "until"               { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "until_with"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "until"               { FL; return yUNTIL; }
+  "until_with"          { FL; return yUNTIL_WITH; }
   "untyped"             { FL; return yUNTYPED; }
-  "weak"                { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "weak"                { FL; return yWEAK; }
 }
 
   /* System Verilog 2012 */
@@ -875,6 +875,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   ">>>="                { FL; return yP_SSRIGHTEQ; }
   "->>"                 { FL; return yP_MINUSGTGT; }
   "##"                  { FL; return yP_POUNDPOUND; }
+  "#-#"                 { FL; return yP_POUNDMINUSPD; }
+  "#=#"                 { FL; return yP_POUNDEQPD; }
   "@@"                  { FL; return yP_ATAT; }
   "::"                  { FL; return yP_COLONCOLON; }
   ":="                  { FL; return yP_COLONEQ; }

@@ -536,7 +536,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 // Double underscores "yX__Y" means token X followed by Y,
 // and "yX__ETC" means X folled by everything but Y(s).
 %token<fl>              ya1STEP         "1step"
-//UNSUP %token<fl>      yACCEPT_ON      "accept_on"
+%token<fl>              yACCEPT_ON      "accept_on"
 %token<fl>              yALIAS          "alias"
 %token<fl>              yALWAYS         "always"
 %token<fl>              yALWAYS_COMB    "always_comb"
@@ -606,7 +606,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yENDTASK        "endtask"
 %token<fl>              yENUM           "enum"
 %token<fl>              yEVENT          "event"
-//UNSUP %token<fl>      yEVENTUALLY     "eventually"
+%token<fl>              yEVENTUALLY     "eventually"
 //UNSUP %token<fl>      yEXPECT         "expect"
 %token<fl>              yEXPORT         "export"
 %token<fl>              yEXTENDS        "extends"
@@ -635,7 +635,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 //UNSUP %token<fl>      yIGNORE_BINS    "ignore_bins"
 //UNSUP %token<fl>      yILLEGAL_BINS   "illegal_bins"
 %token<fl>              yIMPLEMENTS     "implements"
-//UNSUP %token<fl>      yIMPLIES        "implies"
+%token<fl>              yIMPLIES        "implies"
 %token<fl>              yIMPORT         "import"
 %token<fl>              yINITIAL        "initial"
 %token<fl>              yINOUT          "inout"
@@ -665,7 +665,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yNEW__ETC       "new"
 %token<fl>              yNEW__LEX       "new-in-lex"
 %token<fl>              yNEW__PAREN     "new-then-paren"
-//UNSUP %token<fl>      yNEXTTIME       "nexttime"
+%token<fl>              yNEXTTIME       "nexttime"
 %token<fl>              yNMOS           "nmos"
 %token<fl>              yNOR            "nor"
 %token<fl>              yNOT            "not"
@@ -699,7 +699,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yREALTIME       "realtime"
 %token<fl>              yREF            "ref"
 %token<fl>              yREG            "reg"
-//UNSUP %token<fl>      yREJECT_ON      "reject_on"
+%token<fl>              yREJECT_ON      "reject_on"
 %token<fl>              yRELEASE        "release"
 %token<fl>              yREPEAT         "repeat"
 %token<fl>              yRESTRICT       "restrict"
@@ -729,13 +729,13 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              ySUPER          "super"
 %token<fl>              ySUPPLY0        "supply0"
 %token<fl>              ySUPPLY1        "supply1"
-//UNSUP %token<fl>      ySYNC_ACCEPT_ON "sync_accept_on"
-//UNSUP %token<fl>      ySYNC_REJECT_ON "sync_reject_on"
-//UNSUP %token<fl>      yS_ALWAYS       "s_always"
-//UNSUP %token<fl>      yS_EVENTUALLY   "s_eventually"
-//UNSUP %token<fl>      yS_NEXTTIME     "s_nexttime"
-//UNSUP %token<fl>      yS_UNTIL        "s_until"
-//UNSUP %token<fl>      yS_UNTIL_WITH   "s_until_with"
+%token<fl>              ySYNC_ACCEPT_ON "sync_accept_on"
+%token<fl>              ySYNC_REJECT_ON "sync_reject_on"
+%token<fl>              yS_ALWAYS       "s_always"
+%token<fl>              yS_EVENTUALLY   "s_eventually"
+%token<fl>              yS_NEXTTIME     "s_nexttime"
+%token<fl>              yS_UNTIL        "s_until"
+%token<fl>              yS_UNTIL_WITH   "s_until_with"
 %token<fl>              yTABLE          "table"
 //UNSUP %token<fl>      yTAGGED         "tagged"
 %token<fl>              yTASK           "task"
@@ -765,8 +765,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yUNIQUE         "unique"
 %token<fl>              yUNIQUE0        "unique0"
 %token<fl>              yUNSIGNED       "unsigned"
-//UNSUP %token<fl>      yUNTIL          "until"
-//UNSUP %token<fl>      yUNTIL_WITH     "until_with"
+%token<fl>              yUNTIL          "until"
+%token<fl>              yUNTIL_WITH     "until_with"
 %token<fl>              yUNTYPED        "untyped"
 %token<fl>              yVAR            "var"
 %token<fl>              yVECTORED       "vectored"
@@ -1017,8 +1017,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yP_ASTGT        "*>"
 %token<fl>              yP_ANDANDAND    "&&&"
 %token<fl>              yP_POUNDPOUND   "##"
-//UNSUP %token<fl>      yP_POUNDMINUSPD "#-#"
-//UNSUP %token<fl>      yP_POUNDEQPD    "#=#"
+%token<fl>              yP_POUNDMINUSPD "#-#"
+%token<fl>              yP_POUNDEQPD    "#=#"
 %token<fl>              yP_DOTSTAR      ".*"
 
 %token<fl>              yP_ATAT         "@@"
@@ -1068,15 +1068,14 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 
 // Lowest precedence
 // These are in IEEE 17.7.1
-//UNSUP %nonassoc       yALWAYS yS_ALWAYS yEVENTUALLY yS_EVENTUALLY yACCEPT_ON yREJECT_ON ySYNC_ACCEPT_ON ySYNC_REJECT_ON
+%nonassoc       yALWAYS yS_ALWAYS yEVENTUALLY yS_EVENTUALLY yACCEPT_ON yREJECT_ON ySYNC_ACCEPT_ON ySYNC_REJECT_ON
 
-%right          yP_ORMINUSGT yP_OREQGT
-//UNSUP %right          yP_ORMINUSGT yP_OREQGT yP_POUNDMINUSPD yP_POUNDEQPD
-//UNSUP %right          yUNTIL yS_UNTIL yUNTIL_WITH yS_UNTIL_WITH yIMPLIES
+%right          yP_ORMINUSGT yP_OREQGT yP_POUNDMINUSPD yP_POUNDEQPD
+%right          yUNTIL yS_UNTIL yUNTIL_WITH yS_UNTIL_WITH yIMPLIES
 //UNSUP %right          yIFF
 //UNSUP %left           yOR
 //UNSUP %left           yAND
-//UNSUP %nonassoc       yNOT yNEXTTIME yS_NEXTTIME
+%nonassoc       yNOT yNEXTTIME yS_NEXTTIME
 //UNSUP %left           yINTERSECT
 //UNSUP %left           yWITHIN
 //UNSUP %right          yTHROUGHOUT
@@ -6017,29 +6016,52 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // IEEE-2012: yIF and yCASE
         //UNSUP property_statementCaseIf                { }
         //
-        //UNSUP ~o~pexpr/*sexpr*/ yP_POUNDMINUSPD pexpr { }
-        //UNSUP ~o~pexpr/*sexpr*/ yP_POUNDEQPD pexpr    { }
-        //UNSUP yNEXTTIME pexpr                         { }
-        //UNSUP yS_NEXTTIME pexpr                       { }
-        //UNSUP yNEXTTIME '[' expr/*const*/ ']' pexpr %prec yNEXTTIME           { }
-        //UNSUP yS_NEXTTIME '[' expr/*const*/ ']' pexpr %prec yS_NEXTTIME       { }
-        //UNSUP yALWAYS pexpr                           { }
-        //UNSUP yALWAYS '[' cycle_delay_const_range_expression ']' pexpr  %prec yALWAYS { }
-        //UNSUP yS_ALWAYS '[' constant_range ']' pexpr  %prec yS_ALWAYS         { }
-        //UNSUP yS_EVENTUALLY pexpr                     { }
-        //UNSUP yEVENTUALLY '[' constant_range ']' pexpr  %prec yEVENTUALLY     { }
-        //UNSUP yS_EVENTUALLY '[' cycle_delay_const_range_expression ']' pexpr  %prec yS_EVENTUALLY     { }
-        //UNSUP ~o~pexpr yUNTIL pexpr                   { }
-        //UNSUP ~o~pexpr yS_UNTIL pexpr                 { }
-        //UNSUP ~o~pexpr yUNTIL_WITH pexpr              { }
-        //UNSUP ~o~pexpr yS_UNTIL_WITH pexpr            { }
-        //UNSUP ~o~pexpr yIMPLIES pexpr                 { }
+        |       ~o~pexpr/*sexpr*/ yP_POUNDMINUSPD pexpr
+                        { $$ = $3; BBUNSUP($2, "Unsupported: #-# (in property expression)"); }
+        |       ~o~pexpr/*sexpr*/ yP_POUNDEQPD pexpr
+                        { $$ = $3; BBUNSUP($2, "Unsupported: #=# (in property expression)"); }
+        |       yNEXTTIME pexpr
+                        { $$ = $2; BBUNSUP($1, "Unsupported: nexttime (in property expression)"); }
+        |       yS_NEXTTIME pexpr
+                        { $$ = $2; BBUNSUP($1, "Unsupported: s_nexttime (in property expression)"); }
+        |       yNEXTTIME '[' constExpr ']' pexpr %prec yNEXTTIME
+                        { $$ = $5; BBUNSUP($1, "Unsupported: nexttime[] (in property expression)"); }
+        |       yS_NEXTTIME '[' constExpr ']' pexpr %prec yS_NEXTTIME
+                        { $$ = $5; BBUNSUP($1, "Unsupported: s_nexttime[] (in property expression)"); }
+        |       yALWAYS pexpr
+                        { $$ = $2; BBUNSUP($1, "Unsupported: always (in property expression)"); }
+        |       yALWAYS anyrange pexpr  %prec yALWAYS
+                        { $$ = $3; BBUNSUP($1, "Unsupported: always[] (in property expression)"); }
+        |       yS_ALWAYS anyrange pexpr  %prec yS_ALWAYS
+                        { $$ = $3; BBUNSUP($1, "Unsupported: s_always (in property expression)"); }
+        |       yEVENTUALLY pexpr
+                        { $$ = $2; BBUNSUP($1, "Unsupported: eventually (in property expression)"); }
+        |       yS_EVENTUALLY pexpr
+                        { $$ = $2; BBUNSUP($1, "Unsupported: s_eventually (in property expression)"); }
+        |       yEVENTUALLY '[' constExpr ']' pexpr  %prec yEVENTUALLY
+                        { $$ = $5; BBUNSUP($1, "Unsupported: eventually[] (in property expression)"); }
+        |       yS_EVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY
+                        { $$ = $3; BBUNSUP($1, "Unsupported: s_eventually[] (in property expression)"); }
+        |       ~o~pexpr yUNTIL pexpr
+                        { $$ = $1; BBUNSUP($2, "Unsupported: until (in property expression)"); }
+        |       ~o~pexpr yS_UNTIL pexpr
+                        { $$ = $1; BBUNSUP($2, "Unsupported: s_until (in property expression)"); }
+        |       ~o~pexpr yUNTIL_WITH pexpr
+                        { $$ = $1; BBUNSUP($2, "Unsupported: until_with (in property expression)"); }
+        |       ~o~pexpr yS_UNTIL_WITH pexpr
+                        { $$ = $1; BBUNSUP($2, "Unsupported: s_until_with (in property expression)"); }
+        |       ~o~pexpr yIMPLIES pexpr
+                        { $$ = $1; BBUNSUP($2, "Unsupported: implies (in property expression)"); }
         //                      // yIFF also used by event_expression
         //UNSUP ~o~pexpr yIFF ~o~pexpr                  { }
-        //UNSUP yACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yACCEPT_ON   { }
-        //UNSUP yREJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yREJECT_ON   { }
-        //UNSUP ySYNC_ACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec ySYNC_ACCEPT_ON  { }
-        //UNSUP ySYNC_REJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec ySYNC_REJECT_ON  { }
+        |       yACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yACCEPT_ON
+                        { $$ = $5; BBUNSUP($2, "Unsupported: accept_on (in property expression)"); }
+        |       yREJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yREJECT_ON
+                        { $$ = $5; BBUNSUP($2, "Unsupported: reject_on (in property expression)"); }
+        |       ySYNC_ACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec ySYNC_ACCEPT_ON
+                        { $$ = $5; BBUNSUP($2, "Unsupported: sync_accept_on (in property expression)"); }
+        |       ySYNC_REJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec ySYNC_REJECT_ON
+                        { $$ = $5; BBUNSUP($2, "Unsupported: sync_reject_on (in property expression)"); }
         //
         //                      // IEEE: "property_instance"
         //                      // Looks just like a function/method call
@@ -6114,7 +6136,7 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
 //UNSUP //                      // UNSUP: This causes a big grammer ambiguity
 //UNSUP //                      // as ()'s mismatch between primary and the following statement
 //UNSUP //                      // the sv-ac committee has been asked to clarify  (Mantis 1901)
-//UNSUP |       yP_POUNDPOUND '[' cycle_delay_const_range_expression ']'        { }
+//UNSUP |       yP_POUNDPOUND anyrange                  { }
 //UNSUP |       yP_POUNDPOUND yP_BRASTAR ']'            { }
 //UNSUP |       yP_POUNDPOUND yP_BRAPLUSKET             { }
 //UNSUP ;
@@ -6145,7 +6167,7 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
 
 //UNSUPconst_or_range_expression<nodep>:  // ==IEEE: const_or_range_expression
 //UNSUP         constExpr                               { $$ = $1; }
-//UNSUP |       cycle_delay_const_range_expression      { }
+//UNSUP |       cycle_delay_const_range_expression      { }  // Use anyrange removing [] instead
 //UNSUP ;
 
 //UNSUPconstant_range<nodep>:  // ==IEEE: constant_range
