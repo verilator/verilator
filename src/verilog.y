@@ -1030,7 +1030,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yP_BRASTAR      "[*"
 %token<fl>              yP_BRAEQ        "[="
 %token<fl>              yP_BRAMINUSGT   "[->"
-//UNSUP %token<fl>      yP_BRAPLUSKET   "[+]"
+%token<fl>              yP_BRAPLUSKET   "[+]"
 
 %token<fl>              yP_PLUSPLUS     "++"
 %token<fl>              yP_MINUSMINUS   "--"
@@ -1079,9 +1079,9 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %left           yINTERSECT
 %left           yWITHIN
 %right          yTHROUGHOUT
-//UNSUP %left           prPOUNDPOUND_MULTI
-//UNSUP %left           yP_POUNDPOUND
-//UNSUP %left           yP_BRASTAR yP_BRAEQ yP_BRAMINUSGT yP_BRAPLUSKET
+%left           prPOUNDPOUND_MULTI
+%left           yP_POUNDPOUND
+%left           yP_BRASTAR yP_BRAEQ yP_BRAMINUSGT yP_BRAPLUSKET
 
 // Not specified, but needed higher than yOR, lower than normal non-pexpr expressions
 //UNSUP %left           yPOSEDGE yNEGEDGE yEDGE
@@ -5823,12 +5823,12 @@ property_port_list<nodep>:  // ==IEEE: property_port_list
         ;
 
 property_port_item<nodep>:  // IEEE: property_port_item/sequence_port_item
-//UNSUP //                      // Merged in sequence_port_item
-//UNSUP //                      // IEEE: property_lvar_port_direction ::= yINPUT
-//UNSUP //                      // prop IEEE: [ yLOCAL [ yINPUT ] ] property_formal_type
-//UNSUP //                      //           id {variable_dimension} [ '=' property_actual_arg ]
-//UNSUP //                      // seq IEEE: [ yLOCAL [ sequence_lvar_port_direction ] ] sequence_formal_type
-//UNSUP //                      //           id {variable_dimension} [ '=' sequence_actual_arg ]
+        //                      // Merged in sequence_port_item
+        //                      // IEEE: property_lvar_port_direction ::= yINPUT
+        //                      // prop IEEE: [ yLOCAL [ yINPUT ] ] property_formal_type
+        //                      //           id {variable_dimension} [ '=' property_actual_arg ]
+        //                      // seq IEEE: [ yLOCAL [ sequence_lvar_port_direction ] ] sequence_formal_type
+        //                      //           id {variable_dimension} [ '=' sequence_actual_arg ]
                 property_port_itemFront property_port_itemAssignment { $$ = $2; }
         ;
 
@@ -6087,13 +6087,16 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // IEEE: "cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }"
         //                      // IEEE: "sequence_expr cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }"
         //                      // Both rules basically mean we can repeat sequences, so make it simpler:
-        //UNSUP cycle_delay_range sexpr  %prec yP_POUNDPOUND    { }
-        //UNSUP ~p~sexpr cycle_delay_range sexpr %prec prPOUNDPOUND_MULTI       { }
+                cycle_delay_range sexpr  %prec yP_POUNDPOUND
+                        { $$ = $2; BBUNSUP($2->fileline(), "Unsupported: ## (in sequence expression)"); }
+        |       ~p~sexpr cycle_delay_range sexpr %prec prPOUNDPOUND_MULTI
+                        { $$ = $1; BBUNSUP($2->fileline(), "Unsupported: ## (in sequence expression)"); }
         //
         //                      // IEEE: expression_or_dist [ boolean_abbrev ]
         //                      // Note expression_or_dist includes "expr"!
         //                      // sexpr/*sexpression_or_dist*/  --- Hardcoded below
-        //UNSUP ~p~sexpr/*sexpression_or_dist*/ boolean_abbrev  { }
+        |       ~p~sexpr/*sexpression_or_dist*/ boolean_abbrev
+                        { $$ = $1; BBUNSUP($2->fileline(), "Unsupported: boolean abbrev (in sequence expression)"); }
         //
         //                      // IEEE: "sequence_instance [ sequence_abbrev ]"
         //                      // version without sequence_abbrev looks just like normal function call
@@ -6105,7 +6108,7 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // As sequence_expr includes expression_or_dist, and boolean_abbrev includes sequence_abbrev:
         //                      // '(' sequence_expr {',' sequence_match_item } ')' [ boolean_abbrev ]
         //                      // "'(' sexpr ')' boolean_abbrev" matches "[sexpr:'(' expr ')'] boolean_abbrev" so we can drop it
-                '(' ~p~sexpr ')'                        { $$ = $2; }
+        |       '(' ~p~sexpr ')'                        { $$ = $2; }
         //UNSUP '(' ~p~sexpr ',' sequence_match_itemList ')'    { }
         //
         //                      // AND/OR are between pexprs OR sexprs
@@ -6134,20 +6137,32 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         |       BISONPRE_COPY_ONCE(expr,{s/~l~/s/g; s/~p~/s/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g; })  // {copied}
         ;
 
-//UNSUPcycle_delay_range<nodep>:  // IEEE: ==cycle_delay_range
-//UNSUP //                      // These three terms in 1800-2005 ONLY
-//UNSUP         yP_POUNDPOUND yaINTNUM                  { }
-//UNSUP |       yP_POUNDPOUND id                        { }
-//UNSUP |       yP_POUNDPOUND '(' constExpr ')'         { }
-//UNSUP //                      // In 1800-2009 ONLY:
-//UNSUP //                      // IEEE: yP_POUNDPOUND constant_primary
-//UNSUP //                      // UNSUP: This causes a big grammer ambiguity
-//UNSUP //                      // as ()'s mismatch between primary and the following statement
-//UNSUP //                      // the sv-ac committee has been asked to clarify  (Mantis 1901)
-//UNSUP |       yP_POUNDPOUND anyrange                  { }
-//UNSUP |       yP_POUNDPOUND yP_BRASTAR ']'            { }
-//UNSUP |       yP_POUNDPOUND yP_BRAPLUSKET             { }
-//UNSUP ;
+cycle_delay_range<nodep>:  // IEEE: ==cycle_delay_range
+        //                      // These three terms in 1800-2005 ONLY
+                yP_POUNDPOUND intnumAsConst
+                        { $$ = $2;
+                          BBUNSUP($<fl>1, "Unsupported: ## () cycle delay range expression"); }
+        |       yP_POUNDPOUND id
+                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
+                          BBUNSUP($<fl>1, "Unsupported: ## id cycle delay range expression"); }
+        |       yP_POUNDPOUND '(' constExpr ')'
+                        { $$ = $3;
+                          BBUNSUP($<fl>1, "Unsupported: ## () cycle delay range expression"); }
+        //                      // In 1800-2009 ONLY:
+        //                      // IEEE: yP_POUNDPOUND constant_primary
+        //                      // UNSUP: This causes a big grammer ambiguity
+        //                      // as ()'s mismatch between primary and the following statement
+        //                      // the sv-ac committee has been asked to clarify  (Mantis 1901)
+        |       yP_POUNDPOUND anyrange
+                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
+                          BBUNSUP($<fl>1, "Unsupported: ## range cycle delay range expression"); }
+        |       yP_POUNDPOUND yP_BRASTAR ']'
+                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
+                          BBUNSUP($<fl>1, "Unsupported: ## [*] cycle delay range expression"); }
+        |       yP_POUNDPOUND yP_BRAPLUSKET
+                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
+                          BBUNSUP($<fl>1, "Unsupported: ## [+] cycle delay range expression"); }
+        ;
 
 //UNSUPsequence_match_itemList<nodep>:  // IEEE: [sequence_match_item] part of sequence_expr
 //UNSUP         sequence_match_item                     { $$ = $1; }
@@ -6162,30 +6177,29 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
 //UNSUP         for_step_assignment                     { $$ = $1; }
 //UNSUP ;
 
-//UNSUPboolean_abbrev<nodep>:  // ==IEEE: boolean_abbrev
-//UNSUP //                      // IEEE: consecutive_repetition
-//UNSUP         yP_BRASTAR const_or_range_expression ']'        { }
-//UNSUP |       yP_BRASTAR ']'                          { }
-//UNSUP |       yP_BRAPLUSKET                           { $$ = $1; }
-//UNSUP //                      // IEEE: non_consecutive_repetition
-//UNSUP |       yP_BRAEQ const_or_range_expression ']'          { }
-//UNSUP //                      // IEEE: goto_repetition
-//UNSUP |       yP_BRAMINUSGT const_or_range_expression ']'     { }
-//UNSUP ;
-
-//UNSUPconst_or_range_expression<nodep>:  // ==IEEE: const_or_range_expression
-//UNSUP         constExpr                               { $$ = $1; }
-//UNSUP |       cycle_delay_const_range_expression      { }  // Use anyrange removing [] instead
-//UNSUP ;
-
-//UNSUPconstant_range<nodep>:  // ==IEEE: constant_range
-//UNSUP         constExpr ':' constExpr                 { }
-//UNSUP ;
-
-//UNSUPcycle_delay_const_range_expression<nodep>:  // ==IEEE: cycle_delay_const_range_expression
-//UNSUP //                              // Note '$' is part of constExpr
-//UNSUP         constExpr ':' constExpr                 { }
-//UNSUP ;
+boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
+        //                      // IEEE: consecutive_repetition
+                yP_BRASTAR constExpr ']'        { }
+                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [*] boolean abbrev expression"); }
+        |       yP_BRASTAR constExpr ':' constExpr ']'        { }
+                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [*] boolean abbrev expression"); }
+        |       yP_BRASTAR ']'
+                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
+                          BBUNSUP($<fl>1, "Unsupported: [*] boolean abbrev expression"); }
+        |       yP_BRAPLUSKET
+                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
+                          BBUNSUP($<fl>1, "Unsupported: [+] boolean abbrev expression"); }
+        //                      // IEEE: non_consecutive_repetition
+        |       yP_BRAEQ constExpr ']'
+                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [= boolean abbrev expression"); }
+        |       yP_BRAEQ constExpr ':' constExpr ']'
+                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [= boolean abbrev expression"); }
+        //                      // IEEE: goto_repetition
+        |       yP_BRAMINUSGT constExpr ']'
+                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [-> boolean abbrev expression"); }
+        |       yP_BRAMINUSGT constExpr ':' constExpr ']'
+                        { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [-> boolean abbrev expression"); }
+        ;
 
 //************************************************
 // Let

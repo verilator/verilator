@@ -14,6 +14,8 @@ module t (/*AUTOARG*/
    int   b;
    int cyc = 0;
 
+   localparam DELAY = 1;
+
    always @(posedge clk) begin
       cyc <= cyc + 1;
    end
@@ -39,6 +41,66 @@ module t (/*AUTOARG*/
 
    property s_intersect;
       weak(a intersect b);
+   endproperty
+
+   property s_uni_cycdelay_int;
+      weak(## 1 b);
+   endproperty
+   property s_uni_cycdelay_id;
+      weak(## DELAY b);
+   endproperty
+   property s_uni_cycdelay_pid;
+      weak(## ( DELAY ) b);
+   endproperty
+   property s_uni_cycdelay_range;
+      weak(## [1:2] b);
+   endproperty
+   property s_uni_cycdelay_star;
+      weak(## [*] b);
+   endproperty
+   property s_uni_cycdelay_plus;
+      weak(## [+] b);
+   endproperty
+
+   property s_cycdelay_int;
+      weak(a ## 1 b);
+   endproperty
+   property s_cycdelay_id;
+      weak(a ## DELAY b);
+   endproperty
+   property s_cycdelay_pid;
+      weak(a ## ( DELAY ) b);
+   endproperty
+   property s_cycdelay_range;
+      weak(a ## [1:2] b);
+   endproperty
+   property s_cycdelay_star;
+      weak(a ## [*] b);
+   endproperty
+   property s_cycdelay_plus;
+      weak(a ## [+] b);
+   endproperty
+
+   property s_booleanabbrev_brastar_int;
+      weak([* 1 ] a);
+   endproperty
+   property s_booleanabbrev_brastar;
+      weak([*] a);
+   endproperty
+   property s_booleanabbrev_plus;
+      weak([+] a);
+   endproperty
+   property s_booleanabbrev_eq;
+      weak([= 1] a);
+   endproperty
+   property s_booleanabbrev_eq_range;
+      weak([= 1:2] a);
+   endproperty
+   property s_booleanabbrev_minusgt;
+      weak([-> 1] a);
+   endproperty
+   property s_booleanabbrev_minusgt_range;
+      weak([-> 1:2] a);
    endproperty
 
    always @(posedge clk) begin

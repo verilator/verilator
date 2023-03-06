@@ -1,32 +1,144 @@
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:25:14: Unsupported: within (in sequence expression)
-   25 |       weak(a within(b));
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:27:14: Unsupported: within (in sequence expression)
+   27 |       weak(a within(b));
       |              ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:25:11: Unsupported: weak (in property expression)
-   25 |       weak(a within(b));
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:27:11: Unsupported: weak (in property expression)
+   27 |       weak(a within(b));
       |           ^
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:29:14: Unsupported: and (in sequence expression)
-   29 |       weak(a and b);
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:31:14: Unsupported: and (in sequence expression)
+   31 |       weak(a and b);
       |              ^~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:29:11: Unsupported: weak (in property expression)
-   29 |       weak(a and b);
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:31:11: Unsupported: weak (in property expression)
+   31 |       weak(a and b);
       |           ^
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:33:14: Unsupported: or (in sequence expression)
-   33 |       weak(a or b);
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:35:14: Unsupported: or (in sequence expression)
+   35 |       weak(a or b);
       |              ^~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:33:11: Unsupported: weak (in property expression)
-   33 |       weak(a or b);
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:35:11: Unsupported: weak (in property expression)
+   35 |       weak(a or b);
       |           ^
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:37:14: Unsupported: throughout (in sequence expression)
-   37 |       weak(a throughout b);
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:39:14: Unsupported: throughout (in sequence expression)
+   39 |       weak(a throughout b);
       |              ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:37:11: Unsupported: weak (in property expression)
-   37 |       weak(a throughout b);
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:39:11: Unsupported: weak (in property expression)
+   39 |       weak(a throughout b);
       |           ^
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:41:14: Unsupported: intersect (in sequence expression)
-   41 |       weak(a intersect b);
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:43:14: Unsupported: intersect (in sequence expression)
+   43 |       weak(a intersect b);
       |              ^~~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:41:11: Unsupported: weak (in property expression)
-   41 |       weak(a intersect b);
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:43:11: Unsupported: weak (in property expression)
+   43 |       weak(a intersect b);
       |           ^
-%Error: Exiting due to
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:47:12: Unsupported: ## () cycle delay range expression
+   47 |       weak(## 1 b);
+      |            ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:47:17: Unsupported: ## (in sequence expression)
+   47 |       weak(## 1 b);
+      |                 ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:47:11: Unsupported: weak (in property expression)
+   47 |       weak(## 1 b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:50:12: Unsupported: ## id cycle delay range expression
+   50 |       weak(## DELAY b);
+      |            ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:50:21: Unsupported: ## (in sequence expression)
+   50 |       weak(## DELAY b);
+      |                     ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:50:11: Unsupported: weak (in property expression)
+   50 |       weak(## DELAY b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:53:12: Unsupported: ## () cycle delay range expression
+   53 |       weak(## ( DELAY ) b);
+      |            ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:53:25: Unsupported: ## (in sequence expression)
+   53 |       weak(## ( DELAY ) b);
+      |                         ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:53:11: Unsupported: weak (in property expression)
+   53 |       weak(## ( DELAY ) b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:56:12: Unsupported: ## range cycle delay range expression
+   56 |       weak(## [1:2] b);
+      |            ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:56:21: Unsupported: ## (in sequence expression)
+   56 |       weak(## [1:2] b);
+      |                     ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:56:11: Unsupported: weak (in property expression)
+   56 |       weak(## [1:2] b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:59:12: Unsupported: ## [*] cycle delay range expression
+   59 |       weak(## [*] b);
+      |            ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:59:19: Unsupported: ## (in sequence expression)
+   59 |       weak(## [*] b);
+      |                   ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:59:11: Unsupported: weak (in property expression)
+   59 |       weak(## [*] b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:62:12: Unsupported: ## [+] cycle delay range expression
+   62 |       weak(## [+] b);
+      |            ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:62:19: Unsupported: ## (in sequence expression)
+   62 |       weak(## [+] b);
+      |                   ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:62:11: Unsupported: weak (in property expression)
+   62 |       weak(## [+] b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:66:14: Unsupported: ## () cycle delay range expression
+   66 |       weak(a ## 1 b);
+      |              ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:66:17: Unsupported: ## (in sequence expression)
+   66 |       weak(a ## 1 b);
+      |                 ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:66:11: Unsupported: weak (in property expression)
+   66 |       weak(a ## 1 b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:69:14: Unsupported: ## id cycle delay range expression
+   69 |       weak(a ## DELAY b);
+      |              ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:69:14: Unsupported: ## (in sequence expression)
+   69 |       weak(a ## DELAY b);
+      |              ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:69:11: Unsupported: weak (in property expression)
+   69 |       weak(a ## DELAY b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:72:14: Unsupported: ## () cycle delay range expression
+   72 |       weak(a ## ( DELAY ) b);
+      |              ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:72:19: Unsupported: ## (in sequence expression)
+   72 |       weak(a ## ( DELAY ) b);
+      |                   ^~~~~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:72:11: Unsupported: weak (in property expression)
+   72 |       weak(a ## ( DELAY ) b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:75:14: Unsupported: ## range cycle delay range expression
+   75 |       weak(a ## [1:2] b);
+      |              ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:75:14: Unsupported: ## (in sequence expression)
+   75 |       weak(a ## [1:2] b);
+      |              ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:75:11: Unsupported: weak (in property expression)
+   75 |       weak(a ## [1:2] b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:78:14: Unsupported: ## [*] cycle delay range expression
+   78 |       weak(a ## [*] b);
+      |              ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:78:14: Unsupported: ## (in sequence expression)
+   78 |       weak(a ## [*] b);
+      |              ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:78:11: Unsupported: weak (in property expression)
+   78 |       weak(a ## [*] b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:81:14: Unsupported: ## [+] cycle delay range expression
+   81 |       weak(a ## [+] b);
+      |              ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:81:14: Unsupported: ## (in sequence expression)
+   81 |       weak(a ## [+] b);
+      |              ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:81:11: Unsupported: weak (in property expression)
+   81 |       weak(a ## [+] b);
+      |           ^
+%Error: t/t_sequence_sexpr_unsup.v:85:12: syntax error, unexpected [*, expecting TYPE-IDENTIFIER
+   85 |       weak([* 1 ] a);
+      |            ^~
+%Error: Cannot continue
+        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.

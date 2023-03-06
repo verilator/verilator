@@ -885,8 +885,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "|=>"                 { FL; return yP_OREQGT; }
   /* Some simulators allow whitespace here. Grr */
   "["{ws}*"*"           { FL; return yP_BRASTAR; }
-  "["{ws}*"="           { FL; return yP_BRAEQ; }
+  "["{ws}*"+"{ws}*"]"   { FL; return yP_BRAPLUSKET; }
   "["{ws}*"->"          { FL; return yP_BRAMINUSGT; }
+  "["{ws}*"="           { FL; return yP_BRAEQ; }
 }
 
   /* SystemVerilog 2009 Operators */
