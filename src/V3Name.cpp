@@ -103,7 +103,19 @@ private:
     }
     void visit(AstMemberDType* nodep) override {
         if (!nodep->user1()) {
-            rename(nodep, false);
+            rename(nodep, true);
+            iterateChildren(nodep);
+        }
+    }
+    void visit(AstMemberSel* nodep) override {
+        if (!nodep->user1()) {
+            rename(nodep, true);
+            iterateChildren(nodep);
+        }
+    }
+    void visit(AstStructSel* nodep) override {
+        if (!nodep->user1()) {
+            rename(nodep, true);
             iterateChildren(nodep);
         }
     }
