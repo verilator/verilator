@@ -545,7 +545,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "local"               { FL; return yLOCAL__LEX; }
   "logic"               { FL; return yLOGIC; }
   "longint"             { FL; return yLONGINT; }
-  "matches"             { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "matches"             { FL; return yMATCHES; }
   "modport"             { FL; return yMODPORT; }
   "new"                 { FL; return yNEW__LEX; }
   "null"                { FL; return yNULL; }

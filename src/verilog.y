@@ -656,7 +656,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yLOCAL__LEX     "local-in-lex"
 %token<fl>              yLOGIC          "logic"
 %token<fl>              yLONGINT        "longint"
-//UNSUP %token<fl>      yMATCHES        "matches"
+%token<fl>              yMATCHES        "matches"
 %token<fl>              yMODPORT        "modport"
 %token<fl>              yMODULE         "module"
 %token<fl>              yNAND           "nand"
@@ -1056,11 +1056,11 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 //UNSUP %token<fl>      prREDUCTION
 //UNSUP %token<fl>      prNEGATION
 //UNSUP %token<fl>      prEVENTBEGIN
-//UNSUP %token<fl>      prTAGGED
+%token<fl>      prTAGGED
 
 // These prevent other conflicts
 %left           yP_ANDANDAND
-//UNSUP %left   yMATCHES
+%left           yMATCHES
 //UNSUP %left   prTAGGED
 //UNSUP %left   prSEQ_CLOCKING
 
@@ -3482,7 +3482,9 @@ statement_item<nodep>:          // IEEE: statement_item
                           if ($1 == uniq_UNIQUE) $2->uniquePragma(true);
                           if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
                           if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
-        //UNSUP caseStart caseAttrE yMATCHES case_patternListE yENDCASE { }
+        // &&& is part of expr so case_patternListE aliases to case_itemListE
+        |       unique_priorityE caseStart caseAttrE yMATCHES case_patternListE yENDCASE
+                        { $$ = nullptr; BBUNSUP($4, "Unsupported: matches (for tagged union)"); }
         |       unique_priorityE caseStart caseAttrE yINSIDE case_insideListE yENDCASE
                         { $$ = $2; if ($5) $2->addItemsp($5);
                           if (!$2->caseSimple()) $2->v3error("Illegal to have inside on a casex/casez");
@@ -3750,10 +3752,9 @@ caseAttrE:
         |       caseAttrE yVL_PARALLEL_CASE             { GRAMMARP->m_caseAttrp->parallelPragma(true); }
         ;
 
-//UNSUPcase_patternListE<caseItemp>:  // IEEE: case_pattern_item
-//UNSUP //      &&& is part of expr so aliases to case_itemList
-//UNSUP         case_itemListE                          { $$ = $1; }
-//UNSUP ;
+case_patternListE<caseItemp>:  // IEEE: case_pattern_item
+                case_itemListE                          { $$ = $1; }
+        ;
 
 case_itemListE<caseItemp>:      // IEEE: [ { case_item } ]
                 /* empty */                             { $$ = nullptr; }
@@ -4859,8 +4860,10 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //                      // IEEE: cond_pattern - here to avoid reduce problems
         //                      // "expr yMATCHES pattern"
         //                      // IEEE: pattern - expanded here to avoid conflicts
-        //UNSUP ~l~expr yMATCHES patternNoExpr          { UNSUP }
-        //UNSUP ~l~expr yMATCHES ~r~expr                { UNSUP }
+        |       ~l~expr yMATCHES patternNoExpr          { $$ = new AstConst{$2, AstConst::BitFalse{}};
+                                                          BBUNSUP($<fl>2, "Unsupported: matches operator"); }
+        |       ~l~expr yMATCHES ~r~expr                { $$ = new AstConst{$2, AstConst::BitFalse{}};
+                                                          BBUNSUP($<fl>2, "Unsupported: matches operator"); }
         //
         //                      // IEEE: expression_or_dist - here to avoid reduce problems
         //                      // "expr yDIST '{' dist_list '}'"
