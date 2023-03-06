@@ -1,4 +1,4 @@
-%Warning-ASCENDINGRANGE: t/t_select_bad_msb.v:12:8: Big bit endian vector: left < right of bit range: [0:22]
+%Warning-ASCENDINGRANGE: t/t_select_bad_msb.v:12:8: Ascending bit range vector: left < right of bit range: [0:22]
                                              : ... In instance t
    12 |    reg [0:22] backwd;
       |        ^

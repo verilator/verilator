@@ -7,7 +7,7 @@
 // used in the test module to set the value of MSB. A number of warnings and
 // errors follow, starting with:
 //
-// %Warning-ASCENDINGRANGE: t/t_param_module.v:42: Big bit endian vector: MSB
+// %Warning-ASCENDINGRANGE: t/t_param_module.v:42: Ascending bit range vector: MSB
 // < LSB of bit range: -17:0
 //
 // This file ONLY is placed into the Public Domain, for any use, without
