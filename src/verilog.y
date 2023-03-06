@@ -710,7 +710,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yRTRANIF0       "rtranif0"
 %token<fl>              yRTRANIF1       "rtranif1"
 %token<fl>              ySCALARED       "scalared"
-//UNSUP %token<fl>      ySEQUENCE       "sequence"
+%token<fl>              ySEQUENCE       "sequence"
 %token<fl>              ySHORTINT       "shortint"
 %token<fl>              ySHORTREAL      "shortreal"
 %token<fl>              ySIGNED         "signed"
@@ -2509,10 +2509,11 @@ implicit_typeE<nodeDTypep>:             // IEEE: part of *data_type_or_implicit
                         { $$ = new AstBasicDType{$<fl>1, LOGIC_IMPLICIT, $1}; }
         ;
 
-//UNSUPassertion_variable_declaration:  // IEEE: assertion_variable_declaration
-//UNSUP //                      // IEEE: var_data_type expanded
-//UNSUP         var_data_type list_of_variable_decl_assignments ';'     { }
-//UNSUP ;
+assertion_variable_declaration<nodep>:  // IEEE: assertion_variable_declaration
+        //                      // IEEE: var_data_type expanded
+                var_data_type                        { VARRESET_NONLIST(VAR); VARDTYPE_NDECL($1); }
+        /*cont*/    list_of_variable_decl_assignments ';'     { $$ = $3; }
+        ;
 
 type_declaration<nodep>:        // ==IEEE: type_declaration
                                 // Data_type expanded
@@ -5685,8 +5686,8 @@ cycle_delay<delayp>:  // IEEE: cycle_delay
 
 assertion_item_declaration<nodep>:  // ==IEEE: assertion_item_declaration
                 property_declaration                    { $$ = $1; }
-//UNSUP |       sequence_declaration                    { $$ = $1; }
-//UNSUP |       let_declaration                         { $$ = $1; }
+        |       sequence_declaration                    { $$ = $1; }
+        //UNSUP let_declaration                         { $$ = $1; }
         ;
 
 assertion_item<nodep>:          // ==IEEE: assertion_item
@@ -5780,15 +5781,20 @@ concurrent_assertion_statement<nodep>:  // ==IEEE: concurrent_assertion_statemen
                         { $$ = new AstAssert{$1, new AstSampled{$1, $4}, nullptr, $6, false}; }
         //UNSUP yASSUME yPROPERTY '(' property_spec ')' action_block    { }
         //                      // IEEE: cover_property_statement
-        |       yCOVER yPROPERTY '(' property_spec ')' stmtBlock        { $$ = new AstCover{$1, $4, $6, false}; }
+        |       yCOVER yPROPERTY '(' property_spec ')' stmtBlock
+                        { $$ = new AstCover{$1, $4, $6, false}; }
         //                      // IEEE: cover_sequence_statement
-        //UNSUP yCOVER ySEQUENCE '(' sexpr ')' stmt                     { }
+        |       yCOVER ySEQUENCE '(' sexpr ')' stmt
+                        { $$ = nullptr; BBUNSUP($2, "Unsupported: cover sequence"); }
         //                      // IEEE: yCOVER ySEQUENCE '(' clocking_event sexpr ')' stmt
         //                      // sexpr already includes "clocking_event sexpr"
-        //UNSUP yCOVER ySEQUENCE '(' clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' sexpr ')' stmt     { }
-        //UNSUP yCOVER ySEQUENCE '(' yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' sexpr ')' stmt    { }
+        |       yCOVER ySEQUENCE '(' clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' sexpr ')' stmt
+                        { $$ = nullptr; BBUNSUP($2, "Unsupported: cover sequence"); }
+        |       yCOVER ySEQUENCE '(' yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' sexpr ')' stmt
+                        { $$ = nullptr; BBUNSUP($2, "Unsupported: cover sequence"); }
         //                      // IEEE: restrict_property_statement
-        |       yRESTRICT yPROPERTY '(' property_spec ')' ';'           { $$ = new AstRestrict{$1, $4}; }
+        |       yRESTRICT yPROPERTY '(' property_spec ')' ';'
+                        { $$ = new AstRestrict{$1, $4}; }
         ;
 
 elseStmtBlock<nodep>:   // Part of concurrent_assertion_statement
@@ -5799,20 +5805,20 @@ elseStmtBlock<nodep>:   // Part of concurrent_assertion_statement
 property_declaration<nodeFTaskp>:  // ==IEEE: property_declaration
                 property_declarationFront property_port_listE ';' property_declarationBody
                         yENDPROPERTY endLabelE
-                        {   $$ = $1;
-                            $$->addStmtsp($2);
-                            $$->addStmtsp($4);
-                            SYMP->popScope($$);
-                            GRAMMARP->endLabel($<fl>6, $$, $6);
-                            GRAMMARP->m_insideProperty = false;
-                            GRAMMARP->m_typedPropertyPort = false; }
+                        { $$ = $1;
+                          $$->addStmtsp($2);
+                          $$->addStmtsp($4);
+                          SYMP->popScope($$);
+                          GRAMMARP->endLabel($<fl>6, $$, $6);
+                          GRAMMARP->m_insideProperty = false;
+                          GRAMMARP->m_typedPropertyPort = false; }
         ;
 
 property_declarationFront<nodeFTaskp>:  // IEEE: part of property_declaration
                 yPROPERTY idAny/*property_identifier*/
-                        {   $$ = new AstProperty{$1, *$2, nullptr};
-                            GRAMMARP->m_insideProperty = true;
-                            SYMP->pushNewUnderNodeOrCurrent($$, nullptr); }
+                        { $$ = new AstProperty{$<fl>2, *$2, nullptr};
+                          GRAMMARP->m_insideProperty = true;
+                          SYMP->pushNewUnderNodeOrCurrent($$, nullptr); }
         ;
 
 property_port_listE<nodep>:  // IEEE: [ ( [ property_port_list ] ) ]
@@ -5848,71 +5854,83 @@ property_port_itemFront: // IEEE: part of property_port_item/sequence_port_item
 
 property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequence_port_item/checker_port_direction
                 id variable_dimensionListE         { $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
-//UNSUP |       id variable_dimensionListE '=' property_actual_arg
-//UNSUP                 { VARDONE($<fl>1, $1, $2, $4); PINNUMINC(); }
+        //UNSUP|id variable_dimensionListE '=' property_actual_arg
+        //UNSUP         { VARDONE($<fl>1, $1, $2, $4); PINNUMINC(); }
         ;
 
 property_port_itemDirE:
                 /* empty */                             { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
-//UNSUP |        yLOCAL__ETC             { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
-//UNSUP |        yLOCAL__ETC yINPUT      { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
+        //UNSUP|yLOCAL__ETC             { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
+        //UNSUP|yLOCAL__ETC yINPUT      { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
         ;
 
 property_declarationBody<nodep>:  // IEEE: part of property_declaration
-//UNSUP         assertion_variable_declarationList property_statement_spec      { }
-//UNSUP //                      // IEEE-2012: Incorectly hasyCOVER ySEQUENCE then property_spec here.
-//UNSUP //                      // Fixed in IEEE 1800-2017
+        //UNSUP assertion_variable_declarationList property_statement_spec  {}
+        //                      // IEEE-2012: Incorectly hasyCOVER ySEQUENCE then property_spec here.
+        //                      // Fixed in IEEE 1800-2017
                 property_spec                 { $$ = $1; }
         |       property_spec ';'             { $$ = $1; }
         ;
 
-//UNSUPassertion_variable_declarationList<nodep>: // IEEE: part of assertion_variable_declaration
-//UNSUP         assertion_variable_declaration          { $$ = $1; }
-//UNSUP |       assertion_variable_declarationList assertion_variable_declaration       { }
-//UNSUP ;
+assertion_variable_declarationList<nodep>: // IEEE: part of assertion_variable_declaration
+                assertion_variable_declaration          { $$ = $1; }
+        |       assertion_variable_declarationList assertion_variable_declaration
+                        { $$ = addNextNull($1, $2); }
+        ;
 
-//UNSUPsequence_declaration<nodep>:  // ==IEEE: sequence_declaration
-//UNSUP         sequence_declarationFront sequence_port_listE ';' sequence_declarationBody
-//UNSUP                 yENDSEQUENCE endLabelE
-//UNSUP                 { SYMP->popScope($$); }
-//UNSUP ;
+sequence_declaration<nodeFTaskp>:  // ==IEEE: sequence_declaration
+                sequence_declarationFront sequence_port_listE ';' sequence_declarationBody
+        /*cont*/    yENDSEQUENCE endLabelE
+                        { $$ = $1;
+                          $$->addStmtsp($2);
+                          $$->addStmtsp($4);
+                          SYMP->popScope($$);
+                          GRAMMARP->endLabel($<fl>6, $$, $6); }
+        ;
 
-//UNSUPsequence_declarationFront<nodep>:  // IEEE: part of sequence_declaration
-//UNSUP         ySEQUENCE idAny/*new_sequence*/
-//UNSUP                 { SYMP->pushNew($$); }
-//UNSUP ;
+sequence_declarationFront<nodeFTaskp>:  // IEEE: part of sequence_declaration
+                ySEQUENCE idAny/*new_sequence*/
+                        { BBUNSUP($1, "Unsupported: sequence");
+                          $$ = new AstProperty{$<fl>2, *$2, nullptr};
+                          SYMP->pushNewUnderNodeOrCurrent($$, nullptr); }
+        ;
 
-//UNSUPsequence_port_listE<nodep>:  // IEEE: [ ( [ sequence_port_list ] ) ]
-//UNSUP //                      // IEEE: sequence_lvar_port_direction ::= yINPUT | yINOUT | yOUTPUT
-//UNSUP //                      // IEEE: [ yLOCAL [ sequence_lvar_port_direction ] ] sequence_formal_type
-//UNSUP //                      //           id {variable_dimension} [ '=' sequence_actual_arg ]
-//UNSUP //                      // All this is almost identically the same as a property.
-//UNSUP //                      // Difference is only yINOUT/yOUTPUT (which might be added to 1800-2012)
-//UNSUP //                      // and yPROPERTY.  So save some work.
-//UNSUP         property_port_listE                     { $$ = $1; }
-//UNSUP ;
+sequence_port_listE<nodep>:  // IEEE: [ ( [ sequence_port_list ] ) ]
+        //                      // IEEE: sequence_lvar_port_direction ::= yINPUT | yINOUT | yOUTPUT
+        //                      // IEEE: [ yLOCAL [ sequence_lvar_port_direction ] ] sequence_formal_type
+        //                      //           id {variable_dimension} [ '=' sequence_actual_arg ]
+        //                      // All this is almost identically the same as a property.
+        //                      // Difference is only yINOUT/yOUTPUT (which might be added to 1800-2012)
+        //                      // and yPROPERTY.  So save some work.
+                property_port_listE                     { $$ = $1; }
+        ;
 
 property_formal_typeNoDt<nodeDTypep>:  // IEEE: property_formal_type (w/o implicit)
                 sequence_formal_typeNoDt                { $$ = $1; }
-//UNSUP |       yPROPERTY                               { }
+        |       yPROPERTY
+                        { $$ = nullptr; GRAMMARP->m_typedPropertyPort = false;
+                          BBUNSUP($1, "Unsupported: property argument data type"); }
         ;
 
 sequence_formal_typeNoDt<nodeDTypep>:  // ==IEEE: sequence_formal_type (w/o data_type_or_implicit)
-//                      // IEEE: data_type_or_implicit
-//                      // implicit expanded where used
-//UNSUP         ySEQUENCE                               { }
-//                      // IEEE-2009: yEVENT
-//                      // already part of data_type.  Removed in 1800-2012.
-                yUNTYPED                                { $$ = nullptr; GRAMMARP->m_typedPropertyPort = false; }
+                        // IEEE: data_type_or_implicit
+                        // implicit expanded where used
+                ySEQUENCE
+                        { $$ = nullptr; GRAMMARP->m_typedPropertyPort = false;
+                          BBUNSUP($1, "Unsupported: sequence argument data type"); }
+                        // IEEE-2009: yEVENT
+                        // already part of data_type.  Removed in 1800-2012.
+        |       yUNTYPED
+                        { $$ = nullptr; GRAMMARP->m_typedPropertyPort = false; }
         ;
 
-//UNSUPsequence_declarationBody<nodep>:  // IEEE: part of sequence_declaration
-//UNSUP //                      // 1800-2012 makes ';' optional
-//UNSUP         assertion_variable_declarationList sexpr        { }
-//UNSUP |       assertion_variable_declarationList sexpr ';'    { }
-//UNSUP |       sexpr                                   { $$ = $1; }
-//UNSUP |       sexpr ';'                               { $$ = $1; }
-//UNSUP ;
+sequence_declarationBody<nodep>:  // IEEE: part of sequence_declaration
+        //                      // 1800-2012 makes ';' optional
+                assertion_variable_declarationList sexpr        { $$ = addNextNull($1, $2); }
+        |       assertion_variable_declarationList sexpr ';'    { $$ = addNextNull($1, $2); }
+        |       sexpr                                   { $$ = $1; }
+        |       sexpr ';'                               { $$ = $1; }
+        ;
 
 property_spec<propSpecp>:               // IEEE: property_spec
         //UNSUP: This rule has been super-specialized to what is supported now
@@ -5945,27 +5963,33 @@ property_spec<propSpecp>:               // IEEE: property_spec
 //UNSUP |       property_statementCaseIf                { $$ = $1; }
 //UNSUP ;
 
-//UNSUPproperty_statementCaseIf<nodep>:  // IEEE: property_statement - minus pexpr
-//UNSUP         yCASE '(' expr/*expression_or_dist*/ ')' property_case_itemList yENDCASE        { }
-//UNSUP |       yCASE '(' expr/*expression_or_dist*/ ')' yENDCASE               { }
-//UNSUP |       yIF '(' expr/*expression_or_dist*/ ')' pexpr  %prec prLOWER_THAN_ELSE   { }
-//UNSUP |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr        { }
-//UNSUP ;
+property_statementCaseIf<nodeExprp>:  // IEEE: property_statement - minus pexpr
+                yCASE '(' expr/*expression_or_dist*/ ')' property_case_itemList yENDCASE
+                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
+                          BBUNSUP($<fl>1, "Unsupported: property case expression"); }
+        |       yCASE '(' expr/*expression_or_dist*/ ')' yENDCASE
+                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
+                          BBUNSUP($<fl>1, "Unsupported: property case expression"); }
+        |       yIF '(' expr/*expression_or_dist*/ ')' pexpr  %prec prLOWER_THAN_ELSE
+                        { $$ = $5; BBUNSUP($<fl>1, "Unsupported: property case expression"); }
+        |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr
+                        { $$ = $5; BBUNSUP($<fl>1, "Unsupported: property case expression"); }
+        ;
 
-//UNSUPproperty_case_itemList<nodep>:  // IEEE: {property_case_item}
-//UNSUP         property_case_item                      { $$ = $1; }
-//UNSUP |       property_case_itemList ',' property_case_item   { $$ = addNextNull($1, $3); }
-//UNSUP ;
+property_case_itemList<caseItemp>:  // IEEE: {property_case_item}
+                property_case_item                      { $$ = $1; }
+        |       property_case_itemList ',' property_case_item   { $$ = addNextNull($1, $3); }
+        ;
 
-//UNSUPproperty_case_item<nodep>:  // ==IEEE: property_case_item
-//UNSUP //                      // IEEE: expression_or_dist { ',' expression_or_dist } ':' property_statement
-//UNSUP //                      // IEEE 1800-2012 changed from property_statement to property_expr
-//UNSUP //                      // IEEE 1800-2017 changed to require the semicolon
-//UNSUP         caseCondList ':' pexpr                  { }
-//UNSUP |       caseCondList ':' pexpr ';'              { }
-//UNSUP |       yDEFAULT pexpr                          { }
-//UNSUP |       yDEFAULT ':' pexpr ';'                  { }
-//UNSUP ;
+property_case_item<caseItemp>:  // ==IEEE: property_case_item
+        //                      // IEEE: expression_or_dist { ',' expression_or_dist } ':' property_statement
+        //                      // IEEE 1800-2012 changed from property_statement to property_expr
+        //                      // IEEE 1800-2017 changed to require the semicolon
+                caseCondList ':' pexpr                  { $$ = new AstCaseItem{$2, $1, $3}; }
+        |       caseCondList ':' pexpr ';'              { $$ = new AstCaseItem{$2, $1, $3}; }
+        |       yDEFAULT pexpr                          { $$ = new AstCaseItem{$1, nullptr, $2}; }
+        |       yDEFAULT ':' pexpr ';'                  { $$ = new AstCaseItem{$1, nullptr, $3}; }
+        ;
 
 //UNSUPpev_expr<nodep>:  // IEEE: property_actual_arg | expr
 //UNSUP //                      //       which expands to pexpr | event_expression
@@ -6017,7 +6041,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //
         //                      // IEEE-2009: property_statement
         //                      // IEEE-2012: yIF and yCASE
-        //UNSUP property_statementCaseIf                { }
+        |       property_statementCaseIf                { $$ = $1; }
         //
         |       ~o~pexpr/*sexpr*/ yP_POUNDMINUSPD pexpr
                         { $$ = $3; BBUNSUP($2, "Unsupported: #-# (in property expression)"); }
@@ -6182,9 +6206,9 @@ cycle_delay_range<nodep>:  // IEEE: ==cycle_delay_range
 
 boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
         //                      // IEEE: consecutive_repetition
-                yP_BRASTAR constExpr ']'        { }
+                yP_BRASTAR constExpr ']'
                         { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [*] boolean abbrev expression"); }
-        |       yP_BRASTAR constExpr ':' constExpr ']'        { }
+        |       yP_BRASTAR constExpr ':' constExpr ']'
                         { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [*] boolean abbrev expression"); }
         |       yP_BRASTAR ']'
                         { $$ = new AstConst{$1, AstConst::BitFalse{}};

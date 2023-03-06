@@ -6,12 +6,13 @@
 
 module t (/*AUTOARG*/
    // Inputs
-   clk, a, b
+   clk
    );
 
    input clk;
    int   a;
    int   b;
+   int   c;
    int cyc = 0;
 
    always @(posedge clk) begin
@@ -114,6 +115,26 @@ module t (/*AUTOARG*/
 
    property p_iff;
       a iff b;
+   endproperty
+
+   property p_arg_propery(property inprop);
+      inprop;
+   endproperty
+   property p_arg_seqence(sequence inseq);
+      inseq;
+   endproperty
+
+   property p_case_1;
+      case (a) endcase
+   endproperty
+   property p_case_2;
+      case (a) default: b; endcase
+   endproperty
+   property p_if;
+      if (a) b
+   endproperty
+   property p_ifelse;
+      if (a) b else c
    endproperty
 
    always @(posedge clk) begin

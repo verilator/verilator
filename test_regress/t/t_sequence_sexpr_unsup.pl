@@ -12,7 +12,7 @@ scenarios(vlt => 1);
 
 compile(
     expect_filename => $Self->{golden_filename},
-    verilator_flags2 => ['--assert'],
+    verilator_flags2 => ['--assert --error-limit 1000'],
     fails => 1,
     );
 

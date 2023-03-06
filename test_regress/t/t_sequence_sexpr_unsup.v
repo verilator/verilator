@@ -6,7 +6,7 @@
 
 module t (/*AUTOARG*/
    // Inputs
-   clk, a, b
+   clk
    );
 
    input clk;
@@ -23,85 +23,101 @@ module t (/*AUTOARG*/
    // NOTE this grammar hasn't been checked with other simulators,
    // is here just to avoid uncovered code lines in the grammar.
    // NOTE using 'property weak' here as sequence/endsequence not supported
-   property s_within;
-      weak(a within(b));
-   endproperty
+   sequence s_a;
+      a;
+   endsequence : s_a
+   sequence s_var;
+      logic l1, l2;
+      a;
+   endsequence
 
-   property s_and;
-      weak(a and b);
-   endproperty
+   sequence s_within;
+      a within(b);
+   endsequence
 
-   property s_or;
-      weak(a or b);
-   endproperty
+   sequence s_and;
+      a and b;
+   endsequence
 
-   property s_throughout;
-      weak(a throughout b);
-   endproperty
+   sequence s_or;
+      a or b;
+   endsequence
 
-   property s_intersect;
-      weak(a intersect b);
-   endproperty
+   sequence s_throughout;
+      a throughout b;
+   endsequence
 
-   property s_uni_cycdelay_int;
-      weak(## 1 b);
-   endproperty
-   property s_uni_cycdelay_id;
-      weak(## DELAY b);
-   endproperty
-   property s_uni_cycdelay_pid;
-      weak(## ( DELAY ) b);
-   endproperty
-   property s_uni_cycdelay_range;
-      weak(## [1:2] b);
-   endproperty
-   property s_uni_cycdelay_star;
-      weak(## [*] b);
-   endproperty
-   property s_uni_cycdelay_plus;
-      weak(## [+] b);
-   endproperty
+   sequence s_intersect;
+      a intersect b;
+   endsequence
 
-   property s_cycdelay_int;
-      weak(a ## 1 b);
-   endproperty
-   property s_cycdelay_id;
-      weak(a ## DELAY b);
-   endproperty
-   property s_cycdelay_pid;
-      weak(a ## ( DELAY ) b);
-   endproperty
-   property s_cycdelay_range;
-      weak(a ## [1:2] b);
-   endproperty
-   property s_cycdelay_star;
-      weak(a ## [*] b);
-   endproperty
-   property s_cycdelay_plus;
-      weak(a ## [+] b);
-   endproperty
+   sequence s_uni_cycdelay_int;
+      ## 1 b;
+   endsequence
+   sequence s_uni_cycdelay_id;
+      ## DELAY b;
+   endsequence
+   sequence s_uni_cycdelay_pid;
+      ## ( DELAY ) b;
+   endsequence
+   sequence s_uni_cycdelay_range;
+      ## [1:2] b;
+   endsequence
+   sequence s_uni_cycdelay_star;
+      ## [*] b;
+   endsequence
+   sequence s_uni_cycdelay_plus;
+      ## [+] b;
+   endsequence
 
-   property s_booleanabbrev_brastar_int;
-      weak([* 1 ] a);
-   endproperty
-   property s_booleanabbrev_brastar;
-      weak([*] a);
-   endproperty
-   property s_booleanabbrev_plus;
-      weak([+] a);
-   endproperty
-   property s_booleanabbrev_eq;
-      weak([= 1] a);
-   endproperty
-   property s_booleanabbrev_eq_range;
-      weak([= 1:2] a);
-   endproperty
-   property s_booleanabbrev_minusgt;
-      weak([-> 1] a);
-   endproperty
-   property s_booleanabbrev_minusgt_range;
-      weak([-> 1:2] a);
-   endproperty
+   sequence s_cycdelay_int;
+      a ## 1 b;
+   endsequence
+   sequence s_cycdelay_id;
+      a ## DELAY b;
+   endsequence
+   sequence s_cycdelay_pid;
+      a ## ( DELAY ) b;
+   endsequence
+   sequence s_cycdelay_range;
+      a ## [1:2] b;
+   endsequence
+   sequence s_cycdelay_star;
+      a ## [*] b;
+   endsequence
+   sequence s_cycdelay_plus;
+      a ## [+] b;
+   endsequence
+
+   sequence s_booleanabbrev_brastar_int;
+      a [* 1 ];
+   endsequence
+   sequence s_booleanabbrev_brastar;
+      a [*];
+   endsequence
+   sequence s_booleanabbrev_plus;
+      a [+];
+   endsequence
+   sequence s_booleanabbrev_eq;
+      a [= 1];
+   endsequence
+   sequence s_booleanabbrev_eq_range;
+      a [= 1:2];
+   endsequence
+   sequence s_booleanabbrev_minusgt;
+      a [-> 1];
+   endsequence
+   sequence s_booleanabbrev_minusgt_range;
+      a [-> 1:2];
+   endsequence
+
+   sequence p_arg_seqence(sequence inseq);
+      inseq;
+   endsequence
+
+   cover sequence (s_a) $display("");
+   cover sequence (@(posedge a) disable iff (b) s_a) $display("");
+   cover sequence (disable iff (b) s_a) $display("");
 
    always @(posedge clk) begin
       if (cyc == 10) begin

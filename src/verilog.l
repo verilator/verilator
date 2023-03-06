@@ -564,7 +564,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "ref"                 { FL; return yREF; }
   "restrict"            { FL; return yRESTRICT; }
   "return"              { FL; return yRETURN; }
-  "sequence"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "sequence"            { FL; return ySEQUENCE; }
   "shortint"            { FL; return ySHORTINT; }
   "shortreal"           { FL; return ySHORTREAL; }
   "solve"               { FL; return ySOLVE; }
