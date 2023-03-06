@@ -112,6 +112,10 @@ module t (/*AUTOARG*/
       sync_reject_on (a) b;
    endproperty
 
+   property p_iff;
+      a iff b;
+   endproperty
+
    always @(posedge clk) begin
       if (cyc == 10) begin
          $write("*-* All Finished *-*\n");

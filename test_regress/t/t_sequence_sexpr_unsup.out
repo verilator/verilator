@@ -1,0 +1,32 @@
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:25:14: Unsupported: within (in sequence expression)
+   25 |       weak(a within(b));
+      |              ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:25:11: Unsupported: weak (in property expression)
+   25 |       weak(a within(b));
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:29:14: Unsupported: and (in sequence expression)
+   29 |       weak(a and b);
+      |              ^~~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:29:11: Unsupported: weak (in property expression)
+   29 |       weak(a and b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:33:14: Unsupported: or (in sequence expression)
+   33 |       weak(a or b);
+      |              ^~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:33:11: Unsupported: weak (in property expression)
+   33 |       weak(a or b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:37:14: Unsupported: throughout (in sequence expression)
+   37 |       weak(a throughout b);
+      |              ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:37:11: Unsupported: weak (in property expression)
+   37 |       weak(a throughout b);
+      |           ^
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:41:14: Unsupported: intersect (in sequence expression)
+   41 |       weak(a intersect b);
+      |              ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:41:11: Unsupported: weak (in property expression)
+   41 |       weak(a intersect b);
+      |           ^
+%Error: Exiting due to

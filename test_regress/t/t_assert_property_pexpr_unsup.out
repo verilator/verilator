@@ -89,4 +89,7 @@
 %Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:112:22: Unsupported: sync_reject_on (in property expression)
   112 |       sync_reject_on (a) b;
       |                      ^
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:116:9: Unsupported: iff (in property expression)
+  116 |       a iff b;
+      |         ^~~
 %Error: Exiting due to

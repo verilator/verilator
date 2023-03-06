@@ -645,7 +645,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yINTEGER        "integer"
 %token<fl>              yINTERCONNECT   "interconnect"
 %token<fl>              yINTERFACE      "interface"
-//UNSUP %token<fl>      yINTERSECT      "intersect"
+%token<fl>              yINTERSECT      "intersect"
 %token<fl>              yJOIN           "join"
 %token<fl>              yJOIN_ANY       "join_any"
 %token<fl>              yJOIN_NONE      "join_none"
@@ -743,7 +743,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 //UNSUP %token<fl>      yTASK__LEX      "task-in-lex"
 //UNSUP %token<fl>      yTASK__aPUREV   "task-is-pure-virtual"
 %token<fl>              yTHIS           "this"
-//UNSUP %token<fl>      yTHROUGHOUT     "throughout"
+%token<fl>              yTHROUGHOUT     "throughout"
 %token<fl>              yTIME           "time"
 %token<fl>              yTIMEPRECISION  "timeprecision"
 %token<fl>              yTIMEUNIT       "timeunit"
@@ -785,7 +785,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yWHILE          "while"
 //UNSUP %token<fl>      yWILDCARD       "wildcard"
 %token<fl>              yWIRE           "wire"
-//UNSUP %token<fl>      yWITHIN         "within"
+%token<fl>              yWITHIN         "within"
 %token<fl>              yWITH__BRA      "with-then-["
 %token<fl>              yWITH__CUR      "with-then-{"
 %token<fl>              yWITH__ETC      "with"
@@ -1072,13 +1072,13 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 
 %right          yP_ORMINUSGT yP_OREQGT yP_POUNDMINUSPD yP_POUNDEQPD
 %right          yUNTIL yS_UNTIL yUNTIL_WITH yS_UNTIL_WITH yIMPLIES
-//UNSUP %right          yIFF
-//UNSUP %left           yOR
-//UNSUP %left           yAND
+%right          yIFF
+%left           yOR
+%left           yAND
 %nonassoc       yNOT yNEXTTIME yS_NEXTTIME
-//UNSUP %left           yINTERSECT
-//UNSUP %left           yWITHIN
-//UNSUP %right          yTHROUGHOUT
+%left           yINTERSECT
+%left           yWITHIN
+%right          yTHROUGHOUT
 //UNSUP %left           prPOUNDPOUND_MULTI
 //UNSUP %left           yP_POUNDPOUND
 //UNSUP %left           yP_BRASTAR yP_BRAEQ yP_BRAMINUSGT yP_BRAPLUSKET
@@ -6053,7 +6053,8 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       ~o~pexpr yIMPLIES pexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: implies (in property expression)"); }
         //                      // yIFF also used by event_expression
-        //UNSUP ~o~pexpr yIFF ~o~pexpr                  { }
+        |       ~o~pexpr yIFF pexpr
+                        { $$ = $1; BBUNSUP($2, "Unsupported: iff (in property expression)"); }
         |       yACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yACCEPT_ON
                         { $$ = $5; BBUNSUP($2, "Unsupported: accept_on (in property expression)"); }
         |       yREJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yREJECT_ON
@@ -6108,17 +6109,24 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //UNSUP '(' ~p~sexpr ',' sequence_match_itemList ')'    { }
         //
         //                      // AND/OR are between pexprs OR sexprs
-        //UNSUP ~p~sexpr yAND ~p~sexpr                  { $$ = new AstLogAnd{$2, $1, $3}; }
-        //UNSUP ~p~sexpr yOR ~p~sexpr                   { $$ = new AstLogOr{$2, $1, $3}; }
+        |       ~p~sexpr yAND ~p~sexpr
+                        { $$ = new AstLogAnd{$2, $1, $3};
+                          BBUNSUP($2, "Unsupported: and (in sequence expression)"); }
+        |       ~p~sexpr yOR ~p~sexpr
+                        { $$ = new AstLogOr{$2, $1, $3};
+                          BBUNSUP($2, "Unsupported: or (in sequence expression)"); }
         //                      // Intersect always has an sexpr rhs
-        //UNSUP ~p~sexpr yINTERSECT sexpr               { $<fl>$ = $<fl>1; $$ = ...; }
+        |       ~p~sexpr yINTERSECT sexpr
+                        { $$ = $1; BBUNSUP($2, "Unsupported: intersect (in sequence expression)"); }
         //
         //UNSUP yFIRST_MATCH '(' sexpr ')'              { }
         //UNSUP yFIRST_MATCH '(' sexpr ',' sequence_match_itemList ')'  { }
-        //UNSUP ~p~sexpr/*sexpression_or_dist*/ yTHROUGHOUT sexpr               { }
+        |       ~p~sexpr/*sexpression_or_dist*/ yTHROUGHOUT sexpr
+                        { $$ = $1; BBUNSUP($2, "Unsupported: throughout (in sequence expression)"); }
         //                      // Below pexpr's are really sequence_expr, but avoid conflict
         //                      // IEEE: sexpr yWITHIN sexpr
-        //UNSUP ~p~sexpr yWITHIN sexpr                  { $<fl>$ = $<fl>1; $$ = ...; }
+        |       ~p~sexpr yWITHIN sexpr
+                        { $$ = $1; BBUNSUP($2, "Unsupported: within (in sequence expression)"); }
         //                      // Note concurrent_assertion had duplicate rule for below
         //UNSUP clocking_event ~p~sexpr %prec prSEQ_CLOCKING    { }
         //
@@ -6143,7 +6151,7 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
 
 //UNSUPsequence_match_itemList<nodep>:  // IEEE: [sequence_match_item] part of sequence_expr
 //UNSUP         sequence_match_item                     { $$ = $1; }
-//UNSUP |       sequence_match_itemList ',' sequence_match_item { }
+//UNSUP |       sequence_match_itemList ',' sequence_match_item { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
 //UNSUPsequence_match_item<nodep>:  // ==IEEE: sequence_match_item

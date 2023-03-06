@@ -539,7 +539,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "inside"              { FL; return yINSIDE; }
   "int"                 { FL; return yINT; }
   "interface"           { FL; return yINTERFACE; }
-  "intersect"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "intersect"           { FL; return yINTERSECT; }
   "join_any"            { FL; return yJOIN_ANY; }
   "join_none"           { FL; return yJOIN_NONE; }
   "local"               { FL; return yLOCAL__LEX; }
@@ -574,7 +574,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "super"               { FL; return ySUPER; }
   "tagged"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "this"                { FL; return yTHIS; }
-  "throughout"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "throughout"          { FL; return yTHROUGHOUT; }
   "timeprecision"       { FL; return yTIMEPRECISION; }
   "timeunit"            { FL; return yTIMEUNIT; }
   "type"                { FL; return yTYPE__LEX; }
@@ -587,7 +587,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "wait_order"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "wildcard"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "with"                { FL; return yWITH__LEX; }
-  "within"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "within"              { FL; return yWITHIN; }
 }
 
   /* SystemVerilog 2009 */
