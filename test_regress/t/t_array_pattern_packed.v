@@ -62,9 +62,9 @@ module t (/*AUTOARG*/
 
    // 2D packed arrays
    logic [WA-1:0] [WB-1:0] array_bg;  // big endian array
-   /* verilator lint_off LITENDIAN */
+   /* verilator lint_off ASCENDINGRANGE */
    logic [0:WA-1] [0:WB-1] array_lt;  // little endian array
-   /* verilator lint_on LITENDIAN */
+   /* verilator lint_on ASCENDINGRANGE */
 
    integer cnt = 0;
 

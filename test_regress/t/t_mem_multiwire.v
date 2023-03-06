@@ -11,10 +11,10 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCENDINGRANGE
    wire [7:0] array [2:0][1:3];
    wire [7:0] arrayNoColon [2][3];
-   // verilator lint_on LITENDIAN
+   // verilator lint_on ASCENDINGRANGE
 
    integer cyc; initial cyc = 0;
    integer    i0,i1,i2;

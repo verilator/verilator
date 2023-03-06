@@ -89,9 +89,9 @@ module fifo (/*AUTOARG*/
    reg [65:0] outData;
 
    // verilator lint_off VARHIDDEN
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCENDINGRANGE
    reg [65:0]    fifo[0:fifoDepth-1];
-   // verilator lint_on LITENDIAN
+   // verilator lint_on ASCENDINGRANGE
    // verilator lint_on VARHIDDEN
 
    //reg [65:0]               temp;

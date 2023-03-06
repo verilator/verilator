@@ -109,7 +109,7 @@ public:
         INITIALDLY,     // Initial delayed statement
         INSECURE,       // Insecure options
         LATCH,          // Latch detected outside of always_latch block
-        LITENDIAN,      // Little bit endian vector
+        ASCENDINGRANGE,      // Little bit endian vector
         MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks
@@ -192,7 +192,7 @@ public:
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
-            "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MODDUP",
+            "LATCH", "ASCENDINGRANGE", "MINTYPMAXDLY", "MODDUP",
             "MULTIDRIVEN", "MULTITOP", "NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
             "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
@@ -231,7 +231,7 @@ public:
         return (m_e == ALWCOMBORDER || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
-                || m_e == LATCH || m_e == LITENDIAN || m_e == PINMISSING || m_e == REALCVT
+                || m_e == LATCH || m_e == ASCENDINGRANGE || m_e == PINMISSING || m_e == REALCVT
                 || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC
                 || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
     }

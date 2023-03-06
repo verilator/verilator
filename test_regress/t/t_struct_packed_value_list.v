@@ -20,14 +20,14 @@ module t (/*AUTOARG*/
       logic [3:0] e2;
       logic [7:0] e3;
    } struct_bg;  // big endian structure
-   /* verilator lint_off LITENDIAN */
+   /* verilator lint_off ASCENDINGRANGE */
    struct packed {
       logic       e0;
       logic [0:1] e1;
       logic [0:3] e2;
       logic [0:7] e3;
    } struct_lt;  // little endian structure
-   /* verilator lint_on LITENDIAN */
+   /* verilator lint_on ASCENDINGRANGE */
 
    localparam WS = 15;  // $bits(struct_bg)
 

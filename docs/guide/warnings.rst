@@ -846,7 +846,7 @@ List Of Warnings
    simulate correctly.
 
 
-.. option:: LITENDIAN
+.. option:: ASCENDINGRANGE
 
    .. TODO better example
 
