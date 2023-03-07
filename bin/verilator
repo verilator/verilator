@@ -404,6 +404,7 @@ detailed descriptions of these arguments.
     --protect-key <key>         Key for symbol protection
     --protect-lib <name>        Create a DPI protected library
     --public                    Debugging; see docs
+    --public-params             Mark all parameters as public_flat
     --public-flat-rw            Mark all variables, etc as public_flat_rw
      -pvalue+<name>=<value>     Overwrite toplevel parameter
     --quiet-exit                Don't print the command on failure

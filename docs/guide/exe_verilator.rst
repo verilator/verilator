@@ -1113,6 +1113,12 @@ Summary:
    marking only those signals that need public_flat_rw is typically
    significantly better performing.
 
+.. option:: --public-params
+
+   Declares all parameters public as if they had
+   :code:`/*verilator public_flat_rw @ (<variable's_source_process_edge>)*/`
+   metacomments.
+
 .. option:: -pvalue+<name>=<value>
 
    Overwrites the given parameter(s) of the top-level module. See
