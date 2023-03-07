@@ -474,7 +474,9 @@ private:
         m_inSuspendableOrFork = true;
         iterateChildren(nodep);
     }
-    void visit(AstCAwait* nodep) override { m_timingDomains.insert(nodep->sensesp()); }
+    void visit(AstCAwait* nodep) override {
+        if (nodep->sensesp()) m_timingDomains.insert(nodep->sensesp());
+    }
     void visit(AstFireEvent* nodep) override {
         UASSERT_OBJ(v3Global.hasEvents(), nodep, "Inconsistent");
         FileLine* const flp = nodep->fileline();
