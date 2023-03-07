@@ -235,7 +235,7 @@ private:
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables = 0;  // Number of created data type tables
-    TableMap m_tableMap;  // Created tables so can remove duplicates
+    static TableMap m_tableMap;  // Created tables so can remove duplicates
     std::map<const AstNodeDType*, AstQueueDType*>
         m_queueDTypeIndexed;  // Queues with given index type
 
@@ -7415,3 +7415,5 @@ void V3Width::widthCommit(AstNetlist* nodep) {
     { WidthCommitVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("widthcommit", 0, dumpTree() >= 6);
 }
+
+WidthVisitor::TableMap WidthVisitor::m_tableMap;
