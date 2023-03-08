@@ -258,13 +258,7 @@ private:
             }
         }
 
-        if (v3Global.opt.publicParams()) {
-            switch (nodep->varType()) {
-            case VVarType::GPARAM:  // FALLTHRU
-            case VVarType::LPARAM: nodep->sigUserRWPublic(true); break;
-            default: break;
-            }
-        }
+        if (v3Global.opt.publicParams() && nodep->isParam()) nodep->sigUserRWPublic(true);
 
         // We used modTrace before leveling, and we may now
         // want to turn it off now that we know the levelizations
