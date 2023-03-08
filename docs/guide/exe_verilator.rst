@@ -1116,7 +1116,7 @@ Summary:
 .. option:: --public-params
 
    Declares all parameters public as if they had
-   :code:`/*verilator public_flat_rw @ (<variable's_source_process_edge>)*/`
+   :code:`/*verilator public_flat_rd*/`
    metacomments.
 
 .. option:: -pvalue+<name>=<value>
