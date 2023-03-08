@@ -646,7 +646,12 @@ class EmitCTrace final : EmitCFunc {
         } else if (nodep->isQuad()) {
             puts("tracep->declQuad");
         } else if (nodep->bitRange().ranged()) {
-            puts("tracep->declBus");
+            if(nodep->varType() == VVarType::VAR) {
+                puts("tracep->declReg");
+            }
+            else {
+                puts("tracep->declBus");
+            }
         } else if (nodep->dtypep()->basicp()->isEvent()) {
             puts("tracep->declEvent");
         } else {
@@ -674,6 +679,7 @@ class EmitCTrace final : EmitCFunc {
             // fstVarType
             const VVarType vartype = nodep->varType();
             const VBasicDTypeKwd kwd = nodep->declKwd();
+
             string fstvt;
             // Doubles have special decoding properties, so must indicate if a double
             if (nodep->dtypep()->basicp()->isDouble()) {

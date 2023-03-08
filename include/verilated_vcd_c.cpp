@@ -553,6 +553,10 @@ void VerilatedVcd::declBus(uint32_t code, const char* name, bool array, int arra
                            int lsb) {
     declare(code, name, "wire", array, arraynum, false, true, msb, lsb);
 }
+void VerilatedVcd::declReg(uint32_t code, const char* name, bool array, int arraynum, int msb,
+                           int lsb) {
+    declare(code, name, "reg", array, arraynum, false, true, msb, lsb);
+}
 void VerilatedVcd::declQuad(uint32_t code, const char* name, bool array, int arraynum, int msb,
                             int lsb) {
     declare(code, name, "wire", array, arraynum, false, true, msb, lsb);

@@ -143,6 +143,7 @@ public:
     void declEvent(uint32_t code, const char* name, bool array, int arraynum);
     void declBit(uint32_t code, const char* name, bool array, int arraynum);
     void declBus(uint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
+    void declReg(uint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
     void declQuad(uint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
     void declArray(uint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
     void declDouble(uint32_t code, const char* name, bool array, int arraynum);
