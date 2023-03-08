@@ -128,6 +128,19 @@ private:
             return labelp;
         }
     }
+    void addPrefixToBlocksRecurse(AstNode* nodep) {
+        // Add do_while_ prefix to blocks
+        // Used to not have blocks with duplicated names
+        if (AstBegin* const beginp = VN_CAST(nodep, Begin)) {
+            if (beginp->name() != "") beginp->name("do_while_" + beginp->name());
+        }
+
+        if (nodep->op1p()) addPrefixToBlocksRecurse(nodep->op1p());
+        if (nodep->op2p()) addPrefixToBlocksRecurse(nodep->op2p());
+        if (nodep->op3p()) addPrefixToBlocksRecurse(nodep->op3p());
+        if (nodep->op4p()) addPrefixToBlocksRecurse(nodep->op4p());
+        if (nodep->nextp()) addPrefixToBlocksRecurse(nodep->nextp());
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -200,23 +213,21 @@ private:
     void visit(AstDoWhile* nodep) override {
         // It is converted to AstWhile in this visit method
         VL_RESTORER(m_loopp);
-        VL_RESTORER(m_loopInc);
         {
             m_loopp = nodep;
-            m_loopInc = false;
-            iterateAndNextNull(nodep->precondsp());
             iterateAndNextNull(nodep->condp());
             iterateAndNextNull(nodep->stmtsp());
-            m_loopInc = true;
-            iterateAndNextNull(nodep->incsp());
         }
         AstNodeExpr* const condp = nodep->condp() ? nodep->condp()->unlinkFrBack() : nullptr;
         AstNode* const bodyp = nodep->stmtsp() ? nodep->stmtsp()->unlinkFrBack() : nullptr;
-        AstNode* const incsp = nodep->incsp() ? nodep->incsp()->unlinkFrBack() : nullptr;
-        AstWhile* const whilep = new AstWhile{nodep->fileline(), condp, bodyp, incsp};
+        AstWhile* const whilep = new AstWhile{nodep->fileline(), condp, bodyp};
         nodep->replaceWith(whilep);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        if (bodyp) whilep->addHereThisAsNext(bodyp->cloneTree(false));
+        if (bodyp) {
+            AstNode* const copiedBodyp = bodyp->cloneTree(false);
+            addPrefixToBlocksRecurse(copiedBodyp);
+            whilep->addHereThisAsNext(copiedBodyp);
+        }
     }
     void visit(AstForeach* nodep) override {
         VL_RESTORER(m_loopp);
