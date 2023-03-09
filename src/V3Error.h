@@ -70,6 +70,7 @@ public:
         EC_FIRST_WARN,  // Just a code so the program knows where to start warnings
         //
         ALWCOMBORDER,   // Always_comb with unordered statements
+        ASCENDINGRANGE, // Ascending bit range vector
         ASSIGNDLY,      // Assignment delays
         ASSIGNIN,       // Assigning to input
         BADSTDPRAGMA,   // Any error related to pragmas
@@ -109,7 +110,7 @@ public:
         INITIALDLY,     // Initial delayed statement
         INSECURE,       // Insecure options
         LATCH,          // Latch detected outside of always_latch block
-        ASCENDINGRANGE, // Ascending bit range vector
+        LITENDIAN,      // Little endian, renamed to ASCENDINGRANGE
         MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks
@@ -183,7 +184,7 @@ public:
             "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
             // Warnings
             " EC_FIRST_WARN",
-            "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
+            "ALWCOMBORDER", "ASCENDINGRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
@@ -192,7 +193,7 @@ public:
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
-            "LATCH", "ASCENDINGRANGE", "MINTYPMAXDLY", "MODDUP",
+            "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MODDUP",
             "MULTIDRIVEN", "MULTITOP", "NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
             "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
@@ -228,16 +229,17 @@ public:
     }
     // Warnings that are lint only
     bool lintError() const VL_MT_SAFE {
-        return (m_e == ALWCOMBORDER || m_e == BSSPACE || m_e == CASEINCOMPLETE
+        return (m_e == ALWCOMBORDER || m_e == ASCENDINGRANGE || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
-                || m_e == LATCH || m_e == ASCENDINGRANGE || m_e == PINMISSING || m_e == REALCVT
+                || m_e == LATCH || m_e == PINMISSING || m_e == REALCVT
                 || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC
                 || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
-        return (m_e == ASSIGNDLY  // More than style, but for backward compatibility
+        return (m_e == ASCENDINGRANGE
+                || m_e == ASSIGNDLY  // More than style, but for backward compatibility
                 || m_e == BLKSEQ || m_e == DEFPARAM || m_e == DECLFILENAME || m_e == EOFNEWLINE
                 || m_e == IMPORTSTAR || m_e == INCABSPATH || m_e == PINCONNECTEMPTY
                 || m_e == PINNOCONNECT || m_e == SYNCASYNCNET || m_e == UNDRIVEN
@@ -251,7 +253,7 @@ public:
 
     V3ErrorCode renamedTo() const {
         // Return a new error this error has been renamed to
-        // e.g. if (m_e == LITENDIAN) return V3ErrorCode{RANGEASC};
+        if (m_e == LITENDIAN) return V3ErrorCode{ASCENDINGRANGE};
         return V3ErrorCode{EC_MIN};  // Not renamed; see isRenamed()
     }
     bool isRenamed() const { return renamedTo() != V3ErrorCode{EC_MIN}; }

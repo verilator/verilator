@@ -97,6 +97,24 @@ List Of Warnings
    simulate correctly.
 
 
+.. option:: ASCENDINGRANGE
+
+   .. TODO better example
+
+   Warns that a packed vector is declared with ascending bit range
+   (i.e. [0:7]).  Descending bit range is now the overwhelming standard,
+   and ascending ranges are now thus often due to simple oversight
+   instead of intent (a notable exception is the OpenPOWER code base).
+
+   It also warns that an instance is declared with ascending range
+   (i.e. [0:7] or [7]) and is connected to an N-wide signal.
+   The bits will likely be in the reversed order from what people may expect
+   (i.e., instance [0] will connect to signal bit [N-1] not bit [0]).
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+
 .. option:: ASSIGNDLY
 
    .. TODO better example
@@ -846,22 +864,14 @@ List Of Warnings
    simulate correctly.
 
 
-.. option:: ASCENDINGRANGE
+.. option:: LITENDIAN
 
    .. TODO better example
 
-   Warns that a packed vector is declared with ascending bit range
-   (i.e. [0:7]).  Descending bit range is now the overwhelming standard,
-   and ascending ranges are now thus often due to simple oversight
-   instead of intent (a notable exception is the OpenPOWER code base).
-
-   It also warns that an instance is declared with ascending range
-   (i.e. [0:7] or [7]) and is connected to an N-wide signal.
-   The bits will likely be in the reversed order from what people may expect
-   (i.e., instance [0] will connect to signal bit [N-1] not bit [0]).
-
-   Ignoring this warning will only suppress the lint check; it will
-   simulate correctly.
+   The naming of this worning is in contradiction with the common
+   interpretation of little endian. It was therefore renamed to
+   :option:`ASCENDINGRANGE`. While :option:`LITENDIAN` remains for
+   backwards compatibility, new projects should use :option:`ASCENDINGRANGE`.
 
 
 .. option:: MINTYPMAX
