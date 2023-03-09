@@ -259,6 +259,8 @@ private:
             }
         }
 
+        if (v3Global.opt.publicParams() && nodep->isParam()) nodep->sigUserRWPublic(true);
+
         // We used modTrace before leveling, and we may now
         // want to turn it off now that we know the levelizations
         if (v3Global.opt.traceDepth() && m_modp
