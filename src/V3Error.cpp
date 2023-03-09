@@ -40,6 +40,7 @@ V3ErrorCode::V3ErrorCode(const char* msgp) {
         const V3ErrorCode code{codei};
         if (0 == VL_STRCASECMP(msgp, code.ascii())) {
             m_e = code;
+            if (isRenamed()) m_e = renamedTo().m_e;
             return;
         }
     }

@@ -248,6 +248,12 @@ public:
         return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
     }
 
+    V3ErrorCode renamedTo() const {
+        // Return a new error this error has been renamed to
+        // e.g. if (m_e == LITENDIAN) return V3ErrorCode{RANGEASC};
+        return V3ErrorCode{EC_MIN};  // Not renamed; see isRenamed()
+    }
+    bool isRenamed() const { return renamedTo() != V3ErrorCode{EC_MIN}; }
     bool isUnder(V3ErrorCode other) {
         // backwards compatibility inheritance-like warnings
         if (m_e == other) { return true; }
