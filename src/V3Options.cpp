@@ -1381,6 +1381,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_protectIds = true;
     });
     DECL_OPTION("-public", OnOff, &m_public);
+    DECL_OPTION("-public-depth", Set, &m_publicDepth);
     DECL_OPTION("-public-flat-rw", CbOnOff, [this](bool flag) {
         m_publicFlatRW = flag;
         v3Global.dpi(true);
