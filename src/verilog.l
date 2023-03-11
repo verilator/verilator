@@ -584,7 +584,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "var"                 { FL; return yVAR; }
   "virtual"             { FL; return yVIRTUAL__LEX; }
   "void"                { FL; return yVOID; }
-  "wait_order"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "wait_order"          { FL; return yWAIT_ORDER; }
   "wildcard"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "with"                { FL; return yWITH__LEX; }
   "within"              { FL; return yWITHIN; }

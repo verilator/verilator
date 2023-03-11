@@ -769,7 +769,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVIRTUAL__anyID "virtual-then-identifier"
 %token<fl>              yVOID           "void"
 %token<fl>              yWAIT           "wait"
-//UNSUP %token<fl>      yWAIT_ORDER     "wait_order"
+%token<fl>              yWAIT_ORDER     "wait_order"
 %token<fl>              yWAND           "wand"
 %token<fl>              yWEAK           "weak"
 %token<fl>              yWEAK0          "weak0"
@@ -3596,9 +3596,12 @@ statement_item<nodep>:          // IEEE: statement_item
         |       yWAIT '(' expr ')' stmtBlock            { $$ = new AstWait{$1, $3, $5}; }
         |       yWAIT yFORK ';'                         { $$ = new AstWaitFork{$1}; }
         //                      // action_block expanded here
-        //UNSUP yWAIT_ORDER '(' hierarchical_identifierList ')' stmt %prec prLOWER_THAN_ELSE    { UNSUP }
-        //UNSUP yWAIT_ORDER '(' hierarchical_identifierList ')' stmt yELSE stmt   { UNSUP }
-        //UNSUP yWAIT_ORDER '(' hierarchical_identifierList ')' yELSE stmt    { UNSUP }
+        |       yWAIT_ORDER '(' vrdList ')' stmt %prec prLOWER_THAN_ELSE
+                        { $$ = nullptr; BBUNSUP($4, "Unsupported: wait_order"); }
+        |       yWAIT_ORDER '(' vrdList ')' stmt yELSE stmt
+                        { $$ = nullptr; BBUNSUP($4, "Unsupported: wait_order"); }
+        |       yWAIT_ORDER '(' vrdList ')' yELSE stmt
+                        { $$ = nullptr; BBUNSUP($4, "Unsupported: wait_order"); }
         //
         //                      // IEEE: procedural_assertion_statement
         |       procedural_assertion_statement          { $$ = $1; }
