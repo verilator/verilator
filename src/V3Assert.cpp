@@ -182,7 +182,7 @@ private:
             const bool force = VN_IS(nodep, AssertIntrinsic);
             if (passsp) passsp = newIfAssertOn(passsp, force);
             if (failsp) failsp = newIfAssertOn(failsp, force);
-            if (!failsp) failsp = newFireAssertUnchecked(nodep, "'assert' failed.");
+            if (!passsp && !failsp) failsp = newFireAssertUnchecked(nodep, "'assert' failed.");
             ifp = new AstIf{nodep->fileline(), propp, passsp, failsp};
             ifp->isBoundsCheck(true);  // To avoid LATCH warning
             // It's more LIKELY that we'll take the nullptr if clause

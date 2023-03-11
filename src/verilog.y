@@ -5772,14 +5772,13 @@ concurrent_assertion_item<nodep>:       // IEEE: concurrent_assertion_item
 concurrent_assertion_statement<nodep>:  // ==IEEE: concurrent_assertion_statement
         //                      // IEEE: assert_property_statement
         //                      // IEEE: assume_property_statement
-        //UNSUP remove below:
-                assertOrAssume yPROPERTY '(' property_spec ')' elseStmtBlock
-                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, nullptr, $6, false}; }
-        //UNSUP remove above:
         //                      // action_block expanded here
-        //UNSUP assertOrAssume yPROPERTY '(' property_spec ')' stmt %prec prLOWER_THAN_ELSE  {}
-        //UNSUP assertOrAssume yPROPERTY '(' property_spec ')' stmt yELSE stmt  {}
-        //UNSUP assertOrAssume yPROPERTY '(' property_spec ')' yELSE stmt  {}
+                assertOrAssume yPROPERTY '(' property_spec ')' stmt %prec prLOWER_THAN_ELSE
+                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, $6, nullptr, false}; }
+        |       assertOrAssume yPROPERTY '(' property_spec ')' stmt yELSE stmt
+                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, $6, $8, false}; }
+        |       assertOrAssume yPROPERTY '(' property_spec ')' yELSE stmt
+                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, nullptr, $7, false}; }
         //                      // IEEE: cover_property_statement
         |       yCOVER yPROPERTY '(' property_spec ')' stmtBlock
                         { $$ = new AstCover{$1, $4, $6, false}; }
@@ -5795,11 +5794,6 @@ concurrent_assertion_statement<nodep>:  // ==IEEE: concurrent_assertion_statemen
         //                      // IEEE: restrict_property_statement
         |       yRESTRICT yPROPERTY '(' property_spec ')' ';'
                         { $$ = new AstRestrict{$1, $4}; }
-        ;
-
-elseStmtBlock<nodep>:   // Part of concurrent_assertion_statement
-                ';'                                     { $$ = nullptr; }
-        |       yELSE stmtBlock                         { $$ = $2; }
         ;
 
 property_declaration<nodeFTaskp>:  // ==IEEE: property_declaration
