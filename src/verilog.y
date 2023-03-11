@@ -1539,16 +1539,7 @@ port<nodep>:                    // ==IEEE: port
         //
         //                      // Note implicit rules looks just line declaring additional followon port
         //                      // No VARDECL("port") for implicit, as we don't want to declare variables for them
-        //UNSUP portDirNetE data_type          '.' portSig '(' portAssignExprE ')' sigAttrListE
-        //UNSUP         { UNSUP }
-        //UNSUP portDirNetE yVAR data_type     '.' portSig '(' portAssignExprE ')' sigAttrListE
-        //UNSUP         { UNSUP }
-        //UNSUP portDirNetE yVAR implicit_type '.' portSig '(' portAssignExprE ')' sigAttrListE
-        //UNSUP         { UNSUP }
-        //UNSUP portDirNetE signingE rangeList '.' portSig '(' portAssignExprE ')' sigAttrListE
-        //UNSUP         { UNSUP }
-        //UNSUP portDirNetE /*implicit*/       '.' portSig '(' portAssignExprE ')' sigAttrListE
-        //UNSUP         { UNSUP }
+        //                      // IEEE: portDirNetE data_type '.' portSig -> handled with AstDot in expr.
         //
         |       portDirNetE data_type           portSig variable_dimensionListE sigAttrListE
                         { $$ = $3; VARDTYPE($2); addNextNull($$, VARDONEP($$, $4, $5)); }
@@ -3657,7 +3648,6 @@ foperator_assignment<nodep>:    // IEEE: operator_assignment (for first part of 
         |       fexprLvalue '=' yD_FOPEN '(' expr ')'           { $$ = new AstFOpenMcd{$3, $1, $5}; }
         |       fexprLvalue '=' yD_FOPEN '(' expr ',' expr ')'  { $$ = new AstFOpen{$3, $1, $5, $7}; }
         //
-        //UNSUP ~f~exprLvalue yP_PLUS(etc) expr         { UNSUP }
         |       fexprLvalue yP_PLUSEQ    expr
                         { $$ = new AstAssign{$2, $1, new AstAdd{$2, $1->cloneTree(true), $3}}; }
         |       fexprLvalue yP_MINUSEQ   expr
@@ -3680,8 +3670,6 @@ foperator_assignment<nodep>:    // IEEE: operator_assignment (for first part of 
                         { $$ = new AstAssign{$2, $1, new AstShiftR{$2, $1->cloneTree(true), $3}}; }
         |       fexprLvalue yP_SSRIGHTEQ expr
                         { $$ = new AstAssign{$2, $1, new AstShiftRS{$2, $1->cloneTree(true), $3}}; }
-        //UNSUP replace above with:
-        //UNSUP BISONPRE_COPY(operator_assignment,{s/~f~/f/g})  // {copied}
         ;
 
 inc_or_dec_expression<nodeExprp>:   // ==IEEE: inc_or_dec_expression
