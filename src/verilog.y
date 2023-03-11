@@ -5848,9 +5848,14 @@ property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequen
         ;
 
 property_port_itemDirE:
-                /* empty */                             { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
-        //UNSUP|yLOCAL__ETC             { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
-        //UNSUP|yLOCAL__ETC yINPUT      { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
+                /* empty */
+                        { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
+        |       yLOCAL__ETC
+                        { GRAMMARP->m_pinAnsi = true; VARIO(INPUT);
+                          BBUNSUP($1, "Unsupported: property port 'local'"); }
+        |       yLOCAL__ETC yINPUT
+                        { GRAMMARP->m_pinAnsi = true; VARIO(INPUT);
+                          BBUNSUP($1, "Unsupported: property port 'local'"); }
         ;
 
 property_declarationBody<nodep>:  // IEEE: part of property_declaration
