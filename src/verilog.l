@@ -525,7 +525,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "endproperty"         { FL; return yENDPROPERTY; }
   "endsequence"         { FL; return yENDSEQUENCE; }
   "enum"                { FL; return yENUM; }
-  "expect"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "expect"              { FL; return yEXPECT; }
   "export"              { FL; return yEXPORT; }
   "extends"             { FL; return yEXTENDS; }
   "extern"              { FL; return yEXTERN; }

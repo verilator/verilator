@@ -607,7 +607,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yENUM           "enum"
 %token<fl>              yEVENT          "event"
 %token<fl>              yEVENTUALLY     "eventually"
-//UNSUP %token<fl>      yEXPECT         "expect"
+%token<fl>              yEXPECT         "expect"
 %token<fl>              yEXPORT         "export"
 %token<fl>              yEXTENDS        "extends"
 %token<fl>              yEXTERN         "extern"
@@ -3603,7 +3603,10 @@ statement_item<nodep>:          // IEEE: statement_item
         //                      // IEEE: wait_statement
         |       yWAIT '(' expr ')' stmtBlock            { $$ = new AstWait{$1, $3, $5}; }
         |       yWAIT yFORK ';'                         { $$ = new AstWaitFork{$1}; }
-        //UNSUP yWAIT_ORDER '(' hierarchical_identifierList ')' action_block    { UNSUP }
+        //                      // action_block expanded here
+        //UNSUP yWAIT_ORDER '(' hierarchical_identifierList ')' stmt %prec prLOWER_THAN_ELSE    { UNSUP }
+        //UNSUP yWAIT_ORDER '(' hierarchical_identifierList ')' stmt yELSE stmt   { UNSUP }
+        //UNSUP yWAIT_ORDER '(' hierarchical_identifierList ')' yELSE stmt    { UNSUP }
         //
         //                      // IEEE: procedural_assertion_statement
         |       procedural_assertion_statement          { $$ = $1; }
@@ -3613,7 +3616,14 @@ statement_item<nodep>:          // IEEE: statement_item
         //                      // IEEE: randcase_statement
         |       yRANDCASE rand_case_itemList yENDCASE   { $$ = new AstRandCase{$1, $2}; }
         //
-        //UNSUP expect_property_statement               { $$ = $1; }
+        //                      // IEEE: expect_property_statement
+        //                      // action_block expanded here
+        |       yEXPECT '(' property_spec ')' stmt %prec prLOWER_THAN_ELSE
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); }
+        |       yEXPECT '(' property_spec ')' stmt yELSE stmt
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); }
+        |       yEXPECT '(' property_spec ')' yELSE stmt
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); }
         //
         |       error ';'                               { $$ = nullptr; }
         ;
@@ -5716,7 +5726,7 @@ immediate_assertion_statement<nodep>:   // ==IEEE: immediate_assertion_statement
         ;
 
 simple_immediate_assertion_statement<nodep>:    // ==IEEE: simple_immediate_assertion_statement
-        //                              // action_block expanded here, for compatibility with AstAssert
+        //                      // action_block expanded here, for compatibility with AstAssert
                 assertOrAssume '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE
                         { $$ = new AstAssert{$1, $3, $5, nullptr, true}; }
         |       assertOrAssume '(' expr ')'           yELSE stmtBlock
@@ -5751,10 +5761,6 @@ deferred_immediate_assertion_statement<nodep>:  // ==IEEE: deferred_immediate_as
         |       yCOVER final_zero '(' expr ')' stmt     { $$ = new AstCover{$1, $4, $6, true}; }
         ;
 
-//UNSUPexpect_property_statement<nodep>:  // ==IEEE: expect_property_statement
-//UNSUP         yEXPECT '(' property_spec ')' action_block      { }
-//UNSUP ;
-
 concurrent_assertion_item<nodep>:       // IEEE: concurrent_assertion_item
                 concurrent_assertion_statement          { $$ = $1; }
         |       id/*block_identifier*/ ':' concurrent_assertion_statement
@@ -5769,7 +5775,11 @@ concurrent_assertion_statement<nodep>:  // ==IEEE: concurrent_assertion_statemen
         //UNSUP remove below:
                 assertOrAssume yPROPERTY '(' property_spec ')' elseStmtBlock
                         { $$ = new AstAssert{$1, new AstSampled{$1, $4}, nullptr, $6, false}; }
-        //UNSUP assertOrAssume yPROPERTY '(' property_spec ')' action_block    { }
+        //UNSUP remove above:
+        //                      // action_block expanded here
+        //UNSUP assertOrAssume yPROPERTY '(' property_spec ')' stmt %prec prLOWER_THAN_ELSE  {}
+        //UNSUP assertOrAssume yPROPERTY '(' property_spec ')' stmt yELSE stmt  {}
+        //UNSUP assertOrAssume yPROPERTY '(' property_spec ')' yELSE stmt  {}
         //                      // IEEE: cover_property_statement
         |       yCOVER yPROPERTY '(' property_spec ')' stmtBlock
                         { $$ = new AstCover{$1, $4, $6, false}; }

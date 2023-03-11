@@ -1,0 +1,29 @@
+%Error-UNSUPPORTED: t/t_expect.v:19:32: Unsupported: ## () cycle delay range expression
+   19 |       expect (@(posedge clk) a ##1 b) a = 110;
+      |                                ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_expect.v:19:34: Unsupported: ## (in sequence expression)
+   19 |       expect (@(posedge clk) a ##1 b) a = 110;
+      |                                  ^
+%Error-UNSUPPORTED: t/t_expect.v:19:7: Unsupported: expect
+   19 |       expect (@(posedge clk) a ##1 b) a = 110;
+      |       ^~~~~~
+%Error-UNSUPPORTED: t/t_expect.v:21:32: Unsupported: ## () cycle delay range expression
+   21 |       expect (@(posedge clk) a ##1 b) else a = 299;
+      |                                ^~
+%Error-UNSUPPORTED: t/t_expect.v:21:34: Unsupported: ## (in sequence expression)
+   21 |       expect (@(posedge clk) a ##1 b) else a = 299;
+      |                                  ^
+%Error-UNSUPPORTED: t/t_expect.v:21:7: Unsupported: expect
+   21 |       expect (@(posedge clk) a ##1 b) else a = 299;
+      |       ^~~~~~
+%Error-UNSUPPORTED: t/t_expect.v:23:32: Unsupported: ## () cycle delay range expression
+   23 |       expect (@(posedge clk) a ##1 b) a = 300; else a = 399;
+      |                                ^~
+%Error-UNSUPPORTED: t/t_expect.v:23:34: Unsupported: ## (in sequence expression)
+   23 |       expect (@(posedge clk) a ##1 b) a = 300; else a = 399;
+      |                                  ^
+%Error-UNSUPPORTED: t/t_expect.v:23:7: Unsupported: expect
+   23 |       expect (@(posedge clk) a ##1 b) a = 300; else a = 399;
+      |       ^~~~~~
+%Error: Exiting due to
