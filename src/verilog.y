@@ -5741,18 +5741,11 @@ final_zero:                     // IEEE: part of deferred_immediate_assertion_st
 
 deferred_immediate_assertion_statement<nodep>:  // ==IEEE: deferred_immediate_assertion_statement
         //                      // IEEE: deferred_immediate_assert_statement
-                yASSERT final_zero '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE
+                assertOrAssume final_zero '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE
                         { $$ = new AstAssert{$1, $4, $6, nullptr, true}; }
-        |       yASSERT final_zero '(' expr ')'           yELSE stmtBlock
+        |       assertOrAssume final_zero '(' expr ')'           yELSE stmtBlock
                         { $$ = new AstAssert{$1, $4, nullptr, $7, true}; }
-        |       yASSERT final_zero '(' expr ')' stmtBlock yELSE stmtBlock
-                        { $$ = new AstAssert{$1, $4, $6, $8, true}; }
-        //                      // IEEE: deferred_immediate_assume_statement
-        |       yASSUME final_zero '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE
-                        { $$ = new AstAssert{$1, $4, $6, nullptr, true}; }
-        |       yASSUME final_zero '(' expr ')'           yELSE stmtBlock
-                        { $$ = new AstAssert{$1, $4, nullptr, $7, true}; }
-        |       yASSUME final_zero '(' expr ')' stmtBlock yELSE stmtBlock
+        |       assertOrAssume final_zero '(' expr ')' stmtBlock yELSE stmtBlock
                         { $$ = new AstAssert{$1, $4, $6, $8, true}; }
         //                      // IEEE: deferred_immediate_cover_statement
         |       yCOVER final_zero '(' expr ')' stmt     { $$ = new AstCover{$1, $4, $6, true}; }
@@ -5772,14 +5765,11 @@ concurrent_assertion_item<nodep>:       // IEEE: concurrent_assertion_item
 
 concurrent_assertion_statement<nodep>:  // ==IEEE: concurrent_assertion_statement
         //                      // IEEE: assert_property_statement
-        //UNSUP remove below:
-                yASSERT yPROPERTY '(' property_spec ')' elseStmtBlock
-                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, nullptr, $6, false}; }
-        //UNSUP yASSERT yPROPERTY '(' property_spec ')' action_block    { }
         //                      // IEEE: assume_property_statement
-        |       yASSUME yPROPERTY '(' property_spec ')' elseStmtBlock
+        //UNSUP remove below:
+                assertOrAssume yPROPERTY '(' property_spec ')' elseStmtBlock
                         { $$ = new AstAssert{$1, new AstSampled{$1, $4}, nullptr, $6, false}; }
-        //UNSUP yASSUME yPROPERTY '(' property_spec ')' action_block    { }
+        //UNSUP assertOrAssume yPROPERTY '(' property_spec ')' action_block    { }
         //                      // IEEE: cover_property_statement
         |       yCOVER yPROPERTY '(' property_spec ')' stmtBlock
                         { $$ = new AstCover{$1, $4, $6, false}; }
