@@ -13,6 +13,7 @@ module t (/*AUTOARG*/
    int   a;
    int   b;
    int cyc = 0;
+   int res0, res1;
 
    localparam DELAY = 1;
 
@@ -113,6 +114,16 @@ module t (/*AUTOARG*/
 
    sequence p_arg_seqence(sequence inseq);
       inseq;
+   endsequence
+
+   sequence s_firstmatch_a;
+      first_match (a);
+   endsequence
+   sequence s_firstmatch_ab;
+      first_match (a, res0 = 1);
+   endsequence
+   sequence s_firstmatch_abc;
+      first_match (a, res0 = 1, res1 = 2);
    endsequence
 
    cover sequence (s_a) $display("");

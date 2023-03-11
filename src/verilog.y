@@ -610,7 +610,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yEXTENDS        "extends"
 %token<fl>              yEXTERN         "extern"
 %token<fl>              yFINAL          "final"
-//UNSUP %token<fl>      yFIRST_MATCH    "first_match"
+%token<fl>              yFIRST_MATCH    "first_match"
 %token<fl>              yFOR            "for"
 %token<fl>              yFORCE          "force"
 %token<fl>              yFOREACH        "foreach"
@@ -6143,8 +6143,10 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         |       ~p~sexpr yINTERSECT sexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: intersect (in sequence expression)"); }
         //
-        //UNSUP yFIRST_MATCH '(' sexpr ')'              { }
-        //UNSUP yFIRST_MATCH '(' sexpr ',' sequence_match_itemList ')'  { }
+        |       yFIRST_MATCH '(' sexpr ')'
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: first_match (in sequence expression)"); }
+        |       yFIRST_MATCH '(' sexpr ',' sequence_match_itemList ')'
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: first_match (in sequence expression)"); }
         |       ~p~sexpr/*sexpression_or_dist*/ yTHROUGHOUT sexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: throughout (in sequence expression)"); }
         //                      // Below pexpr's are really sequence_expr, but avoid conflict
@@ -6185,18 +6187,18 @@ cycle_delay_range<nodep>:  // IEEE: ==cycle_delay_range
                           BBUNSUP($<fl>1, "Unsupported: ## [+] cycle delay range expression"); }
         ;
 
-//UNSUPsequence_match_itemList<nodep>:  // IEEE: [sequence_match_item] part of sequence_expr
-//UNSUP         sequence_match_item                     { $$ = $1; }
-//UNSUP |       sequence_match_itemList ',' sequence_match_item { $$ = addNextNull($1, $3); }
-//UNSUP ;
+sequence_match_itemList<nodep>:  // IEEE: [sequence_match_item] part of sequence_expr
+                sequence_match_item                     { $$ = $1; }
+        |       sequence_match_itemList ',' sequence_match_item { $$ = addNextNull($1, $3); }
+        ;
 
-//UNSUPsequence_match_item<nodep>:  // ==IEEE: sequence_match_item
-//UNSUP //                      // IEEE says: operator_assignment
-//UNSUP //                      // IEEE says: inc_or_dec_expression
-//UNSUP //                      // IEEE says: subroutine_call
-//UNSUP //                      // This is the same list as...
-//UNSUP         for_step_assignment                     { $$ = $1; }
-//UNSUP ;
+sequence_match_item<nodep>:  // ==IEEE: sequence_match_item
+        //                      // IEEE says: operator_assignment
+        //                      // IEEE says: inc_or_dec_expression
+        //                      // IEEE says: subroutine_call
+        //                      // This is the same list as...
+                for_step_assignment                     { $$ = $1; }
+        ;
 
 boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
         //                      // IEEE: consecutive_repetition

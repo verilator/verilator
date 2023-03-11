@@ -530,7 +530,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "extends"             { FL; return yEXTENDS; }
   "extern"              { FL; return yEXTERN; }
   "final"               { FL; return yFINAL; }
-  "first_match"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "first_match"         { FL; return yFIRST_MATCH; }
   "forkjoin"            { FL; return yFORKJOIN; }
   "iff"                 { FL; return yIFF; }
   "ignore_bins"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
