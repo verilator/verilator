@@ -4861,15 +4861,13 @@ private:
     }
     void visit(AstFOpen* nodep) override {
         // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
-        assertAtStatement(nodep);
-        iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
         userIterateAndNext(nodep->filenamep(), WidthVP{SELF, BOTH}.p());
         userIterateAndNext(nodep->modep(), WidthVP{SELF, BOTH}.p());
+        nodep->dtypeSetLogicUnsized(32, 1, VSigning::SIGNED);  // Spec says integer return
     }
     void visit(AstFOpenMcd* nodep) override {
-        assertAtStatement(nodep);
-        iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
         userIterateAndNext(nodep->filenamep(), WidthVP{SELF, BOTH}.p());
+        nodep->dtypeSetLogicUnsized(32, 1, VSigning::SIGNED);  // Spec says integer return
     }
     void visit(AstFClose* nodep) override {
         assertAtStatement(nodep);

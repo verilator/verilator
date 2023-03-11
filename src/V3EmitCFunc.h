@@ -649,8 +649,7 @@ public:
         }
     }
     void visit(AstFOpen* nodep) override {
-        iterateAndNextNull(nodep->filep());
-        puts(" = VL_FOPEN_NN(");
+        puts("VL_FOPEN_NN(");
         emitCvtPackStr(nodep->filenamep());
         putbs(", ");
         if (nodep->modep()->width() > 4 * 8)
@@ -659,8 +658,7 @@ public:
         puts(");\n");
     }
     void visit(AstFOpenMcd* nodep) override {
-        iterateAndNextNull(nodep->filep());
-        puts(" = VL_FOPEN_MCD_N(");
+        puts("VL_FOPEN_MCD_N(");
         emitCvtPackStr(nodep->filenamep());
         puts(");\n");
     }

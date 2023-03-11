@@ -318,14 +318,6 @@ private:
         if (filep && filep->varp()) filep->varp()->attrFileDescr(true);
     }
 
-    void visit(AstFOpen* nodep) override {
-        iterateChildren(nodep);
-        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
-    }
-    void visit(AstFOpenMcd* nodep) override {
-        iterateChildren(nodep);
-        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
-    }
     void visit(AstFClose* nodep) override {
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));

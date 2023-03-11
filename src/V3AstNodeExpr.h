@@ -1112,6 +1112,46 @@ public:
     bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
+class AstFOpen final : public AstNodeExpr {
+    // @astgen op2 := filenamep : AstNodeExpr
+    // @astgen op3 := modep : AstNodeExpr
+public:
+    AstFOpen(FileLine* fl, AstNodeExpr* filenamep, AstNodeExpr* modep)
+        : ASTGEN_SUPER_FOpen(fl) {
+        this->filenamep(filenamep);
+        this->modep(modep);
+    }
+    ASTGEN_MEMBERS_AstFOpen;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    string verilogKwd() const override { return "$fopen"; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return true; }
+    bool isUnlikely() const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+};
+class AstFOpenMcd final : public AstNodeExpr {
+    // @astgen op2 := filenamep : AstNodeExpr
+public:
+    AstFOpenMcd(FileLine* fl, AstNodeExpr* filenamep)
+        : ASTGEN_SUPER_FOpenMcd(fl) {
+        this->filenamep(filenamep);
+    }
+    ASTGEN_MEMBERS_AstFOpenMcd;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    string verilogKwd() const override { return "$fopen"; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() const override { return false; }
+    bool isOutputter() const override { return true; }
+    bool isUnlikely() const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+};
 class AstFRead final : public AstNodeExpr {
     // @astgen op1 := memp : AstNode // VarRef for result
     // @astgen op2 := filep : AstNode // file (must be a VarRef)
