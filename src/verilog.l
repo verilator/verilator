@@ -498,8 +498,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "assume"              { FL; return yASSUME; }
   "before"              { FL; return yBEFORE; }
   "bind"                { FL; return yBIND; }
-  "bins"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "binsof"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "bins"                { FL; return yBINS; }
+  "binsof"              { FL; return yBINSOF; }
   "bit"                 { FL; return yBIT; }
   "break"               { FL; return yBREAK; }
   "byte"                { FL; return yBYTE; }
@@ -511,14 +511,14 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "context"             { FL; return yCONTEXT; }
   "continue"            { FL; return yCONTINUE; }
   "cover"               { FL; return yCOVER; }
-  "covergroup"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "coverpoint"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "cross"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "covergroup"          { FL; return yCOVERGROUP; }
+  "coverpoint"          { FL; return yCOVERPOINT; }
+  "cross"               { FL; return yCROSS; }
   "dist"                { FL; return yDIST; }
   "do"                  { FL; return yDO; }
   "endclass"            { FL; return yENDCLASS; }
   "endclocking"         { FL; return yENDCLOCKING; }
-  "endgroup"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "endgroup"            { FL; return yENDGROUP; }
   "endinterface"        { FL; return yENDINTERFACE; }
   "endpackage"          { FL; return yENDPACKAGE; }
   "endprogram"          { FL; return yENDPROGRAM; }
@@ -533,8 +533,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "first_match"         { FL; return yFIRST_MATCH; }
   "forkjoin"            { FL; return yFORKJOIN; }
   "iff"                 { FL; return yIFF; }
-  "ignore_bins"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "illegal_bins"        { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "ignore_bins"         { FL; return yIGNORE_BINS; }
+  "illegal_bins"        { FL; return yILLEGAL_BINS; }
   "import"              { FL; return yIMPORT; }
   "inside"              { FL; return yINSIDE; }
   "int"                 { FL; return yINT; }
@@ -585,7 +585,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "virtual"             { FL; return yVIRTUAL__LEX; }
   "void"                { FL; return yVOID; }
   "wait_order"          { FL; return yWAIT_ORDER; }
-  "wildcard"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "wildcard"            { FL; return yWILDCARD; }
   "with"                { FL; return yWITH__LEX; }
   "within"              { FL; return yWITHIN; }
 }
