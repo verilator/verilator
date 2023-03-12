@@ -3503,9 +3503,8 @@ statement_item<nodep>:          // IEEE: statement_item
                           if ($1 == uniq_UNIQUE0) newp->unique0Pragma(true);
                           if ($1 == uniq_PRIORITY) newp->priorityPragma(true); }
         //
-        |       finc_or_dec_expression ';'              { $$ = $1; }
         //                      // IEEE: inc_or_dec_expression
-        //                      // Below under expr
+        |       finc_or_dec_expression ';'              { $$ = $1; }
         //
         //                      // IEEE: subroutine_call_statement
         //                      // IEEE says we then expect a function call
@@ -3530,18 +3529,8 @@ statement_item<nodep>:          // IEEE: statement_item
                           FileLine* const newfl = new FileLine{$$->fileline()};
                           newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
                           $$->fileline(newfl); }
-        //                      // Expr included here to resolve our not knowing what is a method call
-        //                      // Expr here must result in a subroutine_call
-        |       task_subroutine_callNoMethod ';'        { $$ = $1->makeStmt(); }
-        //UNSUP fexpr '.' array_methodNoRoot ';'        { UNSUP }
-        |       fexpr '.' task_subroutine_callNoMethod ';'      { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
-        |       system_t_call ';'                       { $$ = $1; }
-        //UNSUP fexprScope ';'                          { UNSUP }
-        //                      // Not here in IEEE; from class_constructor_declaration
-        //                      // Because we've joined class_constructor_declaration into generic functions
-        //                      // Way over-permissive;
-        //                      // IEEE: [ ySUPER '.' yNEW [ '(' list_of_arguments ')' ] ';' ]
-        |       fexpr '.' class_new ';'                 { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
+        //
+        |       task_subroutine_callNoSemi ';'          { $$ = $1; }
         //
         |       statementVerilatorPragmas               { $$ = $1; }
         //
@@ -3933,18 +3922,11 @@ for_step<nodep>:                // IEEE: for_step
         |       for_step ',' for_step_assignment        { $$ = addNextNull($1, $3); }
         ;
 
-for_step_assignment<nodep>:  // ==IEEE: for_step_assignment
-        //UNSUP operator_assignment                     { $$ = $1; }
-        //
-        //UNSUP inc_or_dec_expression                   { $$ = $1; }
-        //                      // IEEE: subroutine_call
-        //UNSUP function_subroutine_callNoMethod        { $$ = $1; }
-        //                      // method_call:array_method requires a '.'
-        //UNSUP expr '.' array_methodNoRoot             { }
-        //UNSUP exprScope                               { $$ = $1; }
-        //UNSUP remove below
-                genvar_iteration                        { $$ = $1; }
-        //UNSUP remove above
+for_step_assignment<nodep>:     // ==IEEE: for_step_assignment
+                foperator_assignment                    { $$ = $1; }
+        |       finc_or_dec_expression                  { $$ = $1; }
+        //                      // IEEE: function_subroutine_call
+        |       task_subroutine_callNoSemi              { $$ = $1; }
         ;
 
 loop_variables<nodep>:          // IEEE: loop_variables
@@ -3979,6 +3961,19 @@ funcRef<nodeExprp>:             // IEEE: part of tf_call
                         { $$ = AstDot::newIfPkg($<fl>2, $1, new AstFuncRef{$<fl>2, *$2, $4}); }
         //UNSUP list_of_argumentE should be pev_list_of_argumentE
         //UNSUP: idDotted is really just id to allow dotted method calls
+        ;
+
+task_subroutine_callNoSemi<nodep>:  // similar to IEEE task_subroutine_call but without ';'
+        //                      // Expr included here to resolve our not knowing what is a method call
+        //                      // Expr here must result in a subroutine_call
+                task_subroutine_callNoMethod           { $$ = $1->makeStmt(); }
+        |       fexpr '.' task_subroutine_callNoMethod  { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
+        |       system_t_call                          { $$ = $1; }
+        //                      // Not here in IEEE; from class_constructor_declaration
+        //                      // Because we've joined class_constructor_declaration into generic functions
+        //                      // Way over-permissive;
+        //                      // IEEE: [ ySUPER '.' yNEW [ '(' list_of_arguments ')' ] ';' ]
+        |       fexpr '.' class_new                    { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
         ;
 
 task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod (as task)

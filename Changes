@@ -13,8 +13,8 @@ Verilator 5.009 devel
 
 **Minor:**
 
+* Support complicated IEEE 'for' assignments.
 * Support $fopen as an expression.
-
 
 Verilator 5.008 2023-03-04
 ==========================
