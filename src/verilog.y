@@ -3302,8 +3302,11 @@ event_expression<senItemp>:     // IEEE: event_expression - split over several
 
 senitem<senItemp>:              // IEEE: part of event_expression, non-'OR' ',' terms
                 senitemEdge                             { $$ = $1; }
-        |       expr                                    { $$ = new AstSenItem{$<fl>1, VEdgeType::ET_CHANGED, $1}; }
-        //UNSUP expr yIFF expr                          { UNSUP }
+        |       expr
+                        { $$ = new AstSenItem{$<fl>1, VEdgeType::ET_CHANGED, $1}; }
+        |       expr yIFF expr
+                        { $$ = new AstSenItem{$<fl>1, VEdgeType::ET_CHANGED, $1};
+                          if ($2) BBUNSUP($2, "Unsupported: event expression 'iff'"); }
         ;
 
 senitemVar<senItemp>:
@@ -3311,12 +3314,21 @@ senitemVar<senItemp>:
         ;
 
 senitemEdge<senItemp>:          // IEEE: part of event_expression
-                yPOSEDGE expr                           { $$ = new AstSenItem{$1, VEdgeType::ET_POSEDGE, $2}; }
-        |       yNEGEDGE expr                           { $$ = new AstSenItem{$1, VEdgeType::ET_NEGEDGE, $2}; }
-        |       yEDGE expr                              { $$ = new AstSenItem{$1, VEdgeType::ET_BOTHEDGE, $2}; }
-        //UNSUP yPOSEDGE expr yIFF expr                 { UNSUP }
-        //UNSUP yNEGEDGE expr yIFF expr                 { UNSUP }
-        //UNSUP yEDGE expr yIFF expr                    { UNSUP }
+                yPOSEDGE expr
+                        { $$ = new AstSenItem{$1, VEdgeType::ET_POSEDGE, $2}; }
+        |       yNEGEDGE expr
+                        { $$ = new AstSenItem{$1, VEdgeType::ET_NEGEDGE, $2}; }
+        |       yEDGE expr
+                        { $$ = new AstSenItem{$1, VEdgeType::ET_BOTHEDGE, $2}; }
+        |       yPOSEDGE expr yIFF expr
+                        { $$ = new AstSenItem{$1, VEdgeType::ET_POSEDGE, $2};
+                          BBUNSUP($3, "Unsupported: event expression 'iff'"); }
+        |       yNEGEDGE expr yIFF expr
+                        { $$ = new AstSenItem{$1, VEdgeType::ET_NEGEDGE, $2};
+                          BBUNSUP($3, "Unsupported: event expression 'iff'"); }
+        |       yEDGE expr yIFF expr
+                        { $$ = new AstSenItem{$1, VEdgeType::ET_BOTHEDGE, $2};
+                          BBUNSUP($3, "Unsupported: event expression 'iff'"); }
         ;
 
 //************************************************

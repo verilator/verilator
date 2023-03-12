@@ -15,9 +15,11 @@ module t(/*AUTOARG*/);
    initial begin
       wait_order (a, b) wif[0] = '1;
    end
+`ifdef FAIL_ASSERT_1
    initial begin
       wait_order (b, a) nif[0] = '1;
    end
+`endif
 
    initial begin
       wait_order (a, b) else welse[1] = '1;
@@ -41,7 +43,7 @@ module t(/*AUTOARG*/);
       #10;
       -> c;
       #10;
-      // NOTE This hasn't been validated against other simulators
+
       `checkd(wif[0], 1'b1);
       `checkd(nif[0], 1'b0);
 

@@ -42,7 +42,7 @@ module t (/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'he58508de5310b541
+`define EXPECTED_SUM 64'h390aa8652d33a691
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
          $finish;
@@ -59,10 +59,27 @@ module Test
    output wire [31:0] result);
 
    wire         enable = crc[32];
-   wire [31:0]  d = crc[31:0];
-   logic [31:0] y;
-   always @(d iff enable == 1) begin
-      y <= d;
+   wire [7:0]  d = crc[7:0];
+
+
+   logic [7:0] d0_r;
+   always @(d iff enable) begin
+      d0_r <= d;
+   end
+
+   logic [7:0] d1_r;
+   always @(posedge d iff enable) begin
+      d1_r <= d;
+   end
+
+   logic [7:0] d2_r;
+   always @(negedge d iff enable) begin
+      d2_r <= d;
+   end
+
+   logic [7:0] d3_r;
+   always @(edge d iff enable) begin
+      d3_r <= d;
    end
 
    wire reset = (cyc < 10);
@@ -71,6 +88,6 @@ module Test
                     (crc != '0));
 
    // Aggregate outputs into a single result vector
-   assign result = {32'h0, y};
+   assign result = {32'h0, d3_r, d2_r, d1_r, d0_r};
 
 endmodule

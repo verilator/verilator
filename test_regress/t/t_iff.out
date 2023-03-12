@@ -1,7 +1,17 @@
-%Error: t/t_iff.v:64:15: syntax error, unexpected iff, expecting ')' or ',' or or
-   64 |    always @(d iff enable == 1) begin
+%Error-UNSUPPORTED: t/t_iff.v:66:15: Unsupported: event expression 'iff'
+   66 |    always @(d iff enable) begin
       |               ^~~
-%Error: t/t_iff.v:69:35: syntax error, unexpected iff, expecting ')'
-   69 |    assert property (@(posedge clk iff enable)
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_iff.v:71:23: Unsupported: event expression 'iff'
+   71 |    always @(posedge d iff enable) begin
+      |                       ^~~
+%Error-UNSUPPORTED: t/t_iff.v:76:23: Unsupported: event expression 'iff'
+   76 |    always @(negedge d iff enable) begin
+      |                       ^~~
+%Error-UNSUPPORTED: t/t_iff.v:81:20: Unsupported: event expression 'iff'
+   81 |    always @(edge d iff enable) begin
+      |                    ^~~
+%Error-UNSUPPORTED: t/t_iff.v:86:35: Unsupported: event expression 'iff'
+   86 |    assert property (@(posedge clk iff enable)
       |                                   ^~~
 %Error: Exiting due to
