@@ -17,6 +17,7 @@ Verilator 5.009 devel
 * Add --public-params flag (#3990). [Andrew Nolte]
 * Support complicated IEEE 'for' assignments.
 * Support $fopen as an expression.
+* Change ZERODLY to a warning.
 * Fix UNDRIVEN warning seg fault (#3989). [Felix Neumärker]
 * Fix symbol entries when inheriting classes (#3995) (#3996). [Krzysztof Bieganski, Antmicro Ltd]
 

@@ -1,5 +1,6 @@
-%Error-ZERODLY: t/t_timing_zerodly_unsup.v:12:13: Unsupported: #0 delays do not schedule process resumption in the Inactive region
+%Warning-ZERODLY: t/t_timing_zerodly_unsup.v:12:13: Unsupported: #0 delays do not schedule process resumption in the Inactive region
    12 |             #0 if (v) $finish;
       |             ^
-                ... For error description see https://verilator.org/warn/ZERODLY?v=latest
+                  ... For warning description see https://verilator.org/warn/ZERODLY?v=latest
+                  ... Use "/* verilator lint_off ZERODLY */" and lint_on around source to disable this message.
 %Error: Exiting due to

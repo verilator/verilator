@@ -219,11 +219,11 @@ public:
                 || m_e == CONTASSREG || m_e == ENCAPSULATED || m_e == ENDLABEL || m_e == ENUMVALUE
                 || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL
                 || m_e == PROCASSWIRE  // Says IEEE
-                || m_e == ZERODLY);
+        );
     }
     // Warnings to mention manual
     bool mentionManual() const VL_MT_SAFE {
-        return (m_e == EC_FATALSRC || m_e == SYMRSVDWORD || pretendError());
+        return (m_e == EC_FATALSRC || m_e == SYMRSVDWORD || m_e == ZERODLY || pretendError());
     }
     // Warnings that are lint only
     bool lintError() const VL_MT_SAFE {
