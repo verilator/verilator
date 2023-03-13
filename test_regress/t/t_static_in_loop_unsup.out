@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_static_in_loop_unsup.v:14:24: Unsupported: Static variable inside a loop
+   14 |             static int a = 0;
+      |                        ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
