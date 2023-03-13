@@ -1672,15 +1672,6 @@ const char* AstMemberSel::broken() const {
     BROKEN_RTN(m_varp && !m_varp->brokeExists());
     return nullptr;
 }
-void AstMethodCall::dump(std::ostream& str) const {
-    this->AstNodeFTaskRef::dump(str);
-    str << " -> ";
-    if (taskp()) {
-        taskp()->dump(str);
-    } else {
-        str << " -> UNLINKED";
-    }
-}
 void AstModportFTaskRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isExport()) str << " EXPORT";
