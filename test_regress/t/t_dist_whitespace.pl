@@ -67,7 +67,8 @@ foreach my $file (sort keys %files) {
     if ($contents =~ /[^[:alnum:][:punct:] \t\r\n]/) {
         my $unicode_exempt = ($file =~ /Changes$/
                               || $file =~ /CONTRIBUTORS$/
-                              || $file =~ /contributors.rst$/);
+                              || $file =~ /contributors.rst$/
+                              || $file =~ /spelling.txt$/);
         next if $unicode_exempt;
         $warns{$file} = "Warning: non-ASCII contents in $file\n";
     }

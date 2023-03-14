@@ -6,6 +6,7 @@ Alexandre
 Ami
 Amir
 Anastasiadis
+Anglin
 Anikin
 Antmicro
 Antonin
@@ -42,6 +43,7 @@ Chandan
 Chitlesh
 Christophe
 Cochrane
+Corteggiani
 Cuan
 Cygwin
 DErrico
@@ -96,6 +98,7 @@ Fredieu
 GTKWave
 Galbi
 Gantt
+Garnal
 Gartner
 Gelinek
 Geoff
@@ -207,6 +210,7 @@ Matveyenko
 Maupin
 Mdir
 Mednick
+Menküc
 Michiels
 Microsystems
 Milanovic
@@ -223,8 +227,10 @@ Muhlestein
 Multithreaded
 Multithreading
 NOUNOPTFLAT
+NaN
 Nalbantis
 Narayan
+Nassim
 Nauticus
 Newgard
 Nigam
@@ -376,6 +382,7 @@ Xuan
 Xuanqi
 Yazdanbakhsh
 Yi
+Yike
 Yinan
 Yosys
 Yu
@@ -452,6 +459,7 @@ commandArgsPlusMatch
 compilable
 concat
 concats
+conf
 config
 const
 constexpr
@@ -512,6 +520,7 @@ dumpportson
 dumpvars
 dut
 dx
+dynarray
 elab
 elike
 elsif
@@ -541,6 +550,7 @@ exe
 executables
 expr
 extern
+ezchi
 fanin
 fasttrace
 fauto
@@ -635,6 +645,7 @@ lcov
 ld
 leavinel
 len
+libc
 libext
 libgoogle
 libsystemc
@@ -653,6 +664,7 @@ logicals
 longint
 lossy
 lsb
+lubc
 lvalue
 lxt
 macromodule
@@ -678,12 +690,15 @@ mtasks
 mulithreaded
 mult
 multidim
+multidriven
 multiinterfaces
 multiline
 multipling
+multipoint
 multithread
 multithreaded
 multithreading
+musl
 mutexes
 mux
 myftptoyman
@@ -762,6 +777,7 @@ pulldowns
 pullup
 pvalue
 pwd
+py
 qrq
 radix
 randc
@@ -909,6 +925,7 @@ vlt
 vltstd
 vluint
 vpi
+vpiDefName
 vpiLeftRange
 vpiModule
 vpiSize
@@ -938,4 +955,3 @@ ypq
 yurivict
 zdave
 Øyvind
-

@@ -1022,7 +1022,7 @@ class ParamVisitor final : public VNVisitor {
         m_cellps.emplace(!isIface, nodep);
     }
 
-    // RHSs of AstDots need a relink when LHS is a parametrized class reference
+    // RHSs of AstDots need a relink when LHS is a parameterized class reference
     void relinkDots() {
         for (AstDot* const dotp : m_dots) {
             const AstClassOrPackageRef* const classRefp = VN_AS(dotp->lhsp(), ClassOrPackageRef);

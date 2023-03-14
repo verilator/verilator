@@ -738,7 +738,7 @@ List Of Warnings
 
    This is a warning because the static default differs from C++, differs
    from class member function/tasks.  Static is a more dangerous default
-   then automatic as static prevents the function from being reinterant,
+   then automatic as static prevents the function from being reentrant,
    which may be a source of bugs, and/or performance issues.
 
    If the function does not require static behavior, change it to "function
@@ -1813,7 +1813,7 @@ List Of Warnings
 
 .. option:: WIDTHXZEXPAND
 
-   A more granular WIDTH warning, for when a value is xz expanded
+   A more granular WIDTH warning, for when a value is X/Z expanded
 
 .. option:: WIDTHCONCAT
 
