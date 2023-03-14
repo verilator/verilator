@@ -120,6 +120,15 @@ code.  This is a feature, as using the SystemC pin interconnect scheme
 everywhere would reduce performance by an order of magnitude.
 
 
+Verilated API
+=============
+
+The API to a Verilated model is the C++ headers in the include/ directory
+in the distribution.  These headers use Doxygen comments, `///` and `//<`,
+to indicate and document those functions that are part of the Verilated
+public API.
+
+
 Direct Programming Interface (DPI)
 ==================================
 
