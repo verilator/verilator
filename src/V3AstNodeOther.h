@@ -2651,17 +2651,13 @@ public:
     bool addNewline() const { return displayType().addNewline(); }
 };
 class AstDoWhile final : public AstNodeStmt {
-    // @astgen op1 := precondsp : List[AstNode]
-    // @astgen op2 := condp : AstNodeExpr
-    // @astgen op3 := stmtsp : List[AstNode]
-    // @astgen op4 := incsp : List[AstNode]
+    // @astgen op1 := condp : AstNodeExpr
+    // @astgen op2 := stmtsp : List[AstNode]
 public:
-    AstDoWhile(FileLine* fl, AstNodeExpr* conditionp, AstNode* stmtsp = nullptr,
-               AstNode* incsp = nullptr)
+    AstDoWhile(FileLine* fl, AstNodeExpr* conditionp, AstNode* stmtsp = nullptr)
         : ASTGEN_SUPER_DoWhile(fl) {
         condp(conditionp);
         addStmtsp(stmtsp);
-        addIncsp(incsp);
     }
     ASTGEN_MEMBERS_AstDoWhile;
     bool isGateOptimizable() const override { return false; }
