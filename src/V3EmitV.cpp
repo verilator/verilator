@@ -510,6 +510,11 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         puts(".");
         puts(nodep->prettyName());
     }
+    void visit(AstStructSel* nodep) override {
+        iterate(nodep->fromp());
+        puts(".");
+        puts(nodep->prettyName());
+    }
     void visit(AstAttrOf* nodep) override {
         putfs(nodep, "$_ATTROF(");
         iterateAndNextConstNull(nodep->fromp());
