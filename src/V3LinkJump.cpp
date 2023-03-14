@@ -132,7 +132,7 @@ private:
         // Add do_while_ prefix to blocks
         // Used to not have blocks with duplicated names
         if (AstBegin* const beginp = VN_CAST(nodep, Begin)) {
-            if (beginp->name() != "") beginp->name("do_while_" + beginp->name());
+            if (beginp->name() != "") beginp->name("__Vdo_while_" + beginp->name());
         }
 
         if (nodep->op1p()) addPrefixToBlocksRecurse(nodep->op1p());
