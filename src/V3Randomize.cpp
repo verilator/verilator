@@ -232,9 +232,9 @@ private:
         AstFunc* const funcp = V3Randomize::newRandomizeFunc(nodep);
         AstVar* const fvarp = VN_AS(funcp->fvarp(), Var);
         addPrePostCall(nodep, funcp, "pre_randomize");
-        funcp->addStmtsp(new AstAssign{
-            nodep->fileline(), new AstVarRef{nodep->fileline(), fvarp, VAccess::WRITE},
-            new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32, 1}});
+        FileLine* fl = nodep->fileline();
+        funcp->addStmtsp(new AstAssign{fl, new AstVarRef{fl, fvarp, VAccess::WRITE},
+                                       new AstConst{fl, AstConst::WidthedValue{}, 32, 1}});
         for (AstClass* classp = nodep; classp;
              classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr) {
             for (auto* memberp = classp->stmtsp(); memberp; memberp = memberp->nextp()) {
@@ -242,24 +242,25 @@ private:
                 if (!memberVarp || !memberVarp->isRand()) continue;
                 const AstNodeDType* const dtypep = memberp->dtypep()->skipRefp();
                 if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType)) {
-                    AstVarRef* const refp
-                        = new AstVarRef{nodep->fileline(), memberVarp, VAccess::WRITE};
-                    AstNodeStmt* const stmtp = newRandStmtsp(nodep->fileline(), refp);
+                    AstVarRef* const refp = new AstVarRef{fl, memberVarp, VAccess::WRITE};
+                    AstNodeStmt* const stmtp = newRandStmtsp(fl, refp);
                     funcp->addStmtsp(stmtp);
                 } else if (const auto* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
-                    AstVarRef* const refp
-                        = new AstVarRef{nodep->fileline(), memberVarp, VAccess::WRITE};
+                    AstVarRef* const refp = new AstVarRef{fl, memberVarp, VAccess::WRITE};
                     AstFunc* const memberFuncp
                         = V3Randomize::newRandomizeFunc(classRefp->classp());
-                    AstMethodCall* const callp
-                        = new AstMethodCall{nodep->fileline(), refp, "randomize", nullptr};
+                    AstMethodCall* const callp = new AstMethodCall{fl, refp, "randomize", nullptr};
                     callp->taskp(memberFuncp);
                     callp->dtypeFrom(memberFuncp);
-                    funcp->addStmtsp(new AstAssign{
-                        nodep->fileline(), new AstVarRef{nodep->fileline(), fvarp, VAccess::WRITE},
-                        new AstAnd{nodep->fileline(),
-                                   new AstVarRef{nodep->fileline(), fvarp, VAccess::READ},
-                                   callp}});
+                    AstAssign* const assignp = new AstAssign{
+                        fl, new AstVarRef{fl, fvarp, VAccess::WRITE},
+                        new AstAnd{fl, new AstVarRef{fl, fvarp, VAccess::READ}, callp}};
+                    AstIf* const assignIfNotNullp
+                        = new AstIf{fl,
+                                    new AstNeq{fl, new AstVarRef{fl, memberVarp, VAccess::READ},
+                                               new AstConst{fl, AstConst::Null{}}},
+                                    assignp};
+                    funcp->addStmtsp(assignIfNotNullp);
                 } else {
                     memberp->v3warn(E_UNSUPPORTED,
                                     "Unsupported: random member variables with type "

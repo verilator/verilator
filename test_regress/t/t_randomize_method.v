@@ -78,6 +78,10 @@ class OtherCls;
 
 endclass
 
+class ContainsNull;
+   rand BaseCls b;
+endclass
+
 module t (/*AUTOARG*/);
    bit ok = 0;
    longint checksum;
@@ -89,6 +93,7 @@ module t (/*AUTOARG*/);
    DerivedCls derived;
    OtherCls other;
    BaseCls base;
+   ContainsNull cont;
 
    initial begin
       int rand_result;
@@ -96,15 +101,18 @@ module t (/*AUTOARG*/);
       for (int i = 0; i < 10; i++) begin
          derived = new;
          other = new;
+         cont = new;
          base = derived;
          rand_result = base.randomize();
          rand_result = other.randomize();
+         rand_result = cont.randomize();
          if (!(derived.l inside {ONE, TWO, THREE, FOUR})) $stop;
          if (!(other.str.s.c inside {ONE, TWO, THREE, FOUR})) $stop;
          if (!(other.str.y inside {ONE, TWO, THREE, FOUR})) $stop;
          if (derived.i.e != 0) $stop;
          if (derived.k != 0) $stop;
          if (other.v != 0) $stop;
+         if (cont.b != null) $stop;
          checksum = 0;
          checksum_next(longint'(derived.i.a));
          checksum_next(longint'(derived.i.b));
