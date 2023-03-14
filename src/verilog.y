@@ -2480,6 +2480,9 @@ net_type_declaration<nodep>:  // IEEE: net_type_declaration
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
         |       yNETTYPE packageClassScopeE id/*net_type_identifier*/ idAny/*net_type_identifier*/ ';'
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
+        |       yNETTYPE packageClassScopeE id/*net_type_identifier*/ idAny/*net_type_identifier*/
+        /*cont*/   yWITH__ETC packageClassScopeE id/*tf_identifier*/ ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
         ;
 
 implicit_typeE<nodeDTypep>:             // IEEE: part of *data_type_or_implicit
