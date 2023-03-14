@@ -3200,6 +3200,8 @@ private:
             varrefp->access(access);
         } else if (const AstMemberSel* const ichildp = VN_CAST(childp, MemberSel)) {
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
+        } else if (const AstStructSel* const ichildp = VN_CAST(childp, StructSel)) {
+            methodCallLValueRecurse(nodep, ichildp->fromp(), access);
         } else if (const AstNodeSel* const ichildp = VN_CAST(childp, NodeSel)) {
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
         } else {

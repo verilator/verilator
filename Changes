@@ -20,6 +20,7 @@ Verilator 5.009 devel
 * Change ZERODLY to a warning.
 * Fix UNDRIVEN warning seg fault (#3989). [Felix Neumärker]
 * Fix symbol entries when inheriting classes (#3995) (#3996). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix push to dynamic queue in struct (#4015). [ezchi]
 
 
 Verilator 5.008 2023-03-04
