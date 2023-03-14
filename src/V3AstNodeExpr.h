@@ -4052,7 +4052,6 @@ public:
         BROKEN_RTN(!fromp());
         return nullptr;
     }
-    void dump(std::ostream& str) const override;
 };
 class AstNew final : public AstNodeFTaskRef {
     // New as constructor
