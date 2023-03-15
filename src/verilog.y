@@ -2944,7 +2944,7 @@ delay_control<delayp>:   //== IEEE: delay_control
         |       '#' '(' minTypMax ',' minTypMax ')'
                         { $$ = new AstDelay{$<fl>1, $3, false}; RISEFALLDLYUNSUP($3); DEL($5); }
         |       '#' '(' minTypMax ',' minTypMax ',' minTypMax ')'
-                        { $$ = new AstDelay{$<fl>1, $3, false}; RISEFALLDLYUNSUP($5); DEL($3); DEL($7); }
+                        { $$ = new AstDelay{$<fl>1, $5, false}; RISEFALLDLYUNSUP($5); DEL($3); DEL($7); }
         ;
 
 delay_value<nodeExprp>:         // ==IEEE:delay_value
