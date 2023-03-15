@@ -1709,6 +1709,13 @@ private:
         }
         iterateChildren(nodep);
     }
+    void visit(AstPull* nodep) override {
+        // Deal with implicit definitions
+        // We used to nodep->allowImplicit() here, but it turns out
+        // normal "assigns" can also make implicit wires.  Yuk.
+        pinImplicitExprRecurse(nodep->lhsp());
+        iterateChildren(nodep);
+    }
     void visit(AstTypedefFwd* nodep) override {
         VSymEnt* const foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->name());
         if (!foundp && v3Global.opt.pedantic()
