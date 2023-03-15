@@ -13,6 +13,7 @@ class Cls;
    rand int dynarr[];
    rand int unpackarr[5];
    rand Union uni;
+   rand Cls cls;
 endclass
 
 module t (/*AUTOARG*/);

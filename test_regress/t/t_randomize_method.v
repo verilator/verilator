@@ -96,23 +96,46 @@ class ContainsNull;
    rand BaseCls b;
 endclass
 
+class ClsWithInt;
+   rand int a;
+   int b;
+endclass
+
+class DeriveClsWithInt extends ClsWithInt;
+endclass
+
+class DeriveAndContainClsWithInt extends ClsWithInt;
+   rand ClsWithInt cls1;
+   ClsWithInt cls2;
+   function new;
+      cls1 = new;
+      cls2 = new;
+   endfunction
+endclass
+
 module t (/*AUTOARG*/);
 
    DerivedCls derived;
    OtherCls other;
    BaseCls base;
    ContainsNull cont;
+   DeriveClsWithInt der_int;
+   DeriveAndContainClsWithInt der_contain;
 
    initial begin
       int rand_result;
       derived = new;
       other = new;
       cont = new;
+      der_int = new;
+      der_contain = new;
       base = derived;
       for (int i = 0; i < 10; i++) begin
          rand_result = base.randomize();
          rand_result = other.randomize();
          rand_result = cont.randomize();
+         rand_result = der_int.randomize();
+         rand_result = der_contain.randomize();
          if (!(derived.l inside {ONE, TWO, THREE, FOUR})) $stop;
          if (!(other.str.s.c inside {ONE, TWO, THREE, FOUR})) $stop;
          if (!(other.str.y inside {ONE, TWO, THREE, FOUR})) $stop;
@@ -120,6 +143,10 @@ module t (/*AUTOARG*/);
          if (derived.k != 0) $stop;
          if (other.v != 0) $stop;
          if (cont.b != null) $stop;
+         if (der_int.b != 0) $stop;
+         if (der_contain.cls2.a != 0) $stop;
+         if (der_contain.cls1.b != 0) $stop;
+         if (der_contain.b != 0) $stop;
       end
       `check_rand(derived, derived.i.a);
       `check_rand(derived, derived.i.b);
@@ -136,6 +163,9 @@ module t (/*AUTOARG*/);
       `check_rand(other, other.str.s.a);
       `check_rand(other, other.str.s.b);
       `check_rand(other, other.str.s.c);
+      `check_rand(der_int, der_int.a);
+      `check_rand(der_contain, der_contain.cls1.a);
+      `check_rand(der_contain, der_contain.a);
 
       $write("*-* All Finished *-*\n");
       $finish;
