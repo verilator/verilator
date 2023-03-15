@@ -6,7 +6,9 @@
 
 module t (/*AUTOARG*/);
 
-   int q[$ : 2];  // Shall not go higher than [2], i.e. size 3
+   localparam TWO = 2;
+
+   int q[$ : TWO];  // Shall not go higher than [2], i.e. size 3
 
    initial begin
       q.push_front(3);
