@@ -715,8 +715,6 @@ public:
         puts("VL_FCLOSE_I(");
         iterateAndNextNull(nodep->filep());
         puts("); ");
-        iterateAndNextNull(nodep->filep());  // For safety, so user doesn't later WRITE with it.
-        puts(" = 0;\n");
     }
     void visit(AstFFlush* nodep) override {
         if (!nodep->filep()) {
