@@ -1,0 +1,17 @@
+%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:14:17: Unsupported: defparam with no dot
+   14 |    defparam PAR = 5;
+      |                 ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:39:24: Unsupported: defparam with more than one dot
+   39 |          defparam m2.m3.PAR3 = 80;
+      |                        ^
+%Error: t/t_gen_defparam_multi.v:39:25: syntax error, unexpected IDENTIFIER, expecting ',' or ';'
+   39 |          defparam m2.m3.PAR3 = 80;
+      |                         ^~~~
+%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:44:24: Unsupported: defparam with more than one dot
+   44 |          defparam m2.m3.PAR3 = 40;
+      |                        ^
+%Error: t/t_gen_defparam_multi.v:44:25: syntax error, unexpected IDENTIFIER, expecting ',' or ';'
+   44 |          defparam m2.m3.PAR3 = 40;
+      |                         ^~~~
+%Error: Exiting due to
