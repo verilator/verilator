@@ -913,7 +913,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
                           if (PARSEP->lexPrevToken()=='#') {
                               int shortlen = 0;
-                              while (std::isdigit(yytext[shortlen])) ++shortlen;
+                              if (std::isdigit(yytext[shortlen])) {
+                                  while (std::isdigit(yytext[shortlen])
+                                         || yytext[shortlen]=='_') ++shortlen;
+                              }
                               if (shortlen) {
                                   // Push rest past numbers for later parse
                                   PARSEP->lexUnputString(yytext + shortlen, yyleng - shortlen);

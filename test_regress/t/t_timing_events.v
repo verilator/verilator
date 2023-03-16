@@ -28,6 +28,13 @@ module t;
       $finish;
    end
 
+   int         x;
+   initial begin
+      x = # 1_1 'd 12_34;   // Checks we parse _ correctly
+      if (x != 1234) $stop;
+      if ($time != 11) $stop;
+   end
+
    initial #21 $stop; // timeout
 endmodule
 
