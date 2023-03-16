@@ -101,7 +101,7 @@ class VlAnnotations:
                     result.mt_start = True
                 elif node.displayname == "MT_SAFE":
                     result.mt_safe = True
-                elif node.displayname == "MT_STABLE_TREE":
+                elif node.displayname == "MT_STABLE":
                     result.stable_tree = True
                 elif node.displayname == "MT_SAFE_POSTINIT":
                     result.mt_safe_postinit = True

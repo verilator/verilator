@@ -163,9 +163,9 @@
 // Comment tag that function is threadsafe, only if
 // other threads doesn't change tree topology
 #if defined(__clang__)
-# define VL_MT_STABLE_TREE __attribute__((annotate("MT_STABLE_TREE")))
+# define VL_MT_STABLE __attribute__((annotate("MT_STABLE")))
 #else
-# define VL_MT_STABLE_TREE
+# define VL_MT_STABLE
 #endif
 // Comment tag that function is threadsafe, only
 // during normal operation (post-init)

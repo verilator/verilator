@@ -952,7 +952,7 @@ def write_ast_macros(filename):
                             "op{n}p()").format(n=n, kind=kind)
                 if monad == "List":
                     emitBlock('''\
-                    Ast{kind}* {name}() const VL_MT_STABLE_TREE {{ return {retrieve}; }}
+                    Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}
                     void add{Name}(Ast{kind}* nodep) {{ addNOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     ''',
                               kind=kind,
@@ -962,7 +962,7 @@ def write_ast_macros(filename):
                               retrieve=retrieve)
                 elif monad == "Optional":
                     emitBlock('''\
-                    Ast{kind}* {name}() const VL_MT_STABLE_TREE {{ return {retrieve}; }}
+                    Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}
                     void {name}(Ast{kind}* nodep) {{ setNOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     ''',
                               kind=kind,
@@ -971,7 +971,7 @@ def write_ast_macros(filename):
                               retrieve=retrieve)
                 else:
                     emitBlock('''\
-                    Ast{kind}* {name}() const VL_MT_STABLE_TREE {{ return {retrieve}; }}
+                    Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}
                     void {name}(Ast{kind}* nodep) {{ setOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     ''',
                               kind=kind,

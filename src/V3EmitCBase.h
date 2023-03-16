@@ -40,7 +40,7 @@ public:
     EmitCParentModule();
     VL_UNCOPYABLE(EmitCParentModule);
 
-    static const AstNodeModule* get(const AstNode* nodep) VL_MT_STABLE_TREE {
+    static const AstNodeModule* get(const AstNode* nodep) VL_MT_STABLE {
         return VN_AS(nodep->user4p(), NodeModule);
     }
 };
