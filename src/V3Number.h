@@ -63,7 +63,7 @@ public:
         DOUBLE = 2,
         STRING = 3,
     };
-    friend std::ostream& operator<<(std::ostream& os, const V3NumberDataType& rhs) {
+    friend std::ostream& operator<<(std::ostream& os, const V3NumberDataType& rhs) VL_MT_SAFE {
         switch (rhs) {
         case V3NumberDataType::UNINITIALIZED: return os << "UNINITIALIZED";
         case V3NumberDataType::LOGIC: return os << "LOGIC";
@@ -210,7 +210,7 @@ public:
         UASSERT(isString(), "`str` member accessed when data type is " << m_type);
         return m_string;
     }
-    const std::string& str() const VL_MT_SAFE {
+    const std::string& str() const {
         UASSERT(isString(), "`str` member accessed when data type is " << m_type);
         return m_string;
     }
@@ -383,7 +383,7 @@ public:
     }
 
 private:
-    char bitIs(int bit) const VL_MT_SAFE {
+    char bitIs(int bit) const {
         if (bit >= m_data.width() || bit < 0) {
             // We never sign extend
             return '0';
@@ -559,7 +559,7 @@ private:
             m_data.m_sized = false;
         }
     }
-    static string displayPad(size_t fmtsize, char pad, bool left, const string& in);
+    static string displayPad(size_t fmtsize, char pad, bool left, const string& in) VL_PURE;
     string displayed(FileLine* fl, const string& vformat) const VL_MT_SAFE;
     string displayed(const string& vformat) const VL_MT_SAFE {
         return displayed(m_fileline, vformat);
@@ -583,8 +583,8 @@ public:
     V3Number& setMask(int nbits);  // IE if nbits=1, then 0b1, if 2->0b11, if 3->0b111 etc
 
     // ACCESSORS
-    string ascii(bool prefixed = true, bool cleanVerilog = false) const VL_MT_SAFE;
-    string displayed(AstNode* nodep, const string& vformat) const;
+    string ascii(bool prefixed = true, bool cleanVerilog = false) const;
+    string displayed(AstNode* nodep, const string& vformat) const VL_MT_SAFE;
     static bool displayedFmtLegal(char format, bool isScan);  // Is this a valid format letter?
     int width() const VL_MT_SAFE { return m_data.width(); }
     int widthMin() const;  // Minimum width that can represent this number (~== log2(num)+1)
@@ -612,10 +612,10 @@ public:
         return m_data.type() == V3NumberDataType::LOGIC
                || m_data.type() == V3NumberDataType::DOUBLE;
     }
-    bool isNegative() const VL_MT_SAFE { return !isString() && bitIs1(width() - 1); }
+    bool isNegative() const { return !isString() && bitIs1(width() - 1); }
     bool is1Step() const VL_MT_SAFE { return m_data.m_is1Step; }
     bool isNull() const VL_MT_SAFE { return m_data.m_isNull; }
-    bool isFourState() const VL_MT_SAFE;
+    bool isFourState() const;
     bool hasZ() const {
         if (isString()) return false;
         for (int i = 0; i < words(); i++) {
@@ -626,7 +626,7 @@ public:
     }
     bool isAllZ() const VL_MT_SAFE;
     bool isAllX() const VL_MT_SAFE;
-    bool isEqZero() const VL_MT_SAFE;
+    bool isEqZero() const;
     bool isNeqZero() const;
     bool isBitsZero(int msb, int lsb) const;
     bool isEqOne() const;
@@ -637,13 +637,13 @@ public:
     bool isAnyXZ() const;
     bool isAnyZ() const VL_MT_SAFE;
     bool isMsbXZ() const { return bitIsXZ(m_data.width() - 1); }
-    uint32_t toUInt() const;
+    uint32_t toUInt() const VL_MT_SAFE;
     int32_t toSInt() const VL_MT_SAFE;
-    uint64_t toUQuad() const;
+    uint64_t toUQuad() const VL_MT_SAFE;
     int64_t toSQuad() const VL_MT_SAFE;
     string toString() const VL_MT_SAFE;
-    string toDecimalS() const VL_MT_SAFE;  // return ASCII signed decimal number
-    string toDecimalU() const VL_MT_SAFE;  // return ASCII unsigned decimal number
+    string toDecimalS() const;  // return ASCII signed decimal number
+    string toDecimalU() const;  // return ASCII unsigned decimal number
     double toDouble() const VL_MT_SAFE;
     V3Hash toHash() const;
     uint32_t edataWord(int eword) const;
@@ -777,7 +777,7 @@ public:
     V3Number& opLtN(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLteN(const V3Number& lhs, const V3Number& rhs);
 };
-inline std::ostream& operator<<(std::ostream& os, const V3Number& rhs) {
+inline std::ostream& operator<<(std::ostream& os, const V3Number& rhs) VL_MT_SAFE {
     return os << rhs.ascii();
 }
 

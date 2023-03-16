@@ -874,7 +874,7 @@ void V3Options::notify() {
 //######################################################################
 // V3 Options accessors
 
-string V3Options::version() {
+string V3Options::version() VL_PURE {
     string ver = DTVERSION;
     ver += " rev " + cvtToStr(DTVERSION_rev);
     return ver;
@@ -1938,7 +1938,7 @@ unsigned V3Options::dumpLevel(const string& tag) const VL_MT_SAFE {
     return iter != m_dumpLevel.end() ? iter->second : 0;
 }
 
-unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE {
+unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means we need to strip the filenames: ../Foo.cpp -> Foo
     return dumpLevel(V3Os::filenameNonDirExt(srcfile_path));

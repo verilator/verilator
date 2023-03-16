@@ -37,6 +37,7 @@ def fully_qualified_name(node):
 class VlAnnotations:
     mt_start: bool = False
     mt_safe: bool = False
+    stable_tree: bool = False
     mt_safe_postinit: bool = False
     mt_unsafe: bool = False
     mt_unsafe_one: bool = False
@@ -54,6 +55,9 @@ class VlAnnotations:
     def is_pure_context(self):
         return self.pure
 
+    def is_stabe_tree_context(self):
+        return self.stable_tree
+
     def is_mt_unsafe_call(self):
         return self.mt_unsafe or self.mt_unsafe_one
 
@@ -65,6 +69,9 @@ class VlAnnotations:
 
     def is_pure_call(self):
         return self.pure
+
+    def is_stabe_tree_call(self):
+        return self.stable_tree
 
     def __or__(self, other: "VlAnnotations"):
         result = VlAnnotations()
@@ -94,6 +101,8 @@ class VlAnnotations:
                     result.mt_start = True
                 elif node.displayname == "MT_SAFE":
                     result.mt_safe = True
+                elif node.displayname == "MT_STABLE":
+                    result.stable_tree = True
                 elif node.displayname == "MT_SAFE_POSTINIT":
                     result.mt_safe_postinit = True
                 elif node.displayname == "MT_UNSAFE":
@@ -196,6 +205,7 @@ class DiagnosticKind(Enum):
     ANNOTATIONS_DEF_DECL_MISMATCH = enum.auto()
     NON_PURE_CALL_IN_PURE_CTX = enum.auto()
     NON_MT_SAFE_CALL_IN_MT_SAFE_CTX = enum.auto()
+    NON_STABLE_TREE_CALL_IN_STABLE_TREE_CTX = enum.auto()
 
     def __lt__(self, other):
         return self.value < other.value
@@ -377,6 +387,16 @@ class CallAnnotationsValidator:
                     FunctionInfo.from_node(refd, refd, annotations),
                     DiagnosticKind.NON_MT_SAFE_CALL_IN_MT_SAFE_CTX)
 
+        # stable tree context
+        if ctx.is_stabe_tree_context():
+            if not (annotations.is_stabe_tree_call()
+                    or annotations.is_pure_call()
+                    or self.check_mt_safe_call(node, refd, annotations)):
+                self.emit_diagnostic(
+                    FunctionInfo.from_node(refd, refd, annotations),
+                    DiagnosticKind.NON_STABLE_TREE_CALL_IN_STABLE_TREE_CTX)
+
+        # pure context
         if ctx.is_pure_context():
             if not annotations.is_pure_call():
                 self.emit_diagnostic(
@@ -394,6 +414,16 @@ class CallAnnotationsValidator:
                 self.emit_diagnostic(
                     FunctionInfo.from_node(refd, refd, annotations),
                     DiagnosticKind.NON_MT_SAFE_CALL_IN_MT_SAFE_CTX)
+
+        # stable tree context
+        if ctx.is_stabe_tree_context():
+            if not (annotations.is_pure_call()
+                    or annotations.is_mt_safe_call()
+                    or annotations.is_stabe_tree_call()):
+                self.emit_diagnostic(
+                    FunctionInfo.from_node(refd, refd, annotations),
+                    DiagnosticKind.NON_STABLE_TREE_CALL_IN_STABLE_TREE_CTX)
+
         # pure context
         if ctx.is_pure_context():
             if not annotations.is_pure_call():
@@ -409,6 +439,13 @@ class CallAnnotationsValidator:
         # Constructors are OK in MT-safe context
         # only if they call local methods or MT-safe functions.
         if ctx.is_mt_safe_context() or self._constructor_context:
+            self._constructor_context += 1
+            self.iterate_children(refd.get_children(),
+                                  self.dispatch_node_inside_definition)
+            self._constructor_context -= 1
+
+        # stable tree context
+        if ctx.is_stabe_tree_context():
             self._constructor_context += 1
             self.iterate_children(refd.get_children(),
                                   self.dispatch_node_inside_definition)
@@ -788,6 +825,8 @@ class TopDownSummaryPrinter():
                 name += "is mtsafe but calls non-mtsafe function(s)"
             elif func.reason == DiagnosticKind.NON_PURE_CALL_IN_PURE_CTX:
                 name += "is pure but calls non-pure function(s)"
+            elif func.reason == DiagnosticKind.NON_STABLE_TREE_CALL_IN_STABLE_TREE_CTX:
+                name += "calls stable_tree function(s) but isn't annotated as stable_tree"
             else:
                 name += "for unknown reason (please add description)"
 

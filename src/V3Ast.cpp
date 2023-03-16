@@ -155,7 +155,7 @@ string AstNode::vcdName(const string& namein) {
     return prettyName(pretty);
 }
 
-string AstNode::prettyName(const string& namein) {
+string AstNode::prettyName(const string& namein) VL_PURE {
     // This function is somewhat hot, so we short-circuit some compares
     string pretty;
     pretty.reserve(namein.length());
@@ -1079,7 +1079,7 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 //======================================================================
 // Debugging
 
-void AstNode::checkTreeIter(const AstNode* prevBackp) const {
+void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
     // private: Check a tree and children
     UASSERT_OBJ(prevBackp == this->backp(), this, "Back node inconsistent");
     switch (this->type()) {

@@ -865,7 +865,7 @@ def write_type_enum(prefix, nodeList):
         fh.write("        _BOUNDS_END\n")
         fh.write("    };\n")
 
-        fh.write("    const char* ascii() const {\n")
+        fh.write("    const char* ascii() const VL_MT_SAFE {\n")
         fh.write("        static const char* const names[_ENUM_END + 1] = {\n")
         for node in sorted(filter(lambda _: _.isLeaf, nodeList),
                            key=lambda _: _.typeId):
@@ -931,7 +931,7 @@ def write_ast_macros(filename):
             static Ast{t}* cloneTreeNull(Ast{t}* nodep, bool cloneNextLink) {{
                 return nodep ? nodep->cloneTree(cloneNextLink) : nullptr;
             }}
-            Ast{t}* clonep() const VL_MT_SAFE {{ return static_cast<Ast{t}*>(AstNode::clonep()); }}
+            Ast{t}* clonep() const {{ return static_cast<Ast{t}*>(AstNode::clonep()); }}
             Ast{t}* addNext(Ast{t}* nodep) {{ return static_cast<Ast{t}*>(AstNode::addNext(this, nodep)); }}
             ''',
                       t=node.name)
@@ -952,7 +952,7 @@ def write_ast_macros(filename):
                             "op{n}p()").format(n=n, kind=kind)
                 if monad == "List":
                     emitBlock('''\
-                    Ast{kind}* {name}() const VL_MT_SAFE {{ return {retrieve}; }}
+                    Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}
                     void add{Name}(Ast{kind}* nodep) {{ addNOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     ''',
                               kind=kind,
@@ -962,7 +962,7 @@ def write_ast_macros(filename):
                               retrieve=retrieve)
                 elif monad == "Optional":
                     emitBlock('''\
-                    Ast{kind}* {name}() const VL_MT_SAFE {{ return {retrieve}; }}
+                    Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}
                     void {name}(Ast{kind}* nodep) {{ setNOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     ''',
                               kind=kind,
@@ -971,7 +971,7 @@ def write_ast_macros(filename):
                               retrieve=retrieve)
                 else:
                     emitBlock('''\
-                    Ast{kind}* {name}() const VL_MT_SAFE {{ return {retrieve}; }}
+                    Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}
                     void {name}(Ast{kind}* nodep) {{ setOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     ''',
                               kind=kind,

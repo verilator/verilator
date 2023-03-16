@@ -39,7 +39,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // FileLineSingleton class functions
 
-string FileLineSingleton::filenameLetters(fileNameIdx_t fileno) {
+string FileLineSingleton::filenameLetters(fileNameIdx_t fileno) VL_PURE {
     constexpr int size
         = 1 + (64 / 4);  // Each letter retires more than 4 bits of a > 64 bit number
     char out[size];

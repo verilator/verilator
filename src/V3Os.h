@@ -37,10 +37,11 @@ public:
     // METHODS (generic filename utilities)
     static string filenameFromDirBase(const string& dir, const string& basename);
     /// Return non-directory part of filename
-    static string filenameNonDir(const string& filename);
+    static string filenameNonDir(const string& filename) VL_PURE;
     /// Return non-extensioned (no .) part of filename
-    static string filenameNonExt(const string& filename);
-    static string filenameNonDirExt(const string& filename) {  ///< Return basename of filename
+    static string filenameNonExt(const string& filename) VL_PURE;
+    ///< Return basename of filename
+    static string filenameNonDirExt(const string& filename) VL_PURE {
         return filenameNonExt(filenameNonDir(filename));
     }
     static string filenameDir(const string& filename);  ///< Return directory part of filename

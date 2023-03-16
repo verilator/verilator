@@ -142,7 +142,7 @@ string V3Os::filenameDir(const string& filename) {
     }
 }
 
-string V3Os::filenameNonDir(const string& filename) {
+string V3Os::filenameNonDir(const string& filename) VL_PURE {
     string::size_type pos;
     if ((pos = filename.rfind('/')) != string::npos) {
         return filename.substr(pos + 1);
@@ -151,7 +151,7 @@ string V3Os::filenameNonDir(const string& filename) {
     }
 }
 
-string V3Os::filenameNonExt(const string& filename) {
+string V3Os::filenameNonExt(const string& filename) VL_PURE {
     string base = filenameNonDir(filename);
     string::size_type pos;
     if ((pos = base.find('.')) != string::npos) base.erase(pos);

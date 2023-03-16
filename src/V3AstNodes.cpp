@@ -704,12 +704,12 @@ public:
     }
 };
 
-string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const VL_MT_SAFE {
+string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const VL_MT_STABLE {
     const CTypeRecursed info = cTypeRecurse(false);
     return info.render(name, isRef);
 }
 
-AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
+AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const VL_MT_STABLE {
     // Legacy compound argument currently just passed through and unused
     CTypeRecursed info;
 
@@ -846,7 +846,7 @@ int AstNodeDType::widthPow2() const {
     return 1;
 }
 
-bool AstNodeDType::isLiteralType() const VL_MT_SAFE {
+bool AstNodeDType::isLiteralType() const VL_MT_STABLE {
     if (const auto* const dtypep = VN_CAST(skipRefp(), BasicDType)) {
         return dtypep->keyword().isLiteralType();
     } else if (const auto* const dtypep = VN_CAST(skipRefp(), UnpackArrayDType)) {
@@ -1804,7 +1804,7 @@ void AstRefDType::cloneRelink() {
         m_classOrPackagep = m_classOrPackagep->clonep();
     }
 }
-AstNodeDType* AstRefDType::subDTypep() const {
+AstNodeDType* AstRefDType::subDTypep() const VL_MT_STABLE {
     if (typedefp()) return typedefp()->subDTypep();
     return refDTypep();  // Maybe nullptr
 }

@@ -407,7 +407,7 @@ public:
     unsigned debugLevel(const string& tag) const VL_MT_SAFE;
     unsigned debugSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
     unsigned dumpLevel(const string& tag) const VL_MT_SAFE;
-    unsigned dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
+    unsigned dumpSrcLevel(const string& srcfile_path) const;
 
     // METHODS
     void addCppFile(const string& filename);
@@ -650,7 +650,7 @@ public:
     }
 
     // METHODS (from main)
-    static string version();
+    static string version() VL_PURE;
     static string argString(int argc, char** argv);  ///< Return list of arguments as simple string
     string allArgsString() const VL_MT_SAFE;  ///< Return all passed arguments as simple string
     // Return options for child hierarchical blocks when forTop==false, otherwise returns args for

@@ -40,7 +40,7 @@ public:
     EmitCParentModule();
     VL_UNCOPYABLE(EmitCParentModule);
 
-    static const AstNodeModule* get(const AstNode* nodep) {
+    static const AstNodeModule* get(const AstNode* nodep) VL_MT_STABLE {
         return VN_AS(nodep->user4p(), NodeModule);
     }
 };
@@ -70,7 +70,9 @@ public:
     static string protectWordsIf(const string& name, bool doIt) {
         return VIdProtect::protectWordsIf(name, doIt);
     }
-    static string ifNoProtect(const string& in) { return v3Global.opt.protectIds() ? "" : in; }
+    static string ifNoProtect(const string& in) VL_MT_SAFE {
+        return v3Global.opt.protectIds() ? "" : in;
+    }
     static string voidSelfAssign(const AstNodeModule* modp) {
         const string className = prefixNameProtect(modp);
         return className + "* const __restrict vlSelf VL_ATTR_UNUSED = static_cast<" + className
@@ -85,7 +87,7 @@ public:
     static string prefixNameProtect(const AstNode* nodep) {  // C++ name with prefix
         return v3Global.opt.modPrefix() + "_" + protect(nodep->name());
     }
-    static string topClassName() {  // Return name of top wrapper module
+    static string topClassName() VL_MT_SAFE {  // Return name of top wrapper module
         return v3Global.opt.prefix();
     }
 
