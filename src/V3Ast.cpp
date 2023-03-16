@@ -1342,7 +1342,9 @@ void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
         dtypeSetLogicUnsized(width, widthMin, numeric);
     } else {
         if (width == dtypep()->width() && widthMin == dtypep()->widthMin()
-            && numeric == dtypep()->numeric())
+            && numeric == dtypep()->numeric()
+            // Enums need to become direct sizes to avoid later ENUMVALUE errors
+            && !VN_IS(dtypep()->skipRefToEnump(), EnumDType))
             return;  // Correct already
         // FUTURE: We may be pointing at a two state data type, and this may
         // convert it to logic.  Since the AstVar remains correct, we
