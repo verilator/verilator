@@ -2669,6 +2669,12 @@ private:
                     nodep->replaceWith(adfoundp->cloneTree(false));
                     return;
                 }
+                if (AstNodeFTask* const methodp = VN_CAST(foundp, NodeFTask)) {
+                    nodep->replaceWith(new AstMethodCall{nodep->fileline(),
+                                                         nodep->fromp()->unlinkFrBack(),
+                                                         nodep->name(), nullptr});
+                    return;
+                }
                 UINFO(1, "found object " << foundp << endl);
                 nodep->v3fatalSrc("MemberSel of non-variable\n"
                                   << nodep->warnContextPrimary() << '\n'

@@ -24,6 +24,7 @@ module t (/*AUTOARG*/);
       if (c.get_methoda() != 20) $stop;
       c.setv_methoda(30);
       if (c.get_methoda() != 30) $stop;
+      if (c.get_methoda != 30) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end
