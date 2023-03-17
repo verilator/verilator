@@ -334,7 +334,7 @@ private:
     // VISITORS
     void visit(AstNetlist* nodep) override {
         // Children are iterated backwards to ensure correct compilation order
-        iterateChildrenBackwards(nodep);
+        iterateChildrenBackwardsConst(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         // Only list modules and interfaces

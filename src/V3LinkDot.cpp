@@ -780,7 +780,7 @@ class LinkDotFindVisitor final : public VNVisitor {
 
         // First back iterate, to find all packages. Backward as must do base
         // packages before using packages
-        iterateChildrenBackwards(nodep);
+        iterateChildrenBackwardsConst(nodep);
 
         // The first modules in the list are always the top modules
         // (sorted before this is called).
@@ -1756,7 +1756,7 @@ class LinkDotScopeVisitor final : public VNVisitor {
     // VISITs
     void visit(AstNetlist* nodep) override {
         // Recurse..., backward as must do packages before using packages
-        iterateChildrenBackwards(nodep);
+        iterateChildrenBackwardsConst(nodep);
     }
     void visit(AstConstPool*) override {}
     void visit(AstScope* nodep) override {
@@ -2238,7 +2238,7 @@ private:
     // VISITs
     void visit(AstNetlist* nodep) override {
         // Recurse..., backward as must do packages before using packages
-        iterateChildrenBackwards(nodep);
+        iterateChildrenBackwardsConst(nodep);
     }
     void visit(AstTypeTable*) override {}
     void visit(AstConstPool*) override {}

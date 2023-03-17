@@ -5608,7 +5608,7 @@ private:
     }
     void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.  That's faster
-        userIterateChildrenBackwards(nodep, nullptr);
+        userIterateChildrenBackwardsConst(nodep, nullptr);
     }
 
     //--------------------
@@ -7351,12 +7351,12 @@ private:
             iterateChildren(nodep);
         }
     }
-    void userIterateChildrenBackwards(AstNode* nodep, WidthVP* vup) {
+    void userIterateChildrenBackwardsConst(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
         {
             VL_RESTORER(m_vup);
             m_vup = vup;
-            iterateChildrenBackwards(nodep);
+            iterateChildrenBackwardsConst(nodep);
         }
     }
 

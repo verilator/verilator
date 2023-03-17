@@ -907,7 +907,7 @@ void AstNode::iterateChildren(VNVisitor& v) {
     if (m_op4p) m_op4p->iterateAndNext(v);
 }
 
-void AstNode::iterateChildrenConst(VNVisitor& v) {
+void AstNode::iterateChildrenConst(VNVisitorConst& v) {
     // This is a very hot function
     ASTNODE_PREFETCH(m_op1p);
     ASTNODE_PREFETCH(m_op2p);
@@ -954,7 +954,7 @@ void AstNode::iterateAndNext(VNVisitor& v) {
     }
 }
 
-void AstNode::iterateListBackwards(VNVisitor& v) {
+void AstNode::iterateListBackwardsConst(VNVisitorConst& v) {
     AstNode* nodep = this;
     while (nodep->m_nextp) nodep = nodep->m_nextp;
     while (nodep) {
@@ -968,14 +968,14 @@ void AstNode::iterateListBackwards(VNVisitor& v) {
     }
 }
 
-void AstNode::iterateChildrenBackwards(VNVisitor& v) {
-    if (m_op1p) m_op1p->iterateListBackwards(v);
-    if (m_op2p) m_op2p->iterateListBackwards(v);
-    if (m_op3p) m_op3p->iterateListBackwards(v);
-    if (m_op4p) m_op4p->iterateListBackwards(v);
+void AstNode::iterateChildrenBackwardsConst(VNVisitorConst& v) {
+    if (m_op1p) m_op1p->iterateListBackwardsConst(v);
+    if (m_op2p) m_op2p->iterateListBackwardsConst(v);
+    if (m_op3p) m_op3p->iterateListBackwardsConst(v);
+    if (m_op4p) m_op4p->iterateListBackwardsConst(v);
 }
 
-void AstNode::iterateAndNextConst(VNVisitor& v) {
+void AstNode::iterateAndNextConst(VNVisitorConst& v) {
     // Keep following the current list even if edits change it
     AstNode* nodep = this;
     do {

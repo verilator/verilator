@@ -33,7 +33,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Visitor that gathers the headers required by an AstCFunc
 
-class EmitCGatherDependencies final : VNVisitor {
+class EmitCGatherDependencies final : VNVisitorConst {
     // Ordered set, as it is used as a key in another map.
     std::set<string> m_dependencies;  // Header names to be included in output C++ file
 
@@ -142,7 +142,7 @@ class EmitCGatherDependencies final : VNVisitor {
         // declaration of the receiver class, but their body very likely includes at least one
         // relative reference, so we are probably not loosing much.
         addModDependency(EmitCParentModule::get(cfuncp));
-        iterate(cfuncp);
+        iterateConst(cfuncp);
     }
 
 public:

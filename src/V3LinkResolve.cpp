@@ -454,7 +454,7 @@ private:
     // VISITs
     void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.
-        iterateChildrenBackwards(nodep);
+        iterateChildrenBackwardsConst(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);

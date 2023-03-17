@@ -322,7 +322,7 @@ public:
     ASTGEN_MEMBERS_AstNodeTermop;
     // Know no children, and hot function, so skip iterator for speed
     // cppcheck-suppress functionConst
-    void iterateChildren(VNVisitor& v) {}
+    void iterateChildren(VNVisitorConst& v) {}
     void dump(std::ostream& str) const override;
 };
 class AstNodeTriop VL_NOT_FINAL : public AstNodeExpr {
@@ -492,7 +492,7 @@ public:
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     // Know no children, and hot function, so skip iterator for speed
     // cppcheck-suppress functionConst
-    void iterateChildren(VNVisitor& v) {}
+    void iterateChildren(VNVisitorConst& v) {}
 };
 
 // === Concrete node types =====================================================

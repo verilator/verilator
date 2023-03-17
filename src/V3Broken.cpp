@@ -144,7 +144,7 @@ bool V3Broken::isLinkable(const AstNode* nodep) { return s_linkableTable.isLinka
 //######################################################################
 // Check every node in tree
 
-class BrokenCheckVisitor final : public VNVisitor {
+class BrokenCheckVisitor final : public VNVisitorConst {
     bool m_inScope = false;  // Under AstScope
 
     // Constants for marking we are under/not under a node
@@ -312,7 +312,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit BrokenCheckVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit BrokenCheckVisitor(AstNetlist* nodep) { iterateConstNull(nodep); }
     ~BrokenCheckVisitor() override = default;
 };
 

@@ -1793,7 +1793,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         iterateChildren(nodep);
     }
 
-    void visit(AstNetlist* nodep) override { iterateChildrenBackwards(nodep); }
+    void visit(AstNetlist* nodep) override { iterateChildrenBackwardsConst(nodep); }
 
     // Default: Just iterate
     void visit(AstNode* nodep) override {

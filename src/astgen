@@ -938,7 +938,7 @@ def write_ast_macros(filename):
 
             if node.isLeaf:
                 emitBlock('''\
-                void accept(VNVisitor& v) override {{ v.visit(this); }}
+                void accept(VNVisitorConst& v) override {{ v.visit(this); }}
                 AstNode* clone() override {{ return new Ast{t}(*this); }}
                 ''',
                           t=node.name)
@@ -1343,7 +1343,7 @@ if Args.classes:
     # Write Ast code
     write_forward_class_decls("Ast", AstNodeList)
     write_visitor_decls("Ast", AstNodeList)
-    write_visitor_defns("Ast", AstNodeList, "VNVisitor")
+    write_visitor_defns("Ast", AstNodeList, "VNVisitorConst")
     write_type_enum("Ast", AstNodeList)
     write_type_tests("Ast", AstNodeList)
     write_ast_macros("V3Ast__gen_macros.h")
