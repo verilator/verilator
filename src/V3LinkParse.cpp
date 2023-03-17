@@ -223,8 +223,10 @@ private:
 
     void visit(AstVar* nodep) override {
         cleanFileline(nodep);
-        if (nodep->lifetime().isStatic() && m_insideLoop) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Static variable inside a loop");
+        if (nodep->lifetime().isStatic() && m_insideLoop && nodep->valuep()) {
+            nodep->lifetime(VLifetime::AUTOMATIC);
+            nodep->v3warn(STATICVAR, "Static variable with assignment declaration declared in a "
+                                     "loop converted to automatic");
         }
         if (nodep->lifetime().isNone() && nodep->varType() != VVarType::PORT) {
             nodep->lifetime(m_lifetime);

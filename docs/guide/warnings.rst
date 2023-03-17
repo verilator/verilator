@@ -1302,6 +1302,17 @@ List Of Warnings
    * The variable is tristate or bidirectional. (e.g., :code:`inout`).
 
 
+.. option:: STATICVAR
+
+   Warns that a static variable declared in a loop with declaration assignment
+   was converted to automatic. Often such variables were intended to
+   instead be declared "automatic".
+
+   Ignoring this warning may make Verilator differ from other simulators,
+   which will treat the variable as static. Verilator may in future versions also
+   treat the variable as static.
+
+
 .. option:: STMTDLY
 
    Warns that the code has a statement with a delayed time in front of it.
