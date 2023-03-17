@@ -64,7 +64,7 @@ public:
         }
     }
 
-    string name() const override {
+    string name() const override VL_MT_STABLE {
         string nm;
         if (VL_UNCOVERABLE(!logicp())) {  // Avoid crash when debugging
             nm = "nul";  // LCOV_EXCL_LINE

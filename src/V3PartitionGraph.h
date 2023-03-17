@@ -85,7 +85,7 @@ public:
         // If this MTask maps to a C function, this should be the name
         return std::string{"__Vmtask"} + "__" + cvtToStr(m_id);
     }
-    string name() const override { return std::string{"mt"} + cvtToStr(id()); }
+    string name() const override VL_MT_STABLE { return std::string{"mt"} + cvtToStr(id()); }
     string hashName() const { return m_hashName; }
     void hashName(const string& name) { m_hashName = name; }
     void dump(std::ostream& str) const {

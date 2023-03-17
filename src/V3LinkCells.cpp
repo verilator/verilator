@@ -59,8 +59,8 @@ public:
         : V3GraphVertex{graphp}
         , m_modp{modp} {}
     ~LinkCellsVertex() override = default;
-    AstNodeModule* modp() const { return m_modp; }
-    string name() const override { return modp()->name(); }
+    AstNodeModule* modp() const VL_MT_STABLE { return m_modp; }
+    string name() const override VL_MT_STABLE { return modp()->name(); }
     FileLine* fileline() const override { return modp()->fileline(); }
     // Recursive modules get space for maximum recursion
     uint32_t rankAdder() const override {
@@ -73,7 +73,7 @@ public:
     explicit LibraryVertex(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
     ~LibraryVertex() override = default;
-    string name() const override { return "*LIBRARY*"; }
+    string name() const override VL_MT_STABLE { return "*LIBRARY*"; }
 };
 
 void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {

@@ -159,7 +159,7 @@ public:
     AstSenTree* hybridp() const { return m_hybridp; }
 
     // LCOV_EXCL_START // Debug code
-    string name() const override {
+    string name() const override VL_MT_STABLE {
         return (cvtToHex(m_nodep) + "\\n " + cvtToStr(nodep()->typeName()));
     }
     string dotShape() const override { return VN_IS(m_nodep, Active) ? "doubleoctagon" : "rect"; }
@@ -182,7 +182,7 @@ public:
     // LCOV_EXCL_START // Debug code
     string dotShape() const override final { return "ellipse"; }
     virtual string nameSuffix() const = 0;
-    string name() const override final {
+    string name() const override final VL_MT_STABLE {
         return cvtToHex(m_vscp) + " " + nameSuffix() + "\\n " + m_vscp->name();
     }
     // LCOV_EXCL_STOP

@@ -89,7 +89,7 @@ public:
     AstNode* logicp() const { return m_logicp; }
 
     // LCOV_EXCL_START // Debug code
-    string name() const override {
+    string name() const override VL_MT_STABLE {
         return m_logicp->typeName() + ("\n" + m_logicp->fileline()->ascii());
     };
     string dotShape() const override { return "rectangle"; }
@@ -105,7 +105,7 @@ public:
         , m_vscp{vscp} {}
 
     // LCOV_EXCL_START // Debug code
-    string name() const override { return m_vscp->name(); }
+    string name() const override VL_MT_STABLE { return m_vscp->name(); }
     string dotShape() const override {
         return m_vscp->scopep()->isTop() && m_vscp->varp()->isNonOutput() ? "invhouse" : "ellipse";
     }

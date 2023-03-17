@@ -67,8 +67,8 @@ public:
         : TaskBaseVertex{graphp}
         , m_nodep{nodep} {}
     ~TaskFTaskVertex() override = default;
-    AstNodeFTask* nodep() const { return m_nodep; }
-    string name() const override { return nodep()->name(); }
+    AstNodeFTask* nodep() const VL_MT_STABLE { return m_nodep; }
+    string name() const override VL_MT_STABLE { return nodep()->name(); }
     string dotColor() const override { return pure() ? "black" : "red"; }
     AstCFunc* cFuncp() const { return m_cFuncp; }
     void cFuncp(AstCFunc* nodep) { m_cFuncp = nodep; }
@@ -80,7 +80,7 @@ public:
     explicit TaskCodeVertex(V3Graph* graphp)
         : TaskBaseVertex{graphp} {}
     ~TaskCodeVertex() override = default;
-    string name() const override { return "*CODE*"; }
+    string name() const override VL_MT_STABLE { return "*CODE*"; }
     string dotColor() const override { return "green"; }
 };
 

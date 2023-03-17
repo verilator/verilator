@@ -67,7 +67,7 @@ private:
     class DependencyVertex final : public V3GraphVertex {
         AstNode* const m_nodep;  // AST node represented by this graph vertex
         // ACCESSORS
-        string name() const override {
+        string name() const override VL_MT_STABLE {
             return cvtToHex(nodep()) + ' ' + nodep()->prettyTypeName();
         }
         FileLine* fileline() const override { return nodep()->fileline(); }

@@ -68,7 +68,7 @@ public:
         : V3GraphVertex{graphp}
         , m_name{name}
         , m_type{type} {}
-    string name() const override { return m_name + " " + typestr(); }
+    string name() const override VL_MT_STABLE { return m_name + " " + typestr(); }
     string dotColor() const override { return user() ? "green" : "black"; }
     virtual int type() const { return m_type; }
 };

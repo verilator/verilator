@@ -154,7 +154,7 @@ public:
     // ACCESSORS
     AstNode* nodep() const { return m_nodep; }
     const AstVar* varp() const { return VN_CAST(nodep(), Var); }
-    string name() const override {
+    string name() const override VL_MT_STABLE {
         return ((isTristate() ? "tri\\n"
                  : feedsTri() ? "feed\\n"
                               : "-\\n")
