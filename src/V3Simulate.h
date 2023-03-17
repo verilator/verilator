@@ -103,7 +103,7 @@ private:
     bool m_isOutputter;  // Creates output
     int m_instrCount;  ///< Number of nodes
     int m_dataCount;  ///< Bytes of data
-    AstJumpGo* m_jumpp;  ///< Jump label we're branching from
+    AstJumpGo* m_jumpp = nullptr;  ///< Jump label we're branching from
     // Simulating:
     std::unordered_map<const AstNodeDType*, std::deque<AstConst*>>
         m_constps;  ///< Lists of all AstConst* allocated per dtype

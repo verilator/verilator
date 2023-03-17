@@ -337,14 +337,12 @@ module Vt_debug_emitv_sub;
     function f;
         input signed int [31:0]  v;
         begin : label0
-            begin : label0
-                if ((v == 'sh0)) begin
-                    f = 'sh21;
-                    disable label0;
-                end
-                f = ({32'h1{{31'h0, v[2]}}} + 32'h1);
+            if ((v == 'sh0)) begin
+                f = 'sh21;
                 disable label0;
             end
+            f = ({32'h1{{31'h0, v[2]}}} + 32'h1);
+            disable label0;
         end
     endfunction
     signed real r;

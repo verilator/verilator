@@ -35,6 +35,7 @@
 #include "V3LinkJump.h"
 
 #include "V3Ast.h"
+#include "V3AstUserAllocator.h"
 #include "V3Global.h"
 
 #include <algorithm>
@@ -46,6 +47,12 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class LinkJumpVisitor final : public VNVisitor {
 private:
+    // NODE STATE
+    //  AstNode::user1()    -> AstJumpLabel*, for this block if endOfIter
+    //  AstNode::user2()    -> AstJumpLabel*, for this block if !endOfIter
+    const VNUser1InUse m_user1InUse;
+    const VNUser2InUse m_user2InUse;
+
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -60,6 +67,13 @@ private:
         // Put label under given node, and if WHILE optionally at end of iteration
         UINFO(4, "Create label for " << nodep << endl);
         if (VN_IS(nodep, JumpLabel)) return VN_AS(nodep, JumpLabel);  // Done
+
+        // Made it previously?  We always jump to the end, so this works out
+        if (endOfIter) {
+            if (nodep->user1p()) return VN_AS(nodep->user1p(), JumpLabel);
+        } else {
+            if (nodep->user2p()) return VN_AS(nodep->user2p(), JumpLabel);
+        }
 
         AstNode* underp = nullptr;
         bool under_and_next = true;
@@ -125,6 +139,11 @@ private:
             }
             // Label goes last
             blockp->addEndStmtsp(labelp);
+            if (endOfIter) {
+                nodep->user1p(labelp);
+            } else {
+                nodep->user2p(labelp);
+            }
             return labelp;
         }
     }

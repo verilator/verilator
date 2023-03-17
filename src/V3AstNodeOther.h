@@ -2779,7 +2779,7 @@ public:
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
 class AstJumpBlock final : public AstNodeStmt {
-    // Block of code including a JumpGo and JumpLabel
+    // Block of code including a single JumpLabel, and 0+ JumpGo's to that label
     // Parents:  {statement list}
     // Children: {statement list, with JumpGo and JumpLabel below}
     // @astgen op1 := stmtsp : List[AstNode]
