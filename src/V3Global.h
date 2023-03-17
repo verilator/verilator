@@ -91,7 +91,6 @@ constexpr bool operator==(VWidthMinUsage::en lhs, const VWidthMinUsage& rhs) {
 
 class V3Global final {
     // Globals
-    VerilatedMutex m_mutex;  // protects members
     AstNetlist* m_rootp = nullptr;  // Root of entire netlist,
     // created by makeInitNetlist(} so static constructors run first
     V3HierBlockPlan* m_hierPlanp = nullptr;  // Hierarchical Verilation plan,
@@ -99,7 +98,7 @@ class V3Global final {
     VWidthMinUsage m_widthMinUsage
         = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for
 
-    int m_debugFileNumber VL_GUARDED_BY(m_mutex) = 0;  // Number to append to debug files created
+    std::atomic_int m_debugFileNumber{0};  // Number to append to debug files created
     bool m_assertDTypesResolved = false;  // Tree should have dtypep()'s
     bool m_assertScoped = false;  // Tree is scoped
     bool m_constRemoveXs = false;  // Const needs to strip any Xs
@@ -144,8 +143,7 @@ public:
     void widthMinUsage(const VWidthMinUsage& flag) { m_widthMinUsage = flag; }
     bool constRemoveXs() const { return m_constRemoveXs; }
     void constRemoveXs(bool flag) { m_constRemoveXs = flag; }
-    string debugFilename(const string& nameComment, int newNumber = 0)
-        VL_MT_SAFE_EXCLUDES(m_mutex);
+    string debugFilename(const string& nameComment, int newNumber = 0);
     static string digitsFilename(int number);
     bool needTraceDumper() const { return m_needTraceDumper; }
     void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
