@@ -255,7 +255,7 @@ private:
         iterateChildren(nodep);
         if (nodep->varsp()) m_scopep->modp()->addStmtsp(nodep->varsp()->unlinkFrBackWithNext());
         if (nodep->eventp()) m_scopep->modp()->addStmtsp(nodep->eventp()->unlinkFrBack());
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstNodeFTask* nodep) override {
         // Add to list of blocks under this scope
