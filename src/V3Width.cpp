@@ -2667,12 +2667,14 @@ private:
                 }
                 if (AstEnumItemRef* const adfoundp = VN_CAST(foundp, EnumItemRef)) {
                     nodep->replaceWith(adfoundp->cloneTree(false));
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
                 }
                 if (AstNodeFTask* const methodp = VN_CAST(foundp, NodeFTask)) {
                     nodep->replaceWith(new AstMethodCall{nodep->fileline(),
                                                          nodep->fromp()->unlinkFrBack(),
                                                          nodep->name(), nullptr});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
                 }
                 UINFO(1, "found object " << foundp << endl);
