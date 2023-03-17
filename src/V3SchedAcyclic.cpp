@@ -68,7 +68,7 @@ public:
         : V3GraphVertex{graphp}
         , m_logicp{logicp}
         , m_scopep{scopep} {}
-    virtual V3GraphVertex* clone(V3Graph* graphp) const {
+    V3GraphVertex* clone(V3Graph* graphp) const override {
         return new LogicVertex{graphp, logicp(), scopep()};
     }
 
@@ -90,7 +90,7 @@ public:
         , m_vscp{vscp} {}
     AstVarScope* vscp() const { return m_vscp; }
     AstVar* varp() const { return m_vscp->varp(); }
-    virtual V3GraphVertex* clone(V3Graph* graphp) const { return new VarVertex{graphp, vscp()}; }
+    V3GraphVertex* clone(V3Graph* graphp) const override { return new VarVertex{graphp, vscp()}; }
 
     // LCOV_EXCL_START // Debug code
     string name() const override { return m_vscp->name(); }
