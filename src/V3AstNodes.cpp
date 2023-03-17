@@ -115,6 +115,7 @@ void AstNodeUOrStructDType::repairMemberCache() {
 }
 
 const char* AstNodeUOrStructDType::broken() const {
+    BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
     std::unordered_set<AstMemberDType*> exists;
     for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_AS(itemp->nextp(), MemberDType)) {
         exists.insert(itemp);
