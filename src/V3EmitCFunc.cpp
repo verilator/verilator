@@ -417,6 +417,15 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
         puts(selfPointer);
         comma = true;
     }
+    if (nodep->funcp()->isCoroutine()) {
+        if (comma) puts(", ");
+        if (VN_IS(nodep->backp(), CAwait)) {
+            puts("vlProcess");
+        } else {
+            puts("new VlProcess()");
+        }
+        comma = true;
+    }
     if (!nodep->argTypes().empty()) {
         if (comma) puts(", ");
         puts(nodep->argTypes());

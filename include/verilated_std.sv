@@ -98,11 +98,14 @@ package std;
             KILLED
         } state;
 
+        int id;
+
         function new();
         endfunction
 
         static function process self();
             process p = new;
+            p.id = $c("vlProcess->id()");
             return p;
         endfunction
 

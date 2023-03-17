@@ -422,4 +422,33 @@ public:
     void await_resume() const noexcept {}
 };
 
+class VlProcess {
+private:
+    // TYPES
+    enum {
+        FINISHED,
+        RUNNING,
+        WAITING,
+        SUSPENDED,
+        KILLED
+    };
+
+    // MEMBERS
+    int m_state;
+    int m_id;
+
+public:
+    // CONSTRUCTORS
+    VlProcess()
+        : m_state{RUNNING} {
+        static int max_id = 0;
+        m_id = max_id++;
+    }
+
+    // METHODS
+    int id() { return m_id; }
+    int state() { return m_state; }
+    void state(int s) { m_state = s; }
+};
+
 #endif  // Guard

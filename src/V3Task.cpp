@@ -1176,8 +1176,6 @@ private:
             ((nodep->taskPublic() && rtnvarp) ? rtnvarp->cPubArgType(true, true) : "")};
         if (nodep->isFromStd() && nodep->name() == "self") {
             cfuncp->rtnType("VlCoroutine");
-            // We made it a coroutine, so add a co_return at the end.
-            cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
         }
         // It's ok to combine imports because this is just a wrapper;
         // duplicate wrappers can get merged.
