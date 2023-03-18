@@ -656,8 +656,11 @@ string V3Options::getenvPERL() {  //
 
 string V3Options::getenvSYSTEMC() {
     string var = V3Os::getenvStr("SYSTEMC", "");
-    if (var == "" && string(DEFENV_SYSTEMC) != "") {
-        var = DEFENV_SYSTEMC;
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    string defenv = string{DEFENV_SYSTEMC}.c_str();
+    if (var == "" && defenv != "") {
+        var = defenv;
         V3Os::setenvStr("SYSTEMC", var, "Hardcoded at build time");
     }
     return var;
@@ -665,8 +668,11 @@ string V3Options::getenvSYSTEMC() {
 
 string V3Options::getenvSYSTEMC_ARCH() {
     string var = V3Os::getenvStr("SYSTEMC_ARCH", "");
-    if (var == "" && string(DEFENV_SYSTEMC_ARCH) != "") {
-        var = DEFENV_SYSTEMC_ARCH;
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    string defenv = string{DEFENV_SYSTEMC_ARCH}.c_str();
+    if (var == "" && defenv != "") {
+        var = defenv;
         V3Os::setenvStr("SYSTEMC_ARCH", var, "Hardcoded at build time");
     }
     if (var == "") {
@@ -697,8 +703,11 @@ string V3Options::getenvSYSTEMC_ARCH() {
 
 string V3Options::getenvSYSTEMC_INCLUDE() {
     string var = V3Os::getenvStr("SYSTEMC_INCLUDE", "");
-    if (var == "" && string(DEFENV_SYSTEMC_INCLUDE) != "") {
-        var = DEFENV_SYSTEMC_INCLUDE;
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    string defenv = string{DEFENV_SYSTEMC_INCLUDE}.c_str();
+    if (var == "" && defenv != "") {
+        var = defenv;
         V3Os::setenvStr("SYSTEMC_INCLUDE", var, "Hardcoded at build time");
     }
     if (var == "") {
@@ -710,8 +719,11 @@ string V3Options::getenvSYSTEMC_INCLUDE() {
 
 string V3Options::getenvSYSTEMC_LIBDIR() {
     string var = V3Os::getenvStr("SYSTEMC_LIBDIR", "");
-    if (var == "" && string(DEFENV_SYSTEMC_LIBDIR) != "") {
-        var = DEFENV_SYSTEMC_LIBDIR;
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    string defenv = string{DEFENV_SYSTEMC_LIBDIR}.c_str();
+    if (var == "" && defenv != "") {
+        var = defenv;
         V3Os::setenvStr("SYSTEMC_LIBDIR", var, "Hardcoded at build time");
     }
     if (var == "") {
@@ -724,8 +736,11 @@ string V3Options::getenvSYSTEMC_LIBDIR() {
 
 string V3Options::getenvVERILATOR_ROOT() {
     string var = V3Os::getenvStr("VERILATOR_ROOT", "");
-    if (var == "" && string(DEFENV_VERILATOR_ROOT) != "") {
-        var = DEFENV_VERILATOR_ROOT;
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    string defenv = string{DEFENV_VERILATOR_ROOT}.c_str();
+    if (var == "" && defenv != "") {
+        var = defenv;
         V3Os::setenvStr("VERILATOR_ROOT", var, "Hardcoded at build time");
     }
     if (var == "") v3fatal("$VERILATOR_ROOT needs to be in environment\n");
