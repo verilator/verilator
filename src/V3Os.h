@@ -59,7 +59,7 @@ public:
 
     // METHODS (random)
     static uint64_t rand64(std::array<uint64_t, 2>& stater);
-    static string trueRandom(size_t size);
+    static string trueRandom(size_t size) VL_MT_SAFE;
 
     // METHODS (time & performance)
     static void u_sleep(int64_t usec);  ///< Sleep for a given number of microseconds.

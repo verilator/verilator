@@ -125,7 +125,9 @@ string AstNode::encodeNumber(int64_t num) {
     }
 }
 
-string AstNode::nameProtect() const { return VIdProtect::protectIf(name(), protect()); }
+string AstNode::nameProtect() const VL_MT_STABLE {
+    return VIdProtect::protectIf(name(), protect());
+}
 string AstNode::origNameProtect() const { return VIdProtect::protectIf(origName(), protect()); }
 
 string AstNode::shortName() const {

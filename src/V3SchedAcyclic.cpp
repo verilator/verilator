@@ -76,7 +76,7 @@ public:
     AstScope* scopep() const { return m_scopep; }
 
     // LCOV_EXCL_START // Debug code
-    string name() const override { return m_logicp->fileline()->ascii(); };
+    string name() const override VL_MT_STABLE { return m_logicp->fileline()->ascii(); };
     string dotShape() const override { return "rectangle2"; }
     // LCOV_EXCL_STOP
 };
@@ -93,7 +93,7 @@ public:
     V3GraphVertex* clone(V3Graph* graphp) const override { return new VarVertex{graphp, vscp()}; }
 
     // LCOV_EXCL_START // Debug code
-    string name() const override { return m_vscp->name(); }
+    string name() const override VL_MT_STABLE { return m_vscp->name(); }
     string dotShape() const override { return "ellipse"; }
     string dotColor() const override { return "blue"; }
     // LCOV_EXCL_STOP

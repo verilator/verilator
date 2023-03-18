@@ -242,7 +242,7 @@ public:
     bool similarDType(const AstNodeDType* samep) const override {
         return this == samep;  // We don't compare members, require exact equivalence
     }
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& flag) override { m_name = flag; }
     bool packed() const VL_MT_SAFE { return m_packed; }
     void packed(bool flag) { m_packed = flag; }
@@ -281,7 +281,7 @@ public:
         this->valuep(valuep);
     }
     ASTGEN_MEMBERS_AstEnumItem;
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     bool maybePointedTo() const override { return true; }
     bool hasDType() const override { return true; }
     void name(const string& flag) override { m_name = flag; }
@@ -409,7 +409,7 @@ public:
     bool similarDType(const AstNodeDType* samep) const override {
         return type() == samep->type() && same(samep);
     }
-    string name() const override { return m.m_keyword.ascii(); }
+    string name() const override VL_MT_STABLE { return m.m_keyword.ascii(); }
     string prettyDTypeName() const override;
     const char* broken() const override {
         BROKEN_RTN(dtypep() != this);
@@ -531,7 +531,7 @@ public:
     }
     void dump(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
-    string name() const override;
+    string name() const override VL_MT_STABLE;
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     AstNodeDType* skipRefp() const override VL_MT_STABLE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
@@ -543,7 +543,7 @@ public:
     AstNodeDType* subDTypep() const override VL_MT_SAFE { return nullptr; }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
-    AstClass* classp() const { return m_classp; }
+    AstClass* classp() const VL_MT_STABLE { return m_classp; }
     void classp(AstClass* nodep) { m_classp = nodep; }
     bool isCompound() const override { return true; }
 };
@@ -641,7 +641,7 @@ public:
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return dtypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return dtypep()->widthTotalBytes(); }
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& flag) override { m_name = flag; }
     bool isCompound() const override { return false; }
 };
@@ -767,7 +767,7 @@ public:
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& flag) override { m_name = flag; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
@@ -879,7 +879,7 @@ public:
     }
     ASTGEN_MEMBERS_AstMemberDType;
     void dumpSmall(std::ostream& str) const override;
-    string name() const override { return m_name; }  // * = Var name
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     bool hasDType() const override { return true; }
     bool maybePointedTo() const override { return true; }
     const char* broken() const override {
@@ -955,7 +955,7 @@ public:
     int widthAlignBytes() const override { return dtypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return dtypep()->widthTotalBytes(); }
     // METHODS
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     bool maybePointedTo() const override { return true; }
     bool hasDType() const override { return true; }
     void name(const string& flag) override { m_name = flag; }
@@ -1093,7 +1093,7 @@ public:
     }
     void dump(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     string prettyDTypeName() const override {
         return subDTypep() ? prettyName(subDTypep()->name()) : prettyName();
     }

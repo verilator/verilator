@@ -109,7 +109,7 @@ public:
     RegionFlags assignedRegion() const { return m_assignedRegion; }
 
     // For graph dumping
-    string name() const override { return m_logicp->fileline()->ascii(); };
+    string name() const override VL_MT_STABLE { return m_logicp->fileline()->ascii(); };
     string dotShape() const override { return "rectangle"; }
 };
 
@@ -134,7 +134,7 @@ public:
     AstScope* scopep() const { return m_vscp->scopep(); }
 
     // For graph dumping
-    string name() const override { return m_vscp->name(); }
+    string name() const override VL_MT_STABLE { return m_vscp->name(); }
     string dotShape() const override { return varp()->isPrimaryInish() ? "invhouse" : "ellipse"; }
 };
 

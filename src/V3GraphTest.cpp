@@ -60,7 +60,7 @@ public:
         , m_name{name} {}
     ~V3GraphTestVertex() override = default;
     // ACCESSORS
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
 };
 
 class V3GraphTestVarVertex final : public V3GraphTestVertex {

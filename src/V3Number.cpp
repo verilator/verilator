@@ -498,7 +498,7 @@ V3Number& V3Number::setMask(int nbits) {
 //======================================================================
 // ACCESSORS - as strings
 
-string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
+string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_SAFE {
     std::ostringstream out;
 
     if (is1Step()) {
@@ -1050,7 +1050,7 @@ bool V3Number::isEqAllOnes(int optwidth) const {
     }
     return true;
 }
-bool V3Number::isFourState() const {
+bool V3Number::isFourState() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
     for (int i = 0; i < words(); ++i) {
         if (m_data.num()[i].m_valueX) return true;

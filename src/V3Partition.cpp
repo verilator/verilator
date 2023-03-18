@@ -321,7 +321,7 @@ public:
 
     void checkRelativesCp(GraphWay way) const;
 
-    string name() const override {
+    string name() const override VL_MT_STABLE {
         // Display forward and reverse critical path costs. This gives a quick
         // read on whether graph partitioning looks reasonable or bad.
         std::ostringstream out;

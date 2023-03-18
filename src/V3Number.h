@@ -583,7 +583,7 @@ public:
     V3Number& setMask(int nbits);  // IE if nbits=1, then 0b1, if 2->0b11, if 3->0b111 etc
 
     // ACCESSORS
-    string ascii(bool prefixed = true, bool cleanVerilog = false) const;
+    string ascii(bool prefixed = true, bool cleanVerilog = false) const VL_MT_SAFE;
     string displayed(AstNode* nodep, const string& vformat) const VL_MT_SAFE;
     static bool displayedFmtLegal(char format, bool isScan);  // Is this a valid format letter?
     int width() const VL_MT_SAFE { return m_data.width(); }
@@ -615,7 +615,7 @@ public:
     bool isNegative() const { return !isString() && bitIs1(width() - 1); }
     bool is1Step() const VL_MT_SAFE { return m_data.m_is1Step; }
     bool isNull() const VL_MT_SAFE { return m_data.m_isNull; }
-    bool isFourState() const;
+    bool isFourState() const VL_MT_SAFE;
     bool hasZ() const {
         if (isString()) return false;
         for (int i = 0; i < words(); i++) {

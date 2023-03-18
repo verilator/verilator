@@ -134,7 +134,9 @@ public:
     ~GateVarVertex() override = default;
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
-    string name() const override { return (cvtToHex(m_varScp) + " " + varScp()->name()); }
+    string name() const override VL_MT_STABLE {
+        return (cvtToHex(m_varScp) + " " + varScp()->name());
+    }
     string dotColor() const override { return "blue"; }
     bool isTop() const { return m_isTop; }
     void setIsTop() { m_isTop = true; }
@@ -174,7 +176,9 @@ public:
         , m_slow{slow} {}
     ~GateLogicVertex() override = default;
     // ACCESSORS
-    string name() const override { return (cvtToHex(m_nodep) + "@" + scopep()->prettyName()); }
+    string name() const override VL_MT_STABLE {
+        return (cvtToHex(m_nodep) + "@" + scopep()->prettyName());
+    }
     string dotColor() const override { return "purple"; }
     FileLine* fileline() const override { return nodep()->fileline(); }
     AstNode* nodep() const { return m_nodep; }

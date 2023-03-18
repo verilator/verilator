@@ -28,6 +28,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "verilated_threads.h"
+
 // Limited V3 headers here - this is a base class for Vlc etc
 #include "V3Os.h"
 #include "V3String.h"
@@ -286,7 +288,7 @@ uint64_t V3Os::rand64(std::array<uint64_t, 2>& stater) {
     return result;
 }
 
-string V3Os::trueRandom(size_t size) {
+string V3Os::trueRandom(size_t size) VL_MT_SAFE {
     string result(size, '\xFF');
     char* const data = const_cast<char*>(result.data());
     // Note: std::string.data() returns a non-const Char* from C++17 onwards.
