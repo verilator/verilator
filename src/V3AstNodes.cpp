@@ -735,9 +735,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const VL_M
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
         info.m_type = "VlSampleQueue<" + sub.m_type + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
-        info.m_type = "VlClassRef<" + EmitCBaseVisitor::prefixNameProtect(adtypep) + ">";
+        info.m_type = "VlClassRef<" + EmitCBase::prefixNameProtect(adtypep) + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, IfaceRefDType)) {
-        info.m_type = EmitCBaseVisitor::prefixNameProtect(adtypep->ifaceViaCellp()) + "*";
+        info.m_type = EmitCBase::prefixNameProtect(adtypep->ifaceViaCellp()) + "*";
     } else if (const auto* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         if (adtypep->isCompound()) compound = true;
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound);
@@ -746,7 +746,7 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const VL_M
         info.m_type += ">";
     } else if (VN_IS(dtypep, NodeUOrStructDType) && !VN_AS(dtypep, NodeUOrStructDType)->packed()) {
         const auto* const sdtypep = VN_AS(dtypep, NodeUOrStructDType);
-        info.m_type = EmitCBaseVisitor::prefixNameProtect(sdtypep);
+        info.m_type = EmitCBase::prefixNameProtect(sdtypep);
     } else if (const AstBasicDType* const bdtypep = dtypep->basicp()) {
         // We don't print msb()/lsb() as multidim packed would require recursion,
         // and may confuse users as C++ data is stored always with bit 0 used

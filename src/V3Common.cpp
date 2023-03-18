@@ -37,7 +37,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 static void makeVlToString(AstClass* nodep) {
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
-    funcp->argTypes("const VlClassRef<" + EmitCBaseVisitor::prefixNameProtect(nodep) + ">& obj");
+    funcp->argTypes("const VlClassRef<" + EmitCBase::prefixNameProtect(nodep) + ">& obj");
     funcp->isMethod(false);
     funcp->isConst(false);
     funcp->isStatic(false);
@@ -51,7 +51,7 @@ static void makeVlToString(AstClass* nodep) {
 static void makeVlToString(AstIface* nodep) {
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
-    funcp->argTypes("const " + EmitCBaseVisitor::prefixNameProtect(nodep) + "* obj");
+    funcp->argTypes("const " + EmitCBase::prefixNameProtect(nodep) + "* obj");
     funcp->isMethod(false);
     funcp->isConst(false);
     funcp->isStatic(false);
@@ -65,7 +65,7 @@ static void makeVlToString(AstNodeUOrStructDType* nodep) {
     AstNodeModule* const modp = nodep->classOrPackagep();
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
-    funcp->argTypes("const " + EmitCBaseVisitor::prefixNameProtect(nodep) + "& obj");
+    funcp->argTypes("const " + EmitCBase::prefixNameProtect(nodep) + "& obj");
     funcp->isMethod(false);
     funcp->isConst(false);
     funcp->isStatic(false);
@@ -137,7 +137,7 @@ static void makeToStringMiddle(AstClass* nodep) {
         string stmt = "out += ";
         if (!comma.empty()) stmt += "\", \"+ ";
         // comma = ", ";  // Nothing further so not needed
-        stmt += EmitCBaseVisitor::prefixNameProtect(nodep->extendsp()->dtypep());
+        stmt += EmitCBase::prefixNameProtect(nodep->extendsp()->dtypep());
         stmt += "::to_string_middle();\n";
         nodep->user1(true);  // So what we extend dumps this
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});

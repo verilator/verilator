@@ -362,7 +362,7 @@ void transformForks(AstNetlist* const netlistp) {
                 // If we're in a class, add a vlSymsp arg
                 if (m_inClass) {
                     newfuncp->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;\n"});
-                    newfuncp->argTypes(EmitCBaseVisitor::symClassVar());
+                    newfuncp->argTypes(EmitCBase::symClassVar());
                     callp->argTypes("vlSymsp");
                 }
                 // Put the begin's statements in the function, delete the begin

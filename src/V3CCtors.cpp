@@ -70,7 +70,7 @@ private:
         funcp->slow(!m_type.isClass());  // Only classes construct on fast path
         string preventUnusedStmt;
         if (m_type.isClass()) {
-            funcp->argTypes(EmitCBaseVisitor::symClassVar());
+            funcp->argTypes(EmitCBase::symClassVar());
             preventUnusedStmt = "if (false && vlSymsp) {}  // Prevent unused\n";
         } else if (m_type.isCoverage()) {
             funcp->argTypes("bool first");

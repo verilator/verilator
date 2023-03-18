@@ -802,7 +802,7 @@ private:
 
         // Convert input/inout DPI arguments to Internal types
         string args;
-        args += ("(" + EmitCBaseVisitor::symClassName()
+        args += ("(" + EmitCBase::symClassName()
                  + "*)(__Vscopep->symsp())");  // Upcast w/o overhead
         AstNode* argnodesp = nullptr;
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -1181,15 +1181,14 @@ private:
             cfuncp->isConstructor(true);
             AstClass* const classp = m_statep->getClassp(nodep);
             if (classp->extendsp()) {
-                cfuncp->baseCtors(
-                    EmitCBaseVisitor::prefixNameProtect(classp->extendsp()->classp()));
+                cfuncp->baseCtors(EmitCBase::prefixNameProtect(classp->extendsp()->classp()));
             }
         }
         if (cfuncp->dpiExportImpl()) cfuncp->cname(nodep->cname());
 
         if (!nodep->dpiImport() && !nodep->taskPublic()) {
             // Need symbol table
-            cfuncp->argTypes(EmitCBaseVisitor::symClassVar());
+            cfuncp->argTypes(EmitCBase::symClassVar());
             if (cfuncp->name() == "new") {
                 const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);\n";
                 cfuncp->addInitsp(new AstCStmt{nodep->fileline(), stmt});

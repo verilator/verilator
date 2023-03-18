@@ -3129,8 +3129,8 @@ static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& 
         funcp->argTypes("void* voidSelf, bool even_cycle");
 
         // Setup vlSelf an vlSyms
-        funcp->addStmtsp(new AstCStmt{fl, EmitCBaseVisitor::voidSelfAssign(modp)});
-        funcp->addStmtsp(new AstCStmt{fl, EmitCBaseVisitor::symClassAssign()});
+        funcp->addStmtsp(new AstCStmt{fl, EmitCBase::voidSelfAssign(modp)});
+        funcp->addStmtsp(new AstCStmt{fl, EmitCBase::symClassAssign()});
 
         // Invoke each mtask scheduled to this thread from the thread function
         for (const ExecMTask* const mtaskp : thread) {

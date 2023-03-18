@@ -38,23 +38,22 @@ class EmitCGatherDependencies final : VNVisitorConst {
     std::set<string> m_dependencies;  // Header names to be included in output C++ file
 
     // METHODS
-    void addSymsDependency() { m_dependencies.insert(EmitCBaseVisitor::symClassName()); }
+    void addSymsDependency() { m_dependencies.insert(EmitCBase::symClassName()); }
     void addModDependency(const AstNodeModule* modp) {
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            m_dependencies.insert(EmitCBaseVisitor::prefixNameProtect(classp->classOrPackagep()));
+            m_dependencies.insert(EmitCBase::prefixNameProtect(classp->classOrPackagep()));
         } else {
-            m_dependencies.insert(EmitCBaseVisitor::prefixNameProtect(modp));
+            m_dependencies.insert(EmitCBase::prefixNameProtect(modp));
         }
     }
     void addDTypeDependency(const AstNodeDType* nodep) {
         if (const AstClassRefDType* const dtypep = VN_CAST(nodep, ClassRefDType)) {
             m_dependencies.insert(
-                EmitCBaseVisitor::prefixNameProtect(dtypep->classp()->classOrPackagep()));
+                EmitCBase::prefixNameProtect(dtypep->classp()->classOrPackagep()));
         } else if (const AstNodeUOrStructDType* const dtypep
                    = VN_CAST(nodep, NodeUOrStructDType)) {
             if (!dtypep->packed()) {
-                m_dependencies.insert(
-                    EmitCBaseVisitor::prefixNameProtect(dtypep->classOrPackagep()));
+                m_dependencies.insert(EmitCBase::prefixNameProtect(dtypep->classOrPackagep()));
             }
         }
     }

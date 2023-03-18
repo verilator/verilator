@@ -607,7 +607,7 @@ std::pair<AstVarScope*, AstNodeStmt*> makeEvalLoop(AstNetlist* netlistp, const s
                 AstTextBlock* const blockp = new AstTextBlock{flp};
                 failp->addThensp(blockp);
                 FileLine* const locp = netlistp->topModulep()->fileline();
-                const string& file = EmitCBaseVisitor::protect(locp->filename());
+                const string& file = VIdProtect::protect(locp->filename());
                 const string& line = cvtToStr(locp->lineno());
                 const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
                 add("#ifdef VL_DEBUG\n");

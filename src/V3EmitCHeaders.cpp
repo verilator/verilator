@@ -224,7 +224,7 @@ class EmitCHeader final : public EmitCConstInit {
             }
         }
         puts(sdtypep->verilogKwd());  // "struct"/"union"
-        puts(" " + EmitCBaseVisitor::prefixNameProtect(sdtypep) + " {\n");
+        puts(" " + EmitCBase::prefixNameProtect(sdtypep) + " {\n");
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             puts(itemp->dtypep()->cType(itemp->nameProtect(), false, false));

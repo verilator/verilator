@@ -63,7 +63,7 @@ private:
         AstCCall* const callp = new AstCCall{nodep->fileline(), funcp};
         callp->dtypeSetVoid();
         if (VN_IS(m_modp, Class)) {
-            funcp->argTypes(EmitCBaseVisitor::symClassVar());
+            funcp->argTypes(EmitCBase::symClassVar());
             callp->argTypes("vlSymsp");
         }
         UINFO(6, "      New " << callp << endl);

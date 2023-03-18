@@ -154,7 +154,7 @@ public:
 //######################################################################
 // Trace state, as a visitor of each AstNode
 
-class TraceVisitor final : public EmitCBaseVisitor {
+class TraceVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // V3Hasher in V3DupFinder
@@ -511,8 +511,8 @@ private:
             funcp->argTypes("void* voidSelf, " + v3Global.opt.traceClassBase()
                             + "::" + (v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer")
                             + "* bufp");
-            addInitStr(voidSelfAssign(m_topModp));
-            addInitStr(symClassAssign());
+            addInitStr(EmitCBase::voidSelfAssign(m_topModp));
+            addInitStr(EmitCBase::symClassAssign());
             // Add global activity check to change dump functions
             if (!full) {  //
                 addInitStr("if (VL_UNLIKELY(!vlSymsp->__Vm_activity)) return;\n");
@@ -709,8 +709,8 @@ private:
         cleanupFuncp->isStatic(true);
         cleanupFuncp->isLoose(true);
         m_topScopep->addBlocksp(cleanupFuncp);
-        cleanupFuncp->addInitsp(new AstCStmt{fl, voidSelfAssign(m_topModp)});
-        cleanupFuncp->addInitsp(new AstCStmt{fl, symClassAssign()});
+        cleanupFuncp->addInitsp(new AstCStmt{fl, EmitCBase::voidSelfAssign(m_topModp)});
+        cleanupFuncp->addInitsp(new AstCStmt{fl, EmitCBase::symClassAssign()});
 
         // Register it
         m_regFuncp->addStmtsp(new AstText{fl, "tracep->addCleanupCb(", true});
