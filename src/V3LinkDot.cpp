@@ -3272,17 +3272,26 @@ private:
                                        " (IEEE 1800-2017 8.13)");
                     }
                     if (cextp->childDTypep() || cextp->dtypep()) continue;  // Already converted
-                    if (VN_IS(cextp->classOrPkgsp(), Dot)) {
-                        itemp->v3warn(E_UNSUPPORTED, "Unsupported: Hierarchical class references");
-                        continue;
+                    AstNode* cprp = cextp->classOrPkgsp();
+                    VSymEnt* lookSymp = m_curSymp;
+                    if (AstDot* const dotp = VN_CAST(cextp->classOrPkgsp(), Dot)) {
+                        dotp->user3(true);
+                        if (AstClassOrPackageRef* lookNodep
+                            = VN_CAST(dotp->lhsp(), ClassOrPackageRef)) {
+                            iterate(lookNodep);
+                            cprp = dotp->rhsp();
+                            lookSymp = m_statep->getNodeSym(lookNodep->classOrPackagep());
+                        } else {
+                            dotp->lhsp()->v3error("Attempting to extend"  // LCOV_EXCL_LINE
+                                                  " using non-class under dot");
+                        }
                     }
-                    AstClassOrPackageRef* const cpackagerefp
-                        = VN_CAST(cextp->classOrPkgsp(), ClassOrPackageRef);
+                    AstClassOrPackageRef* const cpackagerefp = VN_CAST(cprp, ClassOrPackageRef);
                     if (VL_UNCOVERABLE(!cpackagerefp)) {
                         // Linking the extend gives an error before this is hit
                         cextp->v3error("Attempting to extend using non-class");  // LCOV_EXCL_LINE
                     } else {
-                        VSymEnt* const foundp = m_curSymp->findIdFallback(cpackagerefp->name());
+                        VSymEnt* const foundp = lookSymp->findIdFallback(cpackagerefp->name());
                         if (foundp) {
                             AstClassRefDType* classRefDtypep = nullptr;
                             AstClass* classp = VN_CAST(foundp->nodep(), Class);
@@ -3353,8 +3362,9 @@ private:
                                     if (!cextp->isImplements()) {
                                         m_curSymp->importFromClass(m_statep->symsp(), srcp);
                                     }
-                                    VL_DO_DANGLING(cpackagerefp->unlinkFrBack()->deleteTree(),
-                                                   cpackagerefp);
+                                    VL_DO_DANGLING(
+                                        cextp->classOrPkgsp()->unlinkFrBack()->deleteTree(),
+                                        cpackagerefp);
                                 }
                             }
                         } else {
