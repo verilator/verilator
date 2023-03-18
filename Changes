@@ -50,7 +50,6 @@ Verilator 5.008 2023-03-04
 * Support function calls without parenthesis (#3903) (#3902). [Ryszard Rozak, Antmicro Ltd]
 * Support class extending its parameter (#3904). [Ryszard Rozak, Antmicro Ltd]
 * Support static function variables (#3830). [Ryszard Rozak, Antmicro Ltd]
-* Support vpiDefName (#3906) (#3931). [Andrew Nolte]
 * Support recursive methods (#3987). [Ryszard Rozak, Antmicro Ltd]
 * Fix real parameters of infinity and NaN.
 * Fix pattern assignment to unpacked structs (#3510). [Mostafa Garnal]
