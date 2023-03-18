@@ -1440,6 +1440,13 @@ protected:
 
 public:
     VNRelinker() = default;
+    ~VNRelinker() {
+        // Relink is needed so m_iterpp's get restored, e.g. can't have:
+        // ->unlinkFrBack(relinker);
+        // if (only_sometimes) relinker.relink(newp);
+        UDEBUGONLY(
+            UASSERT_STATIC(!m_backp, "Active linker must be relink()ed before destruction"););
+    }
     inline void relink(AstNode* newp);
     AstNode* oldp() const { return m_oldp; }
     void dump(std::ostream& str = std::cout) const;
@@ -1645,7 +1652,6 @@ public:
     bool brokeExistsAbove() const { return brokeExists() && (m_brokenState >> 7); }
     bool brokeExistsBelow() const { return brokeExists() && !(m_brokenState >> 7); }
     // Note: brokeExistsBelow is not quite precise, as it is true for sibling nodes as well
-    bool brokeIterpp() const { return !!m_iterpp; }
 
     // CONSTRUCTORS
     virtual ~AstNode() = default;

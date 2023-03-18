@@ -146,17 +146,19 @@ private:
         UASSERT_OBJ(nodep->hasClocked(), nodep, "Should have been converted by V3Sched");
         UASSERT_OBJ(nodep->stmtsp(), nodep, "Should not have been created if empty");
 
-        VNRelinker relinker;
-        nodep->unlinkFrBack(&relinker);
         AstNode* const stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
 
         // Create 'if' statement, if needed
         if (!m_lastSenp || !nodep->sensesp()->sameTree(m_lastSenp)) {
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
             clearLastSen();
             m_lastSenp = nodep->sensesp();
             // Make a new if statement
             m_lastIfp = makeActiveIf(m_lastSenp);
             relinker.relink(m_lastIfp);
+        } else {
+            nodep->unlinkFrBack();
         }
 
         // Move statements to if
