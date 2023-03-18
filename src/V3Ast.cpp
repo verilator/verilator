@@ -298,17 +298,19 @@ void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int line
 // Called on all major tree changers.
 // Only for use for those really nasty bugs relating to internals
 // Note this may be null.
-// if (debug()) cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "
-//                 <<prefix<<": "<<cvtToHex(this)<<" <e"<<AstNode::s_editCntGbl<<">"<<endl;
+// if (debug() && nodep) cout << "-treeChange: V3Ast.cpp:" << lineno
+//          << " Tree Change for " << prefix << ": "
+//          << cvtToHex(nodep) << " <e" << AstNode::s_editCntGbl << ">"
+//          << "m_iterpp=" << (void*)nodep->m_iterpp << endl;
 // if (debug()) {
 //  cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<endl;
 //  // Commenting out the section below may crash, as the tree state
 //  // between edits is not always consistent for printing
 //  cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<endl;
 //  v3Global.rootp()->dumpTree("-  treeChange: ");
-//  if (next||1) this->dumpTreeAndNext(cout, prefix);
-//  else this->dumpTree(prefix);
-//  this->checkTree();
+//  if (next||1) nodep->dumpTreeAndNext(cout, prefix);
+//  else nodep->dumpTree(prefix);
+//  nodep->checkTree();
 //  v3Global.rootp()->checkTree();
 //}
 #endif
@@ -347,7 +349,8 @@ AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp) {
         newtailp->m_headtailp = headp;
         headp->m_headtailp = newtailp;
         newp->editCountInc();
-        if (oldtailp->m_iterpp) *(oldtailp->m_iterpp) = newp;  // Iterate on new item
+        // No change of m_iterpp, as only changing m_nextp of current node;
+        // the current node is still the one at the iteration point
     }
     debugTreeChange(nodep, "-addNextOut:", __LINE__, true);
     return nodep;
@@ -397,7 +400,8 @@ void AstNode::addNextHere(AstNode* newp) {
         }  // else is head, and we're inserting into the middle, so no other change
     }
 
-    if (this->m_iterpp) *(this->m_iterpp) = newp;  // Iterate on new item
+    // No change of m_iterpp, as adding after current node;
+    // the current node is still the one at the iteration point
     debugTreeChange(this, "-addHereOut: ", __LINE__, true);
 }
 
@@ -565,8 +569,10 @@ AstNode* AstNode::unlinkFrBackWithNext(VNRelinker* linkerp) {
     // Relink
     oldp->m_backp = nullptr;
     // Iterator fixup
-    if (oldp->m_iterpp) *(oldp->m_iterpp) = nullptr;
-    oldp->m_iterpp = nullptr;
+    if (oldp->m_iterpp) {
+        *(oldp->m_iterpp) = nullptr;
+        oldp->m_iterpp = nullptr;
+    }
     debugTreeChange(oldp, "-unlinkWNextOut: ", __LINE__, true);
     return oldp;
 }
@@ -580,7 +586,11 @@ AstNode* AstNode::unlinkFrBack(VNRelinker* linkerp) {
     if (linkerp) {
         linkerp->m_oldp = oldp;
         linkerp->m_backp = backp;
-        linkerp->m_iterpp = oldp->m_iterpp;
+        if (oldp->m_iterpp) {  // Assumes we will always relink() if want to keep iterating
+            linkerp->m_iterpp = oldp->m_iterpp;
+            *(oldp->m_iterpp) = nullptr;
+            oldp->m_iterpp = nullptr;
+        }
         if (backp->m_nextp == oldp) {
             linkerp->m_chg = VNRelinker::RELINK_NEXT;
         } else if (backp->m_op1p == oldp) {
@@ -625,12 +635,15 @@ AstNode* AstNode::unlinkFrBack(VNRelinker* linkerp) {
         }
     }
     // Iterator fixup
-    if (oldp->m_iterpp) *(oldp->m_iterpp) = oldp->m_nextp;
+    if (oldp->m_iterpp) {  // Only if no linker, point to next in list
+        if (oldp->m_nextp) oldp->m_nextp->m_iterpp = oldp->m_iterpp;
+        *(oldp->m_iterpp) = oldp->m_nextp;
+        oldp->m_iterpp = nullptr;
+    }
     // Relink
     oldp->m_nextp = nullptr;
     oldp->m_backp = nullptr;
-    oldp->m_headtailp = this;
-    oldp->m_iterpp = nullptr;
+    oldp->m_headtailp = oldp;
     debugTreeChange(oldp, "-unlinkFrBkOut: ", __LINE__, true);
     return oldp;
 }
@@ -668,12 +681,12 @@ void AstNode::relink(VNRelinker* linkerp) {
     // Iterator fixup
     if (linkerp->m_iterpp) {
         // If we're iterating over a next() link, we need to follow links off the
-        // NEW node.  Thus we pass iteration information via a pointer in the node.
+        // NEW node, which is always assumed to be what we are relinking to.
         // This adds a unfortunate hot 8 bytes to every AstNode, but is faster than passing
         // across every function.
         // If anyone has a cleaner way, I'd be grateful.
-        *(linkerp->m_iterpp) = newp;
         newp->m_iterpp = linkerp->m_iterpp;
+        *(newp->m_iterpp) = newp;
     }
     // Empty the linker so not used twice accidentally
     linkerp->m_backp = nullptr;
@@ -835,6 +848,7 @@ void AstNode::deleteNode() {
     this->m_op2p = reinterpret_cast<AstNode*>(0x1);
     this->m_op3p = reinterpret_cast<AstNode*>(0x1);
     this->m_op4p = reinterpret_cast<AstNode*>(0x1);
+    this->m_iterpp = reinterpret_cast<AstNode**>(0x1);
     if (
 #if !defined(VL_DEBUG) || defined(VL_LEAK_CHECKS)
         true
@@ -950,7 +964,7 @@ void AstNode::iterateAndNext(VNVisitor& v) {
         niterp->m_iterpp = nullptr;
         if (VL_UNLIKELY(niterp != nodep)) {  // Edited node inside accept
             nodep = niterp;
-        } else {  // Unchanged node, just continue loop
+        } else {  // Unchanged node (though maybe updated m_next), just continue loop
             nodep = niterp->m_nextp;
         }
     }
@@ -1131,7 +1145,7 @@ void AstNode::checkIter() const {
     if (m_iterpp) {
         dumpPtrs(cout);
         // Perhaps something forgot to clear m_iterpp?
-        this->v3fatalSrc("Iteration link should be nullptr");
+        this->v3fatalSrc("Iteration link m_iterpp should be nullptr");
     }
 }
 

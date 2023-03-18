@@ -221,6 +221,7 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
                 }
 #ifndef V3ERROR_NO_GLOBAL_
                 if (dumpTree() || debug()) {
+                    V3Broken::allowMidvisitorCheck(true);
                     V3ThreadPool::s().requestExclusiveAccess([&]() VL_REQUIRES(m_mutex) {
                         if (dumpTree()) {
                             v3Global.rootp()->dumpTreeFile(

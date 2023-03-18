@@ -23,6 +23,7 @@ Verilator 5.009 devel
 * Fix push to dynamic queue in struct (#4015). [ezchi]
 * Fix large return blocks with --comp-limit-blocks (#4028). [tenghtt]
 * Fix clocking block scope internal error (#4032). [Srinivasan Venkataramanan]
+* Fix random internal crashes (#666). [Dag Lem]
 * Fix false ENUMVALUE on expressions and arrays.
 
 

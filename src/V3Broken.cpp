@@ -62,6 +62,8 @@ public:
     }
 } s_brokenCntGlobal;
 
+static bool s_brokenAllowMidvisitorCheck = false;
+
 //######################################################################
 // Table of allocated AstNode pointers
 
@@ -172,6 +174,7 @@ private:
         const char* const whyp = nodep->broken();
         UASSERT_OBJ(!whyp, nodep,
                     "Broken link in node (or something without maybePointedTo): " << whyp);
+        if (!s_brokenAllowMidvisitorCheck) nodep->checkIter();
         if (nodep->dtypep()) {
             UASSERT_OBJ(nodep->dtypep()->brokeExists(), nodep,
                         "Broken link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
@@ -350,6 +353,8 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
         inBroken = false;
     }
 }
+
+void V3Broken::allowMidvisitorCheck(bool flag) { s_brokenAllowMidvisitorCheck = flag; }
 
 //######################################################################
 // Self test
