@@ -139,7 +139,7 @@ public:
 
 //######################################################################
 
-class InstDeModVarVisitor final : public VNVisitor {
+class InstDeModVarVisitor final : public VNVisitorConst {
     // Expand all module variables, and save names for later reference
 private:
     // STATE
@@ -151,10 +151,10 @@ private:
             UINFO(8, "   dm-1-VAR    " << nodep << endl);
             insert(nodep);
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstNodeExpr*) override {}  // Accelerate
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // METHODS
@@ -182,7 +182,7 @@ public:
     void main(AstNodeModule* nodep) {
         UINFO(8, "  dmMODULE    " << nodep << endl);
         m_modVarNameMap.clear();
-        iterate(nodep);
+        iterateConst(nodep);
     }
 };
 

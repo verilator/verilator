@@ -192,7 +192,7 @@ public:
 // ######################################################################
 //  Is this a simple expression with a single input and single output?
 
-class GateOkVisitor final : public VNVisitor {
+class GateOkVisitor final : public VNVisitorConst {
 private:
     // RETURN STATE
     bool m_isSimple = true;  // Set false when we know it isn't simple
@@ -215,7 +215,7 @@ private:
     // VISITORS
     void visit(AstNodeVarRef* nodep) override {
         ++m_ops;
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         // We only allow a LHS ref for the var being set, and a RHS ref for
         // something else being read.
         if (nodep->varScopep()->varp()->isSc()) {
@@ -246,7 +246,7 @@ private:
         } else if (nodep->isTimingControl()) {
             clearSimple("Timing control");
         } else {
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
         // We don't push logic other then assignments/NOTs into SenItems
         // This avoids a mess in computing what exactly a POSEDGE is
@@ -271,7 +271,7 @@ private:
             UINFO(5, "Non optimizable type: " << nodep << endl);
             clearSimple("Non optimizable type");
         } else {
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
 
@@ -281,7 +281,7 @@ public:
         m_buffersOnly = buffersOnly;
         m_dedupe = dedupe;
         // Iterate
-        iterate(nodep);
+        iterateConst(nodep);
         // Check results
         if (!m_substTreep) clearSimple("No assignment found\n");
         for (GateVarRefList::const_iterator it = m_rhsVarRefs.begin(); it != m_rhsVarRefs.end();
@@ -1292,7 +1292,7 @@ void GateVisitor::mergeAssigns() {
 //######################################################################
 // Find a var's offset in a concatenation
 
-class GateConcatVisitor final : public VNVisitor {
+class GateConcatVisitor final : public VNVisitorConst {
 private:
     // STATE
     const AstVarScope* m_vscp = nullptr;  // Varscope we're trying to find
@@ -1315,11 +1315,11 @@ private:
     }
     void visit(AstConcat* nodep) override {
         UINFO(9, "CLK DECOMP Concat search (off = " << m_offset << ") - " << nodep << endl);
-        iterate(nodep->rhsp());
-        iterate(nodep->lhsp());
+        iterateConst(nodep->rhsp());
+        iterateConst(nodep->lhsp());
     }
     //--------------------
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -1331,7 +1331,7 @@ public:
         m_offset = 0;
         m_found = false;
         // Iterate
-        iterate(concatp);
+        iterateConst(concatp);
         UINFO(9, "CLK DECOMP Concat Offset (found = " << m_found << ") (" << m_found_offset
                                                       << ") - " << concatp << " : " << vscp
                                                       << endl);

@@ -53,7 +53,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 
-class CaseLintVisitor final : public VNVisitor {
+class CaseLintVisitor final : public VNVisitorConst {
 private:
     const AstNodeCase* m_caseExprp
         = nullptr;  // Under a CASE value node, if so the relevant case statement
@@ -79,10 +79,10 @@ private:
         // Check for X/Z in non-casex statements
         {
             m_caseExprp = nodep;
-            iterate(nodep->exprp());
+            iterateConst(nodep->exprp());
             for (AstCaseItem* itemp = nodep->itemsp(); itemp;
                  itemp = VN_AS(itemp->nextp(), CaseItem)) {
-                iterateAndNextNull(itemp->condsp());
+                iterateAndNextConstNull(itemp->condsp());
             }
             m_caseExprp = nullptr;
         }
@@ -108,11 +108,11 @@ private:
             }
         }
     }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit CaseLintVisitor(AstNodeCase* nodep) { iterate(nodep); }
+    explicit CaseLintVisitor(AstNodeCase* nodep) { iterateConst(nodep); }
     ~CaseLintVisitor() override = default;
 };
 

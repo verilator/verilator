@@ -309,7 +309,7 @@ AstActive*& ActiveNamer::getSpecialActive<AstSenItem::Combo>() {
 //######################################################################
 // Latch checking visitor
 
-class ActiveLatchCheckVisitor final : public VNVisitor {
+class ActiveLatchCheckVisitor final : public VNVisitorConst {
 private:
     // NODE STATE
     // Input:
@@ -329,20 +329,20 @@ private:
             LatchDetectGraphVertex* const parentp = m_graph.currentp();
             LatchDetectGraphVertex* const branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
             m_graph.addPathVertex(branchp, "IF");
-            iterateAndNextNull(nodep->thensp());
+            iterateAndNextConstNull(nodep->thensp());
             m_graph.addPathVertex(branchp, "ELSE");
-            iterateAndNextNull(nodep->elsesp());
+            iterateAndNextConstNull(nodep->elsesp());
             m_graph.currentp(parentp);
         }
     }
     //--------------------
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
     ActiveLatchCheckVisitor(AstNode* nodep, bool expectLatch) {
         m_graph.begin();
-        iterate(nodep);
+        iterateConst(nodep);
         m_graph.latchCheck(nodep, expectLatch);
     }
     ~ActiveLatchCheckVisitor() override = default;

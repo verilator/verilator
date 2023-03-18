@@ -77,7 +77,7 @@ public:
     }
 };
 
-class EmitCBaseVisitor VL_NOT_FINAL : public VNVisitor, public EmitCBase {
+class EmitCBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst, public EmitCBase {
 public:
     // STATE
     V3OutCFile* m_ofp = nullptr;
@@ -115,8 +115,8 @@ public:
     void emitTextSection(const AstNodeModule* modp, VNType type);
 
     // CONSTRUCTORS
-    EmitCBaseVisitor() = default;
-    ~EmitCBaseVisitor() override = default;
+    EmitCBaseVisitorConst() = default;
+    ~EmitCBaseVisitorConst() override = default;
 };
 
 #endif  // guard

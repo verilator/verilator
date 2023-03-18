@@ -622,7 +622,7 @@ private:
 using ColorSet = std::unordered_set<uint32_t>;
 using AlwaysVec = std::vector<AstAlways*>;
 
-class IfColorVisitor final : public VNVisitor {
+class IfColorVisitor final : public VNVisitorConst {
     // MEMBERS
     ColorSet m_colors;  // All colors in the original always block
 
@@ -636,7 +636,7 @@ class IfColorVisitor final : public VNVisitor {
 public:
     // Visit through *nodep and map each AstNodeIf within to the set of
     // colors it will participate in. Also find the whole set of colors.
-    explicit IfColorVisitor(AstAlways* nodep) { iterate(nodep); }
+    explicit IfColorVisitor(AstAlways* nodep) { iterateConst(nodep); }
     ~IfColorVisitor() override = default;
 
     // METHODS
@@ -667,12 +667,12 @@ protected:
     void visit(AstNodeIf* nodep) override {
         m_ifStack.push_back(nodep);
         trackNode(nodep);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         m_ifStack.pop_back();
     }
     void visit(AstNode* nodep) override {
         trackNode(nodep);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
 private:

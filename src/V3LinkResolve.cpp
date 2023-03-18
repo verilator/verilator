@@ -446,7 +446,7 @@ public:
 //      Recurses cells backwards, so we can pick up those things that propagate
 //      from child cells up to the top module.
 
-class LinkBotupVisitor final : public VNVisitor {
+class LinkBotupVisitor final : public VNVisitorConst {
 private:
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -458,10 +458,8 @@ private:
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        iterateChildrenConst(nodep);
     }
     void visit(AstCell* nodep) override {
         // Parent module inherits child's publicity
@@ -469,11 +467,11 @@ private:
         //** No iteration for speed
     }
     void visit(AstNodeExpr*) override {}  // Accelerate
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit LinkBotupVisitor(AstNetlist* rootp) { iterate(rootp); }
+    explicit LinkBotupVisitor(AstNetlist* rootp) { iterateConst(rootp); }
     ~LinkBotupVisitor() override = default;
 };
 

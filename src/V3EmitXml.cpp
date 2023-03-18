@@ -31,7 +31,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // ######################################################################
 //  Emit statements and expressions
 
-class EmitXmlFileVisitor final : public VNVisitor {
+class EmitXmlFileVisitor final : public VNVisitorConst {
     // NODE STATE
     // Entire netlist:
     // AstNode::user1           -> uint64_t, number to connect crossrefs
@@ -94,7 +94,7 @@ class EmitXmlFileVisitor final : public VNVisitor {
         if (tag == "") tag = VString::downcase(nodep->typeName());
         if (nodep->op1p() || nodep->op2p() || nodep->op3p() || nodep->op4p()) {
             puts(">\n");
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
             puts("</" + tag + ">\n");
         } else {
             puts("/>\n");
@@ -117,13 +117,13 @@ class EmitXmlFileVisitor final : public VNVisitor {
     void visit(AstNodeIf* nodep) override {
         outputTag(nodep, "if");
         puts(">\n");
-        iterateAndNextNull(nodep->condp());
+        iterateAndNextConstNull(nodep->condp());
         puts("<begin>\n");
-        iterateAndNextNull(nodep->thensp());
+        iterateAndNextConstNull(nodep->thensp());
         puts("</begin>\n");
         if (nodep->elsesp()) {
             puts("<begin>\n");
-            iterateAndNextNull(nodep->elsesp());
+            iterateAndNextConstNull(nodep->elsesp());
             puts("</begin>\n");
         }
         puts("</if>\n");
@@ -132,34 +132,34 @@ class EmitXmlFileVisitor final : public VNVisitor {
         outputTag(nodep, "while");
         puts(">\n");
         puts("<begin>\n");
-        iterateAndNextNull(nodep->precondsp());
+        iterateAndNextConstNull(nodep->precondsp());
         puts("</begin>\n");
         if (nodep->condp()) {
             puts("<begin>\n");
-            iterateAndNextNull(nodep->condp());
+            iterateAndNextConstNull(nodep->condp());
             puts("</begin>\n");
         }
         if (nodep->stmtsp()) {
             puts("<begin>\n");
-            iterateAndNextNull(nodep->stmtsp());
+            iterateAndNextConstNull(nodep->stmtsp());
             puts("</begin>\n");
         }
         if (nodep->incsp()) {
             puts("<begin>\n");
-            iterateAndNextNull(nodep->incsp());
+            iterateAndNextConstNull(nodep->incsp());
             puts("</begin>\n");
         }
         puts("</while>\n");
     }
     void visit(AstNetlist* nodep) override {
         puts("<netlist>\n");
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         puts("</netlist>\n");
     }
     void visit(AstConstPool* nodep) override {
         if (!v3Global.opt.xmlOnly()) {
             puts("<constpool>\n");
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
             puts("</constpool>\n");
         }
     }
@@ -170,7 +170,7 @@ class EmitXmlFileVisitor final : public VNVisitor {
             puts("<inititem index=\"");
             puts(cvtToStr(itr.first));
             puts("\">\n");
-            iterateChildren(itr.second);
+            iterateChildrenConst(itr.second);
             puts("</inititem>\n");
         }
         puts("</initarray>\n");
@@ -314,7 +314,7 @@ class EmitXmlFileVisitor final : public VNVisitor {
 public:
     EmitXmlFileVisitor(AstNode* nodep, V3OutFile* ofp)
         : m_ofp{ofp} {
-        iterate(nodep);
+        iterateConst(nodep);
     }
     ~EmitXmlFileVisitor() override = default;
 };
@@ -322,7 +322,7 @@ public:
 //######################################################################
 // List of module files xml visitor
 
-class ModuleFilesXmlVisitor final : public VNVisitor {
+class ModuleFilesXmlVisitor final : public VNVisitorConst {
 private:
     // MEMBERS
     std::ostream& m_os;
@@ -354,7 +354,7 @@ public:
     ModuleFilesXmlVisitor(AstNetlist* nodep, std::ostream& os)
         : m_os(os) {  // Need () or GCC 4.8 false warning
         // Operate on whole netlist
-        nodep->accept(*this);
+        iterateConst(nodep);
         // Xml output
         m_os << "<module_files>\n";
         for (const FileLine* ifp : m_nodeModules) {
@@ -369,7 +369,7 @@ public:
 //######################################################################
 // Hierarchy of Cells visitor
 
-class HierCellsXmlVisitor final : public VNVisitor {
+class HierCellsXmlVisitor final : public VNVisitorConst {
 private:
     // MEMBERS
     std::ostream& m_os;
@@ -391,7 +391,7 @@ private:
                  << " hier=\"" << nodep->prettyName() << "\"";
             m_hier = nodep->prettyName() + ".";
             m_hasChildren = false;
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
             if (m_hasChildren) {
                 m_os << "</cell>\n";
             } else {
@@ -410,7 +410,7 @@ private:
         const std::string hier = m_hier;
         m_hier += nodep->name() + ".";
         m_hasChildren = false;
-        iterateChildren(nodep->modp());
+        iterateChildrenConst(nodep->modp());
         if (m_hasChildren) {
             m_os << "</cell>\n";
         } else {
@@ -420,14 +420,13 @@ private:
         m_hasChildren = true;
     }
     //-----
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
     HierCellsXmlVisitor(AstNetlist* nodep, std::ostream& os)
         : m_os(os) {  // Need () or GCC 4.8 false warning
-        // Operate on whole netlist
-        nodep->accept(*this);
+        iterateConst(nodep);
     }
     ~HierCellsXmlVisitor() override = default;
 };

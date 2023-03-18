@@ -26,7 +26,7 @@
 //######################################################################
 // Emitter that can emit constant initializer expressions
 
-class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitor {
+class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
     // MEMBERS
     uint32_t m_unpackedWord = 0;
     bool m_inUnpacked = false;
@@ -64,7 +64,7 @@ protected:
                 ofp()->printf("%" PRIx64 "ULL", itr.first);
                 ofp()->putsNoTracking(":");
                 ofp()->putsNoTracking("{");
-                iterate(nodep->getIndexValuep(itr.first));
+                iterateConst(nodep->getIndexValuep(itr.first));
                 ofp()->putsNoTracking("}");
             }
             puts("\n");
@@ -83,7 +83,7 @@ protected:
             for (uint64_t n = 0; n < size; ++n) {
                 m_unpackedWord = n;
                 if (n) puts((n % tabMod) ? ", " : ",\n");
-                iterate(nodep->getIndexDefaultedValuep(n));
+                iterateConst(nodep->getIndexDefaultedValuep(n));
             }
             puts("\n");
             puts("}");

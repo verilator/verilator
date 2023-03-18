@@ -158,7 +158,7 @@ using StmtPropertiesAllocator = AstUser3Allocator<AstNodeStmt, StmtProperties>;
 
 // Pure analysis visitor that build the StmtProperties for each statement in the given
 // AstNode list (following AstNode::nextp())
-class CodeMotionAnalysisVisitor final : public VNVisitor {
+class CodeMotionAnalysisVisitor final : public VNVisitorConst {
     // NODE STATE
     // AstNodeStmt::user3   -> StmtProperties (accessed via m_stmtProperties, managed externally,
     //                         see MergeCondVisitor::process)

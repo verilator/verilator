@@ -36,7 +36,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Visitor that marks classes needing a randomize() method
 
-class RandomizeMarkVisitor final : public VNVisitor {
+class RandomizeMarkVisitor final : public VNVisitorConst {
 private:
     // NODE STATE
     // Cleared on Netlist
@@ -87,7 +87,7 @@ private:
 
     // VISITORS
     void visit(AstClass* nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         if (nodep->extendsp()) {
             // Save pointer to derived class
             AstClass* const basep = nodep->extendsp()->classp();
@@ -95,7 +95,7 @@ private:
         }
     }
     void visit(AstMethodCall* nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         if (nodep->name() != "randomize") return;
         if (const AstClassRefDType* const classRefp
             = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
@@ -105,12 +105,12 @@ private:
         }
     }
 
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
     explicit RandomizeMarkVisitor(AstNetlist* nodep) {
-        iterate(nodep);
+        iterateConst(nodep);
         markAllDerived();
     }
     ~RandomizeMarkVisitor() override = default;

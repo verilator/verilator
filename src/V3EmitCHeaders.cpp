@@ -136,7 +136,7 @@ class EmitCHeader final : public EmitCConstInit {
                     puts(varp->dtypep()->cType(varp->nameProtect(), false, false));
                     if (canBeConstexpr) {
                         puts(" = ");
-                        iterate(varp->valuep());
+                        iterateConst(varp->valuep());
                     }
                     puts(";\n");
                 }
@@ -200,7 +200,7 @@ class EmitCHeader final : public EmitCConstInit {
                     }
                     puts(itemp->nameProtect());
                     puts(" = ");
-                    iterate(itemp->valuep());
+                    iterateConst(itemp->valuep());
                     if (VN_IS(itemp->nextp(), EnumItem)) puts(",");
                     puts("\n");
                 }

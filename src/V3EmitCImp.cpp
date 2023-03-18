@@ -262,7 +262,7 @@ class EmitCImp final : EmitCFunc {
                         puts(", ");
                         puts(varp->nameProtect());
                         puts("(");
-                        iterate(varp->valuep());
+                        iterateConst(varp->valuep());
                         puts(")\n");
                     } else if (varp->isIO() && varp->isSc()) {
                         puts(", ");
@@ -522,7 +522,7 @@ class EmitCImp final : EmitCFunc {
             for (AstCFunc* const funcp : pair.second) {
                 VL_RESTORER(m_modp);
                 m_modp = EmitCParentModule::get(funcp);
-                iterate(funcp);
+                iterateConst(funcp);
             }
             // Close output file
             VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
@@ -774,7 +774,7 @@ class EmitCTrace final : EmitCFunc {
     }
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
-        iterateAndNextNull(nodep->precondsp());
+        iterateAndNextConstNull(nodep->precondsp());
         const string func = nodep->full() ? "full" : "chg";
         bool emitWidth = true;
         if (nodep->dtypep()->basicp()->isDouble()) {
@@ -817,7 +817,7 @@ class EmitCTrace final : EmitCFunc {
             } else if (emitTraceIsScBv(nodep)) {
                 puts("VL_SC_BV_DATAP(");
             }
-            iterate(varrefp);  // Put var name out
+            iterateConst(varrefp);  // Put var name out
             // Tracing only supports 1D arrays
             if (nodep->declp()->arrayRange().ranged()) {
                 if (arrayindex == -2) {
@@ -839,7 +839,7 @@ class EmitCTrace final : EmitCFunc {
             puts(")");
         } else {
             puts("(");
-            iterate(nodep->valuep());
+            iterateConst(nodep->valuep());
             puts(")");
         }
     }
@@ -901,7 +901,7 @@ class EmitCTrace final : EmitCFunc {
         openNextOutputFile();
         // Emit functions
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) { iterate(funcp); }
+            if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) { iterateConst(funcp); }
         }
         // Close output file
         VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);

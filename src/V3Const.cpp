@@ -70,7 +70,7 @@ static int countTrailingZeroes(uint64_t val) {
 // This visitor can be used in the post-expanded Ast from V3Expand, where the Ast satisfies:
 // - Constants are 64 bit at most (because words are accessed via AstWordSel)
 // - Variables are scoped.
-class ConstBitOpTreeVisitor final : public VNVisitor {
+class ConstBitOpTreeVisitor final : public VNVisitorConst {
     // NODE STATE
     // AstVarRef::user4u      -> Base index of m_varInfos that points VarInfo
     // AstVarScope::user4u    -> Same as AstVarRef::user4
@@ -416,7 +416,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         {
             VL_RESTORER(m_leafp);
             m_leafp = &info;
-            iterate(nodep);
+            iterateConst(nodep);
         }
 
         bool ok = !m_failed;
@@ -431,7 +431,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNode* nodep) override { CONST_BITOP_SET_FAILED("Hit unexpected op", nodep); }
     void visit(AstCCast* nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         if (m_leafp) m_leafp->updateBitRange(nodep);
     }
     void visit(AstShiftR* nodep) override {
@@ -440,7 +440,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         CONST_BITOP_RETURN_IF(!constp, nodep->rhsp());
         m_lsb += constp->toUInt();
         incrOps(nodep, __LINE__);
-        iterate(nodep->lhsp());
+        iterateConst(nodep->lhsp());
         m_leafp->updateBitRange(nodep);
         m_lsb -= constp->toUInt();
     }
@@ -454,7 +454,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                               lhsp);
         incrOps(nodep, __LINE__);
         m_polarity = !m_polarity;
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         // Don't restore m_polarity for Xor as it counts parity of the entire tree
         if (!isXorTree()) m_polarity = !m_polarity;
         if (m_leafp && castp) m_leafp->updateBitRange(castp);
@@ -465,7 +465,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         CONST_BITOP_RETURN_IF(!constp, nodep->rhsp());
         UASSERT_OBJ(m_leafp->wordIdx() == -1, nodep, "Unexpected nested WordSel");
         m_leafp->wordIdx(constp->toSInt());
-        iterate(nodep->fromp());
+        iterateConst(nodep->fromp());
     }
     void visit(AstVarRef* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
@@ -529,7 +529,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             // Always reach past a plain making AND
             Restorer restorer{*this};
             incrOps(nodep, __LINE__);
-            iterate(nodep->rhsp());
+            iterateConst(nodep->rhsp());
             CONST_BITOP_RETURN_IF(m_failed, nodep->rhsp());
             restorer.disableRestore();  // Now all checks passed
         } else if (nodep->type() == m_rootp->type()) {  // And, Or, Xor
@@ -542,7 +542,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                 m_leafp = &leafInfo;
                 AstNodeExpr* opp = right ? nodep->rhsp() : nodep->lhsp();
                 const bool origFailed = m_failed;
-                iterate(opp);
+                iterateConst(opp);
                 if (leafInfo.constp() || m_failed) {
                     // Revert changes in leaf
                     restorer.restoreNow();
@@ -647,11 +647,11 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         m_varInfos.push_back(nullptr);
         CONST_BITOP_RETURN_IF(!isAndTree() && !isOrTree() && !isXorTree(), nodep);
         if (AstNodeBiop* const biopp = VN_CAST(nodep, NodeBiop)) {
-            iterate(biopp);
+            iterateConst(biopp);
         } else {
             UASSERT_OBJ(VN_IS(nodep, RedXor), nodep, "Must be RedXor");
             incrOps(nodep, __LINE__);
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
         for (auto&& entry : m_bitPolarities) {
             getVarInfo(entry.m_info).setPolarity(entry.m_polarity, entry.m_bit);
