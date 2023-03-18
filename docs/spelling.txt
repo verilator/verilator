@@ -191,6 +191,7 @@ Laurens
 Lavino
 Leber
 Leendert
+Lem
 Lesik
 Liland
 Liu
@@ -301,6 +302,7 @@ Solomatnikov
 Solt
 Southwell
 Srini
+Srinivasan
 Stamness
 Stephane
 Stoddard
@@ -349,6 +351,7 @@ Vdeeptemp
 Vdly
 Vemumtab
 Vemuri
+Venkataramanan
 Veriable
 Verialted
 Verilate
@@ -854,6 +857,7 @@ svdpi
 swrite
 sys
 systemc
+tenghtt
 testbench
 threadsafe
 threashold
