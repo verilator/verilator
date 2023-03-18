@@ -863,8 +863,8 @@ public:
         : ASTGEN_SUPER_ClockingItem(fl) {
         m_direction = direction;
         this->skewp(skewp);
-        if (AstAssign* const assignp = VN_CAST(clockingDeclp, Assign)) {
-            this->assignp(assignp);
+        if (AstAssign* const clkAssignp = VN_CAST(clockingDeclp, Assign)) {
+            this->assignp(clkAssignp);
         } else {
             exprp(VN_AS(clockingDeclp, NodeExpr));
         }

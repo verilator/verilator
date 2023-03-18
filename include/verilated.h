@@ -607,6 +607,7 @@ public:  // But for internal use only
     VerilatedEvalMsgQueue* __Vm_evalMsgQp;
     explicit VerilatedSyms(VerilatedContext* contextp);  // Pass null for default context
     ~VerilatedSyms();
+    VL_UNCOPYABLE(VerilatedSyms);
 };
 
 //===========================================================================

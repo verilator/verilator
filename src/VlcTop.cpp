@@ -288,7 +288,7 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
             const auto lit = lines.find(lineno);
             if (lit == lines.end()) {
                 os << "        " << line << '\n';
-            } else if (lit != lines.end()) {
+            } else {
                 VlcSourceCount& sc = lit->second;
                 // UINFO(0,"Source
                 // "<<source.name()<<":"<<sc.lineno()<<":"<<sc.column()<<endl);

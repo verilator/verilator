@@ -201,7 +201,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    CCtorsVisitor(AstNode* nodep) { iterate(nodep); }
+    explicit CCtorsVisitor(AstNode* nodep) { iterate(nodep); }
     ~CCtorsVisitor() override = default;
 };
 

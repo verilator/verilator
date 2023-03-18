@@ -64,5 +64,5 @@ public:
 
 void V3EmitC::emitcInlines() {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { EmitCInlines visitor{v3Global.rootp()}; }
+    { EmitCInlines{v3Global.rootp()}; }
 }

@@ -1871,7 +1871,6 @@ IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
 IData VL_NTOI_I(int obits, const std::string& str) VL_PURE { return VL_NTOI_Q(obits, str); }
 QData VL_NTOI_Q(int obits, const std::string& str) VL_PURE {
     QData out = 0;
-    const size_t procLen = std::min(str.length(), static_cast<size_t>(8));
     const char* const datap = str.data();
     int pos = static_cast<int>(str.length()) - 1;
     int bit = 0;

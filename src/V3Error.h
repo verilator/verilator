@@ -259,8 +259,7 @@ public:
         // backwards compatibility inheritance-like warnings
         if (m_e == other) { return true; }
         if (other == V3ErrorCode::WIDTH) {
-            return (m_e == WIDTH || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
-                    || m_e == WIDTHXZEXPAND);
+            return (m_e == WIDTHEXPAND || m_e == WIDTHTRUNC || m_e == WIDTHXZEXPAND);
         }
         if (other == V3ErrorCode::I_UNUSED) {
             return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
