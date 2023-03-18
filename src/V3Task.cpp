@@ -673,19 +673,25 @@ private:
 
     void unlinkAndClone(AstNodeFTask* funcp, AstNode* nodep, bool withNext) {
         UASSERT_OBJ(nodep, funcp, "null in function object clone");
-        VNRelinker relinkHandle;
-        if (withNext) {
-            nodep->unlinkFrBackWithNext(&relinkHandle);
-        } else {
-            nodep->unlinkFrBack(&relinkHandle);
-        }
         if (funcp->recursive()) {
+            VNRelinker relinkHandle;
+            if (withNext) {
+                nodep->unlinkFrBackWithNext(&relinkHandle);
+            } else {
+                nodep->unlinkFrBack(&relinkHandle);
+            }
             // Recursive functions require the original argument list to
             // still be live for linking purposes.
             // The old function gets clone, so that node pointers are mostly
             // retained through the V3Task transformations
             AstNode* const newp = nodep->cloneTree(withNext);
             relinkHandle.relink(newp);
+        } else {
+            if (withNext) {
+                nodep->unlinkFrBackWithNext();
+            } else {
+                nodep->unlinkFrBack();
+            }
         }
     }
 
