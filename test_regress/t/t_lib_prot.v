@@ -57,10 +57,10 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
          logic [128:0] s129_out;
          logic [3:0] [31:0] s4x32_in;
          logic [3:0] [31:0] s4x32_out;
-         /*verilator lint_off ASCENDINGRANGE*/
+         /*verilator lint_off ASCRANGE*/
          logic [0:15]       s6x16up_in[0:1][2:0];
          logic [0:15]       s6x16up_out[0:1][2:0];
-         /*verilator lint_on ASCENDINGRANGE*/
+         /*verilator lint_on ASCRANGE*/
          logic [15:0]       s8x16up_in[1:0][0:3];
          logic [15:0]       s8x16up_out[1:0][0:3];
          logic [15:0]       s8x16up_3d_in[1:0][0:1][0:1];

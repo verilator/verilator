@@ -860,9 +860,9 @@ private:
             // Note width() not set on range; use elementsConst()
             if (nodep->ascending() && !VN_IS(nodep->backp(), UnpackArrayDType)
                 && !VN_IS(nodep->backp(), Cell)) {  // For cells we warn in V3Inst
-                nodep->v3warn(ASCENDINGRANGE,
-                              "Ascending bit range vector: left < right of bit range: ["
-                                  << nodep->leftConst() << ":" << nodep->rightConst() << "]");
+                nodep->v3warn(ASCRANGE, "Ascending bit range vector: left < right of bit range: ["
+                                            << nodep->leftConst() << ":" << nodep->rightConst()
+                                            << "]");
             }
         }
     }

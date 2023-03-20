@@ -27,10 +27,10 @@ module secret #(parameter GATED_CLK = 0)
     output logic [128:0]      s129_out,
     input [3:0] [31:0]        s4x32_in,
     output logic [3:0] [31:0] s4x32_out,
-    /*verilator lint_off ASCENDINGRANGE*/
+    /*verilator lint_off ASCRANGE*/
     input [0:15]              s6x16up_in[0:1][2:0],
     output logic [0:15]       s6x16up_out[0:1][2:0],
-    /*verilator lint_on ASCENDINGRANGE*/
+    /*verilator lint_on ASCRANGE*/
     input [15:0]              s8x16up_in[1:0][0:3],
     output logic [15:0]       s8x16up_out[1:0][0:3],
     input [15:0]              s8x16up_3d_in[1:0][0:1][0:1],

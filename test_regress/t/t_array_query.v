@@ -40,9 +40,9 @@ module array_test
 
    input clk;
 
-   // verilator lint_off ASCENDINGRANGE
+   // verilator lint_off ASCRANGE
    reg [7:0] a [LEFT:RIGHT];
-   // verilator lint_on ASCENDINGRANGE
+   // verilator lint_on ASCRANGE
 
    typedef reg [7:0] r_t;
 

@@ -39,11 +39,11 @@ extern "C" int mon_check();
    reg [2:1]    twoone;
    reg [2:1]    fourthreetwoone[4:3];
    reg LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND;
-   // verilator lint_off ASCENDINGRANGE
+   // verilator lint_off ASCRANGE
    reg [0:61]   quads[2:3]      /*verilator public_flat_rw @(posedge clk)*/;
 /*verilator public_off*/
    reg             invisible1;
-   // verilator lint_on ASCENDINGRANGE
+   // verilator lint_on ASCRANGE
 
 /*verilator public_flat_rd_on*/
    reg [31:0]      count;

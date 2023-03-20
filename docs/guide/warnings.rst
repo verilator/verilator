@@ -97,7 +97,7 @@ List Of Warnings
    simulate correctly.
 
 
-.. option:: ASCENDINGRANGE
+.. option:: ASCRANGE
 
    .. TODO better example
 
@@ -870,8 +870,8 @@ List Of Warnings
 
    The naming of this worning is in contradiction with the common
    interpretation of little endian. It was therefore renamed to
-   :option:`ASCENDINGRANGE`. While :option:`LITENDIAN` remains for
-   backwards compatibility, new projects should use :option:`ASCENDINGRANGE`.
+   :option:`ASCRANGE`. While :option:`LITENDIAN` remains for
+   backwards compatibility, new projects should use :option:`ASCRANGE`.
 
 
 .. option:: MINTYPMAX

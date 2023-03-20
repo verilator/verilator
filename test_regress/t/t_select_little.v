@@ -14,7 +14,7 @@ module t (/*AUTOARG*/
    reg [63:0]   crc;
    reg [63:0]   sum;
 
-   // verilator lint_off ASCENDINGRANGE
+   // verilator lint_off ASCRANGE
    wire [10:41] sel2 = crc[31:0];
    wire [10:100] sel3 = {crc[26:0],crc};
 

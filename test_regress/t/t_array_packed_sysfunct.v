@@ -20,9 +20,9 @@ module t (/*AUTOARG*/
 
    // 2D packed arrays
    logic [WA+1:2] [WB+1:2] [WC+1:2] array_dsc;  // descending range array
-   /* verilator lint_off ASCENDINGRANGE */
+   /* verilator lint_off ASCRANGE */
    logic [2:WA+1] [2:WB+1] [2:WC+1] array_asc;  // ascending range array
-   /* verilator lint_on ASCENDINGRANGE */
+   /* verilator lint_on ASCRANGE */
 
    logic [1:0] array_unpk [3:2][1:0];
 

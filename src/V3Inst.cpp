@@ -343,11 +343,10 @@ private:
                 // Arrayed instants: one bit for each of the instants (each
                 // assign is 1 modwidth wide)
                 if (m_cellRangep->ascending()) {
-                    nodep->exprp()->v3warn(ASCENDINGRANGE,
-                                           "Ascending instance range connecting to "
-                                           "vector: left < right of instance range: ["
-                                               << m_cellRangep->leftConst() << ":"
-                                               << m_cellRangep->rightConst() << "]");
+                    nodep->exprp()->v3warn(ASCRANGE, "Ascending instance range connecting to "
+                                                     "vector: left < right of instance range: ["
+                                                         << m_cellRangep->leftConst() << ":"
+                                                         << m_cellRangep->rightConst() << "]");
                 }
                 AstNodeExpr* exprp = VN_AS(nodep->exprp(), NodeExpr)->unlinkFrBack();
                 const bool inputPin = nodep->modVarp()->isNonOutput();
