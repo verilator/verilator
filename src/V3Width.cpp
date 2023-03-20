@@ -1112,7 +1112,7 @@ private:
                            && declRange.hi() != declRange.lo()) {
                     nodep->v3error("Slice selection '"
                                    << declRange << "'"
-                                   << " has backward indexing versus data type's '"
+                                   << " has reversed range order versus data type's '"
                                    << adtypep->declRange() << "'");
                 }
             }
