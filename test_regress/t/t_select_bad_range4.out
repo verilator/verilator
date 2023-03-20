@@ -36,7 +36,7 @@
                                      : ... In instance t
    22 |       sel2 = mi[44 +: nonconst];
       |                       ^~~~~~~~
-%Error: t/t_select_bad_range4.v:22:23: Width of :+ or :- bit extract isn't a constant
+%Error: t/t_select_bad_range4.v:22:23: Width of :+ or :- bit slice range isn't a constant
                                      : ... In instance t
    22 |       sel2 = mi[44 +: nonconst];
       |                       ^~~~~~~~
