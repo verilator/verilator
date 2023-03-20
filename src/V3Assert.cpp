@@ -53,7 +53,7 @@ private:
     // METHODS
     string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message) {
         return (string("[%0t] " + prefix + ": ") + nodep->fileline()->filebasename() + ":"
-                + cvtToStr(nodep->fileline()->lineno()) + ": Assertion failed in %m"
+                + cvtToStr(nodep->fileline()->lineno()) + ": %m"
                 + ((message != "") ? ": " : "") + message + "\n");
     }
     void replaceDisplay(AstDisplay* nodep, const string& prefix) {
