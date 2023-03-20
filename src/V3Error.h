@@ -20,7 +20,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "verilated_threads.h"
+#include "V3Mutex.h"
 
 // Limited V3 headers here - this is a base class for Vlc etc
 #include "V3String.h"
@@ -315,7 +315,7 @@ private:
     bool m_warnFatal VL_GUARDED_BY(m_mutex) = true;  // Option: --warnFatal Warnings are fatal
     std::ostringstream m_errorStr VL_GUARDED_BY(m_mutex);  // Error string being formed
 public:
-    VerilatedMutex m_mutex;  // Make sure only single thread is in class
+    V3RecursiveMutex m_mutex;  // Make sure only single thread is in class
 
     string msgPrefix() VL_REQUIRES(m_mutex);  // returns %Error/%Warn
     string warnMore() VL_REQUIRES(m_mutex);
@@ -408,57 +408,57 @@ public:
     static void debugDefault(int level) VL_MT_UNSAFE { s().debugDefault(level); }
     static int debugDefault() VL_MT_SAFE { return s().debugDefault(); }
     static void errorLimit(int level) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().errorLimit(level);
     }
     static int errorLimit() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().errorLimit();
     }
     static void warnFatal(bool flag) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().warnFatal(flag);
     }
     static bool warnFatal() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().warnFatal();
     }
     // returns %Error/%Warn
     static string msgPrefix() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().msgPrefix();
     }
     static int errorCount() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().errorCount();
     }
     static bool pretendError(int errorCode) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().pretendError(errorCode);
     }
     static int warnCount() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().warnCount();
     }
     static bool errorContexted() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().errorContexted();
     }
     static void errorContexted(bool flag) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().errorContexted(flag);
     }
     static void describedEachWarn(V3ErrorCode code, bool flag) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().describedEachWarn(code, flag);
     }
     // METHODS
     static void incErrors() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().incErrors();
     }
     static void incWarnings() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().incWarnings();
     }
     static void init();
@@ -468,20 +468,20 @@ public:
     static void abortIfWarnings();
     // Suppress next %Warn if user has it off
     static void suppressThisWarning() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().suppressThisWarning();
     }
     static void pretendError(V3ErrorCode code, bool flag) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().pretendError(code, flag);
     }
     static string lineStr(const char* filename, int lineno) VL_PURE;
     static V3ErrorCode errorCode() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().errorCode();
     }
     static void errorExitCb(V3ErrorGuarded::ErrorExitCb cb) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().errorExitCb(cb);
     }
 
@@ -492,7 +492,7 @@ public:
     // streamed directly to cerr.
     // Use with caution as this function isn't MT_SAFE.
     static string warnMoreStandalone() VL_EXCLUDES(s().m_mutex) VL_MT_UNSAFE {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().warnMore();
     }
     // This function marks place in error message from which point message
@@ -508,18 +508,18 @@ public:
     // Internals for v3error()/v3fatal() macros only
     // Error end takes the string stream to output, be careful to seek() as needed
     static void v3errorPrep(V3ErrorCode code) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().v3errorPrep(code);
     }
     static std::ostringstream& v3errorStr() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().v3errorStr();
     }
     static void vlAbort();
     // static, but often overridden in classes.
     static void v3errorEnd(std::ostringstream& sstr, const string& extra = "")
         VL_MT_SAFE_EXCLUDES(s().m_mutex) VL_MT_SAFE {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().v3errorEnd(sstr, extra);
     }
     // We can't call 's().v3errorEnd' directly in 'v3ErrorEnd'/'v3errorEndFatal',

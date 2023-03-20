@@ -17,7 +17,7 @@
 #ifndef _V3THREADPOOL_H_
 #define _V3THREADPOOL_H_ 1
 
-#include "verilated_threads.h"
+#include "V3Mutex.h"
 
 #include <condition_variable>
 #include <functional>
@@ -34,7 +34,7 @@ class V3ThreadPool final {
     static constexpr unsigned int FUTUREWAITFOR_MS = 100;
     using job_t = std::function<void()>;
 
-    mutable VerilatedMutex m_mutex;  // Mutex for use by m_queue
+    mutable V3Mutex m_mutex;  // Mutex for use by m_queue
     std::queue<job_t> m_queue VL_GUARDED_BY(m_mutex);  // Queue of jobs
     // We don't need to guard this condition_variable as
     // both `notify_one` and `notify_all` functions are atomic,
@@ -42,7 +42,7 @@ class V3ThreadPool final {
     // used by this condition_variable, so clang checks that we have mutex locked
     std::condition_variable_any m_cv;  // Conditions to wake up workers
     std::list<std::thread> m_workers;  // Worker threads
-    VerilatedMutex m_stoppedJobsMutex;  // Used to signal stopped jobs
+    V3Mutex m_stoppedJobsMutex;  // Used to signal stopped jobs
     // Conditions to wake up stopped jobs
     std::condition_variable_any m_stoppedJobsCV VL_GUARDED_BY(m_stoppedJobsMutex);
     std::atomic_uint m_stoppedJobs{0};  // Currently stopped jobs waiting for wake up
@@ -54,7 +54,7 @@ class V3ThreadPool final {
     // CONSTRUCTORS
     V3ThreadPool() = default;
     ~V3ThreadPool() {
-        VerilatedLockGuard lock{m_mutex};
+        V3LockGuard lock{m_mutex};
         m_queue = {};  // make sure queue is empty
         lock.unlock();
         resize(0);
@@ -106,15 +106,15 @@ private:
     }
 
     bool stopRequestedStandalone() VL_MT_SAFE_EXCLUDES(m_stoppedJobsMutex) {
-        const VerilatedLockGuard lock{m_stoppedJobsMutex};
+        const V3LockGuard lock{m_stoppedJobsMutex};
         return stopRequested();
     }
 
     // Waits until exclusive access job completes its job
-    void waitStopRequested(VerilatedLockGuard& stoppedJobLock) VL_REQUIRES(m_stoppedJobsMutex);
+    void waitStopRequested(V3LockGuard& stoppedJobLock) VL_REQUIRES(m_stoppedJobsMutex);
 
     // Waits until all other jobs are stopped
-    void waitOtherThreads(VerilatedLockGuard& stoppedJobLock) VL_MT_SAFE_EXCLUDES(m_mutex)
+    void waitOtherThreads(V3LockGuard& stoppedJobLock) VL_MT_SAFE_EXCLUDES(m_mutex)
         VL_REQUIRES(m_stoppedJobsMutex);
 
     template <typename T>
@@ -146,7 +146,7 @@ std::future<T> V3ThreadPool::enqueue(std::function<T()>&& f) VL_MT_SAFE {
     std::shared_ptr<std::promise<T>> prom = std::make_shared<std::promise<T>>();
     std::future<T> result = prom->get_future();
     pushJob(prom, std::move(f));
-    const VerilatedLockGuard guard{m_mutex};
+    const V3LockGuard guard{m_mutex};
     m_cv.notify_one();
     return result;
 }
@@ -157,7 +157,7 @@ void V3ThreadPool::pushJob(std::shared_ptr<std::promise<T>>& prom,
     if (willExecuteSynchronously()) {
         prom->set_value(f());
     } else {
-        const VerilatedLockGuard guard{m_mutex};
+        const V3LockGuard guard{m_mutex};
         m_queue.push([prom, f] { prom->set_value(f()); });
     }
 }

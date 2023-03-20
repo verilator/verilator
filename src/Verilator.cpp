@@ -14,6 +14,8 @@
 //
 //*************************************************************************
 
+#define VERILATOR_VERILATOR_CPP_INTERNAL_
+
 #include "V3Active.h"
 #include "V3ActiveTop.h"
 #include "V3Assert.h"
@@ -591,6 +593,12 @@ static void verilate(const string& argString) {
         v3fatalSrc("VERILATOR_DEBUG_SKIP_IDENTICAL w/ --skip-identical: Changes found\n");
     }  // LCOV_EXCL_STOP
 
+    // Disable mutexes in single-thread verilation
+    if (v3Global.opt.verilateJobs() > 1) {
+        V3MutexConfig::s().configure(/* enable */ true);
+    } else {
+        V3MutexConfig::s().configure(/* enable */ false);
+    }
     // Adjust thread pool size
     V3ThreadPool::s().resize(v3Global.opt.verilateJobs());
 
@@ -762,3 +770,5 @@ int main(int argc, char** argv) {
 
     UINFO(1, "Done, Exiting...\n");
 }
+
+#undef VERILATOR_VERILATOR_CPP_INTERNAL_

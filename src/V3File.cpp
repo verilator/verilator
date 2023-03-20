@@ -108,7 +108,7 @@ class V3FileDependImp final {
     };
 
     // MEMBERS
-    VerilatedMutex m_mutex;  // Protects members
+    V3Mutex m_mutex;  // Protects members
     std::set<string> m_filenameSet VL_GUARDED_BY(m_mutex);  // Files generated (elim duplicates)
     std::set<DependFile> m_filenameList;  // Files sourced/generated
 
@@ -123,7 +123,7 @@ class V3FileDependImp final {
 public:
     // ACCESSOR METHODS
     void addSrcDepend(const string& filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        const VerilatedLockGuard lock{m_mutex};
+        const V3LockGuard lock{m_mutex};
         const auto itFoundPair = m_filenameSet.insert(filename);
         if (itFoundPair.second) {
             DependFile df{filename, false};
@@ -132,7 +132,7 @@ public:
         }
     }
     void addTgtDepend(const string& filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        const VerilatedLockGuard lock{m_mutex};
+        const V3LockGuard lock{m_mutex};
         const auto itFoundPair = m_filenameSet.insert(filename);
         if (itFoundPair.second) m_filenameList.insert(DependFile{filename, true});
     }
@@ -957,7 +957,7 @@ void V3OutCFile::putsGuard() {
 
 class VIdProtectImp final {
     // MEMBERS
-    VerilatedMutex m_mutex;  // Protects members
+    V3Mutex m_mutex;  // Protects members
     std::map<const std::string, std::string> m_nameMap;  // Map of old name into new name
     std::unordered_set<std::string> m_newIdSet VL_GUARDED_BY(m_mutex);  // Which new names exist
 protected:
@@ -979,7 +979,7 @@ public:
     // METHODS
     string passthru(const string& old) VL_MT_SAFE_EXCLUDES(m_mutex) {
         if (!v3Global.opt.protectIds()) return old;
-        const VerilatedLockGuard lock{m_mutex};
+        const V3LockGuard lock{m_mutex};
         const auto it = m_nameMap.find(old);
         if (it != m_nameMap.end()) {
             // No way to go back and correct the older crypt name
@@ -993,7 +993,7 @@ public:
     }
     string protectIf(const string& old, bool doIt) VL_MT_SAFE_EXCLUDES(m_mutex) {
         if (!v3Global.opt.protectIds() || old.empty() || !doIt) return old;
-        const VerilatedLockGuard lock{m_mutex};
+        const V3LockGuard lock{m_mutex};
         const auto it = m_nameMap.find(old);
         if (it != m_nameMap.end()) {
             return it->second;

@@ -896,8 +896,8 @@ string V3Options::version() VL_PURE {
 }
 
 string V3Options::protectKeyDefaulted() VL_MT_SAFE {
-    static VerilatedMutex mutex;
-    const VerilatedLockGuard lock{mutex};
+    static V3Mutex mutex;
+    const V3LockGuard lock{mutex};
     if (m_protectKey.empty()) {
         // Create a key with a human-readable symbol-like name.
         // This conversion drops ~2 bits of entropy out of 256, shouldn't matter.
