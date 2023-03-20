@@ -1514,9 +1514,9 @@ Summary:
 .. option:: -Wno-lint
 
    Disable all lint-related warning messages, and all style warnings.  This is
-   equivalent to ``-Wno-ALWCOMBORDER -Wno-BSSPACE -Wno-CASEINCOMPLETE
+   equivalent to ``-Wno-ALWCOMBORDER -Wno-ASCENDINGRANGE -Wno-BSSPACE -Wno-CASEINCOMPLETE
    -Wno-CASEOVERLAP -Wno-CASEX -Wno-CASTCONST -Wno-CASEWITHX -Wno-CMPCONST -Wno-COLONPLUS
-   -Wno-IMPLICIT -Wno-IMPLICITSTATIC -Wno-ASCENDINGRANGE -Wno-PINCONNECTEMPTY
+   -Wno-IMPLICIT -Wno-IMPLICITSTATIC -Wno-PINCONNECTEMPTY
    -Wno-PINMISSING -Wno-STATICVAR -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED
    -Wno-UNUSEDGENVAR -Wno-UNUSEDPARAM -Wno-UNUSEDSIGNAL
    -Wno-WIDTH`` plus the list shown for Wno-style.
