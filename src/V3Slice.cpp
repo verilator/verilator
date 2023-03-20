@@ -141,7 +141,8 @@ class SliceVisitor final : public VNVisitor {
             if (const AstUnpackArrayDType* const arrayp = VN_CAST(dtp, UnpackArrayDType)) {
                 // Left and right could have different ascending/descending range,
                 // but #elements is common and all variables are realigned to start at zero
-                // Assign of an ascending range slice to a descending range one must reverse the elements
+                // Assign of an ascending range slice to a descending range one must reverse the
+                // elements
                 AstNodeAssign* newlistp = nullptr;
                 const int elements = arrayp->rangep()->elementsConst();
                 for (int offset = 0; offset < elements; ++offset) {

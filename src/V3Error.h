@@ -229,10 +229,10 @@ public:
     }
     // Warnings that are lint only
     bool lintError() const VL_MT_SAFE {
-        return (m_e == ALWCOMBORDER || m_e == ASCENDINGRANGE || m_e == BSSPACE || m_e == CASEINCOMPLETE
-                || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
-                || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
-                || m_e == LATCH || m_e == PINMISSING || m_e == REALCVT
+        return (m_e == ALWCOMBORDER || m_e == ASCENDINGRANGE || m_e == BSSPACE
+                || m_e == CASEINCOMPLETE || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX
+                || m_e == CASTCONST || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT
+                || m_e == IMPLICITSTATIC || m_e == LATCH || m_e == PINMISSING || m_e == REALCVT
                 || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC
                 || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
     }

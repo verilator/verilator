@@ -860,9 +860,9 @@ private:
             // Note width() not set on range; use elementsConst()
             if (nodep->ascending() && !VN_IS(nodep->backp(), UnpackArrayDType)
                 && !VN_IS(nodep->backp(), Cell)) {  // For cells we warn in V3Inst
-                nodep->v3warn(ASCENDINGRANGE, "Ascending bit range vector: left < right of bit range: ["
-                                                  << nodep->leftConst() << ":" << nodep->rightConst()
-                                                  << "]");
+                nodep->v3warn(ASCENDINGRANGE,
+                              "Ascending bit range vector: left < right of bit range: ["
+                                  << nodep->leftConst() << ":" << nodep->rightConst() << "]");
             }
         }
     }
@@ -6351,9 +6351,8 @@ private:
                             constp->fileline(), lhsDTypep,
                             new AstConst{constp->fileline(), AstConst::WidthedValue{}, 8, 0}};
                         for (int aindex = arrayp->lo(); aindex <= arrayp->hi(); ++aindex) {
-                            int cindex = arrayp->declRange().ascending()
-                                             ? (arrayp->hi() - aindex)
-                                             : (aindex - arrayp->lo());
+                            int cindex = arrayp->declRange().ascending() ? (arrayp->hi() - aindex)
+                                                                         : (aindex - arrayp->lo());
                             V3Number selected{constp, 8};
                             selected.opSel(constp->num(), cindex * 8 + 7, cindex * 8);
                             UINFO(0, "   aindex=" << aindex << "  cindex=" << cindex

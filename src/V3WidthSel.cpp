@@ -485,7 +485,8 @@ private:
         V3Width::widthParamsEdit(nodep->rhsp());  // constifyEdit doesn't ensure widths finished
         V3Const::constifyEdit(nodep->rhsp());  // May relink pointed to node, ok if not const
         V3Const::constifyParamsEdit(nodep->thsp());  // May relink pointed to node
-        checkConstantOrReplace(nodep->thsp(), "Width of :+ or :- bit slice range isn't a constant");
+        checkConstantOrReplace(nodep->thsp(),
+                               "Width of :+ or :- bit slice range isn't a constant");
         if (debug() >= 9) nodep->dumpTree("-  SELPM3: ");
         // Now replace it with an AstSel
         AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
