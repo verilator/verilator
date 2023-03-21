@@ -91,11 +91,11 @@ package std;
 
     class process;
         typedef enum {
-            FINISHED,
-            RUNNING,
-            WAITING,
-            SUSPENDED,
-            KILLED
+            FINISHED  = 0,
+            RUNNING   = 1,
+            WAITING   = 2,
+            SUSPENDED = 3,
+            KILLED    = 4
         } state;
 
         int id;
@@ -110,20 +110,24 @@ package std;
         endfunction
 
         function state status();
-            return process::FINISHED;
+            return state'($c("vlIdProcess[", id, "]->state()"));
         endfunction
 
         function void kill();
+            $c("vlIdProcess[", id, "]->state(VlProcess::KILLED);");
         endfunction
 
-        task await();
-        endtask
-
         function void suspend();
+            $c("vlIdProcess[", id, "]->state(VlProcess::SUSPENDED);");
         endfunction
 
         function void resume();
+            $c("vlIdProcess[", id, "]->state(VlProcess::RUNNING);");
         endfunction
+
+        task await();
+            wait (status() == RUNNING);
+        endtask
 
         function void srandom(int seed);
             // TODO: Set the state without changing it

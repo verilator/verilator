@@ -422,27 +422,34 @@ public:
     void await_resume() const noexcept {}
 };
 
-class VlProcess {
-private:
-    // TYPES
-    enum {
-        FINISHED,
-        RUNNING,
-        WAITING,
-        SUSPENDED,
-        KILLED
-    };
+class VlProcess;
 
+extern thread_local std::map<int, VlProcess*> vlIdProcess;
+
+class VlProcess {
     // MEMBERS
     int m_state;
     int m_id;
 
 public:
+    // TYPES
+    enum {
+        FINISHED  = 0,
+        RUNNING   = 1,
+        WAITING   = 2,
+        SUSPENDED = 3,
+        KILLED    = 4,
+    };
+
     // CONSTRUCTORS
     VlProcess()
         : m_state{RUNNING} {
         static int max_id = 0;
         m_id = max_id++;
+        vlIdProcess[m_id] = this;
+    }
+    ~VlProcess() {
+        vlIdProcess.erase(m_id);
     }
 
     // METHODS

@@ -22,6 +22,8 @@
 
 #include "verilated_timing.h"
 
+thread_local std::map<int, VlProcess*> vlIdProcess{};
+
 //======================================================================
 // VlCoroutineHandle:: Methods
 
