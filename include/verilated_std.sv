@@ -110,7 +110,7 @@ package std;
         endfunction
 
         protected function void set_status(state s);
-          $c("((VlProcess*)", m_process, ")->state(", s, ");");
+            $c("((VlProcess*)", m_process, ")->state(", s, ");");
         endfunction
 
         function state status();
@@ -130,7 +130,8 @@ package std;
         endfunction
 
         task await();
-            wait (status() == RUNNING);
+            state s = status();
+            wait (s == FINISHED || s == KILLED);
         endtask
 
         function void srandom(int seed);
