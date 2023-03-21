@@ -98,31 +98,35 @@ package std;
             KILLED    = 4
         } state;
 
-        int id;
+        protected chandle m_process;
 
         function new();
         endfunction
 
         static function process self();
             process p = new;
-            p.id = $c("vlProcess->id()");
+            $c(p.m_process, " = (unsigned long)vlProcess;");
             return p;
         endfunction
 
+        protected function void set_status(state s);
+          $c("((VlProcess*)", m_process, ")->state(", s, ");");
+        endfunction
+
         function state status();
-            return state'($c("vlIdProcess[", id, "]->state()"));
+            return state'($c("((VlProcess*)", m_process, ")->state()"));
         endfunction
 
         function void kill();
-            $c("vlIdProcess[", id, "]->state(VlProcess::KILLED);");
+            set_status(KILLED);
         endfunction
 
         function void suspend();
-            $c("vlIdProcess[", id, "]->state(VlProcess::SUSPENDED);");
+            set_status(SUSPENDED);
         endfunction
 
         function void resume();
-            $c("vlIdProcess[", id, "]->state(VlProcess::RUNNING);");
+            set_status(RUNNING);
         endfunction
 
         task await();
