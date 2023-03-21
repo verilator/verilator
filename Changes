@@ -19,6 +19,7 @@ Verilator 5.009 devel
 * Support $fopen as an expression.
 * Support class extends of package::class.
 * Change ZERODLY to a warning.
+* Fix false LATCH warning on --assert 'unique else if' (#4033). [Jesse Taube]
 * Fix UNDRIVEN warning seg fault (#3989). [Felix Neumärker]
 * Fix symbol entries when inheriting classes (#3995) (#3996). [Krzysztof Boroński]
 * Fix push to dynamic queue in struct (#4015). [ezchi]
