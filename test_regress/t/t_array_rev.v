@@ -12,9 +12,9 @@ module t (/*AUTOARG*/
    input clk;
 
    integer      cyc = 0;
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    logic arrd [0:1] = '{ 1'b1, 1'b0 };
-   // verilator lint_on LITENDIAN
+   // verilator lint_on ASCRANGE
    logic y0, y1;
    logic localbkw [1:0];
 

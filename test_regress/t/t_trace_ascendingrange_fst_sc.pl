@@ -14,13 +14,13 @@ if (!$Self->have_sc) {
     skip("No SystemC installed");
 }
 else {
-    top_filename("t/t_trace_litendian.v");
+    top_filename("t/t_trace_ascendingrange.v");
 
     # CI environment offers 2 VCPUs, 2 thread setting causes the following warning.
     # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
     # Strangely, asking for more threads makes it go away.
     compile(
-        verilator_flags2 => ['--sc --trace-fst --trace-params -Wno-LITENDIAN'],
+        verilator_flags2 => ['--sc --trace-fst --trace-params -Wno-ASCRANGE'],
         threads => $Self->{vltmt} ? 6 : 1
         );
 

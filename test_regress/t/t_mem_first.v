@@ -12,13 +12,13 @@ module t (/*AUTOARG*/
    input clk;
    integer _mode;       initial _mode = 0;
 
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    reg [7:0]  mem_narrow [0:31];  //surefire lint_off_line RD_WRT WRTWRT NBAJAM
    reg [77:0] mem_wide   [1024:0];  //surefire lint_off_line RD_WRT WRTWRT NBAJAM
    reg [7:0]  mem_dly_narrow [0:1];  //surefire lint_off_line RD_WRT WRTWRT NBAJAM
    reg [77:0] mem_dly_wide   [1:0];  //surefire lint_off_line RD_WRT WRTWRT NBAJAM
    reg [34:0] vec_wide;
-   // verilator lint_on LITENDIAN
+   // verilator lint_on ASCRANGE
 
    reg [31:0] wrd0 [15:0];
    wire [3:0] sel = 4'h3;

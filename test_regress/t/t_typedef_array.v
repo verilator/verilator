@@ -8,9 +8,9 @@ typedef logic logic_alias_t;
 
 module t;
    logic_alias_t [6:1] signal;
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    logic_alias_t [1:6] signal2;
-   // verilator lint_on LITENDIAN
+   // verilator lint_on ASCRANGE
 
    initial begin
       signal[6:1] = 'b100001;

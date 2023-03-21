@@ -4,7 +4,7 @@
 // without warranty.
 // SPDX-License-Identifier: CC0-1.0
 
-/* verilator lint_off LITENDIAN */
+/* verilator lint_off ASCRANGE */
 module some_module (
                     input wrclk
                     );

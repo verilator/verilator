@@ -10,11 +10,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
+top_filename("t/t_trace_ascendingrange.v");
+
 # CI environment offers 2 VCPUs, 2 thread setting causes the following warning.
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
 # Strangely, asking for more threads makes it go away.
 compile(
-    verilator_flags2 => ['--cc --trace --trace-params -Wno-LITENDIAN'],
+    verilator_flags2 => ['--cc --trace-fst --trace-params -Wno-ASCRANGE'],
     threads => $Self->{vltmt} ? 6 : 1
     );
 
@@ -22,7 +24,7 @@ execute(
     check_finished => 1,
     );
 
-vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
+fst_identical("$Self->{obj_dir}/simx.fst", $Self->{golden_filename});
 
 ok(1);
 1;

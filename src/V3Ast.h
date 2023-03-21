@@ -1097,21 +1097,21 @@ public:
     }
     //
     VNumRange() = default;
-    VNumRange(int hi, int lo, bool littleEndian) { init(hi, lo, littleEndian); }
+    VNumRange(int hi, int lo, bool ascending) { init(hi, lo, ascending); }
     VNumRange(int left, int right)
         : m_left{left}
         , m_right{right}
         , m_ranged{true} {}
     ~VNumRange() = default;
     // MEMBERS
-    void init(int hi, int lo, bool littleEndian) {
+    void init(int hi, int lo, bool ascending) {
         if (lo > hi) {
             const int t = hi;
             hi = lo;
             lo = t;
         }
-        m_left = littleEndian ? lo : hi;
-        m_right = littleEndian ? hi : lo;
+        m_left = ascending ? lo : hi;
+        m_right = ascending ? hi : lo;
         m_ranged = true;
     }
     int left() const { return m_left; }
@@ -1122,10 +1122,10 @@ public:
     int lo() const VL_MT_SAFE {
         return m_left > m_right ? m_right : m_left;
     }  // How to show a declaration
-    int leftToRightInc() const { return littleEndian() ? 1 : -1; }
+    int leftToRightInc() const { return ascending() ? 1 : -1; }
     int elements() const VL_MT_SAFE { return hi() - lo() + 1; }
     bool ranged() const { return m_ranged; }
-    bool littleEndian() const { return m_left < m_right; }
+    bool ascending() const { return m_left < m_right; }
     int hiMaxSelect() const {
         return (lo() < 0 ? hi() - lo() : hi());
     }  // Maximum value a [] select may index

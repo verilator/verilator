@@ -70,6 +70,7 @@ public:
         EC_FIRST_WARN,  // Just a code so the program knows where to start warnings
         //
         ALWCOMBORDER,   // Always_comb with unordered statements
+        ASCRANGE,       // Ascending bit range vector
         ASSIGNDLY,      // Assignment delays
         ASSIGNIN,       // Assigning to input
         BADSTDPRAGMA,   // Any error related to pragmas
@@ -109,7 +110,7 @@ public:
         INITIALDLY,     // Initial delayed statement
         INSECURE,       // Insecure options
         LATCH,          // Latch detected outside of always_latch block
-        LITENDIAN,      // Little bit endian vector
+        LITENDIAN,      // Little endian, renamed to ASCRANGE
         MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks
@@ -183,7 +184,7 @@ public:
             "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
             // Warnings
             " EC_FIRST_WARN",
-            "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
+            "ALWCOMBORDER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
@@ -228,12 +229,12 @@ public:
     }
     // Warnings that are lint only
     bool lintError() const VL_MT_SAFE {
-        return (m_e == ALWCOMBORDER || m_e == BSSPACE || m_e == CASEINCOMPLETE
+        return (m_e == ALWCOMBORDER || m_e == ASCRANGE || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
-                || m_e == LATCH || m_e == LITENDIAN || m_e == PINMISSING || m_e == REALCVT
-                || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC
-                || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
+                || m_e == LATCH || m_e == PINMISSING || m_e == REALCVT || m_e == STATICVAR
+                || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
+                || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
@@ -251,7 +252,7 @@ public:
 
     V3ErrorCode renamedTo() const {
         // Return a new error this error has been renamed to
-        // e.g. if (m_e == LITENDIAN) return V3ErrorCode{RANGEASC};
+        if (m_e == LITENDIAN) return V3ErrorCode{ASCRANGE};
         return V3ErrorCode{EC_MIN};  // Not renamed; see isRenamed()
     }
     bool isRenamed() const { return renamedTo() != V3ErrorCode{EC_MIN}; }

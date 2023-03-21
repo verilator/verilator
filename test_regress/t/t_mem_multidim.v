@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    // verilator lint_off BLKANDNBLK
    //               3    3    4
    reg [71:0] memw [2:0][1:3][5:2];
@@ -29,7 +29,7 @@ module t (/*AUTOARG*/
 
    integer    imem[2:0][1:3];
    reg [2:0]  cstyle[2];
-   // verilator lint_on  LITENDIAN
+   // verilator lint_on  ASCRANGE
 
    initial begin
       for (i0=0; i0<3; i0=i0+1) begin

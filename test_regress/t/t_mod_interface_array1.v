@@ -44,9 +44,9 @@ module t
    logic [N-1:0] a_in;
    logic [N-1:0] a_out;
    logic [N-1:0] ack_out;
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    a_if #(.PARAM(1)) tl_intf [N] ();
-   // verilator lint_on LITENDIAN
+   // verilator lint_on ASCRANGE
    intf_source source(a_in, tl_intf);
    intf_sink   sink(a_out, tl_intf);
 

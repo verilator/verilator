@@ -45,7 +45,7 @@ module t;
    // verilator lint_off INITIALDLY
    // verilator lint_off INSECURE
    // verilator lint_off LATCH
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    // verilator lint_off MODDUP
    // verilator lint_off MULTIDRIVEN
    // verilator lint_off MULTITOP

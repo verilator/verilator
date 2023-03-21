@@ -22,13 +22,13 @@ module t ();
 
    wire [2:0] X = 3'b110;
 
-   // Should not cause LITENDIAN warning, as no harm in array selections.
-   // verilator lint_on LITENDIAN
+   // Should not cause ASCRANGE warning, as no harm in array selections.
+   // verilator lint_on ASCRANGE
    foo_intf foo1 [N] (.x(1'b1));
    foo_subm sub1 [N] (.x(1'b1));
 
-   // Will cause LITENDIAN warning?
-   // verilator lint_off LITENDIAN
+   // Will cause ASCRANGE warning?
+   // verilator lint_off ASCRANGE
    foo_intf foos [N] (.x(X));
    foo_intf fool [1:3] (.x(X));
    foo_intf foom [3:1] (.x(X));

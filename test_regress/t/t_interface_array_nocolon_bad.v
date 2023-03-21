@@ -22,7 +22,7 @@ module t ();
 
    wire [2:0] X = 3'b110;
 
-   // Will cause LITENDIAN warning?
+   // Will cause ASCRANGE warning?
    foo_intf foos [N] (.x(X)); // bad
    foo_intf fool [1:3] (.x(X)); // bad
    foo_intf foom [3:1] (.x(X)); // ok

@@ -8,7 +8,7 @@
 
 module t (/*AUTOARG*/);
 
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    // verilator lint_off WIDTH
 
    reg [63:0] sum;  // Checked not in objects
