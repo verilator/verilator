@@ -526,7 +526,7 @@
 -V{t#,#}         Resuming delayed processes
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:91
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:89
--V{t#,#}+      Vt_timing_debug2_t____Vfork_h########__0__1
+-V{t#,#}+      Vt_timing_debug2_t____Vfork_h########__0__0
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aAssignDelayClass::__VnoInFunc_do_assign
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act

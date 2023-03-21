@@ -144,9 +144,20 @@ private:
 
     // VISITORS
     void visit(AstFork* nodep) override {
-        // Keep this begin to group its statements together
+        // Keep begins in forks to group their statements together
         VL_RESTORER(m_keepBegins);
         m_keepBegins = true;
+        // If a statement is not a begin, wrap it in a begin. This fixes an issue when the
+        // statement is a task call that gets inlined later (or any other statement that gets
+        // replaced with multiple statements)
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (!VN_IS(stmtp, Begin)) {
+                AstBegin* const beginp = new AstBegin{stmtp->fileline(), "", nullptr};
+                stmtp->replaceWith(beginp);
+                beginp->addStmtsp(stmtp);
+                stmtp = beginp;
+            }
+        }
         dotNames(nodep, "__FORK__");
         nodep->name("");
     }
