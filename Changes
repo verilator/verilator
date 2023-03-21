@@ -15,17 +15,26 @@ Verilator 5.009 devel
 
 * Add --public-depth to force public to a certain instance depth (#3952). [Andrew Nolte]
 * Add --public-params flag (#3990). [Andrew Nolte]
+* Add STATICVAR warning and convert to automatic (#4018) (#4027) (#4030). [Ryszard Rozak, Antmicro Ltd]
+* Support class extends of package::class.
+* Support method calls without parenthesis (#4034). [Ryszard Rozak, Antmicro Ltd]
 * Support complicated IEEE 'for' assignments.
 * Support $fopen as an expression.
-* Support class extends of package::class.
+* Change range order warning from LITENDIAN to ASCRANGE (#4010). [Iztok Jeras]
 * Change ZERODLY to a warning.
-* Fix false LATCH warning on --assert 'unique else if' (#4033). [Jesse Taube]
+* Fix random internal crashes (#666). [Dag Lem]
+* Fix install, standardization in cmake CMakeLists.txt (#3974). [Yu-Sheng Lin]
 * Fix UNDRIVEN warning seg fault (#3989). [Felix Neumärker]
 * Fix symbol entries when inheriting classes (#3995) (#3996). [Krzysztof Boroński]
+* Fix event controls reusing same variable (#4014). Kamil Rakoczy <krakoczy@antmicro.com>
 * Fix push to dynamic queue in struct (#4015). [ezchi]
+* Fix names for blocks in do..while loop (#4019). [Ryszard Rozak, Antmicro Ltd]
+* Fix randomize on null field (#4023). [Ryszard Rozak, Antmicro Ltd]
+* Fix rand fields in base classes (#4025). [Ryszard Rozak, Antmicro Ltd]
 * Fix large return blocks with --comp-limit-blocks (#4028). [tenghtt]
 * Fix clocking block scope internal error (#4032). [Srinivasan Venkataramanan]
-* Fix random internal crashes (#666). [Dag Lem]
+* Fix false LATCH warning on --assert 'unique else if' (#4033) ($4054). [Jesse Taube]
+* Fix characters from DEFENV literals for conda (#4035) (#4044). [Tim Snyder]
 * Fix false ENUMVALUE on expressions and arrays.
 
 
