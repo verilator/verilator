@@ -9,12 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 scenarios(dist => 1);
-skip("CentOS hangs on this test ")
-  if (1);
 
-
-ok(1);
-1;
 my $root = "..";
 
 ### Must trim output before and after our file list
@@ -28,7 +23,6 @@ foreach my $file (sort keys %files) {
 
     my $contents = file_contents($filename);
 
-print ("AsFigo $filename");
     checkPattern($filename, $contents,
                  qr/[^\/]*virtual[^{};]+override/,
                  "'virtual' keyword is redundant on 'override' method");
