@@ -51,15 +51,15 @@ private:
     bool m_inSampled = false;  // True inside a sampled expression
 
     // METHODS
-    string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message, 
+    string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message,
               VDisplayType severity) {
 	 if (severity == VDisplayType::DT_ERROR ||
-	     severity == VDisplayType::DT_FATAL 
+	     severity == VDisplayType::DT_FATAL
 	    ) {
             return (string("[%0t] " + prefix + ": ") + nodep->fileline()->filebasename() + ":"
-                + cvtToStr(nodep->fileline()->lineno()) + ": Assertion failed in %m" 
+                + cvtToStr(nodep->fileline()->lineno()) + ": Assertion failed in %m"
 		+ ((message != "") ? ": " : "") + message + "\n");
-	 } else { 
+	 } else {
             return (string("[%0t] " + prefix + ": ") + nodep->fileline()->filebasename() + ":"
                 + cvtToStr(nodep->fileline()->lineno()) + ": %m" + ((message != "") ? ": " : "")
                 + message + "\n");
