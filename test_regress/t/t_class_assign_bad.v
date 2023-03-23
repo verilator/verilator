@@ -7,15 +7,29 @@
 class Cls;
 endclass : Cls
 
+class Cls2;
+endclass
+
+class ClsExt extends Cls;
+endclass
+
 module t (/*AUTOARG*/);
    Cls c;
+   Cls2 c2;
+   ClsExt c_ext;
 
    task t(Cls c); endtask
+   function f(ClsExt c); endfunction
 
    initial begin
       c = 0;
       c = 1;
+      c = c2;
+      c_ext = c;
+
       t(0);
       t(1);
+      t(c2);
+      f(c);
    end
 endmodule
