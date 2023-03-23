@@ -1166,7 +1166,8 @@ public:
     // CONSTRUCTORS
     VlClassRef() = default;
     // Init with nullptr
-    explicit VlClassRef(VlNull){};
+    // cppcheck-suppress noExplicitConstructor
+    VlClassRef(VlNull){};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         // () required here to avoid narrowing conversion warnings,
@@ -1187,6 +1188,16 @@ public:
     }
     // cppcheck-suppress noExplicitConstructor
     VlClassRef(VlClassRef&& moved)
+        : m_objp{vlstd::exchange(moved.m_objp, nullptr)} {}
+    // cppcheck-suppress noExplicitConstructor
+    template <typename T_OtherClass>
+    VlClassRef(const VlClassRef<T_OtherClass>& copied)
+        : m_objp{copied.m_objp} {
+        refCountInc();
+    }
+    // cppcheck-suppress noExplicitConstructor
+    template <typename T_OtherClass>
+    VlClassRef(VlClassRef<T_OtherClass>&& moved)
         : m_objp{vlstd::exchange(moved.m_objp, nullptr)} {}
     ~VlClassRef() { refCountDec(); }
 
