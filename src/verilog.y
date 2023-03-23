@@ -96,6 +96,7 @@ public:
     bool m_pinAnsi = false;  // In ANSI port list
     bool m_tracingParse = true;  // Tracing disable for parser
     bool m_inImplements = false;  // Is inside class implements list
+    bool m_insideClass = false;  // Is inside a class body
     bool m_insideProperty = false;  // Is inside property declaration
     bool m_typedPropertyPort = false;  // Typed property port occurred on port lists
     bool m_modportImpExpActive
@@ -1947,7 +1948,12 @@ net_type:                       // ==IEEE: net_type
         ;
 
 varParamReset:
-                yPARAMETER                              { VARRESET_NONLIST(GPARAM); }
+                yPARAMETER
+                        { if (GRAMMARP->m_insideClass) {
+                             VARRESET_NONLIST(LPARAM);
+                          } else {
+                             VARRESET_NONLIST(GPARAM);
+                          } }
         |       yLOCALPARAM                             { VARRESET_NONLIST(LPARAM); }
         ;
 
@@ -6708,6 +6714,7 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
                 classFront parameter_port_listE classExtendsE classImplementsE ';'
         /*mid*/         { // Allow resolving types declared in base extends class
                           if ($<scp>3) SYMP->importExtends($<scp>3);
+                          GRAMMARP->m_insideClass = true;
                         }
         /*cont*/    class_itemListE yENDCLASS endLabelE
                         { $$ = $1; $1->addMembersp($2);
@@ -6715,6 +6722,7 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
                           $1->addExtendsp($4);
                           $1->addMembersp($7);
                           SYMP->popScope($$);
+                          GRAMMARP->m_insideClass = false;
                           GRAMMARP->endLabel($<fl>9, $1, $9); }
         ;
 
