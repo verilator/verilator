@@ -111,4 +111,9 @@ module t (/*AUTOARG*/
       end
    end
 
+  initial begin : test_info
+    $info ("Start of $info test");
+    $info ("Middle of $info test");
+    $info ("End of $info test");
+  end : test_info
 endmodule
