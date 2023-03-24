@@ -6249,12 +6249,23 @@ private:
         }
         return false;  // No change
     }
-
+    bool isBaseClassRecurse(const AstClass* const cls1p, const AstClass* const cls2p) {
+        // Returns true if cls1p and cls2p are equal or if cls1p is a base class of cls2p
+        if (cls1p == cls2p) return true;
+        for (const AstClassExtends* cextp = cls2p->extendsp(); cextp;
+             cextp = VN_CAST(cextp->nextp(), ClassExtends)) {
+            if (isBaseClassRecurse(cls1p, cextp->classp())) return true;
+        }
+        return false;
+    }
     void checkClassAssign(AstNode* nodep, const char* side, AstNode* rhsp,
                           AstNodeDType* lhsDTypep) {
-        if (VN_IS(lhsDTypep, ClassRefDType)
-            && !(rhsp->dtypep() && VN_IS(rhsp->dtypep()->skipRefp(), ClassRefDType))) {
-            if (auto* const constp = VN_CAST(rhsp, Const)) {
+        if (AstClassRefDType* const lhsClassRefp = VN_CAST(lhsDTypep, ClassRefDType)) {
+            UASSERT_OBJ(rhsp->dtypep(), rhsp, "Node has no type");
+            if (AstClassRefDType* const rhsClassRefp
+                = VN_CAST(rhsp->dtypep()->skipRefp(), ClassRefDType)) {
+                if (isBaseClassRecurse(lhsClassRefp->classp(), rhsClassRefp->classp())) return;
+            } else if (auto* const constp = VN_CAST(rhsp, Const)) {
                 if (constp->num().isNull()) return;
             }
             nodep->v3error(side << " expects a " << lhsDTypep->prettyTypeName());
