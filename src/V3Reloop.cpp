@@ -75,7 +75,10 @@ private:
             const string newvarname{"__Vilp"};
             varp = new AstVar{fl, VVarType::STMTTEMP, newvarname, VFlagLogicPacked{}, 32};
             UASSERT_OBJ(cfuncp, fl, "Assignment not under a function");
-            cfuncp->addInitsp(varp);
+            if (cfuncp->initsp())
+                cfuncp->initsp()->addNextHere(varp);
+            else
+                cfuncp->addInitsp(varp); 
             cfuncp->user1p(varp);
         }
         return varp;
