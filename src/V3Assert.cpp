@@ -52,22 +52,20 @@ private:
 
     // METHODS
     string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message,
-              VDisplayType severity) {
-	 if (severity == VDisplayType::DT_ERROR ||
-	     severity == VDisplayType::DT_FATAL
-	    ) {
+                                VDisplayType severity) {
+        if (severity == VDisplayType::DT_ERROR || severity == VDisplayType::DT_FATAL) {
             return (string("[%0t] " + prefix + ": ") + nodep->fileline()->filebasename() + ":"
-                + cvtToStr(nodep->fileline()->lineno()) + ": Assertion failed in %m"
-		+ ((message != "") ? ": " : "") + message + "\n");
-	 } else {
+                    + cvtToStr(nodep->fileline()->lineno()) + ": Assertion failed in %m"
+                    + ((message != "") ? ": " : "") + message + "\n");
+        } else {
             return (string("[%0t] " + prefix + ": ") + nodep->fileline()->filebasename() + ":"
-                + cvtToStr(nodep->fileline()->lineno()) + ": %m" + ((message != "") ? ": " : "")
-                + message + "\n");
-	 }
+                    + cvtToStr(nodep->fileline()->lineno()) + ": %m"
+                    + ((message != "") ? ": " : "") + message + "\n");
+        }
     }
     void replaceDisplay(AstDisplay* nodep, const string& prefix) {
-        nodep->fmtp()->text(assertDisplayMessage(nodep, prefix, nodep->fmtp()->text(),
-                            nodep->displayType()));
+        nodep->fmtp()->text(
+            assertDisplayMessage(nodep, prefix, nodep->fmtp()->text(), nodep->displayType()));
         nodep->displayType(VDisplayType::DT_WRITE);
         // cppcheck-suppress nullPointer
         AstNodeExpr* const timenewp = new AstTime{nodep->fileline(), m_modp->timeunit()};
@@ -431,7 +429,7 @@ private:
             replaceDisplay(nodep, "%%Warning");
         } else if (nodep->displayType() == VDisplayType::DT_ERROR) {
             replaceDisplay(nodep, "%%Error");
-	} else if (nodep->displayType() == VDisplayType::DT_FATAL) {
+        } else if (nodep->displayType() == VDisplayType::DT_FATAL) {
             replaceDisplay(nodep, "%%Fatal");
         } else if (nodep->displayType() == VDisplayType::DT_MONITOR) {
             nodep->displayType(VDisplayType::DT_DISPLAY);
