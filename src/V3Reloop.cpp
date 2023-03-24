@@ -78,7 +78,7 @@ private:
             if (cfuncp->initsp())
                 cfuncp->initsp()->addNextHere(varp);
             else
-                cfuncp->addInitsp(varp); 
+                cfuncp->addInitsp(varp);
             cfuncp->user1p(varp);
         }
         return varp;
