@@ -35,6 +35,7 @@ Verilator 5.009 devel
 * Fix clocking block scope internal error (#4032). [Srinivasan Venkataramanan]
 * Fix false LATCH warning on --assert 'unique else if' (#4033) ($4054). [Jesse Taube]
 * Fix characters from DEFENV literals for conda (#4035) (#4044). [Tim Snyder]
+* Fix interface generate begin (#4065). [Srinivasan Venkataramanan]
 * Fix false ENUMVALUE on expressions and arrays.
 
 

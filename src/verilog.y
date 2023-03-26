@@ -1636,7 +1636,7 @@ interface_item<nodep>:          // IEEE: interface_item + non_port_interface_ite
                 port_declaration ';'                    { $$ = $1; }
         //                      // IEEE: non_port_interface_item
         //                      // IEEE: generate_region
-        |       interface_generate_region               { $$ = $1; }
+        |       i_generate_region                       { $$ = $1; }
         |       interface_or_generate_item              { $$ = $1; }
         |       program_declaration
                         { $$ = nullptr; BBUNSUP(CRELINE(), "Unsupported: program decls within interface decls"); }
@@ -1647,11 +1647,6 @@ interface_item<nodep>:          // IEEE: interface_item + non_port_interface_ite
         |       timeunits_declaration                   { $$ = $1; }
         //                      // See note in interface_or_generate item
         |       module_common_item                      { $$ = $1; }
-        ;
-
-interface_generate_region<nodep>:               // ==IEEE: generate_region
-                yGENERATE interface_itemList yENDGENERATE       { $$ = $2; }
-        |       yGENERATE yENDGENERATE                  { $$ = nullptr; }
         ;
 
 interface_or_generate_item<nodep>:  // ==IEEE: interface_or_generate_item
@@ -2733,6 +2728,10 @@ c_generate_region<nodep>:  // IEEE: generate_region (for checkers)
                 BISONPRE_COPY(generate_region,{s/~c~/c_/g})     // {copied}
         ;
 
+i_generate_region<nodep>:  // IEEE: generate_region (for interface)
+                BISONPRE_COPY(generate_region,{s/~c~/i_/g})     // {copied}
+        ;
+
 generate_block_or_null<nodep>:  // IEEE: generate_block_or_null (called from gencase/genif/genfor)
         //      ';'             // is included in
         //                      // IEEE: generate_block
@@ -2765,6 +2764,10 @@ c_genItemBegin<nodep>:  // IEEE: part of generate_block (for checkers)
                 BISONPRE_COPY(genItemBegin,{s/~c~/c_/g})                // {copied}
         ;
 
+i_genItemBegin<nodep>:  // IEEE: part of generate_block (for interfaces)
+                BISONPRE_COPY(genItemBegin,{s/~c~/i_/g})                // {copied}
+        ;
+
 genItemOrBegin<nodep>:          // Not in IEEE, but our begin isn't under generate_item
                 ~c~generate_item                        { $$ = $1; }
         |       ~c~genItemBegin                         { $$ = $1; }
@@ -2774,6 +2777,11 @@ c_genItemOrBegin<nodep>:  // (for checkers)
                 BISONPRE_COPY(genItemOrBegin,{s/~c~/c_/g})      // {copied}
         ;
 
+i_genItemOrBegin<nodep>:  // (for interfaces)
+                interface_item                          { $$ = $1; }
+        |       i_genItemBegin                          { $$ = $1; }
+        ;
+
 genItemList<nodep>:
                 ~c~genItemOrBegin                       { $$ = $1; }
         |       ~c~genItemList ~c~genItemOrBegin        { $$ = addNextNull($1, $2); }
@@ -2781,6 +2789,10 @@ genItemList<nodep>:
 
 c_genItemList<nodep>:  // (for checkers)
                 BISONPRE_COPY(genItemList,{s/~c~/c_/g})         // {copied}
+        ;
+
+i_genItemList<nodep>:  // (for interfaces)
+                BISONPRE_COPY(genItemList,{s/~c~/i_/g})         // {copied}
         ;
 
 generate_item<nodep>:           // IEEE: module_or_interface_or_generate_item
