@@ -62,7 +62,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'he65eec57cf769267
+`define EXPECTED_SUM 64'hf5498264b93d4b48
 
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
@@ -92,10 +92,11 @@ module Test(/*AUTOARG*/
    wire  bug3399_out1;
    logic bug3786_out;
    logic bug3824_out;
+   logic bug4059_out;
 
    output logic o;
 
-   logic [13:0] tmp;
+   logic [14:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -125,6 +126,7 @@ module Test(/*AUTOARG*/
       tmp[11]<= bug3399_out1;
       tmp[12]<= bug3786_out;
       tmp[13]<= bug3824_out;
+      tmp[14]<= bug4059_out;
    end
 
    bug3182 i_bug3182(.in(d[4:0]), .out(bug3182_out));
@@ -135,6 +137,7 @@ module Test(/*AUTOARG*/
    bug3399 i_bug3399(.clk(clk), .in(d), .out0(bug3399_out0), .out1(bug3399_out1));
    bug3786 i_bug3786(.clk(clk), .in(d), .out(bug3786_out));
    bug3824 i_bug3824(.clk(clk), .in(d), .out(bug3824_out));
+   bug4059 i_bug4059(.clk(clk), .in(d), .out(bug4059_out));
 
 endmodule
 
@@ -363,4 +366,33 @@ module bug3824(input wire clk, input wire [31:0] in, output wire out);
    always_ff @(posedge clk) d_xor <= (^a) ^ c_xor;
 
   assign out = d_and ^ d_or ^ d_xor;
+endmodule
+
+/// Bug4059
+// Frozen node in an xor tree held unnecessary poloarity.
+// In an XOR tree, the entire result is flipped if necessary according to
+// total polarity. This bug was introduced when fixing #3445.
+module bug4059(input wire clk, input wire [31:0] in, output wire out);
+   wire [127:0] words_i;
+   logic [127:0] words_i;
+   for (genvar i = 0; i < $bits(in); ++i) begin
+      always_ff @(posedge clk)
+         words_i[4 * i +: 4] <= {4{in[i]}};
+   end
+
+   wire _000_ = ~(words_i[104] ^ words_i[96]);
+   wire _001_ = ~(words_i[88] ^ words_i[80]);
+   wire _002_ = ~(_000_ ^ _001_);
+   wire _003_ = words_i[72] ^ words_i[64];
+   wire _004_ = words_i[120] ^ words_i[112];
+   wire _005_ = ~(_003_ ^ _004_);
+   wire _006_ = ~(_002_ ^ _005_);
+   wire _007_ = words_i[40] ^ words_i[32];
+   wire _008_ = ~(words_i[24] ^ words_i[16]);
+   wire _009_ = ~(_007_ ^ _008_);
+   wire _010_ = words_i[8] ^ words_i[0];
+   wire _011_ = words_i[56] ^ words_i[48];
+   wire _012_ = ~(_010_ ^ _011_);
+   wire _013_ = ~(_009_ ^ _012_);
+   assign out = ~(_006_ ^ _013_);
 endmodule
