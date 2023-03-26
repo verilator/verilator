@@ -548,7 +548,8 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
                     restorer.restoreNow();
                     // Reach past a cast then add to frozen nodes to be added to final reduction
                     if (const AstCCast* const castp = VN_CAST(opp, CCast)) opp = castp->lhsp();
-                    m_frozenNodes.emplace_back(opp, FrozenNodeInfo{m_polarity, m_lsb});
+                    const bool pol = isXorTree() || m_polarity;  // Only AND/OR tree needs polarity
+                    m_frozenNodes.emplace_back(opp, FrozenNodeInfo{pol, m_lsb});
                     m_failed = origFailed;
                     continue;
                 }
