@@ -553,7 +553,13 @@ private:
     }
     void visit(AstNodeProcedure* nodep) override {
         iterateChildren(nodep);
-        if (nodep->user2()) nodep->setSuspendable();
+        if (nodep->user2()) {
+            nodep->setSuspendable();
+            if (VN_IS(nodep, Initial)) {
+                auto* const finishp = new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"};
+                nodep->addStmtsp(finishp);
+            }
+        }
     }
     void visit(AstAlways* nodep) override {
         if (nodep->user1SetOnce()) return;
@@ -880,6 +886,8 @@ private:
             auto* const beginp = VN_AS(stmtp, Begin);
             stmtp = beginp->nextp();
             iterate(beginp);
+            auto* const finishp = new AstCStmt{beginp->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"};
+            beginp->addStmtsp(finishp);
             // Even if we do not find any awaits, we cannot simply inline the process here, as new
             // awaits could be added later.
             // Name the begin (later the name will be used for a new function)
