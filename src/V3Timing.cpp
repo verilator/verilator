@@ -460,6 +460,13 @@ private:
         methodp->addPinsp(createEventDescription(sensesp));
         addDebugInfo(methodp);
     }
+    // Adds process pointer to a hardcoded method call
+    void addProcessInfo(AstCMethodHard* const methodp) const {
+        FileLine* const flp = methodp->fileline();
+        AstCExpr* const ap = new AstCExpr{flp, "vlProcess", 0};
+        ap->dtypeSetVoid();
+        methodp->addPinsp(ap);
+    }
     // Creates the fork handle type and returns it
     AstBasicDType* getCreateForkSyncDTypep() {
         if (m_forkDtp) return m_forkDtp;
@@ -512,11 +519,13 @@ private:
         auto* const initp = new AstCMethodHard{flp, new AstVarRef{flp, forkVscp, VAccess::WRITE},
                                                "init", new AstConst{flp, joinCount}};
         initp->dtypeSetVoid();
+        addProcessInfo(initp);
         forkp->addHereThisAsNext(initp->makeStmt());
         // Await the join at the end
         auto* const joinp
             = new AstCMethodHard{flp, new AstVarRef{flp, forkVscp, VAccess::WRITE}, "join"};
         joinp->dtypeSetVoid();
+        addProcessInfo(joinp);
         addDebugInfo(joinp);
         AstCAwait* const awaitp = new AstCAwait{flp, joinp};
         awaitp->dtypeSetVoid();
@@ -619,6 +628,7 @@ private:
         auto* const delayMethodp = new AstCMethodHard{
             flp, new AstVarRef{flp, getCreateDelayScheduler(), VAccess::WRITE}, "delay", valuep};
         delayMethodp->dtypeSetVoid();
+        addProcessInfo(delayMethodp);
         addDebugInfo(delayMethodp);
         // Create the co_await
         AstCAwait* const awaitp = new AstCAwait{flp, delayMethodp, getCreateDelaySenTree()};
@@ -658,6 +668,7 @@ private:
                 flp, new AstVarRef{flp, getCreateDynamicTriggerScheduler(), VAccess::WRITE},
                 "evaluation"};
             evalMethodp->dtypeSetVoid();
+            addProcessInfo(evalMethodp);
             auto* const sensesp = nodep->sensesp();
             addEventDebugInfo(evalMethodp, sensesp);
             // Create the co_await
@@ -715,6 +726,7 @@ private:
             // If it should be committed immediately, pass true, otherwise false
             triggerMethodp->addPinsp(nodep->user2() ? new AstConst{flp, AstConst::BitTrue{}}
                                                     : new AstConst{flp, AstConst::BitFalse{}});
+            addProcessInfo(triggerMethodp);
             addEventDebugInfo(triggerMethodp, sensesp);
             // Create the co_await
             AstCAwait* const awaitp = new AstCAwait{flp, triggerMethodp, sensesp};

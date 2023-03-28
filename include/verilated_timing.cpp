@@ -29,8 +29,11 @@ void VlCoroutineHandle::resume() {
     // Only null if we have a fork..join_any and one of the other child processes resumed the
     // main process
     if (VL_LIKELY(m_coro)) {
-        VL_DEBUG_IF(VL_DBG_MSGF("             Resuming: "); dump(););
-        m_coro();
+        VL_DEBUG_IF(VL_DBG_MSGF("             Resuming: ", m_process->id()); dump(););
+        if (m_process->state() != VlProcess::KILLED) {
+            m_process->state(VlProcess::RUNNING);
+            m_coro();
+        }
         m_coro = nullptr;
     }
 }

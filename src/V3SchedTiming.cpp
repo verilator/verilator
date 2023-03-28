@@ -156,6 +156,17 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
 
         // METHODS
         // Create an active with a timing scheduler resume() call
+        void addResumePins(AstCMethodHard* const resumep, AstNodeExpr* pinsp) {
+            AstCExpr* const exprp = VN_CAST(pinsp, CExpr);
+            AstText* const textp = VN_CAST(exprp->exprsp(), Text);
+            if (textp && textp->text() == "vlProcess") {
+                if (pinsp = VN_CAST(pinsp->nextp(), NodeExpr)) {
+                    resumep->addPinsp(pinsp->cloneTree(false));
+                }
+            } else {
+                resumep->addPinsp(pinsp->cloneTree(false));
+            }
+        }
         void createResumeActive(AstCAwait* const awaitp) {
             auto* const methodp = VN_AS(awaitp->exprp(), CMethodHard);
             AstVarScope* const schedulerp = VN_AS(methodp->fromp(), VarRef)->varScopep();
@@ -171,7 +182,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
                 // The first pin is the commit boolean, the rest (if any) should be debug info
                 // See V3Timing for details
                 if (AstNode* const dbginfop = methodp->pinsp()->nextp()) {
-                    resumep->addPinsp(static_cast<AstNodeExpr*>(dbginfop)->cloneTree(false));
+                    if (methodp->pinsp()) addResumePins(resumep, static_cast<AstNodeExpr*>(dbginfop));
                 }
             } else if (schedulerp->dtypep()->basicp()->isDynamicTriggerScheduler()) {
                 auto* const postp = resumep->cloneTree(false);

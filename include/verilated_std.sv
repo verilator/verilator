@@ -98,23 +98,30 @@ package std;
             KILLED    = 4
         } state;
 
-        protected chandle m_process;
-
-        function new();
-        endfunction
+    `ifdef VERILATOR_TIMING
+        protected chandle m_process = 0;
+    `endif
 
         static function process self();
+    `ifdef VERILATOR_TIMING
             process p = new;
             $c(p.m_process, " = (unsigned long)vlProcess;");
             return p;
+    `endif
         endfunction
 
         protected function void set_status(state s);
+    `ifdef VERILATOR_TIMING
             $c("((VlProcess*)", m_process, ")->state(", s, ");");
+    `endif
         endfunction
 
         function state status();
+    `ifdef VERILATOR_TIMING
             return state'($c("((VlProcess*)", m_process, ")->state()"));
+    `else
+            return RUNNING;
+    `endif
         endfunction
 
         function void kill();
@@ -130,8 +137,10 @@ package std;
         endfunction
 
         task await();
+    `ifdef VERILATOR_TIMING
             state s = status();
             wait (s == FINISHED || s == KILLED);
+    `endif
         endtask
 
         function void srandom(int seed);
