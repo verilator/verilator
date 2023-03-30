@@ -102,6 +102,12 @@
 #define VL_GUARDED_BY(x) \
         VL_CLANG_ATTR(annotate("GUARDED_BY")) \
         VL_CLANG_ATTR(guarded_by(x))
+// The data that the annotated pointer points to is protected by the given capability.
+// The pointer itself is not protected.
+// Allowed on: pointer data member. (-fthread-safety)
+#define VL_PT_GUARDED_BY(x) \
+        VL_CLANG_ATTR(annotate("PT_GUARDED_BY")) \
+        VL_CLANG_ATTR(pt_guarded_by(x))
 // Name of mutex protecting this variable (-fthread-safety)
 #define VL_EXCLUDES(x) \
         VL_CLANG_ATTR(annotate("EXCLUDES")) \
@@ -109,6 +115,10 @@
 // Scoped threaded capability/lock (-fthread-safety)
 #define VL_SCOPED_CAPABILITY \
         VL_CLANG_ATTR(scoped_lockable)
+// Annotated function returns reference to the given capability.
+// Allowed on: function, method. (-fthread-safety)
+#define VL_RETURN_CAPABILITY(x) \
+        VL_CLANG_ATTR(lock_returned(x))
 
 // Defaults for unsupported compiler features
 #ifndef VL_ATTR_ALWINLINE
