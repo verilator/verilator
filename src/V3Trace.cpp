@@ -437,7 +437,7 @@ private:
                 funcp->stmtsp()->foreachAndNext([&](AstCAwait* awaitp) {
                     AstNode* stmtp = awaitp->backp();
                     while (VN_IS(stmtp, NodeExpr)) stmtp = stmtp->backp();
-                    if (stmtp->nextp()) stmtp->addNextHere(setterp->cloneTree(false));
+                    stmtp->addNextHere(setterp->cloneTree(false));
                 });
             }
             funcp->addStmtsp(setterp);
