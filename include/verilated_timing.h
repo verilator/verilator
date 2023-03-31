@@ -94,11 +94,11 @@ class VlProcess final {
 public:
     // TYPES
     enum {
-        FINISHED  = 0,
-        RUNNING   = 1,
-        WAITING   = 2,
+        FINISHED = 0,
+        RUNNING = 1,
+        WAITING = 2,
         SUSPENDED = 3,
-        KILLED    = 4,
+        KILLED = 4,
     };
 
     // CONSTRUCTORS
@@ -192,28 +192,26 @@ public:
     VlCoroutineHandle(VlProcess* process)
         : m_coro{nullptr}
         , m_process{process} {
-          m_process->state(VlProcess::WAITING);
-        }
+        m_process->state(VlProcess::WAITING);
+    }
     VlCoroutineHandle(std::coroutine_handle<> coro, VlProcess* process, VlFileLineDebug fileline)
         : m_coro{coro}
         , m_process{process}
         , m_fileline{fileline} {
-          m_process->state(VlProcess::WAITING);
-        }
+        m_process->state(VlProcess::WAITING);
+    }
     // Move the handle, leaving a nullptr
     VlCoroutineHandle(VlCoroutineHandle&& moved)
         : m_coro{std::exchange(moved.m_coro, nullptr)}
         , m_process{moved.m_process}
-        , m_fileline{moved.m_fileline} {
-        }
+        , m_fileline{moved.m_fileline} {}
     // Destroy if the handle isn't null
     ~VlCoroutineHandle() {
         // Usually these coroutines should get resumed; we only need to clean up if we destroy a
         // model with some coroutines suspended
         if (VL_UNLIKELY(m_coro)) {
             m_coro.destroy();
-            if (m_process->state() != VlProcess::KILLED)
-                m_process->state(VlProcess::FINISHED);
+            if (m_process->state() != VlProcess::KILLED) m_process->state(VlProcess::FINISHED);
         }
     }
     // METHODS
@@ -273,7 +271,8 @@ public:
     void dump() const;
 #endif
     // Used by coroutines for co_awaiting a certain simulation time
-    auto delay(uint64_t delay, VlProcess* process, const char* filename = VL_UNKNOWN, int lineno = 0) {
+    auto delay(uint64_t delay, VlProcess* process, const char* filename = VL_UNKNOWN,
+               int lineno = 0) {
         struct Awaitable {
             VlProcess* process;
             VlDelayedCoroutineQueue& queue;
@@ -288,7 +287,8 @@ public:
             }
             void await_resume() const {}
         };
-        return Awaitable{process, m_queue, m_context.time() + delay, VlFileLineDebug{filename, lineno}};
+        return Awaitable{process, m_queue, m_context.time() + delay,
+                         VlFileLineDebug{filename, lineno}};
     }
 };
 
@@ -399,20 +399,23 @@ public:
     void dump() const;
 #endif
     // Used by coroutines for co_awaiting trigger evaluation
-    auto evaluation(VlProcess* process, const char* eventDescription, const char* filename, int lineno) {
+    auto evaluation(VlProcess* process, const char* eventDescription, const char* filename,
+                    int lineno) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Suspending process waiting for %s at %s:%d\n",
                                 eventDescription, filename, lineno););
         return awaitable(process, m_suspended, filename, lineno);
     }
     // Used by coroutines for co_awaiting the trigger post update step
-    auto postUpdate(VlProcess* process, const char* eventDescription, const char* filename, int lineno) {
+    auto postUpdate(VlProcess* process, const char* eventDescription, const char* filename,
+                    int lineno) {
         VL_DEBUG_IF(
             VL_DBG_MSGF("         Process waiting for %s at %s:%d awaiting the post update step\n",
                         eventDescription, filename, lineno););
         return awaitable(process, m_post, filename, lineno);
     }
     // Used by coroutines for co_awaiting the resumption step (in 'act' eval)
-    auto resumption(VlProcess* process, const char* eventDescription, const char* filename, int lineno) {
+    auto resumption(VlProcess* process, const char* eventDescription, const char* filename,
+                    int lineno) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Process waiting for %s at %s:%d awaiting resumption\n",
                                 eventDescription, filename, lineno););
         return awaitable(process, m_triggered, filename, lineno);
@@ -460,7 +463,9 @@ public:
             VlFileLineDebug fileline;
 
             bool await_ready() { return join->m_counter == 0; }  // Suspend if join still exists
-            void await_suspend(std::coroutine_handle<> coro) { join->m_susp = {coro, process, fileline}; }
+            void await_suspend(std::coroutine_handle<> coro) {
+                join->m_susp = {coro, process, fileline};
+            }
             void await_resume() const {}
         };
         return Awaitable{process, m_join, VlFileLineDebug{filename, lineno}};

@@ -554,7 +554,7 @@ private:
             // TODO: Maybe AstProcessSelf?
             ccallp = new AstCCall{refp->fileline(), cfuncp};
             ccallp->dtypeSetVoid();
-            AstCAwait *cawaitp = new AstCAwait{refp->fileline(), ccallp};
+            AstCAwait* cawaitp = new AstCAwait{refp->fileline(), ccallp};
             cawaitp->dtypeSetVoid();
             beginp->addNext(cawaitp->makeStmt());
 
@@ -1174,9 +1174,7 @@ private:
         AstCFunc* const cfuncp = new AstCFunc{
             nodep->fileline(), name, m_scopep,
             ((nodep->taskPublic() && rtnvarp) ? rtnvarp->cPubArgType(true, true) : "")};
-        if (nodep->isFromStd() && nodep->name() == "self") {
-            cfuncp->rtnType("VlCoroutine");
-        }
+        if (nodep->isFromStd() && nodep->name() == "self") { cfuncp->rtnType("VlCoroutine"); }
         // It's ok to combine imports because this is just a wrapper;
         // duplicate wrappers can get merged.
         cfuncp->dontCombine(!nodep->dpiImport());
