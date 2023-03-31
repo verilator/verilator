@@ -556,8 +556,7 @@ private:
         if (nodep->user2()) {
             nodep->setSuspendable();
             if (VN_IS(nodep, Initial)) {
-                auto* const finishp = new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"};
-                nodep->addStmtsp(finishp);
+                nodep->addStmtsp(new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
             }
         }
     }
@@ -886,8 +885,8 @@ private:
             auto* const beginp = VN_AS(stmtp, Begin);
             stmtp = beginp->nextp();
             iterate(beginp);
-            auto* const finishp = new AstCStmt{beginp->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"};
-            beginp->addStmtsp(finishp);
+            beginp->addStmtsp(new AstCStmt{beginp->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
+            beginp->addStmtsp(new AstCCoreturn{beginp->fileline()});
             // Even if we do not find any awaits, we cannot simply inline the process here, as new
             // awaits could be added later.
             // Name the begin (later the name will be used for a new function)

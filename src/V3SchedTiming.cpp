@@ -394,6 +394,10 @@ void transformForks(AstNetlist* const netlistp) {
             m_beginHasAwaits = true;
             iterateChildrenConst(nodep);
         }
+        void visit(AstCCoreturn* nodep) override {
+            m_beginHasAwaits = true;
+            iterateChildrenConst(nodep);
+        }
 
         //--------------------
         void visit(AstNodeExpr*) override {}  // Accelerate

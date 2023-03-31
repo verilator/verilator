@@ -2423,6 +2423,15 @@ public:
         return true;  // SPECIAL: We don't process code after breaks
     }
 };
+class AstCCoreturn final : public AstNodeStmt {
+    // C++ co_return from a coroutine
+public:
+    AstCCoreturn(FileLine* fl)
+        : ASTGEN_SUPER_CCoreturn(fl) {}
+    ASTGEN_MEMBERS_AstCCoreturn;
+    int instrCount() const override { return widthInstrs(); }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+};
 class AstCReset final : public AstNodeStmt {
     // Reset variable at startup
     // @astgen op1 := varrefp : AstVarRef

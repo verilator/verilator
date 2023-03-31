@@ -541,6 +541,9 @@ public:
         iterateAndNextConstNull(nodep->lhsp());
         puts(");\n");
     }
+    void visit(AstCCoreturn* nodep) override {
+        puts("co_return;\n");
+    }
     void visit(AstDisplay* nodep) override {
         string text = nodep->fmtp()->text();
         if (nodep->addNewline()) text += "\n";

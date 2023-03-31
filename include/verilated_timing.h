@@ -122,7 +122,7 @@ class VlCoroutine final {
 private:
     // TYPES
     struct VlPromise {
-        std::coroutine_handle<VlPromise> m_continuation;  // Coroutine to resume after this one finishes
+        std::coroutine_handle<> m_continuation;  // Coroutine to resume after this one finishes
         VlCoroutine* m_corop = nullptr;  // Pointer to the coroutine return object
 
         ~VlPromise();
@@ -169,7 +169,7 @@ public:
     // Suspend the awaiter if the coroutine is suspended (the promise exists)
     bool await_ready() const noexcept { return !m_promisep; }
     // Set the awaiting coroutine as the continuation of the current coroutine
-    void await_suspend(std::coroutine_handle<VlPromise> coro) { m_promisep->m_continuation = coro; }
+    void await_suspend(std::coroutine_handle<> coro) { m_promisep->m_continuation = coro; }
     void await_resume() const noexcept {}
 };
 
@@ -182,7 +182,7 @@ class VlCoroutineHandle final {
     VL_UNCOPYABLE(VlCoroutineHandle);
 
     // MEMBERS
-    std::coroutine_handle<VlCoroutine::promise_type> m_coro;  // The wrapped coroutine handle
+    std::coroutine_handle<> m_coro;  // The wrapped coroutine handle
     VlProcess* m_process;
     VlFileLineDebug m_fileline;
 
@@ -194,7 +194,7 @@ public:
         , m_process{process} {
           m_process->state(VlProcess::WAITING);
         }
-    VlCoroutineHandle(std::coroutine_handle<VlCoroutine::promise_type> coro, VlProcess* process, VlFileLineDebug fileline)
+    VlCoroutineHandle(std::coroutine_handle<> coro, VlProcess* process, VlFileLineDebug fileline)
         : m_coro{coro}
         , m_process{process}
         , m_fileline{fileline} {
@@ -281,7 +281,7 @@ public:
             VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
-            void await_suspend(std::coroutine_handle<VlCoroutine::promise_type> coro) {
+            void await_suspend(std::coroutine_handle<> coro) {
                 queue.push_back({delay, VlCoroutineHandle{coro, process, fileline}});
                 // Move last element to the proper place in the max-heap
                 std::push_heap(queue.begin(), queue.end());
@@ -335,7 +335,7 @@ public:
             VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
-            void await_suspend(std::coroutine_handle<VlCoroutine::promise_type> coro) {
+            void await_suspend(std::coroutine_handle<> coro) {
                 suspended.emplace_back(coro, process, fileline);
             }
             void await_resume() const {}
@@ -380,7 +380,7 @@ class VlDynamicTriggerScheduler final {
             VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
-            void await_suspend(std::coroutine_handle<VlCoroutine::promise_type> coro) {
+            void await_suspend(std::coroutine_handle<> coro) {
                 suspended.emplace_back(coro, process, fileline);
             }
             void await_resume() const {}
@@ -425,7 +425,7 @@ public:
 
 struct VlForever {
     bool await_ready() const { return false; }  // Always suspend
-    void await_suspend(std::coroutine_handle<VlCoroutine::promise_type> coro) const { coro.destroy(); }
+    void await_suspend(std::coroutine_handle<> coro) const { coro.destroy(); }
     void await_resume() const {}
 };
 
@@ -460,7 +460,7 @@ public:
             VlFileLineDebug fileline;
 
             bool await_ready() { return join->m_counter == 0; }  // Suspend if join still exists
-            void await_suspend(std::coroutine_handle<VlCoroutine::promise_type> coro) { join->m_susp = {coro, process, fileline}; }
+            void await_suspend(std::coroutine_handle<> coro) { join->m_susp = {coro, process, fileline}; }
             void await_resume() const {}
         };
         return Awaitable{process, m_join, VlFileLineDebug{filename, lineno}};
