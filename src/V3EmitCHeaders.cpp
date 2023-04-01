@@ -117,7 +117,12 @@ class EmitCHeader final : public EmitCConstInit {
         emitCurrentList();
     }
     void emitInternalVarDecls(const AstNodeModule* modp) {
-        if (!VN_IS(modp, Class)) {
+        if (const AstClass* const classp = VN_CAST(modp, Class)) {
+            if (classp->needRNG()) {
+                putsDecoration("\n// INTERNAL VARIABLES\n");
+                puts("VlRNG __Vm_rng;\n");
+            }
+        } else {  // not class
             putsDecoration("\n// INTERNAL VARIABLES\n");
             puts(symClassName() + "* const vlSymsp;\n");
         }

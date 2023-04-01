@@ -17,6 +17,7 @@ Verilator 5.009 devel
 * Add --public-params flag (#3990). [Andrew Nolte]
 * Add STATICVAR warning and convert to automatic (#4018) (#4027) (#4030). [Ryszard Rozak, Antmicro Ltd]
 * Support class extends of package::class.
+* Support class srandom and class random stability.
 * Support method calls without parenthesis (#4034). [Ryszard Rozak, Antmicro Ltd]
 * Support complicated IEEE 'for' assignments.
 * Support $fopen as an expression.

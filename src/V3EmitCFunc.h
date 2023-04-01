@@ -905,6 +905,9 @@ public:
     void visit(AstRand* nodep) override {
         emitOpName(nodep, nodep->emitC(), nodep->seedp(), nullptr, nullptr);
     }
+    void visit(AstRandRNG* nodep) override {
+        emitOpName(nodep, nodep->emitC(), nullptr, nullptr, nullptr);
+    }
     void visit(AstTime* nodep) override {
         puts("VL_TIME_UNITED_Q(");
         if (nodep->timeunit().isNone()) nodep->v3fatalSrc("$time has no units");

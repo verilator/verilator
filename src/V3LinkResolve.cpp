@@ -115,7 +115,7 @@ private:
         if (m_underGenerate) nodep->underGenerate(true);
         // Remember the existing symbol table scope
         if (m_classp) {
-            if (nodep->name() == "randomize") {
+            if (nodep->name() == "randomize" || nodep->name() == "srandom") {
                 nodep->v3error(nodep->prettyNameQ()
                                << " is a predefined class method; redefinition not allowed"
                                   " (IEEE 1800-2017 18.6.3)");

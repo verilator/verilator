@@ -224,6 +224,7 @@ private:
 
     // STATE
     WidthVP* m_vup = nullptr;  // Current node state
+    AstClass* m_classp = nullptr;  // Current class
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -2596,6 +2597,8 @@ private:
         if (nodep->didWidthAndSet()) return;
         // Must do extends first, as we may in functions under this class
         // start following a tree of extends that takes us to other classes
+        VL_RESTORER(m_classp);
+        m_classp = nodep;
         userIterateAndNext(nodep->extendsp(), nullptr);
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->repairCache();
@@ -2611,6 +2614,7 @@ private:
         // userIterateChildren(nodep->classp(), nullptr);
     }
     void visit(AstNodeModule* nodep) override {
+        // Visitor does not include AstClass - specialized visitor above
         VL_RESTORER(m_modp);
         m_modp = nodep;
         userIterateChildren(nodep, nullptr);
@@ -3460,8 +3464,9 @@ private:
         // No need to width-resolve the class, as it was done when we did the child
         AstClass* const first_classp = adtypep->classp();
         if (nodep->name() == "randomize") {
-            v3Global.useRandomizeMethods(true);
             V3Randomize::newRandomizeFunc(first_classp);
+        } else if (nodep->name() == "srandom") {
+            V3Randomize::newSRandomFunc(first_classp);
         }
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
@@ -5504,6 +5509,21 @@ private:
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
         // Function hasn't been widthed, so make it so.
         UINFO(5, "  FTASKREF " << nodep << endl);
+        if (nodep->name() == "randomize" || nodep->name() == "srandom") {
+            // TODO perhaps this should move to V3LinkDot
+            if (!m_classp) {
+                nodep->v3error("Calling implicit class method " << nodep->prettyNameQ()
+                                                                << " without being under class");
+                nodep->replaceWith(new AstConst{nodep->fileline(), 0});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+            if (nodep->name() == "randomize") {
+                nodep->taskp(V3Randomize::newRandomizeFunc(m_classp));
+            } else {
+                nodep->taskp(V3Randomize::newSRandomFunc(m_classp));
+            }
+        }
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
         if (nodep->didWidth()) return;
         userIterate(nodep->taskp(), nullptr);

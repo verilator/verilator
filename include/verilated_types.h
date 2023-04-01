@@ -136,14 +136,34 @@ public:
 };
 
 inline std::string VL_TO_STRING(const VlEvent& e) {
-    return std::string("triggered=") + (e.isTriggered() ? "true" : "false");
+    return std::string{"triggered="} + (e.isTriggered() ? "true" : "false");
 }
 
 //===================================================================
-// Shuffle RNG
+// Random
 
-extern uint64_t vl_rand64() VL_MT_SAFE;
+// Random Number Generator with internal state
+class VlRNG final {
+    std::array<uint64_t, 2> m_state;
 
+public:
+    // The default constructor simply sets state, to avoid vl_rand64()
+    // having to check for construction at each call
+    // Alternative: seed with zero and check on rand64() call
+    VlRNG() VL_MT_SAFE;
+    VlRNG(uint64_t seed0) VL_MT_SAFE : m_state{0x12341234UL, seed0} {}
+    void srandom(uint64_t n) VL_MT_UNSAFE;
+    // Unused: std::string get_randstate() const VL_MT_UNSAFE;
+    // Unused: void set_randstate(const std::string& state) VL_MT_UNSAFE;
+    uint64_t rand64() VL_MT_UNSAFE;
+    // Threadsafe, but requires use on vl_thread_rng
+    static uint64_t vl_thread_rng_rand64() VL_MT_SAFE;
+    static VlRNG& vl_thread_rng() VL_MT_SAFE;
+};
+
+inline uint64_t vl_rand64() VL_MT_SAFE { return VlRNG::vl_thread_rng_rand64(); }
+
+// RNG for shuffle()
 class VlURNG final {
 public:
     using result_type = size_t;
@@ -151,6 +171,11 @@ public:
     static constexpr size_t max() { return 1ULL << 31; }
     size_t operator()() { return VL_MASK_I(31) & vl_rand64(); }
 };
+
+// These require the class object to have the thread safety lock
+inline IData VL_RANDOM_RNG_I(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
+inline QData VL_RANDOM_RNG_Q(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
+extern WDataOutP VL_RANDOM_RNG_W(VlRNG& rngr, int obits, WDataOutP outwp) VL_MT_UNSAFE;
 
 //===================================================================
 // Readmem/Writemem operation classes

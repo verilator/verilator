@@ -1620,6 +1620,26 @@ public:
     bool reset() const { return m_reset; }
     bool urandom() const { return m_urandom; }
 };
+class AstRandRNG final : public AstNodeExpr {
+    // Random used in a class using VlRNG
+    // Return a random number, based upon width()
+public:
+    AstRandRNG(FileLine* fl, AstNodeDType* dtp)
+        : ASTGEN_SUPER_RandRNG(fl) {
+        dtypep(dtp);
+    }
+    ASTGEN_MEMBERS_AstRandRNG;
+    string emitVerilog() override { return "%f$rngrandom()"; }
+    string emitC() override {
+        return isWide() ? "VL_RANDOM_RNG_%nq(__Vm_rng, %nw, %P)"  //
+                        : "VL_RANDOM_RNG_%nq(__Vm_rng)";
+    }
+    bool cleanOut() const override { return false; }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_PLI; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+};
 class AstRose final : public AstNodeExpr {
     // Verilog $rose
     // @astgen op1 := exprp : AstNodeExpr

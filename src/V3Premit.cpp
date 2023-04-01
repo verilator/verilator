@@ -287,6 +287,10 @@ private:
         iterateChildren(nodep);
         checkNode(nodep);
     }
+    void visit(AstRandRNG* nodep) override {
+        iterateChildren(nodep);
+        checkNode(nodep);
+    }
     void visit(AstUCFunc* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);

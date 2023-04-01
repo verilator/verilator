@@ -1455,6 +1455,13 @@ void AstClass::repairCache() {
         }
     }
 }
+AstClass* AstClass::baseMostClassp() {
+    AstClass* basep = this;
+    while (basep->extendsp() && basep->extendsp()->classp()) {
+        basep = basep->extendsp()->classp();
+    }
+    return basep;
+}
 bool AstClass::isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp) {
     // TAIL RECURSIVE
     if (!refClassp || !baseClassp) return false;

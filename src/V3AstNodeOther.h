@@ -2116,6 +2116,7 @@ class AstClass final : public AstNodeModule {
     AstClassPackage* m_classOrPackagep = nullptr;  // Class package this is under
     bool m_extended = false;  // Is extension or extended by other classes
     bool m_interfaceClass = false;  // Interface class
+    bool m_needRNG = false;  // Need RNG, uses srandom/randomize
     bool m_virtual = false;  // Virtual class
     void insertCache(AstNode* nodep);
 
@@ -2148,9 +2149,13 @@ public:
     void isInterfaceClass(bool flag) { m_interfaceClass = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
+    bool needRNG() const { return m_needRNG; }
+    void needRNG(bool flag) { m_needRNG = flag; }
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
+    // Return the lowest class extended from, or this class
+    AstClass* baseMostClassp();
 };
 class AstClassPackage final : public AstNodeModule {
     // The static information portion of a class (treated similarly to a package)

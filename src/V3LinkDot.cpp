@@ -3102,6 +3102,8 @@ private:
                     }
                 } else if (VN_IS(nodep, New) && m_statep->forPrearray()) {
                     // Resolved in V3Width
+                } else if (nodep->name() == "randomize" || nodep->name() == "srandom") {
+                    // Resolved in V3Width
                 } else if (nodep->dotted() == "") {
                     if (nodep->pli()) {
                         if (v3Global.opt.bboxSys()) {

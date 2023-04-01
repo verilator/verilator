@@ -13,6 +13,8 @@ endclass
 class Cls2;
    function void randomize(int x);
    endfunction
+   function void srandom(int seed);
+   endfunction
 endclass
 
 module t (/*AUTOARG*/);
