@@ -10,10 +10,12 @@ module t;
    reg [31:0] vec [1:0];
    reg [31:0] n;
    int        abcd;
+   int        incr_val;
 
    initial begin
       rglobal = 1;
       value = 2;
+      incr_val = 1;
       if (add(value) != 3'd3) $stop;
       if (rglobal != 2) $stop;
       if (add(add(3'd1)) != 3'd3) $stop;
@@ -67,6 +69,10 @@ module t;
       if (abcd != 1) $stop;
       set_2_to_abcd;
       if (abcd != 2) $stop;
+      abcd = fn_incr_val ();
+      if (abcd != 2) $stop;
+      abcd = fn_incr_val;
+      if (abcd != 3) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
@@ -167,5 +173,11 @@ module t;
    task set_2_to_abcd;
       abcd = 2;
    endtask
+
+   function int fn_incr_val;
+      incr_val++;
+      return (incr_val);
+   endfunction : fn_incr_val
+
 
 endmodule
