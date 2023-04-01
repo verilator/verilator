@@ -3075,8 +3075,9 @@ private:
                 = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;  // Maybe nullptr
             if (taskp) {
                 if (staticAccess && !taskp->lifetime().isStatic()) {
-                    nodep->v3error("Static access to non-static task/function "
-                                   << taskp->prettyNameQ() << endl);
+                    // TODO bug4077
+                    // nodep->v3error("Static access to non-static task/function "
+                    //                << taskp->prettyNameQ() << endl);
                 }
                 nodep->taskp(taskp);
                 nodep->classOrPackagep(foundp->classOrPackagep());
