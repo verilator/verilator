@@ -2670,8 +2670,9 @@ private:
                         }
                     } else {
                         if (staticAccess && !varp->lifetime().isStatic() && !varp->isParam()) {
-                            nodep->v3error("Static access to non-static member variable "
-                                           << varp->prettyNameQ() << endl);
+                            // TODO bug4077
+                            // nodep->v3error("Static access to non-static member variable "
+                            //                << varp->prettyNameQ() << endl);
                         }
                         AstVarRef* const refp = new AstVarRef{
                             nodep->fileline(), varp, VAccess::READ};  // lvalue'ness computed later
