@@ -1297,15 +1297,15 @@ private:
         if (const auto* const varp = VN_CAST(nodep->backp(), Var)) {
             if (varp->isParam()) return;  // Ok, leave
         }
-        // queue_slice[#:$]
-        if (const auto* const selp = VN_CAST(nodep->backp(), SelExtract)) {
-            if (VN_IS(selp->fromp()->dtypep(), QueueDType)) {
-                nodep->replaceWith(
-                    new AstConst(nodep->fileline(), AstConst::Signed32{}, 0x7FFFFFFF));
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                return;
-            }
+        AstNode* backp = nodep->backp();
+        if (VN_IS(backp, Sub)) backp = backp->backp();
+        if (const auto* const selp = VN_CAST(backp, SelExtract)) {
+            if (VN_IS(selp->fromp()->dtypep(), QueueDType)) return;
         }
+        if (const auto* const selp = VN_CAST(backp, SelBit)) {
+            if (VN_IS(selp->fromp()->dtypep(), QueueDType)) return;
+        }
+        // queue_slice[#:$] and queue_bitsel[$] etc handled in V3WidthSel
         nodep->v3warn(E_UNSUPPORTED, "Unsupported/illegal unbounded ('$') in this context.");
     }
     void visit(AstIsUnbounded* nodep) override {

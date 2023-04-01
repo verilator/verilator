@@ -190,6 +190,18 @@ private:
         }
     }
 
+    AstNodeExpr* selQueueBackness(AstNode* nodep) {
+        if (VN_IS(nodep, Unbounded)) {  // e.g. "[$]"
+            return new AstConst{nodep->fileline(), AstConst::Signed32{}, 0};
+        } else if (VN_IS(nodep, Sub) && VN_IS(VN_CAST(nodep, Sub)->lhsp(), Unbounded)) {
+            // e.g. "q[$ - 1]", where 1 is subnodep
+            AstNodeExpr* subrhsp = VN_CAST(nodep, Sub)->rhsp()->unlinkFrBack();
+            return subrhsp;
+        } else {
+            return nullptr;
+        }
+    }
+
     void warnTri(AstNode* nodep) {
         if (VN_IS(nodep, Const) && VN_AS(nodep, Const)->num().isFourState()) {
             nodep->v3error(
@@ -250,8 +262,7 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstAssocArrayDType* const adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
             // SELBIT(array, index) -> ASSOCSEL(array, index)
-            AstNodeExpr* const subp = rhsp;
-            AstAssocSel* const newp = new AstAssocSel{nodep->fileline(), fromp, subp};
+            AstAssocSel* const newp = new AstAssocSel{nodep->fileline(), fromp, rhsp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug() >= 9) newp->dumpTree("-  SELBTn: ");
             nodep->replaceWith(newp);
@@ -259,24 +270,26 @@ private:
         } else if (const AstWildcardArrayDType* const adtypep
                    = VN_CAST(ddtypep, WildcardArrayDType)) {
             // SELBIT(array, index) -> WILDCARDSEL(array, index)
-            AstNodeExpr* const subp = rhsp;
-            AstWildcardSel* const newp = new AstWildcardSel{nodep->fileline(), fromp, subp};
+            AstWildcardSel* const newp = new AstWildcardSel{nodep->fileline(), fromp, rhsp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug() >= 9) newp->dumpTree("-  SELBTn: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstDynArrayDType* const adtypep = VN_CAST(ddtypep, DynArrayDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
-            AstNodeExpr* const subp = rhsp;
-            AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, "at", subp};
+            AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, "at", rhsp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             if (debug() >= 9) newp->dumpTree("-  SELBTq: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstQueueDType* const adtypep = VN_CAST(ddtypep, QueueDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
-            AstNodeExpr* const subp = rhsp;
-            AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, "at", subp};
+            AstCMethodHard* newp;
+            if (AstNodeExpr* const backnessp = selQueueBackness(rhsp)) {
+                newp = new AstCMethodHard{nodep->fileline(), fromp, "atBack", backnessp};
+            } else {
+                newp = new AstCMethodHard{nodep->fileline(), fromp, "at", rhsp};
+            }
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             if (debug() >= 9) newp->dumpTree("-  SELBTq: ");
             nodep->replaceWith(newp);
@@ -338,19 +351,43 @@ private:
         V3Const::constifyParamsEdit(nodep->leftp());  // May relink pointed to node
         V3Const::constifyParamsEdit(nodep->rightp());  // May relink pointed to node
         // if (debug() >= 9) nodep->dumpTree("-  SELEX3: ");
+        AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+        const FromData fromdata = fromDataForArray(nodep, fromp);
+        AstNodeDType* const ddtypep = fromdata.m_dtypep;
+        const VNumRange fromRange = fromdata.m_fromRange;
+        if (VN_IS(ddtypep, QueueDType)) {
+            AstNodeExpr* const qleftp = nodep->rhsp()->unlinkFrBack();
+            AstNodeExpr* const qrightp = nodep->thsp()->unlinkFrBack();
+            AstNodeExpr* const qleftBacknessp = selQueueBackness(qleftp);
+            AstNodeExpr* const qrightBacknessp = selQueueBackness(qrightp);
+            // Use special methods to refer to back rather than math using
+            // queue size, this allows a single queue reference, to support
+            // for equations in side effects that select the queue to
+            // operate upon.
+            std::string name = (qleftBacknessp    ? "sliceBackBack"
+                                : qrightBacknessp ? "sliceFrontBack"
+                                                  : "slice");
+            auto* const newp = new AstCMethodHard{nodep->fileline(), fromp, name,
+                                                  qleftBacknessp ? qleftBacknessp : qleftp};
+            newp->addPinsp(qrightBacknessp ? qrightBacknessp : qrightp);
+            newp->dtypep(ddtypep);
+            newp->didWidth(true);
+            newp->protect(false);
+            UINFO(6, "   new " << newp << endl);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        // Non-queue
         checkConstantOrReplace(nodep->leftp(),
                                "First value of [a:b] isn't a constant, maybe you want +: or -:");
         checkConstantOrReplace(nodep->rightp(),
                                "Second value of [a:b] isn't a constant, maybe you want +: or -:");
-        AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
         AstNodeExpr* const msbp = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* const lsbp = nodep->thsp()->unlinkFrBack();
         int32_t msb = VN_AS(msbp, Const)->toSInt();
         int32_t lsb = VN_AS(lsbp, Const)->toSInt();
         const int32_t elem = (msb > lsb) ? (msb - lsb + 1) : (lsb - msb + 1);
-        const FromData fromdata = fromDataForArray(nodep, fromp);
-        AstNodeDType* const ddtypep = fromdata.m_dtypep;
-        const VNumRange fromRange = fromdata.m_fromRange;
         if (VN_IS(ddtypep, UnpackArrayDType)) {
             // Slice extraction
             if (fromRange.elements() == elem
@@ -451,15 +488,6 @@ private:
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp << endl);
             // if (debug() >= 9) newp->dumpTree("-  SELEXnew: ");
-            nodep->replaceWith(newp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (VN_IS(ddtypep, QueueDType)) {
-            auto* const newp = new AstCMethodHard{nodep->fileline(), fromp, "slice", msbp};
-            msbp->addNext(lsbp);
-            newp->dtypep(ddtypep);
-            newp->didWidth(true);
-            newp->protect(false);
-            UINFO(6, "   new " << newp << endl);
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {  // nullptr=bad extract, or unknown node type

@@ -413,6 +413,10 @@ public:
             return m_deque[index];
         }
     }
+    // Access with an index counted from end (e.g. q[$])
+    T_Value& atBack(int32_t index) { return at(m_deque.size() - 1 - index); }
+    const T_Value& atBack(int32_t index) const { return at(m_deque.size() - 1 - index); }
+
     // function void q.insert(index, value);
     void insert(int32_t index, const T_Value& value) {
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) return;
@@ -427,6 +431,12 @@ public:
         if (VL_UNLIKELY(msb >= m_deque.size())) msb = m_deque.size() - 1;
         for (int32_t i = lsb; i <= msb; ++i) out.push_back(m_deque[i]);
         return out;
+    }
+    VlQueue sliceFrontBack(int32_t lsb, int32_t msb) const {
+        return slice(lsb, m_deque.size() - 1 - msb);
+    }
+    VlQueue sliceBackBack(int32_t lsb, int32_t msb) const {
+        return slice(m_deque.size() - 1 - lsb, m_deque.size() - 1 - msb);
     }
 
     // For save/restore
