@@ -3398,6 +3398,7 @@ int flat_hier_alloc_len;
 unsigned do_rewind : 1;
 char str_scope_nam[FST_ID_NAM_SIZ+1];
 char str_scope_comp[FST_ID_NAM_SIZ+1];
+char *str_scope_attr;
 
 unsigned fseek_failed : 1;
 
@@ -4126,7 +4127,7 @@ if(!(isfeof=feof(xc->fh)))
 			cl = 0;
                         while((ch = fgetc(xc->fh)))
                                 {
-				if(cl <= FST_ID_NAM_SIZ)
+				if(cl < FST_ID_NAM_SIZ)
 					{
 					pnt[cl++] = ch;
 					}
@@ -4138,7 +4139,7 @@ if(!(isfeof=feof(xc->fh)))
 			cl = 0;
                         while((ch = fgetc(xc->fh)))
                                 {
-				if(cl <= FST_ID_NAM_SIZ)
+				if(cl < FST_ID_NAM_SIZ)
 					{
 					pnt[cl++] = ch;
 					}
@@ -4155,15 +4156,19 @@ if(!(isfeof=feof(xc->fh)))
                         xc->hier.htyp = FST_HT_ATTRBEGIN;
                         xc->hier.u.attr.typ = fgetc(xc->fh);
                         xc->hier.u.attr.subtype = fgetc(xc->fh);
-                        xc->hier.u.attr.name = pnt = xc->str_scope_nam;
+			if(!xc->str_scope_attr)
+				{
+				xc->str_scope_attr = (char *)calloc(1, FST_ID_NAM_ATTR_SIZ+1);
+				}
+                        xc->hier.u.attr.name = pnt = xc->str_scope_attr;
 			cl = 0;
                         while((ch = fgetc(xc->fh)))
                                 {
-				if(cl <= FST_ID_NAM_SIZ)
+				if(cl < FST_ID_NAM_ATTR_SIZ)
 					{
 					pnt[cl++] = ch;
 					}
-                                }; /* scopename */
+                                }; /* attrname */
 			pnt[cl] = 0;
                         xc->hier.u.attr.name_length = cl;
 
@@ -4223,7 +4228,7 @@ if(!(isfeof=feof(xc->fh)))
 			cl = 0;
                         while((ch = fgetc(xc->fh)))
                                 {
-				if(cl <= FST_ID_NAM_SIZ)
+				if(cl < FST_ID_NAM_SIZ)
 					{
 					pnt[cl++] = ch;
 					}
@@ -4362,7 +4367,7 @@ while(!feof(xc->fh))
 			cl = 0;
                         while((ch = fgetc(xc->fh)))
                                 {
-				if(cl <= FST_ID_NAM_ATTR_SIZ)
+				if(cl < FST_ID_NAM_ATTR_SIZ)
 					{
 					pnt[cl++] = ch;
 					}
@@ -4384,7 +4389,7 @@ while(!feof(xc->fh))
 			cl = 0;
                         while((ch = fgetc(xc->fh)))
                                 {
-				if(cl <= FST_ID_NAM_ATTR_SIZ)
+				if(cl < FST_ID_NAM_ATTR_SIZ)
 					{
 					pnt[cl++] = ch;
 					}
@@ -4473,7 +4478,7 @@ while(!feof(xc->fh))
 			cl = 0;
                         while((ch = fgetc(xc->fh)))
                                 {
-				if(cl <= FST_ID_NAM_ATTR_SIZ)
+				if(cl < FST_ID_NAM_ATTR_SIZ)
 					{
 					pnt[cl++] = ch;
 					}
@@ -4960,6 +4965,7 @@ if(xc)
         free(xc->signal_typs); xc->signal_typs = NULL;
         free(xc->signal_lens); xc->signal_lens = NULL;
         free(xc->filename); xc->filename = NULL;
+	free(xc->str_scope_attr); xc->str_scope_attr = NULL;
 
         if(xc->fh)
                 {
