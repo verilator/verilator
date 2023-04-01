@@ -2744,17 +2744,17 @@ private:
                 m_ds.m_dotSymp = foundp;
                 ok = m_ds.m_dotPos == DP_SCOPE;
             } else if (const AstNodeFTask* const ftaskp = VN_CAST(foundp->nodep(), NodeFTask)) {
-                    ok = m_ds.m_dotPos == DP_NONE;
-                    if (ok) {
-                        // The condition is true for tasks,
-                        // properties and void functions.
-                        // In these cases, the parentheses may be skipped.
-                        // Also SV allows all function call to skip parens
-                        AstFuncRef* const funcRefp
-                            = new AstFuncRef{nodep->fileline(), nodep->name(), nullptr};
-                        nodep->replaceWith(funcRefp);
-                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    }
+                ok = m_ds.m_dotPos == DP_NONE;
+                if (ok) {
+                    // The condition is true for tasks,
+                    // properties and void functions.
+                    // In these cases, the parentheses may be skipped.
+                    // Also SV allows all function call to skip parens
+                    AstFuncRef* const funcRefp
+                        = new AstFuncRef{nodep->fileline(), nodep->name(), nullptr};
+                    nodep->replaceWith(funcRefp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                }
             }
             //
             if (!ok) {
