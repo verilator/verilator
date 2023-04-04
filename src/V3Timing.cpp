@@ -888,7 +888,6 @@ private:
             iterate(beginp);
             beginp->addStmtsp(
                 new AstCStmt{beginp->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
-            beginp->addStmtsp(new AstCCoreturn{beginp->fileline()});
             // Even if we do not find any awaits, we cannot simply inline the process here, as new
             // awaits could be added later.
             // Name the begin (later the name will be used for a new function)
