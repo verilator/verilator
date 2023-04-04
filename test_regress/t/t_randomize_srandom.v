@@ -52,10 +52,39 @@ class Cls;
    endfunction
 endclass
 
+class Foo;
+endclass
+
+class Bar extends Foo;
+   bit [63:0] m_sum;
+   rand int m_r;
+   function void hash_init();
+      m_sum = 64'h5aef0c8d_d70a4497;
+   endfunction
+   function void hash(int res);
+      $display("  res %x", res);
+      m_sum = {32'h0, res} ^ {m_sum[62:0], m_sum[63] ^ m_sum[2] ^ m_sum[0]};
+   endfunction
+
+   function void this_srandom(int seed);
+      this.srandom(seed);
+   endfunction
+
+   function bit [63:0] test2;
+      $display("  init for seeded randomize");
+      hash_init;
+      $display("%d", m_r);
+      hash(m_r);
+      return m_sum;
+   endfunction
+endclass
+
 module t(/*AUTOARG*/);
 
    Cls ca;
    Cls cb;
+   Bar b1;
+   Bar b2;
 
    bit [63:0] sa;
    bit [63:0] sb;
@@ -66,6 +95,8 @@ module t(/*AUTOARG*/);
       $display("New");
       ca = new;
       cb = new;
+      b1 = new;
+      b2 = new;
 
       sa = ca.test1();
       sb = cb.test1();
@@ -88,6 +119,23 @@ module t(/*AUTOARG*/);
 
       sa = ca.test2(3);
       sb = cb.test2(3);
+      `checkeq(sa, sb);
+
+      $display("this.srandom - Bar class");
+      b1.this_srandom(1);
+      b2.this_srandom(2);
+      void'(b1.randomize());
+      void'(b2.randomize());
+      sa = b1.test2;
+      sb = b2.test2;
+      `checkne(sa, sb);
+
+      b1.this_srandom(3);
+      b2.this_srandom(3);
+      void'(b1.randomize());
+      void'(b2.randomize());
+      sa = b1.test2;
+      sb = b2.test2;
       `checkeq(sa, sb);
 
       // Check using direct call
