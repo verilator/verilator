@@ -11,20 +11,9 @@ class Cls;
    function int get_methoda; return imembera; endfunction
    task set_methoda(input int val); imembera = val; endtask
    function void setv_methoda(input int val); imembera = val; endfunction
-   function void call_int_fn ();
-     int local_i;
-
-     local_i = get_methoda();
-     if (local_i != 30) $stop;
-     local_i++;
-     local_i = get_methoda;
-     if (local_i != 30) $stop;
-   endfunction : call_int_fn
-
 endclass : Cls
 
 module t (/*AUTOARG*/);
-
    initial begin
       Cls c;
       if (c != null) $stop;
@@ -36,8 +25,6 @@ module t (/*AUTOARG*/);
       c.setv_methoda(30);
       if (c.get_methoda() != 30) $stop;
       if (c.get_methoda != 30) $stop;
-      c.call_int_fn;
-      c.call_int_fn();
       $write("*-* All Finished *-*\n");
       $finish;
    end

@@ -2027,7 +2027,6 @@ private:
     };  // DOT {member-name} [DOT...]
 
     // STATE
-    AstClass* m_classp = nullptr;  // Class we're inside
     LinkDotState* const m_statep;  // State, including dotted symbol table
     VSymEnt* m_curSymp = nullptr;  // SymEnt for current lookup point
     VSymEnt* m_modSymp = nullptr;  // SymEnt for current module
@@ -3233,9 +3232,6 @@ private:
     void visit(AstNodeFTask* nodep) override {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
-        if (m_classp) {
-            nodep->classMethod(true);
-        }
         if (nodep->isExternDef()) {
             if (!m_curSymp->findIdFallback("extern " + nodep->name())) {
                 nodep->v3error("extern not found that declares " + nodep->prettyNameQ());
@@ -3282,7 +3278,6 @@ private:
     }
     void visit(AstClass* nodep) override {
         nodep->user3SetOnce();
-        m_classp = nodep;
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);
