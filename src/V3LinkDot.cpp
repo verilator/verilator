@@ -2235,6 +2235,12 @@ private:
             }
         }
     }
+    void importSymbolsFromExtended(AstClass* const nodep, AstClassExtends* const cextp) {
+        AstClass* const classp = cextp->classp();
+        VSymEnt* const srcp = m_statep->getNodeSym(classp);
+        if (classp->isInterfaceClass()) importImplementsClass(nodep, srcp, classp);
+        if (!cextp->isImplements()) m_curSymp->importFromClass(m_statep->symsp(), srcp);
+    }
 
     // VISITs
     void visit(AstNetlist* nodep) override {
@@ -2671,8 +2677,9 @@ private:
                         }
                     } else {
                         if (staticAccess && !varp->lifetime().isStatic() && !varp->isParam()) {
-                            nodep->v3error("Static access to non-static member variable "
-                                           << varp->prettyNameQ() << endl);
+                            // TODO bug4077
+                            // nodep->v3error("Static access to non-static member variable "
+                            //                << varp->prettyNameQ() << endl);
                         }
                         AstVarRef* const refp = new AstVarRef{
                             nodep->fileline(), varp, VAccess::READ};  // lvalue'ness computed later
@@ -3295,7 +3302,11 @@ private:
                         cextp->v3error("Multiple inheritance illegal on non-interface classes"
                                        " (IEEE 1800-2017 8.13)");
                     }
-                    if (cextp->childDTypep() || cextp->dtypep()) continue;  // Already converted
+                    if (cextp->childDTypep() || cextp->dtypep()) {
+                        // Already converted. Update symbol table to link unlinked members
+                        importSymbolsFromExtended(nodep, cextp);
+                        continue;
+                    }
                     AstNode* cprp = cextp->classOrPkgsp();
                     VSymEnt* lookSymp = m_curSymp;
                     if (AstDot* const dotp = VN_CAST(cextp->classOrPkgsp(), Dot)) {
@@ -3379,13 +3390,7 @@ private:
                                     cextp->childDTypep(classRefDtypep);
                                     classp->isExtended(true);
                                     nodep->isExtended(true);
-                                    VSymEnt* const srcp = m_statep->getNodeSym(classp);
-                                    if (classp->isInterfaceClass()) {
-                                        importImplementsClass(nodep, srcp, classp);
-                                    }
-                                    if (!cextp->isImplements()) {
-                                        m_curSymp->importFromClass(m_statep->symsp(), srcp);
-                                    }
+                                    importSymbolsFromExtended(nodep, cextp);
                                     VL_DO_DANGLING(
                                         cextp->classOrPkgsp()->unlinkFrBack()->deleteTree(),
                                         cpackagerefp);

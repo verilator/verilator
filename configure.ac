@@ -68,7 +68,7 @@ AC_MSG_CHECKING(whether to use -m32)
 AC_ARG_ENABLE([m32],
               [AS_HELP_STRING([--enable-m32],
                               [Use -m32 for all compilation and link,
-                               including Verialtor and generated models.])],
+                               including Verilator and generated models.])],
               [case "${enableval}" in
                 yes) CFG_ENABLE_M32=yes ;;
                 no)  CFG_ENABLE_M32=no ;;

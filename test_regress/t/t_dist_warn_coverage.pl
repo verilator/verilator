@@ -31,7 +31,6 @@ foreach my $s (
     'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
     # Not yet analyzed
     ' is not an in/out/inout/param/interface: ',
-    'Descending instance range connecting to ',
     ' loading non-variable',
     '--pipe-filter protocol error, unexpected: ',
     '/*verilator sformat*/ can only be applied to last argument of ',
@@ -177,6 +176,7 @@ sub read_messages {
       line:
         while (my $origline = ($fh && $fh->getline)) {
             my $line = $origline;
+            next if $line =~ m!^\s*//!;
             ++$lineno;
             if ($line =~ /\b(v3error|v3warn)\b\($/g) {
                 $read_next = 1 if $line !~ /LCOV_EXCL_LINE/;

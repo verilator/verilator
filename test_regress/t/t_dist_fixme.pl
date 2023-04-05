@@ -9,6 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 use IO::File;
+use File::Spec::Functions 'catfile';
 
 scenarios(dist => 1);
 
@@ -28,7 +29,9 @@ if (!-r "$root/.git") {
     my $n = 0;
     my $re = qr/(FIX[M]E|BO[Z]O)/;
     foreach my $file (split /\s+/, $files) {
-        my $wholefile = file_contents($root . "/" . $file);
+        my $filename = catfile($root, $file);
+        next if !-r $filename;
+        my $wholefile = file_contents($filename);
         if ($wholefile =~ /$re/) {
             $names{$file} = 1;
         }
