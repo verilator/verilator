@@ -3188,7 +3188,7 @@ private:
 
     void visit(AstStmtExpr* nodep) override {
         iterateChildren(nodep);
-        if (!nodep->exprp()) {
+        if (!nodep->exprp() || VN_IS(nodep->exprp(), Const)) {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }

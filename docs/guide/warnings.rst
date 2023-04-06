@@ -396,6 +396,16 @@ List Of Warnings
    simulators.
 
 
+.. option:: CONSTRAINTIGN
+
+   Warns that Verilator does not support :code:`constraint`,
+   :code:`constraint_mode`, or :code:`rand_mode`, and the construct was are
+   ignored.
+
+   Ignoring this warning may make Verilator randomize() simulations differ
+   from other simulators.
+
+
 .. option:: CONTASSREG
 
    .. TODO better example

@@ -6992,9 +6992,13 @@ class_constraint<nodep>:  // ==IEEE: class_constraint
         //                      // IEEE: constraint_declaration
         //                      // UNSUP: We have the unsupported warning on the randomize() call, so don't bother on
         //                      // constraint blocks. When we support randomize we need to make AST nodes for below rules
-                constraintStaticE yCONSTRAINT idAny constraint_block    { $$ = nullptr; /*UNSUP*/ }
+                constraintStaticE yCONSTRAINT idAny constraint_block
+                        { // Variable so we can link and later ignore constraint_mode() methods
+                          $$ = new AstVar{$<fl>3, VVarType::MEMBER, *$3, VFlagBitPacked{}, 1};
+                          $2->v3warn(CONSTRAINTIGN, "Constraint ignored (unsupported)"); }
         //                      // IEEE: constraint_prototype + constraint_prototype_qualifier
-        |       constraintStaticE yCONSTRAINT idAny ';'         { $$ = nullptr; }
+        |       constraintStaticE yCONSTRAINT idAny ';'
+                        { $$ = nullptr; }
         |       yEXTERN constraintStaticE yCONSTRAINT idAny ';'
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: extern constraint"); }
         |       yPURE constraintStaticE yCONSTRAINT idAny ';'

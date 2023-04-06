@@ -15,6 +15,7 @@ Verilator 5.009 devel
 
 * Add --public-depth to force public to a certain instance depth (#3952). [Andrew Nolte]
 * Add --public-params flag (#3990). [Andrew Nolte]
+* Add CONSTRAINTIGN warning when constraint ignored.
 * Add STATICVAR warning and convert to automatic (#4018) (#4027) (#4030). [Ryszard Rozak, Antmicro Ltd]
 * Support class extends of package::class.
 * Support class srandom and class random stability.

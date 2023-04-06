@@ -2829,7 +2829,9 @@ private:
         AstBasicDType* const basicp = fromDtp ? fromDtp->basicp() : nullptr;
         UINFO(9, "     from dt " << fromDtp << endl);
         userIterate(fromDtp, WidthVP{SELF, BOTH}.p());
-        if (AstEnumDType* const adtypep = VN_CAST(fromDtp, EnumDType)) {
+        if (nodep->name() == "rand_mode") {
+            methodCallRandMode(nodep);
+        } else if (AstEnumDType* const adtypep = VN_CAST(fromDtp, EnumDType)) {
             methodCallEnum(nodep, adtypep);
         } else if (AstAssocArrayDType* const adtypep = VN_CAST(fromDtp, AssocArrayDType)) {
             methodCallAssoc(nodep, adtypep);
@@ -2843,6 +2845,8 @@ private:
             methodCallClass(nodep, adtypep);
         } else if (AstUnpackArrayDType* const adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
             methodCallUnpack(nodep, adtypep);
+        } else if (basicp && nodep->name() == "constraint_mode") {
+            methodCallConstraint(nodep, basicp);
         } else if (basicp && basicp->isEvent()) {
             methodCallEvent(nodep, basicp);
         } else if (basicp && basicp->isString()) {
@@ -3532,6 +3536,26 @@ private:
                            << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         }
         nodep->dtypeSetSigned32();  // Guess on error
+    }
+    void methodCallConstraint(AstMethodCall* nodep, AstBasicDType*) {
+        // Method call on constraint (currently hacked as just a var)
+        if (nodep->name() == "constraint_mode") {
+            methodOkArguments(nodep, 0, 1);
+            nodep->v3warn(CONSTRAINTIGN, "constraint_mode ignored (unsupported)");
+            // Constraints ignored, so we just return "OFF"
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else {
+            nodep->v3fatalSrc("Unknown built-in constraint method " << nodep->prettyNameQ());
+        }
+    }
+    void methodCallRandMode(AstMethodCall* nodep) {
+        // Method call on constraint (currently hacked as just a var)
+        methodOkArguments(nodep, 0, 1);
+        nodep->v3warn(CONSTRAINTIGN, "rand_mode ignored (unsupported)");
+        // Disables ignored, so we just return "ON"
+        nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void methodCallUnpack(AstMethodCall* nodep, AstUnpackArrayDType* adtypep) {
         enum : uint8_t {

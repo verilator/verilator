@@ -88,6 +88,7 @@ public:
         CMPCONST,       // Comparison is constant due to limited range
         COLONPLUS,      // :+ instead of +:
         COMBDLY,        // Combinatorial delayed assignment
+        CONSTRAINTIGN,  // Constraint ignored
         CONTASSREG,     // Continuous assignment on reg
         DECLFILENAME,   // Declaration doesn't match filename
         DEFPARAM,       // Style: Defparam
@@ -187,7 +188,7 @@ public:
             "ALWCOMBORDER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
-            "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
+            "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG",
             "DECLFILENAME", "DEFPARAM", "DEPRECATED",
             "ENCAPSULATED", "ENDLABEL", "ENUMVALUE", "EOFNEWLINE", "GENCLK", "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
