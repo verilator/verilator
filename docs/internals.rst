@@ -628,16 +628,12 @@ coroutines ``co_await`` its ``join`` function, and forked ones call ``done``
 when they're finished. Once the required number of coroutines (set using
 ``setCounter``) finish execution, the forking coroutine is resumed.
 
-Awaitable Utilities
-~~~~~~~~~~~~~~~~~~~
+``VlForever``
+~~~~~~~~~~~~~
 
-There are also two small utility awaitable types:
-
-* ``VlNow`` is an awaitable that suspends and immediately resumes coroutines.
-  It is used for forcing a coroutine to be moved onto the heap. See the `Forks`
-  section for more detail.
-* ``VlForever`` is used for blocking a coroutine forever. See the `Timing pass`
-  section for more detail.
+A small utility awaitable type. It allows for blocking a coroutine forever. It
+is currently only used for ``wait`` statements that await a constant false
+condition. See the `Timing Pass` section for more details.
 
 Timing Pass
 ~~~~~~~~~~~
@@ -749,9 +745,7 @@ doesn't suspend the forking process.
 
 In forked processes, references to local variables are only allowed in
 ``fork..join``, as this is the only case that ensures the lifetime of these
-locals are at least as long as the execution of the forked processes. This is
-where ``VlNow`` is used, to ensure the locals are moved to the heap before they
-are passed by reference to the forked processes.
+locals are at least as long as the execution of the forked processes.
 
 
 Multithreaded Mode

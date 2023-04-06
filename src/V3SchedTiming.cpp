@@ -272,21 +272,14 @@ void transformForks(AstNetlist* const netlistp) {
                 // If it a fork sync or an intra-assignment variable, pass it by value
                 const bool passByValue = (dtypep && dtypep->isForkSync())
                                          || VString::startsWith(varp->name(), "__Vintra");
-                // Only handle vars passed by value or locals declared before the fork
-                if (!passByValue && (!varp->user1() || !varp->isFuncLocal())) return;
                 if (passByValue) {
                     // We can just pass it to the new function
+                } else if (!varp->user1() || !varp->isFuncLocal()) {
+                    // Not func local, or not declared before the fork. Their lifetime is longer
+                    // than the forked process. Skip
+                    return;
                 } else if (m_forkp->joinType().join()) {
                     // If it's fork..join, we can refer to variables from the parent process
-                    if (!m_funcp->user1SetOnce()) {  // Only do this once per function
-                        // Move all locals to the heap before the fork
-                        AstCExpr* const nowp
-                            = new AstCExpr{m_forkp->fileline(), "VlNow{}", 0, true};
-                        nowp->dtypeSetVoid();  // TODO: this is sloppy but harmless
-                        AstCAwait* const awaitp = new AstCAwait{m_forkp->fileline(), nowp};
-                        awaitp->dtypeSetVoid();
-                        m_forkp->addHereThisAsNext(awaitp->makeStmt());
-                    }
                 } else {
                     refp->v3warn(E_UNSUPPORTED, "Unsupported: variable local to a forking process "
                                                 "accessed in a fork..join_any or fork..join_none");
