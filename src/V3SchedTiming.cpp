@@ -281,6 +281,11 @@ void transformForks(AstNetlist* const netlistp) {
                 } else if (m_forkp->joinType().join()) {
                     // If it's fork..join, we can refer to variables from the parent process
                 } else {
+                    // TODO: It is possible to relax this by allowing the use of such variables up
+                    // until the first await. Also, variables defined within a forked process
+                    // (inside a begin) are extracted out by V3Begin, so they also trigger this
+                    // error. Preventing this (or detecting such cases and moving the vars back)
+                    // would also allow for using them freely.
                     refp->v3warn(E_UNSUPPORTED, "Unsupported: variable local to a forking process "
                                                 "accessed in a fork..join_any or fork..join_none");
                     return;
@@ -298,7 +303,8 @@ void transformForks(AstNetlist* const netlistp) {
                         = new AstVarScope{newvarp->fileline(), funcp->scopep(), newvarp};
                     funcp->scopep()->addVarsp(newvscp);
                     vscp->user2p(newvscp);
-                    callp->addArgsp(new AstVarRef{refp->fileline(), vscp, VAccess::READ});
+                    callp->addArgsp(new AstVarRef{
+                        refp->fileline(), vscp, passByValue ? VAccess::READ : VAccess::READWRITE});
                 }
                 AstVarScope* const newvscp = VN_AS(vscp->user2p(), VarScope);
                 refp->varScopep(newvscp);
