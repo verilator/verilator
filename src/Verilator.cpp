@@ -618,6 +618,7 @@ static void verilate(const string& argString) {
 
     // Read first filename
     v3Global.readFiles();
+    v3Global.removeStd();
 
     // Link, etc, if needed
     if (!v3Global.opt.preprocOnly()) {  //

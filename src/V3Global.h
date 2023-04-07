@@ -135,6 +135,7 @@ public:
 
     // METHODS
     void readFiles();
+    void removeStd();
     void checkTree() const;
     static void dumpCheckGlobalTree(const string& stagename, int newNumber = 0,
                                     bool doDump = true);

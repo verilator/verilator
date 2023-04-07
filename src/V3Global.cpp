@@ -77,20 +77,22 @@ void V3Global::readFiles() {
                          "Cannot find file containing library module: ");
     }
 
-    // Delete the std package if unused
-    if (!usesStdPackage()) {
-        if (AstNodeModule* stdp = v3Global.rootp()->stdPackagep()) {
-            v3Global.rootp()->stdPackagep(nullptr);
-            VL_DO_DANGLING(stdp->unlinkFrBack()->deleteTree(), stdp);
-        }
-    }
-
     // v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("parse.tree"));
     V3Error::abortIfErrors();
 
     if (!v3Global.opt.preprocOnly()) {
         // Resolve all modules cells refer to
         V3LinkCells::link(v3Global.rootp(), &filter, &parseSyms);
+    }
+}
+
+void V3Global::removeStd() {
+    // Delete the std package if unused
+    if (!usesStdPackage()) {
+        if (AstNodeModule* stdp = v3Global.rootp()->stdPackagep()) {
+            v3Global.rootp()->stdPackagep(nullptr);
+            VL_DO_DANGLING(stdp->unlinkFrBack()->deleteTree(), stdp);
+        }
     }
 }
 
