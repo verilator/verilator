@@ -253,7 +253,7 @@ private:
 
         // Prepare a temporary variable
         FileLine* const fl = backp->fileline();
-        const string name = string("__Vincrement") + cvtToStr(++m_modIncrementsNum);
+        const string name = string{"__Vincrement"} + cvtToStr(++m_modIncrementsNum);
         AstVar* const varp = new AstVar{fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
                                         varrefp->varp()->subDTypep()->cloneTree(true)};
         if (m_ftaskp) varp->funcLocal(true);

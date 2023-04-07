@@ -492,7 +492,7 @@ public:
             if (!v3Global.opt.protectIds()) return;
         }
         if (!(nodep->protect() && v3Global.opt.protectIds())) {
-            putsDecoration(string("// ") + nodep->name() + at + "\n");
+            putsDecoration(string{"// "} + nodep->name() + at + "\n");
         }
         iterateChildrenConst(nodep);
     }
@@ -1310,7 +1310,7 @@ public:
 
     // Default
     void visit(AstNode* nodep) override {
-        puts(string("\n???? // ") + nodep->prettyTypeName() + "\n");
+        puts(string{"\n???? // "} + nodep->prettyTypeName() + "\n");
         iterateChildrenConst(nodep);
         // LCOV_EXCL_START
         if (!v3Global.opt.lintOnly()) {  // An internal problem, so suppress

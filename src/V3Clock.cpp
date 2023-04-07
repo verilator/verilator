@@ -95,7 +95,7 @@ private:
         if (vscp->user1p()) return VN_AS(vscp->user1p(), VarScope);
         const AstVar* const varp = vscp->varp();
         const string newvarname
-            = string("__Vsampled__") + vscp->scopep()->nameDotless() + "__" + varp->name();
+            = string{"__Vsampled__"} + vscp->scopep()->nameDotless() + "__" + varp->name();
         FileLine* const flp = vscp->fileline();
         AstVar* const newvarp = new AstVar{flp, VVarType::MODULETEMP, newvarname, varp->dtypep()};
         newvarp->noReset(true);  // Reset by below assign

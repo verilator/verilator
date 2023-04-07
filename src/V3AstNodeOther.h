@@ -952,7 +952,7 @@ public:
         BROKEN_RTN(!fmtp());
         return nullptr;
     }
-    string verilogKwd() const override { return (string("$") + string(displayType().ascii())); }
+    string verilogKwd() const override { return string{"$"} + string{displayType().ascii()}; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
@@ -1360,7 +1360,7 @@ public:
     void name(const string& name) override { m_name = name; }
     void dump(std::ostream& str) const override;
     string nameDotless() const;
-    string nameVlSym() const { return ((string("vlSymsp->")) + nameDotless()); }
+    string nameVlSym() const { return string{"vlSymsp->"} + nameDotless(); }
     AstNodeModule* modp() const { return m_modp; }
     //
     AstScope* aboveScopep() const VL_MT_SAFE { return m_aboveScopep; }
@@ -2640,8 +2640,8 @@ public:
         return nullptr;
     }
     string verilogKwd() const override {
-        return (filep() ? string("$f") + string(displayType().ascii())
-                        : string("$") + string(displayType().ascii()));
+        return (filep() ? string{"$f"} + string{displayType().ascii()}
+                        : string{"$"} + string{displayType().ascii()});
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }

@@ -966,9 +966,9 @@ void V3Options::parseOpts(FileLine* fl, int argc, char** argv) {
 
     // Default prefix to the filename
     if (prefix() == "" && topModule() != "")
-        m_prefix = string("V") + AstNode::encodeName(topModule());
+        m_prefix = string{"V"} + AstNode::encodeName(topModule());
     if (prefix() == "" && vFilesList.size() >= 1)
-        m_prefix = string("V") + AstNode::encodeName(V3Os::filenameNonExt(*(vFilesList.begin())));
+        m_prefix = string{"V"} + AstNode::encodeName(V3Os::filenameNonExt(*(vFilesList.begin())));
     if (modPrefix() == "") m_modPrefix = prefix();
 
     // Find files in makedir

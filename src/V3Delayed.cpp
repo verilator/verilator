@@ -262,8 +262,8 @@ private:
             if (VN_IS(dimp, Const)) {  // bit = const, can just use it
                 dimreadps.push_front(dimp);
             } else {
-                const string bitvarname = (string("__Vdlyvdim") + cvtToStr(dimension) + "__"
-                                           + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
+                const string bitvarname = string{"__Vdlyvdim"} + cvtToStr(dimension) + "__"
+                                          + oldvarp->shortName() + "__v" + cvtToStr(modVecNum);
                 AstVarScope* const bitvscp
                     = createVarSc(varrefp->varScopep(), bitvarname, dimp->width(), nullptr);
                 AstAssign* const bitassignp = new AstAssign{
@@ -282,8 +282,8 @@ private:
                 // vlsb = constant, can just push constant into where we use it
                 bitreadp = lsbvaluep;
             } else {
-                const string bitvarname = (string("__Vdlyvlsb__") + oldvarp->shortName() + "__v"
-                                           + cvtToStr(modVecNum));
+                const string bitvarname
+                    = string{"__Vdlyvlsb__"} + oldvarp->shortName() + "__v" + cvtToStr(modVecNum);
                 AstVarScope* const bitvscp
                     = createVarSc(varrefp->varScopep(), bitvarname, lsbvaluep->width(), nullptr);
                 AstAssign* const bitassignp = new AstAssign{
@@ -301,7 +301,7 @@ private:
             valreadp = nodep->rhsp()->unlinkFrBack();
         } else {
             const string valvarname
-                = (string("__Vdlyvval__") + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
+                = string{"__Vdlyvval__"} + oldvarp->shortName() + "__v" + cvtToStr(modVecNum);
             AstVarScope* const valvscp
                 = createVarSc(varrefp->varScopep(), valvarname, 0, nodep->rhsp()->dtypep());
             newlhsp = new AstVarRef{nodep->fileline(), valvscp, VAccess::WRITE};
@@ -321,7 +321,7 @@ private:
             ++m_statSharedSet;
         } else {  // Create new one
             const string setvarname
-                = (string("__Vdlyvset__") + oldvarp->shortName() + "__v" + cvtToStr(modVecNum));
+                = string{"__Vdlyvset__"} + oldvarp->shortName() + "__v" + cvtToStr(modVecNum);
             setvscp = createVarSc(varrefp->varScopep(), setvarname, 1, nullptr);
             if (!m_inSuspendableOrFork) {
                 // Suspendables reset __Vdlyvset__ in the AstAlwaysPost
@@ -483,7 +483,7 @@ private:
         if (nodep->isDelayed()) {
             AstVarRef* const vrefp = VN_AS(nodep->operandp(), VarRef);
             vrefp->unlinkFrBack();
-            const string newvarname = (string("__Vdly__") + vrefp->varp()->shortName());
+            const string newvarname = string{"__Vdly__"} + vrefp->varp()->shortName();
             AstVarScope* const dlyvscp = createVarSc(vrefp->varScopep(), newvarname, 1, nullptr);
 
             const auto dlyRef = [=](VAccess access) {
@@ -572,7 +572,7 @@ private:
                     checkActivePost(nodep, oldactivep);
                 }
                 if (!dlyvscp) {  // First use of this delayed variable
-                    const string newvarname = (string("__Vdly__") + nodep->varp()->shortName());
+                    const string newvarname = string{"__Vdly__"} + nodep->varp()->shortName();
                     dlyvscp = createVarSc(oldvscp, newvarname, 0, nullptr);
                     AstNodeAssign* const prep = new AstAssignPre{
                         nodep->fileline(),

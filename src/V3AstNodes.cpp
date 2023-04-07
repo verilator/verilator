@@ -574,7 +574,7 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
     } else {
         class converter final : public dpiTypesToStringConverter {
             string bitLogicVector(const AstVar* varp, bool isBit) const override {
-                return string(varp->isReadOnly() ? "const " : "")
+                return string{varp->isReadOnly() ? "const " : ""}
                        + dpiTypesToStringConverter::bitLogicVector(varp, isBit) + '*';
             }
             string primitive(const AstVar* varp) const override {
@@ -637,13 +637,13 @@ string AstVar::dpiTmpVarType(const string& varName) const {
 
 string AstVar::scType() const {
     if (isScBigUint()) {
-        return (string("sc_biguint<") + cvtToStr(widthMin())
+        return (string{"sc_biguint<"} + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
     } else if (isScUint()) {
-        return (string("sc_uint<") + cvtToStr(widthMin())
+        return (string{"sc_uint<"} + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
     } else if (isScBv()) {
-        return (string("sc_bv<") + cvtToStr(widthMin()) + "> ");  // Keep the space so don't get >>
+        return (string{"sc_bv<"} + cvtToStr(widthMin()) + "> ");  // Keep the space so don't get >>
     } else if (widthMin() == 1) {
         return "bool";
     } else if (widthMin() <= VL_IDATASIZE) {

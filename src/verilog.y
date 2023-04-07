@@ -1803,11 +1803,11 @@ modportPortsDecl<nodep>:
         //                      // IEEE: modport_simple_ports_declaration
         |       modportSimplePortOrTFPort                { $$ = GRAMMARP->m_modportImpExpActive ?
                                                                 static_cast<AstNode*>(
-                                                                  new AstModportFTaskRef(
-                                                                    $<fl>1, *$1, GRAMMARP->m_modportImpExpLastIsExport) ) :
+                                                                  new AstModportFTaskRef{
+                                                                    $<fl>1, *$1, GRAMMARP->m_modportImpExpLastIsExport} ) :
                                                                 static_cast<AstNode*>(
-                                                                  new AstModportVarRef(
-                                                                    $<fl>1, *$1, GRAMMARP->m_varIO) ); }
+                                                                  new AstModportVarRef{
+                                                                    $<fl>1, *$1, GRAMMARP->m_varIO} ); }
         ;
 
 modportSimplePortOrTFPort<strp>:// IEEE: modport_simple_port or modport_tf_port, depending what keyword was earlier

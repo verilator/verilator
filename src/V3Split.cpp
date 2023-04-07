@@ -148,7 +148,7 @@ public:
     SplitVarPostVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
     ~SplitVarPostVertex() override = default;
-    string name() const override VL_MT_STABLE { return string("POST ") + SplitNodeVertex::name(); }
+    string name() const override VL_MT_STABLE { return string{"POST "} + SplitNodeVertex::name(); }
     string dotColor() const override { return "CadetBlue"; }
 };
 
@@ -513,10 +513,10 @@ protected:
         // And a real ordering to get the statements into something reasonable
         // We don't care if there's cutable violations here...
         // Non-cutable violations should be impossible; as those edges are program-order
-        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed(string("splitg_preo"), false);
+        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed("splitg_preo", false);
         m_graph.acyclic(&SplitEdge::followCyclic);
         m_graph.rank(&SplitEdge::followCyclic);  // Or order(), but that's more expensive
-        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed(string("splitg_opt"), false);
+        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed("splitg_opt", false);
     }
 
     void reorderBlock(AstNode* nodep) {

@@ -52,7 +52,7 @@ void V3Global::readFiles() {
     VInFilter filter{v3Global.opt.pipeFilter()};
     V3ParseSym parseSyms{v3Global.rootp()};  // Symbol table must be common across all parsing
 
-    V3Parse parser(v3Global.rootp(), &filter, &parseSyms);
+    V3Parse parser{v3Global.rootp(), &filter, &parseSyms};
 
     // Parse the std package
     if (v3Global.opt.std()) {

@@ -156,9 +156,9 @@ public:
         of.puts("# Path to Verilator kit (from $VERILATOR_ROOT)\n");
         of.puts("VERILATOR_ROOT = " + V3Options::getenvVERILATOR_ROOT() + "\n");
         of.puts("# SystemC include directory with systemc.h (from $SYSTEMC_INCLUDE)\n");
-        of.puts(string("SYSTEMC_INCLUDE ?= ") + V3Options::getenvSYSTEMC_INCLUDE() + "\n");
+        of.puts(string{"SYSTEMC_INCLUDE ?= "} + V3Options::getenvSYSTEMC_INCLUDE() + "\n");
         of.puts("# SystemC library directory with libsystemc.a (from $SYSTEMC_LIBDIR)\n");
-        of.puts(string("SYSTEMC_LIBDIR ?= ") + V3Options::getenvSYSTEMC_LIBDIR() + "\n");
+        of.puts(string{"SYSTEMC_LIBDIR ?= "} + V3Options::getenvSYSTEMC_LIBDIR() + "\n");
 
         // Only check it if we really need the value
         if (v3Global.opt.systemC() && !V3Options::systemCFound()) {
@@ -169,22 +169,22 @@ public:
 
         of.puts("\n### Switches...\n");
         of.puts("# C++ code coverage  0/1 (from --prof-c)\n");
-        of.puts(string("VM_PROFC = ") + ((v3Global.opt.profC()) ? "1" : "0") + "\n");
+        of.puts(string{"VM_PROFC = "} + ((v3Global.opt.profC()) ? "1" : "0") + "\n");
         of.puts("# SystemC output mode?  0/1 (from --sc)\n");
-        of.puts(string("VM_SC = ") + ((v3Global.opt.systemC()) ? "1" : "0") + "\n");
+        of.puts(string{"VM_SC = "} + ((v3Global.opt.systemC()) ? "1" : "0") + "\n");
         of.puts("# Legacy or SystemC output mode?  0/1 (from --sc)\n");
-        of.puts(string("VM_SP_OR_SC = $(VM_SC)\n"));
+        of.puts(string{"VM_SP_OR_SC = $(VM_SC)\n"});
         of.puts("# Deprecated\n");
-        of.puts(string("VM_PCLI = ") + (v3Global.opt.systemC() ? "0" : "1") + "\n");
+        of.puts(string{"VM_PCLI = "} + (v3Global.opt.systemC() ? "0" : "1") + "\n");
         of.puts(
             "# Deprecated: SystemC architecture to find link library path (from $SYSTEMC_ARCH)\n");
-        of.puts(string("VM_SC_TARGET_ARCH = ") + V3Options::getenvSYSTEMC_ARCH() + "\n");
+        of.puts(string{"VM_SC_TARGET_ARCH = "} + V3Options::getenvSYSTEMC_ARCH() + "\n");
 
         of.puts("\n### Vars...\n");
         of.puts("# Design prefix (from --prefix)\n");
-        of.puts(string("VM_PREFIX = ") + v3Global.opt.prefix() + "\n");
+        of.puts(string{"VM_PREFIX = "} + v3Global.opt.prefix() + "\n");
         of.puts("# Module prefix (from --prefix)\n");
-        of.puts(string("VM_MODPREFIX = ") + v3Global.opt.modPrefix() + "\n");
+        of.puts(string{"VM_MODPREFIX = "} + v3Global.opt.modPrefix() + "\n");
 
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");

@@ -555,7 +555,7 @@ public:
             V3Inst::checkOutputShort(pinp);
             AstNodeExpr* const pinexprp = VN_AS(pinp->exprp(), NodeExpr)->unlinkFrBack();
             const string newvarname
-                = (string(pinVarp->isWritable() ? "__Vcellout" : "__Vcellinp")
+                = (string{pinVarp->isWritable() ? "__Vcellout" : "__Vcellinp"}
                    // Prevent name conflict if both tri & non-tri add signals
                    + (forTristate ? "t" : "") + "__" + cellp->name() + "__" + pinp->name());
             AstVar* const newvarp

@@ -323,7 +323,7 @@ struct TaskDpiUtils {
                 return true;
             } else {
                 const AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
-                frstmt = "VL_SET_" + string(dtypep->charIQWN()) + "_" + frSvType + "(";
+                frstmt = "VL_SET_" + string{dtypep->charIQWN()} + "_" + frSvType + "(";
                 if (VN_IS(dtypep, UnpackArrayDType)) frstmt += "&";
                 frstmt += frName;
                 ket = ")";
@@ -425,7 +425,7 @@ private:
         AstNode* const newbodysp
             = AstNode::cloneTreeNull(refp->taskp()->stmtsp(), true);  // Maybe nullptr
         AstNode* const beginp
-            = new AstComment{refp->fileline(), string("Function: ") + refp->name(), true};
+            = new AstComment{refp->fileline(), string{"Function: "} + refp->name(), true};
         if (newbodysp) beginp->addNext(newbodysp);
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  newbegi: ");
         //
@@ -542,7 +542,7 @@ private:
         UASSERT_OBJ(cfuncp, refp, "No non-inline task associated with this task call?");
         //
         AstNode* const beginp
-            = new AstComment{refp->fileline(), string("Function: ") + refp->name(), true};
+            = new AstComment{refp->fileline(), string{"Function: "} + refp->name(), true};
         AstNodeCCall* ccallp;
         if (VN_IS(refp, New)) {
             AstCNew* const cnewp = new AstCNew{refp->fileline(), cfuncp};
@@ -1725,7 +1725,7 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
         stmt = "for (size_t " + idx + " = 0; " + idx + " < " + cvtToStr(unpackSize) + "; ++" + idx
                + ") ";
         stmt += (isBit ? "VL_SET_SVBV_" : "VL_SET_SVLV_")
-                + string(portp->dtypep()->skipRefp()->charIQWN()) + "(" + cvtToStr(portp->width())
+                + string{portp->dtypep()->skipRefp()->charIQWN()} + "(" + cvtToStr(portp->width())
                 + ", ";
         stmt += toName + " + " + cvtToStr(portp->dtypep()->skipRefp()->widthWords()) + " * " + idx
                 + ", ";

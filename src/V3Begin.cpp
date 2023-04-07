@@ -299,7 +299,7 @@ private:
             // To keep correct visual order, must add before other Text's
             AstText* const afterp = nodep->scopeAttrp();
             if (afterp) afterp->unlinkFrBackWithNext();
-            nodep->addScopeAttrp(new AstText{nodep->fileline(), string("__DOT__") + scname});
+            nodep->addScopeAttrp(new AstText{nodep->fileline(), string{"__DOT__"} + scname});
             if (afterp) nodep->addScopeAttrp(afterp);
         }
         iterateChildren(nodep);

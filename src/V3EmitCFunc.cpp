@@ -275,9 +275,9 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
         double dchars = mantissabits / 3.321928094887362 + 1.0;
         if (fmtLetter == 'd') dchars++;  // space for sign
         const int nchars = int(dchars);
-        pfmt = string("%") + cvtToStr(nchars) + fmtLetter;
+        pfmt = string{"%"} + cvtToStr(nchars) + fmtLetter;
     } else {
-        pfmt = string("%") + vfmt + fmtLetter;
+        pfmt = string{"%"} + vfmt + fmtLetter;
     }
     m_emitDispState.pushFormat(pfmt);
     if (!ignore) {
@@ -672,7 +672,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
     } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                     "Should have swapped msb & lsb earlier.");
-        const string ivar = string("__Vi") + cvtToStr(depth);
+        const string ivar = string{"__Vi"} + cvtToStr(depth);
         const string pre = ("for (int " + ivar + " = " + cvtToStr(0) + "; " + ivar + " < "
                             + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
         const string below = emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(),

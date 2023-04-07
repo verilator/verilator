@@ -70,7 +70,7 @@ public:
             nm = "nul";  // LCOV_EXCL_LINE
         } else {
             nm = logicp()->name();
-            nm += (string("\\nMV:") + " d=" + cvtToHex(logicp()->domainp())
+            nm += (string{"\\nMV:"} + " d=" + cvtToHex(logicp()->domainp())
                    + " s=" + cvtToHex(logicp()->scopep()));
         }
         return nm;
@@ -127,7 +127,7 @@ public:
         string nm;
         if (logicp()) {
             nm = logicp()->name();
-            nm += (string("\\nMV:") + " d=" + cvtToHex(logicp()->domainp()) + " s="
+            nm += (string{"\\nMV:"} + " d=" + cvtToHex(logicp()->domainp()) + " s="
                    + cvtToHex(logicp()->scopep())
                    // "color()" represents the mtask ID.
                    + "\\nt=" + cvtToStr(color()));
