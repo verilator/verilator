@@ -360,32 +360,36 @@ void transformForks(AstNetlist* const netlistp) {
             // Start with children, so later we only find awaits that are actually in this begin
             m_beginHasAwaits = false;
             iterateChildrenConst(nodep);
-            UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
-            // Create a function to put this begin's statements in
-            FileLine* const flp = nodep->fileline();
-            AstCFunc* const newfuncp
-                = new AstCFunc{flp, nodep->name(), m_funcp->scopep(), "VlCoroutine"};
-            m_funcp->addNextHere(newfuncp);
-            newfuncp->isLoose(m_funcp->isLoose());
-            newfuncp->slow(m_funcp->slow());
-            newfuncp->isConst(m_funcp->isConst());
-            newfuncp->declPrivate(true);
-            // Replace the begin with a call to the newly created function
-            AstCCall* const callp = new AstCCall{flp, newfuncp};
-            callp->dtypeSetVoid();
-            nodep->replaceWith(callp->makeStmt());
-            // If we're in a class, add a vlSymsp arg
-            if (m_inClass) {
-                newfuncp->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;\n"});
-                newfuncp->argTypes(EmitCBaseVisitor::symClassVar());
-                callp->argTypes("vlSymsp");
+            if (!nodep->name().empty()) {
+                // Create a function to put this begin's statements in
+                FileLine* const flp = nodep->fileline();
+                AstCFunc* const newfuncp
+                    = new AstCFunc{flp, nodep->name(), m_funcp->scopep(), "VlCoroutine"};
+                m_funcp->addNextHere(newfuncp);
+                newfuncp->isLoose(m_funcp->isLoose());
+                newfuncp->slow(m_funcp->slow());
+                newfuncp->isConst(m_funcp->isConst());
+                newfuncp->declPrivate(true);
+                // Replace the begin with a call to the newly created function
+                AstCCall* const callp = new AstCCall{flp, newfuncp};
+                callp->dtypeSetVoid();
+                nodep->replaceWith(callp->makeStmt());
+                // If we're in a class, add a vlSymsp arg
+                if (m_inClass) {
+                    newfuncp->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;\n"});
+                    newfuncp->argTypes(EmitCBaseVisitor::symClassVar());
+                    callp->argTypes("vlSymsp");
+                }
+                // Put the begin's statements in the function, delete the begin
+                newfuncp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
+                if (!m_beginHasAwaits) {
+                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
+                }
+                remapLocals(newfuncp, callp);
+            } else {
+                // The begin has neither awaits nor a name, just inline it's statements
+                nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
             }
-            // Put the begin's statements in the function, delete the begin
-            newfuncp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
-            if (!m_beginHasAwaits) {
-                newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
-            }
-            remapLocals(newfuncp, callp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
         void visit(AstCAwait* nodep) override {
