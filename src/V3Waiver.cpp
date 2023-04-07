@@ -19,6 +19,7 @@
 #include "V3Waiver.h"
 
 #include "V3File.h"
+#include "V3Options.h"
 
 #include <memory>
 #include <sstream>
@@ -26,6 +27,7 @@
 void V3Waiver::addEntry(V3ErrorCode errorCode, const std::string& filename, const std::string& str)
     VL_MT_SAFE_EXCLUDES(s_mutex) {
     const VerilatedLockGuard lock{s_mutex};
+    if (filename == V3Options::getStdPackagePath()) return;
     std::stringstream entry;
     const size_t pos = str.find('\n');
     entry << "lint_off -rule " << errorCode.ascii() << " -file \"*" << filename << "\" -match \""
