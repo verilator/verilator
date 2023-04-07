@@ -94,24 +94,21 @@ class SenExprBuilder final {
         const auto rdCurr = [=]() { return getCurr(exprp); };
 
         AstNode* scopeExprp = exprp;
-        if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
-            scopeExprp = refp->varScopep()->varp();
-        }
+        if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) scopeExprp = refp->varScopep();
         // Create the 'previous value' variable
         auto it = m_prev.find(*scopeExprp);
         if (it == m_prev.end()) {
-            // For readability, use the scoped signal name if the trigger is a simple AstVarRef
-            string name;
-            if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
-                AstVarScope* vscp = refp->varScopep();
-                name = "__Vtrigrprev__" + vscp->scopep()->nameDotless() + "__"
-                       + vscp->varp()->name();
-            } else {
-                name = m_prevNames.get(exprp);
-            }
-
             AstVarScope* prevp;
             if (m_scopep->isTop()) {
+                // For readability, use the scoped signal name if the trigger is a simple AstVarRef
+                string name;
+                if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
+                    AstVarScope* const vscp = refp->varScopep();
+                    name = "__" + vscp->scopep()->nameDotless() + "__" + vscp->varp()->name();
+                    name = m_prevNames.get(name);
+                } else {
+                    name = m_prevNames.get(exprp);
+                }
                 prevp = m_scopep->createTemp(name, exprp->dtypep());
             } else {
                 AstVar* const varp = new AstVar{flp, VVarType::BLOCKTEMP, m_prevNames.get(exprp),

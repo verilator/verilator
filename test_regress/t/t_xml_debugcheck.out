@@ -22,7 +22,7 @@
     <module loc="d,10,8,10,9" name="$root" origName="$root" topModule="1" public="true">
       <var loc="d,14,10,14,13" name="clk" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="clk" clocker="true" public="true"/>
       <var loc="d,23,9,23,10" name="t.e" dtype_id="2" vartype="my_t" origName="e"/>
-      <var loc="d,10,8,10,9" name="__Vtrigrprev__TOP__clk" dtype_id="1" vartype="logic" origName="__Vtrigrprev__TOP__clk"/>
+      <var loc="d,10,8,10,9" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="1" vartype="logic" origName="__Vtrigprevexpr___TOP__clk__0"/>
       <var loc="d,10,8,10,9" name="__VactContinue" dtype_id="3" vartype="bit" origName="__VactContinue"/>
       <var loc="d,22,17,22,20" name="t.cyc" dtype_id="4" vartype="integer" origName="cyc"/>
       <var loc="d,10,8,10,9" name="__VactIterCount" dtype_id="5" vartype="bit" origName="__VactIterCount"/>
@@ -49,7 +49,7 @@
         </stmtexpr>
         <assign loc="d,60,22,60,25" dtype_id="9">
           <varref loc="d,60,22,60,25" name="clk" dtype_id="9"/>
-          <varref loc="d,60,22,60,25" name="__Vtrigrprev__TOP__clk" dtype_id="9"/>
+          <varref loc="d,60,22,60,25" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="9"/>
         </assign>
       </cfunc>
       <cfunc loc="d,10,8,10,9" name="_eval_initial__TOP">
@@ -607,7 +607,7 @@
             </ccast>
             <not loc="d,60,14,60,21" dtype_id="9">
               <ccast loc="d,60,14,60,21" dtype_id="9">
-                <varref loc="d,60,14,60,21" name="__Vtrigrprev__TOP__clk" dtype_id="9"/>
+                <varref loc="d,60,14,60,21" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="9"/>
               </ccast>
             </not>
           </and>
@@ -618,7 +618,7 @@
         </assign>
         <assign loc="d,60,22,60,25" dtype_id="9">
           <varref loc="d,60,22,60,25" name="clk" dtype_id="9"/>
-          <varref loc="d,60,22,60,25" name="__Vtrigrprev__TOP__clk" dtype_id="9"/>
+          <varref loc="d,60,22,60,25" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="9"/>
         </assign>
         <textblock loc="d,10,8,10,9">
           <text loc="d,10,8,10,9"/>
@@ -1688,7 +1688,7 @@
           <varref loc="d,23,9,23,10" name="t.e" dtype_id="2"/>
         </creset>
         <creset loc="d,10,8,10,9">
-          <varref loc="d,10,8,10,9" name="__Vtrigrprev__TOP__clk" dtype_id="1"/>
+          <varref loc="d,10,8,10,9" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="1"/>
         </creset>
       </cfunc>
       <cuse loc="a,0,0,0,0" name="$unit"/>
