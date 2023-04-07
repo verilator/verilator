@@ -1174,7 +1174,6 @@ private:
         AstCFunc* const cfuncp = new AstCFunc{
             nodep->fileline(), name, m_scopep,
             ((nodep->taskPublic() && rtnvarp) ? rtnvarp->cPubArgType(true, true) : "")};
-        if (nodep->isFromStd() && nodep->name() == "self") { cfuncp->rtnType("VlCoroutine"); }
         // It's ok to combine imports because this is just a wrapper;
         // duplicate wrappers can get merged.
         cfuncp->dontCombine(!nodep->dpiImport());
@@ -1323,6 +1322,11 @@ private:
                     cfuncp->addStmtsp(assignp);
                 }
             }
+        }
+
+        if (nodep->isFromStd() && nodep->name() == "self") {
+            cfuncp->rtnType("VlCoroutine");
+            cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
         }
 
         // Delete rest of cloned task and return new func
