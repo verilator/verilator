@@ -115,4 +115,45 @@ package std;
          return 0;
       endfunction
    endclass
+
+   class process;
+      typedef enum { FINISHED, RUNNING, WAITING, SUSPENDED, KILLED } state;
+      static process _s_global_process;
+      static function process self();
+         // Unsupported, emulating with single process' state
+         if (!_s_global_process) _s_global_process = new;
+         return _s_global_process;
+      endfunction
+      function state status();
+         // Unsupported, emulating with single process' state
+         return RUNNING;
+      endfunction
+      function void kill();
+         $error("std::process::kill() not supported");
+      endfunction
+      task await();
+         $error("std::process::await() not supported");
+      endtask
+      function void suspend();
+         $error("std::process::suspend() not supported");
+      endfunction
+      function void resume();
+         $error("std::process::resume() not supported");
+      endfunction
+      // When really implemented, srandom must operates on the process, but for
+      // now rely on the srandom() that is automatically generated for all
+      // classes.
+      // function void srandom(int seed);
+      // endfunction
+      function string get_randstate();
+         // Could operate on all proceses for now
+         // No error, as harmless until set_randstate is called
+         return "NOT_SUPPORTED";
+      endfunction
+      function void set_randstate(string randstate);
+         $error("std::process::set_randstate() not supported");
+         // Could operate on all proceses for now
+      endfunction
+   endclass
+
 endpackage
