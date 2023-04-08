@@ -125,12 +125,6 @@ static void process() {
 
     // Convert parseref's to varrefs, and other directly post parsing fixups
     V3LinkParse::linkParse(v3Global.rootp());
-    if (v3Global.opt.debugExitUvm()) {
-        V3Error::abortIfErrors();
-        cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
-        std::exit(0);
-    }
-
     // Cross-link signal names
     // Cross-link dotted hierarchical references
     V3LinkDot::linkDotPrimary(v3Global.rootp());
@@ -148,6 +142,11 @@ static void process() {
     V3Error::abortIfErrors();
 
     if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
+    if (v3Global.opt.debugExitUvm()) {
+        V3Error::abortIfErrors();
+        cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
+        std::exit(0);
+    }
 
     // Remove parameters by cloning modules to de-parameterized versions
     //   This requires some width calculations and constant propagation
