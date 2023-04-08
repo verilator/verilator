@@ -240,11 +240,12 @@ private:
             return;
         }
 
-        const AstNodeVarRef* varrefp = nullptr;
-        if (m_unsupportedHere || !(varrefp = VN_CAST(nodep->rhsp(), VarRef))) {
+        if (m_unsupportedHere) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Incrementation in this context.");
             return;
         }
+        AstNodeExpr* const readp = nodep->rhsp();
+        AstNodeExpr* const writep = nodep->thsp();
 
         AstConst* const constp = VN_AS(nodep->lhsp(), Const);
         UASSERT_OBJ(nodep, constp, "Expecting CONST");
@@ -254,8 +255,9 @@ private:
         // Prepare a temporary variable
         FileLine* const fl = backp->fileline();
         const string name = string{"__Vincrement"} + cvtToStr(++m_modIncrementsNum);
-        AstVar* const varp = new AstVar{fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
-                                        varrefp->varp()->subDTypep()->cloneTree(true)};
+        AstVar* const varp = new AstVar{
+            fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
+            new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{}, readp->cloneTree(true)}};
         if (m_ftaskp) varp->funcLocal(true);
 
         // Declare the variable
@@ -264,30 +266,29 @@ private:
         // Define what operation will we be doing
         AstNodeExpr* operp;
         if (VN_IS(nodep, PostSub) || VN_IS(nodep, PreSub)) {
-            operp = new AstSub{fl, new AstVarRef{fl, varrefp->varp(), VAccess::READ}, newconstp};
+            operp = new AstSub{fl, readp->cloneTree(true), newconstp};
         } else {
-            operp = new AstAdd{fl, new AstVarRef{fl, varrefp->varp(), VAccess::READ}, newconstp};
+            operp = new AstAdd{fl, readp->cloneTree(true), newconstp};
         }
 
         if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PreSub)) {
             // PreAdd/PreSub operations
             // Immediately after declaration - increment it by one
-            varp->addNextHere(new AstAssign{fl, new AstVarRef{fl, varrefp->varp(), VAccess::WRITE},
+            varp->addNextHere(new AstAssign{fl, writep->cloneTree(true),
                                             new AstVarRef{fl, varp, VAccess::READ}});
             // Immediately after incrementing - assign it to the original variable
             varp->addNextHere(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, operp});
         } else {
             // PostAdd/PostSub operations
             // assign the original variable to the temporary one
-            varp->addNextHere(
-                new AstAssign{fl, new AstVarRef{fl, varrefp->varp(), VAccess::WRITE}, operp});
+            varp->addNextHere(new AstAssign{fl, writep->cloneTree(true), operp});
             // Increment the original variable by one
             varp->addNextHere(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
-                                            new AstVarRef{fl, varrefp->varp(), VAccess::READ}});
+                                            readp->cloneTree(true)});
         }
 
         // Replace the node with the temporary
-        nodep->replaceWith(new AstVarRef{varrefp->fileline(), varp, VAccess::READ});
+        nodep->replaceWith(new AstVarRef{readp->fileline(), varp, VAccess::READ});
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }
