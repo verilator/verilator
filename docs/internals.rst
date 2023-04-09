@@ -1801,8 +1801,6 @@ IEEE 1800-2017 6.12 "shortreal"
     Little/no tool support, and easily promoted to real.
 IEEE 1800-2017 11.11 Min, typ, max
     No SDF support, so will always use typical.
-IEEE 1800-2017 11.12 "let"
-    Little/no tool support, makes it difficult to implement parsers.
 IEEE 1800-2017 20.16 Stochastic analysis
     Little industry use.
 IEEE 1800-2017 20.17 PLA modeling
