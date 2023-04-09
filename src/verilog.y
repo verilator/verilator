@@ -3897,8 +3897,7 @@ for_initialization<nodep>:      // ==IEEE: for_initialization + for_variable_dec
 
 for_initializationItemList<nodep>:      // IEEE: [for_variable_declaration...]
                 for_initializationItem                  { $$ = $1; }
-        |       for_initializationItemList ',' for_initializationItem
-                        { $$ = $1; BBUNSUP($2, "Unsupported: for loop initialization after the first comma"); }
+        |       for_initializationItemList ',' for_initializationItem   { $$ = addNextNull($1, $3); }
         ;
 
 for_initializationItem<nodep>:          // IEEE: variable_assignment + for_variable_declaration
