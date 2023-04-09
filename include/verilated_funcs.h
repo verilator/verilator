@@ -2201,10 +2201,10 @@ inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs
     return lhs + rhs;
 }
 inline std::string VL_REPLICATEN_NNQ(const std::string& lhs, IData rep) VL_PURE {
-    std::string out;
-    out.reserve(lhs.length() * rep);
-    for (unsigned times = 0; times < rep; ++times) out += lhs;
-    return out;
+    std::string result;
+    result.reserve(lhs.length() * rep);
+    for (unsigned times = 0; times < rep; ++times) result += lhs;
+    return result;
 }
 inline std::string VL_REPLICATEN_NNI(const std::string& lhs, IData rep) VL_PURE {
     return VL_REPLICATEN_NNQ(lhs, rep);

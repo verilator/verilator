@@ -467,13 +467,13 @@ string FileLine::warnContext() const {
 }
 
 string FileLine::warnContextParent() const VL_REQUIRES(V3Error::s().m_mutex) {
-    string out;
+    string result;
     for (FileLine* parentFl = parent(); parentFl; parentFl = parentFl->parent()) {
         if (parentFl->filenameIsGlobal()) break;
-        out += parentFl->warnOther() + "... note: In file included from "
-               + parentFl->filebasename() + "\n";
+        result += parentFl->warnOther() + "... note: In file included from "
+                  + parentFl->filebasename() + "\n";
     }
-    return out;
+    return result;
 }
 #ifdef VL_LEAK_CHECKS
 std::unordered_set<FileLine*> fileLineLeakChecks;

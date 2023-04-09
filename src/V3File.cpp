@@ -584,14 +584,14 @@ protected:
         return true;
     }
     static size_t listSize(const StrList& sl) {
-        size_t out = 0;
-        for (const string& i : sl) out += i.length();
-        return out;
+        size_t result = 0;
+        for (const string& i : sl) result += i.length();
+        return result;
     }
     static string listString(const StrList& sl) {
-        string out;
-        for (const string& i : sl) out += i;
-        return out;
+        string result;
+        for (const string& i : sl) result += i;
+        return result;
     }
     // CONSTRUCTORS
     explicit VInFilterImp(const string& command) { start(command); }

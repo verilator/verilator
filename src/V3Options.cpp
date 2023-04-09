@@ -395,12 +395,12 @@ void V3Options::addForceInc(const string& filename) { m_forceIncs.push_back(file
 void V3Options::addArg(const string& arg) { m_impp->m_allArgs.push_back(arg); }
 
 string V3Options::allArgsString() const VL_MT_SAFE {
-    string out;
+    string result;
     for (const string& i : m_impp->m_allArgs) {
-        if (out != "") out += " ";
-        out += i;
+        if (result != "") result += " ";
+        result += i;
     }
-    return out;
+    return result;
 }
 
 // Delete some options for Verilation of the hierarchical blocks.

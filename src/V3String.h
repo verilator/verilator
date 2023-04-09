@@ -70,9 +70,9 @@ inline uint32_t cvtToHash(const void* vp) {
 }
 
 inline string ucfirst(const string& text) {
-    string out = text;
-    out[0] = std::toupper(out[0]);
-    return out;
+    string result = text;
+    result[0] = std::toupper(result[0]);
+    return result;
 }
 
 //######################################################################

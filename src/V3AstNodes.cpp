@@ -917,10 +917,10 @@ void AstScope::cloneRelink() {
     }
 }
 string AstScope::nameDotless() const {
-    string out = shortName();
+    string result = shortName();
     string::size_type pos;
-    while ((pos = out.find('.')) != string::npos) out.replace(pos, 1, "__");
-    return out;
+    while ((pos = result.find('.')) != string::npos) result.replace(pos, 1, "__");
+    return result;
 }
 
 AstVarScope* AstScope::createTemp(const string& name, unsigned width) {

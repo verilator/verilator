@@ -720,11 +720,11 @@ void V3PreLex::dumpStack() {
 }
 
 string V3PreLex::cleanDbgStrg(const string& in) {
-    string out = in;
+    string result = in;
     string::size_type pos;
-    while ((pos = out.find('\n')) != string::npos) { out.replace(pos, 1, "\\n"); }
-    while ((pos = out.find('\r')) != string::npos) { out.replace(pos, 1, "\\r"); }
-    return out;
+    while ((pos = result.find('\n')) != string::npos) result.replace(pos, 1, "\\n");
+    while ((pos = result.find('\r')) != string::npos) result.replace(pos, 1, "\\r");
+    return result;
 }
 
 void V3PreLex::unused() {

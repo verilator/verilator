@@ -161,7 +161,7 @@ string V3Os::filenameNonExt(const string& filename) VL_PURE {
 }
 
 string V3Os::filenameSubstitute(const string& filename) {
-    string out;
+    string result;
     // cppcheck-has-bug-suppress unusedLabel
     enum : uint8_t { NONE, PAREN, CURLY } brackets = NONE;
     for (string::size_type pos = 0; pos < filename.length(); ++pos) {
@@ -188,20 +188,20 @@ string V3Os::filenameSubstitute(const string& filename) {
             string envvalue;
             if (!envvar.empty()) envvalue = getenvStr(envvar, "");
             if (!envvalue.empty()) {
-                out += envvalue;
+                result += envvalue;
                 if (brackets == NONE) {
                     pos = endpos;
                 } else {
                     pos = endpos + 1;
                 }
             } else {
-                out += filename[pos];  // *pos == '$'
+                result += filename[pos];  // *pos == '$'
             }
         } else {
-            out += filename[pos];
+            result += filename[pos];
         }
     }
-    return out;
+    return result;
 }
 
 string V3Os::filenameRealPath(const string& filename) {

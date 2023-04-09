@@ -232,9 +232,9 @@ std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
     char* const bufp = new char[len + 1];
     VL_VSNPRINTF(bufp, len + 1, formatp, ap);
 
-    std::string out{bufp, len};  // Not const to allow move optimization
+    std::string result{bufp, len};  // Not const to allow move optimization
     delete[] bufp;
-    return out;
+    return result;
 }
 
 uint64_t _vl_dbg_sequence_number() VL_MT_SAFE {
@@ -255,24 +255,24 @@ void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
     // includes that otherwise would be required in every Verilated module
     va_list ap;
     va_start(ap, formatp);
-    const std::string out = _vl_string_vprintf(formatp, ap);
+    const std::string result = _vl_string_vprintf(formatp, ap);
     va_end(ap);
     // printf("-imm-V{t%d,%" PRId64 "}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(),
-    // out.c_str());
+    // result.c_str());
 
     // Using VL_PRINTF not VL_PRINTF_MT so that we can call VL_DBG_MSGF
     // from within the guts of the thread execution machinery (and it goes
     // to the screen and not into the queues we're debugging)
-    VL_PRINTF("-V{t%u,%" PRIu64 "}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
+    VL_PRINTF("-V{t%u,%" PRIu64 "}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), result.c_str());
 }
 
 void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap, formatp);
-    const std::string out = _vl_string_vprintf(formatp, ap);
+    const std::string result = _vl_string_vprintf(formatp, ap);
     va_end(ap);
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        VL_PRINTF("%s", out.c_str());
+        VL_PRINTF("%s", result.c_str());
     }});
 }
 
@@ -321,8 +321,8 @@ void VlRNG::srandom(uint64_t n) VL_MT_UNSAFE {
 // Unused:     }
 // Unused: }
 // Unused: std::string VlRNG::get_randstate() const VL_MT_UNSAFE {
-// Unused:     std::string out{reinterpret_cast<const char *>(&m_state), sizeof(m_state)};
-// Unused:     return out;
+// Unused:     std::string result{reinterpret_cast<const char *>(&m_state), sizeof(m_state)};
+// Unused:     return result;
 // Unused: }
 
 static uint32_t vl_sys_rand32() VL_MT_SAFE {
@@ -566,12 +566,12 @@ QData VL_POW_QQW(int, int, int rbits, QData lhs, const WDataInP rwp) VL_MT_SAFE 
     // Skip check for rhs == 0, as short-circuit doesn't save time
     if (VL_UNLIKELY(lhs == 0)) return 0;
     QData power = lhs;
-    QData out = 1ULL;
+    QData result = 1ULL;
     for (int bit = 0; bit < rbits; ++bit) {
         if (bit > 0) power = power * power;
-        if (VL_BITISSET_W(rwp, bit)) out *= power;
+        if (VL_BITISSET_W(rwp, bit)) result *= power;
     }
-    return out;
+    return result;
 }
 
 WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lwp,
@@ -1699,15 +1699,15 @@ std::string VL_STACKTRACE_N() VL_MT_SAFE {
     // cppcheck-suppress knownConditionTrueFalse
     if (!strings) return "Unable to backtrace\n";
 
-    std::string out = "Backtrace:\n";
-    for (int j = 0; j < nptrs; j++) out += std::string{strings[j]} + std::string{"\n"};
+    std::string result = "Backtrace:\n";
+    for (int j = 0; j < nptrs; j++) result += std::string{strings[j]} + std::string{"\n"};
     free(strings);
-    return out;
+    return result;
 }
 
 void VL_STACKTRACE() VL_MT_SAFE {
-    const std::string out = VL_STACKTRACE_N();
-    VL_PRINTF("%s", out.c_str());
+    const std::string result = VL_STACKTRACE_N();
+    VL_PRINTF("%s", result.c_str());
 }
 
 IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {
@@ -1853,14 +1853,14 @@ std::string VL_TO_STRING_W(int words, const WDataInP obj) {
 }
 
 std::string VL_TOLOWER_NN(const std::string& ld) VL_PURE {
-    std::string out = ld;
-    for (auto& cr : out) cr = std::tolower(cr);
-    return out;
+    std::string result = ld;
+    for (auto& cr : result) cr = std::tolower(cr);
+    return result;
 }
 std::string VL_TOUPPER_NN(const std::string& ld) VL_PURE {
-    std::string out = ld;
-    for (auto& cr : out) cr = std::toupper(cr);
-    return out;
+    std::string result = ld;
+    for (auto& cr : result) cr = std::toupper(cr);
+    return result;
 }
 
 std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_PURE {
