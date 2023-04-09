@@ -39,6 +39,7 @@ Verilator 5.009 devel
 * Fix false LATCH warning on --assert 'unique else if' (#4033) ($4054). [Jesse Taube]
 * Fix characters from DEFENV literals for conda (#4035) (#4044). [Tim Snyder]
 * Fix interface generate begin (#4065). [Srinivasan Venkataramanan]
+* Fix false error on new const assignment (#4098). [Tudor Timi]
 * Fix false ENUMVALUE on expressions and arrays.
 * Fix unnecessary verilated_std.sv waivers in --waiver-output.
 

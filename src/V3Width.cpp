@@ -5287,6 +5287,8 @@ private:
         // Function hasn't been widthed, so make it so.
         // Would use user1 etc, but V3Width called from too many places to spend a user
         nodep->doingWidth(true);
+        VL_RESTORER(m_funcp);
+        VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
         // First width the function variable, as if is a recursive function we need data type
         if (nodep->fvarp()) userIterate(nodep->fvarp(), nullptr);
@@ -5306,8 +5308,6 @@ private:
 
         nodep->didWidth(true);
         nodep->doingWidth(false);
-        m_funcp = nullptr;
-        m_ftaskp = nullptr;
         if (nodep->dpiImport() && !nodep->dpiOpenParent() && markHasOpenArray(nodep)) {
             nodep->dpiOpenParentInc();  // Mark so V3Task will wait for a child to build calling
                                         // func
