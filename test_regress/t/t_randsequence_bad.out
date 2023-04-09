@@ -1,0 +1,20 @@
+%Error-UNSUPPORTED: t/t_randsequence_bad.v:13:25: Unsupported: randsequence production
+   13 |          such_production: { };
+      |                         ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_randsequence_bad.v:12:7: Unsupported: randsequence
+   12 |       randsequence(no_such_production)   
+      |       ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence_bad.v:17:16: Unsupported: randsequence production id
+   17 |          main: production_bad;   
+      |                ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence_bad.v:17:14: Unsupported: randsequence production
+   17 |          main: production_bad;   
+      |              ^
+%Error-UNSUPPORTED: t/t_randsequence_bad.v:18:24: Unsupported: randsequence production
+   18 |          production_baa: {};
+      |                        ^
+%Error-UNSUPPORTED: t/t_randsequence_bad.v:16:7: Unsupported: randsequence
+   16 |       randsequence(main)
+      |       ^~~~~~~~~~~~
+%Error: Exiting due to
