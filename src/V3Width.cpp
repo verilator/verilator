@@ -3798,7 +3798,7 @@ private:
         }
         // The AstNodeAssign visitor will be soon be replacing this node, make sure it gets it
         if (!VN_IS(nodep->backp(), NodeAssign)) {
-            if (adtypep) UINFO(1, "Got backp " << nodep->backp() << endl);
+            UINFO(1, "Got backp " << nodep->backp() << endl);
             nodep->v3error(
                 "dynamic new() not expected in this context (expected under an assign)");
             return;

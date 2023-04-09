@@ -148,6 +148,7 @@ private:
         m_modp = nodep;
         V3CCtorsBuilder var_reset{nodep, "_ctor_var_reset",
                                   VN_IS(nodep, Class) ? VCtorType::CLASS : VCtorType::MODULE};
+        // cppcheck-suppress danglingLifetime
         m_varResetp = &var_reset;
         iterateChildren(nodep);
 

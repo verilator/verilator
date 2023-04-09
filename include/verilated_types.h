@@ -151,7 +151,7 @@ public:
     // having to check for construction at each call
     // Alternative: seed with zero and check on rand64() call
     VlRNG() VL_MT_SAFE;
-    VlRNG(uint64_t seed0) VL_MT_SAFE : m_state{0x12341234UL, seed0} {}
+    explicit VlRNG(uint64_t seed0) VL_MT_SAFE : m_state{0x12341234UL, seed0} {}
     void srandom(uint64_t n) VL_MT_UNSAFE;
     // Unused: std::string get_randstate() const VL_MT_UNSAFE;
     // Unused: void set_randstate(const std::string& state) VL_MT_UNSAFE;
