@@ -2766,8 +2766,7 @@ private:
                 ok = m_ds.m_dotPos == DP_SCOPE;
             } else if (const AstNodeFTask* const ftaskp = VN_CAST(foundp->nodep(), NodeFTask)) {
 
-                if (!ftaskp->isFunction() ||
-                    ftaskp->classMethod() ) {
+                if (!ftaskp->isFunction() || ftaskp->classMethod()) {
                     ok = m_ds.m_dotPos == DP_NONE;
                     if (ok) {
                         // The condition is true for tasks,
