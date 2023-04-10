@@ -1157,7 +1157,7 @@ public:
         return modulesp();  // First one in the list, for now
     }
     AstTypeTable* typeTablep() { return m_typeTablep; }
-    AstTableMap* tableMapp() {return m_tableMapp;}
+    AstTableMap* tableMapp() { return m_tableMapp; }
     AstConstPool* constPoolp() { return m_constPoolp; }
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     AstPackage* dollarUnitPkgAddp();
