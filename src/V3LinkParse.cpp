@@ -135,6 +135,9 @@ private:
     // VISITs
     void visit(AstNodeFTask* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
+            // Mark class methods
+            if (VN_IS(m_modp, Class)) nodep->classMethod(true);
+
             V3Config::applyFTask(m_modp, nodep);
             cleanFileline(nodep);
             VL_RESTORER(m_ftaskp);

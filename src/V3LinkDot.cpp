@@ -2765,11 +2765,15 @@ private:
                 m_ds.m_dotSymp = foundp;
                 ok = m_ds.m_dotPos == DP_SCOPE;
             } else if (const AstNodeFTask* const ftaskp = VN_CAST(foundp->nodep(), NodeFTask)) {
-                if (!ftaskp->isFunction()) {
+
+                if (!ftaskp->isFunction() ||
+                    ftaskp->classMethod() ) {
                     ok = m_ds.m_dotPos == DP_NONE;
                     if (ok) {
-                        // The condition is true for tasks, properties and void functions.
+                        // The condition is true for tasks,
+                        // properties and void functions.
                         // In these cases, the parentheses may be skipped.
+                        // Also SV class methods can be called without parens
                         AstFuncRef* const funcRefp
                             = new AstFuncRef{nodep->fileline(), nodep->name(), nullptr};
                         nodep->replaceWith(funcRefp);
