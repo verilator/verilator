@@ -514,7 +514,7 @@ class EmitCImp final : EmitCFunc {
             // Compute the hash of the dependencies, so we can add it to the filenames to
             // disambiguate them
             V3Hash hash;
-            for (const string& name : *m_requiredHeadersp) { hash += name; }
+            for (const string& name : *m_requiredHeadersp) hash += name;
             m_subFileName = "DepSet_" + hash.toString();
             // Open output file
             openNextOutputFile(*m_requiredHeadersp, m_subFileName);
