@@ -174,8 +174,7 @@ class EmitCImp final : EmitCFunc {
             // Unfortunately we have some lint checks here, so we can't just skip processing.
             // We should move them to a different stage.
             const string filename = VL_DEV_NULL;
-            m_cfilesr.push_back(
-                newCFile(filename, /* slow: */ m_slow, /* source: */ true, /* add */ false));
+            m_cfilesr.push_back(createCFile(filename, /* slow: */ m_slow, /* source: */ true));
             m_ofp = new V3OutCFile{filename};
         } else {
             string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(m_fileModp);
@@ -185,12 +184,11 @@ class EmitCImp final : EmitCFunc {
             }
             if (m_slow) filename += "__Slow";
             filename += ".cpp";
-            m_cfilesr.push_back(
-                newCFile(filename, /* slow: */ m_slow, /* source: */ true, /* add */ false));
+            m_cfilesr.push_back(createCFile(filename, /* slow: */ m_slow, /* source: */ true));
             m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
         }
 
-        ofp()->putsHeader();
+        putsHeader();
         puts("// DESCRIPTION: Verilator output: Design implementation internals\n");
         puts("// See " + topClassName() + ".h for the primary calling header\n");
 
@@ -597,7 +595,7 @@ class EmitCTrace final : EmitCFunc {
         if (m_slow) filename += "__Slow";
         filename += ".cpp";
 
-        AstCFile* const cfilep = newCFile(filename, m_slow, true /*source*/, false /*add*/);
+        AstCFile* const cfilep = createCFile(filename, m_slow, true /*source*/);
         cfilep->support(true);
         m_cfilesr.push_back(cfilep);
 
@@ -606,9 +604,9 @@ class EmitCTrace final : EmitCFunc {
         } else {
             m_ofp = new V3OutCFile{filename};
         }
-        m_ofp->putsHeader();
-        m_ofp->puts("// DESCR"
-                    "IPTION: Verilator output: Tracing implementation internals\n");
+        putsHeader();
+        puts("// DESCR"
+             "IPTION: Verilator output: Tracing implementation internals\n");
 
         // Includes
         puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
