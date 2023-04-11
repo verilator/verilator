@@ -770,6 +770,9 @@ public:
         widthFromSub(subDTypep());
     }
     ASTGEN_MEMBERS_AstEnumDType;
+
+    using TableMap = std::map<VAttrType, AstVar*>;
+    TableMap m_tableMap;  // Created tables so can remove duplicates
     const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));

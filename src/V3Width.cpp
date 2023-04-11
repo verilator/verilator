@@ -7192,8 +7192,8 @@ private:
     }
     AstVar* enumVarp(AstEnumDType* nodep, VAttrType attrType, bool assoc, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
-        const auto pos = m_tableMap.find(std::make_pair(nodep, attrType));
-        if (pos != m_tableMap.end()) return pos->second;
+        const auto pos = nodep->m_tableMap.find(attrType);
+        if (pos != nodep->m_tableMap.end()) return pos->second;
         UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " assoc=" << assoc
                                             << " max=" << msbdim << " for " << nodep << endl);
         AstNodeDType* basep;
@@ -7275,7 +7275,7 @@ private:
             }
         }
         userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.emplace(std::make_pair(nodep, attrType), varp);
+        nodep->m_tableMap.emplace(attrType, varp);
         return varp;
     }
 
