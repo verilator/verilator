@@ -20,10 +20,9 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "verilated_threads.h"
-
 #include "V3Error.h"
 #include "V3LangCode.h"
+#include "V3Mutex.h"
 
 #include <atomic>
 #include <bitset>
@@ -52,7 +51,7 @@ class FileLineSingleton final {
     using MsgEnBitSet = std::bitset<V3ErrorCode::_ENUM_MAX>;
 
     // MEMBERS
-    VerilatedMutex m_mutex;  // protects members
+    V3Mutex m_mutex;  // protects members
     std::map<const std::string, fileNameIdx_t> m_namemap;  // filenameno for each filename
     std::deque<string> m_names;  // filename text for each filenameno
     std::deque<V3LangCode> m_languages;  // language for each filenameno

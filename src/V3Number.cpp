@@ -2232,8 +2232,10 @@ V3Number& V3Number::opNToI(const V3Number& lhs) {
     const string& str = lhs.toString();
     for (size_t n = 0; n < str.length(); ++n) {
         const char c = str[str.length() - 1 - n];
-        for (size_t cbit = 0; cbit < 8; ++cbit)
-            setBit(n * 8 + cbit, VL_BITISSET_I(c, cbit) ? 1 : 0);
+        for (size_t cbit = 0; cbit < 8; ++cbit) {
+            const std::bitset<8> sbit{static_cast<unsigned long long>(c)};
+            setBit(n * 8 + cbit, sbit.test(cbit) ? 1 : 0);
+        }
     }
     return *this;
 }

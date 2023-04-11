@@ -22,6 +22,7 @@
 
 #include "V3Error.h"
 #include "V3LangCode.h"
+#include "V3Mutex.h"
 
 #include <map>
 #include <set>

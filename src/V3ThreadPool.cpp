@@ -25,8 +25,10 @@ constexpr unsigned int V3ThreadPool::FUTUREWAITFOR_MS;
 
 void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE {
     // This function is not thread-safe and can result in race between threads
-    VerilatedLockGuard lock{m_mutex};
-    VerilatedLockGuard stoppedJobsLock{m_stoppedJobsMutex};
+    UASSERT(V3MutexConfig::s().lockConfig(),
+            "Mutex config needs to be locked before starting ThreadPool");
+    V3LockGuard lock{m_mutex};
+    V3LockGuard stoppedJobsLock{m_stoppedJobsMutex};
     UASSERT(m_queue.empty(), "Resizing busy thread pool");
     // Shut down old threads
     m_shutdown = true;
@@ -57,7 +59,7 @@ void V3ThreadPool::workerJobLoop(int id) VL_MT_SAFE {
         waitIfStopRequested();
         job_t job;
         {
-            VerilatedLockGuard lock(m_mutex);
+            V3LockGuard lock(m_mutex);
             m_cv.wait(lock, [&]() VL_REQUIRES(m_mutex) {
                 return !m_queue.empty() || m_shutdown || m_stopRequested;
             });
@@ -82,7 +84,7 @@ void V3ThreadPool::pushJob<void>(std::shared_ptr<std::promise<void>>& prom,
         f();
         prom->set_value();
     } else {
-        const VerilatedLockGuard lock{m_mutex};
+        const V3LockGuard lock{m_mutex};
         m_queue.push([prom, f] {
             f();
             prom->set_value();
@@ -95,7 +97,7 @@ void V3ThreadPool::requestExclusiveAccess(const V3ThreadPool::job_t&& exclusiveA
     if (willExecuteSynchronously()) {
         exclusiveAccessJob();
     } else {
-        VerilatedLockGuard stoppedJobLock{m_stoppedJobsMutex};
+        V3LockGuard stoppedJobLock{m_stoppedJobsMutex};
         // if some other job already requested exclusive access
         // wait until it stops
         if (stopRequested()) { waitStopRequested(stoppedJobLock); }
@@ -110,14 +112,13 @@ void V3ThreadPool::requestExclusiveAccess(const V3ThreadPool::job_t&& exclusiveA
 }
 
 bool V3ThreadPool::waitIfStopRequested() VL_MT_SAFE {
-    VerilatedLockGuard stoppedJobLock(m_stoppedJobsMutex);
+    V3LockGuard stoppedJobLock(m_stoppedJobsMutex);
     if (!stopRequested()) return false;
     waitStopRequested(stoppedJobLock);
     return true;
 }
 
-void V3ThreadPool::waitStopRequested(VerilatedLockGuard& stoppedJobLock)
-    VL_REQUIRES(m_stoppedJobsMutex) {
+void V3ThreadPool::waitStopRequested(V3LockGuard& stoppedJobLock) VL_REQUIRES(m_stoppedJobsMutex) {
     ++m_stoppedJobs;
     m_stoppedJobsCV.notify_all();
     m_stoppedJobsCV.wait(
@@ -126,8 +127,8 @@ void V3ThreadPool::waitStopRequested(VerilatedLockGuard& stoppedJobLock)
     m_stoppedJobsCV.notify_all();
 }
 
-void V3ThreadPool::waitOtherThreads(VerilatedLockGuard& stoppedJobLock)
-    VL_MT_SAFE_EXCLUDES(m_mutex) VL_REQUIRES(m_stoppedJobsMutex) {
+void V3ThreadPool::waitOtherThreads(V3LockGuard& stoppedJobLock) VL_MT_SAFE_EXCLUDES(m_mutex)
+    VL_REQUIRES(m_stoppedJobsMutex) {
     ++m_stoppedJobs;
     m_stoppedJobsCV.notify_all();
     m_cv.notify_all();
@@ -139,7 +140,7 @@ void V3ThreadPool::waitOtherThreads(VerilatedLockGuard& stoppedJobLock)
 }
 
 void V3ThreadPool::selfTest() {
-    VerilatedMutex commonMutex;
+    V3Mutex commonMutex;
     int commonValue{0};
 
     auto firstJob = [&](int sleep) -> void {
@@ -151,7 +152,7 @@ void V3ThreadPool::selfTest() {
         });
     };
     auto secondJob = [&](int sleep) -> void {
-        VerilatedLockGuard lock{commonMutex};
+        V3LockGuard lock{commonMutex};
         lock.unlock();
         s().waitIfStopRequested();
         lock.lock();
@@ -159,7 +160,7 @@ void V3ThreadPool::selfTest() {
         commonValue = 1000;
     };
     auto thirdJob = [&](int sleep) -> void {
-        VerilatedLockGuard lock{commonMutex};
+        V3LockGuard lock{commonMutex};
         std::this_thread::sleep_for(std::chrono::milliseconds{sleep});
         lock.unlock();
         s().requestExclusiveAccess([&]() { firstJob(sleep); });

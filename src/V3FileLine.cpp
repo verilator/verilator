@@ -89,7 +89,7 @@ void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
 
 FileLineSingleton::msgEnSetIdx_t FileLineSingleton::addMsgEnBitSet(const MsgEnBitSet& bitSet)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
-    VerilatedLockGuard lock{m_mutex};
+    V3LockGuard lock{m_mutex};
     const auto pair = m_internedMsgEnIdxs.emplace(bitSet, 0);
     msgEnSetIdx_t& idx = pair.first->second;
     if (pair.second) {
@@ -418,7 +418,7 @@ string FileLine::warnOther() const VL_REQUIRES(V3Error::s().m_mutex) {
     }
 };
 string FileLine::warnOtherStandalone() const VL_EXCLUDES(V3Error::s().m_mutex) VL_MT_UNSAFE {
-    const VerilatedLockGuard guard{V3Error::s().m_mutex};
+    const V3RecursiveLockGuard guard{V3Error::s().m_mutex};
     return warnOther();
 }
 

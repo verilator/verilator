@@ -17,9 +17,8 @@
 #ifndef VERILATOR_V3WAIVER_H_
 #define VERILATOR_V3WAIVER_H_
 
-#include "verilated_threads.h"
-
 #include "V3Error.h"
+#include "V3Mutex.h"
 
 #include <string>
 #include <vector>
@@ -27,7 +26,7 @@
 class V3Waiver final {
     // TYPES
     using WaiverList = std::vector<std::string>;
-    static VerilatedMutex s_mutex;  // Protect members
+    static V3Mutex s_mutex;  // Protect members
     static WaiverList s_waiverList VL_GUARDED_BY(s_mutex);
 
 public:

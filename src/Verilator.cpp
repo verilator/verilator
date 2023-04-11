@@ -590,6 +590,8 @@ static void verilate(const string& argString) {
         v3fatalSrc("VERILATOR_DEBUG_SKIP_IDENTICAL w/ --skip-identical: Changes found\n");
     }  // LCOV_EXCL_STOP
 
+    // Disable mutexes in single-thread verilation
+    V3MutexConfig::s().configure(v3Global.opt.verilateJobs() > 1 /*enable*/);
     // Adjust thread pool size
     V3ThreadPool::s().resize(v3Global.opt.verilateJobs());
 
