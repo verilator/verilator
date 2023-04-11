@@ -92,6 +92,7 @@ endif
 # -lfl not needed as Flex invoked with %nowrap option
 LIBS = $(CFG_LIBS) -lm
 
+CPPFLAGS += -DVERILATOR_INTERNAL_
 CPPFLAGS += -MMD
 CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir) -I../../include
 #CPPFLAGS += -DVL_LEAK_CHECKS  # If running valgrind or other hunting tool

@@ -30,7 +30,7 @@
 #ifndef VERILATOR_VERILATED_H_
 #define VERILATOR_VERILATED_H_
 #define VERILATOR_VERILATED_H_INTERNAL_
-#ifdef VERILATOR_VERILATOR_CPP_INTERNAL_
+#ifdef VERILATOR_INTERNAL_
 // This file contains definition of VerilationMutex that should
 // only be used by verilated code. Verilator itself should use
 // mutex from V3Mutex.h. Make sure this file isn't included in

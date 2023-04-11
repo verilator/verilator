@@ -13,6 +13,20 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
+///
+/// \file
+/// \brief Verilator Mutex and LockGuard used only in verilator.
+///
+/// This file defines Mutex and LockGuard that is used in verilator
+/// source code. It shouldn't be used by verilated code.
+/// In contrast to VerilatedMutex that is used by verilated code,
+/// this mutex can be configured and disabled when verilation is using
+/// single thread.
+///
+/// This implementation also allows using different base mutex class in
+/// wrapper V3Mutex class.
+///
+//*************************************************************************
 
 #ifndef VERILATOR_V3MUTEX_H_
 #define VERILATOR_V3MUTEX_H_ 1
@@ -40,7 +54,7 @@ private:
     ~V3MutexConfig() = default;
 
 public:
-    static V3MutexConfig& s() VL_MT_UNSAFE {
+    static V3MutexConfig& s() VL_MT_SAFE {
         static V3MutexConfig s;
         return s;
     }
@@ -57,9 +71,7 @@ public:
             std::abort();
         }
     }
-    // get lockConfig value
     bool lockConfig() VL_MT_SAFE { return m_lockConfig; }
-    // get enable value
     bool enable() VL_MT_SAFE { return m_enable; }
 };
 
