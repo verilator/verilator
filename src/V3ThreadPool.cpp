@@ -182,18 +182,12 @@ void V3ThreadPool::selfTest() {
     }
     futures.push_back(s().enqueue<void>(std::bind(thirdJob, 100)));
     futures.push_back(s().enqueue<void>(std::bind(thirdJob, 100)));
-    while (!futures.empty()) {
-        s().waitForFuture(futures.front());
-        futures.pop_front();
-    }
+    V3ThreadPool::waitForFutures(futures);
     s().waitIfStopRequested();
     s().requestExclusiveAccess(std::bind(firstJob, 100));
     auto forthJob = [&]() -> int { return 1234; };
     std::list<std::future<int>> futuresInt;
     futuresInt.push_back(s().enqueue<int>(forthJob));
-    while (!futuresInt.empty()) {
-        int result = s().waitForFuture(futuresInt.front());
-        UASSERT(result == 1234, "unexpected future result = " << commonValue);
-        futuresInt.pop_front();
-    }
+    auto result = V3ThreadPool::waitForFutures(futuresInt);
+    UASSERT(result.back() == 1234, "unexpected future result = " << result.back());
 }
