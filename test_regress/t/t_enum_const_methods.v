@@ -27,7 +27,7 @@ module t ();
    endfunction
 
    localparam enm_t enum_second = get_second();
-   
+
    function automatic string get_name(enm_t enm);
       return enm.name;
    endfunction
