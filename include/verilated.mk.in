@@ -181,9 +181,14 @@ ifneq ($(VM_PARALLEL_BUILDS),1)
   # also a lot slower for medium to large designs when the speed of the C
   # compiler dominates, which in this mode is not parallelizable.
 
+  $(VM_PREFIX)_args_ALL: $(addsuffix .cpp, $(VM_FAST) $(VM_SLOW))
+	$(file >$@) $(foreach V,-DVL_INCLUDE_OPT=include $^,$(file >>$@,$V))
+
   VK_OBJS += $(VM_PREFIX)__ALL.o
-  $(VM_PREFIX)__ALL.cpp: $(addsuffix .cpp, $(VM_FAST) $(VM_SLOW))
-	$(VERILATOR_INCLUDER) -DVL_INCLUDE_OPT=include $^ > $@
+  $(VM_PREFIX)__ALL.cpp: $(VM_PREFIX)_args_ALL
+	$(VERILATOR_INCLUDER) --read-from-file $^ >> $@
+  all_cpp: $(VM_PREFIX)__ALL.cpp
+	
   all_cpp: $(VM_PREFIX)__ALL.cpp
 else
   # Parallel build: Each .cpp file by itself. This can be somewhat slower for
