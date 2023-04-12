@@ -776,7 +776,7 @@ public:
     const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())
-                     || std::any_of(m_tableMap.begin(), m_tableMap.end(),
+                     || std::all_of(m_tableMap.begin(), m_tableMap.end(),
                                     [](const auto& p) { return p.second->brokeExists(); })));
         return nullptr;
     }
