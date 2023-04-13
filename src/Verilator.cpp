@@ -565,6 +565,13 @@ static void process() {
     reportStatsIfEnabled();
 
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
+        size_t src_f_cnt = 0;
+        for (AstNode* nodep = v3Global.rootp()->filesp(); nodep; nodep = nodep->nextp()) {
+            const AstCFile* cfilep = VN_CAST(nodep, CFile);
+            src_f_cnt += (cfilep && cfilep->source()) ? 1 : 0;
+        }
+        if (src_f_cnt >= V3EmitMk::PARALLEL_FILE_CNT_THRESHOLD) v3Global.useParallelBuild(true);
+
         // Makefile must be after all other emitters
         if (v3Global.opt.main()) V3EmitCMain::emit();
         if (v3Global.opt.cmake()) V3EmitCMake::emit();
