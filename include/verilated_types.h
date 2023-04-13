@@ -79,9 +79,9 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 template <std::size_t T_size>  //
 class VlTriggerVec final {
     // TODO: static assert T_size > 0, and don't generate when empty
-private:
+
     // MEMBERS
-    std::array<bool, T_size> m_flags;  // State of the assoc array
+    alignas(16) std::array<uint64_t, roundUpToMultipleOf<64>(T_size) / 64> m_flags;  // The flags
 
 public:
     // CONSTRUCTOR
@@ -91,10 +91,18 @@ public:
     // METHODS
 
     // Set all elements to false
-    void clear() { m_flags.fill(false); }
+    void clear() { m_flags.fill(0); }
 
-    // Reference to element at 'index'
-    bool& at(size_t index) { return m_flags.at(index); }
+    // Word at given 'wordIndex'
+    uint64_t word(size_t wordIndex) const { return m_flags[wordIndex]; }
+
+    // Set specified flag to given value
+    void set(size_t index, bool value) {
+        uint64_t& w = m_flags[index / 64];
+        const size_t bitIndex = index % 64;
+        w &= ~(1ULL << bitIndex);
+        w |= (static_cast<uint64_t>(value) << bitIndex);
+    }
 
     // Return true iff at least one element is set
     bool any() const {
@@ -104,13 +112,13 @@ public:
     }
 
     // Set all elements true in 'this' that are set in 'other'
-    void set(const VlTriggerVec<T_size>& other) {
+    void thisOr(const VlTriggerVec<T_size>& other) {
         for (size_t i = 0; i < m_flags.size(); ++i) m_flags[i] |= other.m_flags[i];
     }
 
     // Set elements of 'this' to 'a & !b' element-wise
     void andNot(const VlTriggerVec<T_size>& a, const VlTriggerVec<T_size>& b) {
-        for (size_t i = 0; i < m_flags.size(); ++i) m_flags[i] = a.m_flags[i] && !b.m_flags[i];
+        for (size_t i = 0; i < m_flags.size(); ++i) m_flags[i] = a.m_flags[i] & ~b.m_flags[i];
     }
 };
 

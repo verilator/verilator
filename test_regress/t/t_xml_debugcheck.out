@@ -600,22 +600,22 @@
       <cfunc loc="a,0,0,0,0" name="_eval_final"/>
       <cfunc loc="a,0,0,0,0" name="_eval_settle"/>
       <cfunc loc="a,0,0,0,0" name="_eval_triggers__act">
-        <assign loc="d,10,8,10,9" dtype_id="9">
-          <and loc="d,60,14,60,21" dtype_id="9">
-            <ccast loc="d,60,22,60,25" dtype_id="9">
-              <varref loc="d,60,22,60,25" name="clk" dtype_id="9"/>
-            </ccast>
-            <not loc="d,60,14,60,21" dtype_id="9">
-              <ccast loc="d,60,14,60,21" dtype_id="9">
-                <varref loc="d,60,14,60,21" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="9"/>
-              </ccast>
-            </not>
-          </and>
-          <cmethodhard loc="d,10,8,10,9" name="at" dtype_id="9">
+        <stmtexpr loc="d,10,8,10,9">
+          <cmethodhard loc="d,10,8,10,9" name="set" dtype_id="7">
             <varref loc="d,10,8,10,9" name="__VactTriggered" dtype_id="9"/>
             <const loc="d,10,8,10,9" name="32&apos;h0" dtype_id="14"/>
+            <and loc="d,60,14,60,21" dtype_id="9">
+              <ccast loc="d,60,22,60,25" dtype_id="9">
+                <varref loc="d,60,22,60,25" name="clk" dtype_id="9"/>
+              </ccast>
+              <not loc="d,60,14,60,21" dtype_id="9">
+                <ccast loc="d,60,14,60,21" dtype_id="9">
+                  <varref loc="d,60,14,60,21" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="9"/>
+                </ccast>
+              </not>
+            </and>
           </cmethodhard>
-        </assign>
+        </stmtexpr>
         <assign loc="d,60,22,60,25" dtype_id="9">
           <varref loc="d,60,22,60,25" name="clk" dtype_id="9"/>
           <varref loc="d,60,22,60,25" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="9"/>
@@ -647,10 +647,13 @@
           </begin>
         </if>
         <if loc="d,10,8,10,9">
-          <cmethodhard loc="d,10,8,10,9" name="at" dtype_id="9">
-            <varref loc="d,10,8,10,9" name="__VactTriggered" dtype_id="9"/>
-            <const loc="d,10,8,10,9" name="32&apos;h0" dtype_id="14"/>
-          </cmethodhard>
+          <and loc="d,10,8,10,9" dtype_id="17">
+            <const loc="d,10,8,10,9" name="64&apos;h1" dtype_id="17"/>
+            <cmethodhard loc="d,10,8,10,9" name="word" dtype_id="18">
+              <varref loc="d,10,8,10,9" name="__VactTriggered" dtype_id="9"/>
+              <const loc="d,10,8,10,9" name="32&apos;h0" dtype_id="14"/>
+            </cmethodhard>
+          </and>
           <begin>
             <text loc="d,10,8,10,9"/>
           </begin>
@@ -673,10 +676,13 @@
           </begin>
         </if>
         <if loc="d,10,8,10,9">
-          <cmethodhard loc="d,10,8,10,9" name="at" dtype_id="9">
-            <varref loc="d,10,8,10,9" name="__VnbaTriggered" dtype_id="9"/>
-            <const loc="d,10,8,10,9" name="32&apos;h0" dtype_id="14"/>
-          </cmethodhard>
+          <and loc="d,10,8,10,9" dtype_id="17">
+            <const loc="d,10,8,10,9" name="64&apos;h1" dtype_id="17"/>
+            <cmethodhard loc="d,10,8,10,9" name="word" dtype_id="18">
+              <varref loc="d,10,8,10,9" name="__VnbaTriggered" dtype_id="9"/>
+              <const loc="d,10,8,10,9" name="32&apos;h0" dtype_id="14"/>
+            </cmethodhard>
+          </and>
           <begin>
             <text loc="d,10,8,10,9"/>
           </begin>
@@ -1505,10 +1511,13 @@
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_eval_nba">
         <if loc="d,10,8,10,9">
-          <cmethodhard loc="d,10,8,10,9" name="at" dtype_id="9">
-            <varref loc="d,10,8,10,9" name="__VnbaTriggered" dtype_id="9"/>
-            <const loc="d,10,8,10,9" name="32&apos;h0" dtype_id="14"/>
-          </cmethodhard>
+          <and loc="d,10,8,10,9" dtype_id="17">
+            <const loc="d,10,8,10,9" name="64&apos;h1" dtype_id="17"/>
+            <cmethodhard loc="d,10,8,10,9" name="word" dtype_id="18">
+              <varref loc="d,10,8,10,9" name="__VnbaTriggered" dtype_id="9"/>
+              <const loc="d,10,8,10,9" name="32&apos;h0" dtype_id="14"/>
+            </cmethodhard>
+          </and>
           <begin>
             <stmtexpr loc="d,64,10,64,11">
               <ccall loc="d,64,10,64,11" dtype_id="7" func="_nba_sequent__TOP__0"/>
@@ -1609,7 +1618,7 @@
                       </cmethodhard>
                     </stmtexpr>
                     <stmtexpr loc="a,0,0,0,0">
-                      <cmethodhard loc="a,0,0,0,0" name="set" dtype_id="7">
+                      <cmethodhard loc="a,0,0,0,0" name="thisOr" dtype_id="7">
                         <varref loc="a,0,0,0,0" name="__VnbaTriggered" dtype_id="9"/>
                         <varref loc="a,0,0,0,0" name="__VactTriggered" dtype_id="9"/>
                       </cmethodhard>
@@ -1668,7 +1677,7 @@
         <if loc="d,14,10,14,13">
           <and loc="d,14,10,14,13" dtype_id="1">
             <varref loc="d,14,10,14,13" name="clk" dtype_id="1"/>
-            <const loc="d,14,10,14,13" name="8&apos;hfe" dtype_id="17"/>
+            <const loc="d,14,10,14,13" name="8&apos;hfe" dtype_id="19"/>
           </and>
           <begin>
             <cstmt loc="d,14,10,14,13">
@@ -1763,7 +1772,7 @@
       <basicdtype loc="d,32,24,32,27" id="1" name="logic"/>
       <basicdtype loc="d,52,16,52,17" id="14" name="logic" left="31" right="0"/>
       <basicdtype loc="d,16,17,16,18" id="2" name="logic" left="3" right="0"/>
-      <enumdtype loc="d,16,12,16,16" id="18" name="t.my_t" sub_dtype_id="2">
+      <enumdtype loc="d,16,12,16,16" id="20" name="t.my_t" sub_dtype_id="2">
         <enumitem loc="d,17,24,17,27" name="E01" dtype_id="11">
           <const loc="d,17,30,17,31" name="4&apos;h1" dtype_id="11"/>
         </enumitem>
@@ -1775,7 +1784,7 @@
         </enumitem>
       </enumdtype>
       <basicdtype loc="d,22,4,22,11" id="4" name="integer" left="31" right="0" signed="true"/>
-      <refdtype loc="d,23,4,23,8" id="19" name="my_t" sub_dtype_id="2"/>
+      <refdtype loc="d,23,4,23,8" id="21" name="my_t" sub_dtype_id="2"/>
       <basicdtype loc="d,27,4,27,10" id="10" name="string"/>
       <unpackarraydtype loc="d,16,12,16,16" id="12" sub_dtype_id="2">
         <range loc="d,16,12,16,16">
@@ -1795,16 +1804,18 @@
           <const loc="d,16,12,16,16" name="32&apos;h0" dtype_id="14"/>
         </range>
       </unpackarraydtype>
-      <refdtype loc="d,51,12,51,16" id="20" name="my_t" sub_dtype_id="2"/>
+      <refdtype loc="d,51,12,51,16" id="22" name="my_t" sub_dtype_id="2"/>
       <basicdtype loc="d,22,23,22,24" id="8" name="logic" left="31" right="0" signed="true"/>
       <voiddtype loc="d,10,8,10,9" id="7"/>
       <basicdtype loc="d,10,8,10,9" id="6" name="VlTriggerVec"/>
+      <basicdtype loc="d,10,8,10,9" id="18" name="QData" left="63" right="0"/>
+      <basicdtype loc="d,10,8,10,9" id="17" name="logic" left="63" right="0"/>
       <basicdtype loc="d,10,8,10,9" id="5" name="bit" left="31" right="0"/>
       <basicdtype loc="d,10,8,10,9" id="3" name="bit"/>
       <basicdtype loc="d,60,22,60,25" id="9" name="logic" left="31" right="0"/>
       <basicdtype loc="d,31,11,31,14" id="11" name="logic" left="31" right="0"/>
       <basicdtype loc="d,37,17,37,21" id="13" name="logic" left="31" right="0"/>
-      <basicdtype loc="d,14,10,14,13" id="17" name="logic" left="7" right="0"/>
+      <basicdtype loc="d,14,10,14,13" id="19" name="logic" left="7" right="0"/>
     </typetable>
     <constpool>
       <module loc="a,0,0,0,0" name="@CONST-POOL@" origName="@CONST-POOL@">

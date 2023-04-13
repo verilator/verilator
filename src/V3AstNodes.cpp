@@ -2321,7 +2321,7 @@ int AstCMethodHard::instrCount() const {
     if (AstBasicDType* const basicp = fromp()->dtypep()->basicp()) {
         // TODO: add a more structured description of library methods, rather than using string
         //       matching. See #3715.
-        if (basicp->isTriggerVec() && m_name == "at") {
+        if (basicp->isTriggerVec() && m_name == "word") {
             // This is an important special case for scheduling so we compute it precisely,
             // it is simply a load.
             return INSTR_COUNT_LD;
