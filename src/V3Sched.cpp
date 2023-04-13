@@ -311,10 +311,11 @@ struct TriggerKit {
     // No VL_UNCOPYABLE(TriggerKit) as causes C++20 errors on MSVC
 
     // Utility that assigns the given index trigger to fire when the given variable is zero
-    void addFirstIterationTriggerAssignment(AstVarScope* counterp, uint32_t /*index*/) const {
+    void addFirstIterationTriggerAssignment(AstVarScope* counterp, uint32_t index) const {
         FileLine* const flp = counterp->fileline();
         AstVarRef* const vrefp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
-        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "at", new AstConst{flp, 0}};
+        AstCMethodHard* const callp
+            = new AstCMethodHard{flp, vrefp, "at", new AstConst{flp, index}};
         callp->dtypeSetBit();
         callp->pure(true);
         m_funcp->stmtsp()->addHereThisAsNext(new AstAssign{
