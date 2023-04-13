@@ -23,6 +23,7 @@ Verilator 5.009 devel
 * Support complicated IEEE 'for' assignments.
 * Support $fopen as an expression.
 * Support ++/-- on dotted member variables.
+* Optimize static trigger evaluation (#4142). [Geza Lore, X-EPIC]
 * Change range order warning from LITENDIAN to ASCRANGE (#4010). [Iztok Jeras]
 * Change ZERODLY to a warning.
 * Fix random internal crashes (#666). [Dag Lem]

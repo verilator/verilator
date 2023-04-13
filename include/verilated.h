@@ -149,6 +149,15 @@ enum VerilatedVarFlags {
     VLVF_DPI_CLAY = (1 << 10)  // DPI compatible C standard layout
 };
 
+//=============================================================================
+// Utility functions
+
+template <size_t N>
+inline constexpr size_t roundUpToMultipleOf(size_t value) {
+    static_assert((N & (N - 1)) == 0, "'N' must be a power of 2");
+    return (value + N - 1) & ~(N - 1);
+}
+
 //=========================================================================
 // Mutex and threading support
 
