@@ -9,8 +9,8 @@ module t;
 
    integer seed;
    string state;
-   int valuea;
-   int valueb;
+   int a;
+   int b;
 
    initial begin
       p = process::self();
@@ -19,44 +19,49 @@ module t;
 
       // Test setting seed
       p.srandom(seed);
-      valuea = $random;
+      a = $random;
       p.srandom(seed);
-      valueb = $random;
-      if (valuea != valueb) $stop;
+      b = $random;
+      $display("a=%d, b=%d", a, b);
+      if (a != b) $stop;
 
-      // Test setting is with state string
+      // Test setting it with state string
       state = p.get_randstate();
       p.set_randstate(state);
-      valuea = $random;
+      a = $random;
       p.set_randstate(state);
-      valueb = $random;
-      if (valuea != valueb) $stop;
+      b = $random;
+      $display("a=%d, b=%d", a, b);
+      if (a != b) $stop;
 
       // Test the same with $urandom
       p.srandom(seed);
-      valuea = $urandom;
+      a = $urandom;
       p.srandom(seed);
-      valueb = $urandom;
-      if (valuea != valueb) $stop;
+      b = $urandom;
+      $display("a=%d, b=%d", a, b);
+      if (a != b) $stop;
 
       state = p.get_randstate();
       p.set_randstate(state);
-      valuea = $urandom;
+      a = $urandom;
       p.set_randstate(state);
-      valueb = $urandom;
-      if (valuea != valueb) $stop;
+      b = $urandom;
+      $display("a=%d, b=%d", a, b);
+      if (a != b) $stop;
 
       // Test if the results repeat after the state is reset
       state = p.get_randstate();
       for (int i = 0; i < 10; i++)
          $random;
-      valuea = $random;
+      a = $random;
       // Now reset the state and take 11th result again
       p.set_randstate(state);
       for (int i = 0; i < 10; i++)
          $random;
-      valueb = $random;
-      if (valuea != valueb) $stop;
+      b = $random;
+      $display("a=%d, b=%d", a, b);
+      if (a != b) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
