@@ -355,6 +355,7 @@ struct EvalKit {
 
 // Create an AstSenTree that is sensitive to the given trigger index. Must not exist yet!
 AstSenTree* createTriggerSenTree(AstNetlist* netlistp, AstVarScope* const vscp, uint32_t index) {
+    UASSERT_OBJ(index != std::numeric_limits<unsigned>::max(), netlistp, "Invalid trigger index");
     AstTopScope* const topScopep = netlistp->topScopep();
     FileLine* const flp = topScopep->fileline();
     AstVarRef* const vrefp = new AstVarRef{flp, vscp, VAccess::READ};
@@ -752,7 +753,8 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // The DPI Export trigger
     AstSenTree* const dpiExportTriggered
-        = createTriggerSenTree(netlistp, trig.m_vscp, dpiExportTriggerIndex);
+        = dpiExportTriggerVscp ? createTriggerSenTree(netlistp, trig.m_vscp, dpiExportTriggerIndex)
+                               : nullptr;
 
     // Create and Order the body function
     AstCFunc* const icoFuncp
@@ -1112,7 +1114,9 @@ void schedule(AstNetlist* netlistp) {
 
     // The DPI Export trigger AstSenTree
     AstSenTree* const dpiExportTriggeredAct
-        = createTriggerSenTree(netlistp, actTrig.m_vscp, dpiExportTriggerIndex);
+        = dpiExportTriggerVscp
+              ? createTriggerSenTree(netlistp, actTrig.m_vscp, dpiExportTriggerIndex)
+              : nullptr;
 
     AstCFunc* const actFuncp = V3Order::order(
         netlistp, {&logicRegions.m_pre, &logicRegions.m_act, &logicReplicas.m_act}, trigToSenAct,
@@ -1140,7 +1144,9 @@ void schedule(AstNetlist* netlistp) {
         invertAndMergeSenTreeMap(trigToSen, trigMap);
 
         AstSenTree* const dpiExportTriggered
-            = createTriggerSenTree(netlistp, trigVscp, dpiExportTriggerIndex);
+            = dpiExportTriggerVscp
+                  ? createTriggerSenTree(netlistp, trigVscp, dpiExportTriggerIndex)
+                  : nullptr;
 
         const auto& timingDomains = timingKit.remapDomains(trigMap);
         AstCFunc* const funcp = V3Order::order(
