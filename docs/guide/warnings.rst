@@ -878,7 +878,7 @@ List Of Warnings
 
    .. TODO better example
 
-   The naming of this worning is in contradiction with the common
+   The naming of this warning is in contradiction with the common
    interpretation of little endian. It was therefore renamed to
    :option:`ASCRANGE`. While :option:`LITENDIAN` remains for
    backwards compatibility, new projects should use :option:`ASCRANGE`.
