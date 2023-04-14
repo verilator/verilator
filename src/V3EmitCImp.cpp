@@ -196,6 +196,7 @@ class EmitCImp final : EmitCFunc {
         puts("\n#include \"verilated.h\"\n");
         if (v3Global.dpi()) puts("#include \"verilated_dpi.h\"\n");
         puts("\n");
+        puts("#include \"" + symClassName() + ".h\"\n");
         for (const string& name : headers) puts("#include \"" + name + ".h\"\n");
 
         emitTextSection(m_modp, VNType::atScImpHdr);
