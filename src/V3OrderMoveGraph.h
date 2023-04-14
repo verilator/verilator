@@ -75,7 +75,7 @@ public:
         }
         return nm;
     }
-    OrderLogicVertex* logicp() const { return m_logicp; }
+    OrderLogicVertex* logicp() const VL_MT_STABLE { return m_logicp; }
     bool isWait() const { return m_state == POM_WAIT; }
     void setReady() {
         UASSERT(m_state == POM_WAIT, "Wait->Ready on node not in proper state");

@@ -470,7 +470,7 @@ public:
         _ENUM_MAX
     };
     enum en m_e;
-    const char* ascii() const {
+    const char* ascii() const VL_MT_SAFE {
         static const char* const names[] = {"%E-unk",
                                             "bit",
                                             "byte",
@@ -1693,13 +1693,14 @@ public:
     static string prettyNameQ(const string& namein) {  // Quoted pretty name (for errors)
         return std::string{"'"} + prettyName(namein) + "'";
     }
-    static string
-    encodeName(const string& namein);  // Encode user name into internal C representation
+    // Encode user name into internal C representation
+    static string encodeName(const string& namein);
     static string encodeNumber(int64_t num);  // Encode number into internal C representation
     static string vcdName(const string& namein);  // Name for printing out to vcd files
     string prettyName() const VL_MT_STABLE { return prettyName(name()); }
     string prettyNameQ() const { return prettyNameQ(name()); }
-    string prettyTypeName() const;  // "VARREF" for error messages (NOT dtype's pretty name)
+    // "VARREF" for error messages (NOT dtype's pretty name)
+    string prettyTypeName() const VL_MT_STABLE;
     virtual string prettyOperatorName() const { return "operator " + prettyTypeName(); }
     FileLine* fileline() const VL_MT_SAFE { return m_fileline; }
     void fileline(FileLine* fl) { m_fileline = fl; }

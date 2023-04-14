@@ -385,7 +385,7 @@ void V3Number::create(const char* sourcep) {
     // m_value[0]);
 }
 
-void V3Number::nodep(AstNode* nodep) {
+void V3Number::nodep(AstNode* nodep) VL_MT_STABLE {
     m_nodep = nodep;
     if (!nodep) return;
     m_fileline = nodep->fileline();
@@ -498,7 +498,7 @@ V3Number& V3Number::setMask(int nbits) {
 //======================================================================
 // ACCESSORS - as strings
 
-string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_SAFE {
+string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
     std::ostringstream out;
 
     if (is1Step()) {
@@ -604,11 +604,11 @@ string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& i
     return left ? (in + padding) : (padding + in);
 }
 
-string V3Number::displayed(AstNode* nodep, const string& vformat) const VL_MT_SAFE {
+string V3Number::displayed(AstNode* nodep, const string& vformat) const VL_MT_STABLE {
     return displayed(nodep->fileline(), vformat);
 }
 
-string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_SAFE {
+string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STABLE {
     auto pos = vformat.cbegin();
     UASSERT(pos != vformat.cend() && pos[0] == '%',
             "$display-like function with non format argument " << *this);
@@ -847,7 +847,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_SAFE
     }
 }
 
-string V3Number::toDecimalS() const {
+string V3Number::toDecimalS() const VL_MT_STABLE {
     if (isNegative()) {
         V3Number lhsNoSign = *this;
         lhsNoSign.opNegate(*this);
@@ -857,7 +857,7 @@ string V3Number::toDecimalS() const {
     }
 }
 
-string V3Number::toDecimalU() const {
+string V3Number::toDecimalU() const VL_MT_STABLE {
     const int maxdecwidth = (width() + 3) * 4 / 3;
 
     // Or (maxdecwidth+7)/8], but can't have more than 4 BCD bits per word
@@ -1013,7 +1013,7 @@ bool V3Number::isAllX() const VL_MT_SAFE {
     }
     return true;
 }
-bool V3Number::isEqZero() const {
+bool V3Number::isEqZero() const VL_MT_SAFE {
     if (isString()) return m_data.str().empty();
     for (int i = 0; i < words(); i++) {
         const ValueAndX v = m_data.num()[i];

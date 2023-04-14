@@ -285,7 +285,7 @@ string AstNode::vpiName(const string& namein) {
     return pretty;
 }
 
-string AstNode::prettyTypeName() const {
+string AstNode::prettyTypeName() const VL_MT_STABLE {
     if (name() == "") return typeName();
     return std::string{typeName()} + " '" + prettyName() + "'";
 }
