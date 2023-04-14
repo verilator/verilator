@@ -2011,9 +2011,6 @@ private:
     //  *::user4()              -> See LinkDotState
     // Cleared on Cell
     //  AstVar::user5()         // bool. True if pin used in this cell
-    //  AstClass::user5()       // bool. True if class has a parameter
-    //                                   as a (possibly indirect) base class.
-    //                                   Used only in LDS_PRIMARY pass
     const VNUser3InUse m_inuser3;
     const VNUser5InUse m_inuser5;
 
@@ -2037,6 +2034,7 @@ private:
     int m_modportNum = 0;  // Uniqueify modport numbers
     bool m_inSens = false;  // True if in senitem
     std::set<std::string> m_ifClassImpNames;  // Names imported from interface class
+    std::set<AstClass*> m_extendsParam;  // Classes that has a parameter as its super class
 
     struct DotStates {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -2239,6 +2237,26 @@ private:
         VSymEnt* const srcp = m_statep->getNodeSym(classp);
         if (classp->isInterfaceClass()) importImplementsClass(nodep, srcp, classp);
         if (!cextp->isImplements()) m_curSymp->importFromClass(m_statep->symsp(), srcp);
+    }
+    void visitGlobalClassParams(AstClass* const nodep) {
+        // Parameters from port parameter list are at the beginning of the members list, so if a
+        // node, that isn't a parameter, is encountered, all nodes after aren't global parameters
+        // too.
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            // Global parameters are at the beginning of the members list, so if a node, that isn't
+            // a global parameter, is encountered, all nodes after it aren't global parameters too.
+            bool globalParam = false;
+            if (const AstParamTypeDType* const parp = VN_CAST(stmtp, ParamTypeDType)) {
+                if (parp->isGParam()) globalParam = true;
+            } else if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (varp->isGParam()) globalParam = true;
+            }
+            if (globalParam) {
+                iterate(stmtp);
+            } else {
+                break;
+            }
+        }
     }
 
     // VISITs
@@ -3330,9 +3348,13 @@ private:
                                     // function
                                     iterate(classp);
                                 }
-                                if (classp->user5()) {
+                                if (m_statep->forPrimary()
+                                    && m_extendsParam.find(classp) != m_extendsParam.end()) {
                                     // Has a parameter as its base class
-                                    nodep->user5(true);
+                                    m_extendsParam.insert(nodep);
+                                    // Link global parameters. They are declared before the extends
+                                    // statement, so should be unrelated to the base class
+                                    visitGlobalClassParams(nodep);
                                     return;
                                 }
                                 AstPin* paramsp = cpackagerefp->paramsp();
@@ -3345,7 +3367,7 @@ private:
                                     // Extending has to be handled after V3Param.cpp, but the type
                                     // reference has to be visited
                                     iterate(paramp);
-                                    nodep->user5(true);
+                                    m_extendsParam.insert(nodep);
                                     return;
                                 } else {
                                     AstNodeDType* const paramTypep = paramp->getChildDTypep();
