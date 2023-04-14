@@ -546,6 +546,9 @@ class ParamProcessor final {
     }
     void replaceRefsRecurse(AstNode* const nodep, const AstClass* const oldClassp,
                             AstClass* const newClassp) {
+        // Some of the nodes may be already marked as visited, because they were copied. They
+        // should be marked as unvisited, because parameterized references have to be handled.
+        nodep->user5(false);
         if (AstClassRefDType* const classRefp = VN_CAST(nodep, ClassRefDType)) {
             if (classRefp->classp() == oldClassp) classRefp->classp(newClassp);
         } else if (AstClassOrPackageRef* const classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
