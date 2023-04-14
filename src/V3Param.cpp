@@ -342,6 +342,7 @@ class ParamProcessor final {
         // TODO: This parameter value number lookup via a constructed key string is not
         //       particularly robust for type parameters. We should really have a type
         //       equivalence predicate function.
+        if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) nodep = refp->skipRefp();
         const string key = paramValueKey(nodep);
         // cppcheck-has-bug-suppress unreadVariable
         V3Hash hash = V3Hasher::uncachedHash(nodep);
@@ -705,7 +706,7 @@ class ParamProcessor final {
                               << modvarp->prettyNameQ());
             } else {
                 UINFO(9, "Parameter type assignment expr=" << exprp << " to " << origp << endl);
-                if (exprp->sameTree(origp)) {
+                if (exprp->similarDType(origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.

@@ -402,10 +402,7 @@ public:
     ASTGEN_MEMBERS_AstBasicDType;
     void dump(std::ostream& str) const override;
     // width/widthMin/numeric compared elsewhere
-    bool same(const AstNode* samep) const override {
-        const AstBasicDType* const sp = static_cast<const AstBasicDType*>(samep);
-        return m == sp->m;
-    }
+    bool same(const AstNode* samep) const override;
     bool similarDType(const AstNodeDType* samep) const override {
         return type() == samep->type() && same(samep);
     }
