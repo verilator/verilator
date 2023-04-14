@@ -26,6 +26,7 @@ class V3HierBlockPlan;
 
 class V3EmitMk final {
 public:
+    // Number of source files after which to use parallel compiles
     static const size_t PARALLEL_FILE_CNT_THRESHOLD = 128;
 
     static void emitmk();

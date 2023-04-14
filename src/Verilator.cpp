@@ -567,8 +567,8 @@ static void process() {
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
         size_t src_f_cnt = 0;
         for (AstNode* nodep = v3Global.rootp()->filesp(); nodep; nodep = nodep->nextp()) {
-            const AstCFile* cfilep = VN_CAST(nodep, CFile);
-            src_f_cnt += (cfilep && cfilep->source()) ? 1 : 0;
+            if (const AstCFile* cfilep = VN_CAST(nodep, CFile))
+                src_f_cnt += cfilep->source() ? 1 : 0;
         }
         if (src_f_cnt >= V3EmitMk::PARALLEL_FILE_CNT_THRESHOLD) v3Global.useParallelBuild(true);
 
