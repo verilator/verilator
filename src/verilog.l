@@ -599,7 +599,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "eventually"          { FL; return yEVENTUALLY; }
   "global"              { FL; return yGLOBAL__LEX; }
   "implies"             { FL; return yIMPLIES; }
-  "let"                 { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "let"                 { FL; return yLET; }
   "nexttime"            { FL; return yNEXTTIME; }
   "reject_on"           { FL; return yREJECT_ON; }
   "s_always"            { FL; return yS_ALWAYS; }

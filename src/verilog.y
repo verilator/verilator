@@ -645,7 +645,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yJOIN           "join"
 %token<fl>              yJOIN_ANY       "join_any"
 %token<fl>              yJOIN_NONE      "join_none"
-//UNSUP %token<fl>      yLET            "let"
+%token<fl>              yLET            "let"
 %token<fl>              yLOCALPARAM     "localparam"
 %token<fl>              yLOCAL__COLONCOLON "local-then-::"
 %token<fl>              yLOCAL__ETC     "local"
@@ -1815,6 +1815,7 @@ modportSimplePortOrTFPort<strp>:// IEEE: modport_simple_port or modport_tf_port,
         |       '.' idAny '(' ')'                       { $$ = $2; BBUNSUP($<fl>1, "Unsupported: Modport dotted port name"); }
         |       '.' idAny '(' expr ')'                  { $$ = $2; BBUNSUP($<fl>1, "Unsupported: Modport dotted port name"); }
         ;
+
 //************************************************
 // Variable Declarations
 
@@ -3450,7 +3451,7 @@ block_item_declarationList<nodep>:      // IEEE: [ block_item_declaration ]
 block_item_declaration<nodep>:  // ==IEEE: block_item_declaration
                 data_declaration                        { $$ = $1; }
         |       parameter_declaration ';'               { $$ = $1; }
-        //UNSUP let_declaration                         { $$ = $1; }
+        |       let_declaration                         { $$ = $1; }
         ;
 
 stmtList<nodep>:
@@ -5152,6 +5153,49 @@ stream_expressionOrDataType<nodep>:     // IEEE: from streaming_concatenation
         ;
 
 //************************************************
+// Let
+
+letId<nodeFTaskp>:      // IEEE: pert of let_declaration
+                idAny/*let_identifieer*/
+                        { $<fl>$ = $<fl>1;
+                          $<scp>$ = nullptr;
+                          // No unsupported message as caller has one, for now just use a func
+                          $$ = new AstFunc{$<fl>$, *$1, nullptr, nullptr};
+                          SYMP->pushNewUnderNodeOrCurrent($$, $<scp>$); }
+        ;
+
+let_declaration<nodep>:  // IEEE: let_declaration
+                yLET letId '=' expr ';'
+                        { $$ = nullptr;
+                          SYMP->popScope($2);
+                          BBUNSUP($<fl>1, "Unsupported: let"); }
+        |       yLET letId '(' let_port_listE ')' '=' expr ';'
+                        { $$ = nullptr;
+                          SYMP->popScope($2);
+                          BBUNSUP($<fl>1, "Unsupported: let"); }
+        ;
+
+let_port_listE<nodep>:   // IEEE: [ let_port_list ]
+                /*empty*/                               { $$ = nullptr; }
+        |       let_port_list                           { $$ = $1; }
+        ;
+
+let_port_list<nodep>:   // IEEE: let_port_list
+                let_port_item                           { $$ = $1; }
+        |       let_port_list ',' let_port_item         { $$ = addNextNull($1, $3); }
+        ;
+
+let_port_item<nodep>:   // IEEE: let_port_Item
+	//			// IEEE: Expanded let_formal_type
+                yUNTYPED idAny/*formal_port_identifier*/ variable_dimensionListE exprEqE
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: let untyped ports"); }
+        |       data_type id/*formal_port_identifier*/ variable_dimensionListE exprEqE
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: let ports"); }
+        |       implicit_typeE id/*formal_port_identifier*/ variable_dimensionListE exprEqE
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: let ports"); }
+        ;
+
+//************************************************
 // Gate declarations
 
 gateDecl<nodep>:
@@ -5697,7 +5741,7 @@ cycle_delay<delayp>:  // IEEE: cycle_delay
 assertion_item_declaration<nodep>:  // ==IEEE: assertion_item_declaration
                 property_declaration                    { $$ = $1; }
         |       sequence_declaration                    { $$ = $1; }
-        //UNSUP let_declaration                         { $$ = $1; }
+        |       let_declaration                         { $$ = $1; }
         ;
 
 assertion_item<nodep>:          // ==IEEE: assertion_item
