@@ -15,8 +15,7 @@
 // Include common routines
 #include <verilated.h>
 #if VM_TRACE
-//#include <verilated_vcd_sc.h>
-#include <verilated_fst_sc.h>
+#include <verilated_vcd_sc.h>
 #endif
 
 #include <sys/stat.h>  // mkdir
@@ -90,11 +89,11 @@ int sc_main(int argc, char* argv[]) {
 #if VM_TRACE
     // If verilator was invoked with --trace argument,
     // and if at run time passed the +trace argument, turn on tracing
-    VerilatedFstSc* tfp = nullptr;
+    VerilatedVcdSc* tfp = nullptr;
     const char* flag = Verilated::commandArgsPlusMatch("trace");
     if (flag && 0 == std::strcmp(flag, "+trace")) {
         std::cout << "Enabling waves into logs/vlt_dump.vcd...\n";
-        tfp = new VerilatedFstSc;
+        tfp = new VerilatedVcdSc;
         top->trace(tfp, 99);  // Trace 99 levels of hierarchy
         Verilated::mkdir("logs");
         tfp->open("logs/vlt_dump.fst");
