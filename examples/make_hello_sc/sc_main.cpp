@@ -7,13 +7,15 @@
 //======================================================================
 
 // SystemC global header
-#include <systemc.h>
+#include <systemc>
 
 // Include common routines
 #include <verilated.h>
 
 // Include model header, generated from Verilating "top.v"
 #include "Vtop.h"
+
+using namespace sc_core;
 
 int sc_main(int argc, char* argv[]) {
     // See a similar example walkthrough in the verilator manpage.
