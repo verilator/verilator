@@ -19,8 +19,8 @@
 ///
 //=============================================================================
 
-#ifndef VERILATOR_VERILATED_VCD_SC_H_
-#define VERILATOR_VERILATED_VCD_SC_H_
+#ifndef VERILATOR_VERILATED_FST_SC_H_
+#define VERILATOR_VERILATED_FST_SC_H_
 
 #include "verilatedos.h"
 
