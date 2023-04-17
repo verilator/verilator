@@ -10,7 +10,7 @@
 #include <memory>
 
 // SystemC global header
-#include <systemc.h>
+#include <systemc>
 
 // Include common routines
 #include <verilated.h>
@@ -22,6 +22,8 @@
 
 // Include model header, generated from Verilating "top.v"
 #include "Vtop.h"
+
+using namespace sc_core;
 
 int sc_main(int argc, char* argv[]) {
     // This is a more complicated example, please also see the simpler examples/make_hello_c.

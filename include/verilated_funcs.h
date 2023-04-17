@@ -260,7 +260,7 @@ extern void _vl_debug_print_w(int lbits, WDataInP const iwp) VL_MT_SAFE;
 #if defined(SYSTEMC_VERSION)
 /// Return current simulation time
 // Already defined: extern sc_time sc_time_stamp();
-inline uint64_t vl_time_stamp64() VL_MT_SAFE { return sc_time_stamp().value(); }
+inline uint64_t vl_time_stamp64() VL_MT_SAFE { return sc_core::sc_time_stamp().value(); }
 #else  // Non-SystemC
 # if !defined(VL_TIME_CONTEXT) && !defined(VL_NO_LEGACY)
 #  ifdef VL_TIME_STAMP64
