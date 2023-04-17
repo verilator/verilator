@@ -96,7 +96,7 @@ int sc_main(int argc, char* argv[]) {
         tfp = new VerilatedVcdSc;
         top->trace(tfp, 99);  // Trace 99 levels of hierarchy
         Verilated::mkdir("logs");
-        tfp->open("logs/vlt_dump.fst");
+        tfp->open("logs/vlt_dump.vcd");
     }
 #endif
 
