@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2022 by Arkadiusz Kozdra.
+// any use, without warranty, 2023 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
 // See also t_class_param.v
@@ -44,6 +44,36 @@ class SingletonUnusedDefault #(type T=int);
    endfunction
 endclass
 
+class Empty;
+endclass
+
+class Foo #(type IF=Empty) extends IF;
+   typedef Foo foo_t;
+   int a = 1;
+endclass
+
+class Bar #(type A=int, type B=A) extends Foo;
+   function int get_size_A;
+      return $bits(A);
+   endfunction
+   function int get_size_B;
+      return $bits(B);
+   endfunction
+endclass
+
+class Empty2;
+endclass
+
+class Baz #(type T=Empty2) extends Foo;
+endclass
+
+class Getter1 extends Baz;
+   function int get_1;
+      foo_t f = new;
+      return f.a;
+   endfunction
+endclass
+
 module t (/*AUTOARG*/);
 
    initial begin
@@ -61,6 +91,20 @@ module t (/*AUTOARG*/);
       automatic SingletonUnusedDefault #(bit) sud1 = SingletonUnusedDefault#(bit)::self();
       automatic SingletonUnusedDefault #(bit) sud2 = SingletonUnusedDefault#(bit)::self();
 
+      automatic Getter1 getter1 = new;
+
+      typedef bit my_bit_t;
+      Bar#(.A(my_bit_t)) bar_a_bit = new;
+      Bar#(.B(my_bit_t)) bar_b_bit = new;
+      Bar#() bar_default = new;
+
+      if (bar_a_bit.get_size_A != 1) $stop;
+      if (bar_a_bit.get_size_B != 1) $stop;
+      if (bar_b_bit.get_size_A != 32) $stop;
+      if (bar_b_bit.get_size_B != 1) $stop;
+      if (bar_default.get_size_A != 32) $stop;
+      if (bar_default.get_size_B != 32) $stop;
+
       if (pdt1 != pdt2) $stop;
       if (pdt2 != pdt3) $stop;
       if (p1 != p2) $stop;
@@ -76,6 +120,8 @@ module t (/*AUTOARG*/);
       if (p1.get_p() != 20) $stop;
       if (pdt1.get_p() != 20) $stop;
       if (Parcls#(cls2_t)::get_p() != 20) $stop;
+
+      if (getter1.get_1() != 1) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
