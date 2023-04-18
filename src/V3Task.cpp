@@ -1325,7 +1325,8 @@ private:
         }
 
         if (nodep->fileline()->timingOn()) {
-            if (nodep->isFromStd() && nodep->name() == "self" && v3Global.opt.timing().isSetTrue()) {
+            if (nodep->isFromStd() && nodep->name() == "self"
+                && v3Global.opt.timing().isSetTrue()) {
                 cfuncp->rtnType("VlCoroutine");
                 cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
             }

@@ -99,26 +99,26 @@ package std;
         } state;
 
     `ifdef VERILATOR_TIMING
-        protected chandle m_process = 0;
+        protected chandle m_process;
     `endif
 
         static function process self();
     `ifdef VERILATOR_TIMING
             process p = new;
-            $c(p.m_process, " = (unsigned long)vlProcess;");
+            $c(p.m_process, " = vlProcess;");
             return p;
     `endif
         endfunction
 
         protected function void set_status(state s);
     `ifdef VERILATOR_TIMING
-            $c("((VlProcess*)", m_process, ")->state(", s, ");");
+            $c(m_process, "->state(", s, ");");
     `endif
         endfunction
 
         function state status();
     `ifdef VERILATOR_TIMING
-            return state'($c("((VlProcess*)", m_process, ")->state()"));
+            return state'($c(m_process, "->state()"));
     `else
             return RUNNING;
     `endif

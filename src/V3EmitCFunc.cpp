@@ -422,7 +422,7 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
         if (VN_IS(nodep->backp(), CAwait)) {
             puts("vlProcess");
         } else {
-            puts("new VlProcess()");
+            puts("std::make_shared<VlProcess>()");
         }
         comma = true;
     }
@@ -703,6 +703,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         // String's constructor deals with it
         return "";
     } else if (basicp && basicp->isForkSync()) {
+        return "";
+    } else if (basicp && basicp->isProcessRef()) {
         return "";
     } else if (basicp && basicp->isDelayScheduler()) {
         return "";

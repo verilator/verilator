@@ -81,7 +81,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
     }
     if (nodep->isCoroutine()) {
         if (!args.empty()) args += ", ";
-        args += "VlProcess* vlProcess";
+        args += "VlProcessRef vlProcess";
     }
     if (!nodep->argTypes().empty()) {
         if (!args.empty()) args += ", ";

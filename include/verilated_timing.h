@@ -86,10 +86,12 @@ public:
 #endif
 };
 
+//===================================================================
+// VlProcess stores metadata of running processes
+
 class VlProcess final {
     // MEMBERS
     int m_state;
-    int m_id;
 
 public:
     // TYPES
@@ -103,16 +105,16 @@ public:
 
     // CONSTRUCTORS
     VlProcess()
-        : m_state{RUNNING} {
-        static int max_id = 0;
-        m_id = max_id++;
-    }
+        : m_state{RUNNING} {}
 
     // METHODS
-    int id() { return m_id; }
     int state() { return m_state; }
     void state(int s) { m_state = s; }
 };
+
+using VlProcessRef = std::shared_ptr<VlProcess>;
+
+inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
 
 //=============================================================================
 // VlCoroutine
@@ -183,18 +185,18 @@ class VlCoroutineHandle final {
 
     // MEMBERS
     std::coroutine_handle<> m_coro;  // The wrapped coroutine handle
-    VlProcess* m_process;
+    VlProcessRef m_process;
     VlFileLineDebug m_fileline;
 
 public:
     // CONSTRUCTORS
     // Construct
-    VlCoroutineHandle(VlProcess* process)
+    VlCoroutineHandle(VlProcessRef process)
         : m_coro{nullptr}
         , m_process{process} {
         m_process->state(VlProcess::WAITING);
     }
-    VlCoroutineHandle(std::coroutine_handle<> coro, VlProcess* process, VlFileLineDebug fileline)
+    VlCoroutineHandle(std::coroutine_handle<> coro, VlProcessRef process, VlFileLineDebug fileline)
         : m_coro{coro}
         , m_process{process}
         , m_fileline{fileline} {
@@ -271,10 +273,10 @@ public:
     void dump() const;
 #endif
     // Used by coroutines for co_awaiting a certain simulation time
-    auto delay(uint64_t delay, VlProcess* process, const char* filename = VL_UNKNOWN,
+    auto delay(uint64_t delay, VlProcessRef process, const char* filename = VL_UNKNOWN,
                int lineno = 0) {
         struct Awaitable {
-            VlProcess* process;
+            VlProcessRef process;
             VlDelayedCoroutineQueue& queue;
             uint64_t delay;
             VlFileLineDebug fileline;
@@ -325,13 +327,13 @@ public:
     void dump(const char* eventDescription) const;
 #endif
     // Used by coroutines for co_awaiting a certain trigger
-    auto trigger(bool commit, VlProcess* process, const char* eventDescription = VL_UNKNOWN,
+    auto trigger(bool commit, VlProcessRef process, const char* eventDescription = VL_UNKNOWN,
                  const char* filename = VL_UNKNOWN, int lineno = 0) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Suspending process waiting for %s at %s:%d\n",
                                 eventDescription, filename, lineno););
         struct Awaitable {
             VlCoroutineVec& suspended;  // Coros waiting on trigger
-            VlProcess* process;
+            VlProcessRef process;
             VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
@@ -373,9 +375,9 @@ class VlDynamicTriggerScheduler final {
                             // with destructive post updates, e.g. named events)
 
     // METHODS
-    auto awaitable(VlProcess* process, VlCoroutineVec& queue, const char* filename, int lineno) {
+    auto awaitable(VlProcessRef process, VlCoroutineVec& queue, const char* filename, int lineno) {
         struct Awaitable {
-            VlProcess* process;
+            VlProcessRef process;
             VlCoroutineVec& suspended;  // Coros waiting on trigger
             VlFileLineDebug fileline;
 
@@ -399,14 +401,14 @@ public:
     void dump() const;
 #endif
     // Used by coroutines for co_awaiting trigger evaluation
-    auto evaluation(VlProcess* process, const char* eventDescription, const char* filename,
+    auto evaluation(VlProcessRef process, const char* eventDescription, const char* filename,
                     int lineno) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Suspending process waiting for %s at %s:%d\n",
                                 eventDescription, filename, lineno););
         return awaitable(process, m_suspended, filename, lineno);
     }
     // Used by coroutines for co_awaiting the trigger post update step
-    auto postUpdate(VlProcess* process, const char* eventDescription, const char* filename,
+    auto postUpdate(VlProcessRef process, const char* eventDescription, const char* filename,
                     int lineno) {
         VL_DEBUG_IF(
             VL_DBG_MSGF("         Process waiting for %s at %s:%d awaiting the post update step\n",
@@ -414,7 +416,7 @@ public:
         return awaitable(process, m_post, filename, lineno);
     }
     // Used by coroutines for co_awaiting the resumption step (in 'act' eval)
-    auto resumption(VlProcess* process, const char* eventDescription, const char* filename,
+    auto resumption(VlProcessRef process, const char* eventDescription, const char* filename,
                     int lineno) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Process waiting for %s at %s:%d awaiting resumption\n",
                                 eventDescription, filename, lineno););
@@ -448,17 +450,17 @@ class VlForkSync final {
 
 public:
     // Create the join object and set the counter to the specified number
-    void init(size_t count, VlProcess* process) { m_join.reset(new VlJoin{count, {process}}); }
+    void init(size_t count, VlProcessRef process) { m_join.reset(new VlJoin{count, {process}}); }
     // Called whenever any of the forked processes finishes. If the join counter reaches 0, the
     // main process gets resumed
     void done(const char* filename = VL_UNKNOWN, int lineno = 0);
     // Used by coroutines for co_awaiting a join
-    auto join(VlProcess* process, const char* filename = VL_UNKNOWN, int lineno = 0) {
+    auto join(VlProcessRef process, const char* filename = VL_UNKNOWN, int lineno = 0) {
         assert(m_join);
         VL_DEBUG_IF(
             VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, lineno););
         struct Awaitable {
-            VlProcess* process;
+            VlProcessRef process;
             const std::shared_ptr<VlJoin> join;  // Join to await on
             VlFileLineDebug fileline;
 

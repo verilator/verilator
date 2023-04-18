@@ -438,6 +438,7 @@ public:
     bool isEvent() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::EVENT; }
     bool isTriggerVec() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::TRIGGERVEC; }
     bool isForkSync() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::FORK_SYNC; }
+    bool isProcessRef() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::PROCESS_REFERENCE; }
     bool isDelayScheduler() const VL_MT_SAFE {
         return keyword() == VBasicDTypeKwd::DELAY_SCHEDULER;
     }
