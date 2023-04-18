@@ -2035,6 +2035,8 @@ private:
     bool m_inSens = false;  // True if in senitem
     std::set<std::string> m_ifClassImpNames;  // Names imported from interface class
     std::set<AstClass*> m_extendsParam;  // Classes that has a parameter as its super class
+    bool m_insideClassExtParam = false;  // Inside a class that extends a parameter.
+                                         // It may be set only in linkDotPrimary.
 
     struct DotStates {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -2238,26 +2240,6 @@ private:
         if (classp->isInterfaceClass()) importImplementsClass(nodep, srcp, classp);
         if (!cextp->isImplements()) m_curSymp->importFromClass(m_statep->symsp(), srcp);
     }
-    void visitGlobalClassParams(AstClass* const nodep) {
-        // Parameters from port parameter list are at the beginning of the members list, so if a
-        // node, that isn't a parameter, is encountered, all nodes after aren't global parameters
-        // too.
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            // Global parameters are at the beginning of the members list, so if a node, that isn't
-            // a global parameter, is encountered, all nodes after it aren't global parameters too.
-            bool globalParam = false;
-            if (const AstParamTypeDType* const parp = VN_CAST(stmtp, ParamTypeDType)) {
-                if (parp->isGParam()) globalParam = true;
-            } else if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
-                if (varp->isGParam()) globalParam = true;
-            }
-            if (globalParam) {
-                iterate(stmtp);
-            } else {
-                break;
-            }
-        }
-    }
 
     // VISITs
     void visit(AstNetlist* nodep) override {
@@ -2424,12 +2406,17 @@ private:
                         nodep->v3error("'super' used on non-extended class (IEEE 1800-2017 8.15)");
                         m_ds.m_dotErr = true;
                     } else {
-                        const auto cextp = classp->extendsp();
-                        UASSERT_OBJ(cextp, nodep, "Bad super extends link");
-                        const auto sclassp = cextp->classp();
-                        UASSERT_OBJ(sclassp, nodep, "Bad superclass");
-                        m_ds.m_dotSymp = m_statep->getNodeSym(sclassp);
-                        UINFO(8, "     super. " << m_ds.ascii() << endl);
+                        if (m_statep->forPrimary()
+                            && m_extendsParam.find(classp) != m_extendsParam.end()) {
+                            m_ds.m_unresolvedClass = true;
+                        } else {
+                            const auto cextp = classp->extendsp();
+                            UASSERT_OBJ(cextp, nodep, "Bad super extends link");
+                            const auto sclassp = cextp->classp();
+                            UASSERT_OBJ(sclassp, nodep, "Bad superclass");
+                            m_ds.m_dotSymp = m_statep->getNodeSym(sclassp);
+                            UINFO(8, "     super. " << m_ds.ascii() << endl);
+                        }
                     }
                 }
             } else if (VN_IS(nodep->lhsp(), ClassOrPackageRef)) {
@@ -2798,8 +2785,10 @@ private:
                     }
                 }
             }
-            //
-            if (!ok) {
+            // Don't throw error ifthe reference is inside a class that extends a param, because
+            // some members can't be linked in such a case. m_insideClassExtParam may be true only
+            // in the first stage of linking.
+            if (!ok && !m_insideClassExtParam) {
                 // Cells/interfaces can't be implicit
                 const bool isCell = foundp ? VN_IS(foundp->nodep(), Cell) : false;
                 const bool checkImplicit = (!m_ds.m_dotp && m_ds.m_dotText == "" && !isCell);
@@ -3110,6 +3099,10 @@ private:
                 nodep->taskp(taskp);
                 nodep->classOrPackagep(foundp->classOrPackagep());
                 UINFO(7, "         Resolved " << nodep << endl);  // Also prints taskp
+            } else if (m_insideClassExtParam) {
+                // The reference may point to a method declared in a super class, which is proved
+                // by a parameter. In such a case, it can't be linked at the first stage.
+                return;
             } else {
                 // Note ParseRef has similar error handling/message output
                 UINFO(7, "   ErrFtask curSymp=se" << cvtToHex(m_curSymp) << " dotSymp=se"
@@ -3300,6 +3293,7 @@ private:
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_ifClassImpNames);
+        VL_RESTORER(m_insideClassExtParam);
         {
             m_ds.init(m_curSymp);
             // Until overridden by a SCOPE
@@ -3352,10 +3346,7 @@ private:
                                     && m_extendsParam.find(classp) != m_extendsParam.end()) {
                                     // Has a parameter as its base class
                                     m_extendsParam.insert(nodep);
-                                    // Link global parameters. They are declared before the extends
-                                    // statement, so should be unrelated to the base class
-                                    visitGlobalClassParams(nodep);
-                                    return;
+                                    m_insideClassExtParam = true;
                                 }
                                 AstPin* paramsp = cpackagerefp->paramsp();
                                 if (paramsp) paramsp = paramsp->cloneTree(true);
@@ -3364,13 +3355,12 @@ private:
                             } else if (AstParamTypeDType* const paramp
                                        = VN_CAST(foundp->nodep(), ParamTypeDType)) {
                                 if (m_statep->forPrimary()) {
-                                    // Extending has to be handled after V3Param.cpp, but the type
-                                    // reference has to be visited
-                                    iterate(paramp);
+                                    // Extending has to be handled after V3Param.cpp
                                     m_extendsParam.insert(nodep);
-                                    return;
+                                    m_insideClassExtParam = true;
+                                    continue;
                                 } else {
-                                    AstNodeDType* const paramTypep = paramp->getChildDTypep();
+                                    AstNodeDType* const paramTypep = paramp->subDTypep();
                                     classRefDtypep
                                         = VN_CAST(paramTypep->cloneTree(false), ClassRefDType);
                                     if (!classRefDtypep) {

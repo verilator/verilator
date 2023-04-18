@@ -52,7 +52,7 @@ class Foo #(type IF=Empty) extends IF;
    int a = 1;
 endclass
 
-class Bar #(type A=int, type B=A) extends Foo;
+class Bar #(type A=int, type B=A) extends Foo#();
    function int get_size_A;
       return $bits(A);
    endfunction
@@ -64,13 +64,29 @@ endclass
 class Empty2;
 endclass
 
-class Baz #(type T=Empty2) extends Foo;
+class Baz #(type T=Empty2) extends Foo#();
 endclass
 
-class Getter1 extends Baz;
+class Getter1 extends Baz#();
    function int get_1;
       foo_t f = new;
       return f.a;
+   endfunction
+endclass
+
+class MyInt1;
+   int x = 1;
+endclass
+
+class MyInt2;
+   int x = 2;
+endclass
+
+class ExtendsMyInt #(type T=MyInt1) extends T;
+   typedef ExtendsMyInt#(T) this_type;
+   function int get_this_type_x;
+      this_type t = new;
+      return t.x;
    endfunction
 endclass
 
@@ -92,6 +108,9 @@ module t (/*AUTOARG*/);
       automatic SingletonUnusedDefault #(bit) sud2 = SingletonUnusedDefault#(bit)::self();
 
       automatic Getter1 getter1 = new;
+
+      automatic ExtendsMyInt#() ext1 = new;
+      automatic ExtendsMyInt#(MyInt2) ext2 = new;
 
       typedef bit my_bit_t;
       Bar#(.A(my_bit_t)) bar_a_bit = new;
@@ -122,6 +141,9 @@ module t (/*AUTOARG*/);
       if (Parcls#(cls2_t)::get_p() != 20) $stop;
 
       if (getter1.get_1() != 1) $stop;
+
+      if (ext1.get_this_type_x() != 1) $stop;
+      if (ext2.get_this_type_x() != 2) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
