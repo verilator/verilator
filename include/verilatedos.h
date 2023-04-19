@@ -604,7 +604,7 @@ reverse_wrapper<T> reverse_view(const T& v) {
 
 // C++17's std::as_const
 template <class T>
-T const& as_const(T& v) {
+T const& as_const(T& v) VL_MT_SAFE {
     return v;
 }
 

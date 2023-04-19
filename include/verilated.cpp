@@ -693,7 +693,7 @@ std::string VL_DECIMAL_NW(int width, const WDataInP lwp) VL_MT_SAFE {
 }
 
 template <typename T>
-std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t width) {
+std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t width) VL_MT_SAFE {
     const VerilatedContextImp* const ctxImpp = Verilated::threadContextp()->impp();
     const std::string suffix = ctxImpp->timeFormatSuffix();
     const int userUnits = ctxImpp->timeFormatUnits();  // 0..-15
