@@ -231,9 +231,9 @@ private:
             nodep->v3warn(STATICVAR, "Static variable with assignment declaration declared in a "
                                      "loop converted to automatic");
         }
-	if (m_ftaskp != nullptr && m_ftaskp->classMethod() && nodep->lifetime().isNone()) {
+        if (m_ftaskp != nullptr && m_ftaskp->classMethod() && nodep->lifetime().isNone()) {
             nodep->lifetime(VLifetime::AUTOMATIC);
-	}
+        }
         if (nodep->lifetime().isNone() && nodep->varType() != VVarType::PORT) {
             nodep->lifetime(m_lifetime);
         }
