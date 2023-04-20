@@ -49,14 +49,16 @@ class VlAnnotations:
     release: bool = False
 
     def is_mt_safe_context(self):
-        return (not (self.mt_unsafe or self.mt_unsafe_one)
-                and (self.mt_safe or self.mt_start))
+        return (not (self.mt_unsafe or self.mt_unsafe_one) and self.mt_safe)
 
     def is_pure_context(self):
         return self.pure
 
     def is_stabe_tree_context(self):
-        return self.stable_tree
+        # stable tree context requires calls to be marked
+        # as MT_SAFE or MT_STABLE
+        # Functions in MT_START needs to be MT_SAFE or MT_STABLE
+        return self.stable_tree or self.mt_start
 
     def is_mt_unsafe_call(self):
         return self.mt_unsafe or self.mt_unsafe_one
@@ -389,7 +391,8 @@ class CallAnnotationsValidator:
 
         # stable tree context
         if ctx.is_stabe_tree_context():
-            if not (annotations.is_stabe_tree_call()
+            if annotations.is_mt_unsafe_call() or not (
+                    annotations.is_stabe_tree_call()
                     or annotations.is_pure_call()
                     or self.check_mt_safe_call(node, refd, annotations)):
                 self.emit_diagnostic(
@@ -417,7 +420,8 @@ class CallAnnotationsValidator:
 
         # stable tree context
         if ctx.is_stabe_tree_context():
-            if not (annotations.is_pure_call()
+            if annotations.is_mt_unsafe_call() or not (
+                    annotations.is_pure_call()
                     or annotations.is_mt_safe_call()
                     or annotations.is_stabe_tree_call()):
                 self.emit_diagnostic(
@@ -465,11 +469,19 @@ class CallAnnotationsValidator:
         if not supported:
             self.iterate_children(node.get_children(),
                                   self.dispatch_node_inside_definition)
-            return
+            return True
 
         assert refd is not None
         if self._is_ignored_call(refd):
-            return
+            return True
+
+        if "std::function" in refd.displayname:
+            # Workaroud for missing support for lambda annotations
+            # in c++11.
+            # If function takes std::function as argument,
+            # assume, that this std::function will be called inside it.
+            self.process_function_definition(node)
+            return False
 
         assert self._call_location is not None
         node_file = os.path.abspath(node.location.file.name)
@@ -481,47 +493,40 @@ class CallAnnotationsValidator:
                 or refd.kind == CursorKind.CXX_METHOD
                 and refd.is_static_method()):
             self.process_function_call(refd, annotations)
-            self.iterate_children(node.get_children(),
-                                  self.dispatch_node_inside_definition)
-            return
         # Function pointer
-        if refd.kind in [
+        elif refd.kind in [
                 CursorKind.VAR_DECL, CursorKind.FIELD_DECL,
                 CursorKind.PARM_DECL
         ]:
             self.process_function_call(refd, annotations)
-            self.iterate_children(node.get_children(),
-                                  self.dispatch_node_inside_definition)
-            return
         # Non-static class methods
-        if refd.kind == CursorKind.CXX_METHOD:
+        elif refd.kind == CursorKind.CXX_METHOD:
             self.process_method_call(node, refd, annotations)
-            self.iterate_children(node.get_children(),
-                                  self.dispatch_node_inside_definition)
-            return
         # Conversion method (e.g. `operator int()`)
-        if refd.kind == CursorKind.CONVERSION_FUNCTION:
+        elif refd.kind == CursorKind.CONVERSION_FUNCTION:
             self.process_method_call(node, refd, annotations)
-            self.iterate_children(node.get_children(),
-                                  self.dispatch_node_inside_definition)
-            return
         # Constructors
-        if refd.kind == CursorKind.CONSTRUCTOR:
+        elif refd.kind == CursorKind.CONSTRUCTOR:
             self.process_constructor_call(refd, annotations)
-            self.iterate_children(node.get_children(),
-                                  self.dispatch_node_inside_definition)
-            return
-
-        # Ignore other callables
-        print(f"{refd.location.file.name}:{refd.location.line}: "
-              f"{refd.displayname}    {refd.kind}\n"
-              f"    from: {node.location.file.name}:{node.location.line}")
+        else:
+            # Ignore other callables, but report them
+            print("Unknown callable: "
+                  f"{refd.location.file.name}:{refd.location.line}: "
+                  f"{refd.displayname}    {refd.kind}\n"
+                  f"    from: {node.location.file.name}:{node.location.line}")
+        return True
 
     # Definition handling
 
     def dispatch_node_inside_definition(self, node: clang.cindex.Cursor):
         if node.kind == CursorKind.CALL_EXPR:
-            self.dispatch_call_node(node)
+            if self.dispatch_call_node(node) is False:
+                return None
+        elif node.is_definition() and node.kind in [
+                CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL,
+                CursorKind.CONSTRUCTOR, CursorKind.CONVERSION_FUNCTION
+        ]:
+            self.process_function_definition(node)
             return None
 
         return self.iterate_children(node.get_children(),
@@ -556,12 +561,14 @@ class CallAnnotationsValidator:
         # for callees validation.
         self._caller = FunctionInfo.from_node(node, refd,
                                               def_annotations | annotations)
+        prev_call_location = self._call_location
         self._call_location = self._caller
 
         self.iterate_children(node_children,
                               self.dispatch_node_inside_definition)
 
-        self._call_location = None
+        self._call_location = prev_call_location
+        self._caller = prev_call_location
 
         return None
 
@@ -826,7 +833,7 @@ class TopDownSummaryPrinter():
             elif func.reason == DiagnosticKind.NON_PURE_CALL_IN_PURE_CTX:
                 name += "is pure but calls non-pure function(s)"
             elif func.reason == DiagnosticKind.NON_STABLE_TREE_CALL_IN_STABLE_TREE_CTX:
-                name += "calls stable_tree function(s) but isn't annotated as stable_tree"
+                name += "is stable_tree but calls non-stable_tree or non-mtsafe"
             else:
                 name += "for unknown reason (please add description)"
 

@@ -1151,7 +1151,7 @@ public:
     void cloneRelink() override { V3ERROR_NA; }
     string name() const override VL_MT_STABLE { return "$root"; }
     void dump(std::ostream& str) const override;
-    AstNodeModule* topModulep() const {  // Top module in hierarchy
+    AstNodeModule* topModulep() const VL_MT_STABLE {  // Top module in hierarchy
         return modulesp();  // First one in the list, for now
     }
     AstTypeTable* typeTablep() { return m_typeTablep; }
@@ -1789,7 +1789,7 @@ public:
     string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "",
-                     bool asRef = false) const VL_MT_SAFE;
+                     bool asRef = false) const VL_MT_STABLE;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
@@ -2001,8 +2001,8 @@ public:
     string name() const override VL_MT_STABLE { return scopep()->name() + "->" + varp()->name(); }
     void dump(std::ostream& str) const override;
     bool hasDType() const override { return true; }
-    AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
-    AstScope* scopep() const { return m_scopep; }  // Pointer to scope it's under
+    AstVar* varp() const VL_MT_STABLE { return m_varp; }  // [After Link] Pointer to variable
+    AstScope* scopep() const VL_MT_STABLE { return m_scopep; }  // Pointer to scope it's under
     void scopep(AstScope* nodep) { m_scopep = nodep; }
     bool isTrace() const { return m_trace; }
     void trace(bool flag) { m_trace = flag; }

@@ -52,7 +52,7 @@ public:
         uint32_t m_value;
         // Each bit is true if it's X or Z, 10=z, 11=x
         uint32_t m_valueX;
-        bool operator==(const ValueAndX& other) const {
+        bool operator==(const ValueAndX& other) const VL_MT_SAFE {
             return m_value == other.m_value && m_valueX == other.m_valueX;
         }
     };
@@ -210,7 +210,7 @@ public:
         UASSERT(isString(), "`str` member accessed when data type is " << m_type);
         return m_string;
     }
-    const std::string& str() const {
+    const std::string& str() const VL_MT_SAFE {
         UASSERT(isString(), "`str` member accessed when data type is " << m_type);
         return m_string;
     }
@@ -356,7 +356,7 @@ class V3Number final {
     void opCleanThis(bool warnOnTruncation = false);
 
 public:
-    void nodep(AstNode* nodep);
+    void nodep(AstNode* nodep) VL_MT_STABLE;
     FileLine* fileline() const VL_MT_SAFE { return m_fileline; }
     V3Number& setZero();
     V3Number& setQuad(uint64_t value);
@@ -560,8 +560,8 @@ private:
         }
     }
     static string displayPad(size_t fmtsize, char pad, bool left, const string& in) VL_PURE;
-    string displayed(FileLine* fl, const string& vformat) const VL_MT_SAFE;
-    string displayed(const string& vformat) const VL_MT_SAFE {
+    string displayed(FileLine* fl, const string& vformat) const VL_MT_STABLE;
+    string displayed(const string& vformat) const VL_MT_STABLE {
         return displayed(m_fileline, vformat);
     }
 
@@ -583,8 +583,8 @@ public:
     V3Number& setMask(int nbits);  // IE if nbits=1, then 0b1, if 2->0b11, if 3->0b111 etc
 
     // ACCESSORS
-    string ascii(bool prefixed = true, bool cleanVerilog = false) const VL_MT_SAFE;
-    string displayed(AstNode* nodep, const string& vformat) const VL_MT_SAFE;
+    string ascii(bool prefixed = true, bool cleanVerilog = false) const VL_MT_STABLE;
+    string displayed(AstNode* nodep, const string& vformat) const VL_MT_STABLE;
     static bool displayedFmtLegal(char format, bool isScan);  // Is this a valid format letter?
     int width() const VL_MT_SAFE { return m_data.width(); }
     int widthMin() const;  // Minimum width that can represent this number (~== log2(num)+1)
@@ -612,7 +612,7 @@ public:
         return m_data.type() == V3NumberDataType::LOGIC
                || m_data.type() == V3NumberDataType::DOUBLE;
     }
-    bool isNegative() const { return !isString() && bitIs1(width() - 1); }
+    bool isNegative() const VL_MT_SAFE { return !isString() && bitIs1(width() - 1); }
     bool is1Step() const VL_MT_SAFE { return m_data.m_is1Step; }
     bool isNull() const VL_MT_SAFE { return m_data.m_isNull; }
     bool isFourState() const VL_MT_SAFE;
@@ -626,7 +626,7 @@ public:
     }
     bool isAllZ() const VL_MT_SAFE;
     bool isAllX() const VL_MT_SAFE;
-    bool isEqZero() const;
+    bool isEqZero() const VL_MT_SAFE;
     bool isNeqZero() const;
     bool isBitsZero(int msb, int lsb) const;
     bool isEqOne() const;
@@ -642,8 +642,8 @@ public:
     uint64_t toUQuad() const VL_MT_SAFE;
     int64_t toSQuad() const VL_MT_SAFE;
     string toString() const VL_MT_SAFE;
-    string toDecimalS() const;  // return ASCII signed decimal number
-    string toDecimalU() const;  // return ASCII unsigned decimal number
+    string toDecimalS() const VL_MT_STABLE;  // return ASCII signed decimal number
+    string toDecimalU() const VL_MT_STABLE;  // return ASCII unsigned decimal number
     double toDouble() const VL_MT_SAFE;
     V3Hash toHash() const;
     uint32_t edataWord(int eword) const;

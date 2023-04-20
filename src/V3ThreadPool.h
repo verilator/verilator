@@ -85,8 +85,14 @@ public:
     void resize(unsigned n) VL_MT_UNSAFE;
 
     // Enqueue a job for asynchronous execution
+    // Due to missing support for lambda annotations in c++11,
+    // `clang_check_attributes` script assumes that if
+    // function takes `std::function` as argument, it
+    // will call it. `VL_MT_START` here indicates that
+    // every function call inside this `std::function` requires
+    // annotations.
     template <typename T>
-    std::future<T> enqueue(std::function<T()>&& f) VL_MT_SAFE;
+    std::future<T> enqueue(std::function<T()>&& f) VL_MT_START;
 
     // Request exclusive access to processing.
     // It sends request to stop all other threads and waits for them to stop.
@@ -190,7 +196,7 @@ T V3ThreadPool::waitForFuture(std::future<T>& future) VL_MT_SAFE_EXCLUDES(m_mute
 }
 
 template <typename T>
-std::future<T> V3ThreadPool::enqueue(std::function<T()>&& f) VL_MT_SAFE {
+std::future<T> V3ThreadPool::enqueue(std::function<T()>&& f) VL_MT_START {
     std::shared_ptr<std::promise<T>> prom = std::make_shared<std::promise<T>>();
     std::future<T> result = prom->get_future();
     pushJob(prom, std::move(f));

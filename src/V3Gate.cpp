@@ -76,7 +76,7 @@ public:
     ~GateEitherVertex() override = default;
     // ACCESSORS
     string dotStyle() const override { return m_consumed ? "" : "dotted"; }
-    AstScope* scopep() const { return m_scopep; }
+    AstScope* scopep() const VL_MT_STABLE { return m_scopep; }
     bool reducible() const { return m_reducible; }
     bool dedupable() const { return m_dedupable; }
     void setConsumed(const char* /*consumedReason*/) {
@@ -133,7 +133,7 @@ public:
         , m_varScp{varScp} {}
     ~GateVarVertex() override = default;
     // ACCESSORS
-    AstVarScope* varScp() const { return m_varScp; }
+    AstVarScope* varScp() const VL_MT_STABLE { return m_varScp; }
     string name() const override VL_MT_STABLE {
         return (cvtToHex(m_varScp) + " " + varScp()->name());
     }

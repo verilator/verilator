@@ -55,14 +55,14 @@ public:
         return className + "* const __restrict vlSelf VL_ATTR_UNUSED = static_cast<" + className
                + "*>(voidSelf);\n";
     }
-    static string symClassName() {
+    static string symClassName() VL_MT_STABLE {
         return v3Global.opt.prefix() + "_" + VIdProtect::protect("_Syms");
     }
     static string symClassVar() { return symClassName() + "* __restrict vlSymsp"; }
     static string symClassAssign() {
         return symClassName() + "* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;\n";
     }
-    static string prefixNameProtect(const AstNode* nodep) VL_MT_SAFE {  // C++ name with prefix
+    static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE {  // C++ name with prefix
         return v3Global.opt.modPrefix() + "_" + VIdProtect::protect(nodep->name());
     }
     static bool isAnonOk(const AstVar* varp) {

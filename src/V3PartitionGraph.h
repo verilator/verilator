@@ -72,7 +72,7 @@ public:
         , m_bodyp{bodyp}
         , m_id{id} {}
     AstMTaskBody* bodyp() const { return m_bodyp; }
-    uint32_t id() const override { return m_id; }
+    uint32_t id() const override VL_MT_SAFE { return m_id; }
     uint32_t priority() const { return m_priority; }
     void priority(uint32_t pri) { m_priority = pri; }
     uint32_t cost() const override { return m_cost; }

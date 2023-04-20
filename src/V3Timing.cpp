@@ -81,7 +81,7 @@ private:
         ~DependencyVertex() override = default;
 
         // ACCESSORS
-        virtual AstNode* nodep() const { return m_nodep; }
+        virtual AstNode* nodep() const VL_MT_STABLE { return m_nodep; }
     };
 
     // NODE STATE

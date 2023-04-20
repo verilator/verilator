@@ -165,7 +165,7 @@ private:
         static FileLineSingleton s;
         return s;
     }
-    static FileLine& defaultFileLine() {
+    static FileLine& defaultFileLine() VL_MT_SAFE {
         static FileLine s;
         return s;
     }
@@ -364,7 +364,7 @@ public:
 private:
     string warnContext() const;
     string warnContextParent() const VL_REQUIRES(V3Error::s().m_mutex);
-    const MsgEnBitSet& msgEn() const { return singleton().msgEn(m_msgEnIdx); }
+    const MsgEnBitSet& msgEn() const VL_MT_SAFE { return singleton().msgEn(m_msgEnIdx); }
 };
 std::ostream& operator<<(std::ostream& os, FileLine* fileline);
 

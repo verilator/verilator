@@ -54,7 +54,7 @@ private:
     const string m_name;  // Only used for .dot file generation
     const VertexType m_type;  // Vertex type (BLOCK/BRANCH/OUTPUT)
 
-    string typestr() const {  //   "
+    string typestr() const VL_MT_SAFE {  //   "
         switch (m_type) {
         case VT_BLOCK: return "(||)";  // basic block node
         case VT_BRANCH: return "(&&)";  // if/else branch mode
