@@ -30,7 +30,7 @@ module t (/*AUTOARG*/
       endfunction
    endclass
 
-   class ExtendBar extends Bar;
+   class ExtendBar extends Bar#();
      function int get_x;
         return super.get_x();
      endfunction
@@ -39,7 +39,7 @@ module t (/*AUTOARG*/
      endfunction
    endclass
 
-   Bar bar_foo_i;
+   Bar #() bar_foo_i;
    Bar #(Baz) bar_baz_i;
    ExtendBar extend_bar_i;
 

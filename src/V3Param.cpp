@@ -949,16 +949,18 @@ class ParamVisitor final : public VNVisitor {
 
             // Process once; note user5 will be cleared on specialization, so we will do the
             // specialized module if needed
-            if (modp->user5SetOnce()) continue;
+            if (!modp->user5SetOnce()) {
 
-            // TODO: this really should be an assert, but classes and hier_blocks are special...
-            if (modp->someInstanceName().empty()) modp->someInstanceName(modp->origName());
+                // TODO: this really should be an assert, but classes and hier_blocks are
+                // special...
+                if (modp->someInstanceName().empty()) modp->someInstanceName(modp->origName());
 
-            // Iterate the body
-            {
-                VL_RESTORER(m_modp);
-                m_modp = modp;
-                iterateChildren(modp);
+                // Iterate the body
+                {
+                    VL_RESTORER(m_modp);
+                    m_modp = modp;
+                    iterateChildren(modp);
+                }
             }
 
             // Process interface cells, then non-interface cells, which may reference an interface
