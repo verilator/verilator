@@ -5,8 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class string_utils;
-
-
    typedef string array_of_string[];
 
 
