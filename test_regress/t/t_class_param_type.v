@@ -29,7 +29,7 @@ typedef cls_t cls2_t;
 
 class Singleton #(type T=int);
    static function Singleton#(T) self;
-      Singleton#(T) c = new;
+      static Singleton#(T) c = new;
       return c;
    endfunction
    function int get_size;
@@ -39,7 +39,7 @@ endclass
 
 class SingletonUnusedDefault #(type T=int);
    static function SingletonUnusedDefault#(T) self;
-      SingletonUnusedDefault#(T) c = new;
+      static SingletonUnusedDefault#(T) c = new;
       return c;
    endfunction
 endclass
