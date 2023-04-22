@@ -137,7 +137,7 @@ public:
     /// Construct and hold given mutex lock until destruction or unlock()
     explicit V3LockGuardImp(T& mutexr) VL_ACQUIRE(mutexr) VL_MT_SAFE
         : m_mutexr(mutexr) {  // Need () or GCC 4.8 false warning
-        m_mutexr.lock();
+        mutexr.lock();
     }
     /// Destruct and unlock the mutex
     ~V3LockGuardImp() VL_RELEASE() { m_mutexr.unlock(); }
