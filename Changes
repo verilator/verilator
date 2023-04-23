@@ -41,6 +41,7 @@ Verilator 5.009 devel
 * Fix interface generate begin (#4065). [Srinivasan Venkataramanan]
 * Fix false error on new const assignment (#4098). [Tudor Timi]
 * Fix unpacked structs under classes (#4102). [Tudor Timi]
+* Fix DFG error on $countbits (#4101). [Paul Donahue]
 * Fix false ENUMVALUE on expressions and arrays.
 * Fix unnecessary verilated_std.sv waivers in --waiver-output.
 
