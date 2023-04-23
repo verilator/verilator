@@ -42,6 +42,7 @@ Verilator 5.009 devel
 * Fix false error on new const assignment (#4098). [Tudor Timi]
 * Fix unpacked structs under classes (#4102). [Tudor Timi]
 * Fix DFG error on $countbits (#4101). [Paul Donahue]
+* Fix -CFLAGS to allow overriding optimization levels (#4140). [Peter Monsson]
 * Fix false ENUMVALUE on expressions and arrays.
 * Fix unnecessary verilated_std.sv waivers in --waiver-output.
 
