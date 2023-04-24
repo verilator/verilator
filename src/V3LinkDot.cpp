@@ -3287,7 +3287,7 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstClass* nodep) override {
-        nodep->user3SetOnce();
+        if (nodep->user3SetOnce()) return;
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);
