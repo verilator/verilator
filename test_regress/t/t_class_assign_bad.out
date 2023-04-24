@@ -1,32 +1,32 @@
-%Error: t/t_class_assign_bad.v:25:9: Assign RHS expects a CLASSREFDTYPE 'Cls'
+%Error: t/t_class_assign_bad.v:25:9: Assign RHS expects a CLASSREFDTYPE 'Cls', got BASICDTYPE 'logic'
                                    : ... In instance t
    25 |       c = 0;
       |         ^
-%Error: t/t_class_assign_bad.v:26:9: Assign RHS expects a CLASSREFDTYPE 'Cls'
+%Error: t/t_class_assign_bad.v:26:9: Assign RHS expects a CLASSREFDTYPE 'Cls', got BASICDTYPE 'logic'
                                    : ... In instance t
    26 |       c = 1;
       |         ^
-%Error: t/t_class_assign_bad.v:27:9: Assign RHS expects a CLASSREFDTYPE 'Cls'
+%Error: t/t_class_assign_bad.v:27:9: Assign RHS expects a CLASSREFDTYPE 'Cls', got CLASSREFDTYPE 'Cls2'
                                    : ... In instance t
    27 |       c = c2;
       |         ^
-%Error: t/t_class_assign_bad.v:28:13: Assign RHS expects a CLASSREFDTYPE 'ClsExt'
+%Error: t/t_class_assign_bad.v:28:13: Assign RHS expects a CLASSREFDTYPE 'ClsExt', got CLASSREFDTYPE 'Cls'
                                     : ... In instance t
    28 |       c_ext = c;
       |             ^
-%Error: t/t_class_assign_bad.v:30:7: Function Argument expects a CLASSREFDTYPE 'Cls'
+%Error: t/t_class_assign_bad.v:30:7: Function Argument expects a CLASSREFDTYPE 'Cls', got BASICDTYPE 'logic'
                                    : ... In instance t
    30 |       t(0);
       |       ^
-%Error: t/t_class_assign_bad.v:31:7: Function Argument expects a CLASSREFDTYPE 'Cls'
+%Error: t/t_class_assign_bad.v:31:7: Function Argument expects a CLASSREFDTYPE 'Cls', got BASICDTYPE 'logic'
                                    : ... In instance t
    31 |       t(1);
       |       ^
-%Error: t/t_class_assign_bad.v:32:7: Function Argument expects a CLASSREFDTYPE 'Cls'
+%Error: t/t_class_assign_bad.v:32:7: Function Argument expects a CLASSREFDTYPE 'Cls', got CLASSREFDTYPE 'Cls2'
                                    : ... In instance t
    32 |       t(c2);
       |       ^
-%Error: t/t_class_assign_bad.v:33:7: Function Argument expects a CLASSREFDTYPE 'ClsExt'
+%Error: t/t_class_assign_bad.v:33:7: Function Argument expects a CLASSREFDTYPE 'ClsExt', got CLASSREFDTYPE 'Cls'
                                    : ... In instance t
    33 |       f(c);
       |       ^
