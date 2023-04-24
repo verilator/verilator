@@ -219,6 +219,12 @@ private:
         checkDType(nodep);
         checkAll(nodep);
     }
+
+    // void visit(AstEnumDType* nodep) override {
+    //     iterateChildren(nodep);
+    //     checkDType(nodep);
+    //     checkAll(nodep);
+    // }
     void visit(AstEnumItemRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
@@ -446,6 +452,17 @@ private:
             }
         }
         for (std::vector<AstNode*>::iterator it = m_dtypesp.begin(); it != m_dtypesp.end(); ++it) {
+            UINFO(1, "checking dtype " << *it << endl);
+            AstEnumDType* enump;
+            if ((enump = VN_CAST((*it), EnumDType))) {
+                UINFO(1, "Enum with count " << enump->user1() << endl);
+                if (std::any_of(enump->m_tableMap.begin(), enump->m_tableMap.end(),
+                        [](const auto& p) { return !p.second->brokeExists();} )){
+                    VL_DO_DANGLING((*it)->unlinkFrBack()->deleteTree(), *it);
+                    continue;
+                }
+            }
+
             if ((*it)->user1() == 0) {
                 const AstNodeUOrStructDType* classp;
                 // It's possible that there if a reference to each individual member, but
