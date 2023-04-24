@@ -43,6 +43,7 @@ Verilator 5.009 devel
 * Fix unpacked structs under classes (#4102). [Tudor Timi]
 * Fix false ENUMVALUE on expressions and arrays.
 * Fix unnecessary verilated_std.sv waivers in --waiver-output.
+* Fix missing begin block hierarchy in --xml-only cells section (#4129). [Risto Pejašinović]
 
 
 Verilator 5.008 2023-03-04
