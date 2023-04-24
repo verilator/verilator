@@ -3309,7 +3309,10 @@ private:
                                    " (IEEE 1800-2017 8.13)");
                 }
                 if (cextp->childDTypep() || cextp->dtypep()) {
-                    // Already converted. Update symbol table to link unlinked members
+                    // Already converted. Update symbol table to link unlinked members.
+                    // Base class has to be visited in a case if its extends statement
+                    // needs to be handled. Recursive inheritance was already checked.
+                    iterate(cextp->classp());
                     importSymbolsFromExtended(nodep, cextp);
                     continue;
                 }
