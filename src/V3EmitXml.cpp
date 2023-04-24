@@ -403,8 +403,8 @@ private:
     void visit(AstCell* nodep) override {
         if (nodep->modp()->dead()) return;
         if (!m_hasChildren) m_os << ">\n";
-        m_os << "<cell " << nodep->fileline()->xmlDetailedLocation()
-             << " name=\"" << nodep->name() << "\""
+        m_os << "<cell " << nodep->fileline()->xmlDetailedLocation() << " name=\"" << nodep->name()
+             << "\""
              << " submodname=\"" << nodep->modName() << "\""
              << " hier=\"" << m_hier + nodep->name() << "\"";
         const std::string hier = m_hier;
