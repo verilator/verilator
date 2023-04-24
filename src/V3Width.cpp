@@ -6306,13 +6306,14 @@ private:
                           AstNodeDType* lhsDTypep) {
         if (AstClassRefDType* const lhsClassRefp = VN_CAST(lhsDTypep, ClassRefDType)) {
             UASSERT_OBJ(rhsp->dtypep(), rhsp, "Node has no type");
-            if (AstClassRefDType* const rhsClassRefp
-                = VN_CAST(rhsp->dtypep()->skipRefp(), ClassRefDType)) {
+            AstNodeDType* const rhsDtypep = rhsp->dtypep()->skipRefp();
+            if (AstClassRefDType* const rhsClassRefp = VN_CAST(rhsDtypep, ClassRefDType)) {
                 if (isBaseClassRecurse(lhsClassRefp->classp(), rhsClassRefp->classp())) return;
             } else if (auto* const constp = VN_CAST(rhsp, Const)) {
                 if (constp->num().isNull()) return;
             }
-            nodep->v3error(side << " expects a " << lhsDTypep->prettyTypeName());
+            nodep->v3error(side << " expects a " << lhsDTypep->prettyTypeName() << ", got "
+                                << rhsDtypep->prettyTypeName());
         }
     }
     static bool similarDTypeRecurse(AstNodeDType* node1p, AstNodeDType* node2p) {
