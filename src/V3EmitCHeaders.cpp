@@ -22,6 +22,7 @@
 #include "V3Global.h"
 
 #include <algorithm>
+#include <unordered_set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -287,11 +288,9 @@ class EmitCHeader final : public EmitCConstInit {
                      + ".h\"\n");
             }
         }
-        emitModCUse(modp, VUseType::INT_INCLUDE);
 
         // Forward declarations required by this AstNodeModule
         puts("\nclass " + symClassName() + ";\n");
-        emitModCUse(modp, VUseType::INT_FWD_CLASS);
 
         // From `systemc_header
         emitTextSection(modp, VNType::atScHdr);
@@ -360,6 +359,19 @@ class EmitCHeader final : public EmitCConstInit {
         if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
         if (v3Global.usesTiming()) puts("#include \"verilated_timing.h\"\n");
+
+        std::unordered_set<string> cuse_set;
+        auto add_to_cuse_set = [&](string s) { cuse_set.insert(s); };
+
+        forModCUse(modp, VUseType::INT_INCLUDE, add_to_cuse_set);
+        forModCUse(modp, VUseType::INT_FWD_CLASS, add_to_cuse_set);
+        if (const AstClassPackage* const packagep = VN_CAST(modp, ClassPackage)) {
+            forModCUse(packagep->classp(), VUseType::INT_INCLUDE, add_to_cuse_set);
+            forModCUse(packagep->classp(), VUseType::INT_FWD_CLASS, add_to_cuse_set);
+        }
+
+        for (const string& s : cuse_set) puts(s);
+        puts("\n");
 
         emitAll(modp);
 
