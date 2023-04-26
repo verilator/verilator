@@ -161,7 +161,6 @@ private:
     bool m_forPrimary;  // First link
     bool m_forPrearray;  // Compress cell__[array] refs
     bool m_forScopeCreation;  // Remove VarXRefs for V3Scope
-    bool m_removeVoidParamedClasses;  // Remove classes with void params
 
 public:
     // METHODS
@@ -208,7 +207,6 @@ public:
         m_forPrimary = (step == LDS_PRIMARY);
         m_forPrearray = (step == LDS_PARAMED || step == LDS_PRIMARY);
         m_forScopeCreation = (step == LDS_SCOPED);
-        m_removeVoidParamedClasses = (step == LDS_PARAMED);
         s_errorThisp = this;
         V3Error::errorExitCb(preErrorDumpHandler);  // If get error, dump self
     }
@@ -222,7 +220,6 @@ public:
     bool forPrimary() const { return m_forPrimary; }
     bool forPrearray() const { return m_forPrearray; }
     bool forScopeCreation() const { return m_forScopeCreation; }
-    bool removeVoidParamedClasses() const { return m_removeVoidParamedClasses; }
 
     // METHODS
     static string nodeTextType(AstNode* nodep) {
@@ -916,18 +913,6 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Class not under module/package/$unit");
         UINFO(8, "   " << nodep << endl);
-        // Remove classes that have void params, as they were only used for the parameterization
-        // step and will not be instantiated
-        if (m_statep->removeVoidParamedClasses()) {
-            for (auto* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (auto* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
-                    if (VN_IS(dtypep->subDTypep(), VoidDType)) {
-                        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                        return;
-                    }
-                }
-            }
-        }
         VL_RESTORER(m_scope);
         VL_RESTORER(m_classOrPackagep);
         VL_RESTORER(m_modSymp);

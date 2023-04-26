@@ -567,8 +567,9 @@ class ParamProcessor final {
         // Note all module internal variables will be re-linked to the new modules by clone
         // However links outside the module (like on the upper cells) will not.
         AstNodeModule* const newmodp = srcModp->cloneTree(false);
-        if (VN_IS(srcModp, Class)) {
-            replaceRefsRecurse(newmodp->stmtsp(), VN_AS(newmodp, Class), VN_AS(srcModp, Class));
+        if (AstClass* const newClassp = VN_CAST(newmodp, Class)) {
+            newClassp->isParameterized(false);
+            replaceRefsRecurse(newmodp->stmtsp(), newClassp, VN_AS(srcModp, Class));
         }
 
         newmodp->name(newname);
@@ -809,6 +810,9 @@ class ParamProcessor final {
 
         if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
+            // Mark that the defeult instance is used.
+            // It will be checked only if srcModpr is a class.
+            srcModpr->user2(true);
         } else if (AstNodeModule* const paramedModp
                    = m_hierBlocks.findByParams(srcModpr->name(), paramsp, m_modp)) {
             paramedModp->dead(false);
@@ -916,7 +920,7 @@ public:
 class ParamVisitor final : public VNVisitor {
     // NODE STATE
     // AstNodeModule::user1 -> bool: already fixed level
-
+    // AstClass::user2      -> bool: Referenced (value read only in parameterized classes)
     // STATE
     ParamProcessor m_processor;  // De-parameterize a cell, build modules
     UnrollStateful m_unroller;  // Loop unroller
@@ -928,6 +932,7 @@ class ParamVisitor final : public VNVisitor {
     std::vector<AstDot*> m_dots;  // Dot references to process
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
     std::multimap<int, AstNodeModule*> m_workQueue;  // Modules left to process
+    std::vector<AstClass*> m_paramClasses;  // Parameterized classes
 
     // Map from AstNodeModule to set of all AstNodeModules that instantiates it.
     std::unordered_map<AstNodeModule*, std::unordered_set<AstNodeModule*>> m_parentps;
@@ -1047,6 +1052,14 @@ class ParamVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         if (nodep->recursiveClone()) nodep->dead(true);  // Fake, made for recursive elimination
         if (nodep->dead()) return;  // Marked by LinkDot (and above)
+        if (AstClass* const classp = VN_CAST(nodep, Class)) {
+            if (classp->isParameterized()) {
+                // Don't enter into a definition.
+                // If a class is used, it will be visited through a reference
+                m_paramClasses.push_back(classp);
+                return;
+            }
+        }
 
         if (m_iterateModule) {  // Iterating body
             UINFO(4, " MOD-under-MOD.  " << nodep << endl);
@@ -1363,6 +1376,17 @@ public:
 
             // Re-insert modules
             for (AstNodeModule* const modp : modps) netlistp->addModulesp(modp);
+
+            for (AstClass* const classp : m_paramClasses) {
+                if (!classp->user2()) {
+                    // Unreferenced, so it can be removed
+                    VL_DO_DANGLING(pushDeletep(classp->unlinkFrBack()), classp);
+                } else {
+                    // Referenced. classp became a specialized class with the default
+                    // values of parameters and is not a parameterized class anymore
+                    classp->isParameterized(false);
+                }
+            }
         }
     }
     ~ParamVisitor() override = default;
