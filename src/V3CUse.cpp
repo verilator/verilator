@@ -45,7 +45,6 @@ class CUseVisitor final : public VNVisitor {
     const VNUser1InUse m_inuser1;
 
     // MEMBERS
-    bool m_impOnly = false;  // In details needed only for implementation
     AstNodeModule* const m_modp;  // Current module
     std::set<std::pair<VUseType, std::string>> m_didUse;  // What we already used
 
@@ -61,13 +60,7 @@ class CUseVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstClassRefDType* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
-        if (!m_impOnly) addNewUse(nodep, VUseType::INT_FWD_CLASS, nodep->classp()->name());
-        // Need to include extends() when we implement, but no need for pointers to know
-        VL_RESTORER(m_impOnly);
-        {
-            m_impOnly = true;
-            iterateChildren(nodep->classp());  // This also gets all extend classes
-        }
+        addNewUse(nodep, VUseType::INT_FWD_CLASS, nodep->classp()->name());
     }
     void visit(AstNodeDType* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
