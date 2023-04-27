@@ -72,6 +72,8 @@ class CUseVisitor final : public VNVisitor {
         if (stypep && stypep->classOrPackagep()) {
             addNewUse(nodep, VUseType::INT_INCLUDE, stypep->classOrPackagep()->name());
             iterateChildren(stypep);
+        } else if (AstClassRefDType* const classp = VN_CAST(nodep->skipRefp(), ClassRefDType)) {
+            addNewUse(nodep, VUseType::INT_FWD_CLASS, classp->name());
         }
     }
     void visit(AstNode* nodep) override {
