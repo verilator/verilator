@@ -47,9 +47,14 @@ class CUseVisitor final : public VNVisitor {
     // MEMBERS
     AstNodeModule* const m_modp;  // Current module
     std::set<std::pair<VUseType, std::string>> m_didUse;  // What we already used
+    bool m_dtypesImplOnly = false;
 
     // METHODS
     void addNewUse(AstNode* nodep, VUseType useType, const string& name) {
+        if (m_dtypesImplOnly
+            && (useType == VUseType::INT_INCLUDE || useType == VUseType::INT_FWD_CLASS))
+            return;
+
         if (m_didUse.emplace(useType, name).second) {
             AstCUse* const newp = new AstCUse{nodep->fileline(), useType, name};
             m_modp->addStmtsp(newp);
@@ -61,6 +66,32 @@ class CUseVisitor final : public VNVisitor {
     void visit(AstClassRefDType* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         addNewUse(nodep, VUseType::INT_FWD_CLASS, nodep->classp()->name());
+    }
+    void visit(AstCFunc* nodep) override {
+        if (nodep->user1SetOnce()) return;  // Process once
+
+        iterateAndNextNull(nodep->argsp());
+
+        {
+            VL_RESTORER(m_dtypesImplOnly);
+            m_dtypesImplOnly = true;
+
+            iterateAndNextNull(nodep->initsp());
+            iterateAndNextNull(nodep->stmtsp());
+            iterateAndNextNull(nodep->finalsp());
+        }
+    }
+    void visit(AstCReturn* nodep) override {
+        if (nodep->user1SetOnce()) return;  // Process once
+
+        if (m_dtypesImplOnly) {
+            for (AstNode* exprp = nodep->op1p(); exprp; exprp = exprp->nextp()) {
+                if (exprp->dtypep())
+                    iterate(exprp->dtypep());
+            }
+        } else {
+            iterateChildren(nodep);
+        }
     }
     void visit(AstNodeDType* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
