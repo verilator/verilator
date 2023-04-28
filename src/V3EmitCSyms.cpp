@@ -432,7 +432,8 @@ void EmitCSyms::emitSymHdr() {
             if (funcp->dpiExportImpl()) {
                 const string cbtype
                     = protect(v3Global.opt.prefix() + "__Vcb_" + funcp->cname() + "_t");
-                types["using " + cbtype + " = void (*) (" + cFuncArgs(funcp) + ");\n"] = 1;
+                const string functype = funcp->rtnTypeVoid() + " (*) (" + cFuncArgs(funcp) + ")";
+                types["using " + cbtype + " = " + functype + ";\n"] = 1;
             }
         }
         for (const auto& i : types) puts(i.first);
