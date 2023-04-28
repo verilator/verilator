@@ -90,6 +90,16 @@ class ExtendsMyInt #(type T=MyInt1) extends T;
    endfunction
 endclass
 
+class StaticX;
+   static int val = 1;
+endclass
+
+class GetStaticXVal #(type T = int);
+   static function int get;
+      return T::val;
+   endfunction
+endclass
+
 module t (/*AUTOARG*/);
 
    initial begin
@@ -111,6 +121,8 @@ module t (/*AUTOARG*/);
 
       automatic ExtendsMyInt#() ext1 = new;
       automatic ExtendsMyInt#(MyInt2) ext2 = new;
+
+      automatic GetStaticXVal#(StaticX) get_statix_x_val = new;
 
       typedef bit my_bit_t;
       Bar#(.A(my_bit_t)) bar_a_bit = new;
@@ -144,6 +156,8 @@ module t (/*AUTOARG*/);
 
       if (ext1.get_this_type_x() != 1) $stop;
       if (ext2.get_this_type_x() != 2) $stop;
+
+      if (get_statix_x_val.get() != 1) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

@@ -4,13 +4,12 @@
 // any use, without warranty, 2023 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
+class Foo#(type T = logic) extends T;
+endclass
+
 module t (/*AUTOARG*/);
-
-   class Bar #(type T=int) extends T;
-   endclass
-
    initial begin
-      Bar#() bar;
-      $stop;
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
 endmodule
