@@ -16,9 +16,13 @@ jobs:
 
     strategy:
       matrix:
-        # contexts: [ci/docker/buildenv:verilator-buildenv, ci/docker/run:verilator]
-        contexts: [ci/docker/run:verilator]
-        platforms: [linux/arm64,linux/arm/v7,linux/amd64]
+        contexts:
+          - "ci/docker/run:verilator"
+          # - "ci/docker/buildenv:verilator-buildenv"
+        platforms: 
+          - "linux/arm64"
+          - "linux/arm/v7"
+          - "linux/amd64"
 
     steps:
     - name: Checkout
