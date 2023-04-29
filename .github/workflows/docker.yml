@@ -19,7 +19,7 @@ jobs:
         contexts:
           - "ci/docker/run:verilator"
           # - "ci/docker/buildenv:verilator-buildenv"
-        platforms: 
+        platforms:
           - "linux/arm64"
           - "linux/arm/v7"
           - "linux/amd64"
