@@ -19,10 +19,16 @@ RUN apt-get update \
                         ccache \
                         flex \
                         git \
+                        help2man \
+                        libfl2 \
                         libfl-dev \
                         libgoogle-perftools-dev \
+                        numactl \
                         perl \
+                        perl-doc \
                         python3 \
+                        zlib1g \
+                        zlib1g-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
