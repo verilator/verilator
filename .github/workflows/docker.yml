@@ -4,10 +4,6 @@ on:
   push:
     tags: [ 'v*' ]
 
-env:
-  # Get the docker hub namespace from the repository configuration variable
-  DOCKER_HUB_NAMESPACE: ${{ vars.DOCKER_HUB_NAMESPACE }}
-
 jobs:
 
   build:
@@ -38,7 +34,7 @@ jobs:
       uses: docker/metadata-action@v4
       with:
         images: |
-          ${{ env.DOCKER_HUB_NAMESPACE }}/${{ env.image_name }}
+          ${{ secrets.DOCKER_HUB_NAMESPACE }}/${{ env.image_name }}
         tags: |
           type=match,pattern=(v.*),group=1
 
