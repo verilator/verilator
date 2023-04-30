@@ -13,6 +13,8 @@
     :target: https://codecov.io/gh/verilator/verilator
 .. image:: https://github.com/verilator/verilator/workflows/build/badge.svg
     :target: https://github.com/verilator/verilator/actions?query=workflow%3Abuild
+.. image:: https://img.shields.io/docker/pulls/verilator/verilator
+    :target: https://hub.docker.com/r/verilator/verilator
 
 
 Welcome to Verilator
