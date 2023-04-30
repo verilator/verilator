@@ -45,7 +45,7 @@ RUN git clone "${REPO}" verilator && \
     git checkout "${SOURCE_COMMIT}" && \
     autoconf && \
     ./configure && \
-    make -j "$(nproc)" && \
+    make && \
     make install && \
     cd .. && \
     rm -r verilator
