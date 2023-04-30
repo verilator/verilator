@@ -49,7 +49,7 @@ class VlAnnotations:
     release: bool = False
 
     def is_mt_safe_context(self):
-        return (not (self.mt_unsafe or self.mt_unsafe_one) and self.mt_safe)
+        return self.mt_safe and not (self.mt_unsafe or self.mt_unsafe_one)
 
     def is_pure_context(self):
         return self.pure
