@@ -15,10 +15,6 @@ jobs:
         contexts:
           - "ci/docker/run:verilator"
           # - "ci/docker/buildenv:verilator-buildenv"
-        platforms:
-          - "linux/arm64"
-          - "linux/arm/v7"
-          - "linux/amd64"
 
     steps:
     - name: Checkout
@@ -55,7 +51,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/v')
       with:
         context: ${{ env.build_context }}
-        platforms: ${{ matrix.platforms }}
+        platforms: linux/arm64,linux/arm/v7,linux/amd64
         push: ${{ !env.ACT && startsWith(github.ref, 'refs/tags/v') }}
         tags: ${{ steps.docker_meta.outputs.tags }}
         labels: ${{ steps.docker_meta.outputs.labels }}
