@@ -17,13 +17,18 @@ Verilator 5.009 devel
 * Add --public-params flag (#3990). [Andrew Nolte]
 * Add CONSTRAINTIGN warning when constraint ignored.
 * Add STATICVAR warning and convert to automatic (#4018) (#4027) (#4030). [Ryszard Rozak, Antmicro Ltd]
+* Add error if class types don't match (#4064). [Ryszard Rozak, Antmicro Ltd]
 * Support class extends of package::class.
 * Support class srandom and class random stability.
+* Support class method calls without parenthesis (#3902) (#4082). [Srinivasan Venkataramanan]
 * Support method calls without parenthesis (#4034). [Ryszard Rozak, Antmicro Ltd]
+* Support parameterized return types of methods (#4122). [Ryszard Rozak, Antmicro Ltd]
+* Support parameterized class references in extends statement (#4146). [Ryszard Rozak, Antmicro Ltd]
 * Support complicated IEEE 'for' assignments.
 * Support $fopen as an expression.
 * Support ++/-- on dotted member variables.
 * Optimize static trigger evaluation (#4142). [Geza Lore, X-EPIC]
+* Optimize more xor trees (#4071). [Yutetsu TAKATSUKASA]
 * Change range order warning from LITENDIAN to ASCRANGE (#4010). [Iztok Jeras]
 * Change ZERODLY to a warning.
 * Fix random internal crashes (#666). [Dag Lem]
@@ -38,15 +43,35 @@ Verilator 5.009 devel
 * Fix large return blocks with --comp-limit-blocks (#4028). [tenghtt]
 * Fix clocking block scope internal error (#4032). [Srinivasan Venkataramanan]
 * Fix false LATCH warning on --assert 'unique else if' (#4033) ($4054). [Jesse Taube]
-* Fix characters from DEFENV literals for conda (#4035) (#4044). [Tim Snyder]
+* Fix characters from DEFENV literals for Conda (#4035) (#4044). [Tim Snyder]
+* Fix info message prints under --assert (#4036) (#4053). [Srinivasan Venkataramanan]
+* Fix C++ compile errors when passing class refs as task argument (#4063). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix NBAs inside fork-joins (#4050). [Aleksander Kiryk, Antmicro Ltd]
+* Fix task calls as fork statements (#4055). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix _Vilp used before declaration (#4057) (#4062). [Josep Sans]
+* Fix incorrect optimization of bit op tree (#4059) (#4070). [Yutetsu TAKATSUKASA]
+* Fix parameters in a class body to be localparam (#4061). [Ryszard Rozak, Antmicro Ltd]
 * Fix interface generate begin (#4065). [Srinivasan Venkataramanan]
+* Fix tracing with awaits at end of block (#4075) (#4076). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix sense expression variable naming (#4081). [Kamil Rakoczy]
+* Fix importing symbols from base class (#4084). [Ryszard Rozak, Antmicro Ltd]
 * Fix false error on new const assignment (#4098). [Tudor Timi]
 * Fix unpacked structs under classes (#4102). [Tudor Timi]
-* Fix DFG error on $countbits (#4101). [Paul Donahue]
+* Fix variables in class methods to be automatic (#4111) (#4137). [Peter Monsson]
+* Fix to use parallel build for projects with a lot of files (#4116). [Krzysztof Boroński]
+* Fix including __Syms header in generated C++ files (#4123). [Krzysztof Boroński]
+* Fix systemc namespace issues (#4126) (#4127). [Eyck Jentzsch]
+* Fix class param extends A=B (#4128). [Ryszard Rozak, Antmicro Ltd]
+* Fix missing begin block hierarchy in --xml-only cells section (#4129) (#4133). [Risto Pejašinović]
+* Fix resolution of class lvalues after parameterization (#4131). [Krzysztof Boroński]
+* Fix DFG error on $countbits (#4101) (#4143). [Paul Donahue]
+* Fix duplicating parameter class types (#4115). [Ryszard Rozak, Antmicro Ltd]
+* Fix class extend param references (#4136).  [Ryszard Rozak, Antmicro Ltd]
 * Fix -CFLAGS to allow overriding optimization levels (#4140). [Peter Monsson]
+* Fix DPI function type alias (#4148) (#4149). [Toru Niina]
+* Fix deleting unused parameterized classes (#4150). [Ryszard Rozak, Antmicro Ltd]
 * Fix false ENUMVALUE on expressions and arrays.
 * Fix unnecessary verilated_std.sv waivers in --waiver-output.
-* Fix missing begin block hierarchy in --xml-only cells section (#4129). [Risto Pejašinović]
 
 
 Verilator 5.008 2023-03-04
