@@ -24,6 +24,7 @@ jobs:
       run: |
         echo "${{ matrix.contexts }}" | sed -r 's/(.*):.*/build_context=\1/' >> "$GITHUB_ENV"
         echo "${{ matrix.contexts }}" | sed -r 's/.*:(.*)/image_name=\1/' >> "$GITHUB_ENV"
+        echo "git_tag=${GITHUB_REF#refs/*/}" >> "$GITHUB_ENV"
 
     - name: Docker meta
       id: docker_meta
@@ -51,6 +52,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/v')
       with:
         context: ${{ env.build_context }}
+        build-args: SOURCE_COMMIT=${{ env.git_tag }}
         platforms: linux/arm64,linux/arm/v7,linux/amd64
         push: ${{ !env.ACT && startsWith(github.ref, 'refs/tags/v') }}
         tags: ${{ steps.docker_meta.outputs.tags }}
