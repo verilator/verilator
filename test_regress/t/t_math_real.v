@@ -138,6 +138,16 @@ module t (/*AUTOARG*/
       r = real'(96'shf0000000_00000000_00000000);
       if (r != -4951760157141521099596496896.0) $stop;
 
+      r = 1.5;
+      if (r++ != 1.5) $stop;
+      if (r != 2.5) $stop;
+      if (r-- != 2.5) $stop;
+      if (r != 1.5) $stop;
+      if (++r != 2.5) $stop;
+      if (r != 2.5) $stop;
+      if (--r != 1.5) $stop;
+      if (r != 1.5) $stop;
+
       r = 1.23456;
       s = $sformatf("%g", r);
       `checks(s, "1.23456");

@@ -43,7 +43,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    VlcSourceCount(int lineno)
+    explicit VlcSourceCount(int lineno)
         : m_lineno{lineno} {}
     ~VlcSourceCount() = default;
 

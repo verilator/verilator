@@ -50,6 +50,7 @@ module sub #(
    initial begin
       struct_t substruct;
       substruct.data = '1;
+      `checkh($bits(struct_t), EXP_WIDTH);
       `checkh(substruct.data, expval);
    end
 

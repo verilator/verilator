@@ -33,7 +33,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Stats class functions
 
-class StatsVisitor final : public VNVisitor {
+class StatsVisitor final : public VNVisitorConst {
 private:
     // NODE STATE/TYPES
 
@@ -175,7 +175,7 @@ private:
         if (m_fast && !nodep->funcp()->entryPoint()) {
             // Enter the function and trace it
             m_tracingCall = true;
-            iterate(nodep->funcp());
+            iterateConst(nodep->funcp());
         }
     }
     void visit(AstCFunc* nodep) override {
@@ -218,7 +218,7 @@ public:
         // Initialize arrays
         m_statTypeCount.resize(VNType::_ENUM_END);
         // Process
-        iterate(nodep);
+        iterateConst(nodep);
     }
     ~StatsVisitor() override {
         // Done. Publish statistics

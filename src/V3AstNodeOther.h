@@ -48,7 +48,7 @@ protected:
 public:
     ASTGEN_MEMBERS_AstNodeBlock;
     void dump(std::ostream& str) const override;
-    string name() const override { return m_name; }  // * = Block name
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Block name
     void name(const string& name) override { m_name = name; }
     bool unnamed() const { return m_unnamed; }
     bool isFirstInMyListOfStatements(AstNode* nodep) const override { return nodep == stmtsp(); }
@@ -118,7 +118,7 @@ protected:
 public:
     ASTGEN_MEMBERS_AstNodeFTask;
     void dump(std::ostream& str = std::cout) const override;
-    string name() const override { return m_name; }  // * = Var name
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     bool maybePointedTo() const override { return true; }
     bool isGateOptimizable() const override { return !((m_dpiExport || m_dpiImport) && !m_pure); }
     // {AstFunc only} op1 = Range output variable
@@ -186,7 +186,7 @@ public:
         , m_name{name} {}
     ASTGEN_MEMBERS_AstNodeFile;
     void dump(std::ostream& str) const override;
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstNodeModule VL_NOT_FINAL : public AstNode {
@@ -234,7 +234,7 @@ public:
     ASTGEN_MEMBERS_AstNodeModule;
     void dump(std::ostream& str) const override;
     bool maybePointedTo() const override { return true; }
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     virtual bool timescaleMatters() const = 0;
     // ACCESSORS
     void name(const string& name) override { m_name = name; }
@@ -373,7 +373,7 @@ public:
         this->addPasssp(passsp);
     }
     ASTGEN_MEMBERS_AstNodeCoverOrAssert;
-    string name() const override { return m_name; }  // * = Var name
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     bool same(const AstNode* samep) const override { return samep->name() == name(); }
     void name(const string& name) override { m_name = name; }
     void dump(std::ostream& str = std::cout) const override;
@@ -512,7 +512,7 @@ public:
     }
     ASTGEN_MEMBERS_AstActive;
     void dump(std::ostream& str = std::cout) const override;
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     const char* broken() const override;
     void cloneRelink() override;
     // Statements are broken into pieces, as some must come before others.
@@ -537,7 +537,7 @@ public:
     }
     ASTGEN_MEMBERS_AstBind;
     // ACCESSORS
-    string name() const override { return m_name; }  // * = Bind Target name
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Bind Target name
     void name(const string& name) override { m_name = name; }
 };
 class AstCFunc final : public AstNode {
@@ -607,7 +607,7 @@ public:
         m_dpiTraceInit = false;
     }
     ASTGEN_MEMBERS_AstCFunc;
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     const char* broken() const override;
     void cloneRelink() override;
     bool maybePointedTo() const override { return true; }
@@ -702,7 +702,7 @@ public:
         , m_useType{useType} {}
     ASTGEN_MEMBERS_AstCUse;
     void dump(std::ostream& str = std::cout) const override;
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     VUseType useType() const { return m_useType; }
 };
 class AstCaseItem final : public AstNode {
@@ -755,7 +755,7 @@ public:
     const char* broken() const override;
     bool maybePointedTo() const override { return true; }
     // ACCESSORS
-    string name() const override { return m_name; }  // * = Cell name
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Cell name
     void name(const string& name) override { m_name = name; }
     string origName() const override { return m_origName; }  // * = Original name
     void origName(const string& name) { m_origName = name; }
@@ -794,7 +794,7 @@ public:
     void dump(std::ostream& str) const override;
     const char* broken() const override;
     // ACCESSORS
-    string name() const override { return m_name; }  // * = Cell name
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Cell name
     string origModName() const { return m_origModName; }  // * = modp()->origName() before inlining
     void name(const string& name) override { m_name = name; }
     void scopep(AstScope* scp) { m_scopep = scp; }
@@ -845,7 +845,7 @@ public:
     }
     ASTGEN_MEMBERS_AstClocking;
     void dump(std::ostream& str) const override;
-    std::string name() const override { return m_name; }
+    std::string name() const override VL_MT_STABLE { return m_name; }
     bool isDefault() const { return m_isDefault; }
     bool isGlobal() const { return m_isGlobal; }
 };
@@ -863,8 +863,8 @@ public:
         : ASTGEN_SUPER_ClockingItem(fl) {
         m_direction = direction;
         this->skewp(skewp);
-        if (AstAssign* const assignp = VN_CAST(clockingDeclp, Assign)) {
-            this->assignp(assignp);
+        if (AstAssign* const clkAssignp = VN_CAST(clockingDeclp, Assign)) {
+            this->assignp(clkAssignp);
         } else {
             exprp(VN_AS(clockingDeclp, NodeExpr));
         }
@@ -916,7 +916,7 @@ public:
         , m_path{path} {
         this->rhsp(rhsp);
     }
-    string name() const override { return m_name; }  // * = Scope name
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     ASTGEN_MEMBERS_AstDefParam;
     bool same(const AstNode*) const override { return true; }
     string path() const { return m_path; }
@@ -934,7 +934,7 @@ public:
         , m_name{vname}
         , m_cname{cname} {}
     ASTGEN_MEMBERS_AstDpiExport;
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
     string cname() const { return m_cname; }
     void cname(const string& cname) { m_cname = cname; }
@@ -952,7 +952,7 @@ public:
         BROKEN_RTN(!fmtp());
         return nullptr;
     }
-    string verilogKwd() const override { return (string("$") + string(displayType().ascii())); }
+    string verilogKwd() const override { return string{"$"} + string{displayType().ascii()}; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
@@ -995,7 +995,7 @@ public:
         BROKEN_RTN(!m_depGraphp);
         return nullptr;
     }
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     V3Graph* depGraphp() { return m_depGraphp; }
     const V3Graph* depGraphp() const { return m_depGraphp; }
 };
@@ -1033,7 +1033,7 @@ public:
     AstIntfRef(FileLine* fl, const string& name)
         : ASTGEN_SUPER_IntfRef(fl)
         , m_name{name} {}
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     ASTGEN_MEMBERS_AstIntfRef;
 };
 class AstMTaskBody final : public AstNode {
@@ -1070,7 +1070,7 @@ public:
         , m_name{name} {
         this->addVarsp(varsp);
     }
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     bool maybePointedTo() const override { return true; }
     ASTGEN_MEMBERS_AstModport;
 };
@@ -1092,7 +1092,7 @@ public:
     const char* broken() const override;
     void cloneRelink() override;
     void dump(std::ostream& str) const override;
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     bool isImport() const { return !m_export; }
     bool isExport() const { return m_export; }
     AstNodeFTask* ftaskp() const { return m_ftaskp; }  // [After Link] Pointer to variable
@@ -1115,7 +1115,7 @@ public:
     const char* broken() const override;
     void cloneRelink() override;
     void dump(std::ostream& str) const override;
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     void direction(const VDirection& flag) { m_direction = flag; }
     VDirection direction() const { return m_direction; }
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
@@ -1149,9 +1149,9 @@ public:
     ASTGEN_MEMBERS_AstNetlist;
     const char* broken() const override;
     void cloneRelink() override { V3ERROR_NA; }
-    string name() const override { return "$root"; }
+    string name() const override VL_MT_STABLE { return "$root"; }
     void dump(std::ostream& str) const override;
-    AstNodeModule* topModulep() const {  // Top module in hierarchy
+    AstNodeModule* topModulep() const VL_MT_STABLE {  // Top module in hierarchy
         return modulesp();  // First one in the list, for now
     }
     AstTypeTable* typeTablep() { return m_typeTablep; }
@@ -1198,7 +1198,7 @@ public:
     const char* broken() const override;
     void cloneRelink() override;
     void dump(std::ostream& str) const override;
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
 };
@@ -1224,7 +1224,7 @@ public:
     const char* broken() const override;
     void cloneRelink() override;
     void dump(std::ostream& str) const override;
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
 };
@@ -1250,7 +1250,7 @@ public:
     ASTGEN_MEMBERS_AstPin;
     void dump(std::ostream& str) const override;
     const char* broken() const override;
-    string name() const override { return m_name; }  // * = Pin name, ""=go by number
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Pin name, ""=go by number
     void name(const string& name) override { m_name = name; }
     string prettyOperatorName() const override;
     bool dotStar() const { return name() == ".*"; }  // Fake name for .* connections until linked
@@ -1278,7 +1278,7 @@ public:
         , m_pinNum{pinnum}
         , m_name{name} {}
     ASTGEN_MEMBERS_AstPort;
-    string name() const override { return m_name; }  // * = Port name
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Port name
     int pinNum() const { return m_pinNum; }  // * = Pin number, for order based instantiation
 };
 class AstPragma final : public AstNode {
@@ -1356,11 +1356,11 @@ public:
     void cloneRelink() override;
     const char* broken() const override;
     bool maybePointedTo() const override { return true; }
-    string name() const override { return m_name; }  // * = Scope name
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     void name(const string& name) override { m_name = name; }
     void dump(std::ostream& str) const override;
     string nameDotless() const;
-    string nameVlSym() const { return ((string("vlSymsp->")) + nameDotless()); }
+    string nameVlSym() const { return string{"vlSymsp->"} + nameDotless(); }
     AstNodeModule* modp() const { return m_modp; }
     //
     AstScope* aboveScopep() const VL_MT_SAFE { return m_aboveScopep; }
@@ -1544,9 +1544,11 @@ public:
     ASTGEN_MEMBERS_AstTypedef;
     void dump(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    virtual AstNodeDType* subDTypep() const VL_MT_STABLE {
+        return dtypep() ? dtypep() : childDTypep();
+    }
     // METHODS
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     bool maybePointedTo() const override { return true; }
     bool hasDType() const override { return true; }
     void name(const string& flag) override { m_name = flag; }
@@ -1566,7 +1568,7 @@ public:
         , m_name{name} {}
     ASTGEN_MEMBERS_AstTypedefFwd;
     // METHODS
-    string name() const override { return m_name; }
+    string name() const override VL_MT_STABLE { return m_name; }
     bool maybePointedTo() const override { return true; }
 };
 class AstUdpTable final : public AstNode {
@@ -1586,7 +1588,7 @@ public:
         : ASTGEN_SUPER_UdpTableLine(fl)
         , m_text{text} {}
     ASTGEN_MEMBERS_AstUdpTableLine;
-    string name() const override { return m_text; }
+    string name() const override VL_MT_STABLE { return m_text; }
     string text() const { return m_text; }
 };
 class AstVar final : public AstNode {
@@ -1756,7 +1758,7 @@ public:
     }
     ASTGEN_MEMBERS_AstVar;
     void dump(std::ostream& str) const override;
-    string name() const override VL_MT_SAFE { return m_name; }  // * = Var name
+    string name() const override VL_MT_STABLE VL_MT_SAFE { return m_name; }  // * = Var name
     bool hasDType() const override { return true; }
     bool maybePointedTo() const override { return true; }
     string origName() const override { return m_origName; }  // * = Original name
@@ -1787,17 +1789,17 @@ public:
     string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "",
-                     bool asRef = false) const VL_MT_SAFE;
+                     bool asRef = false) const VL_MT_STABLE;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
     void combineType(VVarType type);
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
-    AstNodeDType* dtypeSkipRefp() const VL_MT_SAFE { return subDTypep()->skipRefp(); }
+    AstNodeDType* dtypeSkipRefp() const VL_MT_STABLE { return subDTypep()->skipRefp(); }
     // (Slow) recurse down to find basic data type (Note don't need virtual -
     // AstVar isn't a NodeDType)
-    AstBasicDType* basicp() const VL_MT_SAFE { return subDTypep()->basicp(); }
-    virtual AstNodeDType* subDTypep() const VL_MT_SAFE {
+    AstBasicDType* basicp() const VL_MT_STABLE { return subDTypep()->basicp(); }
+    virtual AstNodeDType* subDTypep() const VL_MT_STABLE {
         return dtypep() ? dtypep() : childDTypep();
     }
     void ansi(bool flag) { m_ansi = flag; }
@@ -1996,11 +1998,11 @@ public:
         return nullptr;
     }
     bool maybePointedTo() const override { return true; }
-    string name() const override { return scopep()->name() + "->" + varp()->name(); }
+    string name() const override VL_MT_STABLE { return scopep()->name() + "->" + varp()->name(); }
     void dump(std::ostream& str) const override;
     bool hasDType() const override { return true; }
-    AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
-    AstScope* scopep() const { return m_scopep; }  // Pointer to scope it's under
+    AstVar* varp() const VL_MT_STABLE { return m_varp; }  // [After Link] Pointer to variable
+    AstScope* scopep() const VL_MT_STABLE { return m_scopep; }  // Pointer to scope it's under
     void scopep(AstScope* nodep) { m_scopep = nodep; }
     bool isTrace() const { return m_trace; }
     void trace(bool flag) { m_trace = flag; }
@@ -2114,7 +2116,9 @@ class AstClass final : public AstNodeModule {
     AstClassPackage* m_classOrPackagep = nullptr;  // Class package this is under
     bool m_extended = false;  // Is extension or extended by other classes
     bool m_interfaceClass = false;  // Interface class
+    bool m_needRNG = false;  // Need RNG, uses srandom/randomize
     bool m_virtual = false;  // Virtual class
+    bool m_parameterized = false;  // Parameterized class
     void insertCache(AstNode* nodep);
 
 public:
@@ -2146,9 +2150,15 @@ public:
     void isInterfaceClass(bool flag) { m_interfaceClass = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
+    bool needRNG() const { return m_needRNG; }
+    void needRNG(bool flag) { m_needRNG = flag; }
+    bool isParameterized() const { return m_parameterized; }
+    void isParameterized(bool flag) { m_parameterized = flag; }
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
+    // Return the lowest class extended from, or this class
+    AstClass* baseMostClassp();
 };
 class AstClassPackage final : public AstNodeModule {
     // The static information portion of a class (treated similarly to a package)
@@ -2334,20 +2344,20 @@ public:
     inline AstRange(FileLine* fl, int left, int right);
     inline AstRange(FileLine* fl, const VNumRange& range);
     ASTGEN_MEMBERS_AstRange;
-    inline int leftConst() const VL_MT_SAFE;
-    inline int rightConst() const VL_MT_SAFE;
-    int hiConst() const VL_MT_SAFE {
+    inline int leftConst() const VL_MT_STABLE;
+    inline int rightConst() const VL_MT_STABLE;
+    int hiConst() const VL_MT_STABLE {
         const int l = leftConst();
         const int r = rightConst();
         return l > r ? l : r;
     }
-    int loConst() const VL_MT_SAFE {
+    int loConst() const VL_MT_STABLE {
         const int l = leftConst();
         const int r = rightConst();
         return l > r ? r : l;
     }
-    int elementsConst() const VL_MT_SAFE { return hiConst() - loConst() + 1; }
-    bool littleEndian() const { return leftConst() < rightConst(); }
+    int elementsConst() const VL_MT_STABLE { return hiConst() - loConst() + 1; }
+    bool ascending() const { return leftConst() < rightConst(); }
     void dump(std::ostream& str) const override;
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     bool same(const AstNode* /*samep*/) const override { return true; }
@@ -2450,7 +2460,7 @@ public:
         , m_name{name}
         , m_showAt{showAt} {}
     ASTGEN_MEMBERS_AstComment;
-    string name() const override { return m_name; }  // * = Text
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Text
     bool same(const AstNode* samep) const override { return true; }  // Ignore name in comments
     virtual bool showAt() const { return m_showAt; }
 };
@@ -2591,7 +2601,7 @@ public:
         : ASTGEN_SUPER_Disable(fl)
         , m_name{name} {}
     ASTGEN_MEMBERS_AstDisable;
-    string name() const override { return m_name; }  // * = Block name
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Block name
     void name(const string& flag) override { m_name = flag; }
     bool isBrancher() const override {
         return true;  // SPECIAL: We don't process code after breaks
@@ -2633,8 +2643,8 @@ public:
         return nullptr;
     }
     string verilogKwd() const override {
-        return (filep() ? string("$f") + string(displayType().ascii())
-                        : string("$") + string(displayType().ascii()));
+        return (filep() ? string{"$f"} + string{displayType().ascii()}
+                        : string{"$"} + string{displayType().ascii()});
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
@@ -2651,17 +2661,13 @@ public:
     bool addNewline() const { return displayType().addNewline(); }
 };
 class AstDoWhile final : public AstNodeStmt {
-    // @astgen op1 := precondsp : List[AstNode]
-    // @astgen op2 := condp : AstNodeExpr
-    // @astgen op3 := stmtsp : List[AstNode]
-    // @astgen op4 := incsp : List[AstNode]
+    // @astgen op1 := condp : AstNodeExpr
+    // @astgen op2 := stmtsp : List[AstNode]
 public:
-    AstDoWhile(FileLine* fl, AstNodeExpr* conditionp, AstNode* stmtsp = nullptr,
-               AstNode* incsp = nullptr)
+    AstDoWhile(FileLine* fl, AstNodeExpr* conditionp, AstNode* stmtsp = nullptr)
         : ASTGEN_SUPER_DoWhile(fl) {
         condp(conditionp);
         addStmtsp(stmtsp);
-        addIncsp(incsp);
     }
     ASTGEN_MEMBERS_AstDoWhile;
     bool isGateOptimizable() const override { return false; }
@@ -2739,46 +2745,6 @@ public:
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
-class AstFOpen final : public AstNodeStmt {
-    // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
-    // @astgen op1 := filep : AstNodeExpr
-    // @astgen op2 := filenamep : AstNodeExpr
-    // @astgen op3 := modep : AstNodeExpr
-public:
-    AstFOpen(FileLine* fl, AstNodeExpr* filep, AstNodeExpr* filenamep, AstNodeExpr* modep)
-        : ASTGEN_SUPER_FOpen(fl) {
-        this->filep(filep);
-        this->filenamep(filenamep);
-        this->modep(modep);
-    }
-    ASTGEN_MEMBERS_AstFOpen;
-    string verilogKwd() const override { return "$fopen"; }
-    bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
-    bool isUnlikely() const override { return true; }
-    bool same(const AstNode* /*samep*/) const override { return true; }
-};
-class AstFOpenMcd final : public AstNodeStmt {
-    // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
-    // @astgen op1 := filep : AstNodeExpr
-    // @astgen op2 := filenamep : AstNodeExpr
-public:
-    AstFOpenMcd(FileLine* fl, AstNodeExpr* filep, AstNodeExpr* filenamep)
-        : ASTGEN_SUPER_FOpenMcd(fl) {
-        this->filep(filep);
-        this->filenamep(filenamep);
-    }
-    ASTGEN_MEMBERS_AstFOpenMcd;
-    string verilogKwd() const override { return "$fopen"; }
-    bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
-    bool isUnlikely() const override { return true; }
-    bool same(const AstNode* /*samep*/) const override { return true; }
-};
 class AstFinish final : public AstNodeStmt {
 public:
     explicit AstFinish(FileLine* fl)
@@ -2821,7 +2787,7 @@ public:
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
 class AstJumpBlock final : public AstNodeStmt {
-    // Block of code including a JumpGo and JumpLabel
+    // Block of code including a single JumpLabel, and 0+ JumpGo's to that label
     // Parents:  {statement list}
     // Children: {statement list, with JumpGo and JumpLabel below}
     // @astgen op1 := stmtsp : List[AstNode]
@@ -2926,7 +2892,7 @@ public:
         : ASTGEN_SUPER_PrintTimeScale(fl) {}
     ASTGEN_MEMBERS_AstPrintTimeScale;
     void name(const string& name) override { m_name = name; }
-    string name() const override { return m_name; }  // * = Var name
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     void dump(std::ostream& str) const override;
     string verilogKwd() const override { return "$printtimescale"; }
     bool isGateOptimizable() const override { return false; }
@@ -3145,7 +3111,7 @@ public:
     void dump(std::ostream& str) const override;
     int instrCount() const override { return 100; }  // Large...
     ASTGEN_MEMBERS_AstTraceDecl;
-    string name() const override { return m_showname; }
+    string name() const override VL_MT_STABLE { return m_showname; }
     bool maybePointedTo() const override { return true; }
     bool hasDType() const override { return true; }
     bool same(const AstNode* samep) const override { return false; }

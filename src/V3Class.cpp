@@ -178,7 +178,7 @@ private:
 
     void setStructModulep(AstNodeUOrStructDType* const dtypep) {
         // Give it a pointer to its package and a final name
-        dtypep->classOrPackagep(m_modp);
+        dtypep->classOrPackagep(m_classPackagep ? m_classPackagep : m_modp);
         dtypep->name(dtypep->name() + (VN_IS(dtypep, UnionDType) ? "__union" : "__struct")
                      + cvtToStr(dtypep->uniqueNum()));
 
@@ -193,6 +193,7 @@ private:
     void visit(AstTypedef* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
+        if (m_classPackagep) m_classPackagep->addStmtsp(nodep->unlinkFrBack());
 
         AstNodeUOrStructDType* const dtypep = VN_CAST(nodep->dtypep(), NodeUOrStructDType);
         if (dtypep && !dtypep->packed()) {

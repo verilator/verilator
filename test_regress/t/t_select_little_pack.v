@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   // No endian warning here
+   // No ascending range warning here
    reg [7:0] pack [3:0];
 
    initial begin

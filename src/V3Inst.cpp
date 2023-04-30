@@ -139,7 +139,7 @@ public:
 
 //######################################################################
 
-class InstDeModVarVisitor final : public VNVisitor {
+class InstDeModVarVisitor final : public VNVisitorConst {
     // Expand all module variables, and save names for later reference
 private:
     // STATE
@@ -151,10 +151,10 @@ private:
             UINFO(8, "   dm-1-VAR    " << nodep << endl);
             insert(nodep);
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstNodeExpr*) override {}  // Accelerate
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // METHODS
@@ -182,7 +182,7 @@ public:
     void main(AstNodeModule* nodep) {
         UINFO(8, "  dmMODULE    " << nodep << endl);
         m_modVarNameMap.clear();
-        iterate(nodep);
+        iterateConst(nodep);
     }
 };
 
@@ -252,7 +252,7 @@ private:
             // Make all of the required clones
             for (int i = 0; i < m_cellRangep->elementsConst(); i++) {
                 m_instSelNum
-                    = m_cellRangep->littleEndian() ? (m_cellRangep->elementsConst() - 1 - i) : i;
+                    = m_cellRangep->ascending() ? (m_cellRangep->elementsConst() - 1 - i) : i;
                 const int instNum = m_cellRangep->loConst() + i;
 
                 AstCell* const newp = nodep->cloneTree(false);
@@ -331,7 +331,7 @@ private:
                 // Connection to array, where array dimensions match the instant dimension
                 const AstRange* const rangep
                     = VN_AS(nodep->exprp()->dtypep(), UnpackArrayDType)->rangep();
-                const int arraySelNum = rangep->littleEndian()
+                const int arraySelNum = rangep->ascending()
                                             ? (rangep->elementsConst() - 1 - m_instSelNum)
                                             : m_instSelNum;
                 AstNodeExpr* exprp = VN_AS(nodep->exprp(), NodeExpr)->unlinkFrBack();
@@ -342,11 +342,11 @@ private:
             } else if (expwidth == modwidth * m_cellRangep->elementsConst()) {
                 // Arrayed instants: one bit for each of the instants (each
                 // assign is 1 modwidth wide)
-                if (m_cellRangep->littleEndian()) {
-                    nodep->exprp()->v3warn(LITENDIAN, "Big endian instance range connecting to "
-                                                      "vector: left < right of instance range: ["
-                                                          << m_cellRangep->leftConst() << ":"
-                                                          << m_cellRangep->rightConst() << "]");
+                if (m_cellRangep->ascending()) {
+                    nodep->exprp()->v3warn(ASCRANGE, "Ascending instance range connecting to "
+                                                     "vector: left < right of instance range: ["
+                                                         << m_cellRangep->leftConst() << ":"
+                                                         << m_cellRangep->rightConst() << "]");
                 }
                 AstNodeExpr* exprp = VN_AS(nodep->exprp(), NodeExpr)->unlinkFrBack();
                 const bool inputPin = nodep->modVarp()->isNonOutput();
@@ -555,7 +555,7 @@ public:
             V3Inst::checkOutputShort(pinp);
             AstNodeExpr* const pinexprp = VN_AS(pinp->exprp(), NodeExpr)->unlinkFrBack();
             const string newvarname
-                = (string(pinVarp->isWritable() ? "__Vcellout" : "__Vcellinp")
+                = (string{pinVarp->isWritable() ? "__Vcellout" : "__Vcellinp"}
                    // Prevent name conflict if both tri & non-tri add signals
                    + (forTristate ? "t" : "") + "__" + cellp->name() + "__" + pinp->name());
             AstVar* const newvarp

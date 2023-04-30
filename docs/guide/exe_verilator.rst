@@ -1101,6 +1101,18 @@ Summary:
    marking only those signals that need public_flat_rw is typically
    significantly better performing.
 
+.. option:: --public-depth <level>
+
+   Enables public as with :vlopt:`--public-flat-rw`, but only to the specified depth of modules.
+   It operates at the module maximum level, so if a module's cells are A.B.X and A.X, the
+   a --public-depth 3 must be used to make module X public, and both A.B.X and A.X will be public.
+
+.. option:: --public-params
+
+   Declares all parameters public as if they had
+   :code:`/*verilator public_flat_rd*/`
+   metacomments.
+
 .. option:: -pvalue+<name>=<value>
 
    Overwrites the given parameter(s) of the top-level module. See
@@ -1502,10 +1514,10 @@ Summary:
 .. option:: -Wno-lint
 
    Disable all lint-related warning messages, and all style warnings.  This is
-   equivalent to ``-Wno-ALWCOMBORDER -Wno-BSSPACE -Wno-CASEINCOMPLETE
+   equivalent to ``-Wno-ALWCOMBORDER -Wno-ASCRANGE -Wno-BSSPACE -Wno-CASEINCOMPLETE
    -Wno-CASEOVERLAP -Wno-CASEX -Wno-CASTCONST -Wno-CASEWITHX -Wno-CMPCONST -Wno-COLONPLUS
-   -Wno-IMPLICIT -Wno-IMPLICITSTATIC -Wno-LITENDIAN -Wno-PINCONNECTEMPTY
-   -Wno-PINMISSING -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED
+   -Wno-IMPLICIT -Wno-IMPLICITSTATIC -Wno-PINCONNECTEMPTY
+   -Wno-PINMISSING -Wno-STATICVAR -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED
    -Wno-UNUSEDGENVAR -Wno-UNUSEDPARAM -Wno-UNUSEDSIGNAL
    -Wno-WIDTH`` plus the list shown for Wno-style.
 
@@ -1542,7 +1554,7 @@ Summary:
    enabled), but do not affect style messages.  This is equivalent to
    ``-Wwarn-ALWCOMBORDER -Wwarn-BSSPACE -Wwarn-CASEINCOMPLETE
    -Wwarn-CASEOVERLAP -Wwarn-CASEX -Wwarn-CASTCONST -Wwarn-CASEWITHX -Wwarn-CMPCONST
-   -Wwarn-COLONPLUS -Wwarn-IMPLICIT -Wwarn-LITENDIAN
+   -Wwarn-COLONPLUS -Wwarn-IMPLICIT -Wwarn-ASCRANGE
    -Wwarn-PINMISSING -Wwarn-REALCVT -Wwarn-UNSIGNED -Wwarn-WIDTH``.
 
 .. option:: -Wwarn-style

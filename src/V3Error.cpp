@@ -40,6 +40,7 @@ V3ErrorCode::V3ErrorCode(const char* msgp) {
         const V3ErrorCode code{codei};
         if (0 == VL_STRCASECMP(msgp, code.ascii())) {
             m_e = code;
+            if (isRenamed()) m_e = renamedTo().m_e;
             return;
         }
     }
@@ -220,6 +221,7 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
                 }
 #ifndef V3ERROR_NO_GLOBAL_
                 if (dumpTree() || debug()) {
+                    V3Broken::allowMidvisitorCheck(true);
                     V3ThreadPool::s().requestExclusiveAccess([&]() VL_REQUIRES(m_mutex) {
                         if (dumpTree()) {
                             v3Global.rootp()->dumpTreeFile(
@@ -255,7 +257,7 @@ void V3Error::init() {
         describedEachWarn(static_cast<V3ErrorCode>(i), false);
         pretendError(static_cast<V3ErrorCode>(i), V3ErrorCode{i}.pretendError());
     }
-    if (VL_UNCOVERABLE(string(V3ErrorCode{V3ErrorCode::_ENUM_MAX}.ascii()) != " MAX")) {
+    if (VL_UNCOVERABLE(string{V3ErrorCode{V3ErrorCode::_ENUM_MAX}.ascii()} != " MAX")) {
         v3fatalSrc("Enum table in V3ErrorCode::EC_ascii() is munged");
     }
 }

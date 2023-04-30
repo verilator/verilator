@@ -166,7 +166,7 @@ private:
                             new AstEq{
                                 funcp->fileline(), new AstCExpr{funcp->fileline(), "this", 64},
                                 new AstCExpr{funcp->fileline(),
-                                             string("&(") + funcp->scopep()->nameVlSym() + ")",
+                                             string{"&("} + funcp->scopep()->nameVlSym() + ")",
                                              64}},
                             returnp};
                         newfuncp->addStmtsp(ifp);
@@ -178,7 +178,7 @@ private:
                 // to come up with some return value
                 // newfuncp->addStmtsp(new AstDisplay(newfuncp->fileline(),
                 //                                   VDisplayType::DT_WARNING,
-                //                                   string("%%Error: ")+name+"() called with bad
+                //                                   string{"%%Error: "}+name+"() called with bad
                 //                                   scope", nullptr));
                 // newfuncp->addStmtsp(new AstStop(newfuncp->fileline()));
                 if (debug() >= 9) newfuncp->dumpTree("-  newfunc: ");

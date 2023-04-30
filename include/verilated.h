@@ -30,6 +30,13 @@
 #ifndef VERILATOR_VERILATED_H_
 #define VERILATOR_VERILATED_H_
 #define VERILATOR_VERILATED_H_INTERNAL_
+#ifdef VERILATOR_INTERNAL_
+// This file contains definition of VerilationMutex that should
+// only be used by verilated code. Verilator itself should use
+// mutex from V3Mutex.h. Make sure this file isn't included in
+// verilator code.
+#error "verilated.h should only be included in verilated code"
+#endif
 
 // clang-format off
 #include "verilatedos.h"
@@ -141,6 +148,15 @@ enum VerilatedVarFlags {
     VLVF_PUB_RW = (1 << 9),  // Public writable
     VLVF_DPI_CLAY = (1 << 10)  // DPI compatible C standard layout
 };
+
+//=============================================================================
+// Utility functions
+
+template <size_t N>
+inline constexpr size_t roundUpToMultipleOf(size_t value) {
+    static_assert((N & (N - 1)) == 0, "'N' must be a power of 2");
+    return (value + N - 1) & ~(N - 1);
+}
 
 //=========================================================================
 // Mutex and threading support
@@ -607,6 +623,7 @@ public:  // But for internal use only
     VerilatedEvalMsgQueue* __Vm_evalMsgQp;
     explicit VerilatedSyms(VerilatedContext* contextp);  // Pass null for default context
     ~VerilatedSyms();
+    VL_UNCOPYABLE(VerilatedSyms);
 };
 
 //===========================================================================
@@ -945,18 +962,18 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
         const VerilatedLockGuard lock{m_mutex};
         m_s.m_timeprecision = value;
 #if VM_SC
-        const sc_time sc_res = sc_get_time_resolution();
-        if (sc_res == sc_time(1, SC_SEC)) {
+        const sc_core::sc_time sc_res = sc_core::sc_get_time_resolution();
+        if (sc_res == sc_core::sc_time(1, sc_core::SC_SEC)) {
             sc_prec = 0;
-        } else if (sc_res == sc_time(1, SC_MS)) {
+        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_MS)) {
             sc_prec = 3;
-        } else if (sc_res == sc_time(1, SC_US)) {
+        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_US)) {
             sc_prec = 6;
-        } else if (sc_res == sc_time(1, SC_NS)) {
+        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_NS)) {
             sc_prec = 9;
-        } else if (sc_res == sc_time(1, SC_PS)) {
+        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_PS)) {
             sc_prec = 12;
-        } else if (sc_res == sc_time(1, SC_FS)) {
+        } else if (sc_res == sc_core::sc_time(1, sc_core::SC_FS)) {
             sc_prec = 15;
         }
 #endif

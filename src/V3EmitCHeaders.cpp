@@ -117,7 +117,12 @@ class EmitCHeader final : public EmitCConstInit {
         emitCurrentList();
     }
     void emitInternalVarDecls(const AstNodeModule* modp) {
-        if (!VN_IS(modp, Class)) {
+        if (const AstClass* const classp = VN_CAST(modp, Class)) {
+            if (classp->needRNG()) {
+                putsDecoration("\n// INTERNAL VARIABLES\n");
+                puts("VlRNG __Vm_rng;\n");
+            }
+        } else {  // not class
             putsDecoration("\n// INTERNAL VARIABLES\n");
             puts(symClassName() + "* const vlSymsp;\n");
         }
@@ -136,7 +141,7 @@ class EmitCHeader final : public EmitCConstInit {
                     puts(varp->dtypep()->cType(varp->nameProtect(), false, false));
                     if (canBeConstexpr) {
                         puts(" = ");
-                        iterate(varp->valuep());
+                        iterateConst(varp->valuep());
                     }
                     puts(";\n");
                 }
@@ -200,7 +205,7 @@ class EmitCHeader final : public EmitCConstInit {
                     }
                     puts(itemp->nameProtect());
                     puts(" = ");
-                    iterate(itemp->valuep());
+                    iterateConst(itemp->valuep());
                     if (VN_IS(itemp->nextp(), EnumItem)) puts(",");
                     puts("\n");
                 }
@@ -224,7 +229,7 @@ class EmitCHeader final : public EmitCConstInit {
             }
         }
         puts(sdtypep->verilogKwd());  // "struct"/"union"
-        puts(" " + EmitCBaseVisitor::prefixNameProtect(sdtypep) + " {\n");
+        puts(" " + EmitCBase::prefixNameProtect(sdtypep) + " {\n");
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             puts(itemp->dtypep()->cType(itemp->nameProtect(), false, false));

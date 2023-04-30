@@ -208,11 +208,11 @@ private:
         // Forward to . so we have a whole word
         const std::string suffix = *bpost ? std::string{bpost + 1} : "";
 
-        std::string out = prefix + "*" + suffix;
+        std::string result = prefix + "*" + suffix;
 
         // cout << "\nch pre="<<prefix<<"  s="<<suffix<<"\nch a="<<old<<"\nch b="<<add
-        // <<"\ncho="<<out<<endl;
-        return out;
+        // <<"\ncho="<<result<<endl;
+        return result;
     }
     bool itemMatchesString(VerilatedCovImpItem* itemp, const std::string& match)
         VL_REQUIRES(m_mutex) {

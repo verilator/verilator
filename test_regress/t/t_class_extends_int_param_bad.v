@@ -6,10 +6,11 @@
 
 module t (/*AUTOARG*/);
 
-   class bar #(type T=int) extends T;
+   class Bar #(type T=int) extends T;
    endclass
 
    initial begin
+      Bar#() bar;
       $stop;
    end
 endmodule

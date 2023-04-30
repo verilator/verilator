@@ -791,7 +791,6 @@ void VerilatedVpiImp::dumpCbs() VL_MT_UNSAFE_ONE {
     }
     for (auto& ifuture : s().m_nextCbs) {
         const QData time = ifuture.first.first;
-        const uint64_t id = ifuture.first.second;
         VerilatedVpiCbHolder& ho = ifuture.second;
         if (VL_UNLIKELY(!ho.invalid())) {
             VL_DBG_MSGF("- vpi:   time=%" PRId64 "(NEXT) reason=%d=%s  id=%" PRId64 "\n", time,
@@ -802,7 +801,6 @@ void VerilatedVpiImp::dumpCbs() VL_MT_UNSAFE_ONE {
     }
     for (auto& ifuture : s().m_futureCbs) {
         const QData time = ifuture.first.first;
-        const uint64_t id = ifuture.first.second;
         VerilatedVpiCbHolder& ho = ifuture.second;
         if (VL_UNLIKELY(!ho.invalid())) {
             VL_DBG_MSGF("- vpi:   time=%" PRId64 " reason=%d=%s  id=%" PRId64 "\n", time,

@@ -70,7 +70,7 @@ static int countTrailingZeroes(uint64_t val) {
 // This visitor can be used in the post-expanded Ast from V3Expand, where the Ast satisfies:
 // - Constants are 64 bit at most (because words are accessed via AstWordSel)
 // - Variables are scoped.
-class ConstBitOpTreeVisitor final : public VNVisitor {
+class ConstBitOpTreeVisitor final : public VNVisitorConst {
     // NODE STATE
     // AstVarRef::user4u      -> Base index of m_varInfos that points VarInfo
     // AstVarScope::user4u    -> Same as AstVarRef::user4
@@ -416,7 +416,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         {
             VL_RESTORER(m_leafp);
             m_leafp = &info;
-            iterate(nodep);
+            iterateConst(nodep);
         }
 
         bool ok = !m_failed;
@@ -431,7 +431,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNode* nodep) override { CONST_BITOP_SET_FAILED("Hit unexpected op", nodep); }
     void visit(AstCCast* nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         if (m_leafp) m_leafp->updateBitRange(nodep);
     }
     void visit(AstShiftR* nodep) override {
@@ -440,7 +440,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         CONST_BITOP_RETURN_IF(!constp, nodep->rhsp());
         m_lsb += constp->toUInt();
         incrOps(nodep, __LINE__);
-        iterate(nodep->lhsp());
+        iterateConst(nodep->lhsp());
         m_leafp->updateBitRange(nodep);
         m_lsb -= constp->toUInt();
     }
@@ -449,12 +449,10 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         AstNode* lhsp = nodep->lhsp();
         AstCCast* const castp = VN_CAST(lhsp, CCast);
         if (castp) lhsp = castp->lhsp();
-        CONST_BITOP_RETURN_IF(!VN_IS(lhsp, VarRef) && !VN_IS(lhsp, Xor) && !VN_IS(lhsp, RedXor)
-                                  && !VN_IS(lhsp, ShiftR),
-                              lhsp);
+        CONST_BITOP_RETURN_IF(!isXorTree() && !VN_IS(lhsp, VarRef) && !VN_IS(lhsp, ShiftR), lhsp);
         incrOps(nodep, __LINE__);
         m_polarity = !m_polarity;
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         // Don't restore m_polarity for Xor as it counts parity of the entire tree
         if (!isXorTree()) m_polarity = !m_polarity;
         if (m_leafp && castp) m_leafp->updateBitRange(castp);
@@ -465,7 +463,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         CONST_BITOP_RETURN_IF(!constp, nodep->rhsp());
         UASSERT_OBJ(m_leafp->wordIdx() == -1, nodep, "Unexpected nested WordSel");
         m_leafp->wordIdx(constp->toSInt());
-        iterate(nodep->fromp());
+        iterateConst(nodep->fromp());
     }
     void visit(AstVarRef* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
@@ -529,7 +527,7 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
             // Always reach past a plain making AND
             Restorer restorer{*this};
             incrOps(nodep, __LINE__);
-            iterate(nodep->rhsp());
+            iterateConst(nodep->rhsp());
             CONST_BITOP_RETURN_IF(m_failed, nodep->rhsp());
             restorer.disableRestore();  // Now all checks passed
         } else if (nodep->type() == m_rootp->type()) {  // And, Or, Xor
@@ -542,13 +540,14 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
                 m_leafp = &leafInfo;
                 AstNodeExpr* opp = right ? nodep->rhsp() : nodep->lhsp();
                 const bool origFailed = m_failed;
-                iterate(opp);
+                iterateConst(opp);
                 if (leafInfo.constp() || m_failed) {
                     // Revert changes in leaf
                     restorer.restoreNow();
                     // Reach past a cast then add to frozen nodes to be added to final reduction
                     if (const AstCCast* const castp = VN_CAST(opp, CCast)) opp = castp->lhsp();
-                    m_frozenNodes.emplace_back(opp, FrozenNodeInfo{m_polarity, m_lsb});
+                    const bool pol = isXorTree() || m_polarity;  // Only AND/OR tree needs polarity
+                    m_frozenNodes.emplace_back(opp, FrozenNodeInfo{pol, m_lsb});
                     m_failed = origFailed;
                     continue;
                 }
@@ -647,11 +646,11 @@ class ConstBitOpTreeVisitor final : public VNVisitor {
         m_varInfos.push_back(nullptr);
         CONST_BITOP_RETURN_IF(!isAndTree() && !isOrTree() && !isXorTree(), nodep);
         if (AstNodeBiop* const biopp = VN_CAST(nodep, NodeBiop)) {
-            iterate(biopp);
+            iterateConst(biopp);
         } else {
             UASSERT_OBJ(VN_IS(nodep, RedXor), nodep, "Must be RedXor");
             incrOps(nodep, __LINE__);
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
         for (auto&& entry : m_bitPolarities) {
             getVarInfo(entry.m_info).setPolarity(entry.m_polarity, entry.m_bit);
@@ -2265,7 +2264,7 @@ private:
     // VISITORS
     void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.  That's faster
-        iterateChildrenBackwards(nodep);
+        iterateChildrenBackwardsConst(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -2747,52 +2746,74 @@ private:
         }
     }
 
-    struct SenItemCmp {
-        bool operator()(const AstSenItem* lhsp, const AstSenItem* rhsp) const {
-            if (lhsp->type() < rhsp->type()) return true;
-            if (lhsp->type() > rhsp->type()) return false;
-            // Looks visually better if we keep sorted by name
-            if (!lhsp->sensp() && rhsp->sensp()) return true;
-            if (lhsp->sensp() && !rhsp->sensp()) return false;
-            if (lhsp->varrefp() && !rhsp->varrefp()) return true;
-            if (!lhsp->varrefp() && rhsp->varrefp()) return false;
-            if (lhsp->varrefp() && rhsp->varrefp()) {
-                if (lhsp->varrefp()->name() < rhsp->varrefp()->name()) return true;
-                if (lhsp->varrefp()->name() > rhsp->varrefp()->name()) return false;
+    class SenItemCmp final {
+        static int cmp(const AstNodeExpr* ap, const AstNodeExpr* bp) {
+            const VNType aType = ap->type();
+            const VNType bType = bp->type();
+            if (aType != bType) return static_cast<int>(bType) - static_cast<int>(aType);
+
+            if (const AstVarRef* const aRefp = VN_CAST(ap, VarRef)) {
+                const AstVarRef* const bRefp = VN_AS(bp, VarRef);
+                // Looks visually better if we keep sorted by name
+                if (aRefp->name() < bRefp->name()) return -1;
+                if (aRefp->name() > bRefp->name()) return 1;
                 // But might be same name with different scopes
-                if (lhsp->varrefp()->varScopep() < rhsp->varrefp()->varScopep()) return true;
-                if (lhsp->varrefp()->varScopep() > rhsp->varrefp()->varScopep()) return false;
+                if (aRefp->varScopep() < bRefp->varScopep()) return -1;
+                if (aRefp->varScopep() > bRefp->varScopep()) return 1;
                 // Or rarely, different data types
-                if (lhsp->varrefp()->dtypep() < rhsp->varrefp()->dtypep()) return true;
-                if (lhsp->varrefp()->dtypep() > rhsp->varrefp()->dtypep()) return false;
-            } else if (AstCMethodHard* const lp = VN_CAST(lhsp->sensp(), CMethodHard)) {
-                if (AstCMethodHard* const rp = VN_CAST(rhsp->sensp(), CMethodHard)) {
-                    if (AstVarRef* const lRefp = VN_CAST(lp->fromp(), VarRef)) {
-                        if (AstVarRef* const rRefp = VN_CAST(rp->fromp(), VarRef)) {
-                            if (lRefp->name() < rRefp->name()) return true;
-                            if (lRefp->name() > rRefp->name()) return false;
-                            // But might be same name with different scopes
-                            if (lRefp->varScopep() < rRefp->varScopep()) return true;
-                            if (lRefp->varScopep() > rRefp->varScopep()) return false;
-                            // Or rarely, different data types
-                            if (lRefp->dtypep() < rRefp->dtypep()) return true;
-                            if (lRefp->dtypep() > rRefp->dtypep()) return false;
-                        }
-                    }
-                    if (AstConst* lConstp = VN_CAST(lp->pinsp(), Const)) {
-                        if (AstConst* rConstp = VN_CAST(rp->pinsp(), Const)) {
-                            if (lConstp->toUInt() < rConstp->toUInt()) return true;
-                            if (lConstp->toUInt() > rConstp->toUInt()) return false;
-                        }
-                    }
-                }
+                if (aRefp->dtypep() < bRefp->dtypep()) return -1;
+                if (aRefp->dtypep() > bRefp->dtypep()) return 1;
+                return 0;
             }
-            // Sort by edge, AFTER variable, as we want multiple edges for same var adjacent.
-            // note the SenTree optimizer requires this order (more
-            // general first, less general last)
-            if (lhsp->edgeType() < rhsp->edgeType()) return true;
-            if (lhsp->edgeType() > rhsp->edgeType()) return false;
-            return false;
+
+            if (const AstConst* const aConstp = VN_CAST(ap, Const)) {
+                const AstConst* const bConstp = VN_AS(bp, Const);
+                if (aConstp->toUQuad() < bConstp->toUQuad()) return -1;
+                if (aConstp->toUQuad() > bConstp->toUQuad()) return 1;
+                return 0;
+            }
+
+            if (const AstNodeBiop* const aBiOpp = VN_CAST(ap, NodeBiop)) {
+                const AstNodeBiop* const bBiOpp = VN_AS(bp, NodeBiop);
+                // Compare RHSs first as LHS might be const, but the variable term should become
+                // adjacent for optimization if identical.
+                if (const int c = cmp(aBiOpp->rhsp(), bBiOpp->rhsp())) return c;
+                return cmp(aBiOpp->lhsp(), bBiOpp->lhsp());
+            }
+
+            if (const AstCMethodHard* const aCallp = VN_CAST(ap, CMethodHard)) {
+                const AstCMethodHard* const bCallp = VN_AS(bp, CMethodHard);
+                if (aCallp->name() < bCallp->name()) return -1;
+                if (aCallp->name() > bCallp->name()) return 1;
+                if (const int c = cmp(aCallp->fromp(), bCallp->fromp())) return c;
+                AstNodeExpr* aPinsp = aCallp->pinsp();
+                AstNodeExpr* bPinsp = bCallp->pinsp();
+                while (aPinsp && bPinsp) {
+                    if (const int c = cmp(aPinsp, bPinsp)) return c;
+                    aPinsp = VN_AS(aPinsp->nextp(), NodeExpr);
+                    bPinsp = VN_AS(bPinsp->nextp(), NodeExpr);
+                }
+                return aPinsp ? -1 : bPinsp ? 1 : 0;
+            }
+
+            return 0;
+        }
+
+    public:
+        bool operator()(const AstSenItem* lhsp, const AstSenItem* rhsp) const {
+            AstNodeExpr* const lSensp = lhsp->sensp();
+            AstNodeExpr* const rSensp = rhsp->sensp();
+            if (lSensp && rSensp) {
+                // If both terms have sensitivity expressions, recursively compare them
+                if (const int c = cmp(lSensp, rSensp)) return c < 0;
+            } else if (lSensp || rSensp) {
+                // Terms with sensitivity expressions come after those without
+                return rSensp;
+            }
+            // Finally sort by edge, AFTER variable, as we want multiple edges for same var
+            // adjacent. note the SenTree optimizer requires this order (more general first,
+            // less general last)
+            return lhsp->edgeType() < rhsp->edgeType();
         }
     };
 
@@ -2817,9 +2838,8 @@ private:
                 }
             }
 
-            // Sort the sensitivity names so "posedge a or b" and "posedge b or a" end up together.
-            // Also, remove duplicate assignments, and fold POS&NEGs into ANYEDGEs
-            // Make things a little faster; check first if we need a sort
+            // Pass 1: Sort the sensitivity items so "posedge a or b" and "posedge b or a" and
+            // similar, optimizable expressions end up next to each other.
             for (AstSenItem *nextp, *senp = nodep->sensesp(); senp; senp = nextp) {
                 nextp = VN_AS(senp->nextp(), SenItem);
                 // cppcheck-suppress unassignedVariable  // cppcheck bug
@@ -2839,35 +2859,53 @@ private:
                 }
             }
 
-            // Pass2, remove dup edges
-            for (AstSenItem *nextp, *senp = nodep->sensesp(); senp; senp = nextp) {
+            // Pass 2, remove duplicates and simplify adjacent terms if possible
+            for (AstSenItem *senp = nodep->sensesp(), *nextp; senp; senp = nextp) {
                 nextp = VN_AS(senp->nextp(), SenItem);
-                AstSenItem* const litemp = senp;
-                AstSenItem* const ritemp = nextp;
-                if (ritemp) {
-                    if ((litemp->sensp() && ritemp->sensp()
-                         && litemp->sensp()->sameGateTree(ritemp->sensp()))
-                        || (!litemp->sensp() && !ritemp->sensp())) {
-                        // We've sorted in the order ANY, BOTH, POS, NEG,
-                        // so we don't need to try opposite orders
-                        if ((litemp->edgeType() == VEdgeType::ET_POSEDGE  // POS or NEG -> BOTH
-                             && ritemp->edgeType() == VEdgeType::ET_NEGEDGE)
-                            || (litemp->edgeType() == ritemp->edgeType())  // Identical edges
-                        ) {
-                            // Fix edge of old node
-                            if (litemp->edgeType() == VEdgeType::ET_POSEDGE
-                                && ritemp->edgeType() == VEdgeType::ET_NEGEDGE)
-                                litemp->edgeType(VEdgeType::ET_BOTHEDGE);
-                            // Remove redundant node
-                            VL_DO_DANGLING(ritemp->unlinkFrBack()->deleteTree(), ritemp);
-                            VL_DANGLING(ritemp);
-                            // Try to collapse again
-                            nextp = litemp;
+                if (!nextp) break;
+                AstSenItem* const lItemp = senp;
+                AstSenItem* const rItemp = nextp;
+                AstNodeExpr* const lSenp = lItemp->sensp();
+                AstNodeExpr* const rSenp = rItemp->sensp();
+                if (!lSenp || !rSenp) continue;
+
+                if (lSenp->sameGateTree(rSenp)) {
+                    // POSEDGE or NEGEDGE -> BOTHEDGE. (We've sorted POSEDGE, before NEGEDGE, so we
+                    // do not need to test for the opposite orders.)
+                    if (lItemp->edgeType() == VEdgeType::ET_POSEDGE
+                        && rItemp->edgeType() == VEdgeType::ET_NEGEDGE) {
+                        // Make both terms BOTHEDGE, the second will be removed below
+                        lItemp->edgeType(VEdgeType::ET_BOTHEDGE);
+                        rItemp->edgeType(VEdgeType::ET_BOTHEDGE);
+                    }
+
+                    // Remove identical expressions
+                    if (lItemp->edgeType() == rItemp->edgeType()) {
+                        VL_DO_DANGLING(rItemp->unlinkFrBack()->deleteTree(), rItemp);
+                        nextp = lItemp;
+                    }
+
+                    continue;
+                }
+
+                // Not identical terms, check if they can be combined
+                if (lSenp->width() != rSenp->width()) continue;
+                if (AstAnd* const lAndp = VN_CAST(lSenp, And)) {
+                    if (AstAnd* const rAndp = VN_CAST(rSenp, And)) {
+                        if (AstConst* const lConstp = VN_CAST(lAndp->lhsp(), Const)) {
+                            if (AstConst* const rConstp = VN_CAST(rAndp->lhsp(), Const)) {
+                                if (lAndp->rhsp()->sameTree(rAndp->rhsp())) {
+                                    const V3Number lNum{lConstp->num()};
+                                    lConstp->num().opOr(lNum, rConstp->num());
+                                    // Remove redundant term
+                                    VL_DO_DANGLING(rItemp->unlinkFrBack()->deleteTree(), rItemp);
+                                    nextp = lItemp;
+                                }
+                            }
                         }
                     }
                 }
             }
-            // nodep->dumpTree("-  ssou: ");
         }
     }
 
@@ -2975,6 +3013,7 @@ private:
                 AstNode* const thensp = nodep->thensp()->unlinkFrBackWithNext();
                 AstNode* const elsesp = nodep->elsesp()->unlinkFrBackWithNext();
                 AstIf* const ifp = new AstIf{nodep->fileline(), condp, elsesp, thensp};
+                ifp->isBoundsCheck(nodep->isBoundsCheck());  // Copy bounds check info
                 ifp->branchPred(nodep->branchPred().invert());
                 nodep->replaceWith(ifp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -3188,7 +3227,7 @@ private:
 
     void visit(AstStmtExpr* nodep) override {
         iterateChildren(nodep);
-        if (!nodep->exprp()) {
+        if (!nodep->exprp() || VN_IS(nodep->exprp(), Const)) {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
@@ -3207,7 +3246,7 @@ private:
 
     void visit(AstJumpGo* nodep) override {
         iterateChildren(nodep);
-        // Jump to label where label immediately follows label is not useful
+        // Jump to label where label immediately follows this go is not useful
         if (nodep->labelp() == VN_CAST(nodep->nextp(), JumpLabel)) {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             // Keep the label, might be other jumps pointing to it, gets cleaned later

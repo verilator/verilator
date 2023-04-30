@@ -7,6 +7,19 @@
 `define stop $stop
 `define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
+class Cls;
+   typedef struct {
+      string      m_strg;
+   } underclass_t;
+
+   underclass_t m_cstr;
+   function underclass_t get_cstr();
+      m_cstr.m_strg = "foo";
+      return m_cstr;
+   endfunction
+endclass
+
+
 module x;
    typedef struct {
       int a, b;
@@ -27,6 +40,7 @@ module x;
    embedded_t t [1:0];
    istr_t istr;
    string s;
+   Cls c;
 
    initial begin
       t[1].a = 2;
@@ -42,6 +56,10 @@ module x;
       istr = '{m_i: '1, m_s: "str2"};
       s = $sformatf("%p", istr);
       `checks(s, "'{m_i:'hffff, m_s:\"str2\"}");
+
+      c = new;
+      s = c.get_cstr().m_strg;
+      `checks(s, "foo");
 
       $write("*-* All Finished *-*\n");
       $finish;

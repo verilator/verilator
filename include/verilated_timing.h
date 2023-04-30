@@ -313,16 +313,6 @@ public:
 };
 
 //=============================================================================
-// VlNow is a helper awaitable type that always suspends, and then immediately resumes a coroutine.
-// Allows forcing the move of coroutine locals to the heap.
-
-struct VlNow {
-    bool await_ready() const { return false; }  // Always suspend
-    bool await_suspend(std::coroutine_handle<>) const { return false; }  // Resume immediately
-    void await_resume() const {}
-};
-
-//=============================================================================
 // VlForever is a helper awaitable type for suspending coroutines forever. Used for constant
 // wait statements.
 

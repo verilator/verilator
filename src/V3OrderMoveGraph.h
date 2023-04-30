@@ -64,18 +64,18 @@ public:
         }
     }
 
-    string name() const override {
+    string name() const override VL_MT_STABLE {
         string nm;
         if (VL_UNCOVERABLE(!logicp())) {  // Avoid crash when debugging
             nm = "nul";  // LCOV_EXCL_LINE
         } else {
             nm = logicp()->name();
-            nm += (string("\\nMV:") + " d=" + cvtToHex(logicp()->domainp())
+            nm += (string{"\\nMV:"} + " d=" + cvtToHex(logicp()->domainp())
                    + " s=" + cvtToHex(logicp()->scopep()));
         }
         return nm;
     }
-    OrderLogicVertex* logicp() const { return m_logicp; }
+    OrderLogicVertex* logicp() const VL_MT_STABLE { return m_logicp; }
     bool isWait() const { return m_state == POM_WAIT; }
     void setReady() {
         UASSERT(m_state == POM_WAIT, "Wait->Ready on node not in proper state");
@@ -127,7 +127,7 @@ public:
         string nm;
         if (logicp()) {
             nm = logicp()->name();
-            nm += (string("\\nMV:") + " d=" + cvtToHex(logicp()->domainp()) + " s="
+            nm += (string{"\\nMV:"} + " d=" + cvtToHex(logicp()->domainp()) + " s="
                    + cvtToHex(logicp()->scopep())
                    // "color()" represents the mtask ID.
                    + "\\nt=" + cvtToStr(color()));

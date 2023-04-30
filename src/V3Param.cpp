@@ -342,6 +342,7 @@ class ParamProcessor final {
         // TODO: This parameter value number lookup via a constructed key string is not
         //       particularly robust for type parameters. We should really have a type
         //       equivalence predicate function.
+        if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) nodep = refp->skipRefp();
         const string key = paramValueKey(nodep);
         // cppcheck-has-bug-suppress unreadVariable
         V3Hash hash = V3Hasher::uncachedHash(nodep);
@@ -545,6 +546,9 @@ class ParamProcessor final {
     }
     void replaceRefsRecurse(AstNode* const nodep, const AstClass* const oldClassp,
                             AstClass* const newClassp) {
+        // Some of the nodes may be already marked as visited, because they were copied. They
+        // should be marked as unvisited, because parameterized references have to be handled.
+        nodep->user5(false);
         if (AstClassRefDType* const classRefp = VN_CAST(nodep, ClassRefDType)) {
             if (classRefp->classp() == oldClassp) classRefp->classp(newClassp);
         } else if (AstClassOrPackageRef* const classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
@@ -563,8 +567,9 @@ class ParamProcessor final {
         // Note all module internal variables will be re-linked to the new modules by clone
         // However links outside the module (like on the upper cells) will not.
         AstNodeModule* const newmodp = srcModp->cloneTree(false);
-        if (VN_IS(srcModp, Class)) {
-            replaceRefsRecurse(newmodp->stmtsp(), VN_AS(newmodp, Class), VN_AS(srcModp, Class));
+        if (AstClass* const newClassp = VN_CAST(newmodp, Class)) {
+            newClassp->isParameterized(false);
+            replaceRefsRecurse(newmodp->stmtsp(), newClassp, VN_AS(srcModp, Class));
         }
 
         newmodp->name(newname);
@@ -705,7 +710,7 @@ class ParamProcessor final {
                               << modvarp->prettyNameQ());
             } else {
                 UINFO(9, "Parameter type assignment expr=" << exprp << " to " << origp << endl);
-                if (exprp->sameTree(origp)) {
+                if (exprp->similarDType(origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.
@@ -805,6 +810,9 @@ class ParamProcessor final {
 
         if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
+            // Mark that the defeult instance is used.
+            // It will be checked only if srcModpr is a class.
+            srcModpr->user2(true);
         } else if (AstNodeModule* const paramedModp
                    = m_hierBlocks.findByParams(srcModpr->name(), paramsp, m_modp)) {
             paramedModp->dead(false);
@@ -912,7 +920,7 @@ public:
 class ParamVisitor final : public VNVisitor {
     // NODE STATE
     // AstNodeModule::user1 -> bool: already fixed level
-
+    // AstClass::user2      -> bool: Referenced (value read only in parameterized classes)
     // STATE
     ParamProcessor m_processor;  // De-parameterize a cell, build modules
     UnrollStateful m_unroller;  // Loop unroller
@@ -924,6 +932,7 @@ class ParamVisitor final : public VNVisitor {
     std::vector<AstDot*> m_dots;  // Dot references to process
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
     std::multimap<int, AstNodeModule*> m_workQueue;  // Modules left to process
+    std::vector<AstClass*> m_paramClasses;  // Parameterized classes
 
     // Map from AstNodeModule to set of all AstNodeModules that instantiates it.
     std::unordered_map<AstNodeModule*, std::unordered_set<AstNodeModule*>> m_parentps;
@@ -945,16 +954,18 @@ class ParamVisitor final : public VNVisitor {
 
             // Process once; note user5 will be cleared on specialization, so we will do the
             // specialized module if needed
-            if (modp->user5SetOnce()) continue;
+            if (!modp->user5SetOnce()) {
 
-            // TODO: this really should be an assert, but classes and hier_blocks are special...
-            if (modp->someInstanceName().empty()) modp->someInstanceName(modp->origName());
+                // TODO: this really should be an assert, but classes and hier_blocks are
+                // special...
+                if (modp->someInstanceName().empty()) modp->someInstanceName(modp->origName());
 
-            // Iterate the body
-            {
-                VL_RESTORER(m_modp);
-                m_modp = modp;
-                iterateChildren(modp);
+                // Iterate the body
+                {
+                    VL_RESTORER(m_modp);
+                    m_modp = modp;
+                    iterateChildren(modp);
+                }
             }
 
             // Process interface cells, then non-interface cells, which may reference an interface
@@ -1022,7 +1033,7 @@ class ParamVisitor final : public VNVisitor {
         m_cellps.emplace(!isIface, nodep);
     }
 
-    // RHSs of AstDots need a relink when LHS is a parametrized class reference
+    // RHSs of AstDots need a relink when LHS is a parameterized class reference
     void relinkDots() {
         for (AstDot* const dotp : m_dots) {
             const AstClassOrPackageRef* const classRefp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
@@ -1041,6 +1052,14 @@ class ParamVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         if (nodep->recursiveClone()) nodep->dead(true);  // Fake, made for recursive elimination
         if (nodep->dead()) return;  // Marked by LinkDot (and above)
+        if (AstClass* const classp = VN_CAST(nodep, Class)) {
+            if (classp->isParameterized()) {
+                // Don't enter into a definition.
+                // If a class is used, it will be visited through a reference
+                m_paramClasses.push_back(classp);
+                return;
+            }
+        }
 
         if (m_iterateModule) {  // Iterating body
             UINFO(4, " MOD-under-MOD.  " << nodep << endl);
@@ -1357,6 +1376,17 @@ public:
 
             // Re-insert modules
             for (AstNodeModule* const modp : modps) netlistp->addModulesp(modp);
+
+            for (AstClass* const classp : m_paramClasses) {
+                if (!classp->user2()) {
+                    // Unreferenced, so it can be removed
+                    VL_DO_DANGLING(pushDeletep(classp->unlinkFrBack()), classp);
+                } else {
+                    // Referenced. classp became a specialized class with the default
+                    // values of parameters and is not a parameterized class anymore
+                    classp->isParameterized(false);
+                }
+            }
         }
     }
     ~ParamVisitor() override = default;

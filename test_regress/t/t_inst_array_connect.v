@@ -20,7 +20,7 @@ module t (/*AUTOARG*/
 
    assign inc = 4'b0001;
 
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
 
    COUNTER UCOUNTER1[N-1:0]
      (

@@ -98,7 +98,7 @@ class V3Global final {
     VWidthMinUsage m_widthMinUsage
         = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for
 
-    int m_debugFileNumber = 0;  // Number to append to debug files created
+    std::atomic_int m_debugFileNumber{0};  // Number to append to debug files created
     bool m_assertDTypesResolved = false;  // Tree should have dtypep()'s
     bool m_assertScoped = false;  // Tree is scoped
     bool m_constRemoveXs = false;  // Const needs to strip any Xs
@@ -135,6 +135,7 @@ public:
 
     // METHODS
     void readFiles();
+    void removeStd();
     void checkTree() const;
     static void dumpCheckGlobalTree(const string& stagename, int newNumber = 0,
                                     bool doDump = true);

@@ -54,7 +54,7 @@ void dpii_clear() {
 }
 int dpii_count(int idx) { return (idx >= 0 && idx < COUNTERS) ? global_count[idx] : -1; }
 unsigned char dpii_incx(int idx, unsigned char value) {
-    if (idx >= 0 && idx < COUNTERS) global_count[idx]++;
+    if (idx >= 0 && idx < COUNTERS) ++global_count[idx];
     return value;
 }
 unsigned char dpii_inc0(int idx) { return dpii_incx(idx, 0); }

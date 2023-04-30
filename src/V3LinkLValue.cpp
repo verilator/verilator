@@ -116,83 +116,43 @@ private:
             iterateAndNextNull(nodep->top());
         }
     }
-    void visit(AstFOpen* nodep) override {
-        VL_RESTORER(m_setRefLvalue);
-        {
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->filep());
-            m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->filenamep());
-            iterateAndNextNull(nodep->modep());
-        }
-    }
-    void visit(AstFOpenMcd* nodep) override {
-        VL_RESTORER(m_setRefLvalue);
-        {
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->filep());
-            m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->filenamep());
-        }
-    }
-    void visit(AstFClose* nodep) override {
-        VL_RESTORER(m_setRefLvalue);
-        {
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->filep());
-        }
-    }
     void visit(AstFError* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
-            m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->filep());
+            m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->strp());
-        }
-    }
-    void visit(AstFFlush* nodep) override {
-        VL_RESTORER(m_setRefLvalue);
-        {
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->filep());
-        }
-    }
-    void visit(AstFGetC* nodep) override {
-        VL_RESTORER(m_setRefLvalue);
-        {
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->filep());
         }
     }
     void visit(AstFGetS* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
-            m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->filep());
+            m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->strgp());
         }
     }
     void visit(AstFRead* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
+            iterateAndNextNull(nodep->filep());
             m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->memp());
-            iterateAndNextNull(nodep->filep());
         }
     }
     void visit(AstFScanF* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
-            m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->filep());
+            m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->exprsp());
         }
     }
     void visit(AstFUngetC* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
-            m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->filep());
+            m_setRefLvalue = VAccess::WRITE;
             iterateAndNextNull(nodep->rhsp());
         }
     }

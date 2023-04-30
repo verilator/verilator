@@ -63,7 +63,7 @@ private:
         AstCCall* const callp = new AstCCall{nodep->fileline(), funcp};
         callp->dtypeSetVoid();
         if (VN_IS(m_modp, Class)) {
-            funcp->argTypes(EmitCBaseVisitor::symClassVar());
+            funcp->argTypes(EmitCBase::symClassVar());
             callp->argTypes("vlSymsp");
         }
         UINFO(6, "      New " << callp << endl);
@@ -93,6 +93,7 @@ private:
         }
     }
     void visit(AstStmtExpr* nodep) override {}  // Stop recursion after introducing new function
+    void visit(AstJumpBlock*) override {}  // Stop recursion as can't break up across a jump
     void visit(AstNodeStmt* nodep) override {
         m_depth++;
         if (m_depth > v3Global.opt.compLimitBlocks()) {  // Already done

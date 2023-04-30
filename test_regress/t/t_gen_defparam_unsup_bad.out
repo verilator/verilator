@@ -1,8 +1,0 @@
-%Error-UNSUPPORTED: t/t_gen_defparam_unsup_bad.v:9:16: Unsupported: defparam with more than one dot
-    9 |    defparam a.b.W = 3;
-      |                ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_gen_defparam_unsup_bad.v:9:17: syntax error, unexpected IDENTIFIER, expecting ',' or ';'
-    9 |    defparam a.b.W = 3;
-      |                 ^
-%Error: Exiting due to

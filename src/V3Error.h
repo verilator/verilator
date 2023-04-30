@@ -20,7 +20,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "verilated_threads.h"
+#include "V3Mutex.h"
 
 // Limited V3 headers here - this is a base class for Vlc etc
 #include "V3String.h"
@@ -70,6 +70,7 @@ public:
         EC_FIRST_WARN,  // Just a code so the program knows where to start warnings
         //
         ALWCOMBORDER,   // Always_comb with unordered statements
+        ASCRANGE,       // Ascending bit range vector
         ASSIGNDLY,      // Assignment delays
         ASSIGNIN,       // Assigning to input
         BADSTDPRAGMA,   // Any error related to pragmas
@@ -87,6 +88,7 @@ public:
         CMPCONST,       // Comparison is constant due to limited range
         COLONPLUS,      // :+ instead of +:
         COMBDLY,        // Combinatorial delayed assignment
+        CONSTRAINTIGN,  // Constraint ignored
         CONTASSREG,     // Continuous assignment on reg
         DECLFILENAME,   // Declaration doesn't match filename
         DEFPARAM,       // Style: Defparam
@@ -109,7 +111,7 @@ public:
         INITIALDLY,     // Initial delayed statement
         INSECURE,       // Insecure options
         LATCH,          // Latch detected outside of always_latch block
-        LITENDIAN,      // Little bit endian vector
+        LITENDIAN,      // Little endian, renamed to ASCRANGE
         MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks
@@ -131,6 +133,7 @@ public:
         SELRANGE,       // Selection index out of range
         SHORTREAL,      // Shortreal not supported
         SPLITVAR,       // Cannot split the variable
+        STATICVAR,      // Static variable declared in a loop with a declaration assignment
         STMTDLY,        // Delayed statement
         SYMRSVDWORD,    // Symbol is Reserved Word
         SYNCASYNCNET,   // Mixed sync + async reset
@@ -182,10 +185,10 @@ public:
             "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
             // Warnings
             " EC_FIRST_WARN",
-            "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
+            "ALWCOMBORDER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
-            "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
+            "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG",
             "DECLFILENAME", "DEFPARAM", "DEPRECATED",
             "ENCAPSULATED", "ENDLABEL", "ENUMVALUE", "EOFNEWLINE", "GENCLK", "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
@@ -195,7 +198,7 @@ public:
             "MULTIDRIVEN", "MULTITOP", "NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
             "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
-            "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
+            "SELRANGE", "SHORTREAL", "SPLITVAR", "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDPARAM", "UNUSEDSIGNAL",
@@ -219,18 +222,18 @@ public:
                 || m_e == CONTASSREG || m_e == ENCAPSULATED || m_e == ENDLABEL || m_e == ENUMVALUE
                 || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL
                 || m_e == PROCASSWIRE  // Says IEEE
-                || m_e == ZERODLY);
+        );
     }
     // Warnings to mention manual
     bool mentionManual() const VL_MT_SAFE {
-        return (m_e == EC_FATALSRC || m_e == SYMRSVDWORD || pretendError());
+        return (m_e == EC_FATALSRC || m_e == SYMRSVDWORD || m_e == ZERODLY || pretendError());
     }
     // Warnings that are lint only
     bool lintError() const VL_MT_SAFE {
-        return (m_e == ALWCOMBORDER || m_e == BSSPACE || m_e == CASEINCOMPLETE
+        return (m_e == ALWCOMBORDER || m_e == ASCRANGE || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
-                || m_e == LATCH || m_e == LITENDIAN || m_e == PINMISSING || m_e == REALCVT
+                || m_e == LATCH || m_e == PINMISSING || m_e == REALCVT || m_e == STATICVAR
                 || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
                 || m_e == WIDTHXZEXPAND);
     }
@@ -248,12 +251,17 @@ public:
         return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
     }
 
+    V3ErrorCode renamedTo() const {
+        // Return a new error this error has been renamed to
+        if (m_e == LITENDIAN) return V3ErrorCode{ASCRANGE};
+        return V3ErrorCode{EC_MIN};  // Not renamed; see isRenamed()
+    }
+    bool isRenamed() const { return renamedTo() != V3ErrorCode{EC_MIN}; }
     bool isUnder(V3ErrorCode other) {
         // backwards compatibility inheritance-like warnings
         if (m_e == other) { return true; }
         if (other == V3ErrorCode::WIDTH) {
-            return (m_e == WIDTH || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
-                    || m_e == WIDTHXZEXPAND);
+            return (m_e == WIDTHEXPAND || m_e == WIDTHTRUNC || m_e == WIDTHXZEXPAND);
         }
         if (other == V3ErrorCode::I_UNUSED) {
             return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
@@ -307,7 +315,7 @@ private:
     bool m_warnFatal VL_GUARDED_BY(m_mutex) = true;  // Option: --warnFatal Warnings are fatal
     std::ostringstream m_errorStr VL_GUARDED_BY(m_mutex);  // Error string being formed
 public:
-    VerilatedMutex m_mutex;  // Make sure only single thread is in class
+    V3RecursiveMutex m_mutex;  // Make sure only single thread is in class
 
     string msgPrefix() VL_REQUIRES(m_mutex);  // returns %Error/%Warn
     string warnMore() VL_REQUIRES(m_mutex);
@@ -400,57 +408,57 @@ public:
     static void debugDefault(int level) VL_MT_UNSAFE { s().debugDefault(level); }
     static int debugDefault() VL_MT_SAFE { return s().debugDefault(); }
     static void errorLimit(int level) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().errorLimit(level);
     }
     static int errorLimit() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().errorLimit();
     }
     static void warnFatal(bool flag) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().warnFatal(flag);
     }
     static bool warnFatal() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().warnFatal();
     }
     // returns %Error/%Warn
     static string msgPrefix() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().msgPrefix();
     }
     static int errorCount() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().errorCount();
     }
     static bool pretendError(int errorCode) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().pretendError(errorCode);
     }
     static int warnCount() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().warnCount();
     }
     static bool errorContexted() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().errorContexted();
     }
     static void errorContexted(bool flag) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().errorContexted(flag);
     }
     static void describedEachWarn(V3ErrorCode code, bool flag) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().describedEachWarn(code, flag);
     }
     // METHODS
     static void incErrors() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().incErrors();
     }
     static void incWarnings() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().incWarnings();
     }
     static void init();
@@ -460,20 +468,20 @@ public:
     static void abortIfWarnings();
     // Suppress next %Warn if user has it off
     static void suppressThisWarning() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().suppressThisWarning();
     }
     static void pretendError(V3ErrorCode code, bool flag) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().pretendError(code, flag);
     }
     static string lineStr(const char* filename, int lineno) VL_PURE;
     static V3ErrorCode errorCode() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().errorCode();
     }
     static void errorExitCb(V3ErrorGuarded::ErrorExitCb cb) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().errorExitCb(cb);
     }
 
@@ -484,7 +492,7 @@ public:
     // streamed directly to cerr.
     // Use with caution as this function isn't MT_SAFE.
     static string warnMoreStandalone() VL_EXCLUDES(s().m_mutex) VL_MT_UNSAFE {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().warnMore();
     }
     // This function marks place in error message from which point message
@@ -500,18 +508,18 @@ public:
     // Internals for v3error()/v3fatal() macros only
     // Error end takes the string stream to output, be careful to seek() as needed
     static void v3errorPrep(V3ErrorCode code) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().v3errorPrep(code);
     }
     static std::ostringstream& v3errorStr() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         return s().v3errorStr();
     }
     static void vlAbort();
     // static, but often overridden in classes.
     static void v3errorEnd(std::ostringstream& sstr, const string& extra = "")
         VL_MT_SAFE_EXCLUDES(s().m_mutex) VL_MT_SAFE {
-        const VerilatedLockGuard guard{s().m_mutex};
+        const V3RecursiveLockGuard guard{s().m_mutex};
         s().v3errorEnd(sstr, extra);
     }
     // We can't call 's().v3errorEnd' directly in 'v3ErrorEnd'/'v3errorEndFatal',
@@ -642,7 +650,7 @@ inline void v3errorEndFatal(std::ostringstream& sstr)
 // Helper macros for VL_DEFINE_DEBUG_FUNCTIONS
 // Takes an optional "name" (as __VA_ARGS__)
 #define VL_DEFINE_DEBUG(...) \
-    VL_ATTR_UNUSED static int debug##__VA_ARGS__() { \
+    VL_ATTR_UNUSED static int debug##__VA_ARGS__() VL_MT_SAFE { \
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
             std::string tag{VL_STRINGIFY(__VA_ARGS__)}; \

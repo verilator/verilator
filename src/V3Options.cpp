@@ -395,12 +395,12 @@ void V3Options::addForceInc(const string& filename) { m_forceIncs.push_back(file
 void V3Options::addArg(const string& arg) { m_impp->m_allArgs.push_back(arg); }
 
 string V3Options::allArgsString() const VL_MT_SAFE {
-    string out;
+    string result;
     for (const string& i : m_impp->m_allArgs) {
-        if (out != "") out += " ";
-        out += i;
+        if (result != "") result += " ";
+        result += i;
     }
-    return out;
+    return result;
 }
 
 // Delete some options for Verilation of the hierarchical blocks.
@@ -656,8 +656,11 @@ string V3Options::getenvPERL() {  //
 
 string V3Options::getenvSYSTEMC() {
     string var = V3Os::getenvStr("SYSTEMC", "");
-    if (var == "" && string(DEFENV_SYSTEMC) != "") {
-        var = DEFENV_SYSTEMC;
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    string defenv = string{DEFENV_SYSTEMC}.c_str();
+    if (var == "" && defenv != "") {
+        var = defenv;
         V3Os::setenvStr("SYSTEMC", var, "Hardcoded at build time");
     }
     return var;
@@ -665,8 +668,11 @@ string V3Options::getenvSYSTEMC() {
 
 string V3Options::getenvSYSTEMC_ARCH() {
     string var = V3Os::getenvStr("SYSTEMC_ARCH", "");
-    if (var == "" && string(DEFENV_SYSTEMC_ARCH) != "") {
-        var = DEFENV_SYSTEMC_ARCH;
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    string defenv = string{DEFENV_SYSTEMC_ARCH}.c_str();
+    if (var == "" && defenv != "") {
+        var = defenv;
         V3Os::setenvStr("SYSTEMC_ARCH", var, "Hardcoded at build time");
     }
     if (var == "") {
@@ -697,8 +703,11 @@ string V3Options::getenvSYSTEMC_ARCH() {
 
 string V3Options::getenvSYSTEMC_INCLUDE() {
     string var = V3Os::getenvStr("SYSTEMC_INCLUDE", "");
-    if (var == "" && string(DEFENV_SYSTEMC_INCLUDE) != "") {
-        var = DEFENV_SYSTEMC_INCLUDE;
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    string defenv = string{DEFENV_SYSTEMC_INCLUDE}.c_str();
+    if (var == "" && defenv != "") {
+        var = defenv;
         V3Os::setenvStr("SYSTEMC_INCLUDE", var, "Hardcoded at build time");
     }
     if (var == "") {
@@ -710,8 +719,11 @@ string V3Options::getenvSYSTEMC_INCLUDE() {
 
 string V3Options::getenvSYSTEMC_LIBDIR() {
     string var = V3Os::getenvStr("SYSTEMC_LIBDIR", "");
-    if (var == "" && string(DEFENV_SYSTEMC_LIBDIR) != "") {
-        var = DEFENV_SYSTEMC_LIBDIR;
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    string defenv = string{DEFENV_SYSTEMC_LIBDIR}.c_str();
+    if (var == "" && defenv != "") {
+        var = defenv;
         V3Os::setenvStr("SYSTEMC_LIBDIR", var, "Hardcoded at build time");
     }
     if (var == "") {
@@ -724,8 +736,11 @@ string V3Options::getenvSYSTEMC_LIBDIR() {
 
 string V3Options::getenvVERILATOR_ROOT() {
     string var = V3Os::getenvStr("VERILATOR_ROOT", "");
-    if (var == "" && string(DEFENV_VERILATOR_ROOT) != "") {
-        var = DEFENV_VERILATOR_ROOT;
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    string defenv = string{DEFENV_VERILATOR_ROOT}.c_str();
+    if (var == "" && defenv != "") {
+        var = defenv;
         V3Os::setenvStr("VERILATOR_ROOT", var, "Hardcoded at build time");
     }
     if (var == "") v3fatal("$VERILATOR_ROOT needs to be in environment\n");
@@ -874,13 +889,15 @@ void V3Options::notify() {
 //######################################################################
 // V3 Options accessors
 
-string V3Options::version() {
+string V3Options::version() VL_PURE {
     string ver = DTVERSION;
     ver += " rev " + cvtToStr(DTVERSION_rev);
     return ver;
 }
 
-string V3Options::protectKeyDefaulted() {
+string V3Options::protectKeyDefaulted() VL_MT_SAFE {
+    static V3Mutex mutex;
+    const V3LockGuard lock{mutex};
     if (m_protectKey.empty()) {
         // Create a key with a human-readable symbol-like name.
         // This conversion drops ~2 bits of entropy out of 256, shouldn't matter.
@@ -949,9 +966,9 @@ void V3Options::parseOpts(FileLine* fl, int argc, char** argv) {
 
     // Default prefix to the filename
     if (prefix() == "" && topModule() != "")
-        m_prefix = string("V") + AstNode::encodeName(topModule());
+        m_prefix = string{"V"} + AstNode::encodeName(topModule());
     if (prefix() == "" && vFilesList.size() >= 1)
-        m_prefix = string("V") + AstNode::encodeName(V3Os::filenameNonExt(*(vFilesList.begin())));
+        m_prefix = string{"V"} + AstNode::encodeName(V3Os::filenameNonExt(*(vFilesList.begin())));
     if (modPrefix() == "") m_modPrefix = prefix();
 
     // Find files in makedir
@@ -1381,11 +1398,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         m_protectIds = true;
     });
     DECL_OPTION("-public", OnOff, &m_public);
+    DECL_OPTION("-public-depth", Set, &m_publicDepth);
     DECL_OPTION("-public-flat-rw", CbOnOff, [this](bool flag) {
         m_publicFlatRW = flag;
         v3Global.dpi(true);
     });
-
+    DECL_OPTION("-public-params", CbOnOff, [this](bool flag) {
+        m_public_params = flag;
+        v3Global.dpi(true);
+    });
     DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
 
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
@@ -1934,7 +1955,7 @@ unsigned V3Options::dumpLevel(const string& tag) const VL_MT_SAFE {
     return iter != m_dumpLevel.end() ? iter->second : 0;
 }
 
-unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE {
+unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means we need to strip the filenames: ../Foo.cpp -> Foo
     return dumpLevel(V3Os::filenameNonDirExt(srcfile_path));

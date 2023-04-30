@@ -32,7 +32,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Symbol table emitting
 
-class EmitCSyms final : EmitCBaseVisitor {
+class EmitCSyms final : EmitCBaseVisitorConst {
     // NODE STATE
     // Cleared on Netlist
     //  AstNodeModule::user1()  -> bool.  Set true __Vconfigure called
@@ -278,7 +278,7 @@ class EmitCSyms final : EmitCBaseVisitor {
     // VISITORS
     void visit(AstNetlist* nodep) override {
         // Collect list of scopes
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         varsExpand();
 
         if (v3Global.opt.vpi()) buildVpiHierarchy();
@@ -304,7 +304,7 @@ class EmitCSyms final : EmitCBaseVisitor {
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
     void visit(AstCellInline* nodep) override {
@@ -356,7 +356,7 @@ class EmitCSyms final : EmitCBaseVisitor {
     }
     void visit(AstVar* nodep) override {
         nameCheck(nodep);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         if (nodep->isSigUserRdPublic() && !m_cfuncp)
             m_modVars.emplace_back(std::make_pair(m_modp, nodep));
     }
@@ -372,18 +372,18 @@ class EmitCSyms final : EmitCBaseVisitor {
         VL_RESTORER(m_cfuncp);
         {
             m_cfuncp = nodep;
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
 
     //---------------------------------------
     void visit(AstConst*) override {}
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     explicit EmitCSyms(AstNetlist* nodep, bool dpiHdrOnly)
         : m_dpiHdrOnly{dpiHdrOnly} {
-        iterate(nodep);
+        iterateConst(nodep);
     }
 };
 
@@ -432,7 +432,8 @@ void EmitCSyms::emitSymHdr() {
             if (funcp->dpiExportImpl()) {
                 const string cbtype
                     = protect(v3Global.opt.prefix() + "__Vcb_" + funcp->cname() + "_t");
-                types["using " + cbtype + " = void (*) (" + cFuncArgs(funcp) + ");\n"] = 1;
+                const string functype = funcp->rtnTypeVoid() + " (*) (" + cFuncArgs(funcp) + ")";
+                types["using " + cbtype + " = " + functype + ";\n"] = 1;
             }
         }
         for (const auto& i : types) puts(i.first);
@@ -516,7 +517,7 @@ void EmitCSyms::emitSymHdr() {
     puts("\n// CONSTRUCTORS\n");
     puts(symClassName() + "(VerilatedContext* contextp, const char* namep, " + topClassName()
          + "* modelp);\n");
-    puts(string("~") + symClassName() + "();\n");
+    puts(string{"~"} + symClassName() + "();\n");
 
     for (const auto& i : m_usesVfinal) {
         puts("void " + symClassName() + "_" + cvtToStr(i.first) + "(");

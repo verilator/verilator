@@ -59,8 +59,7 @@ AstCountOnes* makeNode<AstCountOnes, DfgCountOnes, AstNodeExpr*>(  //
     const DfgCountOnes* vtxp, AstNodeExpr* op1) {
     AstCountOnes* const nodep = new AstCountOnes{vtxp->fileline(), op1};
     // Set dtype same as V3Width
-    const int selwidth = V3Number::log2b(nodep->lhsp()->width()) + 1;
-    nodep->dtypeSetLogicSized(selwidth, VSigning::UNSIGNED);
+    nodep->dtypeSetLogicSized(32, VSigning::UNSIGNED);
     return nodep;
 }
 

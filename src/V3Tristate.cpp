@@ -152,9 +152,9 @@ public:
         , m_nodep{nodep} {}
     ~TristateVertex() override = default;
     // ACCESSORS
-    AstNode* nodep() const { return m_nodep; }
+    AstNode* nodep() const VL_MT_STABLE { return m_nodep; }
     const AstVar* varp() const { return VN_CAST(nodep(), Var); }
-    string name() const override {
+    string name() const override VL_MT_STABLE {
         return ((isTristate() ? "tri\\n"
                  : feedsTri() ? "feed\\n"
                               : "-\\n")
@@ -170,9 +170,9 @@ public:
     }
     FileLine* fileline() const override { return nodep()->fileline(); }
     void isTristate(bool flag) { m_isTristate = flag; }
-    bool isTristate() const { return m_isTristate; }
+    bool isTristate() const VL_MT_SAFE { return m_isTristate; }
     void feedsTri(bool flag) { m_feedsTri = flag; }
-    bool feedsTri() const { return m_feedsTri; }
+    bool feedsTri() const VL_MT_SAFE { return m_feedsTri; }
     void processed(bool flag) { m_processed = flag; }
     bool processed() const { return m_processed; }
 };
@@ -1793,7 +1793,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         iterateChildren(nodep);
     }
 
-    void visit(AstNetlist* nodep) override { iterateChildrenBackwards(nodep); }
+    void visit(AstNetlist* nodep) override { iterateChildrenBackwardsConst(nodep); }
 
     // Default: Just iterate
     void visit(AstNode* nodep) override {

@@ -19,7 +19,7 @@
 //          Replace SELEXTRACT with SEL
 //          Replace SELBIT with SEL or ARRAYSEL
 //
-// This code was once in V3LinkResolve, but little endian bit vectors won't
+// This code was once in V3LinkResolve, but ascending bit range vectors won't
 // work that early.  It was considered for V3Width and V3Param, but is
 // fairly ugly both places as the nodes change in too strongly
 // interconnected ways.
@@ -162,7 +162,7 @@ private:
             // vector without range, or 0 lsb is ok, for example a INTEGER x; y = x[21:0];
             return underp;
         } else {
-            if (fromRange.littleEndian()) {
+            if (fromRange.ascending()) {
                 // reg [1:3] was swapped to [3:1] (lsbEndianedp==3) and needs a SUB(3,under)
                 return newSubNeg(fromRange.hi(), underp);
             } else {
@@ -180,13 +180,25 @@ private:
         } else {
             // Need a slice data type, which is an array of the extracted
             // type, but with (presumably) different size
-            const VNumRange newRange{msb, lsb, nodep->declRange().littleEndian()};
+            const VNumRange newRange{msb, lsb, nodep->declRange().ascending()};
             AstNodeDType* const vardtypep
                 = new AstPackArrayDType{nodep->fileline(),
                                         nodep->subDTypep(),  // Need to strip off array reference
                                         new AstRange{nodep->fileline(), newRange}};
             v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
             return vardtypep;
+        }
+    }
+
+    AstNodeExpr* selQueueBackness(AstNode* nodep) {
+        if (VN_IS(nodep, Unbounded)) {  // e.g. "[$]"
+            return new AstConst{nodep->fileline(), AstConst::Signed32{}, 0};
+        } else if (VN_IS(nodep, Sub) && VN_IS(VN_CAST(nodep, Sub)->lhsp(), Unbounded)) {
+            // e.g. "q[$ - 1]", where 1 is subnodep
+            AstNodeExpr* subrhsp = VN_CAST(nodep, Sub)->rhsp()->unlinkFrBack();
+            return subrhsp;
+        } else {
+            return nullptr;
         }
     }
 
@@ -227,7 +239,7 @@ private:
         } else if (const AstPackArrayDType* const adtypep = VN_CAST(ddtypep, PackArrayDType)) {
             // SELBIT(array, index) -> SEL(array, index*width-of-subindex, width-of-subindex)
             AstNodeExpr* subp = rhsp;
-            if (fromRange.littleEndian()) {
+            if (fromRange.ascending()) {
                 subp = newSubNeg(fromRange.hi(), subp);
             } else {
                 subp = newSubNeg(subp, fromRange.lo());
@@ -250,8 +262,7 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstAssocArrayDType* const adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
             // SELBIT(array, index) -> ASSOCSEL(array, index)
-            AstNodeExpr* const subp = rhsp;
-            AstAssocSel* const newp = new AstAssocSel{nodep->fileline(), fromp, subp};
+            AstAssocSel* const newp = new AstAssocSel{nodep->fileline(), fromp, rhsp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug() >= 9) newp->dumpTree("-  SELBTn: ");
             nodep->replaceWith(newp);
@@ -259,24 +270,26 @@ private:
         } else if (const AstWildcardArrayDType* const adtypep
                    = VN_CAST(ddtypep, WildcardArrayDType)) {
             // SELBIT(array, index) -> WILDCARDSEL(array, index)
-            AstNodeExpr* const subp = rhsp;
-            AstWildcardSel* const newp = new AstWildcardSel{nodep->fileline(), fromp, subp};
+            AstWildcardSel* const newp = new AstWildcardSel{nodep->fileline(), fromp, rhsp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug() >= 9) newp->dumpTree("-  SELBTn: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstDynArrayDType* const adtypep = VN_CAST(ddtypep, DynArrayDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
-            AstNodeExpr* const subp = rhsp;
-            AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, "at", subp};
+            AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, "at", rhsp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             if (debug() >= 9) newp->dumpTree("-  SELBTq: ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstQueueDType* const adtypep = VN_CAST(ddtypep, QueueDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
-            AstNodeExpr* const subp = rhsp;
-            AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, "at", subp};
+            AstCMethodHard* newp;
+            if (AstNodeExpr* const backnessp = selQueueBackness(rhsp)) {
+                newp = new AstCMethodHard{nodep->fileline(), fromp, "atBack", backnessp};
+            } else {
+                newp = new AstCMethodHard{nodep->fileline(), fromp, "at", rhsp};
+            }
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             if (debug() >= 9) newp->dumpTree("-  SELBTq: ");
             nodep->replaceWith(newp);
@@ -338,19 +351,43 @@ private:
         V3Const::constifyParamsEdit(nodep->leftp());  // May relink pointed to node
         V3Const::constifyParamsEdit(nodep->rightp());  // May relink pointed to node
         // if (debug() >= 9) nodep->dumpTree("-  SELEX3: ");
+        AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+        const FromData fromdata = fromDataForArray(nodep, fromp);
+        AstNodeDType* const ddtypep = fromdata.m_dtypep;
+        const VNumRange fromRange = fromdata.m_fromRange;
+        if (VN_IS(ddtypep, QueueDType)) {
+            AstNodeExpr* const qleftp = nodep->rhsp()->unlinkFrBack();
+            AstNodeExpr* const qrightp = nodep->thsp()->unlinkFrBack();
+            AstNodeExpr* const qleftBacknessp = selQueueBackness(qleftp);
+            AstNodeExpr* const qrightBacknessp = selQueueBackness(qrightp);
+            // Use special methods to refer to back rather than math using
+            // queue size, this allows a single queue reference, to support
+            // for equations in side effects that select the queue to
+            // operate upon.
+            std::string name = (qleftBacknessp    ? "sliceBackBack"
+                                : qrightBacknessp ? "sliceFrontBack"
+                                                  : "slice");
+            auto* const newp = new AstCMethodHard{nodep->fileline(), fromp, name,
+                                                  qleftBacknessp ? qleftBacknessp : qleftp};
+            newp->addPinsp(qrightBacknessp ? qrightBacknessp : qrightp);
+            newp->dtypep(ddtypep);
+            newp->didWidth(true);
+            newp->protect(false);
+            UINFO(6, "   new " << newp << endl);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        // Non-queue
         checkConstantOrReplace(nodep->leftp(),
                                "First value of [a:b] isn't a constant, maybe you want +: or -:");
         checkConstantOrReplace(nodep->rightp(),
                                "Second value of [a:b] isn't a constant, maybe you want +: or -:");
-        AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
         AstNodeExpr* const msbp = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* const lsbp = nodep->thsp()->unlinkFrBack();
         int32_t msb = VN_AS(msbp, Const)->toSInt();
         int32_t lsb = VN_AS(lsbp, Const)->toSInt();
         const int32_t elem = (msb > lsb) ? (msb - lsb + 1) : (lsb - msb + 1);
-        const FromData fromdata = fromDataForArray(nodep, fromp);
-        AstNodeDType* const ddtypep = fromdata.m_dtypep;
-        const VNumRange fromRange = fromdata.m_fromRange;
         if (VN_IS(ddtypep, UnpackArrayDType)) {
             // Slice extraction
             if (fromRange.elements() == elem
@@ -375,8 +412,8 @@ private:
                         adtypep,
                         "Array extraction with width miscomputed " << adtypep->width() << "/"
                                                                    << fromRange.elements());
-            if (fromRange.littleEndian()) {
-                // Below code assumes big bit endian; just works out if we swap
+            if (fromRange.ascending()) {
+                // Below code assumes descending bit range; just works out if we swap
                 const int x = msb;
                 msb = lsb;
                 lsb = x;
@@ -385,7 +422,7 @@ private:
                 nodep->v3warn(
                     SELRANGE,
                     "[" << msb << ":" << lsb
-                        << "] Range extract has backward bit ordering, perhaps you wanted [" << lsb
+                        << "] Slice range has ascending bit ordering, perhaps you wanted [" << lsb
                         << ":" << msb << "]");
                 const int x = msb;
                 msb = lsb;
@@ -405,8 +442,8 @@ private:
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (VN_IS(ddtypep, BasicDType)) {
-            if (fromRange.littleEndian()) {
-                // Below code assumes big bit endian; just works out if we swap
+            if (fromRange.ascending()) {
+                // Below code assumes descending bit range; just works out if we swap
                 const int x = msb;
                 msb = lsb;
                 lsb = x;
@@ -415,7 +452,7 @@ private:
                 nodep->v3warn(
                     SELRANGE,
                     "[" << msb << ":" << lsb
-                        << "] Range extract has backward bit ordering, perhaps you wanted [" << lsb
+                        << "] Slice range has ascending bit ordering, perhaps you wanted [" << lsb
                         << ":" << msb << "]");
                 const int x = msb;
                 msb = lsb;
@@ -432,12 +469,12 @@ private:
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (VN_IS(ddtypep, NodeUOrStructDType)) {
-            // Classes aren't little endian
+            // Classes don't have an ascending range
             if (lsb > msb) {
                 nodep->v3warn(
                     SELRANGE,
                     "[" << msb << ":" << lsb
-                        << "] Range extract has backward bit ordering, perhaps you wanted [" << lsb
+                        << "] Slice range has ascending bit ordering, perhaps you wanted [" << lsb
                         << ":" << msb << "]");
                 const int x = msb;
                 msb = lsb;
@@ -451,15 +488,6 @@ private:
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp << endl);
             // if (debug() >= 9) newp->dumpTree("-  SELEXnew: ");
-            nodep->replaceWith(newp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (VN_IS(ddtypep, QueueDType)) {
-            auto* const newp = new AstCMethodHard{nodep->fileline(), fromp, "slice", msbp};
-            msbp->addNext(lsbp);
-            newp->dtypep(ddtypep);
-            newp->didWidth(true);
-            newp->protect(false);
-            UINFO(6, "   new " << newp << endl);
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {  // nullptr=bad extract, or unknown node type
@@ -485,7 +513,8 @@ private:
         V3Width::widthParamsEdit(nodep->rhsp());  // constifyEdit doesn't ensure widths finished
         V3Const::constifyEdit(nodep->rhsp());  // May relink pointed to node, ok if not const
         V3Const::constifyParamsEdit(nodep->thsp());  // May relink pointed to node
-        checkConstantOrReplace(nodep->thsp(), "Width of :+ or :- bit extract isn't a constant");
+        checkConstantOrReplace(nodep->thsp(),
+                               "Width of :+ or :- bit slice range isn't a constant");
         if (debug() >= 9) nodep->dumpTree("-  SELPM3: ");
         // Now replace it with an AstSel
         AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
@@ -521,7 +550,7 @@ private:
                 const int32_t msb = VN_IS(nodep, SelPlus) ? rhs + width - 1 : rhs;
                 const int32_t lsb = VN_IS(nodep, SelPlus) ? rhs : rhs - width + 1;
                 AstSliceSel* const newp = new AstSliceSel{
-                    nodep->fileline(), fromp, VNumRange{msb, lsb, fromRange.littleEndian()}};
+                    nodep->fileline(), fromp, VNumRange{msb, lsb, fromRange.ascending()}};
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {
@@ -539,7 +568,7 @@ private:
             }
             AstNodeExpr* newlsbp = nullptr;
             if (VN_IS(nodep, SelPlus)) {
-                if (fromRange.littleEndian()) {
+                if (fromRange.ascending()) {
                     // SELPLUS(from,lsb,width) -> SEL(from, (vector_msb-width+1)-sel, width)
                     newlsbp = newSubNeg((fromRange.hi() - width + 1), rhsp);
                 } else {
@@ -547,7 +576,7 @@ private:
                     newlsbp = newSubNeg(rhsp, fromRange.lo());
                 }
             } else if (VN_IS(nodep, SelMinus)) {
-                if (fromRange.littleEndian()) {
+                if (fromRange.ascending()) {
                     // SELMINUS(from,msb,width) -> SEL(from, msb-[bit])
                     newlsbp = newSubNeg(fromRange.hi(), rhsp);
                 } else {

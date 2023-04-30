@@ -311,27 +311,26 @@ struct TriggerKit {
     // No VL_UNCOPYABLE(TriggerKit) as causes C++20 errors on MSVC
 
     // Utility that assigns the given index trigger to fire when the given variable is zero
-    void addFirstIterationTriggerAssignment(AstVarScope* counterp, uint32_t /*index*/) const {
+    void addFirstIterationTriggerAssignment(AstVarScope* counterp, uint32_t index) const {
         FileLine* const flp = counterp->fileline();
         AstVarRef* const vrefp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
-        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "at", new AstConst{flp, 0}};
-        callp->dtypeSetBit();
-        callp->pure(true);
-        m_funcp->stmtsp()->addHereThisAsNext(new AstAssign{
-            flp, callp,
-            new AstEq{flp, new AstVarRef{flp, counterp, VAccess::READ}, new AstConst{flp, 0}}});
+        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "set"};
+        callp->addPinsp(new AstConst{flp, index});
+        callp->addPinsp(
+            new AstEq{flp, new AstVarRef{flp, counterp, VAccess::READ}, new AstConst{flp, 0}});
+        callp->dtypeSetVoid();
+        m_funcp->stmtsp()->addHereThisAsNext(callp->makeStmt());
     }
 
     // Utility to set then clear the dpiExportTrigger trigger
     void addDpiExportTriggerAssignment(AstVarScope* dpiExportTriggerVscp, uint32_t index) const {
         FileLine* const flp = dpiExportTriggerVscp->fileline();
         AstVarRef* const vrefp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
-        AstCMethodHard* const callp
-            = new AstCMethodHard{flp, vrefp, "at", new AstConst{flp, index}};
-        callp->dtypeSetBit();
-        callp->pure(true);
-        AstNode* stmtp
-            = new AstAssign{flp, callp, new AstVarRef{flp, dpiExportTriggerVscp, VAccess::READ}};
+        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "set"};
+        callp->addPinsp(new AstConst{flp, index});
+        callp->addPinsp(new AstVarRef{flp, dpiExportTriggerVscp, VAccess::READ});
+        callp->dtypeSetVoid();
+        AstNode* const stmtp = callp->makeStmt();
         stmtp->addNext(new AstAssign{flp, new AstVarRef{flp, dpiExportTriggerVscp, VAccess::WRITE},
                                      new AstConst{flp, AstConst::BitFalse{}}});
         m_funcp->stmtsp()->addHereThisAsNext(stmtp);
@@ -354,13 +353,19 @@ struct EvalKit {
 
 // Create an AstSenTree that is sensitive to the given trigger index. Must not exist yet!
 AstSenTree* createTriggerSenTree(AstNetlist* netlistp, AstVarScope* const vscp, uint32_t index) {
+    UASSERT_OBJ(index != std::numeric_limits<unsigned>::max(), netlistp, "Invalid trigger index");
     AstTopScope* const topScopep = netlistp->topScopep();
     FileLine* const flp = topScopep->fileline();
     AstVarRef* const vrefp = new AstVarRef{flp, vscp, VAccess::READ};
-    AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "at", new AstConst{flp, index}};
-    callp->dtypeSetBit();
+    const uint32_t wordIndex = index / 64;
+    const uint32_t bitIndex = index % 64;
+    AstCMethodHard* const callp
+        = new AstCMethodHard{flp, vrefp, "word", new AstConst{flp, wordIndex}};
+    callp->dtypeSetUInt64();
     callp->pure(true);
-    AstSenItem* const senItemp = new AstSenItem{flp, VEdgeType::ET_TRUE, callp};
+    AstNodeExpr* const termp
+        = new AstAnd{flp, new AstConst{flp, AstConst::Unsized64{}, 1ULL << bitIndex}, callp};
+    AstSenItem* const senItemp = new AstSenItem{flp, VEdgeType::ET_TRUE, termp};
     AstSenTree* const resultp = new AstSenTree{flp, senItemp};
     topScopep->addSenTreesp(resultp);
     return resultp;
@@ -425,14 +430,28 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
             new AstText{flp, "VL_DBG_MSGF(\"         No triggers active\\n\");\n", true});
     }
 
+    // Set the given trigger to the given value
+    const auto setTrig = [&](uint32_t index, AstNodeExpr* valp) {
+        AstVarRef* const vrefp = new AstVarRef{flp, vscp, VAccess::WRITE};
+        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "set"};
+        callp->addPinsp(new AstConst{flp, index});
+        callp->addPinsp(valp);
+        callp->dtypeSetVoid();
+        return callp->makeStmt();
+    };
+
     // Create a reference to a trigger flag
-    const auto getTrigRef = [&](uint32_t index, VAccess access) {
-        AstVarRef* const vrefp = new AstVarRef{flp, vscp, access};
-        AstConst* const idxp = new AstConst{flp, index};
-        AstCMethodHard* callp = new AstCMethodHard{flp, vrefp, "at", idxp};
-        callp->dtypeSetBit();
+    const auto getTrig = [&](uint32_t index) {
+        AstVarRef* const vrefp = new AstVarRef{flp, vscp, VAccess::READ};
+        const uint32_t wordIndex = index / 64;
+        const uint32_t bitIndex = index % 64;
+        AstCMethodHard* const callp
+            = new AstCMethodHard{flp, vrefp, "word", new AstConst{flp, wordIndex}};
+        callp->dtypeSetUInt64();
         callp->pure(true);
-        return callp;
+        AstNodeExpr* const termp
+            = new AstAnd{flp, new AstConst{flp, AstConst::Unsized64{}, 1ULL << bitIndex}, callp};
+        return termp;
     };
 
     // Add a debug dumping statement for this trigger
@@ -444,7 +463,7 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
         ss << "\\n\");\n";
         const string message{ss.str()};
 
-        AstIf* const ifp = new AstIf{flp, getTrigRef(index, VAccess::READ)};
+        AstIf* const ifp = new AstIf{flp, getTrig(index)};
         dumpp->addStmtsp(ifp);
         ifp->addThensp(new AstText{flp, message, true});
     };
@@ -456,13 +475,13 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // Add trigger computation
     uint32_t triggerNumber = extraTriggers.size();
-    AstNode* initialTrigsp = nullptr;
+    AstNodeStmt* initialTrigsp = nullptr;
     for (const AstSenTree* const senTreep : senTreeps) {
         UASSERT_OBJ(senTreep->hasClocked() || senTreep->hasHybrid(), senTreep,
                     "Cannot create trigger expression for non-clocked sensitivity");
 
-        // Create the trigger AstSenTrees and associate it with the original AstSenTree
-        AstCMethodHard* const senp = getTrigRef(triggerNumber, VAccess::READ);
+        // Create the trigger AstSenTrees and associate them with the original AstSenTree
+        AstNodeExpr* const senp = getTrig(triggerNumber);
         AstSenItem* const senItemp = new AstSenItem{flp, VEdgeType::ET_TRUE, senp};
         AstSenTree* const trigpSenp = new AstSenTree{flp, senItemp};
         topScopep->addSenTreesp(trigpSenp);
@@ -470,14 +489,12 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
         // Add the trigger computation
         const auto& pair = senExprBuilder.build(senTreep);
-        funcp->addStmtsp(
-            new AstAssign{flp, getTrigRef(triggerNumber, VAccess::WRITE), pair.first});
+        funcp->addStmtsp(setTrig(triggerNumber, pair.first));
 
         // Add initialization time trigger
         if (pair.second || v3Global.opt.xInitialEdge()) {
-            AstNode* const assignp = new AstAssign{flp, getTrigRef(triggerNumber, VAccess::WRITE),
-                                                   new AstConst{flp, 1}};
-            initialTrigsp = AstNode::addNext(initialTrigsp, assignp);
+            initialTrigsp
+                = AstNode::addNext(initialTrigsp, setTrig(triggerNumber, new AstConst{flp, 1}));
         }
 
         // Add a debug statement for this trigger
@@ -607,7 +624,7 @@ std::pair<AstVarScope*, AstNodeStmt*> makeEvalLoop(AstNetlist* netlistp, const s
                 AstTextBlock* const blockp = new AstTextBlock{flp};
                 failp->addThensp(blockp);
                 FileLine* const locp = netlistp->topModulep()->fileline();
-                const string& file = EmitCBaseVisitor::protect(locp->filename());
+                const string& file = VIdProtect::protect(locp->filename());
                 const string& line = cvtToStr(locp->lineno());
                 const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
                 add("#ifdef VL_DEBUG\n");
@@ -751,7 +768,8 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // The DPI Export trigger
     AstSenTree* const dpiExportTriggered
-        = createTriggerSenTree(netlistp, trig.m_vscp, dpiExportTriggerIndex);
+        = dpiExportTriggerVscp ? createTriggerSenTree(netlistp, trig.m_vscp, dpiExportTriggerIndex)
+                               : nullptr;
 
     // Create and Order the body function
     AstCFunc* const icoFuncp
@@ -800,7 +818,7 @@ AstStmtExpr* createTriggerSetCall(FileLine* const flp, AstVarScope* const toVscp
                                   AstVarScope* const fromVscp) {
     AstVarRef* const lhsp = new AstVarRef{flp, toVscp, VAccess::WRITE};
     AstVarRef* const argp = new AstVarRef{flp, fromVscp, VAccess::READ};
-    AstCMethodHard* const callp = new AstCMethodHard{flp, lhsp, "set", argp};
+    AstCMethodHard* const callp = new AstCMethodHard{flp, lhsp, "thisOr", argp};
     callp->dtypeSetVoid();
     return callp->makeStmt();
 }
@@ -1111,7 +1129,9 @@ void schedule(AstNetlist* netlistp) {
 
     // The DPI Export trigger AstSenTree
     AstSenTree* const dpiExportTriggeredAct
-        = createTriggerSenTree(netlistp, actTrig.m_vscp, dpiExportTriggerIndex);
+        = dpiExportTriggerVscp
+              ? createTriggerSenTree(netlistp, actTrig.m_vscp, dpiExportTriggerIndex)
+              : nullptr;
 
     AstCFunc* const actFuncp = V3Order::order(
         netlistp, {&logicRegions.m_pre, &logicRegions.m_act, &logicReplicas.m_act}, trigToSenAct,
@@ -1139,7 +1159,9 @@ void schedule(AstNetlist* netlistp) {
         invertAndMergeSenTreeMap(trigToSen, trigMap);
 
         AstSenTree* const dpiExportTriggered
-            = createTriggerSenTree(netlistp, trigVscp, dpiExportTriggerIndex);
+            = dpiExportTriggerVscp
+                  ? createTriggerSenTree(netlistp, trigVscp, dpiExportTriggerIndex)
+                  : nullptr;
 
         const auto& timingDomains = timingKit.remapDomains(trigMap);
         AstCFunc* const funcp = V3Order::order(

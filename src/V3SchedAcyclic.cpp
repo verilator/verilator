@@ -68,12 +68,16 @@ public:
         : V3GraphVertex{graphp}
         , m_logicp{logicp}
         , m_scopep{scopep} {}
+    V3GraphVertex* clone(V3Graph* graphp) const override {
+        return new LogicVertex{graphp, logicp(), scopep()};
+    }
+
     AstNode* logicp() const { return m_logicp; }
     AstScope* scopep() const { return m_scopep; }
 
     // LCOV_EXCL_START // Debug code
-    string name() const override { return m_logicp->fileline()->ascii(); };
-    string dotShape() const override { return "rectangle"; }
+    string name() const override VL_MT_STABLE { return m_logicp->fileline()->ascii(); };
+    string dotShape() const override { return "rectangle2"; }
     // LCOV_EXCL_STOP
 };
 
@@ -86,9 +90,10 @@ public:
         , m_vscp{vscp} {}
     AstVarScope* vscp() const { return m_vscp; }
     AstVar* varp() const { return m_vscp->varp(); }
+    V3GraphVertex* clone(V3Graph* graphp) const override { return new VarVertex{graphp, vscp()}; }
 
     // LCOV_EXCL_START // Debug code
-    string name() const override { return m_vscp->name(); }
+    string name() const override VL_MT_STABLE { return m_vscp->name(); }
     string dotShape() const override { return "ellipse"; }
     string dotColor() const override { return "blue"; }
     // LCOV_EXCL_STOP

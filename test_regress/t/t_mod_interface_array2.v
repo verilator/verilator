@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 parameter N = 4;
-// verilator lint_off LITENDIAN
+// verilator lint_off ASCRANGE
 
 interface a_if #(parameter PARAM = 0) ();
    logic long_name;

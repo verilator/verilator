@@ -31,7 +31,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // ######################################################################
 //  Emit statements and expressions
 
-class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
+class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     // MEMBERS
     bool m_suppressSemi = false;
     const bool m_suppressUnknown = false;
@@ -166,7 +166,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         // AstSenItem is called for dumping in isolation by V3Order
         putfs(nodep, "@(");
         for (AstNode* expp = nodep->sensesp(); expp; expp = expp->nextp()) {
-            iterate(expp);
+            iterateConst(expp);
             if (expp->nextp()) putqs(expp->nextp(), " or ");
         }
         puts(")");
@@ -382,7 +382,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     void visit(AstStop* nodep) override { putfs(nodep, "$stop;\n"); }
     void visit(AstFinish* nodep) override { putfs(nodep, "$finish;\n"); }
     void visit(AstStmtExpr* nodep) override {
-        iterate(nodep->exprp());
+        iterateConst(nodep->exprp());
         puts(";\n");
     }
     void visit(AstNodeSimpleText* nodep) override {
@@ -398,7 +398,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             VL_RESTORER(m_suppressSemi);
             m_suppressVarSemi = nodep->commas();
             for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
-                iterate(childp);
+                iterateConst(childp);
                 if (nodep->commas() && childp->nextp()) puts(", ");
             }
         }
@@ -426,11 +426,11 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     }
 
     void visit(AstCMethodHard* nodep) override {
-        iterate(nodep->fromp());
+        iterateConst(nodep->fromp());
         puts("." + nodep->name() + "(");
         for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
             if (pinp != nodep->pinsp()) puts(", ");
-            iterate(pinp);
+            iterateConst(pinp);
         }
         puts(")");
     }
@@ -506,7 +506,12 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
                           nodep->thsp());
     }
     void visit(AstMemberSel* nodep) override {
-        iterate(nodep->fromp());
+        iterateConst(nodep->fromp());
+        puts(".");
+        puts(nodep->prettyName());
+    }
+    void visit(AstStructSel* nodep) override {
+        iterateConst(nodep->fromp());
         puts(".");
         puts(nodep->prettyName());
     }
@@ -528,7 +533,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             puts(cvtToStr(itr.first));
             puts(":");
             AstNode* const valuep = itr.second->valuep();
-            iterate(valuep);
+            iterateConst(valuep);
         }
         puts("}");
     }
@@ -608,13 +613,13 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     }
     void visit(AstConstDType* nodep) override {
         putfs(nodep, "const ");
-        iterate(nodep->subDTypep());
+        iterateConst(nodep->subDTypep());
     }
     void visit(AstNodeArrayDType* nodep) override {
-        iterate(nodep->subDTypep());
+        iterateConst(nodep->subDTypep());
         iterateAndNextConstNull(nodep->rangep());
     }
-    void visit(AstRefDType* nodep) override { iterate(nodep->skipRefp()); }
+    void visit(AstRefDType* nodep) override { iterateConst(nodep->skipRefp()); }
     void visit(AstNodeUOrStructDType* nodep) override {
         puts(nodep->verilogKwd() + " ");
         if (nodep->packed()) puts("packed ");
@@ -622,13 +627,13 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         puts("{");
         for (AstMemberDType* itemp = nodep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            iterate(itemp);
+            iterateConst(itemp);
             puts(";");
         }
         puts("}");
     }
     void visit(AstMemberDType* nodep) override {
-        iterate(nodep->subDTypep());
+        iterateConst(nodep->subDTypep());
         puts(" ");
         puts(nodep->name());
     }
@@ -693,7 +698,7 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
                 unpackps.push_back(unpackp);
                 dtypep = unpackp->subDTypep();
             } else {
-                iterate(dtypep);
+                iterateConst(dtypep);
                 puts(" ");
                 puts(nodep->prettyName());
                 dtypep = nullptr;
@@ -735,16 +740,16 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
 
 public:
     bool m_suppressVarSemi = false;  // Suppress emitting semicolon for AstVars
-    explicit EmitVBaseVisitor(bool suppressUnknown, AstSenTree* domainp)
+    explicit EmitVBaseVisitorConst(bool suppressUnknown, AstSenTree* domainp)
         : m_suppressUnknown{suppressUnknown}
         , m_sensesp{domainp} {}
-    ~EmitVBaseVisitor() override = default;
+    ~EmitVBaseVisitorConst() override = default;
 };
 
 //######################################################################
 // Emit to an output file
 
-class EmitVFileVisitor final : public EmitVBaseVisitor {
+class EmitVFileVisitor final : public EmitVBaseVisitorConst {
     // METHODS
     void puts(const string& str) override { ofp()->puts(str); }
     void putbs(const string& str) override { ofp()->putbs(str); }
@@ -754,10 +759,10 @@ class EmitVFileVisitor final : public EmitVBaseVisitor {
 
 public:
     EmitVFileVisitor(AstNode* nodep, V3OutVFile* ofp, bool trackText, bool suppressUnknown)
-        : EmitVBaseVisitor{suppressUnknown, nullptr} {
+        : EmitVBaseVisitorConst{suppressUnknown, nullptr} {
         m_ofp = ofp;
         m_trackText = trackText;
-        iterate(nodep);
+        iterateConst(nodep);
     }
     ~EmitVFileVisitor() override = default;
 };
@@ -765,7 +770,7 @@ public:
 //######################################################################
 // Emit to a stream (perhaps stringstream)
 
-class EmitVStreamVisitor final : public EmitVBaseVisitor {
+class EmitVStreamVisitor final : public EmitVBaseVisitorConst {
     // MEMBERS
     std::ostream& m_os;
     // METHODS
@@ -777,9 +782,9 @@ class EmitVStreamVisitor final : public EmitVBaseVisitor {
 
 public:
     EmitVStreamVisitor(const AstNode* nodep, std::ostream& os)
-        : EmitVBaseVisitor{false, nullptr}
+        : EmitVBaseVisitorConst{false, nullptr}
         , m_os(os) {  // Need () or GCC 4.8 false warning
-        iterate(const_cast<AstNode*>(nodep));
+        iterateConst(const_cast<AstNode*>(nodep));
     }
     ~EmitVStreamVisitor() override = default;
 };
@@ -832,7 +837,7 @@ public:
     }
 };
 
-class EmitVPrefixedVisitor final : public EmitVBaseVisitor {
+class EmitVPrefixedVisitor final : public EmitVBaseVisitorConst {
     // MEMBERS
     EmitVPrefixedFormatter m_formatter;  // Special verilog formatter (Way down the
                                          // inheritance is another unused V3OutFormatter)
@@ -856,10 +861,10 @@ class EmitVPrefixedVisitor final : public EmitVBaseVisitor {
 public:
     EmitVPrefixedVisitor(const AstNode* nodep, std::ostream& os, const string& prefix, int flWidth,
                          AstSenTree* domainp, bool user3mark)
-        : EmitVBaseVisitor{false, domainp}
+        : EmitVBaseVisitorConst{false, domainp}
         , m_formatter{os, prefix, flWidth} {
         if (user3mark) VNUser3InUse::check();
-        iterate(const_cast<AstNode*>(nodep));
+        iterateConst(const_cast<AstNode*>(nodep));
     }
     ~EmitVPrefixedVisitor() override = default;
 };

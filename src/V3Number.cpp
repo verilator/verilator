@@ -385,7 +385,7 @@ void V3Number::create(const char* sourcep) {
     // m_value[0]);
 }
 
-void V3Number::nodep(AstNode* nodep) {
+void V3Number::nodep(AstNode* nodep) VL_MT_STABLE {
     m_nodep = nodep;
     if (!nodep) return;
     m_fileline = nodep->fileline();
@@ -498,7 +498,7 @@ V3Number& V3Number::setMask(int nbits) {
 //======================================================================
 // ACCESSORS - as strings
 
-string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
+string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
     std::ostringstream out;
 
     if (is1Step()) {
@@ -598,17 +598,17 @@ bool V3Number::displayedFmtLegal(char format, bool isScan) {
     }
 }
 
-string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& in) {
+string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& in) VL_PURE {
     string padding;
     if (in.length() < fmtsize) padding = string(fmtsize - in.length(), pad);
     return left ? (in + padding) : (padding + in);
 }
 
-string V3Number::displayed(AstNode* nodep, const string& vformat) const {
+string V3Number::displayed(AstNode* nodep, const string& vformat) const VL_MT_STABLE {
     return displayed(nodep->fileline(), vformat);
 }
 
-string V3Number::displayed(FileLine* fl, const string& vformat) const {
+string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STABLE {
     auto pos = vformat.cbegin();
     UASSERT(pos != vformat.cend() && pos[0] == '%',
             "$display-like function with non format argument " << *this);
@@ -847,7 +847,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     }
 }
 
-string V3Number::toDecimalS() const {
+string V3Number::toDecimalS() const VL_MT_STABLE {
     if (isNegative()) {
         V3Number lhsNoSign = *this;
         lhsNoSign.opNegate(*this);
@@ -857,7 +857,7 @@ string V3Number::toDecimalS() const {
     }
 }
 
-string V3Number::toDecimalU() const {
+string V3Number::toDecimalU() const VL_MT_STABLE {
     const int maxdecwidth = (width() + 3) * 4 / 3;
 
     // Or (maxdecwidth+7)/8], but can't have more than 4 BCD bits per word
@@ -913,7 +913,7 @@ uint32_t V3Number::toUInt() const VL_MT_SAFE {
     return m_data.num()[0].m_value;
 }
 
-double V3Number::toDouble() const {
+double V3Number::toDouble() const VL_MT_SAFE {
     if (VL_UNCOVERABLE(!isDouble() || width() != 64)) {
         v3fatalSrc("Real operation on wrong sized/non-real number");
     }
@@ -926,7 +926,7 @@ double V3Number::toDouble() const {
     return u.d;
 }
 
-int32_t V3Number::toSInt() const {
+int32_t V3Number::toSInt() const VL_MT_SAFE {
     if (isSigned()) {
         const uint32_t v = toUInt();
         const uint32_t signExtend = (-(v & (1UL << (width() - 1))));
@@ -996,14 +996,14 @@ uint8_t V3Number::dataByte(int byte) const {
     return (edataWord(byte / (VL_EDATASIZE / 8)) >> ((byte * 8) % VL_EDATASIZE)) & 0xff;
 }
 
-bool V3Number::isAllZ() const {
+bool V3Number::isAllZ() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
     for (int i = 0; i < width(); i++) {
         if (!bitIsZ(i)) return false;
     }
     return true;
 }
-bool V3Number::isAllX() const {
+bool V3Number::isAllX() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
     uint32_t mask = hiWordMask();
     for (int i = words() - 1; i >= 0; --i) {
@@ -1013,7 +1013,7 @@ bool V3Number::isAllX() const {
     }
     return true;
 }
-bool V3Number::isEqZero() const {
+bool V3Number::isEqZero() const VL_MT_SAFE {
     if (isString()) return m_data.str().empty();
     for (int i = 0; i < words(); i++) {
         const ValueAndX v = m_data.num()[i];
@@ -1050,14 +1050,14 @@ bool V3Number::isEqAllOnes(int optwidth) const {
     }
     return true;
 }
-bool V3Number::isFourState() const {
+bool V3Number::isFourState() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
     for (int i = 0; i < words(); ++i) {
         if (m_data.num()[i].m_valueX) return true;
     }
     return false;
 }
-bool V3Number::isAnyX() const {
+bool V3Number::isAnyX() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
     for (int bit = 0; bit < width(); bit++) {
         if (bitIsX(bit)) return true;
@@ -1065,7 +1065,7 @@ bool V3Number::isAnyX() const {
     return false;
 }
 bool V3Number::isAnyXZ() const { return isAnyX() || isAnyZ(); }
-bool V3Number::isAnyZ() const {
+bool V3Number::isAnyZ() const VL_MT_SAFE {
     if (isDouble() || isString()) return false;
     for (int bit = 0; bit < width(); bit++) {
         if (bitIsZ(bit)) return true;
@@ -1082,7 +1082,7 @@ bool V3Number::isLtXZ(const V3Number& rhs) const {
     }
     return false;
 }
-int V3Number::countX(int lsb, int nbits) const {
+int V3Number::countX(int lsb, int nbits) const VL_MT_SAFE {
     int count = 0;
     for (int bitn = 0; bitn < nbits; ++bitn) {
         if (lsb + bitn >= width()) return count;
@@ -1090,7 +1090,7 @@ int V3Number::countX(int lsb, int nbits) const {
     }
     return count;
 }
-int V3Number::countZ(int lsb, int nbits) const {
+int V3Number::countZ(int lsb, int nbits) const VL_MT_SAFE {
     int count = 0;
     for (int bitn = 0; bitn < nbits; ++bitn) {
         if (lsb + bitn >= width()) return count;
@@ -2232,8 +2232,10 @@ V3Number& V3Number::opNToI(const V3Number& lhs) {
     const string& str = lhs.toString();
     for (size_t n = 0; n < str.length(); ++n) {
         const char c = str[str.length() - 1 - n];
-        for (size_t cbit = 0; cbit < 8; ++cbit)
-            setBit(n * 8 + cbit, VL_BITISSET_I(c, cbit) ? 1 : 0);
+        for (size_t cbit = 0; cbit < 8; ++cbit) {
+            const std::bitset<8> sbit{static_cast<unsigned long long>(c)};
+            setBit(n * 8 + cbit, sbit.test(cbit) ? 1 : 0);
+        }
     }
     return *this;
 }

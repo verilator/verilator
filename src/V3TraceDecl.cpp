@@ -93,7 +93,7 @@ public:
 //######################################################################
 // TraceDecl state, as a visitor of each AstNode
 
-class TraceDeclVisitor final : public EmitCBaseVisitor {
+class TraceDeclVisitor final : public VNVisitor {
 private:
     // NODE STATE
 
@@ -237,8 +237,9 @@ private:
 
     void addIgnore(const char* why) {
         ++m_statIgnSigs;
-        addToSubFunc(new AstComment{m_traVscp->fileline(),
-                                    "Tracing: " + m_traName + " // Ignored: " + why, true});
+        std::string cmt = std::string{"Tracing: "} + m_traName + " // Ignored: " + why;
+        if (debug() > 3 && m_traVscp) std::cout << "- " << m_traVscp->fileline() << cmt << endl;
+        addToSubFunc(new AstComment{m_traVscp->fileline(), cmt, true});
     }
 
     // VISITORS

@@ -232,9 +232,9 @@ std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
     char* const bufp = new char[len + 1];
     VL_VSNPRINTF(bufp, len + 1, formatp, ap);
 
-    std::string out{bufp, len};  // Not const to allow move optimization
+    std::string result{bufp, len};  // Not const to allow move optimization
     delete[] bufp;
-    return out;
+    return result;
 }
 
 uint64_t _vl_dbg_sequence_number() VL_MT_SAFE {
@@ -255,29 +255,75 @@ void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
     // includes that otherwise would be required in every Verilated module
     va_list ap;
     va_start(ap, formatp);
-    const std::string out = _vl_string_vprintf(formatp, ap);
+    const std::string result = _vl_string_vprintf(formatp, ap);
     va_end(ap);
     // printf("-imm-V{t%d,%" PRId64 "}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(),
-    // out.c_str());
+    // result.c_str());
 
     // Using VL_PRINTF not VL_PRINTF_MT so that we can call VL_DBG_MSGF
     // from within the guts of the thread execution machinery (and it goes
     // to the screen and not into the queues we're debugging)
-    VL_PRINTF("-V{t%u,%" PRIu64 "}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
+    VL_PRINTF("-V{t%u,%" PRIu64 "}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), result.c_str());
 }
 
 void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap, formatp);
-    const std::string out = _vl_string_vprintf(formatp, ap);
+    const std::string result = _vl_string_vprintf(formatp, ap);
     va_end(ap);
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        VL_PRINTF("%s", out.c_str());
+        VL_PRINTF("%s", result.c_str());
     }});
 }
 
 //===========================================================================
 // Random -- Mostly called at init time, so not inline.
+
+VlRNG::VlRNG() VL_MT_SAFE {
+    // Starting point for this new class comes from the global RNG
+    VlRNG& fromr = vl_thread_rng();
+    m_state = fromr.m_state;
+    // Advance the *source* so it can later generate a new number
+    // Xoroshiro128+ algorithm
+    fromr.m_state[1] ^= fromr.m_state[0];
+    fromr.m_state[0] = (((fromr.m_state[0] << 55) | (fromr.m_state[0] >> 9)) ^ fromr.m_state[1]
+                        ^ (fromr.m_state[1] << 14));
+    fromr.m_state[1] = (fromr.m_state[1] << 36) | (fromr.m_state[1] >> 28);
+}
+uint64_t VlRNG::rand64() VL_MT_UNSAFE {
+    // Xoroshiro128+ algorithm
+    const uint64_t result = m_state[0] + m_state[1];
+    m_state[1] ^= m_state[0];
+    m_state[0] = (((m_state[0] << 55) | (m_state[0] >> 9)) ^ m_state[1] ^ (m_state[1] << 14));
+    m_state[1] = (m_state[1] << 36) | (m_state[1] >> 28);
+    return result;
+}
+uint64_t VlRNG::vl_thread_rng_rand64() VL_MT_SAFE {
+    VlRNG& fromr = vl_thread_rng();
+    const uint64_t result = fromr.m_state[0] + fromr.m_state[1];
+    fromr.m_state[1] ^= fromr.m_state[0];
+    fromr.m_state[0] = (((fromr.m_state[0] << 55) | (fromr.m_state[0] >> 9)) ^ fromr.m_state[1]
+                        ^ (fromr.m_state[1] << 14));
+    fromr.m_state[1] = (fromr.m_state[1] << 36) | (fromr.m_state[1] >> 28);
+    return result;
+}
+void VlRNG::srandom(uint64_t n) VL_MT_UNSAFE {
+    m_state[0] = n;
+    m_state[1] = m_state[0];
+    // Fix state as algorithm is slow to randomize if many zeros
+    // This causes a loss of ~ 1 bit of seed entropy, no big deal
+    if (VL_COUNTONES_I(m_state[0]) < 10) m_state[0] = ~m_state[0];
+    if (VL_COUNTONES_I(m_state[1]) < 10) m_state[1] = ~m_state[1];
+}
+// Unused: void VlRNG::set_randstate(const std::string& state) VL_MT_UNSAFE {
+// Unused:     if (VL_LIKELY(state.length() == sizeof(m_state))) {
+// Unused:         memcpy(m_state, state.data(), sizeof(m_state));
+// Unused:     }
+// Unused: }
+// Unused: std::string VlRNG::get_randstate() const VL_MT_UNSAFE {
+// Unused:     std::string result{reinterpret_cast<const char *>(&m_state), sizeof(m_state)};
+// Unused:     return result;
+// Unused: }
 
 static uint32_t vl_sys_rand32() VL_MT_SAFE {
     // Return random 32-bits using system library.
@@ -292,31 +338,33 @@ static uint32_t vl_sys_rand32() VL_MT_SAFE {
 #endif
 }
 
-uint64_t vl_rand64() VL_MT_SAFE {
-    static thread_local uint64_t t_state[2];
+VlRNG& VlRNG::vl_thread_rng() VL_MT_SAFE {
+    static thread_local VlRNG t_rng{0};
     static thread_local uint32_t t_seedEpoch = 0;
     // For speed, we use a thread-local epoch number to know when to reseed
     // A thread always belongs to a single context, so this works out ok
     if (VL_UNLIKELY(t_seedEpoch != VerilatedContextImp::randSeedEpoch())) {
         // Set epoch before state, to avoid race case with new seeding
         t_seedEpoch = VerilatedContextImp::randSeedEpoch();
-        t_state[0] = Verilated::threadContextp()->impp()->randSeedDefault64();
-        t_state[1] = t_state[0];
+        // Same as srandom() but here as needs to be VL_MT_SAFE
+        t_rng.m_state[0] = Verilated::threadContextp()->impp()->randSeedDefault64();
+        t_rng.m_state[1] = t_rng.m_state[0];
         // Fix state as algorithm is slow to randomize if many zeros
         // This causes a loss of ~ 1 bit of seed entropy, no big deal
-        if (VL_COUNTONES_I(t_state[0]) < 10) t_state[0] = ~t_state[0];
-        if (VL_COUNTONES_I(t_state[1]) < 10) t_state[1] = ~t_state[1];
+        if (VL_COUNTONES_I(t_rng.m_state[0]) < 10) t_rng.m_state[0] = ~t_rng.m_state[0];
+        if (VL_COUNTONES_I(t_rng.m_state[1]) < 10) t_rng.m_state[1] = ~t_rng.m_state[1];
     }
-    // Xoroshiro128+ algorithm
-    const uint64_t result = t_state[0] + t_state[1];
-    t_state[1] ^= t_state[0];
-    t_state[0] = (((t_state[0] << 55) | (t_state[0] >> 9)) ^ t_state[1] ^ (t_state[1] << 14));
-    t_state[1] = (t_state[1] << 36) | (t_state[1] >> 28);
-    return result;
+    return t_rng;
 }
 
 WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(obits); ++i) outwp[i] = vl_rand64();
+    // Last word is unclean
+    return outwp;
+}
+
+WDataOutP VL_RANDOM_RNG_W(VlRNG& rngr, int obits, WDataOutP outwp) VL_MT_UNSAFE {
+    for (int i = 0; i < VL_WORDS_I(obits); ++i) outwp[i] = rngr.rand64();
     // Last word is unclean
     return outwp;
 }
@@ -518,12 +566,12 @@ QData VL_POW_QQW(int, int, int rbits, QData lhs, const WDataInP rwp) VL_MT_SAFE 
     // Skip check for rhs == 0, as short-circuit doesn't save time
     if (VL_UNLIKELY(lhs == 0)) return 0;
     QData power = lhs;
-    QData out = 1ULL;
+    QData result = 1ULL;
     for (int bit = 0; bit < rbits; ++bit) {
         if (bit > 0) power = power * power;
-        if (VL_BITISSET_W(rwp, bit)) out *= power;
+        if (VL_BITISSET_W(rwp, bit)) result *= power;
     }
-    return out;
+    return result;
 }
 
 WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lwp,
@@ -645,7 +693,7 @@ std::string VL_DECIMAL_NW(int width, const WDataInP lwp) VL_MT_SAFE {
 }
 
 template <typename T>
-std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t width) {
+std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t width) VL_MT_SAFE {
     const VerilatedContextImp* const ctxImpp = Verilated::threadContextp()->impp();
     const std::string suffix = ctxImpp->timeFormatSuffix();
     const int userUnits = ctxImpp->timeFormatUnits();  // 0..-15
@@ -1651,15 +1699,15 @@ std::string VL_STACKTRACE_N() VL_MT_SAFE {
     // cppcheck-suppress knownConditionTrueFalse
     if (!strings) return "Unable to backtrace\n";
 
-    std::string out = "Backtrace:\n";
-    for (int j = 0; j < nptrs; j++) out += std::string{strings[j]} + std::string{"\n"};
+    std::string result = "Backtrace:\n";
+    for (int j = 0; j < nptrs; j++) result += std::string{strings[j]} + std::string{"\n"};
     free(strings);
-    return out;
+    return result;
 }
 
 void VL_STACKTRACE() VL_MT_SAFE {
-    const std::string out = VL_STACKTRACE_N();
-    VL_PRINTF("%s", out.c_str());
+    const std::string result = VL_STACKTRACE_N();
+    VL_PRINTF("%s", result.c_str());
 }
 
 IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {
@@ -1805,14 +1853,14 @@ std::string VL_TO_STRING_W(int words, const WDataInP obj) {
 }
 
 std::string VL_TOLOWER_NN(const std::string& ld) VL_PURE {
-    std::string out = ld;
-    for (auto& cr : out) cr = std::tolower(cr);
-    return out;
+    std::string result = ld;
+    for (auto& cr : result) cr = std::tolower(cr);
+    return result;
 }
 std::string VL_TOUPPER_NN(const std::string& ld) VL_PURE {
-    std::string out = ld;
-    for (auto& cr : out) cr = std::toupper(cr);
-    return out;
+    std::string result = ld;
+    for (auto& cr : result) cr = std::toupper(cr);
+    return result;
 }
 
 std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_PURE {
@@ -1871,7 +1919,6 @@ IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
 IData VL_NTOI_I(int obits, const std::string& str) VL_PURE { return VL_NTOI_Q(obits, str); }
 QData VL_NTOI_Q(int obits, const std::string& str) VL_PURE {
     QData out = 0;
-    const size_t procLen = std::min(str.length(), static_cast<size_t>(8));
     const char* const datap = str.data();
     int pos = static_cast<int>(str.length()) - 1;
     int bit = 0;

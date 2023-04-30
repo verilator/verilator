@@ -72,7 +72,7 @@ public:
         , m_bodyp{bodyp}
         , m_id{id} {}
     AstMTaskBody* bodyp() const { return m_bodyp; }
-    uint32_t id() const override { return m_id; }
+    uint32_t id() const override VL_MT_SAFE { return m_id; }
     uint32_t priority() const { return m_priority; }
     void priority(uint32_t pri) { m_priority = pri; }
     uint32_t cost() const override { return m_cost; }
@@ -85,7 +85,7 @@ public:
         // If this MTask maps to a C function, this should be the name
         return std::string{"__Vmtask"} + "__" + cvtToStr(m_id);
     }
-    string name() const override { return std::string{"mt"} + cvtToStr(id()); }
+    string name() const override VL_MT_STABLE { return std::string{"mt"} + cvtToStr(id()); }
     string hashName() const { return m_hashName; }
     void hashName(const string& name) { m_hashName = name; }
     void dump(std::ostream& str) const {

@@ -33,28 +33,27 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Visitor that gathers the headers required by an AstCFunc
 
-class EmitCGatherDependencies final : VNVisitor {
+class EmitCGatherDependencies final : VNVisitorConst {
     // Ordered set, as it is used as a key in another map.
     std::set<string> m_dependencies;  // Header names to be included in output C++ file
 
     // METHODS
-    void addSymsDependency() { m_dependencies.insert(EmitCBaseVisitor::symClassName()); }
+    void addSymsDependency() { m_dependencies.insert(EmitCBase::symClassName()); }
     void addModDependency(const AstNodeModule* modp) {
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            m_dependencies.insert(EmitCBaseVisitor::prefixNameProtect(classp->classOrPackagep()));
+            m_dependencies.insert(EmitCBase::prefixNameProtect(classp->classOrPackagep()));
         } else {
-            m_dependencies.insert(EmitCBaseVisitor::prefixNameProtect(modp));
+            m_dependencies.insert(EmitCBase::prefixNameProtect(modp));
         }
     }
     void addDTypeDependency(const AstNodeDType* nodep) {
         if (const AstClassRefDType* const dtypep = VN_CAST(nodep, ClassRefDType)) {
             m_dependencies.insert(
-                EmitCBaseVisitor::prefixNameProtect(dtypep->classp()->classOrPackagep()));
+                EmitCBase::prefixNameProtect(dtypep->classp()->classOrPackagep()));
         } else if (const AstNodeUOrStructDType* const dtypep
                    = VN_CAST(nodep, NodeUOrStructDType)) {
             if (!dtypep->packed()) {
-                m_dependencies.insert(
-                    EmitCBaseVisitor::prefixNameProtect(dtypep->classOrPackagep()));
+                m_dependencies.insert(EmitCBase::prefixNameProtect(dtypep->classOrPackagep()));
             }
         }
     }
@@ -142,7 +141,7 @@ class EmitCGatherDependencies final : VNVisitor {
         // declaration of the receiver class, but their body very likely includes at least one
         // relative reference, so we are probably not loosing much.
         addModDependency(EmitCParentModule::get(cfuncp));
-        iterate(cfuncp);
+        iterateConst(cfuncp);
     }
 
 public:
@@ -175,8 +174,7 @@ class EmitCImp final : EmitCFunc {
             // Unfortunately we have some lint checks here, so we can't just skip processing.
             // We should move them to a different stage.
             const string filename = VL_DEV_NULL;
-            m_cfilesr.push_back(
-                newCFile(filename, /* slow: */ m_slow, /* source: */ true, /* add */ false));
+            m_cfilesr.push_back(createCFile(filename, /* slow: */ m_slow, /* source: */ true));
             m_ofp = new V3OutCFile{filename};
         } else {
             string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(m_fileModp);
@@ -186,12 +184,11 @@ class EmitCImp final : EmitCFunc {
             }
             if (m_slow) filename += "__Slow";
             filename += ".cpp";
-            m_cfilesr.push_back(
-                newCFile(filename, /* slow: */ m_slow, /* source: */ true, /* add */ false));
+            m_cfilesr.push_back(createCFile(filename, /* slow: */ m_slow, /* source: */ true));
             m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
         }
 
-        ofp()->putsHeader();
+        putsHeader();
         puts("// DESCRIPTION: Verilator output: Design implementation internals\n");
         puts("// See " + topClassName() + ".h for the primary calling header\n");
 
@@ -199,6 +196,7 @@ class EmitCImp final : EmitCFunc {
         puts("\n#include \"verilated.h\"\n");
         if (v3Global.dpi()) puts("#include \"verilated_dpi.h\"\n");
         puts("\n");
+        puts("#include \"" + symClassName() + ".h\"\n");
         for (const string& name : headers) puts("#include \"" + name + ".h\"\n");
 
         emitTextSection(m_modp, VNType::atScImpHdr);
@@ -263,7 +261,7 @@ class EmitCImp final : EmitCFunc {
                         puts(", ");
                         puts(varp->nameProtect());
                         puts("(");
-                        iterate(varp->valuep());
+                        iterateConst(varp->valuep());
                         puts(")\n");
                     } else if (varp->isIO() && varp->isSc()) {
                         puts(", ");
@@ -402,7 +400,7 @@ class EmitCImp final : EmitCFunc {
                                 const int vecnum = vects++;
                                 UASSERT_OBJ(arrayp->hi() >= arrayp->lo(), varp,
                                             "Should have swapped msb & lsb earlier.");
-                                const string ivar = string("__Vi") + cvtToStr(vecnum);
+                                const string ivar = string{"__Vi"} + cvtToStr(vecnum);
                                 puts("for (int __Vi" + cvtToStr(vecnum) + " = " + cvtToStr(0));
                                 puts("; " + ivar + " < " + cvtToStr(arrayp->elementsConst()));
                                 puts("; ++" + ivar + ") {\n");
@@ -416,7 +414,7 @@ class EmitCImp final : EmitCFunc {
                             if (elementp->isWide()
                                 && !(basicp && basicp->keyword() == VBasicDTypeKwd::STRING)) {
                                 const int vecnum = vects++;
-                                const string ivar = string("__Vi") + cvtToStr(vecnum);
+                                const string ivar = string{"__Vi"} + cvtToStr(vecnum);
                                 puts("for (int __Vi" + cvtToStr(vecnum) + " = " + cvtToStr(0));
                                 puts("; " + ivar + " < " + cvtToStr(elementp->widthWords()));
                                 puts("; ++" + ivar + ") {\n");
@@ -515,7 +513,7 @@ class EmitCImp final : EmitCFunc {
             // Compute the hash of the dependencies, so we can add it to the filenames to
             // disambiguate them
             V3Hash hash;
-            for (const string& name : *m_requiredHeadersp) { hash += name; }
+            for (const string& name : *m_requiredHeadersp) hash += name;
             m_subFileName = "DepSet_" + hash.toString();
             // Open output file
             openNextOutputFile(*m_requiredHeadersp, m_subFileName);
@@ -523,7 +521,7 @@ class EmitCImp final : EmitCFunc {
             for (AstCFunc* const funcp : pair.second) {
                 VL_RESTORER(m_modp);
                 m_modp = EmitCParentModule::get(funcp);
-                iterate(funcp);
+                iterateConst(funcp);
             }
             // Close output file
             VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
@@ -598,7 +596,7 @@ class EmitCTrace final : EmitCFunc {
         if (m_slow) filename += "__Slow";
         filename += ".cpp";
 
-        AstCFile* const cfilep = newCFile(filename, m_slow, true /*source*/, false /*add*/);
+        AstCFile* const cfilep = createCFile(filename, m_slow, true /*source*/);
         cfilep->support(true);
         m_cfilesr.push_back(cfilep);
 
@@ -607,9 +605,9 @@ class EmitCTrace final : EmitCFunc {
         } else {
             m_ofp = new V3OutCFile{filename};
         }
-        m_ofp->putsHeader();
-        m_ofp->puts("// DESCR"
-                    "IPTION: Verilator output: Tracing implementation internals\n");
+        putsHeader();
+        puts("// DESCR"
+             "IPTION: Verilator output: Tracing implementation internals\n");
 
         // Includes
         puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
@@ -775,7 +773,7 @@ class EmitCTrace final : EmitCFunc {
     }
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
-        iterateAndNextNull(nodep->precondsp());
+        iterateAndNextConstNull(nodep->precondsp());
         const string func = nodep->full() ? "full" : "chg";
         bool emitWidth = true;
         if (nodep->dtypep()->basicp()->isDouble()) {
@@ -818,7 +816,7 @@ class EmitCTrace final : EmitCFunc {
             } else if (emitTraceIsScBv(nodep)) {
                 puts("VL_SC_BV_DATAP(");
             }
-            iterate(varrefp);  // Put var name out
+            iterateConst(varrefp);  // Put var name out
             // Tracing only supports 1D arrays
             if (nodep->declp()->arrayRange().ranged()) {
                 if (arrayindex == -2) {
@@ -840,7 +838,7 @@ class EmitCTrace final : EmitCFunc {
             puts(")");
         } else {
             puts("(");
-            iterate(nodep->valuep());
+            iterateConst(nodep->valuep());
             puts(")");
         }
     }
@@ -902,7 +900,7 @@ class EmitCTrace final : EmitCFunc {
         openNextOutputFile();
         // Emit functions
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) { iterate(funcp); }
+            if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) { iterateConst(funcp); }
         }
         // Close output file
         VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);

@@ -268,7 +268,7 @@ public:
     uint32_t id() const override { return m_serialId; }
     void id(uint32_t id) { m_serialId = id; }
     // Abstract cost of every logic mtask
-    uint32_t cost() const override { return m_cost; }
+    uint32_t cost() const override VL_MT_SAFE { return m_cost; }
     void setCost(uint32_t cost) { m_cost = cost; }  // For tests only
     uint32_t stepCost() const { return stepCost(m_cost); }
     static uint32_t stepCost(uint32_t cost) {
@@ -321,7 +321,7 @@ public:
 
     void checkRelativesCp(GraphWay way) const;
 
-    string name() const override {
+    string name() const override VL_MT_STABLE {
         // Display forward and reverse critical path costs. This gives a quick
         // read on whether graph partitioning looks reasonable or bad.
         std::ostringstream out;
@@ -3129,8 +3129,8 @@ static const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& 
         funcp->argTypes("void* voidSelf, bool even_cycle");
 
         // Setup vlSelf an vlSyms
-        funcp->addStmtsp(new AstCStmt{fl, EmitCBaseVisitor::voidSelfAssign(modp)});
-        funcp->addStmtsp(new AstCStmt{fl, EmitCBaseVisitor::symClassAssign()});
+        funcp->addStmtsp(new AstCStmt{fl, EmitCBase::voidSelfAssign(modp)});
+        funcp->addStmtsp(new AstCStmt{fl, EmitCBase::symClassAssign()});
 
         // Invoke each mtask scheduled to this thread from the thread function
         for (const ExecMTask* const mtaskp : thread) {

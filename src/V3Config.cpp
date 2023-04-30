@@ -40,25 +40,31 @@ template <typename T>
 class V3ConfigWildcardResolver final {
     using Map = std::map<const std::string, T>;
 
-    Map m_mapWildcard;  // Wildcard strings to entities
-    Map m_mapResolved;  // Resolved strings to converged entities
+    mutable V3Mutex m_mutex;  // protects members
+    Map m_mapWildcard VL_GUARDED_BY(m_mutex);  // Wildcard strings to entities
+    Map m_mapResolved VL_GUARDED_BY(m_mutex);  // Resolved strings to converged entities
 public:
     V3ConfigWildcardResolver() = default;
     ~V3ConfigWildcardResolver() = default;
 
     /// Update into maps from other
-    void update(const V3ConfigWildcardResolver& other) {
+    void update(const V3ConfigWildcardResolver& other) VL_MT_SAFE_EXCLUDES(m_mutex)
+        VL_EXCLUDES(other.m_mutex) {
+        V3LockGuard lock{m_mutex};
+        V3LockGuard otherLock{other.m_mutex};
         for (const auto& itr : other.m_mapResolved) m_mapResolved[itr.first].update(itr.second);
         for (const auto& itr : other.m_mapWildcard) m_mapWildcard[itr.first].update(itr.second);
     }
 
     // Access and create a (wildcard) entity
-    T& at(const string& name) {
+    T& at(const string& name) VL_MT_SAFE_EXCLUDES(m_mutex) {
+        V3LockGuard lock{m_mutex};
         // Don't store into wildcards if the name is not a wildcard string
         return m_mapWildcard[name];
     }
     // Access an entity and resolve wildcards that match it
-    T* resolve(const string& name) {
+    T* resolve(const string& name) VL_MT_SAFE_EXCLUDES(m_mutex) {
+        V3LockGuard lock{m_mutex};
         // Lookup if it was resolved before, typically not
         auto it = m_mapResolved.find(name);
         if (VL_UNLIKELY(it != m_mapResolved.end())) return &it->second;
@@ -78,7 +84,10 @@ public:
         return newp;
     }
     // Flush on update
-    void flush() { m_mapResolved.clear(); }
+    void flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
+        V3LockGuard lock{m_mutex};
+        m_mapResolved.clear();
+    }
 };
 
 // Only public_flat_rw has the sensitity tree

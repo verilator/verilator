@@ -28,7 +28,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 
-class EmitCInlines final : EmitCBaseVisitor {
+class EmitCInlines final : EmitCBaseVisitorConst {
     // STATE
 
     // METHODS
@@ -37,26 +37,26 @@ class EmitCInlines final : EmitCBaseVisitor {
     void visit(AstCNew* nodep) override {
         if (v3Global.opt.savable())
             v3warn(E_UNSUPPORTED, "Unsupported: --savable with dynamic new");
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstDumpCtl* nodep) override {
         if (v3Global.opt.trace()) v3Global.needTraceDumper(true);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstNodeDistBiop* nodep) override {
         v3Global.setUsesProbDist();
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstNodeDistTriop* nodep) override {
         v3Global.setUsesProbDist();
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
     //---------------------------------------
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
-    explicit EmitCInlines(AstNetlist* nodep) { iterate(nodep); }
+    explicit EmitCInlines(AstNetlist* nodep) { iterateConst(nodep); }
 };
 
 //######################################################################
@@ -64,5 +64,5 @@ public:
 
 void V3EmitC::emitcInlines() {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    EmitCInlines(v3Global.rootp());
+    { EmitCInlines{v3Global.rootp()}; }
 }

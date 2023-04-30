@@ -498,8 +498,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "assume"              { FL; return yASSUME; }
   "before"              { FL; return yBEFORE; }
   "bind"                { FL; return yBIND; }
-  "bins"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "binsof"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "bins"                { FL; return yBINS; }
+  "binsof"              { FL; return yBINSOF; }
   "bit"                 { FL; return yBIT; }
   "break"               { FL; return yBREAK; }
   "byte"                { FL; return yBYTE; }
@@ -511,41 +511,41 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "context"             { FL; return yCONTEXT; }
   "continue"            { FL; return yCONTINUE; }
   "cover"               { FL; return yCOVER; }
-  "covergroup"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "coverpoint"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "cross"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "covergroup"          { FL; return yCOVERGROUP; }
+  "coverpoint"          { FL; return yCOVERPOINT; }
+  "cross"               { FL; return yCROSS; }
   "dist"                { FL; return yDIST; }
   "do"                  { FL; return yDO; }
   "endclass"            { FL; return yENDCLASS; }
   "endclocking"         { FL; return yENDCLOCKING; }
-  "endgroup"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "endgroup"            { FL; return yENDGROUP; }
   "endinterface"        { FL; return yENDINTERFACE; }
   "endpackage"          { FL; return yENDPACKAGE; }
   "endprogram"          { FL; return yENDPROGRAM; }
   "endproperty"         { FL; return yENDPROPERTY; }
   "endsequence"         { FL; return yENDSEQUENCE; }
   "enum"                { FL; return yENUM; }
-  "expect"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "expect"              { FL; return yEXPECT; }
   "export"              { FL; return yEXPORT; }
   "extends"             { FL; return yEXTENDS; }
   "extern"              { FL; return yEXTERN; }
   "final"               { FL; return yFINAL; }
-  "first_match"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "first_match"         { FL; return yFIRST_MATCH; }
   "forkjoin"            { FL; return yFORKJOIN; }
   "iff"                 { FL; return yIFF; }
-  "ignore_bins"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "illegal_bins"        { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "ignore_bins"         { FL; return yIGNORE_BINS; }
+  "illegal_bins"        { FL; return yILLEGAL_BINS; }
   "import"              { FL; return yIMPORT; }
   "inside"              { FL; return yINSIDE; }
   "int"                 { FL; return yINT; }
   "interface"           { FL; return yINTERFACE; }
-  "intersect"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "intersect"           { FL; return yINTERSECT; }
   "join_any"            { FL; return yJOIN_ANY; }
   "join_none"           { FL; return yJOIN_NONE; }
   "local"               { FL; return yLOCAL__LEX; }
   "logic"               { FL; return yLOGIC; }
   "longint"             { FL; return yLONGINT; }
-  "matches"             { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "matches"             { FL; return yMATCHES; }
   "modport"             { FL; return yMODPORT; }
   "new"                 { FL; return yNEW__LEX; }
   "null"                { FL; return yNULL; }
@@ -564,7 +564,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "ref"                 { FL; return yREF; }
   "restrict"            { FL; return yRESTRICT; }
   "return"              { FL; return yRETURN; }
-  "sequence"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "sequence"            { FL; return ySEQUENCE; }
   "shortint"            { FL; return ySHORTINT; }
   "shortreal"           { FL; return ySHORTREAL; }
   "solve"               { FL; return ySOLVE; }
@@ -574,7 +574,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "super"               { FL; return ySUPER; }
   "tagged"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "this"                { FL; return yTHIS; }
-  "throughout"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "throughout"          { FL; return yTHROUGHOUT; }
   "timeprecision"       { FL; return yTIMEPRECISION; }
   "timeunit"            { FL; return yTIMEUNIT; }
   "type"                { FL; return yTYPE__LEX; }
@@ -584,37 +584,37 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "var"                 { FL; return yVAR; }
   "virtual"             { FL; return yVIRTUAL__LEX; }
   "void"                { FL; return yVOID; }
-  "wait_order"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "wildcard"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "wait_order"          { FL; return yWAIT_ORDER; }
+  "wildcard"            { FL; return yWILDCARD; }
   "with"                { FL; return yWITH__LEX; }
-  "within"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "within"              { FL; return yWITHIN; }
 }
 
   /* SystemVerilog 2009 */
 <S09,S12,S17,SAX>{
   /*     Keywords */
-  "accept_on"           { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "accept_on"           { FL; return yACCEPT_ON; }
   "checker"             { FL; return yCHECKER; }
   "endchecker"          { FL; return yENDCHECKER; }
-  "eventually"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "eventually"          { FL; return yEVENTUALLY; }
   "global"              { FL; return yGLOBAL__LEX; }
-  "implies"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "let"                 { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "nexttime"            { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "reject_on"           { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "s_always"            { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "s_eventually"        { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "s_nexttime"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "s_until"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "s_until_with"        { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "strong"              { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "sync_accept_on"      { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "sync_reject_on"      { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "implies"             { FL; return yIMPLIES; }
+  "let"                 { FL; return yLET; }
+  "nexttime"            { FL; return yNEXTTIME; }
+  "reject_on"           { FL; return yREJECT_ON; }
+  "s_always"            { FL; return yS_ALWAYS; }
+  "s_eventually"        { FL; return yS_EVENTUALLY; }
+  "s_nexttime"          { FL; return yS_NEXTTIME; }
+  "s_until"             { FL; return yS_UNTIL; }
+  "s_until_with"        { FL; return yS_UNTIL_WITH; }
+  "strong"              { FL; return ySTRONG; }
+  "sync_accept_on"      { FL; return ySYNC_ACCEPT_ON; }
+  "sync_reject_on"      { FL; return ySYNC_REJECT_ON; }
   "unique0"             { FL; return yUNIQUE0; }
-  "until"               { ERROR_RSVD_WORD("SystemVerilog 2009"); }
-  "until_with"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "until"               { FL; return yUNTIL; }
+  "until_with"          { FL; return yUNTIL_WITH; }
   "untyped"             { FL; return yUNTYPED; }
-  "weak"                { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "weak"                { FL; return yWEAK; }
 }
 
   /* System Verilog 2012 */
@@ -875,6 +875,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   ">>>="                { FL; return yP_SSRIGHTEQ; }
   "->>"                 { FL; return yP_MINUSGTGT; }
   "##"                  { FL; return yP_POUNDPOUND; }
+  "#-#"                 { FL; return yP_POUNDMINUSPD; }
+  "#=#"                 { FL; return yP_POUNDEQPD; }
   "@@"                  { FL; return yP_ATAT; }
   "::"                  { FL; return yP_COLONCOLON; }
   ":="                  { FL; return yP_COLONEQ; }
@@ -883,8 +885,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "|=>"                 { FL; return yP_OREQGT; }
   /* Some simulators allow whitespace here. Grr */
   "["{ws}*"*"           { FL; return yP_BRASTAR; }
-  "["{ws}*"="           { FL; return yP_BRAEQ; }
+  "["{ws}*"+"{ws}*"]"   { FL; return yP_BRAPLUSKET; }
   "["{ws}*"->"          { FL; return yP_BRAMINUSGT; }
+  "["{ws}*"="           { FL; return yP_BRAEQ; }
 }
 
   /* SystemVerilog 2009 Operators */
@@ -910,7 +913,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
                           if (PARSEP->lexPrevToken()=='#') {
                               int shortlen = 0;
-                              while (std::isdigit(yytext[shortlen])) ++shortlen;
+                              if (std::isdigit(yytext[shortlen])) {
+                                  while (std::isdigit(yytext[shortlen])
+                                         || yytext[shortlen]=='_') ++shortlen;
+                              }
                               if (shortlen) {
                                   // Push rest past numbers for later parse
                                   PARSEP->lexUnputString(yytext + shortlen, yyleng - shortlen);

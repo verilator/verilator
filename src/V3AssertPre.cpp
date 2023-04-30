@@ -229,7 +229,7 @@ private:
                 //     always queue.push(<sampled var>);
                 AstCMethodHard* const pushp = new AstCMethodHard{
                     flp, new AstVarRef{flp, queueVarp, VAccess::WRITE}, "push",
-                    new AstTime(nodep->fileline(), m_modp->timeunit())};
+                    new AstTime{nodep->fileline(), m_modp->timeunit()}};
                 pushp->addPinsp(exprp->cloneTree(false));
                 pushp->dtypeSetVoid();
                 m_clockingp->addNextHere(
@@ -238,7 +238,7 @@ private:
                 //     always @<clocking event> queue.pop(<skew>, /*out*/<skewed var>});
                 AstCMethodHard* const popp = new AstCMethodHard{
                     flp, new AstVarRef{flp, queueVarp, VAccess::READWRITE}, "pop",
-                    new AstTime(nodep->fileline(), m_modp->timeunit())};
+                    new AstTime{nodep->fileline(), m_modp->timeunit()}};
                 popp->addPinsp(skewp->unlinkFrBack());
                 popp->addPinsp(refp);
                 popp->dtypeSetVoid();

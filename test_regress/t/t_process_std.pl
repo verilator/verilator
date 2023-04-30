@@ -14,13 +14,13 @@ top_filename("t/t_process.v");
 
 compile(
     v_flags2 => ["+define+T_PROCESS+std::process"],
-    fails => $Self->{vlt_all},
-    expect_filename => $Self->{golden_filename},
     );
 
 execute(
-    check_finished => 1,
-    ) if !$Self->{vlt_all};
+    check_finished => !$Self->{vlt_all},
+    fails => $Self->{vlt_all},
+    expect_filename => $Self->{golden_filename},
+    );
 
 ok(1);
 1;

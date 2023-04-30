@@ -138,7 +138,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                 case 'i':
                     COMMA;
                     UASSERT_OBJ(detailp, nodep, "emitOperator() references undef node");
-                    iterateAndNextNull(detailp);
+                    iterateAndNextConstNull(detailp);
                     needComma = true;
                     break;
                 default:
@@ -174,7 +174,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
         if (const AstFScanF* const dispp = VN_CAST(nodep, FScanF)) {
             isStmt = false;
             puts("VL_FSCANF_IX(");
-            iterate(dispp->filep());
+            iterateConst(dispp->filep());
             puts(",");
         } else if (const AstSScanF* const dispp = VN_CAST(nodep, SScanF)) {
             isStmt = false;
@@ -184,13 +184,13 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
             puts("X(");
             puts(cvtToStr(dispp->fromp()->widthMin()));
             puts(",");
-            iterate(dispp->fromp());
+            iterateConst(dispp->fromp());
             puts(",");
         } else if (const AstDisplay* const dispp = VN_CAST(nodep, Display)) {
             isStmt = true;
             if (dispp->filep()) {
                 puts("VL_FWRITEF(");
-                iterate(dispp->filep());
+                iterateConst(dispp->filep());
                 puts(",");
             } else {
                 puts("VL_WRITEF(");
@@ -200,7 +200,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
             puts("VL_SFORMAT_X(");
             puts(cvtToStr(dispp->lhsp()->widthMin()));
             putbs(",");
-            iterate(dispp->lhsp());
+            iterateConst(dispp->lhsp());
             putbs(",");
         } else if (VN_IS(nodep, SFormatF)) {
             isStmt = false;
@@ -223,7 +223,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
                 } else if (argp) {
                     const bool addrof = isScan || (fmt == '@');
                     if (addrof) puts("&(");
-                    iterate(argp);
+                    iterateConst(argp);
                     if (!addrof) emitDatap(argp);
                     if (addrof) puts(")");
                 }
@@ -275,9 +275,9 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
         double dchars = mantissabits / 3.321928094887362 + 1.0;
         if (fmtLetter == 'd') dchars++;  // space for sign
         const int nchars = int(dchars);
-        pfmt = string("%") + cvtToStr(nchars) + fmtLetter;
+        pfmt = string{"%"} + cvtToStr(nchars) + fmtLetter;
     } else {
-        pfmt = string("%") + vfmt + fmtLetter;
+        pfmt = string{"%"} + vfmt + fmtLetter;
     }
     m_emitDispState.pushFormat(pfmt);
     if (!ignore) {
@@ -452,16 +452,16 @@ void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
             puts(cvtToStr(nodep->widthWords()));
             puts(", ");
         }
-        iterateAndNextNull(nodep);
+        iterateAndNextConstNull(nodep);
         puts(")");
     }
 }
 
 void EmitCFunc::emitCvtWideArray(AstNode* nodep, AstNode* fromp) {
     putbs("VL_CVT_W_A(");
-    iterate(nodep);
+    iterateConst(nodep);
     puts(", ");
-    iterate(fromp);
+    iterateConst(fromp);
     putbs(".atDefault()");  // Not accessed; only to get the proper type of values
     puts(")");
 }
@@ -672,7 +672,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
     } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                     "Should have swapped msb & lsb earlier.");
-        const string ivar = string("__Vi") + cvtToStr(depth);
+        const string ivar = string{"__Vi"} + cvtToStr(depth);
         const string pre = ("for (int " + ivar + " = " + cvtToStr(0) + "; " + ivar + " < "
                             + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
         const string below = emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(),

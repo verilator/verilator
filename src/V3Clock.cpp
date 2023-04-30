@@ -95,7 +95,7 @@ private:
         if (vscp->user1p()) return VN_AS(vscp->user1p(), VarScope);
         const AstVar* const varp = vscp->varp();
         const string newvarname
-            = string("__Vsampled__") + vscp->scopep()->nameDotless() + "__" + varp->name();
+            = string{"__Vsampled__"} + vscp->scopep()->nameDotless() + "__" + varp->name();
         FileLine* const flp = vscp->fileline();
         AstVar* const newvarp = new AstVar{flp, VVarType::MODULETEMP, newvarname, varp->dtypep()};
         newvarp->noReset(true);  // Reset by below assign
@@ -146,17 +146,19 @@ private:
         UASSERT_OBJ(nodep->hasClocked(), nodep, "Should have been converted by V3Sched");
         UASSERT_OBJ(nodep->stmtsp(), nodep, "Should not have been created if empty");
 
-        VNRelinker relinker;
-        nodep->unlinkFrBack(&relinker);
         AstNode* const stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
 
         // Create 'if' statement, if needed
         if (!m_lastSenp || !nodep->sensesp()->sameTree(m_lastSenp)) {
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
             clearLastSen();
             m_lastSenp = nodep->sensesp();
             // Make a new if statement
             m_lastIfp = makeActiveIf(m_lastSenp);
             relinker.relink(m_lastIfp);
+        } else {
+            nodep->unlinkFrBack();
         }
 
         // Move statements to if

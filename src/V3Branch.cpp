@@ -38,7 +38,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Branch state, as a visitor of each AstNode
 
-class BranchVisitor final : public VNVisitor {
+class BranchVisitor final : public VNVisitorConst {
 private:
     // NODE STATE
     // Entire netlist:
@@ -71,12 +71,12 @@ private:
         {
             // Do if
             reset();
-            iterateAndNextNull(nodep->thensp());
+            iterateAndNextConstNull(nodep->thensp());
             const int ifLikely = m_likely;
             const int ifUnlikely = m_unlikely;
             // Do else
             reset();
-            iterateAndNextNull(nodep->elsesp());
+            iterateAndNextConstNull(nodep->elsesp());
             const int elseLikely = m_likely;
             const int elseUnlikely = m_unlikely;
             // Compute
@@ -91,16 +91,16 @@ private:
     void visit(AstNodeCCall* nodep) override {
         checkUnlikely(nodep);
         nodep->funcp()->user1Inc();
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstCFunc* nodep) override {
         checkUnlikely(nodep);
         m_cfuncsp.push_back(nodep);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstNode* nodep) override {
         checkUnlikely(nodep);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
     // METHODS
@@ -114,7 +114,7 @@ public:
     // CONSTRUCTORS
     explicit BranchVisitor(AstNetlist* nodep) {
         reset();
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         calc_tasks();
     }
     ~BranchVisitor() override = default;

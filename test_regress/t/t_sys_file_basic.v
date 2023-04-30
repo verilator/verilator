@@ -74,10 +74,7 @@ module t;
       $fflush;
 
       $fclose(file);
-`ifdef verilator
-      if (file != 0) $stop(1);  // Also test arguments to stop
       $fwrite(file, "Never printed, file closed\n");
-`endif
 
       begin
          // Check for opening errors

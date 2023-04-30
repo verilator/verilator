@@ -29,6 +29,7 @@ public:
     static void randomizeNetlist(AstNetlist* nodep);
 
     static AstFunc* newRandomizeFunc(AstClass* nodep);
+    static AstFunc* newSRandomFunc(AstClass* nodep);
 };
 
 #endif  // Guard

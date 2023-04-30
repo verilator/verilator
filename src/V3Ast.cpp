@@ -125,7 +125,9 @@ string AstNode::encodeNumber(int64_t num) {
     }
 }
 
-string AstNode::nameProtect() const { return VIdProtect::protectIf(name(), protect()); }
+string AstNode::nameProtect() const VL_MT_STABLE {
+    return VIdProtect::protectIf(name(), protect());
+}
 string AstNode::origNameProtect() const { return VIdProtect::protectIf(origName(), protect()); }
 
 string AstNode::shortName() const {
@@ -155,7 +157,7 @@ string AstNode::vcdName(const string& namein) {
     return prettyName(pretty);
 }
 
-string AstNode::prettyName(const string& namein) {
+string AstNode::prettyName(const string& namein) VL_PURE {
     // This function is somewhat hot, so we short-circuit some compares
     string pretty;
     pretty.reserve(namein.length());
@@ -283,7 +285,7 @@ string AstNode::vpiName(const string& namein) {
     return pretty;
 }
 
-string AstNode::prettyTypeName() const {
+string AstNode::prettyTypeName() const VL_MT_STABLE {
     if (name() == "") return typeName();
     return std::string{typeName()} + " '" + prettyName() + "'";
 }
@@ -296,17 +298,19 @@ void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int line
 // Called on all major tree changers.
 // Only for use for those really nasty bugs relating to internals
 // Note this may be null.
-// if (debug()) cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "
-//                 <<prefix<<": "<<cvtToHex(this)<<" <e"<<AstNode::s_editCntGbl<<">"<<endl;
+// if (debug() && nodep) cout << "-treeChange: V3Ast.cpp:" << lineno
+//          << " Tree Change for " << prefix << ": "
+//          << cvtToHex(nodep) << " <e" << AstNode::s_editCntGbl << ">"
+//          << "m_iterpp=" << (void*)nodep->m_iterpp << endl;
 // if (debug()) {
 //  cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<endl;
 //  // Commenting out the section below may crash, as the tree state
 //  // between edits is not always consistent for printing
 //  cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<endl;
 //  v3Global.rootp()->dumpTree("-  treeChange: ");
-//  if (next||1) this->dumpTreeAndNext(cout, prefix);
-//  else this->dumpTree(prefix);
-//  this->checkTree();
+//  if (next||1) nodep->dumpTreeAndNext(cout, prefix);
+//  else nodep->dumpTree(prefix);
+//  nodep->checkTree();
 //  v3Global.rootp()->checkTree();
 //}
 #endif
@@ -345,7 +349,8 @@ AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp) {
         newtailp->m_headtailp = headp;
         headp->m_headtailp = newtailp;
         newp->editCountInc();
-        if (oldtailp->m_iterpp) *(oldtailp->m_iterpp) = newp;  // Iterate on new item
+        // No change of m_iterpp, as only changing m_nextp of current node;
+        // the current node is still the one at the iteration point
     }
     debugTreeChange(nodep, "-addNextOut:", __LINE__, true);
     return nodep;
@@ -395,7 +400,8 @@ void AstNode::addNextHere(AstNode* newp) {
         }  // else is head, and we're inserting into the middle, so no other change
     }
 
-    if (this->m_iterpp) *(this->m_iterpp) = newp;  // Iterate on new item
+    // No change of m_iterpp, as adding after current node;
+    // the current node is still the one at the iteration point
     debugTreeChange(this, "-addHereOut: ", __LINE__, true);
 }
 
@@ -563,8 +569,10 @@ AstNode* AstNode::unlinkFrBackWithNext(VNRelinker* linkerp) {
     // Relink
     oldp->m_backp = nullptr;
     // Iterator fixup
-    if (oldp->m_iterpp) *(oldp->m_iterpp) = nullptr;
-    oldp->m_iterpp = nullptr;
+    if (oldp->m_iterpp) {
+        *(oldp->m_iterpp) = nullptr;
+        oldp->m_iterpp = nullptr;
+    }
     debugTreeChange(oldp, "-unlinkWNextOut: ", __LINE__, true);
     return oldp;
 }
@@ -578,7 +586,11 @@ AstNode* AstNode::unlinkFrBack(VNRelinker* linkerp) {
     if (linkerp) {
         linkerp->m_oldp = oldp;
         linkerp->m_backp = backp;
-        linkerp->m_iterpp = oldp->m_iterpp;
+        if (oldp->m_iterpp) {  // Assumes we will always relink() if want to keep iterating
+            linkerp->m_iterpp = oldp->m_iterpp;
+            *(oldp->m_iterpp) = nullptr;
+            oldp->m_iterpp = nullptr;
+        }
         if (backp->m_nextp == oldp) {
             linkerp->m_chg = VNRelinker::RELINK_NEXT;
         } else if (backp->m_op1p == oldp) {
@@ -623,12 +635,15 @@ AstNode* AstNode::unlinkFrBack(VNRelinker* linkerp) {
         }
     }
     // Iterator fixup
-    if (oldp->m_iterpp) *(oldp->m_iterpp) = oldp->m_nextp;
+    if (oldp->m_iterpp) {  // Only if no linker, point to next in list
+        if (oldp->m_nextp) oldp->m_nextp->m_iterpp = oldp->m_iterpp;
+        *(oldp->m_iterpp) = oldp->m_nextp;
+        oldp->m_iterpp = nullptr;
+    }
     // Relink
     oldp->m_nextp = nullptr;
     oldp->m_backp = nullptr;
-    oldp->m_headtailp = this;
-    oldp->m_iterpp = nullptr;
+    oldp->m_headtailp = oldp;
     debugTreeChange(oldp, "-unlinkFrBkOut: ", __LINE__, true);
     return oldp;
 }
@@ -666,12 +681,12 @@ void AstNode::relink(VNRelinker* linkerp) {
     // Iterator fixup
     if (linkerp->m_iterpp) {
         // If we're iterating over a next() link, we need to follow links off the
-        // NEW node.  Thus we pass iteration information via a pointer in the node.
+        // NEW node, which is always assumed to be what we are relinking to.
         // This adds a unfortunate hot 8 bytes to every AstNode, but is faster than passing
         // across every function.
         // If anyone has a cleaner way, I'd be grateful.
-        *(linkerp->m_iterpp) = newp;
         newp->m_iterpp = linkerp->m_iterpp;
+        *(newp->m_iterpp) = newp;
     }
     // Empty the linker so not used twice accidentally
     linkerp->m_backp = nullptr;
@@ -833,6 +848,7 @@ void AstNode::deleteNode() {
     this->m_op2p = reinterpret_cast<AstNode*>(0x1);
     this->m_op3p = reinterpret_cast<AstNode*>(0x1);
     this->m_op4p = reinterpret_cast<AstNode*>(0x1);
+    this->m_iterpp = reinterpret_cast<AstNode**>(0x1);
     if (
 #if !defined(VL_DEBUG) || defined(VL_LEAK_CHECKS)
         true
@@ -907,7 +923,7 @@ void AstNode::iterateChildren(VNVisitor& v) {
     if (m_op4p) m_op4p->iterateAndNext(v);
 }
 
-void AstNode::iterateChildrenConst(VNVisitor& v) {
+void AstNode::iterateChildrenConst(VNVisitorConst& v) {
     // This is a very hot function
     ASTNODE_PREFETCH(m_op1p);
     ASTNODE_PREFETCH(m_op2p);
@@ -948,13 +964,13 @@ void AstNode::iterateAndNext(VNVisitor& v) {
         niterp->m_iterpp = nullptr;
         if (VL_UNLIKELY(niterp != nodep)) {  // Edited node inside accept
             nodep = niterp;
-        } else {  // Unchanged node, just continue loop
+        } else {  // Unchanged node (though maybe updated m_next), just continue loop
             nodep = niterp->m_nextp;
         }
     }
 }
 
-void AstNode::iterateListBackwards(VNVisitor& v) {
+void AstNode::iterateListBackwardsConst(VNVisitorConst& v) {
     AstNode* nodep = this;
     while (nodep->m_nextp) nodep = nodep->m_nextp;
     while (nodep) {
@@ -968,14 +984,14 @@ void AstNode::iterateListBackwards(VNVisitor& v) {
     }
 }
 
-void AstNode::iterateChildrenBackwards(VNVisitor& v) {
-    if (m_op1p) m_op1p->iterateListBackwards(v);
-    if (m_op2p) m_op2p->iterateListBackwards(v);
-    if (m_op3p) m_op3p->iterateListBackwards(v);
-    if (m_op4p) m_op4p->iterateListBackwards(v);
+void AstNode::iterateChildrenBackwardsConst(VNVisitorConst& v) {
+    if (m_op1p) m_op1p->iterateListBackwardsConst(v);
+    if (m_op2p) m_op2p->iterateListBackwardsConst(v);
+    if (m_op3p) m_op3p->iterateListBackwardsConst(v);
+    if (m_op4p) m_op4p->iterateListBackwardsConst(v);
 }
 
-void AstNode::iterateAndNextConst(VNVisitor& v) {
+void AstNode::iterateAndNextConst(VNVisitorConst& v) {
     // Keep following the current list even if edits change it
     AstNode* nodep = this;
     do {
@@ -1079,7 +1095,7 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 //======================================================================
 // Debugging
 
-void AstNode::checkTreeIter(const AstNode* prevBackp) const {
+void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
     // private: Check a tree and children
     UASSERT_OBJ(prevBackp == this->backp(), this, "Back node inconsistent");
     switch (this->type()) {
@@ -1129,7 +1145,7 @@ void AstNode::checkIter() const {
     if (m_iterpp) {
         dumpPtrs(cout);
         // Perhaps something forgot to clear m_iterpp?
-        this->v3fatalSrc("Iteration link should be nullptr");
+        this->v3fatalSrc("Iteration link m_iterpp should be nullptr");
     }
 }
 
@@ -1342,7 +1358,9 @@ void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
         dtypeSetLogicUnsized(width, widthMin, numeric);
     } else {
         if (width == dtypep()->width() && widthMin == dtypep()->widthMin()
-            && numeric == dtypep()->numeric())
+            && numeric == dtypep()->numeric()
+            // Enums need to become direct sizes to avoid later ENUMVALUE errors
+            && !VN_IS(dtypep()->skipRefToEnump(), EnumDType))
             return;  // Correct already
         // FUTURE: We may be pointing at a two state data type, and this may
         // convert it to logic.  Since the AstVar remains correct, we

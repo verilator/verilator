@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   logic [1:0] [3:0] [3:0] array_simp;  // big endian array
+   logic [1:0] [3:0] [3:0] array_simp;  // descending range array
 
    logic [3:0]             array_oned;
 
@@ -61,10 +61,10 @@ module t (/*AUTOARG*/
    localparam NO = 11;  // number of access events
 
    // 2D packed arrays
-   logic [WA-1:0] [WB-1:0] array_bg;  // big endian array
-   /* verilator lint_off LITENDIAN */
-   logic [0:WA-1] [0:WB-1] array_lt;  // little endian array
-   /* verilator lint_on LITENDIAN */
+   logic [WA-1:0] [WB-1:0] array_dsc;  // descending range array
+   /* verilator lint_off ASCRANGE */
+   logic [0:WA-1] [0:WB-1] array_asc;  // ascending range array
+   /* verilator lint_on ASCRANGE */
 
    integer cnt = 0;
 
@@ -80,74 +80,74 @@ module t (/*AUTOARG*/
       $finish;
    end
 
-   // big endian
+   // descending range
    always @ (posedge clk)
    if (cnt[1:0]==2'd0) begin
       // initialize to defaults (all bits 1'b0)
-      if      (cnt[30:2]== 0)  array_bg <= '0;
-      else if (cnt[30:2]== 1)  array_bg <= '0;
-      else if (cnt[30:2]== 2)  array_bg <= '0;
-      else if (cnt[30:2]== 3)  array_bg <= '0;
-      else if (cnt[30:2]== 4)  array_bg <= '0;
-      else if (cnt[30:2]== 5)  array_bg <= '0;
-      else if (cnt[30:2]== 6)  array_bg <= '0;
-      else if (cnt[30:2]== 7)  array_bg <= '0;
-      else if (cnt[30:2]== 8)  array_bg <= '0;
-      else if (cnt[30:2]== 9)  array_bg <= '0;
-      else if (cnt[30:2]==10)  array_bg <= '0;
+      if      (cnt[30:2]== 0)  array_dsc <= '0;
+      else if (cnt[30:2]== 1)  array_dsc <= '0;
+      else if (cnt[30:2]== 2)  array_dsc <= '0;
+      else if (cnt[30:2]== 3)  array_dsc <= '0;
+      else if (cnt[30:2]== 4)  array_dsc <= '0;
+      else if (cnt[30:2]== 5)  array_dsc <= '0;
+      else if (cnt[30:2]== 6)  array_dsc <= '0;
+      else if (cnt[30:2]== 7)  array_dsc <= '0;
+      else if (cnt[30:2]== 8)  array_dsc <= '0;
+      else if (cnt[30:2]== 9)  array_dsc <= '0;
+      else if (cnt[30:2]==10)  array_dsc <= '0;
    end else if (cnt[1:0]==2'd1) begin
       // write data into whole or part of the array using literals
       if      (cnt[30:2]== 0)  begin end
-      else if (cnt[30:2]== 1)  array_bg               <= '{ 3 ,2 ,1, 0 };
-      else if (cnt[30:2]== 2)  array_bg               <= '{default:13};
-      else if (cnt[30:2]== 3)  array_bg               <= '{0:4, 1:5, 2:6, 3:7};
-      else if (cnt[30:2]== 4)  array_bg               <= '{2:15, default:13};
-      else if (cnt[30:2]== 5)  array_bg               <= '{WA  {          {WB/2  {2'b10}}  }};
-      else if (cnt[30:2]== 6)  array_bg               <= '{cnt[3:0]+0, cnt[3:0]+1, cnt[3:0]+2, cnt[3:0]+3};
+      else if (cnt[30:2]== 1)  array_dsc               <= '{ 3 ,2 ,1, 0 };
+      else if (cnt[30:2]== 2)  array_dsc               <= '{default:13};
+      else if (cnt[30:2]== 3)  array_dsc               <= '{0:4, 1:5, 2:6, 3:7};
+      else if (cnt[30:2]== 4)  array_dsc               <= '{2:15, default:13};
+      else if (cnt[30:2]== 5)  array_dsc               <= '{WA  {          {WB/2  {2'b10}}  }};
+      else if (cnt[30:2]== 6)  array_dsc               <= '{cnt[3:0]+0, cnt[3:0]+1, cnt[3:0]+2, cnt[3:0]+3};
    end else if (cnt[1:0]==2'd2) begin
       // chack array agains expected value
-      if      (cnt[30:2]== 0)  begin if (array_bg !== 16'b0000000000000000) begin $display("%b", array_bg); $stop(); end end
-      else if (cnt[30:2]== 1)  begin if (array_bg !== 16'b0011001000010000) begin $display("%b", array_bg); $stop(); end end
-      else if (cnt[30:2]== 2)  begin if (array_bg !== 16'b1101110111011101) begin $display("%b", array_bg); $stop(); end end
-      else if (cnt[30:2]== 3)  begin if (array_bg !== 16'b0111011001010100) begin $display("%b", array_bg); $stop(); end end
-      else if (cnt[30:2]== 4)  begin if (array_bg !== 16'b1101111111011101) begin $display("%b", array_bg); $stop(); end end
-      else if (cnt[30:2]== 5)  begin if (array_bg !== 16'b1010101010101010) begin $display("%b", array_bg); $stop(); end end
-      else if (cnt[30:2]== 6)  begin if (array_bg !== 16'b1001101010111100) begin $display("%b", array_bg); $stop(); end end
+      if      (cnt[30:2]== 0)  begin if (array_dsc !== 16'b0000000000000000) begin $display("%b", array_dsc); $stop(); end end
+      else if (cnt[30:2]== 1)  begin if (array_dsc !== 16'b0011001000010000) begin $display("%b", array_dsc); $stop(); end end
+      else if (cnt[30:2]== 2)  begin if (array_dsc !== 16'b1101110111011101) begin $display("%b", array_dsc); $stop(); end end
+      else if (cnt[30:2]== 3)  begin if (array_dsc !== 16'b0111011001010100) begin $display("%b", array_dsc); $stop(); end end
+      else if (cnt[30:2]== 4)  begin if (array_dsc !== 16'b1101111111011101) begin $display("%b", array_dsc); $stop(); end end
+      else if (cnt[30:2]== 5)  begin if (array_dsc !== 16'b1010101010101010) begin $display("%b", array_dsc); $stop(); end end
+      else if (cnt[30:2]== 6)  begin if (array_dsc !== 16'b1001101010111100) begin $display("%b", array_dsc); $stop(); end end
    end
 
-   // little endian
+   // ascending range
    always @ (posedge clk)
    if (cnt[1:0]==2'd0) begin
       // initialize to defaults (all bits 1'b0)
-      if      (cnt[30:2]== 0)  array_lt <= '0;
-      else if (cnt[30:2]== 1)  array_lt <= '0;
-      else if (cnt[30:2]== 2)  array_lt <= '0;
-      else if (cnt[30:2]== 3)  array_lt <= '0;
-      else if (cnt[30:2]== 4)  array_lt <= '0;
-      else if (cnt[30:2]== 5)  array_lt <= '0;
-      else if (cnt[30:2]== 6)  array_lt <= '0;
-      else if (cnt[30:2]== 7)  array_lt <= '0;
-      else if (cnt[30:2]== 8)  array_lt <= '0;
-      else if (cnt[30:2]== 9)  array_lt <= '0;
-      else if (cnt[30:2]==10)  array_lt <= '0;
+      if      (cnt[30:2]== 0)  array_asc <= '0;
+      else if (cnt[30:2]== 1)  array_asc <= '0;
+      else if (cnt[30:2]== 2)  array_asc <= '0;
+      else if (cnt[30:2]== 3)  array_asc <= '0;
+      else if (cnt[30:2]== 4)  array_asc <= '0;
+      else if (cnt[30:2]== 5)  array_asc <= '0;
+      else if (cnt[30:2]== 6)  array_asc <= '0;
+      else if (cnt[30:2]== 7)  array_asc <= '0;
+      else if (cnt[30:2]== 8)  array_asc <= '0;
+      else if (cnt[30:2]== 9)  array_asc <= '0;
+      else if (cnt[30:2]==10)  array_asc <= '0;
    end else if (cnt[1:0]==2'd1) begin
       // write data into whole or part of the array using literals
       if      (cnt[30:2]== 0)  begin end
-      else if (cnt[30:2]== 1)  array_lt               <= '{ 3 ,2 ,1, 0 };
-      else if (cnt[30:2]== 2)  array_lt               <= '{default:13};
-      else if (cnt[30:2]== 3)  array_lt               <= '{3:4, 2:5, 1:6, 0:7};
-      else if (cnt[30:2]== 4)  array_lt               <= '{1:15, default:13};
-      else if (cnt[30:2]== 5)  array_lt               <= '{WA  {          {WB/2  {2'b10}}  }};
-      else if (cnt[30:2]==10)  array_lt               <= '{cnt[3:0]+0, cnt[3:0]+1, cnt[3:0]+2, cnt[3:0]+3};
+      else if (cnt[30:2]== 1)  array_asc               <= '{ 3 ,2 ,1, 0 };
+      else if (cnt[30:2]== 2)  array_asc               <= '{default:13};
+      else if (cnt[30:2]== 3)  array_asc               <= '{3:4, 2:5, 1:6, 0:7};
+      else if (cnt[30:2]== 4)  array_asc               <= '{1:15, default:13};
+      else if (cnt[30:2]== 5)  array_asc               <= '{WA  {          {WB/2  {2'b10}}  }};
+      else if (cnt[30:2]==10)  array_asc               <= '{cnt[3:0]+0, cnt[3:0]+1, cnt[3:0]+2, cnt[3:0]+3};
    end else if (cnt[1:0]==2'd2) begin
       // chack array agains expected value
-      if      (cnt[30:2]== 0)  begin if (array_lt !== 16'b0000000000000000) begin $display("%b", array_lt); $stop(); end end
-      else if (cnt[30:2]== 1)  begin if (array_lt !== 16'b0011001000010000) begin $display("%b", array_lt); $stop(); end end
-      else if (cnt[30:2]== 2)  begin if (array_lt !== 16'b1101110111011101) begin $display("%b", array_lt); $stop(); end end
-      else if (cnt[30:2]== 3)  begin if (array_lt !== 16'b0111011001010100) begin $display("%b", array_lt); $stop(); end end
-      else if (cnt[30:2]== 4)  begin if (array_lt !== 16'b1101111111011101) begin $display("%b", array_lt); $stop(); end end
-      else if (cnt[30:2]== 5)  begin if (array_lt !== 16'b1010101010101010) begin $display("%b", array_lt); $stop(); end end
-      else if (cnt[30:2]==10)  begin if (array_lt !== 16'b1001101010111100) begin $display("%b", array_lt); $stop(); end end
+      if      (cnt[30:2]== 0)  begin if (array_asc !== 16'b0000000000000000) begin $display("%b", array_asc); $stop(); end end
+      else if (cnt[30:2]== 1)  begin if (array_asc !== 16'b0011001000010000) begin $display("%b", array_asc); $stop(); end end
+      else if (cnt[30:2]== 2)  begin if (array_asc !== 16'b1101110111011101) begin $display("%b", array_asc); $stop(); end end
+      else if (cnt[30:2]== 3)  begin if (array_asc !== 16'b0111011001010100) begin $display("%b", array_asc); $stop(); end end
+      else if (cnt[30:2]== 4)  begin if (array_asc !== 16'b1101111111011101) begin $display("%b", array_asc); $stop(); end end
+      else if (cnt[30:2]== 5)  begin if (array_asc !== 16'b1010101010101010) begin $display("%b", array_asc); $stop(); end end
+      else if (cnt[30:2]==10)  begin if (array_asc !== 16'b1001101010111100) begin $display("%b", array_asc); $stop(); end end
    end
 
 endmodule

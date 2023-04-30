@@ -510,7 +510,7 @@ public:
         }
     }
     string name() const {
-        return (string("MDS:") + " d=" + cvtToHex(domainp()) + " s=" + cvtToHex(scopep()));
+        return string{"MDS:"} + " d=" + cvtToHex(domainp()) + " s=" + cvtToHex(scopep());
     }
 };
 

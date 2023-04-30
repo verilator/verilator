@@ -102,11 +102,11 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const VL_MT_SAFE { return m_e; }
 };
-constexpr bool operator==(const VNType& lhs, const VNType& rhs) VL_MT_SAFE {
+constexpr bool operator==(const VNType& lhs, const VNType& rhs) VL_PURE {
     return lhs.m_e == rhs.m_e;
 }
-constexpr bool operator==(const VNType& lhs, VNType::en rhs) { return lhs.m_e == rhs; }
-constexpr bool operator==(VNType::en lhs, const VNType& rhs) { return lhs == rhs.m_e; }
+constexpr bool operator==(const VNType& lhs, VNType::en rhs) VL_PURE { return lhs.m_e == rhs; }
+constexpr bool operator==(VNType::en lhs, const VNType& rhs) VL_PURE { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VNType& rhs) { return os << rhs.ascii(); }
 
 // ######################################################################
@@ -470,7 +470,7 @@ public:
         _ENUM_MAX
     };
     enum en m_e;
-    const char* ascii() const {
+    const char* ascii() const VL_MT_SAFE {
         static const char* const names[] = {"%E-unk",
                                             "bit",
                                             "byte",
@@ -1097,21 +1097,21 @@ public:
     }
     //
     VNumRange() = default;
-    VNumRange(int hi, int lo, bool littleEndian) { init(hi, lo, littleEndian); }
+    VNumRange(int hi, int lo, bool ascending) { init(hi, lo, ascending); }
     VNumRange(int left, int right)
         : m_left{left}
         , m_right{right}
         , m_ranged{true} {}
     ~VNumRange() = default;
     // MEMBERS
-    void init(int hi, int lo, bool littleEndian) {
+    void init(int hi, int lo, bool ascending) {
         if (lo > hi) {
             const int t = hi;
             hi = lo;
             lo = t;
         }
-        m_left = littleEndian ? lo : hi;
-        m_right = littleEndian ? hi : lo;
+        m_left = ascending ? lo : hi;
+        m_right = ascending ? hi : lo;
         m_ranged = true;
     }
     int left() const { return m_left; }
@@ -1122,10 +1122,10 @@ public:
     int lo() const VL_MT_SAFE {
         return m_left > m_right ? m_right : m_left;
     }  // How to show a declaration
-    int leftToRightInc() const { return littleEndian() ? 1 : -1; }
+    int leftToRightInc() const { return ascending() ? 1 : -1; }
     int elements() const VL_MT_SAFE { return hi() - lo() + 1; }
     bool ranged() const { return m_ranged; }
-    bool littleEndian() const { return m_left < m_right; }
+    bool ascending() const { return m_left < m_right; }
     int hiMaxSelect() const {
         return (lo() < 0 ? hi() - lo() : hi());
     }  // Maximum value a [] select may index
@@ -1374,12 +1374,37 @@ public:
 };
 
 //######################################################################
+// VNVisitorConst -- Allows new functions to be called on each node
+// type without changing the base classes.  See "Modern C++ Design".
+// This only has the constant fuctions for non-modifying visitors.
+// For more typical usage see VNVisitor
+
+class VNVisitorConst VL_NOT_FINAL : public VNDeleter {
+    friend class AstNode;
+
+public:
+    /// Call visit()s on nodep
+    inline void iterateConst(AstNode* nodep);
+    /// Call visit()s on nodep
+    inline void iterateConstNull(AstNode* nodep);
+    /// Call visit()s on const nodep's children
+    inline void iterateChildrenConst(AstNode* nodep);
+    /// Call visit()s on nodep's children in backp() order
+    inline void iterateChildrenBackwardsConst(AstNode* nodep);
+    /// Call visit()s on const nodep (maybe nullptr) and nodep's nextp() list
+    inline void iterateAndNextConstNull(AstNode* nodep);
+    /// Call visit()s on const nodep (maybe nullptr) and nodep's nextp() list, in reverse order
+    inline void iterateAndNextConstNullBackwards(AstNode* nodep);
+
+    virtual void visit(AstNode* nodep) = 0;
+#include "V3Ast__gen_visitor_decls.h"  // From ./astgen
+};
+
+//######################################################################
 // VNVisitor -- Allows new functions to be called on each node
 // type without changing the base classes.  See "Modern C++ Design".
 
-class VNVisitor VL_NOT_FINAL : public VNDeleter {
-    friend class AstNode;
-
+class VNVisitor VL_NOT_FINAL : public VNVisitorConst {
 public:
     /// Call visit()s on nodep
     inline void iterate(AstNode* nodep);
@@ -1387,21 +1412,10 @@ public:
     inline void iterateNull(AstNode* nodep);
     /// Call visit()s on nodep's children
     inline void iterateChildren(AstNode* nodep);
-    /// Call visit()s on nodep's children in backp() order
-    inline void iterateChildrenBackwards(AstNode* nodep);
-    /// Call visit()s on const nodep's children
-    inline void iterateChildrenConst(AstNode* nodep);
     /// Call visit()s on nodep (maybe nullptr) and nodep's nextp() list
     inline void iterateAndNextNull(AstNode* nodep);
-    /// Call visit()s on const nodep (maybe nullptr) and nodep's nextp() list
-    inline void iterateAndNextConstNull(AstNode* nodep);
-    /// Call visit()s on const nodep (maybe nullptr) and nodep's nextp() list, in reverse order
-    inline void iterateAndNextConstNullBackwards(AstNode* nodep);
     /// Return edited nodep; see comments in V3Ast.cpp
     inline AstNode* iterateSubtreeReturnEdits(AstNode* nodep);
-
-    virtual void visit(AstNode* nodep) = 0;
-#include "V3Ast__gen_visitor_decls.h"  // From ./astgen
 };
 
 //######################################################################
@@ -1426,6 +1440,13 @@ protected:
 
 public:
     VNRelinker() = default;
+    ~VNRelinker() {
+        // Relink is needed so m_iterpp's get restored, e.g. can't have:
+        // ->unlinkFrBack(relinker);
+        // if (only_sometimes) relinker.relink(newp);
+        UDEBUGONLY(
+            UASSERT_STATIC(!m_backp, "Active linker must be relink()ed before destruction"););
+    }
     inline void relink(AstNode* newp);
     AstNode* oldp() const { return m_oldp; }
     void dump(std::ostream& str = std::cout) const;
@@ -1545,7 +1566,7 @@ class AstNode VL_NOT_FINAL {
 private:
     AstNode* cloneTreeIter();
     AstNode* cloneTreeIterList();
-    void checkTreeIter(const AstNode* prevBackp) const VL_MT_SAFE;
+    void checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE;
     bool gateTreeIter() const;
     static bool sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext,
                              bool gateOnly);
@@ -1601,14 +1622,14 @@ public:
     // ACCESSORS
     VNType type() const VL_MT_SAFE { return m_type; }
     const char* typeName() const VL_MT_SAFE { return type().ascii(); }  // See also prettyTypeName
-    AstNode* nextp() const VL_MT_SAFE { return m_nextp; }
-    AstNode* backp() const VL_MT_SAFE { return m_backp; }
+    AstNode* nextp() const VL_MT_STABLE { return m_nextp; }
+    AstNode* backp() const VL_MT_STABLE { return m_backp; }
     AstNode* abovep() const;  // Parent node above, only when no nextp() as otherwise slow
-    AstNode* op1p() const VL_MT_SAFE { return m_op1p; }
-    AstNode* op2p() const VL_MT_SAFE { return m_op2p; }
-    AstNode* op3p() const VL_MT_SAFE { return m_op3p; }
-    AstNode* op4p() const VL_MT_SAFE { return m_op4p; }
-    AstNodeDType* dtypep() const VL_MT_SAFE { return m_dtypep; }
+    AstNode* op1p() const VL_MT_STABLE { return m_op1p; }
+    AstNode* op2p() const VL_MT_STABLE { return m_op2p; }
+    AstNode* op3p() const VL_MT_STABLE { return m_op3p; }
+    AstNode* op4p() const VL_MT_STABLE { return m_op4p; }
+    AstNodeDType* dtypep() const VL_MT_STABLE { return m_dtypep; }
     AstNode* clonep() const { return ((m_cloneCnt == s_cloneCntGbl) ? m_clonep : nullptr); }
     AstNode* firstAbovep() const {  // Returns nullptr when second or later in list
         return ((backp() && backp()->nextp() != this) ? backp() : nullptr);
@@ -1655,7 +1676,7 @@ public:
     static constexpr int INSTR_COUNT_PLI = 20;  // PLI routines
 
     // ACCESSORS
-    virtual string name() const VL_MT_SAFE { return ""; }
+    virtual string name() const VL_MT_STABLE { return ""; }
     virtual string origName() const { return ""; }
     virtual void name(const string& name) {
         this->v3fatalSrc("name() called on object without name() method");
@@ -1663,22 +1684,23 @@ public:
     virtual void tag(const string& text) {}
     virtual string tag() const { return ""; }
     virtual string verilogKwd() const { return ""; }
-    string nameProtect() const VL_MT_SAFE;  // Name with --protect-id applied
+    string nameProtect() const VL_MT_STABLE;  // Name with --protect-id applied
     string origNameProtect() const;  // origName with --protect-id applied
     string shortName() const;  // Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);  // Name with dots removed
-    static string prettyName(const string& namein);  // Name for printing out to the user
+    static string prettyName(const string& namein) VL_PURE;  // Name for printing out to the user
     static string vpiName(const string& namein);  // Name for vpi access
     static string prettyNameQ(const string& namein) {  // Quoted pretty name (for errors)
         return std::string{"'"} + prettyName(namein) + "'";
     }
-    static string
-    encodeName(const string& namein);  // Encode user name into internal C representation
+    // Encode user name into internal C representation
+    static string encodeName(const string& namein);
     static string encodeNumber(int64_t num);  // Encode number into internal C representation
     static string vcdName(const string& namein);  // Name for printing out to vcd files
-    string prettyName() const VL_MT_SAFE { return prettyName(name()); }
+    string prettyName() const VL_MT_STABLE { return prettyName(name()); }
     string prettyNameQ() const { return prettyNameQ(name()); }
-    string prettyTypeName() const;  // "VARREF" for error messages (NOT dtype's pretty name)
+    // "VARREF" for error messages (NOT dtype's pretty name)
+    string prettyTypeName() const VL_MT_STABLE;
     virtual string prettyOperatorName() const { return "operator " + prettyTypeName(); }
     FileLine* fileline() const VL_MT_SAFE { return m_fileline; }
     void fileline(FileLine* fl) { m_fileline = fl; }
@@ -1697,25 +1719,25 @@ public:
     void protect(bool flag) { m_flags.protect = flag; }
 
     // TODO stomp these width functions out, and call via dtypep() instead
-    inline int width() const VL_MT_SAFE;
+    inline int width() const VL_MT_STABLE;
     inline int widthMin() const;
     int widthMinV() const {
         return v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH ? widthMin() : width();
     }
     int widthWords() const { return VL_WORDS_I(width()); }
-    bool isQuad() const VL_MT_SAFE { return (width() > VL_IDATASIZE && width() <= VL_QUADSIZE); }
-    bool isWide() const VL_MT_SAFE { return (width() > VL_QUADSIZE); }
-    inline bool isDouble() const;
-    inline bool isSigned() const;
-    inline bool isString() const;
+    bool isQuad() const VL_MT_STABLE { return (width() > VL_IDATASIZE && width() <= VL_QUADSIZE); }
+    bool isWide() const VL_MT_STABLE { return (width() > VL_QUADSIZE); }
+    inline bool isDouble() const VL_MT_STABLE;
+    inline bool isSigned() const VL_MT_STABLE;
+    inline bool isString() const VL_MT_STABLE;
 
     // clang-format off
-    VNUser      user1u() const VL_MT_SAFE {
+    VNUser      user1u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser1InUse::s_userBusy, "userp set w/o busy");
         return ((m_user1Cnt==VNUser1InUse::s_userCntGbl) ? m_user1u : VNUser{0});
     }
-    AstNode*    user1p() const VL_MT_SAFE { return user1u().toNodep(); }
+    AstNode*    user1p() const VL_MT_STABLE { return user1u().toNodep(); }
     void        user1u(const VNUser& user) { m_user1u=user; m_user1Cnt=VNUser1InUse::s_userCntGbl; }
     void        user1p(void* userp) { user1u(VNUser{userp}); }
     int         user1() const { return user1u().toInt(); }
@@ -1724,12 +1746,12 @@ public:
     int         user1SetOnce() { int v=user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
     static void user1ClearTree() { VNUser1InUse::clear(); }  // Clear userp()'s across the entire tree
 
-    VNUser      user2u() const VL_MT_SAFE {
+    VNUser      user2u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser2InUse::s_userBusy, "userp set w/o busy");
         return ((m_user2Cnt==VNUser2InUse::s_userCntGbl) ? m_user2u : VNUser{0});
     }
-    AstNode*    user2p() const VL_MT_SAFE { return user2u().toNodep(); }
+    AstNode*    user2p() const VL_MT_STABLE { return user2u().toNodep(); }
     void        user2u(const VNUser& user) { m_user2u=user; m_user2Cnt=VNUser2InUse::s_userCntGbl; }
     void        user2p(void* userp) { user2u(VNUser{userp}); }
     int         user2() const { return user2u().toInt(); }
@@ -1738,12 +1760,12 @@ public:
     int         user2SetOnce() { int v=user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
     static void user2ClearTree() { VNUser2InUse::clear(); }  // Clear userp()'s across the entire tree
 
-    VNUser      user3u() const VL_MT_SAFE {
+    VNUser      user3u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser3InUse::s_userBusy, "userp set w/o busy");
         return ((m_user3Cnt==VNUser3InUse::s_userCntGbl) ? m_user3u : VNUser{0});
     }
-    AstNode*    user3p() const VL_MT_SAFE { return user3u().toNodep(); }
+    AstNode*    user3p() const VL_MT_STABLE { return user3u().toNodep(); }
     void        user3u(const VNUser& user) { m_user3u=user; m_user3Cnt=VNUser3InUse::s_userCntGbl; }
     void        user3p(void* userp) { user3u(VNUser{userp}); }
     int         user3() const { return user3u().toInt(); }
@@ -1752,12 +1774,12 @@ public:
     int         user3SetOnce() { int v=user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
     static void user3ClearTree() { VNUser3InUse::clear(); }  // Clear userp()'s across the entire tree
 
-    VNUser      user4u() const VL_MT_SAFE {
+    VNUser      user4u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser4InUse::s_userBusy, "userp set w/o busy");
         return ((m_user4Cnt==VNUser4InUse::s_userCntGbl) ? m_user4u : VNUser{0});
     }
-    AstNode*    user4p() const VL_MT_SAFE { return user4u().toNodep(); }
+    AstNode*    user4p() const VL_MT_STABLE { return user4u().toNodep(); }
     void        user4u(const VNUser& user) { m_user4u=user; m_user4Cnt=VNUser4InUse::s_userCntGbl; }
     void        user4p(void* userp) { user4u(VNUser{userp}); }
     int         user4() const { return user4u().toInt(); }
@@ -1766,12 +1788,12 @@ public:
     int         user4SetOnce() { int v=user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
     static void user4ClearTree() { VNUser4InUse::clear(); }  // Clear userp()'s across the entire tree
 
-    VNUser      user5u() const VL_MT_SAFE {
+    VNUser      user5u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser5InUse::s_userBusy, "userp set w/o busy");
         return ((m_user5Cnt==VNUser5InUse::s_userCntGbl) ? m_user5u : VNUser{0});
     }
-    AstNode*    user5p() const VL_MT_SAFE { return user5u().toNodep(); }
+    AstNode*    user5p() const VL_MT_STABLE { return user5u().toNodep(); }
     void        user5u(const VNUser& user) { m_user5u=user; m_user5Cnt=VNUser5InUse::s_userCntGbl; }
     void        user5p(void* userp) { user5u(VNUser{userp}); }
     int         user5() const { return user5u().toInt(); }
@@ -1907,7 +1929,7 @@ public:
     // Does tree of this == node2p?, not allowing non-isGateOptimizable
     inline bool sameGateTree(const AstNode* node2p) const;
     void deleteTree();  // Always deletes the next link
-    void checkTree() const VL_MT_SAFE {
+    void checkTree() const VL_MT_STABLE {
         if (v3Global.opt.debugCheck()) checkTreeIter(backp());
     }
     void checkIter() const;
@@ -1964,26 +1986,27 @@ public:
     virtual const char* broken() const { return nullptr; }
 
     // INVOKERS
-    virtual void accept(VNVisitor& v) = 0;
+    virtual void accept(VNVisitorConst& v) = 0;
 
 protected:
     // All VNVisitor related functions are called as methods off the visitor
     friend class VNVisitor;
+    friend class VNVisitorConst;
     // Use instead VNVisitor::iterateChildren
     void iterateChildren(VNVisitor& v);
-    // Use instead VNVisitor::iterateChildrenBackwards
-    void iterateChildrenBackwards(VNVisitor& v);
+    // Use instead VNVisitor::iterateChildrenBackwardsConst
+    void iterateChildrenBackwardsConst(VNVisitorConst& v);
     // Use instead VNVisitor::iterateChildrenConst
-    void iterateChildrenConst(VNVisitor& v);
+    void iterateChildrenConst(VNVisitorConst& v);
     // Use instead VNVisitor::iterateAndNextNull
     void iterateAndNext(VNVisitor& v);
     // Use instead VNVisitor::iterateAndNextConstNull
-    void iterateAndNextConst(VNVisitor& v);
+    void iterateAndNextConst(VNVisitorConst& v);
     // Use instead VNVisitor::iterateSubtreeReturnEdits
     AstNode* iterateSubtreeReturnEdits(VNVisitor& v);
 
 private:
-    void iterateListBackwards(VNVisitor& v);
+    void iterateListBackwardsConst(VNVisitorConst& v);
 
     // For internal use only.
     // Note: specializations for particular node types are provided by 'astgen'
@@ -1992,7 +2015,7 @@ private:
 
     // For internal use only.
     template <typename TargetType, typename DeclType>
-    constexpr static bool uselessCast() {
+    constexpr static bool uselessCast() VL_PURE {
         using NonRef = typename std::remove_reference<DeclType>::type;
         using NonPtr = typename std::remove_pointer<NonRef>::type;
         using NonCV = typename std::remove_cv<NonPtr>::type;
@@ -2001,7 +2024,7 @@ private:
 
     // For internal use only.
     template <typename TargetType, typename DeclType>
-    constexpr static bool impossibleCast() {
+    constexpr static bool impossibleCast() VL_PURE {
         using NonRef = typename std::remove_reference<DeclType>::type;
         using NonPtr = typename std::remove_pointer<NonRef>::type;
         using NonCV = typename std::remove_cv<NonPtr>::type;
@@ -2035,7 +2058,7 @@ public:
 
     // For use via the VN_AS macro only
     template <typename T, typename E>
-    static T* privateAs(AstNode* nodep) VL_MT_SAFE {
+    static T* privateAs(AstNode* nodep) VL_PURE {
         static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
         UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
@@ -2044,7 +2067,7 @@ public:
         return reinterpret_cast<T*>(nodep);
     }
     template <typename T, typename E>
-    static const T* privateAs(const AstNode* nodep) VL_MT_SAFE {
+    static const T* privateAs(const AstNode* nodep) VL_PURE {
         static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
         static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
         UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
@@ -2483,23 +2506,28 @@ struct std::equal_to<VNRef<T_Node>> final {
 //######################################################################
 // Inline VNVisitor METHODS
 
+void VNVisitorConst::iterateConst(AstNode* nodep) { nodep->accept(*this); }
+void VNVisitorConst::iterateConstNull(AstNode* nodep) {
+    if (VL_LIKELY(nodep)) nodep->accept(*this);
+}
+void VNVisitorConst::iterateChildrenConst(AstNode* nodep) { nodep->iterateChildrenConst(*this); }
+void VNVisitorConst::iterateChildrenBackwardsConst(AstNode* nodep) {
+    nodep->iterateChildrenBackwardsConst(*this);
+}
+void VNVisitorConst::iterateAndNextConstNullBackwards(AstNode* nodep) {
+    if (VL_LIKELY(nodep)) nodep->iterateListBackwardsConst(*this);
+}
+void VNVisitorConst::iterateAndNextConstNull(AstNode* nodep) {
+    if (VL_LIKELY(nodep)) nodep->iterateAndNextConst(*this);
+}
+
 void VNVisitor::iterate(AstNode* nodep) { nodep->accept(*this); }
 void VNVisitor::iterateNull(AstNode* nodep) {
     if (VL_LIKELY(nodep)) nodep->accept(*this);
 }
 void VNVisitor::iterateChildren(AstNode* nodep) { nodep->iterateChildren(*this); }
-void VNVisitor::iterateChildrenBackwards(AstNode* nodep) {
-    nodep->iterateChildrenBackwards(*this);
-}
-void VNVisitor::iterateChildrenConst(AstNode* nodep) { nodep->iterateChildrenConst(*this); }
 void VNVisitor::iterateAndNextNull(AstNode* nodep) {
     if (VL_LIKELY(nodep)) nodep->iterateAndNext(*this);
-}
-void VNVisitor::iterateAndNextConstNullBackwards(AstNode* nodep) {
-    if (VL_LIKELY(nodep)) nodep->iterateListBackwards(*this);
-}
-void VNVisitor::iterateAndNextConstNull(AstNode* nodep) {
-    if (VL_LIKELY(nodep)) nodep->iterateAndNextConst(*this);
 }
 AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
     return nodep->iterateSubtreeReturnEdits(*this);

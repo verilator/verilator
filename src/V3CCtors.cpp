@@ -70,7 +70,7 @@ private:
         funcp->slow(!m_type.isClass());  // Only classes construct on fast path
         string preventUnusedStmt;
         if (m_type.isClass()) {
-            funcp->argTypes(EmitCBaseVisitor::symClassVar());
+            funcp->argTypes(EmitCBase::symClassVar());
             preventUnusedStmt = "if (false && vlSymsp) {}  // Prevent unused\n";
         } else if (m_type.isCoverage()) {
             funcp->argTypes("bool first");
@@ -148,6 +148,7 @@ private:
         m_modp = nodep;
         V3CCtorsBuilder var_reset{nodep, "_ctor_var_reset",
                                   VN_IS(nodep, Class) ? VCtorType::CLASS : VCtorType::MODULE};
+        // cppcheck-suppress danglingLifetime
         m_varResetp = &var_reset;
         iterateChildren(nodep);
 
@@ -201,7 +202,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    CCtorsVisitor(AstNode* nodep) { iterate(nodep); }
+    explicit CCtorsVisitor(AstNode* nodep) { iterate(nodep); }
     ~CCtorsVisitor() override = default;
 };
 

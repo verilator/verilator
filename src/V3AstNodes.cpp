@@ -115,6 +115,7 @@ void AstNodeUOrStructDType::repairMemberCache() {
 }
 
 const char* AstNodeUOrStructDType::broken() const {
+    BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
     std::unordered_set<AstMemberDType*> exists;
     for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_AS(itemp->nextp(), MemberDType)) {
         exists.insert(itemp);
@@ -229,6 +230,15 @@ int AstBasicDType::widthTotalBytes() const {
         return 8;
     } else {
         return widthWords() * (VL_EDATASIZE / 8);
+    }
+}
+
+bool AstBasicDType::same(const AstNode* samep) const {
+    const AstBasicDType* const sp = static_cast<const AstBasicDType*>(samep);
+    if (!rangep() && !sp->rangep() && m == sp->m) {
+        return true;
+    } else {
+        return m == sp->m && rangep() && rangep()->sameTree(sp->rangep());
     }
 }
 
@@ -387,7 +397,7 @@ string AstVar::verilogKwd() const {
 }
 
 string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc,
-                         bool asRef) const VL_MT_SAFE {
+                         bool asRef) const VL_MT_STABLE {
     UASSERT_OBJ(!forReturn, this,
                 "Internal data is never passed as return, but as first argument");
     string ostatic;
@@ -573,7 +583,7 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
     } else {
         class converter final : public dpiTypesToStringConverter {
             string bitLogicVector(const AstVar* varp, bool isBit) const override {
-                return string(varp->isReadOnly() ? "const " : "")
+                return string{varp->isReadOnly() ? "const " : ""}
                        + dpiTypesToStringConverter::bitLogicVector(varp, isBit) + '*';
             }
             string primitive(const AstVar* varp) const override {
@@ -636,13 +646,13 @@ string AstVar::dpiTmpVarType(const string& varName) const {
 
 string AstVar::scType() const {
     if (isScBigUint()) {
-        return (string("sc_biguint<") + cvtToStr(widthMin())
+        return (string{"sc_biguint<"} + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
     } else if (isScUint()) {
-        return (string("sc_uint<") + cvtToStr(widthMin())
+        return (string{"sc_uint<"} + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
     } else if (isScBv()) {
-        return (string("sc_bv<") + cvtToStr(widthMin()) + "> ");  // Keep the space so don't get >>
+        return (string{"sc_bv<"} + cvtToStr(widthMin()) + "> ");  // Keep the space so don't get >>
     } else if (widthMin() == 1) {
         return "bool";
     } else if (widthMin() <= VL_IDATASIZE) {
@@ -704,12 +714,12 @@ public:
     }
 };
 
-string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const VL_MT_SAFE {
+string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const VL_MT_STABLE {
     const CTypeRecursed info = cTypeRecurse(false);
     return info.render(name, isRef);
 }
 
-AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
+AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const VL_MT_STABLE {
     // Legacy compound argument currently just passed through and unused
     CTypeRecursed info;
 
@@ -734,9 +744,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
         info.m_type = "VlSampleQueue<" + sub.m_type + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
-        info.m_type = "VlClassRef<" + EmitCBaseVisitor::prefixNameProtect(adtypep) + ">";
+        info.m_type = "VlClassRef<" + EmitCBase::prefixNameProtect(adtypep) + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, IfaceRefDType)) {
-        info.m_type = EmitCBaseVisitor::prefixNameProtect(adtypep->ifaceViaCellp()) + "*";
+        info.m_type = EmitCBase::prefixNameProtect(adtypep->ifaceViaCellp()) + "*";
     } else if (const auto* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         if (adtypep->isCompound()) compound = true;
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound);
@@ -745,7 +755,7 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         info.m_type += ">";
     } else if (VN_IS(dtypep, NodeUOrStructDType) && !VN_AS(dtypep, NodeUOrStructDType)->packed()) {
         const auto* const sdtypep = VN_AS(dtypep, NodeUOrStructDType);
-        info.m_type = EmitCBaseVisitor::prefixNameProtect(sdtypep);
+        info.m_type = EmitCBase::prefixNameProtect(sdtypep);
     } else if (const AstBasicDType* const bdtypep = dtypep->basicp()) {
         // We don't print msb()/lsb() as multidim packed would require recursion,
         // and may confuse users as C++ data is stored always with bit 0 used
@@ -846,7 +856,7 @@ int AstNodeDType::widthPow2() const {
     return 1;
 }
 
-bool AstNodeDType::isLiteralType() const VL_MT_SAFE {
+bool AstNodeDType::isLiteralType() const VL_MT_STABLE {
     if (const auto* const dtypep = VN_CAST(skipRefp(), BasicDType)) {
         return dtypep->keyword().isLiteralType();
     } else if (const auto* const dtypep = VN_CAST(skipRefp(), UnpackArrayDType)) {
@@ -916,10 +926,10 @@ void AstScope::cloneRelink() {
     }
 }
 string AstScope::nameDotless() const {
-    string out = shortName();
+    string result = shortName();
     string::size_type pos;
-    while ((pos = out.find('.')) != string::npos) out.replace(pos, 1, "__");
-    return out;
+    while ((pos = result.find('.')) != string::npos) result.replace(pos, 1, "__");
+    return result;
 }
 
 AstVarScope* AstScope::createTemp(const string& name, unsigned width) {
@@ -1454,6 +1464,13 @@ void AstClass::repairCache() {
         }
     }
 }
+AstClass* AstClass::baseMostClassp() {
+    AstClass* basep = this;
+    while (basep->extendsp() && basep->extendsp()->classp()) {
+        basep = basep->extendsp()->classp();
+    }
+    return basep;
+}
 bool AstClass::isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp) {
     // TAIL RECURSIVE
     if (!refClassp || !baseClassp) return false;
@@ -1672,15 +1689,6 @@ const char* AstMemberSel::broken() const {
     BROKEN_RTN(m_varp && !m_varp->brokeExists());
     return nullptr;
 }
-void AstMethodCall::dump(std::ostream& str) const {
-    this->AstNodeFTaskRef::dump(str);
-    str << " -> ";
-    if (taskp()) {
-        taskp()->dump(str);
-    } else {
-        str << " -> UNLINKED";
-    }
-}
 void AstModportFTaskRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isExport()) str << " EXPORT";
@@ -1767,7 +1775,7 @@ void AstTypedef::dump(std::ostream& str) const {
 void AstNodeRange::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstRange::dump(std::ostream& str) const {
     this->AstNodeRange::dump(str);
-    if (littleEndian()) str << " [LITTLE]";
+    if (ascending()) str << " [ASCENDING]";
 }
 void AstParamTypeDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
@@ -1813,7 +1821,7 @@ void AstRefDType::cloneRelink() {
         m_classOrPackagep = m_classOrPackagep->clonep();
     }
 }
-AstNodeDType* AstRefDType::subDTypep() const {
+AstNodeDType* AstRefDType::subDTypep() const VL_MT_STABLE {
     if (typedefp()) return typedefp()->subDTypep();
     return refDTypep();  // Maybe nullptr
 }
@@ -2313,7 +2321,7 @@ int AstCMethodHard::instrCount() const {
     if (AstBasicDType* const basicp = fromp()->dtypep()->basicp()) {
         // TODO: add a more structured description of library methods, rather than using string
         //       matching. See #3715.
-        if (basicp->isTriggerVec() && m_name == "at") {
+        if (basicp->isTriggerVec() && m_name == "word") {
             // This is an important special case for scheduling so we compute it precisely,
             // it is simply a load.
             return INSTR_COUNT_LD;

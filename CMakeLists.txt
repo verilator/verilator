@@ -15,7 +15,7 @@
 cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW) # Use MSVC_RUNTIME_LIBRARY to select the runtime
 project(Verilator
-    VERSION 5.008
+    VERSION 5.010
     HOMEPAGE_URL https://verilator.org
     LANGUAGES CXX
 )
@@ -23,7 +23,8 @@ project(Verilator
 option(DEBUG_AND_RELEASE_AND_COVERAGE
     "Builds both the debug and release binaries, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild.")
 
-set(PYTHON3 python)
+find_package(Python3 COMPONENTS Interpreter)
+set(PYTHON3 Python3::Interpreter)
 set(CMAKE_INSTALL_DATADIR ${CMAKE_INSTALL_PREFIX})
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -44,15 +45,7 @@ if (MSVC)
     if (NOT WIN_FLEX_BISON)
         message(FATAL_ERROR "Please install https://github.com/lexxmark/winflexbison and set WIN_FLEX_BISON environment variable. Please use install cmake target after a successful build.")
     endif()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++20")
-else()
-    if (NOT DEFINED ENV{FLEX_INCLUDE})
-        message(FATAL_ERROR "Please set environment variable FLEX_INCLUDE to the directory containing FlexLexer.h")
-    endif()
-    set(WIN_FLEX_BISON "$ENV{FLEX_INCLUDE}")
-    if (WIN32 AND NOT MINGW)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
-    endif()
+    set(CMAKE_CXX_STANDARD 20)
 endif()
 
 find_package(BISON)
@@ -99,6 +92,7 @@ configure_package_config_file(verilator-config-version.cmake.in verilator-config
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/verilator-config-version.cmake DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 foreach (program
+    verilator
     verilator_gantt
     verilator_ccache_report
     verilator_difftree

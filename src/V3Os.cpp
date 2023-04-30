@@ -142,7 +142,7 @@ string V3Os::filenameDir(const string& filename) {
     }
 }
 
-string V3Os::filenameNonDir(const string& filename) {
+string V3Os::filenameNonDir(const string& filename) VL_PURE {
     string::size_type pos;
     if ((pos = filename.rfind('/')) != string::npos) {
         return filename.substr(pos + 1);
@@ -151,7 +151,7 @@ string V3Os::filenameNonDir(const string& filename) {
     }
 }
 
-string V3Os::filenameNonExt(const string& filename) {
+string V3Os::filenameNonExt(const string& filename) VL_PURE {
     string base = filenameNonDir(filename);
     string::size_type pos;
     if ((pos = base.find('.')) != string::npos) base.erase(pos);
@@ -159,7 +159,7 @@ string V3Os::filenameNonExt(const string& filename) {
 }
 
 string V3Os::filenameSubstitute(const string& filename) {
-    string out;
+    string result;
     // cppcheck-has-bug-suppress unusedLabel
     enum : uint8_t { NONE, PAREN, CURLY } brackets = NONE;
     for (string::size_type pos = 0; pos < filename.length(); ++pos) {
@@ -186,20 +186,20 @@ string V3Os::filenameSubstitute(const string& filename) {
             string envvalue;
             if (!envvar.empty()) envvalue = getenvStr(envvar, "");
             if (!envvalue.empty()) {
-                out += envvalue;
+                result += envvalue;
                 if (brackets == NONE) {
                     pos = endpos;
                 } else {
                     pos = endpos + 1;
                 }
             } else {
-                out += filename[pos];  // *pos == '$'
+                result += filename[pos];  // *pos == '$'
             }
         } else {
-            out += filename[pos];
+            result += filename[pos];
         }
     }
-    return out;
+    return result;
 }
 
 string V3Os::filenameRealPath(const string& filename) {
@@ -286,7 +286,7 @@ uint64_t V3Os::rand64(std::array<uint64_t, 2>& stater) {
     return result;
 }
 
-string V3Os::trueRandom(size_t size) {
+string V3Os::trueRandom(size_t size) VL_MT_SAFE {
     string result(size, '\xFF');
     char* const data = const_cast<char*>(result.data());
     // Note: std::string.data() returns a non-const Char* from C++17 onwards.

@@ -65,7 +65,7 @@ t/t_dist_attributes_bad.h:204:    [mt_unsafe_one]                        TestCla
 t/t_dist_attributes_bad.h:209:    [mt_safe, mt_unsafe, pure]             TestClass::cm_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:209:    [mt_safe, mt_unsafe_one, pure]         TestClass::cm_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 
-%Error: "TestClass::cm_test_caller_smethod_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
+%Error: "TestClass::cm_test_caller_smethod_VL_MT_START(VerilatedMutex &)" is stable_tree but calls non-stable_tree or non-mtsafe
 t/t_dist_attributes_bad.cpp:155:  [mt_start]                           TestClass::cm_test_caller_smethod_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:191:    [mt_unsafe]                            TestClass::cm_au_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:191:    [mt_unsafe_one]                        TestClass::cm_au_VL_MT_UNSAFE_ONE(VerilatedMutex &)
@@ -143,7 +143,7 @@ t/t_dist_attributes_bad.h:204:    [mt_unsafe_one]                        TestCla
 t/t_dist_attributes_bad.h:209:    [mt_safe, mt_unsafe, pure]             TestClass::cm_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:209:    [mt_safe, mt_unsafe_one, pure]         TestClass::cm_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 
-%Error: "TestClass::cm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
+%Error: "TestClass::cm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)" is stable_tree but calls non-stable_tree or non-mtsafe
 t/t_dist_attributes_bad.h:212:    [mt_start]                           TestClass::cm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:191:    [mt_unsafe]                            TestClass::cm_au_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:191:    [mt_unsafe_one]                        TestClass::cm_au_VL_MT_UNSAFE_ONE(VerilatedMutex &)
@@ -273,7 +273,7 @@ t/t_dist_attributes_bad.cpp:175:  [mt_safe]                            TestClass
 t/t_dist_attributes_bad.h:235:    [mt_unsafe]                            TestClass::icm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:235:    [mt_unsafe_one]                        TestClass::icm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 
-%Error: "TestClass::icm_test_caller_smethod_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
+%Error: "TestClass::icm_test_caller_smethod_VL_MT_START(VerilatedMutex &)" is stable_tree but calls non-stable_tree or non-mtsafe
 t/t_dist_attributes_bad.cpp:175:  [mt_start]                           TestClass::icm_test_caller_smethod_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:235:    [mt_unsafe]                            TestClass::icm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:235:    [mt_unsafe_one]                        TestClass::icm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
@@ -299,7 +299,7 @@ t/t_dist_attributes_bad.h:238:    [mt_safe]                            TestClass
 t/t_dist_attributes_bad.h:235:    [mt_unsafe]                            TestClass::icm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:235:    [mt_unsafe_one]                        TestClass::icm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 
-%Error: "TestClass::icm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
+%Error: "TestClass::icm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)" is stable_tree but calls non-stable_tree or non-mtsafe
 t/t_dist_attributes_bad.h:238:    [mt_start]                           TestClass::icm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:235:    [mt_unsafe]                            TestClass::icm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:235:    [mt_unsafe_one]                        TestClass::icm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
@@ -327,7 +327,7 @@ t/t_dist_attributes_bad.h:170:    [mt_start]                             TestCla
 t/t_dist_attributes_bad.h:170:    [mt_unsafe]                            TestClass::iscm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:170:    [mt_unsafe_one]                        TestClass::iscm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 
-%Error: "TestClass::iscm_test_caller_smethod_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
+%Error: "TestClass::iscm_test_caller_smethod_VL_MT_START(VerilatedMutex &)" is stable_tree but calls non-stable_tree or non-mtsafe
 t/t_dist_attributes_bad.cpp:119:  [mt_start]                           TestClass::iscm_test_caller_smethod_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:170:    []                                     TestClass::iscm_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:170:    [mt_start]                             TestClass::iscm_VL_MT_START(VerilatedMutex &)
@@ -357,7 +357,7 @@ t/t_dist_attributes_bad.h:170:    [mt_start]                             TestCla
 t/t_dist_attributes_bad.h:170:    [mt_unsafe]                            TestClass::iscm_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:170:    [mt_unsafe_one]                        TestClass::iscm_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 
-%Error: "TestClass::iscm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
+%Error: "TestClass::iscm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)" is stable_tree but calls non-stable_tree or non-mtsafe
 t/t_dist_attributes_bad.h:173:    [mt_start]                           TestClass::iscm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:170:    []                                     TestClass::iscm_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:170:    [mt_start]                             TestClass::iscm_VL_MT_START(VerilatedMutex &)
@@ -467,7 +467,7 @@ t/t_dist_attributes_bad.h:133:    [mt_unsafe_one]                        TestCla
 t/t_dist_attributes_bad.h:138:    [mt_safe, mt_unsafe, pure]             TestClass::scm_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:138:    [mt_safe, mt_unsafe_one, pure]         TestClass::scm_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 
-%Error: "TestClass::scm_test_caller_smethod_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
+%Error: "TestClass::scm_test_caller_smethod_VL_MT_START(VerilatedMutex &)" is stable_tree but calls non-stable_tree or non-mtsafe
 t/t_dist_attributes_bad.cpp:93:   [mt_start]                           TestClass::scm_test_caller_smethod_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:120:    []                                     TestClass::scm_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:120:    [mt_start]                             TestClass::scm_au_VL_MT_START(VerilatedMutex &)
@@ -585,7 +585,7 @@ t/t_dist_attributes_bad.h:133:    [mt_unsafe_one]                        TestCla
 t/t_dist_attributes_bad.h:138:    [mt_safe, mt_unsafe, pure]             TestClass::scm_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:138:    [mt_safe, mt_unsafe_one, pure]         TestClass::scm_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 
-%Error: "TestClass::scm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
+%Error: "TestClass::scm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)" is stable_tree but calls non-stable_tree or non-mtsafe
 t/t_dist_attributes_bad.h:141:    [mt_start]                           TestClass::scm_test_caller_smethod_hdr_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:120:    []                                     TestClass::scm_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:120:    [mt_start]                             TestClass::scm_au_VL_MT_START(VerilatedMutex &)
@@ -759,7 +759,7 @@ t/t_dist_attributes_bad.h:94:     [mt_start]                             ifh_VL_
 t/t_dist_attributes_bad.h:94:     [mt_unsafe]                            ifh_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:94:     [mt_unsafe_one]                        ifh_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 
-%Error: "ifh_test_caller_func_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
+%Error: "ifh_test_caller_func_VL_MT_START(VerilatedMutex &)" is stable_tree but calls non-stable_tree or non-mtsafe
 t/t_dist_attributes_bad.cpp:53:   [mt_start]                           ifh_test_caller_func_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:94:     []                                     ifh_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:94:     [mt_start]                             ifh_VL_MT_START(VerilatedMutex &)
@@ -789,7 +789,7 @@ t/t_dist_attributes_bad.h:94:     [mt_start]                             ifh_VL_
 t/t_dist_attributes_bad.h:94:     [mt_unsafe]                            ifh_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:94:     [mt_unsafe_one]                        ifh_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 
-%Error: "ifh_test_caller_func_hdr_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
+%Error: "ifh_test_caller_func_hdr_VL_MT_START(VerilatedMutex &)" is stable_tree but calls non-stable_tree or non-mtsafe
 t/t_dist_attributes_bad.h:97:     [mt_start]                           ifh_test_caller_func_hdr_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:94:     []                                     ifh_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:94:     [mt_start]                             ifh_VL_MT_START(VerilatedMutex &)
@@ -899,7 +899,7 @@ t/t_dist_attributes_bad.h:75:     [mt_unsafe_one]                        nsf_ae_
 t/t_dist_attributes_bad.h:80:     [mt_safe, mt_unsafe, pure]             nsf_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_safe, mt_unsafe_one, pure]         nsf_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 
-%Error: "nsf_test_caller_func_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
+%Error: "nsf_test_caller_func_VL_MT_START(VerilatedMutex &)" is stable_tree but calls non-stable_tree or non-mtsafe
 t/t_dist_attributes_bad.cpp:42:   [mt_start]                           nsf_test_caller_func_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:62:     []                                     nsf_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:62:     [mt_start]                             nsf_au_VL_MT_START(VerilatedMutex &)
@@ -1017,7 +1017,7 @@ t/t_dist_attributes_bad.h:75:     [mt_unsafe_one]                        nsf_ae_
 t/t_dist_attributes_bad.h:80:     [mt_safe, mt_unsafe, pure]             nsf_ea_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.h:80:     [mt_safe, mt_unsafe_one, pure]         nsf_ea_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 
-%Error: "nsf_test_caller_func_hdr_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
+%Error: "nsf_test_caller_func_hdr_VL_MT_START(VerilatedMutex &)" is stable_tree but calls non-stable_tree or non-mtsafe
 t/t_dist_attributes_bad.h:83:     [mt_start]                           nsf_test_caller_func_hdr_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.h:62:     []                                     nsf_au_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.h:62:     [mt_start]                             nsf_au_VL_MT_START(VerilatedMutex &)
@@ -1163,7 +1163,7 @@ t/t_dist_attributes_bad.cpp:60:   [mt_start]                             sfc_VL_
 t/t_dist_attributes_bad.cpp:60:   [mt_unsafe]                            sfc_VL_MT_UNSAFE(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:60:   [mt_unsafe_one]                        sfc_VL_MT_UNSAFE_ONE(VerilatedMutex &)
 
-%Error: "sfc_test_caller_func_VL_MT_START(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
+%Error: "sfc_test_caller_func_VL_MT_START(VerilatedMutex &)" is stable_tree but calls non-stable_tree or non-mtsafe
 t/t_dist_attributes_bad.cpp:63:   [mt_start]                           sfc_test_caller_func_VL_MT_START(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:60:   []                                     sfc_NO_ANNOTATION(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:60:   [mt_start]                             sfc_VL_MT_START(VerilatedMutex &)

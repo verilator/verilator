@@ -125,12 +125,6 @@ static void process() {
 
     // Convert parseref's to varrefs, and other directly post parsing fixups
     V3LinkParse::linkParse(v3Global.rootp());
-    if (v3Global.opt.debugExitUvm()) {
-        V3Error::abortIfErrors();
-        cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
-        std::exit(0);
-    }
-
     // Cross-link signal names
     // Cross-link dotted hierarchical references
     V3LinkDot::linkDotPrimary(v3Global.rootp());
@@ -148,11 +142,17 @@ static void process() {
     V3Error::abortIfErrors();
 
     if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
+    if (v3Global.opt.debugExitUvm()) {
+        V3Error::abortIfErrors();
+        cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
+        std::exit(0);
+    }
 
     // Remove parameters by cloning modules to de-parameterized versions
     //   This requires some width calculations and constant propagation
     V3Param::param(v3Global.rootp());
     V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
+    V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
     V3Error::abortIfErrors();
 
     // Remove any modules that were parameterized and are no longer referenced.
@@ -566,6 +566,13 @@ static void process() {
     reportStatsIfEnabled();
 
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
+        size_t src_f_cnt = 0;
+        for (AstNode* nodep = v3Global.rootp()->filesp(); nodep; nodep = nodep->nextp()) {
+            if (const AstCFile* cfilep = VN_CAST(nodep, CFile))
+                src_f_cnt += cfilep->source() ? 1 : 0;
+        }
+        if (src_f_cnt >= V3EmitMk::PARALLEL_FILE_CNT_THRESHOLD) v3Global.useParallelBuild(true);
+
         // Makefile must be after all other emitters
         if (v3Global.opt.main()) V3EmitCMain::emit();
         if (v3Global.opt.cmake()) V3EmitCMake::emit();
@@ -591,6 +598,8 @@ static void verilate(const string& argString) {
         v3fatalSrc("VERILATOR_DEBUG_SKIP_IDENTICAL w/ --skip-identical: Changes found\n");
     }  // LCOV_EXCL_STOP
 
+    // Disable mutexes in single-thread verilation
+    V3MutexConfig::s().configure(v3Global.opt.verilateJobs() > 1 /*enable*/);
     // Adjust thread pool size
     V3ThreadPool::s().resize(v3Global.opt.verilateJobs());
 
@@ -618,6 +627,7 @@ static void verilate(const string& argString) {
 
     // Read first filename
     v3Global.readFiles();
+    v3Global.removeStd();
 
     // Link, etc, if needed
     if (!v3Global.opt.preprocOnly()) {  //

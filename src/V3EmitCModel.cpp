@@ -658,7 +658,7 @@ class EmitCModel final : public EmitCFunc {
                 puts("\n");
             }
 
-            iterate(funcp);
+            iterateConst(funcp);
         }
 
         if (m_ofp) { VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr); }

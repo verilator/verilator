@@ -101,7 +101,7 @@ private:
                 if (lsb == msb) {
                     bits += cvtToStr(lsb + bdtypep->lo());
                 } else {
-                    if (bdtypep->littleEndian()) {
+                    if (bdtypep->ascending()) {
                         bits
                             += cvtToStr(lsb + bdtypep->lo()) + ":" + cvtToStr(msb + bdtypep->lo());
                     } else {
@@ -269,7 +269,7 @@ public:
 //######################################################################
 // Undriven state, as a visitor of each AstNode
 
-class UndrivenVisitor final : public VNVisitor {
+class UndrivenVisitor final : public VNVisitorConst {
 private:
     // NODE STATE
     // Netlist:
@@ -344,15 +344,15 @@ private:
             if (nodep->valuep()) entryp->drivenWhole();
         }
         // Discover variables used in bit definitions, etc
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstArraySel* nodep) override {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstSliceSel* nodep) override {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstSel* nodep) override {
         AstNodeVarRef* const varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
@@ -375,7 +375,7 @@ private:
             }
         } else {
             // else other varrefs handled as unknown mess in AstVarRef
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
     void visit(AstNodeVarRef* nodep) override {
@@ -460,7 +460,7 @@ private:
         VL_RESTORER(m_inBBox);
         {
             m_inBBox = true;
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
 
@@ -468,21 +468,21 @@ private:
         VL_RESTORER(m_inProcAssign);
         {
             m_inProcAssign = true;
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
     void visit(AstAssignDly* nodep) override {
         VL_RESTORER(m_inProcAssign);
         {
             m_inProcAssign = true;
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
     void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_inContAssign);
         {
             m_inContAssign = true;
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
     void visit(AstAlways* nodep) override {
@@ -495,7 +495,7 @@ private:
             } else {
                 m_alwaysCombp = nullptr;
             }
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
         }
     }
@@ -504,13 +504,13 @@ private:
         VL_RESTORER(m_taskp);
         {
             m_taskp = nodep;
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
     void visit(AstPin* nodep) override {
         VL_RESTORER(m_inInoutPin);
         m_inInoutPin = nodep->modVarp()->isInoutish();
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os
@@ -525,11 +525,11 @@ private:
 
     // iterate
     void visit(AstConst* nodep) override {}
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit UndrivenVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit UndrivenVisitor(AstNetlist* nodep) { iterateConst(nodep); }
     ~UndrivenVisitor() override {
         for (UndrivenVarEntry* ip : m_entryps[1]) ip->reportViolations();
         for (int usr = 1; usr < 3; ++usr) {

@@ -31,7 +31,6 @@ foreach my $s (
     'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
     # Not yet analyzed
     ' is not an in/out/inout/param/interface: ',
-    'Big endian instance range connecting to ',
     ' loading non-variable',
     '--pipe-filter protocol error, unexpected: ',
     '/*verilator sformat*/ can only be applied to last argument of ',
@@ -43,6 +42,7 @@ foreach my $s (
     'Assignment pattern with no members',
     'Assignment pattern with too many elements',
     'Attempted parameter setting of non-parameter: Param ',
+    'Can\'t find typedef: ',
     'Can\'t find varpin scope of ',
     'Can\'t resolve module reference: \'',
     'Cannot mix DPI import, DPI export, class methods, and/or public ',
@@ -53,6 +53,7 @@ foreach my $s (
     'Exceeded limit of ',
     'Extern declaration\'s scope is not a defined class',
     'Format to $display-like function must have constant format string',
+    'Forward typedef used as class/package does not resolve to class/package: ',
     'Illegal +: or -: select; type already selected, or bad dimension: ',
     'Illegal bit or array select; type already selected, or bad dimension: ',
     'Illegal range select; type already selected, or bad dimension: ',
@@ -177,6 +178,7 @@ sub read_messages {
       line:
         while (my $origline = ($fh && $fh->getline)) {
             my $line = $origline;
+            next if $line =~ m!^\s*//!;
             ++$lineno;
             if ($line =~ /\b(v3error|v3warn)\b\($/g) {
                 $read_next = 1 if $line !~ /LCOV_EXCL_LINE/;

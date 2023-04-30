@@ -32,6 +32,9 @@ public:
     static bool isLinkable(const AstNode* nodep);
     static void addNewed(const AstNode* nodep);
     static void deleted(const AstNode* nodep);
+    // Called on error to say may be inside visitor,
+    // Disables checks that may misfire if not called at stable point between visitors
+    static void allowMidvisitorCheck(bool flag);
     static void selfTest();
 };
 

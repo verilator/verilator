@@ -62,6 +62,8 @@ public:
     }
 } s_brokenCntGlobal;
 
+static bool s_brokenAllowMidvisitorCheck = false;
+
 //######################################################################
 // Table of allocated AstNode pointers
 
@@ -144,7 +146,7 @@ bool V3Broken::isLinkable(const AstNode* nodep) { return s_linkableTable.isLinka
 //######################################################################
 // Check every node in tree
 
-class BrokenCheckVisitor final : public VNVisitor {
+class BrokenCheckVisitor final : public VNVisitorConst {
     bool m_inScope = false;  // Under AstScope
 
     // Constants for marking we are under/not under a node
@@ -172,6 +174,7 @@ private:
         const char* const whyp = nodep->broken();
         UASSERT_OBJ(!whyp, nodep,
                     "Broken link in node (or something without maybePointedTo): " << whyp);
+        if (!s_brokenAllowMidvisitorCheck) nodep->checkIter();
         if (nodep->dtypep()) {
             UASSERT_OBJ(nodep->dtypep()->brokeExists(), nodep,
                         "Broken link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
@@ -312,7 +315,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit BrokenCheckVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit BrokenCheckVisitor(AstNetlist* nodep) { iterateConstNull(nodep); }
     ~BrokenCheckVisitor() override = default;
 };
 
@@ -350,6 +353,8 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
         inBroken = false;
     }
 }
+
+void V3Broken::allowMidvisitorCheck(bool flag) { s_brokenAllowMidvisitorCheck = flag; }
 
 //######################################################################
 // Self test

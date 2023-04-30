@@ -22,6 +22,7 @@
 
 #include "V3Error.h"
 #include "V3LangCode.h"
+#include "V3Mutex.h"
 
 #include <map>
 #include <set>
@@ -262,6 +263,7 @@ private:
     bool m_protectIds = false;      // main switch: --protect-ids
     bool m_public = false;          // main switch: --public
     bool m_publicFlatRW = false;    // main switch: --public-flat-rw
+    bool m_public_params = false;   // main switch: --public-params
     bool m_quietExit = false;       // main switch: --quiet-exit
     bool m_relativeIncludes = false; // main switch: --relative-includes
     bool m_reportUnoptflat = false; // main switch: --report-unoptflat
@@ -302,6 +304,7 @@ private:
     int         m_outputSplitCFuncs = -1;  // main switch: --output-split-cfuncs
     int         m_outputSplitCTrace = -1;  // main switch: --output-split-ctrace
     int         m_pinsBv = 65;       // main switch: --pins-bv
+    int         m_publicDepth = 0;   // main switch: --public-depth
     int         m_reloopLimit = 40; // main switch: --reloop-limit
     VOptionBool m_skipIdentical;  // main switch: --skip-identical
     int         m_threads = 1;      // main switch: --threads
@@ -405,7 +408,7 @@ public:
     unsigned debugLevel(const string& tag) const VL_MT_SAFE;
     unsigned debugSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
     unsigned dumpLevel(const string& tag) const VL_MT_SAFE;
-    unsigned dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
+    unsigned dumpSrcLevel(const string& srcfile_path) const;
 
     // METHODS
     void addCppFile(const string& filename);
@@ -492,6 +495,7 @@ public:
     bool usesProfiler() const { return profExec() || profPgo(); }
     bool protectIds() const VL_MT_SAFE { return m_protectIds; }
     bool allPublic() const { return m_public; }
+    bool publicParams() const { return m_public_params; }
     bool publicFlatRW() const { return m_publicFlatRW; }
     bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
@@ -519,6 +523,7 @@ public:
     int outputSplitCFuncs() const { return m_outputSplitCFuncs; }
     int outputSplitCTrace() const { return m_outputSplitCTrace; }
     int pinsBv() const { return m_pinsBv; }
+    int publicDepth() const { return m_publicDepth; }
     int reloopLimit() const { return m_reloopLimit; }
     VOptionBool skipIdentical() const { return m_skipIdentical; }
     int threads() const VL_MT_SAFE { return m_threads; }
@@ -569,7 +574,7 @@ public:
     string prefix() const VL_MT_SAFE { return m_prefix; }
     // Not just called protectKey() to avoid bugs of not using protectKeyDefaulted()
     bool protectKeyProvided() const { return !m_protectKey.empty(); }
-    string protectKeyDefaulted();  // Set default key if not set by user
+    string protectKeyDefaulted() VL_MT_SAFE;  // Set default key if not set by user
     string topModule() const { return m_topModule; }
     string unusedRegexp() const { return m_unusedRegexp; }
     string waiverOutput() const { return m_waiverOutput; }
@@ -646,7 +651,7 @@ public:
     }
 
     // METHODS (from main)
-    static string version();
+    static string version() VL_PURE;
     static string argString(int argc, char** argv);  ///< Return list of arguments as simple string
     string allArgsString() const VL_MT_SAFE;  ///< Return all passed arguments as simple string
     // Return options for child hierarchical blocks when forTop==false, otherwise returns args for

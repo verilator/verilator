@@ -87,7 +87,7 @@ class EmitCConstPool final : public EmitCConstInit {
             puts("extern const ");
             puts(varp->dtypep()->cType(nameProtect, false, false));
             puts(" = ");
-            iterate(varp->valuep());
+            iterateConst(varp->valuep());
             puts(";\n");
             // Keep track of stats
             if (VN_IS(varp->dtypep(), UnpackArrayDType)) {

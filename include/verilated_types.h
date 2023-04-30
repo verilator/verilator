@@ -79,9 +79,9 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 template <std::size_t T_size>  //
 class VlTriggerVec final {
     // TODO: static assert T_size > 0, and don't generate when empty
-private:
+
     // MEMBERS
-    std::array<bool, T_size> m_flags;  // State of the assoc array
+    alignas(16) std::array<uint64_t, roundUpToMultipleOf<64>(T_size) / 64> m_flags;  // The flags
 
 public:
     // CONSTRUCTOR
@@ -91,10 +91,18 @@ public:
     // METHODS
 
     // Set all elements to false
-    void clear() { m_flags.fill(false); }
+    void clear() { m_flags.fill(0); }
 
-    // Reference to element at 'index'
-    bool& at(size_t index) { return m_flags.at(index); }
+    // Word at given 'wordIndex'
+    uint64_t word(size_t wordIndex) const { return m_flags[wordIndex]; }
+
+    // Set specified flag to given value
+    void set(size_t index, bool value) {
+        uint64_t& w = m_flags[index / 64];
+        const size_t bitIndex = index % 64;
+        w &= ~(1ULL << bitIndex);
+        w |= (static_cast<uint64_t>(value) << bitIndex);
+    }
 
     // Return true iff at least one element is set
     bool any() const {
@@ -104,13 +112,13 @@ public:
     }
 
     // Set all elements true in 'this' that are set in 'other'
-    void set(const VlTriggerVec<T_size>& other) {
+    void thisOr(const VlTriggerVec<T_size>& other) {
         for (size_t i = 0; i < m_flags.size(); ++i) m_flags[i] |= other.m_flags[i];
     }
 
     // Set elements of 'this' to 'a & !b' element-wise
     void andNot(const VlTriggerVec<T_size>& a, const VlTriggerVec<T_size>& b) {
-        for (size_t i = 0; i < m_flags.size(); ++i) m_flags[i] = a.m_flags[i] && !b.m_flags[i];
+        for (size_t i = 0; i < m_flags.size(); ++i) m_flags[i] = a.m_flags[i] & ~b.m_flags[i];
     }
 };
 
@@ -136,14 +144,34 @@ public:
 };
 
 inline std::string VL_TO_STRING(const VlEvent& e) {
-    return std::string("triggered=") + (e.isTriggered() ? "true" : "false");
+    return std::string{"triggered="} + (e.isTriggered() ? "true" : "false");
 }
 
 //===================================================================
-// Shuffle RNG
+// Random
 
-extern uint64_t vl_rand64() VL_MT_SAFE;
+// Random Number Generator with internal state
+class VlRNG final {
+    std::array<uint64_t, 2> m_state;
 
+public:
+    // The default constructor simply sets state, to avoid vl_rand64()
+    // having to check for construction at each call
+    // Alternative: seed with zero and check on rand64() call
+    VlRNG() VL_MT_SAFE;
+    explicit VlRNG(uint64_t seed0) VL_MT_SAFE : m_state{0x12341234UL, seed0} {}
+    void srandom(uint64_t n) VL_MT_UNSAFE;
+    // Unused: std::string get_randstate() const VL_MT_UNSAFE;
+    // Unused: void set_randstate(const std::string& state) VL_MT_UNSAFE;
+    uint64_t rand64() VL_MT_UNSAFE;
+    // Threadsafe, but requires use on vl_thread_rng
+    static uint64_t vl_thread_rng_rand64() VL_MT_SAFE;
+    static VlRNG& vl_thread_rng() VL_MT_SAFE;
+};
+
+inline uint64_t vl_rand64() VL_MT_SAFE { return VlRNG::vl_thread_rng_rand64(); }
+
+// RNG for shuffle()
 class VlURNG final {
 public:
     using result_type = size_t;
@@ -151,6 +179,11 @@ public:
     static constexpr size_t max() { return 1ULL << 31; }
     size_t operator()() { return VL_MASK_I(31) & vl_rand64(); }
 };
+
+// These require the class object to have the thread safety lock
+inline IData VL_RANDOM_RNG_I(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
+inline QData VL_RANDOM_RNG_Q(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
+extern WDataOutP VL_RANDOM_RNG_W(VlRNG& rngr, int obits, WDataOutP outwp) VL_MT_UNSAFE;
 
 //===================================================================
 // Readmem/Writemem operation classes
@@ -370,18 +403,17 @@ public:
     // Can't just overload operator[] or provide a "at" reference to set,
     // because we need to be able to insert only when the value is set
     T_Value& at(int32_t index) {
-        static thread_local T_Value s_throwAway;
+        static thread_local T_Value t_throwAway;
         // Needs to work for dynamic arrays, so does not use T_MaxSize
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
-            s_throwAway = atDefault();
-            return s_throwAway;
+            t_throwAway = atDefault();
+            return t_throwAway;
         } else {
             return m_deque[index];
         }
     }
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(int32_t index) const {
-        static thread_local T_Value s_throwAway;
         // Needs to work for dynamic arrays, so does not use T_MaxSize
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
             return atDefault();
@@ -389,6 +421,10 @@ public:
             return m_deque[index];
         }
     }
+    // Access with an index counted from end (e.g. q[$])
+    T_Value& atBack(int32_t index) { return at(m_deque.size() - 1 - index); }
+    const T_Value& atBack(int32_t index) const { return at(m_deque.size() - 1 - index); }
+
     // function void q.insert(index, value);
     void insert(int32_t index, const T_Value& value) {
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) return;
@@ -403,6 +439,12 @@ public:
         if (VL_UNLIKELY(msb >= m_deque.size())) msb = m_deque.size() - 1;
         for (int32_t i = lsb; i <= msb; ++i) out.push_back(m_deque[i]);
         return out;
+    }
+    VlQueue sliceFrontBack(int32_t lsb, int32_t msb) const {
+        return slice(lsb, m_deque.size() - 1 - msb);
+    }
+    VlQueue sliceBackBack(int32_t lsb, int32_t msb) const {
+        return slice(m_deque.size() - 1 - lsb, m_deque.size() - 1 - msb);
     }
 
     // For save/restore
@@ -1166,7 +1208,8 @@ public:
     // CONSTRUCTORS
     VlClassRef() = default;
     // Init with nullptr
-    explicit VlClassRef(VlNull){};
+    // cppcheck-suppress noExplicitConstructor
+    VlClassRef(VlNull){};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         // () required here to avoid narrowing conversion warnings,
@@ -1187,6 +1230,16 @@ public:
     }
     // cppcheck-suppress noExplicitConstructor
     VlClassRef(VlClassRef&& moved)
+        : m_objp{vlstd::exchange(moved.m_objp, nullptr)} {}
+    // cppcheck-suppress noExplicitConstructor
+    template <typename T_OtherClass>
+    VlClassRef(const VlClassRef<T_OtherClass>& copied)
+        : m_objp{copied.m_objp} {
+        refCountInc();
+    }
+    // cppcheck-suppress noExplicitConstructor
+    template <typename T_OtherClass>
+    VlClassRef(VlClassRef<T_OtherClass>&& moved)
         : m_objp{vlstd::exchange(moved.m_objp, nullptr)} {}
     ~VlClassRef() { refCountDec(); }
 

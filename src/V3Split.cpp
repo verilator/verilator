@@ -109,7 +109,9 @@ protected:
     // ACCESSORS
     // Do not make accessor for nodep(),  It may change due to
     // reordering a lower block, but we don't repair it
-    string name() const override { return cvtToHex(m_nodep) + ' ' + m_nodep->prettyTypeName(); }
+    string name() const override VL_MT_STABLE {
+        return cvtToHex(m_nodep) + ' ' + m_nodep->prettyTypeName();
+    }
     FileLine* fileline() const override { return nodep()->fileline(); }
 
 public:
@@ -121,7 +123,7 @@ public:
     explicit SplitPliVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
     ~SplitPliVertex() override = default;
-    string name() const override { return "*PLI*"; }
+    string name() const override VL_MT_STABLE { return "*PLI*"; }
     string dotColor() const override { return "green"; }
 };
 
@@ -146,7 +148,7 @@ public:
     SplitVarPostVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
     ~SplitVarPostVertex() override = default;
-    string name() const override { return string("POST ") + SplitNodeVertex::name(); }
+    string name() const override VL_MT_STABLE { return string{"POST "} + SplitNodeVertex::name(); }
     string dotColor() const override { return "CadetBlue"; }
 };
 
@@ -511,10 +513,10 @@ protected:
         // And a real ordering to get the statements into something reasonable
         // We don't care if there's cutable violations here...
         // Non-cutable violations should be impossible; as those edges are program-order
-        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed(string("splitg_preo"), false);
+        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed("splitg_preo", false);
         m_graph.acyclic(&SplitEdge::followCyclic);
         m_graph.rank(&SplitEdge::followCyclic);  // Or order(), but that's more expensive
-        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed(string("splitg_opt"), false);
+        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed("splitg_opt", false);
     }
 
     void reorderBlock(AstNode* nodep) {
@@ -620,7 +622,7 @@ private:
 using ColorSet = std::unordered_set<uint32_t>;
 using AlwaysVec = std::vector<AstAlways*>;
 
-class IfColorVisitor final : public VNVisitor {
+class IfColorVisitor final : public VNVisitorConst {
     // MEMBERS
     ColorSet m_colors;  // All colors in the original always block
 
@@ -634,7 +636,7 @@ class IfColorVisitor final : public VNVisitor {
 public:
     // Visit through *nodep and map each AstNodeIf within to the set of
     // colors it will participate in. Also find the whole set of colors.
-    explicit IfColorVisitor(AstAlways* nodep) { iterate(nodep); }
+    explicit IfColorVisitor(AstAlways* nodep) { iterateConst(nodep); }
     ~IfColorVisitor() override = default;
 
     // METHODS
@@ -665,12 +667,12 @@ protected:
     void visit(AstNodeIf* nodep) override {
         m_ifStack.push_back(nodep);
         trackNode(nodep);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         m_ifStack.pop_back();
     }
     void visit(AstNode* nodep) override {
         trackNode(nodep);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
 private:

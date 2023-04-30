@@ -11,6 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 use IO::File;
 use POSIX qw(strftime);
 use strict;
+use File::Spec::Functions 'catfile';
 
 scenarios(dist => 1);
 
@@ -74,8 +75,10 @@ if (!-r "$root/.git") {
         $added{$1} = 1;
     }
 
-    foreach my $filename (sort keys %files) {
-        my $fh = IO::File->new("<$root/$filename") or error("$! $filename");
+    foreach my $file (sort keys %files) {
+        my $filename = catfile($root, $file);
+        next if !-r $filename;
+        my $fh = IO::File->new("<$filename") or error("$! $filename");
         next if !$fh;
         my $spdx;
         my $copyright;
@@ -86,12 +89,12 @@ if (!-r "$root/.git") {
             } elsif ($line =~ /Copyright 20[0-9][0-9]/) {
                 $copyright = $line;
                 if ($line =~ /Wilson Snyder/) {
-                } elsif (!$added{$filename} && $line =~ /Antmicro|Geza Lore|Todd Strader/) {
-                } elsif ($filename =~ /$Exempt_Author_Re/) {
+                } elsif (!$added{$file} && $line =~ /Antmicro|Geza Lore|Todd Strader/) {
+                } elsif ($file =~ /$Exempt_Author_Re/) {
                 } else {
-                    my $yeardash = ($filename =~ m!test_regress/t!) ? $year : $year."-".$year;
+                    my $yeardash = ($file =~ m!test_regress/t!) ? $year : $year."-".$year;
                     warn "   ".$copyright;
-                    error("$filename: Please use standard 'Copyright $yeardash by Wilson Snyder'");
+                    error("$file: Please use standard 'Copyright $yeardash by Wilson Snyder'");
                 }
             } elsif ($line =~ m!Creative Commons Public Domain!
                      || $line =~ m!freely copied and/or distributed!
@@ -100,14 +103,14 @@ if (!-r "$root/.git") {
             }
         }
         my $release_note;
-        if ($release && $filename !~ /$Release_Ok_Re/) {
+        if ($release && $file !~ /$Release_Ok_Re/) {
             $release_note = " (has copyright release, but not part of $Release_Ok_Re)";
         }
         if (!$copyright && (!$release || $release_note)) {
-            error("$filename: Please add standard 'Copyright $year ...', similar to in other files" . $release_note);
+            error("$file: Please add standard 'Copyright $year ...', similar to in other files" . $release_note);
         }
         if (!$spdx) {
-            error("$filename: Please add standard 'SPDX-License_Identifier: ...', similar to in other files");
+            error("$file: Please add standard 'SPDX-License_Identifier: ...', similar to in other files");
         }
     }
 }

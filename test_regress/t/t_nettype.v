@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package Pkg;
+   typedef real real_t;
    real last_resolve;
 
    function automatic real resolver(input real drivers[]);
@@ -33,6 +34,10 @@ module t(/*AUTOARG*/);
    nettype real2_n real3_n;
    real3_n real3;
    assign real3 = 1.23;
+
+   nettype Pkg::real_t real4_n with Pkg::resolver;
+   real4_n real4;
+   assign real4 = 1.23;
 
    // TODO when implement net types need to check multiple driver cases, across
    // submodules

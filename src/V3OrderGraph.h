@@ -123,7 +123,7 @@ public:
     virtual bool domainMatters() = 0;
 
     // ACCESSORS
-    AstSenTree* domainp() const { return m_domainp; }
+    AstSenTree* domainp() const VL_MT_STABLE { return m_domainp; }
     void domainp(AstSenTree* domainp) {
 #if VL_DEBUG
         UASSERT(!m_domainp, "Domain should only be set once");
@@ -154,12 +154,12 @@ public:
     bool domainMatters() override { return true; }
 
     // ACCESSORS
-    AstNode* nodep() const { return m_nodep; }
-    AstScope* scopep() const { return m_scopep; }
+    AstNode* nodep() const VL_MT_STABLE { return m_nodep; }
+    AstScope* scopep() const VL_MT_STABLE { return m_scopep; }
     AstSenTree* hybridp() const { return m_hybridp; }
 
     // LCOV_EXCL_START // Debug code
-    string name() const override {
+    string name() const override VL_MT_STABLE {
         return (cvtToHex(m_nodep) + "\\n " + cvtToStr(nodep()->typeName()));
     }
     string dotShape() const override { return VN_IS(m_nodep, Active) ? "doubleoctagon" : "rect"; }
@@ -181,8 +181,8 @@ public:
 
     // LCOV_EXCL_START // Debug code
     string dotShape() const override final { return "ellipse"; }
-    virtual string nameSuffix() const = 0;
-    string name() const override final {
+    virtual string nameSuffix() const VL_MT_SAFE = 0;
+    string name() const override final VL_MT_STABLE {
         return cvtToHex(m_vscp) + " " + nameSuffix() + "\\n " + m_vscp->name();
     }
     // LCOV_EXCL_STOP
@@ -199,7 +199,7 @@ public:
     bool domainMatters() override { return true; }
 
     // LCOV_EXCL_START // Debug code
-    string nameSuffix() const override { return ""; }
+    string nameSuffix() const override VL_MT_SAFE { return ""; }
     string dotColor() const override { return "grey"; }
     // LCOV_EXCL_STOP
 };
@@ -215,7 +215,7 @@ public:
     bool domainMatters() override { return false; }
 
     // LCOV_EXCL_START // Debug code
-    string nameSuffix() const override { return "PRE"; }
+    string nameSuffix() const override VL_MT_SAFE { return "PRE"; }
     string dotColor() const override { return "green"; }
     // LCOV_EXCL_STOP
 };
@@ -231,7 +231,7 @@ public:
     bool domainMatters() override { return false; }
 
     // LCOV_EXCL_START // Debug code
-    string nameSuffix() const override { return "POST"; }
+    string nameSuffix() const override VL_MT_SAFE { return "POST"; }
     string dotColor() const override { return "red"; }
     // LCOV_EXCL_STOP
 };
@@ -247,7 +247,7 @@ public:
     bool domainMatters() override { return false; }
 
     // LCOV_EXCL_START // Debug code
-    string nameSuffix() const override { return "PORD"; }
+    string nameSuffix() const override VL_MT_SAFE { return "PORD"; }
     string dotColor() const override { return "blue"; }
     // LCOV_EXCL_STOP
 };

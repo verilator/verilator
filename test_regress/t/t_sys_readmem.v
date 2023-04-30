@@ -14,7 +14,7 @@
 
 module t;
 
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    reg [5:0] binary_string [2:15];
    reg [5:0] binary_nostart [2:15];
    reg [5:0] binary_start [0:15];
@@ -30,7 +30,7 @@ module t;
    reg [(32*6)-1:0] hex_align_tmp [0:15];
    string fns_tmp;
 `endif
-   // verilator lint_on LITENDIAN
+   // verilator lint_on ASCRANGE
 
    integer   i;
 

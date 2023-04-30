@@ -115,7 +115,7 @@ private:
         if (m_underGenerate) nodep->underGenerate(true);
         // Remember the existing symbol table scope
         if (m_classp) {
-            if (nodep->name() == "randomize") {
+            if (nodep->name() == "randomize" || nodep->name() == "srandom") {
                 nodep->v3error(nodep->prettyNameQ()
                                << " is a predefined class method; redefinition not allowed"
                                   " (IEEE 1800-2017 18.6.3)");
@@ -318,14 +318,6 @@ private:
         if (filep && filep->varp()) filep->varp()->attrFileDescr(true);
     }
 
-    void visit(AstFOpen* nodep) override {
-        iterateChildren(nodep);
-        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
-    }
-    void visit(AstFOpenMcd* nodep) override {
-        iterateChildren(nodep);
-        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
-    }
     void visit(AstFClose* nodep) override {
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
@@ -454,7 +446,7 @@ public:
 //      Recurses cells backwards, so we can pick up those things that propagate
 //      from child cells up to the top module.
 
-class LinkBotupVisitor final : public VNVisitor {
+class LinkBotupVisitor final : public VNVisitorConst {
 private:
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -462,14 +454,12 @@ private:
     // VISITs
     void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.
-        iterateChildrenBackwards(nodep);
+        iterateChildrenBackwardsConst(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        iterateChildrenConst(nodep);
     }
     void visit(AstCell* nodep) override {
         // Parent module inherits child's publicity
@@ -477,11 +467,11 @@ private:
         //** No iteration for speed
     }
     void visit(AstNodeExpr*) override {}  // Accelerate
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit LinkBotupVisitor(AstNetlist* rootp) { iterate(rootp); }
+    explicit LinkBotupVisitor(AstNetlist* rootp) { iterateConst(rootp); }
     ~LinkBotupVisitor() override = default;
 };
 

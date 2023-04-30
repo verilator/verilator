@@ -7,8 +7,13 @@
 class ClsNoArg;
    const int imembera;  // Ok for new() to assign to a const
    function new();
+      int other = other_func();
       imembera = 5;
+      if (other != 6) $stop;
    endfunction : new
+   function int other_func();
+      return 6;
+   endfunction
 endclass
 
 class ClsArg;

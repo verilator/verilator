@@ -97,6 +97,24 @@ List Of Warnings
    simulate correctly.
 
 
+.. option:: ASCRANGE
+
+   .. TODO better example
+
+   Warns that a packed vector is declared with ascending bit range
+   (i.e. [0:7]).  Descending bit range is now the overwhelming standard,
+   and ascending ranges are now thus often due to simple oversight
+   instead of intent (a notable exception is the OpenPOWER code base).
+
+   It also warns that an instance is declared with ascending range
+   (i.e. [0:7] or [7]) and is connected to an N-wide signal.
+   The bits will likely be in the reversed order from what people may expect
+   (i.e., instance [0] will connect to signal bit [N-1] not bit [0]).
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+
 .. option:: ASSIGNDLY
 
    .. TODO better example
@@ -376,6 +394,16 @@ List Of Warnings
 
    Ignoring this warning may make Verilator simulations differ from other
    simulators.
+
+
+.. option:: CONSTRAINTIGN
+
+   Warns that Verilator does not support :code:`constraint`,
+   :code:`constraint_mode`, or :code:`rand_mode`, and the construct was are
+   ignored.
+
+   Ignoring this warning may make Verilator randomize() simulations differ
+   from other simulators.
 
 
 .. option:: CONTASSREG
@@ -738,7 +766,7 @@ List Of Warnings
 
    This is a warning because the static default differs from C++, differs
    from class member function/tasks.  Static is a more dangerous default
-   then automatic as static prevents the function from being reinterant,
+   then automatic as static prevents the function from being reentrant,
    which may be a source of bugs, and/or performance issues.
 
    If the function does not require static behavior, change it to "function
@@ -850,18 +878,10 @@ List Of Warnings
 
    .. TODO better example
 
-   Warns that a packed vector is declared with big endian bit numbering
-   (i.e. [0:7]).  Little endian bit numbering is now the overwhelming
-   standard, and big numbering is now thus often due to simple oversight
-   instead of intent.
-
-   It also warns that an instance is declared with big endian range
-   (i.e. [0:7] or [7]) and is connected to an N-wide signal.
-   The bits will likely be backward from what people may expect
-   (i.e., instance [0] will connect to signal bit [N-1] not bit [0]).
-
-   Ignoring this warning will only suppress the lint check; it will
-   simulate correctly.
+   The naming of this warning is in contradiction with the common
+   interpretation of little endian. It was therefore renamed to
+   :option:`ASCRANGE`. While :option:`LITENDIAN` remains for
+   backwards compatibility, new projects should use :option:`ASCRANGE`.
 
 
 .. option:: MINTYPMAX
@@ -1300,6 +1320,17 @@ List Of Warnings
    * The variable is a parameter, localparam, genvar, or queue.
 
    * The variable is tristate or bidirectional. (e.g., :code:`inout`).
+
+
+.. option:: STATICVAR
+
+   Warns that a static variable declared in a loop with declaration assignment
+   was converted to automatic. Often such variables were intended to
+   instead be declared "automatic".
+
+   Ignoring this warning may make Verilator differ from other simulators,
+   which will treat the variable as static. Verilator may in future versions also
+   treat the variable as static.
 
 
 .. option:: STMTDLY
@@ -1813,7 +1844,7 @@ List Of Warnings
 
 .. option:: WIDTHXZEXPAND
 
-   A more granular WIDTH warning, for when a value is xz expanded
+   A more granular WIDTH warning, for when a value is X/Z expanded
 
 .. option:: WIDTHCONCAT
 

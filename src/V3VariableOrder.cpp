@@ -169,7 +169,7 @@ class VariableOrder final {
                                      : (sigbytes == 1)                                 ? 2
                                                                                        : 10;
                 // Anonymous structure ok
-                attributes.anonOk = EmitCBaseVisitor::isAnonOk(varp);
+                attributes.anonOk = EmitCBase::isAnonOk(varp);
             }
         }
 

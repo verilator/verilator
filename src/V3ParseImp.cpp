@@ -554,7 +554,7 @@ void V3ParseImp::tokenPipelineSym() {
             }
             if (foundp && !v3Global.usesStdPackage()) {
                 AstPackageImport* const impp
-                    = new AstPackageImport(stdpkgp->fileline(), stdpkgp, "*");
+                    = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
                 unitPackage(stdpkgp->fileline())->addStmtsp(impp);
                 v3Global.setUsesStdPackage();
             }

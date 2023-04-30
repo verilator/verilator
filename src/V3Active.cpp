@@ -54,7 +54,7 @@ private:
     const string m_name;  // Only used for .dot file generation
     const VertexType m_type;  // Vertex type (BLOCK/BRANCH/OUTPUT)
 
-    string typestr() const {  //   "
+    string typestr() const VL_MT_SAFE {  //   "
         switch (m_type) {
         case VT_BLOCK: return "(||)";  // basic block node
         case VT_BRANCH: return "(&&)";  // if/else branch mode
@@ -68,7 +68,7 @@ public:
         : V3GraphVertex{graphp}
         , m_name{name}
         , m_type{type} {}
-    string name() const override { return m_name + " " + typestr(); }
+    string name() const override VL_MT_STABLE { return m_name + " " + typestr(); }
     string dotColor() const override { return user() ? "green" : "black"; }
     virtual int type() const { return m_type; }
 };
@@ -309,7 +309,7 @@ AstActive*& ActiveNamer::getSpecialActive<AstSenItem::Combo>() {
 //######################################################################
 // Latch checking visitor
 
-class ActiveLatchCheckVisitor final : public VNVisitor {
+class ActiveLatchCheckVisitor final : public VNVisitorConst {
 private:
     // NODE STATE
     // Input:
@@ -329,20 +329,20 @@ private:
             LatchDetectGraphVertex* const parentp = m_graph.currentp();
             LatchDetectGraphVertex* const branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
             m_graph.addPathVertex(branchp, "IF");
-            iterateAndNextNull(nodep->thensp());
+            iterateAndNextConstNull(nodep->thensp());
             m_graph.addPathVertex(branchp, "ELSE");
-            iterateAndNextNull(nodep->elsesp());
+            iterateAndNextConstNull(nodep->elsesp());
             m_graph.currentp(parentp);
         }
     }
     //--------------------
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
     ActiveLatchCheckVisitor(AstNode* nodep, bool expectLatch) {
         m_graph.begin();
-        iterate(nodep);
+        iterateConst(nodep);
         m_graph.latchCheck(nodep, expectLatch);
     }
     ~ActiveLatchCheckVisitor() override = default;

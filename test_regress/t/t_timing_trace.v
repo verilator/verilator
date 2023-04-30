@@ -29,18 +29,16 @@ module t;
         clk = 0;
         a = 0;
         c = 0;
-        b = 0;
+        b = ~b;
         d = 0;
 
-        #CLK_PERIOD;
-        rst = 0;
-        b = 1;
-        -> ev ;
-        #CLK_PERIOD;
-        -> ev ;
+        fork #(10 * CLK_PERIOD) b = 0; join_none
 
-        #(9 * CLK_PERIOD);
-        -> ev ;
+        while (b) begin
+            c = ~c;
+            -> ev ;
+            #CLK_PERIOD;
+        end
 
         $write("*-* All Finished *-*\n");
         $finish;

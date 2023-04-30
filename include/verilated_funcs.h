@@ -260,7 +260,7 @@ extern void _vl_debug_print_w(int lbits, WDataInP const iwp) VL_MT_SAFE;
 #if defined(SYSTEMC_VERSION)
 /// Return current simulation time
 // Already defined: extern sc_time sc_time_stamp();
-inline uint64_t vl_time_stamp64() VL_MT_SAFE { return sc_time_stamp().value(); }
+inline uint64_t vl_time_stamp64() VL_MT_SAFE { return sc_core::sc_time_stamp().value(); }
 #else  // Non-SystemC
 # if !defined(VL_TIME_CONTEXT) && !defined(VL_NO_LEGACY)
 #  ifdef VL_TIME_STAMP64
@@ -2201,10 +2201,10 @@ inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs
     return lhs + rhs;
 }
 inline std::string VL_REPLICATEN_NNQ(const std::string& lhs, IData rep) VL_PURE {
-    std::string out;
-    out.reserve(lhs.length() * rep);
-    for (unsigned times = 0; times < rep; ++times) out += lhs;
-    return out;
+    std::string result;
+    result.reserve(lhs.length() * rep);
+    for (unsigned times = 0; times < rep; ++times) result += lhs;
+    return result;
 }
 inline std::string VL_REPLICATEN_NNI(const std::string& lhs, IData rep) VL_PURE {
     return VL_REPLICATEN_NNQ(lhs, rep);

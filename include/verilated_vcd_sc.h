@@ -36,23 +36,23 @@
 /// with the SystemC simulation kernel, just like a SystemC-documented
 /// trace format.
 
-class VerilatedVcdSc final : sc_trace_file, public VerilatedVcdC {
+class VerilatedVcdSc final : sc_core::sc_trace_file, public VerilatedVcdC {
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedVcdSc);
 
 public:
     /// Construct a SC trace object, and register with the SystemC kernel
     VerilatedVcdSc() {
-        sc_get_curr_simcontext()->add_trace_file(this);
+        sc_core::sc_get_curr_simcontext()->add_trace_file(this);
         // We want to avoid a depreciated warning, but still be back compatible.
         // Turning off the message just for this still results in an
         // annoying "to turn off" message.
-        const sc_time t1sec{1, SC_SEC};
+        const sc_core::sc_time t1sec{1, sc_core::SC_SEC};
         if (t1sec.to_default_time_units() != 0) {
-            const sc_time tunits{1.0 / t1sec.to_default_time_units(), SC_SEC};
+            const sc_core::sc_time tunits{1.0 / t1sec.to_default_time_units(), sc_core::SC_SEC};
             spTrace()->set_time_unit(tunits.to_string());
         }
-        spTrace()->set_time_resolution(sc_get_time_resolution().to_string());
+        spTrace()->set_time_resolution(sc_core::sc_get_time_resolution().to_string());
     }
     /// Destruct, flush, and close the dump
     ~VerilatedVcdSc() override { close(); }
@@ -60,7 +60,7 @@ public:
     // METHODS - for SC kernel
     // Called by SystemC simulate()
     void cycle(bool delta_cycle) override {
-        if (!delta_cycle) this->dump(sc_time_stamp().to_double());
+        if (!delta_cycle) this->dump(sc_core::sc_time_stamp().to_double());
     }
 
     // Override VerilatedVcdC. Must be called after starting simulation.
@@ -78,7 +78,7 @@ private:
     // Cadence Incisive has these as abstract functions so we must create them
     void set_time_unit(int exponent10_seconds) override {}  // deprecated
 #endif
-    void set_time_unit(double v, sc_time_unit tu) override {}  // LCOV_EXCL_LINE
+    void set_time_unit(double v, sc_core::sc_time_unit tu) override {}  // LCOV_EXCL_LINE
 
     //--------------------------------------------------
     // SystemC 2.1.v1
@@ -95,8 +95,8 @@ private:
     // Formatting matches that of sc_trace.h
     // LCOV_EXCL_START
 #if (SYSTEMC_VERSION >= 20171012)
-    DECL_TRACE_METHOD_A( sc_event )
-    DECL_TRACE_METHOD_A( sc_time )
+    DECL_TRACE_METHOD_A( sc_core::sc_event )
+    DECL_TRACE_METHOD_A( sc_core::sc_time )
 #endif
 
     DECL_TRACE_METHOD_A( bool )

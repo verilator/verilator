@@ -36,7 +36,7 @@ std::map<string, string> VName::s_dehashMap;
 // Wildcard
 
 // Double procedures, inlined, unrolls loop much better
-bool VString::wildmatchi(const char* s, const char* p) {
+bool VString::wildmatchi(const char* s, const char* p) VL_PURE {
     for (; *p; s++, p++) {
         if (*p != '*') {
             if (((*s) != (*p)) && *p != '?') return false;
@@ -52,7 +52,7 @@ bool VString::wildmatchi(const char* s, const char* p) {
     return (*s == '\0');
 }
 
-bool VString::wildmatch(const char* s, const char* p) {
+bool VString::wildmatch(const char* s, const char* p) VL_PURE {
     for (; *p; s++, p++) {
         if (*p != '*') {
             if (((*s) != (*p)) && *p != '?') return false;
@@ -68,7 +68,7 @@ bool VString::wildmatch(const char* s, const char* p) {
     return (*s == '\0');
 }
 
-bool VString::wildmatch(const string& s, const string& p) {
+bool VString::wildmatch(const string& s, const string& p) VL_PURE {
     return wildmatch(s.c_str(), p.c_str());
 }
 
@@ -79,24 +79,24 @@ string VString::dot(const string& a, const string& dot, const string& b) {
 }
 
 string VString::downcase(const string& str) {
-    string out = str;
-    for (auto& cr : out) cr = std::tolower(cr);
-    return out;
+    string result = str;
+    for (char& cr : result) cr = std::tolower(cr);
+    return result;
 }
 
 string VString::upcase(const string& str) {
-    string out = str;
-    for (auto& cr : out) cr = std::toupper(cr);
-    return out;
+    string result = str;
+    for (char& cr : result) cr = std::toupper(cr);
+    return result;
 }
 
 string VString::quoteAny(const string& str, char tgt, char esc) {
-    string out;
+    string result;
     for (const char c : str) {
-        if (c == tgt) out += esc;
-        out += c;
+        if (c == tgt) result += esc;
+        result += c;
     }
-    return out;
+    return result;
 }
 
 string VString::quoteStringLiteralForShell(const string& str) {
@@ -130,25 +130,25 @@ string VString::escapeStringForPath(const string& str) {
     return result;
 }
 
-string VString::spaceUnprintable(const string& str) {
-    string out;
+string VString::spaceUnprintable(const string& str) VL_PURE {
+    string result;
     for (const char c : str) {
         if (std::isprint(c)) {
-            out += c;
+            result += c;
         } else {
-            out += ' ';
+            result += ' ';
         }
     }
-    return out;
+    return result;
 }
 
 string VString::removeWhitespace(const string& str) {
-    string out;
-    out.reserve(str.size());
+    string result;
+    result.reserve(str.size());
     for (const char c : str) {
-        if (!std::isspace(c)) out += c;
+        if (!std::isspace(c)) result += c;
     }
-    return out;
+    return result;
 }
 
 bool VString::isWhitespace(const string& str) {
@@ -216,10 +216,12 @@ static const uint32_t sha256K[]
        0xc67178f2};
 
 VL_ATTR_ALWINLINE
-static uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) { return lhs >> rhs | lhs << (32 - rhs); }
+static uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) VL_PURE {
+    return lhs >> rhs | lhs << (32 - rhs);
+}
 
 VL_ATTR_ALWINLINE
-static void sha256Block(uint32_t* h, const uint32_t* chunk) {
+static void sha256Block(uint32_t* h, const uint32_t* chunk) VL_PURE {
     uint32_t ah[8];
     const uint32_t* p = chunk;
 
@@ -329,34 +331,34 @@ void VHashSha256::finalize() {
 
 string VHashSha256::digestBinary() {
     finalize();
-    string out;
-    out.reserve(32);
+    string result;
+    result.reserve(32);
     for (size_t i = 0; i < 32; ++i) {
-        out += (m_inthash[i >> 2] >> (((3 - i) & 0x3) << 3)) & 0xff;
+        result += (m_inthash[i >> 2] >> (((3 - i) & 0x3) << 3)) & 0xff;
     }
-    return out;
+    return result;
 }
 
 uint64_t VHashSha256::digestUInt64() {
     const string& binhash = digestBinary();
-    uint64_t out = 0;
+    uint64_t result = 0;
     for (size_t byte = 0; byte < sizeof(uint64_t); ++byte) {
         const unsigned char c = binhash[byte];
-        out = (out << 8) | c;
+        result = (result << 8) | c;
     }
-    return out;
+    return result;
 }
 
 string VHashSha256::digestHex() {
     static const char* const digits = "0123456789abcdef";
     const string& binhash = digestBinary();
-    string out;
-    out.reserve(70);
+    string result;
+    result.reserve(70);
     for (size_t byte = 0; byte < 32; ++byte) {
-        out += digits[(binhash[byte] >> 4) & 0xf];
-        out += digits[(binhash[byte] >> 0) & 0xf];
+        result += digits[(binhash[byte] >> 4) & 0xf];
+        result += digits[(binhash[byte] >> 0) & 0xf];
     }
-    return out;
+    return result;
 }
 
 string VHashSha256::digestSymbol() {
@@ -367,19 +369,19 @@ string VHashSha256::digestSymbol() {
     static const char* const digits
         = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789AB";
     const string& binhash = digestBinary();
-    string out;
-    out.reserve(28);
+    string result;
+    result.reserve(28);
     int pos = 0;
     for (; pos < (256 / 8) - 2; pos += 3) {
-        out += digits[((binhash[pos] >> 2) & 0x3f)];
-        out += digits[((binhash[pos] & 0x3) << 4)
-                      | (static_cast<int>(binhash[pos + 1] & 0xf0) >> 4)];
-        out += digits[((binhash[pos + 1] & 0xf) << 2)
-                      | (static_cast<int>(binhash[pos + 2] & 0xc0) >> 6)];
-        out += digits[((binhash[pos + 2] & 0x3f))];
+        result += digits[((binhash[pos] >> 2) & 0x3f)];
+        result += digits[((binhash[pos] & 0x3) << 4)
+                         | (static_cast<int>(binhash[pos + 1] & 0xf0) >> 4)];
+        result += digits[((binhash[pos + 1] & 0xf) << 2)
+                         | (static_cast<int>(binhash[pos + 2] & 0xc0) >> 6)];
+        result += digits[((binhash[pos + 2] & 0x3f))];
     }
     // Any leftover bits don't matter for our purpose
-    return out;
+    return result;
 }
 
 void VHashSha256::selfTestOne(const string& data, const string& data2, const string& exp,

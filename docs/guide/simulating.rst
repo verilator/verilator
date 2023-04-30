@@ -498,3 +498,20 @@ Clang.  The process in GCC 10 was as follows:
 Clang and GCC also support -fauto-profile, which uses sample-based
 feedback-directed optimization.  See the appropriate compiler
 documentation.
+
+
+.. _Runtime Debugging
+
+Runtime Debugging
+=================
+
+To debug a Verilated executable, use the standard GNU debugger ``gdb`` or a
+similar tool. Typically you will want to have debugger symbols inserted by
+the compiler, assertions enabled in the C library, and assertions enabled
+in the Verilated library. (These options slow down the executable, so do
+this only when debugging.) To enable this, Verilate with:
+
+    -CFLAGS -ggdb  -LDFLAGS -ggdb  -CFLAGS -DVL_DEBUG=1  -CFLAGS -D_GLIBCXX_DEBUG
+
+The :vlopt:`-CFLAGS` and/or :vlopt:`-LDFLAGS` options pass arguments
+directly to the compiler or linker.

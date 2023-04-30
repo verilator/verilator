@@ -69,7 +69,7 @@ public:
     }
 };
 
-std::ostream& operator<<(std::ostream& os, const V3Hash& rhs);
+std::ostream& operator<<(std::ostream& os, const V3Hash& rhs) VL_MT_SAFE;
 
 template <>
 struct std::hash<V3Hash> {

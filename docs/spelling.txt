@@ -6,6 +6,7 @@ Alexandre
 Ami
 Amir
 Anastasiadis
+Anglin
 Anikin
 Antmicro
 Antonin
@@ -42,6 +43,8 @@ Chandan
 Chitlesh
 Christophe
 Cochrane
+Conda
+Corteggiani
 Cuan
 Cygwin
 DErrico
@@ -96,6 +99,7 @@ Fredieu
 GTKWave
 Galbi
 Gantt
+Garnal
 Gartner
 Gelinek
 Geoff
@@ -188,6 +192,7 @@ Laurens
 Lavino
 Leber
 Leendert
+Lem
 Lesik
 Liland
 Liu
@@ -207,6 +212,7 @@ Matveyenko
 Maupin
 Mdir
 Mednick
+Menküc
 Michiels
 Microsystems
 Milanovic
@@ -223,8 +229,10 @@ Muhlestein
 Multithreaded
 Multithreading
 NOUNOPTFLAT
+NaN
 Nalbantis
 Narayan
+Nassim
 Nauticus
 Newgard
 Nigam
@@ -295,6 +303,7 @@ Solomatnikov
 Solt
 Southwell
 Srini
+Srinivasan
 Stamness
 Stephane
 Stoddard
@@ -319,6 +328,7 @@ Thiede
 Thierry
 Thyer
 Tichelaar
+Timi
 Tomov
 Tood
 Topa
@@ -343,6 +353,7 @@ Vdeeptemp
 Vdly
 Vemumtab
 Vemuri
+Venkataramanan
 Veriable
 Verialted
 Verilate
@@ -353,6 +364,7 @@ Verilator
 Verilog
 Vighnesh
 Viktor
+Vilp
 Vm
 Vukobratovic
 Wai
@@ -376,6 +388,7 @@ Xuan
 Xuanqi
 Yazdanbakhsh
 Yi
+Yike
 Yinan
 Yosys
 Yu
@@ -452,6 +465,7 @@ commandArgsPlusMatch
 compilable
 concat
 concats
+conf
 config
 const
 constexpr
@@ -512,6 +526,7 @@ dumpportson
 dumpvars
 dut
 dx
+dynarray
 elab
 elike
 elsif
@@ -520,6 +535,7 @@ endcelldefine
 endfunction
 endgenerate
 endian
+endianness
 endif
 endmodule
 endprotect
@@ -541,6 +557,7 @@ exe
 executables
 expr
 extern
+ezchi
 fanin
 fasttrace
 fauto
@@ -635,6 +652,7 @@ lcov
 ld
 leavinel
 len
+libc
 libext
 libgoogle
 libsystemc
@@ -653,7 +671,9 @@ logicals
 longint
 lossy
 lsb
+lubc
 lvalue
+lvalues
 lxt
 macromodule
 makefile
@@ -678,12 +698,15 @@ mtasks
 mulithreaded
 mult
 multidim
+multidriven
 multiinterfaces
 multiline
 multipling
+multipoint
 multithread
 multithreaded
 multithreading
+musl
 mutexes
 mux
 myftptoyman
@@ -714,6 +737,7 @@ ortegon
 oversubscription
 parallelized
 param
+parameterization
 parameterized
 params
 parens
@@ -762,6 +786,7 @@ pulldowns
 pullup
 pvalue
 pwd
+py
 qrq
 radix
 randc
@@ -807,6 +832,7 @@ specparam
 splitme
 spp
 sqrt
+srandom
 src
 srcdir
 srcfile
@@ -838,6 +864,7 @@ svdpi
 swrite
 sys
 systemc
+tenghtt
 testbench
 threadsafe
 threashold
@@ -909,6 +936,7 @@ vlt
 vltstd
 vluint
 vpi
+vpiDefName
 vpiLeftRange
 vpiModule
 vpiSize
@@ -938,4 +966,3 @@ ypq
 yurivict
 zdave
 Øyvind
-

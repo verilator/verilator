@@ -591,7 +591,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             // restore the original decl range here.
             const VNumRange selRange{nodep->declRange().hi() + dtypep->declRange().lo(),
                                      nodep->declRange().lo() + dtypep->declRange().lo(),
-                                     nodep->declRange().littleEndian()};
+                                     nodep->declRange().ascending()};
             UASSERT_OBJ(dtypep->lo() <= selRange.lo() && selRange.hi() <= dtypep->hi(), nodep,
                         "Range check for AstSliceSel must have been finished in V3Width.cpp");
             UINFO(4, "add " << nodep << " for " << refp->varp()->prettyName() << "\n");
@@ -1071,7 +1071,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         for (SplitNewVar& newvar : vars) {
             int left = newvar.msb();
             int right = newvar.lsb();
-            if (basicp->littleEndian()) std::swap(left, right);
+            if (basicp->ascending()) std::swap(left, right);
             const std::string name
                 = (left == right)
                       ? varp->name() + "__BRA__" + AstNode::encodeNumber(left) + "__KET__"
@@ -1091,7 +1091,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             default: UASSERT_OBJ(false, basicp, "Only bit and logic are allowed");
             }
             dtypep->rangep(new AstRange{
-                varp->fileline(), VNumRange{newvar.msb(), newvar.lsb(), basicp->littleEndian()}});
+                varp->fileline(), VNumRange{newvar.msb(), newvar.lsb(), basicp->ascending()}});
             newvar.varp(new AstVar{varp->fileline(), VVarType::VAR, name, dtypep});
             newvar.varp()->propagateAttrFrom(varp);
             newvar.varp()->funcLocal(varp->isFuncLocal() || varp->isFuncReturn());

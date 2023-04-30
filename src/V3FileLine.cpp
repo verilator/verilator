@@ -39,7 +39,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // FileLineSingleton class functions
 
-string FileLineSingleton::filenameLetters(fileNameIdx_t fileno) {
+string FileLineSingleton::filenameLetters(fileNameIdx_t fileno) VL_PURE {
     constexpr int size
         = 1 + (64 / 4);  // Each letter retires more than 4 bits of a > 64 bit number
     char out[size];
@@ -87,7 +87,9 @@ void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
     os << "</files>\n";
 }
 
-FileLineSingleton::msgEnSetIdx_t FileLineSingleton::addMsgEnBitSet(const MsgEnBitSet& bitSet) {
+FileLineSingleton::msgEnSetIdx_t FileLineSingleton::addMsgEnBitSet(const MsgEnBitSet& bitSet)
+    VL_MT_SAFE_EXCLUDES(m_mutex) {
+    V3LockGuard lock{m_mutex};
     const auto pair = m_internedMsgEnIdxs.emplace(bitSet, 0);
     msgEnSetIdx_t& idx = pair.first->second;
     if (pair.second) {
@@ -100,7 +102,7 @@ FileLineSingleton::msgEnSetIdx_t FileLineSingleton::addMsgEnBitSet(const MsgEnBi
     return idx;
 }
 
-FileLineSingleton::msgEnSetIdx_t FileLineSingleton::defaultMsgEnIndex() {
+FileLineSingleton::msgEnSetIdx_t FileLineSingleton::defaultMsgEnIndex() VL_MT_SAFE {
     MsgEnBitSet msgEnBitSet;
     for (int i = V3ErrorCode::EC_MIN; i < V3ErrorCode::_ENUM_MAX; ++i) {
         msgEnBitSet.set(i, !V3ErrorCode{i}.defaultsOff());
@@ -416,7 +418,7 @@ string FileLine::warnOther() const VL_REQUIRES(V3Error::s().m_mutex) {
     }
 };
 string FileLine::warnOtherStandalone() const VL_EXCLUDES(V3Error::s().m_mutex) VL_MT_UNSAFE {
-    const VerilatedLockGuard guard{V3Error::s().m_mutex};
+    const V3RecursiveLockGuard guard{V3Error::s().m_mutex};
     return warnOther();
 }
 
@@ -465,13 +467,13 @@ string FileLine::warnContext() const {
 }
 
 string FileLine::warnContextParent() const VL_REQUIRES(V3Error::s().m_mutex) {
-    string out;
+    string result;
     for (FileLine* parentFl = parent(); parentFl; parentFl = parentFl->parent()) {
         if (parentFl->filenameIsGlobal()) break;
-        out += parentFl->warnOther() + "... note: In file included from "
-               + parentFl->filebasename() + "\n";
+        result += parentFl->warnOther() + "... note: In file included from "
+                  + parentFl->filebasename() + "\n";
     }
-    return out;
+    return result;
 }
 #ifdef VL_LEAK_CHECKS
 std::unordered_set<FileLine*> fileLineLeakChecks;

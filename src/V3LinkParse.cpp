@@ -65,6 +65,7 @@ private:
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
     int m_genblkNum = 0;  // Begin block number, 0=none seen
     VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
+    bool m_insideLoop = false;  // True if the node is inside a loop
 
     // METHODS
     void cleanFileline(AstNode* nodep) {
@@ -134,6 +135,9 @@ private:
     // VISITs
     void visit(AstNodeFTask* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
+            // Mark class methods
+            if (VN_IS(m_modp, Class)) nodep->classMethod(true);
+
             V3Config::applyFTask(m_modp, nodep);
             cleanFileline(nodep);
             VL_RESTORER(m_ftaskp);
@@ -222,6 +226,14 @@ private:
 
     void visit(AstVar* nodep) override {
         cleanFileline(nodep);
+        if (nodep->lifetime().isStatic() && m_insideLoop && nodep->valuep()) {
+            nodep->lifetime(VLifetime::AUTOMATIC);
+            nodep->v3warn(STATICVAR, "Static variable with assignment declaration declared in a "
+                                     "loop converted to automatic");
+        }
+        if (m_ftaskp && m_ftaskp->classMethod() && nodep->lifetime().isNone()) {
+            nodep->lifetime(VLifetime::AUTOMATIC);
+        }
         if (nodep->lifetime().isNone() && nodep->varType() != VVarType::PORT) {
             nodep->lifetime(m_lifetime);
         }
@@ -248,7 +260,10 @@ private:
         // Maybe this variable has a signal attribute
         V3Config::applyVarAttr(m_modp, m_ftaskp, nodep);
 
-        if (v3Global.opt.publicFlatRW()) {
+        if (v3Global.opt.publicFlatRW()
+            || (v3Global.opt.publicDepth() && m_modp
+                && (m_modp->level() - 1) <= v3Global.opt.publicDepth())) {
+
             switch (nodep->varType()) {
             case VVarType::VAR:  // FALLTHRU
             case VVarType::GPARAM:  // FALLTHRU
@@ -258,6 +273,8 @@ private:
             default: break;
             }
         }
+
+        if (v3Global.opt.publicParams() && nodep->isParam()) nodep->sigUserRWPublic(true);
 
         // We used modTrace before leveling, and we may now
         // want to turn it off now that we know the levelizations
@@ -454,6 +471,8 @@ private:
         //   2. ASTSELBIT(first, var0))
         //   3. ASTSELLOOPVARS(first, var0..var1))
         //   4. DOT(DOT(first, second), ASTSELBIT(third, var0))
+        VL_RESTORER(m_insideLoop);
+        m_insideLoop = true;
         AstNode* bracketp = nodep->arrayp();
         while (AstDot* dotp = VN_CAST(bracketp, Dot)) bracketp = dotp->rhsp();
         if (AstSelBit* const selp = VN_CAST(bracketp, SelBit)) {
@@ -466,14 +485,34 @@ private:
         } else if (VN_IS(bracketp, SelLoopVars)) {
             // Ok
         } else {
-            nodep->v3error(
-                "Syntax error; foreach missing bracketed loop variable (IEEE 1800-2017 12.7.3)");
+            nodep->v3error("Syntax error; foreach missing bracketed loop variable (IEEE "
+                           "1800-2017 12.7.3)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
         iterateChildren(nodep);
     }
-
+    void visit(AstRepeat* nodep) override {
+        VL_RESTORER(m_insideLoop);
+        {
+            m_insideLoop = true;
+            iterateChildren(nodep);
+        }
+    }
+    void visit(AstDoWhile* nodep) override {
+        VL_RESTORER(m_insideLoop);
+        {
+            m_insideLoop = true;
+            iterateChildren(nodep);
+        }
+    }
+    void visit(AstWhile* nodep) override {
+        VL_RESTORER(m_insideLoop);
+        {
+            m_insideLoop = true;
+            iterateChildren(nodep);
+        }
+    }
     void visit(AstNodeModule* nodep) override {
         V3Config::applyModule(nodep);
 

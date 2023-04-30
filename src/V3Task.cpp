@@ -67,8 +67,8 @@ public:
         : TaskBaseVertex{graphp}
         , m_nodep{nodep} {}
     ~TaskFTaskVertex() override = default;
-    AstNodeFTask* nodep() const { return m_nodep; }
-    string name() const override { return nodep()->name(); }
+    AstNodeFTask* nodep() const VL_MT_STABLE { return m_nodep; }
+    string name() const override VL_MT_STABLE { return nodep()->name(); }
     string dotColor() const override { return pure() ? "black" : "red"; }
     AstCFunc* cFuncp() const { return m_cFuncp; }
     void cFuncp(AstCFunc* nodep) { m_cFuncp = nodep; }
@@ -80,7 +80,7 @@ public:
     explicit TaskCodeVertex(V3Graph* graphp)
         : TaskBaseVertex{graphp} {}
     ~TaskCodeVertex() override = default;
-    string name() const override { return "*CODE*"; }
+    string name() const override VL_MT_STABLE { return "*CODE*"; }
     string dotColor() const override { return "green"; }
 };
 
@@ -323,7 +323,7 @@ struct TaskDpiUtils {
                 return true;
             } else {
                 const AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
-                frstmt = "VL_SET_" + string(dtypep->charIQWN()) + "_" + frSvType + "(";
+                frstmt = "VL_SET_" + string{dtypep->charIQWN()} + "_" + frSvType + "(";
                 if (VN_IS(dtypep, UnpackArrayDType)) frstmt += "&";
                 frstmt += frName;
                 ket = ")";
@@ -425,7 +425,7 @@ private:
         AstNode* const newbodysp
             = AstNode::cloneTreeNull(refp->taskp()->stmtsp(), true);  // Maybe nullptr
         AstNode* const beginp
-            = new AstComment{refp->fileline(), string("Function: ") + refp->name(), true};
+            = new AstComment{refp->fileline(), string{"Function: "} + refp->name(), true};
         if (newbodysp) beginp->addNext(newbodysp);
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  newbegi: ");
         //
@@ -542,7 +542,7 @@ private:
         UASSERT_OBJ(cfuncp, refp, "No non-inline task associated with this task call?");
         //
         AstNode* const beginp
-            = new AstComment{refp->fileline(), string("Function: ") + refp->name(), true};
+            = new AstComment{refp->fileline(), string{"Function: "} + refp->name(), true};
         AstNodeCCall* ccallp;
         if (VN_IS(refp, New)) {
             AstCNew* const cnewp = new AstCNew{refp->fileline(), cfuncp};
@@ -673,19 +673,25 @@ private:
 
     void unlinkAndClone(AstNodeFTask* funcp, AstNode* nodep, bool withNext) {
         UASSERT_OBJ(nodep, funcp, "null in function object clone");
-        VNRelinker relinkHandle;
-        if (withNext) {
-            nodep->unlinkFrBackWithNext(&relinkHandle);
-        } else {
-            nodep->unlinkFrBack(&relinkHandle);
-        }
         if (funcp->recursive()) {
+            VNRelinker relinkHandle;
+            if (withNext) {
+                nodep->unlinkFrBackWithNext(&relinkHandle);
+            } else {
+                nodep->unlinkFrBack(&relinkHandle);
+            }
             // Recursive functions require the original argument list to
             // still be live for linking purposes.
             // The old function gets clone, so that node pointers are mostly
             // retained through the V3Task transformations
             AstNode* const newp = nodep->cloneTree(withNext);
             relinkHandle.relink(newp);
+        } else {
+            if (withNext) {
+                nodep->unlinkFrBackWithNext();
+            } else {
+                nodep->unlinkFrBack();
+            }
         }
     }
 
@@ -802,7 +808,7 @@ private:
 
         // Convert input/inout DPI arguments to Internal types
         string args;
-        args += ("(" + EmitCBaseVisitor::symClassName()
+        args += ("(" + EmitCBase::symClassName()
                  + "*)(__Vscopep->symsp())");  // Upcast w/o overhead
         AstNode* argnodesp = nullptr;
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -1181,15 +1187,14 @@ private:
             cfuncp->isConstructor(true);
             AstClass* const classp = m_statep->getClassp(nodep);
             if (classp->extendsp()) {
-                cfuncp->baseCtors(
-                    EmitCBaseVisitor::prefixNameProtect(classp->extendsp()->classp()));
+                cfuncp->baseCtors(EmitCBase::prefixNameProtect(classp->extendsp()->classp()));
             }
         }
         if (cfuncp->dpiExportImpl()) cfuncp->cname(nodep->cname());
 
         if (!nodep->dpiImport() && !nodep->taskPublic()) {
             // Need symbol table
-            cfuncp->argTypes(EmitCBaseVisitor::symClassVar());
+            cfuncp->argTypes(EmitCBase::symClassVar());
             if (cfuncp->name() == "new") {
                 const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);\n";
                 cfuncp->addInitsp(new AstCStmt{nodep->fileline(), stmt});
@@ -1720,7 +1725,7 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
         stmt = "for (size_t " + idx + " = 0; " + idx + " < " + cvtToStr(unpackSize) + "; ++" + idx
                + ") ";
         stmt += (isBit ? "VL_SET_SVBV_" : "VL_SET_SVLV_")
-                + string(portp->dtypep()->skipRefp()->charIQWN()) + "(" + cvtToStr(portp->width())
+                + string{portp->dtypep()->skipRefp()->charIQWN()} + "(" + cvtToStr(portp->width())
                 + ", ";
         stmt += toName + " + " + cvtToStr(portp->dtypep()->skipRefp()->widthWords()) + " * " + idx
                 + ", ";

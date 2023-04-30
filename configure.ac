@@ -10,7 +10,7 @@
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.008 2023-03-04],
+AC_INIT([Verilator],[5.010 2023-04-30],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
@@ -68,7 +68,7 @@ AC_MSG_CHECKING(whether to use -m32)
 AC_ARG_ENABLE([m32],
               [AS_HELP_STRING([--enable-m32],
                               [Use -m32 for all compilation and link,
-                               including Verialtor and generated models.])],
+                               including Verilator and generated models.])],
               [case "${enableval}" in
                 yes) CFG_ENABLE_M32=yes ;;
                 no)  CFG_ENABLE_M32=no ;;

@@ -32,7 +32,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 /// we'll count instructions from either the 'if' or the 'else' branch,
 /// whichever is larger. We know we won't run both.
 
-class InstrCountVisitor final : public VNVisitor {
+class InstrCountVisitor final : public VNVisitorConst {
 private:
     // NODE STATE
     //  AstNode::user4()        -> int.  Path cost + 1, 0 means don't dump
@@ -76,7 +76,7 @@ public:
         : m_startNodep{nodep}
         , m_assertNoDups{assertNoDups}
         , m_osp{osp} {
-        if (nodep) iterate(nodep);
+        if (nodep) iterateConst(nodep);
     }
     ~InstrCountVisitor() override = default;
 
@@ -135,7 +135,7 @@ private:
         // Hence, exclude the child of the AstWordSel from the computation,
         // whose cost scales with the size of the entire (maybe large) vector.
         const VisitBase vb{this, nodep};
-        iterateAndNextNull(nodep->bitp());
+        iterateAndNextConstNull(nodep->bitp());
     }
     void visit(AstSel* nodep) override {
         if (m_ignoreRemaining) return;
@@ -144,8 +144,8 @@ private:
         // its width) and the cost of the lsbp() and widthp() nodes, but not
         // the fromp() node which could be disproportionately large.
         const VisitBase vb{this, nodep};
-        iterateAndNextNull(nodep->lsbp());
-        iterateAndNextNull(nodep->widthp());
+        iterateAndNextConstNull(nodep->lsbp());
+        iterateAndNextConstNull(nodep->widthp());
     }
     void visit(AstSliceSel* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("AstSliceSel unhandled");
@@ -177,18 +177,18 @@ private:
     void visit(AstNodeIf* nodep) override {
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
-        iterateAndNextNull(nodep->condp());
+        iterateAndNextConstNull(nodep->condp());
         const uint32_t savedCount = m_instrCount;
 
         UINFO(8, "thensp:\n");
         reset();
-        iterateAndNextNull(nodep->thensp());
+        iterateAndNextConstNull(nodep->thensp());
         uint32_t ifCount = m_instrCount;
         if (nodep->branchPred().unlikely()) ifCount = 0;
 
         UINFO(8, "elsesp:\n");
         reset();
-        iterateAndNextNull(nodep->elsesp());
+        iterateAndNextConstNull(nodep->elsesp());
         uint32_t elseCount = m_instrCount;
         if (nodep->branchPred().likely()) elseCount = 0;
 
@@ -206,17 +206,17 @@ private:
         // Just like if/else above, the ternary operator only evaluates
         // one of the two expressions, so only count the max.
         const VisitBase vb{this, nodep};
-        iterateAndNextNull(nodep->condp());
+        iterateAndNextConstNull(nodep->condp());
         const uint32_t savedCount = m_instrCount;
 
         UINFO(8, "?\n");
         reset();
-        iterateAndNextNull(nodep->thenp());
+        iterateAndNextConstNull(nodep->thenp());
         const uint32_t ifCount = m_instrCount;
 
         UINFO(8, ":\n");
         reset();
-        iterateAndNextNull(nodep->elsep());
+        iterateAndNextConstNull(nodep->elsep());
         const uint32_t elseCount = m_instrCount;
 
         reset();
@@ -230,7 +230,7 @@ private:
     }
     void visit(AstCAwait* nodep) override {
         if (m_ignoreRemaining) return;
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         // Anything past a co_await is irrelevant
         m_ignoreRemaining = true;
     }
@@ -241,7 +241,7 @@ private:
         // Sum counts in each statement until the first await
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             reset();
-            iterate(stmtp);
+            iterateConst(stmtp);
             totalCount += m_instrCount;
         }
         m_instrCount = totalCount;
@@ -266,9 +266,9 @@ private:
     void visit(AstNodeCCall* nodep) override {
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         m_tracingCall = true;
-        iterate(nodep->funcp());
+        iterateConst(nodep->funcp());
         UASSERT_OBJ(!m_tracingCall, nodep, "visit(AstCFunc) should have cleared m_tracingCall.");
     }
     void visit(AstCFunc* nodep) override {
@@ -282,21 +282,21 @@ private:
         {
             m_inCFunc = true;
             const VisitBase vb{this, nodep};
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
         m_ignoreRemaining = false;
     }
     void visit(AstNode* nodep) override {
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
     VL_UNCOPYABLE(InstrCountVisitor);
 };
 
 // Iterate the graph printing the critical path marked by previous visitation
-class InstrCountDumpVisitor final : public VNVisitor {
+class InstrCountDumpVisitor final : public VNVisitorConst {
 private:
     // NODE STATE
     //  AstNode::user4()        -> int.  Path cost, 0 means don't dump
@@ -311,7 +311,7 @@ public:
         : m_osp{osp} {
         // No check for nullptr output, so...
         UASSERT_OBJ(osp, nodep, "Don't call if not dumping");
-        if (nodep) iterate(nodep);
+        if (nodep) iterateConst(nodep);
     }
     ~InstrCountDumpVisitor() override = default;
 
@@ -323,7 +323,7 @@ private:
         if (unsigned costPlus1 = nodep->user4()) {
             *m_osp << "  " << indent() << "cost " << std::setw(6) << std::left << (costPlus1 - 1)
                    << "  " << nodep << '\n';
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
         --m_depth;
     }

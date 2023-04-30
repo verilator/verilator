@@ -31,9 +31,16 @@ module t (/*AUTOARG*/);
          z5 = e5
          } ZN;
 
+   enum int unsigned {
+      FIVE_INT = 5
+   } FI;
+
    typedef enum three_t;  // Forward
    typedef enum [2:0] { ONES=~0 } three_t;
    three_t three = ONES;
+
+   int array5[z5];
+   int array5i[FIVE_INT];
 
    var logic [ONES:0] sized_based_on_enum;
 
@@ -75,6 +82,9 @@ module t (/*AUTOARG*/);
       if (QPR      !=  3) $stop;
       if (QACK     !=  4) $stop;
       if (QRSP     !=  5) $stop;
+
+      if ($size(array5) != 5) $stop;
+      if ($size(array5i) != 5) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
