@@ -13,6 +13,7 @@ require 5.006_001;
 use warnings;
 use Getopt::Long;
 use FindBin qw($RealBin $RealScript);
+use File::Spec;
 use IO::File;
 use Pod::Usage;
 
@@ -141,13 +142,24 @@ sub verilator_bin {
     # Use VERILATOR_ROOT if defined, else assume verilator_bin is in the search path
     my $basename = ($ENV{VERILATOR_BIN}
                     || ($Debug ? "verilator_bin_dbg" : "verilator_bin"));
-    if (defined($ENV{VERILATOR_ROOT})) {
+    if (defined($ENV{VERILATOR_BIN}) &&
+        File::Spec->file_name_is_absolute($ENV{VERILATOR_BIN}) &&
+        -f $ENV{VERILATOR_BIN} &&
+        -x $ENV{VERILATOR_BIN}) {
+        $bin = $ENV{VERILATOR_BIN};	# Use absolute path as-is
+    } elsif (defined($ENV{VERILATOR_ROOT})) {
         my $dir = $ENV{VERILATOR_ROOT};
         if (-x "$dir/bin/$basename"
             || -x "$dir/bin/$basename.exe") {  # From a "make install" into VERILATOR_ROOT
             $bin = "$dir/bin/$basename";
-        } else {
+        } elsif (-f "$dir/$basename") {
+            warn "%Warning-INSTALL file $dir/$basename exists and is not marked executable, chmod +x ?\n" unless (-x "$dir/$basename");
             $bin = "$dir/$basename";  # From pointing to kit directory
+        } elsif (-x "$dir/../../bin/$basename"
+            || -x "$dir/../../bin/$basename.exe") {  # From a "make install" relocated VERILATOR_ROOT such as /opt
+            $bin = "$dir/../../bin/$basename";
+        } else {
+            $bin = $basename;  # Find in PATH
         }
     } else {
         if (-x "$RealBin/$basename"
