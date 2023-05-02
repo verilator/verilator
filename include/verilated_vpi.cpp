@@ -645,14 +645,13 @@ public:
                 continue;
             }
             VerilatedVpiCbHolder& ho = *it++;
-            VerilatedVpioVar* const varop = reinterpret_cast<VerilatedVpioVar*>(ho.cb_datap()->obj);
+            VerilatedVpioVar* const varop
+                = reinterpret_cast<VerilatedVpioVar*>(ho.cb_datap()->obj);
             void* const newDatap = varop->varDatap();
-            void* const prevDatap
-                = varop->prevDatap();  // Was malloced when we added the callback
+            void* const prevDatap = varop->prevDatap();  // Was malloced when we added the callback
             VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_test %s v[0]=%d/%d %p %p\n",
                                         varop->fullname(), *(static_cast<CData*>(newDatap)),
-                                        *(static_cast<CData*>(prevDatap)), newDatap,
-                                        prevDatap););
+                                        *(static_cast<CData*>(prevDatap)), newDatap, prevDatap););
             if (std::memcmp(prevDatap, newDatap, varop->entSize()) != 0) {
                 VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_callback %" PRId64 " %s v[0]=%d\n",
                                             ho.id(), varop->fullname(),
