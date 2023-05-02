@@ -16,6 +16,7 @@ compile(
 
 execute(
     check_finished => 1,
+    all_run_flags => ['+plusarg=value'],
     );
 
 ok(1);
