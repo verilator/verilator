@@ -1,3 +1,8 @@
+# Build and push verilator docker image when tags are pushed to the repository.
+# The following secrets must be configured in the github repository:
+# DOCKER_HUB_NAMESPACE: docker hub namespace.
+# DOCKER_HUB_USER: user name for logging into docker hub
+# DOCKER_HUB_ACCESS_TOKEN: docker hub access token.
 name: Build Verilator Container
 
 on:
