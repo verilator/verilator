@@ -3,12 +3,13 @@ name: Build Verilator Container
 on:
   push:
     tags: [ 'v*' ]
+  workflow_dispatch:
 
 jobs:
 
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
