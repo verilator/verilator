@@ -111,6 +111,7 @@ private:
 
     string dot(const string& a, const string& b) {
         if (a == "") return b;
+        if (b == "") return a;
         return a + "__DOT__" + b;
     }
 
@@ -260,7 +261,8 @@ private:
     void visit(AstVar* nodep) override {
         // If static variable, move it outside a function.
         if (nodep->lifetime().isStatic() && m_ftaskp) {
-            const std::string newName = m_ftaskp->name() + "__Vstatic__" + nodep->name();
+            const std::string newName
+                = m_ftaskp->name() + "__Vstatic__" + dot(m_unnamedScope, nodep->name());
             nodep->name(newName);
             nodep->unlinkFrBack();
             m_ftaskp->addHereThisAsNext(nodep);
