@@ -283,7 +283,7 @@ public:
         iterate(nodep);
         //
         m_callGraph.removeRedundantEdgesSum(&TaskEdge::followAlwaysTrue);
-        if (dumpGraph()) m_callGraph.dumpDotFilePrefixed("task_call");
+        if (dumpGraphLevel()) m_callGraph.dumpDotFilePrefixed("task_call");
     }
     ~TaskStateVisitor() override = default;
     VL_UNCOPYABLE(TaskStateVisitor);
@@ -1820,5 +1820,5 @@ void V3Task::taskAll(AstNetlist* nodep) {
         TaskStateVisitor visitors{nodep};
         const TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("task", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("task", 0, dumpTreeLevel() >= 3);
 }

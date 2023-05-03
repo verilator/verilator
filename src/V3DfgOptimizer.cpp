@@ -237,7 +237,7 @@ void V3DfgOptimizer::extract(AstNetlist* netlistp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     // Extract more optimization candidates
     DataflowExtractVisitor::apply(netlistp);
-    V3Global::dumpCheckGlobalTree("dfg-extract", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("dfg-extract", 0, dumpTreeLevel() >= 3);
 }
 
 void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
@@ -267,7 +267,7 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
 
         // Build the DFG of this module
         const std::unique_ptr<DfgGraph> dfg{V3DfgPasses::astToDfg(*modp, ctx)};
-        if (dumpDfg() >= 8) dfg->dumpDotFilePrefixed(ctx.prefix() + "whole-input");
+        if (dumpDfgLevel() >= 8) dfg->dumpDotFilePrefixed(ctx.prefix() + "whole-input");
 
         // Extract the cyclic sub-graphs. We do this because a lot of the optimizations assume a
         // DAG, and large, mostly acyclic graphs could not be optimized due to the presence of
@@ -284,7 +284,7 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
 
         // For each cyclic component
         for (auto& component : cyclicComponents) {
-            if (dumpDfg() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
+            if (dumpDfgLevel() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
             // TODO: Apply optimizations safe for cyclic graphs
             // Add back under the main DFG (we will convert everything back in one go)
             dfg->addGraph(*component);
@@ -292,7 +292,7 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
 
         // For each acyclic component
         for (auto& component : acyclicComponents) {
-            if (dumpDfg() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
+            if (dumpDfgLevel() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
             // Optimize the component
             V3DfgPasses::optimize(*component, ctx);
             // Add back under the main DFG (we will convert everything back in one go)
@@ -300,9 +300,9 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
         }
 
         // Convert back to Ast
-        if (dumpDfg() >= 8) dfg->dumpDotFilePrefixed(ctx.prefix() + "whole-optimized");
+        if (dumpDfgLevel() >= 8) dfg->dumpDotFilePrefixed(ctx.prefix() + "whole-optimized");
         AstModule* const resultModp = V3DfgPasses::dfgToAst(*dfg, ctx);
         UASSERT_OBJ(resultModp == modp, modp, "Should be the same module");
     }
-    V3Global::dumpCheckGlobalTree("dfg-optimize", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("dfg-optimize", 0, dumpTreeLevel() >= 3);
 }

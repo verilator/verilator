@@ -388,7 +388,7 @@ void transformForks(AstNetlist* const netlistp) {
         ~ForkVisitor() override = default;
     };
     ForkVisitor{netlistp};
-    V3Global::dumpCheckGlobalTree("sched_forks", 0, dumpTree() >= 6);
+    V3Global::dumpCheckGlobalTree("sched_forks", 0, dumpTreeLevel() >= 6);
 }
 
 }  // namespace V3Sched

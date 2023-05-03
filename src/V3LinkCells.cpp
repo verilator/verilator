@@ -167,7 +167,7 @@ private:
         iterateChildren(nodep);
         // Find levels in graph
         m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
-        if (dumpGraph()) m_graph.dumpDotFilePrefixed("linkcells");
+        if (dumpGraphLevel()) m_graph.dumpDotFilePrefixed("linkcells");
         m_graph.rank();
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (const LinkCellsVertex* const vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {

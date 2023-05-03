@@ -314,5 +314,5 @@ void V3Force::forceAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     if (!v3Global.hasForceableSignals()) return;
     ForceConvertVisitor::apply(nodep);
-    V3Global::dumpCheckGlobalTree("force", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("force", 0, dumpTreeLevel() >= 3);
 }

@@ -341,11 +341,11 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
     // Build the graph
     const std::unique_ptr<V3Graph> graphp
         = SchedGraphBuilder::build(clockedLogic, combinationalLogic, hybridLogic);
-    if (dumpGraph() >= 6) graphp->dumpDotFilePrefixed("sched");
+    if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("sched");
 
     // Partition into Active and NBA regions
     colorActiveRegion(*(graphp.get()));
-    if (dumpGraph() >= 6) graphp->dumpDotFilePrefixed("sched-partitioned", true);
+    if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("sched-partitioned", true);
 
     LogicRegions result;
 

@@ -734,11 +734,11 @@ private:
         detectDuplicates();
 
         // Simplify & optimize the graph
-        if (dumpGraph() >= 6) m_graph.dumpDotFilePrefixed("trace_pre");
+        if (dumpGraphLevel() >= 6) m_graph.dumpDotFilePrefixed("trace_pre");
         graphSimplify(true);
-        if (dumpGraph() >= 6) m_graph.dumpDotFilePrefixed("trace_simplified");
+        if (dumpGraphLevel() >= 6) m_graph.dumpDotFilePrefixed("trace_simplified");
         graphOptimize();
-        if (dumpGraph() >= 6) m_graph.dumpDotFilePrefixed("trace_optimized");
+        if (dumpGraphLevel() >= 6) m_graph.dumpDotFilePrefixed("trace_optimized");
 
         // Create the fine grained activity flags
         createActivityFlags();
@@ -924,5 +924,5 @@ public:
 void V3Trace::traceAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { TraceVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("trace", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("trace", 0, dumpTreeLevel() >= 3);
 }

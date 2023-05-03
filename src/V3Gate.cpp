@@ -421,12 +421,12 @@ private:
     // VISITORS
     void visit(AstNetlist* nodep) override {
         iterateChildren(nodep);
-        if (dumpGraph() >= 3) m_graph.dumpDotFilePrefixed("gate_pre");
+        if (dumpGraphLevel() >= 3) m_graph.dumpDotFilePrefixed("gate_pre");
         warnSignals();  // Before loss of sync/async pointers
         // Decompose clock vectors -- need to do this before removing redundant edges
         decomposeClkVectors();
         m_graph.removeRedundantEdgesSum(&V3GraphEdge::followAlwaysTrue);
-        if (dumpGraph() >= 6) m_graph.dumpDotFilePrefixed("gate_simp");
+        if (dumpGraphLevel() >= 6) m_graph.dumpDotFilePrefixed("gate_simp");
         // Find gate interconnect and optimize
         m_graph.userClearVertices();  // vertex->user(): bool. Indicates we've set it as consumed
         // Get rid of buffers first,
@@ -438,15 +438,15 @@ private:
         // Remove redundant logic
         if (v3Global.opt.fDedupe()) {
             dedupe();
-            if (dumpGraph() >= 6) m_graph.dumpDotFilePrefixed("gate_dedup");
+            if (dumpGraphLevel() >= 6) m_graph.dumpDotFilePrefixed("gate_dedup");
         }
         if (v3Global.opt.fAssemble()) {
             mergeAssigns();
-            if (dumpGraph() >= 6) m_graph.dumpDotFilePrefixed("gate_assm");
+            if (dumpGraphLevel() >= 6) m_graph.dumpDotFilePrefixed("gate_assm");
         }
         // Consumption warnings
         consumedMark();
-        if (dumpGraph() >= 3) m_graph.dumpDotFilePrefixed("gate_opt");
+        if (dumpGraphLevel() >= 3) m_graph.dumpDotFilePrefixed("gate_opt");
         // Rewrite assignments
         consumedMove();
     }
@@ -1488,5 +1488,5 @@ void GateVisitor::decomposeClkVectors() {
 void V3Gate::gateAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { const GateVisitor visitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("gate", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("gate", 0, dumpTreeLevel() >= 3);
 }

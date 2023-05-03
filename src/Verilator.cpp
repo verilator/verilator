@@ -635,7 +635,7 @@ static void verilate(const string& argString) {
     }
 
     // Final steps
-    V3Global::dumpCheckGlobalTree("final", 990, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("final", 990, dumpTreeLevel() >= 3);
 
     V3Error::abortIfErrors();
 

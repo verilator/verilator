@@ -1399,5 +1399,5 @@ public:
 void V3Param::param(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ParamVisitor{rootp}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("param", 0, dumpTree() >= 6);
+    V3Global::dumpCheckGlobalTree("param", 0, dumpTreeLevel() >= 6);
 }

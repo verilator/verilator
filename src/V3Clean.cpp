@@ -325,5 +325,5 @@ public:
 void V3Clean::cleanAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { CleanVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("clean", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("clean", 0, dumpTreeLevel() >= 3);
 }

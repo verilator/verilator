@@ -792,7 +792,7 @@ public:
     explicit TimingVisitor(AstNetlist* nodep)
         : m_netlistp{nodep} {
         iterate(nodep);
-        if (dumpGraph() >= 6) m_depGraph.dumpDotFilePrefixed("timing_deps");
+        if (dumpGraphLevel() >= 6) m_depGraph.dumpDotFilePrefixed("timing_deps");
     }
     ~TimingVisitor() override = default;
 };
@@ -803,5 +803,5 @@ public:
 void V3Timing::timingAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     TimingVisitor{nodep};
-    V3Global::dumpCheckGlobalTree("timing", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("timing", 0, dumpTreeLevel() >= 3);
 }
