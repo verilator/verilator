@@ -3064,7 +3064,7 @@ private:
                   && nodep->displayType() == VDisplayType::DT_WRITE)))
             return false;
         if ((prevp->filep() && !nodep->filep()) || (!prevp->filep() && nodep->filep())
-            || !prevp->filep()->sameTree(nodep->filep()))
+            || (prevp->filep() && nodep->filep() && !prevp->filep()->sameTree(nodep->filep())))
             return false;
         if (!prevp->fmtp() || prevp->fmtp()->nextp() || !nodep->fmtp() || nodep->fmtp()->nextp())
             return false;
