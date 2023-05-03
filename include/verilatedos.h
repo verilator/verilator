@@ -38,7 +38,6 @@
 // Compiler pragma abstraction
 
 #ifdef __GNUC__
-# define VL_ATTR_ALIGNED(alignment) __attribute__((aligned(alignment)))
 # define VL_ATTR_ALWINLINE __attribute__((always_inline)) inline
 # define VL_ATTR_NOINLINE __attribute__((noinline))
 # define VL_ATTR_COLD __attribute__((cold))
@@ -78,9 +77,6 @@
 #endif
 
 // Defaults for unsupported compiler features
-#ifndef VL_ATTR_ALIGNED
-# define VL_ATTR_ALIGNED(alignment)  ///< Attribute to align structure to byte alignment
-#endif
 #ifndef VL_ATTR_ALWINLINE
 # define VL_ATTR_ALWINLINE  ///< Attribute to inline, even when not optimizing
 #endif
@@ -142,6 +138,7 @@
 
 
 #ifndef VL_NO_LEGACY
+# define VL_ATTR_ALIGNED(alignment)  // Deprecated
 # define VL_FUNC __func__  // Deprecated
 # define VL_THREAD  // Deprecated
 # define VL_THREAD_LOCAL thread_local  // Deprecated

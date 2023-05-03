@@ -300,6 +300,7 @@ class EmitCHeader final : public EmitCConstInit {
 
         // Open class body {{{
         puts("\nclass ");
+        if (!VN_IS(modp, Class)) puts("alignas(VL_CACHE_LINE_BYTES) ");
         puts(prefixNameProtect(modp));
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
             puts(" : public ");
@@ -329,11 +330,7 @@ class EmitCHeader final : public EmitCConstInit {
         emitTextSection(modp, VNType::atScInt);
 
         // Close class body
-        if (!VN_IS(modp, Class)) {
-            puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
-        } else {
-            puts("};\n");
-        }
+        puts("};\n");
         // }}}
 
         // Emit out of class function declarations

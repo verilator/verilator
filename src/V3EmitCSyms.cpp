@@ -440,7 +440,8 @@ void EmitCSyms::emitSymHdr() {
     }
 
     puts("\n// SYMS CLASS (contains all model state)\n");
-    puts("class " + symClassName() + " final : public VerilatedSyms {\n");
+    puts("class alignas(VL_CACHE_LINE_BYTES)" + symClassName()
+         + " final : public VerilatedSyms {\n");
     ofp()->putsPrivate(false);  // public:
 
     puts("// INTERNAL STATE\n");
@@ -554,7 +555,7 @@ void EmitCSyms::emitSymHdr() {
         puts("void " + protect("__Vserialize") + "(VerilatedSerialize& os);\n");
         puts("void " + protect("__Vdeserialize") + "(VerilatedDeserialize& os);\n");
     }
-    puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
+    puts("};\n");
 
     ofp()->putsEndGuard();
     VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
