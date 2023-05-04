@@ -602,6 +602,7 @@ genvar
 genvars
 getenv
 getline
+ggdb
 gmake
 gmon
 gotFinish
