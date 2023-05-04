@@ -1324,12 +1324,11 @@ private:
             }
         }
 
-        if (nodep->fileline()->timingOn()) {
-            if (nodep->isFromStd() && nodep->name() == "self"
-                && v3Global.opt.timing().isSetTrue()) {
-                cfuncp->rtnType("VlCoroutine");
-                cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
-            }
+        if (nodep->isFromStd() && nodep->name() == "self"
+            && v3Global.opt.timing().isSetTrue()) {
+            cfuncp->hasProcess(true);
+            cfuncp->rtnType("VlCoroutine");
+            cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
         }
 
         // Delete rest of cloned task and return new func

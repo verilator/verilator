@@ -194,13 +194,13 @@ public:
     VlCoroutineHandle(VlProcessRef process)
         : m_coro{nullptr}
         , m_process{process} {
-        m_process->state(VlProcess::WAITING);
+        if (m_process) m_process->state(VlProcess::WAITING);
     }
     VlCoroutineHandle(std::coroutine_handle<> coro, VlProcessRef process, VlFileLineDebug fileline)
         : m_coro{coro}
         , m_process{process}
         , m_fileline{fileline} {
-        m_process->state(VlProcess::WAITING);
+        if (m_process) m_process->state(VlProcess::WAITING);
     }
     // Move the handle, leaving a nullptr
     VlCoroutineHandle(VlCoroutineHandle&& moved)
@@ -213,7 +213,9 @@ public:
         // model with some coroutines suspended
         if (VL_UNLIKELY(m_coro)) {
             m_coro.destroy();
-            if (m_process->state() != VlProcess::KILLED) m_process->state(VlProcess::FINISHED);
+            if (m_process && m_process->state() != VlProcess::KILLED) {
+                m_process->state(VlProcess::FINISHED);
+            }
         }
     }
     // METHODS

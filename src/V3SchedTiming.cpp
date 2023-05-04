@@ -273,6 +273,7 @@ void transformForks(AstNetlist* const netlistp) {
         // STATE
         bool m_inClass = false;  // Are we in a class?
         bool m_beginHasAwaits = false;  // Does the current begin have awaits?
+        bool m_beginHasProcess = false;  // Does the current begin use process::self?
         AstFork* m_forkp = nullptr;  // Current fork
         AstCFunc* m_funcp = nullptr;  // Current function
 
@@ -359,8 +360,10 @@ void transformForks(AstNetlist* const netlistp) {
             UASSERT_OBJ(m_forkp, nodep, "Begin outside of a fork");
             // Start with children, so later we only find awaits that are actually in this begin
             m_beginHasAwaits = false;
+            m_beginHasProcess = false;
             iterateChildrenConst(nodep);
-            if (!nodep->name().empty()) {
+            if (!nodep->name().empty()) { // TODO: m_beginHasAwaits || m_beginHasProcess
+                // UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
                 // Create a function to put this begin's statements in
                 FileLine* const flp = nodep->fileline();
                 AstCFunc* const newfuncp
@@ -382,18 +385,26 @@ void transformForks(AstNetlist* const netlistp) {
                 }
                 // Put the begin's statements in the function, delete the begin
                 newfuncp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
+                if (m_beginHasProcess) {
+                    newfuncp->hasProcess(true);
+                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
+                }
                 if (!m_beginHasAwaits) {
                     newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
                 }
                 remapLocals(newfuncp, callp);
             } else {
-                // The begin has neither awaits nor a name, just inline it's statements
+                // The begin has neither awaits nor a process::self call, just inline its statements
                 nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
             }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
         void visit(AstCAwait* nodep) override {
             m_beginHasAwaits = true;
+            iterateChildrenConst(nodep);
+        }
+        void visit(AstCCall* nodep) override {
+            m_beginHasProcess = true;
             iterateChildrenConst(nodep);
         }
 

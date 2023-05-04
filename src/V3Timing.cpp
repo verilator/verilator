@@ -97,6 +97,8 @@ private:
     //  Ast{NodeProcedure,CFunc,Begin}::user2()  -> bool.               Set true if process/task is
     //                                                                  suspendable
     //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_depGraph
+    //  Ast{NodeProcedure,CFunc,Begin}::user4()  -> bool.         Set true if process/task creates
+    //                                                            std::process
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
@@ -553,8 +555,9 @@ private:
     }
     void visit(AstNodeProcedure* nodep) override {
         iterateChildren(nodep);
-        if (nodep->user2()) {
-            nodep->setSuspendable();
+        if (nodep->user2()) nodep->setSuspendable();
+        if (nodep->user4()) {
+            nodep->setHasProcess();
             if (VN_IS(nodep, Initial)) {
                 nodep->addStmtsp(
                     new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
@@ -595,6 +598,8 @@ private:
                 nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
             }
         }
+        // If first marked as using std::process
+        if (nodep->user4() && !nodep->hasProcess()) nodep->hasProcess(true);
     }
     void visit(AstNodeCCall* nodep) override {
         if (nodep->funcp()->user2() && !nodep->user1SetOnce()) {  // If suspendable
@@ -886,8 +891,10 @@ private:
             auto* const beginp = VN_AS(stmtp, Begin);
             stmtp = beginp->nextp();
             iterate(beginp);
-            beginp->addStmtsp(
-                new AstCStmt{beginp->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
+            /*if (beginp->user4()) {
+                beginp->addStmtsp(
+                    new AstCStmt{beginp->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
+            }*/
             // Even if we do not find any awaits, we cannot simply inline the process here, as new
             // awaits could be added later.
             // Name the begin (later the name will be used for a new function)
