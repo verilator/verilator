@@ -3424,6 +3424,12 @@ private:
         if (nodep->user3SetOnce()) return;
         if (AstNode* const cpackagep = nodep->classOrPackageOpp()) {
             if (AstClassOrPackageRef* const cpackagerefp = VN_CAST(cpackagep, ClassOrPackageRef)) {
+                if (cpackagerefp->paramsp()) {
+                    // Unable to link before the instantiation of parameter classes.
+                    // The class reference node has to be visited to properly link parameters.
+                    iterate(cpackagep);
+                    return;
+                }
                 nodep->classOrPackagep(cpackagerefp->classOrPackagep());
                 if (!VN_IS(nodep->classOrPackagep(), Class)
                     && !VN_IS(nodep->classOrPackagep(), Package)) {
