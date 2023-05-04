@@ -2611,21 +2611,16 @@ private:
     }
     void visit(AstClass* nodep) override {
         if (nodep->didWidthAndSet()) return;
-
         // If the package is std::process, set m_process type to VlProcessRef
-        if (m_pkgp == v3Global.rootp()->stdPackagep() && nodep->name() == "process" && nodep->fileline()->timingOn()) {
-            for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
-                if (itemp->name() == "m_process") {
-                    AstVar* const varp = VN_AS(itemp, Var);
-                    AstBasicDType* const dtypep = new AstBasicDType{
-                        nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
-                    v3Global.rootp()->typeTablep()->addTypesp(dtypep);
-                    varp->getChildDTypep()->unlinkFrBack();
-                    varp->dtypep(dtypep);
-                }
+        if (m_pkgp == v3Global.rootp()->stdPackagep() && nodep->name() == "process") {
+            if (AstVar *const varp = VN_CAST(nodep->findMember("m_process"), Var)) {
+                AstBasicDType* const dtypep = new AstBasicDType{
+                    nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
+                v3Global.rootp()->typeTablep()->addTypesp(dtypep);
+                varp->getChildDTypep()->unlinkFrBack();
+                varp->dtypep(dtypep);
             }
         }
-
         // Must do extends first, as we may in functions under this class
         // start following a tree of extends that takes us to other classes
         VL_RESTORER(m_classp);
