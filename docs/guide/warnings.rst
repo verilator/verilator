@@ -1475,6 +1475,15 @@ List Of Warnings
    "[WRN:PA0205] No timescale set for "..."".
 
 
+.. option:: UNBASEDUNSIZED
+
+   Warns that unbased unsized literals (:code:`'0`, :code:`'1`, :code:`'z`,
+   :code:`'x`) are SystemVerilog only.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+
 .. option:: UNDRIVEN
 
    .. TODO better example

@@ -139,6 +139,7 @@ public:
         SYNCASYNCNET,   // Mixed sync + async reset
         TICKCOUNT,      // Too large tick count
         TIMESCALEMOD,   // Need timescale for module
+        UNBASEDUNSIZED, // Unbased unsigned literals SystemVerilog only
         UNDRIVEN,       // No drivers
         UNOPT,          // Unoptimizable block. Historical, never issued.
         UNOPTFLAT,      // Unoptimizable block after flattening
@@ -200,7 +201,7 @@ public:
             "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
-            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
+            "UNBASEDUNSIZED", "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDPARAM", "UNUSEDSIGNAL",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
             "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHTRUNC", "WIDTHEXPAND", "WIDTHXZEXPAND", "WIDTHCONCAT", "ZERODLY",
@@ -234,6 +235,7 @@ public:
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
                 || m_e == LATCH || m_e == PINMISSING || m_e == REALCVT || m_e == STATICVAR
+                || m_e == UNBASEDUNSIZED
                 || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
                 || m_e == WIDTHXZEXPAND);
     }

@@ -329,6 +329,15 @@ private:
             }
         }
     }
+    void visit(AstConst* nodep) override {
+        if (nodep->num().autoExtend()
+            && nodep->fileline()->language() < V3LangCode::L1800_2005) {
+                nodep->v3warn(
+                    UNBASEDUNSIZED,
+                    "Unbased unsized literals require IEEE 1800-2005 or later."
+                );
+        }
+    }
 
     void visit(AstAttrOf* nodep) override {
         cleanFileline(nodep);
