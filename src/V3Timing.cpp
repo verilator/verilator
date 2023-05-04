@@ -433,12 +433,16 @@ private:
         m_procp = nodep;
         iterateChildren(nodep);
         DependencyVertex* const vxp = getDependencyVertex(nodep);
-        if (m_classp && nodep->isVirtual()
-            && !nodep->user1SetOnce()) {  // If virtual (only visit once)
+        if (m_classp && !nodep->user1SetOnce()) {  // If class method (possibly overrides another
+                                                   // method); only visit once
             // Go over overridden functions
             m_classp->repairCache();
             for (auto* cextp = m_classp->extendsp(); cextp;
                  cextp = VN_AS(cextp->nextp(), ClassExtends)) {
+                if (!cextp->classp()->user1SetOnce()) {
+                    // Repair class cache if it's not repaired already
+                    cextp->classp()->repairCache();
+                }
                 if (auto* const overriddenp
                     = VN_CAST(cextp->classp()->findMember(nodep->name()), CFunc)) {
                     if (overriddenp->user2()) {  // If suspendable
