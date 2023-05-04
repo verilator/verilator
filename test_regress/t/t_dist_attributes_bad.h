@@ -345,6 +345,27 @@ class ConstructorCallsLocalCallsClassGlobal {
 public:
     ConstructorCallsLocalCallsClassGlobal() { local_function(); }
 };
+class DummyClass2 {
+public:
+    void dummy_function2() {}
+};
+class DummyClass {
+public:
+    DummyClass2 d;
+    void dummy_function() {}
+};
+DummyClass dummyGlobalVar;
+class ConstructorCallsGlobalObject {
+
+public:
+    ConstructorCallsGlobalObject() { dummyGlobalVar.dummy_function(); }
+};
+
+class ConstructorCallsGlobalObjectMember {
+
+public:
+    ConstructorCallsGlobalObjectMember() { dummyGlobalVar.d.dummy_function2(); }
+};
 
 class TestClassConstructor {
     void safe_function_unsafe_constructor_bad() VL_MT_SAFE {
@@ -380,6 +401,12 @@ class TestClassConstructor {
     }
     void safe_function_calls_constructor_local_calls_class_global_bad() VL_MT_SAFE {
         ConstructorCallsLocalCallsClassGlobal f{};
+    }
+    void safe_function_calls_constructor_global_object_bad() VL_MT_STABLE {
+        ConstructorCallsGlobalObject f{};
+    }
+    void safe_function_calls_constructor_global_object_member_bad() VL_MT_STABLE {
+        ConstructorCallsGlobalObjectMember f{};
     }
 };
 
