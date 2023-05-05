@@ -144,6 +144,7 @@ static void process() {
     if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
     if (v3Global.opt.debugExitUvm()) {
         V3Error::abortIfErrors();
+        if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
         cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
         std::exit(0);
     }

@@ -188,7 +188,7 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
     void visit(AstVar* nodep) override {
         const VVarType typ = nodep->varType();
         const string kw = nodep->verilogKwd();
-        const string vt = nodep->dtypep()->name();
+        const string vt = nodep->dtypep() ? nodep->dtypep()->name() : "";
         outputTag(nodep, "");
         if (nodep->isIO()) {
             puts(" dir=");
@@ -225,7 +225,7 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
     void visit(AstPin* nodep) override {
         // What we call a pin in verilator is a port in the IEEE spec.
         outputTag(nodep, "port");  // IEEE: vpiPort
-        if (nodep->modVarp()->isIO()) {
+        if (nodep->modVarp() && nodep->modVarp()->isIO()) {
             puts(" direction=\"" + nodep->modVarp()->direction().xmlKwd() + "\"");
         }
         puts(" portIndex=\"" + cvtToStr(nodep->pinNum()) + "\"");  // IEEE: vpiPortIndex
@@ -254,7 +254,7 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
     void visit(AstNodeCCall* nodep) override {
         outputTag(nodep, "");
         puts(" func=");
-        putsQuoted(nodep->funcp()->name());
+        putsQuoted(nodep->funcp() ? nodep->funcp()->name() : nodep->name());
         outputChildrenEnd(nodep, "");
     }
 
@@ -401,7 +401,7 @@ private:
         }
     }
     void visit(AstCell* nodep) override {
-        if (nodep->modp()->dead()) return;
+        if (nodep->modp() && nodep->modp()->dead()) return;
         if (!m_hasChildren) m_os << ">\n";
         m_os << "<cell " << nodep->fileline()->xmlDetailedLocation() << " name=\"" << nodep->name()
              << "\""

@@ -391,8 +391,10 @@ string AstVar::verilogKwd() const {
         return "wreal";
     } else if (varType() == VVarType::IFACEREF) {
         return "ifaceref";
-    } else {
+    } else if (dtypep()) {
         return dtypep()->name();
+    } else {
+        return "UNKNOWN";
     }
 }
 
