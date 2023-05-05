@@ -7,7 +7,7 @@
 module t (/*AUTOARG*/);
 
     // "unbased_unsized_literal" is SystemVerilog only
-    // Should fail with "UNBASEDUNSIZED"
+    // Should fail with "NEWERSTD"
     wire [127:0] FOO1 = '0;
     wire [127:0] FOO2 = '1;
     wire [127:0] FOO3 = 'x;

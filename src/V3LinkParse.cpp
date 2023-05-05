@@ -333,7 +333,7 @@ private:
         if (nodep->num().autoExtend()
             && nodep->fileline()->language() < V3LangCode::L1800_2005) {
                 nodep->v3warn(
-                    UNBASEDUNSIZED,
+                    NEWERSTD,
                     "Unbased unsized literals require IEEE 1800-2005 or later."
                 );
         }

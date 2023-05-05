@@ -972,6 +972,18 @@ List Of Warnings
    (neither :vlopt:`--timing` nor :vlopt:`--no-timing` option was provided).
 
 
+.. option:: NEWERSTD
+
+   Warns that a feature requires a newer standard of Verilog or SystemVerilog
+   than the one specified by the `--language` option. For example, unsized
+   unbased literals (`'0`, `'1`, `'z`, `'x`) require 1800-2005 or later.
+
+   To avoid this warning, use a Verilog or SystemVerilog standard that
+   supports the feature. Alternatively, modify your code to use a different
+   syntax that is supported by the Verilog/SystemVerilog standard specified
+   by the `--language` option.
+
+
 .. option:: NOLATCH
 
    .. TODO better example
@@ -1473,15 +1485,6 @@ List Of Warnings
    Some design elements have no explicit time unit and/or time
    precision. This may cause confusing timing results." Slang's:
    "[WRN:PA0205] No timescale set for "..."".
-
-
-.. option:: UNBASEDUNSIZED
-
-   Warns that unbased unsized literals (:code:`'0`, :code:`'1`, :code:`'z`,
-   :code:`'x`) are SystemVerilog only.
-
-   Ignoring this warning will only suppress the lint check; it will
-   simulate correctly.
 
 
 .. option:: UNDRIVEN
