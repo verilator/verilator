@@ -20,16 +20,16 @@ module t (
    reg  r;
 
    initial begin
-      w = '0;  // Error
-      o = '0;  // Error
-      oa = '0;  // Error
-      wo = '0;  // Error
-      woa = '0;  // Error
-      r = '0;  // Not an error
-      ro = '0;  // Not an error
-      roa = '0;  // Not an error
-      //vo = '0;  // Not an error
-      //voa = '0;  // Not an error
+      w = 0;  // Error
+      o = 0;  // Error
+      oa = 0;  // Error
+      wo = 0;  // Error
+      woa = 0;  // Error
+      r = 0;  // Not an error
+      ro = 0;  // Not an error
+      roa = 0;  // Not an error
+      //vo = 0;  // Not an error
+      //voa = 0;  // Not an error
    end
 
 endmodule
