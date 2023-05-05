@@ -1,4 +1,6 @@
-%Error: t/t_param_default_bad.v:7:26: Parameter requires default value, or use IEEE 1800-2009 or later.
+%Warning-NEWERSTD: t/t_param_default_bad.v:7:26: Parameter requires default value, or use IEEE 1800-2009 or later.
     7 | module m #(parameter int Foo);
       |                          ^~~
+                   ... For warning description see https://verilator.org/warn/NEWERSTD?v=latest
+                   ... Use "/* verilator lint_off NEWERSTD */" and lint_on around source to disable this message.
 %Error: Exiting due to
