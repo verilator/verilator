@@ -1326,9 +1326,11 @@ private:
 
         if (nodep->isFromStd() && nodep->name() == "self"
             && v3Global.opt.timing().isSetTrue()) {
-            cfuncp->hasProcess(true);
+            // Ensure callers of this method become processes
             cfuncp->rtnType("VlCoroutine");
             cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
+            // Mark the fact that this function allocates std::process
+            cfuncp->hasProcess(true);
         }
 
         // Delete rest of cloned task and return new func

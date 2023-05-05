@@ -117,65 +117,6 @@ using VlProcessRef = std::shared_ptr<VlProcess>;
 inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
 
 //=============================================================================
-// VlCoroutine
-// Return value of a coroutine. Used for chaining coroutine suspension/resumption.
-
-class VlCoroutine final {
-private:
-    // TYPES
-    struct VlPromise {
-        std::coroutine_handle<> m_continuation;  // Coroutine to resume after this one finishes
-        VlCoroutine* m_corop = nullptr;  // Pointer to the coroutine return object
-
-        ~VlPromise();
-
-        VlCoroutine get_return_object() { return {this}; }
-
-        // Never suspend at the start of the coroutine
-        std::suspend_never initial_suspend() const { return {}; }
-
-        // Never suspend at the end of the coroutine (thanks to this, the coroutine will clean up
-        // after itself)
-        std::suspend_never final_suspend() noexcept;
-
-        void unhandled_exception() const { std::abort(); }
-        void return_void() const {}
-    };
-
-    // MEMBERS
-    VlPromise* m_promisep;  // The promise created for this coroutine
-
-public:
-    // TYPES
-    using promise_type = VlPromise;  // promise_type has to be public
-
-    // CONSTRUCTORS
-    // Construct
-    // cppcheck-suppress noExplicitConstructor
-    VlCoroutine(VlPromise* promisep)
-        : m_promisep{promisep} {
-        m_promisep->m_corop = this;
-    }
-    // Move. Update the pointers each time the return object is moved
-    // cppcheck-suppress noExplicitConstructor
-    VlCoroutine(VlCoroutine&& other)
-        : m_promisep{std::exchange(other.m_promisep, nullptr)} {
-        if (m_promisep) m_promisep->m_corop = this;
-    }
-    ~VlCoroutine() {
-        // Indicate to the promise that the return object is gone
-        if (m_promisep) m_promisep->m_corop = nullptr;
-    }
-
-    // METHODS
-    // Suspend the awaiter if the coroutine is suspended (the promise exists)
-    bool await_ready() const noexcept { return !m_promisep; }
-    // Set the awaiting coroutine as the continuation of the current coroutine
-    void await_suspend(std::coroutine_handle<> coro) { m_promisep->m_continuation = coro; }
-    void await_resume() const noexcept {}
-};
-
-//=============================================================================
 // VlCoroutineHandle is a non-copyable (but movable) coroutine handle. On resume, the handle is
 // cleared, as we assume that either the coroutine has finished and deleted itself, or, if it got
 // suspended, another VlCoroutineHandle was created to manage it.
@@ -474,6 +415,65 @@ public:
         };
         return Awaitable{process, m_join, VlFileLineDebug{filename, lineno}};
     }
+};
+
+//=============================================================================
+// VlCoroutine
+// Return value of a coroutine. Used for chaining coroutine suspension/resumption.
+
+class VlCoroutine final {
+private:
+    // TYPES
+    struct VlPromise {
+        std::coroutine_handle<> m_continuation;  // Coroutine to resume after this one finishes
+        VlCoroutine* m_corop = nullptr;  // Pointer to the coroutine return object
+
+        ~VlPromise();
+
+        VlCoroutine get_return_object() { return {this}; }
+
+        // Never suspend at the start of the coroutine
+        std::suspend_never initial_suspend() const { return {}; }
+
+        // Never suspend at the end of the coroutine (thanks to this, the coroutine will clean up
+        // after itself)
+        std::suspend_never final_suspend() noexcept;
+
+        void unhandled_exception() const { std::abort(); }
+        void return_void() const {}
+    };
+
+    // MEMBERS
+    VlPromise* m_promisep;  // The promise created for this coroutine
+
+public:
+    // TYPES
+    using promise_type = VlPromise;  // promise_type has to be public
+
+    // CONSTRUCTORS
+    // Construct
+    // cppcheck-suppress noExplicitConstructor
+    VlCoroutine(VlPromise* promisep)
+        : m_promisep{promisep} {
+        m_promisep->m_corop = this;
+    }
+    // Move. Update the pointers each time the return object is moved
+    // cppcheck-suppress noExplicitConstructor
+    VlCoroutine(VlCoroutine&& other)
+        : m_promisep{std::exchange(other.m_promisep, nullptr)} {
+        if (m_promisep) m_promisep->m_corop = this;
+    }
+    ~VlCoroutine() {
+        // Indicate to the promise that the return object is gone
+        if (m_promisep) m_promisep->m_corop = nullptr;
+    }
+
+    // METHODS
+    // Suspend the awaiter if the coroutine is suspended (the promise exists)
+    bool await_ready() const noexcept { return !m_promisep; }
+    // Set the awaiting coroutine as the continuation of the current coroutine
+    void await_suspend(std::coroutine_handle<> coro) { m_promisep->m_continuation = coro; }
+    void await_resume() const noexcept {}
 };
 
 #endif  // Guard

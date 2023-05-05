@@ -155,18 +155,20 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
         std::vector<AstVarScope*> m_writtenBySuspendable;
 
         // METHODS
-        // Create an active with a timing scheduler resume() call
+        // Add arguments to a resume() call based on arguments in the suspending call
         void addResumePins(AstCMethodHard* const resumep, AstNodeExpr* pinsp) {
-            AstCExpr* const exprp = VN_CAST(pinsp, CExpr);
-            AstText* const textp = VN_CAST(exprp->exprsp(), Text);
-            if (textp && textp->text() == "vlProcess") {
-                if (pinsp = VN_CAST(pinsp->nextp(), NodeExpr)) {
-                    resumep->addPinsp(pinsp->cloneTree(false));
-                }
-            } else {
+          AstCExpr* const exprp = VN_CAST(pinsp, CExpr);
+          AstText* const textp = VN_CAST(exprp->exprsp(), Text);
+          if (textp && textp->text() == "vlProcess") {
+              // vlProcess pointer isn't used by any of resume() methods, skip it
+              if ((pinsp = VN_CAST(pinsp->nextp(), NodeExpr))) {
                 resumep->addPinsp(pinsp->cloneTree(false));
-            }
+              }
+          } else {
+              resumep->addPinsp(pinsp->cloneTree(false));
+          }
         }
+        // Create an active with a timing scheduler resume() call
         void createResumeActive(AstCAwait* const awaitp) {
             auto* const methodp = VN_AS(awaitp->exprp(), CMethodHard);
             AstVarScope* const schedulerp = VN_AS(methodp->fromp(), VarRef)->varScopep();
@@ -273,7 +275,7 @@ void transformForks(AstNetlist* const netlistp) {
         // STATE
         bool m_inClass = false;  // Are we in a class?
         bool m_beginHasAwaits = false;  // Does the current begin have awaits?
-        bool m_beginHasProcess = false;  // Does the current begin use process::self?
+        bool m_beginHasProcess = false;  // Does the current begin have process::self dependency?
         AstFork* m_forkp = nullptr;  // Current fork
         AstCFunc* m_funcp = nullptr;  // Current function
 
@@ -390,11 +392,12 @@ void transformForks(AstNetlist* const netlistp) {
                     newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
                 }
                 if (!m_beginHasAwaits) {
-                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
+                    // co_return at the end (either that or a co_await is required in a coroutine
+                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
                 }
                 remapLocals(newfuncp, callp);
             } else {
-                // The begin has neither awaits nor a process::self call, just inline its statements
+                // The begin has neither awaits nor a process::self call, just inline the statements
                 nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
             }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);

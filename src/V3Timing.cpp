@@ -97,8 +97,8 @@ private:
     //  Ast{NodeProcedure,CFunc,Begin}::user2()  -> bool.               Set true if process/task is
     //                                                                  suspendable
     //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_depGraph
-    //  Ast{NodeProcedure,CFunc,Begin}::user4()  -> bool.         Set true if process/task creates
-    //                                                            std::process
+    //  Ast{NodeProcedure,CFunc,Begin}::user4()  -> bool.         Set true if process/task
+    //                                                            allocates std::process
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
@@ -891,10 +891,6 @@ private:
             auto* const beginp = VN_AS(stmtp, Begin);
             stmtp = beginp->nextp();
             iterate(beginp);
-            /*if (beginp->user4()) {
-                beginp->addStmtsp(
-                    new AstCStmt{beginp->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
-            }*/
             // Even if we do not find any awaits, we cannot simply inline the process here, as new
             // awaits could be added later.
             // Name the begin (later the name will be used for a new function)

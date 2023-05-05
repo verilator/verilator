@@ -86,7 +86,7 @@ private:
     bool m_recursive : 1;  // Recursive or part of recursion
     bool m_underGenerate : 1;  // Under generate (for warning)
     bool m_virtual : 1;  // Virtual method in class
-    bool m_fromStd : 1;
+    bool m_fromStd : 1;  // Part of std
     VLifetime m_lifetime;  // Lifetime
 protected:
     AstNodeFTask(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)
@@ -277,7 +277,7 @@ class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
     // @astgen op2 := stmtsp : List[AstNode] // Note: op1 is used in some sub-types only
     bool m_suspendable : 1;  // Is suspendable by a Delay, EventControl, etc.
-    bool m_hasProcess : 1;  // Uses process::self
+    bool m_hasProcess : 1;  // Implements part of a process that allocates std::process
 protected:
     AstNodeProcedure(VNType t, FileLine* fl, AstNode* stmtsp)
         : AstNode{t, fl} {
@@ -585,8 +585,7 @@ private:
     bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
     bool m_dpiTraceInit : 1;  // DPI trace_init
-    bool m_isSuspendable : 1;  // Makes the caller suspendable
-    bool m_hasProcess : 1; // Implements part of a process that spawns std::process
+    bool m_hasProcess : 1; // Implements part of a process that allocates std::process
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
@@ -606,7 +605,6 @@ public:
         m_isLoose = false;
         m_isInline = false;
         m_isVirtual = false;
-        m_isSuspendable = false;
         m_hasProcess = false;
         m_entryPoint = false;
         m_pure = false;
@@ -676,8 +674,6 @@ public:
     void isInline(bool flag) { m_isInline = flag; }
     bool isVirtual() const { return m_isVirtual; }
     void isVirtual(bool flag) { m_isVirtual = flag; }
-    bool isSuspendable() const { return m_isSuspendable; }
-    void isSuspendable(bool flag) { m_isSuspendable = flag; }
     bool hasProcess() const { return m_hasProcess; }
     void hasProcess(bool flag) { m_hasProcess = flag; }
     bool entryPoint() const { return m_entryPoint; }
