@@ -517,10 +517,10 @@ public:
             // otherwise done
             if (pinVarp->direction() == VDirection::INPUT
                 && cellp->modp()->unconnectedDrive().isSetTrue()) {
-                pinp->exprp(new AstConst{pinp->fileline(), AstConst::StringToParse{}, "'1"});
+                pinp->exprp(new AstConst{pinp->fileline(), AstConst::All1{}});
             } else if (pinVarp->direction() == VDirection::INPUT
                        && cellp->modp()->unconnectedDrive().isSetFalse()) {
-                pinp->exprp(new AstConst{pinp->fileline(), AstConst::StringToParse{}, "'0"});
+                pinp->exprp(new AstConst{pinp->fileline(), AstConst::All0{}});
             } else {
                 return nullptr;
             }
