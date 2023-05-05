@@ -975,13 +975,16 @@ List Of Warnings
 .. option:: NEWERSTD
 
    Warns that a feature requires a newer standard of Verilog or SystemVerilog
-   than the one specified by the `--language` option. For example, unsized
+   than the one specified by the :vlopt:`--language` option. For example, unsized
    unbased literals (`'0`, `'1`, `'z`, `'x`) require 1800-2005 or later.
 
    To avoid this warning, use a Verilog or SystemVerilog standard that
    supports the feature. Alternatively, modify your code to use a different
    syntax that is supported by the Verilog/SystemVerilog standard specified
-   by the `--language` option.
+   by the :vlopt:`--language` option.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
 
 
 .. option:: NOLATCH
