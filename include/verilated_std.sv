@@ -143,10 +143,11 @@ package std;
     `endif
         endtask
 
-        function void srandom(int seed);
-            // TODO: Set the state without changing it
-            $random(seed);
-        endfunction
+        // When really implemented, srandom must operate on the process, but for
+        // now rely on the srandom() that is automatically generated for all
+        // classes.
+        // function void srandom(int seed);
+        // endfunction
 
         function string get_randstate();
             // TODO: Access the real state variable of the RNG
