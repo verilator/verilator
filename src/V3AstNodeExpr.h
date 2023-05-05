@@ -980,12 +980,14 @@ public:
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, "'0") {
         initWithNumber();
+        fl->warnOff(V3ErrorCode::NEWERSTD, true);
     }
     class All1 {};
     AstConst(FileLine* fl, All1)
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, "'1") {
         initWithNumber();
+        fl->warnOff(V3ErrorCode::NEWERSTD, true);
     }
     class Null {};
     AstConst(FileLine* fl, Null)
