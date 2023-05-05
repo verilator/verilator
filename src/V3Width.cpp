@@ -2644,12 +2644,6 @@ private:
         // though causes problems with t_class_forward.v, so for now avoided
         // userIterateChildren(nodep->classp(), nullptr);
     }
-    void visit(AstNodeModule* nodep) override {
-        // Visitor does not include AstClass - specialized visitor above
-        VL_RESTORER(m_modp);
-        m_modp = nodep;
-        userIterateChildren(nodep, nullptr);
-    }
     void visit(AstClassOrPackageRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
         userIterateChildren(nodep, nullptr);
