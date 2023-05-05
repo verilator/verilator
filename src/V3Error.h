@@ -116,7 +116,7 @@ public:
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
-        NEWERSTD,       // New language standard required
+        NEWERSTD,       // Newer language standard required
         NOLATCH,        // No latch detected in always_latch block
         NULLPORT,       // Null port detected in module definition
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
