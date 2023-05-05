@@ -98,30 +98,30 @@ package std;
             KILLED    = 4
         } state;
 
-    `ifdef VERILATOR_TIMING
+`ifdef VERILATOR_TIMING
         protected chandle m_process;
-    `endif
+`endif
 
         static function process self();
-    `ifdef VERILATOR_TIMING
             process p = new;
+`ifdef VERILATOR_TIMING
             $c(p.m_process, " = vlProcess;");
+`endif
             return p;
-    `endif
         endfunction
 
         protected function void set_status(state s);
-    `ifdef VERILATOR_TIMING
+`ifdef VERILATOR_TIMING
             $c(m_process, "->state(", s, ");");
-    `endif
+`endif
         endfunction
 
         function state status();
     `ifdef VERILATOR_TIMING
             return state'($c(m_process, "->state()"));
-    `else
+`else
             return RUNNING;
-    `endif
+`endif
         endfunction
 
         function void kill();
@@ -137,10 +137,10 @@ package std;
         endfunction
 
         task await();
-    `ifdef VERILATOR_TIMING
+`ifdef VERILATOR_TIMING
             state s = status();
             wait (s == FINISHED || s == KILLED);
-    `endif
+`endif
         endtask
 
         // When really implemented, srandom must operate on the process, but for
