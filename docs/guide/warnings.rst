@@ -769,11 +769,14 @@ List Of Warnings
    then automatic as static prevents the function from being reentrant,
    which may be a source of bugs, and/or performance issues.
 
-   If the function does not require static behavior, change it to "function
-   automatic".
+   If the function is in a module, and does not require static behavior,
+   change it to "function automatic".
 
-   If the function requires static behavior, change it to "function
-   static".
+   If the function is in a module, and requires static behavior, change it
+   to "function static".
+
+   If the function is in a package, it defaults to static, and label the
+   function's variables as static.
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.

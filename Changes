@@ -28,6 +28,7 @@ Verilator 5.011 devel
 * Fix linking AstRefDType if it has parameterized class ref (#4164) (#4170). [Ryszard Rozak, Antmicro Ltd]
 * Fix crash caused by $display() optimization (#4165) (#4166). [Tudor Timi]
 * Fix detection of wire/reg duplicates.
+* Fix false IMPLICITSTATIC on package functions.
 
 
 Verilator 5.010 2023-04-30

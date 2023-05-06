@@ -124,13 +124,6 @@ private:
                 && (VN_IS(nodep->stmtsp(), GenIf))  // Begin has if underneath
                 && !nodep->stmtsp()->nextp());  // Has only one item
     }
-    bool hasStaticDeclAssignments(AstNodeFTask* nodep) {
-        for (const AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
-            const AstVar* const varp = VN_CAST(itemp, Var);
-            if (varp && varp->valuep() && !varp->lifetime().isAutomatic()) return true;
-        }
-        return false;
-    }
 
     // VISITs
     void visit(AstNodeFTask* nodep) override {
@@ -156,12 +149,30 @@ private:
                         // DPI-imported functions and properties don't have lifetime specifiers
                         m_lifetime = VLifetime::NONE;
                     }
-                    if (m_lifetime.isStatic() && hasStaticDeclAssignments(nodep)) {
-                        nodep->v3warn(
-                            IMPLICITSTATIC,
-                            "Function/task's lifetime implicitly set to static\n"
-                                << nodep->warnMore()
-                                << "... Suggest use 'function automatic' or 'function static'");
+                    for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
+                        AstVar* const varp = VN_CAST(itemp, Var);
+                        if (varp && varp->valuep() && varp->lifetime().isNone()
+                            && m_lifetime.isStatic() && !varp->isIO()) {
+                            if (VN_IS(m_modp, Module)) {
+                                nodep->v3warn(IMPLICITSTATIC,
+                                              "Function/task's lifetime implicitly set to static\n"
+                                                  << nodep->warnMore()
+                                                  << "... Suggest use 'function automatic' or "
+                                                     "'function static'\n"
+                                                  << nodep->warnContextPrimary() << '\n'
+                                                  << varp->warnOther()
+                                                  << "... Location of implicit static variable\n"
+                                                  << varp->warnContextSecondary() << '\n'
+                                                  << "... Suggest use 'function automatic' or "
+                                                     "'function static'");
+                            } else {
+                                varp->v3warn(IMPLICITSTATIC,
+                                             "Variable's lifetime implicitly set to static\n"
+                                                 << nodep->warnMore()
+                                                 << "... Suggest use 'static' before "
+                                                    "variable declaration'");
+                            }
+                        }
                     }
                     nodep->lifetime(m_lifetime);
                 }
