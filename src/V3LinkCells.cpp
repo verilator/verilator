@@ -116,6 +116,7 @@ private:
     VSymGraph m_mods;  // Symbol table of all module names
     LinkCellsGraph m_graph;  // Linked graph of all cell interconnects
     LibraryVertex* m_libVertexp = nullptr;  // Vertex at root of all libraries
+    int m_dedupNum = 0;  // Package dedup number
     const V3GraphVertex* m_topVertexp = nullptr;  // Vertex of top module
     std::unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
     string m_origTopModuleName;  // original name of the top module
@@ -504,8 +505,13 @@ private:
                                               << "... Location of original declaration\n"
                                               << foundp->warnContextSecondary());
                 }
-                nodep->unlinkFrBack();
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                if (VN_IS(nodep, Package)) {
+                    // Packages may be imported, we instead rename to be unique
+                    nodep->name(nodep->name() + "__Vdedup" + cvtToStr(m_dedupNum++));
+                } else {
+                    nodep->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                }
             } else if (!foundp) {
                 m_mods.rootp()->insert(nodep->name(), new VSymEnt{&m_mods, nodep});
             }

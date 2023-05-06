@@ -24,6 +24,7 @@ Verilator 5.011 devel
 * Fix initialization order of initial static after function/task (#4159). [Kamil Rakoczy, Antmicro Ltd]
 * Fix linking AstRefDType if it has parameterized class ref (#4164) (#4170). [Ryszard Rozak, Antmicro Ltd]
 * Fix crash caused by $display() optimization (#4165) (#4166). [Tudor Timi]
+* Fix crash on duplicate imported modules (#3231). [Robert Balas]
 * Fix detection of wire/reg duplicates.
 
 
