@@ -240,7 +240,10 @@ private:
         if (nodep->isGParam() && m_modp) m_modp->hasGParam(true);
         if (nodep->isParam() && !nodep->valuep()
             && nodep->fileline()->language() < V3LangCode::L1800_2009) {
-            nodep->v3error("Parameter requires default value, or use IEEE 1800-2009 or later.");
+            nodep->v3warn(
+                NEWERSTD,
+                "Parameter requires default value, or use IEEE 1800-2009 or later."
+            );
         }
         if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
@@ -327,6 +330,15 @@ private:
             if (m_modp->level() <= 2) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Interfaced port on top level module");
             }
+        }
+    }
+    void visit(AstConst* nodep) override {
+        if (nodep->num().autoExtend()
+            && nodep->fileline()->language() < V3LangCode::L1800_2005) {
+                nodep->v3warn(
+                    NEWERSTD,
+                    "Unbased unsized literals require IEEE 1800-2005 or later."
+                );
         }
     }
 

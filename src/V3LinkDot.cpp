@@ -3117,8 +3117,7 @@ private:
                         if (v3Global.opt.bboxSys()) {
                             AstNode* newp;
                             if (VN_IS(nodep, FuncRef)) {
-                                newp = new AstConst{nodep->fileline(), AstConst::StringToParse{},
-                                                    "'0"};
+                                newp = new AstConst{nodep->fileline(), AstConst::All0{}};
                             } else {
                                 AstNode* outp = nullptr;
                                 while (nodep->pinsp()) {

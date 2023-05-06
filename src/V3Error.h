@@ -116,6 +116,7 @@ public:
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
+        NEWERSTD,       // Newer language standard required
         NOLATCH,        // No latch detected in always_latch block
         NULLPORT,       // Null port detected in module definition
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
@@ -195,7 +196,7 @@ public:
             "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MODDUP",
-            "MULTIDRIVEN", "MULTITOP", "NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
+            "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
             "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
@@ -233,9 +234,9 @@ public:
         return (m_e == ALWCOMBORDER || m_e == ASCRANGE || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
-                || m_e == LATCH || m_e == PINMISSING || m_e == REALCVT || m_e == STATICVAR
-                || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
-                || m_e == WIDTHXZEXPAND);
+                || m_e == LATCH || m_e == NEWERSTD || m_e == PINMISSING || m_e == REALCVT
+                || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC
+                || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
