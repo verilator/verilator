@@ -161,8 +161,8 @@ public:
     VlRNG() VL_MT_SAFE;
     explicit VlRNG(uint64_t seed0) VL_MT_SAFE : m_state{0x12341234UL, seed0} {}
     void srandom(uint64_t n) VL_MT_UNSAFE;
-    // Unused: std::string get_randstate() const VL_MT_UNSAFE;
-    // Unused: void set_randstate(const std::string& state) VL_MT_UNSAFE;
+    std::string get_randstate() const VL_MT_UNSAFE;
+    void set_randstate(const std::string& state) VL_MT_UNSAFE;
     uint64_t rand64() VL_MT_UNSAFE;
     // Threadsafe, but requires use on vl_thread_rng
     static uint64_t vl_thread_rng_rand64() VL_MT_SAFE;

@@ -2812,6 +2812,10 @@ private:
         return false;
     }
 
+    void visit(AstCExpr* nodep) override {
+        // Inserted by V3Width only so we know has been resolved
+        userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
+    }
     void visit(AstCMethodHard* nodep) override {
         // Never created before V3Width, so no need to redo it
         UASSERT_OBJ(nodep->dtypep(), nodep, "CMETHODCALLs should have already been sized");
@@ -2878,7 +2882,7 @@ private:
         }
         return nullptr;
     }
-    void methodOkArguments(AstMethodCall* nodep, int minArg, int maxArg) {
+    void methodOkArguments(AstNodeFTaskRef* nodep, int minArg, int maxArg) {
         int narg = 0;
         for (AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp()) {
             if (VN_IS(argp, With)) {
@@ -3521,6 +3525,13 @@ private:
                     if (VN_IS(ftaskp, Task)) nodep->dtypeSetVoid();
                     processFTaskRefArgs(nodep);
                 }
+                return;
+            } else if (nodep->name() == "get_randstate" || nodep->name() == "set_randstate") {
+                // See implementations under AstNodeFTaskRef
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'get_randstate'/'set_randstate' called "
+                                             "on object. Suggest call from inside class.");
+                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             }
             classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr;
@@ -5537,7 +5548,9 @@ private:
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
         // Function hasn't been widthed, so make it so.
         UINFO(5, "  FTASKREF " << nodep << endl);
-        if (nodep->name() == "randomize" || nodep->name() == "srandom") {
+        if (nodep->name() == "randomize" || nodep->name() == "srandom"
+            || (!nodep->taskp()
+                && (nodep->name() == "get_randstate" || nodep->name() == "set_randstate"))) {
             // TODO perhaps this should move to V3LinkDot
             if (!m_classp) {
                 nodep->v3error("Calling implicit class method " << nodep->prettyNameQ()
@@ -5548,8 +5561,35 @@ private:
             }
             if (nodep->name() == "randomize") {
                 nodep->taskp(V3Randomize::newRandomizeFunc(m_classp));
-            } else {
+            } else if (nodep->name() == "srandom") {
                 nodep->taskp(V3Randomize::newSRandomFunc(m_classp));
+            } else if (nodep->name() == "get_randstate") {
+                methodOkArguments(nodep, 0, 0);
+                m_classp->baseMostClassp()->needRNG(true);
+                v3Global.useRandomizeMethods(true);
+                AstCExpr* const newp
+                    = new AstCExpr{nodep->fileline(), "__Vm_rng.get_randstate()", 1, true};
+                newp->dtypeSetString();
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            } else if (nodep->name() == "set_randstate") {
+                methodOkArguments(nodep, 1, 1);
+                AstNodeExpr* const expr1p = VN_AS(nodep->pinsp(), Arg)->exprp();  // May edit
+                iterateCheckString(nodep, "LHS", expr1p, BOTH);
+                AstNodeExpr* const exprp = VN_AS(nodep->pinsp(), Arg)->exprp();
+                m_classp->baseMostClassp()->needRNG(true);
+                v3Global.useRandomizeMethods(true);
+                AstCExpr* const newp
+                    = new AstCExpr{nodep->fileline(), "__Vm_rng.set_randstate(", 1, true};
+                newp->addExprsp(exprp->unlinkFrBack());
+                newp->addExprsp(new AstText{nodep->fileline(), ")", true});
+                newp->dtypeSetString();
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            } else {
+                UASSERT_OBJ(false, nodep, "Bad case");
             }
         }
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");

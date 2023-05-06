@@ -18,6 +18,7 @@ Verilator 5.011 devel
 
 **Minor:**
 
+* Support get_randstate/set_randstate class method function.
 * Optimize VPI callValueCbs (#4155). [Hennadii Chernyshchyk]
 * Fix crash on duplicate imported modules (#3231). [Robert Balas]
 * Fix false WIDTHEXPAND on array declarations (#3959). [JOTEGO]
