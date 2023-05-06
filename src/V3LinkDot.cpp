@@ -1211,7 +1211,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                         return;
                     }
                     const bool nansiBad
-                        = ((findvarp->isDeclTyped() && nodep->isDeclTyped())
+                        = (((findvarp->isDeclTyped() || findvarp->isNet())
+                            && (nodep->isDeclTyped() || nodep->isNet()))
                            || (findvarp->isIO() && nodep->isIO()));  // e.g. !(output && output)
                     const bool ansiBad
                         = findvarp->isAnsi() || nodep->isAnsi();  // dup illegal with ANSI
