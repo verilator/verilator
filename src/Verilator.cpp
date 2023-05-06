@@ -624,6 +624,7 @@ static void verilate(const string& argString) {
         V3Partition::selfTestNormalizeCosts();
         V3Broken::selfTest();
         V3ThreadPool::selfTest();
+        UINFO(2, "selfTest done\n");
     }
 
     // Read first filename

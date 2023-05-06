@@ -183,8 +183,10 @@ void V3ThreadPool::selfTest() {
     futures.push_back(s().enqueue<void>(std::bind(thirdJob, 100)));
     futures.push_back(s().enqueue<void>(std::bind(thirdJob, 100)));
     V3ThreadPool::waitForFutures(futures);
+
     s().waitIfStopRequested();
     s().requestExclusiveAccess(std::bind(firstJob, 100));
+
     auto forthJob = [&]() -> int { return 1234; };
     std::list<std::future<int>> futuresInt;
     futuresInt.push_back(s().enqueue<int>(forthJob));

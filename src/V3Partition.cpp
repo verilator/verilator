@@ -3227,6 +3227,7 @@ void V3Partition::finalize(AstNetlist* netlistp) {
 }
 
 void V3Partition::selfTest() {
+    UINFO(2, __FUNCTION__ << ": " << endl);
     PartPropagateCpSelfTest::selfTest();
     PartPackMTasks::selfTest();
     PartContraction::selfTest();
