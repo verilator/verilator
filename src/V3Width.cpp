@@ -1658,12 +1658,16 @@ private:
         } else if (AstNodeDType* const keyp = VN_CAST(elementsp, NodeDType)) {
             newp = new AstAssocArrayDType{nodep->fileline(), VFlagChildDType{}, childp, keyp};
         } else {
+            // The subtract in the range may confuse users; as the array
+            // size is self determined there's no reason to warn about widths
+            FileLine* const elementsNewFl = elementsp->fileline();
+            elementsNewFl->warnOff(V3ErrorCode::WIDTHEXPAND, true);
             // Must be expression that is constant, but we'll determine that later
             newp = new AstUnpackArrayDType{
                 nodep->fileline(), VFlagChildDType{}, childp,
                 new AstRange{nodep->fileline(), new AstConst(elementsp->fileline(), 0),
-                             new AstSub{elementsp->fileline(), VN_AS(elementsp, NodeExpr),
-                                        new AstConst(elementsp->fileline(), 1)}}};
+                             new AstSub{elementsNewFl, VN_AS(elementsp, NodeExpr),
+                                        new AstConst(elementsNewFl, 1)}}};
         }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
