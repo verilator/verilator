@@ -1373,16 +1373,18 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     *p = t_tmp;
                 } else if (obits <= VL_BYTESIZE) {
                     CData* const p = va_arg(ap, CData*);
-                    *p = owp[0];
+                    *p = VL_CLEAN_II(obits, obits, owp[0]);
                 } else if (obits <= VL_SHORTSIZE) {
                     SData* const p = va_arg(ap, SData*);
-                    *p = owp[0];
+                    *p = VL_CLEAN_II(obits, obits, owp[0]);
                 } else if (obits <= VL_IDATASIZE) {
                     IData* const p = va_arg(ap, IData*);
-                    *p = owp[0];
+                    *p = VL_CLEAN_II(obits, obits, owp[0]);
                 } else if (obits <= VL_QUADSIZE) {
                     QData* const p = va_arg(ap, QData*);
-                    *p = VL_SET_QW(owp);
+                    *p = VL_CLEAN_QQ(obits, obits, VL_SET_QW(owp));
+                } else {
+                    _vl_clean_inplace_w(obits, owp);
                 }
             }
             }  // switch

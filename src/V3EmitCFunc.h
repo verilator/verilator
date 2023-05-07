@@ -792,7 +792,7 @@ public:
     void visit(AstSysFuncAsTask* nodep) override {
         if (!nodep->lhsp()->isWide()) puts("(void)");
         iterateAndNextConstNull(nodep->lhsp());
-        if (!nodep->lhsp()->isWide()) puts(";");
+        if (!nodep->lhsp()->isWide()) puts(";\n");
     }
     void visit(AstStackTraceF* nodep) override { puts("VL_STACKTRACE_N()"); }
     void visit(AstStackTraceT* nodep) override { puts("VL_STACKTRACE();\n"); }
