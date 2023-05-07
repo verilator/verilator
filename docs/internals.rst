@@ -1503,8 +1503,19 @@ debug level 5, with the V3Width.cpp file at level 9.
 --debug
 -------
 
-When you run with ``--debug``, there are two primary output file types
-placed into the obj_dir, .tree and .dot files.
+When you run with ``--debug``, there are three primary output file types
+placed into the obj_dir, .vpp, .tree and .dot files.
+
+.vpp Output
+-----------
+
+Verilator creates a *{mod_prefix}*\ __inputs\ .vpp file containing all the
+files that were read, filtered by preprocessing. This file can be fed back
+into Verilator, replacing on the command line all of the previous input
+files, to enable simplification of test cases.
+
+Verilator also creates .vpp files for each individual file passed on the
+command line.
 
 
 .dot Output
