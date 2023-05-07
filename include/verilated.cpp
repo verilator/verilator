@@ -318,7 +318,7 @@ void VlRNG::srandom(uint64_t n) VL_MT_UNSAFE {
 std::string VlRNG::get_randstate() const VL_MT_UNSAFE {
     // Though not stated in IEEE, assumption is the string must be printable
     const char* const stateCharsp = reinterpret_cast<const char*>(&m_state);
-    static_assert(sizeof(m_state) == 16);
+    static_assert(sizeof(m_state) == 16, "");
     std::string result{"R00112233445566770011223344556677"};
     for (int i = 0; i < sizeof(m_state); ++i) {
         result[1 + i * 2] = 'a' + ((stateCharsp[i] >> 4) & 15);
