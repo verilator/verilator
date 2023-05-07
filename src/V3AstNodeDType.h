@@ -887,6 +887,7 @@ public:
         if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
+    AstNodeUOrStructDType* getChildStructp() const;
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }

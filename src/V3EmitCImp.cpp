@@ -54,6 +54,7 @@ class EmitCGatherDependencies final : VNVisitorConst {
         } else if (const AstNodeUOrStructDType* const dtypep
                    = VN_CAST(nodep, NodeUOrStructDType)) {
             if (!dtypep->packed()) {
+                UASSERT_OBJ(dtypep->classOrPackagep(), nodep, "Unlinked struct package");
                 m_dependencies.insert(EmitCBase::prefixNameProtect(dtypep->classOrPackagep()));
             }
         }

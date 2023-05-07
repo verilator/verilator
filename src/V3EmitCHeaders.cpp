@@ -219,7 +219,7 @@ class EmitCHeader final : public EmitCConstInit {
         emitted.insert(sdtypep);
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            AstNodeUOrStructDType* subp = VN_CAST(itemp->skipRefp(), NodeUOrStructDType);
+            AstNodeUOrStructDType* const subp = itemp->getChildStructp();
             if (subp && !subp->packed()) {
                 // Recurse if it belongs to the current module
                 if (subp->classOrPackagep() == modp) {

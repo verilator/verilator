@@ -62,6 +62,7 @@ private:
         AstClassPackage* const packagep
             = new AstClassPackage{nodep->fileline(), nodep->origName()};
         packagep->name(nodep->name() + "__Vclpkg");
+        nodep->editCountInc();
         nodep->classOrPackagep(packagep);
         packagep->classp(nodep);
         v3Global.rootp()->addModulesp(packagep);
@@ -177,14 +178,15 @@ private:
     }
 
     void setStructModulep(AstNodeUOrStructDType* const dtypep) {
-        // Give it a pointer to its package and a final name
+        // Give struct a pointer to its package and a final name
+        dtypep->editCountInc();
         dtypep->classOrPackagep(m_classPackagep ? m_classPackagep : m_modp);
         dtypep->name(dtypep->name() + (VN_IS(dtypep, UnionDType) ? "__union" : "__struct")
                      + cvtToStr(dtypep->uniqueNum()));
 
         for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            AstNodeUOrStructDType* const subp = VN_CAST(itemp->skipRefp(), NodeUOrStructDType);
+            AstNodeUOrStructDType* const subp = itemp->getChildStructp();
             // Recurse only into anonymous unpacked structs inside this definition,
             // other unpacked structs will be reached from another typedefs
             if (subp && !subp->packed() && subp->name().empty()) setStructModulep(subp);

@@ -1671,10 +1671,19 @@ void AstLogOr::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (sideEffect()) str << " [SIDE]";
 }
+
 void AstMemberDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "member";
 }
+AstNodeUOrStructDType* AstMemberDType::getChildStructp() const {
+    AstNodeDType* subdtp = skipRefp();
+    while (AstNodeArrayDType* const asubdtp = VN_CAST(subdtp, NodeArrayDType)) {
+        subdtp = asubdtp->subDTypep();
+    }
+    return VN_CAST(subdtp, NodeUOrStructDType);  // Maybe nullptr
+}
+
 void AstMemberSel::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     str << " -> ";
@@ -1831,6 +1840,7 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
     if (packed()) str << " [PACKED]";
     if (isFourstate()) str << " [4STATE]";
+    if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
 }
 void AstNodeDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);
