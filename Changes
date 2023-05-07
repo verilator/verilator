@@ -29,6 +29,7 @@ Verilator 5.011 devel
 * Fix crash caused by $display() optimization (#4165) (#4166). [Tudor Timi]
 * Fix arrays of unpacked structs (#4173). [Risto Pejašinović]
 * Fix $fscanf of decimals overflowing variables (#4174). [Ahmed El-Mahmoudy]
+* Fix super.new missing data type (#4147). [Tudor Timi]
 * Fix detection of wire/reg duplicates.
 * Fix false IMPLICITSTATIC on package functions.
 

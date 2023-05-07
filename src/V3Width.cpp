@@ -3755,7 +3755,9 @@ private:
     void visit(AstNew* nodep) override {
         if (nodep->didWidth()) return;
         AstClass* classp = nullptr;
+        bool assign = false;
         if (VN_IS(nodep->backp(), Assign)) {  // assignment case
+            assign = true;
             AstClassRefDType* const refp
                 = m_vup ? VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType) : nullptr;
             if (!refp) {  // e.g. int a = new;
@@ -3783,9 +3785,9 @@ private:
             classp = VN_CAST(nodep->classOrPackagep(), Class);
             UASSERT_OBJ(classp, nodep, "Unlinked classOrPackagep()");
             UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked taskp()");
-            nodep->dtypeFrom(nodep->taskp());
         }
         userIterate(nodep->taskp(), nullptr);
+        if (!assign) nodep->dtypeFrom(nodep->taskp());
         processFTaskRefArgs(nodep);
     }
     void visit(AstNewCopy* nodep) override {
