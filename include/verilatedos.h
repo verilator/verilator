@@ -321,6 +321,7 @@ extern "C" void __gcov_dump();
 // Now that C++ requires these standard types the vl types are deprecated
 #include <cstdint>
 #include <cinttypes>
+#include <cmath>
 
 #ifndef VL_NO_LEGACY
 using vluint8_t = uint8_t;  ///< 8-bit unsigned type (backward compatibility)
@@ -445,11 +446,14 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_SIZEBITS_E (VL_EDATASIZE - 1)  ///< Bit mask for bits in a quad
 
 /// Return mask for words with 1's where relevant bits are (0=all bits)
+/// Arguments must not have side effects
 #define VL_MASK_I(nbits) (((nbits) & VL_SIZEBITS_I) ? ((1U << ((nbits) & VL_SIZEBITS_I)) - 1) : ~0)
 /// Return mask for quads with 1's where relevant bits are (0=all bits)
+/// Arguments must not have side effects
 #define VL_MASK_Q(nbits) \
     (((nbits) & VL_SIZEBITS_Q) ? ((1ULL << ((nbits) & VL_SIZEBITS_Q)) - 1ULL) : ~0ULL)
 /// Return mask for EData with 1's where relevant bits are (0=all bits)
+/// Arguments must not have side effects
 #define VL_MASK_E(nbits) VL_MASK_I(nbits)
 
 #define VL_EUL(n) VL_UL(n)  // Make constant number EData sized
@@ -471,8 +475,12 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // #defines, to avoid requiring math.h on all compile runs
 
 #ifdef _MSC_VER
-# define VL_TRUNC(n) (((n) < 0) ? std::ceil((n)) : std::floor((n)))
-# define VL_ROUND(n) (((n) < 0) ? std::ceil((n)-0.5) : std::floor((n) + 0.5))
+static inline double VL_TRUNC(double n) {
+    return (n < 0) ? std::ceil(n) : std::floor(n);
+}
+static inline double VL_ROUND(double n) {
+    return (n < 0) ? std::ceil(n-0.5) : std::floor(n + 0.5);
+}
 #else
 # define VL_TRUNC(n) std::trunc(n)
 # define VL_ROUND(n) std::round(n)
