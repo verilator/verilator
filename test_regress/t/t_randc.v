@@ -13,12 +13,13 @@ class ClsNarrow #(parameter int WIDTH);
       automatic int maxcount;
       automatic bit bad;
       automatic int randomize_result;
+      $display("Test %m");
       for (int trial = 0; trial < 10; ++trial) begin
          for (i = 0; i < (2 ** WIDTH); ++i) begin
             randomize_result = randomize();
             if (randomize_result !== 1) $stop;
 `ifdef TEST_VERBOSE
-            $display("w%0d trial=%0d m_var=%0d", WIDTH, i, m_var);
+            $display("w%0d i=%0d m_var=%x", WIDTH, i, m_var);
 `endif
             ++count[m_var];
          end
@@ -47,11 +48,12 @@ class ClsWide #(parameter int WIDTH);
    function void test;
       automatic bit [WIDTH-1:0] last;
       automatic int randomize_result;
+      $display("Test %m");
       for (int i = 0; i < 100; ++i) begin
          randomize_result = randomize();
          if (randomize_result !== 1) $stop;
 `ifdef TEST_VERBOSE
-         $display("ww%0d m_var=%0d", WIDTH, i, m_var);
+         $display("ww%0d i=%0d m_var=%x", WIDTH, i, m_var);
 `endif
          if (i != 0) begin
 `ifndef TEST_IGNORE_RANDC
@@ -76,12 +78,13 @@ class ClsEnum;
    function void test;
       automatic enum_t last;
       automatic int randomize_result;
+      $display("Test %m");
       for (int trial = 0; trial < 10; ++trial) begin
          for (int i = 0; i < 3; ++i) begin
             randomize_result = randomize();
             if (randomize_result !== 1) $stop;
 `ifdef TEST_VERBOSE
-            $display("we trial=%0d m_var=%0d", i, m_var);
+            $display("we i=%0d m_var=%x", i, m_var);
 `endif
             if (m_var != TWO && m_var != FIVE && m_var != SIX) $stop;
             if (i != 0) begin
@@ -100,6 +103,8 @@ module t (/*AUTOARG*/);
 
    ClsNarrow #(1) c1;  // Degenerate case
    ClsNarrow #(2) c2;
+   ClsNarrow #(3) c3;
+   ClsNarrow #(3) c3b;  // Need to have two of same size to cover dtype dedup code
    ClsNarrow #(9) c9;
    ClsWide #(31) c31;
    ClsWide #(32) c32;
@@ -110,6 +115,10 @@ module t (/*AUTOARG*/);
       c1.test();
       c2 = new;
       c2.test();
+      c3 = new;
+      c3.test();
+      c3b = new;
+      c3b.test();
       c9 = new;
       c9.test();
       c31 = new;
