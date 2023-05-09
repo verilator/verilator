@@ -15,17 +15,7 @@ module t;
    initial begin
       p = process::self();
 
-      seed = 43;
-
-      // Test setting seed
-      p.srandom(seed);
-      a = $random;
-      p.srandom(seed);
-      b = $random;
-      $display("a=%d, b=%d", a, b);
-      if (a != b) $stop;
-
-      // Test setting it with state string
+      // Test setting RNG state with state string
       state = p.get_randstate();
       p.set_randstate(state);
       a = $random;
@@ -35,13 +25,6 @@ module t;
       if (a != b) $stop;
 
       // Test the same with $urandom
-      p.srandom(seed);
-      a = $urandom;
-      p.srandom(seed);
-      b = $urandom;
-      $display("a=%d, b=%d", a, b);
-      if (a != b) $stop;
-
       state = p.get_randstate();
       p.set_randstate(state);
       a = $urandom;

@@ -364,8 +364,8 @@ void transformForks(AstNetlist* const netlistp) {
             m_beginHasAwaits = false;
             m_beginHasProcess = false;
             iterateChildrenConst(nodep);
-            if (!nodep->name().empty()) { // TODO: m_beginHasAwaits || m_beginHasProcess
-                // UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
+            if (m_beginHasAwaits || m_beginHasProcess) {
+                UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
                 // Create a function to put this begin's statements in
                 FileLine* const flp = nodep->fileline();
                 AstCFunc* const newfuncp

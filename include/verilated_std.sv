@@ -117,7 +117,7 @@ package std;
         endfunction
 
         function state status();
-    `ifdef VERILATOR_TIMING
+`ifdef VERILATOR_TIMING
             return state'($c(m_process, "->state()"));
 `else
             return RUNNING;
@@ -155,13 +155,11 @@ package std;
 
             s.itoa($random);  // Get a random number
             set_randstate(s);  // Pretend it's the state of RNG
-
             return s;
         endfunction
 
         function void set_randstate(string s);
-            // Set the seed using a string
-            srandom(s.atoi());
+            $urandom(s.atoi());  // Set the seed using a string
         endfunction
     endclass
 
