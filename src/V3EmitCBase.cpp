@@ -224,7 +224,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
 }
 
 void EmitCBaseVisitorConst::emitModCUse(const AstNodeModule* modp, VUseType useType) {
-    bool nl;
+    bool nl = false;
     forModCUse(modp, useType, [&](string entry) {
         puts(entry);
         nl = true;
