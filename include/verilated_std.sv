@@ -45,7 +45,7 @@ package std;
       task put(T message);
 `ifdef VERILATOR_TIMING
          if (m_bound != 0)
-           wait (m_queue.size() < m_bound);
+         wait (m_queue.size() < m_bound);
          m_queue.push_back(message);
 `endif
       endtask
@@ -89,82 +89,12 @@ package std;
       endfunction
    endclass
 
-    class process;
-        typedef enum {
-            FINISHED  = 0,
-            RUNNING   = 1,
-            WAITING   = 2,
-            SUSPENDED = 3,
-            KILLED    = 4
-        } state;
+   class semaphore;
+      protected int m_keyCount;
 
-`ifdef VERILATOR_TIMING
-        protected chandle m_process;
-`endif
-
-        static function process self();
-            process p = new;
-`ifdef VERILATOR_TIMING
-            $c(p.m_process, " = vlProcess;");
-`endif
-            return p;
-        endfunction
-
-        protected function void set_status(state s);
-`ifdef VERILATOR_TIMING
-            $c(m_process, "->state(", s, ");");
-`endif
-        endfunction
-
-        function state status();
-`ifdef VERILATOR_TIMING
-            return state'($c(m_process, "->state()"));
-`else
-            return RUNNING;
-`endif
-        endfunction
-
-        function void kill();
-            set_status(KILLED);
-        endfunction
-
-        function void suspend();
-            set_status(SUSPENDED);
-        endfunction
-
-        function void resume();
-            set_status(RUNNING);
-        endfunction
-
-        task await();
-`ifdef VERILATOR_TIMING
-            state s = status();
-            wait (s == FINISHED || s == KILLED);
-`endif
-        endtask
-
-        // When really implemented, srandom must operate on the process, but for
-        // now rely on the srandom() that is automatically generated for all
-        // classes.
-        // function void srandom(int seed);
-        // endfunction
-
-        function string get_randstate();
-            // TODO: Access the real state variable of the RNG
-            string s;
-
-            s.itoa($random);  // Get a random number
-            set_randstate(s);  // Pretend it's the state of RNG
-            return s;
-        endfunction
-
-        function void set_randstate(string s);
-            $urandom(s.atoi());  // Set the seed using a string
-        endfunction
-    endclass
-
-    class semaphore;
-        protected int m_keyCount;
+      function new(int keyCount = 0);
+         m_keyCount = keyCount;
+      endfunction
 
       function void put(int keyCount = 1);
          m_keyCount += keyCount;
@@ -183,6 +113,80 @@ package std;
             return 1;
          end
          return 0;
+      endfunction
+   endclass
+
+   class process;
+      typedef enum {
+         FINISHED  = 0,
+         RUNNING   = 1,
+         WAITING   = 2,
+         SUSPENDED = 3,
+         KILLED    = 4
+      } state;
+
+`ifdef VERILATOR_TIMING
+      protected chandle m_process;
+`endif
+
+      static function process self();
+         process p = new;
+`ifdef VERILATOR_TIMING
+         $c(p.m_process, " = vlProcess;");
+`endif
+         return p;
+      endfunction
+
+      protected function void set_status(state s);
+`ifdef VERILATOR_TIMING
+         $c(m_process, "->state(", s, ");");
+`endif
+      endfunction
+
+      function state status();
+`ifdef VERILATOR_TIMING
+         return state'($c(m_process, "->state()"));
+`else
+         return RUNNING;
+`endif
+      endfunction
+
+      function void kill();
+         set_status(KILLED);
+      endfunction
+
+      function void suspend();
+         set_status(SUSPENDED);
+      endfunction
+
+      function void resume();
+         set_status(RUNNING);
+      endfunction
+
+      task await();
+`ifdef VERILATOR_TIMING
+         state s = status();
+         wait (s == FINISHED || s == KILLED);
+`endif
+      endtask
+
+      // When really implemented, srandom must operate on the process, but for
+      // now rely on the srandom() that is automatically generated for all
+      // classes.
+      // function void srandom(int seed);
+      // endfunction
+
+      function string get_randstate();
+         // TODO: Access the real state variable of the RNG
+         string s;
+
+         s.itoa($random);  // Get a random number
+         set_randstate(s);  // Pretend it's the state of RNG
+         return s;
+      endfunction
+
+      function void set_randstate(string s);
+         $urandom(s.atoi());  // Set the seed using a string
       endfunction
    endclass
 endpackage
