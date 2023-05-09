@@ -69,7 +69,6 @@ class CUseVisitor final : public VNVisitor {
     }
     void visit(AstCFunc* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
-
         iterateAndNextNull(nodep->argsp());
 
         {
@@ -83,7 +82,6 @@ class CUseVisitor final : public VNVisitor {
     }
     void visit(AstCReturn* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
-
         if (m_dtypesImplOnly) {
             for (AstNode* exprp = nodep->op1p(); exprp; exprp = exprp->nextp()) {
                 if (exprp->dtypep())
