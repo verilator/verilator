@@ -1330,7 +1330,7 @@ private:
             cfuncp->rtnType("VlCoroutine");
             cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
             // Mark the fact that this function allocates std::process
-            cfuncp->hasProcess(true);
+            cfuncp->needProcess(true);
         }
 
         // Delete rest of cloned task and return new func

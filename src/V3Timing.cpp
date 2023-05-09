@@ -557,7 +557,7 @@ private:
         iterateChildren(nodep);
         if (nodep->user2()) nodep->setSuspendable();
         if (nodep->user4()) {
-            nodep->setHasProcess();
+            nodep->setNeedProcess();
             if (VN_IS(nodep, Initial)) {
                 nodep->addStmtsp(
                     new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
@@ -599,7 +599,7 @@ private:
             }
         }
         // If first marked as using std::process
-        if (nodep->user4() && !nodep->hasProcess()) nodep->hasProcess(true);
+        if (nodep->user4() && !nodep->needProcess()) nodep->needProcess(true);
     }
     void visit(AstNodeCCall* nodep) override {
         if (nodep->funcp()->user2() && !nodep->user1SetOnce()) {  // If suspendable

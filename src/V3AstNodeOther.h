@@ -277,11 +277,11 @@ class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
     // @astgen op2 := stmtsp : List[AstNode] // Note: op1 is used in some sub-types only
     bool m_suspendable : 1;  // Is suspendable by a Delay, EventControl, etc.
-    bool m_hasProcess : 1;  // Implements part of a process that allocates std::process
+    bool m_needProcess : 1;  // Implements part of a process that allocates std::process
 protected:
     AstNodeProcedure(VNType t, FileLine* fl, AstNode* stmtsp)
         : AstNode{t, fl} {
-        m_hasProcess = false;
+        m_needProcess = false;
         m_suspendable = false;
         addStmtsp(stmtsp);
     }
@@ -293,8 +293,8 @@ public:
     bool isJustOneBodyStmt() const { return stmtsp() && !stmtsp()->nextp(); }
     bool isSuspendable() const { return m_suspendable; }
     void setSuspendable() { m_suspendable = true; }
-    bool hasProcess() const { return m_hasProcess; }
-    void setHasProcess() { m_hasProcess = true; }
+    bool needProcess() const { return m_needProcess; }
+    void setNeedProcess() { m_needProcess = true; }
 };
 class AstNodeRange VL_NOT_FINAL : public AstNode {
     // A range, sized or unsized
@@ -585,7 +585,7 @@ private:
     bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
     bool m_dpiTraceInit : 1;  // DPI trace_init
-    bool m_hasProcess : 1; // Implements part of a process that allocates std::process
+    bool m_needProcess : 1; // Implements part of a process that allocates std::process
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
@@ -605,7 +605,7 @@ public:
         m_isLoose = false;
         m_isInline = false;
         m_isVirtual = false;
-        m_hasProcess = false;
+        m_needProcess = false;
         m_entryPoint = false;
         m_pure = false;
         m_dpiContext = false;
@@ -674,8 +674,8 @@ public:
     void isInline(bool flag) { m_isInline = flag; }
     bool isVirtual() const { return m_isVirtual; }
     void isVirtual(bool flag) { m_isVirtual = flag; }
-    bool hasProcess() const { return m_hasProcess; }
-    void hasProcess(bool flag) { m_hasProcess = flag; }
+    bool needProcess() const { return m_needProcess; }
+    void needProcess(bool flag) { m_needProcess = flag; }
     bool entryPoint() const { return m_entryPoint; }
     void entryPoint(bool flag) { m_entryPoint = flag; }
     bool pure() const { return m_pure; }

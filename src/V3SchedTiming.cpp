@@ -275,7 +275,7 @@ void transformForks(AstNetlist* const netlistp) {
         // STATE
         bool m_inClass = false;  // Are we in a class?
         bool m_beginHasAwaits = false;  // Does the current begin have awaits?
-        bool m_beginHasProcess = false;  // Does the current begin have process::self dependency?
+        bool m_beginNeedProcess = false;  // Does the current begin have process::self dependency?
         AstFork* m_forkp = nullptr;  // Current fork
         AstCFunc* m_funcp = nullptr;  // Current function
 
@@ -362,9 +362,9 @@ void transformForks(AstNetlist* const netlistp) {
             UASSERT_OBJ(m_forkp, nodep, "Begin outside of a fork");
             // Start with children, so later we only find awaits that are actually in this begin
             m_beginHasAwaits = false;
-            m_beginHasProcess = false;
+            m_beginNeedProcess = false;
             iterateChildrenConst(nodep);
-            if (m_beginHasAwaits || m_beginHasProcess) {
+            if (m_beginHasAwaits || m_beginNeedProcess) {
                 UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
                 // Create a function to put this begin's statements in
                 FileLine* const flp = nodep->fileline();
@@ -387,8 +387,8 @@ void transformForks(AstNetlist* const netlistp) {
                 }
                 // Put the begin's statements in the function, delete the begin
                 newfuncp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
-                if (m_beginHasProcess) {
-                    newfuncp->hasProcess(true);
+                if (m_beginNeedProcess) {
+                    newfuncp->needProcess(true);
                     newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
                 }
                 if (!m_beginHasAwaits) {
@@ -407,7 +407,7 @@ void transformForks(AstNetlist* const netlistp) {
             iterateChildrenConst(nodep);
         }
         void visit(AstCCall* nodep) override {
-            m_beginHasProcess = true;
+            m_beginNeedProcess = true;
             iterateChildrenConst(nodep);
         }
 
