@@ -22,7 +22,7 @@
 #include "V3Global.h"
 
 #include <algorithm>
-#include <unordered_set>
+#include <set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -360,7 +360,7 @@ class EmitCHeader final : public EmitCConstInit {
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
         if (v3Global.usesTiming()) puts("#include \"verilated_timing.h\"\n");
 
-        std::unordered_set<string> cuse_set;
+        std::set<string> cuse_set;
         auto add_to_cuse_set = [&](string s) { cuse_set.insert(s); };
 
         forModCUse(modp, VUseType::INT_INCLUDE, add_to_cuse_set);
