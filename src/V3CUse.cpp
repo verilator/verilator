@@ -84,8 +84,7 @@ class CUseVisitor final : public VNVisitor {
         if (nodep->user1SetOnce()) return;  // Process once
         if (m_dtypesImplOnly) {
             for (AstNode* exprp = nodep->op1p(); exprp; exprp = exprp->nextp()) {
-                if (exprp->dtypep())
-                    iterate(exprp->dtypep());
+                if (exprp->dtypep()) iterate(exprp->dtypep());
             }
         } else {
             iterateChildren(nodep);
