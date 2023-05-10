@@ -2475,20 +2475,13 @@ private:
         }
 
         AstBasicDType* dtype = VN_CAST(nodep->exprp()->dtypep(), BasicDType);
-        AstNodeExpr* (*eq_ctor)(FileLine*, AstNodeExpr*, AstNodeExpr*) = nullptr;
         AstNodeDType* subDTypep = nullptr;
 
         if (dtype && dtype->isString()) {
             nodep->dtypeSetString();
-            eq_ctor = [](FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) -> AstNodeExpr* {
-                return new AstEqN{fl, lhsp, rhsp};
-            };
             subDTypep = nodep->findStringDType();
         } else if (dtype && dtype->isDouble()) {
             nodep->dtypeSetDouble();
-            eq_ctor = [](FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) -> AstNodeExpr* {
-                return new AstEqD{fl, lhsp, rhsp};
-            };
             subDTypep = nodep->findDoubleDType();
         } else {
             // Take width as maximum across all items
@@ -2499,9 +2492,6 @@ private:
                 mwidth = std::max(mwidth, itemp->widthMin());
             }
             nodep->dtypeSetBit();
-            eq_ctor = [](FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) -> AstNodeExpr* {
-                return new AstEqWild{fl, lhsp, rhsp};
-            };
             subDTypep = nodep->findLogicDType(width, mwidth, nodep->exprp()->dtypep()->numeric());
         }
 
@@ -2535,8 +2525,8 @@ private:
                     "Inside operator not legal on non-unpacked arrays (IEEE 1800-2017 11.4.13)");
                 continue;
             } else {
-                inewp = eq_ctor(itemp->fileline(), nodep->exprp()->cloneTree(true),
-                                itemp->unlinkFrBack());
+                inewp = AstEqWild::newTyped(itemp->fileline(), nodep->exprp()->cloneTree(true),
+                                            itemp->unlinkFrBack());
             }
             if (newp) {
                 newp = new AstOr{nodep->fileline(), newp, inewp};
