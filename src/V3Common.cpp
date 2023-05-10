@@ -82,11 +82,13 @@ static void makeVlToString(AstNodeUOrStructDType* nodep) {
         }
         stmt += VIdProtect::protect(itemp->prettyName()) + ":\" + ";
         if (VN_IS(itemp->dtypep()->skipRefp(), BasicDType) && itemp->isWide()) {
-            stmt += "VL_TO_STRING_W";
+            stmt += "VL_TO_STRING_W(";
+            stmt += cvtToStr(itemp->widthWords());
+            stmt += ", ";
         } else {
-            stmt += "VL_TO_STRING";
+            stmt += "VL_TO_STRING(";
         }
-        stmt += "(obj." + itemp->nameProtect() + ");\n";
+        stmt += "obj." + itemp->nameProtect() + ");\n";
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
     }
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "out += \"}\";\n"});
