@@ -1473,7 +1473,8 @@ AstCFunc* order(AstNetlist* netlistp,  //
 
     // Create the result function
     AstScope* const scopeTopp = netlistp->topScopep()->scopep();
-    AstCFunc* const funcp = new AstCFunc{netlistp->fileline(), "_eval_" + tag, scopeTopp, ""};
+    FileLine* const flp = netlistp->fileline();
+    AstCFunc* const funcp = new AstCFunc{flp, "_eval_" + tag, scopeTopp, ""};
     funcp->dontCombine(true);
     funcp->isStatic(false);
     funcp->isLoose(true);
@@ -1482,8 +1483,17 @@ AstCFunc* order(AstNetlist* netlistp,  //
     funcp->declPrivate(true);
     scopeTopp->addBlocksp(funcp);
 
+    if (v3Global.opt.profExec()) {
+        funcp->addStmtsp(new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"func "
+                                               + tag + "\");\n"});
+    }
+
     // Add ordered statements to the result function
     for (AstNode* const nodep : nodeps) funcp->addStmtsp(nodep);
+
+    if (v3Global.opt.profExec()) {
+        funcp->addStmtsp(new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n"});
+    }
 
     // Dispose of the remnants of the inputs
     for (auto* const lbsp : logic) lbsp->deleteActives();

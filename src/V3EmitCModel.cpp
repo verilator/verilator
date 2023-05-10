@@ -403,7 +403,7 @@ class EmitCModel final : public EmitCFunc {
 
         if (v3Global.opt.profExec()) {
             puts("vlSymsp->__Vm_executionProfilerp->configure();\n");
-            puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).evalBegin();\n");
+            puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"eval\");\n");
         }
 
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Eval\\n\"););\n");
@@ -412,7 +412,7 @@ class EmitCModel final : public EmitCFunc {
         putsDecoration("// Evaluate cleanup\n");
         puts("Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);\n");
 
-        if (v3Global.opt.profExec()) puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).evalEnd();\n");
+        if (v3Global.opt.profExec()) puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n");
         puts("}\n");
     }
 
