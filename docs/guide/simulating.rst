@@ -143,7 +143,7 @@ Functional Coverage
 -------------------
 
 With :vlopt:`--coverage` or :vlopt:`--coverage-user`, Verilator will
-translate functional coverage points the user has inserted manually win
+translate functional coverage points the user has inserted manually in
 SystemVerilog code through into the Verilated model.
 
 Currently, all functional coverage points are specified using SystemVerilog
