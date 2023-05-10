@@ -257,8 +257,7 @@ class ParamProcessor final {
     // Generated modules by this visitor is not included
     V3StringSet m_allModuleNames;
 
-    using ValueMapValue = std::pair<int, std::string>;
-    std::map<const V3Hash, ValueMapValue> m_valueMap;  // Hash of node hash to (param value, name)
+    std::map<const V3Hash, int> m_valueMap;  // Hash of node hash to param value
     int m_nextValue = 1;  // Next value to use in m_valueMap
 
     const AstNodeModule* m_modp = nullptr;  // Current module being processed
@@ -304,7 +303,7 @@ class ParamProcessor final {
         return st;
     }
 
-    static string paramValueKey(const AstNode* nodep) {
+    static string paramValueString(const AstNode* nodep) {
         if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) { nodep = refp->skipRefp(); }
         string key = nodep->name();
         if (const AstIfaceRefDType* const ifrtp = VN_CAST(nodep, IfaceRefDType)) {
@@ -322,13 +321,13 @@ class ParamProcessor final {
             key += " {";
             for (const AstNode* memberp = dtypep->membersp(); memberp;
                  memberp = memberp->nextp()) {
-                key += paramValueKey(memberp);
+                key += paramValueString(memberp);
                 key += ";";
             }
             key += "}";
         } else if (const AstMemberDType* const dtypep = VN_CAST(nodep, MemberDType)) {
             key += " ";
-            key += paramValueKey(dtypep->subDTypep());
+            key += paramValueString(dtypep->subDTypep());
         } else if (const AstBasicDType* const dtypep = VN_CAST(nodep, BasicDType)) {
             if (dtypep->isSigned()) { key += " signed"; }
             if (dtypep->isRanged()) {
@@ -343,19 +342,19 @@ class ParamProcessor final {
         //       particularly robust for type parameters. We should really have a type
         //       equivalence predicate function.
         if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) nodep = refp->skipRefp();
-        const string key = paramValueKey(nodep);
+        const string paramStr = paramValueString(nodep);
         // cppcheck-has-bug-suppress unreadVariable
-        V3Hash hash = V3Hasher::uncachedHash(nodep);
+        V3Hash hash = V3Hasher::uncachedHash(nodep) + paramStr;
         // Force hash collisions -- for testing only
         // cppcheck-has-bug-suppress unreadVariable
-        if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash{};
+        if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash{paramStr};
         int num;
         const auto it = m_valueMap.find(hash);
-        if (it != m_valueMap.end() && it->second.second == key) {
-            num = it->second.first;
+        if (it != m_valueMap.end()) {
+            num = it->second;
         } else {
             num = m_nextValue++;
-            m_valueMap[hash] = std::make_pair(num, key);
+            m_valueMap[hash] = num;
         }
         return std::string{"z"} + cvtToStr(num);
     }
