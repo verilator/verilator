@@ -221,7 +221,7 @@ public:
 //######################################################################
 // Remove parameters from cells and build new modules
 
-class ParamProcessor final {
+class ParamProcessor final : public VNDeleter {
     // NODE STATE - Local
     //   AstVar::user4()        // int    Global parameter number (for naming new module)
     //                          //        (0=not processed, 1=iterated, but no number,
@@ -830,6 +830,9 @@ class ParamProcessor final {
             // user2p will also be used to check if the default instance is used.
             if (!srcModpr->user2p() && VN_IS(srcModpr, Class)) {
                 AstClass* classCopyp = VN_AS(srcModpr, Class)->cloneTree(false);
+                // It is a temporary copy of the original class node, stored in order to create
+                // another instances. It is needed only during class instantiation.
+                pushDeletep(classCopyp);
                 srcModpr->user2p(classCopyp);
                 storeOriginalParams(classCopyp);
             }
@@ -1409,8 +1412,6 @@ public:
                     // Referenced. classp became a specialized class with the default
                     // values of parameters and is not a parameterized class anymore
                     classp->isParameterized(false);
-                    // The copy is no longer needed.
-                    VL_DO_DANGLING(pushDeletep(classp->user2p()), classp);
                 }
             }
         }
