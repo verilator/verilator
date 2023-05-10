@@ -49,7 +49,7 @@ if ($Self->{vltmt}) {
     file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 1/i);
     file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 0/i);
 }
-file_grep("$Self->{obj_dir}/gantt.log", qr/Total evals += 2/i);
+file_grep("$Self->{obj_dir}/gantt.log", qr/\|\s+2\s+\|\s+2\.0+\s+\|\s+eval/i);
 
 # Diff to itself, just to check parsing
 vcd_identical("$Self->{obj_dir}/profile_exec.vcd", "$Self->{obj_dir}/profile_exec.vcd");

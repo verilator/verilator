@@ -58,12 +58,12 @@ VL_ATTR_ALWINLINE QData VL_CPU_TICK() {
 
 // clang-format off
 #define FOREACH_VlExecutionRecord_TYPE(macro) \
-    _VL_FOREACH_APPLY(macro, EVAL_BEGIN) \
-    _VL_FOREACH_APPLY(macro, EVAL_END) \
-    _VL_FOREACH_APPLY(macro, EVAL_LOOP_BEGIN) \
-    _VL_FOREACH_APPLY(macro, EVAL_LOOP_END) \
+    _VL_FOREACH_APPLY(macro, SECTION_PUSH) \
+    _VL_FOREACH_APPLY(macro, SECTION_POP) \
     _VL_FOREACH_APPLY(macro, MTASK_BEGIN) \
-    _VL_FOREACH_APPLY(macro, MTASK_END)
+    _VL_FOREACH_APPLY(macro, MTASK_END) \
+    _VL_FOREACH_APPLY(macro, EXEC_GRAPH_BEGIN) \
+    _VL_FOREACH_APPLY(macro, EXEC_GRAPH_END)
 // clang-format on
 
 class VlExecutionRecord final {
@@ -83,6 +83,9 @@ class VlExecutionRecord final {
     };
 
     union Payload {
+        struct {
+            const char* m_name;  // Name of section being entered
+        } sectionPush;
         struct {
             uint32_t m_id;  // MTask id
             uint32_t m_predictStart;  // Time scheduler predicted would start
@@ -109,10 +112,11 @@ public:
     VlExecutionRecord() = default;
 
     // METHODS
-    void evalBegin() { m_type = Type::EVAL_BEGIN; }
-    void evalEnd() { m_type = Type::EVAL_END; }
-    void evalLoopBegin() { m_type = Type::EVAL_LOOP_BEGIN; }
-    void evalLoopEnd() { m_type = Type::EVAL_LOOP_END; }
+    void sectionPush(const char* name) {
+        m_payload.sectionPush.m_name = name;
+        m_type = Type::SECTION_PUSH;
+    }
+    void sectionPop() { m_type = Type::SECTION_POP; }
     void mtaskBegin(uint32_t id, uint32_t predictStart) {
         m_payload.mtaskBegin.m_id = id;
         m_payload.mtaskBegin.m_predictStart = predictStart;
@@ -124,6 +128,8 @@ public:
         m_payload.mtaskEnd.m_predictCost = predictCost;
         m_type = Type::MTASK_END;
     }
+    void execGraphBegin() { m_type = Type::EXEC_GRAPH_BEGIN; }
+    void execGraphEnd() { m_type = Type::EXEC_GRAPH_END; }
 };
 
 static_assert(std::is_trivially_destructible<VlExecutionRecord>::value,

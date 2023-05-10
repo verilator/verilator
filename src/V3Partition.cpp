@@ -3167,6 +3167,10 @@ static void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
         execGraphp->addStmtsp(new AstText{fl, text, /* tracking: */ true});
     };
 
+    if (v3Global.opt.profExec()) {
+        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).execGraphBegin();\n");
+    }
+
     addStrStmt("vlSymsp->__Vm_even_cycle__" + tag + " = !vlSymsp->__Vm_even_cycle__" + tag
                + ";\n");
 
@@ -3190,6 +3194,10 @@ static void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
 
     addStrStmt("vlSelf->__Vm_mtaskstate_final__" + tag
                + ".waitUntilUpstreamDone(vlSymsp->__Vm_even_cycle__" + tag + ");\n");
+
+    if (v3Global.opt.profExec()) {
+        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).execGraphEnd();\n");
+    }
 }
 
 static void implementExecGraph(AstExecGraph* const execGraphp) {

@@ -400,6 +400,17 @@ AstSenTree* createTriggerSenTree(AstNetlist* netlistp, AstVarScope* const vscp, 
 }
 
 //============================================================================
+// Utility for creating profiling statements
+
+AstNodeStmt* profExecSectionPush(FileLine* flp, const string& name) {
+    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"" + name + "\");\n"};
+};
+
+AstNodeStmt* profExecSectionPop(FileLine* flp) {
+    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n"};
+};
+
+//============================================================================
 // Utility for extra trigger allocation
 
 class ExtraTriggers final {
@@ -442,6 +453,7 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // Create the trigger computation function
     AstCFunc* const funcp = makeSubFunction(netlistp, "_eval_triggers__" + name, slow);
+    if (v3Global.opt.profExec()) funcp->addStmtsp(profExecSectionPush(flp, "trig " + name));
 
     // Create the trigger dump function (for debugging, always 'slow')
     AstCFunc* const dumpp = makeSubFunction(netlistp, "_dump_triggers__" + name, true);
@@ -581,6 +593,8 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
         add("#endif\n");
     }
 
+    if (v3Global.opt.profExec()) funcp->addStmtsp(profExecSectionPop(flp));
+
     // The debug code might leak signal names, so simply delete it when using --protect-ids
     if (v3Global.opt.protectIds()) dumpp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
 
@@ -636,7 +650,9 @@ EvalLoop makeEvalLoop(AstNetlist* netlistp, const string& tag, const string& nam
     AstVarScope* const continuep = scopeTopp->createTemp("__V" + tag + "Continue", 1);
     continuep->varp()->noReset(true);
 
-    AstNodeStmt* nodep = setVar(counterp, 0);
+    AstNodeStmt* nodep = nullptr;
+    if (v3Global.opt.profExec()) nodep = profExecSectionPush(flp, "loop " + tag);
+    nodep = AstNode::addNext(nodep, setVar(counterp, 0));
     nodep->addNext(buildLoop(netlistp, continuep, [&](AstWhile* loopp) {
         // Compute triggers
         loopp->addStmtsp(computeTriggers());
@@ -688,6 +704,8 @@ EvalLoop makeEvalLoop(AstNetlist* netlistp, const string& tag, const string& nam
             ifp->addThensp(makeBody());
         }
     }));
+
+    if (v3Global.opt.profExec()) nodep->addNext(profExecSectionPop(flp));
 
     return {counterp, continuep, nodep};
 }
