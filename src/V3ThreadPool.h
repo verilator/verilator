@@ -67,9 +67,10 @@ class V3ThreadPool final {
     // CONSTRUCTORS
     V3ThreadPool() = default;
     ~V3ThreadPool() {
-        V3LockGuard lock{m_mutex};
-        m_queue = {};  // make sure queue is empty
-        lock.unlock();
+        {
+            V3LockGuard lock{m_mutex};
+            m_queue = {};  // make sure queue is empty
+        }
         resize(0);
     }
 
@@ -82,7 +83,7 @@ public:
     }
 
     // Resize thread pool to n workers (queue must be empty)
-    void resize(unsigned n) VL_MT_UNSAFE;
+    void resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_stoppedJobsMutex);
 
     // Enqueue a job for asynchronous execution
     // Due to missing support for lambda annotations in c++11,

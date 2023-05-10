@@ -23,29 +23,33 @@
 // c++11 requires definition of static constexpr as well as declaration
 constexpr unsigned int V3ThreadPool::FUTUREWAITFOR_MS;
 
-void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE {
+void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex)
+    VL_EXCLUDES(m_stoppedJobsMutex) {
     // This function is not thread-safe and can result in race between threads
     UASSERT(V3MutexConfig::s().lockConfig(),
             "Mutex config needs to be locked before starting ThreadPool");
-    V3LockGuard lock{m_mutex};
-    V3LockGuard stoppedJobsLock{m_stoppedJobsMutex};
-    UASSERT(m_queue.empty(), "Resizing busy thread pool");
-    // Shut down old threads
-    m_shutdown = true;
-    m_stoppedJobs = 0;
-    m_cv.notify_all();
-    m_stoppedJobsCV.notify_all();
-    stoppedJobsLock.unlock();
-    lock.unlock();
+    {
+        V3LockGuard lock{m_mutex};
+        V3LockGuard stoppedJobsLock{m_stoppedJobsMutex};
+
+        UASSERT(m_queue.empty(), "Resizing busy thread pool");
+        // Shut down old threads
+        m_shutdown = true;
+        m_stoppedJobs = 0;
+        m_cv.notify_all();
+        m_stoppedJobsCV.notify_all();
+    }
     while (!m_workers.empty()) {
         m_workers.front().join();
         m_workers.pop_front();
     }
-    lock.lock();
-    // Start new threads
-    m_shutdown = false;
-    for (unsigned int i = 1; i < n; ++i) {
-        m_workers.emplace_back(&V3ThreadPool::startWorker, this, i);
+    if (n > 1) {
+        V3LockGuard lock{m_mutex};
+        // Start new threads
+        m_shutdown = false;
+        for (unsigned int i = 1; i < n; ++i) {
+            m_workers.emplace_back(&V3ThreadPool::startWorker, this, i);
+        }
     }
 }
 
@@ -152,19 +156,20 @@ void V3ThreadPool::selfTest() {
         });
     };
     auto secondJob = [&](int sleep) -> void {
-        V3LockGuard lock{commonMutex};
-        lock.unlock();
+        commonMutex.lock();
+        commonMutex.unlock();
         s().waitIfStopRequested();
-        lock.lock();
+        V3LockGuard lock{commonMutex};
         std::this_thread::sleep_for(std::chrono::milliseconds{sleep});
         commonValue = 1000;
     };
     auto thirdJob = [&](int sleep) -> void {
-        V3LockGuard lock{commonMutex};
-        std::this_thread::sleep_for(std::chrono::milliseconds{sleep});
-        lock.unlock();
+        {
+            V3LockGuard lock{commonMutex};
+            std::this_thread::sleep_for(std::chrono::milliseconds{sleep});
+        }
         s().requestExclusiveAccess([&]() { firstJob(sleep); });
-        lock.lock();
+        V3LockGuard lock{commonMutex};
         commonValue = 1000;
     };
     std::list<std::future<void>> futures;
