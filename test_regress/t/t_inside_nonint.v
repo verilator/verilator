@@ -4,23 +4,32 @@
 // any use, without warranty, 2023 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
-task foo(string s, real d);
+function bit check_string(string s);
   if (s inside {"RW", "WO"})
-    $display("string: %s", s);
+    return 1'b1;
+  return 1'b0;
+endfunction
+
+function bit check_double(real d);
   if (d inside {0.0, 2.5})
-    $display("real: %f", d);
-endtask : foo
+    return 1'b1;
+  return 1'b0;
+endfunction
 
 module t();
   initial begin
-    $display("CALL 1:");
-    foo("WO", 0.0);
-    $display("CALL 2:");
-    foo("ABC", 1.0);
-    $display("CALL 3:");
-    foo("RW", 2.0);
-    $display("CALL 4:");
-    foo("ABC", 2.5);
+    if (!check_string("WO"))
+      $stop;
+    if (!check_string("RW"))
+      $stop;
+    if (check_string("ABC"))
+      $stop;
+    if (!check_double(0.0))
+      $stop;
+    if (!check_double(2.5))
+      $stop;
+    if (check_double(1.0))
+      $stop;
 
     $display("*-* All Finished *-*");
     $finish;
