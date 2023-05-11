@@ -165,8 +165,7 @@ package std;
 
       task await();
 `ifdef VERILATOR_TIMING
-         state s = status();
-         wait (s == FINISHED || s == KILLED);
+         wait (status() == FINISHED || status() == KILLED);
 `endif
       endtask
 
