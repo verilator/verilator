@@ -809,6 +809,8 @@ class AstClassExtends final : public AstNode {
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     // @astgen op2 := classOrPkgsp : Optional[AstNode]
     const bool m_isImplements = false;  // class implements
+    bool m_parameterized = false;  // has parameters in its statement
+
 public:
     AstClassExtends(FileLine* fl, AstNode* classOrPkgsp, bool isImplements)
         : ASTGEN_SUPER_ClassExtends(fl)
@@ -819,8 +821,10 @@ public:
     void dump(std::ostream& str) const override;
     bool hasDType() const override { return true; }
     string verilogKwd() const override { return isImplements() ? "implements" : "extends"; }
-    AstClass* classp() const;  // Class being extended (after link)
+    AstClass* classp() const;  // Class being extended (after link and instantiation if needed)
     bool isImplements() const { return m_isImplements; }
+    void parameterized(bool flag) { m_parameterized = flag; }
+    bool parameterized() const { return m_parameterized; }
 };
 class AstClocking final : public AstNode {
     // Parents:  MODULE
