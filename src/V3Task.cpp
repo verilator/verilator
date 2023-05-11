@@ -551,13 +551,11 @@ private:
             // Parent AstNew will replace with this CNew
             cnewpr = cnewp;
         } else if (refp->taskp()->isFromStd() && refp->taskp()->name() == "self") {
-            // TODO: Maybe AstProcessSelf?
             ccallp = new AstCCall{refp->fileline(), cfuncp};
             ccallp->dtypeSetVoid();
             AstCAwait* cawaitp = new AstCAwait{refp->fileline(), ccallp};
             cawaitp->dtypeSetVoid();
             beginp->addNext(cawaitp->makeStmt());
-
         } else if (const AstMethodCall* const mrefp = VN_CAST(refp, MethodCall)) {
             ccallp = new AstCMethodCall{refp->fileline(), mrefp->fromp()->unlinkFrBack(), cfuncp};
             ccallp->dtypeSetVoid();
