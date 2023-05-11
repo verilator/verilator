@@ -133,6 +133,17 @@ class VL_SCOPED_CAPABILITY V3LockGuardImp final {
 private:
     T& m_mutexr;
 
+    // lock() and unlock() are private to avoid mistakes related to manual unlocking and locking of
+    // the LockGuard object. Double unlock is an undefined behavior, so if the mutex is unlocked
+    // and not locked again, it will be unlocked the second time in destructor. If you really need
+    // to manually (un)lock a mutex somewhere, do it directly on the mutex, probably also skipping
+    // use of the LockGuard altogether.
+
+    /// Lock the mutex.
+    void lock() VL_ACQUIRE() VL_MT_SAFE { m_mutexr.lock(); }
+    /// Unlock the mutex.
+    void unlock() VL_RELEASE() VL_MT_SAFE { m_mutexr.unlock(); }
+
 public:
     /// Construct and hold given mutex lock until destruction or unlock()
     explicit V3LockGuardImp(T& mutexr) VL_ACQUIRE(mutexr) VL_MT_SAFE
@@ -141,19 +152,6 @@ public:
     }
     /// Destruct and unlock the mutex
     ~V3LockGuardImp() VL_RELEASE() { m_mutexr.unlock(); }
-    /// Lock the mutex
-    void lock() VL_ACQUIRE() VL_MT_SAFE { m_mutexr.lock(); }
-    /// Unlock the mutex
-    void unlock() VL_RELEASE() VL_MT_SAFE { m_mutexr.unlock(); }
-    /// Acquire/lock mutex and check for stop request.
-    /// It tries to lock the mutex and if it fails, it check if stop request was send.
-    /// It returns after locking mutex.
-    /// This function should be extracted to V3ThreadPool, but due to clang thread-safety
-    /// limitations it needs to be placed here.
-    void lockCheckStopRequest(std::function<void()> checkStopRequestFunction)
-        VL_ACQUIRE() VL_MT_SAFE {
-        m_mutexr.lockCheckStopRequest(checkStopRequestFunction);
-    }
 };
 
 using V3Mutex = V3MutexImp<std::mutex>;

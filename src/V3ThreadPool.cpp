@@ -64,7 +64,7 @@ void V3ThreadPool::workerJobLoop(int id) VL_MT_SAFE {
         job_t job;
         {
             V3LockGuard lock(m_mutex);
-            m_cv.wait(lock, [&]() VL_REQUIRES(m_mutex) {
+            m_cv.wait(m_mutex, [&]() VL_REQUIRES(m_mutex) {
                 return !m_queue.empty() || m_shutdown || m_stopRequested;
             });
             if (m_shutdown) return;  // Terminate if requested
@@ -104,9 +104,9 @@ void V3ThreadPool::requestExclusiveAccess(const V3ThreadPool::job_t&& exclusiveA
         V3LockGuard stoppedJobLock{m_stoppedJobsMutex};
         // if some other job already requested exclusive access
         // wait until it stops
-        if (stopRequested()) { waitStopRequested(stoppedJobLock); }
+        if (stopRequested()) { waitStopRequested(); }
         m_stopRequested = true;
-        waitOtherThreads(stoppedJobLock);
+        waitOtherThreads();
         m_exclusiveAccess = true;
         exclusiveAccessJob();
         m_exclusiveAccess = false;
@@ -118,25 +118,26 @@ void V3ThreadPool::requestExclusiveAccess(const V3ThreadPool::job_t&& exclusiveA
 bool V3ThreadPool::waitIfStopRequested() VL_MT_SAFE {
     V3LockGuard stoppedJobLock(m_stoppedJobsMutex);
     if (!stopRequested()) return false;
-    waitStopRequested(stoppedJobLock);
+    waitStopRequested();
     return true;
 }
 
-void V3ThreadPool::waitStopRequested(V3LockGuard& stoppedJobLock) VL_REQUIRES(m_stoppedJobsMutex) {
+void V3ThreadPool::waitStopRequested() VL_REQUIRES(m_stoppedJobsMutex) {
     ++m_stoppedJobs;
     m_stoppedJobsCV.notify_all();
-    m_stoppedJobsCV.wait(
-        stoppedJobLock, [&]() VL_REQUIRES(m_stoppedJobsMutex) { return !m_stopRequested.load(); });
+    m_stoppedJobsCV.wait(m_stoppedJobsMutex, [&]() VL_REQUIRES(m_stoppedJobsMutex) {
+        return !m_stopRequested.load();
+    });
     --m_stoppedJobs;
     m_stoppedJobsCV.notify_all();
 }
 
-void V3ThreadPool::waitOtherThreads(V3LockGuard& stoppedJobLock) VL_MT_SAFE_EXCLUDES(m_mutex)
+void V3ThreadPool::waitOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex)
     VL_REQUIRES(m_stoppedJobsMutex) {
     ++m_stoppedJobs;
     m_stoppedJobsCV.notify_all();
     m_cv.notify_all();
-    m_stoppedJobsCV.wait(stoppedJobLock, [&]() VL_REQUIRES(m_stoppedJobsMutex) {
+    m_stoppedJobsCV.wait(m_stoppedJobsMutex, [&]() VL_REQUIRES(m_stoppedJobsMutex) {
         // count also the main thread
         return m_stoppedJobs == (m_workers.size() + 1);
     });

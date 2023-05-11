@@ -166,11 +166,10 @@ private:
     }
 
     // Waits until exclusive access job completes its job
-    void waitStopRequested(V3LockGuard& stoppedJobLock) VL_REQUIRES(m_stoppedJobsMutex);
+    void waitStopRequested() VL_REQUIRES(m_stoppedJobsMutex);
 
     // Waits until all other jobs are stopped
-    void waitOtherThreads(V3LockGuard& stoppedJobLock) VL_MT_SAFE_EXCLUDES(m_mutex)
-        VL_REQUIRES(m_stoppedJobsMutex);
+    void waitOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex) VL_REQUIRES(m_stoppedJobsMutex);
 
     template <typename T>
     void pushJob(std::shared_ptr<std::promise<T>>& prom, std::function<T()>&& f) VL_MT_SAFE;
