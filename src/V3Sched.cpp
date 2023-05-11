@@ -247,7 +247,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                         subFuncp = createNewSubFuncp(scopep);
                         subFuncp->name(subFuncp->name() + "__" + cvtToStr(scopep->user2Inc()));
                         subFuncp->rtnType("VlCoroutine");
-                        if (procp->needProcess()) subFuncp->needProcess(true);
+                        subFuncp->needProcess(procp->needProcess());
                         if (VN_IS(procp, Always)) {
                             subFuncp->slow(false);
                             FileLine* const flp = procp->fileline();

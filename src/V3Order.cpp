@@ -1214,9 +1214,11 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
     // Process procedures per statement (unless profCFuncs), so we can split CFuncs within
     // procedures. Everything else is handled in one go
     bool suspendable = false;
+    bool needProcess = false;
     bool slow = m_slow;
     if (AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure)) {
         suspendable = procp->isSuspendable();
+        needProcess = procp->needProcess();
         if (suspendable) slow = slow && !VN_IS(procp, Always);
         nodep = procp->stmtsp();
         pushDeletep(procp);
@@ -1241,6 +1243,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
             const string name = cfuncName(modp, domainp, scopep, nodep);
             newFuncpr
                 = new AstCFunc{nodep->fileline(), name, scopep, suspendable ? "VlCoroutine" : ""};
+            newFuncpr->needProcess(needProcess);
             newFuncpr->isStatic(false);
             newFuncpr->isLoose(true);
             newFuncpr->slow(slow);
