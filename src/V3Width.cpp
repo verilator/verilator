@@ -2473,23 +2473,35 @@ private:
             nextip = itemp->nextp();  // iterate may cause the node to get replaced
             VL_DO_DANGLING(userIterate(itemp, WidthVP{CONTEXT_DET, PRELIM}.p()), itemp);
         }
-        // Take width as maximum across all items
-        int width = nodep->exprp()->width();
-        int mwidth = nodep->exprp()->widthMin();
-        for (const AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
-            width = std::max(width, itemp->width());
-            mwidth = std::max(mwidth, itemp->widthMin());
+
+        AstBasicDType* dtype = VN_CAST(nodep->exprp()->dtypep(), BasicDType);
+        AstNodeDType* subDTypep = nullptr;
+
+        if (dtype && dtype->isString()) {
+            nodep->dtypeSetString();
+            subDTypep = nodep->findStringDType();
+        } else if (dtype && dtype->isDouble()) {
+            nodep->dtypeSetDouble();
+            subDTypep = nodep->findDoubleDType();
+        } else {
+            // Take width as maximum across all items
+            int width = nodep->exprp()->width();
+            int mwidth = nodep->exprp()->widthMin();
+            for (const AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+                width = std::max(width, itemp->width());
+                mwidth = std::max(mwidth, itemp->widthMin());
+            }
+            nodep->dtypeSetBit();
+            subDTypep = nodep->findLogicDType(width, mwidth, nodep->exprp()->dtypep()->numeric());
         }
-        // Apply width
-        AstNodeDType* const subDTypep
-            = nodep->findLogicDType(width, mwidth, nodep->exprp()->dtypep()->numeric());
+
         iterateCheck(nodep, "Inside expression", nodep->exprp(), CONTEXT_DET, FINAL, subDTypep,
                      EXTEND_EXP);
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = itemp->nextp();  // iterate may cause the node to get replaced
             iterateCheck(nodep, "Inside Item", itemp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
         }
-        nodep->dtypeSetBit();
+
         if (debug() >= 9) nodep->dumpTree("-  inside-in: ");
         // Now rip out the inside and replace with simple math
         AstNodeExpr* newp = nullptr;
@@ -2513,8 +2525,8 @@ private:
                     "Inside operator not legal on non-unpacked arrays (IEEE 1800-2017 11.4.13)");
                 continue;
             } else {
-                inewp = new AstEqWild{itemp->fileline(), nodep->exprp()->cloneTree(true),
-                                      itemp->unlinkFrBack()};
+                inewp = AstEqWild::newTyped(itemp->fileline(), nodep->exprp()->cloneTree(true),
+                                            itemp->unlinkFrBack());
             }
             if (newp) {
                 newp = new AstOr{nodep->fileline(), newp, inewp};
