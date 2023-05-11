@@ -556,13 +556,14 @@ private:
     void visit(AstNodeProcedure* nodep) override {
         iterateChildren(nodep);
         if (nodep->user2()) nodep->setSuspendable();
-        if (nodep->user4()) {
-            nodep->setNeedProcess();
-            if (VN_IS(nodep, Initial)) {
-                nodep->addStmtsp(
-                    new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
-            }
-        }
+        if (nodep->user4()) nodep->setNeedProcess();
+    }
+    void visit(AstInitial* nodep) override {
+          visit(static_cast<AstNodeProcedure*>(nodep));
+          if (nodep->needProcess() && !nodep->user1SetOnce()) {
+              nodep->addStmtsp(
+                  new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
+          }
     }
     void visit(AstAlways* nodep) override {
         if (nodep->user1SetOnce()) return;
