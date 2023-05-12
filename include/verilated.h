@@ -214,14 +214,12 @@ class VL_SCOPED_CAPABILITY VerilatedLockGuard final {
 private:
     VerilatedMutex& m_mutexr;
 
-public:
-    /// Construct and hold given mutex lock until destruction or unlock()
-    explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr) VL_MT_SAFE
-        : m_mutexr(mutexr) {  // Need () or GCC 4.8 false warning
-        m_mutexr.lock();
-    }
-    /// Destruct and unlock the mutex
-    ~VerilatedLockGuard() VL_RELEASE() { m_mutexr.unlock(); }
+    // lock() and unlock() are private to avoid mistakes related to manual unlocking and locking of
+    // the LockGuard object. Double unlock is an undefined behavior, so if the mutex is unlocked
+    // and not locked again, it will be unlocked the second time in destructor. If you really need
+    // to manually (un)lock a mutex somewhere, do it directly on the mutex, probably also skipping
+    // use of the LockGuard altogether.
+
     /// Lock the mutex
     void lock() VL_ACQUIRE() VL_MT_SAFE { m_mutexr.lock(); }
     /// Unlock the mutex
@@ -235,6 +233,15 @@ public:
         VL_ACQUIRE() VL_MT_SAFE {
         m_mutexr.lockCheckStopRequest(checkStopRequestFunction);
     }
+
+public:
+    /// Construct and hold given mutex lock until destruction or unlock()
+    explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr) VL_MT_SAFE
+        : m_mutexr(mutexr) {  // Need () or GCC 4.8 false warning
+        m_mutexr.lock();
+    }
+    /// Destruct and unlock the mutex
+    ~VerilatedLockGuard() VL_RELEASE() { m_mutexr.unlock(); }
 };
 
 // Internals: Remember the calling thread at construction time, and make
