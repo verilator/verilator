@@ -3228,7 +3228,7 @@ void VerilatedAssertOneThread::fatal_different() VL_MT_SAFE {
 //===========================================================================
 // VlDeleter:: Methods
 
-void VlDeleter::deleteAll() {
+void VlDeleter::deleteAll() VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_deleteMutex) VL_MT_SAFE {
     while (true) {
         {
             VerilatedLockGuard lock{m_mutex};
