@@ -3302,8 +3302,7 @@ private:
             }
             VSymEnt* const foundp = lookSymp->findIdFallback(cpackagerefp->name());
             if (foundp) {
-                AstClass* const classp = VN_CAST(foundp->nodep(), Class);
-                if (classp) {
+                if (AstClass* const classp = VN_CAST(foundp->nodep(), Class)) {
                     AstPin* paramsp = cpackagerefp->paramsp();
                     if (paramsp) {
                         paramsp = paramsp->cloneTree(true);

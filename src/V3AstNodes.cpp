@@ -1505,7 +1505,7 @@ AstClass* AstClassExtends::classp() const {
     const AstNodeDType* const dtp = dtypep() ? dtypep() : childDTypep();
     const AstClassRefDType* const refp = VN_CAST(dtp, ClassRefDType);
     if (refp && !refp->paramsp()) {
-        // class already resolved
+        // Class already resolved
         return refp->classp();
     } else {
         return nullptr;
