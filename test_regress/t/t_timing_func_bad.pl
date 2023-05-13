@@ -13,7 +13,6 @@ scenarios(linter => 1);
 lint(
     fails => 1,
     expect_filename => $Self->{golden_filename},
-    verilator_flags2 => ['--no-timing'],
     );
 
 ok(1);
