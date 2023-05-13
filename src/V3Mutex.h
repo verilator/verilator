@@ -141,19 +141,6 @@ public:
     }
     /// Destruct and unlock the mutex
     ~V3LockGuardImp() VL_RELEASE() { m_mutexr.unlock(); }
-    /// Lock the mutex
-    void lock() VL_ACQUIRE() VL_MT_SAFE { m_mutexr.lock(); }
-    /// Unlock the mutex
-    void unlock() VL_RELEASE() VL_MT_SAFE { m_mutexr.unlock(); }
-    /// Acquire/lock mutex and check for stop request.
-    /// It tries to lock the mutex and if it fails, it check if stop request was send.
-    /// It returns after locking mutex.
-    /// This function should be extracted to V3ThreadPool, but due to clang thread-safety
-    /// limitations it needs to be placed here.
-    void lockCheckStopRequest(std::function<void()> checkStopRequestFunction)
-        VL_ACQUIRE() VL_MT_SAFE {
-        m_mutexr.lockCheckStopRequest(checkStopRequestFunction);
-    }
 };
 
 using V3Mutex = V3MutexImp<std::mutex>;

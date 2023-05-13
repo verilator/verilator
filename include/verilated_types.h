@@ -1138,7 +1138,7 @@ public:
     }
 
     // Deletes all queued garbage objects.
-    void deleteAll() VL_MT_SAFE;
+    void deleteAll() VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_deleteMutex) VL_MT_SAFE;
 };
 
 //===================================================================

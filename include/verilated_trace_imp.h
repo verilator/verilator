@@ -482,7 +482,7 @@ VL_ATTR_NOINLINE void VerilatedTrace<VL_SUB_T, VL_BUF_T>::ParallelWorkerData::wa
     // We have been spinning for a while, so yield the thread
     VerilatedLockGuard lock{m_mutex};
     m_waiting = true;
-    m_cv.wait(lock, [this] { return m_ready.load(std::memory_order_relaxed); });
+    m_cv.wait(m_mutex, [this] { return m_ready.load(std::memory_order_relaxed); });
     m_waiting = false;
 }
 

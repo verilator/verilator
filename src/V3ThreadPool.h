@@ -67,9 +67,10 @@ class V3ThreadPool final {
     // CONSTRUCTORS
     V3ThreadPool() = default;
     ~V3ThreadPool() {
-        V3LockGuard lock{m_mutex};
-        m_queue = {};  // make sure queue is empty
-        lock.unlock();
+        {
+            V3LockGuard lock{m_mutex};
+            m_queue = {};  // make sure queue is empty
+        }
         resize(0);
     }
 
@@ -82,7 +83,7 @@ public:
     }
 
     // Resize thread pool to n workers (queue must be empty)
-    void resize(unsigned n) VL_MT_UNSAFE;
+    void resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_stoppedJobsMutex);
 
     // Enqueue a job for asynchronous execution
     // Due to missing support for lambda annotations in c++11,
@@ -165,11 +166,10 @@ private:
     }
 
     // Waits until exclusive access job completes its job
-    void waitStopRequested(V3LockGuard& stoppedJobLock) VL_REQUIRES(m_stoppedJobsMutex);
+    void waitStopRequested() VL_REQUIRES(m_stoppedJobsMutex);
 
     // Waits until all other jobs are stopped
-    void waitOtherThreads(V3LockGuard& stoppedJobLock) VL_MT_SAFE_EXCLUDES(m_mutex)
-        VL_REQUIRES(m_stoppedJobsMutex);
+    void waitOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex) VL_REQUIRES(m_stoppedJobsMutex);
 
     template <typename T>
     void pushJob(std::shared_ptr<std::promise<T>>& prom, std::function<T()>&& f) VL_MT_SAFE;

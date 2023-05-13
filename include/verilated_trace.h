@@ -75,7 +75,7 @@ public:
     // Get an element from the front of the queue. Blocks if none available
     T get() VL_MT_SAFE_EXCLUDES(m_mutex) {
         VerilatedLockGuard lock{m_mutex};
-        m_cv.wait(lock, [this]() VL_REQUIRES(m_mutex) { return !m_queue.empty(); });
+        m_cv.wait(m_mutex, [this]() VL_REQUIRES(m_mutex) { return !m_queue.empty(); });
         assert(!m_queue.empty());
         T value = m_queue.front();
         m_queue.pop_front();
