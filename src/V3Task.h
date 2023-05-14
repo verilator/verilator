@@ -34,6 +34,8 @@ using V3TaskConnects = std::vector<V3TaskConnect>;  // [ [port, pin-connects-to]
 //============================================================================
 
 class V3Task final {
+    static const char* const s_dpiTemporaryVarSuffix;
+
 public:
     static void taskAll(AstNetlist* nodep);
     /// Return vector of [port, pin-connects-to]  (SLOW)
@@ -41,7 +43,7 @@ public:
     static string assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
                                       const string& toSuffix, const string& frPrefix = "");
     static string assignDpiToInternal(const string& lhsName, AstVar* rhsp);
-    static const char* dpiTemporaryVarSuffix();
+    static const char* dpiTemporaryVarSuffix() VL_MT_SAFE { return s_dpiTemporaryVarSuffix; }
 };
 
 #endif  // Guard

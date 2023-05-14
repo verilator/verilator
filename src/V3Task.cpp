@@ -1554,6 +1554,8 @@ public:
 //######################################################################
 // Task class functions
 
+const char* const V3Task::s_dpiTemporaryVarSuffix = "__Vcvt";
+
 V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp) {
     // Output list will be in order of the port declaration variables (so
     // func calls are made right in C)
@@ -1809,11 +1811,6 @@ string V3Task::assignDpiToInternal(const string& lhsName, AstVar* varp) {
         }
     }
     return statements;
-}
-
-const char* V3Task::dpiTemporaryVarSuffix() {
-    static const char* const suffix = "__Vcvt";
-    return suffix;
 }
 
 void V3Task::taskAll(AstNetlist* nodep) {
