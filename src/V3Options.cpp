@@ -23,6 +23,7 @@
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3Global.h"
+#include "V3Mutex.h"
 #include "V3OptionParser.h"
 #include "V3Os.h"
 #include "V3PreShell.h"
