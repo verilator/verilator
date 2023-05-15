@@ -821,7 +821,9 @@ public:
     void dump(std::ostream& str) const override;
     bool hasDType() const override { return true; }
     string verilogKwd() const override { return isImplements() ? "implements" : "extends"; }
-    AstClass* classp() const;  // Class being extended (after link and instantiation if needed)
+    // Class being extended (after link and instantiation if needed)
+    AstClass* classOrNullp() const;
+    AstClass* classp() const;  // Like above, but throws error if nulll
     bool isImplements() const { return m_isImplements; }
     void parameterized(bool flag) { m_parameterized = flag; }
     bool parameterized() const { return m_parameterized; }

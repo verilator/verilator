@@ -1501,7 +1501,7 @@ void AstClassExtends::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isImplements()) str << " [IMPLEMENTS]";
 }
-AstClass* AstClassExtends::classp() const {
+AstClass* AstClassExtends::classOrNullp() const {
     const AstNodeDType* const dtp = dtypep() ? dtypep() : childDTypep();
     const AstClassRefDType* const refp = VN_CAST(dtp, ClassRefDType);
     if (refp && !refp->paramsp()) {
@@ -1510,6 +1510,11 @@ AstClass* AstClassExtends::classp() const {
     } else {
         return nullptr;
     }
+}
+AstClass* AstClassExtends::classp() const {
+    AstClass* const clsp = classOrNullp();
+    UASSERT_OBJ(clsp, this, "Extended class is unresolved");
+    return clsp;
 }
 void AstClassRefDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);

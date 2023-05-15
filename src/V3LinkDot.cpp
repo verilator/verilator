@@ -3279,7 +3279,7 @@ private:
         // If it is a parameterized case, the class will be resolved after V3Param.cpp
         if (nodep->user3SetOnce()) return;
         // If the class is resolved, there is nothing more to do
-        if (nodep->classp()) return;
+        if (nodep->classOrNullp()) return;
         if (m_statep->forPrimary()) {
             AstNode* cprp = nodep->classOrPkgsp();
             VSymEnt* lookSymp = m_curSymp;
@@ -3397,7 +3397,7 @@ private:
                     }
                 }
 
-                if (AstClass* const classp = cextp->classp()) {
+                if (AstClass* const classp = cextp->classOrNullp()) {
                     // Already converted. Update symbol table to link unlinked members.
                     // Base class has to be visited in a case if its extends statement
                     // needs to be handled. Recursive inheritance was already checked.
