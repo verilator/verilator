@@ -2779,6 +2779,8 @@ private:
                     // may be true only in the first stage of linking.
                     // Mark that the Dot statement can't be resolved.
                     m_ds.m_unresolvedClass = true;
+                    // If the symbol was a scope name, it would be resolved.
+                    if (m_ds.m_dotPos == DP_SCOPE) m_ds.m_dotPos = DP_MEMBER;
                 } else {
                     // Cells/interfaces can't be implicit
                     const bool isCell = foundp ? VN_IS(foundp->nodep(), Cell) : false;
@@ -3173,6 +3175,11 @@ private:
     void visit(AstSelBit* nodep) override {
         if (nodep->user3SetOnce()) return;
         iterateAndNextNull(nodep->fromp());
+        if (m_ds.m_unresolvedClass) {
+            UASSERT_OBJ(m_ds.m_dotPos != DP_SCOPE, nodep,
+                        "Object of unresolved class on scope position in dotted reference");
+            return;
+        }
         if (m_ds.m_dotPos
             == DP_SCOPE) {  // Already under dot, so this is {modulepart} DOT {modulepart}
             UINFO(9, "  deferring until after a V3Param pass: " << nodep << endl);
