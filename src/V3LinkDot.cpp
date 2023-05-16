@@ -2772,49 +2772,57 @@ private:
                     }
                 }
             }
-            // Don't throw error ifthe reference is inside a class that extends a param, because
-            // some members can't be linked in such a case. m_insideClassExtParam may be true only
-            // in the first stage of linking.
-            if (!ok && !m_insideClassExtParam) {
-                // Cells/interfaces can't be implicit
-                const bool isCell = foundp ? VN_IS(foundp->nodep(), Cell) : false;
-                const bool checkImplicit = (!m_ds.m_dotp && m_ds.m_dotText == "" && !isCell);
-                const bool err = !(checkImplicit && m_statep->implicitOk(m_modp, nodep->name()));
-                if (err) {
-                    if (foundp) {
-                        nodep->v3error("Found definition of '"
-                                       << m_ds.m_dotText << (m_ds.m_dotText == "" ? "" : ".")
-                                       << nodep->prettyName() << "'"
-                                       << " as a " << foundp->nodep()->typeName()
-                                       << " but expected a " << expectWhat);
-                    } else if (m_ds.m_dotText == "") {
-                        UINFO(7, "   ErrParseRef curSymp=se" << cvtToHex(m_curSymp)
-                                                             << " ds=" << m_ds.ascii() << endl);
-                        const string suggest = m_statep->suggestSymFallback(
-                            m_ds.m_dotSymp, nodep->name(), VNodeMatcher{});
-                        nodep->v3error("Can't find definition of "
-                                       << expectWhat << ": " << nodep->prettyNameQ() << '\n'
-                                       << (suggest.empty() ? "" : nodep->warnMore() + suggest));
-                    } else {
-                        nodep->v3error("Can't find definition of "
-                                       << (!baddot.empty() ? AstNode::prettyNameQ(baddot)
-                                                           : nodep->prettyNameQ())
-                                       << " in dotted " << expectWhat << ": '"
-                                       << m_ds.m_dotText + "." + nodep->prettyName() << "'");
-                        if (okSymp) {
-                            okSymp->cellErrorScopes(nodep, AstNode::prettyName(m_ds.m_dotText));
+            if (!ok) {
+                if (m_insideClassExtParam) {
+                    // Don't throw error if the reference is inside a class that extends a param,
+                    // because some members can't be linked in such a case. m_insideClassExtParam
+                    // may be true only in the first stage of linking.
+                    // Mark that the Dot statement can't be resolved.
+                    m_ds.m_unresolvedClass = true;
+                } else {
+                    // Cells/interfaces can't be implicit
+                    const bool isCell = foundp ? VN_IS(foundp->nodep(), Cell) : false;
+                    const bool checkImplicit = (!m_ds.m_dotp && m_ds.m_dotText == "" && !isCell);
+                    const bool err
+                        = !(checkImplicit && m_statep->implicitOk(m_modp, nodep->name()));
+                    if (err) {
+                        if (foundp) {
+                            nodep->v3error("Found definition of '"
+                                           << m_ds.m_dotText << (m_ds.m_dotText == "" ? "" : ".")
+                                           << nodep->prettyName() << "'"
+                                           << " as a " << foundp->nodep()->typeName()
+                                           << " but expected a " << expectWhat);
+                        } else if (m_ds.m_dotText == "") {
+                            UINFO(7, "   ErrParseRef curSymp=se"
+                                         << cvtToHex(m_curSymp) << " ds=" << m_ds.ascii() << endl);
+                            const string suggest = m_statep->suggestSymFallback(
+                                m_ds.m_dotSymp, nodep->name(), VNodeMatcher{});
+                            nodep->v3error(
+                                "Can't find definition of "
+                                << expectWhat << ": " << nodep->prettyNameQ() << '\n'
+                                << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+                        } else {
+                            nodep->v3error("Can't find definition of "
+                                           << (!baddot.empty() ? AstNode::prettyNameQ(baddot)
+                                                               : nodep->prettyNameQ())
+                                           << " in dotted " << expectWhat << ": '"
+                                           << m_ds.m_dotText + "." + nodep->prettyName() << "'");
+                            if (okSymp) {
+                                okSymp->cellErrorScopes(nodep,
+                                                        AstNode::prettyName(m_ds.m_dotText));
+                            }
                         }
+                        m_ds.m_dotErr = true;
                     }
-                    m_ds.m_dotErr = true;
-                }
-                if (checkImplicit) {
-                    // Create if implicit, and also if error (so only complain once)
-                    // Else if a scope is allowed, making a signal won't help error cascade
-                    AstVarRef* const newp
-                        = new AstVarRef{nodep->fileline(), nodep->name(), VAccess::READ};
-                    nodep->replaceWith(newp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    createImplicitVar(m_curSymp, newp, m_modp, m_modSymp, err);
+                    if (checkImplicit) {
+                        // Create if implicit, and also if error (so only complain once)
+                        // Else if a scope is allowed, making a signal won't help error cascade
+                        AstVarRef* const newp
+                            = new AstVarRef{nodep->fileline(), nodep->name(), VAccess::READ};
+                        nodep->replaceWith(newp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                        createImplicitVar(m_curSymp, newp, m_modp, m_modSymp, err);
+                    }
                 }
             }
         }

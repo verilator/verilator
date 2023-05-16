@@ -34,8 +34,10 @@ class Getter2;
 endclass
 
 class Foo #(type T=Getter1);
+   T foo_field;
    int x;
    function new(int y);
+      foo_field = new;
       x = y;
    endfunction
 endclass
@@ -49,6 +51,10 @@ class Bar #(type S=Getter2) extends Foo#(S);
 
    function int get_field_int;
       return field.get_int();
+   endfunction
+
+   function int get_foo_field_int;
+      return foo_field.get_int();
    endfunction
 endclass
 
@@ -81,6 +87,7 @@ module t (/*AUTOARG*/);
 
       if (b.x != 1) $stop;
       if (b.get_field_int() != 2) $stop;
+      if (b.get_foo_field_int() != 2) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
