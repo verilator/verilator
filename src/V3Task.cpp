@@ -550,12 +550,6 @@ private:
             ccallp = cnewp;
             // Parent AstNew will replace with this CNew
             cnewpr = cnewp;
-        } else if (refp->taskp()->isFromStd() && refp->taskp()->name() == "self") {
-            ccallp = new AstCCall{refp->fileline(), cfuncp};
-            ccallp->dtypeSetVoid();
-            AstCAwait* cawaitp = new AstCAwait{refp->fileline(), ccallp};
-            cawaitp->dtypeSetVoid();
-            beginp->addNext(cawaitp->makeStmt());
         } else if (const AstMethodCall* const mrefp = VN_CAST(refp, MethodCall)) {
             ccallp = new AstCMethodCall{refp->fileline(), mrefp->fromp()->unlinkFrBack(), cfuncp};
             ccallp->dtypeSetVoid();
@@ -1324,11 +1318,9 @@ private:
 
         if (nodep->isFromStd() && nodep->name() == "self"
             && v3Global.opt.timing().isSetTrue()) {
-            // Ensure callers of this method become processes
-            cfuncp->rtnType("VlCoroutine");
-            cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
             // Mark the fact that this function allocates std::process
             cfuncp->needProcess(true);
+            cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
         }
 
         // Delete rest of cloned task and return new func

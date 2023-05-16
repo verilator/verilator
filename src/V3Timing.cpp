@@ -277,6 +277,8 @@ private:
 
     // Other
     SenTreeFinder m_finder{m_netlistp};  // Sentree finder and uniquifier
+    using ActiveMap = std::map<AstNode*, AstActive*>;
+    ActiveMap m_alwaysActiveMap;  // Table of active blocks assigned to always blocks
 
     // METHODS
     // Find net delay on the LHS of an assignment
@@ -599,8 +601,6 @@ private:
                 nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
             }
         }
-        // If first marked as using std::process
-        if (nodep->user4() && !nodep->needProcess()) nodep->needProcess(true);
     }
     void visit(AstNodeCCall* nodep) override {
         if (nodep->funcp()->user2() && !nodep->user1SetOnce()) {  // If suspendable
