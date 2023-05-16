@@ -2613,7 +2613,7 @@ private:
         if (nodep->didWidthAndSet()) return;
         // If the package is std::process, set m_process type to VlProcessRef
         if (m_pkgp && m_pkgp->name() == "std" && nodep->name() == "process") {
-            if (AstVar *const varp = VN_CAST(nodep->findMember("m_process"), Var)) {
+            if (AstVar* const varp = VN_CAST(nodep->findMember("m_process"), Var)) {
                 AstBasicDType* const dtypep = new AstBasicDType{
                     nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
                 v3Global.rootp()->typeTablep()->addTypesp(dtypep);

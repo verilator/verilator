@@ -1316,8 +1316,7 @@ private:
             }
         }
 
-        if (nodep->isFromStd() && nodep->name() == "self"
-            && v3Global.opt.timing().isSetTrue()) {
+        if (nodep->isFromStd() && nodep->name() == "self" && v3Global.opt.timing().isSetTrue()) {
             // Mark the fact that this function allocates std::process
             cfuncp->needProcess(true);
             cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});

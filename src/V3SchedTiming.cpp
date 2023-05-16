@@ -157,16 +157,16 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
         // METHODS
         // Add arguments to a resume() call based on arguments in the suspending call
         void addResumePins(AstCMethodHard* const resumep, AstNodeExpr* pinsp) {
-          AstCExpr* const exprp = VN_CAST(pinsp, CExpr);
-          AstText* const textp = VN_CAST(exprp->exprsp(), Text);
-          if (textp && textp->text() == "vlProcess") {
-              // vlProcess pointer isn't used by any of resume() methods, skip it
-              if ((pinsp = VN_CAST(pinsp->nextp(), NodeExpr))) {
+            AstCExpr* const exprp = VN_CAST(pinsp, CExpr);
+            AstText* const textp = VN_CAST(exprp->exprsp(), Text);
+            if (textp && textp->text() == "vlProcess") {
+                // vlProcess pointer isn't used by any of resume() methods, skip it
+                if ((pinsp = VN_CAST(pinsp->nextp(), NodeExpr))) {
+                    resumep->addPinsp(pinsp->cloneTree(false));
+                }
+            } else {
                 resumep->addPinsp(pinsp->cloneTree(false));
-              }
-          } else {
-              resumep->addPinsp(pinsp->cloneTree(false));
-          }
+            }
         }
         // Create an active with a timing scheduler resume() call
         void createResumeActive(AstCAwait* const awaitp) {
@@ -389,7 +389,8 @@ void transformForks(AstNetlist* const netlistp) {
                 newfuncp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
                 if (m_beginNeedProcess) {
                     newfuncp->needProcess(true);
-                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
+                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(),
+                                                     "vlProcess->state(VlProcess::FINISHED);\n"});
                 }
                 if (!m_beginHasAwaits) {
                     // co_return at the end (either that or a co_await is required in a coroutine
@@ -397,7 +398,8 @@ void transformForks(AstNetlist* const netlistp) {
                 }
                 remapLocals(newfuncp, callp);
             } else {
-                // The begin has neither awaits nor a process::self call, just inline the statements
+                // The begin has neither awaits nor a process::self call, just inline the
+                // statements
                 nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
             }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);

@@ -561,11 +561,11 @@ private:
         if (nodep->user4()) nodep->setNeedProcess();
     }
     void visit(AstInitial* nodep) override {
-          visit(static_cast<AstNodeProcedure*>(nodep));
-          if (nodep->needProcess() && !nodep->user1SetOnce()) {
-              nodep->addStmtsp(
-                  new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
-          }
+        visit(static_cast<AstNodeProcedure*>(nodep));
+        if (nodep->needProcess() && !nodep->user1SetOnce()) {
+            nodep->addStmtsp(
+                new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
+        }
     }
     void visit(AstAlways* nodep) override {
         if (nodep->user1SetOnce()) return;
