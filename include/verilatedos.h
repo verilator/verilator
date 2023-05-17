@@ -430,6 +430,11 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
     Type(const Type& other) = delete; \
     Type& operator=(const Type&) = delete
 
+// Declare a class as unmovable; put after a private:
+#define VL_UNMOVABLE(Type) \
+    Type(Type&& other) = delete; \
+    Type& operator=(Type&&) = delete
+
 //=========================================================================
 // Verilated function size macros
 
