@@ -85,6 +85,7 @@ public:
     /// Construct mutex (without locking it)
     V3MutexImp() = default;
     ~V3MutexImp() = default;
+    VL_UNCOPYABLE(V3MutexImp);
     const V3MutexImp& operator!() const { return *this; }  // For -fthread_safety
     /// Acquire/lock mutex
     void lock() VL_ACQUIRE() VL_MT_SAFE {
