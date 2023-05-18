@@ -1316,11 +1316,8 @@ private:
             }
         }
 
-        if (nodep->isFromStd() && nodep->name() == "self" && v3Global.opt.timing().isSetTrue()) {
-            // Mark the fact that this function allocates std::process
-            cfuncp->needProcess(true);
-            cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
-        }
+        // Mark the fact that this function allocates std::process
+        if (nodep->isFromStd() && nodep->name() == "self") cfuncp->setNeedProcess();
 
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

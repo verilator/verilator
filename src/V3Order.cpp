@@ -1243,7 +1243,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
             const string name = cfuncName(modp, domainp, scopep, nodep);
             newFuncpr
                 = new AstCFunc{nodep->fileline(), name, scopep, suspendable ? "VlCoroutine" : ""};
-            newFuncpr->needProcess(needProcess);
+            if (needProcess) newFuncpr->setNeedProcess();
             newFuncpr->isStatic(false);
             newFuncpr->isLoose(true);
             newFuncpr->slow(slow);

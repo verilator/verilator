@@ -675,7 +675,7 @@ public:
     bool isVirtual() const { return m_isVirtual; }
     void isVirtual(bool flag) { m_isVirtual = flag; }
     bool needProcess() const { return m_needProcess; }
-    void needProcess(bool flag) { m_needProcess = flag; }
+    void setNeedProcess() { m_needProcess = true; }
     bool entryPoint() const { return m_entryPoint; }
     void entryPoint(bool flag) { m_entryPoint = flag; }
     bool pure() const { return m_pure; }

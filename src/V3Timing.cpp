@@ -94,11 +94,10 @@ private:
     //  AstClass::user1()                        -> bool.               Set true if the class
     //                                                                  member cache has been
     //                                                                  refreshed.
-    //  Ast{NodeProcedure,CFunc,Begin}::user2()  -> bool.               Set true if process/task is
-    //                                                                  suspendable
+    //  Ast{NodeProcedure,CFunc,Begin}::user2()  -> int.                Set to >=1 if process/task is
+    //                                                                  suspendable and to 2 if also
+    //                                                                  needs process metadata.
     //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_depGraph
-    //  Ast{NodeProcedure,CFunc,Begin}::user4()  -> bool.         Set true if process/task
-    //                                                            allocates std::process
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
@@ -117,11 +116,12 @@ private:
     }
     // Propagate suspendable flag to all nodes that depend on the given one
     void propagateSuspendable(TimingDependencyVertex* const vxp) {
+        auto* const parentp = vxp->nodep();
         for (V3GraphEdge* edgep = vxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
             auto* const depVxp = static_cast<TimingDependencyVertex*>(edgep->fromp());
             AstNode* const depp = depVxp->nodep();
-            if (!depp->user2()) {
-                depp->user2(true);
+            if (depp->user2() < parentp->user2()) {
+                depp->user2(parentp->user2());
                 propagateSuspendable(depVxp);
             }
         }
@@ -144,6 +144,7 @@ private:
         m_procp = nodep;
         iterateChildren(nodep);
         TimingDependencyVertex* const vxp = getDependencyVertex(nodep);
+        if (nodep->needProcess()) nodep->user2(2);
         if (!m_classp) return;
         // If class method (possibly overrides another method)
         if (!m_classp->user1SetOnce()) m_classp->repairCache();
@@ -164,17 +165,11 @@ private:
                 // the root of the inheritance hierarchy and check if the original method is
                 // virtual or not.
                 if (!cextp->classp()->user1SetOnce()) cextp->classp()->repairCache();
-                if (AstCFunc* const overriddenp
+                if (auto* const overriddenp
                     = VN_CAST(cextp->classp()->findMember(nodep->name()), CFunc)) {
-                    if (overriddenp->user2()) {  // If it's suspendable
-                        nodep->user2(true);  // Then we are also suspendable
-                        // As both are suspendable already, there is no need to add it as our
-                        // dependency or self to its dependencies
-                    } else {
-                        // Make a dependency cycle, as being suspendable should propagate both
-                        // up and down the inheritance tree
-                        TimingDependencyVertex* const overriddenVxp
-                            = getDependencyVertex(overriddenp);
+                    if (nodep->user2() < overriddenp->user2()) nodep->user2(overriddenp->user2());  // Then we are also suspendable
+                    if (nodep->user2() < 2) {
+                        TimingDependencyVertex* const overriddenVxp = getDependencyVertex(overriddenp);
                         new V3GraphEdge{&m_depGraph, vxp, overriddenVxp, 1};
                         new V3GraphEdge{&m_depGraph, overriddenVxp, vxp, 1};
                     }
@@ -186,11 +181,8 @@ private:
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        if (nodep->funcp()->user2()) {
-            m_procp->user2(true);
-            // Both the caller and the callee are suspendable, no need to make dependency edges
-            // between them
-        } else {
+        if (m_procp->user2() < nodep->funcp()->user2() == 1) m_procp->user2(nodep->funcp()->user2());
+        if (m_procp->user2() < 2) {
             TimingDependencyVertex* const procVxp = getDependencyVertex(m_procp);
             TimingDependencyVertex* const funcVxp = getDependencyVertex(nodep->funcp());
             new V3GraphEdge{&m_depGraph, procVxp, funcVxp, 1};
@@ -205,7 +197,7 @@ private:
     void visit(AstNode* nodep) override {
         if (nodep->isTimingControl()) {
             v3Global.setUsesTiming();
-            if (m_procp) m_procp->user2(true);
+            if (m_procp) m_procp->user2(1);
         }
         iterateChildren(nodep);
     }
@@ -277,8 +269,6 @@ private:
 
     // Other
     SenTreeFinder m_finder{m_netlistp};  // Sentree finder and uniquifier
-    using ActiveMap = std::map<AstNode*, AstActive*>;
-    ActiveMap m_alwaysActiveMap;  // Table of active blocks assigned to always blocks
 
     // METHODS
     // Find net delay on the LHS of an assignment
@@ -557,8 +547,8 @@ private:
     }
     void visit(AstNodeProcedure* nodep) override {
         iterateChildren(nodep);
-        if (nodep->user2()) nodep->setSuspendable();
-        if (nodep->user4()) nodep->setNeedProcess();
+        if (nodep->user2() >= 1) nodep->setSuspendable();
+        if (nodep->user2() >= 2) nodep->setNeedProcess();
     }
     void visit(AstInitial* nodep) override {
         visit(static_cast<AstNodeProcedure*>(nodep));
@@ -571,6 +561,7 @@ private:
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
         if (!nodep->user2()) return;
+        if (nodep->user2() == 2) nodep->setNeedProcess();
         nodep->setSuspendable();
         FileLine* const flp = nodep->fileline();
         AstSenTree* const sensesp = m_activep->sensesp();
@@ -601,6 +592,7 @@ private:
                 nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
             }
         }
+        if (nodep->user2() == 2) nodep->setNeedProcess();
     }
     void visit(AstNodeCCall* nodep) override {
         if (nodep->funcp()->user2() && !nodep->user1SetOnce()) {  // If suspendable

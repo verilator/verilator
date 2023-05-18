@@ -388,7 +388,7 @@ void transformForks(AstNetlist* const netlistp) {
                 // Put the begin's statements in the function, delete the begin
                 newfuncp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
                 if (m_beginNeedProcess) {
-                    newfuncp->needProcess(true);
+                    newfuncp->setNeedProcess();
                     newfuncp->addStmtsp(new AstCStmt{nodep->fileline(),
                                                      "vlProcess->state(VlProcess::FINISHED);\n"});
                 }
