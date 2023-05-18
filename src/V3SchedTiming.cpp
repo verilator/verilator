@@ -159,8 +159,8 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
         void addResumePins(AstCMethodHard* const resumep, AstNodeExpr* pinsp) {
             AstCExpr* const exprp = VN_CAST(pinsp, CExpr);
             AstText* const textp = VN_CAST(exprp->exprsp(), Text);
-            if (textp && textp->text() == "vlProcess") {
-                // vlProcess pointer isn't used by any of resume() methods, skip it
+            if (textp) {
+                // The first argument, vlProcess, isn't used by any of resume() methods, skip it
                 if ((pinsp = VN_CAST(pinsp->nextp(), NodeExpr))) {
                     resumep->addPinsp(pinsp->cloneTree(false));
                 }

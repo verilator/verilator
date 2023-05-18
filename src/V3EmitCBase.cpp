@@ -79,7 +79,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
         args += prefixNameProtect(EmitCParentModule::get(nodep));
         args += "* vlSelf";
     }
-    if (nodep->isCoroutine()) {
+    if (nodep->needProcess()) {
         if (!args.empty()) args += ", ";
         args += "VlProcessRef vlProcess";
     }

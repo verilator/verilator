@@ -246,6 +246,7 @@ private:
     AstClass* m_classp = nullptr;  // Current class
     AstScope* m_scopep = nullptr;  // Current scope
     AstActive* m_activep = nullptr;  // Current active
+    AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     double m_timescaleFactor = 1.0;  // Factor to scale delays by
 
     // Unique names
@@ -457,7 +458,7 @@ private:
     // Adds process pointer to a hardcoded method call
     void addProcessInfo(AstCMethodHard* const methodp) const {
         FileLine* const flp = methodp->fileline();
-        AstCExpr* const ap = new AstCExpr{flp, "vlProcess", 0};
+        AstCExpr* const ap = new AstCExpr{flp, m_procp && m_procp->user2() == 2 ? "vlProcess" : "nullptr", 0};
         ap->dtypeSetVoid();
         methodp->addPinsp(ap);
     }
@@ -546,6 +547,8 @@ private:
         m_activep = nullptr;
     }
     void visit(AstNodeProcedure* nodep) override {
+        VL_RESTORER(m_procp);
+        m_procp = nodep;
         iterateChildren(nodep);
         if (nodep->user2() >= 1) nodep->setSuspendable();
         if (nodep->user2() >= 2) nodep->setNeedProcess();
@@ -579,6 +582,8 @@ private:
         m_activep->addNextHere(activep);
     }
     void visit(AstCFunc* nodep) override {
+        VL_RESTORER(m_procp);
+        m_procp = nodep;
         iterateChildren(nodep);
         if (nodep->user2()) {
             nodep->rtnType("VlCoroutine");
@@ -865,6 +870,11 @@ private:
             nodep->replaceWith(loopp);
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+    void visit(AstBegin* nodep) override {
+        VL_RESTORER(m_procp);
+        m_procp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstFork* nodep) override {
         if (nodep->user1SetOnce()) return;

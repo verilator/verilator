@@ -417,14 +417,12 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
         puts(selfPointer);
         comma = true;
     }
-    if (nodep->funcp()->isCoroutine()) {
+    if (nodep->funcp()->needProcess()) {
         if (comma) puts(", ");
         if (VN_IS(nodep->backp(), CAwait)) {
             puts("vlProcess");
-        } else if (nodep->funcp()->needProcess()) {
-            puts("std::make_shared<VlProcess>()");
         } else {
-            puts("nullptr");
+            puts("std::make_shared<VlProcess>()");
         }
         comma = true;
     }
