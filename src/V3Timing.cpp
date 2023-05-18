@@ -181,7 +181,7 @@ private:
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        if (m_procp->user2() < nodep->funcp()->user2() == 1) m_procp->user2(nodep->funcp()->user2());
+        if (m_procp->user2() < nodep->funcp()->user2()) m_procp->user2(nodep->funcp()->user2());
         if (m_procp->user2() < 2) {
             TimingDependencyVertex* const procVxp = getDependencyVertex(m_procp);
             TimingDependencyVertex* const funcVxp = getDependencyVertex(nodep->funcp());
