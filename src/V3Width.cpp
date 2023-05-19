@@ -3510,10 +3510,7 @@ private:
                     AstPackage* const packagep = getItemPackage(classp);
                     // Check if it's std
                     if (packagep && packagep->name() == "std") {
-                        if (classp->name() == "process"
-                            && (nodep->name() == "self" || nodep->name() == "status"
-                                || nodep->name() == "kill" || nodep->name() == "await"
-                                || nodep->name() == "suspend" || nodep->name() == "resume")) {
+                        if (classp->name() == "process") {
                             methodCallWarnTiming(nodep, "process");
                         } else if (classp->name() == "semaphore" && nodep->name() == "get") {
                             methodCallWarnTiming(nodep, "semaphore");
