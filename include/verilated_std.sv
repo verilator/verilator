@@ -26,10 +26,6 @@
 // verilator lint_off TIMESCALEMOD
 // verilator lint_off UNUSEDSIGNAL
 package std;
-   // The process class is not implemented, but it's predeclared here,
-   // so the linter accepts references to it.
-   typedef class process;
-
    class mailbox #(type T);
       protected int m_bound;
       protected T m_queue[$];
@@ -45,7 +41,7 @@ package std;
       task put(T message);
 `ifdef VERILATOR_TIMING
          if (m_bound != 0)
-         wait (m_queue.size() < m_bound);
+            wait (m_queue.size() < m_bound);
          m_queue.push_back(message);
 `endif
       endtask
@@ -126,6 +122,7 @@ package std;
       } state;
 
 `ifdef VERILATOR_TIMING
+      // Width visitor changes it to VlProcessRef
       protected chandle m_process;
 `endif
 
