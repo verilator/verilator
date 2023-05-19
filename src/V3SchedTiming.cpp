@@ -409,7 +409,7 @@ void transformForks(AstNetlist* const netlistp) {
             iterateChildrenConst(nodep);
         }
         void visit(AstCCall* nodep) override {
-            m_beginNeedProcess = true;
+            if (nodep->funcp()->needProcess()) m_beginNeedProcess = true;
             iterateChildrenConst(nodep);
         }
 
