@@ -64,7 +64,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // ######################################################################
 
 enum TimingFlag : uint8_t {
-    NORM = 0,  // Normal unsuspendable process
+    NORM = 0,  // Normal non-suspendable process
     SUSP = 1,  // Suspendable
     PROC = 2  // Suspendable with process metadata
 };
@@ -123,16 +123,23 @@ private:
         if (!nodep->user3p()) nodep->user3p(new TimingDependencyVertex{&m_depGraph, nodep});
         return nodep->user3u().to<TimingDependencyVertex*>();
     }
+    // Set timing flag of a node
+    bool setTimingFlag(AstNode *nodep, int flag) {
+        // Properties of flags with higher numbers include properties of flags with lower
+        // numbers, so modify nodep->user2() only if it will increase.
+        if (nodep->user2() < flag) {
+            nodep->user2(flag);
+            return true;
+        }
+        return false;
+    }
     // Propagate suspendable/needProcess flag to all nodes that depend on the given one
     void propagateTimingFlags(TimingDependencyVertex* const vxp) {
         auto* const parentp = vxp->nodep();
         for (V3GraphEdge* edgep = vxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
             auto* const depVxp = static_cast<TimingDependencyVertex*>(edgep->fromp());
             AstNode* const depp = depVxp->nodep();
-            if (depp->user2() < parentp->user2()) {
-                depp->user2(parentp->user2());
-                propagateTimingFlags(depVxp);
-            }
+            if (setTimingFlag(depp, parentp->user2())) propagateTimingFlags(depVxp);
         }
     }
 
@@ -176,10 +183,10 @@ private:
                 if (!cextp->classp()->user1SetOnce()) cextp->classp()->repairCache();
                 if (auto* const overriddenp
                     = VN_CAST(cextp->classp()->findMember(nodep->name()), CFunc)) {
-                    if (nodep->user2() < overriddenp->user2()) {
-                        nodep->user2(overriddenp->user2());  // Then we are also suspendable
-                    }
+                    setTimingFlag(nodep, overriddenp->user2());
                     if (nodep->user2() < PROC) {  // Add a vertex only if the flag can still change
+                        // Make a dependency cycle, as being suspendable should propagate both up
+                        // and down the inheritance tree
                         TimingDependencyVertex* const overriddenVxp = getDependencyVertex(overriddenp);
                         new V3GraphEdge{&m_depGraph, vxp, overriddenVxp, 1};
                         new V3GraphEdge{&m_depGraph, overriddenVxp, vxp, 1};
@@ -192,7 +199,7 @@ private:
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        if (m_procp->user2() < nodep->funcp()->user2()) m_procp->user2(nodep->funcp()->user2());
+        setTimingFlag(m_procp, nodep->funcp()->user2());
         if (m_procp->user2() < PROC) {  // Add a vertex only if the flag can still change
             TimingDependencyVertex* const procVxp = getDependencyVertex(m_procp);
             TimingDependencyVertex* const funcVxp = getDependencyVertex(nodep->funcp());
