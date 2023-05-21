@@ -467,7 +467,7 @@ public:
     void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
     void visit(AstWith* nodep) override {
         // With uses a C++11 lambda
-        putbs("[=](");
+        putbs("[&](");
         if (auto* const argrefp = nodep->indexArgRefp()) {
             putbs(argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
             puts(",");

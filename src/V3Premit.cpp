@@ -157,30 +157,39 @@ private:
     }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
-        {
-            m_cfuncp = nodep;
-            m_tempNames.reset();
-            iterateChildren(nodep);
-        }
+        m_cfuncp = nodep;
+        m_tempNames.reset();
+        iterateChildren(nodep);
     }
+
+#define RESTORER_START_STATEMENT() \
+    VL_RESTORER(m_assignLhs); \
+    VL_RESTORER(m_stmtp);
+
+    // Must use RESTORER_START_STATEMENT() in visitors using this
     void startStatement(AstNode* nodep) {
         m_assignLhs = false;
         if (m_cfuncp) m_stmtp = nodep;
     }
+
     void visit(AstWhile* nodep) override {
         UINFO(4, "  WHILE  " << nodep << endl);
+        RESTORER_START_STATEMENT();
         startStatement(nodep);
         iterateAndNextNull(nodep->precondsp());
         startStatement(nodep);
-        m_inWhilep = nodep;
-        iterateAndNextNull(nodep->condp());
-        m_inWhilep = nullptr;
+        {
+            VL_RESTORER(m_inWhilep);
+            m_inWhilep = nodep;
+            iterateAndNextNull(nodep->condp());
+        }
         startStatement(nodep);
         iterateAndNextNull(nodep->stmtsp());
         iterateAndNextNull(nodep->incsp());
         m_stmtp = nullptr;
     }
     void visit(AstNodeAssign* nodep) override {
+        RESTORER_START_STATEMENT();
         startStatement(nodep);
         {
             bool noopt = false;
@@ -202,22 +211,26 @@ private:
             }
         }
         iterateAndNextNull(nodep->rhsp());
-        m_assignLhs = true;
-        iterateAndNextNull(nodep->lhsp());
-        m_assignLhs = false;
+        {
+            VL_RESTORER(m_assignLhs);
+            m_assignLhs = true;
+            iterateAndNextNull(nodep->lhsp());
+        }
         m_stmtp = nullptr;
     }
     void visit(AstNodeStmt* nodep) override {
         UINFO(4, "  STMT  " << nodep << endl);
+        RESTORER_START_STATEMENT();
         startStatement(nodep);
         iterateChildren(nodep);
         m_stmtp = nullptr;
     }
     void visit(AstTraceInc* nodep) override {
+        RESTORER_START_STATEMENT();
         startStatement(nodep);
+        VL_RESTORER(m_inTracep);
         m_inTracep = nodep;
         iterateChildren(nodep);
-        m_inTracep = nullptr;
         m_stmtp = nullptr;
     }
     void visitShift(AstNodeBiop* nodep) {
@@ -345,6 +358,7 @@ private:
 
     // Autoflush
     void visit(AstDisplay* nodep) override {
+        RESTORER_START_STATEMENT();
         startStatement(nodep);
         iterateChildren(nodep);
         m_stmtp = nullptr;
