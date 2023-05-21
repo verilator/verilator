@@ -20,6 +20,9 @@
 srcdir = @srcdir@
 PYTHON3 = @PYTHON3@
 EXEEXT = @EXEEXT@
+BEAR = @BEAR@
+BEAR_OUTPUT_FLAG = @CFG_BEAR_OUTPUT_FLAG@
+BEAR_CMD_FLAG = @CFG_BEAR_CMD_FLAG@
 # VPATH only does sources; fix install_test's not creating ../bin
 vpath %.h @srcdir@
 
@@ -35,6 +38,14 @@ ifneq ($(words $(CURDIR)),1)
 endif
 
 UNDER_GIT = $(wildcard ${srcdir}/../.git/logs/HEAD)
+
+ifneq ($(BEAR),)
+RM_OBJ_OPT_COMPILE_COMMANDS := rm -f obj_opt/compile_commands.json
+BEAR_OBJ_OPT := $(BEAR) --append $(BEAR_OUTPUT_FLAG) obj_opt/compile_commands.json $(BEAR_CMD_FLAG)
+else
+RM_OBJ_OPT_COMPILE_COMMANDS :=
+BEAR_OBJ_OPT :=
+endif
 
 #*********************************************************************
 
@@ -56,8 +67,9 @@ ifeq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... One build
 	-mv -f $@.tmp $@
 else
 ../bin/verilator_bin$(EXEEXT): obj_opt ../bin prefiles
-	$(MAKE) -C obj_opt -j 1  TGT=../$@ -f ../Makefile_obj serial
-	$(MAKE) -C obj_opt       TGT=../$@ -f ../Makefile_obj
+	$(RM_OBJ_OPT_COMPILE_COMMANDS)
+	$(BEAR_OBJ_OPT) $(MAKE) -C obj_opt -j 1  TGT=../$@ -f ../Makefile_obj serial
+	$(BEAR_OBJ_OPT) $(MAKE) -C obj_opt       TGT=../$@ -f ../Makefile_obj
 endif
 
 dbg: ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT)

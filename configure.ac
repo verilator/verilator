@@ -144,6 +144,49 @@ AC_ARG_ENABLE([longtests],
 AC_SUBST(CFG_WITH_LONGTESTS)
 AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 
+# Flag to enable wrapping build with bear if available
+AC_MSG_CHECKING(whether to use bear)
+AC_ARG_ENABLE([bear],
+              [AS_HELP_STRING([--enable-bear],
+                              [Wrap make with bear to generate
+                               compile_commands.json. Required by some tests])],
+              [case "${enableval}" in
+                yes) CFG_ENABLE_BEAR=yes ;;
+                no)  CFG_ENABLE_BEAR=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-bear]) ;;
+               esac],
+              [CFG_ENABLE_BEAR=no;])
+AC_MSG_RESULT($CFG_ENABLE_BEAR)
+
+if test "$CFG_ENABLE_BEAR" = "yes"; then
+  AC_PATH_PROG(BEAR,bear)
+  if test "x$BEAR" = "x"; then
+    AC_MSG_ERROR([--enable-bear was given but "bear" was not found in your PATH.])
+  fi
+  bear_version=$($BEAR --version | head -1)
+  AC_MSG_RESULT([$BEAR --version = $bear_version])
+
+  # Different versions of Bear use different flags for specifying output file.
+  # Version 3.x also requires "--" before command.
+  # Find out to use.
+  AC_MSG_CHECKING(supported syntax of bear command)
+  if $BEAR --output conftest.json -- true >/dev/null 2>&1; then
+    # Version 3.x
+    CFG_BEAR_OUTPUT_FLAG=--output
+    CFG_BEAR_CMD_FLAG=--
+  elif $BEAR -o conftest.json true >/dev/null 2>&1; then
+    # Version 2.x
+    CFG_BEAR_OUTPUT_FLAG=-o
+    CFG_BEAR_CMD_FLAG=
+  else
+    AC_MSG_RESULT(unknown)
+    AC_MSG_ERROR([$BEAR uses unsupported syntax])
+  fi
+  AC_SUBST(CFG_BEAR_OUTPUT_FLAG)
+  AC_SUBST(CFG_BEAR_CMD_FLAG)
+  AC_MSG_RESULT([$BEAR $CFG_BEAR_OUTPUT_FLAG <file> $CFG_BEAR_CMD_FLAG <cmd>])
+fi
+
 # Compiler flags (ensure they are not empty to avoid configure defaults)
 CFLAGS="$CFLAGS "
 CPPFLAGS="$CPPFLAGS "
