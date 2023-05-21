@@ -1271,44 +1271,17 @@ AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
 //======================================================================
 // Special walking tree inserters
 
-void AstNode::addBeforeStmt(AstNode* newp, AstNode*) {
-    UASSERT_OBJ(backp(), newp, "Can't find current statement to addBeforeStmt");
-    // Look up; virtual call will find where to put it
-    this->backp()->addBeforeStmt(newp, this);
-}
 void AstNode::addNextStmt(AstNode* newp, AstNode*) {
     UASSERT_OBJ(backp(), newp, "Can't find current statement to addNextStmt");
     // Look up; virtual call will find where to put it
     this->backp()->addNextStmt(newp, this);
 }
 
-void AstNodeStmt::addBeforeStmt(AstNode* newp, AstNode*) {
-    // Insert newp before current node
-    this->addHereThisAsNext(newp);
-}
 void AstNodeStmt::addNextStmt(AstNode* newp, AstNode*) {
     // Insert newp after current node
     this->addNextHere(newp);
 }
 
-void AstWhile::addBeforeStmt(AstNode* newp, AstNode* belowp) {
-    // Special, as statements need to be put in different places
-    // Belowp is how we came to recurse up to this point
-    // Preconditions insert first just before themselves (the normal rule
-    // for other statement types)
-    if (belowp == precondsp()) {
-        // Must have been first statement in precondsp list, so newp is new first statement
-        belowp->addHereThisAsNext(newp);
-    } else if (belowp == condp()) {
-        // Goes before condition, IE in preconditions
-        addPrecondsp(newp);
-    } else if (belowp == stmtsp()) {
-        // Was first statement in body, so new front
-        belowp->addHereThisAsNext(newp);
-    } else {
-        belowp->v3fatalSrc("Doesn't look like this was really under the while");
-    }
-}
 void AstWhile::addNextStmt(AstNode* newp, AstNode* belowp) {
     // Special, as statements need to be put in different places
     // Belowp is how we came to recurse up to this point

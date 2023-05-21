@@ -1915,8 +1915,6 @@ public:
     // Iterate and insert - assumes tree format
     virtual void addNextStmt(AstNode* newp,
                              AstNode* belowp);  // When calling, "this" is second argument
-    virtual void addBeforeStmt(AstNode* newp,
-                               AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
     // Clone or return nullptr if nullptr

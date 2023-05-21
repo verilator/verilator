@@ -1335,7 +1335,6 @@ private:
     }
     AstNode* insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
-        // See also AstNode::addBeforeStmt; this predates that function
         if (debug() >= 9) nodep->dumpTree("-  newstmt: ");
         UASSERT_OBJ(m_insStmtp, nodep, "Function not underneath a statement");
         AstNode* visitp = nullptr;

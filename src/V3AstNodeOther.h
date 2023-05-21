@@ -308,8 +308,6 @@ public:
     // METHODS
     void addNextStmt(AstNode* newp,
                      AstNode* belowp) override;  // Stop statement searchback here
-    void addBeforeStmt(AstNode* newp,
-                       AstNode* belowp) override;  // Stop statement searchback here
     void dump(std::ostream& str = std::cout) const override;
 };
 class AstNodeAssign VL_NOT_FINAL : public AstNodeStmt {
@@ -3245,8 +3243,6 @@ public:
     bool isGateOptimizable() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     bool same(const AstNode* /*samep*/) const override { return true; }
-    // Stop statement searchback here
-    void addBeforeStmt(AstNode* newp, AstNode* belowp) override;
     // Stop statement searchback here
     void addNextStmt(AstNode* newp, AstNode* belowp) override;
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
