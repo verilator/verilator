@@ -133,12 +133,10 @@ private:
         UINFO(4, "  CFUNC " << nodep << endl);
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_nodeDepth);
-        {
-            m_cfuncp = nodep;
-            m_nodeDepth = 0;
-            const VNUser2InUse user2InUse;
-            iterateChildrenConst(nodep);
-        }
+        m_cfuncp = nodep;
+        m_nodeDepth = 0;
+        const VNUser2InUse user2InUse;
+        iterateChildrenConst(nodep);
     }
 
     void visit(AstCCall* nodep) override {
@@ -204,9 +202,9 @@ private:
     }
 
     void visit(AstNode* nodep) override {
+        VL_RESTORER(m_nodeDepth);
         ++m_nodeDepth;
         iterateChildrenConst(nodep);
-        --m_nodeDepth;
     }
 
 public:
