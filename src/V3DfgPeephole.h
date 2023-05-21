@@ -19,6 +19,8 @@
 
 #include "config_build.h"
 
+#include "V3ThreadSafety.h"
+
 #include <V3Stats.h>
 
 #define _FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION_APPLY(macro, arg) macro(arg, #arg)
@@ -127,8 +129,8 @@ struct V3DfgPeepholeContext final {
     // Count of applications for each optimization (for statistics)
     std::array<VDouble0, VDfgPeepholePattern::_ENUM_END> m_count;
 
-    explicit V3DfgPeepholeContext(const std::string& label);
-    ~V3DfgPeepholeContext();
+    explicit V3DfgPeepholeContext(const std::string& label) VL_MT_DISABLED;
+    ~V3DfgPeepholeContext() VL_MT_DISABLED;
 };
 
 #endif

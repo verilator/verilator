@@ -31,8 +31,7 @@
 class AbstractMTask VL_NOT_FINAL : public V3GraphVertex {
     VL_RTTI_IMPL(AbstractMTask, V3GraphVertex)
 public:
-    explicit AbstractMTask(V3Graph* graphp)
-        : V3GraphVertex{graphp} {}
+    explicit AbstractMTask(V3Graph* graphp) VL_MT_DISABLED : V3GraphVertex{graphp} {}
     ~AbstractMTask() override = default;
     virtual uint32_t id() const = 0;
     virtual uint32_t cost() const = 0;
@@ -44,8 +43,7 @@ public:
     // TYPES
     using VxList = std::list<MTaskMoveVertex*>;
     // CONSTRUCTORS
-    explicit AbstractLogicMTask(V3Graph* graphp)
-        : AbstractMTask{graphp} {}
+    explicit AbstractLogicMTask(V3Graph* graphp) VL_MT_DISABLED : AbstractMTask{graphp} {}
     ~AbstractLogicMTask() override = default;
     // METHODS
     // Set of logic vertices in this mtask. Order is not significant.
@@ -70,10 +68,10 @@ private:
     VL_UNCOPYABLE(ExecMTask);
 
 public:
-    ExecMTask(V3Graph* graphp, AstMTaskBody* bodyp, uint32_t id)
-        : AbstractMTask{graphp}
-        , m_bodyp{bodyp}
-        , m_id{id} {}
+    ExecMTask(V3Graph* graphp, AstMTaskBody* bodyp, uint32_t id) VL_MT_DISABLED
+        : AbstractMTask{graphp},
+          m_bodyp{bodyp},
+          m_id{id} {}
     AstMTaskBody* bodyp() const { return m_bodyp; }
     uint32_t id() const override VL_MT_SAFE { return m_id; }
     uint32_t priority() const { return m_priority; }

@@ -20,6 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 class AstNetlist;
 class VInFilter;
 class V3ParseSym;
@@ -28,7 +30,7 @@ class V3ParseSym;
 
 class V3LinkCells final {
 public:
-    static void link(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp);
+    static void link(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp) VL_MT_DISABLED;
 };
 
 #endif  // Guard

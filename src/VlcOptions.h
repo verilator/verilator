@@ -20,6 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 #include "config_rev.h"
 
 #include <map>
@@ -47,7 +49,7 @@ class VlcOptions final {
 
 private:
     // METHODS
-    static void showVersion(bool verbose);
+    static void showVersion(bool verbose) VL_MT_DISABLED;
 
 public:
     // CONSTRUCTORS
@@ -55,8 +57,8 @@ public:
     ~VlcOptions() = default;
 
     // METHODS
-    void parseOptsList(int argc, char** argv);
-    void addReadFile(const string& filename);
+    void parseOptsList(int argc, char** argv) VL_MT_DISABLED;
+    void addReadFile(const string& filename) VL_MT_DISABLED;
 
     // ACCESSORS (options)
     const VlStringSet& readFiles() const { return m_readFiles; }
@@ -70,7 +72,7 @@ public:
     string writeInfoFile() const { return m_writeInfoFile; }
 
     // METHODS (from main)
-    static string version();
+    static string version() VL_MT_DISABLED;
 };
 
 //######################################################################

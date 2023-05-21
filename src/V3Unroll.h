@@ -22,6 +22,7 @@
 
 #include "V3Ast.h"
 #include "V3Error.h"
+#include "V3ThreadSafety.h"
 
 //============================================================================
 /// Unroller with saved state, so caller can determine when pushDelete's are executed.
@@ -35,18 +36,18 @@ class UnrollStateful final {
 
 public:
     // CONSTRUCTORS
-    UnrollStateful();
-    ~UnrollStateful();
+    UnrollStateful() VL_MT_DISABLED;
+    ~UnrollStateful() VL_MT_DISABLED;
     // METHODS
-    void unrollGen(AstNodeFor* nodep, const string& beginName);
-    void unrollAll(AstNetlist* nodep);
+    void unrollGen(AstNodeFor* nodep, const string& beginName) VL_MT_DISABLED;
+    void unrollAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 //============================================================================
 
 class V3Unroll final {
 public:
-    static void unrollAll(AstNetlist* nodep);
+    static void unrollAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

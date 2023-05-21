@@ -20,6 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 class AstAssignW;
 class AstCell;
 class AstNetlist;
@@ -29,11 +31,11 @@ class AstPin;
 
 class V3Inst final {
 public:
-    static void instAll(AstNetlist* nodep);
-    static void dearrayAll(AstNetlist* nodep);
+    static void instAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void dearrayAll(AstNetlist* nodep) VL_MT_DISABLED;
     static AstAssignW* pinReconnectSimple(AstPin* pinp, AstCell* cellp, bool forTristate,
-                                          bool alwaysCvt = false);
-    static void checkOutputShort(AstPin* nodep);
+                                          bool alwaysCvt = false) VL_MT_DISABLED;
+    static void checkOutputShort(AstPin* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

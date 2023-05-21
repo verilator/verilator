@@ -92,10 +92,14 @@ public:
 
     // Methods to add edges representing constraints, utilizing the type system to help us ensure
     // the graph remains bipartite.
-    inline void addHardEdge(OrderLogicVertex* fromp, OrderVarVertex* top, int weight);
-    inline void addHardEdge(OrderVarVertex* fromp, OrderLogicVertex* top, int weight);
-    inline void addSoftEdge(OrderLogicVertex* fromp, OrderVarVertex* top, int weight);
-    inline void addSoftEdge(OrderVarVertex* fromp, OrderLogicVertex* top, int weight);
+    inline void addHardEdge(OrderLogicVertex* fromp, OrderVarVertex* top,
+                            int weight) VL_MT_DISABLED;
+    inline void addHardEdge(OrderVarVertex* fromp, OrderLogicVertex* top,
+                            int weight) VL_MT_DISABLED;
+    inline void addSoftEdge(OrderLogicVertex* fromp, OrderVarVertex* top,
+                            int weight) VL_MT_DISABLED;
+    inline void addSoftEdge(OrderVarVertex* fromp, OrderLogicVertex* top,
+                            int weight) VL_MT_DISABLED;
 };
 
 //======================================================================
@@ -114,9 +118,9 @@ class OrderEitherVertex VL_NOT_FINAL : public V3GraphVertex {
 
 protected:
     // CONSTRUCTOR
-    OrderEitherVertex(OrderGraph* graphp, AstSenTree* domainp)
-        : V3GraphVertex{graphp}
-        , m_domainp{domainp} {}
+    OrderEitherVertex(OrderGraph* graphp, AstSenTree* domainp) VL_MT_DISABLED
+        : V3GraphVertex{graphp},
+          m_domainp{domainp} {}
     ~OrderEitherVertex() override = default;
 
 public:
@@ -125,7 +129,7 @@ public:
 
     // ACCESSORS
     AstSenTree* domainp() const VL_MT_STABLE { return m_domainp; }
-    void domainp(AstSenTree* domainp) {
+    void domainp(AstSenTree* domainp) VL_MT_DISABLED {
 #if VL_DEBUG
         UASSERT(!m_domainp, "Domain should only be set once");
 #endif
@@ -142,11 +146,11 @@ class OrderLogicVertex final : public OrderEitherVertex {
 public:
     // CONSTRUCTOR
     OrderLogicVertex(OrderGraph* graphp, AstScope* scopep, AstSenTree* domainp,
-                     AstSenTree* hybridp, AstNode* nodep)
-        : OrderEitherVertex{graphp, domainp}
-        , m_nodep{nodep}
-        , m_scopep{scopep}
-        , m_hybridp{hybridp} {
+                     AstSenTree* hybridp, AstNode* nodep) VL_MT_DISABLED
+        : OrderEitherVertex{graphp, domainp},
+          m_nodep{nodep},
+          m_scopep{scopep},
+          m_hybridp{hybridp} {
         UASSERT_OBJ(scopep, nodep, "Must not be null");
         UASSERT_OBJ(!(domainp && hybridp), nodep, "Cannot have bot domainp and hybridp set");
     }
@@ -174,9 +178,9 @@ class OrderVarVertex VL_NOT_FINAL : public OrderEitherVertex {
 
 public:
     // CONSTRUCTOR
-    OrderVarVertex(OrderGraph* graphp, AstVarScope* vscp)
-        : OrderEitherVertex{graphp, nullptr}
-        , m_vscp{vscp} {}
+    OrderVarVertex(OrderGraph* graphp, AstVarScope* vscp) VL_MT_DISABLED
+        : OrderEitherVertex{graphp, nullptr},
+          m_vscp{vscp} {}
     ~OrderVarVertex() override = default;
 
     // ACCESSORS
@@ -195,7 +199,7 @@ class OrderVarStdVertex final : public OrderVarVertex {
     VL_RTTI_IMPL(OrderVarStdVertex, OrderVarVertex)
 public:
     // CONSTRUCTOR
-    OrderVarStdVertex(OrderGraph* graphp, AstVarScope* vscp)
+    OrderVarStdVertex(OrderGraph* graphp, AstVarScope* vscp) VL_MT_DISABLED
         : OrderVarVertex{graphp, vscp} {}
     ~OrderVarStdVertex() override = default;
 
@@ -212,7 +216,7 @@ class OrderVarPreVertex final : public OrderVarVertex {
     VL_RTTI_IMPL(OrderVarPreVertex, OrderVarVertex)
 public:
     // CONSTRUCTOR
-    OrderVarPreVertex(OrderGraph* graphp, AstVarScope* vscp)
+    OrderVarPreVertex(OrderGraph* graphp, AstVarScope* vscp) VL_MT_DISABLED
         : OrderVarVertex{graphp, vscp} {}
     ~OrderVarPreVertex() override = default;
 
@@ -229,7 +233,7 @@ class OrderVarPostVertex final : public OrderVarVertex {
     VL_RTTI_IMPL(OrderVarPostVertex, OrderVarVertex)
 public:
     // CONSTRUCTOR
-    OrderVarPostVertex(OrderGraph* graphp, AstVarScope* vscp)
+    OrderVarPostVertex(OrderGraph* graphp, AstVarScope* vscp) VL_MT_DISABLED
         : OrderVarVertex{graphp, vscp} {}
     ~OrderVarPostVertex() override = default;
 
@@ -246,7 +250,7 @@ class OrderVarPordVertex final : public OrderVarVertex {
     VL_RTTI_IMPL(OrderVarPordVertex, OrderVarVertex)
 public:
     // CONSTRUCTOR
-    OrderVarPordVertex(OrderGraph* graphp, AstVarScope* vscp)
+    OrderVarPordVertex(OrderGraph* graphp, AstVarScope* vscp) VL_MT_DISABLED
         : OrderVarVertex{graphp, vscp} {}
     ~OrderVarPordVertex() override = default;
 
@@ -267,8 +271,7 @@ class OrderEdge final : public V3GraphEdge {
     friend class OrderGraph;  // Only the OrderGraph can create these
     // CONSTRUCTOR
     OrderEdge(OrderGraph* graphp, OrderEitherVertex* fromp, OrderEitherVertex* top, int weight,
-              bool cutable)
-        : V3GraphEdge{graphp, fromp, top, weight, cutable} {}
+              bool cutable) VL_MT_DISABLED : V3GraphEdge{graphp, fromp, top, weight, cutable} {}
     ~OrderEdge() override = default;
 
     // LCOV_EXCL_START // Debug code
@@ -279,16 +282,20 @@ class OrderEdge final : public V3GraphEdge {
 //======================================================================
 // Inline methods
 
-void OrderGraph::addHardEdge(OrderLogicVertex* fromp, OrderVarVertex* top, int weight) {
+void OrderGraph::addHardEdge(OrderLogicVertex* fromp, OrderVarVertex* top,
+                             int weight) VL_MT_DISABLED {
     new OrderEdge{this, fromp, top, weight, /* cutable: */ false};
 }
-void OrderGraph::addHardEdge(OrderVarVertex* fromp, OrderLogicVertex* top, int weight) {
+void OrderGraph::addHardEdge(OrderVarVertex* fromp, OrderLogicVertex* top,
+                             int weight) VL_MT_DISABLED {
     new OrderEdge{this, fromp, top, weight, /* cutable: */ false};
 }
-void OrderGraph::addSoftEdge(OrderLogicVertex* fromp, OrderVarVertex* top, int weight) {
+void OrderGraph::addSoftEdge(OrderLogicVertex* fromp, OrderVarVertex* top,
+                             int weight) VL_MT_DISABLED {
     new OrderEdge{this, fromp, top, weight, /* cutable: */ true};
 }
-void OrderGraph::addSoftEdge(OrderVarVertex* fromp, OrderLogicVertex* top, int weight) {
+void OrderGraph::addSoftEdge(OrderVarVertex* fromp, OrderLogicVertex* top,
+                             int weight) VL_MT_DISABLED {
     new OrderEdge{this, fromp, top, weight, /* cutable: */ true};
 }
 

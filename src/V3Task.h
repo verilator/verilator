@@ -22,6 +22,7 @@
 
 #include "V3Ast.h"
 #include "V3Error.h"
+#include "V3ThreadSafety.h"
 
 #include <utility>
 #include <vector>
@@ -51,19 +52,20 @@ class V3Task final {
     static const char* const s_dpiTemporaryVarSuffix;
 
 public:
-    static void taskAll(AstNetlist* nodep);
+    static void taskAll(AstNetlist* nodep) VL_MT_DISABLED;
     /// Return vector of [port, pin-connects-to]  (SLOW)
     static V3TaskConnects taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
-                                       V3TaskConnectState* statep = nullptr);
+                                       V3TaskConnectState* statep = nullptr) VL_MT_DISABLED;
     static void taskConnectWrap(AstNodeFTaskRef* nodep, const V3TaskConnects& tconnects,
                                 V3TaskConnectState* statep,
-                                const std::set<const AstVar*>& argWrap);
+                                const std::set<const AstVar*>& argWrap) VL_MT_DISABLED;
     static AstNodeFTask* taskConnectWrapNew(AstNodeFTask* taskp, const string& newname,
                                             const V3TaskConnects& tconnects,
-                                            const std::set<const AstVar*>& argWrap);
+                                            const std::set<const AstVar*>& argWrap) VL_MT_DISABLED;
     static string assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
-                                      const string& toSuffix, const string& frPrefix = "");
-    static string assignDpiToInternal(const string& lhsName, AstVar* rhsp);
+                                      const string& toSuffix,
+                                      const string& frPrefix = "") VL_MT_DISABLED;
+    static string assignDpiToInternal(const string& lhsName, AstVar* rhsp) VL_MT_DISABLED;
     static const char* dpiTemporaryVarSuffix() VL_MT_SAFE { return s_dpiTemporaryVarSuffix; }
 };
 
