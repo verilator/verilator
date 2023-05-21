@@ -46,7 +46,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
 
   if [ "$COVERAGE" != 1 ]; then
     autoconf
-    ./configure --enable-longtests --enable-ccwarn ${CI_M32:+--enable-m32}
+    ./configure --enable-longtests --enable-ccwarn --enable-bear ${CI_M32:+--enable-m32}
     ccache -z
     "$MAKE" -j "$NPROC" -k
     ccache -s
