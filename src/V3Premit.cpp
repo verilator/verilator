@@ -53,15 +53,16 @@ private:
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
-    // STATE
+    // STATE - for current visit position (use VL_RESTORER)
     AstCFunc* m_cfuncp = nullptr;  // Current block
     AstNode* m_stmtp = nullptr;  // Current statement
     AstCCall* m_callp = nullptr;  // Current AstCCall
     AstWhile* m_inWhilep = nullptr;  // Inside while loop, special statement additions
     AstTraceInc* m_inTracep = nullptr;  // Inside while loop, special statement additions
     bool m_assignLhs = false;  // Inside assignment lhs, don't breakup extracts
-    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
 
+    // STATE - across all visitors
+    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
     VDouble0 m_extractedToConstPool;  // Statistic tracking
 
     // METHODS
@@ -186,7 +187,6 @@ private:
         startStatement(nodep);
         iterateAndNextNull(nodep->stmtsp());
         iterateAndNextNull(nodep->incsp());
-        m_stmtp = nullptr;
     }
     void visit(AstNodeAssign* nodep) override {
         RESTORER_START_STATEMENT();
@@ -216,14 +216,12 @@ private:
             m_assignLhs = true;
             iterateAndNextNull(nodep->lhsp());
         }
-        m_stmtp = nullptr;
     }
     void visit(AstNodeStmt* nodep) override {
         UINFO(4, "  STMT  " << nodep << endl);
         RESTORER_START_STATEMENT();
         startStatement(nodep);
         iterateChildren(nodep);
-        m_stmtp = nullptr;
     }
     void visit(AstTraceInc* nodep) override {
         RESTORER_START_STATEMENT();
@@ -231,7 +229,6 @@ private:
         VL_RESTORER(m_inTracep);
         m_inTracep = nodep;
         iterateChildren(nodep);
-        m_stmtp = nullptr;
     }
     void visitShift(AstNodeBiop* nodep) {
         // Shifts of > 32/64 bits in C++ will wrap-around and generate non-0s
@@ -361,7 +358,6 @@ private:
         RESTORER_START_STATEMENT();
         startStatement(nodep);
         iterateChildren(nodep);
-        m_stmtp = nullptr;
         if (v3Global.opt.autoflush()) {
             const AstNode* searchp = nodep->nextp();
             while (searchp && VN_IS(searchp, Comment)) searchp = searchp->nextp();
