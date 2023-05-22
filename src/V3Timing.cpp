@@ -57,6 +57,8 @@
 #include "V3SenTree.h"
 #include "V3UniqueNames.h"
 
+#include <queue>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 // ######################################################################
@@ -143,26 +145,39 @@ private:
         if (!m_classp) return;
         // If class method (possibly overrides another method)
         if (!m_classp->user1SetOnce()) m_classp->repairCache();
+
         // Go over overridden functions
-        for (auto* cextp = m_classp->extendsp(); cextp;
-             cextp = VN_AS(cextp->nextp(), ClassExtends)) {
-            // TODO: It is possible that a methods the same name in the base class is not
-            // actually overridden by our method. If this causes a problem, traverse to the
-            // root of the inheritance hierarchy and check if the original method is virtual or
-            // not.
-            if (!cextp->classp()->user1SetOnce()) cextp->classp()->repairCache();
-            if (auto* const overriddenp
-                = VN_CAST(cextp->classp()->findMember(nodep->name()), CFunc)) {
-                if (overriddenp->user2()) {  // If it's suspendable
-                    nodep->user2(true);  // Then we are also suspendable
-                    // As both are suspendable already, there is no need to add it as our
-                    // dependency or self to its dependencies
+
+        std::queue<AstClassExtends*> extends;
+        if (m_classp->extendsp()) extends.push(m_classp->extendsp());
+
+        while (!extends.empty()) {
+            auto* ext_list = extends.front();
+            extends.pop();
+
+            for (auto* cextp = ext_list; cextp; cextp = VN_AS(cextp->nextp(), ClassExtends)) {
+                // TODO: It is possible that a methods the same name in the base class is not
+                // actually overridden by our method. If this causes a problem, traverse to
+                // the root of the inheritance hierarchy and check if the original method is
+                // virtual or not.
+                if (!cextp->classp()->user1SetOnce()) cextp->classp()->repairCache();
+                if (auto* const overriddenp
+                    = VN_CAST(cextp->classp()->findMember(nodep->name()), CFunc)) {
+                    if (overriddenp->user2()) {  // If it's suspendable
+                        nodep->user2(true);  // Then we are also suspendable
+                        // As both are suspendable already, there is no need to add it as our
+                        // dependency or self to its dependencies
+                    } else {
+                        // Make a dependency cycle, as being suspendable should propagate both
+                        // up and down the inheritance tree
+                        TimingDependencyVertex* const overriddenVxp
+                            = getDependencyVertex(overriddenp);
+                        new V3GraphEdge{&m_depGraph, vxp, overriddenVxp, 1};
+                        new V3GraphEdge{&m_depGraph, overriddenVxp, vxp, 1};
+                    }
                 } else {
-                    // Make a dependency cycle, as being suspendable should propagate both up
-                    // and down the inheritance tree
-                    TimingDependencyVertex* const overriddenVxp = getDependencyVertex(overriddenp);
-                    new V3GraphEdge{&m_depGraph, vxp, overriddenVxp, 1};
-                    new V3GraphEdge{&m_depGraph, overriddenVxp, vxp, 1};
+                    auto* more_extends = cextp->classp()->extendsp();
+                    if (more_extends) extends.push(more_extends);
                 }
             }
         }
