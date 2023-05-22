@@ -533,7 +533,8 @@ public:
 
 // Global versions, so that if the class doesn't define an operator, we get the functions anyway.
 void v3errorEnd(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex) VL_MT_SAFE;
-void v3errorEndFatal(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex) VL_MT_SAFE VL_ATTR_NORETURN;
+void v3errorEndFatal(std::ostringstream& sstr)
+    VL_RELEASE(V3Error::s().m_mutex) VL_MT_SAFE VL_ATTR_NORETURN;
 
 #ifdef VL_MT_DISABLED_CODE_UNIT
 #define VL_MT_DISABLED_CODE_UNIT_DEFINED 1
