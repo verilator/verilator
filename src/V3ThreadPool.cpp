@@ -165,3 +165,5 @@ void V3ThreadPool::selfTest() {
     auto result = V3ThreadPool::waitForFutures(futuresInt);
     UASSERT(result.back() == 1234, "unexpected future result = " << result.back());
 }
+
+V3MtDisabledLock V3MtDisabledLock::s_mtDisabledLock;
