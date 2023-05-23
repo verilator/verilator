@@ -5313,7 +5313,7 @@ private:
             nodep->didWidth(true);
             return;
         }
-        if (m_pkgp && m_pkgp->name() == "std") { nodep->isFromStd(true); }
+        if (m_pkgp && m_pkgp->name() == "std") nodep->isFromStd(true);
         if (nodep->classMethod() && nodep->name() == "rand_mode") {
             nodep->v3error("The 'rand_mode' method is built-in and cannot be overridden"
                            " (IEEE 1800-2017 18.8)");
@@ -5408,9 +5408,8 @@ private:
         if (nodep->fileline()->timingOn()) {
             AstNodeModule* const classp = nodep->classOrPackagep();
             if (nodep->name() == "self" && classp->name() == "process") {
-                // Find the package the class is in
+                // Find if package the class is in is std::
                 AstPackage* const packagep = getItemPackage(classp);
-                // Check if it's std
                 if (packagep && packagep->name() == "std") {
                     methodCallWarnTiming(nodep, "process");
                 }
