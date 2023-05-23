@@ -508,12 +508,12 @@ private:
             if (thenDTypep->skipRefp() == elseDTypep->skipRefp()) {
                 // TODO might need a broader equation, use the Castable function?
                 nodep->dtypeFrom(thenDTypep);
-            } else if (nodep->thenp()->isClassHandleValue() || nodep->elsep()->isClassHandleValue()) {
+            } else if (nodep->thenp()->isClassHandleValue()
+                       || nodep->elsep()->isClassHandleValue()) {
                 AstNodeDType* commonClassTypep = nullptr;
                 if (nodep->thenp()->isClassHandleValue() && nodep->elsep()->isClassHandleValue()) {
                     // Get the most-deriving class type that both arguments can be casted to.
-                    commonClassTypep
-                        = getCommonClassTypep(nodep->thenp(), nodep->elsep(), nodep->fileline());
+                    commonClassTypep = getCommonClassTypep(nodep->thenp(), nodep->elsep());
                 }
                 if (commonClassTypep) {
                     nodep->dtypep(commonClassTypep);
@@ -7326,60 +7326,27 @@ private:
         if (nodep->subDTypep()) return hasOpenArrayIterateDType(nodep->subDTypep()->skipRefp());
         return false;
     }
-    int getDepthOfClassHierarchyRec(const AstClass* const classp) {
-        // Return the number of classes between the current class and its most base class
-        // (inclusive)
-        if (!classp->extendsp()) {
-            return 1;
-        } else {
-            return 1 + getDepthOfClassHierarchyRec(classp->extendsp()->classp());
-        }
-    }
-    AstClass* getCommonBaseClass(AstClass* class1p, AstClass* class2p) {
-        // Return the first common base class or nullptr if it doesn't exist.
-        int depth1 = getDepthOfClassHierarchyRec(class1p);
-        int depth2 = getDepthOfClassHierarchyRec(class2p);
-        if (depth2 > depth1) {
-            std::swap(depth1, depth2);
-            std::swap(class1p, class2p);
-        }
-        while (depth1 > depth2) {
-            class1p = class1p->extendsp()->classp();
-            --depth1;
-        }
-        while (class1p != class2p) {
-            class1p = class1p->extendsp() ? class1p->extendsp()->classp() : nullptr;
-            class2p = class2p->extendsp() ? class2p->extendsp()->classp() : nullptr;
-        }
-        // Possibly nullptr if no common base class exists
-        return class1p;
-    }
-    AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2, FileLine* const fl) {
+    AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) {
         // Return the class type that both nodep1 and nodep2 are castable to.
         // If both are null, return the type of null constant.
         // If one is a class and one is null, return AstClassRefDType that points to that class.
         // If no common class type exists, return nullptr.
+
+        // First handle cases with null values and when one class is a super class of the other.
         if (VN_IS(nodep1, Const)) std::swap(nodep1, nodep2);
-        if (AstConst* const constp = VN_CAST(nodep2, Const)) {
-            if (constp->num().isNull() && nodep1->isClassHandleValue()) {
-                return nodep1->dtypep()->cloneTree(false);
-            } else {
-                return nullptr;
-            }
+        const Castable castable = computeCastable(nodep1->dtypep(), nodep2->dtypep(), nodep2);
+        if (castable == SAMEISH || castable == COMPATIBLE) {
+            return nodep1->dtypep()->cloneTree(false);
+        } else if (castable == DYNAMIC_CLASS) {
+            return nodep2->dtypep()->cloneTree(false);
         }
-        AstClass* class1p = nullptr;
-        AstClass* class2p = nullptr;
-        if (const AstClassRefDType* const classRefDtypep
-            = VN_CAST(nodep1->dtypep(), ClassRefDType)) {
-            class1p = classRefDtypep->classp();
-        }
-        if (const AstClassRefDType* const classRefDtypep
-            = VN_CAST(nodep2->dtypep(), ClassRefDType)) {
-            class2p = classRefDtypep->classp();
-        }
-        if (!class1p || !class2p) return nullptr;
-        if (AstClass* const commonBaseClassp = getCommonBaseClass(class1p, class2p)) {
-            return new AstClassRefDType{fl, commonBaseClassp, nullptr};
+
+        AstClassRefDType* classDtypep1 = VN_CAST(nodep1->dtypep(), ClassRefDType);
+        while (classDtypep1) {
+            const Castable castable = computeCastable(classDtypep1, nodep2->dtypep(), nodep2);
+            if (castable == COMPATIBLE) return classDtypep1->cloneTree(false);
+            AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
+            classDtypep1 = extendsp ? VN_AS(extendsp->dtypep(), ClassRefDType) : nullptr;
         }
         return nullptr;
     }
