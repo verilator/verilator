@@ -20,7 +20,8 @@ else {
 
     execute(
         check_finished => 1,
-        ) if !$Self->{vlt_all};
+        expect_filename => $Self->{golden_filename},
+        );
 }
 
 ok(1);
