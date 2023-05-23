@@ -31,6 +31,7 @@ Verilator 5.011 devel
 * Fix arrays of unpacked structs (#4173). [Risto Pejašinović]
 * Fix $fscanf of decimals overflowing variables (#4174). [Ahmed El-Mahmoudy]
 * Fix super.new missing data type (#4147). [Tudor Timi]
+* Fix duplicate std:: declaration with -I (#4215). [Harald Pretl]
 * Fix detection of wire/reg duplicates.
 * Fix false IMPLICITSTATIC on package functions.
 

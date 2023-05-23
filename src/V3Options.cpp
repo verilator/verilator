@@ -547,6 +547,11 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
+    if (modname[0] == '/') {
+        // If leading /, obey existing absolute path, so can find getStdPackagePath()
+        string exists = filePathCheckOneDir(modname, "");
+        if (exists != "") return exists;
+    }
     for (const string& dir : m_impp->m_incDirUsers) {
         string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
