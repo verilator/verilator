@@ -25,7 +25,7 @@ module t (/*AUTOARG*/
          p = process::self();
          s = 1;
       end else begin
-         $display("running");
+         $stop;
       end
    end
 endmodule
