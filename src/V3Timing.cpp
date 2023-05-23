@@ -64,6 +64,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // ######################################################################
 
 enum TimingFlag : uint8_t {
+    // Properties of flags with higher numbers include properties of flags with
+    // lower numbers
     T_NORM = 0,  // Normal non-suspendable process
     T_SUSP = 1,  // Suspendable
     T_PROC = 2  // Suspendable with process metadata
