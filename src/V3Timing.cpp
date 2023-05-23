@@ -152,16 +152,17 @@ private:
         if (m_classp->extendsp()) extends.push(m_classp->extendsp());
 
         while (!extends.empty()) {
-            auto* ext_list = extends.front();
+            AstClassExtends* ext_list = extends.front();
             extends.pop();
 
-            for (auto* cextp = ext_list; cextp; cextp = VN_AS(cextp->nextp(), ClassExtends)) {
+            for (AstClassExtends* cextp = ext_list; cextp;
+                 cextp = VN_AS(cextp->nextp(), ClassExtends)) {
                 // TODO: It is possible that a methods the same name in the base class is not
                 // actually overridden by our method. If this causes a problem, traverse to
                 // the root of the inheritance hierarchy and check if the original method is
                 // virtual or not.
                 if (!cextp->classp()->user1SetOnce()) cextp->classp()->repairCache();
-                if (auto* const overriddenp
+                if (AstCFunc* const overriddenp
                     = VN_CAST(cextp->classp()->findMember(nodep->name()), CFunc)) {
                     if (overriddenp->user2()) {  // If it's suspendable
                         nodep->user2(true);  // Then we are also suspendable
@@ -176,7 +177,7 @@ private:
                         new V3GraphEdge{&m_depGraph, overriddenVxp, vxp, 1};
                     }
                 } else {
-                    auto* more_extends = cextp->classp()->extendsp();
+                    AstClassExtends* more_extends = cextp->classp()->extendsp();
                     if (more_extends) extends.push(more_extends);
                 }
             }
