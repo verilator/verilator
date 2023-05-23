@@ -41,7 +41,7 @@ bool AstNode::isString() const VL_MT_STABLE {
 }
 bool AstNode::isSigned() const VL_MT_STABLE { return dtypep() && dtypep()->isSigned(); }
 
-bool AstNode::isOfClassType() const {
+bool AstNode::isClassHandleValue() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->num().isNull())
            || VN_IS(dtypep(), ClassRefDType);
 }
