@@ -1043,7 +1043,9 @@ public:
     }
     void visit(AstCCast* nodep) override {
         // Extending a value of the same word width is just a NOP.
-        if (nodep->size() <= VL_IDATASIZE) {
+        if (const AstClassRefDType* const classDtypep = VN_CAST(nodep->dtypep(), ClassRefDType)) {
+            puts("(" + classDtypep->cType("", false, false) + ")(");
+        } else if (nodep->size() <= VL_IDATASIZE) {
             puts("(IData)(");
         } else {
             puts("(QData)(");
@@ -1059,33 +1061,9 @@ public:
             putbs("(");
             iterateAndNextConstNull(nodep->condp());
             putbs(" ? ");
-            // All class types are castable to each other. If they are of different types,
-            // a compilation error will be thrown, so an explicit cast is required. Types were
-            // already checked by V3Width and dtypep of a condition operator is a type of their
-            // common base class, so both classes can be safetly casted.
-            const AstClassRefDType* const thenClassDtypep
-                = VN_CAST(nodep->thenp()->dtypep(), ClassRefDType);
-            const AstClassRefDType* const elseClassDtypep
-                = VN_CAST(nodep->elsep()->dtypep(), ClassRefDType);
-            const bool castRequired = thenClassDtypep && elseClassDtypep
-                                      && (thenClassDtypep->classp() != elseClassDtypep->classp());
-            bool thenCastRequired = false;
-            bool elseCastRequired = false;
-            std::string castStr;
-            if (castRequired) {
-                const AstClass* const commonBaseClassp
-                    = VN_AS(nodep->dtypep(), ClassRefDType)->classp();
-                if (thenClassDtypep->classp() != commonBaseClassp) thenCastRequired = true;
-                if (elseClassDtypep->classp() != commonBaseClassp) elseCastRequired = true;
-                castStr = "static_cast<" + nodep->dtypep()->cType("", false, false) + ">(";
-            }
-            if (thenCastRequired) putbs(castStr);
             iterateAndNextConstNull(nodep->thenp());
-            if (thenCastRequired) putbs(")");
             putbs(" : ");
-            if (elseCastRequired) putbs(castStr);
             iterateAndNextConstNull(nodep->elsep());
-            if (elseCastRequired) putbs(")");
             puts(")");
         }
     }
