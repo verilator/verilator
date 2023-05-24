@@ -3246,7 +3246,16 @@ private:
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
         if (nodep->isExternDef()) {
-            if (!m_curSymp->findIdFallback("extern " + nodep->name())) {
+            if (const VSymEnt* const foundp
+                = m_curSymp->findIdFallback("extern " + nodep->name())) {
+                const AstNodeFTask* const funcProtop = VN_AS(foundp->nodep(), NodeFTask);
+                // Copy specifiers.
+                // External definition cannot have any specifiers, so no value will be overwritten.
+                nodep->isHideLocal(funcProtop->isHideLocal());
+                nodep->isHideProtected(funcProtop->isHideProtected());
+                nodep->isVirtual(funcProtop->isVirtual());
+                nodep->lifetime(funcProtop->lifetime());
+            } else {
                 nodep->v3error("extern not found that declares " + nodep->prettyNameQ());
             }
         }
