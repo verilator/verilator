@@ -95,8 +95,9 @@ void VlTriggerScheduler::resume(const char* eventDescription) {
     VL_DEBUG_IF(dump(eventDescription);
                 VL_DBG_MSGF("         Resuming processes waiting for %s\n", eventDescription););
 #endif
-    for (auto& susp : m_ready) susp.resume();
-    m_ready.clear();
+    std::swap(m_ready, m_resumeQueue);
+    for (VlCoroutineHandle& coro : m_resumeQueue) coro.resume();
+    m_resumeQueue.clear();
     commit(eventDescription);
 }
 

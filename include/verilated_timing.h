@@ -207,6 +207,10 @@ class VlTriggerScheduler final {
                                    // (not resumable)
     VlCoroutineVec m_ready;  // Coroutines that can be resumed (all coros from m_uncommitted are
                              // moved here in commit())
+    VlCoroutineVec m_resumeQueue;  // Coroutines being resumed by resume(); kept as a field to
+                                   // avoid reallocation. Resumed coroutines are moved to
+                                   // m_resumeQueue to allow adding coroutines to m_ready
+                                   // during resume(). Outside of resume() should always be empty.
 
 public:
     // METHODS
@@ -220,8 +224,8 @@ public:
     void dump(const char* eventDescription) const;
 #endif
     // Used by coroutines for co_awaiting a certain trigger
-    auto trigger(const char* eventDescription = VL_UNKNOWN, const char* filename = VL_UNKNOWN,
-                 int lineno = 0) {
+    auto trigger(bool commit, const char* eventDescription = VL_UNKNOWN,
+                 const char* filename = VL_UNKNOWN, int lineno = 0) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Suspending process waiting for %s at %s:%d\n",
                                 eventDescription, filename, lineno););
         struct Awaitable {
@@ -234,7 +238,7 @@ public:
             }
             void await_resume() const {}
         };
-        return Awaitable{m_uncommitted, VlFileLineDebug{filename, lineno}};
+        return Awaitable{commit ? m_ready : m_uncommitted, VlFileLineDebug{filename, lineno}};
     }
 };
 

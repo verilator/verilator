@@ -166,7 +166,13 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
                 flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, "resume"};
             resumep->dtypeSetVoid();
             if (schedulerp->dtypep()->basicp()->isTriggerScheduler()) {
-                if (methodp->pinsp()) resumep->addPinsp(methodp->pinsp()->cloneTree(false));
+                UASSERT_OBJ(methodp->pinsp(), methodp,
+                            "Trigger method should have pins from V3Timing");
+                // The first pin is the commit boolean, the rest (if any) should be debug info
+                // See V3Timing for details
+                if (AstNode* const dbginfop = methodp->pinsp()->nextp()) {
+                    resumep->addPinsp(static_cast<AstNodeExpr*>(dbginfop)->cloneTree(false));
+                }
             } else if (schedulerp->dtypep()->basicp()->isDynamicTriggerScheduler()) {
                 auto* const postp = resumep->cloneTree(false);
                 postp->name("doPostUpdates");
