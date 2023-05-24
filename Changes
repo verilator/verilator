@@ -21,6 +21,7 @@ Verilator 5.011 devel
 * Support get_randstate/set_randstate class method function.
 * Add creating __inputs.vpp file with --debug (#4177). [Tudor Timi]
 * Optimize VPI callValueCbs (#4155). [Hennadii Chernyshchyk]
+* Configure for faster C++ linking using 'mold', if it is installed.
 * Fix crash on duplicate imported modules (#3231). [Robert Balas]
 * Fix false WIDTHEXPAND on array declarations (#3959). [JOTEGO]
 * Fix marking overridden methods as coroutines (#4120) (#4169). [Krzysztof Bieganski, Antmicro Ltd]
