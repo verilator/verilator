@@ -63,12 +63,16 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     sudo apt-get install ccache help2man libfl-dev
     if [ "$CI_RUNS_ON" != "ubuntu-22.04" ]; then
       # Some conflict of libunwind verison on 22.04, can live without it for now
-      sudo apt-get install libgoogle-perftools-dev mold ||
-      sudo apt-get install libgoogle-perftools-dev mold
+      sudo apt-get install libgoogle-perftools-dev ||
+      sudo apt-get install libgoogle-perftools-dev
     fi
     if [ "$CI_RUNS_ON" = "ubuntu-20.04" ] || [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
       sudo apt-get install libsystemc libsystemc-dev ||
       sudo apt-get install libsystemc libsystemc-dev
+    fi
+    if [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
+      sudo apt-get install mold ||
+      sudo apt-get install mold
     fi
     if [ "$COVERAGE" = 1 ]; then
       yes yes | sudo cpan -fi Parallel::Forker
