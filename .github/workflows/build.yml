@@ -42,7 +42,8 @@ jobs:
           # Build -m32 only on ubuntu-22.04 clang++
           - {os: ubuntu-18.04, m32: 1}
           - {os: ubuntu-20.04, m32: 1}
-          - {compiler: gcc, m32: 1}
+          - { cc: gcc, cxx: g++ }
+            m32: 1
         include:
           # Build GCC 10 on ubuntu-20.04
           - os: ubuntu-20.04
