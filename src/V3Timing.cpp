@@ -126,7 +126,7 @@ private:
         return nodep->user3u().to<TimingDependencyVertex*>();
     }
     // Set timing flag of a node
-    bool setTimingFlag(AstNode *nodep, int flag) {
+    bool setTimingFlag(AstNode* nodep, int flag) {
         // Properties of flags with higher numbers include properties of flags with lower
         // numbers, so modify nodep->user2() only if it will increase.
         if (nodep->user2() < flag) {
@@ -478,7 +478,8 @@ private:
     // Adds process pointer to a hardcoded method call
     void addProcessInfo(AstCMethodHard* const methodp) const {
         FileLine* const flp = methodp->fileline();
-        AstCExpr* const ap = new AstCExpr{flp, m_procp && m_procp->user2() == T_PROC ? "vlProcess" : "nullptr", 0};
+        AstCExpr* const ap = new AstCExpr{
+            flp, m_procp && m_procp->user2() == T_PROC ? "vlProcess" : "nullptr", 0};
         ap->dtypeSetVoid();
         methodp->addPinsp(ap);
     }
