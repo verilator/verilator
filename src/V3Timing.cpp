@@ -237,6 +237,9 @@ private:
     //                                                                   to this sentree
     //  Ast{NodeProcedure,CFunc,Begin}::user2()         -> bool.         Set true if process/task
     //                                                                   is suspendable
+    //  Ast{EventControl}::user2()                      -> bool.         Set true if event control
+    //                                                                   should immediately be
+    //                                                                   committed
     //  AstSenTree::user2()                             -> AstCExpr*.    Debug info passed to the
     //                                                                   timing schedulers
     // const VNUser1InUse m_user1InUse;      (Allocated for use in SuspendableVisitor)
@@ -709,6 +712,9 @@ private:
                 flp, new AstVarRef{flp, getCreateTriggerSchedulerp(sensesp), VAccess::WRITE},
                 "trigger"};
             triggerMethodp->dtypeSetVoid();
+            // If it should be committed immediately, pass true, otherwise false
+            triggerMethodp->addPinsp(nodep->user2() ? new AstConst{flp, AstConst::BitTrue{}}
+                                                    : new AstConst{flp, AstConst::BitFalse{}});
             addEventDebugInfo(triggerMethodp, sensesp);
             // Create the co_await
             AstCAwait* const awaitp = new AstCAwait{flp, triggerMethodp, sensesp};
@@ -835,9 +841,10 @@ private:
             AstSenItem* const senItemsp = varRefpsToSenItemsp(condp);
             UASSERT_OBJ(senItemsp, nodep, "No varrefs in wait statement condition");
             // Put the event control in a while loop with the wait expression as condition
-            auto* const loopp
-                = new AstWhile{flp, new AstLogNot{flp, condp},
-                               new AstEventControl{flp, new AstSenTree{flp, senItemsp}, nullptr}};
+            AstEventControl* const controlp
+                = new AstEventControl{flp, new AstSenTree{flp, senItemsp}, nullptr};
+            controlp->user2(true);  // Commit immediately
+            AstWhile* const loopp = new AstWhile{flp, new AstLogNot{flp, condp}, controlp};
             if (stmtsp) AstNode::addNext<AstNode, AstNode>(loopp, stmtsp);
             nodep->replaceWith(loopp);
         }
