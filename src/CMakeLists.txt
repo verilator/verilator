@@ -82,6 +82,7 @@ set(HEADERS
     V3File.h
     V3FileLine.h
     V3Force.h
+    V3Fork.h
     V3FunctionTraits.h
     V3Gate.h
     V3Global.h
@@ -227,6 +228,7 @@ set(COMMON_SOURCES
     V3File.cpp
     V3FileLine.cpp
     V3Force.cpp
+    V3Fork.cpp
     V3Gate.cpp
     V3Global.cpp
     V3Graph.cpp
