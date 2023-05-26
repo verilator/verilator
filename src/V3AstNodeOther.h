@@ -2066,13 +2066,7 @@ public:
     AstFork(FileLine* fl, const string& name, AstNode* stmtsp)
         : ASTGEN_SUPER_Fork(fl, name, stmtsp) {}
     ASTGEN_MEMBERS_AstFork;
-    // TODO: fork..join_none is not timing-conrtol, but we need to treat it as such
-    // So V3SchedTimed can process BEGIN blocks underneath it.
-    // There should be a better way to do it.
-    bool isTimingControl() const override {
-        //return !joinType().joinNone();
-        return true;
-    }
+    bool isTimingControl() const override { return !joinType().joinNone(); }
     void dump(std::ostream& str) const override;
     VJoinType joinType() const { return m_joinType; }
     void joinType(const VJoinType& flag) { m_joinType = flag; }

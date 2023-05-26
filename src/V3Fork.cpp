@@ -140,8 +140,8 @@ private:
 
     // Problem: we shouldn't treat refs to internal variables as captures.
     void visit(AstVarRef* nodep) override {
-        UINFO(1, "Referenced var: " << nodep->varp() << "\n");
-        UINFO(1, "Locals: \n");
+        //UINFO(1, "Referenced var: " << nodep->varp() << "\n");
+        //UINFO(1, "Locals: \n");
         for (auto* item :  m_forkLocalsp) {
             UINFO(1, "  * " << item << "\n");
         }
@@ -149,13 +149,6 @@ private:
             processCapturedRef(nodep);
         iterateChildren(nodep);
     }
-
-    //void visit(AstNodeFTask* nodep) override {
-    //    VL_RESTORER(m_funcp);
-    //    if (!m_capture)
-    //        m_funcp = nodep;
-    //    iterateChildren(nodep);
-    //}
 
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
