@@ -886,7 +886,8 @@ private:
         iterateAndNextConstNull(nodep->stmtsp());
         if (!optimizable()) return;
         iterateAndNextConstNull(nodep->resultp());
-        newValue(nodep, fetchValue(nodep->resultp()));
+        if (!optimizable()) return;
+        if (!m_checkOnly) newValue(nodep, fetchValue(nodep->resultp()));
     }
 
     void visit(AstJumpBlock* nodep) override {

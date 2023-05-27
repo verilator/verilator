@@ -78,6 +78,7 @@ private:
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
 
     // STATE - for current visit position (use VL_RESTORER)
+    bool m_inAssign = false;  // Currently in an assign
     AstNodeModule* m_modp = nullptr;  // Current module
     AstSelLoopVars* m_selloopvarsp = nullptr;  // Current loop vars
 
@@ -281,9 +282,13 @@ private:
         // See if simple assignments to variables may be eliminated because
         // that variable is never used.
         // Similar code in V3Life
-        VL_RESTORER(m_sideEffect);
+        const bool assignInAssign = m_inAssign;  // Might be Assign(..., ExprStmt(Assign), ...)
         {
+            VL_RESTORER(m_inAssign);
+            VL_RESTORER(m_sideEffect);
+            m_inAssign = true;
             m_sideEffect = false;
+            if (assignInAssign) m_sideEffect = true;
             iterateAndNextNull(nodep->rhsp());
             checkAll(nodep);
             // Has to be direct assignment without any EXTRACTing.
@@ -298,6 +303,7 @@ private:
             }
             iterateNull(nodep->timingControlp());
         }
+        if (assignInAssign) m_sideEffect = true;  // Parent assign shouldn't optimize
     }
 
     //-----

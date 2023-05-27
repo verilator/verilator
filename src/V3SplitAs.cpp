@@ -48,6 +48,12 @@ private:
             m_splitVscp = nodep->varScopep();
         }
     }
+    void visit(AstExprStmt* nodep) override {
+        // A function call inside the splitting assignment
+        // We need to presume the whole call is preserved (if the upper statement is)
+        // This will break if the m_splitVscp is a "ref" argument to the function,
+        // but little we can do.
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
@@ -101,6 +107,12 @@ private:
         // If something below matches, the upper statement remains too.
         m_keepStmt = oldKeep || m_keepStmt;
         UINFO(9, "     upKeep=" << m_keepStmt << " STMT " << nodep << endl);
+    }
+    void visit(AstExprStmt* nodep) override {
+        // A function call inside the splitting assignment
+        // We need to presume the whole call is preserved (if the upper statement is)
+        // This will break if the m_splitVscp is a "ref" argument to the function,
+        // but little we can do.
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
