@@ -35,22 +35,15 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
-
-class SplitAsBaseVisitor VL_NOT_FINAL : public VNVisitor {
-public:
-    // METHODS
-};
-
-//######################################################################
 // Find all split variables in a block
 
-class SplitAsFindVisitor final : public SplitAsBaseVisitor {
+class SplitAsFindVisitor final : public VNVisitor {
 private:
-    // STATE
+    // STATE - across all visitors
     AstVarScope* m_splitVscp = nullptr;  // Variable we want to split
 
     // METHODS
-    void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) {
         if (nodep->access().isWriteOrRW() && !m_splitVscp && nodep->varp()->attrIsolateAssign()) {
             m_splitVscp = nodep->varScopep();
         }
@@ -68,11 +61,12 @@ public:
 //######################################################################
 // Remove nodes not containing proper references
 
-class SplitAsCleanVisitor final : public SplitAsBaseVisitor {
+class SplitAsCleanVisitor final : public VNVisitor {
 private:
-    // STATE
-    AstVarScope* const m_splitVscp;  // Variable we want to split
+    // STATE - across all visitors
+    const AstVarScope* const m_splitVscp;  // Variable we want to split
     const bool m_modeMatch;  // Remove matching Vscp, else non-matching
+    // STATE - for current visit position (use VL_RESTORER)
     bool m_keepStmt = false;  // Current Statement must be preserved
     bool m_matches = false;  // Statement below has matching lvalue reference
 
@@ -89,6 +83,7 @@ private:
         UINFO(6, "     CL STMT " << nodep << endl);
         const bool oldKeep = m_keepStmt;
         {
+            VL_RESTORER(m_matches);
             m_matches = false;
             m_keepStmt = false;
 
@@ -122,14 +117,15 @@ public:
 //######################################################################
 // SplitAs class functions
 
-class SplitAsVisitor final : public SplitAsBaseVisitor {
+class SplitAsVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  AstAlways::user()       -> bool.  True if already processed
     const VNUser1InUse m_inuser1;
 
-    // STATE
+    // STATE - across all visitors
     VDouble0 m_statSplits;  // Statistic tracking
+    // STATE - for current visit position (use VL_RESTORER)
     AstVarScope* m_splitVscp = nullptr;  // Variable we want to split
 
     // METHODS
@@ -154,6 +150,7 @@ private:
     void visit(AstAlways* nodep) override {
         // Are there any lvalue references below this?
         // There could be more than one.  So, we process the first one found first.
+        VL_RESTORER(m_splitVscp);
         const AstVarScope* lastSplitVscp = nullptr;
         while (!nodep->user1()) {
             // Find any splittable variables
