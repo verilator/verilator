@@ -62,9 +62,10 @@ private:
     // TYPES
     using AssignMap = std::multimap<AstVarScope*, AstNodeAssign*>;
 
-    // STATE
-    AstNodeModule* m_modp = nullptr;  // Current module
-    AstSelLoopVars* m_selloopvarsp = nullptr;  // Current loop vars
+    // STATE - across all visitors
+    const bool m_elimUserVars;  // Allow removal of user's vars
+    const bool m_elimDTypes;  // Allow removal of DTypes
+    const bool m_elimCells;  // Allow removal of Cells
     // List of all encountered to avoid another loop through tree
     std::vector<AstVar*> m_varsp;
     std::vector<AstNode*> m_dtypesp;
@@ -73,12 +74,12 @@ private:
     std::vector<AstCell*> m_cellsp;
     std::vector<AstClass*> m_classesp;
     std::vector<AstTypedef*> m_typedefsp;
-
     AssignMap m_assignMap;  // List of all simple assignments for each variable
-    const bool m_elimUserVars;  // Allow removal of user's vars
-    const bool m_elimDTypes;  // Allow removal of DTypes
-    const bool m_elimCells;  // Allow removal of Cells
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
+
+    // STATE - for current visit position (use VL_RESTORER)
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstSelLoopVars* m_selloopvarsp = nullptr;  // Current loop vars
 
     // METHODS
 
@@ -107,18 +108,16 @@ private:
     void visit(AstNodeModule* nodep) override {
         if (m_modp) m_modp->user1Inc();  // e.g. Class under Package
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            if (!nodep->dead()) {
-                iterateChildren(nodep);
-                checkAll(nodep);
-                if (AstClass* const classp = VN_CAST(nodep, Class)) {
-                    if (classp->extendsp()) classp->extendsp()->user1Inc();
-                    if (classp->classOrPackagep()) classp->classOrPackagep()->user1Inc();
-                    m_classesp.push_back(classp);
-                    // TODO we don't reclaim dead classes yet - graph implementation instead?
-                    classp->user1Inc();
-                }
+        m_modp = nodep;
+        if (!nodep->dead()) {
+            iterateChildren(nodep);
+            checkAll(nodep);
+            if (AstClass* const classp = VN_CAST(nodep, Class)) {
+                if (classp->extendsp()) classp->extendsp()->user1Inc();
+                if (classp->classOrPackagep()) classp->classOrPackagep()->user1Inc();
+                m_classesp.push_back(classp);
+                // TODO we don't reclaim dead classes yet - graph implementation instead?
+                classp->user1Inc();
             }
         }
     }
