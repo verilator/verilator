@@ -236,6 +236,21 @@ class EmitCHeader final : public EmitCConstInit {
             puts(itemp->dtypep()->cType(itemp->nameProtect(), false, false));
             puts(";\n");
         }
+
+        puts("\nbool operator==(const " + EmitCBase::prefixNameProtect(sdtypep) + "& rhs){\n");
+        puts("return ");
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            puts(itemp->nameProtect() + " == " + "rhs." + itemp->nameProtect());
+            if (itemp->nextp())
+                puts(" &&\n    ");
+            else
+                puts(";\n");
+        }
+        puts("}");
+        puts("\nbool operator!=(const " + EmitCBase::prefixNameProtect(sdtypep) + "& rhs){\n");
+        puts("return !(*this == rhs);\n");
+        puts("}\n");
         puts("};\n");
     }
     void emitStructs(const AstNodeModule* modp) {
