@@ -437,6 +437,7 @@ class AstToDfgVisitor final : public VNVisitor {
     void visit(AstCell* nodep) override { markReferenced(nodep); }
     void visit(AstNodeProcedure* nodep) override { markReferenced(nodep); }
     void visit(AstVar* nodep) override {
+        if (nodep->isSc()) return;
         // No need to (and in fact cannot) handle variables with unsupported dtypes
         if (!DfgVertex::isSupportedDType(nodep->dtypep())) return;
         // Mark ports as having external references

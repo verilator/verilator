@@ -25,6 +25,7 @@ Verilator 5.011 devel
 * Fix crash on duplicate imported modules (#3231). [Robert Balas]
 * Fix false WIDTHEXPAND on array declarations (#3959). [JOTEGO]
 * Fix marking overridden methods as coroutines (#4120) (#4169). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix SystemC signal copy macro use (#4135). [Josep Sans]
 * Fix duplicate static names in blocks in functions (#4144) (#4160). [Stefan Wallentowitz]
 * Fix initialization order of initial static after function/task (#4159). [Kamil Rakoczy, Antmicro Ltd]
 * Fix linking AstRefDType if it has parameterized class ref (#4164) (#4170). [Ryszard Rozak, Antmicro Ltd]
