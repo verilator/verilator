@@ -92,6 +92,13 @@ private:
     const VNUser4InUse m_inuser4;
     const VNUser5InUse m_inuser5;
 
+    // STATE - across all visitors
+    std::unordered_map<const AstVarScope*, int> m_scopeVecMap;  // Next var number for each scope
+    std::set<AstSenTree*> m_timingDomains;  // Timing resume domains
+    using VarMap = std::map<const std::pair<AstNodeModule*, std::string>, AstVar*>;
+    VarMap m_modVarMap;  // Table of new var names created under module
+    VDouble0 m_statSharedSet;  // Statistic tracking
+
     // STATE - for current visit position (use VL_RESTORER)
     AstActive* m_activep = nullptr;  // Current activate
     const AstCFunc* m_cfuncp = nullptr;  // Current public C Function
@@ -102,13 +109,6 @@ private:
     bool m_inInitial = false;  // True in static initializers and initial blocks
     bool m_inSuspendableOrFork = false;  // True in suspendable processes and forks
     bool m_ignoreBlkAndNBlk = false;  // Suppress delayed assignment BLKANDNBLK
-
-    // STATE - across all visitors
-    std::unordered_map<const AstVarScope*, int> m_scopeVecMap;  // Next var number for each scope
-    std::set<AstSenTree*> m_timingDomains;  // Timing resume domains
-    using VarMap = std::map<const std::pair<AstNodeModule*, std::string>, AstVar*>;
-    VarMap m_modVarMap;  // Table of new var names created under module
-    VDouble0 m_statSharedSet;  // Statistic tracking
 
     // METHODS
 

@@ -57,13 +57,13 @@ private:
     AstUser4Allocator<AstCFunc, std::unordered_multimap<const AstVarScope*, AstVarRef*>>
         m_references;
 
-    // STATE - for current visit position (use VL_RESTORER)
-    AstCFunc* m_cfuncp = nullptr;  // Current active function
-    uint32_t m_nodeDepth = 0;  // Node depth under m_cfuncp
-
     // STATE - across all visitors
     std::vector<AstVarScope*> m_varScopeps;  // List of variables to consider for localization
     VDouble0 m_statLocVars;  // Statistic tracking
+
+    // STATE - for current visit position (use VL_RESTORER)
+    AstCFunc* m_cfuncp = nullptr;  // Current active function
+    uint32_t m_nodeDepth = 0;  // Node depth under m_cfuncp
 
     // METHODS
     bool isOptimizable(AstVarScope* nodep) {

@@ -53,6 +53,10 @@ private:
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
+    // STATE - across all visitors
+    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
+    VDouble0 m_extractedToConstPool;  // Statistic tracking
+
     // STATE - for current visit position (use VL_RESTORER)
     AstCFunc* m_cfuncp = nullptr;  // Current block
     AstNode* m_stmtp = nullptr;  // Current statement
@@ -60,10 +64,6 @@ private:
     AstWhile* m_inWhilep = nullptr;  // Inside while loop, special statement additions
     AstTraceInc* m_inTracep = nullptr;  // Inside while loop, special statement additions
     bool m_assignLhs = false;  // Inside assignment lhs, don't breakup extracts
-
-    // STATE - across all visitors
-    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
-    VDouble0 m_extractedToConstPool;  // Statistic tracking
 
     // METHODS
     bool assignNoTemp(AstNodeAssign* nodep) {
