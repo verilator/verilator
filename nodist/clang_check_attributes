@@ -384,12 +384,16 @@ class CallAnnotationsValidator:
         if build_dir:
             initial_cwd = os.getcwd()
             os.chdir(build_dir)
-        translation_unit = self._index.parse(filename, filtered_args)
-        has_errors = False
-        for diag in translation_unit.diagnostics:
-            if diag.severity > clang.cindex.Diagnostic.Error:
-                has_errors = True
-        if translation_unit and not has_errors:
+        try:
+            translation_unit = self._index.parse(filename, filtered_args)
+        except:
+            translation_unit = None
+        errors = []
+        if translation_unit:
+            for diag in translation_unit.diagnostics:
+                if diag.severity >= clang.cindex.Diagnostic.Error:
+                    errors.append(str(diag))
+        if translation_unit and len(errors) == 0:
             self._defines = defines
             self._main_source_file = filename
             self.process_translation_unit(translation_unit)
@@ -397,6 +401,8 @@ class CallAnnotationsValidator:
             self._defines = {}
         else:
             print(f"%Error: parsing failed: {filename}", file=sys.stderr)
+            for e in errors:
+                print(f"        {e}", file=sys.stderr)
         if build_dir:
             os.chdir(initial_cwd)
 
@@ -853,34 +859,39 @@ def get_filter_funcs(verilator_root: str):
 
 
 def precompile_header(compile_command: CompileCommand, tmp_dir: str) -> str:
+    initial_cwd = os.getcwd()
+    errors = []
     try:
-        initial_cwd = os.getcwd()
         os.chdir(compile_command.directory)
 
         index = Index.create()
         translation_unit = index.parse(compile_command.filename,
                                        compile_command.args)
         for diag in translation_unit.diagnostics:
-            if diag.severity > clang.cindex.Diagnostic.Error:
-                pch_file = None
-                break
-        else:
+            if diag.severity >= clang.cindex.Diagnostic.Error:
+                errors.append(str(diag))
+
+        if len(errors) == 0:
             pch_file = os.path.join(
                 tmp_dir,
                 f"{compile_command.refid:02}_{os.path.basename(compile_command.filename)}.pch"
             )
             translation_unit.save(pch_file)
 
+            if pch_file:
+                return pch_file
+
+    except (TranslationUnitSaveError, TranslationUnitLoadError, OSError) as e:
+        print(f"%Warning: {e}", file=sys.stderr)
+
+    finally:
         os.chdir(initial_cwd)
 
-        if pch_file:
-            return pch_file
-
-    except (TranslationUnitSaveError, TranslationUnitLoadError, OSError):
-        pass
-
     print(
-        f"%Warning: Precompiling failed, skipping: {compile_command.filename}")
+        f"%Warning: Precompilation failed, skipping: {compile_command.filename}",
+        file=sys.stderr)
+    for e in errors:
+        print(f"          {e}", file=sys.stderr)
     return ""
 
 
