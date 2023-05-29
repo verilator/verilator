@@ -48,6 +48,7 @@ Verilator 5.011 devel
 * Fix missing assignment for wide unpacked structs (#4233). [Jiamin Zhu]
 * Fix detection of wire/reg duplicates.
 * Fix false IMPLICITSTATIC on package functions.
+* Fix method calls on function return values.
 
 
 Verilator 5.010 2023-04-30
