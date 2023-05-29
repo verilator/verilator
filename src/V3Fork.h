@@ -27,7 +27,9 @@ class AstNetlist;
 
 class V3Fork final {
 public:
-    static void makeTasks(AstNetlist* nodep);
+    // Create tasks out of begin blocks that can outlive processes in which they were forked.
+    // Return value: number of tasks created
+    static int makeTasks(AstNetlist* nodep);
 };
 
 #endif  // Guard

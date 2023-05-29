@@ -50,6 +50,7 @@ private:
     std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
     AstArg* m_capturedVarRefsp = nullptr;
     bool m_capture = false;
+    int m_createdTasksCount = 0;
 
     void processCapturedRef(AstVarRef* vrefp) {
         AstVar* varp = nullptr;
@@ -88,6 +89,8 @@ private:
         AstTask* taskp = new AstTask{blockp->fileline(), taskName, stmtsp};
         // if (captures)
         //     taskp->fvarp(AstNode::addNext(taskp->fvarp(), captures));
+
+        ++m_createdTasksCount;
 
         return taskp;
     }
@@ -169,10 +172,19 @@ private:
 
 public:
     ForkVisitor(AstNetlist* nodep) { visit(nodep); }
+
+    int createdTasksCount() { return m_createdTasksCount; }
 };
 
-void V3Fork::makeTasks(AstNetlist* nodep) {
+int V3Fork::makeTasks(AstNetlist* nodep) {
+    int createdTasksCount;
+
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ForkVisitor fork_visitor(nodep); }
+    {
+        ForkVisitor fork_visitor(nodep);
+        createdTasksCount = fork_visitor.createdTasksCount();
+    }
     V3Global::dumpCheckGlobalTree("fork", 0, dumpTreeLevel() >= 3);
+
+    return createdTasksCount;
 }
