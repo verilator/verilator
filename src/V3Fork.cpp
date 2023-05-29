@@ -54,7 +54,7 @@ private:
 
     void processCapturedRef(AstVarRef* vrefp) {
         AstVar* varp = nullptr;
-        for (varp = m_capturedVarsp; varp; varp = VN_AS(m_capturedVarsp->nextp(), Var))
+        for (varp = m_capturedVarsp; varp; varp = VN_AS(varp->nextp(), Var))
             if (varp->name() == vrefp->name()) break;
         if (!varp) {
             varp = new AstVar{vrefp->fileline(), VVarType::MEMBER, vrefp->name(), vrefp->dtypep()};
@@ -82,10 +82,9 @@ private:
         //     m_liftedp = AstNode::addNext(m_liftedp, varp);
         // });
 
-        std::string taskName
-            = m_modp->name() + "__BEGIN_"
-              + (!blockp->name().empty() ? (blockp->name() + "__") : "ANON_BLOCK__")
-              + cvtToHex(blockp);
+        std::string taskName = m_modp->name() + "__BEGIN_"
+                               + (!blockp->name().empty() ? (blockp->name() + "__") : "UNNAMED__")
+                               + cvtToHex(blockp);
         // TODO: Ensure no collisions
 
         stmtsp = AstNode::addNext(static_cast<AstNode*>(captures), stmtsp);
