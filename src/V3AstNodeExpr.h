@@ -1450,7 +1450,7 @@ public:
     void name(const string& name) override { m_name = name; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return false; }
+    bool cleanOut() const override { return true; }
     bool same(const AstNode* samep) const override { return true; }  // dtype comparison does it
     int instrCount() const override { return widthInstrs(); }
     AstVar* varp() const { return m_varp; }
