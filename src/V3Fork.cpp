@@ -52,15 +52,19 @@ private:
     bool m_capture = false;
 
     void processCapturedRef(AstVarRef* vrefp) {
-        AstVar* varp
-            = new AstVar{vrefp->fileline(), VVarType::MEMBER, vrefp->name(), vrefp->dtypep()};
-        varp->direction(VDirection::INPUT);
-        varp->funcLocal(true);
-        varp->lifetime(VLifetime::AUTOMATIC);
-        m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
-        // Use the original ref as an argument for call
-        AstArg* arg = new AstArg{vrefp->fileline(), vrefp->name(), vrefp->cloneTree(false)};
-        m_capturedVarRefsp = AstNode::addNext(m_capturedVarRefsp, arg);
+        AstVar* varp = nullptr;
+        for (varp = m_capturedVarsp; varp; varp = VN_AS(m_capturedVarsp->nextp(), Var))
+            if (varp->name() == vrefp->name()) break;
+        if (!varp) {
+            varp = new AstVar{vrefp->fileline(), VVarType::MEMBER, vrefp->name(), vrefp->dtypep()};
+            varp->direction(VDirection::INPUT);
+            varp->funcLocal(true);
+            varp->lifetime(VLifetime::AUTOMATIC);
+            m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
+            // Use the original ref as an argument for call
+            AstArg* arg = new AstArg{vrefp->fileline(), vrefp->name(), vrefp->cloneTree(false)};
+            m_capturedVarRefsp = AstNode::addNext(m_capturedVarRefsp, arg);
+        }
         vrefp->varp(varp);
         // We don't need to update scope as those don't exist yet.
     }
@@ -141,7 +145,9 @@ private:
     void visit(AstVarRef* nodep) override {
         // UINFO(1, "Referenced var: " << nodep->varp() << "\n");
         // UINFO(1, "Locals: \n");
-        for (auto* item : m_forkLocalsp) { UINFO(1, "  * " << item << "\n"); }
+        // for (auto* item : m_forkLocalsp) { UINFO(1, "  * " << item << "\n"); }
+
+        // TODO: Allow writes to static variables
         if (m_capture && (m_forkLocalsp.count(nodep->varp()) == 0)) {
             if (nodep->access().isWriteOrRW()) {
                 nodep->v3warn(E_TASKNSVAR, "Invalid capture: Process might outlive this "
