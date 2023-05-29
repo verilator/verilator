@@ -145,8 +145,14 @@ private:
         for (auto* item :  m_forkLocalsp) {
             UINFO(1, "  * " << item << "\n");
         }
-        if (m_capture && (m_forkLocalsp.count(nodep->varp()) == 0))
+        if (m_capture && (m_forkLocalsp.count(nodep->varp()) == 0)) {
+            if (nodep->access().isWriteOrRW()) {
+                nodep->v3warn(E_TASKNSVAR, "Invalid capture: Process might outlive this "
+                                           "variable. Initialize a local copy instead.");
+                return;
+            }
             processCapturedRef(nodep);
+        }
         iterateChildren(nodep);
     }
 
