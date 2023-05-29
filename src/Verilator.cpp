@@ -224,7 +224,7 @@ static void process() {
 
         // Create dedicated tasks for fork..join_any / fork_join_none processes
         V3Fork::makeTasks(v3Global.rootp());
-        V3LinkDot::linkDotPrimary(v3Global.rootp()); // Link newly created tasks
+        V3LinkDot::linkDotPrimary(v3Global.rootp());  // Link newly created tasks
 
         // Task inlining & pushing BEGINs names to variables/cells
         // Begin processing must be after Param, before module inlining

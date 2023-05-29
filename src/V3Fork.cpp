@@ -32,28 +32,28 @@
 #include "V3Fork.h"
 
 #include "V3Ast.h"
-#include "V3Global.h"
 #include "V3AstNodeExpr.h"
+#include "V3Global.h"
 
-#include <set>
 #include <algorithm>
+#include <set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 class ForkVisitor final : public VNVisitor {
 private:
     AstNodeModule* m_modp = nullptr;
-    //AstNodeFTask* m_funcp = nullptr;
+    // AstNodeFTask* m_funcp = nullptr;
     AstFork* m_fork = nullptr;
     AstVar* m_capturedVarsp = nullptr;
     // Problem: where to lift the variables? What in case of nested forks?
-    std::set<AstVar*> m_forkLocalsp; // Variables local to a given fork
+    std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
     AstArg* m_capturedVarRefsp = nullptr;
     bool m_capture = false;
 
     void processCapturedRef(AstVarRef* vrefp) {
-        AstVar* varp = new AstVar{vrefp->fileline(), VVarType::MEMBER, vrefp->name(),
-                                  vrefp->dtypep()};
+        AstVar* varp
+            = new AstVar{vrefp->fileline(), VVarType::MEMBER, vrefp->name(), vrefp->dtypep()};
         varp->direction(VDirection::INPUT);
         varp->funcLocal(true);
         varp->lifetime(VLifetime::AUTOMATIC);
@@ -72,18 +72,18 @@ private:
         //// Question: does it still work for nested forks?
         //// > Probably yes, in caseof nested fork we won't find any vars next time
         //// > [this could be optimized then]
-        //stmtsp->foreach([&](AstVar* varp) {
-        //    varp = varp->unlinkFrBack();
-        //    m_liftedp = AstNode::addNext(m_liftedp, varp);
-        //});
+        // stmtsp->foreach([&](AstVar* varp) {
+        //     varp = varp->unlinkFrBack();
+        //     m_liftedp = AstNode::addNext(m_liftedp, varp);
+        // });
 
-        std::string taskName = "test_name"; // TODO: Generate name
+        std::string taskName = "test_name";  // TODO: Generate name
 
         stmtsp = AstNode::addNext(static_cast<AstNode*>(captures), stmtsp);
 
         AstTask* taskp = new AstTask{blockp->fileline(), taskName, stmtsp};
-        //if (captures)
-        //    taskp->fvarp(AstNode::addNext(taskp->fvarp(), captures));
+        // if (captures)
+        //     taskp->fvarp(AstNode::addNext(taskp->fvarp(), captures));
 
         return taskp;
     }
@@ -116,18 +116,17 @@ private:
         }
         // We might need to propagate the captures in case of nested forks
         if (m_capturedVarsp)
-            parentCapturesp =
-                AstNode::addNext(parentCapturesp, m_capturedVarsp->cloneTree(true));
+            parentCapturesp = AstNode::addNext(parentCapturesp, m_capturedVarsp->cloneTree(true));
 
         // TODO: Check scoping - captures can't be refs to fork's scope.
 
         AstTask* taskp = turnBlockToTask(nodep, m_capturedVarsp);
         m_modp->addStmtsp(taskp);
 
-        m_capturedVarsp = parentCapturesp; // Restore captures
+        m_capturedVarsp = parentCapturesp;  // Restore captures
 
-        AstTaskRef* taskrefp = new AstTaskRef{nodep->fileline(), taskp->name(),
-                                              m_capturedVarRefsp};
+        AstTaskRef* taskrefp
+            = new AstTaskRef{nodep->fileline(), taskp->name(), m_capturedVarRefsp};
         AstStmtExpr* taskcallp = new AstStmtExpr{nodep->fileline(), taskrefp};
         nodep->replaceWith(taskcallp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -140,11 +139,9 @@ private:
 
     // Problem: we shouldn't treat refs to internal variables as captures.
     void visit(AstVarRef* nodep) override {
-        //UINFO(1, "Referenced var: " << nodep->varp() << "\n");
-        //UINFO(1, "Locals: \n");
-        for (auto* item :  m_forkLocalsp) {
-            UINFO(1, "  * " << item << "\n");
-        }
+        // UINFO(1, "Referenced var: " << nodep->varp() << "\n");
+        // UINFO(1, "Locals: \n");
+        for (auto* item : m_forkLocalsp) { UINFO(1, "  * " << item << "\n"); }
         if (m_capture && (m_forkLocalsp.count(nodep->varp()) == 0)) {
             if (nodep->access().isWriteOrRW()) {
                 nodep->v3warn(E_TASKNSVAR, "Invalid capture: Process might outlive this "
@@ -165,15 +162,11 @@ private:
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
-    ForkVisitor(AstNetlist* nodep) {
-        visit(nodep);
-    }
+    ForkVisitor(AstNetlist* nodep) { visit(nodep); }
 };
 
 void V3Fork::makeTasks(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    {
-        ForkVisitor fork_visitor(nodep);
-    }
+    { ForkVisitor fork_visitor(nodep); }
     V3Global::dumpCheckGlobalTree("fork", 0, dumpTreeLevel() >= 3);
 }
