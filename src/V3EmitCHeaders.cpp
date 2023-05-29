@@ -22,7 +22,9 @@
 #include "V3Global.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <set>
+#include <string>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -241,16 +243,22 @@ class EmitCHeader final : public EmitCConstInit {
         puts("return ");
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            puts(itemp->nameProtect() + " == " + "rhs." + itemp->nameProtect());
-            if (itemp->nextp())
-                puts(" &&\n    ");
-            else
-                puts(";\n");
+            if (itemp != sdtypep->membersp()) puts("\n    && ");
+            if (AstUnpackArrayDType* const adtypep
+                = VN_CAST(itemp->subDTypep(), UnpackArrayDType)) {
+                for (uint32_t i = 0; i < adtypep->arrayUnpackedElements(); i++) {
+                    if (i != 0) puts("\n    && ");
+                    puts(itemp->nameProtect() + "[" + std::to_string(i) + "U] == " + "rhs."
+                         + itemp->nameProtect() + "[" + std::to_string(i) + "U]");
+                }
+            } else {
+                puts(itemp->nameProtect() + " == " + "rhs." + itemp->nameProtect());
+            }
         }
-        puts("}");
-        puts("\nbool operator!=(const " + EmitCBase::prefixNameProtect(sdtypep) + "& rhs){\n");
-        puts("return !(*this == rhs);\n");
+        puts(";\n");
         puts("}\n");
+        puts("bool operator!=(const " + EmitCBase::prefixNameProtect(sdtypep) + "& rhs){\n");
+        puts("return !(*this == rhs);\n}\n");
         puts("};\n");
     }
     void emitStructs(const AstNodeModule* modp) {
