@@ -82,7 +82,11 @@ private:
         //     m_liftedp = AstNode::addNext(m_liftedp, varp);
         // });
 
-        std::string taskName = "test_name";  // TODO: Generate name
+        std::string taskName
+            = m_modp->name() + "__BEGIN_"
+              + (!blockp->name().empty() ? (blockp->name() + "__") : "ANON_BLOCK__")
+              + cvtToHex(blockp);
+        // TODO: Ensure no collisions
 
         stmtsp = AstNode::addNext(static_cast<AstNode*>(captures), stmtsp);
 
