@@ -2122,14 +2122,14 @@ class AstWith final : public AstNodeExpr {
     // Children: expression (equation establishing the with)
     // @astgen op1 := indexArgRefp : AstLambdaArgRef
     // @astgen op2 := valueArgRefp : AstLambdaArgRef
-    // @astgen op3 := exprp : AstNodeExpr
+    // @astgen op3 := exprp : List[AstNode]
 public:
     AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,
             AstNodeExpr* exprp)
         : ASTGEN_SUPER_With(fl) {
         this->indexArgRefp(indexArgRefp);
         this->valueArgRefp(valueArgRefp);
-        this->exprp(exprp);
+        this->addExprp(exprp);
     }
     ASTGEN_MEMBERS_AstWith;
     bool same(const AstNode* /*samep*/) const override { return true; }

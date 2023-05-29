@@ -1371,6 +1371,15 @@ private:
             iterateChildren(nodep);
         }
     }
+    void visit(AstWith* nodep) override {
+        if (nodep->user1SetOnce()){
+            // Make sure that the return expression is converted only once
+            return;
+        }
+        AstNodeExpr* const withExprp = VN_AS(nodep->exprp()->unlinkFrBack(), NodeExpr);
+        nodep->addExprp(new AstCReturn{withExprp->fileline(), withExprp});
+        iterateChildren(nodep);
+    }
     void visit(AstScope* nodep) override {
         m_scopep = nodep;
         m_insStmtp = nullptr;

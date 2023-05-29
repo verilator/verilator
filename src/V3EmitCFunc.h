@@ -476,10 +476,9 @@ public:
         if (auto* const argrefp = nodep->valueArgRefp()) {
             putbs(argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
         }
-        // Probably fragile, V3Task may need to convert to a AstCReturn
-        puts(") { return ");
+        puts(") {\n");
         iterateAndNextConstNull(nodep->exprp());
-        puts("; }\n");
+        puts("}\n");
     }
     void visit(AstNodeCase* nodep) override {  // LCOV_EXCL_LINE
         // In V3Case...
