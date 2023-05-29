@@ -72,6 +72,7 @@ private:
 
     AstTask* turnBlockToTask(AstNodeBlock* blockp, AstVar* captures) {
         AstNode* stmtsp = blockp->stmtsp();
+        UASSERT(stmtsp, "No stmtsp\n");
         stmtsp = stmtsp->unlinkFrBackWithNext();
 
         //// Question: does it still work for nested forks?
@@ -115,6 +116,7 @@ private:
         }
 
         VL_RESTORER(m_capturedVarRefsp);
+        m_capturedVarRefsp = nullptr;
 
         // Collect captures
         AstVar* parentCapturesp = m_capturedVarsp;
