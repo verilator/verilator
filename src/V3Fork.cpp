@@ -45,13 +45,16 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class ForkVisitor final : public VNVisitor {
 private:
+    // NODE STATE
+    // AstVar::user1           -> bool, 1 = Node was created as a call toan asynchronous task
+    const VNUser1InUse m_inuser1;
+
     // STATE
     AstNodeModule* m_modp = nullptr;  // Class/module we are currently under
-    int m_fork = 0;  // level of fork..join_* nesting
+    int m_forkDepth = 0;
     AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
     std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
     AstArg* m_capturedVarRefsp = nullptr;  // References to captured variables (as args
-    bool m_capture = false;  // Enable variable capturing
     int m_createdTasksCount = 0;  // Number of tasks created by this visitor
 
     // METHODS
@@ -89,25 +92,22 @@ private:
 
     // VISITORS
     void visit(AstFork* nodep) override {
-        VL_RESTORER(m_fork);
         VL_RESTORER(m_forkLocalsp);
+        VL_RESTORER(m_forkDepth)
         if (!nodep->joinType().join()) {
-            ++m_fork;
+            ++m_forkDepth;
             m_forkLocalsp.clear();
         }
         iterateChildren(nodep);
     }
     void visit(AstNodeBlock* nodep) override {
-        if (!m_fork) {
+        if (!m_forkDepth) {
             iterateChildren(nodep);
             return;
         }
 
-        VL_RESTORER(m_capture);
         VL_RESTORER(m_capturedVarsp);
         VL_RESTORER(m_capturedVarRefsp);
-
-        m_capture = true;
         m_capturedVarsp = nullptr;
         m_capturedVarRefsp = nullptr;
 
@@ -120,16 +120,23 @@ private:
             = new AstTaskRef{nodep->fileline(), taskp->name(), m_capturedVarRefsp};
         AstStmtExpr* taskcallp = new AstStmtExpr{nodep->fileline(), taskrefp};
         // Replaced nodes will be revisited, so we don't need to "lift" the arguments
-        // as captures in case of nested forks
+        // as captures in case of nested forks.
         nodep->replaceWith(taskcallp);
+        taskcallp->user1(true);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstVar* nodep) override {
-        if (m_fork) m_forkLocalsp.insert(nodep);
+        VL_RESTORER(m_forkDepth);
+        if (nodep->user1()) --m_forkDepth;
+
+        if (m_forkDepth) m_forkLocalsp.insert(nodep);
         iterateChildren(nodep);
     }
     void visit(AstVarRef* nodep) override {
-        if (m_capture && (m_forkLocalsp.count(nodep->varp()) == 0)
+        VL_RESTORER(m_forkDepth);
+        if (nodep->user1()) --m_forkDepth;
+
+        if (m_forkDepth && (m_forkLocalsp.count(nodep->varp()) == 0)
             && !nodep->varp()->lifetime().isStatic()) {
             if (nodep->access().isWriteOrRW()) {
                 nodep->v3warn(E_TASKNSVAR, "Invalid capture: Process might outlive this "
@@ -141,11 +148,18 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_forkDepth);
         VL_RESTORER(m_modp);
+        if (nodep->user1()) --m_forkDepth;
+
         m_modp = nodep;
         iterateChildren(nodep);
     }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override {
+        VL_RESTORER(m_forkDepth);
+        if (nodep->user1()) --m_forkDepth;
+        iterateChildren(nodep);
+    }
 
 public:
     // CONSTRUCTORS
