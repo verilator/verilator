@@ -3040,6 +3040,10 @@ private:
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
+        } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_SCOPE) {
+            // HERE function() . method_called_on_function_return_value()
+            m_ds.m_dotPos = DP_MEMBER;
+            m_ds.m_dotText = "";
         } else {
             checkNoDot(nodep);
         }
