@@ -298,7 +298,11 @@ private:
     }
     void visit(AstWith* nodep) override {
         iterateChildren(nodep);
-        ensureCleanAndNext(nodep->exprp());
+        setClean(nodep, true);
+    }
+    void visit(AstCReturn* nodep) override {
+        iterateChildren(nodep);
+        ensureClean(nodep->lhsp());
         setClean(nodep, true);
     }
     void visit(AstIntfRef* nodep) override {

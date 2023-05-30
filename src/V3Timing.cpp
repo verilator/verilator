@@ -568,17 +568,25 @@ private:
     }
     void visit(AstCFunc* nodep) override {
         iterateChildren(nodep);
-        if (nodep->user2()) {
-            nodep->rtnType("VlCoroutine");
-            // If in a class, create a shared pointer to 'this'
-            if (m_classp) nodep->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;\n"});
-            if (!nodep->exists([](AstCAwait*) { return true; })) {
-                // It's a coroutine but has no awaits (a class method that overrides/is
-                // overridden by a suspendable, but doesn't have any awaits itself). Add a
-                // co_return at the end (either that or a co_await is required in a
-                // coroutine)
-                nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
-            }
+        if (!nodep->user2()) return;
+        nodep->rtnType("VlCoroutine");
+        // If in a class, create a shared pointer to 'this'
+        if (m_classp) nodep->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;\n"});
+        AstNode* firstCoStmtp = nullptr;  // First co_* statement in the function
+        nodep->exists([&](AstCAwait* const awaitp) -> bool { return (firstCoStmtp = awaitp); });
+        if (!firstCoStmtp) {
+            // It's a coroutine but has no awaits (a class method that overrides/is
+            // overridden by a suspendable, but doesn't have any awaits itself). Add a
+            // co_return at the end (either that or a co_await is required in a
+            // coroutine)
+            firstCoStmtp = new AstCStmt{nodep->fileline(), "co_return;\n"};
+            nodep->addStmtsp(firstCoStmtp);
+        }
+        if (nodep->dpiExportImpl()) {
+            // A DPI-exported coroutine won't be able to block the calling code
+            // Error on the await node; fall back to the function node
+            firstCoStmtp->v3warn(E_UNSUPPORTED,
+                                 "Unsupported: Timing controls inside DPI-exported tasks");
         }
     }
     void visit(AstNodeCCall* nodep) override {

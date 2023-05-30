@@ -476,10 +476,9 @@ public:
         if (auto* const argrefp = nodep->valueArgRefp()) {
             putbs(argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
         }
-        // Probably fragile, V3Task may need to convert to a AstCReturn
-        puts(") { return ");
+        puts(") {\n");
         iterateAndNextConstNull(nodep->exprp());
-        puts("; }\n");
+        puts("}\n");
     }
     void visit(AstNodeCase* nodep) override {  // LCOV_EXCL_LINE
         // In V3Case...
@@ -1044,7 +1043,9 @@ public:
     }
     void visit(AstCCast* nodep) override {
         // Extending a value of the same word width is just a NOP.
-        if (nodep->size() <= VL_IDATASIZE) {
+        if (const AstClassRefDType* const classDtypep = VN_CAST(nodep->dtypep(), ClassRefDType)) {
+            puts("(" + classDtypep->cType("", false, false) + ")(");
+        } else if (nodep->size() <= VL_IDATASIZE) {
             puts("(IData)(");
         } else {
             puts("(QData)(");

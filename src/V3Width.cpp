@@ -503,9 +503,26 @@ private:
             //  the size of this subexpression only.
             // Second call (final()) m_vup->width() is probably the expression size, so
             //  the expression includes the size of the output too.
-            if (nodep->thenp()->dtypep()->skipRefp() == nodep->elsep()->dtypep()->skipRefp()) {
+            const AstNodeDType* const thenDTypep = nodep->thenp()->dtypep();
+            const AstNodeDType* const elseDTypep = nodep->elsep()->dtypep();
+            if (thenDTypep->skipRefp() == elseDTypep->skipRefp()) {
                 // TODO might need a broader equation, use the Castable function?
-                nodep->dtypeFrom(nodep->thenp()->dtypep());
+                nodep->dtypeFrom(thenDTypep);
+            } else if (nodep->thenp()->isClassHandleValue()
+                       || nodep->elsep()->isClassHandleValue()) {
+                AstNodeDType* commonClassTypep = nullptr;
+                if (nodep->thenp()->isClassHandleValue() && nodep->elsep()->isClassHandleValue()) {
+                    // Get the most-deriving class type that both arguments can be casted to.
+                    commonClassTypep = getCommonClassTypep(nodep->thenp(), nodep->elsep());
+                }
+                if (commonClassTypep) {
+                    nodep->dtypep(commonClassTypep);
+                } else {
+                    nodep->v3error("Incompatible types of operands of condition operator: "
+                                   << thenDTypep->prettyTypeName() << " and "
+                                   << elseDTypep->prettyTypeName());
+                    nodep->dtypeFrom(thenDTypep);
+                }
             } else if (nodep->thenp()->isDouble() || nodep->elsep()->isDouble()) {
                 nodep->dtypeSetDouble();
             } else if (nodep->thenp()->isString() || nodep->elsep()->isString()) {
@@ -7308,6 +7325,30 @@ private:
         if (VN_IS(nodep, UnsizedArrayDType)) return true;
         if (nodep->subDTypep()) return hasOpenArrayIterateDType(nodep->subDTypep()->skipRefp());
         return false;
+    }
+    AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) {
+        // Return the class type that both nodep1 and nodep2 are castable to.
+        // If both are null, return the type of null constant.
+        // If one is a class and one is null, return AstClassRefDType that points to that class.
+        // If no common class type exists, return nullptr.
+
+        // First handle cases with null values and when one class is a super class of the other.
+        if (VN_IS(nodep1, Const)) std::swap(nodep1, nodep2);
+        const Castable castable = computeCastable(nodep1->dtypep(), nodep2->dtypep(), nodep2);
+        if (castable == SAMEISH || castable == COMPATIBLE) {
+            return nodep1->dtypep()->cloneTree(false);
+        } else if (castable == DYNAMIC_CLASS) {
+            return nodep2->dtypep()->cloneTree(false);
+        }
+
+        AstClassRefDType* classDtypep1 = VN_CAST(nodep1->dtypep(), ClassRefDType);
+        while (classDtypep1) {
+            const Castable castable = computeCastable(classDtypep1, nodep2->dtypep(), nodep2);
+            if (castable == COMPATIBLE) return classDtypep1->cloneTree(false);
+            AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
+            classDtypep1 = extendsp ? VN_AS(extendsp->dtypep(), ClassRefDType) : nullptr;
+        }
+        return nullptr;
     }
 
     //----------------------------------------------------------------------
