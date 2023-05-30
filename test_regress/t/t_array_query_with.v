@@ -4,11 +4,24 @@
 // any use, without warranty, 2022 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-      clk
-   );
+class Cls;
+   static function bit get_true();
+      return 1'b1;
+   endfunction
 
-   input clk;
+   static function bit test_find_index_in_class();
+      if (get_true) begin
+         int q[$] = {0, -1, 3, 1, 4, 1};
+         int found_idx[$];
+         found_idx = q.find_index(node) with (node == 1);
+         return found_idx[0] == 3;
+      end
+      return 0;
+   endfunction
+endclass
+
+module t (/*AUTOARG*/
+   );
 
    function bit test_find;
       string bar[$];
@@ -31,22 +44,31 @@ module t (/*AUTOARG*/
       return first_even_idx[0] == 1;
    endfunction
 
+   function bit is_even(int a);
+      return a % 2 == 0;
+   endfunction
+
+   function static bit test_find_first_index_by_func;
+      int    q[] = {1, 2, 3, 4, 5, 6};
+      int    first_even_idx[$] = q.find_first_index(x) with (is_even(x));
+      return first_even_idx[0] == 1;
+   endfunction
+
    function automatic bit test_sort;
       int    q[] = {-5, 2, -3, 0, 4};
       q.sort(x) with (x >= 0 ? x : -x);
       return q[1] == 2;
    endfunction
 
-   always @(posedge clk) begin
-      bit [3:0] results = {test_find(), test_find_index(),
-                           test_find_first_index(), test_sort()};
-      if (results == '1) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-      else begin
-         $write("Results: %b\n", results);
-         $stop;
-      end
+   initial begin
+      if (!test_find()) $stop;
+      if (!test_find_index()) $stop;
+      if (!test_find_first_index()) $stop;
+      if (!test_find_first_index_by_func()) $stop;
+      if (!test_sort()) $stop;
+      if (!Cls::test_find_index_in_class()) $stop;
+
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
 endmodule
