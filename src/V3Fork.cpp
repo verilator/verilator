@@ -42,15 +42,13 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class ForkVisitor final : public VNVisitor {
 private:
-    AstNodeModule* m_modp = nullptr;
-    // AstNodeFTask* m_funcp = nullptr;
-    AstFork* m_fork = nullptr;
-    AstVar* m_capturedVarsp = nullptr;
-    // Problem: where to lift the variables? What in case of nested forks?
-    std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
-    AstArg* m_capturedVarRefsp = nullptr;
-    bool m_capture = false;
-    int m_createdTasksCount = 0;
+    AstNodeModule* m_modp = nullptr; /* Class/module we are currently under        */
+    int m_fork = 0; /* level of fork..join_* nesting              */
+    AstVar* m_capturedVarsp = nullptr; /* Local copies of captured variables         */
+    std::set<AstVar*> m_forkLocalsp; /* Variables local to a given fork            */
+    AstArg* m_capturedVarRefsp = nullptr; /* References to captured variables (as args) */
+    bool m_capture = false; /* Enable variable capturing                  */
+    int m_createdTasksCount = 0; /* Number of tasks created by this visitor    */
 
     void processCapturedRef(AstVarRef* vrefp) {
         AstVar* varp = nullptr;
@@ -75,14 +73,6 @@ private:
         UASSERT(stmtsp, "No stmtsp\n");
         stmtsp = stmtsp->unlinkFrBackWithNext();
 
-        //// Question: does it still work for nested forks?
-        //// > Probably yes, in caseof nested fork we won't find any vars next time
-        //// > [this could be optimized then]
-        // stmtsp->foreach([&](AstVar* varp) {
-        //     varp = varp->unlinkFrBack();
-        //     m_liftedp = AstNode::addNext(m_liftedp, varp);
-        // });
-
         std::string taskName = m_modp->name() + "__BEGIN_"
                                + (!blockp->name().empty() ? (blockp->name() + "__") : "UNNAMED__")
                                + cvtToHex(blockp);
@@ -103,7 +93,7 @@ private:
         VL_RESTORER(m_fork);
         VL_RESTORER(m_forkLocalsp);
         if (!nodep->joinType().join()) {
-            m_fork = nodep;
+            ++m_fork;
             m_forkLocalsp.clear();
         }
         iterateChildren(nodep);
@@ -115,31 +105,29 @@ private:
             return;
         }
 
+        VL_RESTORER(m_capture);
+        VL_RESTORER(m_capturedVarsp);
         VL_RESTORER(m_capturedVarRefsp);
+
+        m_capture = true;
+        m_capturedVarsp = nullptr;
         m_capturedVarRefsp = nullptr;
+        iterateChildren(nodep);
 
-        // Collect captures
-        AstVar* parentCapturesp = m_capturedVarsp;
-        {
-            VL_RESTORER(m_capture);
-            m_capture = true;
-            m_capturedVarsp = nullptr;
-            iterateChildren(nodep);
-        }
-        // We might need to propagate the captures in case of nested forks
-        if (m_capturedVarsp)
-            parentCapturesp = AstNode::addNext(parentCapturesp, m_capturedVarsp->cloneTree(true));
-
-        // TODO: Check scoping - captures can't be refs to fork's scope.
+        UINFO(1, "Iterated children of block " << (nodep->name().empty() ? "ANON" : nodep->name())
+                                               << "\n");
+        UINFO(1, "Captured:\n");
+        for (AstVar* varp = m_capturedVarsp; varp; varp = VN_AS(varp->nextp(), Var))
+            UINFO(1, "* " << varp->name() << "\n");
 
         AstTask* taskp = turnBlockToTask(nodep, m_capturedVarsp);
         m_modp->addStmtsp(taskp);
 
-        m_capturedVarsp = parentCapturesp;  // Restore captures
-
         AstTaskRef* taskrefp
             = new AstTaskRef{nodep->fileline(), taskp->name(), m_capturedVarRefsp};
         AstStmtExpr* taskcallp = new AstStmtExpr{nodep->fileline(), taskrefp};
+        // Replaced nodes will be revisited, so we don't need to "lift" the arguments
+        // as captures in case of nested forks
         nodep->replaceWith(taskcallp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
