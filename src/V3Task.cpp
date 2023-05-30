@@ -1372,7 +1372,7 @@ private:
         }
     }
     void visit(AstWith* nodep) override {
-        if (nodep->user1SetOnce()){
+        if (nodep->user1SetOnce()) {
             // Make sure that the return expression is converted only once
             return;
         }
