@@ -1280,6 +1280,14 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; }).undocumented();  // Historical
     DECL_OPTION("-l2name", CbCall, [this]() { m_l2Name = "v"; }).undocumented();  // Historical
 
+    DECL_OPTION("-main-top-name", CbVal, [this](const char* valp) {
+        if (!std::strcmp(valp, "-")) {
+            m_mainTopName = "";
+        } else {
+            m_mainTopName = valp;
+        }
+    });
+
     DECL_OPTION("-MAKEFLAGS", CbVal, callStrSetter(&V3Options::addMakeFlags));
     DECL_OPTION("-MMD", OnOff, &m_makeDepend);
     DECL_OPTION("-MP", OnOff, &m_makePhony);
