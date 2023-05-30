@@ -1359,6 +1359,7 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     void name(const string& name) override { m_name = name; }
     void dump(std::ostream& str) const override;
+    bool same(const AstNode* samep) const override;
     string nameDotless() const;
     string nameVlSym() const { return string{"vlSymsp->"} + nameDotless(); }
     AstNodeModule* modp() const { return m_modp; }
@@ -1758,6 +1759,7 @@ public:
     }
     ASTGEN_MEMBERS_AstVar;
     void dump(std::ostream& str) const override;
+    bool same(const AstNode* samep) const override;
     string name() const override VL_MT_STABLE VL_MT_SAFE { return m_name; }  // * = Var name
     bool hasDType() const override { return true; }
     bool maybePointedTo() const override { return true; }
@@ -2000,6 +2002,7 @@ public:
     bool maybePointedTo() const override { return true; }
     string name() const override VL_MT_STABLE { return scopep()->name() + "->" + varp()->name(); }
     void dump(std::ostream& str) const override;
+    bool same(const AstNode* samep) const override;
     bool hasDType() const override { return true; }
     AstVar* varp() const VL_MT_STABLE { return m_varp; }  // [After Link] Pointer to variable
     AstScope* scopep() const VL_MT_STABLE { return m_scopep; }  // Pointer to scope it's under

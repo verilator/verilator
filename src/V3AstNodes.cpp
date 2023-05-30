@@ -2083,6 +2083,10 @@ void AstVarScope::dump(std::ostream& str) const {
         str << " ->UNLINKED";
     }
 }
+bool AstVarScope::same(const AstNode* samep) const {
+    const AstVarScope* const asamep = static_cast<const AstVarScope*>(samep);
+    return varp()->same(asamep->varp()) && scopep()->same(asamep->scopep());
+}
 void AstNodeVarRef::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
@@ -2146,11 +2150,23 @@ void AstVar::dump(std::ostream& str) const {
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
 }
+bool AstVar::same(const AstNode* samep) const {
+    const AstVar* const asamep = static_cast<const AstVar*>(samep);
+    return name() == asamep->name()
+           && varType() == asamep->varType();
+}
 void AstScope::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [abovep=" << reinterpret_cast<const void*>(aboveScopep()) << "]";
     str << " [cellp=" << reinterpret_cast<const void*>(aboveCellp()) << "]";
     str << " [modp=" << reinterpret_cast<const void*>(modp()) << "]";
+}
+bool AstScope::same(const AstNode* samep) const {
+    const AstScope* const asamep = static_cast<const AstScope*>(samep);
+    return name() == asamep->name()
+           && ((!aboveScopep() && !asamep->aboveScopep())
+               || (aboveScopep() && asamep->aboveScopep()
+                   && aboveScopep()->name() == asamep->aboveScopep()->name()));
 }
 void AstScopeName::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
