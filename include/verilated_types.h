@@ -1066,6 +1066,9 @@ struct VlUnpacked final {
     // Similar to 'neq' above, *this = that used for change detection
     void assign(const VlUnpacked<T_Value, T_Depth>& that) { *this = that; }
 
+    bool operator==(const VlUnpacked<T_Value, T_Depth>& that) const { return !neq(that); }
+    bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) { return neq(that); }
+
     // Dumping. Verilog: str = $sformatf("%p", assoc)
     std::string to_string() const {
         std::string out = "'{";
