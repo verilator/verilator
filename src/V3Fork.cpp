@@ -149,14 +149,13 @@ private:
         iterateChildren(nodep);
     }
 
-    // Problem: we shouldn't treat refs to internal variables as captures.
     void visit(AstVarRef* nodep) override {
         // UINFO(1, "Referenced var: " << nodep->varp() << "\n");
         // UINFO(1, "Locals: \n");
         // for (auto* item : m_forkLocalsp) { UINFO(1, "  * " << item << "\n"); }
 
-        // TODO: Allow writes to static variables
-        if (m_capture && (m_forkLocalsp.count(nodep->varp()) == 0)) {
+        if (m_capture && (m_forkLocalsp.count(nodep->varp()) == 0)
+            && !nodep->varp()->lifetime().isStatic()) {
             if (nodep->access().isWriteOrRW()) {
                 nodep->v3warn(E_TASKNSVAR, "Invalid capture: Process might outlive this "
                                            "variable. Initialize a local copy instead.");
