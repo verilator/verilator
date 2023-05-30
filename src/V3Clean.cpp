@@ -237,10 +237,7 @@ private:
     void visit(AstStructSel* nodep) override {
         iterateChildren(nodep);
         AstStructDType* dtypep = VN_CAST(nodep->dtypep()->skipRefp(), StructDType);
-        if(dtypep)
-            setClean(nodep, !dtypep->packed());
-        else
-            setClean(nodep, false);
+        setClean(nodep, dtypep && !dtypep->packed());
     }
     void visit(AstUCFunc* nodep) override {
         iterateChildren(nodep);
