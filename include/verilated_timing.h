@@ -95,7 +95,7 @@ class VlProcess final {
 
 public:
     // TYPES
-    enum {
+    enum : int {
         FINISHED = 0,
         RUNNING = 1,
         WAITING = 2,
