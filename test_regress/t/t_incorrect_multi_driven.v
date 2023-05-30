@@ -1,3 +1,9 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2023 by Adrien Le Masle.
+// SPDX-License-Identifier: CC0-1.0
+
 interface test_if #(parameter int AA = 2, BB=5);
 
    logic [AA-1 : 0]     a;
