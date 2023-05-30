@@ -40,21 +40,27 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+//######################################################################
+// Fork visitor, transforms asynchronous blocks into separate tasks
+
 class ForkVisitor final : public VNVisitor {
 private:
-    AstNodeModule* m_modp = nullptr; /* Class/module we are currently under        */
-    int m_fork = 0; /* level of fork..join_* nesting              */
-    AstVar* m_capturedVarsp = nullptr; /* Local copies of captured variables         */
-    std::set<AstVar*> m_forkLocalsp; /* Variables local to a given fork            */
-    AstArg* m_capturedVarRefsp = nullptr; /* References to captured variables (as args) */
-    bool m_capture = false; /* Enable variable capturing                  */
-    int m_createdTasksCount = 0; /* Number of tasks created by this visitor    */
+    // STATE
+    AstNodeModule* m_modp = nullptr;  // Class/module we are currently under
+    int m_fork = 0;  // level of fork..join_* nesting
+    AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
+    std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
+    AstArg* m_capturedVarRefsp = nullptr;  // References to captured variables (as args
+    bool m_capture = false;  // Enable variable capturing
+    int m_createdTasksCount = 0;  // Number of tasks created by this visitor
 
+    // METHODS
     void processCapturedRef(AstVarRef* vrefp) {
         AstVar* varp = nullptr;
         for (varp = m_capturedVarsp; varp; varp = VN_AS(varp->nextp(), Var))
             if (varp->name() == vrefp->name()) break;
         if (!varp) {
+            // Create a local copy for a capture
             varp = new AstVar{vrefp->fileline(), VVarType::MEMBER, vrefp->name(), vrefp->dtypep()};
             varp->direction(VDirection::INPUT);
             varp->funcLocal(true);
@@ -65,30 +71,23 @@ private:
             m_capturedVarRefsp = AstNode::addNext(m_capturedVarRefsp, arg);
         }
         vrefp->varp(varp);
-        // We don't need to update scope as those don't exist yet.
     }
 
     AstTask* turnBlockToTask(AstNodeBlock* blockp, AstVar* captures) {
         AstNode* stmtsp = blockp->stmtsp();
         UASSERT(stmtsp, "No stmtsp\n");
         stmtsp = stmtsp->unlinkFrBackWithNext();
-
+        stmtsp = AstNode::addNext(static_cast<AstNode*>(captures), stmtsp);
+        // TODO: Ensure no collisions
         std::string taskName = m_modp->name() + "__BEGIN_"
                                + (!blockp->name().empty() ? (blockp->name() + "__") : "UNNAMED__")
                                + cvtToHex(blockp);
-        // TODO: Ensure no collisions
-
-        stmtsp = AstNode::addNext(static_cast<AstNode*>(captures), stmtsp);
-
         AstTask* taskp = new AstTask{blockp->fileline(), taskName, stmtsp};
-        // if (captures)
-        //     taskp->fvarp(AstNode::addNext(taskp->fvarp(), captures));
-
         ++m_createdTasksCount;
-
         return taskp;
     }
 
+    // VISITORS
     void visit(AstFork* nodep) override {
         VL_RESTORER(m_fork);
         VL_RESTORER(m_forkLocalsp);
@@ -98,7 +97,6 @@ private:
         }
         iterateChildren(nodep);
     }
-
     void visit(AstNodeBlock* nodep) override {
         if (!m_fork) {
             iterateChildren(nodep);
@@ -112,13 +110,8 @@ private:
         m_capture = true;
         m_capturedVarsp = nullptr;
         m_capturedVarRefsp = nullptr;
-        iterateChildren(nodep);
 
-        UINFO(1, "Iterated children of block " << (nodep->name().empty() ? "ANON" : nodep->name())
-                                               << "\n");
-        UINFO(1, "Captured:\n");
-        for (AstVar* varp = m_capturedVarsp; varp; varp = VN_AS(varp->nextp(), Var))
-            UINFO(1, "* " << varp->name() << "\n");
+        iterateChildren(nodep);
 
         AstTask* taskp = turnBlockToTask(nodep, m_capturedVarsp);
         m_modp->addStmtsp(taskp);
@@ -131,17 +124,11 @@ private:
         nodep->replaceWith(taskcallp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-
     void visit(AstVar* nodep) override {
         if (m_fork) m_forkLocalsp.insert(nodep);
         iterateChildren(nodep);
     }
-
     void visit(AstVarRef* nodep) override {
-        // UINFO(1, "Referenced var: " << nodep->varp() << "\n");
-        // UINFO(1, "Locals: \n");
-        // for (auto* item : m_forkLocalsp) { UINFO(1, "  * " << item << "\n"); }
-
         if (m_capture && (m_forkLocalsp.count(nodep->varp()) == 0)
             && !nodep->varp()->lifetime().isStatic()) {
             if (nodep->access().isWriteOrRW()) {
@@ -153,20 +140,24 @@ private:
         }
         iterateChildren(nodep);
     }
-
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         m_modp = nodep;
         iterateChildren(nodep);
     }
-
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
+    // CONSTRUCTORS
     ForkVisitor(AstNetlist* nodep) { visit(nodep); }
+    ~ForkVisitor() override = default;
 
+    // UTILITY
     int createdTasksCount() { return m_createdTasksCount; }
 };
+
+//######################################################################
+// Fork class functions
 
 int V3Fork::makeTasks(AstNetlist* nodep) {
     int createdTasksCount;
