@@ -173,10 +173,10 @@ package std;
       // function void srandom(int seed);
       // endfunction
 
-      // get_randstate() and set_randstate() cannot be fully supported until
-      // there is a way to access RNG state without changing it. The methods
-      // here are guaranteed to work if set_randstate is never applied to
-      // a state string created before some another such string.
+      // The methods below work only if set_randstate is never applied to
+      // a state string created before another such string. Full support
+      // could use VlRNG class to store the state per process in VlProcess
+      // objects.
       function string get_randstate();
          string s;
 
