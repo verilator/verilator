@@ -1044,7 +1044,9 @@ public:
     }
     void visit(AstCCast* nodep) override {
         // Extending a value of the same word width is just a NOP.
-        if (nodep->size() <= VL_IDATASIZE) {
+        if (const AstClassRefDType* const classDtypep = VN_CAST(nodep->dtypep(), ClassRefDType)) {
+            puts("(" + classDtypep->cType("", false, false) + ")(");
+        } else if (nodep->size() <= VL_IDATASIZE) {
             puts("(IData)(");
         } else {
             puts("(QData)(");
