@@ -51,7 +51,8 @@ private:
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Class/module we are currently under
-    int m_forkDepth = 0;
+    int m_forkDepth = 0;  // Nesting level of asynchronous forks
+    bool m_newProcess = false;  // True if we are directly under an asynchronous fork.
     AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
     std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
     AstArg* m_capturedVarRefsp = nullptr;  // References to captured variables (as args
@@ -76,44 +77,58 @@ private:
         vrefp->varp(varp);
     }
 
-    AstTask* turnBlockToTask(AstNodeBlock* blockp, AstVar* captures) {
-        AstNode* stmtsp = blockp->stmtsp();
-        UASSERT(stmtsp, "No stmtsp\n");
-        stmtsp = stmtsp->unlinkFrBackWithNext();
+    AstTask* makeTask(FileLine* fl, AstNode* stmtsp, AstVar* captures, std::string name) {
         stmtsp = AstNode::addNext(static_cast<AstNode*>(captures), stmtsp);
-        // TODO: Ensure no collisions
-        std::string taskName = m_modp->name() + "__BEGIN_"
-                               + (!blockp->name().empty() ? (blockp->name() + "__") : "UNNAMED__")
-                               + cvtToHex(blockp);
-        AstTask* taskp = new AstTask{blockp->fileline(), taskName, stmtsp};
+        AstTask* taskp = new AstTask{fl, name, stmtsp};
         ++m_createdTasksCount;
         return taskp;
     }
 
-    // VISITORS
-    void visit(AstFork* nodep) override {
-        VL_RESTORER(m_forkLocalsp);
-        VL_RESTORER(m_forkDepth)
-        if (!nodep->joinType().join()) {
-            ++m_forkDepth;
-            m_forkLocalsp.clear();
-        }
-        iterateChildren(nodep);
+    std::string generateTaskName(AstNode* fromp, std::string kind) {
+        // TODO: Ensure no collisions occur
+        return m_modp->name() + kind
+               + (!fromp->name().empty() ? (fromp->name() + "__") : "UNNAMED__") + cvtToHex(fromp);
     }
-    void visit(AstNodeBlock* nodep) override {
-        if (!m_forkDepth) {
+
+    AstTask* turnBlockIntoTask(AstNodeBlock* blockp, AstVar* captures, VNRelinker& handle) {
+        UASSERT(blockp->stmtsp(), "No stmtsp\n");
+        std::string taskName = generateTaskName(blockp, "__FORK_BLOCK_");
+        AstTask* task = makeTask(blockp->fileline(), blockp->stmtsp()->unlinkFrBackWithNext(),
+                                 captures, taskName);
+        blockp->unlinkFrBack(&handle);
+        VL_DO_DANGLING(blockp->deleteTree(), blockp);
+        return task;
+    }
+
+    AstTask* turnStatementIntoTask(AstNodeStmt* stmtp, AstVar* captures, VNRelinker& handle) {
+        std::string taskName = generateTaskName(stmtp, "__FORK_STMT_");
+        return makeTask(stmtp->fileline(), stmtp->unlinkFrBack(&handle), captures, taskName);
+    }
+
+    void visitBlockOrStmt(AstNode* nodep, bool block) {
+        if (!m_newProcess || nodep->user1()) {
+            VL_RESTORER(m_forkDepth);
+            if (nodep->user1()) {
+                UASSERT(m_forkDepth > 0, "Wrong fork depth!");
+                --m_forkDepth;
+            }
             iterateChildren(nodep);
             return;
         }
 
         VL_RESTORER(m_capturedVarsp);
         VL_RESTORER(m_capturedVarRefsp);
+        VL_RESTORER(m_newProcess);
         m_capturedVarsp = nullptr;
         m_capturedVarRefsp = nullptr;
+        m_newProcess = false;
 
         iterateChildren(nodep);
 
-        AstTask* taskp = turnBlockToTask(nodep, m_capturedVarsp);
+        VNRelinker handle;
+        AstTask* taskp
+            = block ? turnBlockIntoTask(VN_AS(nodep, NodeBlock), m_capturedVarsp, handle)
+                    : turnStatementIntoTask(VN_AS(nodep, NodeStmt), m_capturedVarsp, handle);
         m_modp->addStmtsp(taskp);
 
         AstTaskRef* taskrefp
@@ -121,21 +136,30 @@ private:
         AstStmtExpr* taskcallp = new AstStmtExpr{nodep->fileline(), taskrefp};
         // Replaced nodes will be revisited, so we don't need to "lift" the arguments
         // as captures in case of nested forks.
-        nodep->replaceWith(taskcallp);
+        handle.relink(taskcallp);
         taskcallp->user1(true);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    void visit(AstVar* nodep) override {
-        VL_RESTORER(m_forkDepth);
-        if (nodep->user1()) --m_forkDepth;
 
-        if (m_forkDepth) m_forkLocalsp.insert(nodep);
+    // VISITORS
+    void visit(AstFork* nodep) override {
+        VL_RESTORER(m_forkLocalsp);
+        VL_RESTORER(m_newProcess);
+        VL_RESTORER(m_forkDepth)
+        if (!nodep->joinType().join()) {
+            ++m_forkDepth;
+            m_newProcess = true;
+            m_forkLocalsp.clear();
+        } else {
+            m_newProcess = false;
+        }
         iterateChildren(nodep);
     }
+    void visit(AstBegin* nodep) override { visitBlockOrStmt(nodep, true); }
+    void visit(AstNodeStmt* nodep) override { visitBlockOrStmt(nodep, false); }
+    void visit(AstVar* nodep) override {
+        if (m_forkDepth) m_forkLocalsp.insert(nodep);
+    }
     void visit(AstVarRef* nodep) override {
-        VL_RESTORER(m_forkDepth);
-        if (nodep->user1()) --m_forkDepth;
-
         if (m_forkDepth && (m_forkLocalsp.count(nodep->varp()) == 0)
             && !nodep->varp()->lifetime().isStatic()) {
             if (nodep->access().isWriteOrRW()) {
@@ -145,19 +169,18 @@ private:
             }
             processCapturedRef(nodep);
         }
-        iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
-        VL_RESTORER(m_forkDepth);
         VL_RESTORER(m_modp);
-        if (nodep->user1()) --m_forkDepth;
 
         m_modp = nodep;
         iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override {
+        VL_RESTORER(m_newProcess)
         VL_RESTORER(m_forkDepth);
         if (nodep->user1()) --m_forkDepth;
+        m_newProcess = false;
         iterateChildren(nodep);
     }
 
