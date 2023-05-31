@@ -808,6 +808,13 @@ Summary:
 
    See also :vlopt:`--binary`.
 
+.. option:: --main-top-name <string>
+
+   Specify the name passed to the Verilated model being constructed, in the
+   generated C++ main() function.
+
+   If the string ``"-"`` is used, no top level scope is added.
+
 .. option:: --max-num-width <value>
 
    Set the maximum number literal width (e.g., in 1024'd22 this
