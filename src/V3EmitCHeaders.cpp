@@ -17,6 +17,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Ast.h"
 #include "V3EmitC.h"
 #include "V3EmitCConstInit.h"
 #include "V3Global.h"
@@ -239,25 +240,18 @@ class EmitCHeader final : public EmitCConstInit {
             puts(";\n");
         }
 
-        puts("\nbool operator==(const " + EmitCBase::prefixNameProtect(sdtypep) + "& rhs){\n");
+        puts("\nbool operator==(const " + EmitCBase::prefixNameProtect(sdtypep)
+             + "& rhs) const {\n");
         puts("return ");
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             if (itemp != sdtypep->membersp()) puts("\n    && ");
-            if (AstUnpackArrayDType* const adtypep
-                = VN_CAST(itemp->subDTypep(), UnpackArrayDType)) {
-                for (uint32_t i = 0; i < adtypep->arrayUnpackedElements(); i++) {
-                    if (i != 0) puts("\n    && ");
-                    puts(itemp->nameProtect() + "[" + std::to_string(i) + "U] == " + "rhs."
-                         + itemp->nameProtect() + "[" + std::to_string(i) + "U]");
-                }
-            } else {
-                puts(itemp->nameProtect() + " == " + "rhs." + itemp->nameProtect());
-            }
+            puts(itemp->nameProtect() + " == " + "rhs." + itemp->nameProtect());
         }
         puts(";\n");
         puts("}\n");
-        puts("bool operator!=(const " + EmitCBase::prefixNameProtect(sdtypep) + "& rhs){\n");
+        puts("bool operator!=(const " + EmitCBase::prefixNameProtect(sdtypep)
+             + "& rhs) const {\n");
         puts("return !(*this == rhs);\n}\n");
         puts("};\n");
     }
