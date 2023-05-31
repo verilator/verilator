@@ -46,7 +46,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class ForkVisitor final : public VNVisitor {
 private:
     // NODE STATE
-    // AstVar::user1           -> bool, 1 = Node was created as a call toan asynchronous task
+    // AstVar::user1           -> bool, 1 = Node was created as a call to an asynchronous task
     const VNUser1InUse m_inuser1;
 
     // STATE
@@ -124,6 +124,8 @@ private:
         m_newProcess = false;
 
         iterateChildren(nodep);
+
+        if (m_capturedVarsp == nullptr) return;  // No captures - no need to taskify
 
         VNRelinker handle;
         AstTask* taskp
