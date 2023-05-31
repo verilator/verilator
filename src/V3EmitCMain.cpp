@@ -51,10 +51,12 @@ private:
         // Not defining main_time/vl_time_stamp, so
         v3Global.opt.addCFlags("-DVL_TIME_CONTEXT");  // On MSVC++ anyways
 
-        // Optional main top name argument
+        // Optional main top name argument, with empty string replacement
         string topArg;
-        if (!v3Global.opt.mainTopName().empty()) {
-            topArg = ", \"" + v3Global.opt.mainTopName() + "\"";
+        string topName = v3Global.opt.mainTopName();
+        if (!topName.empty()) {
+            if (topName == "-") topName = "";
+            topArg = ", \"" + topName + "\"";
         }
 
         // Heavily commented output, as users are likely to look at or copy this code
