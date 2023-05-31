@@ -91,11 +91,11 @@ public:
 
 class VlProcess final {
     // MEMBERS
-    int m_state;
+    int m_state;  // Current state of the process
 
 public:
     // TYPES
-    enum : int {
+    enum : int {  // Type int for compatibility with $c
         FINISHED = 0,
         RUNNING = 1,
         WAITING = 2,
@@ -126,7 +126,7 @@ class VlCoroutineHandle final {
 
     // MEMBERS
     std::coroutine_handle<> m_coro;  // The wrapped coroutine handle
-    VlProcessRef m_process;
+    VlProcessRef m_process;  // Data of the suspended process, null if not needed
     VlFileLineDebug m_fileline;
 
 public:
@@ -219,7 +219,7 @@ public:
     auto delay(uint64_t delay, VlProcessRef process, const char* filename = VL_UNKNOWN,
                int lineno = 0) {
         struct Awaitable {
-            VlProcessRef process;
+            VlProcessRef process;  // Data of the suspended process, null if not needed
             VlDelayedCoroutineQueue& queue;
             uint64_t delay;
             VlFileLineDebug fileline;
@@ -276,7 +276,7 @@ public:
                                 eventDescription, filename, lineno););
         struct Awaitable {
             VlCoroutineVec& suspended;  // Coros waiting on trigger
-            VlProcessRef process;
+            VlProcessRef process;  // Data of the suspended process, null if not needed
             VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
@@ -320,7 +320,7 @@ class VlDynamicTriggerScheduler final {
     // METHODS
     auto awaitable(VlProcessRef process, VlCoroutineVec& queue, const char* filename, int lineno) {
         struct Awaitable {
-            VlProcessRef process;
+            VlProcessRef process;  // Data of the suspended process, null if not needed
             VlCoroutineVec& suspended;  // Coros waiting on trigger
             VlFileLineDebug fileline;
 
@@ -403,7 +403,7 @@ public:
         VL_DEBUG_IF(
             VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, lineno););
         struct Awaitable {
-            VlProcessRef process;
+            VlProcessRef process;  // Data of the suspended process, null if not needed
             const std::shared_ptr<VlJoin> join;  // Join to await on
             VlFileLineDebug fileline;
 
