@@ -38,9 +38,8 @@ module t;
     assign s2.arr[1] = 8'h33;
 
     initial begin
-        if(s1 != s2) begin
-            $fatal;
-        end
+        if(s1 != s2) $stop;
+        if(s1.sub != s2.sub) $stop;
         if(s1 == s2) begin
             $write("*-* All Finished *-*\n");
             $finish;
