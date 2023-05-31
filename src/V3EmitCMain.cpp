@@ -52,9 +52,9 @@ private:
         v3Global.opt.addCFlags("-DVL_TIME_CONTEXT");  // On MSVC++ anyways
 
         // Optional main top name argument
-        string toparg = "";
+        string topArg = "";
         if (!v3Global.opt.mainTopName().empty()) {
-            toparg = ", \"" + v3Global.opt.mainTopName() + "\"";
+            topArg = ", \"" + v3Global.opt.mainTopName() + "\"";
         }
 
         // Heavily commented output, as users are likely to look at or copy this code
@@ -77,7 +77,7 @@ private:
 
         puts("// Construct the Verilated model, from Vtop.h generated from Verilating\n");
         puts("const std::unique_ptr<" + topClassName() + "> topp{new " + topClassName()
-             + "{contextp.get()" + toparg + "}};\n");
+             + "{contextp.get()" + topArg + "}};\n");
         puts("\n");
 
         puts("// Simulate until $finish\n");
