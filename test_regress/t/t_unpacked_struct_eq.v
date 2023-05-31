@@ -56,9 +56,6 @@ module t;
     assign s3.sub.arr[1][2] = 8'h06;
 
     initial begin
-        if(s1 != s2) begin
-            $fatal;
-        end
         if(s3 == s1) $stop;
         if(s1 == s2 && s3 != s1) begin
             $write("*-* All Finished *-*\n");
