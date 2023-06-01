@@ -169,6 +169,9 @@ private:
                                            "variable. Initialize a local copy instead.");
                 return;
             }
+            UASSERT_OBJ(
+                !nodep->varp()->lifetime().isNone(), nodep,
+                "Variable's lifetime is unknown. Can't determine if a capture is necessary.");
             processCapturedRef(nodep);
         }
     }
