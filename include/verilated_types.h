@@ -1040,9 +1040,17 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
 
 template <class T_Value, std::size_t T_Depth>
 struct VlUnpacked final {
+private:
+    // TYPES
+    using T_Key = IData;  // Index type, for uniformity with other containers
+    using Unpacked = std::array<T_Value, T_Depth>;
+
+public:
+    using const_iterator = typename Unpacked::const_iterator;
+
     // MEMBERS
     // This should be the only data member, otherwise generated static initializers need updating
-    T_Value m_storage[T_Depth];  // Contents of the unpacked array
+    Unpacked m_storage;  // Contents of the unpacked array
 
     // CONSTRUCTORS
     // Default constructors and destructor are used. Note however that C++20 requires that
@@ -1053,6 +1061,7 @@ struct VlUnpacked final {
     // Default copy assignment operators are used.
 
     // METHODS
+public:
     // Raw access
     WData* data() { return &m_storage[0]; }
     const WData* data() const { return &m_storage[0]; }
@@ -1068,6 +1077,150 @@ struct VlUnpacked final {
 
     bool operator==(const VlUnpacked<T_Value, T_Depth>& that) const { return !neq(that); }
     bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) { return neq(that); }
+
+    VlQueue<T_Value> unique() const {
+        VlQueue<T_Value> out;
+        std::set<T_Value> saw;
+        for (const auto& i : m_storage) {
+            const auto it = saw.find(i);
+            if (it == saw.end()) {
+                saw.insert(it, i);
+                out.push_back(i);
+            }
+        }
+        return out;
+    }
+    template <typename Func>
+    VlQueue<T_Value> unique(Func with_func) const {
+        VlQueue<T_Value> out;
+        std::set<T_Value> saw;
+        for (const auto& i : m_storage) {
+            const auto i_mapped = with_func(0, i);
+            const auto it = saw.find(i_mapped);
+            if (it == saw.end()) {
+                saw.insert(it, i_mapped);
+                out.push_back(i);
+            }
+        }
+        return out;
+    }
+    VlQueue<T_Key> unique_index() const {
+        VlQueue<T_Key> out;
+        IData index = 0;
+        std::set<T_Value> saw;
+        for (const auto& i : m_storage) {
+            const auto it = saw.find(i);
+            if (it == saw.end()) {
+                saw.insert(it, i);
+                out.push_back(index);
+            }
+            ++index;
+        }
+        return out;
+    }
+    template <typename Func>
+    VlQueue<T_Key> unique_index(Func with_func) const {
+        VlQueue<T_Key> out;
+        IData index = 0;
+        std::unordered_set<T_Value> saw;
+        for (const auto& i : m_storage) {
+            const auto i_mapped = with_func(index, i);
+            auto it = saw.find(i_mapped);
+            if (it == saw.end()) {
+                saw.insert(it, i_mapped);
+                out.push_back(index);
+            }
+            ++index;
+        }
+        return out;
+    }
+    template <typename Func>
+    VlQueue<T_Value> find(Func with_func) const {
+        VlQueue<T_Value> out;
+        IData index = 0;
+        for (const auto& i : m_storage) {
+            if (with_func(index, i)) out.push_back(i);
+            ++index;
+        }
+        return out;
+    }
+    template <typename Func>
+    VlQueue<T_Key> find_index(Func with_func) const {
+        VlQueue<T_Key> out;
+        IData index = 0;
+        for (const auto& i : m_storage) {
+            if (with_func(index, i)) out.push_back(index);
+            ++index;
+        }
+        return out;
+    }
+    template <typename Func>
+    VlQueue<T_Value> find_first(Func with_func) const {
+        // Can't use std::find_if as need index number
+        IData index = 0;
+        for (const auto& i : m_storage) {
+            if (with_func(index, i)) return VlQueue<T_Value>::cons(i);
+            ++index;
+        }
+        return VlQueue<T_Value>{};
+    }
+    template <typename Func>
+    VlQueue<T_Key> find_first_index(Func with_func) const {
+        IData index = 0;
+        for (const auto& i : m_storage) {
+            if (with_func(index, i)) return VlQueue<IData>::cons(index);
+            ++index;
+        }
+        return VlQueue<T_Key>{};
+    }
+    template <typename Func>
+    VlQueue<T_Value> find_last(Func with_func) const {
+        IData index = m_storage.size() - 1;
+        for (auto& item : vlstd::reverse_view(m_storage)) {
+            if (with_func(index, item)) return VlQueue<T_Value>::cons(item);
+            --index;
+        }
+        return VlQueue<T_Value>{};
+    }
+    template <typename Func>
+    VlQueue<T_Key> find_last_index(Func with_func) const {
+        IData index = m_storage.size() - 1;
+        for (auto& item : vlstd::reverse_view(m_storage)) {
+            if (with_func(index, item)) return VlQueue<IData>::cons(index);
+            --index;
+        }
+        return VlQueue<T_Key>{};
+    }
+
+    // Reduction operators
+    VlQueue<T_Value> min() const {
+        if (m_storage.empty()) return VlQueue<T_Value>{};
+        const auto it = std::min_element(m_storage.begin(), m_storage.end());
+        return VlQueue<T_Value>::cons(*it);
+    }
+    template <typename Func>
+    VlQueue<T_Value> min(Func with_func) const {
+        if (m_storage.empty()) return VlQueue<T_Value>{};
+        const auto it = std::min_element(m_storage.begin(), m_storage.end(),
+                                         [&with_func](const IData& a, const IData& b) {
+                                             return with_func(0, a) < with_func(0, b);
+                                         });
+        return VlQueue<T_Value>::cons(*it);
+    }
+    VlQueue<T_Value> max() const {
+        if (m_storage.empty()) return VlQueue<T_Value>{};
+        const auto it = std::max_element(m_storage.begin(), m_storage.end());
+        return VlQueue<T_Value>::cons(*it);
+    }
+    template <typename Func>
+    VlQueue<T_Value> max(Func with_func) const {
+        if (m_storage.empty()) return VlQueue<T_Value>{};
+        const auto it = std::max_element(m_storage.begin(), m_storage.end(),
+                                         [&with_func](const IData& a, const IData& b) {
+                                             return with_func(0, a) < with_func(0, b);
+                                         });
+        return VlQueue<T_Value>::cons(*it);
+    }
 
     // Dumping. Verilog: str = $sformatf("%p", assoc)
     std::string to_string() const {

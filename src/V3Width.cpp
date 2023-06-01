@@ -3611,6 +3611,8 @@ private:
             ARRAY_PRODUCT
         } methodId;
 
+        AstCMethodHard* newp = nullptr;
+
         methodId = UNKNOWN;
         if (nodep->name() == "or") {
             methodId = ARRAY_OR;
@@ -3646,9 +3648,49 @@ private:
             }
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique"
+                   || nodep->name() == "unique_index") {
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      nodep->name()};
+            if (nodep->name() == "unique_index") {
+                newp->dtypep(newp->findQueueIndexDType());
+            } else {
+                newp->dtypeFrom(adtypep);
+            }
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
+        } else if (nodep->name() == "find" || nodep->name() == "find_first"
+                   || nodep->name() == "find_last" || nodep->name() == "find_index") {
+            AstWith* const withp
+                = methodWithArgument(nodep, true, false, nodep->findBitDType(),
+                                     nodep->findUInt32DType(), adtypep->subDTypep());
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      nodep->name(), withp};
+            newp->dtypeFrom(adtypep);
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
+        } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
+                   || nodep->name() == "find_last_index") {
+            AstWith* const withp
+                = methodWithArgument(nodep, true, false, nodep->findBitDType(),
+                                     nodep->findUInt32DType(), adtypep->subDTypep());
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      nodep->name(), withp};
+            newp->dtypep(newp->findQueueIndexDType());
+            if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else {
             nodep->v3error("Unknown built-in array method " << nodep->prettyNameQ());
             nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
+        }
+        if (newp) {
+            newp->protect(false);
+            newp->didWidth(true);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
     void methodCallEvent(AstMethodCall* nodep, AstBasicDType*) {
