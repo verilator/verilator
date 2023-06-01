@@ -18,4 +18,8 @@
                                 : ... In instance t
    93 |       i = q.xor with (item + 1); do if ((i) !== (32'hb)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_array_method.v",93, (i), (32'hb)); $stop; end while(0);;
       |                 ^~~~
+%Error: t/t_array_method.v:97:9: Unknown built-in array method 'mex'
+                               : ... In instance t
+   97 |       q.mex;
+      |         ^~~
 %Error: Exiting due to

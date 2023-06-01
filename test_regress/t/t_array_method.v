@@ -92,6 +92,10 @@ module t (/*AUTOARG*/);
       i = q.xor; `checkh(i, 32'ha);
       i = q.xor with (item + 1); `checkh(i, 32'hb);
 
+      // Test unknown method
+
+      q.mex;
+
       $write("*-* All Finished *-*\n");
       $finish;
    end
