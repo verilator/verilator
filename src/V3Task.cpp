@@ -1316,6 +1316,9 @@ private:
             }
         }
 
+        // Mark the fact that this function allocates std::process
+        if (nodep->isFromStd() && nodep->name() == "self") cfuncp->setNeedProcess();
+
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         if (debug() >= 9) cfuncp->dumpTree("-  userFunc: ");

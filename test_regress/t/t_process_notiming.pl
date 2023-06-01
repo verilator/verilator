@@ -10,19 +10,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    compile(
-        v_flags2 => ["--timing"],
-        );
+top_filename("t/t_process.v");
 
-    execute(
-        check_finished => 1,
-        expect_filename => $Self->{golden_filename},
-        );
-}
+compile(
+    expect_filename => $Self->{golden_filename},
+    v_flags2 => ["+define+T_PROCESS+std::process", "--no-timing"],
+    fails => 1,
+    );
 
 ok(1);
 1;

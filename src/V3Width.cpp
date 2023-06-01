@@ -232,7 +232,7 @@ private:
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
-    AstNodeModule* m_modp = nullptr;  // Current module
+    AstPackage* m_pkgp = nullptr;  // Current package
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables = 0;  // Number of created data type tables
@@ -2628,6 +2628,16 @@ private:
     }
     void visit(AstClass* nodep) override {
         if (nodep->didWidthAndSet()) return;
+        // If the package is std::process, set m_process type to VlProcessRef
+        if (m_pkgp && m_pkgp->name() == "std" && nodep->name() == "process") {
+            if (AstVar* const varp = VN_CAST(nodep->findMember("m_process"), Var)) {
+                AstBasicDType* const dtypep = new AstBasicDType{
+                    nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
+                v3Global.rootp()->typeTablep()->addTypesp(dtypep);
+                varp->getChildDTypep()->unlinkFrBack();
+                varp->dtypep(dtypep);
+            }
+        }
         // Must do extends first, as we may in functions under this class
         // start following a tree of extends that takes us to other classes
         VL_RESTORER(m_classp);
@@ -2635,6 +2645,11 @@ private:
         userIterateAndNext(nodep->extendsp(), nullptr);
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->repairCache();
+    }
+    void visit(AstPackage* nodep) override {
+        VL_RESTORER(m_pkgp);
+        m_pkgp = nodep;
+        userIterateChildren(nodep, nullptr);
     }
     void visit(AstThisRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
@@ -2645,12 +2660,6 @@ private:
         // TODO this maybe eventually required to properly resolve members,
         // though causes problems with t_class_forward.v, so for now avoided
         // userIterateChildren(nodep->classp(), nullptr);
-    }
-    void visit(AstNodeModule* nodep) override {
-        // Visitor does not include AstClass - specialized visitor above
-        VL_RESTORER(m_modp);
-        m_modp = nodep;
-        userIterateChildren(nodep, nullptr);
     }
     void visit(AstClassOrPackageRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
@@ -3491,7 +3500,7 @@ private:
         VL_DANGLING(index_exprp);  // May have been edited
         return VN_AS(nodep->pinsp(), Arg)->exprp();
     }
-    void methodCallWarnTiming(AstMethodCall* const nodep, const std::string& className) {
+    void methodCallWarnTiming(AstNodeFTaskRef* const nodep, const std::string& className) {
         if (v3Global.opt.timing().isSetFalse()) {
             nodep->v3warn(E_NOTIMING,
                           className << "::" << nodep->name() << "() requires --timing");
@@ -3515,14 +3524,12 @@ private:
                 if (classp->name() == "semaphore" || classp->name() == "process"
                     || VString::startsWith(classp->name(), "mailbox")) {
                     // Find the package the class is in
-                    AstNode* pkgItemp = classp;
-                    while (pkgItemp->backp() && pkgItemp->backp()->nextp() == pkgItemp) {
-                        pkgItemp = pkgItemp->backp();
-                    }
-                    AstPackage* const packagep = VN_CAST(pkgItemp->backp(), Package);
+                    AstPackage* const packagep = getItemPackage(classp);
                     // Check if it's std
                     if (packagep && packagep->name() == "std") {
-                        if (classp->name() == "semaphore" && nodep->name() == "get") {
+                        if (classp->name() == "process") {
+                            methodCallWarnTiming(nodep, "process");
+                        } else if (classp->name() == "semaphore" && nodep->name() == "get") {
                             methodCallWarnTiming(nodep, "semaphore");
                         } else if (nodep->name() == "put" || nodep->name() == "get"
                                    || nodep->name() == "peek") {
@@ -5323,6 +5330,7 @@ private:
             nodep->didWidth(true);
             return;
         }
+        if (m_pkgp && m_pkgp->name() == "std") nodep->isFromStd(true);
         if (nodep->classMethod() && nodep->name() == "rand_mode") {
             nodep->v3error("The 'rand_mode' method is built-in and cannot be overridden"
                            " (IEEE 1800-2017 18.8)");
@@ -5405,9 +5413,25 @@ private:
         }
     }
 
+    AstPackage* getItemPackage(AstNode* pkgItemp) {
+        while (pkgItemp->backp() && pkgItemp->backp()->nextp() == pkgItemp) {
+            pkgItemp = pkgItemp->backp();
+        }
+        return VN_CAST(pkgItemp->backp(), Package);
+    }
     void visit(AstFuncRef* nodep) override {
         visit(static_cast<AstNodeFTaskRef*>(nodep));
         nodep->dtypeFrom(nodep->taskp());
+        if (nodep->fileline()->timingOn()) {
+            AstNodeModule* const classp = nodep->classOrPackagep();
+            if (nodep->name() == "self" && classp->name() == "process") {
+                // Find if package the class is in is std::
+                AstPackage* const packagep = getItemPackage(classp);
+                if (packagep && packagep->name() == "std") {
+                    methodCallWarnTiming(nodep, "process");
+                }
+            }
+        }
         // if (debug()) nodep->dumpTree("-  FuncOut: ");
     }
     // Returns true if dtypep0 and dtypep1 have same dimensions

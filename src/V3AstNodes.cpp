@@ -784,6 +784,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const VL_M
             info.m_type = "VlDynamicTriggerScheduler";
         } else if (bdtypep->isForkSync()) {
             info.m_type = "VlForkSync";
+        } else if (bdtypep->isProcessRef()) {
+            info.m_type = "VlProcessRef";
         } else if (bdtypep->isEvent()) {
             info.m_type = "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
@@ -1352,6 +1354,7 @@ void AstNode::dump(std::ostream& str) const {
 void AstNodeProcedure::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isSuspendable()) str << " [SUSP]";
+    if (needProcess()) str << " [NPRC]";
 }
 
 void AstAlways::dump(std::ostream& str) const {
@@ -2294,6 +2297,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isDestructor()) str << " [DTOR]";
     if (isVirtual()) str << " [VIRT]";
     if (isCoroutine()) str << " [CORO]";
+    if (needProcess()) str << " [NPRC]";
 }
 const char* AstCAwait::broken() const {
     BROKEN_RTN(m_sensesp && !m_sensesp->brokeExists());
