@@ -186,10 +186,12 @@ private:
                 if (auto* const overriddenp
                     = VN_CAST(cextp->classp()->findMember(nodep->name()), CFunc)) {
                     setTimingFlag(nodep, overriddenp->user2());
-                    if (nodep->user2() < T_PROC) {  // Add a vertex only if the flag can still change
+                    if (nodep->user2()
+                        < T_PROC) {  // Add a vertex only if the flag can still change
                         // Make a dependency cycle, as being suspendable should propagate both up
                         // and down the inheritance tree
-                        TimingDependencyVertex* const overriddenVxp = getDependencyVertex(overriddenp);
+                        TimingDependencyVertex* const overriddenVxp
+                            = getDependencyVertex(overriddenp);
                         new V3GraphEdge{&m_depGraph, vxp, overriddenVxp, 1};
                         new V3GraphEdge{&m_depGraph, overriddenVxp, vxp, 1};
                     }

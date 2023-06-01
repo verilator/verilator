@@ -184,7 +184,8 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
                 // The first pin is the commit boolean, the rest (if any) should be debug info
                 // See V3Timing for details
                 if (AstNode* const dbginfop = methodp->pinsp()->nextp()) {
-                    if (methodp->pinsp()) addResumePins(resumep, static_cast<AstNodeExpr*>(dbginfop));
+                    if (methodp->pinsp())
+                        addResumePins(resumep, static_cast<AstNodeExpr*>(dbginfop));
                 }
             } else if (schedulerp->dtypep()->basicp()->isDynamicTriggerScheduler()) {
                 auto* const postp = resumep->cloneTree(false);

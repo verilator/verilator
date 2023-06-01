@@ -285,7 +285,8 @@ public:
             }
             void await_resume() const {}
         };
-        return Awaitable{commit ? m_ready : m_uncommitted, process, VlFileLineDebug{filename, lineno}};
+        return Awaitable{commit ? m_ready : m_uncommitted, process,
+                         VlFileLineDebug{filename, lineno}};
     }
 };
 
