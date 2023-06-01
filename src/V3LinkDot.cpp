@@ -1174,6 +1174,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
         AstVar* const newvarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP, varname,
                                            VFlagChildDType{}, dtypep};
+        newvarp->lifetime(VLifetime::STATIC);
         nodep->varp(newvarp);
         iterate(nodep->exprp());
     }
