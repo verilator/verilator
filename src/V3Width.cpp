@@ -3648,6 +3648,18 @@ private:
             }
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else if (nodep->name() == "reverse" || nodep->name() == "shuffle"
+                   || nodep->name() == "sort" || nodep->name() == "rsort") {
+            AstWith* withp = nullptr;
+            if (nodep->name() == "sort" || nodep->name() == "rsort") {
+                withp = methodWithArgument(nodep, false, true, nullptr, nodep->findUInt32DType(),
+                                           adtypep->subDTypep());
+            }
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      nodep->name(), withp};
+            newp->dtypeSetVoid();
         } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique"
                    || nodep->name() == "unique_index") {
             methodOkArguments(nodep, 0, 0);

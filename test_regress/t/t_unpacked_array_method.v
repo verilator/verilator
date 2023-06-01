@@ -19,6 +19,14 @@ module t (/*AUTOARG*/);
       $display("max:              %p", p.max());
       $display("unique:           %p", p.unique());
       $display("unique_index:     %p", p.unique_index());
+      p.reverse();
+      $display("reverse:          %p", p);
+      p.shuffle();
+      p.sort();
+      $display("shuffle & sort:   %p", p);
+      p.shuffle();
+      p.rsort();
+      $display("shuffle & rsort:  %p", p);
       $write("*-* All Finished *-*\n");
       $finish;
    end

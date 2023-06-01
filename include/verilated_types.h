@@ -1074,10 +1074,29 @@ public:
     bool neq(const VlUnpacked<T_Value, T_Depth>& that) const { return neq(*this, that); }
     // Similar to 'neq' above, *this = that used for change detection
     void assign(const VlUnpacked<T_Value, T_Depth>& that) { *this = that; }
-
     bool operator==(const VlUnpacked<T_Value, T_Depth>& that) const { return !neq(that); }
     bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) { return neq(that); }
 
+    void sort() { std::sort(m_storage.begin(), m_storage.end()); }
+    template <typename Func>
+    void sort(Func with_func) {
+        // with_func returns arbitrary type to use for the sort comparison
+        std::sort(m_storage.begin(), m_storage.end(), [=](const T_Value& a, const T_Value& b) {
+            // index number is meaningless with sort, as it changes
+            return with_func(0, a) < with_func(0, b);
+        });
+    }
+    void rsort() { std::sort(m_storage.rbegin(), m_storage.rend()); }
+    template <typename Func>
+    void rsort(Func with_func) {
+        // with_func returns arbitrary type to use for the sort comparison
+        std::sort(m_storage.rbegin(), m_storage.rend(), [=](const T_Value& a, const T_Value& b) {
+            // index number is meaningless with sort, as it changes
+            return with_func(0, a) < with_func(0, b);
+        });
+    }
+    void reverse() { std::reverse(m_storage.begin(), m_storage.end()); }
+    void shuffle() { std::shuffle(m_storage.begin(), m_storage.end(), VlURNG{}); }
     VlQueue<T_Value> unique() const {
         VlQueue<T_Value> out;
         std::set<T_Value> saw;

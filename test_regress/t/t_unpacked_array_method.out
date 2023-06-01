@@ -9,4 +9,7 @@ min:              '{'h1}
 max:              '{'ha} 
 unique:           '{'h9, 'h8, 'h3, 'h2, 'h1, 'h5, 'h4, 'h7, 'h6, 'ha} 
 unique_index:     '{'h0, 'h1, 'h2, 'h3, 'h4, 'h5, 'h8, 'ha, 'hc, 'he} 
+reverse:          '{'ha, 'h9, 'h6, 'h4, 'h7, 'h1, 'h4, 'h5, 'h5, 'h5, 'h1, 'h2, 'h3, 'h8, 'h9} 
+shuffle & sort:   '{'h1, 'h1, 'h2, 'h3, 'h4, 'h4, 'h5, 'h5, 'h5, 'h6, 'h7, 'h8, 'h9, 'h9, 'ha} 
+shuffle & rsort:  '{'ha, 'h9, 'h9, 'h8, 'h7, 'h6, 'h5, 'h5, 'h5, 'h4, 'h4, 'h3, 'h2, 'h1, 'h1} 
 *-* All Finished *-*
