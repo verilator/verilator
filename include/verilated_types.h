@@ -1043,11 +1043,9 @@ struct VlUnpacked final {
 private:
     // TYPES
     using T_Key = IData;  // Index type, for uniformity with other containers
-    using Unpacked = std::array<T_Value, T_Depth>;
+    using Unpacked = T_Value[T_Depth];
 
 public:
-    using const_iterator = typename Unpacked::const_iterator;
-
     // MEMBERS
     // This should be the only data member, otherwise generated static initializers need updating
     Unpacked m_storage;  // Contents of the unpacked array
@@ -1077,26 +1075,26 @@ public:
     bool operator==(const VlUnpacked<T_Value, T_Depth>& that) const { return !neq(that); }
     bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) { return neq(that); }
 
-    void sort() { std::sort(m_storage.begin(), m_storage.end()); }
+    void sort() { std::sort(std::begin(m_storage), std::end(m_storage)); }
     template <typename Func>
     void sort(Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
-        std::sort(m_storage.begin(), m_storage.end(), [=](const T_Value& a, const T_Value& b) {
+        std::sort(std::begin(m_storage), std::end(m_storage), [=](const T_Value& a, const T_Value& b) {
             // index number is meaningless with sort, as it changes
             return with_func(0, a) < with_func(0, b);
         });
     }
-    void rsort() { std::sort(m_storage.rbegin(), m_storage.rend()); }
+    void rsort() { std::sort(std::rbegin(m_storage), std::rend(m_storage)); }
     template <typename Func>
     void rsort(Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
-        std::sort(m_storage.rbegin(), m_storage.rend(), [=](const T_Value& a, const T_Value& b) {
+        std::sort(std::rbegin(m_storage), std::rend(m_storage), [=](const T_Value& a, const T_Value& b) {
             // index number is meaningless with sort, as it changes
             return with_func(0, a) < with_func(0, b);
         });
     }
-    void reverse() { std::reverse(m_storage.begin(), m_storage.end()); }
-    void shuffle() { std::shuffle(m_storage.begin(), m_storage.end(), VlURNG{}); }
+    void reverse() { std::reverse(std::begin(m_storage), std::end(m_storage)); }
+    void shuffle() { std::shuffle(std::begin(m_storage), std::end(m_storage), VlURNG{}); }
     VlQueue<T_Value> unique() const {
         VlQueue<T_Value> out;
         std::set<T_Value> saw;
@@ -1194,47 +1192,39 @@ public:
     }
     template <typename Func>
     VlQueue<T_Value> find_last(Func with_func) const {
-        IData index = m_storage.size() - 1;
-        for (auto& item : vlstd::reverse_view(m_storage)) {
-            if (with_func(index, item)) return VlQueue<T_Value>::cons(item);
-            --index;
+        for (int i = T_Depth - 1; i >= 0; i--) {
+            if (with_func(i, m_storage[i])) return VlQueue<T_Value>::cons(m_storage[i]);
         }
         return VlQueue<T_Value>{};
     }
     template <typename Func>
     VlQueue<T_Key> find_last_index(Func with_func) const {
-        IData index = m_storage.size() - 1;
-        for (auto& item : vlstd::reverse_view(m_storage)) {
-            if (with_func(index, item)) return VlQueue<IData>::cons(index);
-            --index;
+        for (int i = T_Depth - 1; i >= 0; i--) {
+            if (with_func(i, m_storage[i])) return VlQueue<IData>::cons(i);
         }
         return VlQueue<T_Key>{};
     }
 
     // Reduction operators
     VlQueue<T_Value> min() const {
-        if (m_storage.empty()) return VlQueue<T_Value>{};
-        const auto it = std::min_element(m_storage.begin(), m_storage.end());
+        const auto it = std::min_element(std::begin(m_storage), std::end(m_storage));
         return VlQueue<T_Value>::cons(*it);
     }
     template <typename Func>
     VlQueue<T_Value> min(Func with_func) const {
-        if (m_storage.empty()) return VlQueue<T_Value>{};
-        const auto it = std::min_element(m_storage.begin(), m_storage.end(),
+        const auto it = std::min_element(std::begin(m_storage), std::end(m_storage),
                                          [&with_func](const IData& a, const IData& b) {
                                              return with_func(0, a) < with_func(0, b);
                                          });
         return VlQueue<T_Value>::cons(*it);
     }
     VlQueue<T_Value> max() const {
-        if (m_storage.empty()) return VlQueue<T_Value>{};
-        const auto it = std::max_element(m_storage.begin(), m_storage.end());
+        const auto it = std::max_element(std::begin(m_storage), std::end(m_storage));
         return VlQueue<T_Value>::cons(*it);
     }
     template <typename Func>
     VlQueue<T_Value> max(Func with_func) const {
-        if (m_storage.empty()) return VlQueue<T_Value>{};
-        const auto it = std::max_element(m_storage.begin(), m_storage.end(),
+        const auto it = std::max_element(std::begin(m_storage), std::end(m_storage),
                                          [&with_func](const IData& a, const IData& b) {
                                              return with_func(0, a) < with_func(0, b);
                                          });
