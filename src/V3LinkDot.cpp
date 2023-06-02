@@ -158,6 +158,7 @@ private:
     std::array<ScopeAliasMap, SAMN__MAX> m_scopeAliasMap;  // Map of <lhs,rhs> aliases
     std::vector<VSymEnt*> m_ifaceVarSyms;  // List of AstIfaceRefDType's to be imported
     IfaceModSyms m_ifaceModSyms;  // List of AstIface+Symbols to be processed
+    int m_stepNumber;  // Number of the step
     bool m_forPrimary;  // First link
     bool m_forPrearray;  // Compress cell__[array] refs
     bool m_forScopeCreation;  // Remove VarXRefs for V3Scope
@@ -204,6 +205,7 @@ public:
     LinkDotState(AstNetlist* rootp, VLinkDotStep step)
         : m_syms{rootp} {
         UINFO(4, __FUNCTION__ << ": " << endl);
+        m_stepNumber = int(step);
         m_forPrimary = (step == LDS_PRIMARY);
         m_forPrearray = (step == LDS_PARAMED || step == LDS_PRIMARY);
         m_forScopeCreation = (step == LDS_SCOPED);
@@ -217,6 +219,7 @@ public:
 
     // ACCESSORS
     VSymGraph* symsp() { return &m_syms; }
+    int stepNumber() const { return m_stepNumber; }
     bool forPrimary() const { return m_forPrimary; }
     bool forPrearray() const { return m_forPrearray; }
     bool forScopeCreation() const { return m_forScopeCreation; }
@@ -1017,9 +1020,13 @@ class LinkDotFindVisitor final : public VNVisitor {
             for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                 if (VN_IS(stmtp, Var) || VN_IS(stmtp, Foreach)) {
                     std::string name;
+                    std::string stepStr;
+                    if (m_statep->stepNumber()) {
+                        stepStr = std::to_string(m_statep->stepNumber()) + "_";
+                    }
                     do {
                         ++m_modBlockNum;
-                        name = "unnamedblk" + cvtToStr(m_modBlockNum);
+                        name = "unnamedblk" + stepStr + cvtToStr(m_modBlockNum);
                         // Increment again if earlier pass of V3LinkDot claimed this name
                     } while (m_curSymp->findIdFlat(name));
                     nodep->name(name);
