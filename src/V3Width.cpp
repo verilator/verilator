@@ -4680,6 +4680,7 @@ private:
         FileLine* const fl = varp->fileline();
         auto* const whilep = new AstWhile{
             fl, condp, bodysp, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, incp}};
+        varp->lifetime(VLifetime::AUTOMATIC);
         AstNode* const stmtsp = varp;  // New statements for under new Begin
         stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, leftp});
         stmtsp->addNext(whilep);
