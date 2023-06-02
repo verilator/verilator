@@ -12,5 +12,8 @@ module t;
       end
       foreach (a[i]) begin
       end
+      begin
+         int x;
+      end
    endfunction
 endmodule
