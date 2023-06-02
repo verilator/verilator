@@ -880,6 +880,15 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
+    void visit(AstExprStmt* nodep) override {
+        if (jumpingOver(nodep)) return;
+        checkNodeInfo(nodep);
+        iterateAndNextConstNull(nodep->stmtsp());
+        if (!optimizable()) return;
+        iterateAndNextConstNull(nodep->resultp());
+        if (!optimizable()) return;
+        if (!m_checkOnly) newValue(nodep, fetchValue(nodep->resultp()));
+    }
 
     void visit(AstJumpBlock* nodep) override {
         if (jumpingOver(nodep)) return;

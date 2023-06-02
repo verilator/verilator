@@ -638,7 +638,22 @@ condition. See the `Timing Pass` section for more details.
 Timing Pass
 ~~~~~~~~~~~
 
-The visitor in ``V3Timing.cpp`` transforms each timing control into a ``co_await``.
+There are two visitors in ``V3Timing.cpp``.
+
+The first one, ``TimingSuspendableVisitor``, does not perform any AST
+transformations. It is responsible for marking processes and C++ functions that
+contain timing controls as suspendable. Processes that call suspendable
+functions are also marked as suspendable. Functions that call, are overridden
+by, or override suspendable functions are marked as suspendable as well.
+
+The visitor keeps a dependency graph of functions and processes to handle such
+cases. A function or process is dependent on a function if it calls it. A
+virtual class method is dependent on another class method if it calls it,
+overrides it, or is overriden by it.
+
+The second visitor in ``V3Timing.cpp``, ``TimingControlVisitor``, uses the
+information provided by ``TimingSuspendableVisitor`` and transforms each timing
+control into a ``co_await``.
 
 * event controls are turned into ``co_await`` on a trigger scheduler's
   ``trigger`` method. The awaited trigger scheduler is the one corresponding to
@@ -670,14 +685,9 @@ Each sub-statement of a ``fork`` is put in an ``AstBegin`` node for easier
 grouping. In a later step, each of these gets transformed into a new, separate
 function. See the `Forks` section for more detail.
 
-Processes that use awaits are marked as suspendable. Later, during ``V3Sched``,
-they are transformed into coroutines. Functions that use awaits get the return
-type of ``VlCoroutine``. This immediately makes them coroutines. Note that if a
-process calls a function that is a coroutine, the call gets wrapped in an
-await, which means the process itself will be marked as suspendable. A virtual
-function is a coroutine if any of its overriding or overridden functions are
-coroutines. The visitor keeps a dependency graph of functions and processes to
-handle such cases.
+Suspendable functions get the return type of ``VlCoroutine``, which makes them
+coroutines. Later, during ``V3Sched``, suspendable processes are also
+transformed into coroutines.
 
 Scheduling with timing
 ~~~~~~~~~~~~~~~~~~~~~~

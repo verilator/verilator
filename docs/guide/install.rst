@@ -104,6 +104,7 @@ for good performance:
 ::
 
    sudo apt-get install ccache  # If present at build, needed for run
+   sudo apt-get install mold  # If present at build, needed for run
    sudo apt-get install libgoogle-perftools-dev numactl
 
 The following is optional but is recommended for nicely rendered command line
@@ -124,7 +125,7 @@ Those developing Verilator itself may also want these (see internals.rst):
 
 ::
 
-   sudo apt-get install gdb graphviz cmake clang clang-format-14 gprof lcov
+   sudo apt-get install clang clang-format-14 cmake gdb gprof graphviz lcov
    sudo apt-get install libclang-dev yapf3
    sudo pip3 install clang sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe ruff
    cpan install Pod::Perldoc

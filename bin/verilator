@@ -372,6 +372,7 @@ detailed descriptions of these arguments.
     --make <build-tool>         Generate scripts for specified build tool
      -MAKEFLAGS <flags>         Arguments to pass to make during --build
     --main                      Generate C++ main() file
+    --main-top-name             Specify top name passed to Verilated model in generated C++ main
     --max-num-width <value>     Maximum number width (default: 64K)
     --Mdir <directory>          Name of output object directory
     --MMD                       Create .d dependency files

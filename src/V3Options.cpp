@@ -23,6 +23,7 @@
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3Global.h"
+#include "V3Mutex.h"
 #include "V3OptionParser.h"
 #include "V3Os.h"
 #include "V3PreShell.h"
@@ -547,6 +548,11 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
+    if (modname[0] == '/') {
+        // If leading /, obey existing absolute path, so can find getStdPackagePath()
+        string exists = filePathCheckOneDir(modname, "");
+        if (exists != "") return exists;
+    }
     for (const string& dir : m_impp->m_incDirUsers) {
         string exists = filePathCheckOneDir(modname, dir);
         if (exists != "") return exists;
@@ -1273,6 +1279,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-l2-name", Set, &m_l2Name);
     DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; }).undocumented();  // Historical
     DECL_OPTION("-l2name", CbCall, [this]() { m_l2Name = "v"; }).undocumented();  // Historical
+    DECL_OPTION("-main-top-name", Set, &m_mainTopName);
 
     DECL_OPTION("-MAKEFLAGS", CbVal, callStrSetter(&V3Options::addMakeFlags));
     DECL_OPTION("-MMD", OnOff, &m_makeDepend);

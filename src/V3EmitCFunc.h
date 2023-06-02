@@ -354,6 +354,7 @@ public:
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //
                    && !VN_IS(nodep->rhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), AssocSel)  //
+                   && !VN_IS(nodep->rhsp(), StructSel)  //
                    && !VN_IS(nodep->rhsp(), ArraySel)) {
             // Wide functions assign into the array directly, don't need separate assign statement
             m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
@@ -467,7 +468,7 @@ public:
     void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
     void visit(AstWith* nodep) override {
         // With uses a C++11 lambda
-        putbs("[=](");
+        putbs("[&](");
         if (auto* const argrefp = nodep->indexArgRefp()) {
             putbs(argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
             puts(",");
@@ -475,10 +476,9 @@ public:
         if (auto* const argrefp = nodep->valueArgRefp()) {
             putbs(argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
         }
-        // Probably fragile, V3Task may need to convert to a AstCReturn
-        puts(") { return ");
+        puts(") {\n");
         iterateAndNextConstNull(nodep->exprp());
-        puts("; }\n");
+        puts("}\n");
     }
     void visit(AstNodeCase* nodep) override {  // LCOV_EXCL_LINE
         // In V3Case...
@@ -1043,7 +1043,9 @@ public:
     }
     void visit(AstCCast* nodep) override {
         // Extending a value of the same word width is just a NOP.
-        if (nodep->size() <= VL_IDATASIZE) {
+        if (const AstClassRefDType* const classDtypep = VN_CAST(nodep->dtypep(), ClassRefDType)) {
+            puts("(" + classDtypep->cType("", false, false) + ")(");
+        } else if (nodep->size() <= VL_IDATASIZE) {
             puts("(IData)(");
         } else {
             puts("(QData)(");

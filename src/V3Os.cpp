@@ -126,7 +126,7 @@ void V3Os::setenvStr(const string& envvar, const string& value, const string& wh
 
 string V3Os::filenameFromDirBase(const string& dir, const string& basename) {
     // Don't return ./{filename} because if filename was absolute, that makes it relative
-    if (dir == ".") {
+    if (dir.empty() || dir == ".") {
         return basename;
     } else {
         return dir + "/" + basename;

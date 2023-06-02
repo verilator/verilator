@@ -307,7 +307,9 @@ class ParamProcessor final : public VNDeleter {
     }
 
     static string paramValueString(const AstNode* nodep) {
-        if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) { nodep = refp->skipRefp(); }
+        if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) {
+            nodep = refp->skipRefToEnump();
+        }
         string key = nodep->name();
         if (const AstIfaceRefDType* const ifrtp = VN_CAST(nodep, IfaceRefDType)) {
             if (ifrtp->cellp() && ifrtp->cellp()->modp()) {
@@ -344,7 +346,9 @@ class ParamProcessor final : public VNDeleter {
         // TODO: This parameter value number lookup via a constructed key string is not
         //       particularly robust for type parameters. We should really have a type
         //       equivalence predicate function.
-        if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) nodep = refp->skipRefp();
+        if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) {
+            nodep = refp->skipRefToEnump();
+        }
         const string paramStr = paramValueString(nodep);
         // cppcheck-has-bug-suppress unreadVariable
         V3Hash hash = V3Hasher::uncachedHash(nodep) + paramStr;

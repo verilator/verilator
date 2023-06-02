@@ -175,6 +175,7 @@ public:
     /// Construct mutex (without locking it)
     VerilatedMutex() = default;
     ~VerilatedMutex() = default;
+    VL_UNCOPYABLE(VerilatedMutex);
     const VerilatedMutex& operator!() const { return *this; }  // For -fthread_safety
     /// Acquire/lock mutex
     void lock() VL_ACQUIRE() VL_MT_SAFE {

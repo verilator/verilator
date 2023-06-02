@@ -38,6 +38,8 @@ module t(/*AUTOARG*/);
       p.srandom(0);
       p.set_randstate(p.get_randstate());
 
+      $display("%p", p);
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

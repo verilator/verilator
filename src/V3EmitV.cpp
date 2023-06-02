@@ -424,12 +424,27 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         iterateAndNextConstNull(nodep->exprsp());
         puts(")");
     }
+    void visit(AstExprStmt* nodep) override {
+        putfs(nodep, "$_EXPRSTMT(\n");
+        iterateAndNextConstNull(nodep->stmtsp());
+        putbs(", ");
+        puts(");\n");
+    }
 
     void visit(AstCMethodHard* nodep) override {
         iterateConst(nodep->fromp());
         puts("." + nodep->name() + "(");
         for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
             if (pinp != nodep->pinsp()) puts(", ");
+            iterateConst(pinp);
+        }
+        puts(")");
+    }
+    void visit(AstCMethodCall* nodep) override {
+        iterateConst(nodep->fromp());
+        puts("." + nodep->name() + "(");
+        for (AstNode* pinp = nodep->argsp(); pinp; pinp = pinp->nextp()) {
+            if (pinp != nodep->argsp()) puts(", ");
             iterateConst(pinp);
         }
         puts(")");
