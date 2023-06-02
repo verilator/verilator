@@ -144,6 +144,17 @@ private:
 
     // VISITORS
     void visit(AstFork* nodep) override {
+
+        // HACK: If we are directly under another fork, then the simplest way to propagate
+        // captures is to wrap the inner fork in a begin block.
+        if (m_newProcess) {
+            VNRelinker handle;
+            nodep->unlinkFrBack(&handle);
+            AstBegin* beginp = new AstBegin(nodep->fileline(), "", nodep);
+            handle.relink(beginp);
+            return;
+        }
+
         VL_RESTORER(m_forkLocalsp);
         VL_RESTORER(m_newProcess);
         VL_RESTORER(m_forkDepth)
