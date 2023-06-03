@@ -26,6 +26,7 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <vector>
 
 namespace future_type {
 template <typename T>
@@ -54,7 +55,7 @@ class V3ThreadPool final {
     // `wait` function is not atomic, but we are guarding `m_queue` that is
     // used by this condition_variable, so clang checks that we have mutex locked
     std::condition_variable_any m_cv;  // Conditions to wake up workers
-    std::list<std::thread> m_workers;  // Worker threads
+    std::vector<std::thread> m_workers;  // Worker threads
     V3Mutex m_stoppedJobsMutex;  // Used to signal stopped jobs
     // Conditions to wake up stopped jobs
     std::condition_variable_any m_stoppedJobsCV VL_GUARDED_BY(m_stoppedJobsMutex);

@@ -39,14 +39,13 @@ void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex)
         m_cv.notify_all();
         m_stoppedJobsCV.notify_all();
     }
-    while (!m_workers.empty()) {
-        m_workers.front().join();
-        m_workers.pop_front();
-    }
+    for (auto& worker : m_workers) { worker.join(); }
+    m_workers.clear();
     if (n > 1) {
         V3LockGuard lock{m_mutex};
         // Start new threads
         m_shutdown = false;
+        m_workers.reserve(n - 1);
         for (unsigned int i = 1; i < n; ++i) {
             m_workers.emplace_back(&V3ThreadPool::startWorker, this, i);
         }
