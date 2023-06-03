@@ -23,6 +23,8 @@
 // c++11 requires definition of static constexpr as well as declaration
 constexpr unsigned int V3ThreadPool::FUTUREWAITFOR_MS;
 
+thread_local std::size_t V3ThreadPool::s_threadId{V3ThreadPool::mainThreadId()};
+
 void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex)
     VL_EXCLUDES(m_stoppedJobsMutex) {
     // This function is not thread-safe and can result in race between threads
@@ -53,6 +55,7 @@ void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex)
 }
 
 void V3ThreadPool::startWorker(V3ThreadPool* selfThreadp, int id) VL_MT_SAFE {
+    s_threadId = id;
     selfThreadp->workerJobLoop(id);
 }
 

@@ -65,6 +65,9 @@ class V3ThreadPool final {
 
     std::atomic_bool m_shutdown{false};  // Termination pending
 
+    // Sequential thread index.
+    static thread_local std::size_t s_threadId;
+
     // CONSTRUCTORS
     V3ThreadPool() = default;
     ~V3ThreadPool() {
@@ -81,6 +84,17 @@ public:
     static V3ThreadPool& s() VL_MT_SAFE {
         static V3ThreadPool s_s;
         return s_s;
+    }
+
+    // Returns sequential thread index.
+    // Main thread has index 0, first worker thread has index 1, etc.
+    static std::size_t currentThreadId() VL_MT_SAFE { return s_threadId; }
+
+    static constexpr std::size_t mainThreadId() VL_PURE { return 0; }
+
+    // Returns number of threads (including main thread).
+    std::size_t size() const VL_MT_SAFE {
+        return m_workers.size() + 1;
     }
 
     // Resize thread pool to n workers (queue must be empty)
@@ -150,9 +164,7 @@ private:
             futures.pop_front();
         }
     }
-    bool willExecuteSynchronously() const VL_MT_SAFE {
-        return m_workers.empty() || m_exclusiveAccess;
-    }
+    bool willExecuteSynchronously() const VL_MT_SAFE { return (size() == 1) || m_exclusiveAccess; }
 
     // True when any thread requested exclusive access
     bool stopRequested() const VL_REQUIRES(m_stoppedJobsMutex) {
