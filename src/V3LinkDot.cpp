@@ -1015,7 +1015,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             // places such as tasks, where "task ...; begin ... end"
             // are common.
             for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (VN_IS(stmtp, Var) || VN_IS(stmtp, Foreach)) {
+                if (VN_IS(stmtp, Var)) {
                     std::string name;
                     do {
                         ++m_modBlockNum;
