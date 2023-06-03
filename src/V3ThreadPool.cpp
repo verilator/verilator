@@ -19,18 +19,22 @@
 #include "V3ThreadPool.h"
 
 #include "V3Error.h"
+#include "V3ThreadSafety.h"
 
 // c++11 requires definition of static constexpr as well as declaration
 constexpr unsigned int V3ThreadPool::FUTUREWAITFOR_MS;
 
 void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex)
-    VL_EXCLUDES(m_stoppedJobsMutex) {
+    VL_EXCLUDES(m_stoppedJobsMutex) VL_EXCLUDES(V3MtDisabledLock::instance()) {
+    // At least one thread (main)
+    n = std::max(1u, n);
+    if (n == (m_workers.size() + 1)) { return; }
     // This function is not thread-safe and can result in race between threads
     UASSERT(V3MutexConfig::s().lockConfig(),
             "Mutex config needs to be locked before starting ThreadPool");
     {
-        V3LockGuard lock{m_mutex};
         V3LockGuard stoppedJobsLock{m_stoppedJobsMutex};
+        V3LockGuard lock{m_mutex};
 
         UASSERT(m_queue.empty(), "Resizing busy thread pool");
         // Shut down old threads
@@ -50,6 +54,48 @@ void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex)
         for (unsigned int i = 1; i < n; ++i) {
             m_workers.emplace_back(&V3ThreadPool::startWorker, this, i);
         }
+    }
+}
+
+void V3ThreadPool::suspendMultithreading() VL_MT_SAFE VL_EXCLUDES(m_mutex)
+    VL_EXCLUDES(m_stoppedJobsMutex) {
+    if (!m_stoppedJobsMutex.try_lock()) {
+        v3fatal("Tried to suspend thread pool when other thread uses it.");
+        assert(0);  // LCOV_EXCL_LINE
+        VL_UNREACHABLE;
+    }
+    V3LockGuard stoppedJobsLock{m_stoppedJobsMutex, std::adopt_lock_t{}};
+    if (!m_workers.empty()) { stopOtherThreads(); }
+
+    if (!m_mutex.try_lock()) {
+        v3fatal("Tried to suspend thread pool when other thread uses it.");
+        assert(0);  // LCOV_EXCL_LINE
+        VL_UNREACHABLE;
+    }
+    V3LockGuard lock{m_mutex, std::adopt_lock_t{}};
+
+    UASSERT(m_queue.empty(), "Thread pool has pending jobs");
+    UASSERT(m_jobsInProgress == 0, "Thread pool has jobs in progress");
+    m_exclusiveAccess = true;
+    m_multithreadingSuspended = true;
+}
+
+void V3ThreadPool::resumeMultithreading() VL_MT_SAFE VL_EXCLUDES(m_mutex)
+    VL_EXCLUDES(m_stoppedJobsMutex) {
+    if (!m_mutex.try_lock()) {
+        v3fatal("Tried to resume thread pool when other thread uses it.");
+        assert(0);  // LCOV_EXCL_LINE
+        VL_UNREACHABLE;
+    }
+    {
+        V3LockGuard lock{m_mutex, std::adopt_lock_t{}};
+        UASSERT(m_multithreadingSuspended, "Multithreading is not suspended");
+        m_multithreadingSuspended = false;
+        m_exclusiveAccess = false;
+    }
+    if (!m_workers.empty()) {
+        V3LockGuard stoppedJobsLock{m_stoppedJobsMutex};
+        resumeOtherThreads();
     }
 }
 
@@ -74,10 +120,14 @@ void V3ThreadPool::workerJobLoop(int id) VL_MT_SAFE {
 
             job = std::move(m_queue.front());
             m_queue.pop();
+            ++m_jobsInProgress;
         }
 
         // Execute the job
         job();
+        // Note that a context switch can happen here. This means `m_jobsInProgress` could still
+        // contain old value even after the job promise has been fulfilled.
+        --m_jobsInProgress;
     }
 }
 
@@ -175,3 +225,11 @@ void V3ThreadPool::selfTest() {
 }
 
 V3MtDisabledLock V3MtDisabledLock::s_mtDisabledLock;
+
+void V3MtDisabledLock::lock() VL_ACQUIRE() VL_MT_SAFE {
+    V3ThreadPool::s().suspendMultithreading();
+}
+
+void V3MtDisabledLock::unlock() VL_RELEASE() VL_MT_SAFE {
+    V3ThreadPool::s().resumeMultithreading();
+}

@@ -89,6 +89,9 @@ class V3ThreadPool final {
     // used by this condition_variable, so clang checks that we have mutex locked
     std::condition_variable_any m_cv;  // Conditions to wake up workers
     std::list<std::thread> m_workers;  // Worker threads
+    // Number of started and not yet finished jobs.
+    // Reading is valid only after call to `stopOtherThreads()` or when no worker threads exist.
+    std::atomic_uint m_jobsInProgress{0};
     V3Mutex m_stoppedJobsMutex;  // Used to signal stopped jobs
     // Conditions to wake up stopped jobs
     std::condition_variable_any m_stoppedJobsCV VL_GUARDED_BY(m_stoppedJobsMutex);
@@ -98,11 +101,23 @@ class V3ThreadPool final {
 
     std::atomic_bool m_shutdown{false};  // Termination pending
 
+    // Indicates whether multithreading has been suspended.
+    // Used for error detection in resumeMultithreading only. You probably should use
+    // m_exclusiveAcces for information whether something should be run in current thread.
+    bool m_multithreadingSuspended VL_GUARDED_BY(m_mutex) = false;
+
     // CONSTRUCTORS
     V3ThreadPool() = default;
     ~V3ThreadPool() {
-        {
-            V3LockGuard lock{m_mutex};
+        if (!m_mutex.try_lock()) {
+            if (m_jobsInProgress != 0) {
+                // ThreadPool shouldn't be destroyed when jobs are running and mutex is locked,
+                // something is wrong. Most likely Verilator is exitting as a result of failed
+                // assert in critical section. Do noting, let it exit.
+                return;
+            }
+        } else {
+            V3LockGuard lock{m_mutex, std::adopt_lock_t{}};
             m_queue = {};  // make sure queue is empty
         }
         resize(0);
@@ -120,7 +135,8 @@ public:
     }
 
     // Resize thread pool to n workers (queue must be empty)
-    void resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_stoppedJobsMutex);
+    void resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_stoppedJobsMutex)
+        VL_EXCLUDES(V3MtDisabledLock::instance());
 
     // Enqueue a job for asynchronous execution
     // Due to missing support for lambda annotations in c++11,
@@ -171,6 +187,24 @@ public:
     static void selfTestMtDisabled() VL_MT_DISABLED;
 
 private:
+    // For access to suspendMultithreading() and resumeMultithreading()
+    friend class V3MtDisabledLock;
+
+    // Temporarily suspends multithreading.
+    //
+    // Existing worker threads are not terminated. All jobs enqueued when multithreading is
+    // suspended are executed synchronously.
+    // Must be called from the main thread. Jobs queue must be empty. Existing worker threads must
+    // be idle.
+    //
+    // Only V3MtDisabledLock class is supposed to use this function.
+    void suspendMultithreading() VL_MT_SAFE VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_stoppedJobsMutex);
+
+    // Resumes multithreading suspended previously by call tosuspendMultithreading().
+    //
+    // Only V3MtDisabledLock class is supposed to use this function.
+    void resumeMultithreading() VL_MT_SAFE VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_stoppedJobsMutex);
+
     template <typename T>
     static std::list<T> waitForFuturesImp(std::list<std::future<T>>& futures) {
         std::list<T> results;
