@@ -2135,8 +2135,7 @@ void AstVar::dump(std::ostream& str) const {
 }
 bool AstVar::same(const AstNode* samep) const {
     const AstVar* const asamep = static_cast<const AstVar*>(samep);
-    return name() == asamep->name()
-           && varType() == asamep->varType();
+    return name() == asamep->name() && varType() == asamep->varType();
 }
 void AstScope::dump(std::ostream& str) const {
     this->AstNode::dump(str);
