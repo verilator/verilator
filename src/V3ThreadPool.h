@@ -94,6 +94,7 @@ public:
 
     // Returns number of threads (including main thread).
     std::size_t size() const VL_MT_SAFE {
+        std::atomic_thread_fence(std::memory_order_acquire);
         return m_workers.size() + 1;
     }
 

@@ -51,6 +51,8 @@ void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex)
         for (unsigned int i = 1; i < n; ++i) {
             m_workers.emplace_back(&V3ThreadPool::startWorker, this, i);
         }
+        // Synchronization for size().
+        std::atomic_thread_fence(std::memory_order_release);
     }
 }
 
