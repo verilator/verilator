@@ -119,6 +119,10 @@
 // Allowed on: function, method. (-fthread-safety)
 #define VL_RETURN_CAPABILITY(x) \
         VL_CLANG_ATTR(lock_returned(x))
+// Assert that capability is already held.
+// Allowed on: function, method. (-fthread-safety)
+#define VL_ASSERT_CAPABILITY(x) \
+        VL_CLANG_ATTR(assert_capability(x))
 
 // Defaults for unsupported compiler features
 #ifndef VL_ATTR_ALWINLINE

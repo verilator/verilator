@@ -109,6 +109,10 @@ public:
     bool try_lock() VL_TRY_ACQUIRE(true) VL_MT_SAFE {
         return V3MutexConfig::s().enable() ? m_mutex.try_lock() : true;
     }
+    /// Assume that the mutex is already held. Purely for Clang thread safety analyzer.
+    void assumeLocked() VL_ASSERT_CAPABILITY(this) VL_MT_SAFE {}
+    /// Pretend that the mutex is being unlocked. Purely for Clang thread safety analyzer.
+    void pretendUnlock() VL_RELEASE() VL_MT_SAFE {}
     /// Acquire/lock mutex and check for stop request
     /// It tries to lock the mutex and if it fails, it check if stop request was send.
     /// It returns after locking mutex.
