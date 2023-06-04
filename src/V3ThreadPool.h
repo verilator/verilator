@@ -106,7 +106,7 @@ public:
     // Check if other thread requested exclusive access to processing,
     // if so, it waits for it to complete. Afterwards it is resumed.
     // Returns true if request was send and we waited, otherwise false
-    bool waitIfStopRequested() VL_MT_SAFE;
+    bool waitIfStopRequested() VL_MT_SAFE VL_EXCLUDES(m_stoppedJobsMutex);
 
     // Waits for future.
     // This function can be interupted by exclusive access request.
@@ -154,15 +154,10 @@ private:
     }
 
     // True when any thread requested exclusive access
-    bool stopRequested() const VL_REQUIRES(m_stoppedJobsMutex) {
+    bool stopRequested() const VL_MT_SAFE {
         // don't wait if shutdown already requested
         if (m_shutdown) return false;
         return m_stopRequested;
-    }
-
-    bool stopRequestedStandalone() VL_MT_SAFE_EXCLUDES(m_stoppedJobsMutex) {
-        const V3LockGuard lock{m_stoppedJobsMutex};
-        return stopRequested();
     }
 
     // Waits until exclusive access job completes its job
