@@ -100,6 +100,9 @@ class V3ThreadPool final {
     }
 
 public:
+    // Request exclusive access to processing for the object lifetime.
+    class ScopedExclusiveAccess;
+
     // METHODS
     // Singleton
     static V3ThreadPool& s() VL_MT_SAFE {
@@ -196,6 +199,34 @@ private:
     static void startWorker(V3ThreadPool* selfThreadp, int id) VL_MT_SAFE;
 };
 
+class VL_SCOPED_CAPABILITY V3ThreadPool::ScopedExclusiveAccess final {
+public:
+    ScopedExclusiveAccess() VL_ACQUIRE(V3ThreadPool::s().m_stoppedJobsMutex) VL_MT_SAFE {
+        if (!V3ThreadPool::s().willExecuteSynchronously()) {
+            V3ThreadPool::s().m_stoppedJobsMutex.lock();
+
+            if (V3ThreadPool::s().stopRequested()) { V3ThreadPool::s().waitStopRequested(); }
+            V3ThreadPool::s().m_stopRequested = true;
+            V3ThreadPool::s().waitOtherThreads();
+            V3ThreadPool::s().m_exclusiveAccess = true;
+        } else {
+            V3ThreadPool::s().m_stoppedJobsMutex.assumeLocked();
+        }
+    }
+    ~ScopedExclusiveAccess() VL_RELEASE(V3ThreadPool::s().m_stoppedJobsMutex) VL_MT_SAFE {
+        // Can't use `willExecuteSynchronously`, we're still in exclusive execution state.
+        if (V3ThreadPool::s().m_exclusiveAccess) {
+            V3ThreadPool::s().m_exclusiveAccess = false;
+            V3ThreadPool::s().m_stopRequested = false;
+            V3ThreadPool::s().m_stoppedJobsCV.notify_all();
+
+            V3ThreadPool::s().m_stoppedJobsMutex.unlock();
+        } else {
+            V3ThreadPool::s().m_stoppedJobsMutex.pretendUnlock();
+        }
+    }
+};
+
 template <typename T>
 T V3ThreadPool::waitForFuture(std::future<T>& future) VL_MT_SAFE_EXCLUDES(m_mutex) {
     while (true) {
@@ -232,21 +263,8 @@ auto V3ThreadPool::enqueue(Callable&& f) VL_MT_START {
 template <typename Callable>
 void V3ThreadPool::requestExclusiveAccess(Callable&& exclusiveAccessJob) VL_MT_SAFE
     VL_EXCLUDES(m_stoppedJobsMutex) {
-    if (willExecuteSynchronously()) {
-        exclusiveAccessJob();
-    } else {
-        V3LockGuard stoppedJobLock{m_stoppedJobsMutex};
-        // if some other job already requested exclusive access
-        // wait until it stops
-        if (stopRequested()) { waitStopRequested(); }
-        m_stopRequested = true;
-        waitOtherThreads();
-        m_exclusiveAccess = true;
-        exclusiveAccessJob();
-        m_exclusiveAccess = false;
-        m_stopRequested = false;
-        m_stoppedJobsCV.notify_all();
-    }
+    ScopedExclusiveAccess exclusive_access;
+    exclusiveAccessJob();
 }
 
 #endif  // Guard

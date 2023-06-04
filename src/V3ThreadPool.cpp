@@ -116,11 +116,10 @@ void V3ThreadPool::selfTest() {
 
     auto firstJob = [&](int sleep) -> void {
         std::this_thread::sleep_for(std::chrono::milliseconds{sleep});
-        s().requestExclusiveAccess([&]() {
-            commonValue = 10;
-            std::this_thread::sleep_for(std::chrono::milliseconds{sleep + 10});
-            UASSERT(commonValue == 10, "unexpected commonValue = " << commonValue);
-        });
+        const V3ThreadPool::ScopedExclusiveAccess exclusiveAccess;
+        commonValue = 10;
+        std::this_thread::sleep_for(std::chrono::milliseconds{sleep + 10});
+        UASSERT(commonValue == 10, "unexpected commonValue = " << commonValue);
     };
     auto secondJob = [&](int sleep) -> void {
         commonMutex.lock();
