@@ -932,11 +932,11 @@ void V3EmitC::emitcImp() {
         const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
         cfiles.emplace_back();
         auto& slowCfilesr = cfiles.back();
-        futures.push_back(V3ThreadPool::s().enqueue<void>(
+        futures.push_back(V3ThreadPool::s().enqueue(
             [modp, &slowCfilesr]() { EmitCImp::main(modp, /* slow: */ true, slowCfilesr); }));
         cfiles.emplace_back();
         auto& fastCfilesr = cfiles.back();
-        futures.push_back(V3ThreadPool::s().enqueue<void>(
+        futures.push_back(V3ThreadPool::s().enqueue(
             [modp, &fastCfilesr]() { EmitCImp::main(modp, /* slow: */ false, fastCfilesr); }));
     }
 
@@ -944,12 +944,12 @@ void V3EmitC::emitcImp() {
     if (v3Global.opt.trace() && !v3Global.opt.lintOnly()) {
         cfiles.emplace_back();
         auto& slowCfilesr = cfiles.back();
-        futures.push_back(V3ThreadPool::s().enqueue<void>([&slowCfilesr]() {
+        futures.push_back(V3ThreadPool::s().enqueue([&slowCfilesr]() {
             EmitCTrace::main(v3Global.rootp()->topModulep(), /* slow: */ true, slowCfilesr);
         }));
         cfiles.emplace_back();
         auto& fastCfilesr = cfiles.back();
-        futures.push_back(V3ThreadPool::s().enqueue<void>([&fastCfilesr]() {
+        futures.push_back(V3ThreadPool::s().enqueue([&fastCfilesr]() {
             EmitCTrace::main(v3Global.rootp()->topModulep(), /* slow: */ false, fastCfilesr);
         }));
     }
