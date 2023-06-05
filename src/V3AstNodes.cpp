@@ -1071,6 +1071,15 @@ AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
     return m_voidp;
 }
 
+AstStreamDType* AstTypeTable::findStreamDType(FileLine* fl) {
+    if (VL_UNLIKELY(!m_streamp)) {
+        AstStreamDType* const newp = new AstStreamDType{fl};
+        addTypesp(newp);
+        m_streamp = newp;
+    }
+    return m_streamp;
+}
+
 AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
     if (VL_UNLIKELY(!m_queueIndexp)) {
         AstQueueDType* const newp = new AstQueueDType{fl, AstNode::findUInt32DType(), nullptr};
@@ -2054,6 +2063,10 @@ void AstEmptyQueueDType::dumpSmall(std::ostream& str) const {
 void AstVoidDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "void";
+}
+void AstStreamDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "stream";
 }
 void AstVarScope::dump(std::ostream& str) const {
     this->AstNode::dump(str);
