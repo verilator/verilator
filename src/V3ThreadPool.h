@@ -27,19 +27,6 @@
 #include <queue>
 #include <thread>
 
-namespace future_type {
-template <typename T>
-struct return_type {
-    typedef std::list<T> type;
-};
-
-template <>
-struct return_type<void> {
-    typedef void type;
-};
-
-}  // namespace future_type
-
 //============================================================================
 
 class V3ThreadPool final {
@@ -124,8 +111,7 @@ public:
     // specialization as C++11 requires them to be inside namespace scope
     // Returns list of future result or void
     template <typename T>
-    static typename future_type::return_type<T>::type
-    waitForFutures(std::list<std::future<T>>& futures) {
+    static auto waitForFutures(std::list<std::future<T>>& futures) {
         return waitForFuturesImp(futures);
     }
 
@@ -133,9 +119,8 @@ public:
 
 private:
     template <typename T>
-    static typename future_type::return_type<T>::type
-    waitForFuturesImp(std::list<std::future<T>>& futures) {
-        typename future_type::return_type<T>::type results;
+    static std::list<T> waitForFuturesImp(std::list<std::future<T>>& futures) {
+        std::list<T> results;
         while (!futures.empty()) {
             results.push_back(V3ThreadPool::waitForFuture(futures.front()));
             futures.pop_front();
