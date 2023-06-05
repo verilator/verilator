@@ -77,8 +77,8 @@ private:
         vrefp->varp(varp);
     }
 
-    AstTask* makeTask(FileLine* fl, AstNode* stmtsp, AstVar* captures, std::string name) {
-        stmtsp = AstNode::addNext(static_cast<AstNode*>(captures), stmtsp);
+    AstTask* makeTask(FileLine* fl, AstNode* stmtsp, std::string name) {
+        stmtsp = AstNode::addNext(static_cast<AstNode*>(m_capturedVarsp), stmtsp);
         AstTask* taskp = new AstTask{fl, name, stmtsp};
         ++m_createdTasksCount;
         return taskp;
@@ -90,22 +90,7 @@ private:
                + (!fromp->name().empty() ? (fromp->name() + "__") : "UNNAMED__") + cvtToHex(fromp);
     }
 
-    AstTask* turnBlockIntoTask(AstNodeBlock* blockp, AstVar* captures, VNRelinker& handle) {
-        UASSERT(blockp->stmtsp(), "No stmtsp\n");
-        std::string taskName = generateTaskName(blockp, "__FORK_BLOCK_");
-        AstTask* task = makeTask(blockp->fileline(), blockp->stmtsp()->unlinkFrBackWithNext(),
-                                 captures, taskName);
-        blockp->unlinkFrBack(&handle);
-        VL_DO_DANGLING(blockp->deleteTree(), blockp);
-        return task;
-    }
-
-    AstTask* turnStatementIntoTask(AstNodeStmt* stmtp, AstVar* captures, VNRelinker& handle) {
-        std::string taskName = generateTaskName(stmtp, "__FORK_STMT_");
-        return makeTask(stmtp->fileline(), stmtp->unlinkFrBack(&handle), captures, taskName);
-    }
-
-    void visitBlockOrStmt(AstNode* nodep, bool block) {
+    void visitTaskifiable(AstNode* nodep) {
         if (!m_newProcess || nodep->user1()) {
             VL_RESTORER(m_forkDepth);
             if (nodep->user1()) {
@@ -128,9 +113,24 @@ private:
         if (m_capturedVarsp == nullptr) return;  // No captures - no need to taskify
 
         VNRelinker handle;
-        AstTask* taskp
-            = block ? turnBlockIntoTask(VN_AS(nodep, NodeBlock), m_capturedVarsp, handle)
-                    : turnStatementIntoTask(VN_AS(nodep, NodeStmt), m_capturedVarsp, handle);
+        AstTask* taskp = nullptr;
+        std::string taskName;
+
+        if (AstBegin* beginp = VN_CAST(nodep, Begin)) {
+            UASSERT(beginp->stmtsp(), "No stmtsp\n");
+            taskName = generateTaskName(beginp, "__FORK_BEGIN_");
+            taskp
+                = makeTask(beginp->fileline(), beginp->stmtsp()->unlinkFrBackWithNext(), taskName);
+            beginp->unlinkFrBack(&handle);
+            VL_DO_DANGLING(beginp->deleteTree(), beginp);
+        } else if (AstNodeStmt* stmtp = VN_CAST(nodep, NodeStmt)) {
+            taskName = generateTaskName(stmtp, "__FORK_STMT_");
+            taskp = makeTask(stmtp->fileline(), stmtp->unlinkFrBack(&handle), taskName);
+        } else if (AstFork* forkp = VN_CAST(nodep, Fork)) {
+            taskName = generateTaskName(forkp, "__FORK_NESTED_");
+            taskp = makeTask(forkp->fileline(), forkp->unlinkFrBack(&handle), taskName);
+        }
+
         m_modp->addStmtsp(taskp);
 
         AstTaskRef* taskrefp
@@ -144,16 +144,7 @@ private:
 
     // VISITORS
     void visit(AstFork* nodep) override {
-
-        // HACK: If we are directly under another fork, then the simplest way to propagate
-        // captures is to wrap the inner fork in a begin block.
-        if (m_newProcess) {
-            VNRelinker handle;
-            nodep->unlinkFrBack(&handle);
-            AstBegin* beginp = new AstBegin(nodep->fileline(), "", nodep);
-            handle.relink(beginp);
-            return;
-        }
+        bool nested = m_newProcess;
 
         VL_RESTORER(m_forkLocalsp);
         VL_RESTORER(m_newProcess);
@@ -162,13 +153,18 @@ private:
             ++m_forkDepth;
             m_newProcess = true;
             m_forkLocalsp.clear();
+            // Nested forks get moved into separate tasks
+            if (nested) {
+                visitTaskifiable(nodep);
+                return;
+            }
         } else {
             m_newProcess = false;
         }
         iterateChildren(nodep);
     }
-    void visit(AstBegin* nodep) override { visitBlockOrStmt(nodep, true); }
-    void visit(AstNodeStmt* nodep) override { visitBlockOrStmt(nodep, false); }
+    void visit(AstBegin* nodep) override { visitTaskifiable(nodep); }
+    void visit(AstNodeStmt* nodep) override { visitTaskifiable(nodep); }
     void visit(AstVar* nodep) override {
         if (m_forkDepth) m_forkLocalsp.insert(nodep);
     }
