@@ -68,7 +68,7 @@ void V3ThreadPool::workerJobLoop(int id) VL_MT_SAFE {
                 return !m_queue.empty() || m_shutdown || m_stopRequested;
             });
             if (m_shutdown) return;  // Terminate if requested
-            if (stopRequestedStandalone()) { continue; }
+            if (stopRequested()) { continue; }
             // Get the job
             UASSERT(!m_queue.empty(), "Job should be available");
 
@@ -115,9 +115,9 @@ void V3ThreadPool::requestExclusiveAccess(const V3ThreadPool::job_t&& exclusiveA
     }
 }
 
-bool V3ThreadPool::waitIfStopRequested() VL_MT_SAFE {
-    V3LockGuard stoppedJobLock(m_stoppedJobsMutex);
+bool V3ThreadPool::waitIfStopRequested() VL_MT_SAFE VL_EXCLUDES(m_stoppedJobsMutex) {
     if (!stopRequested()) return false;
+    V3LockGuard stoppedJobLock(m_stoppedJobsMutex);
     waitStopRequested();
     return true;
 }
