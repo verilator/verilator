@@ -203,9 +203,6 @@ public:
         : m_syms{rootp}
         , m_step(step) {
         UINFO(4, __FUNCTION__ << ": " << endl);
-        m_forPrimary = (step == LDS_PRIMARY);
-        m_forPrearray = (step == LDS_PARAMED || step == LDS_PRIMARY);
-        m_forScopeCreation = (step == LDS_SCOPED);
         s_errorThisp = this;
         V3Error::errorExitCb(preErrorDumpHandler);  // If get error, dump self
     }
@@ -216,10 +213,10 @@ public:
 
     // ACCESSORS
     VSymGraph* symsp() { return &m_syms; }
-    int stepNumber() const { return m_stepNumber; }
-    bool forPrimary() const { return m_forPrimary; }
-    bool forPrearray() const { return m_forPrearray; }
-    bool forScopeCreation() const { return m_forScopeCreation; }
+    int stepNumber() const { return int(m_step); }
+    bool forPrimary() const { return m_step == LDS_PRIMARY; }
+    bool forPrearray() const { return m_step == LDS_PARAMED || m_step == LDS_PRIMARY; }
+    bool forScopeCreation() const { return m_step == LDS_SCOPED; }
 
     // METHODS
     static string nodeTextType(AstNode* nodep) {
@@ -590,7 +587,7 @@ public:
             baddot = ident;  // So user can see where they botched it
             okSymp = lookupSymp;
             string altIdent;
-            if (m_forPrearray) {
+            if (forPrearray()) {
                 // GENFOR Begin is foo__BRA__##__KET__ after we've genloop unrolled,
                 // but presently should be just "foo".
                 // Likewise cell foo__[array] before we've expanded arrays is just foo
@@ -620,7 +617,7 @@ public:
                 else if (ident == "$root") {
                     lookupSymp = rootEntp();
                     // We've added the '$root' module, now everything else is one lower
-                    if (!m_forPrearray) {
+                    if (!forPrearray()) {
                         lookupSymp = lookupSymp->findIdFlat(ident);
                         UASSERT(lookupSymp, "Cannot find $root module under netlist");
                     }
@@ -1017,7 +1014,9 @@ class LinkDotFindVisitor final : public VNVisitor {
             for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                 if (VN_IS(stmtp, Var) || VN_IS(stmtp, Foreach)) {
                     std::string name;
-                    const std::string stepStr = m_statep->step() == PRIMARY ? "" : std::to_string(m_statep->stepNumber()) + "_";
+                    const std::string stepStr = m_statep->forPrimary()
+                                                    ? ""
+                                                    : std::to_string(m_statep->stepNumber()) + "_";
                     do {
                         ++m_modBlockNum;
                         name = "unnamedblk" + stepStr + cvtToStr(m_modBlockNum);
