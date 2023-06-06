@@ -110,7 +110,8 @@ private:
 
         iterateChildren(nodep);
 
-        if (m_capturedVarsp == nullptr) return;  // No captures - no need to taskify
+        // If there are no captures, there's no need to taskify
+        if ((m_capturedVarsp == nullptr) && !v3Global.opt.taskifyAll()) return;
 
         VNRelinker handle;
         AstTask* taskp = nullptr;
