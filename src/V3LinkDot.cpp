@@ -158,10 +158,7 @@ private:
     std::array<ScopeAliasMap, SAMN__MAX> m_scopeAliasMap;  // Map of <lhs,rhs> aliases
     std::vector<VSymEnt*> m_ifaceVarSyms;  // List of AstIfaceRefDType's to be imported
     IfaceModSyms m_ifaceModSyms;  // List of AstIface+Symbols to be processed
-    int m_stepNumber;  // Number of the step
-    bool m_forPrimary;  // First link
-    bool m_forPrearray;  // Compress cell__[array] refs
-    bool m_forScopeCreation;  // Remove VarXRefs for V3Scope
+    const VLinkDotStep m_step;  // Operational step
 
 public:
     // METHODS
@@ -203,9 +200,9 @@ public:
 
     // CONSTRUCTORS
     LinkDotState(AstNetlist* rootp, VLinkDotStep step)
-        : m_syms{rootp} {
+        : m_syms{rootp}
+        , m_step(step) {
         UINFO(4, __FUNCTION__ << ": " << endl);
-        m_stepNumber = int(step);
         m_forPrimary = (step == LDS_PRIMARY);
         m_forPrearray = (step == LDS_PARAMED || step == LDS_PRIMARY);
         m_forScopeCreation = (step == LDS_SCOPED);
@@ -1020,10 +1017,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                 if (VN_IS(stmtp, Var) || VN_IS(stmtp, Foreach)) {
                     std::string name;
-                    std::string stepStr;
-                    if (m_statep->stepNumber()) {
-                        stepStr = std::to_string(m_statep->stepNumber()) + "_";
-                    }
+                    const std::string stepStr = m_statep->step() == PRIMARY ? "" : std::to_string(m_statep->stepNumber()) + "_";
                     do {
                         ++m_modBlockNum;
                         name = "unnamedblk" + stepStr + cvtToStr(m_modBlockNum);
