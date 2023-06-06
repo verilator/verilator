@@ -183,7 +183,8 @@ private:
         // Give struct a pointer to its package and a final name
         dtypep->editCountInc();
         dtypep->classOrPackagep(m_classPackagep ? m_classPackagep : m_modp);
-        dtypep->name(m_names.get(dtypep->name() + (VN_IS(dtypep, UnionDType) ? "__union" : "__struct")));
+        dtypep->name(
+            m_names.get(dtypep->name() + (VN_IS(dtypep, UnionDType) ? "__union" : "__struct")));
 
         for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
