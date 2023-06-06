@@ -27,6 +27,7 @@
 
 #include "V3Ast.h"
 #include "V3Global.h"
+#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -41,6 +42,7 @@ private:
 
     // MEMBERS
     string m_prefix;  // String prefix to add to name based on hier
+    V3UniqueNames m_names;  // For unique naming of structs and unions
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeModule* m_classPackagep = nullptr;  // Package moving into
     const AstScope* m_classScopep = nullptr;  // Package moving scopes into
@@ -181,8 +183,8 @@ private:
         // Give struct a pointer to its package and a final name
         dtypep->editCountInc();
         dtypep->classOrPackagep(m_classPackagep ? m_classPackagep : m_modp);
-        dtypep->name(dtypep->name() + (VN_IS(dtypep, UnionDType) ? "__union" : "__struct")
-                     + cvtToStr(dtypep->uniqueNum()));
+        dtypep->name(
+            m_names.get(dtypep->name() + (VN_IS(dtypep, UnionDType) ? "__union" : "__struct")));
 
         for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
