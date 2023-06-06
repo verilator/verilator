@@ -216,6 +216,13 @@ private:
         m_procp = nodep;
         iterateChildren(nodep);
     }
+    void visit(AstFork* nodep) override {
+        v3Global.setUsesTiming();  // Even if there are no event controls, we have to set this flag
+                                   // so that transformForks() in V3SchedTiming gets called and
+                                   // removes all forks and begins
+        if (nodep->isTimingControl() && m_procp) m_procp->user2(T_SUSP);
+        iterateChildren(nodep);
+    }
     void visit(AstNode* nodep) override {
         if (nodep->isTimingControl()) {
             v3Global.setUsesTiming();
