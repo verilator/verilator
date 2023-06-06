@@ -59,22 +59,23 @@ private:
     int m_createdTasksCount = 0;  // Number of tasks created by this visitor
 
     // METHODS
-    void processCapturedRef(AstVarRef* vrefp) {
+    template <typename MakeArgument>
+    AstVar* captureRef(AstNodeExpr* refp, std::string&& localName, MakeArgument makeArgument) {
         AstVar* varp = nullptr;
         for (varp = m_capturedVarsp; varp; varp = VN_AS(varp->nextp(), Var))
-            if (varp->name() == vrefp->name()) break;
+            if (varp->name() == localName) break;
         if (!varp) {
             // Create a local copy for a capture
-            varp = new AstVar{vrefp->fileline(), VVarType::MEMBER, vrefp->name(), vrefp->dtypep()};
+            varp = new AstVar{refp->fileline(), VVarType::MEMBER, localName, refp->dtypep()};
             varp->direction(VDirection::INPUT);
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC);
             m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
             // Use the original ref as an argument for call
-            AstArg* arg = new AstArg{vrefp->fileline(), vrefp->name(), vrefp->cloneTree(false)};
+            AstArg* arg = makeArgument();
             m_capturedVarRefsp = AstNode::addNext(m_capturedVarRefsp, arg);
         }
-        vrefp->varp(varp);
+        return varp;
     }
 
     AstTask* makeTask(FileLine* fl, AstNode* stmtsp, std::string name) {
@@ -180,7 +181,31 @@ private:
             UASSERT_OBJ(
                 !nodep->varp()->lifetime().isNone(), nodep,
                 "Variable's lifetime is unknown. Can't determine if a capture is necessary.");
-            processCapturedRef(nodep);
+
+            AstVar* varp = captureRef(nodep, nodep->name(), [&]() -> AstArg* {
+                return new AstArg{nodep->fileline(), nodep->name(), nodep->cloneTree(false)};
+            });
+            nodep->varp(varp);
+        }
+    }
+    void visit(AstThisRef* nodep) override {
+        AstClass* classp = VN_CAST(m_modp, Class);
+        UASSERT_OBJ(classp, nodep, "`this` reference is not under a class");
+
+        std::string handleName = "this_" + cvtToHex(m_modp);
+
+        if (m_forkDepth) {
+            std::string handleName = "this_" + cvtToHex(m_modp);
+            VNRelinker handle;
+            nodep->unlinkFrBack(&handle);
+            bool newLocal = false;
+            AstVar* varp = captureRef(nodep, std::move(handleName), [&]() -> AstArg* {
+                newLocal = true;
+                return new AstArg{nodep->fileline(), handleName, nodep};
+            });
+            if (newLocal) m_forkLocalsp.insert(varp);
+            AstVarRef* vrefp = new AstVarRef{nodep->fileline(), varp, VAccess::READWRITE};
+            handle.relink(vrefp);
         }
     }
     void visit(AstNodeModule* nodep) override {
