@@ -1079,19 +1079,21 @@ public:
     template <typename Func>
     void sort(Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
-        std::sort(std::begin(m_storage), std::end(m_storage), [=](const T_Value& a, const T_Value& b) {
-            // index number is meaningless with sort, as it changes
-            return with_func(0, a) < with_func(0, b);
-        });
+        std::sort(std::begin(m_storage), std::end(m_storage),
+                  [=](const T_Value& a, const T_Value& b) {
+                      // index number is meaningless with sort, as it changes
+                      return with_func(0, a) < with_func(0, b);
+                  });
     }
     void rsort() { std::sort(std::rbegin(m_storage), std::rend(m_storage)); }
     template <typename Func>
     void rsort(Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
-        std::sort(std::rbegin(m_storage), std::rend(m_storage), [=](const T_Value& a, const T_Value& b) {
-            // index number is meaningless with sort, as it changes
-            return with_func(0, a) < with_func(0, b);
-        });
+        std::sort(std::rbegin(m_storage), std::rend(m_storage),
+                  [=](const T_Value& a, const T_Value& b) {
+                      // index number is meaningless with sort, as it changes
+                      return with_func(0, a) < with_func(0, b);
+                  });
     }
     void reverse() { std::reverse(std::begin(m_storage), std::end(m_storage)); }
     void shuffle() { std::shuffle(std::begin(m_storage), std::end(m_storage), VlURNG{}); }

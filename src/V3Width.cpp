@@ -3267,8 +3267,8 @@ private:
     AstCMethodHard* methodCallArray(AstMethodCall* nodep, AstNodeDType* adtypep) {
         AstCMethodHard* newp = nullptr;
 
-        if (nodep->name() == "reverse" || nodep->name() == "shuffle"
-                   || nodep->name() == "sort" || nodep->name() == "rsort") {
+        if (nodep->name() == "reverse" || nodep->name() == "shuffle" || nodep->name() == "sort"
+            || nodep->name() == "rsort") {
             AstWith* withp = nullptr;
             if (nodep->name() == "sort" || nodep->name() == "rsort") {
                 withp = methodWithArgument(nodep, false, true, nullptr, nodep->findUInt32DType(),
