@@ -1,0 +1,5 @@
+%Error: t/t_clocking_sched.v:11:9: Input/output/inout does not appear in port list: 'clk'
+                                 : ... In instance t
+   11 |   input clk;
+      |         ^~~
+%Error: Exiting due to
