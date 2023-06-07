@@ -3573,8 +3573,6 @@ private:
             ARRAY_PRODUCT
         } methodId;
 
-        AstCMethodHard* newp = nullptr;
-
         methodId = UNKNOWN;
         if (nodep->name() == "or") {
             methodId = ARRAY_OR;
@@ -3610,7 +3608,7 @@ private:
             }
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        } else if ((newp = methodCallArray(nodep, adtypep))) {
+        } else if (AstCMethodHard* newp = methodCallArray(nodep, adtypep)) {
             newp->protect(false);
             newp->didWidth(true);
             nodep->replaceWith(newp);
