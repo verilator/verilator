@@ -55,32 +55,35 @@ private:
     bool m_newProcess = false;  // True if we are directly under an asynchronous fork.
     AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
     std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
-    AstArg* m_capturedVarRefsp = nullptr;  // References to captured variables (as args
+    AstArg* m_capturedVarRefsp = nullptr;  // References to captured variables (as args)
     int m_createdTasksCount = 0;  // Number of tasks created by this visitor
 
     // METHODS
-    template <typename MakeArgument>
-    AstVar* captureRef(AstNodeExpr* refp, std::string&& localName, MakeArgument makeArgument) {
+    AstVar* captureRef(AstNodeExpr* refp, std::string&& localName, bool* newLocal = nullptr) {
         AstVar* varp = nullptr;
         for (varp = m_capturedVarsp; varp; varp = VN_AS(varp->nextp(), Var))
             if (varp->name() == localName) break;
         if (!varp) {
             // Create a local copy for a capture
-            varp = new AstVar{refp->fileline(), VVarType::MEMBER, localName, refp->dtypep()};
+            UINFO(1, "REFFF: " << refp << "\n");
+            varp = new AstVar{refp->fileline(), VVarType::BLOCKTEMP, localName, refp->dtypep()};
             varp->direction(VDirection::INPUT);
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC);
             m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
             // Use the original ref as an argument for call
-            AstArg* arg = makeArgument();
+            AstArg* arg = new AstArg{refp->fileline(), localName, refp};
             m_capturedVarRefsp = AstNode::addNext(m_capturedVarRefsp, arg);
+            if (newLocal) *newLocal = true;
+        } else if (newLocal) {
+            *newLocal = false;
         }
         return varp;
     }
 
     AstTask* makeTask(FileLine* fl, AstNode* stmtsp, std::string name) {
         stmtsp = AstNode::addNext(static_cast<AstNode*>(m_capturedVarsp), stmtsp);
-        AstTask* taskp = new AstTask{fl, name, stmtsp};
+        AstTask* const taskp = new AstTask{fl, name, stmtsp};
         ++m_createdTasksCount;
         return taskp;
     }
@@ -116,28 +119,27 @@ private:
 
         VNRelinker handle;
         AstTask* taskp = nullptr;
-        std::string taskName;
 
         if (AstBegin* beginp = VN_CAST(nodep, Begin)) {
             UASSERT(beginp->stmtsp(), "No stmtsp\n");
-            taskName = generateTaskName(beginp, "__FORK_BEGIN_");
+            const std::string taskName = generateTaskName(beginp, "__FORK_BEGIN_");
             taskp
                 = makeTask(beginp->fileline(), beginp->stmtsp()->unlinkFrBackWithNext(), taskName);
             beginp->unlinkFrBack(&handle);
             VL_DO_DANGLING(beginp->deleteTree(), beginp);
         } else if (AstNodeStmt* stmtp = VN_CAST(nodep, NodeStmt)) {
-            taskName = generateTaskName(stmtp, "__FORK_STMT_");
+            const std::string taskName = generateTaskName(stmtp, "__FORK_STMT_");
             taskp = makeTask(stmtp->fileline(), stmtp->unlinkFrBack(&handle), taskName);
         } else if (AstFork* forkp = VN_CAST(nodep, Fork)) {
-            taskName = generateTaskName(forkp, "__FORK_NESTED_");
+            const std::string taskName = generateTaskName(forkp, "__FORK_NESTED_");
             taskp = makeTask(forkp->fileline(), forkp->unlinkFrBack(&handle), taskName);
         }
 
         m_modp->addStmtsp(taskp);
 
-        AstTaskRef* taskrefp
+        AstTaskRef* const taskrefp
             = new AstTaskRef{nodep->fileline(), taskp->name(), m_capturedVarRefsp};
-        AstStmtExpr* taskcallp = new AstStmtExpr{nodep->fileline(), taskrefp};
+        AstStmtExpr* const taskcallp = new AstStmtExpr{nodep->fileline(), taskrefp};
         // Replaced nodes will be revisited, so we don't need to "lift" the arguments
         // as captures in case of nested forks.
         handle.relink(taskcallp);
@@ -182,9 +184,7 @@ private:
                 !nodep->varp()->lifetime().isNone(), nodep,
                 "Variable's lifetime is unknown. Can't determine if a capture is necessary.");
 
-            AstVar* varp = captureRef(nodep, nodep->name(), [&]() -> AstArg* {
-                return new AstArg{nodep->fileline(), nodep->name(), nodep->cloneTree(false)};
-            });
+            AstVar* const varp = captureRef(nodep->cloneTree(false), nodep->name());
             nodep->varp(varp);
         }
     }
@@ -192,25 +192,19 @@ private:
         AstClass* classp = VN_CAST(m_modp, Class);
         UASSERT_OBJ(classp, nodep, "`this` reference is not under a class");
 
-        std::string handleName = "this_" + cvtToHex(m_modp);
-
         if (m_forkDepth) {
             std::string handleName = "this_" + cvtToHex(m_modp);
             VNRelinker handle;
             nodep->unlinkFrBack(&handle);
             bool newLocal = false;
-            AstVar* varp = captureRef(nodep, std::move(handleName), [&]() -> AstArg* {
-                newLocal = true;
-                return new AstArg{nodep->fileline(), handleName, nodep};
-            });
+            AstVar* const varp = captureRef(nodep, std::move(handleName), &newLocal);
             if (newLocal) m_forkLocalsp.insert(varp);
-            AstVarRef* vrefp = new AstVarRef{nodep->fileline(), varp, VAccess::READWRITE};
+            AstVarRef* const vrefp = new AstVarRef{nodep->fileline(), varp, VAccess::READWRITE};
             handle.relink(vrefp);
         }
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-
         m_modp = nodep;
         iterateChildren(nodep);
     }
