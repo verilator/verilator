@@ -24,6 +24,10 @@ module t();
           my_var++;
           static_var++; /* Write to a value with static lifetime (valid) */
           $display("Vars in forked process: %d %d", my_var, my_other_var);
+          if (my_var != 2)
+            $stop;
+          if (my_other_var != 1)
+            $stop;
           send_event();
         end
       join_none
@@ -41,6 +45,8 @@ module t();
 
   always @(evt) begin
     $display("Static variable: %d", static_var);
+    if (static_var != 1)
+      $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
