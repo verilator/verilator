@@ -272,7 +272,6 @@ private:
     bool m_systemC = false;         // main switch: --sc: System C instead of simple C++
     bool m_stats = false;           // main switch: --stats
     bool m_statsVars = false;       // main switch: --stats-vars
-    bool m_taskifyAll;              // main switch: --taskify-all-forked
     bool m_threadsCoarsen = true;   // main switch: --threads-coarsen
     bool m_threadsDpiPure = true;   // main switch: --threads-dpi all/pure
     bool m_threadsDpiUnpure = false;  // main switch: --threads-dpi all
@@ -361,6 +360,7 @@ private:
     bool m_fDfgPreInline;    // main switch: -fno-dfg-pre-inline and -fno-dfg
     bool m_fDfgPostInline;   // main switch: -fno-dfg-post-inline and -fno-dfg
     bool m_fExpand;      // main switch: -fno-expand: expansion of C macros
+    bool m_fTaskifyAll = false;  // main switch: --ftaskify-all-forked
     bool m_fGate;        // main switch: -fno-gate: gate wire elimination
     bool m_fInline;      // main switch: -fno-inline: module inlining
     bool m_fLife;        // main switch: -fno-life: variable lifetime
@@ -527,7 +527,6 @@ public:
     int publicDepth() const { return m_publicDepth; }
     int reloopLimit() const { return m_reloopLimit; }
     VOptionBool skipIdentical() const { return m_skipIdentical; }
-    bool taskifyAll() const { return m_taskifyAll; }
     int threads() const VL_MT_SAFE { return m_threads; }
     int threadsMaxMTasks() const { return m_threadsMaxMTasks; }
     bool mtasks() const { return (m_threads > 1); }
@@ -621,6 +620,7 @@ public:
         return !m_fDfgPeepholeDisabled.count(name);
     }
     bool fExpand() const { return m_fExpand; }
+    bool fTaskifyAll() const { return m_fTaskifyAll; }
     bool fGate() const { return m_fGate; }
     bool fInline() const { return m_fInline; }
     bool fLife() const { return m_fLife; }
