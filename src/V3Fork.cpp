@@ -90,8 +90,8 @@ private:
 
     std::string generateTaskName(AstNode* fromp, std::string kind) {
         // TODO: Ensure no collisions occur
-        return m_modp->name() + kind
-               + (!fromp->name().empty() ? (fromp->name() + "__") : "UNNAMED__") + cvtToHex(fromp);
+        return "__V" + kind + (!fromp->name().empty() ? (fromp->name() + "__") : "UNNAMED__")
+               + cvtToHex(fromp);
     }
 
     void visitTaskifiable(AstNode* nodep) {
@@ -193,7 +193,7 @@ private:
         UASSERT_OBJ(classp, nodep, "`this` reference is not under a class");
 
         if (m_forkDepth) {
-            std::string handleName = "this_" + cvtToHex(m_modp);
+            std::string handleName = "__Vthis_" + cvtToHex(m_modp);
             VNRelinker handle;
             nodep->unlinkFrBack(&handle);
             bool newLocal = false;
