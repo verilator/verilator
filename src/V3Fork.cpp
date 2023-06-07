@@ -176,8 +176,10 @@ private:
         if (m_forkDepth && (m_forkLocalsp.count(nodep->varp()) == 0)
             && !nodep->varp()->lifetime().isStatic()) {
             if (nodep->access().isWriteOrRW()) {
-                nodep->v3warn(E_TASKNSVAR, "Invalid capture: Process might outlive this "
-                                           "variable. Initialize a local copy instead.");
+                nodep->v3warn(E_TASKNSVAR, "Invalid reference: Process might outlive this "
+                                           "variable. Use it as read-only to initialize a "
+                                           "local copy at the beginning of the process, or "
+                                           "declare it as static.");
                 return;
             }
             UASSERT_OBJ(
