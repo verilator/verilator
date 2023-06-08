@@ -196,7 +196,7 @@ private:
     }
 
     std::string getScopeChar(VltTraceScope sct) {
-        if(v3Global.opt.traceFormat().fst())
+        if (v3Global.opt.traceFormat().fst())
             return std::string(1, static_cast<char>(0x80 + sct));
         else
             return std::string();
