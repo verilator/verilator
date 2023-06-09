@@ -335,6 +335,7 @@ private:
             iterateAndNextConstNull(nodep->elsesp());
             m_graph.currentp(parentp);
         }
+        else iterateChildrenConst(nodep);
     }
     //--------------------
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
