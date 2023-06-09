@@ -14,6 +14,7 @@ module t (/*AUTOARG*/
    input clk;
 
    logic [3:0] foo [1:0];
+   logic [3:0] fooe [1:0];
    initial begin
       foo[0] = 4'b0101;
       foo[1] = 4'b0011;
@@ -23,6 +24,10 @@ module t (/*AUTOARG*/
       `checkh(foo.xor, 4'b0110);
       `checkh(foo.sum, 4'b1000);
       `checkh(foo.product, 4'b1111);
+
+      fooe[0] = 4'b0101;
+      fooe[1] = 4'b0011;
+      if (foo != fooe) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

@@ -391,8 +391,10 @@ string AstVar::verilogKwd() const {
         return "wreal";
     } else if (varType() == VVarType::IFACEREF) {
         return "ifaceref";
-    } else {
+    } else if (dtypep()) {
         return dtypep()->name();
+    } else {
+        return "UNKNOWN";
     }
 }
 
@@ -782,6 +784,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const VL_M
             info.m_type = "VlDynamicTriggerScheduler";
         } else if (bdtypep->isForkSync()) {
             info.m_type = "VlForkSync";
+        } else if (bdtypep->isProcessRef()) {
+            info.m_type = "VlProcessRef";
         } else if (bdtypep->isEvent()) {
             info.m_type = "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
@@ -1269,44 +1273,17 @@ AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
 //======================================================================
 // Special walking tree inserters
 
-void AstNode::addBeforeStmt(AstNode* newp, AstNode*) {
-    UASSERT_OBJ(backp(), newp, "Can't find current statement to addBeforeStmt");
-    // Look up; virtual call will find where to put it
-    this->backp()->addBeforeStmt(newp, this);
-}
 void AstNode::addNextStmt(AstNode* newp, AstNode*) {
     UASSERT_OBJ(backp(), newp, "Can't find current statement to addNextStmt");
     // Look up; virtual call will find where to put it
     this->backp()->addNextStmt(newp, this);
 }
 
-void AstNodeStmt::addBeforeStmt(AstNode* newp, AstNode*) {
-    // Insert newp before current node
-    this->addHereThisAsNext(newp);
-}
 void AstNodeStmt::addNextStmt(AstNode* newp, AstNode*) {
     // Insert newp after current node
     this->addNextHere(newp);
 }
 
-void AstWhile::addBeforeStmt(AstNode* newp, AstNode* belowp) {
-    // Special, as statements need to be put in different places
-    // Belowp is how we came to recurse up to this point
-    // Preconditions insert first just before themselves (the normal rule
-    // for other statement types)
-    if (belowp == precondsp()) {
-        // Must have been first statement in precondsp list, so newp is new first statement
-        belowp->addHereThisAsNext(newp);
-    } else if (belowp == condp()) {
-        // Goes before condition, IE in preconditions
-        addPrecondsp(newp);
-    } else if (belowp == stmtsp()) {
-        // Was first statement in body, so new front
-        belowp->addHereThisAsNext(newp);
-    } else {
-        belowp->v3fatalSrc("Doesn't look like this was really under the while");
-    }
-}
 void AstWhile::addNextStmt(AstNode* newp, AstNode* belowp) {
     // Special, as statements need to be put in different places
     // Belowp is how we came to recurse up to this point
@@ -1377,6 +1354,7 @@ void AstNode::dump(std::ostream& str) const {
 void AstNodeProcedure::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isSuspendable()) str << " [SUSP]";
+    if (needProcess()) str << " [NPRC]";
 }
 
 void AstAlways::dump(std::ostream& str) const {
@@ -1499,13 +1477,20 @@ void AstClassExtends::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isImplements()) str << " [IMPLEMENTS]";
 }
-AstClass* AstClassExtends::classp() const {
-    const AstClassRefDType* refp = VN_CAST(dtypep(), ClassRefDType);
-    if (VL_UNLIKELY(!refp)) {  // LinkDot uses this for 'super.'
-        refp = VN_AS(childDTypep(), ClassRefDType);
+AstClass* AstClassExtends::classOrNullp() const {
+    const AstNodeDType* const dtp = dtypep() ? dtypep() : childDTypep();
+    const AstClassRefDType* const refp = VN_CAST(dtp, ClassRefDType);
+    if (refp && !refp->paramsp()) {
+        // Class already resolved
+        return refp->classp();
+    } else {
+        return nullptr;
     }
-    UASSERT_OBJ(refp, this, "class extends non-ref");
-    return refp->classp();
+}
+AstClass* AstClassExtends::classp() const {
+    AstClass* const clsp = classOrNullp();
+    UASSERT_OBJ(clsp, this, "Extended class is unresolved");
+    return clsp;
 }
 void AstClassRefDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
@@ -1669,10 +1654,19 @@ void AstLogOr::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (sideEffect()) str << " [SIDE]";
 }
+
 void AstMemberDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "member";
 }
+AstNodeUOrStructDType* AstMemberDType::getChildStructp() const {
+    AstNodeDType* subdtp = skipRefp();
+    while (AstNodeArrayDType* const asubdtp = VN_CAST(subdtp, NodeArrayDType)) {
+        subdtp = asubdtp->subDTypep();
+    }
+    return VN_CAST(subdtp, NodeUOrStructDType);  // Maybe nullptr
+}
+
 void AstMemberSel::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     str << " -> ";
@@ -1829,6 +1823,7 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
     if (packed()) str << " [PACKED]";
     if (isFourstate()) str << " [4STATE]";
+    if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
 }
 void AstNodeDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);
@@ -2071,6 +2066,10 @@ void AstVarScope::dump(std::ostream& str) const {
         str << " ->UNLINKED";
     }
 }
+bool AstVarScope::same(const AstNode* samep) const {
+    const AstVarScope* const asamep = static_cast<const AstVarScope*>(samep);
+    return varp()->same(asamep->varp()) && scopep()->same(asamep->scopep());
+}
 void AstNodeVarRef::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
@@ -2134,11 +2133,22 @@ void AstVar::dump(std::ostream& str) const {
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
 }
+bool AstVar::same(const AstNode* samep) const {
+    const AstVar* const asamep = static_cast<const AstVar*>(samep);
+    return name() == asamep->name() && varType() == asamep->varType();
+}
 void AstScope::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [abovep=" << reinterpret_cast<const void*>(aboveScopep()) << "]";
     str << " [cellp=" << reinterpret_cast<const void*>(aboveCellp()) << "]";
     str << " [modp=" << reinterpret_cast<const void*>(modp()) << "]";
+}
+bool AstScope::same(const AstNode* samep) const {
+    const AstScope* const asamep = static_cast<const AstScope*>(samep);
+    return name() == asamep->name()
+           && ((!aboveScopep() && !asamep->aboveScopep())
+               || (aboveScopep() && asamep->aboveScopep()
+                   && aboveScopep()->name() == asamep->aboveScopep()->name()));
 }
 void AstScopeName::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
@@ -2302,6 +2312,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isDestructor()) str << " [DTOR]";
     if (isVirtual()) str << " [VIRT]";
     if (isCoroutine()) str << " [CORO]";
+    if (needProcess()) str << " [NPRC]";
 }
 const char* AstCAwait::broken() const {
     BROKEN_RTN(m_sensesp && !m_sensesp->brokeExists());

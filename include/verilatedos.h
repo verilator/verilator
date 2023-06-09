@@ -37,8 +37,13 @@
 //=========================================================================
 // Compiler pragma abstraction
 
+#if defined(__clang__)
+# define VL_CLANG_ATTR(attr) __attribute__(( attr ))
+#else
+# define VL_CLANG_ATTR(attr)
+#endif
+
 #ifdef __GNUC__
-# define VL_ATTR_ALIGNED(alignment) __attribute__((aligned(alignment)))
 # define VL_ATTR_ALWINLINE __attribute__((always_inline)) inline
 # define VL_ATTR_NOINLINE __attribute__((noinline))
 # define VL_ATTR_COLD __attribute__((cold))
@@ -57,19 +62,6 @@
 // All VL_ATTR_WEAK symbols must be marked with the macOS -U linker flag in verilated.mk.in
 #  define VL_ATTR_WEAK __attribute__((weak))
 # endif
-# if defined(__clang__)
-#  define VL_ACQUIRE(...) __attribute__((annotate("ACQUIRE"))) __attribute__((acquire_capability(__VA_ARGS__)))
-#  define VL_ACQUIRE_SHARED(...) __attribute__((annotate("ACQUIRE_SHARED"))) __attribute__((acquire_shared_capability(__VA_ARGS__)))
-#  define VL_RELEASE(...) __attribute__((annotate("RELEASE"))) __attribute__((release_capability(__VA_ARGS__)))
-#  define VL_RELEASE_SHARED(...) __attribute__((annotate("RELEASE_SHARED"))) __attribute__((release_shared_capability(__VA_ARGS__)))
-#  define VL_TRY_ACQUIRE(...) __attribute__((try_acquire_capability(__VA_ARGS__)))
-#  define VL_TRY_ACQUIRE_SHARED(...) __attribute__((try_acquire_shared_capability(__VA_ARGS__)))
-#  define VL_CAPABILITY(x) __attribute__((capability(x)))
-#  define VL_REQUIRES(x) __attribute__((annotate("REQUIRES"))) __attribute__((requires_capability(x)))
-#  define VL_GUARDED_BY(x) __attribute__((annotate("GUARDED_BY"))) __attribute__((guarded_by(x)))
-#  define VL_EXCLUDES(x) __attribute__((annotate("EXCLUDES"))) __attribute__((locks_excluded(x)))
-#  define VL_SCOPED_CAPABILITY __attribute__((scoped_lockable))
-# endif
 # define VL_LIKELY(x) __builtin_expect(!!(x), 1)  // Prefer over C++20 [[likely]]
 # define VL_UNLIKELY(x) __builtin_expect(!!(x), 0)  // Prefer over C++20 [[unlikely]]
 # define VL_UNREACHABLE __builtin_unreachable()  // C++23 std::unreachable()
@@ -77,10 +69,58 @@
 # define VL_PREFETCH_RW(p) __builtin_prefetch((p), 1)
 #endif
 
+// Function acquires a capability/lock (-fthread-safety)
+#define VL_ACQUIRE(...) \
+        VL_CLANG_ATTR(annotate("ACQUIRE")) \
+        VL_CLANG_ATTR(acquire_capability(__VA_ARGS__))
+// Function acquires a shared capability/lock (-fthread-safety)
+#define VL_ACQUIRE_SHARED(...) \
+        VL_CLANG_ATTR(annotate("ACQUIRE_SHARED")) \
+        VL_CLANG_ATTR(acquire_shared_capability(__VA_ARGS__))
+// Function releases a capability/lock (-fthread-safety)
+#define VL_RELEASE(...) \
+        VL_CLANG_ATTR(annotate("RELEASE")) \
+        VL_CLANG_ATTR(release_capability(__VA_ARGS__))
+// Function releases a shared capability/lock (-fthread-safety)
+#define VL_RELEASE_SHARED(...) \
+        VL_CLANG_ATTR(annotate("RELEASE_SHARED")) \
+        VL_CLANG_ATTR(release_shared_capability(__VA_ARGS__))
+// Function returns bool if acquired a capability (-fthread-safety)
+#define VL_TRY_ACQUIRE(...) \
+        VL_CLANG_ATTR(try_acquire_capability(__VA_ARGS__))
+// Function returns bool if acquired shared (-fthread-safety)
+#define VL_TRY_ACQUIRE_SHARED(...) \
+        VL_CLANG_ATTR(try_acquire_shared_capability(__VA_ARGS__))
+// Function requires a capability inbound (-fthread-safety)
+#define VL_CAPABILITY(x) \
+        VL_CLANG_ATTR(capability(x))
+// Function requires not having a capability inbound (-fthread-safety)
+#define VL_REQUIRES(x) \
+        VL_CLANG_ATTR(annotate("REQUIRES")) \
+        VL_CLANG_ATTR(requires_capability(x))
+// Name of capability/lock (-fthread-safety)
+#define VL_GUARDED_BY(x) \
+        VL_CLANG_ATTR(annotate("GUARDED_BY")) \
+        VL_CLANG_ATTR(guarded_by(x))
+// The data that the annotated pointer points to is protected by the given capability.
+// The pointer itself is not protected.
+// Allowed on: pointer data member. (-fthread-safety)
+#define VL_PT_GUARDED_BY(x) \
+        VL_CLANG_ATTR(annotate("PT_GUARDED_BY")) \
+        VL_CLANG_ATTR(pt_guarded_by(x))
+// Name of mutex protecting this variable (-fthread-safety)
+#define VL_EXCLUDES(x) \
+        VL_CLANG_ATTR(annotate("EXCLUDES")) \
+        VL_CLANG_ATTR(locks_excluded(x))
+// Scoped threaded capability/lock (-fthread-safety)
+#define VL_SCOPED_CAPABILITY \
+        VL_CLANG_ATTR(scoped_lockable)
+// Annotated function returns reference to the given capability.
+// Allowed on: function, method. (-fthread-safety)
+#define VL_RETURN_CAPABILITY(x) \
+        VL_CLANG_ATTR(lock_returned(x))
+
 // Defaults for unsupported compiler features
-#ifndef VL_ATTR_ALIGNED
-# define VL_ATTR_ALIGNED(alignment)  ///< Attribute to align structure to byte alignment
-#endif
 #ifndef VL_ATTR_ALWINLINE
 # define VL_ATTR_ALWINLINE  ///< Attribute to inline, even when not optimizing
 #endif
@@ -111,19 +151,6 @@
 #ifndef VL_ATTR_WEAK
 # define VL_ATTR_WEAK  ///< Attribute that function external that is optionally defined
 #endif
-#ifndef VL_CAPABILITY
-# define VL_ACQUIRE(...)  ///< Function acquires a capability/lock (-fthread-safety)
-# define VL_ACQUIRE_SHARED(...)  ///< Function acquires a shared capability/lock (-fthread-safety)
-# define VL_RELEASE(...)  ///< Function releases a capability/lock (-fthread-safety)
-# define VL_RELEASE_SHARED(...)  ///< Function releases a shared capability/lock (-fthread-safety)
-# define VL_TRY_ACQUIRE(...)  ///< Function returns bool if acquired a capability (-fthread-safety)
-# define VL_TRY_ACQUIRE_SHARED(...)  ///< Function returns bool if acquired shared (-fthread-safety)
-# define VL_REQUIRES(x)  ///< Function requires a capability inbound (-fthread-safety)
-# define VL_EXCLUDES(x)  ///< Function requires not having a capability inbound (-fthread-safety)
-# define VL_CAPABILITY(x)  ///< Name of capability/lock (-fthread-safety)
-# define VL_GUARDED_BY(x)  ///< Name of mutex protecting this variable (-fthread-safety)
-# define VL_SCOPED_CAPABILITY  ///< Scoped threaded capability/lock (-fthread-safety)
-#endif
 #ifndef VL_LIKELY
 # define VL_LIKELY(x) (!!(x))  ///< Return boolean expression that is more often true
 # define VL_UNLIKELY(x) (!!(x))  ///< Return boolean expression that is more often false
@@ -142,6 +169,7 @@
 
 
 #ifndef VL_NO_LEGACY
+# define VL_ATTR_ALIGNED(alignment)  // Deprecated
 # define VL_FUNC __func__  // Deprecated
 # define VL_THREAD  // Deprecated
 # define VL_THREAD_LOCAL thread_local  // Deprecated
@@ -149,56 +177,24 @@
 #endif
 
 // Comment tag that Function is pure (and thus also VL_MT_SAFE)
-#if defined(__clang__)
-# define VL_PURE __attribute__((annotate("PURE")))
-#else
-# define VL_PURE
-#endif
+#define VL_PURE VL_CLANG_ATTR(annotate("PURE"))
 // Comment tag that function is threadsafe
-#if defined(__clang__)
-# define VL_MT_SAFE __attribute__((annotate("MT_SAFE")))
-#else
-# define VL_MT_SAFE
-#endif
+#define VL_MT_SAFE VL_CLANG_ATTR(annotate("MT_SAFE"))
 // Comment tag that function is threadsafe, only if
 // other threads doesn't change tree topology
-#if defined(__clang__)
-# define VL_MT_STABLE __attribute__((annotate("MT_STABLE")))
-#else
-# define VL_MT_STABLE
-#endif
+#define VL_MT_STABLE VL_CLANG_ATTR(annotate("MT_STABLE"))
 // Comment tag that function is threadsafe, only
 // during normal operation (post-init)
-#if defined(__clang__)
-# define VL_MT_SAFE_POSTINIT __attribute__((annotate("MT_SAFE_POSTINIT")))
-#else
-# define VL_MT_SAFE_POSTINIT
-#endif
+#define VL_MT_SAFE_POSTINIT VL_CLANG_ATTR(annotate("MT_SAFE_POSTINIT"))
 // Attribute that function is clang threadsafe and uses given mutex
-#if defined(__clang__)
-# define VL_MT_SAFE_EXCLUDES(mutex) __attribute__((annotate("MT_SAFE_EXCLUDES"))) VL_EXCLUDES(mutex)
-#else
-# define VL_MT_SAFE_EXCLUDES(mutex) VL_EXCLUDES(mutex)
-#endif
+#define VL_MT_SAFE_EXCLUDES(mutex) VL_CLANG_ATTR(annotate("MT_SAFE_EXCLUDES")) VL_EXCLUDES(mutex)
 // Comment tag that function is not threadsafe
-#if defined(__clang__)
-# define VL_MT_UNSAFE __attribute__((annotate("MT_UNSAFE")))
-#else
-# define VL_MT_UNSAFE
-#endif
+#define VL_MT_UNSAFE VL_CLANG_ATTR(annotate("MT_UNSAFE"))
 // Comment tag that function is not threadsafe
 // protected to make sure single-caller
-#if defined(__clang__)
-# define VL_MT_UNSAFE_ONE __attribute__((annotate("MT_UNSAFE_ONE")))
-#else
-# define VL_MT_UNSAFE_ONE
-#endif
+#define VL_MT_UNSAFE_ONE VL_CLANG_ATTR(annotate("MT_UNSAFE_ONE"))
 // Comment tag that function is entry point of parallelization
-#if defined(__clang__)
-# define VL_MT_START __attribute__((annotate("MT_START")))
-#else
-# define VL_MT_START
-#endif
+#define VL_MT_START VL_CLANG_ATTR(annotate("MT_START"))
 
 #ifndef VL_NO_LEGACY
 # define VL_ULL(c) (c##ULL)  // Add appropriate suffix to 64-bit constant (deprecated)
@@ -324,6 +320,7 @@ extern "C" void __gcov_dump();
 // Now that C++ requires these standard types the vl types are deprecated
 #include <cstdint>
 #include <cinttypes>
+#include <cmath>
 
 #ifndef VL_NO_LEGACY
 using vluint8_t = uint8_t;  ///< 8-bit unsigned type (backward compatibility)
@@ -448,11 +445,14 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_SIZEBITS_E (VL_EDATASIZE - 1)  ///< Bit mask for bits in a quad
 
 /// Return mask for words with 1's where relevant bits are (0=all bits)
+/// Arguments must not have side effects
 #define VL_MASK_I(nbits) (((nbits) & VL_SIZEBITS_I) ? ((1U << ((nbits) & VL_SIZEBITS_I)) - 1) : ~0)
 /// Return mask for quads with 1's where relevant bits are (0=all bits)
+/// Arguments must not have side effects
 #define VL_MASK_Q(nbits) \
     (((nbits) & VL_SIZEBITS_Q) ? ((1ULL << ((nbits) & VL_SIZEBITS_Q)) - 1ULL) : ~0ULL)
 /// Return mask for EData with 1's where relevant bits are (0=all bits)
+/// Arguments must not have side effects
 #define VL_MASK_E(nbits) VL_MASK_I(nbits)
 
 #define VL_EUL(n) VL_UL(n)  // Make constant number EData sized
@@ -474,8 +474,12 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 // #defines, to avoid requiring math.h on all compile runs
 
 #ifdef _MSC_VER
-# define VL_TRUNC(n) (((n) < 0) ? std::ceil((n)) : std::floor((n)))
-# define VL_ROUND(n) (((n) < 0) ? std::ceil((n)-0.5) : std::floor((n) + 0.5))
+static inline double VL_TRUNC(double n) {
+    return (n < 0) ? std::ceil(n) : std::floor(n);
+}
+static inline double VL_ROUND(double n) {
+    return (n < 0) ? std::ceil(n-0.5) : std::floor(n + 0.5);
+}
 #else
 # define VL_TRUNC(n) std::trunc(n)
 # define VL_ROUND(n) std::round(n)

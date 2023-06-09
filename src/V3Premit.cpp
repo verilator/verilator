@@ -53,16 +53,17 @@ private:
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
-    // STATE
+    // STATE - across all visitors
+    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
+    VDouble0 m_extractedToConstPool;  // Statistic tracking
+
+    // STATE - for current visit position (use VL_RESTORER)
     AstCFunc* m_cfuncp = nullptr;  // Current block
     AstNode* m_stmtp = nullptr;  // Current statement
     AstCCall* m_callp = nullptr;  // Current AstCCall
     AstWhile* m_inWhilep = nullptr;  // Inside while loop, special statement additions
     AstTraceInc* m_inTracep = nullptr;  // Inside while loop, special statement additions
     bool m_assignLhs = false;  // Inside assignment lhs, don't breakup extracts
-    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
-
-    VDouble0 m_extractedToConstPool;  // Statistic tracking
 
     // METHODS
     bool assignNoTemp(AstNodeAssign* nodep) {
@@ -157,30 +158,38 @@ private:
     }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
-        {
-            m_cfuncp = nodep;
-            m_tempNames.reset();
-            iterateChildren(nodep);
-        }
+        m_cfuncp = nodep;
+        m_tempNames.reset();
+        iterateChildren(nodep);
     }
+
+#define RESTORER_START_STATEMENT() \
+    VL_RESTORER(m_assignLhs); \
+    VL_RESTORER(m_stmtp);
+
+    // Must use RESTORER_START_STATEMENT() in visitors using this
     void startStatement(AstNode* nodep) {
         m_assignLhs = false;
         if (m_cfuncp) m_stmtp = nodep;
     }
+
     void visit(AstWhile* nodep) override {
         UINFO(4, "  WHILE  " << nodep << endl);
+        RESTORER_START_STATEMENT();
         startStatement(nodep);
         iterateAndNextNull(nodep->precondsp());
         startStatement(nodep);
-        m_inWhilep = nodep;
-        iterateAndNextNull(nodep->condp());
-        m_inWhilep = nullptr;
+        {
+            VL_RESTORER(m_inWhilep);
+            m_inWhilep = nodep;
+            iterateAndNextNull(nodep->condp());
+        }
         startStatement(nodep);
         iterateAndNextNull(nodep->stmtsp());
         iterateAndNextNull(nodep->incsp());
-        m_stmtp = nullptr;
     }
     void visit(AstNodeAssign* nodep) override {
+        RESTORER_START_STATEMENT();
         startStatement(nodep);
         {
             bool noopt = false;
@@ -202,23 +211,24 @@ private:
             }
         }
         iterateAndNextNull(nodep->rhsp());
-        m_assignLhs = true;
-        iterateAndNextNull(nodep->lhsp());
-        m_assignLhs = false;
-        m_stmtp = nullptr;
+        {
+            VL_RESTORER(m_assignLhs);
+            m_assignLhs = true;
+            iterateAndNextNull(nodep->lhsp());
+        }
     }
     void visit(AstNodeStmt* nodep) override {
         UINFO(4, "  STMT  " << nodep << endl);
+        RESTORER_START_STATEMENT();
         startStatement(nodep);
         iterateChildren(nodep);
-        m_stmtp = nullptr;
     }
     void visit(AstTraceInc* nodep) override {
+        RESTORER_START_STATEMENT();
         startStatement(nodep);
+        VL_RESTORER(m_inTracep);
         m_inTracep = nodep;
         iterateChildren(nodep);
-        m_inTracep = nullptr;
-        m_stmtp = nullptr;
     }
     void visitShift(AstNodeBiop* nodep) {
         // Shifts of > 32/64 bits in C++ will wrap-around and generate non-0s
@@ -345,9 +355,9 @@ private:
 
     // Autoflush
     void visit(AstDisplay* nodep) override {
+        RESTORER_START_STATEMENT();
         startStatement(nodep);
         iterateChildren(nodep);
-        m_stmtp = nullptr;
         if (v3Global.opt.autoflush()) {
             const AstNode* searchp = nodep->nextp();
             while (searchp && VN_IS(searchp, Comment)) searchp = searchp->nextp();
@@ -400,5 +410,5 @@ public:
 void V3Premit::premitAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { PremitVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("premit", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("premit", 0, dumpTreeLevel() >= 3);
 }

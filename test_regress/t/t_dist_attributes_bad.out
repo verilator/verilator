@@ -724,32 +724,40 @@ t/t_dist_attributes_bad.cpp:75:   [release]                            TestClass
 t/t_dist_attributes_bad.h:124:    []                                   TestClass::scm_ua_VL_REQUIRES(VerilatedMutex &) [declaration]
 t/t_dist_attributes_bad.cpp:75:   [requires]                           TestClass::scm_ua_VL_REQUIRES(VerilatedMutex &)
 
+%Error: "TestClassConstructor::safe_function_calls_constructor_global_object_bad()" is stable_tree but calls non-stable_tree or non-mtsafe
+t/t_dist_attributes_bad.h:405:    [stable_tree]                        TestClassConstructor::safe_function_calls_constructor_global_object_bad()
+t/t_dist_attributes_bad.h:355:    []                                     DummyClass::dummy_function()
+
+%Error: "TestClassConstructor::safe_function_calls_constructor_global_object_member_bad()" is stable_tree but calls non-stable_tree or non-mtsafe
+t/t_dist_attributes_bad.h:408:    [stable_tree]                        TestClassConstructor::safe_function_calls_constructor_global_object_member_bad()
+t/t_dist_attributes_bad.h:350:    []                                     DummyClass2::dummy_function2()
+
 %Error: "TestClassConstructor::safe_function_calls_constructor_local_calls_class_global_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes_bad.h:381:    [mt_safe]                            TestClassConstructor::safe_function_calls_constructor_local_calls_class_global_bad()
+t/t_dist_attributes_bad.h:402:    [mt_safe]                            TestClassConstructor::safe_function_calls_constructor_local_calls_class_global_bad()
 t/t_dist_attributes_bad.h:280:    []                                     StaticClass::static_class_function()
 
 %Error: "TestClassConstructor::safe_function_calls_constructor_local_calls_global_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes_bad.h:378:    [mt_safe]                            TestClassConstructor::safe_function_calls_constructor_local_calls_global_bad()
+t/t_dist_attributes_bad.h:399:    [mt_safe]                            TestClassConstructor::safe_function_calls_constructor_local_calls_global_bad()
 t/t_dist_attributes_bad.h:276:    []                                     static_function()
 
 %Error: "TestClassConstructor::safe_function_calls_constructor_with_unsafepointer_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes_bad.h:370:    [mt_safe]                            TestClassConstructor::safe_function_calls_constructor_with_unsafepointer_bad()
+t/t_dist_attributes_bad.h:391:    [mt_safe]                            TestClassConstructor::safe_function_calls_constructor_with_unsafepointer_bad()
 t/t_dist_attributes_bad.h:311:    [mt_unsafe]                            UnsafeFunction::unsafe_function()
 
 %Error: "TestClassConstructor::safe_function_calls_constructor_with_unsafereference_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes_bad.h:374:    [mt_safe]                            TestClassConstructor::safe_function_calls_constructor_with_unsafereference_bad()
+t/t_dist_attributes_bad.h:395:    [mt_safe]                            TestClassConstructor::safe_function_calls_constructor_with_unsafereference_bad()
 t/t_dist_attributes_bad.h:311:    [mt_unsafe]                            UnsafeFunction::unsafe_function()
 
 %Error: "TestClassConstructor::safe_function_local_function_global_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes_bad.h:356:    [mt_safe]                            TestClassConstructor::safe_function_local_function_global_bad()
+t/t_dist_attributes_bad.h:377:    [mt_safe]                            TestClassConstructor::safe_function_local_function_global_bad()
 t/t_dist_attributes_bad.h:276:    []                                     static_function()
 
 %Error: "TestClassConstructor::safe_function_static_constructor_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes_bad.h:353:    [mt_safe]                            TestClassConstructor::safe_function_static_constructor_bad()
+t/t_dist_attributes_bad.h:374:    [mt_safe]                            TestClassConstructor::safe_function_static_constructor_bad()
 t/t_dist_attributes_bad.h:276:    []                                     static_function()
 
 %Error: "TestClassConstructor::safe_function_unsafe_constructor_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes_bad.h:350:    [mt_safe]                            TestClassConstructor::safe_function_unsafe_constructor_bad()
+t/t_dist_attributes_bad.h:371:    [mt_safe]                            TestClassConstructor::safe_function_unsafe_constructor_bad()
 t/t_dist_attributes_bad.h:285:    [mt_unsafe]                            ConstructorCallsUnsafeLocalFunction::unsafe_function()
 
 %Error: "ifh_test_caller_func_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
@@ -1185,4 +1193,4 @@ t/t_dist_attributes_bad.cpp:60:   [mt_unsafe_one]                        sfc_VL_
 t/t_dist_attributes_bad.cpp:60:   [release]                              sfc_VL_RELEASE(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:60:   [release]                              sfc_VL_RELEASE_SHARED(VerilatedMutex &)
 t/t_dist_attributes_bad.cpp:60:   [requires]                             sfc_VL_REQUIRES(VerilatedMutex &)
-Number of functions reported unsafe: 224
+Number of functions reported unsafe: 226

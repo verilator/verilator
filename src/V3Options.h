@@ -22,7 +22,6 @@
 
 #include "V3Error.h"
 #include "V3LangCode.h"
-#include "V3Mutex.h"
 
 #include <map>
 #include <set>
@@ -331,6 +330,7 @@ private:
     string      m_flags;        // main switch: -f {name}
     string      m_l2Name;       // main switch: --l2name; "" for top-module's name
     string      m_libCreate;    // main switch: --lib-create {lib_name}
+    string      m_mainTopName;  // main switch: --main-top-name
     string      m_makeDir;      // main switch: -Mdir
     string      m_modPrefix;    // main switch: --mod-prefix
     string      m_pipeFilter;   // main switch: --pipe-filter
@@ -568,6 +568,7 @@ public:
         }
         return libName;
     }
+    string mainTopName() const { return m_mainTopName; }
     string makeDir() const VL_MT_SAFE { return m_makeDir; }
     string modPrefix() const VL_MT_SAFE { return m_modPrefix; }
     string pipeFilter() const { return m_pipeFilter; }

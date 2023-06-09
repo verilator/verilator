@@ -113,6 +113,21 @@ public:
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
     void emitVarDecl(const AstVar* nodep, bool asRef = false);
+    template <typename F>
+    static void forModCUse(const AstNodeModule* modp, VUseType useType, F action) {
+        for (AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {
+            if (AstCUse* const usep = VN_CAST(itemp, CUse)) {
+                if (usep->useType() == useType) {
+                    if (usep->useType().isInclude()) {
+                        action("#include \"" + prefixNameProtect(usep) + ".h\"\n");
+                    }
+                    if (usep->useType().isFwdClass()) {
+                        action("class " + prefixNameProtect(usep) + ";\n");
+                    }
+                }
+            }
+        }
+    }
     void emitModCUse(const AstNodeModule* modp, VUseType useType);
     void emitTextSection(const AstNodeModule* modp, VNType type);
 

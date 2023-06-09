@@ -112,7 +112,8 @@ class SliceVisitor final : public VNVisitor {
                                          : offset));
             newp = new AstArraySel{nodep->fileline(), snodep->fromp()->cloneTree(false), leOffset};
         } else if (VN_IS(nodep, ArraySel) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel)
-                   || VN_IS(nodep, CMethodHard) || VN_IS(nodep, MemberSel)) {
+                   || VN_IS(nodep, CMethodHard) || VN_IS(nodep, MemberSel)
+                   || VN_IS(nodep, ExprStmt)) {
             UINFO(9, "  cloneSel(" << elements << "," << offset << ") " << nodep << endl);
             const int leOffset = !arrayp->rangep()->ascending()
                                      ? arrayp->rangep()->elementsConst() - 1 - offset
@@ -247,5 +248,5 @@ public:
 void V3Slice::sliceAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { SliceVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("slice", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("slice", 0, dumpTreeLevel() >= 3);
 }

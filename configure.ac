@@ -10,7 +10,7 @@
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.010 2023-04-30],
+AC_INIT([Verilator],[5.011 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
@@ -470,6 +470,10 @@ m4_foreach([ldflag], [
 AC_SUBST(CFG_LDLIBS_THREADS)
 AC_SUBST(CFG_LDFLAGS_THREADS_CMAKE)
 
+# If 'mold' is installed, use it to link for faster buildtimes
+_MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -fuse-ld=mold)
+_MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_VERILATED, -fuse-ld=mold)
+
 # When linking partially statically
 if test "$CFG_ENABLE_PARTIAL_STATIC" = "yes"; then
   _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -static-libgcc)
@@ -480,6 +484,7 @@ else
   LTCMALLOC=-ltcmalloc_minimal
 fi
 AC_SUBST(CFG_LDFLAGS_SRC)
+AC_SUBST(CFG_LDFLAGS_VERILATED)
 
 # The pthread library is required by tcmalloc, so add it if it exists. If it
 # does not, the tcmalloc check below will fail anyway, and linking against

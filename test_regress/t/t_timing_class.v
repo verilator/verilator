@@ -10,10 +10,18 @@
  `define WRITE_VERBOSE(args)
 `endif
 
+class BaseClass;
+    virtual task sleep;
+    endtask
+
+    virtual task await;
+    endtask
+endclass
+
 module t;
     // =============================================
     // EVENTS
-    class EventClass;
+    class EventClass extends BaseClass;
         event e;
         int trig_count;
 
@@ -35,7 +43,7 @@ module t;
         endtask
     endclass
 
-    class WaitClass;
+    class WaitClass extends BaseClass;
         int a;
         int b;
         logic ok;
@@ -53,7 +61,7 @@ module t;
         endtask
     endclass
 
-    class LocalWaitClass;
+    class LocalWaitClass extends BaseClass;
         logic ok;
 
         function new;

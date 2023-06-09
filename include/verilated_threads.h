@@ -173,7 +173,7 @@ public:
         VerilatedLockGuard lock{m_mutex};
         while (m_ready.empty()) {
             m_waiting = true;
-            m_cv.wait(lock);
+            m_cv.wait(m_mutex);
         }
         m_waiting = false;
         // As noted above this is inefficient if our ready list is ever

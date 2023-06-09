@@ -27,19 +27,6 @@
 #include <queue>
 #include <thread>
 
-namespace future_type {
-template <typename T>
-struct return_type {
-    typedef std::list<T> type;
-};
-
-template <>
-struct return_type<void> {
-    typedef void type;
-};
-
-}  // namespace future_type
-
 //============================================================================
 
 class V3ThreadPool final {
@@ -67,9 +54,10 @@ class V3ThreadPool final {
     // CONSTRUCTORS
     V3ThreadPool() = default;
     ~V3ThreadPool() {
-        V3LockGuard lock{m_mutex};
-        m_queue = {};  // make sure queue is empty
-        lock.unlock();
+        {
+            V3LockGuard lock{m_mutex};
+            m_queue = {};  // make sure queue is empty
+        }
         resize(0);
     }
 
@@ -82,7 +70,7 @@ public:
     }
 
     // Resize thread pool to n workers (queue must be empty)
-    void resize(unsigned n) VL_MT_UNSAFE;
+    void resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_stoppedJobsMutex);
 
     // Enqueue a job for asynchronous execution
     // Due to missing support for lambda annotations in c++11,
@@ -105,7 +93,7 @@ public:
     // Check if other thread requested exclusive access to processing,
     // if so, it waits for it to complete. Afterwards it is resumed.
     // Returns true if request was send and we waited, otherwise false
-    bool waitIfStopRequested() VL_MT_SAFE;
+    bool waitIfStopRequested() VL_MT_SAFE VL_EXCLUDES(m_stoppedJobsMutex);
 
     // Waits for future.
     // This function can be interupted by exclusive access request.
@@ -123,8 +111,7 @@ public:
     // specialization as C++11 requires them to be inside namespace scope
     // Returns list of future result or void
     template <typename T>
-    static typename future_type::return_type<T>::type
-    waitForFutures(std::list<std::future<T>>& futures) {
+    static auto waitForFutures(std::list<std::future<T>>& futures) {
         return waitForFuturesImp(futures);
     }
 
@@ -132,9 +119,8 @@ public:
 
 private:
     template <typename T>
-    static typename future_type::return_type<T>::type
-    waitForFuturesImp(std::list<std::future<T>>& futures) {
-        typename future_type::return_type<T>::type results;
+    static std::list<T> waitForFuturesImp(std::list<std::future<T>>& futures) {
+        std::list<T> results;
         while (!futures.empty()) {
             results.push_back(V3ThreadPool::waitForFuture(futures.front()));
             futures.pop_front();
@@ -153,23 +139,17 @@ private:
     }
 
     // True when any thread requested exclusive access
-    bool stopRequested() const VL_REQUIRES(m_stoppedJobsMutex) {
+    bool stopRequested() const VL_MT_SAFE {
         // don't wait if shutdown already requested
         if (m_shutdown) return false;
         return m_stopRequested;
     }
 
-    bool stopRequestedStandalone() VL_MT_SAFE_EXCLUDES(m_stoppedJobsMutex) {
-        const V3LockGuard lock{m_stoppedJobsMutex};
-        return stopRequested();
-    }
-
     // Waits until exclusive access job completes its job
-    void waitStopRequested(V3LockGuard& stoppedJobLock) VL_REQUIRES(m_stoppedJobsMutex);
+    void waitStopRequested() VL_REQUIRES(m_stoppedJobsMutex);
 
     // Waits until all other jobs are stopped
-    void waitOtherThreads(V3LockGuard& stoppedJobLock) VL_MT_SAFE_EXCLUDES(m_mutex)
-        VL_REQUIRES(m_stoppedJobsMutex);
+    void waitOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex) VL_REQUIRES(m_stoppedJobsMutex);
 
     template <typename T>
     void pushJob(std::shared_ptr<std::promise<T>>& prom, std::function<T()>&& f) VL_MT_SAFE;

@@ -3064,7 +3064,7 @@ private:
                   && nodep->displayType() == VDisplayType::DT_WRITE)))
             return false;
         if ((prevp->filep() && !nodep->filep()) || (!prevp->filep() && nodep->filep())
-            || !prevp->filep()->sameTree(nodep->filep()))
+            || (prevp->filep() && nodep->filep() && !prevp->filep()->sameTree(nodep->filep())))
             return false;
         if (!prevp->fmtp() || prevp->fmtp()->nextp() || !nodep->fmtp() || nodep->fmtp()->nextp())
             return false;
@@ -3405,9 +3405,9 @@ private:
     TREEOPS("AstCond {$lhsp.isNeqZero}",        "replaceWIteratedRhs(nodep)");
     TREEOP ("AstCond{$condp.castNot,       $thenp, $elsep}", "AstCond{$condp->castNot()->lhsp(), $elsep, $thenp}");
     TREEOP ("AstNodeCond{$condp.width1, $thenp.width1,   $thenp.isAllOnes, $elsep}", "AstLogOr {$condp, $elsep}");  // a?1:b == a||b
-    TREEOP ("AstNodeCond{$condp.width1, $thenp.width1,   $thenp,    $elsep.isZero}", "AstLogAnd{$condp, $thenp}");  // a?b:0 == a&&b
+    TREEOP ("AstNodeCond{$condp.width1, $thenp.width1,   $thenp,    $elsep.isZero, !$elsep.isClassHandleValue}", "AstLogAnd{$condp, $thenp}");  // a?b:0 == a&&b
     TREEOP ("AstNodeCond{$condp.width1, $thenp.width1,   $thenp, $elsep.isAllOnes}", "AstLogOr {AstNot{$condp}, $thenp}");  // a?b:1 == ~a||b
-    TREEOP ("AstNodeCond{$condp.width1, $thenp.width1,   $thenp.isZero,    $elsep}", "AstLogAnd{AstNot{$condp}, $elsep}");  // a?0:b == ~a&&b
+    TREEOP ("AstNodeCond{$condp.width1, $thenp.width1,   $thenp.isZero, !$thenp.isClassHandleValue,   $elsep}", "AstLogAnd{AstNot{$condp}, $elsep}");  // a?0:b == ~a&&b
     TREEOP ("AstNodeCond{!$condp.width1, operandBoolShift(nodep->condp())}", "replaceBoolShift(nodep->condp())");
     // Prefer constants on left, since that often needs a shift, it lets
     // constant red remove the shift
@@ -3759,7 +3759,7 @@ void V3Const::constifyAllLint(AstNetlist* nodep) {
         ConstVisitor visitor{ConstVisitor::PROC_V_WARN, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("const", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("const", 0, dumpTreeLevel() >= 3);
 }
 
 void V3Const::constifyCpp(AstNetlist* nodep) {
@@ -3768,7 +3768,7 @@ void V3Const::constifyCpp(AstNetlist* nodep) {
         ConstVisitor visitor{ConstVisitor::PROC_CPP, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("const_cpp", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("const_cpp", 0, dumpTreeLevel() >= 3);
 }
 
 AstNode* V3Const::constifyEdit(AstNode* nodep) {
@@ -3792,7 +3792,7 @@ void V3Const::constifyAllLive(AstNetlist* nodep) {
         ConstVisitor visitor{ConstVisitor::PROC_LIVE, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("const", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("const", 0, dumpTreeLevel() >= 3);
 }
 
 void V3Const::constifyAll(AstNetlist* nodep) {
@@ -3802,7 +3802,7 @@ void V3Const::constifyAll(AstNetlist* nodep) {
         ConstVisitor visitor{ConstVisitor::PROC_V_EXPENSIVE, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("const", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("const", 0, dumpTreeLevel() >= 3);
 }
 
 AstNode* V3Const::constifyExpensiveEdit(AstNode* nodep) {

@@ -456,7 +456,7 @@ protected:
         UINFO(5, "ReorderBlock " << nodep << endl);
         m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
 
-        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed("reorderg_nodup", false);
+        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("reorderg_nodup", false);
 
         // Mark all the logic for this step
         // Vertex::m_user begin: true indicates logic for this step
@@ -513,10 +513,10 @@ protected:
         // And a real ordering to get the statements into something reasonable
         // We don't care if there's cutable violations here...
         // Non-cutable violations should be impossible; as those edges are program-order
-        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed("splitg_preo", false);
+        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("splitg_preo", false);
         m_graph.acyclic(&SplitEdge::followCyclic);
         m_graph.rank(&SplitEdge::followCyclic);  // Or order(), but that's more expensive
-        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed("splitg_opt", false);
+        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("splitg_opt", false);
     }
 
     void reorderBlock(AstNode* nodep) {
@@ -942,14 +942,14 @@ protected:
             }
         }
 
-        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed("splitg_nodup", false);
+        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("splitg_nodup", false);
 
         // Weak coloring to determine what needs to remain grouped
         // in a single always. This follows all edges excluding:
         //  - those we pruned above
         //  - PostEdges, which are done later
         m_graph.weaklyConnected(&SplitEdge::followScoreboard);
-        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed("splitg_colored", false);
+        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("splitg_colored", false);
     }
 
     void visit(AstAlways* nodep) override {
@@ -1003,10 +1003,10 @@ private:
 void V3Split::splitReorderAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ReorderVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("reorder", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("reorder", 0, dumpTreeLevel() >= 3);
 }
 void V3Split::splitAlwaysAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { SplitVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("split", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("split", 0, dumpTreeLevel() >= 3);
 }

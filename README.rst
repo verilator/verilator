@@ -13,6 +13,8 @@
     :target: https://codecov.io/gh/verilator/verilator
 .. image:: https://github.com/verilator/verilator/workflows/build/badge.svg
     :target: https://github.com/verilator/verilator/actions?query=workflow%3Abuild
+.. image:: https://img.shields.io/docker/pulls/verilator/verilator
+    :target: https://hub.docker.com/r/verilator/verilator
 
 
 Welcome to Verilator
@@ -57,17 +59,16 @@ files, the "Verilated" code.
 
 These Verilated C++/SystemC files are then compiled by a C++ compiler
 (gcc/clang/MSVC++), optionally along with a user's own C++/SystemC wrapper
-file to instantiate the Verilated model. Executing the resulting executable
-performs the design simulation. Verilator also supports linking Verilated
-generated libraries, optionally encrypted, into other simulators.
+file, to instantiate the Verilated model. Executing the resulting
+executable performs the design simulation. Verilator also supports linking
+Verilated generated libraries, optionally encrypted, into other simulators.
 
 Verilator may not be the best choice if you are expecting a full-featured
 replacement for a closed-source Verilog simulator, needs SDF annotation,
 mixed-signal simulation, or are doing a quick class project (we recommend
 `Icarus Verilog`_ for classwork.)  However, if you are looking for a path
 to migrate SystemVerilog to C++/SystemC, or want high-speed simulation of
-synthesizable designs containing limited verification constructs, Verilator
-is the tool for you.
+designs, Verilator is the tool for you.
 
 
 Performance
@@ -83,11 +84,11 @@ as `Icarus Verilog`_. Another 2-10x speedup might be gained from
 multithreading (yielding 200-1000x total over interpreted simulators).
 
 Verilator has typically similar or better performance versus the
-closed-source Verilog simulators (Carbon Design Systems Carbonator,
+closed-source Verilog simulators (e.g., Carbon Design Systems Carbonator,
 Modelsim/Questa, Cadence Incisive/NC-Verilog, Synopsys VCS, VTOC, and
 Pragmatic CVer/CVC). But, Verilator is open-sourced, so you can spend on
 computes rather than licenses. Thus, Verilator gives you the best
-cycles/dollar.
+simulation cycles/dollar.
 
 
 Installation & Documentation

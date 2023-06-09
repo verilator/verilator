@@ -253,16 +253,33 @@ class ForceConvertVisitor final : public VNVisitor {
         resetRdp->rhsp()->foreach([this](AstNodeVarRef* refp) {
             if (refp->access() != VAccess::WRITE) return;
             AstVarScope* const vscp = refp->varScopep();
-            AstVarScope* const newVscp
-                = vscp->varp()->isContinuously() ? vscp : getForceComponents(vscp).m_valVscp;
-            AstVarRef* const newpRefp = new AstVarRef{refp->fileline(), newVscp, VAccess::READ};
+            FileLine* const flp = new FileLine{refp->fileline()};
+            AstVarRef* const newpRefp = new AstVarRef{refp->fileline(), vscp, VAccess::READ};
             newpRefp->user2(1);  // Don't replace this read ref with the read signal
-            refp->replaceWith(newpRefp);
+            if (vscp->varp()->isContinuously()) {
+                refp->replaceWith(newpRefp);
+            } else if (isRangedDType(vscp)) {
+                refp->replaceWith(new AstOr{
+                    flp,
+                    new AstAnd{
+                        flp, new AstVarRef{flp, getForceComponents(vscp).m_enVscp, VAccess::READ},
+                        new AstVarRef{flp, getForceComponents(vscp).m_valVscp, VAccess::READ}},
+                    new AstAnd{
+                        flp,
+                        new AstNot{flp, new AstVarRef{flp, getForceComponents(vscp).m_enVscp,
+                                                      VAccess::READ}},
+                        newpRefp}});
+            } else {
+                refp->replaceWith(new AstCond{
+                    flp, new AstVarRef{flp, getForceComponents(vscp).m_enVscp, VAccess::READ},
+                    new AstVarRef{flp, getForceComponents(vscp).m_valVscp, VAccess::READ},
+                    newpRefp});
+            }
             VL_DO_DANGLING(refp->deleteTree(), refp);
         });
 
-        resetEnp->addNext(resetRdp);
-        relinker.relink(resetEnp);
+        resetRdp->addNext(resetEnp);
+        relinker.relink(resetRdp);
     }
 
     void visit(AstVarScope* nodep) override {
@@ -314,5 +331,5 @@ void V3Force::forceAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     if (!v3Global.hasForceableSignals()) return;
     ForceConvertVisitor::apply(nodep);
-    V3Global::dumpCheckGlobalTree("force", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("force", 0, dumpTreeLevel() >= 3);
 }

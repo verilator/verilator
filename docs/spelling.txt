@@ -260,6 +260,7 @@ Prateek
 Pre
 Preprocess
 Pretet
+Pretl
 Priyadharshini
 Pullup
 Pulver
@@ -472,6 +473,7 @@ constexpr
 constpool
 coredump
 coroutine
+coroutines
 countbits
 countones
 cout
@@ -602,6 +604,7 @@ genvar
 genvars
 getenv
 getline
+ggdb
 gmake
 gmon
 gotFinish
@@ -791,6 +794,7 @@ qrq
 radix
 randc
 randcase
+randstate
 rarr
 rdtsc
 reStructuredText
@@ -896,6 +900,7 @@ typedefs
 typename
 uint
 un
+unbased
 undef
 undefineall
 undriven
@@ -966,3 +971,4 @@ ypq
 yurivict
 zdave
 Øyvind
+

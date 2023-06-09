@@ -63,12 +63,23 @@ module t (/*AUTOARG*/
       endfunction
    endclass
 
+   class FooDict;
+      Foo q[int];
+   endclass
+
+   class ExtendFooDict#(type BASE=FooDict) extends BASE;
+      function int get_x_of_item(int i);
+         return q[i].x;
+      endfunction
+   endclass
+
    Bar #() bar_foo_i;
    Bar #(Baz) bar_baz_i;
    ExtendBar extend_bar_i;
    ExtendBar1 extend_bar1_i;
    ExtendBarBaz extend_bar_baz_i;
    ExtendExtendBar extend_extend_bar_i;
+   ExtendFooDict extend_foo_dict_i;
 
    initial begin
       bar_foo_i = new;
@@ -77,18 +88,26 @@ module t (/*AUTOARG*/
       extend_bar1_i = new;
       extend_bar_baz_i = new;
       extend_extend_bar_i = new;
-      if (bar_foo_i.get_x() == 1 && bar_foo_i.get_3() == 3 &&
-          bar_baz_i.get_x() == 2 && bar_baz_i.get_4() == 4 &&
-          extend_bar_i.get_x() == 1 && extend_bar_i.get_6() == 6 &&
-          extend_bar_i.get_x() == 1 && extend_bar_i.get_6() == 6 &&
-          extend_bar1_i.get_x() == 1 && extend_bar1_i.get_6() == 6 &&
-          extend_bar_baz_i.get_x() == 2 && extend_bar_baz_i.get_8() == 8 &&
-          extend_extend_bar_i.get_x() == 1 && extend_extend_bar_i.get_12() == 12) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-      else begin
-         $stop;
-      end
+      extend_foo_dict_i = new;
+      extend_foo_dict_i.q[1] = new;
+
+      if (bar_foo_i.get_x() != 1) $stop;
+      if (bar_foo_i.get_3() != 3) $stop;
+      if (bar_baz_i.get_x() != 2) $stop;
+      if (bar_baz_i.get_4() != 4) $stop;
+      if (extend_bar_i.get_x() != 1) $stop;
+      if (extend_bar_i.get_6() != 6) $stop;
+      if (extend_bar_i.get_x() != 1) $stop;
+      if (extend_bar_i.get_6() != 6) $stop;
+      if (extend_bar1_i.get_x() != 1) $stop;
+      if (extend_bar1_i.get_6() != 6) $stop;
+      if (extend_bar_baz_i.get_x() != 2) $stop;
+      if (extend_bar_baz_i.get_8() != 8) $stop;
+      if (extend_extend_bar_i.get_x() != 1) $stop;
+      if (extend_extend_bar_i.get_12() != 12) $stop;
+      if (extend_foo_dict_i.get_x_of_item(1) != 1) $stop;
+
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
 endmodule

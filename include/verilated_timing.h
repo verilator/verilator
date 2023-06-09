@@ -86,6 +86,36 @@ public:
 #endif
 };
 
+//===================================================================
+// VlProcess stores metadata of running processes
+
+class VlProcess final {
+    // MEMBERS
+    int m_state;  // Current state of the process
+
+public:
+    // TYPES
+    enum : int {  // Type int for compatibility with $c
+        FINISHED = 0,
+        RUNNING = 1,
+        WAITING = 2,
+        SUSPENDED = 3,
+        KILLED = 4,
+    };
+
+    // CONSTRUCTORS
+    VlProcess()
+        : m_state{RUNNING} {}
+
+    // METHODS
+    int state() { return m_state; }
+    void state(int s) { m_state = s; }
+};
+
+using VlProcessRef = std::shared_ptr<VlProcess>;
+
+inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
+
 //=============================================================================
 // VlCoroutineHandle is a non-copyable (but movable) coroutine handle. On resume, the handle is
 // cleared, as we assume that either the coroutine has finished and deleted itself, or, if it got
@@ -96,25 +126,38 @@ class VlCoroutineHandle final {
 
     // MEMBERS
     std::coroutine_handle<> m_coro;  // The wrapped coroutine handle
+    VlProcessRef m_process;  // Data of the suspended process, null if not needed
     VlFileLineDebug m_fileline;
 
 public:
     // CONSTRUCTORS
     // Construct
-    VlCoroutineHandle()
-        : m_coro{nullptr} {}
-    VlCoroutineHandle(std::coroutine_handle<> coro, VlFileLineDebug fileline)
+    VlCoroutineHandle(VlProcessRef process)
+        : m_coro{nullptr}
+        , m_process{process} {
+        if (m_process) m_process->state(VlProcess::WAITING);
+    }
+    VlCoroutineHandle(std::coroutine_handle<> coro, VlProcessRef process, VlFileLineDebug fileline)
         : m_coro{coro}
-        , m_fileline{fileline} {}
+        , m_process{process}
+        , m_fileline{fileline} {
+        if (m_process) m_process->state(VlProcess::WAITING);
+    }
     // Move the handle, leaving a nullptr
     VlCoroutineHandle(VlCoroutineHandle&& moved)
         : m_coro{std::exchange(moved.m_coro, nullptr)}
+        , m_process{moved.m_process}
         , m_fileline{moved.m_fileline} {}
     // Destroy if the handle isn't null
     ~VlCoroutineHandle() {
         // Usually these coroutines should get resumed; we only need to clean up if we destroy a
         // model with some coroutines suspended
-        if (VL_UNLIKELY(m_coro)) m_coro.destroy();
+        if (VL_UNLIKELY(m_coro)) {
+            m_coro.destroy();
+            if (m_process && m_process->state() != VlProcess::KILLED) {
+                m_process->state(VlProcess::FINISHED);
+            }
+        }
     }
     // METHODS
     // Move the handle, leaving a null handle
@@ -122,7 +165,7 @@ public:
         m_coro = std::exchange(moved.m_coro, nullptr);
         return *this;
     }
-    // Resume the coroutine if the handle isn't null
+    // Resume the coroutine if the handle isn't null and the process isn't killed
     void resume();
 #ifdef VL_DEBUG
     void dump() const;
@@ -173,21 +216,24 @@ public:
     void dump() const;
 #endif
     // Used by coroutines for co_awaiting a certain simulation time
-    auto delay(uint64_t delay, const char* filename = VL_UNKNOWN, int lineno = 0) {
+    auto delay(uint64_t delay, VlProcessRef process, const char* filename = VL_UNKNOWN,
+               int lineno = 0) {
         struct Awaitable {
+            VlProcessRef process;  // Data of the suspended process, null if not needed
             VlDelayedCoroutineQueue& queue;
             uint64_t delay;
             VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
             void await_suspend(std::coroutine_handle<> coro) {
-                queue.push_back({delay, VlCoroutineHandle{coro, fileline}});
+                queue.push_back({delay, VlCoroutineHandle{coro, process, fileline}});
                 // Move last element to the proper place in the max-heap
                 std::push_heap(queue.begin(), queue.end());
             }
             void await_resume() const {}
         };
-        return Awaitable{m_queue, m_context.time() + delay, VlFileLineDebug{filename, lineno}};
+        return Awaitable{process, m_queue, m_context.time() + delay,
+                         VlFileLineDebug{filename, lineno}};
     }
 };
 
@@ -207,6 +253,10 @@ class VlTriggerScheduler final {
                                    // (not resumable)
     VlCoroutineVec m_ready;  // Coroutines that can be resumed (all coros from m_uncommitted are
                              // moved here in commit())
+    VlCoroutineVec m_resumeQueue;  // Coroutines being resumed by resume(); kept as a field to
+                                   // avoid reallocation. Resumed coroutines are moved to
+                                   // m_resumeQueue to allow adding coroutines to m_ready
+                                   // during resume(). Outside of resume() should always be empty.
 
 public:
     // METHODS
@@ -220,21 +270,23 @@ public:
     void dump(const char* eventDescription) const;
 #endif
     // Used by coroutines for co_awaiting a certain trigger
-    auto trigger(const char* eventDescription = VL_UNKNOWN, const char* filename = VL_UNKNOWN,
-                 int lineno = 0) {
+    auto trigger(bool commit, VlProcessRef process, const char* eventDescription = VL_UNKNOWN,
+                 const char* filename = VL_UNKNOWN, int lineno = 0) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Suspending process waiting for %s at %s:%d\n",
                                 eventDescription, filename, lineno););
         struct Awaitable {
             VlCoroutineVec& suspended;  // Coros waiting on trigger
+            VlProcessRef process;  // Data of the suspended process, null if not needed
             VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
             void await_suspend(std::coroutine_handle<> coro) {
-                suspended.emplace_back(coro, fileline);
+                suspended.emplace_back(coro, process, fileline);
             }
             void await_resume() const {}
         };
-        return Awaitable{m_uncommitted, VlFileLineDebug{filename, lineno}};
+        return Awaitable{commit ? m_ready : m_uncommitted, process,
+                         VlFileLineDebug{filename, lineno}};
     }
 };
 
@@ -267,18 +319,19 @@ class VlDynamicTriggerScheduler final {
                             // with destructive post updates, e.g. named events)
 
     // METHODS
-    auto awaitable(VlCoroutineVec& queue, const char* filename, int lineno) {
+    auto awaitable(VlProcessRef process, VlCoroutineVec& queue, const char* filename, int lineno) {
         struct Awaitable {
+            VlProcessRef process;  // Data of the suspended process, null if not needed
             VlCoroutineVec& suspended;  // Coros waiting on trigger
             VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
             void await_suspend(std::coroutine_handle<> coro) {
-                suspended.emplace_back(coro, fileline);
+                suspended.emplace_back(coro, process, fileline);
             }
             void await_resume() const {}
         };
-        return Awaitable{queue, VlFileLineDebug{filename, lineno}};
+        return Awaitable{process, queue, VlFileLineDebug{filename, lineno}};
     }
 
 public:
@@ -292,23 +345,26 @@ public:
     void dump() const;
 #endif
     // Used by coroutines for co_awaiting trigger evaluation
-    auto evaluation(const char* eventDescription, const char* filename, int lineno) {
+    auto evaluation(VlProcessRef process, const char* eventDescription, const char* filename,
+                    int lineno) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Suspending process waiting for %s at %s:%d\n",
                                 eventDescription, filename, lineno););
-        return awaitable(m_suspended, filename, lineno);
+        return awaitable(process, m_suspended, filename, lineno);
     }
     // Used by coroutines for co_awaiting the trigger post update step
-    auto postUpdate(const char* eventDescription, const char* filename, int lineno) {
+    auto postUpdate(VlProcessRef process, const char* eventDescription, const char* filename,
+                    int lineno) {
         VL_DEBUG_IF(
             VL_DBG_MSGF("         Process waiting for %s at %s:%d awaiting the post update step\n",
                         eventDescription, filename, lineno););
-        return awaitable(m_post, filename, lineno);
+        return awaitable(process, m_post, filename, lineno);
     }
     // Used by coroutines for co_awaiting the resumption step (in 'act' eval)
-    auto resumption(const char* eventDescription, const char* filename, int lineno) {
+    auto resumption(VlProcessRef process, const char* eventDescription, const char* filename,
+                    int lineno) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Process waiting for %s at %s:%d awaiting resumption\n",
                                 eventDescription, filename, lineno););
-        return awaitable(m_triggered, filename, lineno);
+        return awaitable(process, m_triggered, filename, lineno);
     }
 };
 
@@ -338,24 +394,27 @@ class VlForkSync final {
 
 public:
     // Create the join object and set the counter to the specified number
-    void init(size_t count) { m_join.reset(new VlJoin{count, {}}); }
+    void init(size_t count, VlProcessRef process) { m_join.reset(new VlJoin{count, {process}}); }
     // Called whenever any of the forked processes finishes. If the join counter reaches 0, the
     // main process gets resumed
     void done(const char* filename = VL_UNKNOWN, int lineno = 0);
     // Used by coroutines for co_awaiting a join
-    auto join(const char* filename = VL_UNKNOWN, int lineno = 0) {
+    auto join(VlProcessRef process, const char* filename = VL_UNKNOWN, int lineno = 0) {
         assert(m_join);
         VL_DEBUG_IF(
             VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, lineno););
         struct Awaitable {
+            VlProcessRef process;  // Data of the suspended process, null if not needed
             const std::shared_ptr<VlJoin> join;  // Join to await on
             VlFileLineDebug fileline;
 
             bool await_ready() { return join->m_counter == 0; }  // Suspend if join still exists
-            void await_suspend(std::coroutine_handle<> coro) { join->m_susp = {coro, fileline}; }
+            void await_suspend(std::coroutine_handle<> coro) {
+                join->m_susp = {coro, process, fileline};
+            }
             void await_resume() const {}
         };
-        return Awaitable{m_join, VlFileLineDebug{filename, lineno}};
+        return Awaitable{process, m_join, VlFileLineDebug{filename, lineno}};
     }
 };
 

@@ -121,6 +121,8 @@ public:
     static void statsFinalAll(AstNetlist* nodep);
     /// Called by the top level to dump the statistics
     static void statsReport();
+    /// Called by debug dumps
+    static void infoHeader(std::ofstream& os, const string& prefix);
 };
 
 #endif  // Guard

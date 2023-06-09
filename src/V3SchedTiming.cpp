@@ -155,6 +155,19 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
         std::vector<AstVarScope*> m_writtenBySuspendable;
 
         // METHODS
+        // Add arguments to a resume() call based on arguments in the suspending call
+        void addResumePins(AstCMethodHard* const resumep, AstNodeExpr* pinsp) {
+            AstCExpr* const exprp = VN_CAST(pinsp, CExpr);
+            AstText* const textp = VN_CAST(exprp->exprsp(), Text);
+            if (textp) {
+                // The first argument, vlProcess, isn't used by any of resume() methods, skip it
+                if ((pinsp = VN_CAST(pinsp->nextp(), NodeExpr))) {
+                    resumep->addPinsp(pinsp->cloneTree(false));
+                }
+            } else {
+                resumep->addPinsp(pinsp->cloneTree(false));
+            }
+        }
         // Create an active with a timing scheduler resume() call
         void createResumeActive(AstCAwait* const awaitp) {
             auto* const methodp = VN_AS(awaitp->exprp(), CMethodHard);
@@ -166,7 +179,14 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
                 flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, "resume"};
             resumep->dtypeSetVoid();
             if (schedulerp->dtypep()->basicp()->isTriggerScheduler()) {
-                if (methodp->pinsp()) resumep->addPinsp(methodp->pinsp()->cloneTree(false));
+                UASSERT_OBJ(methodp->pinsp(), methodp,
+                            "Trigger method should have pins from V3Timing");
+                // The first pin is the commit boolean, the rest (if any) should be debug info
+                // See V3Timing for details
+                if (AstNode* const dbginfop = methodp->pinsp()->nextp()) {
+                    if (methodp->pinsp())
+                        addResumePins(resumep, static_cast<AstNodeExpr*>(dbginfop));
+                }
             } else if (schedulerp->dtypep()->basicp()->isDynamicTriggerScheduler()) {
                 auto* const postp = resumep->cloneTree(false);
                 postp->name("doPostUpdates");
@@ -256,6 +276,7 @@ void transformForks(AstNetlist* const netlistp) {
         // STATE
         bool m_inClass = false;  // Are we in a class?
         bool m_beginHasAwaits = false;  // Does the current begin have awaits?
+        bool m_beginNeedProcess = false;  // Does the current begin have process::self dependency?
         AstFork* m_forkp = nullptr;  // Current fork
         AstCFunc* m_funcp = nullptr;  // Current function
 
@@ -342,8 +363,9 @@ void transformForks(AstNetlist* const netlistp) {
             UASSERT_OBJ(m_forkp, nodep, "Begin outside of a fork");
             // Start with children, so later we only find awaits that are actually in this begin
             m_beginHasAwaits = false;
+            m_beginNeedProcess = false;
             iterateChildrenConst(nodep);
-            if (m_beginHasAwaits) {
+            if (m_beginHasAwaits || m_beginNeedProcess) {
                 UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
                 // Create a function to put this begin's statements in
                 FileLine* const flp = nodep->fileline();
@@ -366,15 +388,29 @@ void transformForks(AstNetlist* const netlistp) {
                 }
                 // Put the begin's statements in the function, delete the begin
                 newfuncp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
+                if (m_beginNeedProcess) {
+                    newfuncp->setNeedProcess();
+                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(),
+                                                     "vlProcess->state(VlProcess::FINISHED);\n"});
+                }
+                if (!m_beginHasAwaits) {
+                    // co_return at the end (either that or a co_await is required in a coroutine
+                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
+                }
                 remapLocals(newfuncp, callp);
             } else {
-                // No awaits, just inline the forked process
+                // The begin has neither awaits nor a process::self call, just inline the
+                // statements
                 nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
             }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
         void visit(AstCAwait* nodep) override {
             m_beginHasAwaits = true;
+            iterateChildrenConst(nodep);
+        }
+        void visit(AstCCall* nodep) override {
+            if (nodep->funcp()->needProcess()) m_beginNeedProcess = true;
             iterateChildrenConst(nodep);
         }
 
@@ -388,7 +424,7 @@ void transformForks(AstNetlist* const netlistp) {
         ~ForkVisitor() override = default;
     };
     ForkVisitor{netlistp};
-    V3Global::dumpCheckGlobalTree("sched_forks", 0, dumpTree() >= 6);
+    V3Global::dumpCheckGlobalTree("sched_forks", 0, dumpTreeLevel() >= 6);
 }
 
 }  // namespace V3Sched

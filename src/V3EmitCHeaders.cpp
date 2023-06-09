@@ -17,11 +17,15 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Ast.h"
 #include "V3EmitC.h"
 #include "V3EmitCConstInit.h"
 #include "V3Global.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <set>
+#include <string>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -219,7 +223,7 @@ class EmitCHeader final : public EmitCConstInit {
         emitted.insert(sdtypep);
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            AstNodeUOrStructDType* subp = VN_CAST(itemp->skipRefp(), NodeUOrStructDType);
+            AstNodeUOrStructDType* const subp = itemp->getChildStructp();
             if (subp && !subp->packed()) {
                 // Recurse if it belongs to the current module
                 if (subp->classOrPackagep() == modp) {
@@ -235,6 +239,20 @@ class EmitCHeader final : public EmitCConstInit {
             puts(itemp->dtypep()->cType(itemp->nameProtect(), false, false));
             puts(";\n");
         }
+
+        puts("\nbool operator==(const " + EmitCBase::prefixNameProtect(sdtypep)
+             + "& rhs) const {\n");
+        puts("return ");
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            if (itemp != sdtypep->membersp()) puts("\n    && ");
+            puts(itemp->nameProtect() + " == " + "rhs." + itemp->nameProtect());
+        }
+        puts(";\n");
+        puts("}\n");
+        puts("bool operator!=(const " + EmitCBase::prefixNameProtect(sdtypep)
+             + "& rhs) const {\n");
+        puts("return !(*this == rhs);\n}\n");
         puts("};\n");
     }
     void emitStructs(const AstNodeModule* modp) {
@@ -287,11 +305,9 @@ class EmitCHeader final : public EmitCConstInit {
                      + ".h\"\n");
             }
         }
-        emitModCUse(modp, VUseType::INT_INCLUDE);
 
         // Forward declarations required by this AstNodeModule
         puts("\nclass " + symClassName() + ";\n");
-        emitModCUse(modp, VUseType::INT_FWD_CLASS);
 
         // From `systemc_header
         emitTextSection(modp, VNType::atScHdr);
@@ -300,6 +316,7 @@ class EmitCHeader final : public EmitCConstInit {
 
         // Open class body {{{
         puts("\nclass ");
+        if (!VN_IS(modp, Class)) puts("alignas(VL_CACHE_LINE_BYTES) ");
         puts(prefixNameProtect(modp));
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
             puts(" : public ");
@@ -329,11 +346,7 @@ class EmitCHeader final : public EmitCConstInit {
         emitTextSection(modp, VNType::atScInt);
 
         // Close class body
-        if (!VN_IS(modp, Class)) {
-            puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
-        } else {
-            puts("};\n");
-        }
+        puts("};\n");
         // }}}
 
         // Emit out of class function declarations
@@ -363,6 +376,19 @@ class EmitCHeader final : public EmitCConstInit {
         if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
         if (v3Global.usesTiming()) puts("#include \"verilated_timing.h\"\n");
+
+        std::set<string> cuse_set;
+        auto add_to_cuse_set = [&](string s) { cuse_set.insert(s); };
+
+        forModCUse(modp, VUseType::INT_INCLUDE, add_to_cuse_set);
+        forModCUse(modp, VUseType::INT_FWD_CLASS, add_to_cuse_set);
+        if (const AstClassPackage* const packagep = VN_CAST(modp, ClassPackage)) {
+            forModCUse(packagep->classp(), VUseType::INT_INCLUDE, add_to_cuse_set);
+            forModCUse(packagep->classp(), VUseType::INT_FWD_CLASS, add_to_cuse_set);
+        }
+
+        for (const string& s : cuse_set) puts(s);
+        puts("\n");
 
         emitAll(modp);
 

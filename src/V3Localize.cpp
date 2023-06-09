@@ -57,11 +57,13 @@ private:
     AstUser4Allocator<AstCFunc, std::unordered_multimap<const AstVarScope*, AstVarRef*>>
         m_references;
 
-    // STATE
+    // STATE - across all visitors
+    std::vector<AstVarScope*> m_varScopeps;  // List of variables to consider for localization
     VDouble0 m_statLocVars;  // Statistic tracking
+
+    // STATE - for current visit position (use VL_RESTORER)
     AstCFunc* m_cfuncp = nullptr;  // Current active function
     uint32_t m_nodeDepth = 0;  // Node depth under m_cfuncp
-    std::vector<AstVarScope*> m_varScopeps;  // List of variables to consider for localization
 
     // METHODS
     bool isOptimizable(AstVarScope* nodep) {
@@ -133,12 +135,10 @@ private:
         UINFO(4, "  CFUNC " << nodep << endl);
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_nodeDepth);
-        {
-            m_cfuncp = nodep;
-            m_nodeDepth = 0;
-            const VNUser2InUse user2InUse;
-            iterateChildrenConst(nodep);
-        }
+        m_cfuncp = nodep;
+        m_nodeDepth = 0;
+        const VNUser2InUse user2InUse;
+        iterateChildrenConst(nodep);
     }
 
     void visit(AstCCall* nodep) override {
@@ -204,9 +204,9 @@ private:
     }
 
     void visit(AstNode* nodep) override {
+        VL_RESTORER(m_nodeDepth);
         ++m_nodeDepth;
         iterateChildrenConst(nodep);
-        --m_nodeDepth;
     }
 
 public:
@@ -223,5 +223,5 @@ public:
 void V3Localize::localizeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { LocalizeVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("localize", 0, dumpTree() >= 6);
+    V3Global::dumpCheckGlobalTree("localize", 0, dumpTreeLevel() >= 6);
 }

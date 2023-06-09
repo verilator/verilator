@@ -62,9 +62,10 @@ private:
     // TYPES
     using AssignMap = std::multimap<AstVarScope*, AstNodeAssign*>;
 
-    // STATE
-    AstNodeModule* m_modp = nullptr;  // Current module
-    AstSelLoopVars* m_selloopvarsp = nullptr;  // Current loop vars
+    // STATE - across all visitors
+    const bool m_elimUserVars;  // Allow removal of user's vars
+    const bool m_elimDTypes;  // Allow removal of DTypes
+    const bool m_elimCells;  // Allow removal of Cells
     // List of all encountered to avoid another loop through tree
     std::vector<AstVar*> m_varsp;
     std::vector<AstNode*> m_dtypesp;
@@ -73,12 +74,13 @@ private:
     std::vector<AstCell*> m_cellsp;
     std::vector<AstClass*> m_classesp;
     std::vector<AstTypedef*> m_typedefsp;
-
     AssignMap m_assignMap;  // List of all simple assignments for each variable
-    const bool m_elimUserVars;  // Allow removal of user's vars
-    const bool m_elimDTypes;  // Allow removal of DTypes
-    const bool m_elimCells;  // Allow removal of Cells
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
+
+    // STATE - for current visit position (use VL_RESTORER)
+    bool m_inAssign = false;  // Currently in an assign
+    AstNodeModule* m_modp = nullptr;  // Current module
+    AstSelLoopVars* m_selloopvarsp = nullptr;  // Current loop vars
 
     // METHODS
 
@@ -107,18 +109,16 @@ private:
     void visit(AstNodeModule* nodep) override {
         if (m_modp) m_modp->user1Inc();  // e.g. Class under Package
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            if (!nodep->dead()) {
-                iterateChildren(nodep);
-                checkAll(nodep);
-                if (AstClass* const classp = VN_CAST(nodep, Class)) {
-                    if (classp->extendsp()) classp->extendsp()->user1Inc();
-                    if (classp->classOrPackagep()) classp->classOrPackagep()->user1Inc();
-                    m_classesp.push_back(classp);
-                    // TODO we don't reclaim dead classes yet - graph implementation instead?
-                    classp->user1Inc();
-                }
+        m_modp = nodep;
+        if (!nodep->dead()) {
+            iterateChildren(nodep);
+            checkAll(nodep);
+            if (AstClass* const classp = VN_CAST(nodep, Class)) {
+                if (classp->extendsp()) classp->extendsp()->user1Inc();
+                if (classp->classOrPackagep()) classp->classOrPackagep()->user1Inc();
+                m_classesp.push_back(classp);
+                // TODO we don't reclaim dead classes yet - graph implementation instead?
+                classp->user1Inc();
             }
         }
     }
@@ -282,9 +282,13 @@ private:
         // See if simple assignments to variables may be eliminated because
         // that variable is never used.
         // Similar code in V3Life
-        VL_RESTORER(m_sideEffect);
+        const bool assignInAssign = m_inAssign;  // Might be Assign(..., ExprStmt(Assign), ...)
         {
+            VL_RESTORER(m_inAssign);
+            VL_RESTORER(m_sideEffect);
+            m_inAssign = true;
             m_sideEffect = false;
+            if (assignInAssign) m_sideEffect = true;
             iterateAndNextNull(nodep->rhsp());
             checkAll(nodep);
             // Has to be direct assignment without any EXTRACTing.
@@ -299,6 +303,7 @@ private:
             }
             iterateNull(nodep->timingControlp());
         }
+        if (assignInAssign) m_sideEffect = true;  // Parent assign shouldn't optimize
     }
 
     //-----
@@ -539,29 +544,29 @@ void V3Dead::deadifyModules(AstNetlist* nodep) {
     {
         DeadVisitor{nodep, false, false, false, false, !v3Global.opt.topIfacesSupported()};
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTree() >= 6);
+    V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTreeLevel() >= 6);
 }
 
 void V3Dead::deadifyDTypes(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DeadVisitor{nodep, false, true, false, false, false}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("deadDtypes", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("deadDtypes", 0, dumpTreeLevel() >= 3);
 }
 
 void V3Dead::deadifyDTypesScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DeadVisitor{nodep, false, true, true, false, false}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("deadDtypesScoped", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("deadDtypesScoped", 0, dumpTreeLevel() >= 3);
 }
 
 void V3Dead::deadifyAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DeadVisitor{nodep, true, true, false, true, false}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("deadAll", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("deadAll", 0, dumpTreeLevel() >= 3);
 }
 
 void V3Dead::deadifyAllScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DeadVisitor{nodep, true, true, true, true, false}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("deadAllScoped", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("deadAllScoped", 0, dumpTreeLevel() >= 3);
 }

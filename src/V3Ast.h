@@ -461,6 +461,7 @@ public:
         TRIGGER_SCHEDULER,
         DYNAMIC_TRIGGER_SCHEDULER,
         FORK_SYNC,
+        PROCESS_REFERENCE,
         // Unsigned and two state; fundamental types
         UINT32,
         UINT64,
@@ -493,6 +494,7 @@ public:
                                             "VlTriggerScheduler",
                                             "VlDynamicTriggerScheduler",
                                             "VlFork",
+                                            "VlProcessRef",
                                             "IData",
                                             "QData",
                                             "LOGIC_IMPLICIT",
@@ -500,13 +502,20 @@ public:
         return names[m_e];
     }
     const char* dpiType() const {
-        static const char* const names[]
-            = {"%E-unk",       "svBit",         "char",          "void*",        "char",
-               "int",          "%E-integer",    "svLogic",       "long long",    "double",
-               "short",        "%E-time",       "const char*",   "%E-untyped",   "dpiScope",
-               "const char*",  "%E-mtaskstate", "%E-triggervec", "%E-dly-sched", "%E-trig-sched",
-               "%E-dyn-sched", "%E-fork",       "IData",         "QData",        "%E-logic-implct",
-               " MAX"};
+        static const char* const names[] = {"%E-unk",        "svBit",
+                                            "char",          "void*",
+                                            "char",          "int",
+                                            "%E-integer",    "svLogic",
+                                            "long long",     "double",
+                                            "short",         "%E-time",
+                                            "const char*",   "%E-untyped",
+                                            "dpiScope",      "const char*",
+                                            "%E-mtaskstate", "%E-triggervec",
+                                            "%E-dly-sched",  "%E-trig-sched",
+                                            "%E-dyn-sched",  "%E-fork",
+                                            "%E-proc-ref",   "IData",
+                                            "QData",         "%E-logic-implct",
+                                            " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -545,6 +554,7 @@ public:
         case TRIGGER_SCHEDULER: return 0;  // opaque
         case DYNAMIC_TRIGGER_SCHEDULER: return 0;  // opaque
         case FORK_SYNC: return 0;  // opaque
+        case PROCESS_REFERENCE: return 0;  // opaque
         case UINT32: return 32;
         case UINT64: return 64;
         default: return 0;
@@ -584,7 +594,7 @@ public:
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
                 || m_e == MTASKSTATE || m_e == TRIGGERVEC || m_e == DELAY_SCHEDULER
                 || m_e == TRIGGER_SCHEDULER || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC
-                || m_e == DOUBLE || m_e == UNTYPED);
+                || m_e == PROCESS_REFERENCE || m_e == DOUBLE || m_e == UNTYPED);
     }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
     bool isEvent() const { return m_e == EVENT; }
@@ -1817,6 +1827,7 @@ public:
 
     // ACCESSORS for specific types
     // Alas these can't be virtual or they break when passed a nullptr
+    inline bool isClassHandleValue() const;
     inline bool isZero() const;
     inline bool isOne() const;
     inline bool isNeqZero() const;
@@ -1915,8 +1926,6 @@ public:
     // Iterate and insert - assumes tree format
     virtual void addNextStmt(AstNode* newp,
                              AstNode* belowp);  // When calling, "this" is second argument
-    virtual void addBeforeStmt(AstNode* newp,
-                               AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
     // Clone or return nullptr if nullptr

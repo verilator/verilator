@@ -295,6 +295,7 @@ public:
 
     void parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
                    const string& errmsg);
+    void dumpInputsFile();
 
 private:
     void lexFile(const string& modname);
@@ -305,7 +306,7 @@ private:
     size_t tokenPipeScanParam(size_t depth);
     size_t tokenPipeScanType(size_t depth);
     const V3ParseBisonYYSType* tokenPeekp(size_t depth);
-    void preprocDumps(std::ostream& os);
+    void preprocDumps(std::ostream& os, bool forInputs);
 };
 
 #endif  // Guard

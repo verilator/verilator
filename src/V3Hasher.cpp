@@ -307,7 +307,7 @@ private:
     }
     void visit(AstNodeModule* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, false, [=]() {  //
-            m_hash += nodep->origName();
+            m_hash += nodep->name();
         });
     }
     void visit(AstNodePreSel* nodep) override {

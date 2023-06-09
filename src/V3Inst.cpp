@@ -517,10 +517,10 @@ public:
             // otherwise done
             if (pinVarp->direction() == VDirection::INPUT
                 && cellp->modp()->unconnectedDrive().isSetTrue()) {
-                pinp->exprp(new AstConst{pinp->fileline(), AstConst::StringToParse{}, "'1"});
+                pinp->exprp(new AstConst{pinp->fileline(), AstConst::All1{}});
             } else if (pinVarp->direction() == VDirection::INPUT
                        && cellp->modp()->unconnectedDrive().isSetFalse()) {
-                pinp->exprp(new AstConst{pinp->fileline(), AstConst::StringToParse{}, "'0"});
+                pinp->exprp(new AstConst{pinp->fileline(), AstConst::All0{}});
             } else {
                 return nullptr;
             }
@@ -616,11 +616,11 @@ void V3Inst::checkOutputShort(AstPin* nodep) {
 void V3Inst::instAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { InstVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("inst", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("inst", 0, dumpTreeLevel() >= 3);
 }
 
 void V3Inst::dearrayAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { InstDeVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("dearray", 0, dumpTree() >= 6);
+    V3Global::dumpCheckGlobalTree("dearray", 0, dumpTreeLevel() >= 6);
 }

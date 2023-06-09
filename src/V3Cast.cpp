@@ -122,6 +122,31 @@ private:
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         if (nodep->sizeMattersRhs()) ensureCast(nodep->rhsp());
     }
+    void visit(AstNodeCond* nodep) override {
+        // All class types are castable to each other. If they are of different types,
+        // a compilation error will be thrown, so an explicit cast is required. Types were
+        // already checked by V3Width and dtypep of a condition operator is a type of their
+        // common base class, so both classes can be safetly casted.
+        const AstClassRefDType* const thenClassDtypep
+            = VN_CAST(nodep->thenp()->dtypep(), ClassRefDType);
+        const AstClassRefDType* const elseClassDtypep
+            = VN_CAST(nodep->elsep()->dtypep(), ClassRefDType);
+        const bool castRequired = thenClassDtypep && elseClassDtypep
+                                  && (thenClassDtypep->classp() != elseClassDtypep->classp());
+        if (castRequired) {
+            const AstClass* const commonBaseClassp
+                = VN_AS(nodep->dtypep(), ClassRefDType)->classp();
+            if (thenClassDtypep->classp() != commonBaseClassp) {
+                AstNodeExpr* thenp = nodep->thenp()->unlinkFrBack();
+                nodep->thenp(new AstCCast{thenp->fileline(), thenp, nodep});
+            }
+            if (elseClassDtypep->classp() != commonBaseClassp) {
+                AstNodeExpr* elsep = nodep->elsep()->unlinkFrBack();
+                nodep->elsep(new AstCCast{elsep->fileline(), elsep, nodep});
+            }
+        }
+        visit(static_cast<AstNodeTriop*>(nodep));
+    }
     void visit(AstNodeTriop* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1() | nodep->rhsp()->user1() | nodep->thsp()->user1());
@@ -161,7 +186,8 @@ private:
             && !VN_IS(backp, NodeCCall) && !VN_IS(backp, CMethodHard) && !VN_IS(backp, SFormatF)
             && !VN_IS(backp, ArraySel) && !VN_IS(backp, StructSel) && !VN_IS(backp, RedXor)
             && (nodep->varp()->basicp() && !nodep->varp()->basicp()->isTriggerVec()
-                && !nodep->varp()->basicp()->isForkSync())
+                && !nodep->varp()->basicp()->isForkSync()
+                && !nodep->varp()->basicp()->isProcessRef())
             && backp->width() && castSize(nodep) != castSize(nodep->varp())) {
             // Cast vars to IData first, else below has upper bits wrongly set
             //  CData x=3; out = (QData)(x<<30);
@@ -208,5 +234,5 @@ public:
 void V3Cast::castAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { CastVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("cast", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("cast", 0, dumpTreeLevel() >= 3);
 }

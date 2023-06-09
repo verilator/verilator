@@ -89,7 +89,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\n");
 
         puts("// This class is the main interface to the Verilated model\n");
-        puts("class " + topClassName() + " VL_NOT_FINAL : ");
+        puts("class alignas(VL_CACHE_LINE_BYTES) " + topClassName() + " VL_NOT_FINAL : ");
         if (optSystemC()) {
             // SC_MODULE, but with multiple-inheritance of VerilatedModel
             puts("public ::sc_core::sc_module, ");
@@ -238,7 +238,7 @@ class EmitCModel final : public EmitCFunc {
             puts("std::unique_ptr<VerilatedTraceConfig> traceConfig() const override final;\n");
         }
 
-        puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
+        puts("};\n");
 
         ofp()->putsEndGuard();
 

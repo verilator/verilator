@@ -356,8 +356,8 @@ Why do I get "undefined reference to \`VL_RAND_RESET_I' or \`Verilated::...'"?
 You need to link your compiled Verilated code against the
 :code:`verilated.cpp` file found in the include directory of the Verilator
 kit.  This is one target in the ``$(VK_GLOBAL_OBJS)`` make variable, which
-should be part of your Makefile's link rule.  If you use :vlopt:`--exe`,
-this is done for you.
+should be part of your Makefile's link rule.  If you use :vlopt:`--exe` or
+:vlopt:`--binary`, this is done for you.
 
 
 Is the PLI supported?

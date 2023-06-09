@@ -17,5 +17,9 @@ execute(
     check_finished => 1,
     );
 
+lint(
+    verilator_flags2 => ["--language 1364-2005"]
+    );
+
 ok(1);
 1;

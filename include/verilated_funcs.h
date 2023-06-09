@@ -152,9 +152,11 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE;  // PLIi
 // Base macros
 
 // Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
+// Arguments must not have side effects
 #define VL_BITISSETLIMIT_W(data, width, bit) (((bit) < (width)) && VL_BITISSET_W(data, bit))
 
 // Shift appropriate word by bit. Does not account for wrapping between two words
+// Argument 'bit' must not have side effects
 #define VL_BITRSHIFT_W(data, bit) ((data)[VL_BITWORD_E(bit)] >> VL_BITBIT_E(bit))
 
 // Create two 32-bit words from quadword
@@ -758,6 +760,7 @@ static inline IData VL_ONEHOT0_W(int words, WDataInP const lwp) VL_PURE {
 
 static inline IData VL_CLOG2_I(IData lhs) VL_PURE {
     // There are faster algorithms, or fls GCC4 builtins, but rarely used
+    // In C++20 there will be std::bit_width(lhs) - 1
     if (VL_UNLIKELY(!lhs)) return 0;
     --lhs;
     int shifts = 0;
@@ -953,11 +956,19 @@ static inline void VL_NEGATE_INPLACE_W(int words, WDataOutP owp_lwp) VL_MT_SAFE 
 // EMIT_RULE: VL_MUL:    oclean=dirty; lclean==clean; rclean==clean;
 // EMIT_RULE: VL_DIV:    oclean=dirty; lclean==clean; rclean==clean;
 // EMIT_RULE: VL_MODDIV: oclean=dirty; lclean==clean; rclean==clean;
-#define VL_DIV_III(lbits, lhs, rhs) (((rhs) == 0) ? 0 : (lhs) / (rhs))
-#define VL_DIV_QQQ(lbits, lhs, rhs) (((rhs) == 0) ? 0 : (lhs) / (rhs))
+static inline IData VL_DIV_III(int lbits, IData lhs, IData rhs) {
+    return (rhs == 0) ? 0 : lhs / rhs;
+}
+static inline QData VL_DIV_QQQ(int lbits, QData lhs, QData rhs) {
+    return (rhs == 0) ? 0 : lhs / rhs;
+}
 #define VL_DIV_WWW(lbits, owp, lwp, rwp) (_vl_moddiv_w(lbits, owp, lwp, rwp, 0))
-#define VL_MODDIV_III(lbits, lhs, rhs) (((rhs) == 0) ? 0 : (lhs) % (rhs))
-#define VL_MODDIV_QQQ(lbits, lhs, rhs) (((rhs) == 0) ? 0 : (lhs) % (rhs))
+static inline IData VL_MODDIV_III(int lbits, IData lhs, IData rhs) {
+    return (rhs == 0) ? 0 : lhs % rhs;
+}
+static inline QData VL_MODDIV_QQQ(int lbits, QData lhs, QData rhs) {
+    return (rhs == 0) ? 0 : lhs % rhs;
+}
 #define VL_MODDIV_WWW(lbits, owp, lwp, rwp) (_vl_moddiv_w(lbits, owp, lwp, rwp, 1))
 
 static inline WDataOutP VL_ADD_W(int words, WDataOutP owp, WDataInP const lwp,
