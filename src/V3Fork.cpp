@@ -115,7 +115,8 @@ private:
         iterateChildren(nodep);
 
         // If there are no captures, there's no need to taskify
-        if ((m_capturedVarsp == nullptr) && !v3Global.opt.fTaskifyAll()) return;
+        if (m_forkLocalsp.empty() && (m_capturedVarsp == nullptr) && !v3Global.opt.fTaskifyAll())
+            return;
 
         VNRelinker handle;
         AstTask* taskp = nullptr;
@@ -175,11 +176,10 @@ private:
     void visit(AstVarRef* nodep) override {
 
         // VL_KEEP_THIS ensures that we hold a handle to the class
-        if (m_forkDepth && !nodep->varp()->isFuncLocal() && nodep->varp()->isClassMember())
-            return;
+        if (m_forkDepth && !nodep->varp()->isFuncLocal() && nodep->varp()->isClassMember()) return;
 
         if (m_forkDepth && (m_forkLocalsp.count(nodep->varp()) == 0)
-                   && !nodep->varp()->lifetime().isStatic()) {
+            && !nodep->varp()->lifetime().isStatic()) {
             if (nodep->access().isWriteOrRW()) {
                 nodep->v3warn(E_TASKNSVAR, "Invalid reference: Process might outlive this "
                                            "variable. Use it as read-only to initialize a "
