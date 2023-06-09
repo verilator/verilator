@@ -320,7 +320,8 @@ private:
     // VISITORS
     void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
-        if (nodep->access().isWriteOrRW() && varp->isSignal() && !varp->isUsedLoopIdx() && !varp->isFuncLocalSticky()) {
+        if (nodep->access().isWriteOrRW() && varp->isSignal() && !varp->isUsedLoopIdx()
+            && !varp->isFuncLocalSticky()) {
             m_graph.addAssignment(nodep);
         }
     }
