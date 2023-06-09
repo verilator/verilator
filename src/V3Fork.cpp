@@ -173,8 +173,13 @@ private:
         if (m_forkDepth) m_forkLocalsp.insert(nodep);
     }
     void visit(AstVarRef* nodep) override {
+
+        // VL_KEEP_THIS ensures that we hold a handle to the class
+        if (m_forkDepth && !nodep->varp()->isFuncLocal() && nodep->varp()->isClassMember())
+            return;
+
         if (m_forkDepth && (m_forkLocalsp.count(nodep->varp()) == 0)
-            && !nodep->varp()->lifetime().isStatic()) {
+                   && !nodep->varp()->lifetime().isStatic()) {
             if (nodep->access().isWriteOrRW()) {
                 nodep->v3warn(E_TASKNSVAR, "Invalid reference: Process might outlive this "
                                            "variable. Use it as read-only to initialize a "
@@ -190,21 +195,7 @@ private:
             nodep->varp(varp);
         }
     }
-    void visit(AstThisRef* nodep) override {
-        AstClass* classp = VN_CAST(m_modp, Class);
-        UASSERT_OBJ(classp, nodep, "`this` reference is not under a class");
-
-        if (m_forkDepth) {
-            std::string handleName = "__Vthis_" + cvtToHex(m_modp);
-            VNRelinker handle;
-            nodep->unlinkFrBack(&handle);
-            bool newLocal = false;
-            AstVar* const varp = captureRef(nodep, std::move(handleName), &newLocal);
-            if (newLocal) m_forkLocalsp.insert(varp);
-            AstVarRef* const vrefp = new AstVarRef{nodep->fileline(), varp, VAccess::READWRITE};
-            handle.relink(vrefp);
-        }
-    }
+    void visit(AstThisRef* nodep) override { return; }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         m_modp = nodep;
