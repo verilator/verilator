@@ -181,10 +181,13 @@ private:
         if (m_forkDepth && (m_forkLocalsp.count(nodep->varp()) == 0)
             && !nodep->varp()->lifetime().isStatic()) {
             if (nodep->access().isWriteOrRW()) {
-                nodep->v3warn(E_TASKNSVAR, "Invalid reference: Process might outlive this "
-                                           "variable. Use it as read-only to initialize a "
-                                           "local copy at the beginning of the process, or "
-                                           "declare it as static.");
+                nodep->v3warn(E_TASKNSVAR,
+                              "Invalid reference: Process might outlive variable `"
+                                  << nodep->varp()->name()
+                                  << "`. Use it as read-only to initialize a "
+                                     "local copy at the beginning of the process, or "
+                                     "declare it as static. It is also possible to "
+                                     "refer by reference to `this` object's members.");
                 return;
             }
             UASSERT_OBJ(

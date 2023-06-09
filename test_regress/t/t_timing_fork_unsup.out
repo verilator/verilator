@@ -1,13 +1,13 @@
-%Error-TASKNSVAR: t/t_timing_fork_unsup.v:12:12: Invalid reference: Process might outlive this variable. Either use it as read-only to initialize a local copy at the beginning of the process, usefork..join, make the variable static, or move it to a reference-counted object.
+%Error-TASKNSVAR: t/t_timing_fork_unsup.v:12:12: Invalid reference: Process might outlive variable `x`. Use it as read-only to initialize a local copy at the beginning of the process, or declare it as static. It is also possible to refer by reference to `this` object's members.
                                                : ... In instance t
    12 |         #6 x = 4;
       |            ^
                   ... For error description see https://verilator.org/warn/TASKNSVAR?v=latest
-%Error-TASKNSVAR: t/t_timing_fork_unsup.v:13:12: Invalid reference: Process might outlive this variable. Either use it as read-only to initialize a local copy at the beginning of the process, usefork..join, make the variable static, or move it to a reference-counted object.
+%Error-TASKNSVAR: t/t_timing_fork_unsup.v:13:12: Invalid reference: Process might outlive variable `x`. Use it as read-only to initialize a local copy at the beginning of the process, or declare it as static. It is also possible to refer by reference to `this` object's members.
                                                : ... In instance t
    13 |         #2 x++;
       |            ^
-%Error-TASKNSVAR: t/t_timing_fork_unsup.v:14:9: Invalid reference: Process might outlive this variable. Either use it as read-only to initialize a local copy at the beginning of the process, usefork..join, make the variable static, or move it to a reference-counted object.
+%Error-TASKNSVAR: t/t_timing_fork_unsup.v:14:9: Invalid reference: Process might outlive variable `x`. Use it as read-only to initialize a local copy at the beginning of the process, or declare it as static. It is also possible to refer by reference to `this` object's members.
                                               : ... In instance t
    14 |         x = #4 x * 3;
       |         ^
