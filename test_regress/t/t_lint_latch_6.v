@@ -1,3 +1,9 @@
+// DESCRIPTION: Verilator: Verilog Test module for Issue#221
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2023 by Julien Margetts (Originally provided by Adrien Le Masle)
+// SPDX-License-Identifier: Unlicense
+
 module verilator_latch
 (
    input  logic        state,

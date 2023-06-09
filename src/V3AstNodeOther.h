@@ -1646,8 +1646,7 @@ class AstVar final : public AstNode {
     bool m_usedLoopIdx : 1;  // Variable subject of for unrolling
     bool m_usedVirtIface : 1;  // Signal used through a virtual interface
     bool m_funcLocal : 1;  // Local variable for a function
-    bool
-        m_funcLocalSticky : 1;  // As m_funcLocal, but remains set even if var is moved to a static
+    bool m_funcLocalSticky : 1;  // As m_funcLocal but remains set if var is moved to a static
     bool m_funcReturn : 1;  // Return variable for a function
     bool m_attrScBv : 1;  // User force bit vector attribute
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
