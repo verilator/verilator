@@ -59,24 +59,21 @@ private:
     int m_createdTasksCount = 0;  // Number of tasks created by this visitor
 
     // METHODS
-    AstVar* captureRef(AstNodeExpr* refp, std::string&& localName, bool* newLocal = nullptr) {
+    AstVar* captureRef(AstNodeExpr* refp) {
         AstVar* varp = nullptr;
         for (varp = m_capturedVarsp; varp; varp = VN_AS(varp->nextp(), Var))
-            if (varp->name() == localName) break;
+            if (varp->name() == refp->name()) break;
         if (!varp) {
             // Create a local copy for a capture
             UINFO(1, "REFFF: " << refp << "\n");
-            varp = new AstVar{refp->fileline(), VVarType::BLOCKTEMP, localName, refp->dtypep()};
+            varp = new AstVar{refp->fileline(), VVarType::BLOCKTEMP, refp->name(), refp->dtypep()};
             varp->direction(VDirection::INPUT);
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC);
             m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
             // Use the original ref as an argument for call
-            AstArg* arg = new AstArg{refp->fileline(), localName, refp};
+            AstArg* arg = new AstArg{refp->fileline(), refp->name(), refp->cloneTree(false)};
             m_capturedVarRefsp = AstNode::addNext(m_capturedVarRefsp, arg);
-            if (newLocal) *newLocal = true;
-        } else if (newLocal) {
-            *newLocal = false;
         }
         return varp;
     }
@@ -194,7 +191,7 @@ private:
                 !nodep->varp()->lifetime().isNone(), nodep,
                 "Variable's lifetime is unknown. Can't determine if a capture is necessary.");
 
-            AstVar* const varp = captureRef(nodep->cloneTree(false), nodep->name());
+            AstVar* const varp = captureRef(nodep);
             nodep->varp(varp);
         }
     }
