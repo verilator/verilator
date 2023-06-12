@@ -360,7 +360,6 @@ private:
     bool m_fDfgPreInline;    // main switch: -fno-dfg-pre-inline and -fno-dfg
     bool m_fDfgPostInline;   // main switch: -fno-dfg-post-inline and -fno-dfg
     bool m_fExpand;      // main switch: -fno-expand: expansion of C macros
-    bool m_fTaskifyAll = false;  // main switch: --ftaskify-all-forked
     bool m_fGate;        // main switch: -fno-gate: gate wire elimination
     bool m_fInline;      // main switch: -fno-inline: module inlining
     bool m_fLife;        // main switch: -fno-life: variable lifetime
@@ -375,6 +374,7 @@ private:
     bool m_fSubst;       // main switch: -fno-subst: substitute expression temp values
     bool m_fSubstConst;  // main switch: -fno-subst-const: final constant substitution
     bool m_fTable;       // main switch: -fno-table: lookup table creation
+    bool m_fTaskifyAll = false;  // main switch: --ftaskify-all-forked
     // clang-format on
 
     bool m_available = false;  // Set to true at the end of option parsing
@@ -620,7 +620,6 @@ public:
         return !m_fDfgPeepholeDisabled.count(name);
     }
     bool fExpand() const { return m_fExpand; }
-    bool fTaskifyAll() const { return m_fTaskifyAll; }
     bool fGate() const { return m_fGate; }
     bool fInline() const { return m_fInline; }
     bool fLife() const { return m_fLife; }
@@ -635,6 +634,7 @@ public:
     bool fSubst() const { return m_fSubst; }
     bool fSubstConst() const { return m_fSubstConst; }
     bool fTable() const { return m_fTable; }
+    bool fTaskifyAll() const { return m_fTaskifyAll; }
 
     string traceClassBase() const { return m_traceFormat.classBase(); }
     string traceClassLang() const { return m_traceFormat.classBase() + (systemC() ? "Sc" : "C"); }
