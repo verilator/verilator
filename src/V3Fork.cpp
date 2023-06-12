@@ -46,8 +46,11 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class ForkVisitor final : public VNVisitor {
 private:
     // NODE STATE
-    // AstVar::user1           -> bool, 1 = Node was created as a call to an asynchronous task
+    // AstNode::user1()         -> bool, 1 = Node was created as a call to an asynchronous task
+    // AstVarRef::user2()       -> bool, 1 = Node is a class handle reference. The handle gets
+    //                                       modified in the context of this reference.
     const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Class/module we are currently under
@@ -177,14 +180,14 @@ private:
 
         if (m_forkDepth && (m_forkLocalsp.count(nodep->varp()) == 0)
             && !nodep->varp()->lifetime().isStatic()) {
-            if (nodep->access().isWriteOrRW()) {
-                nodep->v3warn(E_LIFETIME,
-                              "Invalid reference: Process might outlive variable `"
-                                  << nodep->varp()->name()
-                                  << "`. Use it as read-only to initialize a "
-                                     "local copy at the beginning of the process, or "
-                                     "declare it as static. It is also possible to "
-                                     "refer by reference to `this` object's members.");
+            if (nodep->access().isWriteOrRW()
+                && (!nodep->isClassHandleValue() || nodep->user2())) {
+                nodep->v3warn(E_LIFETIME, "Invalid reference: Process might outlive variable `"
+                                              << nodep->varp()->name()
+                                              << "`. Use it as read-only to initialize a "
+                                                 "local copy at the beginning of the process, or "
+                                                 "declare it as static. It is also possible to "
+                                                 "refer by reference to `this` object's members.");
                 return;
             }
             UASSERT_OBJ(
@@ -194,6 +197,12 @@ private:
             AstVar* const varp = captureRef(nodep);
             nodep->varp(varp);
         }
+    }
+    void visit(AstAssign* nodep) override {
+        if (VN_IS(nodep->lhsp(), VarRef) && nodep->lhsp()->isClassHandleValue()) {
+            nodep->lhsp()->user2(true);
+        }
+        visit(static_cast<AstNodeStmt*>(nodep));
     }
     void visit(AstThisRef* nodep) override { return; }
     void visit(AstNodeModule* nodep) override {

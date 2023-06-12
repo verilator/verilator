@@ -14,7 +14,7 @@ class Foo;
       #20 begin
         m_member++;
         $display("this's m_member: ", m_member);
-        if (m_member != 2)
+        if (m_member != 3)
           $stop;
         ->evt1;
       end
@@ -24,13 +24,18 @@ class Foo;
       end
     join_none
   endtask
-endclass
 
-task bar(Foo foo);
-  $display("foo's m_member: %d", foo.m_member);
-  if (foo.m_member != 1)
-    $stop;
-endtask
+  static task bar(Foo foo);
+    fork
+      begin
+        foo.m_member++;
+        $display("foo's m_member: %d", foo.m_member);
+        if (foo.m_member != 2)
+          $stop;
+      end
+    join_none
+  endtask
+endclass
 
 module t();
   initial begin
