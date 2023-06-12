@@ -2196,6 +2196,7 @@ extern IData VL_DIST_UNIFORM(IData& seedr, IData ustart, IData uend) VL_MT_SAFE;
 // Conversion functions
 
 extern std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_PURE;
+extern std::string VL_CVT_PACK_STR_ND(const VlQueue<std::string>& q) VL_PURE;
 inline std::string VL_CVT_PACK_STR_NQ(QData lhs) VL_PURE {
     VlWide<VL_WQ_WORDS_E> lw;
     VL_SET_WQ(lw, lhs);

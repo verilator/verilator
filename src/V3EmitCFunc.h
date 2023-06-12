@@ -1026,6 +1026,7 @@ public:
         UASSERT_OBJ(!emitSimpleOk(nodep), nodep, "Triop cannot be described in a simple way");
         emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nodep->thsp());
     }
+    void visit(AstCvtPackString* nodep) override { emitCvtPackStr(nodep->lhsp()); }
     void visit(AstRedXor* nodep) override {
         if (nodep->lhsp()->isWide()) {
             visit(static_cast<AstNodeUniop*>(nodep));

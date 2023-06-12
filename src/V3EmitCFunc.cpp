@@ -452,6 +452,10 @@ void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
         putbs("std::string{");
         putsQuoted(constp->num().toString());
         puts("}");
+    } else if (VN_IS(nodep->dtypep(), StreamDType)) {
+        putbs("VL_CVT_PACK_STR_ND(");
+        iterateAndNextConstNull(nodep);
+        puts(")");
     } else {
         putbs("VL_CVT_PACK_STR_N");
         emitIQW(nodep);
