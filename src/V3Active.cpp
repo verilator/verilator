@@ -334,8 +334,7 @@ private:
             m_graph.addPathVertex(branchp, "ELSE");
             iterateAndNextConstNull(nodep->elsesp());
             m_graph.currentp(parentp);
-        }
-        else {
+        } else {
             iterateChildrenConst(nodep);
         }
     }
