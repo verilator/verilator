@@ -872,7 +872,7 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullIData(uint32_t* oldp, IData newval, int
 template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullQData(uint32_t* oldp, QData newval, int bits) {
     const uint32_t code = oldp - m_sigs_oldvalp;
-    *reinterpret_cast<QData*>(oldp) = newval;
+    std::memcpy(oldp, &newval, sizeof(newval));
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
     emitQData(code, newval, bits);
 }
@@ -888,7 +888,7 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullWData(uint32_t* oldp, const WData* newv
 template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullDouble(uint32_t* oldp, double newval) {
     const uint32_t code = oldp - m_sigs_oldvalp;
-    *reinterpret_cast<double*>(oldp) = newval;
+    std::memcpy(oldp, &newval, sizeof(newval));
     if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
     // cppcheck-suppress invalidPointerCast
     emitDouble(code, newval);
