@@ -2166,13 +2166,11 @@ private:
             AstNodeExpr* const srcp = nodep->rhsp()->unlinkFrBack();
             // Connect the rhs to the stream operator and update its width
             VN_AS(streamp, StreamL)->lhsp(srcp);
-            if (VN_IS(srcp->dtypep(), DynArrayDType)
-                || VN_IS(srcp->dtypep(), QueueDType)
+            if (VN_IS(srcp->dtypep(), DynArrayDType) || VN_IS(srcp->dtypep(), QueueDType)
                 || VN_IS(srcp->dtypep(), UnpackArrayDType)) {
                 streamp->dtypeSetStream();
             } else {
-                streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(),
-                                              VSigning::UNSIGNED);
+                streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
             }
             // Shrink the RHS if necessary
             if (sWidth > dWidth) {
