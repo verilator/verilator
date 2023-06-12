@@ -68,7 +68,6 @@ private:
             if (varp->name() == refp->name()) break;
         if (!varp) {
             // Create a local copy for a capture
-            UINFO(1, "REFFF: " << refp << "\n");
             varp = new AstVar{refp->fileline(), VVarType::BLOCKTEMP, refp->name(), refp->dtypep()};
             varp->direction(VDirection::INPUT);
             varp->funcLocal(true);
