@@ -29,6 +29,8 @@ else {
         check_finished => 1,
         );
 
+# Make sure that there are no additional messages (such as runtime messages
+# regarding about undefined behavior).
     files_identical("$Self->{obj_dir}/vlt_sim.log", $Self->{golden_filename}, "logfile");
 }
 
