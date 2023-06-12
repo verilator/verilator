@@ -178,7 +178,7 @@ private:
         if (m_forkDepth && (m_forkLocalsp.count(nodep->varp()) == 0)
             && !nodep->varp()->lifetime().isStatic()) {
             if (nodep->access().isWriteOrRW()) {
-                nodep->v3warn(E_TASKNSVAR,
+                nodep->v3warn(E_LIFETIME,
                               "Invalid reference: Process might outlive variable `"
                                   << nodep->varp()->name()
                                   << "`. Use it as read-only to initialize a "

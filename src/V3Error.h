@@ -60,6 +60,7 @@ public:
         I_TRACING,      // Tracing is on/off from /*verilator tracing_on/off*/
         I_UNUSED,       // Unused genvar, parameter or signal message (Backward Compatibility)
         // Error codes:
+        E_LIFETIME,     // Error: Reference to a variable might outlive the variable.
         E_NEEDTIMINGOPT,  // Error: --timing/--no-timing option not specified
         E_NOTIMING,     // Timing control encountered with --no-timing
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
@@ -183,7 +184,7 @@ public:
             // Boolean
             " I_CELLDEFINE", " I_COVERAGE",  " I_DEF_NETTYPE_WIRE", " I_LINT", " I_TIMING", " I_TRACING", " I_UNUSED",
             // Errors
-            "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT", "TASKNSVAR", "UNSUPPORTED",
+            "LIFETIME", "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT", "TASKNSVAR", "UNSUPPORTED",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
