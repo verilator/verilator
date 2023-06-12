@@ -182,12 +182,14 @@ private:
             && !nodep->varp()->lifetime().isStatic()) {
             if (nodep->access().isWriteOrRW()
                 && (!nodep->isClassHandleValue() || nodep->user2())) {
-                nodep->v3warn(E_LIFETIME, "Invalid reference: Process might outlive variable `"
-                                              << nodep->varp()->name()
-                                              << "`. Use it as read-only to initialize a "
-                                                 "local copy at the beginning of the process, or "
-                                                 "declare it as static. It is also possible to "
-                                                 "refer by reference to `this` object's members.");
+                nodep->v3warn(
+                    E_LIFETIME,
+                    "Invalid reference: Process might outlive variable `"
+                        << nodep->varp()->name() << "`.\n"
+                        << nodep->varp()->warnMore()
+                        << "... Suggest use it as read-only to initialize a local copy at the "
+                           "beginning of the process, or declare it as static. It is also "
+                           "possible to refer by reference to objects and their members.");
                 return;
             }
             UASSERT_OBJ(
