@@ -447,7 +447,9 @@ public:
         if (VL_UNLIKELY(diff)) fullIData(oldp, newval, bits);
     }
     VL_ATTR_ALWINLINE void chgQData(uint32_t* oldp, QData newval, int bits) {
-        const uint64_t diff = *reinterpret_cast<QData*>(oldp) ^ newval;
+        QData old;
+        memcpy(&old, oldp, sizeof(old));
+        const uint64_t diff = old ^ newval;
         if (VL_UNLIKELY(diff)) fullQData(oldp, newval, bits);
     }
     VL_ATTR_ALWINLINE void chgWData(uint32_t* oldp, const WData* newvalp, int bits) {
@@ -460,8 +462,9 @@ public:
     }
     VL_ATTR_ALWINLINE void chgEvent(uint32_t* oldp, VlEvent newval) { fullEvent(oldp, newval); }
     VL_ATTR_ALWINLINE void chgDouble(uint32_t* oldp, double newval) {
-        // cppcheck-suppress invalidPointerCast
-        if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) fullDouble(oldp, newval);
+        double old;
+        memcpy(&old, oldp, sizeof(old));
+        if (VL_UNLIKELY(old != newval)) fullDouble(oldp, newval);
     }
 };
 
