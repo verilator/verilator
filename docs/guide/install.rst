@@ -219,11 +219,12 @@ Git directory, then execute ``$VERILATOR_ROOT/bin/verilator``, which will
 find the path to all needed files.
 
 
-2. Install into a specific location
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2. Install into a Specific Prefix
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You may eventually be installing onto a project/company-wide "CAD" tools
-disk that may support multiple versions of every tool. Tell configure the
+You may be an OS package maintainer building a Verilator package, or you
+may eventually be installing onto a project/company-wide "CAD" tools disk
+that may support multiple versions of every tool. Tell configure the
 eventual destination directory name.  We recommend that the destination
 location include the Verilator version name:
 
@@ -248,23 +249,7 @@ following:
    prepend-path PKG_CONFIG_PATH $install_root/share/pkgconfig
 
 
-3. Install into a Specific Prefix
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-You may eventually install Verilator into a specific installation prefix,
-as follows. This option is typically only used by OS package maintainers.
-
-::
-
-   unset VERILATOR_ROOT      # if your shell is bash
-   unsetenv VERILATOR_ROOT   # if your shell is csh
-   ./configure --prefix /opt/verilator-VERSION
-
-Then after installing (below steps), you will need to add
-``/opt/verilator-VERSION/bin`` to your ``$PATH`` environment variable.
-
-
-4. Install System Globally
+3. Install System Globally
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The final option is to eventually install Verilator globally, using
