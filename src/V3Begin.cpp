@@ -40,6 +40,39 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 
+class RenameStaticVisitor final : public VNVisitor {
+private:
+    // STATE
+    const std::set<AstVar*>& m_staticFuncVarsr;  // Static variables from m_ftaskp
+    AstNodeFTask* const m_ftaskp;  // Current function/task
+
+    // VISITORS
+    void visit(AstVarRef* nodep) override {
+        const auto it = m_staticFuncVarsr.find(nodep->varp());
+        if (it != m_staticFuncVarsr.end()) nodep->name((*it)->name());
+        iterateChildren(nodep);
+    }
+
+    void visit(AstInitialStatic* nodep) override {
+        iterateChildren(nodep);
+        nodep->unlinkFrBack();
+        m_ftaskp->addHereThisAsNext(nodep);
+    }
+
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    RenameStaticVisitor(std::set<AstVar*>& staticFuncVars, AstNodeFTask* ftaskp, AstNode* nodep)
+        : m_staticFuncVarsr(staticFuncVars)
+        , m_ftaskp(ftaskp) {
+        iterateChildren(nodep);
+    }
+    ~RenameStaticVisitor() override = default;
+};
+
+//######################################################################
+
 class BeginState final {
 private:
     // NODE STATE
@@ -78,6 +111,7 @@ private:
 
     string dot(const string& a, const string& b) {
         if (a == "") return b;
+        if (b == "") return a;
         return a + "__DOT__" + b;
     }
 
@@ -120,25 +154,6 @@ private:
         } else {
             // Move to module
             m_modp->addStmtsp(nodep);
-        }
-    }
-
-    void renameAndStaticsRecurse(AstNode* const nodep) {
-        // Rename references and move InitialStatic items
-        if (AstVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
-            const auto it = m_staticFuncVars.find(varrefp->varp());
-            if (it != m_staticFuncVars.end()) varrefp->name((*it)->name());
-        }
-
-        if (nodep->op1p()) renameAndStaticsRecurse(nodep->op1p());
-        if (nodep->op2p()) renameAndStaticsRecurse(nodep->op2p());
-        if (nodep->op3p()) renameAndStaticsRecurse(nodep->op3p());
-        if (nodep->op4p()) renameAndStaticsRecurse(nodep->op4p());
-        if (nodep->nextp()) renameAndStaticsRecurse(nodep->nextp());
-
-        if (VN_IS(nodep, InitialStatic)) {
-            nodep->unlinkFrBack();
-            m_ftaskp->addHereThisAsNext(nodep);
         }
     }
 
@@ -197,7 +212,7 @@ private:
             m_ftaskp = nodep;
             m_liftedp = nullptr;
             iterateChildren(nodep);
-            renameAndStaticsRecurse(nodep);
+            RenameStaticVisitor{m_staticFuncVars, m_ftaskp, nodep};
             if (m_liftedp) {
                 // Place lifted nodes at beginning of stmtsp, so Var nodes appear before referenced
                 if (AstNode* const stmtsp = nodep->stmtsp()) {
@@ -246,7 +261,8 @@ private:
     void visit(AstVar* nodep) override {
         // If static variable, move it outside a function.
         if (nodep->lifetime().isStatic() && m_ftaskp) {
-            const std::string newName = m_ftaskp->name() + "__Vstatic__" + nodep->name();
+            const std::string newName
+                = m_ftaskp->name() + "__Vstatic__" + dot(m_unnamedScope, nodep->name());
             nodep->name(newName);
             nodep->unlinkFrBack();
             m_ftaskp->addHereThisAsNext(nodep);
@@ -392,5 +408,5 @@ void V3Begin::debeginAll(AstNetlist* nodep) {
         { BeginVisitor{nodep, &state}; }
         if (state.anyFuncInBegin()) { BeginRelinkVisitor{nodep, &state}; }
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("begin", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("begin", 0, dumpTreeLevel() >= 3);
 }

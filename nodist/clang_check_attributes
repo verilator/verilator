@@ -33,6 +33,26 @@ def fully_qualified_name(node):
     return [node.displayname] if node.displayname else []
 
 
+# Returns True, if `class_node` contains node
+# that matches `member` spelling
+def check_class_member_exists(class_node, member):
+    for child in class_node.get_children():
+        if member.spelling == child.spelling:
+            return True
+    return False
+
+
+# Returns Base class (if found) of `class_node`
+# that is of type `base_type`
+def get_base_class(class_node, base_type):
+    for child in class_node.get_children():
+        if child.kind is CursorKind.CXX_BASE_SPECIFIER:
+            base_class = child.type
+            if base_type.spelling == base_class.spelling:
+                return base_class
+    return None
+
+
 @dataclass
 class VlAnnotations:
     mt_start: bool = False
@@ -251,7 +271,10 @@ class CallAnnotationsValidator:
         self._call_location: Optional[FunctionInfo] = None
         self._caller: Optional[FunctionInfo] = None
         self._level: int = 0
-        self._constructor_context: int = 0
+        self._constructor_context: list[clang.cindex.Cursor] = []
+
+    def is_constructor_context(self):
+        return len(self._constructor_context) > 0
 
     def compile_and_analyze_file(self, source_file: str,
                                  compiler_args: list[str],
@@ -341,7 +364,7 @@ class CallAnnotationsValidator:
                     return None
 
             refn = find_object_ref(node)
-            if self._constructor_context and not refn:
+            if self.is_constructor_context() and not refn:
                 # we are in constructor and no object reference means
                 # we are calling local method. It is MT safe
                 # only if this method is also only calling local methods or
@@ -353,20 +376,44 @@ class CallAnnotationsValidator:
             elif refn and refn.kind == CursorKind.MEMBER_REF_EXPR and refn.referenced:
                 refn = refn.referenced
                 refna = VlAnnotations.from_nodes_list(refn.get_children())
-                if refna.guarded or self._constructor_context:
+                if refna.guarded:
                     is_mt_safe = True
+                if self.is_constructor_context() and refn.semantic_parent:
+                    # we are in constructor, so calling local members is MT_SAFE,
+                    # make sure object that we are calling is local to the constructor
+                    constructor_class = self._constructor_context[
+                        -1].semantic_parent
+                    if refn.semantic_parent.spelling == constructor_class.spelling:
+                        if check_class_member_exists(constructor_class, refn):
+                            is_mt_safe = True
+                    else:
+                        # check if this class inherits from some base class
+                        base_class = get_base_class(constructor_class,
+                                                    refn.semantic_parent)
+                        if base_class:
+                            if check_class_member_exists(
+                                    base_class.get_declaration(), refn):
+                                is_mt_safe = True
             # variable
             elif refn and refn.kind == CursorKind.DECL_REF_EXPR and refn.referenced:
-                # This is probably a local or an argument.
-                # Calling methods on local pointers or references is MT-safe,
-                # but on argument pointers or references is not.
-                if "*" not in refn.type.spelling and "&" not in refn.type.spelling:
-                    is_mt_safe = True
-                # local variable
-                if refn.referenced.kind == CursorKind.VAR_DECL:
-                    is_mt_safe = True
+                if refn.get_definition():
+                    if refn.referenced.semantic_parent:
+                        if refn.referenced.semantic_parent.kind in [
+                                CursorKind.FUNCTION_DECL, CursorKind.CXX_METHOD
+                        ]:
+                            # This is a local or an argument.
+                            # Calling methods on local pointers or references is MT-safe,
+                            # but on argument pointers or references is not.
+                            if "*" not in refn.type.spelling and "&" not in refn.type.spelling:
+                                is_mt_safe = True
+                            # local variable
+                            if refn.referenced.kind == CursorKind.VAR_DECL:
+                                is_mt_safe = True
+                else:
+                    # Global variable in different translation unit, unsafe
+                    pass
             elif refn and refn.kind == CursorKind.CALL_EXPR:
-                if self._constructor_context:
+                if self.is_constructor_context():
                     # call to local function from constructor context
                     # safe if this function also calling local methods or
                     # MT-safe methods
@@ -442,18 +489,18 @@ class CallAnnotationsValidator:
 
         # Constructors are OK in MT-safe context
         # only if they call local methods or MT-safe functions.
-        if ctx.is_mt_safe_context() or self._constructor_context:
-            self._constructor_context += 1
+        if ctx.is_mt_safe_context() or self.is_constructor_context():
+            self._constructor_context.append(refd)
             self.iterate_children(refd.get_children(),
                                   self.dispatch_node_inside_definition)
-            self._constructor_context -= 1
+            self._constructor_context.pop()
 
         # stable tree context
         if ctx.is_stabe_tree_context():
-            self._constructor_context += 1
+            self._constructor_context.append(refd)
             self.iterate_children(refd.get_children(),
                                   self.dispatch_node_inside_definition)
-            self._constructor_context -= 1
+            self._constructor_context.pop()
 
         # pure context
         if ctx.is_pure_context():

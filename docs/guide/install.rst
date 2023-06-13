@@ -39,7 +39,7 @@ In brief, to install from git:
 ::
 
    # Prerequisites:
-   #sudo apt-get install git perl python3 make autoconf g++ flex bison ccache
+   #sudo apt-get install git help2man perl python3 make autoconf g++ flex bison ccache
    #sudo apt-get install libgoogle-perftools-dev numactl perl-doc
    #sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
    #sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
@@ -104,6 +104,7 @@ for good performance:
 ::
 
    sudo apt-get install ccache  # If present at build, needed for run
+   sudo apt-get install mold  # If present at build, needed for run
    sudo apt-get install libgoogle-perftools-dev numactl
 
 The following is optional but is recommended for nicely rendered command line
@@ -124,9 +125,9 @@ Those developing Verilator itself may also want these (see internals.rst):
 
 ::
 
-   sudo apt-get install gdb graphviz cmake clang clang-format-14 gprof lcov
+   sudo apt-get install clang clang-format-14 cmake gdb gprof graphviz lcov
    sudo apt-get install libclang-dev yapf3
-   sudo pip3 install clang sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe
+   sudo pip3 install clang sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe ruff
    cpan install Pod::Perldoc
    cpan install Parallel::Forker
 
@@ -201,8 +202,9 @@ These are the installation options:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Our personal favorite is to always run Verilator in-place from its Git
-directory. This allows the easiest experimentation and upgrading, and
-allows many versions of Verilator to co-exist on a system.
+directory (don't run ``make install``). This allows the easiest
+experimentation and upgrading, and allows many versions of Verilator to
+co-exist on a system.
 
 ::
 
@@ -211,17 +213,18 @@ allows many versions of Verilator to co-exist on a system.
    ./configure
    # Running will use files from $VERILATOR_ROOT, so no install needed
 
-Note after installing (below steps), a calling program or shell must set
-the environment variable :option:`VERILATOR_ROOT` to point to this Git
-directory, then execute ``$VERILATOR_ROOT/bin/verilator``, which will find
-the path to all needed files.
+Note after installing (see `Installation`_), a calling program or shell
+must set the environment variable :option:`VERILATOR_ROOT` to point to this
+Git directory, then execute ``$VERILATOR_ROOT/bin/verilator``, which will
+find the path to all needed files.
 
 
-2. Install into a specific location
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2. Install into a Specific Prefix
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You may eventually be installing onto a project/company-wide "CAD" tools
-disk that may support multiple versions of every tool. Tell configure the
+You may be an OS package maintainer building a Verilator package, or you
+may eventually be installing onto a project/company-wide "CAD" tools disk
+that may support multiple versions of every tool. Tell configure the
 eventual destination directory name.  We recommend that the destination
 location include the Verilator version name:
 
@@ -232,7 +235,8 @@ location include the Verilator version name:
    # For the tarball, use the version number instead of git describe
    ./configure --prefix /CAD_DISK/verilator/`git describe | sed "s/verilator_//"`
 
-Note after installing (below steps), if you use `modulecmd
+Note after installing (see `Installation`_), you need to add the path to
+the ``bin`` directory to your ``PATH``. Or, if you use `modulecmd
 <http://modules.sourceforge.net/>`__, you'll want a module file like the
 following:
 
@@ -245,23 +249,7 @@ following:
    prepend-path PKG_CONFIG_PATH $install_root/share/pkgconfig
 
 
-3. Install into a Specific Path
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-You may eventually install Verilator into a specific installation prefix,
-as most GNU tools support:
-
-::
-
-   unset VERILATOR_ROOT      # if your shell is bash
-   unsetenv VERILATOR_ROOT   # if your shell is csh
-   ./configure --prefix /opt/verilator-VERSION
-
-Then after installing (below steps), you will need to add
-``/opt/verilator-VERSION/bin`` to your ``$PATH`` environment variable.
-
-
-4. Install System Globally
+3. Install System Globally
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The final option is to eventually install Verilator globally, using
@@ -273,8 +261,8 @@ configure's default system paths:
    unsetenv VERILATOR_ROOT   # if your shell is csh
    ./configure
 
-Then after installing (below), the binaries should be in a location
-already in your ``$PATH`` environment variable.
+Then after installing (see `Installation`_), the binaries should be in a
+location already in your ``$PATH`` environment variable.
 
 
 Configure

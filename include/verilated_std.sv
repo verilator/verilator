@@ -26,10 +26,6 @@
 // verilator lint_off TIMESCALEMOD
 // verilator lint_off UNUSEDSIGNAL
 package std;
-   // The process class is not implemented, but it's predeclared here,
-   // so the linter accepts references to it.
-   typedef class process;
-
    class mailbox #(type T);
       protected int m_bound;
       protected T m_queue[$];
@@ -45,7 +41,7 @@ package std;
       task put(T message);
 `ifdef VERILATOR_TIMING
          if (m_bound != 0)
-           wait (m_queue.size() < m_bound);
+            wait (m_queue.size() < m_bound);
          m_queue.push_back(message);
 `endif
       endtask
@@ -117,43 +113,80 @@ package std;
    endclass
 
    class process;
-      typedef enum { FINISHED, RUNNING, WAITING, SUSPENDED, KILLED } state;
-      static process _s_global_process;
+      typedef enum {
+         FINISHED  = 0,
+         RUNNING   = 1,
+         WAITING   = 2,
+         SUSPENDED = 3,
+         KILLED    = 4
+      } state;
+
+`ifdef VERILATOR_TIMING
+      // Width visitor changes it to VlProcessRef
+      protected chandle m_process;
+`endif
+
       static function process self();
-         // Unsupported, emulating with single process' state
-         if (!_s_global_process) _s_global_process = new;
-         return _s_global_process;
+         process p = new;
+`ifdef VERILATOR_TIMING
+         $c(p.m_process, " = vlProcess;");
+`endif
+         return p;
       endfunction
+
+      protected function void set_status(state s);
+`ifdef VERILATOR_TIMING
+         $c(m_process, "->state(", s, ");");
+`endif
+      endfunction
+
       function state status();
-         // Unsupported, emulating with single process' state
+`ifdef VERILATOR_TIMING
+         return state'($c(m_process, "->state()"));
+`else
          return RUNNING;
+`endif
       endfunction
+
       function void kill();
-         $error("std::process::kill() not supported");
+         set_status(KILLED);
       endfunction
-      task await();
-         $error("std::process::await() not supported");
-      endtask
+
       function void suspend();
          $error("std::process::suspend() not supported");
       endfunction
+
       function void resume();
-         $error("std::process::resume() not supported");
+         set_status(RUNNING);
       endfunction
-      // When really implemented, srandom must operates on the process, but for
+
+      task await();
+`ifdef VERILATOR_TIMING
+         wait (status() == FINISHED || status() == KILLED);
+`endif
+      endtask
+
+      // When really implemented, srandom must operate on the process, but for
       // now rely on the srandom() that is automatically generated for all
       // classes.
+      //
       // function void srandom(int seed);
       // endfunction
+
+      // The methods below work only if set_randstate is never applied to
+      // a state string created before another such string. Full support
+      // could use VlRNG class to store the state per process in VlProcess
+      // objects.
       function string get_randstate();
-         // Could operate on all proceses for now
-         // No error, as harmless until set_randstate is called
-         return "NOT_SUPPORTED";
+         string s;
+
+         s.itoa($random);  // Get a random number
+         set_randstate(s);  // Pretend it's the state of RNG
+         return s;
       endfunction
-      function void set_randstate(string randstate);
-         $error("std::process::set_randstate() not supported");
-         // Could operate on all proceses for now
+
+      function void set_randstate(string s);
+         $urandom(s.atoi());  // Set the seed using a string
       endfunction
    endclass
-
 endpackage

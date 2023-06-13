@@ -1214,9 +1214,11 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
     // Process procedures per statement (unless profCFuncs), so we can split CFuncs within
     // procedures. Everything else is handled in one go
     bool suspendable = false;
+    bool needProcess = false;
     bool slow = m_slow;
     if (AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure)) {
         suspendable = procp->isSuspendable();
+        needProcess = procp->needProcess();
         if (suspendable) slow = slow && !VN_IS(procp, Always);
         nodep = procp->stmtsp();
         pushDeletep(procp);
@@ -1241,6 +1243,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
             const string name = cfuncName(modp, domainp, scopep, nodep);
             newFuncpr
                 = new AstCFunc{nodep->fileline(), name, scopep, suspendable ? "VlCoroutine" : ""};
+            if (needProcess) newFuncpr->setNeedProcess();
             newFuncpr->isStatic(false);
             newFuncpr->isLoose(true);
             newFuncpr->slow(slow);
@@ -1416,7 +1419,7 @@ void OrderProcess::processMTasks() {
 
 void OrderProcess::process(bool multiThreaded) {
     // Dump data
-    if (dumpGraph()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_pre");
+    if (dumpGraphLevel()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_pre");
 
     // Break cycles. Each strongly connected subgraph (including cutable
     // edges) will have its own color, and corresponds to a loop in the
@@ -1424,27 +1427,27 @@ void OrderProcess::process(bool multiThreaded) {
     // edges are actually still there, just with weight 0).
     UINFO(2, "  Acyclic & Order...\n");
     m_graph.acyclic(&V3GraphEdge::followAlwaysTrue);
-    if (dumpGraph()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_acyc");
+    if (dumpGraphLevel()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_acyc");
 
     // Assign ranks so we know what to follow
     // Then, sort vertices and edges by that ordering
     m_graph.order();
-    if (dumpGraph()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_order");
+    if (dumpGraphLevel()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_order");
 
     // Assign logic vertices to new domains
     UINFO(2, "  Domains...\n");
     processDomains();
-    if (dumpGraph()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_domain");
+    if (dumpGraphLevel()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_domain");
 
-    if (dump()) processEdgeReport();
+    if (dumpLevel()) processEdgeReport();
 
     if (!multiThreaded) {
         UINFO(2, "  Construct Move Graph...\n");
         processMoveBuildGraph();
         // Different prefix (ordermv) as it's not the same graph
-        if (dumpGraph() >= 4) m_pomGraph.dumpDotFilePrefixed(m_tag + "_ordermv_start");
+        if (dumpGraphLevel() >= 4) m_pomGraph.dumpDotFilePrefixed(m_tag + "_ordermv_start");
         m_pomGraph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
-        if (dumpGraph() >= 4) m_pomGraph.dumpDotFilePrefixed(m_tag + "_ordermv_simpl");
+        if (dumpGraphLevel() >= 4) m_pomGraph.dumpDotFilePrefixed(m_tag + "_ordermv_simpl");
 
         UINFO(2, "  Move...\n");
         processMove();
@@ -1454,7 +1457,7 @@ void OrderProcess::process(bool multiThreaded) {
     }
 
     // Dump data
-    if (dumpGraph()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_done");
+    if (dumpGraphLevel()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_done");
 }
 
 //######################################################################

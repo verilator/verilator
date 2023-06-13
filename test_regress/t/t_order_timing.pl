@@ -12,21 +12,16 @@ scenarios(simulator => 1);
 
 $Self->{main_time_multiplier} = 1e-8 / 1e-9;
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    top_filename("t/t_order.v");
+top_filename("t/t_order.v");
 
-    compile(
-        timing_loop => 1,
-        verilator_flags2 => ["--timescale 10ns/1ns --timing"],
-        );
+compile(
+    timing_loop => 1,
+    verilator_flags2 => ["--timescale 10ns/1ns --timing"],
+    );
 
-    execute(
-        check_finished => 1,
-        );
-}
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

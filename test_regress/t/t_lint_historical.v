@@ -7,6 +7,7 @@
 module t;
    // Test all warnings, including those that are historically removed still parse
    // verilator lint_off ALWCOMBORDER
+   // verilator lint_off ASCRANGE
    // verilator lint_off ASSIGNDLY
    // verilator lint_off ASSIGNIN
    // verilator lint_off BADSTDPRAGMA
@@ -24,13 +25,14 @@ module t;
    // verilator lint_off CMPCONST
    // verilator lint_off COLONPLUS
    // verilator lint_off COMBDLY
+   // verilator lint_off CONSTRAINTIGN
    // verilator lint_off CONTASSREG
-   // verilator lint_off DEFPARAM
    // verilator lint_off DECLFILENAME
+   // verilator lint_off DEFPARAM
    // verilator lint_off DEPRECATED
-   // verilator lint_off RISEFALLDLY
-   // verilator lint_off MINTYPMAXDLY
+   // verilator lint_off ENCAPSULATED
    // verilator lint_off ENDLABEL
+   // verilator lint_off ENUMVALUE
    // verilator lint_off EOFNEWLINE
    // verilator lint_off GENCLK
    // verilator lint_off HIERBLOCK
@@ -38,6 +40,7 @@ module t;
    // verilator lint_off IGNOREDRETURN
    // verilator lint_off IMPERFECTSCH
    // verilator lint_off IMPLICIT
+   // verilator lint_off IMPLICITSTATIC
    // verilator lint_off IMPORTSTAR
    // verilator lint_off IMPURE
    // verilator lint_off INCABSPATH
@@ -45,10 +48,12 @@ module t;
    // verilator lint_off INITIALDLY
    // verilator lint_off INSECURE
    // verilator lint_off LATCH
-   // verilator lint_off ASCRANGE
+   // verilator lint_off LITENDIAN
+   // verilator lint_off MINTYPMAXDLY
    // verilator lint_off MODDUP
    // verilator lint_off MULTIDRIVEN
    // verilator lint_off MULTITOP
+   // verilator lint_off NEWERSTD
    // verilator lint_off NOLATCH
    // verilator lint_off NULLPORT
    // verilator lint_off PINCONNECTEMPTY
@@ -62,9 +67,11 @@ module t;
    // verilator lint_off RANDC
    // verilator lint_off REALCVT
    // verilator lint_off REDEFMACRO
+   // verilator lint_off RISEFALLDLY
    // verilator lint_off SELRANGE
    // verilator lint_off SHORTREAL
    // verilator lint_off SPLITVAR
+   // verilator lint_off STATICVAR
    // verilator lint_off STMTDLY
    // verilator lint_off SYMRSVDWORD
    // verilator lint_off SYNCASYNCNET
@@ -87,6 +94,9 @@ module t;
    // verilator lint_off WAITCONST
    // verilator lint_off WIDTH
    // verilator lint_off WIDTHCONCAT
+   // verilator lint_off WIDTHEXPAND
+   // verilator lint_off WIDTHTRUNC
+   // verilator lint_off WIDTHXZEXPAND
    // verilator lint_off ZERODLY
 
 endmodule

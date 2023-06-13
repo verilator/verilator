@@ -2463,7 +2463,7 @@ public:
             }
         }
 
-        if (dumpGraph() >= 4) schedule.dumpDotFilePrefixedAlways(mtaskGraph, "schedule");
+        if (dumpGraphLevel() >= 4) schedule.dumpDotFilePrefixedAlways(mtaskGraph, "schedule");
 
         return schedule;
     }
@@ -2528,7 +2528,7 @@ private:
 // V3Partition implementation
 
 void V3Partition::debugMTaskGraphStats(const V3Graph* graphp, const string& stage) {
-    if (!debug() && !dump() && !dumpGraph()) return;
+    if (!debug() && !dumpLevel() && !dumpGraphLevel()) return;
 
     UINFO(4, "\n");
     UINFO(4, " Stats for " << stage << endl);
@@ -2565,7 +2565,7 @@ void V3Partition::debugMTaskGraphStats(const V3Graph* graphp, const string& stag
     if (mtaskCount < 1000) {
         string filePrefix("ordermv_");
         filePrefix += stage;
-        if (dumpGraph() >= 4) graphp->dumpDotFilePrefixedAlways(filePrefix);
+        if (dumpGraphLevel() >= 4) graphp->dumpDotFilePrefixedAlways(filePrefix);
     }
 
     // Look only at the cost of each mtask, neglect communication cost.
@@ -2740,7 +2740,7 @@ void V3Partition::go(V3Graph* mtasksp) {
     // For debug: print out the longest critical path.  This allows us to
     // verify that the costs look reasonable, that we aren't combining
     // nodes that should probably be split, etc.
-    if (dump() >= 3) LogicMTask::dumpCpFilePrefixed(mtasksp, "cp");
+    if (dumpLevel() >= 3) LogicMTask::dumpCpFilePrefixed(mtasksp, "cp");
 
     // Merge nodes that could present data hazards; see comment within.
     {
@@ -3227,6 +3227,7 @@ void V3Partition::finalize(AstNetlist* netlistp) {
 }
 
 void V3Partition::selfTest() {
+    UINFO(2, __FUNCTION__ << ": " << endl);
     PartPropagateCpSelfTest::selfTest();
     PartPackMTasks::selfTest();
     PartContraction::selfTest();

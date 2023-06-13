@@ -86,6 +86,7 @@ private:
     bool m_recursive : 1;  // Recursive or part of recursion
     bool m_underGenerate : 1;  // Under generate (for warning)
     bool m_virtual : 1;  // Virtual method in class
+    bool m_fromStd : 1;  // Part of std
     VLifetime m_lifetime;  // Lifetime
 protected:
     AstNodeFTask(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)
@@ -110,7 +111,8 @@ protected:
         , m_pureVirtual{false}
         , m_recursive{false}
         , m_underGenerate{false}
-        , m_virtual{false} {
+        , m_virtual{false}
+        , m_fromStd{false} {
         addStmtsp(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
     }
@@ -170,6 +172,8 @@ public:
     bool underGenerate() const { return m_underGenerate; }
     void isVirtual(bool flag) { m_virtual = flag; }
     bool isVirtual() const { return m_virtual; }
+    void isFromStd(bool flag) { m_fromStd = flag; }
+    bool isFromStd() const { return m_fromStd; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
@@ -272,10 +276,13 @@ public:
 class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
     // @astgen op2 := stmtsp : List[AstNode] // Note: op1 is used in some sub-types only
-    bool m_suspendable = false;  // Is suspendable by a Delay, EventControl, etc.
+    bool m_suspendable : 1;  // Is suspendable by a Delay, EventControl, etc.
+    bool m_needProcess : 1;  // Implements part of a process that allocates std::process
 protected:
     AstNodeProcedure(VNType t, FileLine* fl, AstNode* stmtsp)
         : AstNode{t, fl} {
+        m_needProcess = false;
+        m_suspendable = false;
         addStmtsp(stmtsp);
     }
 
@@ -286,6 +293,8 @@ public:
     bool isJustOneBodyStmt() const { return stmtsp() && !stmtsp()->nextp(); }
     bool isSuspendable() const { return m_suspendable; }
     void setSuspendable() { m_suspendable = true; }
+    bool needProcess() const { return m_needProcess; }
+    void setNeedProcess() { m_needProcess = true; }
 };
 class AstNodeRange VL_NOT_FINAL : public AstNode {
     // A range, sized or unsized
@@ -308,8 +317,6 @@ public:
     // METHODS
     void addNextStmt(AstNode* newp,
                      AstNode* belowp) override;  // Stop statement searchback here
-    void addBeforeStmt(AstNode* newp,
-                       AstNode* belowp) override;  // Stop statement searchback here
     void dump(std::ostream& str = std::cout) const override;
 };
 class AstNodeAssign VL_NOT_FINAL : public AstNodeStmt {
@@ -578,6 +585,7 @@ private:
     bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
     bool m_dpiTraceInit : 1;  // DPI trace_init
+    bool m_needProcess : 1;  // Implements part of a process that allocates std::process
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
@@ -597,6 +605,7 @@ public:
         m_isLoose = false;
         m_isInline = false;
         m_isVirtual = false;
+        m_needProcess = false;
         m_entryPoint = false;
         m_pure = false;
         m_dpiContext = false;
@@ -665,6 +674,8 @@ public:
     void isInline(bool flag) { m_isInline = flag; }
     bool isVirtual() const { return m_isVirtual; }
     void isVirtual(bool flag) { m_isVirtual = flag; }
+    bool needProcess() const { return m_needProcess; }
+    void setNeedProcess() { m_needProcess = true; }
     bool entryPoint() const { return m_entryPoint; }
     void entryPoint(bool flag) { m_entryPoint = flag; }
     bool pure() const { return m_pure; }
@@ -809,6 +820,8 @@ class AstClassExtends final : public AstNode {
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     // @astgen op2 := classOrPkgsp : Optional[AstNode]
     const bool m_isImplements = false;  // class implements
+    bool m_parameterized = false;  // has parameters in its statement
+
 public:
     AstClassExtends(FileLine* fl, AstNode* classOrPkgsp, bool isImplements)
         : ASTGEN_SUPER_ClassExtends(fl)
@@ -819,8 +832,12 @@ public:
     void dump(std::ostream& str) const override;
     bool hasDType() const override { return true; }
     string verilogKwd() const override { return isImplements() ? "implements" : "extends"; }
-    AstClass* classp() const;  // Class being extended (after link)
+    // Class being extended (after link and instantiation if needed)
+    AstClass* classOrNullp() const;
+    AstClass* classp() const;  // Like above, but throws error if nulll
     bool isImplements() const { return m_isImplements; }
+    void parameterized(bool flag) { m_parameterized = flag; }
+    bool parameterized() const { return m_parameterized; }
 };
 class AstClocking final : public AstNode {
     // Parents:  MODULE
@@ -1359,6 +1376,7 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     void name(const string& name) override { m_name = name; }
     void dump(std::ostream& str) const override;
+    bool same(const AstNode* samep) const override;
     string nameDotless() const;
     string nameVlSym() const { return string{"vlSymsp->"} + nameDotless(); }
     AstNodeModule* modp() const { return m_modp; }
@@ -1628,6 +1646,7 @@ class AstVar final : public AstNode {
     bool m_usedLoopIdx : 1;  // Variable subject of for unrolling
     bool m_usedVirtIface : 1;  // Signal used through a virtual interface
     bool m_funcLocal : 1;  // Local variable for a function
+    bool m_funcLocalSticky : 1;  // As m_funcLocal but remains set if var is moved to a static
     bool m_funcReturn : 1;  // Return variable for a function
     bool m_attrScBv : 1;  // User force bit vector attribute
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
@@ -1671,6 +1690,7 @@ class AstVar final : public AstNode {
         m_sigUserRdPublic = false;
         m_sigUserRWPublic = false;
         m_funcLocal = false;
+        m_funcLocalSticky = false;
         m_funcReturn = false;
         m_attrScBv = false;
         m_attrIsolateAssign = false;
@@ -1758,6 +1778,7 @@ public:
     }
     ASTGEN_MEMBERS_AstVar;
     void dump(std::ostream& str) const override;
+    bool same(const AstNode* samep) const override;
     string name() const override VL_MT_STABLE VL_MT_SAFE { return m_name; }  // * = Var name
     bool hasDType() const override { return true; }
     bool maybePointedTo() const override { return true; }
@@ -1833,7 +1854,10 @@ public:
     void isContinuously(bool flag) { m_isContinuously = flag; }
     void isStatic(bool flag) { m_isStatic = flag; }
     void isIfaceParent(bool flag) { m_isIfaceParent = flag; }
-    void funcLocal(bool flag) { m_funcLocal = flag; }
+    void funcLocal(bool flag) {
+        m_funcLocal = flag;
+        if (flag) m_funcLocalSticky = true;
+    }
     void funcReturn(bool flag) { m_funcReturn = flag; }
     void hasStrengthAssignment(bool flag) { m_hasStrengthAssignment = flag; }
     bool hasStrengthAssignment() { return m_hasStrengthAssignment; }
@@ -1915,6 +1939,7 @@ public:
     bool isStatic() const VL_MT_SAFE { return m_isStatic; }
     bool isLatched() const { return m_isLatched; }
     bool isFuncLocal() const { return m_funcLocal; }
+    bool isFuncLocalSticky() const { return m_funcLocalSticky; }
     bool isFuncReturn() const { return m_funcReturn; }
     bool isPullup() const { return m_isPullup; }
     bool isPulldown() const { return m_isPulldown; }
@@ -2000,6 +2025,7 @@ public:
     bool maybePointedTo() const override { return true; }
     string name() const override VL_MT_STABLE { return scopep()->name() + "->" + varp()->name(); }
     void dump(std::ostream& str) const override;
+    bool same(const AstNode* samep) const override;
     bool hasDType() const override { return true; }
     AstVar* varp() const VL_MT_STABLE { return m_varp; }  // [After Link] Pointer to variable
     AstScope* scopep() const VL_MT_STABLE { return m_scopep; }  // Pointer to scope it's under
@@ -3239,8 +3265,6 @@ public:
     bool isGateOptimizable() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     bool same(const AstNode* /*samep*/) const override { return true; }
-    // Stop statement searchback here
-    void addBeforeStmt(AstNode* newp, AstNode* belowp) override;
     // Stop statement searchback here
     void addNextStmt(AstNode* newp, AstNode* belowp) override;
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }

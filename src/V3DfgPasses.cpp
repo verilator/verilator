@@ -285,7 +285,7 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
 
     const auto apply = [&](int dumpLevel, const string& name, std::function<void()> pass) {
         pass();
-        if (dumpDfg() >= dumpLevel) {
+        if (dumpDfgLevel() >= dumpLevel) {
             const string strippedName = VString::removeWhitespace(name);
             const string label
                 = ctx.prefix() + "pass-" + cvtToStr(passNumber) + "-" + strippedName;
@@ -294,7 +294,7 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
         ++passNumber;
     };
 
-    if (dumpDfg() >= 8) dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "input");
+    if (dumpDfgLevel() >= 8) dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "input");
     apply(3, "input           ", [&]() {});
     apply(4, "inlineVars      ", [&]() { inlineVars(dfg); });
     apply(4, "cse0            ", [&]() { cse(dfg, ctx.m_cseContext0); });
@@ -304,5 +304,5 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
         apply(4, "cse1            ", [&]() { cse(dfg, ctx.m_cseContext1); });
     }
     apply(4, "removeVars      ", [&]() { removeVars(dfg, ctx.m_removeVarsContext); });
-    if (dumpDfg() >= 8) dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "optimized");
+    if (dumpDfgLevel() >= 8) dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "optimized");
 }

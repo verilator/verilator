@@ -10,21 +10,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    top_filename("t/t_wait.v");
+top_filename("t/t_wait.v");
 
-    compile(
-        timing_loop => 1,
-        verilator_flags2 => ["--timing -Wno-WAITCONST"],
-        );
+compile(
+    timing_loop => 1,
+    verilator_flags2 => ["--timing -Wno-WAITCONST"],
+    );
 
-    execute(
-        check_finished => 1,
-        );
-}
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

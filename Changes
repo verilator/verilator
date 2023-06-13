@@ -8,6 +8,70 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
+Verilator 5.012 2023-06-13
+==========================
+
+**Major:**
+
+* With -j or --build-jobs, multithread Verilator's emit phase of Verilation. [Kamil Rakoczy, Antmicro Ltd]
+  Additional Verilator-internal stages will become multithreaded over time.
+
+**Minor:**
+
+* Add --main-top-name option for C main TOP name (#4235) (#4249). [Don Williamson]
+* Add creating __inputs.vpp file with --debug (#4177). [Tudor Timi]
+* Add NEWERSTD warning when using feature in newer language standard (#4168) (#4172). [Ethan Sifferman]
+* Add warning that timing controls in DPI exports are unsupported (#4238). [Krzysztof Bieganski, Antmicro Ltd]
+* Support std::process class (#4212). [Aleksander Kiryk, Antmicro Ltd]
+* Support inside expressions with strings and doubles (#4138) (#4139). [Krzysztof Boroński]
+* Support get_randstate/set_randstate class method functions.
+* Support for condition operator on class objects (#4214). [Ryszard Rozak, Antmicro Ltd]
+* Support array max (#4275). [Aleksander Kiryk, Antmicro Ltd]
+* Optimize VPI callValueCbs (#4155). [Hennadii Chernyshchyk]
+* Configure for faster C++ linking using 'mold', if it is installed.
+* Fix crash on duplicate imported modules (#3231). [Robert Balas]
+* Fix false WIDTHEXPAND on array declarations (#3959). [JOTEGO]
+* Fix marking overridden methods as coroutines (#4120) (#4169). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix SystemC signal copy macro use (#4135). [Josep Sans]
+* Fix duplicate static names in blocks in functions (#4144) (#4160). [Stefan Wallentowitz]
+* Fix initialization order of initial static after function/task (#4159). [Kamil Rakoczy, Antmicro Ltd]
+* Fix linking AstRefDType if it has parameterized class ref (#4164) (#4170). [Ryszard Rozak, Antmicro Ltd]
+* Fix crash caused by $display() optimization (#4165) (#4166). [Tudor Timi]
+* Fix arrays of unpacked structs (#4173). [Risto Pejašinović]
+* Fix $fscanf of decimals overflowing variables (#4174). [Ahmed El-Mahmoudy]
+* Fix super.new missing data type (#4147). [Tudor Timi]
+* Fix missing class forward declarations (#4151). [Krzysztof Boroński]
+* Fix hashes of instances of parameterized classes (#4182). [Ryszard Rozak, Antmicro Ltd]
+* Fix forced assignments that override non-continuous assignments (#4183) (#4192). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix wide structure VL_TOSTRING_W generation (#4188) (#4189). [Aylon Chaim Porat]
+* Fix references to members of parameterized base classes (#4196). [Ryszard Rozak, Antmicro Ltd]
+* Fix tracing undefined alignment (#4201) (#4288) [John Wehle]
+* Fix class specific same methods for AstVarScope, AstVar, and AstScope (#4203) (#4250). [John Wehle]
+* Fix dotted references in parameterized classes (#4206). [Ryszard Rozak, Antmicro Ltd]
+* Fix bit selections under parameterized classes (#4210). [Ryszard Rozak, Antmicro Ltd]
+* Fix duplicate std:: declaration with -I (#4215). [Harald Pretl]
+* Fix deep traversal of class inheritance timing (#4216). [Krzysztof Boroński]
+* Fix class parameters of enum types (#4219). [Ryszard Rozak, Antmicro Ltd]
+* Fix static methods with prototypes (#4220). [Ryszard Rozak, Antmicro Ltd]
+* Fix LATCH warning on function local variables (#4221) (#4284) [Julien Margetts]
+* Fix VCD scope types (#4227) (#4282). [Àlex Torregrosa]
+* Fix incorrect multi-driven lint warning (#4231) (#4248). [Adrien Le Masle]
+* Fix missing assignment for wide unpacked structs (#4233). [Jiamin Zhu]
+* Fix unpacked struct == and != operators (#4234) (#4240). [Risto Pejašinović]
+* Fix AstStructSel clean when data type is structure (#4241) (#4244). [Risto Pejašinović]
+* Fix function calls in with statements (#4245). [Ryszard Rozak, Antmicro Ltd]
+* Fix operator == for unpacked struct, if elements are VlUnpacked arrays (#4247). [Risto Pejašinović]
+* Fix STATIC lifetime for variables created from clocking items (#4262). [Krzysztof Boroński]
+* Fix names of foreach blocks (#4264). [Ryszard Rozak, Antmicro Ltd]
+* Fix iterated variables in foreach loops to have VAUTOM lifetimes (#4265). [Krzysztof Boroński]
+* Fix missing assignment for wide class members (#4267). [Jiamin Zhu]
+* Fix the global uses timing flag when forks exist (#4274). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix struct redefinition (#4276). [Aleksander Kiryk, Antmicro Ltd]
+* Fix detection of wire/reg duplicates.
+* Fix false IMPLICITSTATIC on package functions.
+* Fix method calls on function return values.
+
+
 Verilator 5.010 2023-04-30
 ==========================
 

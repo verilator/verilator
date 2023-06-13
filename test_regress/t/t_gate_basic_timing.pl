@@ -12,21 +12,16 @@ scenarios(simulator => 1);
 
 $Self->{main_time_multiplier} = 10e-7 / 10e-9;
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    top_filename("t/t_gate_basic.v");
+top_filename("t/t_gate_basic.v");
 
-    compile(
-        timing_loop => 1,
-        verilator_flags2 => ["--timing --timescale 10ns/1ns -Wno-RISEFALLDLY"],
-        );
+compile(
+    timing_loop => 1,
+    verilator_flags2 => ["--timing --timescale 10ns/1ns -Wno-RISEFALLDLY"],
+    );
 
-    execute(
-        check_finished => 1,
-        );
-}
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

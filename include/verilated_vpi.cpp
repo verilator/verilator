@@ -165,6 +165,7 @@ class VerilatedVpioVarBase VL_NOT_FINAL : public VerilatedVpio {
 protected:
     const VerilatedVar* m_varp = nullptr;
     const VerilatedScope* m_scopep = nullptr;
+    std::string m_fullname;
     const VerilatedRange& get_range() const {
         // Determine number of dimensions and return outermost
         return (m_varp->dims() > 1) ? m_varp->unpacked() : m_varp->packed();
@@ -173,11 +174,13 @@ protected:
 public:
     VerilatedVpioVarBase(const VerilatedVar* varp, const VerilatedScope* scopep)
         : m_varp{varp}
-        , m_scopep{scopep} {}
+        , m_scopep{scopep}
+        , m_fullname{std::string{m_scopep->name()} + '.' + name()} {}
     explicit VerilatedVpioVarBase(const VerilatedVpioVarBase* varp) {
         if (varp) {
             m_varp = varp->m_varp;
             m_scopep = varp->m_scopep;
+            m_fullname = varp->m_fullname;
         }
     }
     static VerilatedVpioVarBase* castp(vpiHandle h) {
@@ -188,11 +191,7 @@ public:
     uint32_t size() const override { return get_range().elements(); }
     const VerilatedRange* rangep() const override { return &get_range(); }
     const char* name() const override { return m_varp->name(); }
-    const char* fullname() const override {
-        static thread_local std::string t_out;
-        t_out = std::string{m_scopep->name()} + "." + name();
-        return t_out.c_str();
-    }
+    const char* fullname() const override { return m_fullname.c_str(); }
 };
 
 class VerilatedVpioParam final : public VerilatedVpioVarBase {
@@ -646,23 +645,21 @@ public:
                 continue;
             }
             VerilatedVpiCbHolder& ho = *it++;
-            if (VerilatedVpioVar* const varop = VerilatedVpioVar::castp(ho.cb_datap()->obj)) {
-                void* const newDatap = varop->varDatap();
-                void* const prevDatap
-                    = varop->prevDatap();  // Was malloced when we added the callback
-                VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_test %s v[0]=%d/%d %p %p\n",
-                                            varop->fullname(), *(static_cast<CData*>(newDatap)),
-                                            *(static_cast<CData*>(prevDatap)), newDatap,
-                                            prevDatap););
-                if (std::memcmp(prevDatap, newDatap, varop->entSize()) != 0) {
-                    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_callback %" PRId64 " %s v[0]=%d\n",
-                                                ho.id(), varop->fullname(),
-                                                *(static_cast<CData*>(newDatap))););
-                    update.insert(varop);
-                    vpi_get_value(ho.cb_datap()->obj, ho.cb_datap()->value);
-                    (ho.cb_rtnp())(ho.cb_datap());
-                    called = true;
-                }
+            VerilatedVpioVar* const varop
+                = reinterpret_cast<VerilatedVpioVar*>(ho.cb_datap()->obj);
+            void* const newDatap = varop->varDatap();
+            void* const prevDatap = varop->prevDatap();  // Was malloced when we added the callback
+            VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_test %s v[0]=%d/%d %p %p\n",
+                                        varop->fullname(), *(static_cast<CData*>(newDatap)),
+                                        *(static_cast<CData*>(prevDatap)), newDatap, prevDatap););
+            if (std::memcmp(prevDatap, newDatap, varop->entSize()) != 0) {
+                VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_callback %" PRId64 " %s v[0]=%d\n",
+                                            ho.id(), varop->fullname(),
+                                            *(static_cast<CData*>(newDatap))););
+                update.insert(varop);
+                vpi_get_value(ho.cb_datap()->obj, ho.cb_datap()->value);
+                (ho.cb_rtnp())(ho.cb_datap());
+                called = true;
             }
             if (was_last) break;
         }

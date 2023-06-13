@@ -10,21 +10,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    top_filename("t/t_clocking_timing.v");
+top_filename("t/t_clocking_timing.v");
 
-    compile(
-        verilator_flags2 => ["--exe --main --timing -DTEST_INPUT_SKEW=12 -DTEST_OUTPUT_SKEW=16"],
-        make_main => 0,
-        );
+compile(
+    verilator_flags2 => ["--exe --main --timing -DTEST_INPUT_SKEW=12 -DTEST_OUTPUT_SKEW=16"],
+    make_main => 0,
+    );
 
-    execute(
-        check_finished => 1,
-        );
-}
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

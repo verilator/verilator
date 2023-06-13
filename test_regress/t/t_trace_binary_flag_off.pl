@@ -12,24 +12,19 @@ scenarios(vlt => 1);
 
 top_filename("t/t_trace_binary.v");
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    compile(
-        verilator_flags => [# Custom as don't want -cc
-                            "-Mdir $Self->{obj_dir}",
-                            "--debug-check", ],
-        verilator_flags2 => ['--binary'],
-        verilator_make_cmake => 0,
-        verilator_make_gmake => 0,
-        make_main => 0,
-        );
+compile(
+    verilator_flags => [# Custom as don't want -cc
+                        "-Mdir $Self->{obj_dir}",
+                        "--debug-check", ],
+    verilator_flags2 => ['--binary'],
+    verilator_make_cmake => 0,
+    verilator_make_gmake => 0,
+    make_main => 0,
+    );
 
-    execute(
-        expect_filename => $Self->{golden_filename},
-        );
-}
+execute(
+    expect_filename => $Self->{golden_filename},
+    );
 
 ok(1);
 1;

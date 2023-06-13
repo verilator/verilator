@@ -544,28 +544,28 @@ void GraphAcyc::main() {
     // edges (and thus can't represent loops - if we did the unbreakable
     // marking right, anyways)
     buildGraph(m_origGraphp);
-    if (dumpGraph() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_pre");
+    if (dumpGraphLevel() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_pre");
 
     // Perform simple optimizations before any cuttings
     simplify(false);
-    if (dumpGraph() >= 5) m_breakGraph.dumpDotFilePrefixed("acyc_simp");
+    if (dumpGraphLevel() >= 5) m_breakGraph.dumpDotFilePrefixed("acyc_simp");
 
     UINFO(4, " Cutting trivial loops\n");
     simplify(true);
-    if (dumpGraph() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_mid");
+    if (dumpGraphLevel() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_mid");
 
     UINFO(4, " Ranking\n");
     m_breakGraph.rank(&V3GraphEdge::followNotCutable);
-    if (dumpGraph() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_rank");
+    if (dumpGraphLevel() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_rank");
 
     UINFO(4, " Placement\n");
     place();
-    if (dumpGraph() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_place");
+    if (dumpGraphLevel() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_place");
 
     UINFO(4, " Final Ranking\n");
     // Only needed to assert there are no loops in completed graph
     m_breakGraph.rank(&V3GraphEdge::followAlwaysTrue);
-    if (dumpGraph() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_done");
+    if (dumpGraphLevel() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_done");
 }
 
 void V3Graph::acyclic(V3EdgeFuncP edgeFuncp) {

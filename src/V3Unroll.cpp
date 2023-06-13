@@ -518,5 +518,5 @@ void V3Unroll::unrollAll(AstNetlist* nodep) {
         UnrollStateful unroller;
         unroller.unrollAll(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("unroll", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("unroll", 0, dumpTreeLevel() >= 3);
 }

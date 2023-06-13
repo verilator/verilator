@@ -247,6 +247,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                         subFuncp = createNewSubFuncp(scopep);
                         subFuncp->name(subFuncp->name() + "__" + cvtToStr(scopep->user2Inc()));
                         subFuncp->rtnType("VlCoroutine");
+                        if (procp->needProcess()) subFuncp->setNeedProcess();
                         if (VN_IS(procp, Always)) {
                             subFuncp->slow(false);
                             FileLine* const flp = procp->fileline();
@@ -1225,7 +1226,7 @@ void schedule(AstNetlist* netlistp) {
 
     netlistp->dpiExportTriggerp(nullptr);
 
-    V3Global::dumpCheckGlobalTree("sched", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("sched", 0, dumpTreeLevel() >= 3);
 }
 
 }  // namespace V3Sched

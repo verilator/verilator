@@ -12,21 +12,16 @@ scenarios(simulator => 1);
 
 $Self->{main_time_multiplier} = 10e-7 / 10e-9;
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    top_filename("t/t_delay_incr.v");
+top_filename("t/t_delay_incr.v");
 
-    compile(
-        timing_loop => 1,
-        verilator_flags2 => ['--timing -Wno-ZERODLY'],
-        );
+compile(
+    timing_loop => 1,
+    verilator_flags2 => ['--timing -Wno-ZERODLY'],
+    );
 
-    execute(
-        check_finished => 1,
-        );
-}
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

@@ -410,28 +410,14 @@ void VerilatedVcd::dumpHeader() {
             if (*np == ' ') np++;
             if (*np == '\t') break;  // tab means signal name starts
             printIndent(1);
-            // Find character after name end
-            const char* sp = np;
-            while (*sp && *sp != ' ' && *sp != '\t' && !(*sp & '\x80')) sp++;
-
-            printStr("$scope ");
-            if (*sp & '\x80') {
-                switch (*sp & 0x7f) {
-                case VLT_TRACE_SCOPE_STRUCT: printStr("struct "); break;
-                case VLT_TRACE_SCOPE_INTERFACE: printStr("interface "); break;
-                case VLT_TRACE_SCOPE_UNION: printStr("union "); break;
-                default: printStr("module ");
-                }
-            } else {
-                printStr("module ");
-            }
+            printStr("$scope module ");
 
             for (; *np && *np != ' ' && *np != '\t'; np++) {
                 if (*np == '[') {
                     printStr("[");
                 } else if (*np == ']') {
                     printStr("]");
-                } else if (!(*np & '\x80')) {
+                } else {
                     *m_writep++ = *np;
                 }
             }

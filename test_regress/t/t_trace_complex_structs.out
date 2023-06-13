@@ -37,52 +37,52 @@ $timescale 1ps $end
      $var wire 32 H a [31:0] $end
     $upscope $end
    $upscope $end
-   $scope struct v_arrp_strp[3] $end
+   $scope module v_arrp_strp[3] $end
     $var wire  1 1 b0 $end
     $var wire  1 0 b1 $end
    $upscope $end
-   $scope struct v_arrp_strp[4] $end
+   $scope module v_arrp_strp[4] $end
     $var wire  1 3 b0 $end
     $var wire  1 2 b1 $end
    $upscope $end
-   $scope struct v_arru_strp[3] $end
+   $scope module v_arru_strp[3] $end
     $var wire  1 7 b0 $end
     $var wire  1 6 b1 $end
    $upscope $end
-   $scope struct v_arru_strp[4] $end
+   $scope module v_arru_strp[4] $end
     $var wire  1 9 b0 $end
     $var wire  1 8 b1 $end
    $upscope $end
-   $scope struct v_enumb2_str $end
+   $scope module v_enumb2_str $end
     $var wire  3 E a [2:0] $end
     $var wire  3 F b [2:0] $end
    $upscope $end
-   $scope struct v_str32x2[0] $end
+   $scope module v_str32x2[0] $end
     $var wire 32 @ data [31:0] $end
    $upscope $end
-   $scope struct v_str32x2[1] $end
+   $scope module v_str32x2[1] $end
     $var wire 32 A data [31:0] $end
    $upscope $end
-   $scope struct v_strp_strp $end
-    $scope struct x0 $end
+   $scope module v_strp_strp $end
+    $scope module x0 $end
      $var wire  1 * b0 $end
      $var wire  1 ) b1 $end
     $upscope $end
-    $scope struct x1 $end
+    $scope module x1 $end
      $var wire  1 ( b0 $end
      $var wire  1 ' b1 $end
     $upscope $end
    $upscope $end
-   $scope struct v_strp $end
+   $scope module v_strp $end
     $var wire  1 & b0 $end
     $var wire  1 % b1 $end
    $upscope $end
-   $scope union v_unip_strp $end
-    $scope struct x0 $end
+   $scope module v_unip_strp $end
+    $scope module x0 $end
      $var wire  1 , b0 $end
      $var wire  1 + b1 $end
     $upscope $end
-    $scope struct x1 $end
+    $scope module x1 $end
      $var wire  1 , b0 $end
      $var wire  1 + b1 $end
     $upscope $end

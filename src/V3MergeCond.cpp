@@ -888,5 +888,5 @@ public:
 void V3MergeCond::mergeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { MergeCondVisitor{nodep}; }
-    V3Global::dumpCheckGlobalTree("merge_cond", 0, dumpTree() >= 6);
+    V3Global::dumpCheckGlobalTree("merge_cond", 0, dumpTreeLevel() >= 6);
 }

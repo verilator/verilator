@@ -294,7 +294,7 @@ public:
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             graphWalkRecurseBack(static_cast<TristateVertex*>(itp), 0);
         }
-        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed("tri_pos__" + nodep->name());
+        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("tri_pos__" + nodep->name());
     }
     void associate(AstNode* fromp, AstNode* top) {
         new V3GraphEdge{&m_graph, makeVertex(fromp), makeVertex(top), 1};
@@ -1818,5 +1818,5 @@ public:
 void V3Tristate::tristateAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { TristateVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("tristate", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("tristate", 0, dumpTreeLevel() >= 3);
 }

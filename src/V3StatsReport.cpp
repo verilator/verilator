@@ -40,18 +40,8 @@ class StatsReport final {
     std::ofstream& os;  ///< Output stream
     static StatColl s_allStats;  ///< All statistics
 
-    void header() {
-        os << "Verilator Statistics Report\n\n";
-
-        os << "Information:\n";
-        os << "  " << V3Options::version() << '\n';
-        os << "  Arguments: " << v3Global.opt.allArgsString() << '\n';
-        os << "  Build jobs: " << v3Global.opt.buildJobs() << '\n';
-        os << "  Verilate jobs: " << v3Global.opt.verilateJobs() << '\n';
-        os << '\n';
-    }
-
     void sumit() {
+        os << '\n';
         // If sumit is set on a statistic, combine with others of same name
         std::multimap<std::string, V3Statistic*> byName;
         // * is always first
@@ -179,7 +169,8 @@ public:
     // CONSTRUCTORS
     explicit StatsReport(std::ofstream* aofp)
         : os(*aofp) {  // Need () or GCC 4.8 false warning
-        header();
+        os << "Verilator Statistics Report\n\n";
+        V3Stats::infoHeader(os, "");
         sumit();
         stars();
         stages();
@@ -220,6 +211,14 @@ void V3Stats::statsStage(const string& name) {
 
     const double memory = V3Os::memUsageBytes() / 1024.0 / 1024.0;
     V3Stats::addStatPerf("Stage, Memory (MB), " + digitName, memory);
+}
+
+void V3Stats::infoHeader(std::ofstream& os, const string& prefix) {
+    os << prefix << "Information:\n";
+    os << prefix << "  " << V3Options::version() << '\n';
+    os << prefix << "  Arguments: " << v3Global.opt.allArgsString() << '\n';
+    os << prefix << "  Build jobs: " << v3Global.opt.buildJobs() << '\n';
+    os << prefix << "  Verilate jobs: " << v3Global.opt.verilateJobs() << '\n';
 }
 
 void V3Stats::statsReport() {

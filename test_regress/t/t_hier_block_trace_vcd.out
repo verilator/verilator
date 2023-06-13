@@ -157,20 +157,20 @@ $timescale 1ps $end
      $var wire  8 N in [7:0] $end
      $var wire  8 P out [7:0] $end
     $upscope $end
-    $scope interface in $end
+    $scope module in $end
      $var wire  1 K clk $end
      $var wire  8 N data [7:0] $end
     $upscope $end
-    $scope interface out $end
+    $scope module out $end
      $var wire  1 K clk $end
      $var wire  8 O data [7:0] $end
     $upscope $end
    $upscope $end
-   $scope interface in_ifs $end
+   $scope module in_ifs $end
     $var wire  1 K clk $end
     $var wire  8 N data [7:0] $end
    $upscope $end
-   $scope interface out_ifs $end
+   $scope module out_ifs $end
     $var wire  1 K clk $end
     $var wire  8 O data [7:0] $end
    $upscope $end

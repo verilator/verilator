@@ -438,6 +438,7 @@ public:
     bool isEvent() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::EVENT; }
     bool isTriggerVec() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::TRIGGERVEC; }
     bool isForkSync() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::FORK_SYNC; }
+    bool isProcessRef() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::PROCESS_REFERENCE; }
     bool isDelayScheduler() const VL_MT_SAFE {
         return keyword() == VBasicDTypeKwd::DELAY_SCHEDULER;
     }
@@ -887,6 +888,7 @@ public:
         if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
+    AstNodeUOrStructDType* getChildStructp() const;
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }

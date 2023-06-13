@@ -54,17 +54,17 @@ public:
         // Boolean information we track per-line, but aren't errors
         I_CELLDEFINE,   // Inside cell define from `celldefine/`endcelldefine
         I_COVERAGE,     // Coverage is on/off from /*verilator coverage_on/off*/
-        I_TRACING,      // Tracing is on/off from /*verilator tracing_on/off*/
-        I_LINT,         // All lint messages
-        I_UNUSED,       // Unused genvar, parameter or signal message (Backward Compatibility)
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
+        I_LINT,         // All lint messages
         I_TIMING,       // Enable timing from /*verilator timing_on/off*/
+        I_TRACING,      // Tracing is on/off from /*verilator tracing_on/off*/
+        I_UNUSED,       // Unused genvar, parameter or signal message (Backward Compatibility)
         // Error codes:
-        E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
-        E_UNSUPPORTED,  // Error: Unsupported (generally)
-        E_TASKNSVAR,    // Error: Task I/O not simple
         E_NEEDTIMINGOPT,  // Error: --timing/--no-timing option not specified
         E_NOTIMING,     // Timing control encountered with --no-timing
+        E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
+        E_TASKNSVAR,    // Error: Task I/O not simple
+        E_UNSUPPORTED,  // Error: Unsupported (generally)
         //
         // Warning codes:
         EC_FIRST_WARN,  // Just a code so the program knows where to start warnings
@@ -116,6 +116,7 @@ public:
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
+        NEWERSTD,       // Newer language standard required
         NOLATCH,        // No latch detected in always_latch block
         NULLPORT,       // Null port detected in module definition
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
@@ -155,10 +156,10 @@ public:
         VARHIDDEN,      // Hiding variable
         WAITCONST,      // Wait condition is constant
         WIDTH,          // Width mismatch
-        WIDTHTRUNC,     // Width mismatch- lhs < rhs
-        WIDTHEXPAND,    // Width mismatch- lhs > rhs
-        WIDTHXZEXPAND,  // Width mismatch- lhs > rhs xz filled
         WIDTHCONCAT,    // Unsized numbers/parameters in concatenations
+        WIDTHEXPAND,    // Width mismatch- lhs > rhs
+        WIDTHTRUNC,     // Width mismatch- lhs < rhs
+        WIDTHXZEXPAND,  // Width mismatch- lhs > rhs xz filled
         ZERODLY,        // #0 delay
         _ENUM_MAX
         // ***Add new elements below also***
@@ -180,9 +181,9 @@ public:
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
-            " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_UNUSED", " I_DEF_NETTYPE_WIRE", " I_TIMING",
+            " I_CELLDEFINE", " I_COVERAGE",  " I_DEF_NETTYPE_WIRE", " I_LINT", " I_TIMING", " I_TRACING", " I_UNUSED",
             // Errors
-            "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
+            "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT", "TASKNSVAR", "UNSUPPORTED",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
@@ -195,7 +196,7 @@ public:
             "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MODDUP",
-            "MULTIDRIVEN", "MULTITOP", "NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
+            "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
             "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
@@ -203,7 +204,7 @@ public:
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDPARAM", "UNUSEDSIGNAL",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHTRUNC", "WIDTHEXPAND", "WIDTHXZEXPAND", "WIDTHCONCAT", "ZERODLY",
+            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",  "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY",
             " MAX"
         };
         // clang-format on
@@ -233,9 +234,9 @@ public:
         return (m_e == ALWCOMBORDER || m_e == ASCRANGE || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
-                || m_e == LATCH || m_e == PINMISSING || m_e == REALCVT || m_e == STATICVAR
-                || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
-                || m_e == WIDTHXZEXPAND);
+                || m_e == LATCH || m_e == NEWERSTD || m_e == PINMISSING || m_e == REALCVT
+                || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC
+                || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
@@ -666,12 +667,10 @@ inline void v3errorEndFatal(std::ostringstream& sstr)
     static_assert(true, "")
 
 // Takes an optional "name" (as __VA_ARGS__)
-#define VL_DEFINE_DUMP(...) \
-    VL_ATTR_UNUSED static int dump##__VA_ARGS__() { \
+#define VL_DEFINE_DUMP(func, tag) \
+    VL_ATTR_UNUSED static int dump##func() { \
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
-            std::string tag{VL_STRINGIFY(__VA_ARGS__)}; \
-            tag[0] = std::tolower(tag[0]); \
             const unsigned dumpTag = v3Global.opt.dumpLevel(tag); \
             const unsigned dumpSrc = v3Global.opt.dumpSrcLevel(__FILE__); \
             const unsigned dumpLevel = dumpTag >= dumpSrc ? dumpTag : dumpSrc; \
@@ -685,11 +684,11 @@ inline void v3errorEndFatal(std::ostringstream& sstr)
 // Define debug*() and dump*() routines. This needs to be added to every compilation unit so that
 // --debugi-<tag/srcfile> and --dumpi-<tag/srcfile> can be used to control debug prints and dumping
 #define VL_DEFINE_DEBUG_FUNCTIONS \
-    VL_DEFINE_DEBUG(); /* Define 'int debug()' */ \
-    VL_DEFINE_DUMP(); /* Define 'int dump()' */ \
-    VL_DEFINE_DUMP(Dfg); /* Define 'int dumpDfg()' */ \
-    VL_DEFINE_DUMP(Graph); /* Define 'int dumpGraph()' */ \
-    VL_DEFINE_DUMP(Tree); /* Define 'int dumpTree()' */ \
+    VL_DEFINE_DEBUG(); /* Define 'int debug()' for --debugi */ \
+    VL_DEFINE_DUMP(Level, ""); /* Define 'int dumpLevel()' for --dumpi */ \
+    VL_DEFINE_DUMP(DfgLevel, "dfg"); /* Define 'int dumpDfgLevel()' for --dumpi-level */ \
+    VL_DEFINE_DUMP(GraphLevel, "graph"); /* Define 'int dumpGraphLevel()' for dumpi-graph */ \
+    VL_DEFINE_DUMP(TreeLevel, "tree"); /* Define 'int dumpTreeLevel()' for dumpi-tree */ \
     static_assert(true, "")
 
 //----------------------------------------------------------------------

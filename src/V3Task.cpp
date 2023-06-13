@@ -283,7 +283,7 @@ public:
         iterate(nodep);
         //
         m_callGraph.removeRedundantEdgesSum(&TaskEdge::followAlwaysTrue);
-        if (dumpGraph()) m_callGraph.dumpDotFilePrefixed("task_call");
+        if (dumpGraphLevel()) m_callGraph.dumpDotFilePrefixed("task_call");
     }
     ~TaskStateVisitor() override = default;
     VL_UNCOPYABLE(TaskStateVisitor);
@@ -1316,6 +1316,9 @@ private:
             }
         }
 
+        // Mark the fact that this function allocates std::process
+        if (nodep->isFromStd() && nodep->name() == "self") cfuncp->setNeedProcess();
+
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         if (debug() >= 9) cfuncp->dumpTree("-  userFunc: ");
@@ -1335,7 +1338,6 @@ private:
     }
     AstNode* insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
-        // See also AstNode::addBeforeStmt; this predates that function
         if (debug() >= 9) nodep->dumpTree("-  newstmt: ");
         UASSERT_OBJ(m_insStmtp, nodep, "Function not underneath a statement");
         AstNode* visitp = nullptr;
@@ -1371,6 +1373,15 @@ private:
             m_modNCalls = 0;
             iterateChildren(nodep);
         }
+    }
+    void visit(AstWith* nodep) override {
+        if (nodep->user1SetOnce()) {
+            // Make sure that the return expression is converted only once
+            return;
+        }
+        AstNodeExpr* const withExprp = VN_AS(nodep->exprp()->unlinkFrBack(), NodeExpr);
+        nodep->addExprp(new AstCReturn{withExprp->fileline(), withExprp});
+        iterateChildren(nodep);
     }
     void visit(AstScope* nodep) override {
         m_scopep = nodep;
@@ -1820,5 +1831,5 @@ void V3Task::taskAll(AstNetlist* nodep) {
         TaskStateVisitor visitors{nodep};
         const TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("task", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("task", 0, dumpTreeLevel() >= 3);
 }

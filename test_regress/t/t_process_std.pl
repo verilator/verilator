@@ -13,14 +13,12 @@ scenarios(simulator => 1);
 top_filename("t/t_process.v");
 
 compile(
-    v_flags2 => ["+define+T_PROCESS+std::process"],
+    v_flags2 => ["+define+T_PROCESS+std::process", "--timing"],
     );
 
 execute(
-    check_finished => !$Self->{vlt_all},
-    fails => $Self->{vlt_all},
-    expect_filename => $Self->{golden_filename},
-    );
+    check_finished => 1,
+    ) if !$Self->{vlt_all};
 
 ok(1);
 1;

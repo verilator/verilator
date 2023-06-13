@@ -92,21 +92,23 @@ private:
     const VNUser4InUse m_inuser4;
     const VNUser5InUse m_inuser5;
 
-    // STATE
+    // STATE - across all visitors
+    std::unordered_map<const AstVarScope*, int> m_scopeVecMap;  // Next var number for each scope
+    std::set<AstSenTree*> m_timingDomains;  // Timing resume domains
+    using VarMap = std::map<const std::pair<AstNodeModule*, std::string>, AstVar*>;
+    VarMap m_modVarMap;  // Table of new var names created under module
+    VDouble0 m_statSharedSet;  // Statistic tracking
+
+    // STATE - for current visit position (use VL_RESTORER)
     AstActive* m_activep = nullptr;  // Current activate
     const AstCFunc* m_cfuncp = nullptr;  // Current public C Function
     AstAssignDly* m_nextDlyp = nullptr;  // Next delayed assignment in a list of assignments
     AstNodeProcedure* m_procp = nullptr;  // Current process
-    std::set<AstSenTree*> m_timingDomains;  // Timing resume domains
     bool m_inDly = false;  // True in delayed assignments
     bool m_inLoop = false;  // True in for loops
     bool m_inInitial = false;  // True in static initializers and initial blocks
     bool m_inSuspendableOrFork = false;  // True in suspendable processes and forks
     bool m_ignoreBlkAndNBlk = false;  // Suppress delayed assignment BLKANDNBLK
-    using VarMap = std::map<const std::pair<AstNodeModule*, std::string>, AstVar*>;
-    VarMap m_modVarMap;  // Table of new var names created under module
-    VDouble0 m_statSharedSet;  // Statistic tracking
-    std::unordered_map<const AstVarScope*, int> m_scopeVecMap;  // Next var number for each scope
 
     // METHODS
 
@@ -424,10 +426,8 @@ private:
     }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
-        {
-            m_cfuncp = nodep;
-            iterateChildren(nodep);
-        }
+        m_cfuncp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstActive* nodep) override {
         m_activep = nodep;
@@ -443,10 +443,12 @@ private:
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_inSuspendableOrFork);
         m_inSuspendableOrFork = nodep->isSuspendable();
-        m_procp = nodep;
-        m_timingDomains.clear();
-        iterateChildren(nodep);
-        m_procp = nullptr;
+        {
+            VL_RESTORER(m_procp);
+            m_procp = nodep;
+            m_timingDomains.clear();
+            iterateChildren(nodep);
+        }
         if (m_timingDomains.empty()) return;
         if (auto* const actp = VN_AS(nodep->user3p(), Active)) {
             // Merge all timing domains (and possibly the active's domain) to create a sentree for
@@ -618,10 +620,8 @@ private:
     }
     void visit(AstWhile* nodep) override {
         VL_RESTORER(m_inLoop);
-        {
-            m_inLoop = true;
-            iterateChildren(nodep);
-        }
+        m_inLoop = true;
+        iterateChildren(nodep);
     }
 
     //--------------------
@@ -641,5 +641,5 @@ public:
 void V3Delayed::delayedAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DelayedVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("delayed", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("delayed", 0, dumpTreeLevel() >= 3);
 }

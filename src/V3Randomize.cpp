@@ -47,6 +47,7 @@ private:
     using BaseToDerivedMap = std::unordered_map<AstClass*, DerivedSet>;
 
     BaseToDerivedMap m_baseToDerivedMap;  // Mapping from base classes to classes that extend them
+    AstClass* m_classp = nullptr;  // Current class
 
     // METHODS
     void markMembers(AstClass* nodep) {
@@ -87,6 +88,8 @@ private:
 
     // VISITORS
     void visit(AstClass* nodep) override {
+        VL_RESTORER(m_classp);
+        m_classp = nodep;
         iterateChildrenConst(nodep);
         if (nodep->extendsp()) {
             // Save pointer to derived class
@@ -103,6 +106,11 @@ private:
             classp->user1(true);
             markMembers(classp);
         }
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        iterateChildrenConst(nodep);
+        if (nodep->name() != "randomize") return;
+        if (m_classp) m_classp->user1(true);
     }
 
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -368,7 +376,7 @@ void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
         const RandomizeMarkVisitor markVisitor{nodep};
         RandomizeVisitor{nodep};
     }
-    V3Global::dumpCheckGlobalTree("randomize", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("randomize", 0, dumpTreeLevel() >= 3);
 }
 
 AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep) {

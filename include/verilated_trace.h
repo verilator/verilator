@@ -75,7 +75,7 @@ public:
     // Get an element from the front of the queue. Blocks if none available
     T get() VL_MT_SAFE_EXCLUDES(m_mutex) {
         VerilatedLockGuard lock{m_mutex};
-        m_cv.wait(lock, [this]() VL_REQUIRES(m_mutex) { return !m_queue.empty(); });
+        m_cv.wait(m_mutex, [this]() VL_REQUIRES(m_mutex) { return !m_queue.empty(); });
         assert(!m_queue.empty());
         T value = m_queue.front();
         m_queue.pop_front();
@@ -447,7 +447,9 @@ public:
         if (VL_UNLIKELY(diff)) fullIData(oldp, newval, bits);
     }
     VL_ATTR_ALWINLINE void chgQData(uint32_t* oldp, QData newval, int bits) {
-        const uint64_t diff = *reinterpret_cast<QData*>(oldp) ^ newval;
+        QData old;
+        std::memcpy(&old, oldp, sizeof(old));
+        const uint64_t diff = old ^ newval;
         if (VL_UNLIKELY(diff)) fullQData(oldp, newval, bits);
     }
     VL_ATTR_ALWINLINE void chgWData(uint32_t* oldp, const WData* newvalp, int bits) {
@@ -460,8 +462,9 @@ public:
     }
     VL_ATTR_ALWINLINE void chgEvent(uint32_t* oldp, VlEvent newval) { fullEvent(oldp, newval); }
     VL_ATTR_ALWINLINE void chgDouble(uint32_t* oldp, double newval) {
-        // cppcheck-suppress invalidPointerCast
-        if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) fullDouble(oldp, newval);
+        double old;
+        std::memcpy(&old, oldp, sizeof(old));
+        if (VL_UNLIKELY(old != newval)) fullDouble(oldp, newval);
     }
 };
 

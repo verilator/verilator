@@ -144,6 +144,7 @@ static void process() {
     if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
     if (v3Global.opt.debugExitUvm()) {
         V3Error::abortIfErrors();
+        if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
         cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
         std::exit(0);
     }
@@ -623,6 +624,7 @@ static void verilate(const string& argString) {
         V3Partition::selfTestNormalizeCosts();
         V3Broken::selfTest();
         V3ThreadPool::selfTest();
+        UINFO(2, "selfTest done\n");
     }
 
     // Read first filename
@@ -635,7 +637,7 @@ static void verilate(const string& argString) {
     }
 
     // Final steps
-    V3Global::dumpCheckGlobalTree("final", 990, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("final", 990, dumpTreeLevel() >= 3);
 
     V3Error::abortIfErrors();
 
