@@ -283,7 +283,6 @@ private:
     V3UniqueNames m_intraValueNames{"__Vintraval"};  // Intra assign delay value var names
     V3UniqueNames m_intraIndexNames{"__Vintraidx"};  // Intra assign delay index var names
     V3UniqueNames m_intraLsbNames{"__Vintralsb"};  // Intra assign delay LSB var names
-    V3UniqueNames m_forkNames{"__Vfork"};  // Fork name generator
     V3UniqueNames m_trigSchedNames{"__VtrigSched"};  // Trigger scheduler name generator
     V3UniqueNames m_dynTrigNames{"__VdynTrigger"};  // Dynamic trigger name generator
 
@@ -918,7 +917,8 @@ private:
         if (nodep->user1SetOnce()) return;
         v3Global.setUsesTiming();
         // Create a unique name for this fork
-        nodep->name(m_forkNames.get(nodep));
+        static int forkCnt = 0;
+        nodep->name("__Vfork_" + cvtToStr(++forkCnt));
         unsigned idx = 0;  // Index for naming begins
         AstNode* stmtp = nodep->stmtsp();
         // Put each statement in a begin
