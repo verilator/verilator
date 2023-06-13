@@ -5,7 +5,7 @@
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-# When releasing, also update header of Changes file,
+# When releasing, also update header of Changes file, and CmakeLists.txt,
 # and commit using "devel release" or "Version bump" message
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
