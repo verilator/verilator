@@ -95,8 +95,8 @@ private:
                 || VN_IS(nodep->dtypep()->skipRefp(), DynArrayDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), ClassRefDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), QueueDType)
-                || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), StreamDType)
+                || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), VoidDType)) {
             } else {
                 const AstNodeUOrStructDType* const dtypep
