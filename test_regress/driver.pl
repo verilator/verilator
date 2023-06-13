@@ -921,16 +921,18 @@ sub compile_vlt_flags {
     my %param = (%{$self}, @_);  # Default arguments are from $self
     return 1 if $self->errors || $self->skips;
 
-    my $checkflags = ' '.join(' ', @{$param{v_flags}},
-                              @{$param{v_flags2}},
-                              @{$param{verilator_flags}},
-                              @{$param{verilator_flags2}},
-                              @{$param{verilator_flags3}});
+    my $checkflags = (' '.join(' ',
+                               @{$param{v_flags}},
+                               @{$param{v_flags2}},
+                               @{$param{verilator_flags}},
+                               @{$param{verilator_flags2}},
+                               @{$param{verilator_flags3}})
+                      .' ');
     die "%Error: specify threads via 'threads =>' argument, not as a command line option" unless ($checkflags !~ /(^|\s)-?-threads\s/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
-    $self->{timing} = 1 if ($checkflags =~ /\b-?-timing\b/ || $checkflags =~ /\b-?-binary\b/ );
+    $self->{timing} = 1 if ($checkflags =~ / -?-timing\b/ || $checkflags =~ / -?-binary\b/ );
     $self->{trace} = ($opt_trace || $checkflags =~ /-trace\b/
                       || $checkflags =~ /-trace-fst\b/);
     $self->{trace_format} = (($checkflags =~ /-trace-fst/ && $self->{sc} && 'fst-sc')
