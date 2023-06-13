@@ -10,27 +10,34 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-top_filename("t/t_timing_fork_join.v");  # Contains all relevant constructs
+if (!$Self->have_coroutines) {
+    skip("No coroutine support");
+}
+else {
+    top_filename("t/t_timing_fork_join.v");  # Contains all relevant constructs
 
-compile(
-    verilator_flags2 => ["--exe --main --timing --protect-ids",
-                         "--protect-key SECRET_KEY"],
-    make_main => 0,
-    );
+    compile(
+        verilator_flags2 => ["--exe --main --timing --protect-ids",
+                             "--protect-key SECRET_KEY"],
+        make_main => 0,
+        );
 
-execute(
-    check_finished => 1,
-    );
+    execute(
+        check_finished => 1,
+        );
 
-if ($Self->{vlt_all}) {
-    # Check for secret in any outputs
-    my $any;
-    foreach my $filename (glob $Self->{obj_dir} . "/*.[ch]*") {
-        file_grep_not($filename, qr/event[123]/i);
-        file_grep_not($filename, qr/t_timing_fork_join/i);
-        $any = 1;
+    if ($Self->{vlt_all}) {
+        # Check for secret in any outputs
+        my $any;
+        foreach my $filename (glob $Self->{obj_dir} . "/*.[ch]*") {
+            file_grep_not($filename, qr/event[123]/i);
+            file_grep_not($filename, qr/t_timing_fork_join/i);
+            $any = 1;
     }
     $any or $Self->error("No outputs found");
+
+}
+
 }
 
 ok(1);
