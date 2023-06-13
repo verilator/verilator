@@ -65,7 +65,7 @@ Verilator 5.011 devel
 * Fix names of foreach blocks (#4264). [Ryszard Rozak, Antmicro Ltd]
 * Fix iterated variables in foreach loops to have VAUTOM lifetimes (#4265). [Krzysztof Boroński]
 * Fix missing assignment for wide class members (#4267). [Jiamin Zhu]
-* Fix the global `usesTiming` flag when forks exist (#4274). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix the global uses timing flag when forks exist (#4274). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix struct redefinition (#4276). [Aleksander Kiryk, Antmicro Ltd]
 * Fix detection of wire/reg duplicates.
 * Fix false IMPLICITSTATIC on package functions.
