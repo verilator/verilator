@@ -10,27 +10,22 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    # Should convert the first always into combo and detect cycle
-    compile(
-        fails => 1,
-        verilator_flags2 => ["--timing"],
-        expect =>
-            '%Warning-UNOPTFLAT: t/t_timing_fork_comb.v:\d+:\d+: Signal unoptimizable: Circular combinational logic:'
-        );
+# Should convert the first always into combo and detect cycle
+compile(
+    fails => 1,
+    verilator_flags2 => ["--timing"],
+    expect =>
+    '%Warning-UNOPTFLAT: t/t_timing_fork_comb.v:\d+:\d+: Signal unoptimizable: Circular combinational logic:'
+    );
 
-    compile(
-        verilator_flags2 => ["--exe --main --timing -Wno-UNOPTFLAT"],
-        make_main => 0,
-        );
+compile(
+    verilator_flags2 => ["--exe --main --timing -Wno-UNOPTFLAT"],
+    make_main => 0,
+    );
 
-    execute(
-        check_finished => 1,
-        );
-}
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

@@ -12,18 +12,13 @@ scenarios(simulator => 1);
 
 top_filename("t/t_process.v");
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    compile(
-        v_flags2 => ["+define+T_PROCESS+std::process", "--timing"],
-        );
+compile(
+    v_flags2 => ["+define+T_PROCESS+std::process", "--timing"],
+    );
 
-    execute(
-        check_finished => 1,
-        ) if !$Self->{vlt_all};
-}
+execute(
+    check_finished => 1,
+    ) if !$Self->{vlt_all};
 
 ok(1);
 1;

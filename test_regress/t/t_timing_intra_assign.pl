@@ -10,31 +10,25 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    compile(
-        verilator_flags2 => ["--exe --main --timing -Wno-UNOPTFLAT"],
-        make_main => 0,
-        );
+compile(
+    verilator_flags2 => ["--exe --main --timing -Wno-UNOPTFLAT"],
+    make_main => 0,
+    );
 
-    execute(
-        check_finished => 1,
-        expect_filename => $Self->{golden_filename},
-        );
+execute(
+    check_finished => 1,
+    expect_filename => $Self->{golden_filename},
+    );
 
-    compile(
-        verilator_flags2 => ["--exe --main --timing -Wno-UNOPTFLAT -fno-localize"],
-        make_main => 0,
-        );
+compile(
+    verilator_flags2 => ["--exe --main --timing -Wno-UNOPTFLAT -fno-localize"],
+    make_main => 0,
+    );
 
-    execute(
-        check_finished => 1,
-        expect_filename => $Self->{golden_filename},
-        );
-
-}
+execute(
+    check_finished => 1,
+    expect_filename => $Self->{golden_filename},
+    );
 
 ok(1);
 1;

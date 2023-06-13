@@ -12,24 +12,19 @@ scenarios(simulator => 1);
 
 top_filename("t/t_flag_main.v");
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    compile(
-        verilator_flags => [# Custom as don't want -cc
-                            "-Mdir $Self->{obj_dir}",
-                            "--debug-check", ],
-        verilator_flags2 => ['--binary'],
-        verilator_make_cmake => 0,
-        verilator_make_gmake => 0,
-        make_main => 0,
-        );
+compile(
+    verilator_flags => [# Custom as don't want -cc
+                        "-Mdir $Self->{obj_dir}",
+                        "--debug-check", ],
+    verilator_flags2 => ['--binary'],
+    verilator_make_cmake => 0,
+    verilator_make_gmake => 0,
+    make_main => 0,
+    );
 
-    execute(
-        check_finished => 1,
-        );
-}
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

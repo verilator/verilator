@@ -12,21 +12,16 @@ scenarios(simulator => 1);
 
 top_filename("t/t_timing_trace.v");
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    compile(
-        verilator_flags2 => ["--exe --main --timing --trace-fst -Wno-MINTYPMAXDLY"],
-        make_main => 0,
-        );
+compile(
+    verilator_flags2 => ["--exe --main --timing --trace-fst -Wno-MINTYPMAXDLY"],
+    make_main => 0,
+    );
 
-    execute(
-        check_finished => 1,
-        );
+execute(
+    check_finished => 1,
+    );
 
-    fst_identical($Self->trace_filename, $Self->{golden_filename});
-}
+fst_identical($Self->trace_filename, $Self->{golden_filename});
 
 ok(1);
 1;

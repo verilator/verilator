@@ -10,25 +10,20 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt_all => 1);
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-else {
-    top_filename("t/t_timing_sched.v");
+top_filename("t/t_timing_sched.v");
 
-    compile(
-        verilator_flags2 => ["--exe --main --timing"],
-        make_main => 0,
-        );
+compile(
+    verilator_flags2 => ["--exe --main --timing"],
+    make_main => 0,
+    );
 
-    execute(
-        all_run_flags => ["+verilator+debug"],
-        check_finished => 1,
-        );
+execute(
+    all_run_flags => ["+verilator+debug"],
+    check_finished => 1,
+    );
 
-    if (!$Self->{vltmt}) {  # vltmt output may vary between thread exec order
-        files_identical("$Self->{obj_dir}/vlt_sim.log", $Self->{golden_filename}, "logfile");
-    }
+if (!$Self->{vltmt}) {  # vltmt output may vary between thread exec order
+    files_identical("$Self->{obj_dir}/vlt_sim.log", $Self->{golden_filename}, "logfile");
 }
 
 ok(1);
