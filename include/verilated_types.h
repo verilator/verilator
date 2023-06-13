@@ -1085,14 +1085,18 @@ public:
                       return with_func(0, a) < with_func(0, b);
                   });
     }
-    void rsort() { std::sort(std::rbegin(m_storage), std::rend(m_storage)); }
+    // std::rbegin/std::rend not available until C++14
+    void rsort() {
+        std::sort(std::begin(m_storage), std::end(m_storage), std::greater<T_Value>());
+    }
     template <typename Func>
     void rsort(Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
-        std::sort(std::rbegin(m_storage), std::rend(m_storage),
+        // std::rbegin/std::rend not available until C++14, so using > below
+        std::sort(std::begin(m_storage), std::end(m_storage),
                   [=](const T_Value& a, const T_Value& b) {
                       // index number is meaningless with sort, as it changes
-                      return with_func(0, a) < with_func(0, b);
+                      return with_func(0, a) > with_func(0, b);
                   });
     }
     void reverse() { std::reverse(std::begin(m_storage), std::end(m_storage)); }
