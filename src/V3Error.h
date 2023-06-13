@@ -54,17 +54,17 @@ public:
         // Boolean information we track per-line, but aren't errors
         I_CELLDEFINE,   // Inside cell define from `celldefine/`endcelldefine
         I_COVERAGE,     // Coverage is on/off from /*verilator coverage_on/off*/
-        I_TRACING,      // Tracing is on/off from /*verilator tracing_on/off*/
-        I_LINT,         // All lint messages
-        I_UNUSED,       // Unused genvar, parameter or signal message (Backward Compatibility)
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
+        I_LINT,         // All lint messages
         I_TIMING,       // Enable timing from /*verilator timing_on/off*/
+        I_TRACING,      // Tracing is on/off from /*verilator tracing_on/off*/
+        I_UNUSED,       // Unused genvar, parameter or signal message (Backward Compatibility)
         // Error codes:
-        E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
-        E_UNSUPPORTED,  // Error: Unsupported (generally)
-        E_TASKNSVAR,    // Error: Task I/O not simple
         E_NEEDTIMINGOPT,  // Error: --timing/--no-timing option not specified
         E_NOTIMING,     // Timing control encountered with --no-timing
+        E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
+        E_TASKNSVAR,    // Error: Task I/O not simple
+        E_UNSUPPORTED,  // Error: Unsupported (generally)
         //
         // Warning codes:
         EC_FIRST_WARN,  // Just a code so the program knows where to start warnings
@@ -156,10 +156,10 @@ public:
         VARHIDDEN,      // Hiding variable
         WAITCONST,      // Wait condition is constant
         WIDTH,          // Width mismatch
-        WIDTHTRUNC,     // Width mismatch- lhs < rhs
-        WIDTHEXPAND,    // Width mismatch- lhs > rhs
-        WIDTHXZEXPAND,  // Width mismatch- lhs > rhs xz filled
         WIDTHCONCAT,    // Unsized numbers/parameters in concatenations
+        WIDTHEXPAND,    // Width mismatch- lhs > rhs
+        WIDTHTRUNC,     // Width mismatch- lhs < rhs
+        WIDTHXZEXPAND,  // Width mismatch- lhs > rhs xz filled
         ZERODLY,        // #0 delay
         _ENUM_MAX
         // ***Add new elements below also***
@@ -181,9 +181,9 @@ public:
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
-            " I_CELLDEFINE", " I_COVERAGE", " I_TRACING", " I_LINT", " I_UNUSED", " I_DEF_NETTYPE_WIRE", " I_TIMING",
+            " I_CELLDEFINE", " I_COVERAGE",  " I_DEF_NETTYPE_WIRE", " I_LINT", " I_TIMING", " I_TRACING", " I_UNUSED",
             // Errors
-            "PORTSHORT", "UNSUPPORTED", "TASKNSVAR", "NEEDTIMINGOPT", "NOTIMING",
+            "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT", "TASKNSVAR", "UNSUPPORTED",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
@@ -204,7 +204,7 @@ public:
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDPARAM", "UNUSEDSIGNAL",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHTRUNC", "WIDTHEXPAND", "WIDTHXZEXPAND", "WIDTHCONCAT", "ZERODLY",
+            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",  "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY",
             " MAX"
         };
         // clang-format on
