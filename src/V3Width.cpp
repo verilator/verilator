@@ -848,8 +848,14 @@ private:
             } else {
                 nodep->v3error("Slice size isn't a constant or basic data type.");
             }
-            nodep->dtypeSetLogicUnsized(nodep->lhsp()->width(), nodep->lhsp()->widthMin(),
-                                        VSigning::UNSIGNED);
+            if (VN_IS(nodep->lhsp()->dtypep(), DynArrayDType)
+                || VN_IS(nodep->lhsp()->dtypep(), QueueDType)
+                || VN_IS(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
+                nodep->dtypeSetStream();
+            } else {
+                nodep->dtypeSetLogicUnsized(nodep->lhsp()->width(), nodep->lhsp()->widthMin(),
+                                            VSigning::UNSIGNED);
+            }
         }
         if (m_vup->final()) {
             if (!nodep->dtypep()->widthSized()) {

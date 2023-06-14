@@ -1406,6 +1406,9 @@ AstNodeDType* AstNode::findQueueIndexDType() const {
 AstNodeDType* AstNode::findVoidDType() const {
     return v3Global.rootp()->typeTablep()->findVoidDType(fileline());
 }
+AstNodeDType* AstNode::findStreamDType() const {
+    return v3Global.rootp()->typeTablep()->findStreamDType(fileline());
+}
 
 //######################################################################
 // VNDeleter

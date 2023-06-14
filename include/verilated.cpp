@@ -1896,6 +1896,12 @@ std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_PURE {
     return std::string{destout, len};
 }
 
+std::string VL_CVT_PACK_STR_ND(const VlQueue<std::string>& q) VL_PURE {
+    std::string output;
+    for (const std::string& s : q) output += s;
+    return output;
+}
+
 std::string VL_PUTC_N(const std::string& lhs, IData rhs, CData ths) VL_PURE {
     std::string lstring = lhs;
     const int32_t rhs_s = rhs;  // To signed value

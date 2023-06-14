@@ -1867,6 +1867,7 @@ public:
     void dtypeSetUInt64() { dtypep(findUInt64DType()); }  // Twostate
     void dtypeSetEmptyQueue() { dtypep(findEmptyQueueDType()); }
     void dtypeSetVoid() { dtypep(findVoidDType()); }
+    void dtypeSetStream() { dtypep(findStreamDType()); }
 
     // Data type locators
     AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::LOGIC); }
@@ -1878,6 +1879,7 @@ public:
     AstNodeDType* findCHandleDType() const { return findBasicDType(VBasicDTypeKwd::CHANDLE); }
     AstNodeDType* findEmptyQueueDType() const;
     AstNodeDType* findVoidDType() const;
+    AstNodeDType* findStreamDType() const;
     AstNodeDType* findQueueIndexDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;

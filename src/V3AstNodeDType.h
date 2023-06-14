@@ -1188,6 +1188,34 @@ public:
     int widthTotalBytes() const override { return sizeof(std::map<std::string, std::string>); }
     bool isCompound() const override { return true; }
 };
+class AstStreamDType final : public AstNodeDType {
+    // Stream data type, used only as data type of stream operations
+    // Should behave like AstPackArrayDType, but it doesn't have a size
+public:
+    explicit AstStreamDType(FileLine* fl)
+        : ASTGEN_SUPER_StreamDType(fl) {
+        dtypep(this);
+    }
+    ASTGEN_MEMBERS_AstStreamDType;
+    void dumpSmall(std::ostream& str) const override;
+    bool hasDType() const override { return true; }
+    bool maybePointedTo() const override { return true; }
+    bool undead() const override { return true; }
+    AstNodeDType* subDTypep() const override VL_MT_SAFE { return nullptr; }
+    AstNodeDType* virtRefDTypep() const override { return nullptr; }
+    void virtRefDTypep(AstNodeDType* nodep) override {}
+    bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
+    AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
+    // cppcheck-suppress csyleCast
+    AstNodeDType* skipRefp() const override VL_MT_STABLE { return (AstNodeDType*)this; }
+    // cppcheck-suppress csyleCast
+    AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
+    // cppcheck-suppress csyleCast
+    AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
+    int widthAlignBytes() const override { return 1; }
+    int widthTotalBytes() const override { return 1; }
+    bool isCompound() const override { return false; }
+};
 class AstUnsizedArrayDType final : public AstNodeDType {
     // Unsized/open-range Array data type, ie "some_dtype var_name []"
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
