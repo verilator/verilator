@@ -49,6 +49,7 @@
 #include "V3Expand.h"
 #include "V3File.h"
 #include "V3Force.h"
+#include "V3Fork.h"
 #include "V3Gate.h"
 #include "V3Global.h"
 #include "V3Graph.h"
@@ -220,6 +221,10 @@ static void process() {
         // Remove cell arrays (must be between V3Width and scoping)
         V3Inst::dearrayAll(v3Global.rootp());
         V3LinkDot::linkDotArrayed(v3Global.rootp());
+
+        // Create dedicated tasks for fork..join_any / fork_join_none processes
+        if (V3Fork::makeTasks(v3Global.rootp()))
+            V3LinkDot::linkDotPrimary(v3Global.rootp());  // Link newly created tasks
 
         // Task inlining & pushing BEGINs names to variables/cells
         // Begin processing must be after Param, before module inlining

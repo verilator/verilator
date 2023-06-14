@@ -1224,6 +1224,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-fsubst", FOnOff, &m_fSubst);
     DECL_OPTION("-fsubst-const", FOnOff, &m_fSubstConst);
     DECL_OPTION("-ftable", FOnOff, &m_fTable);
+    DECL_OPTION("-ftaskify-all-forked", FOnOff, &m_fTaskifyAll).undocumented();  // Debug
 
     DECL_OPTION("-G", CbPartialMatch, [this](const char* optp) { addParameter(optp, false); });
     DECL_OPTION("-gate-stmts", Set, &m_gateStmts);

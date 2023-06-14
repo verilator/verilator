@@ -299,17 +299,6 @@ void transformForks(AstNetlist* const netlistp) {
                     // Not func local, or not declared before the fork. Their lifetime is longer
                     // than the forked process. Skip
                     return;
-                } else if (m_forkp->joinType().join()) {
-                    // If it's fork..join, we can refer to variables from the parent process
-                } else {
-                    // TODO: It is possible to relax this by allowing the use of such variables up
-                    // until the first await. Also, variables defined within a forked process
-                    // (inside a begin) are extracted out by V3Begin, so they also trigger this
-                    // error. Preventing this (or detecting such cases and moving the vars back)
-                    // would also allow for using them freely.
-                    refp->v3warn(E_UNSUPPORTED, "Unsupported: variable local to a forking process "
-                                                "accessed in a fork..join_any or fork..join_none");
-                    return;
                 }
                 // Remap the reference
                 AstVarScope* const vscp = refp->varScopep();
