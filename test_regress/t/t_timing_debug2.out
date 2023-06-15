@@ -64,7 +64,9 @@
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__VnoInFunc_do_fork
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__Vfork_h########__0__0
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__Vfork_h########__0__1
--V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__Vfork_h########__0__2
+-V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__Vfork_h########__0__0
+-V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__Vfork_h########__0__1
+-V{t#,#}             Awaiting join of fork at: t/t_timing_class.v:222
 -V{t#,#}             Awaiting join of fork at: t/t_timing_class.v:217
 -V{t#,#}+      Vt_timing_debug2_t___eval_initial__TOP__t__7
 -V{t#,#}+    Vt_timing_debug2___024root___eval_settle
@@ -97,11 +99,11 @@
 -V{t#,#}             Awaiting time 30: Process waiting at t/t_timing_class.v:109
 -V{t#,#}             Awaiting time 40: Process waiting at t/t_timing_class.v:145
 -V{t#,#}             Awaiting time 50: Process waiting at t/t_timing_class.v:219
--V{t#,#}             Awaiting time 20: Process waiting at t/t_timing_class.v:223
--V{t#,#}             Awaiting time 80: Process waiting at t/t_timing_class.v:228
--V{t#,#}             Awaiting time 101: Process waiting at t/t_timing_class.v:244
+-V{t#,#}             Awaiting time 20: Process waiting at t/t_timing_class.v:224
+-V{t#,#}             Awaiting time 80: Process waiting at t/t_timing_class.v:229
+-V{t#,#}             Awaiting time 101: Process waiting at t/t_timing_class.v:246
 -V{t#,#}         Resuming delayed processes
--V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:244
+-V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:246
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aDelay10::__VnoInFunc_do_sth_else
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aDelay20::__VnoInFunc_do_delay
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:146
@@ -137,14 +139,14 @@
 -V{t#,#}             Awaiting time 30: Process waiting at t/t_timing_class.v:109
 -V{t#,#}             Awaiting time 40: Process waiting at t/t_timing_class.v:145
 -V{t#,#}             Awaiting time 50: Process waiting at t/t_timing_class.v:219
--V{t#,#}             Awaiting time 101: Process waiting at t/t_timing_class.v:223
--V{t#,#}             Awaiting time 80: Process waiting at t/t_timing_class.v:228
+-V{t#,#}             Awaiting time 101: Process waiting at t/t_timing_class.v:224
+-V{t#,#}             Awaiting time 80: Process waiting at t/t_timing_class.v:229
 -V{t#,#}         Resuming delayed processes
--V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:228
+-V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:229
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aForkDelayClass::new
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aForkDelayClass::_ctor_var_reset
--V{t#,#}             Process forked at t/t_timing_class.v:222 finished
--V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:223
+-V{t#,#}             Process forked at t/t_timing_class.v:223 finished
+-V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:224
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aEventClass::__VnoInFunc_wake
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
@@ -445,7 +447,9 @@
 -V{t#,#}             Awaiting time 70: Process waiting at t/t_timing_class.v:76
 -V{t#,#}         Resuming delayed processes
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:76
--V{t#,#}             Process forked at t/t_timing_class.v:227 finished
+-V{t#,#}             Process forked at t/t_timing_class.v:228 finished
+-V{t#,#}             Resuming: Process waiting at (null):0
+-V{t#,#}             Process forked at t/t_timing_class.v:222 finished
 -V{t#,#}             Resuming: Process waiting at (null):0
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:109
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aDelay40::__VnoInFunc_do_sth_else
