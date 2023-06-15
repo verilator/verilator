@@ -6377,7 +6377,7 @@ private:
     }
     void checkClassAssign(AstNode* nodep, const char* side, AstNode* rhsp,
                           AstNodeDType* lhsDTypep) {
-        if (AstClassRefDType* const lhsClassRefp = VN_CAST(lhsDTypep, ClassRefDType)) {
+        if (AstClassRefDType* const lhsClassRefp = VN_CAST(lhsDTypep->skipRefp(), ClassRefDType)) {
             UASSERT_OBJ(rhsp->dtypep(), rhsp, "Node has no type");
             AstNodeDType* const rhsDtypep = rhsp->dtypep()->skipRefp();
             if (AstClassRefDType* const rhsClassRefp = VN_CAST(rhsDtypep, ClassRefDType)) {
@@ -6385,7 +6385,7 @@ private:
             } else if (auto* const constp = VN_CAST(rhsp, Const)) {
                 if (constp->num().isNull()) return;
             }
-            nodep->v3error(side << " expects a " << lhsDTypep->prettyTypeName() << ", got "
+            nodep->v3error(side << " expects a " << lhsClassRefp->prettyTypeName() << ", got "
                                 << rhsDtypep->prettyTypeName());
         }
     }
