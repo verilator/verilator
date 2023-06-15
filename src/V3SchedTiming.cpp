@@ -290,15 +290,18 @@ void transformForks(AstNetlist* const netlistp) {
             funcp->foreach([&](AstNodeVarRef* refp) {
                 AstVar* const varp = refp->varp();
                 AstBasicDType* const dtypep = varp->dtypep()->basicp();
-                // If it a fork sync or an intra-assignment variable, pass it by value
-                const bool passByValue = (dtypep && dtypep->isForkSync())
-                                         || VString::startsWith(varp->name(), "__Vintra");
-                if (passByValue) {
-                    // We can just pass it to the new function
+                bool passByValue = false;
+                if (VString::startsWith(varp->name(), "__Vintra")) {
+                    // Pass it by value to the new function, as otherwise there are issues with
+                    // -flocalize (see t_timing_intra_assign)
+                    passByValue = true;
                 } else if (!varp->user1() || !varp->isFuncLocal()) {
                     // Not func local, or not declared before the fork. Their lifetime is longer
                     // than the forked process. Skip
                     return;
+                } else if (dtypep && dtypep->isForkSync()) {
+                    // We can just pass it by value to the new function
+                    passByValue = true;
                 }
                 // Remap the reference
                 AstVarScope* const vscp = refp->varScopep();
