@@ -518,7 +518,7 @@ class MTaskEdge final : public V3GraphEdge, public MergeCandidate {
     // MEMBERS
     // This edge can be in 2 EdgeHeaps, one forward and one reverse. We allocate the heap nodes
     // directly within the edge as they are always required and this makes association cheap.
-    EdgeHeap::Node m_edgeHeapNode[GraphWay::NUM_WAYS];
+    std::array<EdgeHeap::Node, GraphWay::NUM_WAYS> m_edgeHeapNode;
 
 public:
     // CONSTRUCTORS
@@ -1060,7 +1060,7 @@ class PartPropagateCpSelfTest final {
 private:
     // MEMBERS
     V3Graph m_graph;  // A graph
-    LogicMTask* m_vx[50];  // All vertices within the graph
+    std::array<LogicMTask*, 50> m_vx;  // All vertices within the graph
 
     // CONSTRUCTORS
     PartPropagateCpSelfTest() = default;
