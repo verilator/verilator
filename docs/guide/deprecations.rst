@@ -17,6 +17,11 @@ C++11 compiler support
   Verilator will require C++20 or newer compilers for both compiling
   Verilator and compiling all Verilated models no sooner than January 2025.
 
+32-bit compiler support
+  Verilator currently regresses both 64-bit and 32-bit pointer modes (GCC's
+  `-m64` and `-m32`).  Support for 32-bit `-m32` mode will be deprecated no
+  sooner than January 2024.
+
 Verilated_heavy.h
   The legacy "verilated_heavy.h" include was replaced with just including
   "verilated.h". Verilated_heavy.h is planned for removal no sooner than
