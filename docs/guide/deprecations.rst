@@ -22,11 +22,6 @@ C++11 compiler support
   `-m64` and `-m32`).  Support for 32-bit `-m32` mode will be deprecated no
   sooner than January 2024.
 
-Verilated_heavy.h
-  The legacy "verilated_heavy.h" include was replaced with just including
-  "verilated.h". Verilated_heavy.h is planned for removal no sooner than
-  July 2022.
-
 Option `-O<letter>`
   The debug `-O<letter>` options have been replaced with
   `-fno-<optimization>` debug options to match GCC. The old options are
