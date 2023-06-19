@@ -709,7 +709,7 @@ class ParamProcessor final : public VNDeleter {
             }
         } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
             AstNodeDType* const exprp = VN_CAST(pinp->exprp(), NodeDType);
-            const AstNodeDType* const origp = modvarp->subDTypep();
+            const AstNodeDType* const origp = modvarp->skipRefToEnump();
             if (!exprp) {
                 pinp->v3error("Parameter type pin value isn't a type: Param "
                               << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
