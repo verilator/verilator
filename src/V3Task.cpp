@@ -657,8 +657,15 @@ private:
                         args += ", ";
                         dpiproto += ", ";
                     }
+                    // Include both the Verilator and C type names, as if either
+                    // differ we may get C compilation problems later
+                    const std::string dpiType = portp->dpiArgType(false, false);
+                    dpiproto += dpiType;
+                    const std::string vType = portp->dtypep()->prettyDTypeName();
+                    if (!portp->isDpiOpenArray() && dpiType != vType) {
+                        dpiproto += " /* " + vType + " */ ";
+                    }
                     args += portp->name();  // Leftover so ,'s look nice
-                    if (nodep->dpiImport()) dpiproto += portp->dpiArgType(false, false);
                 }
             }
         }
@@ -929,15 +936,15 @@ private:
             m_dpiNames.emplace(nodep->cname(), std::make_tuple(nodep, signature, funcp));
             return funcp;
         } else {
-            // Seen this cname before. Check if it's the same prototype.
+            // Seen this cname import before. Check if it's the same prototype.
             const AstNodeFTask* firstNodep;
             string firstSignature;
             AstCFunc* firstFuncp;
             std::tie(firstNodep, firstSignature, firstFuncp) = it->second;
             if (signature != firstSignature) {
                 // Different signature, so error.
-                nodep->v3error("Duplicate declaration of DPI function with different signature: "
-                               << nodep->prettyNameQ() << '\n'
+                nodep->v3error("Duplicate declaration of DPI function with different signature: '"
+                               << nodep->cname() << "'\n"
                                << nodep->warnContextPrimary() << '\n'
                                << nodep->warnMore()  //
                                << "... New signature:      " << signature << '\n'  //

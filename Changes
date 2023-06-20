@@ -14,6 +14,7 @@ Verilator 5.013 devel
 **Minor:**
 
 * Deprecation planned for 32-bit pointer -m32 mode (#4268).
+* Fix error when multiple duplicate DPI exports (#4301).
 
 
 Verilator 5.012 2023-06-13
