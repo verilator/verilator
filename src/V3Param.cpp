@@ -690,22 +690,25 @@ class ParamProcessor final : public VNDeleter {
             } else {
                 V3Const::constifyParamsEdit(pinp->exprp());
                 AstConst* exprp = VN_CAST(pinp->exprp(), Const);
+                AstConst* origp = VN_CAST(modvarp->valuep(), Const);
                 if (exprp && isString(modvarp->subDTypep())) {
                     pinp->exprp()->replaceWith(new AstConst{exprp->fileline(), AstConst::String{},
                                                             exprp->num().toString()});
                     exprp->deleteTree();
-                    exprp = VN_CAST(pinp->exprp(), Const);
+                    exprp = VN_AS(pinp->exprp(), Const);
+                    if (origp) {
+                        modvarp->valuep()->replaceWith(new AstConst{
+                            origp->fileline(), AstConst::String{}, origp->num().toString()});
+                        origp->deleteTree();
+                        origp = VN_AS(modvarp->valuep(), Const);
+                    }
                 }
-                const AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
                 if (!exprp) {
                     if (debug()) pinp->dumpTree("-  ");
                     pinp->v3error("Can't convert defparam value to constant: Param "
                                   << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
                     pinp->exprp()->replaceWith(new AstConst{
                         pinp->fileline(), AstConst::WidthedValue{}, modvarp->width(), 0});
-                } else if (origp && isString(modvarp->subDTypep())
-                           && origp->num().toString() == exprp->num().toString()) {
-                    // string
                 } else if (origp && exprp->sameTree(origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
