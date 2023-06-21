@@ -698,9 +698,9 @@ class ParamProcessor final : public VNDeleter {
                                   << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
                     pinp->exprp()->replaceWith(new AstConst{
                         pinp->fileline(), AstConst::WidthedValue{}, modvarp->width(), 0});
-                    // } else if (origp && isString(modvarp->subDTypep()) &&
-                    // origp->num().toString() == exprp->num().toString()) {
-                    //     // string
+                } else if (origp && isString(modvarp->subDTypep())
+                           && origp->num().toString() == exprp->num().toString()) {
+                    // string
                 } else if (origp && exprp->sameTree(origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
