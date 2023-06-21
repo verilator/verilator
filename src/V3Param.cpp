@@ -689,8 +689,13 @@ class ParamProcessor final : public VNDeleter {
                 any_overridesr = true;
             } else {
                 V3Const::constifyParamsEdit(pinp->exprp());
-                AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
-                if (isString(modvarp->subDTypep())) exprp->dtypeSetString();
+                AstConst* exprp = VN_CAST(pinp->exprp(), Const);
+                if (exprp && isString(modvarp->subDTypep())) {
+                    pinp->exprp()->replaceWith(new AstConst{exprp->fileline(), AstConst::String{},
+                                                            exprp->num().toString()});
+                    exprp->deleteTree();
+                    exprp = VN_CAST(pinp->exprp(), Const);
+                }
                 const AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
                 if (!exprp) {
                     if (debug()) pinp->dumpTree("-  ");
