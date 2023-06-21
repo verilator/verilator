@@ -91,7 +91,7 @@ private:
         // ACCESSORS
         string name() const override VL_MT_STABLE {
             if (m_classp) {
-                if (AstCFunc* cfunc = VN_CAST(nodep(), CFunc)) {
+                if (VN_IS(nodep(), CFunc)) {
                     return cvtToHex(nodep()) + ' ' + classp()->name() + "::" + nodep()->name();
                 }
             }
