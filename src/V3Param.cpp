@@ -394,6 +394,11 @@ class ParamProcessor final : public VNDeleter {
         }
         return nullptr;
     }
+    bool isString(AstNodeDType* nodep) {
+        if (AstBasicDType* basicp = VN_CAST(nodep->skipRefToEnump(), BasicDType))
+            return basicp->isString();
+        return false;
+    }
     void collectPins(CloneMap* clonemapp, AstNodeModule* modp, bool originalIsCopy) {
         // Grab all I/O so we can remap our pins later
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -685,6 +690,7 @@ class ParamProcessor final : public VNDeleter {
             } else {
                 V3Const::constifyParamsEdit(pinp->exprp());
                 AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
+                if (isString(modvarp->subDTypep())) exprp->dtypeSetString();
                 const AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
                 if (!exprp) {
                     if (debug()) pinp->dumpTree("-  ");
@@ -692,6 +698,9 @@ class ParamProcessor final : public VNDeleter {
                                   << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
                     pinp->exprp()->replaceWith(new AstConst{
                         pinp->fileline(), AstConst::WidthedValue{}, modvarp->width(), 0});
+                    // } else if (origp && isString(modvarp->subDTypep()) &&
+                    // origp->num().toString() == exprp->num().toString()) {
+                    //     // string
                 } else if (origp && exprp->sameTree(origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
