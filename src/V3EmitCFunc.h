@@ -269,7 +269,6 @@ public:
         puts(nodep->nameProtect() + "\\n\"); );\n");
 
         // Instantiate a process class if it's going to be needed somewhere later
-        bool needsProcessDef = false;
         nodep->forall([&](const AstNodeCCall* ccallp) -> bool {
             if (ccallp->funcp()->needProcess() && !VN_IS(ccallp->backp(), CAwait)) {
                 if (!nodep->needProcess() && !m_instantiatesOwnProcess) {
