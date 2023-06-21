@@ -33,6 +33,9 @@ module t;
 
    integer v_length, v_off;
 
+   wire signed [16:0] wire17 = 17'h1ffff;
+   logic signed [16:0] scan17;
+
 `ifdef TEST_VERBOSE
  `define verbose 1'b1
 `else
@@ -307,6 +310,11 @@ module t;
         if (v_off != 0) $stop;
 
          $fclose(file);
+      end
+
+      begin
+         $sscanf("-1", "%d", scan17);
+         if (scan17 !== wire17) $stop;
       end
 
       $write("*-* All Finished *-*\n");

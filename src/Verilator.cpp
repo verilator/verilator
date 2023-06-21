@@ -49,6 +49,7 @@
 #include "V3Expand.h"
 #include "V3File.h"
 #include "V3Force.h"
+#include "V3Fork.h"
 #include "V3Gate.h"
 #include "V3Global.h"
 #include "V3Graph.h"
@@ -144,6 +145,7 @@ static void process() {
     if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
     if (v3Global.opt.debugExitUvm()) {
         V3Error::abortIfErrors();
+        if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
         cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
         std::exit(0);
     }
@@ -219,6 +221,10 @@ static void process() {
         // Remove cell arrays (must be between V3Width and scoping)
         V3Inst::dearrayAll(v3Global.rootp());
         V3LinkDot::linkDotArrayed(v3Global.rootp());
+
+        // Create dedicated tasks for fork..join_any / fork_join_none processes
+        if (V3Fork::makeTasks(v3Global.rootp()))
+            V3LinkDot::linkDotPrimary(v3Global.rootp());  // Link newly created tasks
 
         // Task inlining & pushing BEGINs names to variables/cells
         // Begin processing must be after Param, before module inlining
@@ -623,6 +629,7 @@ static void verilate(const string& argString) {
         V3Partition::selfTestNormalizeCosts();
         V3Broken::selfTest();
         V3ThreadPool::selfTest();
+        UINFO(2, "selfTest done\n");
     }
 
     // Read first filename
@@ -635,7 +642,7 @@ static void verilate(const string& argString) {
     }
 
     // Final steps
-    V3Global::dumpCheckGlobalTree("final", 990, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("final", 990, dumpTreeLevel() >= 3);
 
     V3Error::abortIfErrors();
 

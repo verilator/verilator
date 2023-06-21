@@ -40,6 +40,38 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
+// Find nodes with side effects, to mark as non-expandable
+
+class ExpandOkVisitor final : public VNVisitor {
+private:
+    // NODE STATE
+    //  AstNode::user2()        -> bool.  Is pure (along with all children)
+    const VNUser2InUse m_inuser2;
+
+    // STATE - for current visit position (use VL_RESTORER)
+    // Tracks similar to AstNode::isTreePureRecurse(), but avoid O(n^2)
+    // False = pure, as nodes that ExpandVisitor inserts preserve pureness
+    bool m_isImpure = true;  // Currently pure
+
+    void visit(AstNode* nodep) override {
+        bool selfImpure = !nodep->isPure();
+        {
+            VL_RESTORER(m_isImpure);
+            m_isImpure = false;
+            iterateChildren(nodep);
+            selfImpure |= m_isImpure;
+            nodep->user2(selfImpure);
+        }
+        m_isImpure |= selfImpure;
+    }
+
+public:
+    // CONSTRUCTORS
+    explicit ExpandOkVisitor(AstNetlist* nodep) { iterate(nodep); }
+    ~ExpandOkVisitor() = default;
+};
+
+//######################################################################
 // Expand state, as a visitor of each AstNode
 
 class ExpandVisitor final : public VNVisitor {
@@ -48,15 +80,24 @@ private:
     //  AstNode::user1()        -> bool.  Processed
     const VNUser1InUse m_inuser1;
 
-    // STATE
+    // STATE - for current visit position (use VL_RESTORER)
     AstNode* m_stmtp = nullptr;  // Current statement
+
+    // STATE - across all visitors
     VDouble0 m_statWides;  // Statistic tracking
     VDouble0 m_statWideWords;  // Statistic tracking
     VDouble0 m_statWideLimited;  // Statistic tracking
 
     // METHODS
+    // Use state that ExpandOkVisitor calculated
+    bool isImpure(AstNode* nodep) {
+        const bool impure = nodep->user2();
+        if (impure) UINFO(9, "      impure " << nodep << endl);
+        return impure;
+    }
 
-    bool doExpand(AstNode* nodep) {
+    bool doExpandWide(AstNode* nodep) {
+        if (isImpure(nodep)) return false;
         ++m_statWides;
         if (nodep->widthWords() <= v3Global.opt.expandLimit()) {
             m_statWideWords += nodep->widthWords();
@@ -225,7 +266,7 @@ private:
 
     bool expandWide(AstNodeAssign* nodep, AstConst* rhsp) {
         UINFO(8, "    Wordize ASSIGN(CONST) " << nodep << endl);
-        if (!doExpand(nodep)) return false;
+        if (!doExpandWide(nodep)) return false;
         // -> {for each_word{ ASSIGN(WORDSEL(wide,#),WORDSEL(CONST,#))}}
         if (rhsp->num().isFourState()) {
             rhsp->v3warn(E_UNSUPPORTED,  // LCOV_EXCL_LINE  // impossible?
@@ -241,7 +282,7 @@ private:
     //-------- Uniops
     bool expandWide(AstNodeAssign* nodep, AstVarRef* rhsp) {
         UINFO(8, "    Wordize ASSIGN(VARREF) " << nodep << endl);
-        if (!doExpand(nodep)) return false;
+        if (!doExpandWide(nodep)) return false;
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w, newAstWordSelClone(rhsp, w));
         }
@@ -251,7 +292,7 @@ private:
         UINFO(8, "    Wordize ASSIGN(ARRAYSEL) " << nodep << endl);
         UASSERT_OBJ(!VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType), nodep,
                     "ArraySel with unpacked arrays should have been removed in V3Slice");
-        if (!doExpand(nodep)) return false;
+        if (!doExpandWide(nodep)) return false;
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w, newAstWordSelClone(rhsp, w));
         }
@@ -260,7 +301,7 @@ private:
     bool expandWide(AstNodeAssign* nodep, AstNot* rhsp) {
         UINFO(8, "    Wordize ASSIGN(NOT) " << nodep << endl);
         // -> {for each_word{ ASSIGN(WORDSEL(wide,#),NOT(WORDSEL(lhs,#))) }}
-        if (!doExpand(nodep)) return false;
+        if (!doExpandWide(nodep)) return false;
         FileLine* const fl = rhsp->fileline();
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w, new AstNot{fl, newAstWordSelClone(rhsp->lhsp(), w)});
@@ -270,7 +311,7 @@ private:
     //-------- Biops
     bool expandWide(AstNodeAssign* nodep, AstAnd* rhsp) {
         UINFO(8, "    Wordize ASSIGN(AND) " << nodep << endl);
-        if (!doExpand(nodep)) return false;
+        if (!doExpandWide(nodep)) return false;
         FileLine* const fl = nodep->fileline();
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w,
@@ -281,7 +322,7 @@ private:
     }
     bool expandWide(AstNodeAssign* nodep, AstOr* rhsp) {
         UINFO(8, "    Wordize ASSIGN(OR) " << nodep << endl);
-        if (!doExpand(nodep)) return false;
+        if (!doExpandWide(nodep)) return false;
         FileLine* const fl = nodep->fileline();
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w,
@@ -292,7 +333,7 @@ private:
     }
     bool expandWide(AstNodeAssign* nodep, AstXor* rhsp) {
         UINFO(8, "    Wordize ASSIGN(XOR) " << nodep << endl);
-        if (!doExpand(nodep)) return false;
+        if (!doExpandWide(nodep)) return false;
         FileLine* const fl = nodep->fileline();
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w,
@@ -304,7 +345,7 @@ private:
     //-------- Triops
     bool expandWide(AstNodeAssign* nodep, AstNodeCond* rhsp) {
         UINFO(8, "    Wordize ASSIGN(COND) " << nodep << endl);
-        if (!doExpand(nodep)) return false;
+        if (!doExpandWide(nodep)) return false;
         FileLine* const fl = nodep->fileline();
         for (int w = 0; w < nodep->widthWords(); ++w) {
             addWordAssign(nodep, w,
@@ -322,6 +363,7 @@ private:
         if (nodep->isWide()) {
             // See under ASSIGN(EXTEND)
         } else {
+            if (isImpure(nodep)) return;
             AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
             AstNodeExpr* newp = lhsp;
             if (nodep->isQuad()) {
@@ -343,7 +385,7 @@ private:
     }
     bool expandWide(AstNodeAssign* nodep, AstExtend* rhsp) {
         UINFO(8, "    Wordize ASSIGN(EXTEND) " << nodep << endl);
-        if (!doExpand(nodep)) return false;
+        if (!doExpandWide(nodep)) return false;
         AstNodeExpr* const rlhsp = rhsp->lhsp();
         for (int w = 0; w < rlhsp->widthWords(); ++w) {
             addWordAssign(nodep, w, newAstWordSelClone(rlhsp, w));
@@ -365,6 +407,7 @@ private:
         } else if (nodep->isWide()) {
             // See under ASSIGN(WIDE)
         } else if (nodep->fromp()->isWide()) {
+            if (isImpure(nodep)) return;
             UINFO(8, "    SEL(wide) " << nodep << endl);
             UASSERT_OBJ(nodep->widthConst() <= 64, nodep, "Inconsistent width");
             // Selection amounts
@@ -386,7 +429,7 @@ private:
                 const uint32_t midMsbOffset
                     = std::min<uint32_t>(nodep->widthConst(), VL_EDATASIZE) - 1;
                 AstNodeExpr* const midMsbp = new AstAdd{lfl, new AstConst{lfl, midMsbOffset},
-                                                        nodep->lsbp()->cloneTree(false)};
+                                                        nodep->lsbp()->cloneTree(true)};
                 AstNodeExpr* midwordp =  // SEL(from,[midwordnum])
                     newWordSel(ffl, nodep->fromp()->cloneTree(true), midMsbp, 0);
                 // newWordSel clones the index, so delete it
@@ -414,7 +457,7 @@ private:
             if (nodep->widthConst() > VL_EDATASIZE) {
                 const uint32_t hiMsbOffset = nodep->widthConst() - 1;
                 AstNodeExpr* const hiMsbp = new AstAdd{lfl, new AstConst{lfl, hiMsbOffset},
-                                                       nodep->lsbp()->cloneTree(false)};
+                                                       nodep->lsbp()->cloneTree(true)};
                 AstNodeExpr* hiwordp =  // SEL(from,[hiwordnum])
                     newWordSel(ffl, nodep->fromp()->cloneTree(true), hiMsbp);
                 // newWordSel clones the index, so delete it
@@ -439,15 +482,16 @@ private:
             newp->dtypeFrom(nodep);
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {  // Long/Quad from Long/Quad
+            // No isImpure() check - can handle side effects in below
             UINFO(8, "    SEL->SHIFT " << nodep << endl);
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* fromp = nodep->fromp()->unlinkFrBack();
             AstNodeExpr* const lsbp = nodep->lsbp()->unlinkFrBack();
-            if (nodep->isQuad() && !fromp->isQuad()) { fromp = new AstCCast{fl, fromp, nodep}; }
+            if (nodep->isQuad() && !fromp->isQuad()) fromp = new AstCCast{fl, fromp, nodep};
             // {large}>>32 requires 64-bit shift operation; then cast
             AstNodeExpr* newp = new AstShiftR{fl, fromp, dropCondBound(lsbp), fromp->width()};
             newp->dtypeFrom(fromp);
-            if (!nodep->isQuad() && fromp->isQuad()) { newp = new AstCCast{fl, newp, nodep}; }
+            if (!nodep->isQuad() && fromp->isQuad()) newp = new AstCCast{fl, newp, nodep};
             newp->dtypeFrom(nodep);
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
@@ -455,7 +499,7 @@ private:
 
     bool expandWide(AstNodeAssign* nodep, AstSel* rhsp) {
         UASSERT_OBJ(nodep->widthMin() == rhsp->widthConst(), nodep, "Width mismatch");
-        if (!doExpand(nodep)) return false;
+        if (!doExpandWide(nodep)) return false;
         if (VN_IS(rhsp->lsbp(), Const) && VL_BITBIT_E(rhsp->lsbConst()) == 0) {
             const int lsb = rhsp->lsbConst();
             UINFO(8, "    Wordize ASSIGN(SEL,align) " << nodep << endl);
@@ -499,6 +543,7 @@ private:
         //      rhsp:  may be allones and can remove AND NOT gate
         //      lsbp:  constant or variable
         // Yuk.
+        if (isImpure(nodep)) return false;
         FileLine* const nfl = nodep->fileline();
         FileLine* const lfl = lhsp->fileline();
         const bool destwide = lhsp->fromp()->isWide();
@@ -649,13 +694,14 @@ private:
         if (nodep->isWide()) {
             // See under ASSIGN(WIDE)
         } else {
+            // No isImpure() check - can handle side effects in below
             UINFO(8, "    CONCAT " << nodep << endl);
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
             AstNodeExpr* rhsp = nodep->rhsp()->unlinkFrBack();
             const uint32_t rhsshift = rhsp->widthMin();
-            if (nodep->isQuad() && !lhsp->isQuad()) { lhsp = new AstCCast{fl, lhsp, nodep}; }
-            if (nodep->isQuad() && !rhsp->isQuad()) { rhsp = new AstCCast{fl, rhsp, nodep}; }
+            if (nodep->isQuad() && !lhsp->isQuad()) lhsp = new AstCCast{fl, lhsp, nodep};
+            if (nodep->isQuad() && !rhsp->isQuad()) rhsp = new AstCCast{fl, rhsp, nodep};
             AstNodeExpr* const newp = new AstOr{
                 fl, new AstShiftL{fl, lhsp, new AstConst{fl, rhsshift}, nodep->width()}, rhsp};
             newp->dtypeFrom(nodep);  // Unsigned
@@ -664,7 +710,7 @@ private:
     }
     bool expandWide(AstNodeAssign* nodep, AstConcat* rhsp) {
         UINFO(8, "    Wordize ASSIGN(CONCAT) " << nodep << endl);
-        if (!doExpand(rhsp)) return false;
+        if (!doExpandWide(rhsp)) return false;
         FileLine* const fl = rhsp->fileline();
         // Lhs or Rhs may be word, long, or quad.
         // newAstWordSelClone nicely abstracts the difference.
@@ -686,6 +732,7 @@ private:
         if (nodep->isWide()) {
             // See under ASSIGN(WIDE)
         } else {
+            if (isImpure(nodep)) return;
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
             AstNodeExpr* newp;
@@ -719,7 +766,7 @@ private:
     }
     bool expandWide(AstNodeAssign* nodep, AstReplicate* rhsp) {
         UINFO(8, "    Wordize ASSIGN(REPLICATE) " << nodep << endl);
-        if (!doExpand(rhsp)) return false;
+        if (!doExpandWide(rhsp)) return false;
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const lhsp = rhsp->lhsp();
         const int lhswidth = lhsp->widthMin();
@@ -748,6 +795,7 @@ private:
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
+            if (isImpure(nodep)) return;
             UINFO(8, "    Wordize EQ/NEQ " << nodep << endl);
             // -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
             FileLine* const fl = nodep->fileline();
@@ -773,6 +821,7 @@ private:
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
         if (nodep->lhsp()->isWide()) {
+            if (isImpure(nodep)) return;
             UINFO(8, "    Wordize REDOR " << nodep << endl);
             // -> (0!={or{for each_word{WORDSEL(lhs,#)}}}
             AstNodeExpr* newp = nullptr;
@@ -783,6 +832,7 @@ private:
             newp = new AstNeq{fl, new AstConst{fl, AstConst::SizedEData{}, 0}, newp};
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {
+            // No isImpure() check - can handle side effects in below
             UINFO(8, "    REDOR->EQ " << nodep << endl);
             AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
             AstNodeExpr* const newp = new AstNeq{
@@ -795,6 +845,7 @@ private:
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
         if (nodep->lhsp()->isWide()) {
+            if (isImpure(nodep)) return;
             UINFO(8, "    Wordize REDAND " << nodep << endl);
             // -> (0!={and{for each_word{WORDSEL(lhs,#)}}}
             AstNodeExpr* newp = nullptr;
@@ -814,6 +865,7 @@ private:
                              newp};
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {
+            // No isImpure() check - can handle side effects in below
             UINFO(8, "    REDAND->EQ " << nodep << endl);
             AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
             AstNodeExpr* const newp = new AstEq{fl, new AstConst{fl, wordMask(lhsp)}, lhsp};
@@ -824,6 +876,7 @@ private:
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
+            if (isImpure(nodep)) return;
             UINFO(8, "    Wordize REDXOR " << nodep << endl);
             // -> (0!={redxor{for each_word{XOR(WORDSEL(lhs,#))}}}
             FileLine* const fl = nodep->fileline();
@@ -906,14 +959,14 @@ public:
     }
 };
 
-//----------------------------------------------------------------------
-// Top loop
-
 //######################################################################
 // Expand class functions
 
 void V3Expand::expandAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { ExpandVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("expand", 0, dumpTree() >= 3);
+    {
+        ExpandOkVisitor okVisitor{nodep};
+        ExpandVisitor{nodep};
+    }  // Destruct before checking
+    V3Global::dumpCheckGlobalTree("expand", 0, dumpTreeLevel() >= 3);
 }

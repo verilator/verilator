@@ -424,17 +424,15 @@ YAPF_FLAGS = -i
 yapf:
 	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
 
-FLAKE8 = flake8
-FLAKE8_FLAGS = \
-	--extend-exclude=fastcov.py \
-	--ignore=E123,E129,E251,E402,E501,W503,W504,E701
-
 PYLINT = pylint
 PYLINT_FLAGS = --score=n --disable=R0801
 
+RUFF = ruff
+RUFF_FLAGS = check --ignore=E402,E501,E701
+
 lint-py:
-	-$(FLAKE8) $(FLAKE8_FLAGS) $(PY_PROGRAMS)
 	-$(PYLINT) $(PYLINT_FLAGS) $(PY_PROGRAMS)
+	-$(RUFF) $(RUFF_FLAGS) $(PY_PROGRAMS)
 
 format-pl-exec:
 	-chmod a+x test_regress/t/*.pl

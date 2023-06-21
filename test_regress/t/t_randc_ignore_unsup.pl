@@ -10,8 +10,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
+top_filename("t/t_randc.v");
+
 compile(
-    verilator_flags2 => ['-Wno-RANDC'],
+    verilator_flags2 => ['-Wno-RANDC -DTEST_IGNORE_RANDC'],
     );
 
 execute(

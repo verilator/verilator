@@ -85,6 +85,7 @@ public:
     /// Construct mutex (without locking it)
     V3MutexImp() = default;
     ~V3MutexImp() = default;
+    VL_UNCOPYABLE(V3MutexImp);
     const V3MutexImp& operator!() const { return *this; }  // For -fthread_safety
     /// Acquire/lock mutex
     void lock() VL_ACQUIRE() VL_MT_SAFE {
@@ -137,23 +138,10 @@ public:
     /// Construct and hold given mutex lock until destruction or unlock()
     explicit V3LockGuardImp(T& mutexr) VL_ACQUIRE(mutexr) VL_MT_SAFE
         : m_mutexr(mutexr) {  // Need () or GCC 4.8 false warning
-        m_mutexr.lock();
+        mutexr.lock();
     }
     /// Destruct and unlock the mutex
     ~V3LockGuardImp() VL_RELEASE() { m_mutexr.unlock(); }
-    /// Lock the mutex
-    void lock() VL_ACQUIRE() VL_MT_SAFE { m_mutexr.lock(); }
-    /// Unlock the mutex
-    void unlock() VL_RELEASE() VL_MT_SAFE { m_mutexr.unlock(); }
-    /// Acquire/lock mutex and check for stop request.
-    /// It tries to lock the mutex and if it fails, it check if stop request was send.
-    /// It returns after locking mutex.
-    /// This function should be extracted to V3ThreadPool, but due to clang thread-safety
-    /// limitations it needs to be placed here.
-    void lockCheckStopRequest(std::function<void()> checkStopRequestFunction)
-        VL_ACQUIRE() VL_MT_SAFE {
-        m_mutexr.lockCheckStopRequest(checkStopRequestFunction);
-    }
 };
 
 using V3Mutex = V3MutexImp<std::mutex>;

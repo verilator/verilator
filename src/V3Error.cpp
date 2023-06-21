@@ -220,10 +220,10 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
                     tellManual(2);
                 }
 #ifndef V3ERROR_NO_GLOBAL_
-                if (dumpTree() || debug()) {
+                if (dumpTreeLevel() || debug()) {
                     V3Broken::allowMidvisitorCheck(true);
                     V3ThreadPool::s().requestExclusiveAccess([&]() VL_REQUIRES(m_mutex) {
-                        if (dumpTree()) {
+                        if (dumpTreeLevel()) {
                             v3Global.rootp()->dumpTreeFile(
                                 v3Global.debugFilename("final.tree", 990));
                         }

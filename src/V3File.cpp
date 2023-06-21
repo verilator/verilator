@@ -489,8 +489,8 @@ private:
     void startFilter(const string& command) {
         if (command == "") {}  // Prevent Unused
 #ifdef INFILTER_PIPE
-        int fd_stdin[2];
-        int fd_stdout[2];
+        int fd_stdin[2];  // Can't use std::array
+        int fd_stdout[2];  // Can't use std::array
         constexpr int P_RD = 0;
         constexpr int P_WR = 1;
 

@@ -11,11 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-scenarios(
-    vlt => 1,
-    vltmt => 1,
-    xsim => 1,
-    );
+scenarios(vlt_all => 1, xsim => 1);
 top_filename("t/t_lib_prot.v");
 
 $Self->{sim_time} = $Self->{benchmark} * 100 if $Self->{benchmark};

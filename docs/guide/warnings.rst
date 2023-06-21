@@ -769,11 +769,14 @@ List Of Warnings
    then automatic as static prevents the function from being reentrant,
    which may be a source of bugs, and/or performance issues.
 
-   If the function does not require static behavior, change it to "function
-   automatic".
+   If the function is in a module, and does not require static behavior,
+   change it to "function automatic".
 
-   If the function requires static behavior, change it to "function
-   static".
+   If the function is in a module, and requires static behavior, change it
+   to "function static".
+
+   If the function is in a package, it defaults to static, and label the
+   function's variables as static.
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
@@ -873,6 +876,102 @@ List Of Warnings
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
+.. option:: LIFETIME
+
+   Error when a variable is referenced in a process that can outlive the process
+   in which it was declared. This can happen when using 'fork..join_none' or
+   'fork..join_any' blocks, which spawn process that can outlive their parents.
+   This error occurs only when Verilator can't replace the reference with a
+   reference to copy of this variable, local to the forked process. For example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 3
+
+         task foo(int local_var);
+            fork
+               #10 local_var++;
+               #20 $display("local_var = %d", local_var);
+            join_none
+         endtask
+
+   In the example above 'local_var' exists only within scope of 'foo', once foo
+   finishes, the stack frame containing 'i' gets removed. However, the process
+   forked from foo continues, as it contains a delay. After 10 units of time
+   pass, this process attempts to modify 'local_var'. However, this variable no
+   longer exits. It can't be made local to the forked process upon spawning, because
+   it's modified and can be referenced somewhere else, for example in the other
+   forked process, that was delayed by 20 units of time in this example. Thus,
+   there's no viable stack allocation for it.
+
+   In order to fix it, you can create a local copy of the varible for
+   each process, if you don't intend to share its state outside of those processes.
+
+   Eg.:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 4
+
+         task foo(int local_var);
+            fork
+               #10 begin
+                  int forked_var = local_var;
+                  forked_var++;
+               end
+               #20 begin
+                  // Note that we are going to print the original value here,
+                  // as `forked_var`is a local copy that was initialized while
+                  // `foo` was still alive.
+                  int forked_var = local_var;
+                  $display("forked_var = %d", forked_var)
+               end
+            join_none
+         endtask
+
+   If you need to share its state, another strategy is to ensure it's allocated
+   statically:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 1
+
+         int static_var;
+
+         task foo();
+            fork
+               #10 static_var++;
+               #20 $display("static_var = %d", static_var);
+            join_none
+         endtask
+
+   However, if you need to be able to instantiate at runtime, the solution would be to
+   wrap it in an object, since the forked process can hold a reference to that object
+   and ensure that the variable stays alive this way:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2q
+
+         class Wrapper;
+            int m_var;
+
+            // Here we implicitly hold a reference to `this`
+            task foo();
+               fork
+                  #10 m_var++;
+                  #20 $display("this.m_var = %d", m_var);
+               join_none
+            endtask
+         endclass
+
+         // Here we explicitly hold a handle to an object
+         task bar(Wrapper wrapper);
+            fork
+               #10 wrapper.m_var++;
+               #20 $display("wrapper.m_var = %d", wrapper.m_var);
+            join_none
+         endtask
 
 .. option:: LITENDIAN
 
@@ -970,6 +1069,21 @@ List Of Warnings
    Error when a timing-related construct, such as an event control or delay,
    has been encountered, without specifying how Verilator should handle it
    (neither :vlopt:`--timing` nor :vlopt:`--no-timing` option was provided).
+
+
+.. option:: NEWERSTD
+
+   Warns that a feature requires a newer standard of Verilog or SystemVerilog
+   than the one specified by the :vlopt:`--language` option. For example, unsized
+   unbased literals (`'0`, `'1`, `'z`, `'x`) require 1800-2005 or later.
+
+   To avoid this warning, use a Verilog or SystemVerilog standard that
+   supports the feature. Alternatively, modify your code to use a different
+   syntax that is supported by the Verilog/SystemVerilog standard specified
+   by the :vlopt:`--language` option.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
 
 
 .. option:: NOLATCH

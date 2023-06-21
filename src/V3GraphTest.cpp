@@ -37,7 +37,7 @@ protected:
 
     // Utilities
     void dumpSelf() {
-        if (dumpGraph() >= 9) m_graph.dumpDotFilePrefixed("v3graphtest_" + name());
+        if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("v3graphtest_" + name());
     }
 
 public:

@@ -12,23 +12,15 @@ scenarios(simulator => 1);
 
 $Self->{main_time_multiplier} = 2;
 
-if (!$Self->have_coroutines) {
-    skip("No coroutine support");
-}
-elsif (!$Self->have_sc) {
-    skip("No SystemC installed");
-}
-else {
-    top_filename("t/t_net_delay.v");
+top_filename("t/t_net_delay.v");
 
-    compile(
-        verilator_flags2 => ["--sc --exe --timing --timescale 10ps/1ps"],
-        );
+compile(
+    verilator_flags2 => ["--sc --exe --timing --timescale 10ps/1ps"],
+    );
 
-    execute(
-        check_finished => 1,
-        );
-}
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

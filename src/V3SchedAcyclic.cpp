@@ -403,7 +403,7 @@ LogicByScope breakCycles(AstNetlist* netlistp, LogicByScope& combinationalLogic)
     if (graphp->empty()) return LogicByScope{};
 
     // Dump for debug
-    if (dumpGraph() >= 6) graphp->dumpDotFilePrefixed("sched-comb-cycles");
+    if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("sched-comb-cycles");
 
     // Make graph acyclic by cutting some edges. Note: This also colors strongly connected
     // components which reportCycles uses to print each SCCs separately.

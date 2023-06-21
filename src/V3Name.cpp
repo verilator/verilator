@@ -42,8 +42,8 @@ private:
     //  AstVar::user1()         -> bool.  Set true if already processed
     const VNUser1InUse m_inuser1;
 
-    // STATE
-    const AstNodeModule* m_modp = nullptr;
+    // STATE - for current visit position (use VL_RESTORER)
+    const AstNodeModule* m_modp = nullptr;  // Current module
 
     // METHODS
     void rename(AstNode* nodep, bool addPvt) {
@@ -150,5 +150,5 @@ public:
 void V3Name::nameAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { NameVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("name", 0, dumpTree() >= 6);
+    V3Global::dumpCheckGlobalTree("name", 0, dumpTreeLevel() >= 6);
 }

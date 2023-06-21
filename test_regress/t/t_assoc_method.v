@@ -139,6 +139,11 @@ module t (/*AUTOARG*/);
       i = qe.xor();
       `checkh(i, 32'b0);
 
+      q = '{10:1, 11:2};
+      qe = '{10:1, 11:2};
+      `checkh(q == qe, 1'b1);
+      `checkh(q != qe, 1'b0);
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

@@ -315,15 +315,28 @@ void VlRNG::srandom(uint64_t n) VL_MT_UNSAFE {
     if (VL_COUNTONES_I(m_state[0]) < 10) m_state[0] = ~m_state[0];
     if (VL_COUNTONES_I(m_state[1]) < 10) m_state[1] = ~m_state[1];
 }
-// Unused: void VlRNG::set_randstate(const std::string& state) VL_MT_UNSAFE {
-// Unused:     if (VL_LIKELY(state.length() == sizeof(m_state))) {
-// Unused:         memcpy(m_state, state.data(), sizeof(m_state));
-// Unused:     }
-// Unused: }
-// Unused: std::string VlRNG::get_randstate() const VL_MT_UNSAFE {
-// Unused:     std::string result{reinterpret_cast<const char *>(&m_state), sizeof(m_state)};
-// Unused:     return result;
-// Unused: }
+std::string VlRNG::get_randstate() const VL_MT_UNSAFE {
+    // Though not stated in IEEE, assumption is the string must be printable
+    const char* const stateCharsp = reinterpret_cast<const char*>(&m_state);
+    static_assert(sizeof(m_state) == 16, "");
+    std::string result{"R00112233445566770011223344556677"};
+    for (int i = 0; i < sizeof(m_state); ++i) {
+        result[1 + i * 2] = 'a' + ((stateCharsp[i] >> 4) & 15);
+        result[1 + i * 2 + 1] = 'a' + (stateCharsp[i] & 15);
+    }
+    return result;
+}
+void VlRNG::set_randstate(const std::string& state) VL_MT_UNSAFE {
+    if (VL_UNLIKELY((state.length() != 1 + 2 * sizeof(m_state)) || (state[0] != 'R'))) {
+        VL_PRINTF_MT("%%Warning: set_randstate ignored as state string not from get_randstate\n");
+        return;
+    }
+    char* const stateCharsp = reinterpret_cast<char*>(&m_state);
+    for (int i = 0; i < sizeof(m_state); ++i) {
+        stateCharsp[i]
+            = (((state[1 + i * 2] - 'a') & 15) << 4) | ((state[1 + i * 2 + 1] - 'a') & 15);
+    }
+}
 
 static uint32_t vl_sys_rand32() VL_MT_SAFE {
     // Return random 32-bits using system library.
@@ -1360,16 +1373,18 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     *p = t_tmp;
                 } else if (obits <= VL_BYTESIZE) {
                     CData* const p = va_arg(ap, CData*);
-                    *p = owp[0];
+                    *p = VL_CLEAN_II(obits, obits, owp[0]);
                 } else if (obits <= VL_SHORTSIZE) {
                     SData* const p = va_arg(ap, SData*);
-                    *p = owp[0];
+                    *p = VL_CLEAN_II(obits, obits, owp[0]);
                 } else if (obits <= VL_IDATASIZE) {
                     IData* const p = va_arg(ap, IData*);
-                    *p = owp[0];
+                    *p = VL_CLEAN_II(obits, obits, owp[0]);
                 } else if (obits <= VL_QUADSIZE) {
                     QData* const p = va_arg(ap, QData*);
-                    *p = VL_SET_QW(owp);
+                    *p = VL_CLEAN_QQ(obits, obits, VL_SET_QW(owp));
+                } else {
+                    _vl_clean_inplace_w(obits, owp);
                 }
             }
             }  // switch
@@ -1879,6 +1894,12 @@ std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_PURE {
         }
     }
     return std::string{destout, len};
+}
+
+std::string VL_CVT_PACK_STR_ND(const VlQueue<std::string>& q) VL_PURE {
+    std::string output;
+    for (const std::string& s : q) output += s;
+    return output;
 }
 
 std::string VL_PUTC_N(const std::string& lhs, IData rhs, CData ths) VL_PURE {
@@ -3213,15 +3234,18 @@ void VerilatedAssertOneThread::fatal_different() VL_MT_SAFE {
 //===========================================================================
 // VlDeleter:: Methods
 
-void VlDeleter::deleteAll() {
+void VlDeleter::deleteAll() VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_deleteMutex) VL_MT_SAFE {
     while (true) {
-        VerilatedLockGuard lock{m_mutex};
-        if (m_newGarbage.empty()) break;
-        VerilatedLockGuard deleteLock{m_deleteMutex};
-        std::swap(m_newGarbage, m_toDelete);
-        lock.unlock();  // So destructors can enqueue new objects
+        {
+            VerilatedLockGuard lock{m_mutex};
+            if (m_newGarbage.empty()) break;
+            m_deleteMutex.lock();
+            std::swap(m_newGarbage, m_toDelete);
+            // m_mutex is unlocked here, so destructors can enqueue new objects
+        }
         for (VlDeletable* const objp : m_toDelete) delete objp;
         m_toDelete.clear();
+        m_deleteMutex.unlock();
     }
 }
 

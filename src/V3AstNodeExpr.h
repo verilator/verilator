@@ -975,6 +975,20 @@ public:
         , m_num(this, 1, on) {
         dtypeSetBit();
     }
+    class All0 {};
+    AstConst(FileLine* fl, All0)
+        : ASTGEN_SUPER_Const(fl)
+        , m_num(this, "'0") {
+        initWithNumber();
+        fl->warnOff(V3ErrorCode::NEWERSTD, true);
+    }
+    class All1 {};
+    AstConst(FileLine* fl, All1)
+        : ASTGEN_SUPER_Const(fl)
+        , m_num(this, "'1") {
+        initWithNumber();
+        fl->warnOff(V3ErrorCode::NEWERSTD, true);
+    }
     class Null {};
     AstConst(FileLine* fl, Null)
         : ASTGEN_SUPER_Const(fl)
@@ -1092,7 +1106,7 @@ public:
     // METHODS
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return false; }
+    bool cleanOut() const override { return true; }
     bool same(const AstNode*) const override { return true; }
 };
 class AstFError final : public AstNodeExpr {
@@ -1436,7 +1450,7 @@ public:
     void name(const string& name) override { m_name = name; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return false; }
+    bool cleanOut() const override { return true; }
     bool same(const AstNode* samep) const override { return true; }  // dtype comparison does it
     int instrCount() const override { return widthInstrs(); }
     AstVar* varp() const { return m_varp; }
@@ -2108,14 +2122,14 @@ class AstWith final : public AstNodeExpr {
     // Children: expression (equation establishing the with)
     // @astgen op1 := indexArgRefp : AstLambdaArgRef
     // @astgen op2 := valueArgRefp : AstLambdaArgRef
-    // @astgen op3 := exprp : AstNodeExpr
+    // @astgen op3 := exprp : List[AstNode]
 public:
     AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,
             AstNodeExpr* exprp)
         : ASTGEN_SUPER_With(fl) {
         this->indexArgRefp(indexArgRefp);
         this->valueArgRefp(valueArgRefp);
-        this->exprp(exprp);
+        this->addExprp(exprp);
     }
     ASTGEN_MEMBERS_AstWith;
     bool same(const AstNode* /*samep*/) const override { return true; }
@@ -4657,7 +4671,7 @@ public:
     ASTGEN_MEMBERS_AstCvtPackString;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAssign(lhs); }
     string emitVerilog() override { return "%f$_CAST(%l)"; }
-    string emitC() override { return "VL_CVT_PACK_STR_N%lq(%lW, %li)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }

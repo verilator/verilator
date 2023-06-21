@@ -69,7 +69,6 @@ private:
     // METHODS
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
-        // See also AstNode::addBeforeStmt; this predates that function
         if (debug() >= 9) newp->dumpTree("-  newstmt: ");
         UASSERT_OBJ(m_insStmtp, nodep, "Function not underneath a statement");
         if (m_insMode == IM_BEFORE) {
@@ -310,5 +309,5 @@ public:
 void V3LinkInc::linkIncrements(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { LinkIncVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("linkinc", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("linkinc", 0, dumpTreeLevel() >= 3);
 }

@@ -417,6 +417,15 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
         puts(selfPointer);
         comma = true;
     }
+    if (nodep->funcp()->needProcess()) {
+        if (comma) puts(", ");
+        if (VN_IS(nodep->backp(), CAwait)) {
+            puts("vlProcess");
+        } else {
+            puts("std::make_shared<VlProcess>()");
+        }
+        comma = true;
+    }
     if (!nodep->argTypes().empty()) {
         if (comma) puts(", ");
         puts(nodep->argTypes());
@@ -443,6 +452,10 @@ void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
         putbs("std::string{");
         putsQuoted(constp->num().toString());
         puts("}");
+    } else if (VN_IS(nodep->dtypep(), StreamDType)) {
+        putbs("VL_CVT_PACK_STR_ND(");
+        iterateAndNextConstNull(nodep);
+        puts(")");
     } else {
         putbs("VL_CVT_PACK_STR_N");
         emitIQW(nodep);
@@ -694,6 +707,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         // String's constructor deals with it
         return "";
     } else if (basicp && basicp->isForkSync()) {
+        return "";
+    } else if (basicp && basicp->isProcessRef()) {
         return "";
     } else if (basicp && basicp->isDelayScheduler()) {
         return "";

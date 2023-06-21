@@ -123,9 +123,9 @@ struct V3DfgPeepholeContext final {
     const std::string m_label;  // Label to apply to stats
 
     // Enable flags for each optimization
-    bool m_enabled[VDfgPeepholePattern::_ENUM_END];
+    std::array<bool, VDfgPeepholePattern::_ENUM_END> m_enabled;
     // Count of applications for each optimization (for statistics)
-    VDouble0 m_count[VDfgPeepholePattern::_ENUM_END];
+    std::array<VDouble0, VDfgPeepholePattern::_ENUM_END> m_count;
 
     explicit V3DfgPeepholeContext(const std::string& label);
     ~V3DfgPeepholeContext();

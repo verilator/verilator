@@ -63,6 +63,7 @@ static void makeVlToString(AstIface* nodep) {
 }
 static void makeVlToString(AstNodeUOrStructDType* nodep) {
     AstNodeModule* const modp = nodep->classOrPackagep();
+    UASSERT_OBJ(modp, nodep, "Unlinked struct package");
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
     funcp->argTypes("const " + EmitCBase::prefixNameProtect(nodep) + "& obj");
@@ -81,11 +82,13 @@ static void makeVlToString(AstNodeUOrStructDType* nodep) {
         }
         stmt += VIdProtect::protect(itemp->prettyName()) + ":\" + ";
         if (VN_IS(itemp->dtypep()->skipRefp(), BasicDType) && itemp->isWide()) {
-            stmt += "VL_TO_STRING_W";
+            stmt += "VL_TO_STRING_W(";
+            stmt += cvtToStr(itemp->widthWords());
+            stmt += ", ";
         } else {
-            stmt += "VL_TO_STRING";
+            stmt += "VL_TO_STRING(";
         }
-        stmt += "(obj." + itemp->nameProtect() + ");\n";
+        stmt += "obj." + itemp->nameProtect() + ");\n";
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
     }
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "out += \"}\";\n"});
@@ -172,5 +175,5 @@ void V3Common::commonAll() {
             if (!dtypep->packed()) makeVlToString(dtypep);
         }
     }
-    V3Global::dumpCheckGlobalTree("common", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("common", 0, dumpTreeLevel() >= 3);
 }

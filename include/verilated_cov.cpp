@@ -316,7 +316,7 @@ public:
         valps[2] = page_default.c_str();
 
         // Keys -> strings
-        std::string keys[VerilatedCovConst::MAX_KEYS];
+        std::array<std::string, VerilatedCovConst::MAX_KEYS> keys;
         for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
             if (ckeyps[i] && ckeyps[i][0]) keys[i] = ckeyps[i];
         }

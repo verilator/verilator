@@ -52,10 +52,17 @@ module t (/*AUTOARG*/
    function automatic int f_au_au ();
       automatic int au = 2; au++; return au;
    endfunction
+   string plusarg                 = "";
+   bit has_plusarg                = |($value$plusargs("plusarg=%s", plusarg));
 
    int v;
 
    initial begin
+      if (has_plusarg) begin
+        if (plusarg == "") begin
+          $fatal(1, "%m: +plusarg must not be empty");
+        end
+      end
       v = f_no_no(); `checkh(v, 3);
       v = f_no_no(); `checkh(v,   4);
       v = f_no_st(); `checkh(v, 3);

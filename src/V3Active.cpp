@@ -183,7 +183,7 @@ public:
                         << " (not all control paths of combinational always assign a value)\n"
                         << nodep->warnMore()
                         << "... Suggest use of always_latch for intentional latches");
-                if (dumpGraph() >= 9) dumpDotFilePrefixed("latch_" + vrp->name());
+                if (dumpGraphLevel() >= 9) dumpDotFilePrefixed("latch_" + vrp->name());
             }
             vertp->user(false);  // Clear again (see above)
             vrp->varp()->isLatched(latch_detected);
@@ -320,7 +320,8 @@ private:
     // VISITORS
     void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
-        if (nodep->access().isWriteOrRW() && varp->isSignal() && !varp->isUsedLoopIdx()) {
+        if (nodep->access().isWriteOrRW() && varp->isSignal() && !varp->isUsedLoopIdx()
+            && !varp->isFuncLocalSticky()) {
             m_graph.addAssignment(nodep);
         }
     }
@@ -333,6 +334,8 @@ private:
             m_graph.addPathVertex(branchp, "ELSE");
             iterateAndNextConstNull(nodep->elsesp());
             m_graph.currentp(parentp);
+        } else {
+            iterateChildrenConst(nodep);
         }
     }
     //--------------------
@@ -652,5 +655,5 @@ public:
 void V3Active::activeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ActiveVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("active", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("active", 0, dumpTreeLevel() >= 3);
 }

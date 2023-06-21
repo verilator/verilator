@@ -283,7 +283,7 @@ public:
         iterate(nodep);
         //
         m_callGraph.removeRedundantEdgesSum(&TaskEdge::followAlwaysTrue);
-        if (dumpGraph()) m_callGraph.dumpDotFilePrefixed("task_call");
+        if (dumpGraphLevel()) m_callGraph.dumpDotFilePrefixed("task_call");
     }
     ~TaskStateVisitor() override = default;
     VL_UNCOPYABLE(TaskStateVisitor);
@@ -657,8 +657,15 @@ private:
                         args += ", ";
                         dpiproto += ", ";
                     }
+                    // Include both the Verilator and C type names, as if either
+                    // differ we may get C compilation problems later
+                    const std::string dpiType = portp->dpiArgType(false, false);
+                    dpiproto += dpiType;
+                    const std::string vType = portp->dtypep()->prettyDTypeName();
+                    if (!portp->isDpiOpenArray() && dpiType != vType) {
+                        dpiproto += " /* " + vType + " */ ";
+                    }
                     args += portp->name();  // Leftover so ,'s look nice
-                    if (nodep->dpiImport()) dpiproto += portp->dpiArgType(false, false);
                 }
             }
         }
@@ -929,15 +936,15 @@ private:
             m_dpiNames.emplace(nodep->cname(), std::make_tuple(nodep, signature, funcp));
             return funcp;
         } else {
-            // Seen this cname before. Check if it's the same prototype.
+            // Seen this cname import before. Check if it's the same prototype.
             const AstNodeFTask* firstNodep;
             string firstSignature;
             AstCFunc* firstFuncp;
             std::tie(firstNodep, firstSignature, firstFuncp) = it->second;
             if (signature != firstSignature) {
                 // Different signature, so error.
-                nodep->v3error("Duplicate declaration of DPI function with different signature: "
-                               << nodep->prettyNameQ() << '\n'
+                nodep->v3error("Duplicate declaration of DPI function with different signature: '"
+                               << nodep->cname() << "'\n"
                                << nodep->warnContextPrimary() << '\n'
                                << nodep->warnMore()  //
                                << "... New signature:      " << signature << '\n'  //
@@ -1316,6 +1323,9 @@ private:
             }
         }
 
+        // Mark the fact that this function allocates std::process
+        if (nodep->isFromStd() && nodep->name() == "self") cfuncp->setNeedProcess();
+
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         if (debug() >= 9) cfuncp->dumpTree("-  userFunc: ");
@@ -1335,7 +1345,6 @@ private:
     }
     AstNode* insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
-        // See also AstNode::addBeforeStmt; this predates that function
         if (debug() >= 9) nodep->dumpTree("-  newstmt: ");
         UASSERT_OBJ(m_insStmtp, nodep, "Function not underneath a statement");
         AstNode* visitp = nullptr;
@@ -1371,6 +1380,15 @@ private:
             m_modNCalls = 0;
             iterateChildren(nodep);
         }
+    }
+    void visit(AstWith* nodep) override {
+        if (nodep->user1SetOnce()) {
+            // Make sure that the return expression is converted only once
+            return;
+        }
+        AstNodeExpr* const withExprp = VN_AS(nodep->exprp()->unlinkFrBack(), NodeExpr);
+        nodep->addExprp(new AstCReturn{withExprp->fileline(), withExprp});
+        iterateChildren(nodep);
     }
     void visit(AstScope* nodep) override {
         m_scopep = nodep;
@@ -1820,5 +1838,5 @@ void V3Task::taskAll(AstNetlist* nodep) {
         TaskStateVisitor visitors{nodep};
         const TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("task", 0, dumpTree() >= 3);
+    V3Global::dumpCheckGlobalTree("task", 0, dumpTreeLevel() >= 3);
 }

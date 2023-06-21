@@ -79,6 +79,10 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
         args += prefixNameProtect(EmitCParentModule::get(nodep));
         args += "* vlSelf";
     }
+    if (nodep->needProcess()) {
+        if (!args.empty()) args += ", ";
+        args += "VlProcessRef vlProcess";
+    }
     if (!nodep->argTypes().empty()) {
         if (!args.empty()) args += ", ";
         args += nodep->argTypes();
@@ -224,21 +228,12 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
 }
 
 void EmitCBaseVisitorConst::emitModCUse(const AstNodeModule* modp, VUseType useType) {
-    string nl;
-    for (AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {
-        if (AstCUse* const usep = VN_CAST(itemp, CUse)) {
-            if (usep->useType() == useType) {
-                if (usep->useType().isInclude()) {
-                    puts("#include \"" + prefixNameProtect(usep) + ".h\"\n");
-                }
-                if (usep->useType().isFwdClass()) {
-                    puts("class " + prefixNameProtect(usep) + ";\n");
-                }
-                nl = "\n";
-            }
-        }
-    }
-    puts(nl);
+    bool nl = false;
+    forModCUse(modp, useType, [&](string entry) {
+        puts(entry);
+        nl = true;
+    });
+    if (nl) puts("\n");
 }
 
 void EmitCBaseVisitorConst::emitTextSection(const AstNodeModule* modp, VNType type) {

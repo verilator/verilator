@@ -14,18 +14,18 @@ module t (/*AUTOARG*/);
    assign (strong0, strong1) b = 0;
 
    wire [1:0] c;
-   assign (weak0, supply1) c = '1;
-   assign (supply0, pull1) c = '1;
-   assign (strong0, strong1) c = '0;
+   assign (weak0, supply1) c = 2'b11;
+   assign (supply0, pull1) c = 2'b11;
+   assign (strong0, strong1) c = 0;
 
    supply0 d;
    assign (strong0, strong1) d = 1;
 
-   wire (supply0, supply1) e = 'z;
+   wire (supply0, supply1) e = 1'bz;
    assign (weak0, weak1) e = 1;
 
    always begin
-      if (a && !b && c === '1 && !d && e) begin
+      if (a && !b && c === 2'b11 && !d && e) begin
          $write("*-* All Finished *-*\n");
          $finish;
       end

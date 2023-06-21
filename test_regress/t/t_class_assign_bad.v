@@ -13,9 +13,12 @@ endclass
 class ClsExt extends Cls;
 endclass
 
+typedef Cls2 cls2_t;
+
 module t (/*AUTOARG*/);
    Cls c;
    Cls2 c2;
+   cls2_t ct2;
    ClsExt c_ext;
 
    task t(Cls c); endtask
@@ -26,6 +29,7 @@ module t (/*AUTOARG*/);
       c = 1;
       c = c2;
       c_ext = c;
+      ct2 = c;
 
       t(0);
       t(1);

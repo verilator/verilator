@@ -51,6 +51,14 @@ private:
         // Not defining main_time/vl_time_stamp, so
         v3Global.opt.addCFlags("-DVL_TIME_CONTEXT");  // On MSVC++ anyways
 
+        // Optional main top name argument, with empty string replacement
+        string topArg;
+        string topName = v3Global.opt.mainTopName();
+        if (!topName.empty()) {
+            if (topName == "-") topName = "";
+            topArg = ", \"" + topName + "\"";
+        }
+
         // Heavily commented output, as users are likely to look at or copy this code
         ofp()->putsHeader();
         puts("// DESCRIPTION: main() calling loop, created with Verilator --main\n");
@@ -71,7 +79,7 @@ private:
 
         puts("// Construct the Verilated model, from Vtop.h generated from Verilating\n");
         puts("const std::unique_ptr<" + topClassName() + "> topp{new " + topClassName()
-             + "{contextp.get()}};\n");
+             + "{contextp.get()" + topArg + "}};\n");
         puts("\n");
 
         puts("// Simulate until $finish\n");

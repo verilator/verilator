@@ -124,13 +124,6 @@ private:
                 && (VN_IS(nodep->stmtsp(), GenIf))  // Begin has if underneath
                 && !nodep->stmtsp()->nextp());  // Has only one item
     }
-    bool hasStaticDeclAssignments(AstNodeFTask* nodep) {
-        for (const AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
-            const AstVar* const varp = VN_CAST(itemp, Var);
-            if (varp && varp->valuep() && !varp->lifetime().isAutomatic()) return true;
-        }
-        return false;
-    }
 
     // VISITs
     void visit(AstNodeFTask* nodep) override {
@@ -156,12 +149,30 @@ private:
                         // DPI-imported functions and properties don't have lifetime specifiers
                         m_lifetime = VLifetime::NONE;
                     }
-                    if (m_lifetime.isStatic() && hasStaticDeclAssignments(nodep)) {
-                        nodep->v3warn(
-                            IMPLICITSTATIC,
-                            "Function/task's lifetime implicitly set to static\n"
-                                << nodep->warnMore()
-                                << "... Suggest use 'function automatic' or 'function static'");
+                    for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
+                        AstVar* const varp = VN_CAST(itemp, Var);
+                        if (varp && varp->valuep() && varp->lifetime().isNone()
+                            && m_lifetime.isStatic() && !varp->isIO()) {
+                            if (VN_IS(m_modp, Module)) {
+                                nodep->v3warn(IMPLICITSTATIC,
+                                              "Function/task's lifetime implicitly set to static\n"
+                                                  << nodep->warnMore()
+                                                  << "... Suggest use 'function automatic' or "
+                                                     "'function static'\n"
+                                                  << nodep->warnContextPrimary() << '\n'
+                                                  << varp->warnOther()
+                                                  << "... Location of implicit static variable\n"
+                                                  << varp->warnContextSecondary() << '\n'
+                                                  << "... Suggest use 'function automatic' or "
+                                                     "'function static'");
+                            } else {
+                                varp->v3warn(IMPLICITSTATIC,
+                                             "Variable's lifetime implicitly set to static\n"
+                                                 << nodep->warnMore()
+                                                 << "... Suggest use 'static' before "
+                                                    "variable declaration'");
+                            }
+                        }
                     }
                     nodep->lifetime(m_lifetime);
                 }
@@ -240,7 +251,8 @@ private:
         if (nodep->isGParam() && m_modp) m_modp->hasGParam(true);
         if (nodep->isParam() && !nodep->valuep()
             && nodep->fileline()->language() < V3LangCode::L1800_2009) {
-            nodep->v3error("Parameter requires default value, or use IEEE 1800-2009 or later.");
+            nodep->v3warn(NEWERSTD,
+                          "Parameter requires default value, or use IEEE 1800-2009 or later.");
         }
         if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
@@ -327,6 +339,11 @@ private:
             if (m_modp->level() <= 2) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Interfaced port on top level module");
             }
+        }
+    }
+    void visit(AstConst* nodep) override {
+        if (nodep->num().autoExtend() && nodep->fileline()->language() < V3LangCode::L1800_2005) {
+            nodep->v3warn(NEWERSTD, "Unbased unsized literals require IEEE 1800-2005 or later.");
         }
     }
 
@@ -775,5 +792,5 @@ public:
 void V3LinkParse::linkParse(AstNetlist* rootp) {
     UINFO(4, __FUNCTION__ << ": " << endl);
     { LinkParseVisitor{rootp}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("linkparse", 0, dumpTree() >= 6);
+    V3Global::dumpCheckGlobalTree("linkparse", 0, dumpTreeLevel() >= 6);
 }

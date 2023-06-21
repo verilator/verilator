@@ -30,7 +30,16 @@ void VlCoroutineHandle::resume() {
     // main process
     if (VL_LIKELY(m_coro)) {
         VL_DEBUG_IF(VL_DBG_MSGF("             Resuming: "); dump(););
-        m_coro();
+        if (m_process) {  // If process state is managed with std::process
+            if (m_process->state() == VlProcess::KILLED) {
+                m_coro.destroy();
+            } else {
+                m_process->state(VlProcess::RUNNING);
+                m_coro();
+            }
+        } else {
+            m_coro();
+        }
         m_coro = nullptr;
     }
 }
@@ -95,8 +104,9 @@ void VlTriggerScheduler::resume(const char* eventDescription) {
     VL_DEBUG_IF(dump(eventDescription);
                 VL_DBG_MSGF("         Resuming processes waiting for %s\n", eventDescription););
 #endif
-    for (auto& susp : m_ready) susp.resume();
-    m_ready.clear();
+    std::swap(m_ready, m_resumeQueue);
+    for (VlCoroutineHandle& coro : m_resumeQueue) coro.resume();
+    m_resumeQueue.clear();
     commit(eventDescription);
 }
 

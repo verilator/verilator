@@ -100,5 +100,5 @@ void V3DupFinder::dumpFile(const string& filename, bool tree) {
 }
 
 void V3DupFinder::dumpFilePrefixed(const string& nameComment, bool tree) {
-    if (dump()) dumpFile(v3Global.debugFilename(nameComment) + ".hash", tree);
+    if (dumpLevel()) dumpFile(v3Global.debugFilename(nameComment) + ".hash", tree);
 }

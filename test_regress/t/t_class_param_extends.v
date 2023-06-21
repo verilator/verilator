@@ -21,16 +21,55 @@ endclass
 
 typedef Cls#(8) Cls8_t;
 
+class Getter1;
+   function int get_int;
+      return 1;
+   endfunction
+endclass
+
+class Getter2;
+   function int get_int;
+      return 2;
+   endfunction
+endclass
+
+class Foo #(type T=Getter1);
+   T foo_field;
+   int x;
+   function new(int y);
+      foo_field = new;
+      x = y;
+   endfunction
+endclass
+
+class Bar #(type S=Getter2) extends Foo#(S);
+   T field;
+   function new(int y);
+      super.new(y);
+      field = new;
+   endfunction
+
+   function int get_field_int;
+      return field.get_int();
+   endfunction
+
+   function int get_foo_field_int;
+      return foo_field.get_int();
+   endfunction
+endclass
+
 // See also t_class_param_mod.v
 
 module t (/*AUTOARG*/);
 
    Cls #(.P(4)) c4;
    Cls8_t c8;
+   Bar b;
 
    initial begin
       c4 = new;
       c8 = new;
+      b = new(1);
       if (c4.PBASE != 4) $stop;
       if (c8.PBASE != 8) $stop;
       if (c4.get_p() != 4) $stop;
@@ -45,6 +84,10 @@ module t (/*AUTOARG*/);
       if (c8.get_member() != 8'haa) $stop;
       $display("c4 = %s", $sformatf("%p", c4));
       if ($sformatf("%p", c4) != "'{member:'ha}") $stop;
+
+      if (b.x != 1) $stop;
+      if (b.get_field_int() != 2) $stop;
+      if (b.get_foo_field_int() != 2) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

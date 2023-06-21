@@ -45,10 +45,12 @@ private:
     //  AstFTask::user1()       -> int.  Number of references
     const VNUser1InUse m_inuser1;
 
-    // STATE
+    // STATE - across all visitors
+    std::vector<AstCFunc*> m_cfuncsp;  // List of all tasks
+
+    // STATE - for current visit position (use VL_RESTORER)
     int m_likely = false;  // Excuses for branch likely taken
     int m_unlikely = false;  // Excuses for branch likely not taken
-    std::vector<AstCFunc*> m_cfuncsp;  // List of all tasks
 
     // METHODS
 

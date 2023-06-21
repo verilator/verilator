@@ -152,7 +152,7 @@ module bug3182(in, out);
       bit_source = c_fake_dependency() | in;
 
    wire [5:0] tmp = bit_source; // V3Gate should inline this
-   wire out =  ~(tmp >> 5) & (bit_source == 5'd10);
+   assign out =  ~(tmp >> 5) & (bit_source == 5'd10);
    /* verilator lint_on WIDTH */
 endmodule
 
@@ -374,7 +374,6 @@ endmodule
 // total polarity. This bug was introduced when fixing #3445.
 module bug4059(input wire clk, input wire [31:0] in, output wire out);
    wire [127:0] words_i;
-   logic [127:0] words_i;
    for (genvar i = 0; i < $bits(in); ++i) begin
       always_ff @(posedge clk)
          words_i[4 * i +: 4] <= {4{in[i]}};

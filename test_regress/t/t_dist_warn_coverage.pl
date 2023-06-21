@@ -38,14 +38,11 @@ foreach my $s (
     'Array initialization has too few elements, need element ',
     'Assert not allowed under another assert',
     'Assigned pin is neither input nor output',
-    'Assignment pattern key used multiple times: ',
     'Assignment pattern with no members',
-    'Assignment pattern with too many elements',
     'Attempted parameter setting of non-parameter: Param ',
     'Can\'t find typedef: ',
     'Can\'t find varpin scope of ',
     'Can\'t resolve module reference: \'',
-    'Cannot mix DPI import, DPI export, class methods, and/or public ',
     'Cannot write preprocessor output: ',
     'Circular logic when ordering code (non-cutable edge loop)',
     'Deferred assertions must use \'#0\' (IEEE 1800-2017 16.4)',
@@ -161,12 +158,14 @@ sub check {
             print("  Line is: ", $line, "\n") if $Debug;
         }
     }
+    print "\n";
 
     for my $msg (sort keys %Suppressed) {
         if (!$used_suppressed{$msg}) {
             print "Suppression not used: '$msg'\n";
         }
-  }
+    }
+    print "\n";
 }
 
 sub read_messages {

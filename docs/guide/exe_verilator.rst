@@ -808,6 +808,13 @@ Summary:
 
    See also :vlopt:`--binary`.
 
+.. option:: --main-top-name <string>
+
+   Specify the name passed to the Verilated model being constructed, in the
+   generated C++ main() function.
+
+   If the string ``"-"`` is used, no top level scope is added.
+
 .. option:: --max-num-width <value>
 
    Set the maximum number literal width (e.g., in 1024'd22 this
@@ -1467,8 +1474,11 @@ Summary:
    them systematically.
 
    The generated file is in the Verilator Configuration format, see
-   :ref:`Configuration Files`, and can directly be consumed by
-   Verilator. The standard file extension is ".vlt".
+   :ref:`Configuration Files`. The standard file extension is ".vlt".
+   These files can directly be consumed by Verilator, typically by placing
+   the filename as part of the Verilator command line options. Waiver files
+   need to be listed on the command line before listing the files they are
+   waiving.
 
 .. option:: -Wall
 

@@ -61,7 +61,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     sudo apt-get update
     sudo apt-get install ccache help2man libfl-dev ||
     sudo apt-get install ccache help2man libfl-dev
-    if [ "$CI_RUNS_ON" != "ubuntu-22.04" ]; then
+    if [ "$CI_RUNS_ON" = "ubuntu-20.04" ]; then
       # Some conflict of libunwind verison on 22.04, can live without it for now
       sudo apt-get install libgoogle-perftools-dev ||
       sudo apt-get install libgoogle-perftools-dev
@@ -69,6 +69,10 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     if [ "$CI_RUNS_ON" = "ubuntu-20.04" ] || [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
       sudo apt-get install libsystemc libsystemc-dev ||
       sudo apt-get install libsystemc libsystemc-dev
+    fi
+    if [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
+      sudo apt-get install mold ||
+      sudo apt-get install mold
     fi
     if [ "$COVERAGE" = 1 ]; then
       yes yes | sudo cpan -fi Parallel::Forker
@@ -102,8 +106,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     sudo apt-get install gdb gtkwave lcov libfl-dev ccache
     # Required for test_regress/t/t_dist_attributes.pl
     if [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
-      sudo apt-get install libclang-dev ||
-      sudo apt-get install libclang-dev
+      sudo apt-get install libclang-dev mold ||
+      sudo apt-get install libclang-dev mold
       pip3 install clang==14.0
     fi
     if [ "$CI_RUNS_ON" = "ubuntu-20.04" ] || [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
