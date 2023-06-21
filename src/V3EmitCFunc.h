@@ -148,6 +148,7 @@ protected:
     bool m_useSelfForThis = false;  // Replace "this" with "vlSelf"
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
+    bool m_instantiatesOwnProcess = false;
 
 public:
     // METHODS
@@ -218,7 +219,9 @@ public:
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
+        VL_RESTORER(m_instantiatesOwnProcess)
         m_cfuncp = nodep;
+        m_instantiatesOwnProcess = false;
 
         splitSizeInc(nodep);
 
@@ -264,6 +267,23 @@ public:
         puts(prefixNameProtect(m_modp));
         puts(nodep->isLoose() ? "__" : "::");
         puts(nodep->nameProtect() + "\\n\"); );\n");
+
+        // Instantiate a process class if it's going to be needed somewhere later
+        bool needsProcessDef = false;
+        nodep->forall([&](const AstNodeCCall* ccallp) -> bool {
+            if (ccallp->funcp()->needProcess() && !VN_IS(ccallp->backp(), CAwait)) {
+                if (!nodep->needProcess() && !m_instantiatesOwnProcess) {
+                    m_instantiatesOwnProcess = true;
+                    return false;
+                }
+            }
+            return true;
+        });
+        if (m_instantiatesOwnProcess) {
+            AstNode* vlprocp = new AstCStmt{
+                nodep->fileline(), "VlProcessRef vlProcess = std::make_shared<VlProcess>();\n"};
+            nodep->stmtsp()->addHereThisAsNext(vlprocp);
+        }
 
         for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
             if (AstVar* const varp = VN_CAST(subnodep, Var)) {

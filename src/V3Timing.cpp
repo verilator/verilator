@@ -63,12 +63,17 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 // ######################################################################
 
-enum TimingFlag : uint8_t {
-    // Properties of flags with higher numbers include properties of flags with
-    // lower numbers
-    T_NORM = 0,  // Normal non-suspendable process
-    T_SUSP = 1,  // Suspendable
-    T_PROC = 2  // Suspendable with process metadata
+enum NodeFlag : uint8_t {
+    T_SUSPENDEE = 1,  // Suspendable (due to dependence on another suspendable)
+    T_SUSPENDER = 2,  // Suspendable (has timing control)
+    T_HAS_PROC = 4,  // Has an associated std::process
+    T_CALLS_PROC_SELF = 8,  // Calls std::process::self
+};
+
+enum ForkType : uint8_t {
+    F_NONE = 0,
+    F_MIGHT_SUSPEND = 1,
+    F_MIGHT_NEED_PROC = 2,
 };
 
 // ######################################################################
@@ -79,25 +84,58 @@ private:
     // TYPES
     // Vertex of a dependency graph of suspendable nodes, e.g. if a node (process or task) is
     // suspendable, all its dependents should also be suspendable
-    class TimingDependencyVertex final : public V3GraphVertex {
+    class DepVtx : public V3GraphVertex {
+        AstClass* const m_classp;  // Class associated with a method
         AstNode* const m_nodep;  // AST node represented by this graph vertex
 
         // ACCESSORS
         string name() const override VL_MT_STABLE {
+            if (m_classp) {
+                if (AstCFunc* cfunc = VN_CAST(nodep(), CFunc)) {
+                    return cvtToHex(nodep()) + ' ' + classp()->name() + "::" + nodep()->name();
+                }
+            }
             return cvtToHex(nodep()) + ' ' + nodep()->prettyTypeName();
         }
         FileLine* fileline() const override { return nodep()->fileline(); }
-        string dotColor() const override { return nodep()->user2() ? "red" : "black"; }
 
     public:
         // CONSTRUCTORS
-        TimingDependencyVertex(V3Graph* graphp, AstNode* nodep)
+        DepVtx(V3Graph* graphp, AstNode* nodep, AstClass* classp)
             : V3GraphVertex{graphp}
+            , m_classp{classp}
             , m_nodep{nodep} {}
-        ~TimingDependencyVertex() override = default;
+        ~DepVtx() override = default;
 
         // ACCESSORS
         virtual AstNode* nodep() const VL_MT_STABLE { return m_nodep; }
+        virtual AstNode* classp() const VL_MT_STABLE { return m_classp; }
+    };
+
+    class SuspendDepVtx final : public DepVtx {
+        string dotColor() const override {
+            if (nodep()->user2() & T_SUSPENDER) return "red";
+            if (nodep()->user2() & T_SUSPENDEE) return "blue";
+            return "black";
+        }
+
+    public:
+        SuspendDepVtx(V3Graph* graphp, AstNode* nodep, AstClass* classp)
+            : DepVtx{graphp, nodep, classp} {}
+        ~SuspendDepVtx() override = default;
+    };
+
+    class NeedsProcDepVtx final : public DepVtx {
+        string dotColor() const override {
+            if (nodep()->user2() & T_CALLS_PROC_SELF) return "red";
+            if (nodep()->user2() & T_HAS_PROC) return "blue";
+            return "black";
+        }
+
+    public:
+        NeedsProcDepVtx(V3Graph* graphp, AstNode* nodep, AstClass* classp)
+            : DepVtx{graphp, nodep, classp} {}
+        ~NeedsProcDepVtx() override = default;
     };
 
     // NODE STATE
@@ -108,40 +146,59 @@ private:
     //                                                                  process/task suspendable
     //                                                                  and to T_PROC if it
     //                                                                  needs process metadata.
-    //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_depGraph
+    //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_suspGraph
+    //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_procGraph
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
+    const VNUser5InUse m_user5InUse;
 
     // STATE
     AstClass* m_classp = nullptr;  // Current class
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
-    V3Graph m_depGraph;  // Dependency graph where a node is a dependency of another if it being
-                         // suspendable makes the other node suspendable
+    uint8_t m_underFork = F_NONE;
+    V3Graph m_suspGraph;  // Dependency graph where a node is a dependency of another if it being
+                          // suspendable makes the other node suspendable
+    V3Graph m_procGraph;  // Dependency graph where a node is a dependency of another if it being
+                          // suspendable makes the other node suspendable
 
     // METHODS
     // Get or create the dependency vertex for the given node
-    TimingDependencyVertex* getDependencyVertex(AstNode* const nodep) {
-        if (!nodep->user3p()) nodep->user3p(new TimingDependencyVertex{&m_depGraph, nodep});
-        return nodep->user3u().to<TimingDependencyVertex*>();
+    DepVtx* getSuspendDepVtx(AstNode* const nodep) {
+        AstClass* classp = nullptr;
+        if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
+            if (funcp->scopep() && funcp->scopep()->modp()) {
+                classp = VN_CAST(funcp->scopep()->modp(), Class);
+            }
+        }
+        if (!nodep->user3p()) nodep->user3p(new SuspendDepVtx{&m_suspGraph, nodep, classp});
+        return nodep->user3u().to<SuspendDepVtx*>();
+    }
+    DepVtx* getNeedsProcDepVtx(AstNode* const nodep) {
+        AstClass* classp = nullptr;
+        if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
+            if (funcp->scopep() && funcp->scopep()->modp()) {
+                classp = VN_CAST(funcp->scopep()->modp(), Class);
+            }
+        }
+        if (!nodep->user5p()) nodep->user5p(new NeedsProcDepVtx{&m_procGraph, nodep, classp});
+        return nodep->user5u().to<NeedsProcDepVtx*>();
     }
     // Set timing flag of a node
-    bool setTimingFlag(AstNode* nodep, int flag) {
-        // Properties of flags with higher numbers include properties of flags with lower
-        // numbers, so modify nodep->user2() only if it will increase.
-        if (nodep->user2() < flag) {
-            nodep->user2(flag);
+    bool passFlag(const AstNode* from, AstNode* to, NodeFlag flag) {
+        if ((from->user2() & flag) && !(to->user2() & flag)) {
+            to->user2(to->user2() | flag);
             return true;
         }
         return false;
     }
-    // Propagate suspendable/needProcess flag to all nodes that depend on the given one
-    void propagateTimingFlags(TimingDependencyVertex* const vxp) {
+    // Propagate flag to all nodes that depend on the given one
+    void propagateFlags(DepVtx* const vxp, NodeFlag flag) {
         auto* const parentp = vxp->nodep();
-        for (V3GraphEdge* edgep = vxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            auto* const depVxp = static_cast<TimingDependencyVertex*>(edgep->fromp());
+        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
             AstNode* const depp = depVxp->nodep();
-            if (setTimingFlag(depp, parentp->user2())) propagateTimingFlags(depVxp);
+            if (passFlag(parentp, depp, flag)) propagateFlags(depVxp, flag);
         }
     }
 
@@ -161,8 +218,9 @@ private:
         VL_RESTORER(m_procp);
         m_procp = nodep;
         iterateChildren(nodep);
-        TimingDependencyVertex* const vxp = getDependencyVertex(nodep);
-        if (nodep->needProcess()) nodep->user2(T_PROC);
+        if (nodep->needProcess()) nodep->user2(T_HAS_PROC | T_CALLS_PROC_SELF);
+        DepVtx* const sVxp = getSuspendDepVtx(nodep);
+        DepVtx* const pVxp = getNeedsProcDepVtx(nodep);
         if (!m_classp) return;
         // If class method (possibly overrides another method)
         if (!m_classp->user1SetOnce()) m_classp->repairCache();
@@ -185,16 +243,13 @@ private:
                 if (!cextp->classp()->user1SetOnce()) cextp->classp()->repairCache();
                 if (auto* const overriddenp
                     = VN_CAST(cextp->classp()->findMember(nodep->name()), CFunc)) {
-                    setTimingFlag(nodep, overriddenp->user2());
-                    if (nodep->user2()
-                        < T_PROC) {  // Add a vertex only if the flag can still change
-                        // Make a dependency cycle, as being suspendable should propagate both up
-                        // and down the inheritance tree
-                        TimingDependencyVertex* const overriddenVxp
-                            = getDependencyVertex(overriddenp);
-                        new V3GraphEdge{&m_depGraph, vxp, overriddenVxp, 1};
-                        new V3GraphEdge{&m_depGraph, overriddenVxp, vxp, 1};
-                    }
+                    // Suspendability and process affects typing, so they propagate both ways
+                    DepVtx* const overriddenSVxp = getSuspendDepVtx(overriddenp);
+                    DepVtx* const overriddenPVxp = getNeedsProcDepVtx(overriddenp);
+                    new V3GraphEdge{&m_suspGraph, sVxp, overriddenSVxp, 1};
+                    new V3GraphEdge{&m_suspGraph, overriddenSVxp, sVxp, 1};
+                    new V3GraphEdge{&m_procGraph, pVxp, overriddenPVxp, 1};
+                    new V3GraphEdge{&m_procGraph, overriddenPVxp, pVxp, 1};
                 } else {
                     AstClassExtends* more_extends = cextp->classp()->extendsp();
                     if (more_extends) extends.push(more_extends);
@@ -203,13 +258,15 @@ private:
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        setTimingFlag(m_procp, nodep->funcp()->user2());
-        if (m_procp->user2() < T_PROC) {  // Add a vertex only if the flag can still change
-            TimingDependencyVertex* const procVxp = getDependencyVertex(m_procp);
-            TimingDependencyVertex* const funcVxp = getDependencyVertex(nodep->funcp());
-            new V3GraphEdge{&m_depGraph, procVxp, funcVxp, 1};
-            iterateChildren(nodep);
-        }
+        if (!m_underFork || (m_underFork & F_MIGHT_SUSPEND))
+            new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep->funcp()),
+                            getSuspendDepVtx(m_procp), 1};
+
+        if (!m_underFork)
+            new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep->funcp()),
+                            getNeedsProcDepVtx(m_procp), 1};
+
+        iterateChildren(nodep);
     }
     void visit(AstBegin* nodep) override {
         VL_RESTORER(m_procp);
@@ -217,16 +274,22 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstFork* nodep) override {
+        VL_RESTORER(m_underFork);
+
         v3Global.setUsesTiming();  // Even if there are no event controls, we have to set this flag
                                    // so that transformForks() in V3SchedTiming gets called and
                                    // removes all forks and begins
-        if (nodep->isTimingControl() && m_procp) m_procp->user2(T_SUSP);
+        if (nodep->isTimingControl() && m_procp) {
+            m_procp->user2(T_SUSPENDEE | T_SUSPENDER);
+            m_underFork |= F_MIGHT_SUSPEND;
+        }
+        m_underFork |= F_MIGHT_NEED_PROC;
         iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override {
         if (nodep->isTimingControl()) {
             v3Global.setUsesTiming();
-            if (m_procp) m_procp->user2(T_SUSP);
+            if (m_procp) m_procp->user2(T_SUSPENDEE | T_SUSPENDER);
         }
         iterateChildren(nodep);
     }
@@ -238,12 +301,20 @@ public:
     // CONSTRUCTORS
     explicit TimingSuspendableVisitor(AstNetlist* nodep) {
         iterate(nodep);
-        m_depGraph.removeTransitiveEdges();
-        for (V3GraphVertex* vxp = m_depGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            TimingDependencyVertex* const depVxp = static_cast<TimingDependencyVertex*>(vxp);
-            if (depVxp->nodep()->user2()) propagateTimingFlags(depVxp);
+        m_suspGraph.removeTransitiveEdges();
+        m_procGraph.removeTransitiveEdges();
+        // Propagate suspendability
+        for (V3GraphVertex* vxp = m_suspGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
+            DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
+            if (depVxp->nodep()->user2() & T_SUSPENDEE) propagateFlags(depVxp, T_SUSPENDEE);
         }
-        if (dumpGraphLevel() >= 6) m_depGraph.dumpDotFilePrefixed("timing_deps");
+        if (dumpGraphLevel() >= 6) m_suspGraph.dumpDotFilePrefixed("timing_deps");
+        // Propagate process
+        for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
+            DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
+            if (depVxp->nodep()->user2() & T_HAS_PROC) propagateFlags(depVxp, T_HAS_PROC);
+        }
+        if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps");
     }
     ~TimingSuspendableVisitor() override = default;
 };
@@ -489,7 +560,7 @@ private:
     void addProcessInfo(AstCMethodHard* const methodp) const {
         FileLine* const flp = methodp->fileline();
         AstCExpr* const ap = new AstCExpr{
-            flp, m_procp && m_procp->user2() == T_PROC ? "vlProcess" : "nullptr", 0};
+            flp, m_procp && (m_procp->user2() & T_HAS_PROC) ? "vlProcess" : "nullptr", 0};
         ap->dtypeSetVoid();
         methodp->addPinsp(ap);
     }
@@ -588,8 +659,8 @@ private:
         VL_RESTORER(m_procp);
         m_procp = nodep;
         iterateChildren(nodep);
-        if (nodep->user2() >= T_SUSP) nodep->setSuspendable();
-        if (nodep->user2() >= T_PROC) nodep->setNeedProcess();
+        if (nodep->user2() & T_SUSPENDEE) nodep->setSuspendable();
+        if (nodep->user2() & T_HAS_PROC) nodep->setNeedProcess();
     }
     void visit(AstInitial* nodep) override {
         visit(static_cast<AstNodeProcedure*>(nodep));
@@ -603,8 +674,8 @@ private:
         VL_RESTORER(m_procp);
         m_procp = nodep;
         iterateChildren(nodep);
-        if (!nodep->user2()) return;
-        if (nodep->user2() == T_PROC) nodep->setNeedProcess();
+        if (nodep->user2() & T_HAS_PROC) nodep->setNeedProcess();
+        if (!(nodep->user2() & T_SUSPENDEE)) return;
         nodep->setSuspendable();
         FileLine* const flp = nodep->fileline();
         AstSenTree* const sensesp = m_activep->sensesp();
@@ -625,7 +696,9 @@ private:
         VL_RESTORER(m_procp);
         m_procp = nodep;
         iterateChildren(nodep);
-        if (!nodep->user2()) return;
+        if (nodep->user2() & T_HAS_PROC) nodep->setNeedProcess();
+        if (!(nodep->user2() & T_SUSPENDEE)) return;
+
         nodep->rtnType("VlCoroutine");
         // If in a class, create a shared pointer to 'this'
         if (m_classp) nodep->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;\n"});
@@ -645,10 +718,9 @@ private:
             firstCoStmtp->v3warn(E_UNSUPPORTED,
                                  "Unsupported: Timing controls inside DPI-exported tasks");
         }
-        if (nodep->user2() == T_PROC) nodep->setNeedProcess();
     }
     void visit(AstNodeCCall* nodep) override {
-        if (nodep->funcp()->user2() && !nodep->user1SetOnce()) {  // If suspendable
+        if ((nodep->funcp()->user2() & T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
             VNRelinker relinker;
             nodep->unlinkFrBack(&relinker);
             AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), nodep};
