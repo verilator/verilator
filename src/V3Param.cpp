@@ -682,8 +682,8 @@ class ParamProcessor final : public VNDeleter {
         AstConst* const constp = VN_CAST(nodep, Const);
         // Check if it wasn't already converted
         if (constp && !constp->num().isString()) {
-            constp->replaceWith(new AstConst{constp->fileline(), AstConst::String{},
-                    constp->num().toString()});
+            constp->replaceWith(
+                new AstConst{constp->fileline(), AstConst::String{}, constp->num().toString()});
             constp->deleteTree();
         }
     }
