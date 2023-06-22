@@ -750,7 +750,14 @@ class LinkDotFindVisitor final : public VNVisitor {
 
     // METHODS
     void makeImplicitNew(AstClass* nodep) {
-        AstFunc* const newp = new AstFunc{nodep->fileline(), "new", nullptr, nullptr};
+        FileLine* const fl = nodep->fileline();
+        AstFunc* const newp = new AstFunc{fl, "new", nullptr, nullptr};
+        if (nodep->extendsp()) {
+            AstDot* const superNewp
+                = new AstDot{fl, false, new AstParseRef{fl, VParseRefExp::PX_ROOT, "super"},
+                             new AstNew{fl, nullptr}};
+            newp->addStmtsp(superNewp->makeStmt());
+        }
         newp->isConstructor(true);
         nodep->addMembersp(newp);
         UINFO(8, "Made implicit new for " << nodep->name() << ": " << nodep << endl);
