@@ -125,7 +125,41 @@ void splitCheck(AstCFunc* ofuncp) {
 
     int funcnum = 0;
     int func_stmts = 0;
+    bool is_coroutine = false;
     AstCFunc* funcp = nullptr;
+
+    const auto createNewSubFuncp = [&]() {
+        AstCFunc* const subFuncp = new AstCFunc{
+            ofuncp->fileline(), ofuncp->name() + "__" + cvtToStr(funcnum++), ofuncp->scopep()};
+        subFuncp->dontCombine(true);
+        subFuncp->isStatic(false);
+        subFuncp->isLoose(true);
+        subFuncp->slow(ofuncp->slow());
+        subFuncp->declPrivate(ofuncp->declPrivate());
+
+        func_stmts = 0;
+        is_coroutine = false;
+
+        return subFuncp;
+    };
+
+    const auto finishSubFuncp = [&](AstCFunc* subFuncp) {
+        ofuncp->scopep()->addBlocksp(subFuncp);
+        AstCCall* const callp = new AstCCall{subFuncp->fileline(), subFuncp};
+        callp->dtypeSetVoid();
+
+        if (is_coroutine) {  // Wrap call with co_await
+            subFuncp->rtnType("VlCoroutine");
+
+            AstCAwait* const awaitp = new AstCAwait{subFuncp->fileline(), callp};
+            awaitp->dtypeSetVoid();
+            ofuncp->addStmtsp(awaitp->makeStmt());
+        } else {
+            ofuncp->addStmtsp(callp->makeStmt());
+        }
+    };
+
+    funcp = createNewSubFuncp();
 
     // Unlink all statements, then add item by item to new sub-functions
     AstBegin* const tempp = new AstBegin{ofuncp->fileline(), "[EditWrapper]",
@@ -135,24 +169,20 @@ void splitCheck(AstCFunc* ofuncp) {
     while (tempp->stmtsp()) {
         AstNode* const itemp = tempp->stmtsp()->unlinkFrBack();
         const int stmts = itemp->nodeCount();
-        if (!funcp || (func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
-            // Make a new function
-            funcp = new AstCFunc{ofuncp->fileline(), ofuncp->name() + "__" + cvtToStr(funcnum++),
-                                 ofuncp->scopep()};
-            funcp->dontCombine(true);
-            funcp->isStatic(false);
-            funcp->isLoose(true);
-            funcp->slow(ofuncp->slow());
-            ofuncp->scopep()->addBlocksp(funcp);
-            //
-            AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
-            callp->dtypeSetVoid();
-            ofuncp->addStmtsp(callp->makeStmt());
-            func_stmts = 0;
+
+        if ((func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
+            finishSubFuncp(funcp);
+            funcp = createNewSubFuncp();
         }
+
         funcp->addStmtsp(itemp);
         func_stmts += stmts;
+
+        itemp->foreach([&is_coroutine](const AstNode* nodep) {
+            if (VN_IS(nodep, CAwait)) is_coroutine = true;
+        });
     }
+    finishSubFuncp(funcp);
     VL_DO_DANGLING(tempp->deleteTree(), tempp);
 }
 
@@ -254,8 +284,11 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                             bodyp
                                 = new AstWhile{flp, new AstConst{flp, AstConst::BitTrue{}}, bodyp};
                         }
+                        subFuncp->addStmtsp(bodyp);
+                        splitCheck(subFuncp);
+                    } else {
+                        subFuncp->addStmtsp(bodyp);
                     }
-                    subFuncp->addStmtsp(bodyp);
                 }
             } else {
                 logicp->unlinkFrBack();
