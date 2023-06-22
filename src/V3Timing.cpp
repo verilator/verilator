@@ -277,6 +277,7 @@ private:
     AstActive* m_activep = nullptr;  // Current active
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     double m_timescaleFactor = 1.0;  // Factor to scale delays by
+    int m_forkCnt = 0;  // Number of forks inside a module
 
     // Unique names
     V3UniqueNames m_contAssignVarNames{"__VassignWtmp"};  // Names for temp AssignW vars
@@ -563,6 +564,8 @@ private:
         m_classp = VN_CAST(nodep, Class);
         VL_RESTORER(m_timescaleFactor);
         m_timescaleFactor = calculateTimescaleFactor(nodep->timeunit());
+        VL_RESTORER(m_forkCnt);
+        m_forkCnt = 0;
         iterateChildren(nodep);
     }
     void visit(AstScope* nodep) override {
@@ -917,8 +920,7 @@ private:
         if (nodep->user1SetOnce()) return;
         v3Global.setUsesTiming();
         // Create a unique name for this fork
-        static int forkCnt = 0;
-        nodep->name("__Vfork_" + cvtToStr(++forkCnt));
+        nodep->name("__Vfork_" + cvtToStr(++m_forkCnt));
         unsigned idx = 0;  // Index for naming begins
         AstNode* stmtp = nodep->stmtsp();
         // Put each statement in a begin

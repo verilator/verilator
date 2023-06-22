@@ -62,10 +62,10 @@
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::new
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::_ctor_var_reset
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__VnoInFunc_do_fork
--V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__Vfork_4__0
--V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__Vfork_4__1
--V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__Vfork_5__0
--V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__Vfork_5__1
+-V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__Vfork_1__0
+-V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__Vfork_1__1
+-V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__Vfork_2__0
+-V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::__Vfork_2__1
 -V{t#,#}             Awaiting join of fork at: t/t_timing_class.v:222
 -V{t#,#}             Awaiting join of fork at: t/t_timing_class.v:217
 -V{t#,#}+      Vt_timing_debug2_t___eval_initial__TOP__t__7
@@ -402,9 +402,9 @@
 -V{t#,#}           - Process waiting at t/t_timing_class.v:58
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:58
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aLocalWaitClass::__VnoInFunc_await
--V{t#,#}+        Vt_timing_debug2_t__03a__03aLocalWaitClass::__Vfork_3__0
+-V{t#,#}+        Vt_timing_debug2_t__03a__03aLocalWaitClass::__Vfork_1__0
 -V{t#,#}         Suspending process waiting for @([true] ((32'sh2a == t::LocalWaitClass.a) | (32'sh64 != t::LocalWaitClass.b))) at t/t_timing_class.v:75
--V{t#,#}+        Vt_timing_debug2_t__03a__03aLocalWaitClass::__Vfork_3__1
+-V{t#,#}+        Vt_timing_debug2_t__03a__03aLocalWaitClass::__Vfork_1__1
 -V{t#,#}             Awaiting join of fork at: t/t_timing_class.v:74
 -V{t#,#}+    Vt_timing_debug2___024root___eval_act
 -V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
