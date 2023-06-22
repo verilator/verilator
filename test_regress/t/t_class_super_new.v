@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2022 by Antmicro Ltd.
+// any use, without warranty, 2023 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
 `define stop $stop
@@ -58,6 +58,21 @@ class Bar2Args extends Foo2Args;
    endfunction
 endclass
 
+class OptArgInNew;
+   int x;
+   function new (int y=1);
+      x = y;
+   endfunction
+endclass
+
+class NoNew extends OptArgInNew;
+endclass
+
+class NewWithoutSuper extends OptArgInNew;
+   function new;
+   endfunction
+endclass
+
 module t (/*AUTOARG*/
    );
 
@@ -80,6 +95,8 @@ module t (/*AUTOARG*/
    BarArg barArg;
    BarExpr barExpr;
    Bar2Args bar2Args;
+   NoNew no_new;
+   NewWithoutSuper new_without_super;
 
    initial begin
       bar = new;
@@ -94,6 +111,10 @@ module t (/*AUTOARG*/
       `checkh(barExpr.x, 16);
       bar2Args = new(2, 12);
       `checkh(bar2Args.x, 14);
+      no_new = new;
+      `checkh(no_new.x, 1);
+      new_without_super = new;
+      `checkh(new_without_super.x, 1);
 
       $write("*-* All Finished *-*\n");
       $finish;
