@@ -675,6 +675,19 @@ class ParamProcessor final : public VNDeleter {
         return modInfop;
     }
 
+    void convertToStringp(AstNode* nodep) {
+        // Should be called on values of parameters of type string to convert them
+        // to properly typed string constants.
+        // Has no effect if the value is not a string constant.
+        AstConst* const constp = VN_CAST(nodep, Const);
+        // Check if it wasn't already converted
+        if (constp && !constp->num().isString()) {
+            constp->replaceWith(new AstConst{constp->fileline(), AstConst::String{},
+                    constp->num().toString()});
+            constp->deleteTree();
+        }
+    }
+
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstNodeModule* srcModp, string& longnamer,
                         bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
@@ -689,25 +702,16 @@ class ParamProcessor final : public VNDeleter {
                 any_overridesr = true;
             } else {
                 V3Const::constifyParamsEdit(pinp->exprp());
-                AstConst* exprp = VN_CAST(pinp->exprp(), Const);
-                AstConst* origp = VN_CAST(modvarp->valuep(), Const);
                 // String constants are parsed as logic arrays and converted to strings in V3Const.
                 // At this moment, some constants may have been already converted.
                 // To correctly compare constants, both should be of the same type,
                 // so they need to be converted.
-                if (exprp && isString(modvarp->subDTypep())) {
-                    pinp->exprp()->replaceWith(new AstConst{exprp->fileline(), AstConst::String{},
-                                                            exprp->num().toString()});
-                    exprp->deleteTree();
-                    exprp = VN_AS(pinp->exprp(), Const);
-                    // Check if it wasn't already converted
-                    if (origp && !origp->num().isString()) {
-                        modvarp->valuep()->replaceWith(new AstConst{
-                            origp->fileline(), AstConst::String{}, origp->num().toString()});
-                        origp->deleteTree();
-                        origp = VN_AS(modvarp->valuep(), Const);
-                    }
+                if (isString(modvarp->subDTypep())) {
+                    convertToStringp(pinp->exprp());
+                    convertToStringp(modvarp->valuep());
                 }
+                AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
+                AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
                 if (!exprp) {
                     if (debug()) pinp->dumpTree("-  ");
                     pinp->v3error("Can't convert defparam value to constant: Param "
