@@ -125,6 +125,7 @@ void splitCheck(AstCFunc* ofuncp) {
 
     int funcnum = 0;
     int func_stmts = 0;
+    const bool is_ofuncp_coroutine = ofuncp->isCoroutine();
     bool is_coroutine = false;
     AstCFunc* funcp = nullptr;
 
@@ -178,9 +179,10 @@ void splitCheck(AstCFunc* ofuncp) {
         funcp->addStmtsp(itemp);
         func_stmts += stmts;
 
-        itemp->foreach([&is_coroutine](const AstNode* nodep) {
-            if (VN_IS(nodep, CAwait)) is_coroutine = true;
-        });
+        if (is_ofuncp_coroutine && !is_coroutine)
+            itemp->foreach([&is_coroutine](const AstNode* nodep) {
+                if (VN_IS(nodep, CAwait)) is_coroutine = true;
+            });
     }
     finishSubFuncp(funcp);
     VL_DO_DANGLING(tempp->deleteTree(), tempp);

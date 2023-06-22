@@ -12,7 +12,7 @@ scenarios(vlt_all => 1);
 
 compile(
     timing_loop => 1,
-    verilator_flags2 => ["--timing --output-split-cfuncs 128 -CFLAGS -Werror --unroll-count 8192 --unroll-stmts 1024"],
+    verilator_flags2 => ["--timing --output-split-cfuncs 1 -CFLAGS -Werror"],
     );
 
 execute(
