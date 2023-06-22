@@ -760,7 +760,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             // super.new shall be the first statement (section 8.15 of IEEE Std 1800-2017)
             // but some nodes (such as variable declarations and typedefs) should stay before
             if (VN_IS(stmtp, NodeStmt)) {
-                nodep->addHereThisAsNext(superNewStmtp);
+                stmtp->addHereThisAsNext(superNewStmtp);
                 return;
             }
         }
