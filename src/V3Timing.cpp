@@ -84,7 +84,7 @@ private:
     // TYPES
     // Vertex of a dependency graph of suspendable nodes, e.g. if a node (process or task) is
     // suspendable, all its dependents should also be suspendable
-    class DepVtx : public V3GraphVertex {
+    class DepVtx VL_NOT_FINAL : public V3GraphVertex {
         AstClass* const m_classp;  // Class associated with a method
         AstNode* const m_nodep;  // AST node represented by this graph vertex
 
