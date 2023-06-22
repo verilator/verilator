@@ -691,12 +691,17 @@ class ParamProcessor final : public VNDeleter {
                 V3Const::constifyParamsEdit(pinp->exprp());
                 AstConst* exprp = VN_CAST(pinp->exprp(), Const);
                 AstConst* origp = VN_CAST(modvarp->valuep(), Const);
+                // String constants are parsed as logic arrays and converted to strings in V3Const.
+                // At this moment, some constants may have been already converted.
+                // To correctly compare constants, both should be of the same type,
+                // so they need to be converted.
                 if (exprp && isString(modvarp->subDTypep())) {
                     pinp->exprp()->replaceWith(new AstConst{exprp->fileline(), AstConst::String{},
                                                             exprp->num().toString()});
                     exprp->deleteTree();
                     exprp = VN_AS(pinp->exprp(), Const);
-                    if (origp) {
+                    // Check if it wasn't already converted
+                    if (origp && !origp->num().isString()) {
                         modvarp->valuep()->replaceWith(new AstConst{
                             origp->fileline(), AstConst::String{}, origp->num().toString()});
                         origp->deleteTree();
