@@ -745,19 +745,31 @@ class LinkDotFindVisitor final : public VNVisitor {
     bool m_inRecursion = false;  // Inside a recursive module
     int m_paramNum = 0;  // Parameter number, for position based connection
     bool m_explicitNew = false;  // Hit a "new" function
+    bool m_explicitSuperNew = false;  // Hit a "super.new" call inside a "new" function
     int m_modBlockNum = 0;  // Begin block number in module, 0=none seen
     int m_modWithNum = 0;  // With block number, 0=none seen
 
     // METHODS
-    void makeImplicitNew(AstClass* nodep) {
+    void addImplicitSuperNewCall(AstFunc* nodep) {
         FileLine* const fl = nodep->fileline();
-        AstFunc* const newp = new AstFunc{fl, "new", nullptr, nullptr};
-        if (nodep->extendsp()) {
-            AstDot* const superNewp
-                = new AstDot{fl, false, new AstParseRef{fl, VParseRefExp::PX_ROOT, "super"},
-                             new AstNew{fl, nullptr}};
-            newp->addStmtsp(superNewp->makeStmt());
+        AstDot* const superNewp
+            = new AstDot{fl, false, new AstParseRef{fl, VParseRefExp::PX_ROOT, "super"},
+                         new AstNew{fl, nullptr}};
+        AstNodeStmt* const superNewStmtp = superNewp->makeStmt();
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            // super.new shall be the first statement (section 8.15 of IEEE Std 1800-2017)
+            // but some nodes (such as variable declarations and typedefs) should stay before
+            if (VN_IS(stmtp, NodeStmt)) {
+                nodep->addHereThisAsNext(superNewStmtp);
+                return;
+            }
         }
+        // There were no statements
+        nodep->addStmtsp(superNewStmtp);
+    }
+    void makeImplicitNew(AstClass* nodep) {
+        AstFunc* const newp = new AstFunc{nodep->fileline(), "new", nullptr, nullptr};
+        if (nodep->extendsp()) addImplicitSuperNewCall(newp);
         newp->isConstructor(true);
         nodep->addMembersp(newp);
         UINFO(8, "Made implicit new for " << nodep->name() << ": " << nodep << endl);
@@ -1054,7 +1066,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         // NodeTask: Remember its name for later resolution
         UINFO(5, "   " << nodep << endl);
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Function/Task not under module?");
-        if (nodep->name() == "new") m_explicitNew = true;
+        bool isNew = nodep->name() == "new";
+        if (isNew) m_explicitNew = true;
         // Remember the existing symbol table scope
         VL_RESTORER(m_classOrPackagep);
         VL_RESTORER(m_curSymp);
@@ -1125,7 +1138,12 @@ class LinkDotFindVisitor final : public VNVisitor {
                                     nullptr /*classOrPackagep*/);
             }
             m_ftaskp = nodep;
+            if (isNew) m_explicitSuperNew = false;
             iterateChildren(nodep);
+            if (isNew && !m_explicitSuperNew && m_statep->forPrimary()
+                && VN_AS(m_classOrPackagep, Class)->extendsp()) {
+                addImplicitSuperNewCall(VN_AS(nodep, Func));
+            }
             m_ftaskp = nullptr;
         }
     }
@@ -1521,6 +1539,12 @@ class LinkDotFindVisitor final : public VNVisitor {
             m_statep->insertSym(m_curSymp, nodep->valueArgRefp()->name(), nodep->valueArgRefp(),
                                 nullptr);
         }
+    }
+    void visit(AstDot* nodep) override {
+        if (nodep->lhsp()->name() == "super" && VN_IS(nodep->rhsp(), New)) {
+            m_explicitSuperNew = true;
+        }
+        iterateChildren(nodep);
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
