@@ -150,11 +150,18 @@ protected:
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
     bool m_instantiatesOwnProcess = false;
 
-    bool classConstructorNeedsProcess(AstClassRefDType* dtypep) {
-        AstNode* newp = dtypep->classp()->findMember("new");
+    bool constructorNeedsProcess(AstClass* classp) {
+        AstNode* newp = classp->findMember("new");
         AstCFunc* ctor = newp ? VN_CAST(newp, CFunc) : nullptr;
         UASSERT_OBJ(ctor ? ctor->isConstructor() : true, ctor, "`new` is not a constructor!");
         return ctor ? ctor->needProcess() : false;
+    }
+
+    bool constructorNeedsProcess(AstNodeDType* dtypep) {
+        if (AstClassRefDType* crefdtypep = VN_CAST(dtypep, ClassRefDType)) {
+            return constructorNeedsProcess(crefdtypep->classp());
+        }
+        return false;
     }
 
 public:
@@ -241,7 +248,8 @@ public:
         if (!nodep->baseCtors().empty()) {
             puts(": ");
             puts(nodep->baseCtors());
-            puts("(vlSymsp");
+            AstClass* classp = VN_CAST(nodep->scopep()->modp(), Class);
+            bool baseCtorCall = false;
             // Find call to super.new to get the arguments
             for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                 AstNode* exprp;
@@ -251,11 +259,23 @@ public:
                     exprp = stmtp;
                 }
                 if (AstCNew* const newRefp = VN_CAST(exprp, CNew)) {
+                    if (classp && constructorNeedsProcess(classp)) {
+                        puts("(vlProcess, vlSymsp");
+                    } else {
+                        puts("(vlSymsp");
+                    }
+                    baseCtorCall = true;
                     putCommaIterateNext(newRefp->argsp(), true);
+                    puts(")");
                     break;
                 }
             }
-            puts(")");
+            if (!baseCtorCall) {
+                if (classp && constructorNeedsProcess(classp))
+                    puts("(vlProcess, vlSymsp)");
+                else
+                    puts("(vlSymsp)");
+            }
         }
         puts(" {\n");
 
@@ -472,7 +492,7 @@ public:
             return;
         }
         // assignment case;
-        bool ctorNeedProc = classConstructorNeedsProcess(VN_AS(nodep->dtypep(), ClassRefDType));
+        bool ctorNeedProc = constructorNeedsProcess(nodep->dtypep());
         puts("VL_NEW(" + prefixNameProtect(nodep->dtypep())
              + (ctorNeedProc ? ", vlProcess, vlSymsp" : ", vlSymsp"));
         putCommaIterateNext(nodep->argsp(), true);
@@ -1119,7 +1139,7 @@ public:
         puts(")");
     }
     void visit(AstNewCopy* nodep) override {
-        bool ctorNeedProc = classConstructorNeedsProcess(VN_AS(nodep->dtypep(), ClassRefDType));
+        bool ctorNeedProc = constructorNeedsProcess(nodep->dtypep());
         puts("VL_NEW(" + prefixNameProtect(nodep->dtypep())
              + (ctorNeedProc ? ", vlProcess, " : ", "));
         puts("*");  // i.e. make into a reference
