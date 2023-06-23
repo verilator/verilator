@@ -29,8 +29,9 @@
 
 //============================================================================
 
-// Callable, type-erased wrapper for std::package_task<Signature> with any Signature.
-class any_packaged_task final {
+// Callable, type-erased wrapper for std::packaged_task<Signature> with any Signature.
+class VAnyPackagedTask final {
+    // TYPES
     struct PTWrapperBase {
         virtual ~PTWrapperBase() {}
         virtual void operator()() = 0;
@@ -46,26 +47,27 @@ class any_packaged_task final {
         void operator()() final override { m_pt(); }
     };
 
-    std::unique_ptr<PTWrapperBase> m_ptWrapperp = nullptr;
+    // MEMBERS
+    std::unique_ptr<PTWrapperBase> m_ptWrapperp = nullptr;  // Wrapper to call
 
 public:
+    // CONSTRUCTORS
     template <typename Signature>
-    any_packaged_task(std::packaged_task<Signature>&& pt)
+    VAnyPackagedTask(std::packaged_task<Signature>&& pt)
         : m_ptWrapperp{std::make_unique<PTWrapper<Signature>>(std::move(pt))} {}
 
-    any_packaged_task() = default;
-    ~any_packaged_task() = default;
+    VAnyPackagedTask() = default;
+    ~VAnyPackagedTask() = default;
 
-    any_packaged_task(const any_packaged_task&) = delete;
-    any_packaged_task& operator=(const any_packaged_task&) = delete;
+    VAnyPackagedTask(const VAnyPackagedTask&) = delete;
+    VAnyPackagedTask& operator=(const VAnyPackagedTask&) = delete;
 
-    any_packaged_task(any_packaged_task&&) = default;
-    any_packaged_task& operator=(any_packaged_task&&) = default;
+    VAnyPackagedTask(VAnyPackagedTask&&) = default;
+    VAnyPackagedTask& operator=(VAnyPackagedTask&&) = default;
 
-    void operator()() {
-        // UASSERT(m_pt_wrapper, "Tried to call uninitialized any_package_wrapper");
-        (*m_ptWrapperp)();
-    }
+    // METHODS
+    // Call the wrapped function
+    void operator()() { (*m_ptWrapperp)(); }
 };
 
 class V3ThreadPool final {
@@ -73,7 +75,7 @@ class V3ThreadPool final {
     static constexpr unsigned int FUTUREWAITFOR_MS = 100;
 
     V3Mutex m_mutex;  // Mutex for use by m_queue
-    std::queue<any_packaged_task> m_queue VL_GUARDED_BY(m_mutex);  // Queue of jobs
+    std::queue<VAnyPackagedTask> m_queue VL_GUARDED_BY(m_mutex);  // Queue of jobs
     // We don't need to guard this condition_variable as
     // both `notify_one` and `notify_all` functions are atomic,
     // `wait` function is not atomic, but we are guarding `m_queue` that is
@@ -245,8 +247,8 @@ T V3ThreadPool::waitForFuture(std::future<T>& future) VL_MT_SAFE_EXCLUDES(m_mute
 
 template <typename Callable>
 auto V3ThreadPool::enqueue(Callable&& f) VL_MT_START {
-    using result_type = decltype(f());
-    auto&& job = std::packaged_task<result_type()>{std::forward<Callable>(f)};
+    using result_t = decltype(f());
+    auto&& job = std::packaged_task<result_t()>{std::forward<Callable>(f)};
     auto future = job.get_future();
     if (willExecuteSynchronously()) {
         job();

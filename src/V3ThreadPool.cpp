@@ -61,7 +61,7 @@ void V3ThreadPool::workerJobLoop(int id) VL_MT_SAFE {
     while (true) {
         // Wait for a notification
         waitIfStopRequested();
-        any_packaged_task job;
+        VAnyPackagedTask job;
         {
             V3LockGuard lock(m_mutex);
             m_cv.wait(m_mutex, [&]() VL_REQUIRES(m_mutex) {
