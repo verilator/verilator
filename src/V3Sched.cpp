@@ -147,7 +147,9 @@ void splitCheck(AstCFunc* ofuncp) {
         AstCCall* const callp = new AstCCall{subFuncp->fileline(), subFuncp};
         callp->dtypeSetVoid();
 
-        if (is_ofuncp_coroutine && subFuncp->exists([](const AstCAwait*) { return true;})) {  // Wrap call with co_await
+        if (is_ofuncp_coroutine && subFuncp->exists([](const AstCAwait*) {
+                return true;
+            })) {  // Wrap call with co_await
             subFuncp->rtnType("VlCoroutine");
 
             AstCAwait* const awaitp = new AstCAwait{subFuncp->fileline(), callp};
