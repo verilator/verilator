@@ -718,7 +718,8 @@ class ParamProcessor final : public VNDeleter {
                                   << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
                     pinp->exprp()->replaceWith(new AstConst{
                         pinp->fileline(), AstConst::WidthedValue{}, modvarp->width(), 0});
-                } else if (origp && exprp->sameTree(origp)) {
+                } else if (origp
+                           && V3Hasher::uncachedHash(exprp) == V3Hasher::uncachedHash(origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.
