@@ -126,7 +126,6 @@ void splitCheck(AstCFunc* ofuncp) {
     int funcnum = 0;
     int func_stmts = 0;
     const bool is_ofuncp_coroutine = ofuncp->isCoroutine();
-    bool is_coroutine = false;
     AstCFunc* funcp = nullptr;
 
     const auto createNewSubFuncp = [&]() {
@@ -139,7 +138,6 @@ void splitCheck(AstCFunc* ofuncp) {
         subFuncp->declPrivate(ofuncp->declPrivate());
 
         func_stmts = 0;
-        is_coroutine = false;
 
         return subFuncp;
     };
@@ -149,7 +147,7 @@ void splitCheck(AstCFunc* ofuncp) {
         AstCCall* const callp = new AstCCall{subFuncp->fileline(), subFuncp};
         callp->dtypeSetVoid();
 
-        if (is_coroutine) {  // Wrap call with co_await
+        if (is_ofuncp_coroutine && subFuncp->exists([](const AstCAwait*) { return true;})) {  // Wrap call with co_await
             subFuncp->rtnType("VlCoroutine");
 
             AstCAwait* const awaitp = new AstCAwait{subFuncp->fileline(), callp};
@@ -178,11 +176,6 @@ void splitCheck(AstCFunc* ofuncp) {
 
         funcp->addStmtsp(itemp);
         func_stmts += stmts;
-
-        if (is_ofuncp_coroutine && !is_coroutine)
-            itemp->foreach([&is_coroutine](const AstNode* nodep) {
-                if (VN_IS(nodep, CAwait)) is_coroutine = true;
-            });
     }
     finishSubFuncp(funcp);
     VL_DO_DANGLING(tempp->deleteTree(), tempp);
@@ -286,11 +279,9 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                             bodyp
                                 = new AstWhile{flp, new AstConst{flp, AstConst::BitTrue{}}, bodyp};
                         }
-                        subFuncp->addStmtsp(bodyp);
-                        splitCheck(subFuncp);
-                    } else {
-                        subFuncp->addStmtsp(bodyp);
                     }
+                    subFuncp->addStmtsp(bodyp);
+                    splitCheck(subFuncp);
                 }
             } else {
                 logicp->unlinkFrBack();
