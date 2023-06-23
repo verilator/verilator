@@ -419,10 +419,10 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
     }
     if (nodep->funcp()->needProcess()) {
         if (comma) puts(", ");
-        if (VN_IS(nodep->backp(), CAwait)) {
-            puts("std::make_shared<VlProcess>()");
-        } else {
+        if (VN_IS(nodep->backp(), CAwait) || !nodep->funcp()->isCoroutine()) {
             puts("vlProcess");
+        } else {
+            puts("std::make_shared<VlProcess>()");
         }
         comma = true;
     }
