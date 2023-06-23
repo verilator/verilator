@@ -201,6 +201,15 @@ private:
             if (passFlag(parentp, depp, flag)) propagateFlags(depVxp, flag);
         }
     }
+    template <typename Predicate>
+    void propagateFlagsReversedIf(DepVtx* const vxp, NodeFlag flag, Predicate p) {
+        auto* const parentp = vxp->nodep();
+        for (V3GraphEdge* edgep = vxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+            auto* const depVxp = static_cast<DepVtx*>(edgep->fromp());
+            AstNode* const depp = depVxp->nodep();
+            if (p(vxp) && passFlag(parentp, depp, flag)) propagateFlagsReversedIf(depVxp, flag, p);
+        }
+    }
 
     // VISITORS
     void visit(AstClass* nodep) override {
@@ -270,7 +279,17 @@ private:
     }
     void visit(AstBegin* nodep) override {
         VL_RESTORER(m_procp);
+        VL_RESTORER(m_underFork);
+
+        if (!m_underFork || (m_underFork & F_MIGHT_SUSPEND))
+            new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep), getSuspendDepVtx(m_procp), 1};
+
+        if (!m_underFork)
+            new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep), getNeedsProcDepVtx(m_procp),
+                            1};
+
         m_procp = nodep;
+        m_underFork = 0;
         iterateChildren(nodep);
     }
     void visit(AstFork* nodep) override {
@@ -313,6 +332,14 @@ public:
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
             if (depVxp->nodep()->user2() & T_HAS_PROC) propagateFlags(depVxp, T_HAS_PROC);
+        }
+        // Propagate process downwards (from caller to callee) for suspendable calls
+        for (V3GraphVertex* vxp = m_suspGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
+            DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
+            if (depVxp->nodep()->user2() & T_HAS_PROC)
+                propagateFlagsReversedIf(depVxp, T_HAS_PROC, [&](const DepVtx* vtx) -> bool {
+                    return vtx->nodep()->user2() & T_SUSPENDEE;
+                });
         }
         if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps");
     }
