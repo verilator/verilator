@@ -27,6 +27,7 @@ ok(1);
 sub check_splits {
     my $got1;
     my $gotSyms1;
+    return if !$Self->have_coroutines;
     foreach my $file (glob("$Self->{obj_dir}/*.cpp")) {
         if ($file =~ /Syms__1/) {
             $gotSyms1 = 1;
