@@ -215,6 +215,7 @@ public:
     VSymGraph* symsp() { return &m_syms; }
     int stepNumber() const { return int(m_step); }
     bool forPrimary() const { return m_step == LDS_PRIMARY; }
+    bool forParamed() const { return m_step == LDS_PARAMED; }
     bool forPrearray() const { return m_step == LDS_PARAMED || m_step == LDS_PRIMARY; }
     bool forScopeCreation() const { return m_step == LDS_SCOPED; }
 
@@ -745,31 +746,14 @@ class LinkDotFindVisitor final : public VNVisitor {
     bool m_inRecursion = false;  // Inside a recursive module
     int m_paramNum = 0;  // Parameter number, for position based connection
     bool m_explicitNew = false;  // Hit a "new" function
-    bool m_explicitSuperNew = false;  // Hit a "super.new" call inside a "new" function
     int m_modBlockNum = 0;  // Begin block number in module, 0=none seen
     int m_modWithNum = 0;  // With block number, 0=none seen
 
     // METHODS
-    void addImplicitSuperNewCall(AstFunc* nodep) {
-        FileLine* const fl = nodep->fileline();
-        AstDot* const superNewp
-            = new AstDot{fl, false, new AstParseRef{fl, VParseRefExp::PX_ROOT, "super"},
-                         new AstNew{fl, nullptr}};
-        AstNodeStmt* const superNewStmtp = superNewp->makeStmt();
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            // super.new shall be the first statement (section 8.15 of IEEE Std 1800-2017)
-            // but some nodes (such as variable declarations and typedefs) should stay before
-            if (VN_IS(stmtp, NodeStmt)) {
-                stmtp->addHereThisAsNext(superNewStmtp);
-                return;
-            }
-        }
-        // There were no statements
-        nodep->addStmtsp(superNewStmtp);
-    }
     void makeImplicitNew(AstClass* nodep) {
         AstFunc* const newp = new AstFunc{nodep->fileline(), "new", nullptr, nullptr};
-        if (nodep->extendsp()) addImplicitSuperNewCall(newp);
+        // If needed, super.new() call is added the 2nd pass of V3LinkDotResolve,
+        // because base classes are already resolved there.
         newp->isConstructor(true);
         nodep->addMembersp(newp);
         UINFO(8, "Made implicit new for " << nodep->name() << ": " << nodep << endl);
@@ -1066,8 +1050,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         // NodeTask: Remember its name for later resolution
         UINFO(5, "   " << nodep << endl);
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Function/Task not under module?");
-        bool isNew = nodep->name() == "new";
-        if (isNew) m_explicitNew = true;
+        if (nodep->name() == "new") m_explicitNew = true;
         // Remember the existing symbol table scope
         VL_RESTORER(m_classOrPackagep);
         VL_RESTORER(m_curSymp);
@@ -1138,12 +1121,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                                     nullptr /*classOrPackagep*/);
             }
             m_ftaskp = nodep;
-            if (isNew) m_explicitSuperNew = false;
             iterateChildren(nodep);
-            if (isNew && !m_explicitSuperNew && m_statep->forPrimary()
-                && VN_AS(m_classOrPackagep, Class)->extendsp()) {
-                addImplicitSuperNewCall(VN_AS(nodep, Func));
-            }
             m_ftaskp = nullptr;
         }
     }
@@ -1539,12 +1517,6 @@ class LinkDotFindVisitor final : public VNVisitor {
             m_statep->insertSym(m_curSymp, nodep->valueArgRefp()->name(), nodep->valueArgRefp(),
                                 nullptr);
         }
-    }
-    void visit(AstDot* nodep) override {
-        if (nodep->lhsp()->name() == "super" && VN_IS(nodep->rhsp(), New)) {
-            m_explicitSuperNew = true;
-        }
-        iterateChildren(nodep);
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -2056,6 +2028,7 @@ private:
                                          // (except the default instances)
                                          // They are added to the set only in linkDotPrimary.
     bool m_insideClassExtParam = false;  // Inside a class from m_extendsParam
+    bool m_explicitSuperNew = false;  // Hit a "super.new" call inside a "new" function
 
     struct DotStates {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -2142,6 +2115,25 @@ private:
         } else {
             return nullptr;
         }
+    }
+    AstNodeStmt* addImplicitSuperNewCall(AstFunc* nodep) {
+        // Returns the added node
+        FileLine* const fl = nodep->fileline();
+        AstDot* const superNewp
+            = new AstDot{fl, false, new AstParseRef{fl, VParseRefExp::PX_ROOT, "super"},
+                         new AstNew{fl, nullptr}};
+        AstNodeStmt* const superNewStmtp = superNewp->makeStmt();
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            // super.new shall be the first statement (section 8.15 of IEEE Std 1800-2017)
+            // but some nodes (such as variable declarations and typedefs) should stay before
+            if (VN_IS(stmtp, NodeStmt)) {
+                stmtp->addHereThisAsNext(superNewStmtp);
+                return superNewStmtp;
+            }
+        }
+        // There were no statements
+        nodep->addStmtsp(superNewStmtp);
+        return superNewStmtp;
     }
     void taskFuncSwapCheck(AstNodeFTaskRef* nodep) {
         if (nodep->taskp() && VN_IS(nodep->taskp(), Task) && VN_IS(nodep, FuncRef)) {
@@ -3304,7 +3296,16 @@ private:
         {
             m_ftaskp = nodep;
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+            bool isNew = nodep->name() == "new";
+            if (isNew) m_explicitSuperNew = false;
             iterateChildren(nodep);
+            if (isNew && !m_explicitSuperNew && m_statep->forParamed()) {
+                const AstClassExtends* const classExtendsp = VN_AS(m_modp, Class)->extendsp();
+                if (classExtendsp->classOrNullp()) {
+                    AstNodeStmt* const superNewp = addImplicitSuperNewCall(VN_AS(nodep, Func));
+                    iterate(superNewp);
+                }
+            }
         }
         m_ds.m_dotSymp = m_curSymp = oldCurSymp;
         m_ftaskp = nullptr;
@@ -3625,6 +3626,11 @@ private:
     void visit(AstUnlinkedRef* nodep) override {
         UINFO(5, "  AstCellArrayRef: " << nodep << " " << m_ds.ascii() << endl);
         // No need to iterate, if we have a UnlinkedVarXRef, we're already done
+    }
+    void visit(AstStmtExpr* nodep) override {
+        checkNoDot(nodep);
+        if (VN_IS(nodep->exprp(), New)) m_explicitSuperNew = true;
+        iterateChildren(nodep);
     }
 
     void visit(AstNode* nodep) override {
