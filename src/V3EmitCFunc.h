@@ -150,9 +150,9 @@ protected:
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
     bool m_instantiatesOwnProcess = false;
 
-    bool constructorNeedsProcess(AstClass* classp) {
-        AstNode* newp = classp->findMember("new");
-        AstCFunc* ctor = newp ? VN_CAST(newp, CFunc) : nullptr;
+    bool constructorNeedsProcess(const AstClass* classp) {
+        const AstNode* newp = classp->findMember("new");
+        const AstCFunc* ctor = newp ? VN_CAST(newp, CFunc) : nullptr;
         UASSERT_OBJ(ctor ? ctor->isConstructor() : true, ctor, "`new` is not a constructor!");
         return ctor ? ctor->needProcess() : false;
     }
