@@ -3301,7 +3301,7 @@ private:
             iterateChildren(nodep);
             if (isNew && !m_explicitSuperNew && m_statep->forParamed()) {
                 const AstClassExtends* const classExtendsp = VN_AS(m_modp, Class)->extendsp();
-                if (classExtendsp->classOrNullp()) {
+                if (classExtendsp && classExtendsp->classOrNullp()) {
                     AstNodeStmt* const superNewp = addImplicitSuperNewCall(VN_AS(nodep, Func));
                     iterate(superNewp);
                 }
