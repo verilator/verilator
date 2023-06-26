@@ -3421,6 +3421,7 @@ private:
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_modSymp);
+        VL_RESTORER(m_modp);
         VL_RESTORER(m_ifClassImpNames);
         VL_RESTORER(m_insideClassExtParam);
         {
