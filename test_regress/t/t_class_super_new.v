@@ -73,6 +73,21 @@ class NewWithoutSuper extends OptArgInNew;
    endfunction
 endclass
 
+class OptArgInNewParam #(parameter int P=1);
+   int x;
+   function new (int y=1);
+      x = y;
+   endfunction
+endclass
+
+class NoNewParam#(parameter int R) extends OptArgInNewParam#(R);
+endclass
+
+class NewWithoutSuperParam#(parameter int R) extends OptArgInNewParam#();
+   function new;
+   endfunction
+endclass
+
 module t (/*AUTOARG*/
    );
 
@@ -95,8 +110,10 @@ module t (/*AUTOARG*/
    BarArg barArg;
    BarExpr barExpr;
    Bar2Args bar2Args;
-   NoNew no_new;
-   NewWithoutSuper new_without_super;
+   NoNew noNew;
+   NewWithoutSuper newWithoutSuper;
+   NoNewParam#(2) noNewParam;
+   NewWithoutSuperParam#(1) newWithoutSuperParam;
 
    initial begin
       bar = new;
@@ -111,10 +128,14 @@ module t (/*AUTOARG*/
       `checkh(barExpr.x, 16);
       bar2Args = new(2, 12);
       `checkh(bar2Args.x, 14);
-      no_new = new;
-      `checkh(no_new.x, 1);
-      new_without_super = new;
-      `checkh(new_without_super.x, 1);
+      noNew = new;
+      `checkh(noNew.x, 1);
+      newWithoutSuper = new;
+      `checkh(newWithoutSuper.x, 1);
+      noNewParam = new;
+      `checkh(noNewParam.x, 1);
+      newWithoutSuperParam = new;
+      `checkh(newWithoutSuperParam.x, 1);
 
       $write("*-* All Finished *-*\n");
       $finish;
