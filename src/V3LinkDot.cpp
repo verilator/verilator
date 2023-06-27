@@ -3630,7 +3630,15 @@ private:
     }
     void visit(AstStmtExpr* nodep) override {
         checkNoDot(nodep);
-        if (VN_IS(nodep->exprp(), New)) m_explicitSuperNew = true;
+        // check if nodep represents a super.new call;
+        if (VN_IS(nodep->exprp(), New)) {
+            // in this case it was already linked, so it doesn't have a super reference
+            m_explicitSuperNew = true;
+        } else if (const AstDot* const dotp = VN_CAST(nodep->exprp(), Dot)) {
+            if (dotp->lhsp()->name() == "super" && VN_IS(dotp->rhsp(), New)) {
+                m_explicitSuperNew = true;
+            }
+        }
         iterateChildren(nodep);
     }
 
