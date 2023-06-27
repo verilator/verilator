@@ -27,6 +27,7 @@ sub gen_compile_commands_json {
     my @common_args = ("clang++",
                        "-std=c++14",
                        "-I$root_dir/include",
+                       "-I$root_dir/src",
                        "-c");
 
     my $ccjson = [
@@ -34,6 +35,11 @@ sub gen_compile_commands_json {
          "file" => "$srcs_dir/mt_enabled.cpp",
          "output" => undef,
          "arguments" => [@common_args]},
+        {"directory" => "$srcs_dir",
+         "file" => "$srcs_dir/mt_disabled.cpp",
+         "output" => undef,
+         "arguments" => [@common_args,
+                         "-DVL_MT_DISABLED_CODE_UNIT=1"]},
     ];
 
     my @srcfiles;
