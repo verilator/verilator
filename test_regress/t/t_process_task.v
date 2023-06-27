@@ -5,10 +5,10 @@ module t();
 
    always #1 clk = ~clk;
 
-   task kill_me_after_1ns(std::process proc);
+   task kill_me_after_1ns();
       fork
-         #1 proc.kill(); // kill proc after 1 step
-         #3 begin        // finish after the next clock cycle
+         #1 proc.kill();
+         #3 begin
             $write("*-* All Finished *-*\n");
             $finish;
          end
@@ -18,7 +18,7 @@ module t();
    always @(posedge clk) begin
       if (!b) begin
          proc = std::process::self();
-         kill_me_after_1ns(proc);
+         kill_me_after_1ns();
          b = 1;
       end else begin
          $stop;
