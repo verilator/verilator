@@ -63,7 +63,7 @@ sub checkPattern {
     my $pattern = shift;
     my $message = shift;
 
-    open(my $in_fileh, $filename)
+    my $in_fileh = IO::File-new("<$filename")
       or die "Could not open file '$filename' $!";
     my @lines_l = <$in_fileh>;
     my $lineno = 0;
@@ -75,14 +75,14 @@ sub checkPattern {
     my @n_rows;
 
     for( my $row_i = 0; $row_i < $num_rows; $row_i++) {
-        $lineno++;
-        $start_row = $row_i;
-        $end_row = $start_row + 3;
+        ++$lineno;
+        my $start_row = $row_i;
+        my $end_row = $start_row + 3;
         if ($end_row >= $num_rows) {
             $end_row = $num_rows - 1;
         }
         @n_rows = @lines_l [$start_row..$end_row];
-        $buffer = join ("", @n_rows);
+        my $buffer = join ("", @n_rows);
         if ($buffer =~ s/.*?^($pattern)//sm) {
             error("$filename:$lineno: $message");
         }
