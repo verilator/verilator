@@ -63,18 +63,30 @@ sub checkPattern {
     my $pattern = shift;
     my $message = shift;
 
-    my $offset = 0;
-    my $buffer = $contents;
-    while ($buffer =~ s/.*?^($pattern)//sm) {
-      my $lineno = offset_to_lineno($contents, $offset + $-[-1]);
-      $offset += $+[1];
-      error("$filename:$lineno: $message");
+    open(my $in_fileh, $filename)
+      or die "Could not open file '$filename' $!";
+    my @lines_l = <$in_fileh>;
+    my $lineno = 0;
+    my $start_row = 0;
+    my $end_row = 0;
+    my $buffer;
+
+    my $num_rows = scalar(@lines_l);
+    my @n_rows;
+
+    for( my $row_i = 0; $row_i < $num_rows; $row_i++) {
+        $lineno++;
+        $start_row = $row_i;
+        $end_row = $start_row + 3;
+        if ($end_row >= $num_rows) {
+            $end_row = $num_rows - 1;
+        }
+        @n_rows = @lines_l [$start_row..$end_row];
+        $buffer = join ("", @n_rows);
+        if ($buffer =~ s/.*?^($pattern)//sm) {
+            error("$filename:$lineno: $message");
+        }
     }
+
 }
 
-sub offset_to_lineno {
-    my $contents = shift;
-    my $offset = shift;
-    my $count = (substr $contents, 0, $offset) =~ tr/\n//;
-    return $count + 1;
-}
