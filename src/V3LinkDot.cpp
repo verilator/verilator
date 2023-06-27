@@ -3296,7 +3296,7 @@ private:
         {
             m_ftaskp = nodep;
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
-            bool isNew = nodep->name() == "new";
+            const bool isNew = nodep->name() == "new";
             if (isNew) m_explicitSuperNew = false;
             iterateChildren(nodep);
             if (isNew && !m_explicitSuperNew && m_statep->forParamed()) {
@@ -3630,7 +3630,7 @@ private:
     }
     void visit(AstStmtExpr* nodep) override {
         checkNoDot(nodep);
-        // check if nodep represents a super.new call;
+        // Check if nodep represents a super.new call;
         if (VN_IS(nodep->exprp(), New)) {
             // in this case it was already linked, so it doesn't have a super reference
             m_explicitSuperNew = true;
