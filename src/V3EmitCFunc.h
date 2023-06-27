@@ -150,7 +150,10 @@ protected:
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
     bool m_instantiatesOwnProcess = false;
 
-    bool constructorNeedsProcess(const AstClass* classp) {
+    bool constructorNeedsProcess(AstClass* classp) {
+        // This function is called only once per emitted constructor code, so this is fine.
+        classp->repairCache();
+
         const AstNode* newp = classp->findMember("new");
         const AstCFunc* ctor = newp ? VN_CAST(newp, CFunc) : nullptr;
         UASSERT_OBJ(ctor ? ctor->isConstructor() : true, ctor, "`new` is not a constructor!");
