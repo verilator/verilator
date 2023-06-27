@@ -395,7 +395,7 @@ class ParamProcessor final : public VNDeleter {
         return nullptr;
     }
     bool isString(AstNodeDType* nodep) {
-        if (AstBasicDType* basicp = VN_CAST(nodep->skipRefToEnump(), BasicDType))
+        if (AstBasicDType* const basicp = VN_CAST(nodep->skipRefToEnump(), BasicDType))
             return basicp->isString();
         return false;
     }
