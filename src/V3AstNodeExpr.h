@@ -1428,6 +1428,7 @@ class AstMemberSel final : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr
     // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
     string m_name;
+    VAccess m_access;  // Read or write, as in AstNodeVarRef
     AstVar* m_varp = nullptr;  // Post link, variable within class that is target of selection
 public:
     AstMemberSel(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, const string& name)
@@ -1448,6 +1449,8 @@ public:
     void dump(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
+    VAccess access() const { return m_access; }
+    void access(const VAccess& flag) { m_access = flag; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
