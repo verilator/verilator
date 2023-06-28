@@ -2710,41 +2710,7 @@ private:
         if (AstNodeUOrStructDType* const adtypep = VN_CAST(fromDtp, NodeUOrStructDType)) {
             if (memberSelStruct(nodep, adtypep)) return;
         } else if (AstClassRefDType* const adtypep = VN_CAST(fromDtp, ClassRefDType)) {
-            if (AstNode* const foundp = memberSelClass(nodep, adtypep)) {
-                if (AstVar* const varp = VN_CAST(foundp, Var)) {
-                    if (!varp->didWidth()) userIterate(varp, nullptr);
-                    if (varp->lifetime().isStatic()) {
-                        // Static fiels are moved outside the class, so they shouldn't be accessed
-                        // by member select on a class object
-                        AstVarRef* const varRefp
-                            = new AstVarRef{nodep->fileline(), varp, nodep->access()};
-                        varRefp->classOrPackagep(adtypep->classp());
-                        nodep->replaceWith(varRefp);
-                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                        return;
-                    }
-                    nodep->dtypep(foundp->dtypep());
-                    nodep->varp(varp);
-                    return;
-                }
-                if (AstEnumItemRef* const adfoundp = VN_CAST(foundp, EnumItemRef)) {
-                    nodep->replaceWith(adfoundp->cloneTree(false));
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    return;
-                }
-                if (AstNodeFTask* const methodp = VN_CAST(foundp, NodeFTask)) {
-                    nodep->replaceWith(new AstMethodCall{nodep->fileline(),
-                                                         nodep->fromp()->unlinkFrBack(),
-                                                         nodep->name(), nullptr});
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    return;
-                }
-                UINFO(1, "found object " << foundp << endl);
-                nodep->v3fatalSrc("MemberSel of non-variable\n"
-                                  << nodep->warnContextPrimary() << '\n'
-                                  << foundp->warnOther() << "... Location of found object\n"
-                                  << foundp->warnContextSecondary());
-            }
+            if (memberSelClass(nodep, adtypep)) return;
         } else if (AstIfaceRefDType* const adtypep = VN_CAST(fromDtp, IfaceRefDType)) {
             if (AstNode* const foundp = memberSelIface(nodep, adtypep)) {
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
@@ -2783,15 +2749,50 @@ private:
         nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    AstNode* memberSelClass(AstMemberSel* nodep, AstClassRefDType* adtypep) {
-        // Returns node if ok
+    bool memberSelClass(AstMemberSel* nodep, AstClassRefDType* adtypep) {
+        // Returns true if ok
         // No need to width-resolve the class, as it was done when we did the child
         AstClass* const first_classp = adtypep->classp();
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
-            if (AstNode* const foundp = classp->findMember(nodep->name())) return foundp;
+            if (AstNode* const foundp = classp->findMember(nodep->name())) {
+                if (AstVar* const varp = VN_CAST(foundp, Var)) {
+                    if (!varp->didWidth()) userIterate(varp, nullptr);
+                    if (varp->lifetime().isStatic()) {
+                        // Static fiels are moved outside the class, so they shouldn't be accessed
+                        // by member select on a class object
+                        AstVarRef* const varRefp
+                            = new AstVarRef{nodep->fileline(), varp, nodep->access()};
+                        varRefp->classOrPackagep(classp);
+                        nodep->replaceWith(varRefp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                        return true;
+                    }
+                    nodep->dtypep(foundp->dtypep());
+                    nodep->varp(varp);
+                    return true;
+                }
+                if (AstEnumItemRef* const adfoundp = VN_CAST(foundp, EnumItemRef)) {
+                    nodep->replaceWith(adfoundp->cloneTree(false));
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return true;
+                }
+                if (AstNodeFTask* const methodp = VN_CAST(foundp, NodeFTask)) {
+                    nodep->replaceWith(new AstMethodCall{nodep->fileline(),
+                                                         nodep->fromp()->unlinkFrBack(),
+                                                         nodep->name(), nullptr});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return true;
+                }
+                UINFO(1, "found object " << foundp << endl);
+                nodep->v3fatalSrc("MemberSel of non-variable\n"
+                                  << nodep->warnContextPrimary() << '\n'
+                                  << foundp->warnOther() << "... Location of found object\n"
+                                  << foundp->warnContextSecondary());
+            }
             classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr;
         }
+
         VSpellCheck speller;
         for (AstClass* classp = first_classp; classp;) {
             for (AstNode* itemp = classp->membersp(); itemp; itemp = itemp->nextp()) {
@@ -2806,7 +2807,7 @@ private:
             "Member " << nodep->prettyNameQ() << " not found in class "
                       << first_classp->prettyNameQ() << "\n"
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
-        return nullptr;  // Caller handles error
+        return false;  // Caller handles error
     }
     AstNode* memberSelIface(AstMemberSel* nodep, AstIfaceRefDType* adtypep) {
         // Returns node if ok
