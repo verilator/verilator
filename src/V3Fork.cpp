@@ -59,7 +59,6 @@ private:
     AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
     std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
     AstArg* m_capturedVarRefsp = nullptr;  // References to captured variables (as args)
-    int m_createdTasksCount = 0;  // Number of tasks created by this visitor
 
     // METHODS
     AstVar* captureRef(AstNodeExpr* refp) {
@@ -83,7 +82,6 @@ private:
     AstTask* makeTask(FileLine* fl, AstNode* stmtsp, std::string name) {
         stmtsp = AstNode::addNext(static_cast<AstNode*>(m_capturedVarsp), stmtsp);
         AstTask* const taskp = new AstTask{fl, name, stmtsp};
-        ++m_createdTasksCount;
         return taskp;
     }
 
@@ -139,6 +137,7 @@ private:
 
         AstTaskRef* const taskrefp
             = new AstTaskRef{nodep->fileline(), taskp->name(), m_capturedVarRefsp};
+        taskrefp->taskp(taskp);
         AstStmtExpr* const taskcallp = new AstStmtExpr{nodep->fileline(), taskrefp};
         // Replaced nodes will be revisited, so we don't need to "lift" the arguments
         // as captures in case of nested forks.
@@ -223,23 +222,15 @@ public:
     // CONSTRUCTORS
     ForkVisitor(AstNetlist* nodep) { visit(nodep); }
     ~ForkVisitor() override = default;
-
-    // UTILITY
-    int createdTasksCount() { return m_createdTasksCount; }
 };
 
 //######################################################################
 // Fork class functions
 
-int V3Fork::makeTasks(AstNetlist* nodep) {
-    int createdTasksCount;
-
+void V3Fork::makeTasks(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         ForkVisitor fork_visitor(nodep);
-        createdTasksCount = fork_visitor.createdTasksCount();
     }
     V3Global::dumpCheckGlobalTree("fork", 0, dumpTreeLevel() >= 3);
-
-    return createdTasksCount;
 }
