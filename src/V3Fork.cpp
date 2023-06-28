@@ -79,13 +79,13 @@ private:
         return varp;
     }
 
-    AstTask* makeTask(FileLine* fl, AstNode* stmtsp, std::string name) {
+    AstTask* makeTask(FileLine* fl, AstNode* stmtsp, string name) {
         stmtsp = AstNode::addNext(static_cast<AstNode*>(m_capturedVarsp), stmtsp);
         AstTask* const taskp = new AstTask{fl, name, stmtsp};
         return taskp;
     }
 
-    std::string generateTaskName(AstNode* fromp, std::string kind) {
+    string generateTaskName(AstNode* fromp, string kind) {
         // TODO: Ensure no collisions occur
         return "__V" + kind + (!fromp->name().empty() ? (fromp->name() + "__") : "UNNAMED__")
                + cvtToHex(fromp);
@@ -120,16 +120,16 @@ private:
 
         if (AstBegin* beginp = VN_CAST(nodep, Begin)) {
             UASSERT(beginp->stmtsp(), "No stmtsp\n");
-            const std::string taskName = generateTaskName(beginp, "__FORK_BEGIN_");
+            const string taskName = generateTaskName(beginp, "__FORK_BEGIN_");
             taskp
                 = makeTask(beginp->fileline(), beginp->stmtsp()->unlinkFrBackWithNext(), taskName);
             beginp->unlinkFrBack(&handle);
             VL_DO_DANGLING(beginp->deleteTree(), beginp);
         } else if (AstNodeStmt* stmtp = VN_CAST(nodep, NodeStmt)) {
-            const std::string taskName = generateTaskName(stmtp, "__FORK_STMT_");
+            const string taskName = generateTaskName(stmtp, "__FORK_STMT_");
             taskp = makeTask(stmtp->fileline(), stmtp->unlinkFrBack(&handle), taskName);
         } else if (AstFork* forkp = VN_CAST(nodep, Fork)) {
-            const std::string taskName = generateTaskName(forkp, "__FORK_NESTED_");
+            const string taskName = generateTaskName(forkp, "__FORK_NESTED_");
             taskp = makeTask(forkp->fileline(), forkp->unlinkFrBack(&handle), taskName);
         }
 
