@@ -1,5 +1,58 @@
-%Error: t/t_clocking_sched.v:11:9: Input/output/inout does not appear in port list: 'clk'
-                                 : ... In instance t
-   11 |   input clk;
-      |         ^~~
-%Error: Exiting due to
+0 | posedge
+0 | cb.y=0
+0 | b=0
+0 | z<=0
+0 | x<=0
+0 | y=0
+0 | c<=0
+0 | c<=1
+0 | cb.a=1
+0 | cb.b=1
+0 | posedge
+0 | x<=1
+0 | y=1
+0 | c<=0
+0 | cb.a=0
+0 | cb.b=1
+0 | cb.y=1
+0 | b=1
+0 | x<=0
+0 | y=0
+0 | 0 1 0 0 0 0
+2 | z<=1
+3 | posedge
+3 | c<=1
+3 | cb.a=1
+3 | cb.b=1
+3 | cb.y=0
+3 | b=0
+3 | posedge
+3 | x<=1
+3 | y=1
+3 | c<=0
+3 | cb.a=0
+3 | cb.b=1
+3 | cb.y=1
+3 | b=1
+3 | x<=0
+3 | y=0
+3 | 0 1 0 0 0 1
+5 | posedge
+5 | z<=0
+5 | c<=1
+5 | cb.a=1
+5 | cb.b=1
+5 | cb.y=0
+5 | b=0
+5 | posedge
+5 | x<=1
+5 | y=1
+5 | c<=0
+5 | cb.a=0
+5 | cb.b=1
+5 | cb.y=1
+5 | b=1
+5 | x<=0
+5 | y=0
+5 | 0 1 0 0 0 0
+*-* All Finished *-*
