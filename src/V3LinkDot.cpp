@@ -3049,7 +3049,8 @@ private:
             }
             UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
             nodep->classOrPackagep(cpackagerefp->classOrPackagep());
-            m_ds.m_dotPos = DP_SCOPE;
+            // Class/package :: HERE function() . method_called_on_function_return_value()
+            m_ds.m_dotPos = DP_MEMBER;
             m_ds.m_dotp = nullptr;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
             nodep->dotted(m_ds.m_dotText);  // Maybe ""

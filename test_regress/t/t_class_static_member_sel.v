@@ -42,6 +42,18 @@ class Getter1;
    endfunction
 endclass
 
+class uvm_root;
+   int x;
+   static uvm_root m_inst;
+   static function uvm_root get_inst();
+      if (m_inst == null) m_inst = new;
+      return m_inst;
+   endfunction
+   function int get_7();
+      return 7;
+   endfunction
+endclass
+
 module t (/*AUTOARG*/
    );
 
@@ -67,6 +79,11 @@ module t (/*AUTOARG*/
       if (ec.iw.x != 5) $stop;
 
       if (getter1.get_1 != 1) $stop;
+
+      uvm_root::get_inst().x = 6;
+      if (uvm_root::get_inst().x != 6) $stop;
+
+      if (uvm_root::get_inst().get_7() != 7) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
