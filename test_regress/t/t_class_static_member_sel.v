@@ -22,6 +22,20 @@ class Baz;
    endfunction
 endclass
 
+class IntWrapper;
+   int        x;
+endclass
+
+class Cls;
+   static IntWrapper iw;
+   function new;
+      if (iw == null) iw = new;
+   endfunction
+endclass
+
+class ExtendCls extends Cls;
+endclass
+
 module t (/*AUTOARG*/
    );
 
@@ -29,6 +43,7 @@ module t (/*AUTOARG*/
       Foo foo = new;
       Bar bar = new;
       Baz baz = new;
+      ExtendCls ec = new;
 
       if (foo.x != 1) $stop;
 
@@ -40,6 +55,9 @@ module t (/*AUTOARG*/
 
       baz.get_bar().f.x = 4;
       if (baz.get_bar().f.x != 4) $stop;
+
+      ec.iw.x = 5;
+      if (ec.iw.x != 5) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
