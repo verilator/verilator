@@ -49,6 +49,8 @@ private:
     // AstNode::user1()         -> bool, 1 = Node was created as a call to an asynchronous task
     // AstVarRef::user2()       -> bool, 1 = Node is a class handle reference. The handle gets
     //                                       modified in the context of this reference.
+    // AstVar::user2()          -> bool, 1 = Variable is moved to dynamic
+    // AstClass::user2()        -> bool, 1 = Class is finalized (can no longer capture)
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
@@ -57,11 +59,149 @@ private:
     int m_forkDepth = 0;  // Nesting level of asynchronous forks
     bool m_newProcess = false;  // True if we are directly under an asynchronous fork.
     AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
+    AstClass* m_dynScopeClassp = nullptr; // Class for holding variables of dynamic scope
+    AstClassRefDType* m_dynScopeClassRefDTypep = nullptr;
+    AstVar* m_dynScopeHandlep = nullptr; // Class handle for holding variables of dynamic scope
+    AstNode* m_procp = nullptr; // Task/function/block we are currently under (not forked)
     std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
     AstArg* m_capturedVarRefsp = nullptr;  // References to captured variables (as args)
 
     // METHODS
-    AstVar* captureRef(AstNodeExpr* refp) {
+
+    // Creates an "anonymous" class for holding variables that areaccessed in async forks.
+    AstClass* getAnonDynScopeClass() {
+        UASSERT(m_procp != nullptr, "creating dynamic scope while not under a task/function");
+        if (!m_dynScopeClassp) {
+            m_dynScopeClassp = new AstClass{m_procp->fileline(), generateClassName(m_procp)};
+            m_dynScopeClassRefDTypep =
+                new AstClassRefDType{m_procp->fileline(), m_dynScopeClassp, nullptr};
+            v3Global.rootp()->typeTablep()->addTypesp(m_dynScopeClassRefDTypep);
+            UASSERT_OBJ(m_modp != m_dynScopeClassp, m_dynScopeClassp,
+                        "Adding self as dynamic scope");
+            UASSERT_OBJ(!m_dynScopeClassp->nextp(), m_dynScopeClassp,
+                        "Dynamic scope is not alone");
+            UASSERT_OBJ(!m_dynScopeClassp->backp(), m_dynScopeClassp,
+                        "Dynamic scope is already linked");
+            m_modp = AstNode::addNext(m_modp, m_dynScopeClassp);
+        }
+        return m_dynScopeClassp;
+    }
+
+    AstVar* getAnonDynScopeHandle() {
+        if (!m_dynScopeHandlep) {
+            (void)getAnonDynScopeClass();
+
+            m_dynScopeHandlep =
+                new AstVar{m_procp->fileline(), VVarType::BLOCKTEMP, 
+                           "__VDynScope_"
+                           + (m_procp->name().empty() ? cvtToHex(m_procp) : m_procp->name()),
+                           m_dynScopeClassRefDTypep};
+            m_dynScopeHandlep->funcLocal(true);
+            m_dynScopeHandlep->lifetime(VLifetime::AUTOMATIC);
+        }
+        return m_dynScopeHandlep;
+    }
+
+    AstNode* getProcStmts() {
+        AstNode* stmtsp = nullptr;
+        if (!m_procp)
+            return nullptr;
+        if (AstBegin* beginp = VN_CAST(m_procp, Begin))
+            stmtsp = beginp->stmtsp();
+        else if (AstNodeFTask* taskp = VN_CAST(m_procp, NodeFTask))
+            stmtsp = taskp->stmtsp();
+        else
+            v3fatal("m_procp is not a begin block or a procedure");
+        return stmtsp;
+    }
+
+    bool isVarLocalToCurrentProc(AstVar* varp) {
+        // Assumption: all local variables are declared at the beginning of the block
+
+        //TODO: Handle nesteed declarations
+
+        UINFO(1, "CURRENT PROC: " << m_procp << "\n");
+
+        AstNode* stmtsp = getProcStmts();
+        if (!stmtsp)
+            return false;
+
+        for (AstVar* pvarp = VN_CAST(stmtsp, Var); pvarp; pvarp = VN_CAST(pvarp->nextp(), Var)) {
+            if (pvarp == varp)
+                return true;
+        }
+        return false;
+    }
+
+    bool isVarInDynScope(AstVar* varp) {
+        // Assumption: all local variables are declared at the beginning of the block
+
+        //TODO: Handle nesteed declarations
+
+        UINFO(1, "CURRENT PROC: " << m_procp << "\n");
+
+        AstNode* stmtsp = getProcStmts();
+        if (!stmtsp)
+            return false;
+
+        for (AstVar* pvarp = VN_CAST(stmtsp, Var); pvarp; pvarp = VN_CAST(pvarp->nextp(), Var)) {
+            if (pvarp == varp)
+                return true;
+        }
+        return false;
+    }
+
+    void replaceRefWithMembersel(AstVarRef* refp) {
+        AstVar* dynScopeHandlep = getAnonDynScopeHandle();
+
+        VNRelinker handle;
+        refp->unlinkFrBack(&handle);
+        AstMemberSel* membersel =
+            new AstMemberSel{refp->fileline(),
+                             new AstVarRef{refp->fileline(), dynScopeHandlep, refp->access()},
+                             refp->dtypep()};
+        membersel->name(refp->varp()->name());
+        membersel->varp(refp->varp());
+        handle.relink(membersel);
+        VL_DO_DANGLING(refp->deleteTree(), refp);
+    }
+
+    // Updates all var refs that point to stuff that was moved to dynamic scope
+    void updateRefsInCurrentProc() {
+        m_procp->forall([&](AstVarRef* vrefp) -> bool {
+            if (vrefp->varp()->user2())
+                replaceRefWithMembersel(vrefp);
+            return true;
+        });
+    }
+
+    void instantiateDynScopeObject() {
+        UASSERT_OBJ(!m_dynScopeHandlep->nextp(), m_dynScopeHandlep, "Handle already linked");
+
+        AstNode* stmtp = getProcStmts();
+        UASSERT(stmtp, "trying to instantiate dynamic scope while not under proc");
+
+        // Find node after last variable declaration
+        while (stmtp && VN_IS(stmtp, Var))
+            stmtp = stmtp->nextp();
+        UASSERT(stmtp, "no proc body");
+
+        AstNew* newp = new AstNew{m_procp->fileline(), nullptr};
+        newp->taskp(VN_AS(m_dynScopeClassp->findMember("new"), NodeFTask));
+        newp->dtypep(m_dynScopeClassRefDTypep);
+
+        AstNode* asgnp =
+            new AstAssign{m_procp->fileline(),
+                          new AstVarRef{m_procp->fileline(), m_dynScopeHandlep, VAccess::WRITE},
+                          newp};
+
+        m_dynScopeHandlep =
+            VN_AS(AstNode::addNext(static_cast<AstNode*>(m_dynScopeHandlep), asgnp), Var);
+
+        stmtp->addHereThisAsNext(m_dynScopeHandlep);
+    }
+
+    AstVar* captureRefAsArg(AstVarRef* refp) {
         AstVar* varp = nullptr;
         for (varp = m_capturedVarsp; varp; varp = VN_AS(varp->nextp(), Var))
             if (varp->name() == refp->name()) break;
@@ -79,6 +219,37 @@ private:
         return varp;
     }
 
+    void captureRefIntoDynScope(AstVarRef* refp) {
+        AstClass* dynScopeClassp = getAnonDynScopeClass();
+
+        UASSERT_OBJ(!dynScopeClassp->user2(), dynScopeClassp, "DynScope class is finalized");
+
+        // Move the variable definition into class
+        AstVar* varp = refp->varp()->unlinkFrBack();
+        if (!dynScopeClassp->findMember(varp->name())) {
+            // TODO: Handle a case where the variable is function's argument
+            varp->funcLocal(false);
+            varp->varType(VVarType::MEMBER);
+            dynScopeClassp->addStmtsp(varp);
+            dynScopeClassp->repairCache(); // TODO: Optimize
+        }
+
+        replaceRefWithMembersel(refp);
+
+        varp->user2(true);
+    }
+
+    void finalizeDynScopeClass() {
+        AstFunc* newp = new AstFunc{m_dynScopeClassp->fileline(), "new", nullptr, nullptr};
+        newp->isConstructor(true);
+        newp->classMethod(true);
+        newp->dtypep(newp->findVoidDType());
+        m_dynScopeClassp->addStmtsp(newp);
+        m_dynScopeClassp->repairCache();
+
+        m_dynScopeClassp->user2(true);
+    }
+
     AstTask* makeTask(FileLine* fl, AstNode* stmtsp, string name) {
         stmtsp = AstNode::addNext(static_cast<AstNode*>(m_capturedVarsp), stmtsp);
         AstTask* const taskp = new AstTask{fl, name, stmtsp};
@@ -91,6 +262,14 @@ private:
                + cvtToHex(fromp);
     }
 
+    string generateClassName(AstNode* fromp) {
+        // TODO: Ensure no collisions occur
+        string n = "__VDynScope__" + (!fromp->name().empty() ? (fromp->name() + "__") : "ANON__")
+               + cvtToHex(fromp);
+        UINFO(1, "Generated \"" << n << "\" class name\n");
+        return n;
+    }
+
     void visitTaskifiable(AstNode* nodep) {
         if (!m_newProcess || nodep->user1()) {
             VL_RESTORER(m_forkDepth);
@@ -99,6 +278,10 @@ private:
                 --m_forkDepth;
             }
             iterateChildren(nodep);
+
+            if (m_dynScopeClassp)
+                updateRefsInCurrentProc();
+
             return;
         }
 
@@ -143,6 +326,9 @@ private:
         // as captures in case of nested forks.
         handle.relink(taskcallp);
         taskcallp->user1(true);
+
+        if (m_dynScopeClassp)
+            updateRefsInCurrentProc();
     }
 
     // VISITORS
@@ -166,7 +352,26 @@ private:
         }
         iterateChildren(nodep);
     }
-    void visit(AstBegin* nodep) override { visitTaskifiable(nodep); }
+    void visit(AstBegin* nodep) override {
+        VL_RESTORER(m_dynScopeClassp);
+        VL_RESTORER(m_dynScopeClassRefDTypep);
+        VL_RESTORER(m_dynScopeHandlep);
+        VL_RESTORER(m_procp);
+
+        if (!m_forkDepth) {
+            m_procp = nodep;
+            m_dynScopeClassp = nullptr;
+            m_dynScopeClassRefDTypep = nullptr;
+            m_dynScopeHandlep = nullptr;
+        }
+        visitTaskifiable(nodep);
+
+        if (m_dynScopeClassp) {
+            finalizeDynScopeClass();
+            instantiateDynScopeObject();
+            UINFO(1, "Instantiated an instance of " << m_dynScopeClassp->name() << "\n");
+        }
+    }
     void visit(AstNodeStmt* nodep) override { visitTaskifiable(nodep); }
     void visit(AstVar* nodep) override {
         if (m_forkDepth) m_forkLocalsp.insert(nodep);
@@ -178,6 +383,12 @@ private:
 
         if (m_forkDepth && (m_forkLocalsp.count(nodep->varp()) == 0)
             && !nodep->varp()->lifetime().isStatic()) {
+
+
+            if (isVarLocalToCurrentProc(nodep->varp())) {
+                captureRefIntoDynScope(nodep);
+                return;
+            }
             if (nodep->access().isWriteOrRW()
                 && (!nodep->isClassHandleValue() || nodep->user2())) {
                 nodep->v3warn(
@@ -194,7 +405,7 @@ private:
                 !nodep->varp()->lifetime().isNone(), nodep,
                 "Variable's lifetime is unknown. Can't determine if a capture is necessary.");
 
-            AstVar* const varp = captureRef(nodep);
+            AstVar* const varp = captureRefAsArg(nodep);
             nodep->varp(varp);
         }
     }
@@ -208,7 +419,31 @@ private:
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         m_modp = nodep;
+        UINFO(1, "Entering module " << nodep << "\n");
         iterateChildren(nodep);
+        UINFO(1, "DUMP:\n");
+        nodep->dumpTree();
+        UINFO(1, "\n\n");
+    }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_dynScopeClassp);
+        VL_RESTORER(m_dynScopeClassRefDTypep);
+        VL_RESTORER(m_dynScopeHandlep);
+        VL_RESTORER(m_procp);
+        m_dynScopeClassp = nullptr;
+        m_dynScopeClassRefDTypep = nullptr;
+        m_dynScopeHandlep = nullptr;
+
+        UASSERT(m_procp == nullptr, "FTask under FTask");
+        m_procp = nodep;
+
+        visit(static_cast<AstNode*>(nodep));
+
+        if (m_dynScopeClassp) {
+            finalizeDynScopeClass();
+            instantiateDynScopeObject();
+            UINFO(1, "Instantiated an instance of " << m_dynScopeClassp->name() << "\n");
+        }
     }
     void visit(AstNode* nodep) override {
         VL_RESTORER(m_newProcess)
