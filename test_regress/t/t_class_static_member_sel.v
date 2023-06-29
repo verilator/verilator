@@ -36,6 +36,12 @@ endclass
 class ExtendCls extends Cls;
 endclass
 
+class Getter1;
+   function static int get_1;
+      return 1;
+   endfunction
+endclass
+
 module t (/*AUTOARG*/
    );
 
@@ -44,6 +50,7 @@ module t (/*AUTOARG*/
       Bar bar = new;
       Baz baz = new;
       ExtendCls ec = new;
+      Getter1 getter1 = new;
 
       if (foo.x != 1) $stop;
 
@@ -58,6 +65,8 @@ module t (/*AUTOARG*/
 
       ec.iw.x = 5;
       if (ec.iw.x != 5) $stop;
+
+      if (getter1.get_1 != 1) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
