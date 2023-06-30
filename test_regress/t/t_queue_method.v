@@ -10,6 +10,13 @@
 
 `define checkg(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%g' exp='%g'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
+class Cls;
+   int x;
+   function new(int a);
+      x = a;
+   endfunction
+endclass
+
 module t (/*AUTOARG*/);
    typedef struct packed { int x, y; } point;
    typedef struct packed { point p; int z; } point_3d;
@@ -25,10 +32,21 @@ module t (/*AUTOARG*/);
       string string_qv[$];
       point_3d points_q[$];  // Same as q and qv, but complex value type
       point_3d points_qv[$];
+      Cls cls;
+      Cls cls_q[$];
+      Cls cls_qv[$];
 
       points_q.push_back(point_3d'{point'{1, 2}, 3});
       points_q.push_back(point_3d'{point'{2, 3}, 5});
       points_q.push_back(point_3d'{point'{1, 4}, 5});
+
+
+      cls = new(1);
+      cls_q.push_back(cls);
+      cls = new(2);
+      cls_q.push_back(cls);
+      cls = new(1);
+      cls_q.push_back(cls);
 
       string_q.push_back("a");
       string_q.push_back("A");
@@ -71,6 +89,13 @@ module t (/*AUTOARG*/);
       `checkh(qi.size(), 0);
       qi = q.unique_index(x) with (x % 3); qv.sort;
       `checkh(qi.size(), 3);
+      cls_qv = cls_q.unique with (item.x);
+      `checkh(cls_qv.size(), 2);
+      cls_qv = cls_q.unique with (item.x < 10);
+      `checkh(cls_qv.size(), 1);
+      qi = cls_q.unique_index with (item.x % 2);
+      qi.sort;
+      v = $sformatf("%p", qi); `checks(v, "'{'h0, 'h1} ");
 
       q.reverse;
       v = $sformatf("%p", q); `checks(v, "'{'h3, 'h1, 'h4, 'h2, 'h2} ");
