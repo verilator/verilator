@@ -487,7 +487,7 @@ public:
     template <typename Func>
     VlQueue unique(Func with_func) const {
         VlQueue out;
-        std::set<T_Value> saw;
+        std::set<decltype(with_func(0, m_deque[0]))> saw;
         for (const auto& i : m_deque) {
             const auto i_mapped = with_func(0, i);
             const auto it = saw.find(i_mapped);
@@ -516,7 +516,7 @@ public:
     VlQueue<IData> unique_index(Func with_func) const {
         VlQueue<IData> out;
         IData index = 0;
-        std::unordered_set<T_Value> saw;
+        std::set<decltype(with_func(0, m_deque[0]))> saw;
         for (const auto& i : m_deque) {
             const auto i_mapped = with_func(index, i);
             auto it = saw.find(i_mapped);
