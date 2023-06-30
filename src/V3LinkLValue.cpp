@@ -275,6 +275,16 @@ private:
             iterateAndNextNull(nodep->thsp());
         }
     }
+    void visit(AstMemberSel* nodep) override {
+        if (m_setRefLvalue != VAccess::NOCHANGE) {
+            nodep->access(m_setRefLvalue);
+        } else {
+            // It is the only place where the access is set to member select nodes.
+            // If it doesn't have to be set to WRITE, it means that it is READ.
+            nodep->access(VAccess::READ);
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;

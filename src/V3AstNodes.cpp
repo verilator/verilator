@@ -1676,6 +1676,12 @@ AstNodeUOrStructDType* AstMemberDType::getChildStructp() const {
     return VN_CAST(subdtp, NodeUOrStructDType);  // Maybe nullptr
 }
 
+bool AstMemberSel::same(const AstNode* samep) const {
+    const AstMemberSel* const sp = static_cast<const AstMemberSel*>(samep);
+    return sp != nullptr && access() == sp->access() && fromp()->same(sp->fromp())
+           && name() == sp->name() && varp()->same(sp->varp());
+}
+
 void AstMemberSel::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     str << " -> ";
