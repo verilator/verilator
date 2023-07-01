@@ -76,6 +76,8 @@ private:
             // without suppressing other token's messages as a side effect.
             // We could have verilog.l create a new one on every token,
             // but that's a lot more structures than only doing AST nodes.
+            // TODO: Many places copy the filename when suppressing warnings,
+            // perhaps audit to make consistent and this is no longer needed
             if (m_filelines.find(nodep->fileline()) != m_filelines.end()) {
                 nodep->fileline(new FileLine{nodep->fileline()});
             }
@@ -476,6 +478,7 @@ private:
     void visit(AstForeach* nodep) override {
         // FOREACH(array, loopvars, body)
         UINFO(9, "FOREACH " << nodep << endl);
+        cleanFileline(nodep);
         // Separate iteration vars from base from variable
         // Input:
         //      v--- arrayp
@@ -510,6 +513,7 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstRepeat* nodep) override {
+        cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
         {
             m_insideLoop = true;
@@ -517,6 +521,7 @@ private:
         }
     }
     void visit(AstDoWhile* nodep) override {
+        cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
         {
             m_insideLoop = true;
@@ -524,6 +529,7 @@ private:
         }
     }
     void visit(AstWhile* nodep) override {
+        cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
         {
             m_insideLoop = true;
@@ -666,6 +672,10 @@ private:
             }
         }
     }
+    void visit(AstIf* nodep) override {
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+    }
     void visit(AstPrintTimeScale* nodep) override {
         // Inlining may change hierarchy, so just save timescale where needed
         cleanFileline(nodep);
@@ -694,6 +704,7 @@ private:
         nodep->timeunit(m_modp->timeunit());
     }
     void visit(AstTimeUnit* nodep) override {
+        cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
@@ -722,6 +733,7 @@ private:
         }
     }
     void visit(AstClocking* nodep) override {
+        cleanFileline(nodep);
         VL_RESTORER(m_defaultInSkewp);
         VL_RESTORER(m_defaultOutSkewp);
         // Find default input and output skews
@@ -756,6 +768,7 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstClockingItem* nodep) override {
+        cleanFileline(nodep);
         if (nodep->direction() == VDirection::OUTPUT) {
             if (!nodep->skewp()) {
                 if (m_defaultOutSkewp) {
