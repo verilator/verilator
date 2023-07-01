@@ -904,10 +904,10 @@ List Of Warnings
    forked process, that was delayed by 20 units of time in this example. Thus,
    there's no viable stack allocation for it.
 
-   In order to fix it, you can create a local copy of the varible for
-   each process, if you don't intend to share its state outside of those processes.
+   In order to fix it, if the intent is not to share the variable's state outside
+   of the process, then create a local copy of the variable.
 
-   Eg.:
+   For example:
 
    .. code-block:: sv
       :linenos:
@@ -951,7 +951,7 @@ List Of Warnings
 
    .. code-block:: sv
       :linenos:
-      :emphasize-lines: 2q
+      :emphasize-lines: 2
 
          class Wrapper;
             int m_var;
