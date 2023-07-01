@@ -1039,6 +1039,51 @@ List Of Warnings
    unsupported. Verilator uses only the typical delay value.
 
 
+.. option:: MISINDENT
+
+   Warns that the indentation of a statement is misleading, suggesting the
+   statement is part of a previous :code:`if` or :code:`while` block while
+   it is not.
+
+   Verilator suppresses this check when there is an inconsistent mix of
+   spaces and tabs, as it cannot ensure the width of tabs.  Verilator also
+   ignores blocks with :code:`begin`/:code:`end`, as the :code:`end`
+   visually indicates the earlier statement's end.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+   For example
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 3
+
+         if (something)
+            statement_in_if;
+            statement_not_in_if;  //<--- Warning
+
+   Results in:
+
+   .. code-block::
+
+         %Warning-MISINDENT: example.v:3:9: Misleading indentation
+
+   To fix this repair the indentation to match the correct earlier
+   statement, for example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 3
+
+         if (something)
+            statement_in_if;
+         statement_not_in_if;  //<--- Repaired
+
+   Other tools with similar warnings: GCC -Wmisleading-indentation,
+   clang-tidy readability-misleading-indentation.
+
+
 .. option:: MODDUP
 
    .. TODO better example

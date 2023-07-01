@@ -241,6 +241,7 @@ public:
     // as the parser errors etc generally make more sense pointing at the last parse point
     int lineno() const VL_MT_SAFE { return m_lastLineno; }
     string source() const VL_MT_SAFE;
+    string sourcePrefix(int toColumn) const VL_MT_SAFE;
     string prettySource() const VL_MT_SAFE;  // Source, w/stripped unprintables and newlines
     FileLine* parent() const VL_MT_SAFE { return m_parent; }
     V3LangCode language() const { return singleton().numberToLang(filenameno()); }

@@ -127,6 +127,58 @@ private:
                 && !nodep->stmtsp()->nextp());  // Has only one item
     }
 
+    void checkIndent(AstNode* nodep, AstNode* childp) {
+        // Try very hard to avoid false positives
+        AstNode* nextp = nodep->nextp();
+        if (!childp) return;
+        if (!nextp && VN_IS(nodep, While) && VN_IS(nodep->backp(), Begin))
+            nextp = nodep->backp()->nextp();
+        if (!nextp) return;
+        if (VN_IS(childp, Begin)) return;
+        FileLine* const nodeFlp = nodep->fileline();
+        FileLine* const childFlp = childp->fileline();
+        FileLine* const nextFlp = nextp->fileline();
+        // UINFO(0, "checkInd " << nodeFlp->firstColumn() << " " << nodep << endl);
+        // UINFO(0, "  child  " << childFlp->firstColumn() << " " << childp << endl);
+        // UINFO(0, " next    " << nextFlp->firstColumn() << " " << nextp << endl);
+        // Same filename, later line numbers (no macro magic going on)
+        if (nodeFlp->filenameno() != childFlp->filenameno()) return;
+        if (nodeFlp->filenameno() != nextFlp->filenameno()) return;
+        if (nodeFlp->lastLineno() >= childFlp->firstLineno()) return;
+        if (childFlp->lastLineno() >= nextFlp->firstLineno()) return;
+        // This block has indent 'a'
+        // Child block has indent 'b' where indent('b') > indent('a')
+        // Next block has indent 'b'
+        // (note similar code below)
+        if (!(nodeFlp->firstColumn() < childFlp->firstColumn()
+              && nextFlp->firstColumn() >= childFlp->firstColumn()))
+            return;
+        // Might be a tab difference in spaces up to the node prefix, if so
+        // just ignore this warning
+        // Note it's correct we look at nodep's column in all of these
+        const std::string nodePrefix = nodeFlp->sourcePrefix(nodeFlp->firstColumn());
+        const std::string childPrefix = childFlp->sourcePrefix(nodeFlp->firstColumn());
+        const std::string nextPrefix = nextFlp->sourcePrefix(nodeFlp->firstColumn());
+        if (childPrefix != nodePrefix) return;
+        if (nextPrefix != childPrefix) return;
+        // Some file lines start after the indentation, so make another check
+        // using actual file contents
+        const std::string nodeSource = nodeFlp->source();
+        const std::string childSource = childFlp->source();
+        const std::string nextSource = nextFlp->source();
+        if (!(VString::leadingWhitespaceCount(nodeSource)
+                  < VString::leadingWhitespaceCount(childSource)
+              && VString::leadingWhitespaceCount(nextSource)
+                     >= VString::leadingWhitespaceCount(childSource)))
+            return;
+        nextp->v3warn(MISINDENT,
+                      "Misleading indentation\n"
+                          << nextp->warnContextPrimary() << '\n'
+                          << nodep->warnOther()
+                          << "... Expected indentation matching this earlier statement's line:\n"
+                          << nodep->warnContextSecondary());
+    }
+
     // VISITs
     void visit(AstNodeFTask* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
@@ -517,6 +569,7 @@ private:
         VL_RESTORER(m_insideLoop);
         {
             m_insideLoop = true;
+            checkIndent(nodep, nodep->stmtsp());
             iterateChildren(nodep);
         }
     }
@@ -533,6 +586,7 @@ private:
         VL_RESTORER(m_insideLoop);
         {
             m_insideLoop = true;
+            checkIndent(nodep, nodep->stmtsp());
             iterateChildren(nodep);
         }
     }
@@ -628,6 +682,7 @@ private:
     }
     void visit(AstGenIf* nodep) override {
         cleanFileline(nodep);
+        checkIndent(nodep, nodep->elsesp() ? nodep->elsesp() : nodep->thensp());
         const bool nestedIf
             = (VN_IS(nodep->backp(), Begin) && nestedIfBegin(VN_CAST(nodep->backp(), Begin)));
         if (nestedIf) {
@@ -674,6 +729,7 @@ private:
     }
     void visit(AstIf* nodep) override {
         cleanFileline(nodep);
+        checkIndent(nodep, nodep->elsesp() ? nodep->elsesp() : nodep->thensp());
         iterateChildren(nodep);
     }
     void visit(AstPrintTimeScale* nodep) override {

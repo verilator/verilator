@@ -16,6 +16,7 @@ Verilator 5.013 devel
 * Deprecation planned for 32-bit pointer -m32 mode (#4268).
 * Support some stream operations on queues (#4292). [Ryszard Rozak, Antmicro Ltd]
 * Add GENUNNAMED lint warning. [Srinivasan Venkataramanan, Deepa Palaniappan]
+* Add MISINDENT lint warning for misleading indentation.
 * Fix 'VlForkSync' redeclaration (#4277). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix processes that can outlive their parents (#4253). [Krzysztof Boronski, Antmicro Ltd]
 * Fix duplicate fork names (#4295). [Ryszard Rozak, Antmicro Ltd]
