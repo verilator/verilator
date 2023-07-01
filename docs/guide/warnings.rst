@@ -670,6 +670,52 @@ List Of Warnings
    used as a clock.
 
 
+.. option:: GENUNNAMED
+
+   Warns that a generate block was unnamed and "genblk" will be used per
+   IEEE.
+
+   The potential issue is that adding additional generate blocks will
+   renumber the assigned names, which may cause evental problems with
+   synthesis constraints or other tools that depend on hierarchical paths
+   remaining consistend.
+
+   Blocks that are empty may not be reported with this warning, as no
+   scopes are created for empty blocks, so there is no harm in having them
+   unnamed.
+
+   Disabled by default as this is a code-style warning; it will simulate
+   correctly.
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+         generate
+            if (PARAM == 1) begin  //<--- Warning
+            end
+
+   Results in:
+
+   .. code-block::
+
+         %Warning-GENUNNAMED: example.v:2:9: Unnamed generate block (IEEE 1800-2017 27.6)
+
+   To fix this assign a label (often with the naming convention prefix of
+   'gen_' or 'g_'), for example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+         generate
+            if (PARAM == 1) begin : gen_param_1  //<--- Repaired
+            end
+
+   Other tools with similar warnings: Verible's generate-label, "All
+   generate block statements must have a label."
+
+
 .. option:: HIERBLOCK
 
    Warns that the top module is marked as a hierarchy block by the

@@ -1539,7 +1539,7 @@ Summary:
 
    Disable all code style related warning messages (note that by default, they are
    already disabled).  This is equivalent to ``-Wno-DECLFILENAME -Wno-DEFPARAM
-   -Wno-EOFNEWLINE -Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY
+   -Wno-EOFNEWLINE -Wno-GENUNNAMED -Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY
    -Wno-PINNOCONNECT -Wno-SYNCASYNCNET -Wno-UNDRIVEN
    -Wno-UNUSEDGENVAR -Wno-UNUSEDPARAM -Wno-UNUSEDSIGNAL
    -Wno-VARHIDDEN``.
@@ -1571,7 +1571,7 @@ Summary:
 
    Enable all code style-related warning messages.  This is equivalent to
    ``-Wwarn ASSIGNDLY -Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-EOFNEWLINE
-   -Wwarn-INCABSPATH -Wwarn-PINNOCONNECT -Wwarn-SYNCASYNCNET -Wwarn-UNDRIVEN
+   -Wwarn-GENUNNAMED -Wwarn-INCABSPATH -Wwarn-PINNOCONNECT -Wwarn-SYNCASYNCNET -Wwarn-UNDRIVEN
    -Wwarn-UNUSEDGENVAR -Wwarn-UNUSEDPARAM -Wwarn-UNUSEDSIGNAL -Wwarn-VARHIDDEN``.
 
 .. option:: --x-assign 0

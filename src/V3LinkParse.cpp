@@ -580,14 +580,25 @@ private:
         // The genblk name will get attached to the if true/false LOWER begin block(s)
         const bool nestedIf = nestedIfBegin(nodep);
         // It's not FOR(BEGIN(...)) but we earlier changed it to BEGIN(FOR(...))
+        int assignGenBlkNum = -1;
         if (nodep->genforp()) {
             ++m_genblkNum;
-            if (nodep->name() == "") nodep->name("genblk" + cvtToStr(m_genblkNum));
+            if (nodep->name() == "") assignGenBlkNum = m_genblkNum;
+        } else if (nodep->generate() && nodep->name() == "" && assignGenBlkNum == -1
+                   && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf)) && !nestedIf) {
+            assignGenBlkNum = m_genblkAbove;
         }
-        if (nodep->generate() && nodep->name() == ""
-            && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf)) && !nestedIf) {
-            nodep->name("genblk" + cvtToStr(m_genblkAbove));
+        if (assignGenBlkNum != -1) {
+            nodep->name("genblk" + cvtToStr(assignGenBlkNum));
+            if (nodep->stmtsp()) {
+                nodep->v3warn(GENUNNAMED,
+                              "Unnamed generate block "
+                                  << nodep->prettyNameQ() << " (IEEE 1800-2017 27.6)"
+                                  << nodep->warnMore()
+                                  << "... Suggest assign a label with 'begin : gen_<label_name>'");
+            }
         }
+
         if (nodep->name() != "") {
             VL_RESTORER(m_genblkAbove);
             VL_RESTORER(m_genblkNum);

@@ -99,6 +99,7 @@ public:
         ENUMVALUE,      // Error: enum type needs explicit cast
         EOFNEWLINE,     // End-of-file missing newline
         GENCLK,         // Generated Clock. Historical, never issued.
+        GENUNNAMED,     // Generate unnamed, without label
         HIERBLOCK,      // Ignored hierarchical block setting
         IFDEPTH,        // If statements too deep
         IGNOREDRETURN,  // Ignoring return value (function as task)
@@ -192,7 +193,8 @@ public:
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG",
             "DECLFILENAME", "DEFPARAM", "DEPRECATED",
-            "ENCAPSULATED", "ENDLABEL", "ENUMVALUE", "EOFNEWLINE", "GENCLK", "HIERBLOCK",
+            "ENCAPSULATED", "ENDLABEL", "ENUMVALUE", "EOFNEWLINE", "GENCLK", "GENUNNAMED",
+            "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
@@ -243,10 +245,10 @@ public:
     bool styleError() const VL_MT_SAFE {
         return (m_e == ASSIGNDLY  // More than style, but for backward compatibility
                 || m_e == BLKSEQ || m_e == DEFPARAM || m_e == DECLFILENAME || m_e == EOFNEWLINE
-                || m_e == IMPORTSTAR || m_e == INCABSPATH || m_e == PINCONNECTEMPTY
-                || m_e == PINNOCONNECT || m_e == SYNCASYNCNET || m_e == UNDRIVEN
-                || m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL
-                || m_e == VARHIDDEN);
+                || m_e == GENUNNAMED || m_e == IMPORTSTAR || m_e == INCABSPATH
+                || m_e == PINCONNECTEMPTY || m_e == PINNOCONNECT || m_e == SYNCASYNCNET
+                || m_e == UNDRIVEN || m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM
+                || m_e == UNUSEDSIGNAL || m_e == VARHIDDEN);
     }
     // Warnings that are unused only
     bool unusedError() const VL_MT_SAFE {
