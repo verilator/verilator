@@ -144,6 +144,25 @@ AC_ARG_ENABLE([longtests],
 AC_SUBST(CFG_WITH_LONGTESTS)
 AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 
+# Whether to add Google analytics to HTML docs
+AC_MSG_CHECKING(whether to add Google analytics to generated HTML docs)
+AC_ARG_ENABLE([ganalytics],
+              [AS_HELP_STRING([--enable-ganalytics],
+			      [enable adding Google Analytics to generated HTML
+			       documents])],
+              [case "${enableval}" in
+                yes) CFG_WITH_GANALYTICS=yes ;;
+                no)  CFG_WITH_GANALYTICS=no ;;
+                *)   AC_MSG_ERROR([bad value ${enableval} for --enable-ganalytics]) ;;
+               esac],
+              [case "x${VERILATOR_AUTHOR_SITE}" in
+                x)   CFG_WITH_GANALYTICS=no ;;
+                *)   CFG_WITH_GANALYTICS=yes ;;
+               esac]
+              )
+AC_SUBST(CFG_WITH_GANALYTICS)
+AC_MSG_RESULT($CFG_WITH_GANALYTICS)
+
 # Compiler flags (ensure they are not empty to avoid configure defaults)
 CFLAGS="$CFLAGS "
 CPPFLAGS="$CPPFLAGS "

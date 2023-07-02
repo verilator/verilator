@@ -18,7 +18,11 @@
 RST2HTML = rst2html
 PYTHON3 = python3
 DOXYGEN = doxygen
+ANALYTICS_ID=G-D27B0C9QEB
 SPHINXOPTS ?= -c guide
+ifeq ($(CFG_WITH_GANALYTICS),yes)  # Local...
+SPHINXOPTS += -D html_theme_options.analytics_id=$(ANALYTICS_ID)
+endif
 SPHINXBUILD ?= sphinx-build
 
 SOURCEDIR = guide
@@ -66,7 +70,7 @@ pdf:
 
 html latex linkcheck spelling::
 	$(MAKE) vl-extract
-	$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
+	VERIATOR_WEBSITE=True $(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
 	$(PYTHON3) bin/vl_sphinx_fix _build
 
 help:

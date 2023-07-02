@@ -91,6 +91,7 @@ datarootdir = @datarootdir@
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
+CFG_WITH_GANALYTICS = @CFG_WITH_GANALYTICS@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 
 #### End of system configuration section. ####
@@ -192,7 +193,7 @@ verilator_coverage.1: ${srcdir}/bin/verilator_coverage
 
 .PHONY: verilator.html
 verilator.html:
-	$(MAKE) -C docs html
+	$(MAKE) -C docs html CFG_WITH_GANALYTICS=$(CFG_WITH_GANALYTICS)
 
 # PDF needs DIST variables; but having configure.ac as dependency isn't detected
 .PHONY: verilator.pdf
