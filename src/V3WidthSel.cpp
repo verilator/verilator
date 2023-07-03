@@ -348,8 +348,8 @@ private:
         UINFO(6, "SELEXTRACT " << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree("-  SELEX0: ");
         // Below 2 lines may change nodep->widthp()
-        V3Const::constifyParamsEdit(nodep->leftp());  // May relink pointed to node
-        V3Const::constifyParamsEdit(nodep->rightp());  // May relink pointed to node
+        V3Const::constifyParamsNoWarnEdit(nodep->leftp());  // May relink pointed to node
+        V3Const::constifyParamsNoWarnEdit(nodep->rightp());  // May relink pointed to node
         // if (debug() >= 9) nodep->dumpTree("-  SELEX3: ");
         AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
         const FromData fromdata = fromDataForArray(nodep, fromp);
