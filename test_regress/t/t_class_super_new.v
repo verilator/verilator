@@ -39,6 +39,16 @@ class BarArg extends FooArg;
    endfunction
 endclass
 
+class BarArgWithReturnInIf extends FooArg;
+   function new (int a);
+      super.new(a);
+      if (a < 10) begin
+         return;
+      end
+      this.x = 20;
+   endfunction
+endclass
+
 class BarExpr extends FooArg;
    function new (int a, string b);
       super.new(a + b.len());
@@ -114,6 +124,7 @@ module t (/*AUTOARG*/
    NewWithoutSuper newWithoutSuper;
    NoNewParam#(2) noNewParam;
    NewWithoutSuperParam#(1) newWithoutSuperParam;
+   BarArgWithReturnInIf barIf1, barIf10;
 
    initial begin
       bar = new;
@@ -136,6 +147,10 @@ module t (/*AUTOARG*/
       `checkh(noNewParam.x, 1);
       newWithoutSuperParam = new;
       `checkh(newWithoutSuperParam.x, 1);
+      barIf1 = new(1);
+      `checkh(barIf1.x, 1);
+      barIf10 = new(10);
+      `checkh(barIf10.x, 20);
 
       $write("*-* All Finished *-*\n");
       $finish;
