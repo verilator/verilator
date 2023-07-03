@@ -934,12 +934,32 @@ public:
             });
         return VlQueue<T_Value>::cons(it->second);
     }
+    template <typename Func>
+    VlQueue<T_Value> min(Func with_func) const {
+        if (m_map.empty()) return VlQueue<T_Value>();
+        const auto it = std::min_element(
+            m_map.begin(), m_map.end(),
+            [&with_func](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
+                return with_func(a.first, a.second) < with_func(b.first, b.second);
+            });
+        return VlQueue<T_Value>::cons(it->second);
+    }
     VlQueue<T_Value> max() const {
         if (m_map.empty()) return VlQueue<T_Value>();
         const auto it = std::max_element(
             m_map.begin(), m_map.end(),
             [](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
                 return a.second < b.second;
+            });
+        return VlQueue<T_Value>::cons(it->second);
+    }
+    template <typename Func>
+    VlQueue<T_Value> max(Func with_func) const {
+        if (m_map.empty()) return VlQueue<T_Value>();
+        const auto it = std::max_element(
+            m_map.begin(), m_map.end(),
+            [&with_func](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
+                return with_func(a.first, a.second) < with_func(b.first, b.second);
             });
         return VlQueue<T_Value>::cons(it->second);
     }
