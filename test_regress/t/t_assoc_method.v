@@ -87,12 +87,21 @@ module t (/*AUTOARG*/);
 
       qv = q.min;
       v = $sformatf("%p", qv); `checks(v, "'{'h1} ");
+      points_qv = points_q.min(p) with (p.x + p.y);
+      if (points_qv[0].x != 1 || points_qv[0].y != 2) $stop;
+
       qv = q.max;
       v = $sformatf("%p", qv); `checks(v, "'{'h4} ");
+      points_qv = points_q.max(p) with (p.x + p.y);
+      if (points_qv[0].x != 2 || points_qv[0].y != 4) $stop;
 
       qv = qe.min;
       v = $sformatf("%p", qv); `checks(v, "'{}");
+      qv = qe.min(x) with (x + 1);
+      v = $sformatf("%p", qv); `checks(v, "'{}");
       qv = qe.max;
+      v = $sformatf("%p", qv); `checks(v, "'{}");
+      qv = qe.max(x) with (x + 1);
       v = $sformatf("%p", qv); `checks(v, "'{}");
 
       // Reduction methods
