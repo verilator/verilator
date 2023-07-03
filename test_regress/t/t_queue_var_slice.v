@@ -10,7 +10,8 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer i = 0, q[$] = {0, 1};
+   integer i = 0;
+   integer q[$] = {0, 1};
 
    always @(posedge clk) begin
       $display("%p", q[i:i+1]);
