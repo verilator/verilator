@@ -234,6 +234,21 @@ public:
     string optionalProcArg(const T* const nodep) {
         return (nodep && constructorNeedsProcess(nodep)) ? "vlProcess, " : "";
     }
+    const AstCNew* getSuperNewCallRecursep(AstNode* const nodep) {
+        // Get the super.new call
+        if (!nodep) return nullptr;
+        if (const AstCNew* const cnewp = VN_CAST(nodep, CNew)) return cnewp;
+        if (const AstStmtExpr* const stmtp = VN_CAST(nodep, StmtExpr)) {
+            if (const AstCNew* const cnewp = VN_CAST(stmtp->exprp(), CNew)) return cnewp;
+        }
+        if (const AstJumpBlock* const blockp = VN_CAST(nodep, JumpBlock)) {
+            if (const AstCNew* const cnewp = getSuperNewCallRecursep(blockp->stmtsp())) {
+                return cnewp;
+            }
+        }
+        if (const AstCNew* const cnewp = getSuperNewCallRecursep(nodep->nextp())) return cnewp;
+        return nullptr;
+    }
 
     // VISITORS
     using EmitCConstInit::visit;
@@ -256,24 +271,16 @@ public:
             puts(": ");
             puts(nodep->baseCtors());
             const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
-            bool baseCtorCall = false;
             // Find call to super.new to get the arguments
-            for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                AstNode* exprp;
-                if (VN_IS(stmtp, StmtExpr)) {
-                    exprp = VN_CAST(stmtp, StmtExpr)->exprp();
-                } else {
-                    exprp = stmtp;
-                }
-                if (AstCNew* const newRefp = VN_CAST(exprp, CNew)) {
-                    puts("(" + optionalProcArg(classp) + "vlSymsp");
-                    baseCtorCall = true;
-                    putCommaIterateNext(newRefp->argsp(), true);
-                    puts(")");
-                    break;
-                }
+            if (classp && constructorNeedsProcess(classp)) {
+                puts("(vlProcess, vlSymsp");
+            } else {
+                puts("(vlSymsp");
             }
-            if (!baseCtorCall) { puts("(" + optionalProcArg(classp) + "vlSymsp)"); }
+            const AstCNew* const superNewCallp = getSuperNewCallRecursep(nodep->stmtsp());
+            UASSERT_OBJ(superNewCallp, nodep, "super.new call not found");
+            putCommaIterateNext(superNewCallp->argsp(), true);
+            puts(")");
         }
         puts(" {\n");
 
