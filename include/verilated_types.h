@@ -830,6 +830,22 @@ public:
         }
         return out;
     }
+    template <typename Func>
+    VlQueue<T_Value> unique(Func with_func) const {
+        VlQueue<T_Value> out;
+        T_Key default_key;
+        using WithType = decltype(with_func(m_map.begin()->first, m_map.begin()->second));
+        std::set<WithType> saw;
+        for (const auto& i : m_map) {
+            const auto i_mapped = with_func(default_key, i.second);
+            const auto it = saw.find(i_mapped);
+            if (it == saw.end()) {
+                saw.insert(it, i_mapped);
+                out.push_back(i.second);
+            }
+        }
+        return out;
+    }
     VlQueue<T_Key> unique_index() const {
         VlQueue<T_Key> out;
         std::set<T_Key> saw;
@@ -837,6 +853,21 @@ public:
             auto it = saw.find(i.second);
             if (it == saw.end()) {
                 saw.insert(it, i.second);
+                out.push_back(i.first);
+            }
+        }
+        return out;
+    }
+    template <typename Func>
+    VlQueue<T_Key> unique_index(Func with_func) const {
+        VlQueue<T_Key> out;
+        using WithType = decltype(with_func(m_map.begin()->first, m_map.begin()->second));
+        std::set<WithType> saw;
+        for (const auto& i : m_map) {
+            const auto i_mapped = with_func(i.first, i.second);
+            auto it = saw.find(i_mapped);
+            if (it == saw.end()) {
+                saw.insert(it, i_mapped);
                 out.push_back(i.first);
             }
         }
@@ -903,12 +934,32 @@ public:
             });
         return VlQueue<T_Value>::cons(it->second);
     }
+    template <typename Func>
+    VlQueue<T_Value> min(Func with_func) const {
+        if (m_map.empty()) return VlQueue<T_Value>();
+        const auto it = std::min_element(
+            m_map.begin(), m_map.end(),
+            [&with_func](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
+                return with_func(a.first, a.second) < with_func(b.first, b.second);
+            });
+        return VlQueue<T_Value>::cons(it->second);
+    }
     VlQueue<T_Value> max() const {
         if (m_map.empty()) return VlQueue<T_Value>();
         const auto it = std::max_element(
             m_map.begin(), m_map.end(),
             [](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
                 return a.second < b.second;
+            });
+        return VlQueue<T_Value>::cons(it->second);
+    }
+    template <typename Func>
+    VlQueue<T_Value> max(Func with_func) const {
+        if (m_map.empty()) return VlQueue<T_Value>();
+        const auto it = std::max_element(
+            m_map.begin(), m_map.end(),
+            [&with_func](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
+                return with_func(a.first, a.second) < with_func(b.first, b.second);
             });
         return VlQueue<T_Value>::cons(it->second);
     }
