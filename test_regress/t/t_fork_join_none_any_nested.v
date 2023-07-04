@@ -10,6 +10,7 @@ class Foo;
   task do_something(int cap1, int cap2);
     fork
       begin
+        cap2 += 1;
         $display("outer fork: %d", cap1);
         fork
           $display("inner fork: %d", cap2);

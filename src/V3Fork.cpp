@@ -112,6 +112,7 @@ public:
             varp->funcLocal(false);
             varp->varType(VVarType::MEMBER);
             varp->lifetime(VLifetime::AUTOMATIC);
+            varp->usedLoopIdx(false); // No longer unrollable
             m_instance.classp->addStmtsp(varp);
         }
 
@@ -162,7 +163,7 @@ public:
 
         stmtp->addHereThisAsNext(m_instance.handlep);
 
-        AstNode::addNext(m_modp, m_instance.classp);
+        m_modp->addStmtsp(m_instance.classp);
     }
 
     bool linked() const { return m_instance && m_instance.handlep->backp(); }
@@ -284,6 +285,7 @@ private:
         m_modp = nodep;
         iterateChildren(nodep);
     }
+    void visit(AstClass* nodep) override { iterateChildren(nodep); }
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
@@ -336,6 +338,8 @@ public:
         // Create Dynamic scope class prototypes and objects
         visit(nodep);
 
+        bool typesAdded = false;
+
         // Commit changes to AST
         for (auto frameIt : m_frames) {
             DynScopeFrame* frame = frameIt.second;
@@ -344,12 +348,16 @@ public:
             if (!frame->linked()) {
                 frame->populateClass();
                 frame->linkNodes();
+                typesAdded = true;
             }
 
             if (AstVarRef* refp = VN_CAST(frameIt.first, VarRef)) {
                 if (frame->captured(refp->varp())) replaceWithMemberSel(refp, frame->instance());
             }
         }
+
+        if (typesAdded)
+            v3Global.rootp()->typeTablep()->repairCache();
     }
     ~DynScopeVisitor() override = default;
 };
