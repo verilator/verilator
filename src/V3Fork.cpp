@@ -103,10 +103,15 @@ public:
 
         // Move variables into the class
         for (AstVar* varp : m_captures) {
-            varp->unlinkFrBack();
-            // TODO: Handle a case where the variable is function's argument
+            if (VL_UNLIKELY(varp->direction() == VDirection::INPUT)) {
+                varp = varp->cloneTree(false);
+                varp->direction(VDirection::NONE);
+            } else {
+                varp->unlinkFrBack();
+            }
             varp->funcLocal(false);
             varp->varType(VVarType::MEMBER);
+            varp->lifetime(VLifetime::AUTOMATIC);
             m_instance.classp->addStmtsp(varp);
         }
 
@@ -138,6 +143,22 @@ public:
             new AstVarRef{m_procp->fileline(), m_instance.handlep, VAccess::WRITE}, newp};
 
         AstNode::addNext(static_cast<AstNode*>(m_instance.handlep), asgnp);
+
+        AstNode* inits = nullptr;  // Arguments need to be copied
+        for (AstVar* varp : m_captures) {
+            if (VL_LIKELY(varp->direction() != VDirection::INPUT)) continue;
+
+            AstMemberSel* membersel = new AstMemberSel{
+                varp->fileline(),
+                new AstVarRef{varp->fileline(), m_instance.handlep, VAccess::WRITE},
+                varp->dtypep()};
+            membersel->name(varp->name());
+            membersel->varp(VN_AS(m_instance.classp->findMember(varp->name()), Var));
+            AstNode* initAsgnp = new AstAssign{
+                varp->fileline(), membersel, new AstVarRef{varp->fileline(), varp, VAccess::READ}};
+            inits = AstNode::addNext(inits, initAsgnp);
+        }
+        if (inits) AstNode::addNext(asgnp, inits);
 
         stmtp->addHereThisAsNext(m_instance.handlep);
 
@@ -230,7 +251,10 @@ private:
             refp->fileline(), new AstVarRef{refp->fileline(), dynScope.handlep, refp->access()},
             refp->dtypep()};
         membersel->name(refp->varp()->name());
-        membersel->varp(refp->varp());
+        if (VL_UNLIKELY(refp->varp()->direction() == VDirection::INPUT))
+            membersel->varp(VN_AS(dynScope.classp->findMember(refp->varp()->name()), Var));
+        else
+            membersel->varp(refp->varp());
         handle.relink(membersel);
         VL_DO_DANGLING(refp->deleteTree(), refp);
     }
@@ -317,14 +341,14 @@ public:
             DynScopeFrame* frame = frameIt.second;
             if (!frame->instance()) continue;
 
+            if (!frame->linked()) {
+                frame->populateClass();
+                frame->linkNodes();
+            }
+
             if (AstVarRef* refp = VN_CAST(frameIt.first, VarRef)) {
                 if (frame->captured(refp->varp())) replaceWithMemberSel(refp, frame->instance());
             }
-
-            if (frame->linked()) continue;
-            frame->populateClass();
-            frame->instance().classp->repairCache();
-            frame->linkNodes();
         }
     }
     ~DynScopeVisitor() override = default;
