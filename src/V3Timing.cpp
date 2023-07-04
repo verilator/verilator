@@ -572,10 +572,12 @@ private:
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
         m_scopep = nodep;
-        VL_RESTORER(m_senExprBuilderp);
         SenExprBuilder senExprBuilder{m_scopep};
-        m_senExprBuilderp = &senExprBuilder;
-        iterateChildren(nodep);
+        {  // Restore m_senExprBuilderp before destroying senExprBuilder
+            VL_RESTORER(m_senExprBuilderp);
+            m_senExprBuilderp = &senExprBuilder;
+            iterateChildren(nodep);
+        }
     }
     void visit(AstActive* nodep) override {
         m_activep = nodep;
