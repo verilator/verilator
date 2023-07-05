@@ -151,9 +151,6 @@ protected:
     bool m_instantiatesOwnProcess = false;
 
     bool constructorNeedsProcess(AstClass* classp) {
-        // This function is called only once per emitted constructor code, so this is fine.
-        classp->repairCache();
-
         const AstNode* const newp = classp->findMember("new");
         if (!newp) return false;
         const AstCFunc* const ctorp = VN_CAST(newp, CFunc);
