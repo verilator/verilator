@@ -64,10 +64,10 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // ######################################################################
 
 enum NodeFlag : uint8_t {
-    T_SUSPENDEE = 1,  // Suspendable (due to dependence on another suspendable)
-    T_SUSPENDER = 2,  // Suspendable (has timing control)
-    T_HAS_PROC = 4,  // Has an associated std::process
-    T_CALLS_PROC_SELF = 8,  // Calls std::process::self
+    T_SUSPENDEE = 1 << 0,  // Suspendable (due to dependence on another suspendable)
+    T_SUSPENDER = 1 << 1,  // Suspendable (has timing control)
+    T_HAS_PROC = 1 << 2,  // Has an associated std::process
+    T_CALLS_PROC_SELF = 1 << 3,  // Calls std::process::self
 };
 
 enum ForkType : uint8_t {

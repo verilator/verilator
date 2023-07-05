@@ -154,10 +154,12 @@ protected:
         // This function is called only once per emitted constructor code, so this is fine.
         classp->repairCache();
 
-        const AstNode* newp = classp->findMember("new");
-        const AstCFunc* ctor = newp ? VN_CAST(newp, CFunc) : nullptr;
-        UASSERT_OBJ(ctor ? ctor->isConstructor() : true, ctor, "`new` is not a constructor!");
-        return ctor ? ctor->needProcess() : false;
+        const AstNode* const newp = classp->findMember("new");
+        if (!newp) return false;
+        const AstCFunc* const ctorp = VN_CAST(newp, CFunc);
+        if (!ctorp) return false;
+        UASSERT_OBJ(ctorp->isConstructor(), ctorp, "`new` is not a constructor!");
+        return ctorp->needProcess();
     }
 
     bool constructorNeedsProcess(AstNodeDType* dtypep) {
@@ -230,6 +232,10 @@ public:
             comma = true;
         }
     }
+    template <typename T>
+    string optionalProcArg(T* nodep) {
+        return (nodep && constructorNeedsProcess(nodep)) ? "vlProcess, " : "";
+    }
 
     // VISITORS
     using EmitCConstInit::visit;
@@ -262,23 +268,14 @@ public:
                     exprp = stmtp;
                 }
                 if (AstCNew* const newRefp = VN_CAST(exprp, CNew)) {
-                    if (classp && constructorNeedsProcess(classp)) {
-                        puts("(vlProcess, vlSymsp");
-                    } else {
-                        puts("(vlSymsp");
-                    }
+                    puts("(" + optionalProcArg(classp) + "vlSymsp");
                     baseCtorCall = true;
                     putCommaIterateNext(newRefp->argsp(), true);
                     puts(")");
                     break;
                 }
             }
-            if (!baseCtorCall) {
-                if (classp && constructorNeedsProcess(classp))
-                    puts("(vlProcess, vlSymsp)");
-                else
-                    puts("(vlSymsp)");
-            }
+            if (!baseCtorCall) { puts("(" + optionalProcArg(classp) + "vlSymsp)"); }
         }
         puts(" {\n");
 
@@ -310,7 +307,7 @@ public:
             return true;
         });
         if (m_instantiatesOwnProcess) {
-            AstNode* vlprocp = new AstCStmt{
+            AstNode* const vlprocp = new AstCStmt{
                 nodep->fileline(), "VlProcessRef vlProcess = std::make_shared<VlProcess>();\n"};
             nodep->stmtsp()->addHereThisAsNext(vlprocp);
         }
@@ -496,9 +493,8 @@ public:
             return;
         }
         // assignment case;
-        bool ctorNeedProc = constructorNeedsProcess(nodep->dtypep());
-        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep())
-             + (ctorNeedProc ? ", vlProcess, vlSymsp" : ", vlSymsp"));
+        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", "
+             + optionalProcArg(nodep->dtypep()) + "vlSymsp");
         putCommaIterateNext(nodep->argsp(), true);
         puts(")");
     }
@@ -1143,9 +1139,8 @@ public:
         puts(")");
     }
     void visit(AstNewCopy* nodep) override {
-        bool ctorNeedProc = constructorNeedsProcess(nodep->dtypep());
-        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep())
-             + (ctorNeedProc ? ", vlProcess, " : ", "));
+        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", "
+             + optionalProcArg(nodep->dtypep()));
         puts("*");  // i.e. make into a reference
         iterateAndNextConstNull(nodep->rhsp());
         puts(")");
