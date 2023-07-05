@@ -729,19 +729,12 @@ private:
         //   width: value(LHS) * width(RHS)
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
-            V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
+            V3Const::constifyParamsNoWarnEdit(nodep->rhsp());  // rhsp may change
+
+            uint32_t times = 1;
+
             const AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
-            if (!constp) {
-                nodep->v3error("Replication value isn't a constant.");
-                return;
-            }
-            uint32_t times = constp->toUInt();
-            if (times == 0
-                && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
-                nodep->v3error("Replication value of 0 is only legal under a concatenation"
-                               " (IEEE 1800-2017 11.4.12.1)");
-                times = 1;
-            }
+            if (constp) times = constp->toUInt();
 
             AstNodeDType* const vdtypep = m_vup->dtypeNullSkipRefp();
             if (VN_IS(vdtypep, QueueDType) || VN_IS(vdtypep, DynArrayDType)
@@ -775,7 +768,7 @@ private:
                                                  << vdtypep->prettyDTypeNameQ() << " data type");
             }
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
-            if (nodep->lhsp()->isString()) {
+            if ((vdtypep && vdtypep->isString()) || nodep->lhsp()->isString()) {
                 AstNode* const newp
                     = new AstReplicateN{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
                                         nodep->rhsp()->unlinkFrBack()};
@@ -783,6 +776,13 @@ private:
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             } else {
+                if (!constp) nodep->v3error("Replication value isn't a constant.");
+                if (times == 0
+                    && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
+                    nodep->v3error("Replication value of 0 is only legal under a concatenation"
+                                   " (IEEE 1800-2017 11.4.12.1)");
+                    times = 1;  // Set to 1, so we can continue looking for errors
+                }
                 nodep->dtypeSetLogicUnsized((nodep->lhsp()->width() * times),
                                             (nodep->lhsp()->widthMin() * times),
                                             VSigning::UNSIGNED);
@@ -801,18 +801,7 @@ private:
         if (m_vup->prelim()) {
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
-            V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
-            const AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
-            if (!constp) {
-                nodep->v3error("Replication value isn't a constant.");
-                return;
-            }
-            const uint32_t times = constp->toUInt();
-            if (times == 0
-                && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
-                nodep->v3error("Replication value of 0 is only legal under a concatenation"
-                               " (IEEE 1800-2017 11.4.12.1)");
-            }
+            V3Const::constifyParamsNoWarnEdit(nodep->rhsp());  // rhsp may change
             nodep->dtypeSetString();
         }
         if (m_vup->final()) {
