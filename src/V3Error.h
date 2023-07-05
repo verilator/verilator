@@ -592,12 +592,12 @@ inline void v3errorEndFatal(std::ostringstream& sstr)
 #define UINFO(level, stmsg) \
     do { \
         if (VL_UNCOVERABLE(debug() >= (level))) { \
-            cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; \
+            std::cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; \
         } \
     } while (false)
 #define UINFONL(level, stmsg) \
     do { \
-        if (VL_UNCOVERABLE(debug() >= (level))) { cout << stmsg; } \
+        if (VL_UNCOVERABLE(debug() >= (level))) { std::cout << stmsg; } \
     } while (false)
 
 #ifdef VL_DEBUG
