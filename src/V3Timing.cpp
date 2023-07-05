@@ -299,6 +299,7 @@ private:
 
     // Other
     SenTreeFinder m_finder{m_netlistp};  // Sentree finder and uniquifier
+    SenExprBuilder* m_senExprBuilderp = nullptr;  // Sens expression builder for current m_scope
 
     // METHODS
     // Find net delay on the LHS of an assignment
@@ -571,7 +572,12 @@ private:
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
         m_scopep = nodep;
-        iterateChildren(nodep);
+        SenExprBuilder senExprBuilder{m_scopep};
+        {  // Restore m_senExprBuilderp before destroying senExprBuilder
+            VL_RESTORER(m_senExprBuilderp);
+            m_senExprBuilderp = &senExprBuilder;
+            iterateChildren(nodep);
+        }
     }
     void visit(AstActive* nodep) override {
         m_activep = nodep;
@@ -727,14 +733,14 @@ private:
                 = new AstCAwait{flp, evalMethodp, getCreateDynamicTriggerSenTree()};
             awaitEvalp->dtypeSetVoid();
             // Construct the sen expression for this sentree
-            SenExprBuilder senExprBuilder{m_scopep};
+            UASSERT_OBJ(m_senExprBuilderp, nodep, "No SenExprBuilder for this scope");
             auto* const assignp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
-                                                senExprBuilder.build(sensesp).first};
+                                                m_senExprBuilderp->build(sensesp).first};
             // Put all the locals and inits before the trigger eval loop
-            for (AstVar* const varp : senExprBuilder.getAndClearLocals()) {
+            for (AstVar* const varp : m_senExprBuilderp->getAndClearLocals()) {
                 nodep->addHereThisAsNext(varp);
             }
-            for (AstNodeStmt* const stmtp : senExprBuilder.getAndClearInits()) {
+            for (AstNodeStmt* const stmtp : m_senExprBuilderp->getAndClearInits()) {
                 nodep->addHereThisAsNext(stmtp);
             }
             // Create the trigger eval loop, which will await the evaluation step and check the
@@ -743,7 +749,7 @@ private:
                 flp, new AstLogNot{flp, new AstVarRef{flp, trigvscp, VAccess::READ}},
                 awaitEvalp->makeStmt()};
             // Put pre updates before the trigger check and assignment
-            for (AstNodeStmt* const stmtp : senExprBuilder.getAndClearPreUpdates()) {
+            for (AstNodeStmt* const stmtp : m_senExprBuilderp->getAndClearPreUpdates()) {
                 loopp->addStmtsp(stmtp);
             }
             // Then the trigger check and assignment
@@ -756,7 +762,7 @@ private:
                 loopp->addStmtsp(awaitPostUpdatep->makeStmt());
             }
             // Put the post updates at the end of the loop
-            for (AstNodeStmt* const stmtp : senExprBuilder.getAndClearPostUpdates()) {
+            for (AstNodeStmt* const stmtp : m_senExprBuilderp->getAndClearPostUpdates()) {
                 loopp->addStmtsp(stmtp);
             }
             // Finally, await the resumption step in 'act'
