@@ -22,9 +22,14 @@ module t (/*AUTOARG*/
       cyc <= cyc + 1;
       begin
          // Wildcard
+         typedef string dict_t [*];
          string a [*] = '{default: "nope", "BBBBB": "fooing", 23'h434343: "baring"};
+         dict_t b = '{default: "nope", "BBBBB": "fooing", 23'h434343: "baring"};
          int k;
          string v;
+
+         v = b["CCC"]; `checks(v, "baring");
+         v = b["BBBBB"]; `checks(v, "fooing");
 
          v = a["CCC"]; `checks(v, "baring");
          v = a["BBBBB"]; `checks(v, "fooing");

@@ -2121,6 +2121,10 @@ private:
                 v3Global.rootp()->typeTablep()->addTypesp(newp);
             }
         }
+        if (AstWildcardArrayDType* const wildp
+            = VN_CAST(nodep->dtypeSkipRefp(), WildcardArrayDType)) {
+            nodep->dtypep(wildp);  // Skip RefDType like for other dynamic array types
+        }
         if (VN_IS(nodep->dtypep()->skipRefToConstp(), ConstDType)) nodep->isConst(true);
         // Parameters if implicit untyped inherit from what they are assigned to
         const AstBasicDType* const bdtypep = VN_CAST(nodep->dtypep(), BasicDType);
