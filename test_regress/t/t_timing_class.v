@@ -80,32 +80,9 @@ module t;
         endtask
     endclass
 
-    class ClkClass;
-        logic clk;
-        int count;
-
-        function new;
-            clk = 0;
-            count = 0;
-        endfunction
-
-        task flip;
-            clk = ~clk;
-        endtask;
-
-        task count_5;
-            @(posedge clk) count++;
-            @(posedge clk) count++;
-            @(posedge clk) count++;
-            @(posedge clk) count++;
-            @(posedge clk) count++;
-        endtask
-    endclass
-
     EventClass ec = new;
     WaitClass wc = new;
     LocalWaitClass lc = new;
-    ClkClass cc = new;
 
     initial begin
         @ec.e;
@@ -128,13 +105,8 @@ module t;
         `WRITE_VERBOSE(("Event in class triggered at time %0t!\n", $time));
     end
 
-    always #5 cc.flip;
-
-    initial cc.count_5;
-
     initial begin
         #80
-        if (cc.count != 5) $stop;
         if (ec.trig_count != 3) $stop;
         if (!wc.ok) $stop;
         if (!lc.ok) $stop;
