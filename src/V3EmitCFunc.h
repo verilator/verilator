@@ -150,7 +150,7 @@ protected:
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
     bool m_instantiatesOwnProcess = false;
 
-    bool constructorNeedsProcess(AstClass* classp) {
+    bool constructorNeedsProcess(const AstClass* const classp) {
         const AstNode* const newp = classp->findMember("new");
         if (!newp) return false;
         const AstCFunc* const ctorp = VN_CAST(newp, CFunc);
@@ -159,10 +159,9 @@ protected:
         return ctorp->needProcess();
     }
 
-    bool constructorNeedsProcess(AstNodeDType* dtypep) {
-        if (AstClassRefDType* crefdtypep = VN_CAST(dtypep, ClassRefDType)) {
+    bool constructorNeedsProcess(const AstNodeDType* const dtypep) {
+        if (const AstClassRefDType* const crefdtypep = VN_CAST(dtypep, ClassRefDType))
             return constructorNeedsProcess(crefdtypep->classp());
-        }
         return false;
     }
 
@@ -230,7 +229,7 @@ public:
         }
     }
     template <typename T>
-    string optionalProcArg(T* nodep) {
+    string optionalProcArg(const T* const nodep) {
         return (nodep && constructorNeedsProcess(nodep)) ? "vlProcess, " : "";
     }
 
@@ -254,7 +253,7 @@ public:
         if (!nodep->baseCtors().empty()) {
             puts(": ");
             puts(nodep->baseCtors());
-            AstClass* classp = VN_CAST(nodep->scopep()->modp(), Class);
+            const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
             bool baseCtorCall = false;
             // Find call to super.new to get the arguments
             for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
