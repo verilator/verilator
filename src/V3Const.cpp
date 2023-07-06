@@ -1448,18 +1448,6 @@ private:
             return false;
         }
     }
-    bool ifSameAssign(const AstNodeIf* nodep) {
-        const AstNodeAssign* const thensp = VN_CAST(nodep->thensp(), NodeAssign);
-        const AstNodeAssign* const elsesp = VN_CAST(nodep->elsesp(), NodeAssign);
-        if (!thensp || thensp->nextp()) return false;  // Must be SINGLE statement
-        if (!elsesp || elsesp->nextp()) return false;
-        if (thensp->type() != elsesp->type()) return false;  // Can't mix an assigndly with assign
-        if (!thensp->lhsp()->sameGateTree(elsesp->lhsp())) return false;
-        if (!thensp->rhsp()->gateTree()) return false;
-        if (!elsesp->rhsp()->gateTree()) return false;
-        if (m_underRecFunc) return false;  // This optimization may lead to infinite recursion
-        return true;
-    }
     bool operandIfIf(const AstNodeIf* nodep) {
         if (nodep->elsesp()) return false;
         const AstNodeIf* const lowerIfp = VN_CAST(nodep->thensp(), NodeIf);
@@ -3021,19 +3009,6 @@ private:
                 ifp->isBoundsCheck(nodep->isBoundsCheck());  // Copy bounds check info
                 ifp->branchPred(nodep->branchPred().invert());
                 nodep->replaceWith(ifp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            } else if (ifSameAssign(nodep)) {
-                UINFO(
-                    4,
-                    "IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})\n");
-                AstNodeAssign* const thensp = VN_AS(nodep->thensp(), NodeAssign);
-                AstNodeAssign* const elsesp = VN_AS(nodep->elsesp(), NodeAssign);
-                thensp->unlinkFrBack();
-                AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
-                AstNodeExpr* const truep = thensp->rhsp()->unlinkFrBack();
-                AstNodeExpr* const falsep = elsesp->rhsp()->unlinkFrBack();
-                thensp->rhsp(new AstCond{truep->fileline(), condp, truep, falsep});
-                nodep->replaceWith(thensp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             } else if (false  // Disabled, as vpm assertions are faster
                               // without due to short-circuiting
