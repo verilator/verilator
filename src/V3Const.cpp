@@ -899,7 +899,6 @@ private:
     bool m_doV = false;  // Verilog, not C++ conversion
     bool m_doGenerate = false;  // Postpone width checking inside generate
     bool m_hasJumpDelay = false;  // JumpGo or Delay under this while
-    bool m_underRecFunc = false;  // Under a recursive function
     AstNodeModule* m_modp = nullptr;  // Current module
     const AstArraySel* m_selp = nullptr;  // Current select
     const AstNode* m_scopep = nullptr;  // Current scope
@@ -3148,11 +3147,6 @@ private:
             // Just a simple constant string - the formatting is pointless
             VL_DO_DANGLING(replaceConstString(nodep, nodep->name()), nodep);
         }
-    }
-    void visit(AstNodeFTask* nodep) override {
-        VL_RESTORER(m_underRecFunc);
-        if (nodep->recursive()) m_underRecFunc = true;
-        iterateChildren(nodep);
     }
 
     void visit(AstFuncRef* nodep) override {
