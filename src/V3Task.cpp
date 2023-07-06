@@ -1380,8 +1380,7 @@ private:
             m_modNCalls = 0;
             iterateChildren(nodep);
         }
-        if (AstClass* classp = VN_CAST(nodep, Class))
-            classp->repairCache();
+        if (AstClass* classp = VN_CAST(nodep, Class)) classp->repairCache();
     }
     void visit(AstWith* nodep) override {
         if (nodep->user1SetOnce()) {
