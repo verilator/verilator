@@ -360,14 +360,8 @@ class AstNodeCond VL_NOT_FINAL : public AstNodeTriop {
     // @astgen alias op2 := thenp
     // @astgen alias op3 := elsep
 protected:
-    AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep)
-        : AstNodeTriop{t, fl, condp, thenp, elsep} {
-        if (thenp) {
-            dtypeFrom(thenp);
-        } else if (elsep) {
-            dtypeFrom(elsep);
-        }
-    }
+    AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,
+                AstNodeExpr* elsep);
 
 public:
     ASTGEN_MEMBERS_AstNodeCond;
