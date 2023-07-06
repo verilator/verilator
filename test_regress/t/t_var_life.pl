@@ -15,7 +15,7 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep($Self->{stats}, qr/Optimizations, Lifetime assign deletions\s+(\d+)/i, 4);
+    file_grep($Self->{stats}, qr/Optimizations, Lifetime assign deletions\s+(\d+)/i, 3);
     file_grep($Self->{stats}, qr/Optimizations, Lifetime constant prop\s+(\d+)/i, 2);
 }
 
