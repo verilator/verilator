@@ -71,9 +71,9 @@ enum NodeFlag : uint8_t {
 };
 
 enum ForkType : uint8_t {
-    F_NONE = 0,
-    F_MIGHT_SUSPEND = 1 << 0,
-    F_MIGHT_NEED_PROC = 1 << 1,
+    F_NONE = 0,  // Not under a fork
+    F_MIGHT_SUSPEND = 1 << 0,  // Fork might suspend the execution of current process
+    F_MIGHT_NEED_PROC = 1 << 1,  // Fork might need a process (any fork really)
 };
 
 enum PropagationType : uint8_t {
@@ -83,7 +83,7 @@ enum PropagationType : uint8_t {
 };
 
 // ######################################################################
-//  Detect nodes affected by timing
+//  Detect nodes affected by timing and/or requiring a process
 
 class TimingSuspendableVisitor final : public VNVisitor {
 private:
@@ -162,7 +162,7 @@ private:
     // STATE
     AstClass* m_classp = nullptr;  // Current class
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
-    uint8_t m_underFork = F_NONE;
+    uint8_t m_underFork = F_NONE;  // F_NONE or flags of a fork we are under
     V3Graph m_suspGraph;  // Dependency graph where a node is a dependency of another if it being
                           // suspendable makes the other node suspendable
     V3Graph m_procGraph;  // Dependency graph where a node is a dependency of another if it being
