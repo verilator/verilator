@@ -72,8 +72,8 @@ enum NodeFlag : uint8_t {
 
 enum ForkType : uint8_t {
     F_NONE = 0,
-    F_MIGHT_SUSPEND = 1,
-    F_MIGHT_NEED_PROC = 2,
+    F_MIGHT_SUSPEND = 1 << 0,
+    F_MIGHT_NEED_PROC = 1 << 1,
 };
 
 enum PropagationType : uint8_t {
@@ -278,13 +278,13 @@ private:
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        if (!m_underFork || (m_underFork & F_MIGHT_SUSPEND) || VN_IS(m_procp, Always))
+        if (!m_underFork || (m_underFork & F_MIGHT_SUSPEND))
             new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep->funcp()),
-                            getSuspendDepVtx(m_procp), 1};
+                            getSuspendDepVtx(m_procp), m_underFork ? P_FORK : P_CALL};
 
         if (!m_underFork)
             new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep->funcp()),
-                            getNeedsProcDepVtx(m_procp), 1};
+                            getNeedsProcDepVtx(m_procp), P_CALL};
 
         iterateChildren(nodep);
     }
@@ -292,7 +292,7 @@ private:
         VL_RESTORER(m_procp);
         VL_RESTORER(m_underFork);
 
-        if (!m_underFork || (m_underFork & F_MIGHT_SUSPEND) || VN_IS(m_procp, Always))
+        if (!m_underFork || (m_underFork & F_MIGHT_SUSPEND))
             new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep), getSuspendDepVtx(m_procp),
                             m_underFork ? P_FORK : P_CALL};
 
