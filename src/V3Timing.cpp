@@ -76,6 +76,12 @@ enum ForkType : uint8_t {
     F_MIGHT_NEED_PROC = 2,
 };
 
+enum PropagationType : uint8_t {
+    P_CALL = 1,  // Propagation through call to a function/task/method
+    P_FORK = 2,  // Propagation due to fork's behaviour
+    P_SIGNATURE = 3,  // Propagation required to maintain C++ function's signature requirements
+};
+
 // ######################################################################
 //  Detect nodes affected by timing
 
@@ -207,7 +213,8 @@ private:
         for (V3GraphEdge* edgep = vxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
             auto* const depVxp = static_cast<DepVtx*>(edgep->fromp());
             AstNode* const depp = depVxp->nodep();
-            if (p(vxp) && passFlag(parentp, depp, flag)) propagateFlagsReversedIf(depVxp, flag, p);
+            if (p(edgep) && passFlag(parentp, depp, flag))
+                propagateFlagsReversedIf(depVxp, flag, p);
         }
     }
 
@@ -221,6 +228,10 @@ private:
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
+        if (nodep->needProcess()) nodep->user2(T_HAS_PROC | T_CALLS_PROC_SELF);
+        if (VN_IS(nodep, Always)) {
+            UINFO(1, "Always does " << (nodep->needProcess() ? "" : "NOT ") << "need process\n");
+        }
         iterateChildren(nodep);
     }
     void visit(AstCFunc* nodep) override {
@@ -255,10 +266,10 @@ private:
                     // Suspendability and process affects typing, so they propagate both ways
                     DepVtx* const overriddenSVxp = getSuspendDepVtx(overriddenp);
                     DepVtx* const overriddenPVxp = getNeedsProcDepVtx(overriddenp);
-                    new V3GraphEdge{&m_suspGraph, sVxp, overriddenSVxp, 1};
-                    new V3GraphEdge{&m_suspGraph, overriddenSVxp, sVxp, 1};
-                    new V3GraphEdge{&m_procGraph, pVxp, overriddenPVxp, 1};
-                    new V3GraphEdge{&m_procGraph, overriddenPVxp, pVxp, 1};
+                    new V3GraphEdge{&m_suspGraph, sVxp, overriddenSVxp, P_SIGNATURE};
+                    new V3GraphEdge{&m_suspGraph, overriddenSVxp, sVxp, P_SIGNATURE};
+                    new V3GraphEdge{&m_procGraph, pVxp, overriddenPVxp, P_SIGNATURE};
+                    new V3GraphEdge{&m_procGraph, overriddenPVxp, pVxp, P_SIGNATURE};
                 } else {
                     AstClassExtends* more_extends = cextp->classp()->extendsp();
                     if (more_extends) extends.push(more_extends);
@@ -267,7 +278,7 @@ private:
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        if (!m_underFork || (m_underFork & F_MIGHT_SUSPEND))
+        if (!m_underFork || (m_underFork & F_MIGHT_SUSPEND) || VN_IS(m_procp, Always))
             new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep->funcp()),
                             getSuspendDepVtx(m_procp), 1};
 
@@ -281,12 +292,13 @@ private:
         VL_RESTORER(m_procp);
         VL_RESTORER(m_underFork);
 
-        if (!m_underFork || (m_underFork & F_MIGHT_SUSPEND))
-            new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep), getSuspendDepVtx(m_procp), 1};
+        if (!m_underFork || (m_underFork & F_MIGHT_SUSPEND) || VN_IS(m_procp, Always))
+            new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep), getSuspendDepVtx(m_procp),
+                            m_underFork ? P_FORK : P_CALL};
 
         if (!m_underFork)
             new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep), getNeedsProcDepVtx(m_procp),
-                            1};
+                            P_CALL};
 
         m_procp = nodep;
         m_underFork = 0;
@@ -337,8 +349,9 @@ public:
         for (V3GraphVertex* vxp = m_suspGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
             if (depVxp->nodep()->user2() & T_HAS_PROC)
-                propagateFlagsReversedIf(depVxp, T_HAS_PROC, [&](const DepVtx* vtx) -> bool {
-                    return vtx->nodep()->user2() & T_SUSPENDEE;
+                propagateFlagsReversedIf(depVxp, T_HAS_PROC, [&](const V3GraphEdge* e) -> bool {
+                    return (e->weight() != P_FORK)
+                           && (static_cast<DepVtx*>(e->top())->nodep()->user2() & T_SUSPENDEE);
                 });
         }
         if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps");
