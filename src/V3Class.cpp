@@ -67,6 +67,7 @@ private:
         nodep->editCountInc();
         nodep->classOrPackagep(packagep);
         packagep->classp(nodep);
+        packagep->timeunit(nodep->timeunit());
         v3Global.rootp()->addModulesp(packagep);
         // Add package to hierarchy
         AstCell* const cellp = new AstCell{packagep->fileline(),
