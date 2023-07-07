@@ -14,6 +14,8 @@
 //
 //*************************************************************************
 
+#define VL_MT_CONTROL_CODE_UNIT 1
+
 #include "V3Active.h"
 #include "V3ActiveTop.h"
 #include "V3Assert.h"
