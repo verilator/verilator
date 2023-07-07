@@ -291,22 +291,27 @@ void V3Error::vlAbort() {
     VL_GCOV_DUMP();
     std::abort();
 }
-void V3Error::v3errorAcquireLock() VL_ACQUIRE(s().m_mutex) {
-#ifndef V3ERROR_NO_GLOBAL_
-    V3Error::s().m_mutex.lockCheckStopRequest(
-        []() -> void { V3ThreadPool::s().waitIfStopRequested(); });
+void V3Error::v3errorAcquireLock(bool mtDisabledCodeUnit) VL_ACQUIRE(s().m_mutex) {
+#if !defined(V3ERROR_NO_GLOBAL_)
+    if (!mtDisabledCodeUnit) {
+        V3Error::s().m_mutex.lockCheckStopRequest(
+            []() -> void { V3ThreadPool::s().waitIfStopRequested(); });
+    } else {
+        V3Error::s().m_mutex.lock();
+    }
 #else
     V3Error::s().m_mutex.lock();
 #endif
 }
-std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mutex) {
-    v3errorAcquireLock();
+std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code, bool mtDisabledCodeUnit)
+    VL_ACQUIRE(s().m_mutex) {
+    v3errorAcquireLock(mtDisabledCodeUnit);
     s().v3errorPrep(code);
     return v3errorStr();
 }
-std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* file, int line)
-    VL_ACQUIRE(s().m_mutex) {
-    v3errorPrep(code) << file << ":" << std::dec << line << ": ";
+std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* file, int line,
+                                                 bool mtDisabledCodeUnit) VL_ACQUIRE(s().m_mutex) {
+    v3errorPrep(code, mtDisabledCodeUnit) << file << ":" << std::dec << line << ": ";
     return v3errorStr();
 }
 std::ostringstream& V3Error::v3errorStr() VL_REQUIRES(s().m_mutex) { return s().v3errorStr(); }

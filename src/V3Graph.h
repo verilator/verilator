@@ -282,8 +282,9 @@ public:
     V3GraphEdge* beginp(GraphWay way) const { return way.forward() ? outBeginp() : inBeginp(); }
     // METHODS
     /// Error reporting
-    void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
-    void v3errorEndFatal(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
+    void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) VL_MT_DISABLED;
+    void v3errorEndFatal(std::ostringstream& str) const
+        VL_RELEASE(V3Error::s().m_mutex) VL_MT_DISABLED;
     /// Edges are routed around this vertex to point from "from" directly to "to"
     void rerouteEdges(V3Graph* graphp);
     /// Find the edge connecting ap and bp, where bp is wayward from ap.
