@@ -354,14 +354,6 @@ public:
                            && (static_cast<DepVtx*>(e->top())->nodep()->user2() & T_SUSPENDEE);
                 });
         }
-
-        // Workaround for killing `always` processes (doing that is pretty much UB)
-        // TODO: Disallow killing `always` at runtime
-        nodep->forall([&](AstAlways* nodep) -> bool {
-            if (nodep->user2() & T_HAS_PROC) nodep->user2(nodep->user2() | T_SUSPENDEE);
-            return true;
-        });
-
         if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps");
     }
     ~TimingSuspendableVisitor() override = default;
@@ -721,6 +713,11 @@ private:
         if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_procp);
         m_procp = nodep;
+
+        // Workaround for killing `always` processes (doing that is pretty much UB)
+        // TODO: Disallow killing `always` at runtime (throw an error)
+        if (nodep->user2() & T_HAS_PROC) nodep->user2(nodep->user2() | T_SUSPENDEE);
+
         iterateChildren(nodep);
         if (nodep->user2() & T_HAS_PROC) nodep->setNeedProcess();
         if (!(nodep->user2() & T_SUSPENDEE)) return;
