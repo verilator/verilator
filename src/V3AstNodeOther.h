@@ -2172,6 +2172,7 @@ public:
         const auto it = m_members.find(name);
         return (it == m_members.end()) ? nullptr : it->second;
     }
+    int memberCount() const { return m_members.size(); }
     bool isExtended() const { return m_extended; }
     void isExtended(bool flag) { m_extended = flag; }
     bool isInterfaceClass() const { return m_interfaceClass; }

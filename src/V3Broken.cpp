@@ -220,6 +220,28 @@ private:
         }
         return false;
     }
+    void visit(AstClass* nodep) override {
+        auto check = [nodep](const AstNode* memberp) {
+            const AstNode* cacheEntry = nodep->findMember(memberp->name());
+            UASSERT_OBJ(cacheEntry == memberp, nodep,
+                        "Class cache has not been updated. Entry `"
+                            << memberp << " does not match the cache content ("
+                            << cvtToHex(cacheEntry) << ")");
+        };
+        int m_count = 0;
+        for (const AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
+            if (const auto* const scopep = VN_CAST(itemp, Scope)) {
+                for (auto* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
+                    check(blockp);
+                }
+            } else {
+                check(itemp);
+            }
+            ++m_count;
+        }
+        UASSERT_OBJ(m_count == nodep->memberCount(), nodep,
+                    "Class cache has not been updated. Detected outdated entries");
+    }
     void visit(AstNodeAssign* nodep) override {
         processAndIterate(nodep);
         UASSERT_OBJ(!(v3Global.assertDTypesResolved() && nodep->brokeLhsMustBeLvalue()

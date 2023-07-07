@@ -88,6 +88,12 @@ void V3LinkLevel::modSortByLevel() {
     UASSERT_OBJ(!v3Global.rootp()->modulesp(), v3Global.rootp(), "Unlink didn't work");
     for (AstNodeModule* nodep : mods) v3Global.rootp()->addModulesp(nodep);
     UINFO(9, "modSortByLevel() done\n");  // Comment required for gcc4.6.3 / bug666
+
+    v3Global.rootp()->forall([](AstClass* nodep) -> bool {
+        nodep->repairCache();
+        return true;
+    });
+
     V3Global::dumpCheckGlobalTree("cells", false, dumpTreeLevel() >= 3);
 }
 
