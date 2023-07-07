@@ -101,15 +101,11 @@ private:
     };
 
     // NODE STATE
-    //  AstClass::user1()                        -> bool.               Set true if the class
-    //                                                                  member cache has been
-    //                                                                  refreshed.
     //  Ast{NodeProcedure,CFunc,Begin}::user2()  -> int.                Set to >= T_SUSP if
     //                                                                  process/task suspendable
     //                                                                  and to T_PROC if it
     //                                                                  needs process metadata.
     //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_depGraph
-    const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
 
@@ -164,8 +160,6 @@ private:
         TimingDependencyVertex* const vxp = getDependencyVertex(nodep);
         if (nodep->needProcess()) nodep->user2(T_PROC);
         if (!m_classp) return;
-        // If class method (possibly overrides another method)
-        if (!m_classp->user1SetOnce()) m_classp->repairCache();
 
         // Go over overridden functions
 
@@ -182,7 +176,6 @@ private:
                 // actually overridden by our method. If this causes a problem, traverse to
                 // the root of the inheritance hierarchy and check if the original method is
                 // virtual or not.
-                if (!cextp->classp()->user1SetOnce()) cextp->classp()->repairCache();
                 if (auto* const overriddenp
                     = VN_CAST(cextp->classp()->findMember(nodep->name()), CFunc)) {
                     setTimingFlag(nodep, overriddenp->user2());
