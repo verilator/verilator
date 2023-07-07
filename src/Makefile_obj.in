@@ -289,6 +289,7 @@ NON_STANDALONE_HEADERS = \
 	V3AstNodeExpr.h  \
 	V3AstNodeOther.h  \
 	V3DfgVertices.h  \
+	V3ThreadPool.h \
 	V3WidthCommit.h  \
 
 AST_DEFS := \
@@ -298,81 +299,6 @@ AST_DEFS := \
 
 DFG_DEFS := \
   V3DfgVertices.h
-
-# Following objects are strictly checked for multi-thread safety.
-# Code in those objects is allowed to call Verilator code only from other
-# objects from this list.
-MT_ENABLED_OBJS := \
-	V3Ast.o \
-	V3AstNodes.o \
-	V3Config.o \
-	V3EmitCBase.o \
-	V3EmitCConstPool.o \
-	V3EmitCFunc.o \
-	V3EmitCHeaders.o \
-	V3EmitCImp.o \
-	V3EmitCInlines.o \
-	V3EmitV.o \
-	V3Broken.o \
-	V3Error.o \
-	V3File.o \
-	V3FileLine.o \
-	V3Global.o \
-	V3Hash.o \
-	V3Hasher.o \
-	V3Number.o \
-	V3Options.o \
-	V3Os.o \
-	V3Stats.o \
-	V3StatsReport.o \
-	V3String.o \
-	V3ThreadPool.o \
-	V3Waiver.o
-
-# Following objects are strictly checked for multi-thread safety.
-# Code in those objects is allowed to call Verilator code from all other
-# objects. However, it must assure that no other threads are working when
-# the code from objects in MT_DISABLED_OBJS list is called.
-MT_CONTROL_OBJS := \
-	Verilator.o
-
-# Following objects are only partially checked for thread-safety.
-# Mutexes are not required to be held when calling code that requires them.
-# Proper locking and unlocking is still checked in order to avoid deadlocks.
-# Code in those objects is allowed to call Verilator code from both
-# MT_DISABLED_OBJS and MT_ENABLED_OBJS.
-MT_DISABLED_OBJS := \
-	$(filter-out ${MT_CONTROL_OBJS} ${MT_ENABLED_OBJS},${RAW_OBJS}, ${VLCOV_OBJS})
-
-# For header_cc
-
-HEADER_CC_H := $(filter-out $(NON_STANDALONE_HEADERS), $(notdir $(wildcard $(srcdir)/*.h)))
-HEADER_CC_OBJS := $(addsuffix __header_cc.o, $(basename $(HEADER_CC_H)))
-
-# Equivalent of MT_ENABLED_OBJS
-MT_ENABLED_HEADER_CC_OBJS := \
-	V3ThreadPool__header_cc.o
-
-# Equivalent of MT_DISABLED_OBJS
-MT_DISABLED_HEADER_CC_OBJS := \
-	$(filter-out ${MT_ENABLED_HEADER_CC_OBJS},${HEADER_CC_OBJS})
-
-${MT_ENABLED_HEADER_CC_OBJS}: PRIV_MT_CPPFLAGS :=
-
-${MT_DISABLED_HEADER_CC_OBJS}: PRIV_MT_CPPFLAGS := \
-	-DVL_MT_DISABLED_CODE_UNIT=1 \
-	-DV3ERROR_NO_GLOBAL_=1
-
-# Per-object multithreading controlling flags
-
-${MT_ENABLED_OBJS} ${MT_ENABLED_HEADER_CC_OBJS}: PRIV_MT_CPPFLAGS :=
-
-${MT_CONTROL_OBJS}: PRIV_MT_CPPFLAGS := \
-	-DVL_MT_CONTROL_CODE_UNIT=1
-
-${MT_DISABLED_OBJS} ${MT_DISABLED_HEADER_CC_OBJS}: PRIV_MT_CPPFLAGS := \
-	-DVL_MT_DISABLED_CODE_UNIT=1 \
-	-DV3ERROR_NO_GLOBAL_=1
 
 #### astgen common flags
 
@@ -405,21 +331,21 @@ V3Number_test: V3Number_test.o
 .SECONDARY:
 
 %.o: %.cpp
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} ${PRIV_MT_CPPFLAGS} -c $< -o $@
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
 %.o: %.c
 	$(OBJCACHE) ${CC}  ${CFLAGS} ${CPPFLAGSWALL} -c $< -o $@
 
 V3ParseLex.o: V3ParseLex.cpp V3Lexer.yy.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} ${PRIV_MT_CPPFLAGS} -c $< -o $@
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
 V3ParseGrammar.o: V3ParseGrammar.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} ${PRIV_MT_CPPFLAGS} -c $< -o $@
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
 V3ParseImp.o: V3ParseImp.cpp V3ParseBison.c
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} ${PRIV_MT_CPPFLAGS} -c $< -o $@
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
 V3PreProc.o: V3PreProc.cpp V3PreLex.yy.cpp
-	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} ${PRIV_MT_CPPFLAGS} -c $< -o $@
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
 #### Generated files
 
@@ -457,11 +383,13 @@ V3PreLex.yy.cpp: V3PreLex_pregen.yy.cpp $(FLEXFIX)
 	$(PYTHON3) $(FLEXFIX) V3PreLex <$< >$@
 
 # For t_dist_header_cc
+HEADER_CC_H := $(filter-out $(NON_STANDALONE_HEADERS), $(notdir $(wildcard $(srcdir)/*.h)))
+
 .PHONY: header_cc
-header_cc: $(HEADER_CC_OBJS)
+header_cc: $(addsuffix __header_cc.o, $(basename $(HEADER_CC_H)))
 
 %__header_cc.cpp: %.h
-	$(PYTHON3) $(srcdir)/../bin/verilator_includer $^ > $@
+	$(PYTHON3) $(srcdir)/../bin/verilator_includer -DVL_MT_DISABLED_CODE_UNIT=1 $^ > $@
 
 .SUFFIXES:
 
