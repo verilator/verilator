@@ -98,18 +98,18 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
 }
 
 void VlcOptions::showVersion(bool verbose) {
-    cout << version();
-    cout << endl;
+    std::cout << version();
+    std::cout << endl;
     if (!verbose) return;
 
-    cout << endl;
-    cout << "Copyright 2003-2023 by Wilson Snyder.  Verilator is free software; you can\n";
-    cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
-    cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
-    cout << "License Version 2.0.\n";
+    std::cout << endl;
+    std::cout << "Copyright 2003-2023 by Wilson Snyder.  Verilator is free software; you can\n";
+    std::cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
+    std::cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
+    std::cout << "License Version 2.0.\n";
 
-    cout << endl;
-    cout << "See https://verilator.org for documentation\n";
+    std::cout << endl;
+    std::cout << "See https://verilator.org for documentation\n";
 }
 
 //######################################################################

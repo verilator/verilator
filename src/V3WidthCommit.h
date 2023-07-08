@@ -110,10 +110,10 @@ private:
             AstBasicDType* const newp = nodep->findInsertSameDType(bdtypep);
             if (newp != bdtypep && debug() >= 9) {
                 UINFO(9, "dtype replacement ");
-                nodep->dumpSmall(cout);
-                cout << "  ---->  ";
-                newp->dumpSmall(cout);
-                cout << endl;
+                nodep->dumpSmall(std::cout);
+                std::cout << "  ---->  ";
+                newp->dumpSmall(std::cout);
+                std::cout << std::endl;
             }
             return newp;
         }
