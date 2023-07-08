@@ -106,7 +106,6 @@ private:
             m_prefix = nodep->name() + "__02e";  // .
             iterateChildren(nodep);
         }
-        nodep->repairCache();
     }
     void visit(AstNodeModule* nodep) override {
         // Visit for NodeModules that are not AstClass (AstClass is-a AstNodeModule)

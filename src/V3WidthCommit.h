@@ -252,8 +252,9 @@ public:
         // Were changing widthMin's, so the table is now somewhat trashed
         nodep->typeTablep()->clearCache();
         iterate(nodep);
-        // Don't want to repairCache, as all needed nodes have been added back in
-        // a repair would prevent dead nodes from being detected
+        // Don't want to AstTypeTable::repairCache, as all needed nodes
+        // have been added back in; a repair would prevent dead nodes from
+        // being detected
     }
     ~WidthCommitVisitor() override = default;
 };

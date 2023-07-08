@@ -1411,30 +1411,6 @@ bool AstClass::isCacheableChild(const AstNode* nodep) {
             || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto())
             || VN_IS(nodep, CFunc));
 }
-void AstClass::insertCache(AstNode* nodep) {
-    const bool doit = (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
-                       || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto())
-                       || VN_IS(nodep, CFunc));
-    if (doit) {
-        if (m_members.find(nodep->name()) != m_members.end()) {
-            nodep->v3error("Duplicate declaration of member name: " << nodep->prettyNameQ());
-        } else {
-            m_members.emplace(nodep->name(), nodep);
-        }
-    }
-}
-void AstClass::repairCache() {
-    clearCache();
-    for (auto* itemp = membersp(); itemp; itemp = itemp->nextp()) {
-        if (const auto* const scopep = VN_CAST(itemp, Scope)) {
-            for (auto* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
-                insertCache(blockp);
-            }
-        } else {
-            insertCache(itemp);
-        }
-    }
-}
 AstClass* AstClass::baseMostClassp() {
     AstClass* basep = this;
     while (basep->extendsp() && basep->extendsp()->classp()) {

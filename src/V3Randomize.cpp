@@ -398,7 +398,6 @@ AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep) {
         funcp->classMethod(true);
         funcp->isVirtual(nodep->isExtended());
         nodep->addMembersp(funcp);
-        nodep->repairCache();
         AstClass* const basep = nodep->baseMostClassp();
         basep->needRNG(true);
     }
@@ -422,7 +421,6 @@ AstFunc* V3Randomize::newSRandomFunc(AstClass* nodep) {
         funcp->classMethod(true);
         funcp->isVirtual(false);
         basep->addMembersp(funcp);
-        basep->repairCache();
         funcp->addStmtsp(new AstCStmt{basep->fileline(), "__Vm_rng.srandom(seed);\n"});
         basep->needRNG(true);
     }

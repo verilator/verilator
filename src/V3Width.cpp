@@ -2644,7 +2644,6 @@ private:
         m_classp = nodep;
         userIterateAndNext(nodep->extendsp(), nullptr);
         userIterateChildren(nodep, nullptr);  // First size all members
-        nodep->repairCache();
     }
     void visit(AstPackage* nodep) override {
         VL_RESTORER(m_pkgp);
@@ -2749,7 +2748,7 @@ private:
         AstClass* const first_classp = adtypep->classp();
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
-            if (AstNode* const foundp = classp->findMember(nodep->name())) {
+            if (AstNode* const foundp = memberMap.findMember(classp, nodep->name())) {
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
                     if (!varp->didWidth()) userIterate(varp, nullptr);
                     if (varp->lifetime().isStatic()) {
@@ -3516,7 +3515,7 @@ private:
                 }
             }
             if (AstNodeFTask* const ftaskp
-                = VN_CAST(classp->findMember(nodep->name()), NodeFTask)) {
+                = VN_CAST(memberMap.findMember(classp, nodep->name()), NodeFTask)) {
                 userIterate(ftaskp, nullptr);
                 if (ftaskp->lifetime().isStatic()) {
                     AstNodeExpr* argsp = nullptr;

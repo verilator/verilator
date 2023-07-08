@@ -3492,7 +3492,6 @@ private:
         // V3Width when determines types needs to find enum values and such
         // so add members pointing to appropriate enum values
         {
-            nodep->repairCache();
             VMemberMap memberMap;
             for (VSymEnt::const_iterator it = m_curSymp->begin(); it != m_curSymp->end(); ++it) {
                 AstNode* const itemp = it->second->nodep();
