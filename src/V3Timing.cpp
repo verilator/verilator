@@ -53,6 +53,7 @@
 #include "V3Const.h"
 #include "V3EmitV.h"
 #include "V3Graph.h"
+#include "V3MemberMap.h"
 #include "V3SenExprBuilder.h"
 #include "V3SenTree.h"
 #include "V3UniqueNames.h"
@@ -114,6 +115,7 @@ private:
     const VNUser3InUse m_user3InUse;
 
     // STATE
+    VMemberMap memberMap;  // Member names cached for fast lookup
     AstClass* m_classp = nullptr;  // Current class
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     V3Graph m_depGraph;  // Dependency graph where a node is a dependency of another if it being
@@ -164,8 +166,6 @@ private:
         TimingDependencyVertex* const vxp = getDependencyVertex(nodep);
         if (nodep->needProcess()) nodep->user2(T_PROC);
         if (!m_classp) return;
-        // If class method (possibly overrides another method)
-        if (!m_classp->user1SetOnce()) m_classp->repairCache();
 
         // Go over overridden functions
 
@@ -182,9 +182,8 @@ private:
                 // actually overridden by our method. If this causes a problem, traverse to
                 // the root of the inheritance hierarchy and check if the original method is
                 // virtual or not.
-                if (!cextp->classp()->user1SetOnce()) cextp->classp()->repairCache();
                 if (auto* const overriddenp
-                    = VN_CAST(cextp->classp()->findMember(nodep->name()), CFunc)) {
+                    = VN_CAST(memberMap.findMember(cextp->classp(), nodep->name()), CFunc)) {
                     setTimingFlag(nodep, overriddenp->user2());
                     if (nodep->user2()
                         < T_PROC) {  // Add a vertex only if the flag can still change

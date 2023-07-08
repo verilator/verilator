@@ -30,6 +30,7 @@
 #include "V3Randomize.h"
 
 #include "V3Ast.h"
+#include "V3MemberMap.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -138,6 +139,7 @@ private:
     const VNUser2InUse m_inuser2;
 
     // STATE
+    VMemberMap memberMap;  // Member names cached for fast lookup
     AstNodeModule* m_modp = nullptr;  // Current module
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
@@ -213,7 +215,7 @@ private:
         }
     }
     void addPrePostCall(AstClass* classp, AstFunc* funcp, const string& name) {
-        if (AstTask* userFuncp = VN_CAST(classp->findMember(name), Task)) {
+        if (AstTask* userFuncp = VN_CAST(memberMap.findMember(classp, name), Task)) {
             AstTaskRef* const callp
                 = new AstTaskRef{userFuncp->fileline(), userFuncp->name(), nullptr};
             callp->taskp(userFuncp);
@@ -380,7 +382,8 @@ void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
 }
 
 AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep) {
-    AstFunc* funcp = VN_AS(nodep->findMember("randomize"), Func);
+    VMemberMap memberMap;
+    AstFunc* funcp = VN_AS(memberMap.findMember(nodep, "randomize"), Func);
     if (!funcp) {
         v3Global.useRandomizeMethods(true);
         AstNodeDType* const dtypep
@@ -403,8 +406,9 @@ AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep) {
 }
 
 AstFunc* V3Randomize::newSRandomFunc(AstClass* nodep) {
+    VMemberMap memberMap;
     AstClass* const basep = nodep->baseMostClassp();
-    AstFunc* funcp = VN_AS(basep->findMember("srandom"), Func);
+    AstFunc* funcp = VN_AS(memberMap.findMember(basep, "srandom"), Func);
     if (!funcp) {
         v3Global.useRandomizeMethods(true);
         AstNodeDType* const dtypep

@@ -70,6 +70,7 @@
 
 #include "V3Const.h"
 #include "V3Global.h"
+#include "V3MemberMap.h"
 #include "V3Number.h"
 #include "V3Randomize.h"
 #include "V3String.h"
@@ -223,6 +224,7 @@ private:
     using DTypeMap = std::map<const std::string, AstPatMember*>;
 
     // STATE
+    VMemberMap memberMap;  // Member names cached for fast lookup
     WidthVP* m_vup = nullptr;  // Current node state
     AstClass* m_classp = nullptr;  // Current class
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
@@ -2576,7 +2578,6 @@ private:
         // if (debug() >= 9) nodep->dumpTree("-  class-in: ");
         if (!nodep->packed() && v3Global.opt.structsPacked()) nodep->packed(true);
         userIterateChildren(nodep, nullptr);  // First size all members
-        nodep->repairMemberCache();
         nodep->dtypep(nodep);
         nodep->isFourstate(false);
         // Error checks
@@ -2629,7 +2630,7 @@ private:
         if (nodep->didWidthAndSet()) return;
         // If the package is std::process, set m_process type to VlProcessRef
         if (m_pkgp && m_pkgp->name() == "std" && nodep->name() == "process") {
-            if (AstVar* const varp = VN_CAST(nodep->findMember("m_process"), Var)) {
+            if (AstVar* const varp = VN_CAST(memberMap.findMember(nodep, "m_process"), Var)) {
                 AstBasicDType* const dtypep = new AstBasicDType{
                     nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
                 v3Global.rootp()->typeTablep()->addTypesp(dtypep);
@@ -2807,7 +2808,6 @@ private:
         // No need to width-resolve the interface, as it was done when we did the child
         AstNodeModule* const ifacep = adtypep->ifacep();
         UASSERT_OBJ(ifacep, nodep, "Unlinked");
-        // if (AstNode* const foundp = ifacep->findMember(nodep->name())) return foundp;
         VSpellCheck speller;
         for (AstNode* itemp = ifacep->stmtsp(); itemp; itemp = itemp->nextp()) {
             if (itemp->name() == nodep->name()) return itemp;
@@ -2824,7 +2824,8 @@ private:
     }
     bool memberSelStruct(AstMemberSel* nodep, AstNodeUOrStructDType* adtypep) {
         // Returns true if ok
-        if (AstMemberDType* const memberp = adtypep->findMember(nodep->name())) {
+        if (AstMemberDType* const memberp
+            = VN_CAST(memberMap.findMember(adtypep, nodep->name()), MemberDType)) {
             if (m_attrp) {  // Looking for the base of the attribute
                 nodep->dtypep(memberp);
                 UINFO(9, "   MEMBERSEL(attr) -> " << nodep << endl);
@@ -3489,8 +3490,10 @@ private:
         AstClass* const first_classp = adtypep->classp();
         if (nodep->name() == "randomize") {
             V3Randomize::newRandomizeFunc(first_classp);
+            memberMap.clear();
         } else if (nodep->name() == "srandom") {
             V3Randomize::newSRandomFunc(first_classp);
+            memberMap.clear();
         }
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
@@ -3783,7 +3786,7 @@ private:
 
             classp = refp->classp();
             UASSERT_OBJ(classp, nodep, "Unlinked");
-            if (AstNodeFTask* const ftaskp = VN_CAST(classp->findMember("new"), Func)) {
+            if (AstNodeFTask* const ftaskp = VN_CAST(memberMap.findMember(classp, "new"), Func)) {
                 nodep->taskp(ftaskp);
                 nodep->classOrPackagep(classp);
             } else {
@@ -3951,7 +3954,8 @@ private:
                         // '{member:value} or '{data_type: default_value}
                         if (const AstText* textp = VN_CAST(patp->keyp(), Text)) {
                             // member: value
-                            memp = vdtypep->findMember(textp->text());
+                            memp = VN_CAST(memberMap.findMember(vdtypep, textp->text()),
+                                           MemberDType);
                             if (!memp) {
                                 patp->keyp()->v3error("Assignment pattern key '"
                                                       << textp->text() << "' not found as member");
@@ -5596,8 +5600,10 @@ private:
             }
             if (nodep->name() == "randomize") {
                 nodep->taskp(V3Randomize::newRandomizeFunc(m_classp));
+                memberMap.clear();
             } else if (nodep->name() == "srandom") {
                 nodep->taskp(V3Randomize::newSRandomFunc(m_classp));
+                memberMap.clear();
             } else if (nodep->name() == "get_randstate") {
                 methodOkArguments(nodep, 0, 0);
                 m_classp->baseMostClassp()->needRNG(true);

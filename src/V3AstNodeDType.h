@@ -199,12 +199,9 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     // A struct or union; common handling
     // @astgen op1 := membersp : List[AstMemberDType]
 private:
-    // TYPES
-    using MemberNameMap = std::map<const std::string, AstMemberDType*>;
     // MEMBERS
     string m_name;  // Name from upper typedef, if any
     AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
-    MemberNameMap m_members;
     const int m_uniqueNum;
     bool m_packed;
     bool m_isFourstate = false;  // V3Width computes
@@ -250,12 +247,6 @@ public:
     static bool packedUnsup() { return true; }
     void isFourstate(bool flag) { m_isFourstate = flag; }
     bool isFourstate() const override VL_MT_SAFE { return m_isFourstate; }
-    void clearCache() { m_members.clear(); }
-    void repairMemberCache();
-    AstMemberDType* findMember(const string& name) const {
-        const auto it = m_members.find(name);
-        return (it == m_members.end()) ? nullptr : it->second;
-    }
     static int lo() { return 0; }
     int hi() const { return dtypep()->width() - 1; }  // Packed classes look like arrays
     VNumRange declRange() const { return VNumRange{hi(), lo()}; }

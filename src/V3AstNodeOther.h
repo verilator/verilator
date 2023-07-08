@@ -2187,6 +2187,7 @@ public:
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
     // Return the lowest class extended from, or this class
     AstClass* baseMostClassp();
+    static bool isCacheableChild(const AstNode* nodep);
 };
 class AstClassPackage final : public AstNodeModule {
     // The static information portion of a class (treated similarly to a package)

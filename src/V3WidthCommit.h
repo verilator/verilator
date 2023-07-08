@@ -190,7 +190,6 @@ private:
     void visit(AstNodeUOrStructDType* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         visitIterateNodeDType(nodep);
-        nodep->clearCache();
     }
     void visit(AstParamTypeDType* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
