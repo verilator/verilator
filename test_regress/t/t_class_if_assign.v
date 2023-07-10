@@ -31,8 +31,11 @@ module t (/*AUTOARG*/);
 
       if (cls.x == 1) cls = ext_cls;
       else cls = an_ext_cls;
-
       if (cls.x != 2) $stop;
+
+      if (cls.x == 1) cls = ext_cls;
+      else cls = an_ext_cls;
+      if (cls.x != 3) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
