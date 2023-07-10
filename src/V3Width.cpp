@@ -617,9 +617,11 @@ private:
         }
         if (m_vup->final()) {
             if (nodep->lhsp()->isString() || nodep->rhsp()->isString()) {
-                AstNode* const newp
-                    = new AstConcatN{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-                                     nodep->rhsp()->unlinkFrBack()};
+                AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
+                AstNodeExpr* rhsp = nodep->rhsp()->unlinkFrBack();
+                if (!lhsp->isString()) lhsp = new AstCvtPackString{lhsp->fileline(), lhsp};
+                if (!rhsp->isString()) rhsp = new AstCvtPackString{rhsp->fileline(), rhsp};
+                AstNode* const newp = new AstConcatN{nodep->fileline(), lhsp, rhsp};
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
