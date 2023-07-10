@@ -17,6 +17,7 @@ import enum
 from enum import Enum
 import multiprocessing
 import tempfile
+import re
 
 import clang.cindex
 from clang.cindex import (
@@ -301,7 +302,7 @@ class CallAnnotationsValidator:
 
         self._index = Index.create()
 
-        # Map key represents translation unit defines
+        # Map key represents translation unit initial defines (from command line and source's lines before any include)
         self._processed_headers: dict[str, set[str]] = {}
         self._external_decls: dict[str, set[tuple[str, int]]] = {}
 
@@ -318,6 +319,25 @@ class CallAnnotationsValidator:
 
     def is_constructor_context(self):
         return len(self._constructor_context) > 0
+
+    # Parses all lines in a form: `#define KEY VALUE` located before any `#include` line.
+    # The parsing is very simple, there is no support for line breaks, etc.
+    @staticmethod
+    def parse_initial_defines(source_file: str) -> dict[str, str]:
+        defs: dict[str, str] = {}
+        with open(source_file, "r") as f:
+            for line in f:
+                line = line.strip()
+                m = re.fullmatch(
+                    r"^#\s*(define\s+(\w+)(?:\s+(.*))?|include\s+.*)$", line)
+                if m:
+                    if m.group(1).startswith("define"):
+                        key = m.group(2)
+                        value = m.groups("1")[2]
+                        defs[key] = value
+                    elif m.group(1).startswith("include"):
+                        break
+        return defs
 
     @staticmethod
     def filter_out_unsupported_compiler_args(
@@ -393,6 +413,7 @@ class CallAnnotationsValidator:
 
         filtered_args, defines = self.filter_out_unsupported_compiler_args(
             compiler_args)
+        defines.update(self.parse_initial_defines(source_file))
 
         if build_dir:
             initial_cwd = os.getcwd()
