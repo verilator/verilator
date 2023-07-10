@@ -303,7 +303,7 @@ class CallAnnotationsValidator:
 
         # Map key represents translation unit defines
         self._processed_headers: dict[str, set[str]] = {}
-        self._external_decls: dict[str, tuple[str, int]] = {}
+        self._external_decls: dict[str, set[tuple[str, int]]] = {}
 
         # Current context
         self._main_source_file: str = ""
