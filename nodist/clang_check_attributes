@@ -10,7 +10,7 @@ import argparse
 import os
 import sys
 import shlex
-from typing import Callable, Iterable, Optional, Union
+from typing import Callable, Iterable, Optional, Union, TYPE_CHECKING
 import dataclasses
 from dataclasses import dataclass
 import enum
@@ -20,12 +20,25 @@ import tempfile
 
 import clang.cindex
 from clang.cindex import (
-    CursorKind,
     Index,
     TranslationUnitSaveError,
     TranslationUnitLoadError,
     CompilationDatabase,
 )
+
+if not TYPE_CHECKING:
+    from clang.cindex import CursorKind
+else:
+    # Workaround for missing support for members defined out-of-class in Pylance:
+    # https://github.com/microsoft/pylance-release/issues/2365#issuecomment-1035803067
+
+    class CursorKindMeta(type):
+
+        def __getattr__(cls, name: str) -> clang.cindex.CursorKind:
+            return getattr(clang.cindex.CursorKind, name)
+
+    class CursorKind(clang.cindex.CursorKind, metaclass=CursorKindMeta):
+        pass
 
 
 def fully_qualified_name(node):
