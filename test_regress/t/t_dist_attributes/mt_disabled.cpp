@@ -12,6 +12,8 @@
 //
 //*************************************************************************
 
+#define VL_MT_DISABLED_CODE_UNIT 1
+
 #include "mt_disabled.h"
 #include "mt_enabled.h"
 

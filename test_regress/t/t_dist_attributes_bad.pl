@@ -38,8 +38,7 @@ sub gen_compile_commands_json {
         {"directory" => "$srcs_dir",
          "file" => "$srcs_dir/mt_disabled.cpp",
          "output" => undef,
-         "arguments" => [@common_args,
-                         "-DVL_MT_DISABLED_CODE_UNIT=1"]},
+         "arguments" => [@common_args]},
     ];
 
     my @srcfiles;
