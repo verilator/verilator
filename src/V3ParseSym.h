@@ -119,7 +119,7 @@ public:
         if (VL_UNCOVERABLE(symCurrentp()->nodep() != nodep)) {  // LCOV_EXCL_START
             if (debug()) {
                 showUpward();
-                dumpSelf(cout, "-mism: ");
+                dumpSelf(std::cout, "-mism: ");
             }
             nodep->v3fatalSrc("Symbols suggest ending " << symCurrentp()->nodep()->prettyTypeName()
                                                         << " but parser thinks ending "

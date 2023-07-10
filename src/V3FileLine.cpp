@@ -433,6 +433,12 @@ string FileLine::source() const VL_MT_SAFE {
     }  // LCOV_EXCL_STOP
     return m_contentp->getLine(m_contentLineno);
 }
+string FileLine::sourcePrefix(int toColumn) const VL_MT_SAFE {
+    const std::string src = source();
+    if (toColumn > static_cast<int>(src.length())) toColumn = static_cast<int>(src.length());
+    if (toColumn < 1) return "";
+    return src.substr(0, toColumn - 1);
+}
 string FileLine::prettySource() const VL_MT_SAFE {
     string out = source();
     // Drop ignore trailing newline

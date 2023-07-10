@@ -70,6 +70,7 @@
 
 #include "V3Const.h"
 #include "V3Global.h"
+#include "V3MemberMap.h"
 #include "V3Number.h"
 #include "V3Randomize.h"
 #include "V3String.h"
@@ -223,6 +224,7 @@ private:
     using DTypeMap = std::map<const std::string, AstPatMember*>;
 
     // STATE
+    VMemberMap memberMap;  // Member names cached for fast lookup
     WidthVP* m_vup = nullptr;  // Current node state
     AstClass* m_classp = nullptr;  // Current class
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
@@ -729,19 +731,12 @@ private:
         //   width: value(LHS) * width(RHS)
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
-            V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
+            V3Const::constifyParamsNoWarnEdit(nodep->rhsp());  // rhsp may change
+
+            uint32_t times = 1;
+
             const AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
-            if (!constp) {
-                nodep->v3error("Replication value isn't a constant.");
-                return;
-            }
-            uint32_t times = constp->toUInt();
-            if (times == 0
-                && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
-                nodep->v3error("Replication value of 0 is only legal under a concatenation"
-                               " (IEEE 1800-2017 11.4.12.1)");
-                times = 1;
-            }
+            if (constp) times = constp->toUInt();
 
             AstNodeDType* const vdtypep = m_vup->dtypeNullSkipRefp();
             if (VN_IS(vdtypep, QueueDType) || VN_IS(vdtypep, DynArrayDType)
@@ -775,7 +770,7 @@ private:
                                                  << vdtypep->prettyDTypeNameQ() << " data type");
             }
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
-            if (nodep->lhsp()->isString()) {
+            if ((vdtypep && vdtypep->isString()) || nodep->lhsp()->isString()) {
                 AstNode* const newp
                     = new AstReplicateN{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
                                         nodep->rhsp()->unlinkFrBack()};
@@ -783,6 +778,13 @@ private:
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             } else {
+                if (!constp) nodep->v3error("Replication value isn't a constant.");
+                if (times == 0
+                    && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
+                    nodep->v3error("Replication value of 0 is only legal under a concatenation"
+                                   " (IEEE 1800-2017 11.4.12.1)");
+                    times = 1;  // Set to 1, so we can continue looking for errors
+                }
                 nodep->dtypeSetLogicUnsized((nodep->lhsp()->width() * times),
                                             (nodep->lhsp()->widthMin() * times),
                                             VSigning::UNSIGNED);
@@ -801,18 +803,7 @@ private:
         if (m_vup->prelim()) {
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
-            V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
-            const AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
-            if (!constp) {
-                nodep->v3error("Replication value isn't a constant.");
-                return;
-            }
-            const uint32_t times = constp->toUInt();
-            if (times == 0
-                && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
-                nodep->v3error("Replication value of 0 is only legal under a concatenation"
-                               " (IEEE 1800-2017 11.4.12.1)");
-            }
+            V3Const::constifyParamsNoWarnEdit(nodep->rhsp());  // rhsp may change
             nodep->dtypeSetString();
         }
         if (m_vup->final()) {
@@ -2121,6 +2112,10 @@ private:
                 v3Global.rootp()->typeTablep()->addTypesp(newp);
             }
         }
+        if (AstWildcardArrayDType* const wildp
+            = VN_CAST(nodep->dtypeSkipRefp(), WildcardArrayDType)) {
+            nodep->dtypep(wildp);  // Skip RefDType like for other dynamic array types
+        }
         if (VN_IS(nodep->dtypep()->skipRefToConstp(), ConstDType)) nodep->isConst(true);
         // Parameters if implicit untyped inherit from what they are assigned to
         const AstBasicDType* const bdtypep = VN_CAST(nodep->dtypep(), BasicDType);
@@ -2583,7 +2578,6 @@ private:
         // if (debug() >= 9) nodep->dumpTree("-  class-in: ");
         if (!nodep->packed() && v3Global.opt.structsPacked()) nodep->packed(true);
         userIterateChildren(nodep, nullptr);  // First size all members
-        nodep->repairMemberCache();
         nodep->dtypep(nodep);
         nodep->isFourstate(false);
         // Error checks
@@ -2636,7 +2630,7 @@ private:
         if (nodep->didWidthAndSet()) return;
         // If the package is std::process, set m_process type to VlProcessRef
         if (m_pkgp && m_pkgp->name() == "std" && nodep->name() == "process") {
-            if (AstVar* const varp = VN_CAST(nodep->findMember("m_process"), Var)) {
+            if (AstVar* const varp = VN_CAST(memberMap.findMember(nodep, "m_process"), Var)) {
                 AstBasicDType* const dtypep = new AstBasicDType{
                     nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
                 v3Global.rootp()->typeTablep()->addTypesp(dtypep);
@@ -2650,7 +2644,6 @@ private:
         m_classp = nodep;
         userIterateAndNext(nodep->extendsp(), nullptr);
         userIterateChildren(nodep, nullptr);  // First size all members
-        nodep->repairCache();
     }
     void visit(AstPackage* nodep) override {
         VL_RESTORER(m_pkgp);
@@ -2755,7 +2748,7 @@ private:
         AstClass* const first_classp = adtypep->classp();
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
-            if (AstNode* const foundp = classp->findMember(nodep->name())) {
+            if (AstNode* const foundp = memberMap.findMember(classp, nodep->name())) {
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
                     if (!varp->didWidth()) userIterate(varp, nullptr);
                     if (varp->lifetime().isStatic()) {
@@ -2814,7 +2807,6 @@ private:
         // No need to width-resolve the interface, as it was done when we did the child
         AstNodeModule* const ifacep = adtypep->ifacep();
         UASSERT_OBJ(ifacep, nodep, "Unlinked");
-        // if (AstNode* const foundp = ifacep->findMember(nodep->name())) return foundp;
         VSpellCheck speller;
         for (AstNode* itemp = ifacep->stmtsp(); itemp; itemp = itemp->nextp()) {
             if (itemp->name() == nodep->name()) return itemp;
@@ -2831,7 +2823,8 @@ private:
     }
     bool memberSelStruct(AstMemberSel* nodep, AstNodeUOrStructDType* adtypep) {
         // Returns true if ok
-        if (AstMemberDType* const memberp = adtypep->findMember(nodep->name())) {
+        if (AstMemberDType* const memberp
+            = VN_CAST(memberMap.findMember(adtypep, nodep->name()), MemberDType)) {
             if (m_attrp) {  // Looking for the base of the attribute
                 nodep->dtypep(memberp);
                 UINFO(9, "   MEMBERSEL(attr) -> " << nodep << endl);
@@ -3219,10 +3212,12 @@ private:
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique"
                    || nodep->name() == "unique_index") {
+            AstWith* const withp = methodWithArgument(
+                nodep, false, true, nullptr, nodep->findUInt32DType(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      nodep->name()};
+                                      nodep->name(), withp};
             if (nodep->name() == "unique_index") {
                 newp->dtypep(queueDTypeIndexedBy(adtypep->keyDTypep()));
             } else {
@@ -3494,8 +3489,10 @@ private:
         AstClass* const first_classp = adtypep->classp();
         if (nodep->name() == "randomize") {
             V3Randomize::newRandomizeFunc(first_classp);
+            memberMap.clear();
         } else if (nodep->name() == "srandom") {
             V3Randomize::newSRandomFunc(first_classp);
+            memberMap.clear();
         }
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
@@ -3518,7 +3515,7 @@ private:
                 }
             }
             if (AstNodeFTask* const ftaskp
-                = VN_CAST(classp->findMember(nodep->name()), NodeFTask)) {
+                = VN_CAST(memberMap.findMember(classp, nodep->name()), NodeFTask)) {
                 userIterate(ftaskp, nullptr);
                 if (ftaskp->lifetime().isStatic()) {
                     AstNodeExpr* argsp = nullptr;
@@ -3788,7 +3785,7 @@ private:
 
             classp = refp->classp();
             UASSERT_OBJ(classp, nodep, "Unlinked");
-            if (AstNodeFTask* const ftaskp = VN_CAST(classp->findMember("new"), Func)) {
+            if (AstNodeFTask* const ftaskp = VN_CAST(memberMap.findMember(classp, "new"), Func)) {
                 nodep->taskp(ftaskp);
                 nodep->classOrPackagep(classp);
             } else {
@@ -3956,7 +3953,8 @@ private:
                         // '{member:value} or '{data_type: default_value}
                         if (const AstText* textp = VN_CAST(patp->keyp(), Text)) {
                             // member: value
-                            memp = vdtypep->findMember(textp->text());
+                            memp = VN_CAST(memberMap.findMember(vdtypep, textp->text()),
+                                           MemberDType);
                             if (!memp) {
                                 patp->keyp()->v3error("Assignment pattern key '"
                                                       << textp->text() << "' not found as member");
@@ -5601,8 +5599,10 @@ private:
             }
             if (nodep->name() == "randomize") {
                 nodep->taskp(V3Randomize::newRandomizeFunc(m_classp));
+                memberMap.clear();
             } else if (nodep->name() == "srandom") {
                 nodep->taskp(V3Randomize::newSRandomFunc(m_classp));
+                memberMap.clear();
             } else if (nodep->name() == "get_randstate") {
                 methodOkArguments(nodep, 0, 0);
                 m_classp->baseMostClassp()->needRNG(true);

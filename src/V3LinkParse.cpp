@@ -76,6 +76,8 @@ private:
             // without suppressing other token's messages as a side effect.
             // We could have verilog.l create a new one on every token,
             // but that's a lot more structures than only doing AST nodes.
+            // TODO: Many places copy the filename when suppressing warnings,
+            // perhaps audit to make consistent and this is no longer needed
             if (m_filelines.find(nodep->fileline()) != m_filelines.end()) {
                 nodep->fileline(new FileLine{nodep->fileline()});
             }
@@ -123,6 +125,58 @@ private:
                 && !nodep->nextp()  // No other statements under upper genif else
                 && (VN_IS(nodep->stmtsp(), GenIf))  // Begin has if underneath
                 && !nodep->stmtsp()->nextp());  // Has only one item
+    }
+
+    void checkIndent(AstNode* nodep, AstNode* childp) {
+        // Try very hard to avoid false positives
+        AstNode* nextp = nodep->nextp();
+        if (!childp) return;
+        if (!nextp && VN_IS(nodep, While) && VN_IS(nodep->backp(), Begin))
+            nextp = nodep->backp()->nextp();
+        if (!nextp) return;
+        if (VN_IS(childp, Begin)) return;
+        FileLine* const nodeFlp = nodep->fileline();
+        FileLine* const childFlp = childp->fileline();
+        FileLine* const nextFlp = nextp->fileline();
+        // UINFO(0, "checkInd " << nodeFlp->firstColumn() << " " << nodep << endl);
+        // UINFO(0, "  child  " << childFlp->firstColumn() << " " << childp << endl);
+        // UINFO(0, " next    " << nextFlp->firstColumn() << " " << nextp << endl);
+        // Same filename, later line numbers (no macro magic going on)
+        if (nodeFlp->filenameno() != childFlp->filenameno()) return;
+        if (nodeFlp->filenameno() != nextFlp->filenameno()) return;
+        if (nodeFlp->lastLineno() >= childFlp->firstLineno()) return;
+        if (childFlp->lastLineno() >= nextFlp->firstLineno()) return;
+        // This block has indent 'a'
+        // Child block has indent 'b' where indent('b') > indent('a')
+        // Next block has indent 'b'
+        // (note similar code below)
+        if (!(nodeFlp->firstColumn() < childFlp->firstColumn()
+              && nextFlp->firstColumn() >= childFlp->firstColumn()))
+            return;
+        // Might be a tab difference in spaces up to the node prefix, if so
+        // just ignore this warning
+        // Note it's correct we look at nodep's column in all of these
+        const std::string nodePrefix = nodeFlp->sourcePrefix(nodeFlp->firstColumn());
+        const std::string childPrefix = childFlp->sourcePrefix(nodeFlp->firstColumn());
+        const std::string nextPrefix = nextFlp->sourcePrefix(nodeFlp->firstColumn());
+        if (childPrefix != nodePrefix) return;
+        if (nextPrefix != childPrefix) return;
+        // Some file lines start after the indentation, so make another check
+        // using actual file contents
+        const std::string nodeSource = nodeFlp->source();
+        const std::string childSource = childFlp->source();
+        const std::string nextSource = nextFlp->source();
+        if (!(VString::leadingWhitespaceCount(nodeSource)
+                  < VString::leadingWhitespaceCount(childSource)
+              && VString::leadingWhitespaceCount(nextSource)
+                     >= VString::leadingWhitespaceCount(childSource)))
+            return;
+        nextp->v3warn(MISINDENT,
+                      "Misleading indentation\n"
+                          << nextp->warnContextPrimary() << '\n'
+                          << nodep->warnOther()
+                          << "... Expected indentation matching this earlier statement's line:\n"
+                          << nodep->warnContextSecondary());
     }
 
     // VISITs
@@ -476,6 +530,7 @@ private:
     void visit(AstForeach* nodep) override {
         // FOREACH(array, loopvars, body)
         UINFO(9, "FOREACH " << nodep << endl);
+        cleanFileline(nodep);
         // Separate iteration vars from base from variable
         // Input:
         //      v--- arrayp
@@ -510,13 +565,16 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstRepeat* nodep) override {
+        cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
         {
             m_insideLoop = true;
+            checkIndent(nodep, nodep->stmtsp());
             iterateChildren(nodep);
         }
     }
     void visit(AstDoWhile* nodep) override {
+        cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
         {
             m_insideLoop = true;
@@ -524,9 +582,11 @@ private:
         }
     }
     void visit(AstWhile* nodep) override {
+        cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
         {
             m_insideLoop = true;
+            checkIndent(nodep, nodep->stmtsp());
             iterateChildren(nodep);
         }
     }
@@ -580,14 +640,25 @@ private:
         // The genblk name will get attached to the if true/false LOWER begin block(s)
         const bool nestedIf = nestedIfBegin(nodep);
         // It's not FOR(BEGIN(...)) but we earlier changed it to BEGIN(FOR(...))
+        int assignGenBlkNum = -1;
         if (nodep->genforp()) {
             ++m_genblkNum;
-            if (nodep->name() == "") nodep->name("genblk" + cvtToStr(m_genblkNum));
+            if (nodep->name() == "") assignGenBlkNum = m_genblkNum;
+        } else if (nodep->generate() && nodep->name() == "" && assignGenBlkNum == -1
+                   && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf)) && !nestedIf) {
+            assignGenBlkNum = m_genblkAbove;
         }
-        if (nodep->generate() && nodep->name() == ""
-            && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf)) && !nestedIf) {
-            nodep->name("genblk" + cvtToStr(m_genblkAbove));
+        if (assignGenBlkNum != -1) {
+            nodep->name("genblk" + cvtToStr(assignGenBlkNum));
+            if (nodep->stmtsp()) {
+                nodep->v3warn(GENUNNAMED,
+                              "Unnamed generate block "
+                                  << nodep->prettyNameQ() << " (IEEE 1800-2017 27.6)"
+                                  << nodep->warnMore()
+                                  << "... Suggest assign a label with 'begin : gen_<label_name>'");
+            }
         }
+
         if (nodep->name() != "") {
             VL_RESTORER(m_genblkAbove);
             VL_RESTORER(m_genblkNum);
@@ -611,6 +682,7 @@ private:
     }
     void visit(AstGenIf* nodep) override {
         cleanFileline(nodep);
+        checkIndent(nodep, nodep->elsesp() ? nodep->elsesp() : nodep->thensp());
         const bool nestedIf
             = (VN_IS(nodep->backp(), Begin) && nestedIfBegin(VN_CAST(nodep->backp(), Begin)));
         if (nestedIf) {
@@ -655,6 +727,11 @@ private:
             }
         }
     }
+    void visit(AstIf* nodep) override {
+        cleanFileline(nodep);
+        checkIndent(nodep, nodep->elsesp() ? nodep->elsesp() : nodep->thensp());
+        iterateChildren(nodep);
+    }
     void visit(AstPrintTimeScale* nodep) override {
         // Inlining may change hierarchy, so just save timescale where needed
         cleanFileline(nodep);
@@ -683,6 +760,7 @@ private:
         nodep->timeunit(m_modp->timeunit());
     }
     void visit(AstTimeUnit* nodep) override {
+        cleanFileline(nodep);
         iterateChildren(nodep);
         nodep->timeunit(m_modp->timeunit());
     }
@@ -711,6 +789,7 @@ private:
         }
     }
     void visit(AstClocking* nodep) override {
+        cleanFileline(nodep);
         VL_RESTORER(m_defaultInSkewp);
         VL_RESTORER(m_defaultOutSkewp);
         // Find default input and output skews
@@ -745,6 +824,7 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstClockingItem* nodep) override {
+        cleanFileline(nodep);
         if (nodep->direction() == VDirection::OUTPUT) {
             if (!nodep->skewp()) {
                 if (m_defaultOutSkewp) {

@@ -52,14 +52,6 @@
                                                    : ... In instance t
    23 |       sel2 = mi[nonconst];
       |            ^
-%Error: t/t_select_bad_range4.v:24:17: Expecting expression to be constant, but variable isn't const: 'nonconst'
-                                     : ... In instance t
-   24 |       sel2 = mi[nonconst : nonconst];
-      |                 ^~~~~~~~
-%Error: t/t_select_bad_range4.v:24:28: Expecting expression to be constant, but variable isn't const: 'nonconst'
-                                     : ... In instance t
-   24 |       sel2 = mi[nonconst : nonconst];
-      |                            ^~~~~~~~
 %Error: t/t_select_bad_range4.v:24:17: First value of [a:b] isn't a constant, maybe you want +: or -:
                                      : ... In instance t
    24 |       sel2 = mi[nonconst : nonconst];

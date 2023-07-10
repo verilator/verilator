@@ -23,7 +23,8 @@ module t (/*AUTOARG*/
       begin
          // Type
          typedef bit [3:0] nibble_t;
-         string a [nibble_t];
+         typedef string dict_t [nibble_t];
+         dict_t a;
          string b [nibble_t];
          nibble_t k;
          string v;

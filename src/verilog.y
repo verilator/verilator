@@ -2753,12 +2753,14 @@ genItemBegin<nodep>:            // IEEE: part of generate_block
                         { $$ = new AstBegin{$<fl>1, *$1, $4, true, false};
                           GRAMMARP->endLabel($<fl>6, *$1, $6); }
         |       id yP_COLON__BEGIN yBEGIN yEND endLabelE
-                        { $$ = nullptr; GRAMMARP->endLabel($<fl>5, *$1, $5); }
+                        { $$ = new AstBegin{$<fl>1, *$1, nullptr, true, false};
+                          GRAMMARP->endLabel($<fl>5, *$1, $5); }
         |       yBEGIN ':' idAny ~c~genItemList yEND endLabelE
                         { $$ = new AstBegin{$<fl>3, *$3, $4, true, false};
                           GRAMMARP->endLabel($<fl>6, *$3, $6); }
         |       yBEGIN ':' idAny yEND endLabelE
-                        { $$ = nullptr; GRAMMARP->endLabel($<fl>5, *$3, $5); }
+                        { $$ = new AstBegin{$<fl>3, *$3, nullptr, true, false};
+                          GRAMMARP->endLabel($<fl>5, *$3, $5); }
         ;
 
 c_genItemBegin<nodep>:  // IEEE: part of generate_block (for checkers)
@@ -5186,7 +5188,7 @@ let_port_list<nodep>:   // IEEE: let_port_list
         ;
 
 let_port_item<nodep>:   // IEEE: let_port_Item
-	//			// IEEE: Expanded let_formal_type
+        //                      // IEEE: Expanded let_formal_type
                 yUNTYPED idAny/*formal_port_identifier*/ variable_dimensionListE exprEqE
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: let untyped ports"); }
         |       data_type id/*formal_port_identifier*/ variable_dimensionListE exprEqE

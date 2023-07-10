@@ -2137,17 +2137,13 @@ public:
 // === AstNodeModule ===
 class AstClass final : public AstNodeModule {
     // @astgen op4 := extendsp : List[AstClassExtends]
-    // TYPES
-    using MemberNameMap = std::map<const std::string, AstNode*>;
     // MEMBERS
-    MemberNameMap m_members;  // Members or method children
     AstClassPackage* m_classOrPackagep = nullptr;  // Class package this is under
     bool m_extended = false;  // Is extension or extended by other classes
     bool m_interfaceClass = false;  // Interface class
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
     bool m_virtual = false;  // Virtual class
     bool m_parameterized = false;  // Parameterized class
-    void insertCache(AstNode* nodep);
 
 public:
     AstClass(FileLine* fl, const string& name)
@@ -2162,16 +2158,7 @@ public:
     AstClassPackage* classOrPackagep() const VL_MT_SAFE { return m_classOrPackagep; }
     void classOrPackagep(AstClassPackage* classpackagep) { m_classOrPackagep = classpackagep; }
     AstNode* membersp() const { return stmtsp(); }
-    void addMembersp(AstNode* nodep) {
-        insertCache(nodep);
-        addStmtsp(nodep);
-    }
-    void clearCache() { m_members.clear(); }
-    void repairCache();
-    AstNode* findMember(const string& name) const {
-        const auto it = m_members.find(name);
-        return (it == m_members.end()) ? nullptr : it->second;
-    }
+    void addMembersp(AstNode* nodep) { addStmtsp(nodep); }
     bool isExtended() const { return m_extended; }
     void isExtended(bool flag) { m_extended = flag; }
     bool isInterfaceClass() const { return m_interfaceClass; }
@@ -2187,6 +2174,7 @@ public:
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
     // Return the lowest class extended from, or this class
     AstClass* baseMostClassp();
+    static bool isCacheableChild(const AstNode* nodep);
 };
 class AstClassPackage final : public AstNodeModule {
     // The static information portion of a class (treated similarly to a package)

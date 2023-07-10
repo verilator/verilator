@@ -416,7 +416,7 @@ foreach(astgen_name ${ASTGENERATED_NAMES})
         MAIN_DEPENDENCY ${astgen_name}.cpp
         DEPENDS ${ASTGEN} V3Ast.h
         COMMAND ${PYTHON3} ARGS
-            ${ASTGEN} -I"${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h ${astgen_name}.cpp
+            ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h ${astgen_name}.cpp
     )
     list(APPEND GENERATED_FILES ${astgen_name}__gen.cpp)
 endforeach()

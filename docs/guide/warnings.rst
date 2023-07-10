@@ -670,6 +670,52 @@ List Of Warnings
    used as a clock.
 
 
+.. option:: GENUNNAMED
+
+   Warns that a generate block was unnamed and "genblk" will be used per
+   IEEE.
+
+   The potential issue is that adding additional generate blocks will
+   renumber the assigned names, which may cause evental problems with
+   synthesis constraints or other tools that depend on hierarchical paths
+   remaining consistend.
+
+   Blocks that are empty may not be reported with this warning, as no
+   scopes are created for empty blocks, so there is no harm in having them
+   unnamed.
+
+   Disabled by default as this is a code-style warning; it will simulate
+   correctly.
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+         generate
+            if (PARAM == 1) begin  //<--- Warning
+            end
+
+   Results in:
+
+   .. code-block::
+
+         %Warning-GENUNNAMED: example.v:2:9: Unnamed generate block (IEEE 1800-2017 27.6)
+
+   To fix this assign a label (often with the naming convention prefix of
+   'gen_' or 'g_'), for example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+         generate
+            if (PARAM == 1) begin : gen_param_1  //<--- Repaired
+            end
+
+   Other tools with similar warnings: Verible's generate-label, "All
+   generate block statements must have a label."
+
+
 .. option:: HIERBLOCK
 
    Warns that the top module is marked as a hierarchy block by the
@@ -904,10 +950,10 @@ List Of Warnings
    forked process, that was delayed by 20 units of time in this example. Thus,
    there's no viable stack allocation for it.
 
-   In order to fix it, you can create a local copy of the varible for
-   each process, if you don't intend to share its state outside of those processes.
+   In order to fix it, if the intent is not to share the variable's state outside
+   of the process, then create a local copy of the variable.
 
-   Eg.:
+   For example:
 
    .. code-block:: sv
       :linenos:
@@ -951,7 +997,7 @@ List Of Warnings
 
    .. code-block:: sv
       :linenos:
-      :emphasize-lines: 2q
+      :emphasize-lines: 2
 
          class Wrapper;
             int m_var;
@@ -991,6 +1037,51 @@ List Of Warnings
 
    Warns that minimum, typical, and maximum delay expressions are currently
    unsupported. Verilator uses only the typical delay value.
+
+
+.. option:: MISINDENT
+
+   Warns that the indentation of a statement is misleading, suggesting the
+   statement is part of a previous :code:`if` or :code:`while` block while
+   it is not.
+
+   Verilator suppresses this check when there is an inconsistent mix of
+   spaces and tabs, as it cannot ensure the width of tabs.  Verilator also
+   ignores blocks with :code:`begin`/:code:`end`, as the :code:`end`
+   visually indicates the earlier statement's end.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+   For example
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 3
+
+         if (something)
+            statement_in_if;
+            statement_not_in_if;  //<--- Warning
+
+   Results in:
+
+   .. code-block::
+
+         %Warning-MISINDENT: example.v:3:9: Misleading indentation
+
+   To fix this repair the indentation to match the correct earlier
+   statement, for example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 3
+
+         if (something)
+            statement_in_if;
+         statement_not_in_if;  //<--- Repaired
+
+   Other tools with similar warnings: GCC -Wmisleading-indentation,
+   clang-tidy readability-misleading-indentation.
 
 
 .. option:: MODDUP

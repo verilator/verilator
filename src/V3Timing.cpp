@@ -53,6 +53,7 @@
 #include "V3Const.h"
 #include "V3EmitV.h"
 #include "V3Graph.h"
+#include "V3MemberMap.h"
 #include "V3SenExprBuilder.h"
 #include "V3SenTree.h"
 #include "V3UniqueNames.h"
@@ -114,6 +115,7 @@ private:
     const VNUser3InUse m_user3InUse;
 
     // STATE
+    VMemberMap memberMap;  // Member names cached for fast lookup
     AstClass* m_classp = nullptr;  // Current class
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     V3Graph m_depGraph;  // Dependency graph where a node is a dependency of another if it being
@@ -164,8 +166,6 @@ private:
         TimingDependencyVertex* const vxp = getDependencyVertex(nodep);
         if (nodep->needProcess()) nodep->user2(T_PROC);
         if (!m_classp) return;
-        // If class method (possibly overrides another method)
-        if (!m_classp->user1SetOnce()) m_classp->repairCache();
 
         // Go over overridden functions
 
@@ -182,9 +182,8 @@ private:
                 // actually overridden by our method. If this causes a problem, traverse to
                 // the root of the inheritance hierarchy and check if the original method is
                 // virtual or not.
-                if (!cextp->classp()->user1SetOnce()) cextp->classp()->repairCache();
                 if (auto* const overriddenp
-                    = VN_CAST(cextp->classp()->findMember(nodep->name()), CFunc)) {
+                    = VN_CAST(memberMap.findMember(cextp->classp(), nodep->name()), CFunc)) {
                     setTimingFlag(nodep, overriddenp->user2());
                     if (nodep->user2()
                         < T_PROC) {  // Add a vertex only if the flag can still change
@@ -299,6 +298,7 @@ private:
 
     // Other
     SenTreeFinder m_finder{m_netlistp};  // Sentree finder and uniquifier
+    SenExprBuilder* m_senExprBuilderp = nullptr;  // Sens expression builder for current m_scope
 
     // METHODS
     // Find net delay on the LHS of an assignment
@@ -571,7 +571,12 @@ private:
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
         m_scopep = nodep;
-        iterateChildren(nodep);
+        SenExprBuilder senExprBuilder{m_scopep};
+        {  // Restore m_senExprBuilderp before destroying senExprBuilder
+            VL_RESTORER(m_senExprBuilderp);
+            m_senExprBuilderp = &senExprBuilder;
+            iterateChildren(nodep);
+        }
     }
     void visit(AstActive* nodep) override {
         m_activep = nodep;
@@ -727,14 +732,14 @@ private:
                 = new AstCAwait{flp, evalMethodp, getCreateDynamicTriggerSenTree()};
             awaitEvalp->dtypeSetVoid();
             // Construct the sen expression for this sentree
-            SenExprBuilder senExprBuilder{m_scopep};
+            UASSERT_OBJ(m_senExprBuilderp, nodep, "No SenExprBuilder for this scope");
             auto* const assignp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
-                                                senExprBuilder.build(sensesp).first};
+                                                m_senExprBuilderp->build(sensesp).first};
             // Put all the locals and inits before the trigger eval loop
-            for (AstVar* const varp : senExprBuilder.getAndClearLocals()) {
+            for (AstVar* const varp : m_senExprBuilderp->getAndClearLocals()) {
                 nodep->addHereThisAsNext(varp);
             }
-            for (AstNodeStmt* const stmtp : senExprBuilder.getAndClearInits()) {
+            for (AstNodeStmt* const stmtp : m_senExprBuilderp->getAndClearInits()) {
                 nodep->addHereThisAsNext(stmtp);
             }
             // Create the trigger eval loop, which will await the evaluation step and check the
@@ -743,7 +748,7 @@ private:
                 flp, new AstLogNot{flp, new AstVarRef{flp, trigvscp, VAccess::READ}},
                 awaitEvalp->makeStmt()};
             // Put pre updates before the trigger check and assignment
-            for (AstNodeStmt* const stmtp : senExprBuilder.getAndClearPreUpdates()) {
+            for (AstNodeStmt* const stmtp : m_senExprBuilderp->getAndClearPreUpdates()) {
                 loopp->addStmtsp(stmtp);
             }
             // Then the trigger check and assignment
@@ -756,7 +761,7 @@ private:
                 loopp->addStmtsp(awaitPostUpdatep->makeStmt());
             }
             // Put the post updates at the end of the loop
-            for (AstNodeStmt* const stmtp : senExprBuilder.getAndClearPostUpdates()) {
+            for (AstNodeStmt* const stmtp : m_senExprBuilderp->getAndClearPostUpdates()) {
                 loopp->addStmtsp(stmtp);
             }
             // Finally, await the resumption step in 'act'

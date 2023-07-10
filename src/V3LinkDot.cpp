@@ -69,6 +69,7 @@
 #include "V3Ast.h"
 #include "V3Global.h"
 #include "V3Graph.h"
+#include "V3MemberMap.h"
 #include "V3String.h"
 #include "V3SymTable.h"
 
@@ -3491,15 +3492,16 @@ private:
         // V3Width when determines types needs to find enum values and such
         // so add members pointing to appropriate enum values
         {
-            nodep->repairCache();
+            VMemberMap memberMap;
             for (VSymEnt::const_iterator it = m_curSymp->begin(); it != m_curSymp->end(); ++it) {
                 AstNode* const itemp = it->second->nodep();
-                if (!nodep->findMember(it->first)) {
+                if (!memberMap.findMember(nodep, it->first)) {
                     if (AstEnumItem* const aitemp = VN_CAST(itemp, EnumItem)) {
                         AstEnumItemRef* const newp = new AstEnumItemRef{
                             aitemp->fileline(), aitemp, it->second->classOrPackagep()};
                         UINFO(8, "Class import noderef '" << it->first << "' " << newp << endl);
                         nodep->addMembersp(newp);
+                        memberMap.insert(nodep, newp);
                     }
                 }
             }

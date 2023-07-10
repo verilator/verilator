@@ -46,6 +46,7 @@
 #include "V3Ast.h"
 #include "V3AstNodeExpr.h"
 #include "V3Global.h"
+#include "V3MemberMap.h"
 
 #include <algorithm>
 #include <map>
@@ -122,10 +123,9 @@ public:
         newp->classMethod(true);
         newp->dtypep(newp->findVoidDType());
         m_instance.classp->addStmtsp(newp);
-        m_instance.classp->repairCache();
     }
 
-    void linkNodes() {
+    void linkNodes(VMemberMap& memberMap) {
         UASSERT_OBJ(!linked(), m_instance.handlep, "Handle already linked");
 
         AstNode* stmtp = getProcStmts();
@@ -136,7 +136,7 @@ public:
         UASSERT(stmtp, "no proc body");
 
         AstNew* newp = new AstNew{m_procp->fileline(), nullptr};
-        newp->taskp(VN_AS(m_instance.classp->findMember("new"), NodeFTask));
+        newp->taskp(VN_AS(memberMap.findMember(m_instance.classp, "new"), NodeFTask));
         newp->dtypep(m_instance.refDTypep);
 
         AstNode* asgnp = new AstAssign{
@@ -154,7 +154,7 @@ public:
                 new AstVarRef{varp->fileline(), m_instance.handlep, VAccess::WRITE},
                 varp->dtypep()};
             membersel->name(varp->name());
-            membersel->varp(VN_AS(m_instance.classp->findMember(varp->name()), Var));
+            membersel->varp(VN_AS(memberMap.findMember(m_instance.classp, varp->name()), Var));
             AstNode* initAsgnp = new AstAssign{
                 varp->fileline(), membersel, new AstVarRef{varp->fileline(), varp, VAccess::READ}};
             inits = AstNode::addNext(inits, initAsgnp);
@@ -215,6 +215,7 @@ private:
     AstNodeModule* m_modp = nullptr;  // Module we are currently under
     AstNode* m_procp = nullptr;  // Function/task/block we are currently under
     std::map<AstNode*, DynScopeFrame*> m_frames;  // Mapping from nodes to related DynScopeFrames
+    VMemberMap m_memberMap;
     int m_forkDepth = 0;  // Number of asynchronous forks we are currently under
 
     // METHODS
@@ -244,7 +245,7 @@ private:
         return "__VDynScope_" + (fromp->name().empty() ? cvtToHex(fromp) : fromp->name());
     }
 
-    static void replaceWithMemberSel(AstVarRef* refp, const DynScopeInstance& dynScope) {
+    void replaceWithMemberSel(AstVarRef* refp, const DynScopeInstance& dynScope) {
         // TODO: Handle a case where the variable is function's argument
         VNRelinker handle;
         refp->unlinkFrBack(&handle);
@@ -253,7 +254,7 @@ private:
             refp->dtypep()};
         membersel->name(refp->varp()->name());
         if (VL_UNLIKELY(refp->varp()->direction() == VDirection::INPUT))
-            membersel->varp(VN_AS(dynScope.classp->findMember(refp->varp()->name()), Var));
+            membersel->varp(VN_AS(m_memberMap.findMember(dynScope.classp, refp->varp()->name()), Var));
         else
             membersel->varp(refp->varp());
         handle.relink(membersel);
@@ -347,7 +348,7 @@ public:
 
             if (!frame->linked()) {
                 frame->populateClass();
-                frame->linkNodes();
+                frame->linkNodes(m_memberMap);
                 typesAdded = true;
             }
 
@@ -458,7 +459,6 @@ private:
         }
 
         m_modp->addStmtsp(taskp);
-        if (AstClass* classp = VN_CAST(m_modp, Class)) classp->repairCache();
 
         AstTaskRef* const taskrefp
             = new AstTaskRef{nodep->fileline(), taskp->name(), m_capturedVarRefsp};

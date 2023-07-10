@@ -99,6 +99,7 @@ public:
         ENUMVALUE,      // Error: enum type needs explicit cast
         EOFNEWLINE,     // End-of-file missing newline
         GENCLK,         // Generated Clock. Historical, never issued.
+        GENUNNAMED,     // Generate unnamed, without label
         HIERBLOCK,      // Ignored hierarchical block setting
         IFDEPTH,        // If statements too deep
         IGNOREDRETURN,  // Ignoring return value (function as task)
@@ -114,6 +115,7 @@ public:
         LATCH,          // Latch detected outside of always_latch block
         LITENDIAN,      // Little endian, renamed to ASCRANGE
         MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
+        MISINDENT,      // Misleading indentation
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
@@ -192,11 +194,12 @@ public:
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG",
             "DECLFILENAME", "DEFPARAM", "DEPRECATED",
-            "ENCAPSULATED", "ENDLABEL", "ENUMVALUE", "EOFNEWLINE", "GENCLK", "HIERBLOCK",
+            "ENCAPSULATED", "ENDLABEL", "ENUMVALUE", "EOFNEWLINE", "GENCLK", "GENUNNAMED",
+            "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
-            "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MODDUP",
+            "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP",
             "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
             "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
@@ -235,18 +238,18 @@ public:
         return (m_e == ALWCOMBORDER || m_e == ASCRANGE || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
-                || m_e == LATCH || m_e == NEWERSTD || m_e == PINMISSING || m_e == REALCVT
-                || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC
-                || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
+                || m_e == LATCH || m_e == MISINDENT || m_e == NEWERSTD || m_e == PINMISSING
+                || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH
+                || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
         return (m_e == ASSIGNDLY  // More than style, but for backward compatibility
                 || m_e == BLKSEQ || m_e == DEFPARAM || m_e == DECLFILENAME || m_e == EOFNEWLINE
-                || m_e == IMPORTSTAR || m_e == INCABSPATH || m_e == PINCONNECTEMPTY
-                || m_e == PINNOCONNECT || m_e == SYNCASYNCNET || m_e == UNDRIVEN
-                || m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL
-                || m_e == VARHIDDEN);
+                || m_e == GENUNNAMED || m_e == IMPORTSTAR || m_e == INCABSPATH
+                || m_e == PINCONNECTEMPTY || m_e == PINNOCONNECT || m_e == SYNCASYNCNET
+                || m_e == UNDRIVEN || m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM
+                || m_e == UNUSEDSIGNAL || m_e == VARHIDDEN);
     }
     // Warnings that are unused only
     bool unusedError() const VL_MT_SAFE {
@@ -336,7 +339,7 @@ public:
             v3errorEnd(
                 (v3errorPrep(V3ErrorCode::EC_FATALEXIT),
                  (v3errorStr() << "Exiting due to too many errors encountered; --error-limit="
-                               << errorCount() << endl),
+                               << errorCount() << std::endl),
                  v3errorStr()));
             assert(0);  // LCOV_EXCL_LINE
             VL_UNREACHABLE;
@@ -589,12 +592,12 @@ inline void v3errorEndFatal(std::ostringstream& sstr)
 #define UINFO(level, stmsg) \
     do { \
         if (VL_UNCOVERABLE(debug() >= (level))) { \
-            cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; \
+            std::cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; \
         } \
     } while (false)
 #define UINFONL(level, stmsg) \
     do { \
-        if (VL_UNCOVERABLE(debug() >= (level))) { cout << stmsg; } \
+        if (VL_UNCOVERABLE(debug() >= (level))) { std::cout << stmsg; } \
     } while (false)
 
 #ifdef VL_DEBUG

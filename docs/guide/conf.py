@@ -115,7 +115,6 @@ html_theme = 'sphinx_rtd_theme'
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 html_theme_options = {
-    'analytics_id': 'G-D27B0C9QEB',
     'logo_only': True,
     'style_nav_header_background': "#45acf8",  # Default is #2980B9
     # 'canonical_url':
