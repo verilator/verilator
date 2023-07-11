@@ -1932,7 +1932,7 @@ public:
     void name(const string& name) override { m_name = name; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return false; }
+    bool cleanOut() const override { return true; }
     bool same(const AstNode* samep) const override {
         const AstStructSel* const sp = static_cast<const AstStructSel*>(samep);
         return m_name == sp->m_name;
