@@ -113,7 +113,7 @@ public:
             varp->funcLocal(false);
             varp->varType(VVarType::MEMBER);
             varp->lifetime(VLifetime::AUTOMATIC);
-            varp->usedLoopIdx(false); // No longer unrollable
+            varp->usedLoopIdx(false);  // No longer unrollable
             m_instance.classp->addStmtsp(varp);
         }
 
@@ -253,7 +253,8 @@ private:
             refp->dtypep()};
         membersel->name(refp->varp()->name());
         if (VL_UNLIKELY(refp->varp()->direction() == VDirection::INPUT))
-            membersel->varp(VN_AS(m_memberMap.findMember(dynScope.classp, refp->varp()->name()), Var));
+            membersel->varp(
+                VN_AS(m_memberMap.findMember(dynScope.classp, refp->varp()->name()), Var));
         else
             membersel->varp(refp->varp());
         handle.relink(membersel);
@@ -356,8 +357,7 @@ public:
             }
         }
 
-        if (typesAdded)
-            v3Global.rootp()->typeTablep()->repairCache();
+        if (typesAdded) v3Global.rootp()->typeTablep()->repairCache();
     }
     ~DynScopeVisitor() override = default;
 };
