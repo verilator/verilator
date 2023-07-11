@@ -138,6 +138,7 @@ public:
         AstNew* newp = new AstNew{m_procp->fileline(), nullptr};
         newp->taskp(VN_AS(memberMap.findMember(m_instance.classp, "new"), NodeFTask));
         newp->dtypep(m_instance.refDTypep);
+        newp->classOrPackagep(m_instance.classp);
 
         AstNode* asgnp = new AstAssign{
             m_procp->fileline(),
@@ -160,9 +161,7 @@ public:
             inits = AstNode::addNext(inits, initAsgnp);
         }
         if (inits) AstNode::addNext(asgnp, inits);
-
         stmtp->addHereThisAsNext(m_instance.handlep);
-
         m_modp->addStmtsp(m_instance.classp);
     }
 
@@ -319,7 +318,7 @@ private:
 
         // UASSERT_OBJ(m_forkDepth, nodep, "Frame found, yet not under fork");
 
-        if (needsDynScope(nodep)) {
+        if (needsDynScope(nodep) && m_forkDepth) {
             if (!frame->instance()) frame->createInstancePrototype();
             frame->captureVar(nodep->varp());
         }
