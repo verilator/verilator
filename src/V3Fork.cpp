@@ -55,17 +55,17 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-class DynScopeInstance {
+class DynScopeInstance final {
 public:
     AstClass* classp = nullptr;  // Class for holding variables of dynamic scope
     AstClassRefDType* refDTypep = nullptr;  // RefDType for the above
     AstVar* handlep = nullptr;  // Class handle for holding variables of dynamic scope
 
     // True if the instance exists
-    inline operator bool() const { return classp != nullptr; }
+    operator bool() const { return classp != nullptr; }
 };
 
-class DynScopeFrame {
+class DynScopeFrame final {
 public:
     DynScopeFrame(AstNodeModule* modp, AstNode* procp)
         : m_modp(modp)
@@ -261,7 +261,7 @@ private:
         return afork;
     }
 
-    inline void bindNodeToDynScope(AstNode* nodep, DynScopeFrame* frame) {
+    void bindNodeToDynScope(AstNode* nodep, DynScopeFrame* frame) {
         m_frames.emplace(std::make_pair(nodep, frame));
     }
 
