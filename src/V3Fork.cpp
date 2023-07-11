@@ -78,13 +78,6 @@ public:
         m_instance.refDTypep
             = new AstClassRefDType{m_procp->fileline(), m_instance.classp, nullptr};
         v3Global.rootp()->typeTablep()->addTypesp(m_instance.refDTypep);
-        UASSERT_OBJ(m_modp != m_instance.classp, m_instance.classp,
-                    "Adding self as dynamic scope");
-        UASSERT_OBJ(!m_instance.classp->nextp(), m_instance.classp, "Dynamic scope is not alone");
-        UASSERT_OBJ(!m_instance.classp->backp(), m_instance.classp,
-                    "Dynamic scope is already linked");
-        // AstNode::addNext(m_modp, m_instance.classp);
-
         m_instance.handlep = new AstVar{m_procp->fileline(), VVarType::BLOCKTEMP,
                                         generateDynScopeHandleName(m_procp), m_instance.refDTypep};
         m_instance.handlep->funcLocal(true);
@@ -118,7 +111,7 @@ public:
         }
 
         // Create class's constructor
-        AstFunc* newp = new AstFunc{m_instance.classp->fileline(), "new", nullptr, nullptr};
+        AstFunc* const newp = new AstFunc{m_instance.classp->fileline(), "new", nullptr, nullptr};
         newp->isConstructor(true);
         newp->classMethod(true);
         newp->dtypep(newp->findVoidDType());
@@ -150,7 +143,7 @@ public:
         for (AstVar* varp : m_captures) {
             if (VL_LIKELY(varp->direction() != VDirection::INPUT)) continue;
 
-            AstMemberSel* membersel = new AstMemberSel{
+            AstMemberSel* const membersel = new AstMemberSel{
                 varp->fileline(),
                 new AstVarRef{varp->fileline(), m_instance.handlep, VAccess::WRITE},
                 varp->dtypep()};
@@ -214,7 +207,7 @@ private:
     AstNodeModule* m_modp = nullptr;  // Module we are currently under
     AstNode* m_procp = nullptr;  // Function/task/block we are currently under
     std::map<AstNode*, DynScopeFrame*> m_frames;  // Mapping from nodes to related DynScopeFrames
-    VMemberMap m_memberMap;
+    VMemberMap m_memberMap;  // Class member look-up
     int m_forkDepth = 0;  // Number of asynchronous forks we are currently under
 
     // METHODS
@@ -226,7 +219,7 @@ private:
     }
 
     DynScopeFrame* pushDynScopeFrame() {
-        DynScopeFrame* frame = new DynScopeFrame{m_modp, m_procp};
+        DynScopeFrame* const frame = new DynScopeFrame{m_modp, m_procp};
         auto r = m_frames.emplace(std::make_pair(m_procp, frame));
         UASSERT_OBJ(r.second, m_modp, "Procedure already contains a frame");
         return frame;
@@ -245,10 +238,9 @@ private:
     }
 
     void replaceWithMemberSel(AstVarRef* refp, const DynScopeInstance& dynScope) {
-        // TODO: Handle a case where the variable is function's argument
         VNRelinker handle;
         refp->unlinkFrBack(&handle);
-        AstMemberSel* membersel = new AstMemberSel{
+        AstMemberSel* const membersel = new AstMemberSel{
             refp->fileline(), new AstVarRef{refp->fileline(), dynScope.handlep, refp->access()},
             refp->dtypep()};
         membersel->name(refp->varp()->name());
@@ -290,9 +282,13 @@ private:
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
-
         if (hasAsyncFork(nodep)) pushDynScopeFrame();
-
+        iterateChildren(nodep);
+    }
+    void visit(AstBegin* nodep) override {
+        VL_RESTORER(m_procp);
+        m_procp = nodep;
+        if (hasAsyncFork(nodep)) pushDynScopeFrame();
         iterateChildren(nodep);
     }
     void visit(AstFork* nodep) override {
@@ -300,24 +296,14 @@ private:
         if (!nodep->joinType().join()) ++m_forkDepth;
         iterateChildren(nodep);
     }
-    void visit(AstBegin* nodep) override {
-        VL_RESTORER(m_procp);
-        m_procp = nodep;
-
-        if (hasAsyncFork(nodep)) pushDynScopeFrame();
-
-        iterateChildren(nodep);
-    }
     void visit(AstVar* nodep) override {
-        DynScopeFrame* frame = frameOf(m_procp);
+        DynScopeFrame* const frame = frameOf(m_procp);
         if (!frame) return;  // Cannot be legally referenced from a fork
         if (VL_LIKELY(nodep != frame->instance().handlep)) bindNodeToDynScope(nodep, frame);
     }
     void visit(AstVarRef* nodep) override {
-        DynScopeFrame* frame = frameOf(nodep->varp());
+        DynScopeFrame* const frame = frameOf(nodep->varp());
         if (!frame) return;
-
-        // UASSERT_OBJ(m_forkDepth, nodep, "Frame found, yet not under fork");
 
         if (needsDynScope(nodep) && m_forkDepth) {
             if (!frame->instance()) frame->createInstancePrototype();
@@ -339,9 +325,8 @@ public:
         // Create Dynamic scope class prototypes and objects
         visit(nodep);
 
-        bool typesAdded = false;
-
         // Commit changes to AST
+        bool typesAdded = false;
         for (auto frameIt : m_frames) {
             DynScopeFrame* frame = frameIt.second;
             if (!frame->instance()) continue;
@@ -396,8 +381,9 @@ private:
             varp->lifetime(VLifetime::AUTOMATIC);
             m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
             // Use the original ref as an argument for call
-            AstArg* arg = new AstArg{refp->fileline(), refp->name(), refp->cloneTree(false)};
-            m_capturedVarRefsp = AstNode::addNext(m_capturedVarRefsp, arg);
+            m_capturedVarRefsp
+                = AstNode::addNext(m_capturedVarRefsp, new AstArg{refp->fileline(), refp->name(),
+                                                                  refp->cloneTree(false)});
         }
         return varp;
     }
@@ -462,7 +448,7 @@ private:
         AstTaskRef* const taskrefp
             = new AstTaskRef{nodep->fileline(), taskp->name(), m_capturedVarRefsp};
         taskrefp->taskp(taskp);
-        AstStmtExpr* const taskcallp = new AstStmtExpr{nodep->fileline(), taskrefp};
+        AstStmtExpr* const taskcallp = taskrefp->makeStmt();
         // Replaced nodes will be revisited, so we don't need to "lift" the arguments
         // as captures in case of nested forks.
         handle.relink(taskcallp);
@@ -552,12 +538,14 @@ public:
 //######################################################################
 // Fork class functions
 
+void V3Fork::makeDynamicScopes(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    { DynScopeVisitor{nodep}; }
+    V3Global::dumpCheckGlobalTree("fork_dynscope", 0, dumpTreeLevel() >= 3);
+}
+
 void V3Fork::makeTasks(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    {
-        DynScopeVisitor{nodep};
-        V3Global::dumpCheckGlobalTree("fork_dynscope", 0, dumpTreeLevel() >= 3);
-        ForkVisitor{nodep};
-    }
+    { ForkVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("fork", 0, dumpTreeLevel() >= 3);
 }
