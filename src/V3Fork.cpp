@@ -198,8 +198,10 @@ private:
 class DynScopeVisitor final : public VNVisitor {
 private:
     // NODE STATE
+    // AstVar::user1()          -> int, timing-constrol fork nesting level of that variable
     // AstVarRef::user2()       -> bool, 1 = Node is a class handle reference. The handle gets
     //                                       modified in the context of this reference.
+    const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
     // STATE
@@ -295,6 +297,7 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstVar* nodep) override {
+        nodep->user1(m_forkDepth);
         DynScopeFrame* const frame = frameOf(m_procp);
         if (!frame) return;  // Cannot be legally referenced from a fork
         if (VL_LIKELY(nodep != frame->instance().handlep)) bindNodeToDynScope(nodep, frame);
