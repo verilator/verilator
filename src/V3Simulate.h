@@ -178,8 +178,8 @@ public:
             m_whyNotNodep = nodep;
             if (debug() >= 5) {
                 UINFO(0, "Clear optimizable: " << why);
-                if (nodep) cout << ": " << nodep;
-                cout << endl;
+                if (nodep) std::cout << ": " << nodep;
+                std::cout << std::endl;
             }
             m_whyNotOptimizable = why;
             std::ostringstream stack;

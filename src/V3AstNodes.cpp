@@ -103,29 +103,8 @@ int AstNodeSel::bitConst() const {
     return (constp ? constp->toSInt() : 0);
 }
 
-void AstNodeUOrStructDType::repairMemberCache() {
-    clearCache();
-    for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_AS(itemp->nextp(), MemberDType)) {
-        if (m_members.find(itemp->name()) != m_members.end()) {
-            itemp->v3error("Duplicate declaration of member name: " << itemp->prettyNameQ());
-        } else {
-            m_members.emplace(itemp->name(), itemp);
-        }
-    }
-}
-
 const char* AstNodeUOrStructDType::broken() const {
     BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
-    std::unordered_set<AstMemberDType*> exists;
-    for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_AS(itemp->nextp(), MemberDType)) {
-        exists.insert(itemp);
-    }
-    for (MemberNameMap::const_iterator it = m_members.begin(); it != m_members.end(); ++it) {
-        if (VL_UNCOVERABLE(exists.find(it->second) == exists.end())) {
-            this->v3error("Internal: Structure member broken: " << it->first);
-            return "member broken";
-        }
-    }
     return nullptr;
 }
 
@@ -1427,29 +1406,10 @@ const char* AstClassPackage::broken() const {
 void AstClassPackage::cloneRelink() {
     if (m_classp && m_classp->clonep()) m_classp = m_classp->clonep();
 }
-void AstClass::insertCache(AstNode* nodep) {
-    const bool doit = (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
-                       || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto())
-                       || VN_IS(nodep, CFunc));
-    if (doit) {
-        if (m_members.find(nodep->name()) != m_members.end()) {
-            nodep->v3error("Duplicate declaration of member name: " << nodep->prettyNameQ());
-        } else {
-            m_members.emplace(nodep->name(), nodep);
-        }
-    }
-}
-void AstClass::repairCache() {
-    clearCache();
-    for (auto* itemp = membersp(); itemp; itemp = itemp->nextp()) {
-        if (const auto* const scopep = VN_CAST(itemp, Scope)) {
-            for (auto* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
-                insertCache(blockp);
-            }
-        } else {
-            insertCache(itemp);
-        }
-    }
+bool AstClass::isCacheableChild(const AstNode* nodep) {
+    return (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
+            || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto())
+            || VN_IS(nodep, CFunc));
 }
 AstClass* AstClass::baseMostClassp() {
     AstClass* basep = this;

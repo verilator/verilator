@@ -22,6 +22,7 @@
 
 #include "V3EmitCConstInit.h"
 #include "V3Global.h"
+#include "V3MemberMap.h"
 
 #include <algorithm>
 #include <map>
@@ -115,6 +116,7 @@ public:
 
 class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
 private:
+    VMemberMap m_memberMap;
     AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
     int m_labelNum = 0;  // Next label number
     int m_splitSize = 0;  // # of cfunc nodes placed into output file
@@ -151,7 +153,7 @@ protected:
     bool m_instantiatesOwnProcess = false;
 
     bool constructorNeedsProcess(const AstClass* const classp) {
-        const AstNode* const newp = classp->findMember("new");
+        const AstNode* const newp = m_memberMap.findMember(classp, "new");
         if (!newp) return false;
         const AstCFunc* const ctorp = VN_CAST(newp, CFunc);
         if (!ctorp) return false;

@@ -18,11 +18,15 @@
 RST2HTML = rst2html
 PYTHON3 = python3
 DOXYGEN = doxygen
-SPHINXOPTS ?= -c guide
 SPHINXBUILD ?= sphinx-build
 
 SOURCEDIR = guide
 BUILDDIR = _build
+
+SPHINXOPTS ?= -c guide
+ifneq ($(VERILATOR_ANALYTICS_ID),)
+SPHINXOPTS += -D html_theme_options.analytics_id=$(VERILATOR_ANALYTICS_ID)
+endif
 
 ######################################################################
 

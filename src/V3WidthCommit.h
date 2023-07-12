@@ -110,10 +110,10 @@ private:
             AstBasicDType* const newp = nodep->findInsertSameDType(bdtypep);
             if (newp != bdtypep && debug() >= 9) {
                 UINFO(9, "dtype replacement ");
-                nodep->dumpSmall(cout);
-                cout << "  ---->  ";
-                newp->dumpSmall(cout);
-                cout << endl;
+                nodep->dumpSmall(std::cout);
+                std::cout << "  ---->  ";
+                newp->dumpSmall(std::cout);
+                std::cout << std::endl;
             }
             return newp;
         }
@@ -190,7 +190,6 @@ private:
     void visit(AstNodeUOrStructDType* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         visitIterateNodeDType(nodep);
-        nodep->clearCache();
     }
     void visit(AstParamTypeDType* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
@@ -253,8 +252,9 @@ public:
         // Were changing widthMin's, so the table is now somewhat trashed
         nodep->typeTablep()->clearCache();
         iterate(nodep);
-        // Don't want to repairCache, as all needed nodes have been added back in
-        // a repair would prevent dead nodes from being detected
+        // Don't want to AstTypeTable::repairCache, as all needed nodes
+        // have been added back in; a repair would prevent dead nodes from
+        // being detected
     }
     ~WidthCommitVisitor() override = default;
 };

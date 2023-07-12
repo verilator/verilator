@@ -339,7 +339,7 @@ public:
             v3errorEnd(
                 (v3errorPrep(V3ErrorCode::EC_FATALEXIT),
                  (v3errorStr() << "Exiting due to too many errors encountered; --error-limit="
-                               << errorCount() << endl),
+                               << errorCount() << std::endl),
                  v3errorStr()));
             assert(0);  // LCOV_EXCL_LINE
             VL_UNREACHABLE;
@@ -592,12 +592,12 @@ inline void v3errorEndFatal(std::ostringstream& sstr)
 #define UINFO(level, stmsg) \
     do { \
         if (VL_UNCOVERABLE(debug() >= (level))) { \
-            cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; \
+            std::cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; \
         } \
     } while (false)
 #define UINFONL(level, stmsg) \
     do { \
-        if (VL_UNCOVERABLE(debug() >= (level))) { cout << stmsg; } \
+        if (VL_UNCOVERABLE(debug() >= (level))) { std::cout << stmsg; } \
     } while (false)
 
 #ifdef VL_DEBUG

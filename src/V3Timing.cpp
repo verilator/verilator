@@ -53,6 +53,7 @@
 #include "V3Const.h"
 #include "V3EmitV.h"
 #include "V3Graph.h"
+#include "V3MemberMap.h"
 #include "V3SenExprBuilder.h"
 #include "V3SenTree.h"
 #include "V3UniqueNames.h"
@@ -160,6 +161,7 @@ private:
     const VNUser5InUse m_user5InUse;
 
     // STATE
+    VMemberMap memberMap;  // Member names cached for fast lookup
     AstClass* m_classp = nullptr;  // Current class
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     uint8_t m_underFork = F_NONE;  // F_NONE or flags of a fork we are under
@@ -242,8 +244,6 @@ private:
         DepVtx* const sVxp = getSuspendDepVtx(nodep);
         DepVtx* const pVxp = getNeedsProcDepVtx(nodep);
         if (!m_classp) return;
-        // If class method (possibly overrides another method)
-        if (!m_classp->user1SetOnce()) m_classp->repairCache();
 
         // Go over overridden functions
 
@@ -260,9 +260,8 @@ private:
                 // actually overridden by our method. If this causes a problem, traverse to
                 // the root of the inheritance hierarchy and check if the original method is
                 // virtual or not.
-                if (!cextp->classp()->user1SetOnce()) cextp->classp()->repairCache();
                 if (auto* const overriddenp
-                    = VN_CAST(cextp->classp()->findMember(nodep->name()), CFunc)) {
+                    = VN_CAST(memberMap.findMember(cextp->classp(), nodep->name()), CFunc)) {
                     // Suspendability and process affects typing, so they propagate both ways
                     DepVtx* const overriddenSVxp = getSuspendDepVtx(overriddenp);
                     DepVtx* const overriddenPVxp = getNeedsProcDepVtx(overriddenp);
