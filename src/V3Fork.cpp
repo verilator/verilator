@@ -265,11 +265,17 @@ private:
         m_frames.emplace(std::make_pair(nodep, frame));
     }
 
-    bool needsDynScope(AstVarRef* refp) {
-        // TODO: Check if we are after a timing control event as well, this would also require
-        // us to create a dynamic scope, so we can reference the variable instead of copying it
-        // before the timing event occurs.
-        return refp->varp()->isClassHandleValue() ? refp->user2() : refp->access().isWriteOrRW();
+    bool needsDynScope(const AstVarRef* refp) const {
+        // Conditions
+        auto mutated = [=]() -> bool {
+            return refp->varp()->isClassHandleValue()
+                ? refp->user2()
+                : refp->access().isWriteOrRW();
+        };
+        auto canEscapeTheScope = [=]() -> bool { return m_forkDepth > refp->varp()->user1(); };
+        auto afterDelay = [=]() -> bool { return false; /* TODO: Implement this */ };
+
+        return canEscapeTheScope() && (mutated() || afterDelay());
     }
 
     // VISITORS
@@ -306,7 +312,7 @@ private:
         DynScopeFrame* const frame = frameOf(nodep->varp());
         if (!frame) return;
 
-        if (needsDynScope(nodep) && m_forkDepth) {
+        if (needsDynScope(nodep)) {
             if (!frame->instance()) frame->createInstancePrototype();
             frame->captureVar(nodep->varp());
         }
