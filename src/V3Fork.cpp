@@ -165,7 +165,6 @@ private:
         // TODO: Ensure no collisions occur
         string n = "__VDynScope__" + (!fromp->name().empty() ? (fromp->name() + "__") : "ANON__")
                    + cvtToHex(fromp);
-        UINFO(1, "Generated \"" << n << "\" class name\n");
         return n;
     }
 
@@ -229,7 +228,6 @@ private:
         // TODO: Ensure no collisions occur
         string n = "__VDynScope__" + (!fromp->name().empty() ? (fromp->name() + "__") : "ANON__")
                    + cvtToHex(fromp);
-        UINFO(1, "Generated \"" << n << "\" class name\n");
         return n;
     }
 
