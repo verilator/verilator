@@ -80,7 +80,7 @@ public:
         v3Global.rootp()->typeTablep()->addTypesp(m_instance.refDTypep);
         m_instance.handlep = new AstVar{m_procp->fileline(), VVarType::BLOCKTEMP,
                                         generateDynScopeHandleName(m_procp), m_instance.refDTypep};
-        m_instance.handlep->funcLocal(true);
+        m_instance.handlep->funcLocal(VN_IS(m_procp, Func) || VN_IS(m_procp, Task));
         m_instance.handlep->lifetime(VLifetime::AUTOMATIC);
 
         return m_instance;
@@ -119,6 +119,7 @@ public:
     }
 
     void linkNodes(VMemberMap& memberMap) {
+        UASSERT_OBJ(m_instance, m_procp, "No dynamic scope prototype");
         UASSERT_OBJ(!linked(), m_instance.handlep, "Handle already linked");
 
         AstNode* stmtp = getProcStmts();
@@ -198,7 +199,7 @@ private:
 class DynScopeVisitor final : public VNVisitor {
 private:
     // NODE STATE
-    // AstVar::user1()          -> int, timing-constrol fork nesting level of that variable
+    // AstVar::user1()          -> int, timing-control fork nesting level of that variable
     // AstVarRef::user2()       -> bool, 1 = Node is a class handle reference. The handle gets
     //                                       modified in the context of this reference.
     const VNUser1InUse m_inuser1;
@@ -210,6 +211,8 @@ private:
     std::map<AstNode*, DynScopeFrame*> m_frames;  // Mapping from nodes to related DynScopeFrames
     VMemberMap m_memberMap;  // Class member look-up
     int m_forkDepth = 0;  // Number of asynchronous forks we are currently under
+    bool m_afterTimingControl = false;  // A timing control might've be executed in the current
+                                        // process
 
     // METHODS
 
@@ -268,12 +271,14 @@ private:
     bool needsDynScope(const AstVarRef* refp) const {
         // Conditions
         auto mutated = [=]() -> bool {
-            return refp->varp()->isClassHandleValue()
-                ? refp->user2()
-                : refp->access().isWriteOrRW();
+            return refp->varp()->isClassHandleValue() ? refp->user2()
+                                                      : refp->access().isWriteOrRW();
         };
-        auto canEscapeTheScope = [=]() -> bool { return m_forkDepth > refp->varp()->user1(); };
-        auto afterDelay = [=]() -> bool { return false; /* TODO: Implement this */ };
+        auto canEscapeTheScope = [=]() -> bool {
+            return (m_forkDepth > refp->varp()->user1())
+                   && (refp->varp()->isFuncLocal() || !refp->varp()->isClassMember());
+        };
+        auto afterDelay = [=]() -> bool { return m_afterTimingControl; };
 
         return canEscapeTheScope() && (mutated() || afterDelay());
     }
@@ -300,7 +305,20 @@ private:
     void visit(AstFork* nodep) override {
         VL_RESTORER(m_forkDepth);
         if (!nodep->joinType().join()) ++m_forkDepth;
-        iterateChildren(nodep);
+
+        bool oldAfterTimingControl = m_afterTimingControl;
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            m_afterTimingControl = false;
+            iterate(stmtp);
+        }
+        m_afterTimingControl = oldAfterTimingControl;
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        visit(static_cast<AstNodeExpr*>(nodep));
+        // We are before V3Timing, so unfortnately we need to treat any calls as suspending,
+        // just to be safe. This might be improved if we could propagate suspendability
+        // before doing all the other timing-related stuff.
+        m_afterTimingControl = true;
     }
     void visit(AstVar* nodep) override {
         nodep->user1(m_forkDepth);
@@ -324,7 +342,10 @@ private:
         }
         visit(static_cast<AstNodeStmt*>(nodep));
     }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override {
+        if (nodep->isTimingControl()) m_afterTimingControl = true;
+        iterateChildren(nodep);
+    }
 
 public:
     // CONSTRUCTORS
