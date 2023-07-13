@@ -86,11 +86,10 @@ public:
         return m_instance;
     }
 
-    const DynScopeInstance& instance() { return m_instance; }
-
+    const DynScopeInstance& instance() const { return m_instance; }
     void captureVar(AstVar* varp) { m_captures.insert(varp); }
-
     bool captured(AstVar* varp) { return m_captures.count(varp) != 0; }
+    AstNode* procp() const { return m_procp; }
 
     void populateClass() {
         UASSERT_OBJ(m_instance, m_procp, "No DynScope prototype");
@@ -222,6 +221,12 @@ private:
         return frameIt->second;
     }
 
+    const DynScopeFrame* frameOf(AstNode* nodep) const {
+        auto frameIt = m_frames.find(nodep);
+        if (frameIt == m_frames.end()) return nullptr;
+        return frameIt->second;
+    }
+
     DynScopeFrame* pushDynScopeFrame() {
         DynScopeFrame* const frame = new DynScopeFrame{m_modp, m_procp};
         auto r = m_frames.emplace(std::make_pair(m_procp, frame));
@@ -275,8 +280,10 @@ private:
                                                       : refp->access().isWriteOrRW();
         };
         auto canEscapeTheScope = [=]() -> bool {
+            const AstNode* const procp = this->frameOf(refp->varp())->procp();
             return (m_forkDepth > refp->varp()->user1())
-                   && (refp->varp()->isFuncLocal() || !refp->varp()->isClassMember());
+                   && (refp->varp()->isFuncLocal() || !refp->varp()->isClassMember())
+                   && (VN_IS(procp, Func) || VN_IS(procp, Task));
         };
         auto afterDelay = [=]() -> bool { return m_afterTimingControl; };
 
