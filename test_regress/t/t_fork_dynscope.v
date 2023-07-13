@@ -7,27 +7,26 @@
 class Foo;
   task do_something(int arg_v);
     int dynscope_var;
+    int x;
     dynscope_var = 0;
 
     fork
       #10 begin
-        int x;
         x = 0;
         // Test capturing a variable that needs to be modified
         $display("Incremented dynscope_var: %d", ++dynscope_var);
         if (dynscope_var != 1)
           $stop;
 
-        // TODO: FIX NESTING
-        //// Check nesting
-        //fork
-        //  #10 begin
-        //    $display("Incremented x: %d", ++x);
-        //    $display("Incremented dynscope_var: %d", ++dynscope_var);
-        //    if (dynscope_var != 2)
-        //      $stop;
-        //  end
-        //join_none
+        // Check nested access
+        fork
+          #10 begin
+            $display("Incremented x: %d", ++x);
+            $display("Incremented dynscope_var: %d", ++dynscope_var);
+            if (dynscope_var != 2)
+              $stop;
+          end
+        join_none
       end
       #10 begin
         // Same as the first check, but with an argument
