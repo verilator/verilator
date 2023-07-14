@@ -431,11 +431,7 @@ public:
         AstAssocArrayDType* const adtypep
             = VN_AS(nodep->fromp()->dtypep()->skipRefp(), AssocArrayDType);
         UASSERT_OBJ(adtypep, nodep, "Associative select on non-associative type");
-        if (adtypep->keyDTypep()->isWide()) {
-            emitCvtWideArray(nodep->bitp(), nodep->fromp());
-        } else {
-            iterateAndNextConstNull(nodep->bitp());
-        }
+        iterateAndNextConstNull(nodep->bitp());
         puts(")");
     }
     void visit(AstWildcardSel* nodep) override {
