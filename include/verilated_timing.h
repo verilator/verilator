@@ -86,36 +86,6 @@ public:
 #endif
 };
 
-//===================================================================
-// VlProcess stores metadata of running processes
-
-class VlProcess final {
-    // MEMBERS
-    int m_state;  // Current state of the process
-
-public:
-    // TYPES
-    enum : int {  // Type int for compatibility with $c
-        FINISHED = 0,
-        RUNNING = 1,
-        WAITING = 2,
-        SUSPENDED = 3,
-        KILLED = 4,
-    };
-
-    // CONSTRUCTORS
-    VlProcess()
-        : m_state{RUNNING} {}
-
-    // METHODS
-    int state() { return m_state; }
-    void state(int s) { m_state = s; }
-};
-
-using VlProcessRef = std::shared_ptr<VlProcess>;
-
-inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
-
 //=============================================================================
 // VlCoroutineHandle is a non-copyable (but movable) coroutine handle. On resume, the handle is
 // cleared, as we assume that either the coroutine has finished and deleted itself, or, if it got
