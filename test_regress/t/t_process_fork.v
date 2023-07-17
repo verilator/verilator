@@ -16,8 +16,7 @@ module t;
          end
       join_none
       foreach (job[j]) begin
-         is_alloc = !!job[j];
-         wait (is_alloc);
+         wait (job[j]);
       end
       $write("all jobs started\n");
       foreach (job[j]) begin
