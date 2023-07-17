@@ -80,7 +80,7 @@ public:
         v3Global.rootp()->typeTablep()->addTypesp(m_instance.refDTypep);
         m_instance.handlep = new AstVar{m_procp->fileline(), VVarType::BLOCKTEMP,
                                         generateDynScopeHandleName(m_procp), m_instance.refDTypep};
-        m_instance.handlep->funcLocal(VN_IS(m_procp, Func) || VN_IS(m_procp, Task));
+        m_instance.handlep->funcLocal(true);
         m_instance.handlep->lifetime(VLifetime::AUTOMATIC);
 
         return m_instance;
@@ -123,10 +123,14 @@ public:
 
         AstNode* stmtp = getProcStmts();
         UASSERT(stmtp, "trying to instantiate dynamic scope while not under proc");
+        VNRelinker stmtpHandle;
+        stmtp->unlinkFrBackWithNext(&stmtpHandle);
 
         // Find node after last variable declaration
-        while (stmtp && VN_IS(stmtp, Var)) stmtp = stmtp->nextp();
-        UASSERT(stmtp, "no proc body");
+        AstNode* initp = stmtp;
+        while (initp && VN_IS(initp, Var)) initp = initp->nextp();
+        UASSERT(stmtp, "Procedure lacks body");
+        UASSERT(initp, "Procedure lacks statements besides declarations");
 
         AstNew* newp = new AstNew{m_procp->fileline(), nullptr};
         newp->taskp(VN_AS(memberMap.findMember(m_instance.classp, "new"), NodeFTask));
@@ -136,8 +140,6 @@ public:
         AstNode* asgnp = new AstAssign{
             m_procp->fileline(),
             new AstVarRef{m_procp->fileline(), m_instance.handlep, VAccess::WRITE}, newp};
-
-        AstNode::addNext(static_cast<AstNode*>(m_instance.handlep), asgnp);
 
         AstNode* inits = nullptr;  // Arguments need to be copied
         for (AstVar* varp : m_captures) {
@@ -154,7 +156,16 @@ public:
             inits = AstNode::addNext(inits, initAsgnp);
         }
         if (inits) AstNode::addNext(asgnp, inits);
-        stmtp->addHereThisAsNext(m_instance.handlep);
+
+        if (initp != stmtp) {
+            initp->addHereThisAsNext(asgnp);
+        } else {
+            AstNode::addNext(asgnp, static_cast<AstNode*>(initp));
+            stmtp = asgnp;
+        }
+
+        AstNode::addNext(static_cast<AstNode*>(m_instance.handlep), stmtp);
+        stmtpHandle.relink(m_instance.handlep);
         m_modp->addStmtsp(m_instance.classp);
     }
 
@@ -280,10 +291,7 @@ private:
                                                       : refp->access().isWriteOrRW();
         };
         auto canEscapeTheScope = [=]() -> bool {
-            const AstNode* const procp = this->frameOf(refp->varp())->procp();
-            return (m_forkDepth > refp->varp()->user1())
-                   && (refp->varp()->isFuncLocal() || !refp->varp()->isClassMember())
-                   && (VN_IS(procp, Func) || VN_IS(procp, Task));
+            return (m_forkDepth > refp->varp()->user1()) && refp->varp()->isFuncLocal();
         };
         auto afterDelay = [=]() -> bool { return m_afterTimingControl; };
 
@@ -331,7 +339,7 @@ private:
         nodep->user1(m_forkDepth);
         DynScopeFrame* const frame = frameOf(m_procp);
         if (!frame) return;  // Cannot be legally referenced from a fork
-        if (VL_LIKELY(nodep != frame->instance().handlep)) bindNodeToDynScope(nodep, frame);
+        bindNodeToDynScope(nodep, frame);
     }
     void visit(AstVarRef* nodep) override {
         DynScopeFrame* const frame = frameOf(nodep->varp());
