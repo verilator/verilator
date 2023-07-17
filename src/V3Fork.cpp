@@ -327,6 +327,8 @@ private:
             iterate(stmtp);
         }
         m_afterTimingControl = oldAfterTimingControl;
+        if (nodep->isTimingControl())
+            m_afterTimingControl = true;
     }
     void visit(AstNodeFTaskRef* nodep) override {
         visit(static_cast<AstNodeExpr*>(nodep));
