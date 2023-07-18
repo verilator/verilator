@@ -5558,7 +5558,7 @@ private:
             for (const auto& tconnect : tconnects) {
                 const AstVar* const portp = tconnect.first;
                 const AstArg* const argp = tconnect.second;
-                AstNode* const pinp = argp->exprp();
+                AstNodeExpr* pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
                 if (portp->direction() == VDirection::REF
                     && !similarDTypeRecurse(portp->dtypep(), pinp->dtypep())) {
@@ -5567,13 +5567,13 @@ private:
                                   << portp->prettyTypeName() << " but connection is "
                                   << pinp->prettyTypeName() << ".");
                 } else if (portp->isWritable() && pinp->width() != portp->width()) {
-                    pinp->v3warn(E_UNSUPPORTED, "Unsupported: Function output argument "
-                                                    << portp->prettyNameQ() << " requires "
-                                                    << portp->width() << " bits, but connection's "
-                                                    << pinp->prettyTypeName() << " generates "
-                                                    << pinp->width() << " bits.");
-                    // otherwise would need some mess to force both sides to proper size
-                    // (get an ASSIGN with EXTEND on the lhs instead of rhs)
+                    if (portp->width() < pinp->width())
+                        pinp->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: Function output argument "
+                                         << portp->prettyNameQ() << " requires " << portp->width()
+                                         << " bits, but connection's " << pinp->prettyTypeName()
+                                         << " generates " << pinp->width() << " bits.");
+                    pinp = extendVar(pinp, portp->dtypeSkipRefp(), ExtendRule::EXTEND_LHS);
                 }
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
                     checkClassAssign(nodep, "Function Argument", pinp, portp->dtypep());
@@ -6249,6 +6249,23 @@ private:
         return false;
     }
 
+    AstNodeExpr* extendVar(AstNodeExpr* nodep, AstNodeDType* expDTypep, ExtendRule extendRule) {
+        VNRelinker linker;
+        nodep->unlinkFrBack(&linker);
+        bool doSigned = false;
+        switch (extendRule) {
+        case EXTEND_ZERO: doSigned = false; break;
+        case EXTEND_EXP: doSigned = nodep->isSigned() && expDTypep->isSigned(); break;
+        case EXTEND_LHS: doSigned = nodep->isSigned(); break;
+        default: nodep->v3fatalSrc("bad case");
+        }
+        AstNodeExpr* const newp
+            = (doSigned ? static_cast<AstNodeExpr*>(new AstExtendS{nodep->fileline(), nodep})
+                        : static_cast<AstNodeExpr*>(new AstExtend{nodep->fileline(), nodep}));
+        linker.relink(newp);
+        return newp;
+    }
+
     void fixWidthExtend(AstNodeExpr* nodep, AstNodeDType* expDTypep, ExtendRule extendRule) {
         // Fix the width mismatch by extending or truncating bits
         // *ONLY* call this from checkWidth()
@@ -6285,20 +6302,7 @@ private:
             nodep = newp;
         } else {
             // Extend
-            VNRelinker linker;
-            nodep->unlinkFrBack(&linker);
-            bool doSigned = false;
-            switch (extendRule) {
-            case EXTEND_ZERO: doSigned = false; break;
-            case EXTEND_EXP: doSigned = nodep->isSigned() && expDTypep->isSigned(); break;
-            case EXTEND_LHS: doSigned = nodep->isSigned(); break;
-            default: nodep->v3fatalSrc("bad case");
-            }
-            AstNodeExpr* const newp
-                = (doSigned ? static_cast<AstNodeExpr*>(new AstExtendS{nodep->fileline(), nodep})
-                            : static_cast<AstNodeExpr*>(new AstExtend{nodep->fileline(), nodep}));
-            linker.relink(newp);
-            nodep = newp;
+            nodep = extendVar(nodep, expDTypep, extendRule);
         }
         if (expDTypep->isDouble() && !nodep->isDouble()) {
             // For AstVar init() among others
