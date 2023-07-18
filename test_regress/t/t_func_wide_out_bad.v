@@ -6,13 +6,13 @@
 
 module t ();
 
-   parameter MSG_PORT_WIDTH = 4350;
+   parameter MSG_PORT_WIDTH = 4356;
    localparam PAYLOAD_MAX_BITS = 4352;
 
    reg [MSG_PORT_WIDTH-1:0] msg;
 
    initial begin
-      // Operator TASKREF 'func' expects 4352 bits on the Function Argument, but Function Argument's VARREF 'msg' generates 4350 bits.
+      // Operator TASKREF 'func' expects 4352 bits on the Function Argument, but Function Argument's VARREF 'msg' generates 4356 bits.
       // verilator lint_off WIDTH
       func(msg);
       // verilator lint_on WIDTH
