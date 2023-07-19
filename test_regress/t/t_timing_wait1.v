@@ -27,7 +27,7 @@ module t;
       #1 c = 3; `WRITE_VERBOSE("assign 3 to c\n");
       #1 c = 4; `WRITE_VERBOSE("assign 4 to c\n");  // a+b<c
       #1 c = 4; `WRITE_VERBOSE("assign 5 to b\n");  // a<b && b>c
-      b = 5;
+      b = 5;    `WRITE_VERBOSE("push_back b to q\n");
       q.push_back(b);
    end
 
@@ -58,5 +58,5 @@ module t;
    initial wait(0) $stop;
    initial wait(1 == 0) $stop;
 
-   initial #11 $stop; // timeout
+   initial #12 $stop; // timeout
 endmodule
