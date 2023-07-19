@@ -7,6 +7,7 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 
 module t(/*AUTOARG*/);
+   int a;
    function int assign5;
       a = 5;
       return 5;
@@ -19,7 +20,6 @@ module t(/*AUTOARG*/);
       a++;
       return a;
    endfunction
-   int a;
    int i;
 
    initial begin
