@@ -3388,14 +3388,30 @@ seq_blockPreId<nodep>:          // IEEE: seq_block, but called with leading ID
 par_block<nodep>:               // ==IEEE: par_block
                 par_blockFront blockDeclStmtListE yJOIN endLabelE
                         { $$ = $1; $1->addStmtsp($2);
+                          for (AstNode* stmtp = $2; stmtp; stmtp = stmtp->nextp()) {
+                              if (!VN_IS(stmtp, Var)) break;
+                              stmtp->unlinkFrBack();
+                              $1->addInitsp(stmtp);
+                          }
                           $1->joinType(VJoinType::JOIN);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         |       par_blockFront blockDeclStmtListE yJOIN_ANY endLabelE
                         { $$ = $1; $1->addStmtsp($2);
+                          for (AstNode* stmtp = $2; stmtp; stmtp = stmtp->nextp()) {
+                              if (!VN_IS(stmtp, Var)) break;
+                              stmtp->unlinkFrBack();
+                              $1->addInitsp(stmtp);
+                          }
                           $1->joinType(VJoinType::JOIN_ANY);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         |       par_blockFront blockDeclStmtListE yJOIN_NONE endLabelE
-                        { $$ = $1; $1->addStmtsp($2);
+                        { $$ = $1;
+                          $1->addStmtsp($2);
+                          for (AstNode* stmtp = $2; stmtp; stmtp = stmtp->nextp()) {
+                              if (!VN_IS(stmtp, Var)) break;
+                              stmtp->unlinkFrBack();
+                              $1->addInitsp(stmtp);
+                          }
                           $1->joinType(VJoinType::JOIN_NONE);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         ;
