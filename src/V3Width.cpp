@@ -5690,7 +5690,8 @@ private:
         }
         if (nodep->fileline()->timingOn()) {
             if (v3Global.opt.timing().isSetTrue()) {
-                userIterate(nodep->condp(), WidthVP{SELF, PRELIM}.p());
+                iterateCheckBool(nodep, "Wait", nodep->condp(),
+                                 BOTH);  // it's like an if() condition.
                 iterateNull(nodep->stmtsp());
                 return;
             } else if (v3Global.opt.timing().isSetFalse()) {
