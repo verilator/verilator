@@ -20,12 +20,20 @@ module t(/*AUTOARG*/);
       a++;
       return a;
    endfunction
+   function int assign5_return_arg(int x);
+      a = 5;
+      return x;
+   endfunction
    int i;
 
    initial begin
       a = 1;
       i = assign5() + assign3() + incr();
       `checkd(a, 4); `checkd(i, 12);
+
+      a = 1;
+      i = assign5_return_arg(assign3()+incr());
+      `checkd(a, 5); `checkd(i, 7);
 
       $write("*-* All Finished *-*\n");
       $finish;
