@@ -6,7 +6,6 @@
 
 module t;
    process job[] = new [8];
-   bit is_alloc = 0;
 
    initial begin
       foreach (job[j]) fork
