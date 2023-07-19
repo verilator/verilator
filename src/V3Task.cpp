@@ -350,7 +350,6 @@ private:
     // TYPES
     enum InsertMode : uint8_t {
         IM_BEFORE,  // Pointing at statement ref is in, insert before this
-        IM_AFTER,  // Pointing at last inserted stmt, insert after
         IM_WHILE_PRECOND  // Pointing to for loop, add to body end
     };
     using DpiCFuncs = std::map<const string, std::tuple<AstNodeFTask*, std::string, AstCFunc*>>;
@@ -1353,9 +1352,6 @@ private:
             UINFO(5, "     IM_Before  " << m_insStmtp << endl);
             if (debug() >= 9) newp->dumpTree("-  newfunc: ");
             m_insStmtp->addHereThisAsNext(newp);
-        } else if (m_insMode == IM_AFTER) {
-            UINFO(5, "     IM_After   " << m_insStmtp << endl);
-            m_insStmtp->addNextHere(newp);
         } else if (m_insMode == IM_WHILE_PRECOND) {
             UINFO(5, "     IM_While_Precond " << m_insStmtp << endl);
             AstWhile* const whilep = VN_AS(m_insStmtp, While);
@@ -1365,8 +1361,6 @@ private:
         } else {
             nodep->v3fatalSrc("Unknown InsertMode");
         }
-        m_insMode = IM_AFTER;
-        m_insStmtp = newp;
         return visitp;
     }
 
