@@ -41,11 +41,11 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Error.h"
 #include "V3Fork.h"
 
 #include "V3Ast.h"
 #include "V3AstNodeExpr.h"
+#include "V3Error.h"
 #include "V3Global.h"
 #include "V3MemberMap.h"
 
@@ -189,7 +189,6 @@ public:
     bool linked() const { return m_instance.initialized() && m_instance.m_handlep->backp(); }
 
 private:
-
     AstAssign* instantiateDynScope(VMemberMap& memberMap) {
         AstNew* newp = new AstNew{m_procp->fileline(), nullptr};
         newp->taskp(VN_AS(memberMap.findMember(m_instance.m_classp, "new"), NodeFTask));
@@ -208,10 +207,10 @@ private:
         VNRelinker forkHandle;
         forkp->unlinkFrBack(&forkHandle);
 
-        AstBegin* const beginp =
-            new AstBegin{forkp->fileline(),
-                         "_Vwrapped_" + (forkp->name().empty() ? cvtToHex(forkp) : forkp->name()),
-                         m_instance.m_handlep, false, true};
+        AstBegin* const beginp = new AstBegin{
+            forkp->fileline(),
+            "_Vwrapped_" + (forkp->name().empty() ? cvtToHex(forkp) : forkp->name()),
+            m_instance.m_handlep, false, true};
         forkHandle.relink(beginp);
 
         AstNode* instAsgnp = instantiateDynScope(memberMap);
@@ -362,8 +361,7 @@ private:
         const bool oldAfterTimingControl = m_afterTimingControl;
 
         ForkDynScopeFrame* frame = nullptr;
-        if (nodep->initsp())
-            frame = pushDynScopeFrame(nodep);
+        if (nodep->initsp()) frame = pushDynScopeFrame(nodep);
 
         for (AstNode* stmtp = nodep->initsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* varp = VN_CAST(stmtp, Var)) {
