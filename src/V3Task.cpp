@@ -1546,6 +1546,13 @@ private:
         iterateChildren(nodep);
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
+    void visit(AstVar* nodep) override {
+        if (nodep->isFuncLocal() && nodep->direction() == VDirection::INPUT && nodep->valuep()) {
+            // It's the default value of optional argument.
+            // Such values are added to function calls on this stage.
+            pushDeletep(nodep->valuep()->unlinkFrBack());
+        }
+    }
     void visit(AstStmtExpr* nodep) override {
         m_insMode = IM_BEFORE;
         m_insStmtp = nodep;
