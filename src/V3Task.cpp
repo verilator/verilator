@@ -1667,7 +1667,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                 newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
             } else if (AstFuncRef* const funcRefp = VN_CAST(portp->valuep(), FuncRef)) {
                 const AstNodeFTask* const funcp = funcRefp->taskp();
-                if (funcp->classMethod() && funcp->lifetime().isStatic()) { newvaluep = funcRefp; }
+                if (funcp->classMethod() && funcp->lifetime().isStatic()) newvaluep = funcRefp;
             } else if (AstConst* const constp = VN_CAST(portp->valuep(), Const)) {
                 newvaluep = constp;
             }
@@ -1688,7 +1688,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                     newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
                 }
             }
-            newvaluep = VN_AS(portp->valuep(), NodeExpr)->cloneTree(true);
+            newvaluep = newvaluep->cloneTree(true);
             // To avoid problems with callee needing to know to deleteTree
             // or not, we make this into a pin
             UINFO(9, "Default pin for " << portp << endl);
