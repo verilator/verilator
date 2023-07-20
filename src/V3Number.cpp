@@ -1866,13 +1866,13 @@ V3Number& V3Number::opAdd(const V3Number& lhs, const V3Number& rhs) {
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
     setZero();
     // Addem
-    uint32_t lsc, rsc, sum, carry = 0;
+    uint64_t carry = 0;
     for (int word = 0; word < words(); word++) {
-        lsc = lhs.wordIs1(word);
-        rsc = rhs.wordIs1(word);
-        sum = lsc + rsc + carry;
+        const uint64_t lsc = lhs.wordIs1(word);
+        const uint64_t rsc = rhs.wordIs1(word);
+        const uint64_t sum = lsc + rsc + carry;
         setWord(word, sum);
-        carry = (sum <= std::min(lsc, rsc));
+        carry = sum > 0xffffffff;
     }
     return *this;
 }
