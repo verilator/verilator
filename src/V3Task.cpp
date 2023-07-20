@@ -1549,7 +1549,7 @@ private:
     void visit(AstVar* nodep) override {
         if (nodep->isFuncLocal() && nodep->direction() == VDirection::INPUT && nodep->valuep()) {
             // It's the default value of optional argument.
-            // Such values are added to function calls on this stage.
+            // Such values are added to function calls on this stage and aren't needed here.
             pushDeletep(nodep->valuep()->unlinkFrBack());
         }
     }
