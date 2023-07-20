@@ -3425,14 +3425,35 @@ par_block<nodep>:               // ==IEEE: par_block
 par_blockPreId<nodep>:          // ==IEEE: par_block but called with leading ID
                 par_blockFrontPreId blockDeclStmtListE yJOIN endLabelE
                         { $$ = $1; $1->addStmtsp($2);
+                          for (AstNode* stmtp = $2; stmtp; stmtp = stmtp->nextp()) {
+                              AstVar* varp = VN_CAST(stmtp, Var);
+                              if (!varp) break;
+                              varp->unlinkFrBack();
+                              varp->funcLocal(true);
+                              $1->addInitsp(varp);
+                          }
                           $1->joinType(VJoinType::JOIN);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         |       par_blockFrontPreId blockDeclStmtListE yJOIN_ANY endLabelE
                         { $$ = $1; $1->addStmtsp($2);
+                          for (AstNode* stmtp = $2; stmtp; stmtp = stmtp->nextp()) {
+                              AstVar* varp = VN_CAST(stmtp, Var);
+                              if (!varp) break;
+                              varp->unlinkFrBack();
+                              varp->funcLocal(true);
+                              $1->addInitsp(varp);
+                          }
                           $1->joinType(VJoinType::JOIN_ANY);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         |       par_blockFrontPreId blockDeclStmtListE yJOIN_NONE endLabelE
                         { $$ = $1; $1->addStmtsp($2);
+                          for (AstNode* stmtp = $2; stmtp; stmtp = stmtp->nextp()) {
+                              AstVar* varp = VN_CAST(stmtp, Var);
+                              if (!varp) break;
+                              varp->unlinkFrBack();
+                              varp->funcLocal(true);
+                              $1->addInitsp(varp);
+                          }
                           $1->joinType(VJoinType::JOIN_NONE);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         ;

@@ -361,19 +361,22 @@ private:
 
         const bool oldAfterTimingControl = m_afterTimingControl;
 
+        ForkDynScopeFrame* frame = nullptr;
         if (nodep->initsp())
-            pushDynScopeFrame(nodep);
+            frame = pushDynScopeFrame(nodep);
 
         for (AstNode* stmtp = nodep->initsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* varp = VN_CAST(stmtp, Var)) {
-                // TODO: This can be probably optimized to detect cases in which dynscopes
+                // This can be probably optimized to detect cases in which dynscopes
                 // could be avoided
-                ForkDynScopeFrame* const frame = frameOf(nodep);
                 if (!frame->instance().initialized()) frame->createInstancePrototype();
                 frame->captureVarInsert(varp);
+                bindNodeToDynScope(varp, frame);
             } else {
-                UASSERT_OBJ(VN_IS(stmtp, Assign), stmtp,
+                AstAssign* const asgnp = VN_CAST(stmtp, Assign);
+                UASSERT_OBJ(asgnp, stmtp,
                             "Invalid node under block item initialization part of fork");
+                bindNodeToDynScope(asgnp->lhsp(), frame);
             }
         }
 
