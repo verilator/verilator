@@ -1868,12 +1868,13 @@ V3Number& V3Number::opAdd(const V3Number& lhs, const V3Number& rhs) {
     // Addem
     uint64_t carry = 0;
     for (int word = 0; word < words(); word++) {
-        const uint64_t lsc = lhs.wordIs1(word);
-        const uint64_t rsc = rhs.wordIs1(word);
-        const uint64_t sum = lsc + rsc + carry;
-        setWord(word, sum);
-        carry = sum > 0xffffffff;
+        const uint64_t lwordval = lhs.m_data.num()[word].m_value;
+        const uint64_t rwordval = rhs.m_data.num()[word].m_value;
+        const uint64_t sum = lwordval + rwordval + carry;
+        m_data.num()[word].m_value = sum & 0xffffffffULL;
+        carry = sum > 0xffffffffULL;
     }
+    opCleanThis();  // Just in case it produced extra bits in result
     return *this;
 }
 V3Number& V3Number::opSub(const V3Number& lhs, const V3Number& rhs) {

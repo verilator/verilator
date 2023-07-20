@@ -381,13 +381,6 @@ public:
             v.m_valueX |= mask;
         }
     }
-    inline void setWord(int word, uint32_t value) {
-        uint64_t mask = 0xffffffff;
-        if (word == words()-1) mask = (1UL<<(1+((m_data.width()-1)&31)))-1;
-        uint32_t& m_value = m_data.num()[word].m_value;
-        m_value &= ~mask;
-        m_value |= value & mask;
-    }
 
 private:
     char bitIs(int bit) const {
@@ -458,13 +451,7 @@ public:
         const ValueAndX v = m_data.num()[bit / 32];
         return ((~v.m_value & (1UL << (bit & 31))) && (v.m_valueX & (1UL << (bit & 31))));
     }
-    inline uint32_t wordIs1(int word) const VL_MT_SAFE {
-        uint64_t mask = 0xffffffff;
-        if (!isNumber()) return 0;
-        if (word == words()-1) mask = (1UL<<(1+((m_data.width()-1)&31)))-1;
-        const uint32_t value = m_data.num()[word].m_value;
-        return value & mask;
-    }
+
 private:
     uint32_t bitsValue(int lsb, int nbits) const VL_MT_SAFE {
         uint32_t v = 0;
