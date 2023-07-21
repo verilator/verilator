@@ -1,7 +1,7 @@
 .. Github doesn't render images unless absolute URL
 .. Do not know of a conditional tag, "only: github" nor "github display" works
 
-.. image:: https://img.shields.io/badge/Website-Verilator%20org-181717.svg
+.. image:: https://img.shields.io/badge/Website-Verilator.org-181717.svg
     :target: https://verilator.org
 .. image:: https://img.shields.io/badge/License-LGPL%20v3-blue.svg
     :target: https://www.gnu.org/licenses/lgpl-3.0
