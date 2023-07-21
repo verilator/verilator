@@ -1,20 +1,22 @@
 .. Github doesn't render images unless absolute URL
 .. Do not know of a conditional tag, "only: github" nor "github display" works
 
+.. image:: https://img.shields.io/badge/Website-Verilator%20org-181717.svg?logo=github
+    :target: https://verilator.org
 .. image:: https://img.shields.io/badge/License-LGPL%20v3-blue.svg
-    :target: https://www.gnu.org/licenses/lgpl-3.0]
+    :target: https://www.gnu.org/licenses/lgpl-3.0
 .. image:: https://img.shields.io/badge/License-Artistic%202.0-0298c3.svg
     :target: https://opensource.org/licenses/Artistic-2.0
 .. image:: https://repology.org/badge/tiny-repos/verilator.svg?header=distro%20packages
     :target: https://repology.org/project/verilator/versions
+.. image:: https://img.shields.io/docker/pulls/verilator/verilator
+    :target: https://hub.docker.com/r/verilator/verilator
 .. image:: https://api.codacy.com/project/badge/Grade/fa78caa433c84a4ab9049c43e9debc6f
     :target: https://www.codacy.com/gh/verilator/verilator
 .. image:: https://codecov.io/gh/verilator/verilator/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/verilator/verilator
 .. image:: https://github.com/verilator/verilator/workflows/build/badge.svg
     :target: https://github.com/verilator/verilator/actions?query=workflow%3Abuild
-.. image:: https://img.shields.io/docker/pulls/verilator/verilator
-    :target: https://hub.docker.com/r/verilator/verilator
 
 
 Welcome to Verilator
