@@ -8,13 +8,14 @@
 module t;
    typedef process pr;
    pr p[] = new[4];
+   int n = 0;
 
    initial begin
       wait (p[1]);
       p[1].await();
       p[0] = process::self();
-      $display("0");
-      #1 $write("*-* All Finished *-*\n");
+      if (n == 3) n++;
+      #2 $write("*-* All Finished *-*\n");
       $finish;
    end
 
@@ -22,19 +23,21 @@ module t;
       wait (p[2]);
       p[2].await();
       p[1] = process::self();
-      $display("1");
+      if (n == 2) n++;
    end
 
    initial begin
       wait (p[3]);
       p[3].await();
       p[2] = process::self();
-      $display("2");
+      if (n == 1) n++;
    end
 
    initial begin
       p[3] = process::self();
+      if (n == 0) n++;
    end
 
-   initial #2 $stop;  // timeout
+   initial #1 if (n != 4) $stop;
+   initial #3 $stop;  // timeout
 endmodule
