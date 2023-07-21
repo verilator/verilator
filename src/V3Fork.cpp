@@ -375,6 +375,7 @@ private:
                 UASSERT_OBJ(asgnp, stmtp,
                             "Invalid node under block item initialization part of fork");
                 bindNodeToDynScope(asgnp->lhsp(), frame);
+                iterate(asgnp->rhsp());
             }
         }
 
