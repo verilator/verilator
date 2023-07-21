@@ -1546,6 +1546,13 @@ private:
         iterateChildren(nodep);
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
+    void visit(AstVar* nodep) override {
+        if (nodep->isFuncLocal() && nodep->direction() == VDirection::INPUT && nodep->valuep()) {
+            // It's the default value of optional argument.
+            // Such values are added to function calls on this stage and aren't needed here.
+            pushDeletep(nodep->valuep()->unlinkFrBack());
+        }
+    }
     void visit(AstStmtExpr* nodep) override {
         m_insMode = IM_BEFORE;
         m_insStmtp = nodep;
@@ -1658,7 +1665,14 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                                << portp->prettyNameQ() << " in function call to "
                                << nodep->taskp()->prettyTypeName());
                 newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
-            } else if (!VN_IS(portp->valuep(), Const)) {
+            } else if (AstFuncRef* const funcRefp = VN_CAST(portp->valuep(), FuncRef)) {
+                const AstNodeFTask* const funcp = funcRefp->taskp();
+                if (funcp->classMethod() && funcp->lifetime().isStatic()) newvaluep = funcRefp;
+            } else if (AstConst* const constp = VN_CAST(portp->valuep(), Const)) {
+                newvaluep = constp;
+            }
+
+            if (!newvaluep) {
                 // The default value for this port might be a constant
                 // expression that hasn't been folded yet. Try folding it
                 // now; we don't have much to lose if it fails.
@@ -1672,12 +1686,9 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                                       << portp->prettyNameQ() << " in function call to "
                                       << nodep->taskp()->prettyTypeName());
                     newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
-                } else {
-                    newvaluep = newvaluep->cloneTree(true);
                 }
-            } else {
-                newvaluep = VN_AS(portp->valuep(), NodeExpr)->cloneTree(true);
             }
+            newvaluep = newvaluep->cloneTree(true);
             // To avoid problems with callee needing to know to deleteTree
             // or not, we make this into a pin
             UINFO(9, "Default pin for " << portp << endl);
