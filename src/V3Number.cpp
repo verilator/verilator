@@ -1866,12 +1866,15 @@ V3Number& V3Number::opAdd(const V3Number& lhs, const V3Number& rhs) {
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
     setZero();
     // Addem
-    int carry = 0;
-    for (int bit = 0; bit < width(); bit++) {
-        const int sum = ((lhs.bitIs1(bit) ? 1 : 0) + (rhs.bitIs1(bit) ? 1 : 0) + carry);
-        if (sum & 1) setBit(bit, 1);
-        carry = (sum >= 2);
+    uint64_t carry = 0;
+    for (int word = 0; word < words(); word++) {
+        const uint64_t lwordval = lhs.m_data.num()[word].m_value;
+        const uint64_t rwordval = rhs.m_data.num()[word].m_value;
+        const uint64_t sum = lwordval + rwordval + carry;
+        m_data.num()[word].m_value = sum & 0xffffffffULL;
+        carry = sum > 0xffffffffULL;
     }
+    opCleanThis();  // Just in case it produced extra bits in result
     return *this;
 }
 V3Number& V3Number::opSub(const V3Number& lhs, const V3Number& rhs) {
