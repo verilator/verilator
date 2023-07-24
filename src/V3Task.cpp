@@ -412,7 +412,6 @@ private:
                 AstVarScope* const newvscp = VN_AS(refp->varp()->user2p(), VarScope);
                 refp->varScopep(newvscp);
                 refp->varp(refp->varScopep()->varp());
-                refp->name(refp->varp()->name());
             }
         });
     }

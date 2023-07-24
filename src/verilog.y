@@ -2251,7 +2251,7 @@ tf_variable_identifier<varp>:           // IEEE: part of list_of_tf_variable_ide
                 id variable_dimensionListE sigAttrListE exprEqE
                         { $$ = VARDONEA($<fl>1, *$1, $2, $3);
                           if ($4) AstNode::addNext<AstNode, AstNode>(
-                                      $$, new AstAssign{$4->fileline(), new AstVarRef{$<fl>1, *$1, VAccess::WRITE}, $4}); }
+                                      $$, new AstAssign{$4->fileline(), new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $4}); }
         ;
 
 variable_declExpr<nodep>:               // IEEE: part of variable_decl_assignment - rhs of expr
@@ -2995,7 +2995,7 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); }
         |       netId sigAttrListE '=' expr
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
-                          auto* const assignp = new AstAssignW{$3, new AstVarRef{$<fl>1, *$1, VAccess::WRITE}, $4};
+                          auto* const assignp = new AstAssignW{$3, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $4};
                           if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
                           AstNode::addNext<AstNode, AstNode>($$, assignp); }
         |       netId variable_dimensionList sigAttrListE
@@ -3912,14 +3912,14 @@ for_initializationItem<nodep>:          // IEEE: variable_assignment + for_varia
                           AstVar* const varp = VARDONEA($<fl>2, *$2, nullptr, nullptr);
                           varp->lifetime(VLifetime::AUTOMATIC);
                           $$ = varp;
-                          $$->addNext(new AstAssign{$3, new AstVarRef{$<fl>2, *$2, VAccess::WRITE}, $4}); }
+                          $$->addNext(new AstAssign{$3, new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2}, $4}); }
         //                      // IEEE-2012:
         |       yVAR data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($2);
                           AstVar* const varp = VARDONEA($<fl>3, *$3, nullptr, nullptr);
                           varp->lifetime(VLifetime::AUTOMATIC);
                           $$ = varp;
-                          $$->addNext(new AstAssign{$4, new AstVarRef{$<fl>3, *$3, VAccess::WRITE}, $5}); }
+                          $$->addNext(new AstAssign{$4, new AstParseRef{$<fl>3, VParseRefExp::PX_TEXT, *$3}, $5}); }
         //                      // IEEE: variable_assignment
         //                      // UNSUP variable_lvalue below
         |       varRefBase '=' expr                     { $$ = new AstAssign{$2, $1, $3}; }
@@ -5614,8 +5614,8 @@ idArrayedForeach<nodeExprp>:    // IEEE: id + select (under foreach expression)
         ;
 
 // VarRef without any dots or vectorizaion
-varRefBase<varRefp>:
-                id                                      { $$ = new AstVarRef{$<fl>1, *$1, VAccess::READ}; }
+varRefBase<parseRefp>:
+                id                                      { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}; }
         ;
 
 // ParseRef

@@ -1812,7 +1812,7 @@ public:
     string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "",
-                     bool asRef = false) const VL_MT_STABLE;
+                     bool asRef = false) const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
