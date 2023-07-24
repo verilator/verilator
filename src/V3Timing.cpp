@@ -469,23 +469,6 @@ private:
         int scalePowerOfTen = timeunit.powerOfTen() - m_netlistp->timeprecision().powerOfTen();
         return std::pow(10.0, scalePowerOfTen);
     }
-    // Construct SenItems from VarRefs in an expression
-    AstSenItem* varRefpsToSenItemsp(AstNode* const nodep) const {
-        AstNode* senItemsp = nullptr;
-        const VNUser4InUse user4InUse;
-        nodep->foreach([&](AstNodeVarRef* refp) {
-            if (refp->access().isWriteOnly()) return;
-            AstVarScope* const vscp = refp->varScopep();
-            if (vscp->user4SetOnce()) return;
-            const bool isEvent = vscp->dtypep() && vscp->dtypep()->basicp()
-                                 && vscp->dtypep()->basicp()->isEvent();
-            const auto edgeType = isEvent ? VEdgeType::ET_EVENT : VEdgeType::ET_CHANGED;
-            senItemsp = AstNode::addNext(
-                senItemsp, new AstSenItem{refp->fileline(), edgeType,
-                                          new AstVarRef{refp->fileline(), vscp, VAccess::READ}});
-        });
-        return VN_AS(senItemsp, SenItem);
-    }
     // Creates the global delay scheduler variable
     AstVarScope* getCreateDelayScheduler() {
         if (m_delaySchedp) return m_delaySchedp;
@@ -1023,11 +1006,14 @@ private:
             if (stmtsp) AstNode::addNext<AstNode, AstNode>(ifp, stmtsp);
             nodep->replaceWith(ifp);
         } else {
-            AstSenItem* const senItemsp = varRefpsToSenItemsp(condp);
-            UASSERT_OBJ(senItemsp, nodep, "No varrefs in wait statement condition");
-            // Put the event control in a while loop with the wait expression as condition
-            AstEventControl* const controlp
-                = new AstEventControl{flp, new AstSenTree{flp, senItemsp}, nullptr};
+            // We are using a global sentree, so we cannot use ET_TRUE, as that could lead to the
+            // active region never converging. Because of this, we need to use ET_CHANGED in a
+            // loop.
+            AstEventControl* const controlp = new AstEventControl{
+                flp,
+                new AstSenTree{
+                    flp, new AstSenItem{flp, VEdgeType::ET_CHANGED, condp->cloneTree(false)}},
+                nullptr};
             controlp->user2(true);  // Commit immediately
             AstWhile* const loopp = new AstWhile{flp, new AstLogNot{flp, condp}, controlp};
             if (stmtsp) AstNode::addNext<AstNode, AstNode>(loopp, stmtsp);

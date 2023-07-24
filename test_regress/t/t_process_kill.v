@@ -10,10 +10,9 @@ module t (/*AUTOARG*/
    );
    input clk;
    process p;
-   bit s = 0;
 
    initial begin
-      wait (s);
+      wait (p);
       p.kill();
       p.await();
       $write("*-* All Finished *-*\n");
@@ -23,7 +22,6 @@ module t (/*AUTOARG*/
    always @(posedge clk) begin
       if (!p) begin
          p = process::self();
-         s = 1;
       end else begin
          $stop;
       end
