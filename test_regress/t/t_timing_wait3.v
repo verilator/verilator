@@ -7,7 +7,7 @@
 
 module t;
    typedef process pr;
-   pr p[] = new[4];
+   pr p[4];
    int n = 0;
 
    initial begin
