@@ -1157,24 +1157,25 @@ inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) {
 class VUseType final {
 public:
     enum en : uint8_t {
-        IMP_INCLUDE,  // Implementation (.cpp) needs an include
-        INT_INCLUDE,  // Interface (.h) needs an include
-        IMP_FWD_CLASS,  // Implementation (.cpp) needs a forward class declaration
-        INT_FWD_CLASS,  // Interface (.h) needs a forward class declaration
+        INT_FWD_CLASS = 1,  // Interface (.h) needs a forward class declaration
+        INT_INCLUDE = 2,  // Interface (.h) needs an include
+        // Implementations currently include _Syms file which includes all headers.
+        // TODO: Rework SYMS CLASS so it can be used without including all headers, because
+        // it slows down the compilation for big projects.
     };
     enum en m_e;
     VUseType()
-        : m_e{IMP_FWD_CLASS} {}
+        : m_e{INT_FWD_CLASS} {}
     // cppcheck-suppress noExplicitConstructor
     constexpr VUseType(en _e)
         : m_e{_e} {}
     explicit VUseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    bool isInclude() const { return m_e == IMP_INCLUDE || m_e == INT_INCLUDE; }
-    bool isFwdClass() const { return m_e == IMP_FWD_CLASS || m_e == INT_FWD_CLASS; }
+    bool isInclude() const { return m_e == INT_INCLUDE; }
+    bool isFwdClass() const { return m_e == INT_FWD_CLASS; }
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"IMP_INC", "INT_INC", "IMP_FWD", "INT_FWD"};
+        static const char* const names[] = {"INT_INC", "INT_FWD"};
         return names[m_e];
     }
 };

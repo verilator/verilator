@@ -30,7 +30,7 @@
 #include "V3Ast.h"
 #include "V3Global.h"
 
-#include <set>
+#include <map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -46,16 +46,14 @@ class CUseVisitor final : public VNVisitor {
 
     // MEMBERS
     AstNodeModule* const m_modp;  // Current module
-    std::set<std::pair<VUseType, std::string>> m_didUse;  // What we already used
-    bool m_dtypesImplOnly = false;
+    std::map<std::string, VUseType> m_didUse;  // What we already used
 
     // METHODS
     void addNewUse(AstNode* nodep, VUseType useType, const string& name) {
-        if (m_dtypesImplOnly
-            && (useType == VUseType::INT_INCLUDE || useType == VUseType::INT_FWD_CLASS))
-            return;
-
-        if (m_didUse.emplace(useType, name).second) {
+        auto e = m_didUse.emplace(name, useType).first;
+        bool needsUpgrade = e->second < useType;
+        if (needsUpgrade) {
+            e->second = useType;
             AstCUse* const newp = new AstCUse{nodep->fileline(), useType, name};
             m_modp->addStmtsp(newp);
             UINFO(8, "Insert " << newp << endl);
@@ -64,34 +62,17 @@ class CUseVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstClassRefDType* nodep) override {
-        if (nodep->user1SetOnce()) return;  // Process once
         addNewUse(nodep, VUseType::INT_FWD_CLASS, nodep->classp()->name());
     }
     void visit(AstCFunc* nodep) override {
-        if (nodep->user1SetOnce()) return;  // Process once
+        UASSERT(nodep->user1SetOnce(), "Visited same function twice.");
         iterateAndNextNull(nodep->argsp());
-
-        {
-            VL_RESTORER(m_dtypesImplOnly);
-            m_dtypesImplOnly = true;
-
-            iterateAndNextNull(nodep->initsp());
-            iterateAndNextNull(nodep->stmtsp());
-            iterateAndNextNull(nodep->finalsp());
-        }
     }
     void visit(AstCReturn* nodep) override {
-        if (nodep->user1SetOnce()) return;  // Process once
-        if (m_dtypesImplOnly) {
-            for (AstNode* exprp = nodep->op1p(); exprp; exprp = exprp->nextp()) {
-                if (exprp->dtypep()) iterate(exprp->dtypep());
-            }
-        } else {
-            iterateChildren(nodep);
-        }
+        UASSERT(nodep->user1SetOnce(), "Visited same return twice.");
+        iterateChildren(nodep);
     }
     void visit(AstNodeDType* nodep) override {
-        if (nodep->user1SetOnce()) return;  // Process once
         if (nodep->virtRefDTypep()) iterate(nodep->virtRefDTypep());
         if (nodep->virtRefDType2p()) iterate(nodep->virtRefDType2p());
 
@@ -106,7 +87,7 @@ class CUseVisitor final : public VNVisitor {
     }
     void visit(AstNode* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
-        if (nodep->dtypep() && !nodep->dtypep()->user1()) iterate(nodep->dtypep());
+        if (nodep->dtypep()) iterate(nodep->dtypep());
         iterateChildren(nodep);
     }
     void visit(AstCell* nodep) override {
