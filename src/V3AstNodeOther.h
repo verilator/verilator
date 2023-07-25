@@ -1388,7 +1388,6 @@ public:
     void dump(std::ostream& str) const override;
     bool same(const AstNode* samep) const override;
     string nameDotless() const;
-    string nameVlSym() const { return string{"vlSymsp->"} + nameDotless(); }
     AstNodeModule* modp() const { return m_modp; }
     //
     AstScope* aboveScopep() const VL_MT_SAFE { return m_aboveScopep; }
