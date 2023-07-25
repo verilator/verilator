@@ -65,8 +65,9 @@ class CUseVisitor final : public VNVisitor {
         addNewUse(nodep, VUseType::INT_FWD_CLASS, nodep->classp()->name());
     }
     void visit(AstCFunc* nodep) override {
-        UASSERT(nodep->user1SetOnce(), "Visited same function twice.");
+        if (nodep->user1SetOnce()) return;
         iterateAndNextNull(nodep->argsp());
+        nodep->stmtsp()->forall([=](AstCReturn* retp) { visit(retp); });
     }
     void visit(AstCReturn* nodep) override {
         UASSERT(nodep->user1SetOnce(), "Visited same return twice.");
