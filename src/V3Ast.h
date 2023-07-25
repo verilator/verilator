@@ -1175,7 +1175,7 @@ public:
     bool isFwdClass() const { return m_e == INT_FWD_CLASS; }
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"INT_INC", "INT_FWD"};
+        static const char* const names[] = {"INT_FWD", "INT_INC"};
         return names[m_e];
     }
 };
