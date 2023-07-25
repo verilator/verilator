@@ -50,10 +50,9 @@ class CUseVisitor final : public VNVisitor {
 
     // METHODS
     void addNewUse(AstNode* nodep, VUseType useType, const string& name) {
-        auto e = m_didUse.emplace(name, useType).first;
-        bool needsUpgrade = e->second < useType;
-        if (needsUpgrade) {
-            e->second = useType;
+        auto e = m_didUse.emplace(name, useType);
+        if (e.second || (e.first->second < useType)) {
+            e.first->second = useType;
             AstCUse* const newp = new AstCUse{nodep->fileline(), useType, name};
             m_modp->addStmtsp(newp);
             UINFO(8, "Insert " << newp << endl);
