@@ -1114,7 +1114,7 @@ private:
                                        "other than a single 'logic' (IEEE 1800-2017 35.5.5)");
                     }
                 }
-            } else {
+            } else if (nodep->taskPublic()) {
                 if (portp->isWide()) {
                     nodep->v3warn(E_UNSUPPORTED,
                                   "Unsupported: Public functions with return > 64 bits wide.\n"
