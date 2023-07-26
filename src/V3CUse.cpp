@@ -28,9 +28,11 @@
 #include "V3CUse.h"
 
 #include "V3Ast.h"
+#include "V3FileLine.h"
 #include "V3Global.h"
 
 #include <map>
+#include <utility>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -46,16 +48,13 @@ class CUseVisitor final : public VNVisitor {
 
     // MEMBERS
     AstNodeModule* const m_modp;  // Current module
-    std::map<std::string, VUseType> m_didUse;  // What we already used
+    std::map<std::string, std::pair<FileLine*, uint8_t>> m_didUse;  // What we already used
 
     // METHODS
     void addNewUse(AstNode* nodep, VUseType useType, const string& name) {
-        auto e = m_didUse.emplace(name, useType);
-        if (e.second || (e.first->second < useType)) {
-            e.first->second = useType;
-            AstCUse* const newp = new AstCUse{nodep->fileline(), useType, name};
-            m_modp->addStmtsp(newp);
-            UINFO(8, "Insert " << newp << endl);
+        auto e = m_didUse.emplace(name, std::make_pair(nodep->fileline(), useType));
+        if (e.second || ((e.first->second.second & useType) != useType)) {
+            e.first->second.second |= useType;
         }
     }
 
@@ -106,6 +105,13 @@ public:
     explicit CUseVisitor(AstNodeModule* modp)
         : m_modp(modp) {
         iterate(modp);
+
+        for (auto& used : m_didUse) {
+            AstCUse* const newp =
+                new AstCUse{used.second.first, used.second.second, used.first};
+            m_modp->addStmtsp(newp);
+            UINFO(8, "Insert " << newp << endl);
+        }
     }
     ~CUseVisitor() override = default;
     VL_UNCOPYABLE(CUseVisitor);
