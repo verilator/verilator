@@ -948,7 +948,7 @@ def write_ast_macros(filename):
                 if not op:
                     continue
                 name, monad, kind = op
-                retrieve = ("VN_AS(op{n}p(), {kind})" if kind != "Node" else
+                retrieve = ("VN_DBG_AS(op{n}p(), {kind})" if kind != "Node" else
                             "op{n}p()").format(n=n, kind=kind)
                 if monad == "List":
                     emitBlock('''\
