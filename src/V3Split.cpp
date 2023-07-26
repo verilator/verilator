@@ -176,12 +176,12 @@ public:
     void setIgnoreThisStep() { m_ignoreInStep = s_stepNum; }
     virtual bool followScoreboard() const = 0;
     static bool followScoreboard(const V3GraphEdge* edgep) {
-        const SplitEdge* const oedgep = edgep->as<SplitEdge>();
+        const SplitEdge* const oedgep = static_cast<const SplitEdge*>(edgep);
         if (oedgep->ignoreThisStep()) return false;
         return oedgep->followScoreboard();
     }
     static bool followCyclic(const V3GraphEdge* edgep) {
-        const SplitEdge* const oedgep = edgep->as<SplitEdge>();
+        const SplitEdge* const oedgep = static_cast<const SplitEdge*>(edgep);
         return (!oedgep->ignoreThisStep());
     }
     string dotStyle() const override {
@@ -332,7 +332,7 @@ protected:
                     stdp->nodep()->dumpTree("-  ");
                 }
                 for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                    SplitEdge* const oedgep = edgep->as<SplitEdge>();
+                    SplitEdge* const oedgep = static_cast<SplitEdge*>(edgep);
                     oedgep->setIgnoreThisStep();
                 }
             }
@@ -487,12 +487,12 @@ protected:
                 if (const SplitLogicVertex* const vvertexp = vertexp->cast<SplitLogicVertex>()) {
                     for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep;
                          edgep = edgep->inNextp()) {
-                        SplitEdge* const oedgep = edgep->as<SplitEdge>();
+                        SplitEdge* const oedgep = static_cast<SplitEdge*>(edgep);
                         oedgep->setIgnoreThisStep();
                     }
                     for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep;
                          edgep = edgep->outNextp()) {
-                        SplitEdge* const oedgep = edgep->as<SplitEdge>();
+                        SplitEdge* const oedgep = static_cast<SplitEdge*>(edgep);
                         oedgep->setIgnoreThisStep();
                     }
                 }
@@ -919,7 +919,7 @@ protected:
 
             bool pruneMe = true;
             for (V3GraphEdge* edgep = logicp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                const SplitEdge* const oedgep = edgep->as<const SplitEdge>();
+                const SplitEdge* const oedgep = static_cast<const SplitEdge*>(edgep);
                 if (!oedgep->ignoreThisStep()) {
                     // This if conditional depends on something we can't
                     // prune -- a variable generated in the current block.
@@ -929,7 +929,8 @@ protected:
                     // give a hint about why...
                     if (debug() >= 9) {
                         V3GraphVertex* vxp = oedgep->top();
-                        const SplitNodeVertex* const nvxp = vxp->as<const SplitNodeVertex>();
+                        const SplitNodeVertex* const nvxp
+                            = static_cast<const SplitNodeVertex*>(vxp);
                         UINFO(0, "Cannot prune if-node due to edge "
                                      << oedgep << " pointing to node " << nvxp->nodep() << endl);
                         nvxp->nodep()->dumpTree("-  ");
@@ -943,7 +944,7 @@ protected:
 
             // This if can be split; prune dependencies on it.
             for (V3GraphEdge* edgep = logicp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                SplitEdge* const oedgep = edgep->as<SplitEdge>();
+                SplitEdge* const oedgep = static_cast<SplitEdge*>(edgep);
                 oedgep->setIgnoreThisStep();
             }
         }
