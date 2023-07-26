@@ -143,11 +143,16 @@ string V3Os::filenameDir(const string& filename) {
 }
 
 string V3Os::filenameNonDir(const string& filename) VL_PURE {
-    string::size_type pos;
-    if ((pos = filename.rfind('/')) != string::npos) {
-        return filename.substr(pos + 1);
-    } else {
+    const string::size_type pos1 = filename.rfind('/');
+    const string::size_type pos2 = filename.rfind('\\');
+    if (pos1 == string::npos && pos2 == string::npos) {
         return filename;
+    } else if (pos1 == string::npos) {
+        return filename.substr(pos2 + 1);
+    } else if (pos2 == string::npos) {
+        return filename.substr(pos1 + 1);
+    } else {
+        return filename.substr(std::max(pos1, pos2) + 1);
     }
 }
 
