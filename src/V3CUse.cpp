@@ -66,7 +66,10 @@ class CUseVisitor final : public VNVisitor {
     void visit(AstCFunc* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateAndNextNull(nodep->argsp());
-        nodep->stmtsp()->forall([=](AstCReturn* retp) { visit(retp); });
+        nodep->stmtsp()->forall([=](AstCReturn* retp) -> bool {
+            visit(retp);
+            return true;
+        });
     }
     void visit(AstCReturn* nodep) override {
         UASSERT(nodep->user1SetOnce(), "Visited same return twice.");
