@@ -5863,6 +5863,7 @@ property_declarationFront<nodeFTaskp>:  // IEEE: part of property_declaration
 
 property_port_listE<nodep>:  // IEEE: [ ( [ property_port_list ] ) ]
                 /* empty */                       { $$ = nullptr; }
+        |       '(' ')'                           { $$ = nullptr; }
         |       '(' property_port_list ')'        { $$ = $2; }
         ;
 
