@@ -7544,16 +7544,16 @@ AstNodeDType* V3Width::getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) {
     const Castable castable
         = WidthVisitor::computeCastable(nodep1->dtypep(), nodep2->dtypep(), nodep2);
     if (castable == SAMEISH || castable == COMPATIBLE) {
-        return nodep1->dtypep()->cloneTree(false);
+        return nodep1->dtypep();
     } else if (castable == DYNAMIC_CLASS) {
-        return nodep2->dtypep()->cloneTree(false);
+        return nodep2->dtypep();
     }
 
     AstClassRefDType* classDtypep1 = VN_CAST(nodep1->dtypep(), ClassRefDType);
     while (classDtypep1) {
         const Castable castable
             = WidthVisitor::computeCastable(classDtypep1, nodep2->dtypep(), nodep2);
-        if (castable == COMPATIBLE) return classDtypep1->cloneTree(false);
+        if (castable == COMPATIBLE) return classDtypep1;
         AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
         classDtypep1 = extendsp ? VN_AS(extendsp->dtypep(), ClassRefDType) : nullptr;
     }
