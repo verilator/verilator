@@ -1099,7 +1099,7 @@ private:
         if (nodep->isFunction()) {
             AstVar* const portp = VN_AS(nodep->fvarp(), Var);
             UASSERT_OBJ(portp, nodep, "function without function output variable");
-            if (!portp->isFuncReturn()) nodep->v3error("Not marked as function return var");
+            UASSERT_OBJ(portp->isFuncReturn(), nodep, "Not marked as function return var");
             if (nodep->dpiImport() || nodep->dpiExport()) {
                 AstBasicDType* const bdtypep = portp->dtypep()->basicp();
                 if (!bdtypep->isDpiPrimitive()) {

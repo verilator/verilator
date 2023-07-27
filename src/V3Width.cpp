@@ -1549,7 +1549,7 @@ private:
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported: $bits for queue");
                     break;
                 }
-                default: nodep->v3error("Unhandled attribute type");
+                default: nodep->v3fatalSrc("Unhandled attribute type");
                 }
             } else {
                 const std::pair<uint32_t, uint32_t> dimpair = dtypep->skipRefp()->dimensions(true);
