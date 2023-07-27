@@ -16,8 +16,8 @@
 
 // clang-format off
 #include "config_build.h"
-#ifndef HAVE_CONFIG_BUILD
-# error "Something failed during ./configure as config_build.h is incomplete. Perhaps you used autoreconf, don't."
+#ifndef HAVE_CONFIG_PACKAGE
+# error "Something failed during ./configure as config_package.h is incomplete. Perhaps you used autoreconf, don't."
 #endif
 // clang-format on
 
@@ -48,7 +48,7 @@ static int debug() { return V3Error::debugDefault(); }
 void VlcOptions::addReadFile(const string& filename) { m_readFiles.insert(filename); }
 
 string VlcOptions::version() {
-    string ver = DTVERSION;
+    string ver = PACKAGE_STRING;
     ver += " rev " + cvtToStr(DTVERSION_rev);
     return ver;
 }
