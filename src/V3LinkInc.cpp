@@ -267,11 +267,10 @@ private:
 
         AstConst* const constp = VN_AS(nodep->lhsp(), Const);
         UASSERT_OBJ(nodep, constp, "Expecting CONST");
-        const AstNode* const backp = nodep->backp();
         AstConst* const newconstp = constp->cloneTree(true);
 
         // Prepare a temporary variable
-        FileLine* const fl = backp->fileline();
+        FileLine* const fl = nodep->fileline();
         const string name = string{"__Vincrement"} + cvtToStr(++m_modIncrementsNum);
         AstVar* const varp = new AstVar{
             fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
