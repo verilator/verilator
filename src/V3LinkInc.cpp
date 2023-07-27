@@ -61,12 +61,29 @@ private:
 
     // STATE
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
+    AstNodeModule* m_modp = nullptr;  // Module we're inside
     int m_modIncrementsNum = 0;  // Var name counter
     InsertMode m_insMode = IM_BEFORE;  // How to insert
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_unsupportedHere = false;  // Used to detect where it's not supported yet
 
     // METHODS
+    void insertOnTop(AstNode *newp) {
+        // Add the thing on top of current TFunc/Module
+        AstNode* stmtsp;
+        if (m_ftaskp) {
+            stmtsp = m_ftaskp->stmtsp();
+        } else if (m_modp) {
+            stmtsp = m_modp->stmtsp();
+        }
+        stmtsp->unlinkFrBackWithNext();
+        newp->addNext(stmtsp);
+        if (m_ftaskp) {
+            m_ftaskp->addStmtsp(newp);
+        } else if (m_modp) {
+            m_modp->addStmtsp(newp);
+        }
+    }
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
         if (debug() >= 9) newp->dumpTree("-  newstmt: ");
@@ -88,7 +105,9 @@ private:
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
         VL_RESTORER(m_modIncrementsNum);
+        m_modp = nodep;
         m_modIncrementsNum = 0;
         iterateChildren(nodep);
     }
@@ -260,7 +279,7 @@ private:
         if (m_ftaskp) varp->funcLocal(true);
 
         // Declare the variable
-        insertBeforeStmt(nodep, varp);
+        insertOnTop(varp);
 
         // Define what operation will we be doing
         AstNodeExpr* operp;
@@ -270,20 +289,23 @@ private:
             operp = new AstAdd{fl, readp->cloneTree(true), newconstp};
         }
 
+        AstAssign* assignp;
         if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PreSub)) {
             // PreAdd/PreSub operations
             // Immediately after declaration - increment it by one
-            varp->addNextHere(new AstAssign{fl, writep->cloneTree(true),
-                                            new AstVarRef{fl, varp, VAccess::READ}});
+            assignp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, operp};
+            insertBeforeStmt(nodep, assignp);
             // Immediately after incrementing - assign it to the original variable
-            varp->addNextHere(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, operp});
+            assignp->addNextHere(new AstAssign{fl, writep->cloneTree(true),
+                                               new AstVarRef{fl, varp, VAccess::READ}});
         } else {
             // PostAdd/PostSub operations
-            // assign the original variable to the temporary one
-            varp->addNextHere(new AstAssign{fl, writep->cloneTree(true), operp});
+            // Assign the original variable to the temporary one
+            assignp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                               readp->cloneTree(true)};
+            insertBeforeStmt(nodep, assignp);
             // Increment the original variable by one
-            varp->addNextHere(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
-                                            readp->cloneTree(true)});
+            assignp->addNextHere(new AstAssign{fl, writep->cloneTree(true), operp});
         }
 
         // Replace the node with the temporary
