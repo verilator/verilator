@@ -144,8 +144,7 @@ AstNodeCond::AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr
         // Get the most-deriving class type that both arguments can be casted to.
         AstNodeDType* const commonClassTypep = V3Width::getCommonClassTypep(thenp, elsep);
         UASSERT_OBJ(commonClassTypep, this, "No common base class exists");
-        v3Global.rootp()->typeTablep()->addTypesp(commonClassTypep);
-        dtypeFrom(commonClassTypep);
+        dtypep(commonClassTypep);
     } else {
         dtypeFrom(thenp);
     }
