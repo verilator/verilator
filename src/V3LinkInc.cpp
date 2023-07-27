@@ -68,23 +68,23 @@ private:
     bool m_unsupportedHere = false;  // Used to detect where it's not supported yet
 
     // METHODS
-    void insertOnTop(AstNode *newp) {
-        // Add the thing on top of current TFunc/Module
-        AstNode* stmtsp;
+    void insertOnTop(AstNode* newp) {
+        // Add the thing directly under the current TFunc/Module
+        AstNode* stmtsp = nullptr;
         if (m_ftaskp) {
             stmtsp = m_ftaskp->stmtsp();
         } else if (m_modp) {
             stmtsp = m_modp->stmtsp();
         }
-        stmtsp->unlinkFrBackWithNext();
-        newp->addNext(stmtsp);
+        UASSERT(stmtsp, "Variable not under FTASK/MODULE");
+        newp->addNext(stmtsp->unlinkFrBackWithNext());
         if (m_ftaskp) {
             m_ftaskp->addStmtsp(newp);
         } else if (m_modp) {
             m_modp->addStmtsp(newp);
         }
     }
-    void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
+    void insertNextToStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
         if (debug() >= 9) newp->dumpTree("-  newstmt: ");
         UASSERT_OBJ(m_insStmtp, nodep, "Function not underneath a statement");
@@ -293,7 +293,7 @@ private:
             // PreAdd/PreSub operations
             // Immediately after declaration - increment it by one
             assignp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, operp};
-            insertBeforeStmt(nodep, assignp);
+            insertNextToStmt(nodep, assignp);
             // Immediately after incrementing - assign it to the original variable
             assignp->addNextHere(new AstAssign{fl, writep->cloneTree(true),
                                                new AstVarRef{fl, varp, VAccess::READ}});
@@ -301,8 +301,8 @@ private:
             // PostAdd/PostSub operations
             // Assign the original variable to the temporary one
             assignp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
-                                               readp->cloneTree(true)};
-            insertBeforeStmt(nodep, assignp);
+                                    readp->cloneTree(true)};
+            insertNextToStmt(nodep, assignp);
             // Increment the original variable by one
             assignp->addNextHere(new AstAssign{fl, writep->cloneTree(true), operp});
         }
