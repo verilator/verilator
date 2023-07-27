@@ -69,6 +69,16 @@ module t(/*AUTOARG*/);
       v2 = $urandom();
       if (v1 != v2) $stop;
 
+      // Seed stability via process.srandom
+      p.srandom(32'h88888888);  // "Large" seed to check a VlRNG::srandom edge case
+      v1 = $urandom();
+      p.srandom(32'h88888888);
+      v2 = $urandom();
+      if (v1 != v2) $stop;
+      p.srandom(32'h88888888);
+      v2 = $urandom();
+      if (v1 != v2) $stop;
+
       // Seed stability via process.get_randstate
       s = p.get_randstate();
       v1 = $urandom();

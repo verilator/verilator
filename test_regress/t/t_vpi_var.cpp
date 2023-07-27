@@ -325,6 +325,7 @@ int _mon_check_var() {
         CHECK_RESULT_NZ(vh10);
         vpi_get_value(vh10, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer, 4);
+        CHECK_RESULT(vpi_get(vpiType, vh10), vpiConstant);
         p = vpi_get_str(vpiType, vh10);
         CHECK_RESULT_CSTR(p, "vpiConstant");
     }
@@ -386,6 +387,12 @@ int _mon_check_varlist() {
 
     TestVpiHandle vh2 = VPI_HANDLE("sub");
     CHECK_RESULT_NZ(vh2);
+    p = vpi_get_str(vpiName, vh2);
+    CHECK_RESULT_CSTR(p, "sub");
+    if (TestSimulator::is_verilator()) {
+        p = vpi_get_str(vpiDefName, vh2);
+        CHECK_RESULT_CSTR(p, "<null>");  // Unsupported
+    }
 
     TestVpiHandle vh10 = vpi_iterate(vpiReg, vh2);
     CHECK_RESULT_NZ(vh10);
