@@ -55,44 +55,53 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-class DynScopeInstance final {
+class ForkDynScopeInstance final {
 public:
-    AstClass* classp = nullptr;  // Class for holding variables of dynamic scope
-    AstClassRefDType* refDTypep = nullptr;  // RefDType for the above
-    AstVar* handlep = nullptr;  // Class handle for holding variables of dynamic scope
+    AstClass* m_classp = nullptr;  // Class for holding variables of dynamic scope
+    AstClassRefDType* m_refDTypep = nullptr;  // RefDType for the above
+    AstVar* m_handlep = nullptr;  // Class handle for holding variables of dynamic scope
 
     // True if the instance exists
-    operator bool() const { return classp != nullptr; }
+    bool initialized() const { return m_classp != nullptr; }
 };
 
-class DynScopeFrame final {
+class ForkDynScopeFrame final {
+private:
+    // MEMBERS
+    AstNodeModule* const m_modp;  // Module to insert the scope into
+    AstNode* const m_procp;  // Procedure/block associated with that dynscope
+    std::set<AstVar*> m_captures;  // Variables to be moved into the dynscope
+    ForkDynScopeInstance m_instance;  // Nodes to be injected into the AST to create the dynscope
+
 public:
-    DynScopeFrame(AstNodeModule* modp, AstNode* procp)
-        : m_modp(modp)
-        , m_procp(procp) {}
+    ForkDynScopeFrame(AstNodeModule* modp, AstNode* procp)
+        : m_modp{modp}
+        , m_procp{procp} {}
 
-    DynScopeInstance& createInstancePrototype() {
-        UASSERT_OBJ(!m_instance, m_procp, "Dynamic scope already instantiated.");
+    ForkDynScopeInstance& createInstancePrototype() {
+        UASSERT_OBJ(!m_instance.initialized(), m_procp, "Dynamic scope already instantiated.");
 
-        m_instance.classp = new AstClass{m_procp->fileline(), generateDynScopeClassName(m_procp)};
-        m_instance.refDTypep
-            = new AstClassRefDType{m_procp->fileline(), m_instance.classp, nullptr};
-        v3Global.rootp()->typeTablep()->addTypesp(m_instance.refDTypep);
-        m_instance.handlep = new AstVar{m_procp->fileline(), VVarType::BLOCKTEMP,
-                                        generateDynScopeHandleName(m_procp), m_instance.refDTypep};
-        m_instance.handlep->funcLocal(true);
-        m_instance.handlep->lifetime(VLifetime::AUTOMATIC);
+        m_instance.m_classp
+            = new AstClass{m_procp->fileline(), generateDynScopeClassName(m_procp)};
+        m_instance.m_refDTypep
+            = new AstClassRefDType{m_procp->fileline(), m_instance.m_classp, nullptr};
+        v3Global.rootp()->typeTablep()->addTypesp(m_instance.m_refDTypep);
+        m_instance.m_handlep
+            = new AstVar{m_procp->fileline(), VVarType::BLOCKTEMP,
+                         generateDynScopeHandleName(m_procp), m_instance.m_refDTypep};
+        m_instance.m_handlep->funcLocal(true);
+        m_instance.m_handlep->lifetime(VLifetime::AUTOMATIC);
 
         return m_instance;
     }
 
-    const DynScopeInstance& instance() const { return m_instance; }
-    void captureVar(AstVar* varp) { m_captures.insert(varp); }
+    const ForkDynScopeInstance& instance() const { return m_instance; }
+    void captureVarInsert(AstVar* varp) { m_captures.insert(varp); }
     bool captured(AstVar* varp) { return m_captures.count(varp) != 0; }
     AstNode* procp() const { return m_procp; }
 
     void populateClass() {
-        UASSERT_OBJ(m_instance, m_procp, "No DynScope prototype");
+        UASSERT_OBJ(m_instance.initialized(), m_procp, "No DynScope prototype");
 
         // Move variables into the class
         for (AstVar* varp : m_captures) {
@@ -106,20 +115,21 @@ public:
             varp->varType(VVarType::MEMBER);
             varp->lifetime(VLifetime::AUTOMATIC);
             varp->usedLoopIdx(false);  // No longer unrollable
-            m_instance.classp->addStmtsp(varp);
+            m_instance.m_classp->addStmtsp(varp);
         }
 
         // Create class's constructor
-        AstFunc* const newp = new AstFunc{m_instance.classp->fileline(), "new", nullptr, nullptr};
+        AstFunc* const newp
+            = new AstFunc{m_instance.m_classp->fileline(), "new", nullptr, nullptr};
         newp->isConstructor(true);
         newp->classMethod(true);
         newp->dtypep(newp->findVoidDType());
-        m_instance.classp->addStmtsp(newp);
+        m_instance.m_classp->addStmtsp(newp);
     }
 
     void linkNodes(VMemberMap& memberMap) {
-        UASSERT_OBJ(m_instance, m_procp, "No dynamic scope prototype");
-        UASSERT_OBJ(!linked(), m_instance.handlep, "Handle already linked");
+        UASSERT_OBJ(m_instance.initialized(), m_procp, "No dynamic scope prototype");
+        UASSERT_OBJ(!linked(), m_instance.m_handlep, "Handle already linked");
 
         AstNode* stmtp = getProcStmts();
         UASSERT(stmtp, "trying to instantiate dynamic scope while not under proc");
@@ -132,30 +142,31 @@ public:
         UASSERT(stmtp, "Procedure lacks body");
         UASSERT(initp, "Procedure lacks statements besides declarations");
 
-        AstNew* newp = new AstNew{m_procp->fileline(), nullptr};
-        newp->taskp(VN_AS(memberMap.findMember(m_instance.classp, "new"), NodeFTask));
-        newp->dtypep(m_instance.refDTypep);
-        newp->classOrPackagep(m_instance.classp);
+        AstNew* const newp = new AstNew{m_procp->fileline(), nullptr};
+        newp->taskp(VN_AS(memberMap.findMember(m_instance.m_classp, "new"), NodeFTask));
+        newp->dtypep(m_instance.m_refDTypep);
+        newp->classOrPackagep(m_instance.m_classp);
 
-        AstNode* asgnp = new AstAssign{
+        AstNode* const asgnp = new AstAssign{
             m_procp->fileline(),
-            new AstVarRef{m_procp->fileline(), m_instance.handlep, VAccess::WRITE}, newp};
+            new AstVarRef{m_procp->fileline(), m_instance.m_handlep, VAccess::WRITE}, newp};
 
-        AstNode* inits = nullptr;  // Arguments need to be copied
+        AstNode* initsp = nullptr;  // Arguments need to be copied
         for (AstVar* varp : m_captures) {
             if (VL_LIKELY(varp->direction() != VDirection::INPUT)) continue;
 
-            AstMemberSel* const membersel = new AstMemberSel{
+            AstMemberSel* const memberselp = new AstMemberSel{
                 varp->fileline(),
-                new AstVarRef{varp->fileline(), m_instance.handlep, VAccess::WRITE},
+                new AstVarRef{varp->fileline(), m_instance.m_handlep, VAccess::WRITE},
                 varp->dtypep()};
-            membersel->name(varp->name());
-            membersel->varp(VN_AS(memberMap.findMember(m_instance.classp, varp->name()), Var));
-            AstNode* initAsgnp = new AstAssign{
-                varp->fileline(), membersel, new AstVarRef{varp->fileline(), varp, VAccess::READ}};
-            inits = AstNode::addNext(inits, initAsgnp);
+            memberselp->name(varp->name());
+            memberselp->varp(VN_AS(memberMap.findMember(m_instance.m_classp, varp->name()), Var));
+            AstNode* initAsgnp
+                = new AstAssign{varp->fileline(), memberselp,
+                                new AstVarRef{varp->fileline(), varp, VAccess::READ}};
+            initsp = AstNode::addNext(initsp, initAsgnp);
         }
-        if (inits) AstNode::addNext(asgnp, inits);
+        if (initsp) AstNode::addNext(asgnp, initsp);
 
         if (initp != stmtp) {
             initp->addHereThisAsNext(asgnp);
@@ -164,16 +175,16 @@ public:
             stmtp = asgnp;
         }
 
-        AstNode::addNext(static_cast<AstNode*>(m_instance.handlep), stmtp);
-        stmtpHandle.relink(m_instance.handlep);
-        m_modp->addStmtsp(m_instance.classp);
+        AstNode::addNext(static_cast<AstNode*>(m_instance.m_handlep), stmtp);
+        stmtpHandle.relink(m_instance.m_handlep);
+        m_modp->addStmtsp(m_instance.m_classp);
     }
 
-    bool linked() const { return m_instance && m_instance.handlep->backp(); }
+    bool linked() const { return m_instance.initialized() && m_instance.m_handlep->backp(); }
 
 private:
     static string generateDynScopeClassName(const AstNode* fromp) {
-        // TODO: Ensure no collisions occur
+        // FIXME: Ensure no collisions occur
         string n = "__VDynScope__" + (!fromp->name().empty() ? (fromp->name() + "__") : "ANON__")
                    + cvtToHex(fromp);
         return n;
@@ -194,11 +205,6 @@ private:
             v3fatal("m_procp is not a begin block or a procedure");
         return stmtsp;
     }
-
-    AstNodeModule* m_modp;
-    AstNode* m_procp;
-    std::set<AstVar*> m_captures;
-    DynScopeInstance m_instance;
 };
 
 //######################################################################
@@ -218,7 +224,8 @@ private:
     // STATE
     AstNodeModule* m_modp = nullptr;  // Module we are currently under
     AstNode* m_procp = nullptr;  // Function/task/block we are currently under
-    std::map<AstNode*, DynScopeFrame*> m_frames;  // Mapping from nodes to related DynScopeFrames
+    std::map<AstNode*, ForkDynScopeFrame*>
+        m_frames;  // Mapping from nodes to related DynScopeFrames
     VMemberMap m_memberMap;  // Class member look-up
     int m_forkDepth = 0;  // Number of asynchronous forks we are currently under
     bool m_afterTimingControl = false;  // A timing control might've be executed in the current
@@ -226,48 +233,38 @@ private:
 
     // METHODS
 
-    DynScopeFrame* frameOf(AstNode* nodep) {
+    ForkDynScopeFrame* frameOf(AstNode* nodep) {
         auto frameIt = m_frames.find(nodep);
         if (frameIt == m_frames.end()) return nullptr;
         return frameIt->second;
     }
 
-    const DynScopeFrame* frameOf(AstNode* nodep) const {
+    const ForkDynScopeFrame* frameOf(AstNode* nodep) const {
         auto frameIt = m_frames.find(nodep);
         if (frameIt == m_frames.end()) return nullptr;
         return frameIt->second;
     }
 
-    DynScopeFrame* pushDynScopeFrame() {
-        DynScopeFrame* const frame = new DynScopeFrame{m_modp, m_procp};
+    ForkDynScopeFrame* pushDynScopeFrame() {
+        ForkDynScopeFrame* const frame = new ForkDynScopeFrame{m_modp, m_procp};
         auto r = m_frames.emplace(std::make_pair(m_procp, frame));
         UASSERT_OBJ(r.second, m_modp, "Procedure already contains a frame");
         return frame;
     }
 
-    static string generateDynScopeClassName(AstNode* fromp) {
-        // TODO: Ensure no collisions occur
-        string n = "__VDynScope__" + (!fromp->name().empty() ? (fromp->name() + "__") : "ANON__")
-                   + cvtToHex(fromp);
-        return n;
-    }
-
-    static string generateDynScopeHandleName(AstNode* fromp) {
-        return "__VDynScope_" + (fromp->name().empty() ? cvtToHex(fromp) : fromp->name());
-    }
-
-    void replaceWithMemberSel(AstVarRef* refp, const DynScopeInstance& dynScope) {
+    void replaceWithMemberSel(AstVarRef* refp, const ForkDynScopeInstance& dynScope) {
         VNRelinker handle;
         refp->unlinkFrBack(&handle);
         AstMemberSel* const membersel = new AstMemberSel{
-            refp->fileline(), new AstVarRef{refp->fileline(), dynScope.handlep, refp->access()},
+            refp->fileline(), new AstVarRef{refp->fileline(), dynScope.m_handlep, refp->access()},
             refp->dtypep()};
         membersel->name(refp->varp()->name());
-        if (VL_UNLIKELY(refp->varp()->direction() == VDirection::INPUT))
+        if (VL_UNLIKELY(refp->varp()->direction() == VDirection::INPUT)) {
             membersel->varp(
-                VN_AS(m_memberMap.findMember(dynScope.classp, refp->varp()->name()), Var));
-        else
+                VN_AS(m_memberMap.findMember(dynScope.m_classp, refp->varp()->name()), Var));
+        } else {
             membersel->varp(refp->varp());
+        }
         handle.relink(membersel);
         VL_DO_DANGLING(refp->deleteTree(), refp);
     }
@@ -275,12 +272,12 @@ private:
     static bool hasAsyncFork(AstNode* nodep) {
         bool afork = false;
         nodep->foreach([&](AstFork* forkp) {
-            if (!forkp->joinType().join()) { afork = true; }
+            if (!forkp->joinType().join()) afork = true;
         });
         return afork;
     }
 
-    void bindNodeToDynScope(AstNode* nodep, DynScopeFrame* frame) {
+    void bindNodeToDynScope(AstNode* nodep, ForkDynScopeFrame* frame) {
         m_frames.emplace(std::make_pair(nodep, frame));
     }
 
@@ -321,14 +318,13 @@ private:
         VL_RESTORER(m_forkDepth);
         if (!nodep->joinType().join()) ++m_forkDepth;
 
-        bool oldAfterTimingControl = m_afterTimingControl;
+        const bool oldAfterTimingControl = m_afterTimingControl;
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             m_afterTimingControl = false;
             iterate(stmtp);
         }
         m_afterTimingControl = oldAfterTimingControl;
-        if (nodep->isTimingControl())
-            m_afterTimingControl = true;
+        if (nodep->isTimingControl()) m_afterTimingControl = true;
     }
     void visit(AstNodeFTaskRef* nodep) override {
         visit(static_cast<AstNodeExpr*>(nodep));
@@ -339,19 +335,19 @@ private:
     }
     void visit(AstVar* nodep) override {
         nodep->user1(m_forkDepth);
-        DynScopeFrame* const frame = frameOf(m_procp);
-        if (!frame) return;  // Cannot be legally referenced from a fork
-        bindNodeToDynScope(nodep, frame);
+        ForkDynScopeFrame* const framep = frameOf(m_procp);
+        if (!framep) return;  // Cannot be legally referenced from a fork
+        bindNodeToDynScope(nodep, framep);
     }
     void visit(AstVarRef* nodep) override {
-        DynScopeFrame* const frame = frameOf(nodep->varp());
-        if (!frame) return;
+        ForkDynScopeFrame* const framep = frameOf(nodep->varp());
+        if (!framep) return;
 
         if (needsDynScope(nodep)) {
-            if (!frame->instance()) frame->createInstancePrototype();
-            frame->captureVar(nodep->varp());
+            if (!framep->instance().initialized()) framep->createInstancePrototype();
+            framep->captureVarInsert(nodep->varp());
         }
-        bindNodeToDynScope(nodep, frame);
+        bindNodeToDynScope(nodep, framep);
     }
     void visit(AstAssign* nodep) override {
         if (VN_IS(nodep->lhsp(), VarRef) && nodep->lhsp()->isClassHandleValue()) {
@@ -373,8 +369,8 @@ public:
         // Commit changes to AST
         bool typesAdded = false;
         for (auto frameIt : m_frames) {
-            DynScopeFrame* frame = frameIt.second;
-            if (!frame->instance()) continue;
+            ForkDynScopeFrame* frame = frameIt.second;
+            if (!frame->instance().initialized()) continue;
 
             if (!frame->linked()) {
                 frame->populateClass();
@@ -453,7 +449,6 @@ private:
                 --m_forkDepth;
             }
             iterateChildren(nodep);
-
             return;
         }
 
@@ -533,7 +528,6 @@ private:
 
         if (m_forkDepth && (m_forkLocalsp.count(nodep->varp()) == 0)
             && !nodep->varp()->lifetime().isStatic()) {
-
             if (nodep->access().isWriteOrRW()
                 && (!nodep->isClassHandleValue() || nodep->user2())) {
                 nodep->v3warn(
