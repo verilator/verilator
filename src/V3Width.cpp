@@ -69,6 +69,7 @@
 #include "V3Width.h"
 
 #include "V3Const.h"
+#include "V3Error.h"
 #include "V3Global.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
@@ -5567,13 +5568,19 @@ private:
                                   << portp->prettyTypeName() << " but connection is "
                                   << pinp->prettyTypeName() << ".");
                 } else if (portp->isWritable() && pinp->width() != portp->width()) {
-                    if (portp->width() < pinp->width())
-                        pinp->v3warn(E_UNSUPPORTED,
-                                     "Unsupported: Function output argument "
-                                         << portp->prettyNameQ() << " requires " << portp->width()
-                                         << " bits, but connection's " << pinp->prettyTypeName()
-                                         << " generates " << pinp->width() << " bits.");
-                    pinp = extendVar(pinp, portp->dtypeSkipRefp(), ExtendRule::EXTEND_LHS);
+                    V3ErrorCode warnKind;
+                    if (portp->width() < pinp->width()) {
+                        warnKind = V3ErrorCode::WIDTHEXPAND;
+                        pinp = extendVar(pinp, portp->dtypeSkipRefp(), ExtendRule::EXTEND_LHS);
+                    } else {
+                        warnKind = V3ErrorCode::WIDTHTRUNC;
+                        pinp = truncVar(pinp, portp->dtypeSkipRefp());
+                    }
+                    pinp->v3warnCode(warnKind, "Function output argument "
+                                                   << portp->prettyNameQ() << " requires "
+                                                   << portp->width() << " bits, but connection's "
+                                                   << pinp->prettyTypeName() << " generates "
+                                                   << pinp->width() << " bits.");
                 }
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
                     checkClassAssign(nodep, "Function Argument", pinp, portp->dtypep());
@@ -6267,6 +6274,16 @@ private:
         return newp;
     }
 
+    AstNodeExpr* truncVar(AstNodeExpr* nodep, AstNodeDType* expDTypep) {
+        VNRelinker linker;
+        nodep->unlinkFrBack(&linker);
+        AstNodeExpr* const newp = new AstSel{nodep->fileline(), nodep, 0, expDTypep->width()};
+        newp->didWidth(true);  // Don't replace dtype with unsigned
+        linker.relink(newp);
+        nodep = newp;
+        return newp;
+    }
+
     void fixWidthExtend(AstNodeExpr* nodep, AstNodeDType* expDTypep, ExtendRule extendRule) {
         // Fix the width mismatch by extending or truncating bits
         // *ONLY* call this from checkWidth()
@@ -6294,15 +6311,8 @@ private:
             VL_DANGLING(nodep);
             nodep = newp;
         } else if (expWidth < nodep->width()) {
-            // Trunc - Extract
-            VNRelinker linker;
-            nodep->unlinkFrBack(&linker);
-            AstNodeExpr* const newp = new AstSel{nodep->fileline(), nodep, 0, expWidth};
-            newp->didWidth(true);  // Don't replace dtype with unsigned
-            linker.relink(newp);
-            nodep = newp;
+            nodep = truncVar(nodep, expDTypep);
         } else {
-            // Extend
             nodep = extendVar(nodep, expDTypep, extendRule);
         }
         if (expDTypep->isDouble() && !nodep->isDouble()) {
