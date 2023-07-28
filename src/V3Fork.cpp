@@ -184,7 +184,6 @@ public:
 
 private:
     static string generateDynScopeClassName(const AstNode* fromp) {
-        // FIXME: Ensure no collisions occur
         string n = "__VDynScope__" + (!fromp->name().empty() ? (fromp->name() + "__") : "ANON__")
                    + cvtToHex(fromp);
         return n;
@@ -197,12 +196,13 @@ private:
     AstNode* getProcStmts() {
         AstNode* stmtsp = nullptr;
         if (!m_procp) return nullptr;
-        if (AstBegin* beginp = VN_CAST(m_procp, Begin))
+        if (AstBegin* beginp = VN_CAST(m_procp, Begin)) {
             stmtsp = beginp->stmtsp();
-        else if (AstNodeFTask* taskp = VN_CAST(m_procp, NodeFTask))
+        } else if (AstNodeFTask* taskp = VN_CAST(m_procp, NodeFTask)) {
             stmtsp = taskp->stmtsp();
-        else
+        } else {
             v3fatal("m_procp is not a begin block or a procedure");
+        }
         return stmtsp;
     }
 };
@@ -282,26 +282,22 @@ private:
     }
 
     bool needsDynScope(const AstVarRef* refp) const {
-        // Conditions
-        auto mutated = [=]() -> bool {
-            return refp->varp()->isClassHandleValue() ? refp->user2()
-                                                      : refp->access().isWriteOrRW();
-        };
-        auto canEscapeTheScope = [=]() -> bool {
-            return (m_forkDepth > refp->varp()->user1()) && refp->varp()->isFuncLocal();
-        };
-        auto afterDelay = [=]() -> bool { return m_afterTimingControl; };
-
-        return canEscapeTheScope() && (mutated() || afterDelay());
+        return
+            // Can this variable escape the scope
+            ((m_forkDepth > refp->varp()->user1()) && refp->varp()->isFuncLocal())
+            && (
+                // Is it mutated
+                (refp->varp()->isClassHandleValue() ? refp->user2() : refp->access().isWriteOrRW())
+                // Or is it after a timing-control event
+                || m_afterTimingControl);
     }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        m_modp = nodep;
+        if (!VN_IS(nodep, Class)) m_modp = nodep;
         iterateChildren(nodep);
     }
-    void visit(AstClass* nodep) override { iterateChildren(nodep); }
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
