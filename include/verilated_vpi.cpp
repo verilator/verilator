@@ -2307,7 +2307,7 @@ PLI_INT32 vpi_flush(void) {
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
     Verilated::runFlushCallbacks();
-    return 0;
+    return 0;  // Gcc coverage bug // LCOV_EXCL_LINE
 }
 
 PLI_INT32 vpi_mcd_flush(PLI_UINT32 mcd) {

@@ -1,0 +1,4 @@
+%Error: t/t_class_member_var_virt_bad.v:8:16: Syntax error: 'virtual' not allowed before var declaration
+    8 |    virtual int member;
+      |                ^~~~~~
+%Error: Exiting due to

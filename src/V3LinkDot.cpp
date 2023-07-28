@@ -2144,7 +2144,7 @@ private:
     void checkNoDot(AstNode* nodep) {
         if (VL_UNLIKELY(m_ds.m_dotPos != DP_NONE)) {
             // UINFO(9, "ds=" << m_ds.ascii() << endl);
-            nodep->v3error("Syntax Error: Not expecting " << nodep->type() << " under a "
+            nodep->v3error("Syntax error: Not expecting " << nodep->type() << " under a "
                                                           << nodep->backp()->type()
                                                           << " in dotted expression");
             m_ds.m_dotErr = true;
@@ -3240,7 +3240,7 @@ private:
         if (nodep->user3SetOnce()) return;
         if (m_ds.m_dotPos
             == DP_SCOPE) {  // Already under dot, so this is {modulepart} DOT {modulepart}
-            nodep->v3error("Syntax Error: Range ':', '+:' etc are not allowed in the instance "
+            nodep->v3error("Syntax error: Range ':', '+:' etc are not allowed in the instance "
                            "part of a dotted reference");
             m_ds.m_dotErr = true;
             return;

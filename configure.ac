@@ -14,7 +14,7 @@ AC_INIT([Verilator],[5.013 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
-AC_CONFIG_HEADERS(src/config_build.h)
+AC_CONFIG_HEADERS(src/config_package.h)
 AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk include/verilated_config.h verilator.pc verilator-config.cmake verilator-config-version.cmake)
 
 # Version
