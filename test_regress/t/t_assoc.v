@@ -102,8 +102,11 @@ module t (/*AUTOARG*/
       begin
          // Wide-wides - need special array container classes, ick.
          logic [91:2] a [ logic [65:1] ];
+         int          b [ bit [99:0] ];
          a[~65'hfe] = ~ 90'hfee;
          `checkh(a[~65'hfe], ~ 90'hfee);
+         b[100'b1] = 1;
+         `checkh(b[100'b1], 1);
       end
 
       begin

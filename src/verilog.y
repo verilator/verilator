@@ -5863,6 +5863,7 @@ property_declarationFront<nodeFTaskp>:  // IEEE: part of property_declaration
 
 property_port_listE<nodep>:  // IEEE: [ ( [ property_port_list ] ) ]
                 /* empty */                       { $$ = nullptr; }
+        |       '(' ')'                           { $$ = nullptr; }
         |       '(' property_port_list ')'        { $$ = $2; }
         ;
 
@@ -7229,7 +7230,7 @@ vltOffFront<errcodeen>:
                         { const char *codemsg = (*$3).c_str();
                           if (V3ErrorCode::unusedMsg(codemsg)) {$$ = V3ErrorCode::I_UNUSED; }
                           else {$$ = V3ErrorCode{codemsg}; }
-                          if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
+                          if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown error code: " << *$3);  } }
         ;
 
 vltOnFront<errcodeen>:
@@ -7241,7 +7242,7 @@ vltOnFront<errcodeen>:
                         { const char *codemsg = (*$3).c_str();
                           if (V3ErrorCode::unusedMsg(codemsg)) {$$ = V3ErrorCode::I_UNUSED; }
                           else {$$ = V3ErrorCode{codemsg}; }
-                          if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: " << *$3);  } }
+                          if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown error code: " << *$3);  } }
         ;
 
 vltDModuleE<strp>:

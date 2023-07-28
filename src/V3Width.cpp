@@ -1549,7 +1549,7 @@ private:
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported: $bits for queue");
                     break;
                 }
-                default: nodep->v3error("Unhandled attribute type");
+                default: nodep->v3fatalSrc("Unhandled attribute type");
                 }
             } else {
                 const std::pair<uint32_t, uint32_t> dimpair = dtypep->skipRefp()->dimensions(true);
@@ -5690,7 +5690,8 @@ private:
         }
         if (nodep->fileline()->timingOn()) {
             if (v3Global.opt.timing().isSetTrue()) {
-                userIterate(nodep->condp(), WidthVP{SELF, PRELIM}.p());
+                iterateCheckBool(nodep, "Wait", nodep->condp(),
+                                 BOTH);  // it's like an if() condition.
                 iterateNull(nodep->stmtsp());
                 return;
             } else if (v3Global.opt.timing().isSetFalse()) {

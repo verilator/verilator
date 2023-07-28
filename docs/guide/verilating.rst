@@ -165,7 +165,7 @@ compiled on the different target system.
 
 To support this, none of the files that Verilator produces will reference
 any configure-generated build-system-specific files, such as
-:file:`config.h` (which is renamed in Verilator to :file:`config_build.h`
+:file:`config.h` (which is renamed in Verilator to :file:`config_package.h`
 to reduce confusion.)  The disadvantage of this approach is that
 :file:`include/verilatedos.h` must self-detect the requirements of the
 target system, rather than using configure.

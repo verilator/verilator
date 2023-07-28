@@ -676,9 +676,9 @@ List Of Warnings
    IEEE.
 
    The potential issue is that adding additional generate blocks will
-   renumber the assigned names, which may cause evental problems with
+   renumber the assigned names, which may cause eventual problems with
    synthesis constraints or other tools that depend on hierarchical paths
-   remaining consistend.
+   remaining consistent.
 
    Blocks that are empty may not be reported with this warning, as no
    scopes are created for empty blocks, so there is no harm in having them
@@ -702,7 +702,7 @@ List Of Warnings
          %Warning-GENUNNAMED: example.v:2:9: Unnamed generate block (IEEE 1800-2017 27.6)
 
    To fix this assign a label (often with the naming convention prefix of
-   'gen_' or 'g_'), for example:
+   :code:`gen_` or :code:`g_`), for example:
 
    .. code-block:: sv
       :linenos:
