@@ -2163,7 +2163,6 @@ private:
             AstNodeExpr* const srcp = nodep->rhsp()->unlinkFrBack();
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
-            const bool dynamicDst = dWidth == 0;
             // Connect the rhs to the stream operator and update its width
             VN_AS(streamp, StreamL)->lhsp(srcp);
             if (VN_IS(srcp->dtypep(), DynArrayDType) || VN_IS(srcp->dtypep(), QueueDType)
@@ -2172,15 +2171,12 @@ private:
             } else {
                 streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
             }
-            // Shrink the RHS if necessary
-            if (sWidth > dWidth && !dynamicDst) {
+            if (dWidth == 0) {
+                streamp = new AstCastPackedToDynArray{nodep->fileline(), streamp, dstp->dtypep()};
+            } else if (sWidth > dWidth) {
                 streamp = new AstSel{streamp->fileline(), streamp, sWidth - dWidth, dWidth};
             }
-            // Link the nodes back in
             nodep->lhsp(dstp);
-            if (dynamicDst) {
-                streamp = new AstCastPackedToDynArray{nodep->fileline(), streamp, dstp->dtypep()};
-            }
             nodep->rhsp(streamp);
             return true;
         } else if (m_doV && VN_IS(nodep->lhsp(), StreamR)) {
@@ -2193,14 +2189,12 @@ private:
             AstNodeExpr* srcp = nodep->rhsp()->unlinkFrBack();
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
-            const bool dynamicDst = dWidth == 0;
-            if (sWidth > dWidth && !dynamicDst) {
+            if (dWidth == 0) {
+                srcp = new AstCastPackedToDynArray{nodep->fileline(), srcp, dstp->dtypep()};
+            } else if (sWidth > dWidth) {
                 srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
             }
             nodep->lhsp(dstp);
-            if (dynamicDst) {
-                srcp = new AstCastPackedToDynArray{nodep->fileline(), srcp, dstp->dtypep()};
-            }
             nodep->rhsp(srcp);
             // Cleanup
             VL_DO_DANGLING(sizep->deleteTree(), sizep);
