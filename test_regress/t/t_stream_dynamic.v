@@ -10,6 +10,7 @@
 module t (/*AUTOARG*/);
    initial begin
       bit arr[];
+      bit [1:0] arr2[];
       string v;
       bit [5:0] bit6 = 6'b111000;
 
@@ -18,6 +19,12 @@ module t (/*AUTOARG*/);
 
       { << bit {arr}} = bit6;
       v = $sformatf("%p", arr); `checks(v, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0} ");
+
+      { >> bit[1:0] {arr2}} = bit6;
+      v = $sformatf("%p", arr2); `checks(v, "'{'h0, 'h2, 'h3} ");
+
+      { << bit[1:0] {arr2}} = bit6;
+      v = $sformatf("%p", arr2); `checks(v, "'{'h3, 'h2, 'h0} ");
 
       $write("*-* All Finished *-*\n");
       $finish;
