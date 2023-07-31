@@ -401,8 +401,8 @@ public:
             puts(cvtToStr(nodep->widthMin()) + ",");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
-        } else if (const AstCastPackedToUnpacked* const castp
-                   = VN_CAST(nodep->rhsp(), CastPackedToUnpacked)) {
+        } else if (const AstCastPackedToDynArray* const castp
+                   = VN_CAST(nodep->rhsp(), CastPackedToDynArray)) {
             puts("VL_ASSIGN_DQ<");
             putbs(castp->dtypep()->subDTypep()->cType("", false, false));
             puts(">(");

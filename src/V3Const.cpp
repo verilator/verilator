@@ -2179,7 +2179,7 @@ private:
             // Link the nodes back in
             nodep->lhsp(dstp);
             if (dWidth == 0) {
-                streamp = new AstCastPackedToUnpacked{nodep->fileline(), streamp, dstp->dtypep()};
+                streamp = new AstCastPackedToDynArray{nodep->fileline(), streamp, dstp->dtypep()};
             }
             nodep->rhsp(streamp);
             return true;
@@ -2199,7 +2199,7 @@ private:
             }
             nodep->lhsp(dstp);
             if (dWidth == 0) {
-                srcp = new AstCastPackedToUnpacked{nodep->fileline(), srcp, dstp->dtypep()};
+                srcp = new AstCastPackedToDynArray{nodep->fileline(), srcp, dstp->dtypep()};
             }
             nodep->rhsp(srcp);
             // Cleanup
