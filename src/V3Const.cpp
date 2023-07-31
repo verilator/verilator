@@ -2178,6 +2178,9 @@ private:
             }
             // Link the nodes back in
             nodep->lhsp(dstp);
+            if (dWidth == 0) {
+                streamp = new AstCastPackedToUnpacked{nodep->fileline(), streamp, dstp->dtypep()};
+            }
             nodep->rhsp(streamp);
             return true;
         } else if (m_doV && VN_IS(nodep->lhsp(), StreamR)) {
@@ -2195,6 +2198,9 @@ private:
                 srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
             }
             nodep->lhsp(dstp);
+            if (dWidth == 0) {
+                srcp = new AstCastPackedToUnpacked{nodep->fileline(), srcp, dstp->dtypep()};
+            }
             nodep->rhsp(srcp);
             // Cleanup
             VL_DO_DANGLING(sizep->deleteTree(), sizep);
