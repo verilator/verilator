@@ -1169,6 +1169,15 @@ public:
             emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
         }
     }
+    void visit(AstCastPackedToUnpacked* nodep) override {
+        puts("VL_CAST_PACKED_TO_UNPACKED_DQ(");
+        puts(cvtToStr(nodep->fromp()->widthMin()));
+        puts(", ");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(", ");
+        puts(cvtToStr(nodep->dtypep()->subDTypep()->widthMin()));
+        puts(")");
+    }
     void visit(AstStreamL* nodep) override {
         // Attempt to use a "fast" stream function for slice size = power of 2
         if (!nodep->isWide()) {
