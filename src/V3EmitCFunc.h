@@ -401,6 +401,9 @@ public:
             puts(cvtToStr(nodep->widthMin()) + ",");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
+        } else if (VN_IS(nodep->rhsp(), CastPackedToUnpacked)) {
+            m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
+            paren = false;
         } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), CExpr)  //
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //
@@ -1173,6 +1176,8 @@ public:
         puts("VL_CAST_PACKED_TO_UNPACKED_DQ<");
         putbs(nodep->dtypep()->subDTypep()->cType("", false, false));
         puts(">(");
+        puts(m_wideTempRefp->varp()->nameProtect());
+        puts(", ");
         puts(cvtToStr(nodep->fromp()->widthMin()));
         puts(", ");
         iterateAndNextConstNull(nodep->fromp());

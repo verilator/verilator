@@ -1527,15 +1527,13 @@ static inline WDataOutP VL_STREAML_WWI(int lbits, WDataOutP owp, WDataInP const 
 }
 
 template <typename T>
-static inline VlQueue<T> VL_CAST_PACKED_TO_UNPACKED_DQ(int lbits, QData fromp, int elem_size) {
-    VlQueue<T> q;
+static inline void VL_CAST_PACKED_TO_UNPACKED_DQ(VlQueue<T>& q, int lbits, QData fromp, int elem_size) {
     const int size = (lbits + elem_size - 1) / elem_size;
     q.renew(size);
     for (int i = 0; i < size; ++i) {
         const QData mask = VL_MASK_Q(elem_size);
         q.at(i) = (T)((fromp >> (i * elem_size)) & mask);
     }
-    return q;
 }
 
 // Because concats are common and wide, it's valuable to always have a clean output.
