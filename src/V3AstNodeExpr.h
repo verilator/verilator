@@ -646,6 +646,20 @@ public:
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const VL_MT_STABLE { return dtypep() ? dtypep() : childDTypep(); }
 };
+class AstCastPackedToUnpacked final : public AstNodeExpr {
+    // Cast from packed to unpacked data type
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    AstCastPackedToUnpacked(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CastPackedToUnpacked(fl) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCastPackedToUnpacked;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
 class AstCastParse final : public AstNodeExpr {
     // Cast to appropriate type, where we haven't determined yet what the data type is
     // @astgen op1 := lhsp : AstNodeExpr
