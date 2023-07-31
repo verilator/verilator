@@ -1531,7 +1531,7 @@ static inline VlQueue<T> VL_CAST_PACKED_TO_UNPACKED_DQ(int lbits, QData fromp, i
     VlQueue<T> q;
     const int size = (lbits + elem_size - 1) / elem_size;
     q.renew(size);
-    for (int i = 0; i < size; i+= elem_size) {
+    for (int i = 0; i < size; ++i) {
         const QData mask = VL_MASK_Q(elem_size);
         q.at(i) = (T)((fromp >> (i * elem_size)) & mask);
     }
