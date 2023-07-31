@@ -3152,7 +3152,15 @@ private:
                 } else if (nodep->name() == "randomize" || nodep->name() == "srandom"
                            || nodep->name() == "get_randstate"
                            || nodep->name() == "set_randstate") {
-                    // Resolved in V3Width
+                    if (AstClass* const classp = VN_CAST(m_modp, Class)) {
+                        nodep->classOrPackagep(classp);
+                    } else {
+                        nodep->v3error("Calling implicit class method "
+                                       << nodep->prettyNameQ() << " without being under class");
+                        nodep->replaceWith(new AstConst{nodep->fileline(), 0});
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                        return;
+                    }
                 } else if (nodep->dotted() == "") {
                     if (nodep->pli()) {
                         if (v3Global.opt.bboxSys()) {
