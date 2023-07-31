@@ -1527,7 +1527,7 @@ static inline WDataOutP VL_STREAML_WWI(int lbits, WDataOutP owp, WDataInP const 
 }
 
 template <typename T>
-static inline void VL_CAST_PACKED_TO_UNPACKED_DQ(VlQueue<T>& q, int lbits, QData fromp, int elem_size) {
+static inline void VL_ASSIGN_DQ(VlQueue<T>& q, int elem_size, int lbits, QData fromp) {
     const int size = (lbits + elem_size - 1) / elem_size;
     q.renew(size);
     for (int i = 0; i < size; ++i) {

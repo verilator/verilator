@@ -401,9 +401,19 @@ public:
             puts(cvtToStr(nodep->widthMin()) + ",");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
-        } else if (VN_IS(nodep->rhsp(), CastPackedToUnpacked)) {
-            m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
-            paren = false;
+        } else if (const AstCastPackedToUnpacked* const castp
+                   = VN_CAST(nodep->rhsp(), CastPackedToUnpacked)) {
+            puts("VL_ASSIGN_DQ<");
+            putbs(castp->dtypep()->subDTypep()->cType("", false, false));
+            puts(">(");
+            iterateAndNextConstNull(nodep->lhsp());
+            puts(", ");
+            puts(cvtToStr(castp->dtypep()->subDTypep()->widthMin()));
+            puts(", ");
+            puts(cvtToStr(castp->fromp()->widthMin()));
+            puts(", ");
+            rhs = false;
+            iterateAndNextConstNull(castp->fromp());
         } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), CExpr)  //
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //
@@ -1171,19 +1181,6 @@ public:
         } else {
             emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
         }
-    }
-    void visit(AstCastPackedToUnpacked* nodep) override {
-        puts("VL_CAST_PACKED_TO_UNPACKED_DQ<");
-        putbs(nodep->dtypep()->subDTypep()->cType("", false, false));
-        puts(">(");
-        puts(m_wideTempRefp->varp()->nameProtect());
-        puts(", ");
-        puts(cvtToStr(nodep->fromp()->widthMin()));
-        puts(", ");
-        iterateAndNextConstNull(nodep->fromp());
-        puts(", ");
-        puts(cvtToStr(nodep->dtypep()->subDTypep()->widthMin()));
-        puts(")");
     }
     void visit(AstStreamL* nodep) override {
         // Attempt to use a "fast" stream function for slice size = power of 2
