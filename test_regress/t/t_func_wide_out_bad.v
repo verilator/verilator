@@ -13,9 +13,7 @@ module t ();
 
    initial begin
       // Operator TASKREF 'func' expects 4352 bits on the Function Argument, but Function Argument's VARREF 'msg' generates 4356 bits.
-      // verilator lint_off WIDTH
       func(msg);
-      // verilator lint_on WIDTH
       if (msg !== {MSG_PORT_WIDTH{1'b1}}) $stop;
       $write("*-* All Finished *-*\n");
       $finish;

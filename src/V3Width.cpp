@@ -5569,18 +5569,19 @@ private:
                                   << pinp->prettyTypeName() << ".");
                 } else if (portp->isWritable() && pinp->width() != portp->width()) {
                     V3ErrorCode warnKind;
-                    if (portp->width() < pinp->width()) {
+                    const AstNode* const oldPinp = pinp;
+                    if (portp->width() > pinp->width()) {
                         warnKind = V3ErrorCode::WIDTHEXPAND;
                         pinp = extendVar(pinp, portp->dtypeSkipRefp(), ExtendRule::EXTEND_LHS);
                     } else {
                         warnKind = V3ErrorCode::WIDTHTRUNC;
                         pinp = truncVar(pinp, portp->dtypeSkipRefp());
                     }
-                    pinp->v3warnCode(warnKind, "Function output argument "
-                                                   << portp->prettyNameQ() << " requires "
-                                                   << portp->width() << " bits, but connection's "
-                                                   << pinp->prettyTypeName() << " generates "
-                                                   << pinp->width() << " bits.");
+                    oldPinp->v3warnCode(
+                        warnKind, "Function output argument "
+                                      << portp->prettyNameQ() << " requires " << portp->width()
+                                      << " bits, but connection's " << oldPinp->prettyTypeName()
+                                      << " generates " << oldPinp->width() << " bits.");
                 }
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
                     checkClassAssign(nodep, "Function Argument", pinp, portp->dtypep());
