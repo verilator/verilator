@@ -1170,7 +1170,9 @@ public:
         }
     }
     void visit(AstCastPackedToUnpacked* nodep) override {
-        puts("VL_CAST_PACKED_TO_UNPACKED_DQ(");
+        puts("VL_CAST_PACKED_TO_UNPACKED_DQ<");
+        emitIQW(nodep->dtypep()->subDTypep());
+        puts(">(");
         puts(cvtToStr(nodep->fromp()->widthMin()));
         puts(", ");
         iterateAndNextConstNull(nodep->fromp());

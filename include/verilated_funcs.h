@@ -1526,6 +1526,12 @@ static inline WDataOutP VL_STREAML_WWI(int lbits, WDataOutP owp, WDataInP const 
     return owp;
 }
 
+template <typename T>
+static inline VlQueue<T> VL_CAST_PACKED_TO_UNPACKED_DQ(int lbits, QData fromp, IData elem_size) {
+    VlQueue<T> q;
+    return q;
+}
+
 // Because concats are common and wide, it's valuable to always have a clean output.
 // Thus we specify inputs must be clean, so we don't need to clean the output.
 // Note the bit shifts are always constants, so the adds in these constify out.
