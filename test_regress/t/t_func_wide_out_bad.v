@@ -6,7 +6,7 @@
 
 module t ();
 
-   parameter MSG_PORT_WIDTH = 4356;
+   parameter MSG_PORT_WIDTH = 4350;
    localparam PAYLOAD_MAX_BITS = 4352;
 
    reg [MSG_PORT_WIDTH-1:0] msg;
