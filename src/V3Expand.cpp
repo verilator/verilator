@@ -910,7 +910,6 @@ private:
         iterateChildren(nodep);
         bool did = false;
         if (nodep->isWide() && ((VN_IS(nodep->lhsp(), VarRef) || VN_IS(nodep->lhsp(), ArraySel)))
-            && ((VN_IS(nodep->lhsp(), VarRef) || VN_IS(nodep->lhsp(), ArraySel)))
             && !AstVar::scVarRecurse(nodep->lhsp())  // Need special function for SC
             && !AstVar::scVarRecurse(nodep->rhsp())) {
             if (AstConst* const rhsp = VN_CAST(nodep->rhsp(), Const)) {
