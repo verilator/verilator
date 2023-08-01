@@ -5570,7 +5570,9 @@ private:
                 } else if (portp->isWritable() && pinp->width() != portp->width()) {
                     V3ErrorCode warnKind;
                     const AstNode* const oldPinp = pinp;
-                    if (portp->width() > pinp->width()) {
+                    if (portp->isWritable()) {
+                        warnKind = V3ErrorCode::E_UNSUPPORTED;
+                    } else if (portp->width() > pinp->width()) {
                         warnKind = V3ErrorCode::WIDTHEXPAND;
                         pinp = extendVar(pinp, portp->dtypeSkipRefp(), ExtendRule::EXTEND_LHS);
                     } else {
@@ -5581,7 +5583,11 @@ private:
                         warnKind, "Function output argument "
                                       << portp->prettyNameQ() << " requires " << portp->width()
                                       << " bits, but connection's " << oldPinp->prettyTypeName()
-                                      << " generates " << oldPinp->width() << " bits.");
+                                      << " generates " << oldPinp->width() << " bits."
+                                      << ((warnKind == V3ErrorCode::E_UNSUPPORTED)
+                                              ? " Casting of Output/Inout variables is currently "
+                                                "unsupported."
+                                              : ""));
                 }
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
                     checkClassAssign(nodep, "Function Argument", pinp, portp->dtypep());
