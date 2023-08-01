@@ -841,9 +841,13 @@ private:
             } else {
                 nodep->v3error("Slice size isn't a constant or basic data type.");
             }
-            if (VN_IS(nodep->lhsp()->dtypep(), DynArrayDType)
-                || VN_IS(nodep->lhsp()->dtypep(), QueueDType)
-                || VN_IS(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
+            const AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep();
+            if (VN_IS(lhsDtypep, DynArrayDType) || VN_IS(lhsDtypep, QueueDType)) {
+                nodep->dtypeSetStream();
+            } else if (VN_IS(lhsDtypep, UnpackArrayDType) || lhsDtypep->isCompound()) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Stream operation on a variable of a type "
+                                  << lhsDtypep->prettyDTypeNameQ());
                 nodep->dtypeSetStream();
             } else {
                 nodep->dtypeSetLogicUnsized(nodep->lhsp()->width(), nodep->lhsp()->widthMin(),
