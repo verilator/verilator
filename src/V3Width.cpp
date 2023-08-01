@@ -5588,6 +5588,7 @@ private:
                                               ? " Casting of Output/Inout variables is currently "
                                                 "unsupported."
                                               : ""));
+                    if (warnKind == V3ErrorCode::E_UNSUPPORTED) return;
                 }
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
                     checkClassAssign(nodep, "Function Argument", pinp, portp->dtypep());

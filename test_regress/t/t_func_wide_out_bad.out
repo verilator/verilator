@@ -1,6 +1,6 @@
-%Error-UNSUPPORTED: t/t_func_wide_out_bad.v:17:12: Unsupported: Function output argument 'data' requires 4352 bits, but connection's VARREF 'msg' generates 4356 bits.
+%Error-UNSUPPORTED: t/t_func_wide_out_bad.v:16:12: Function output argument 'data' requires 4352 bits, but connection's VARREF 'msg' generates 4350 bits. Casting of Output/Inout variables is currently unsupported.
                                                  : ... In instance t
-   17 |       func(msg);
+   16 |       func(msg);
       |            ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to
