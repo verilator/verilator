@@ -214,7 +214,7 @@ class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op3 := pinsp : List[AstNodeExpr]
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
     AstNodeFTask* m_taskp = nullptr;  // [AfterLink] Pointer to task referenced
-    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
+    AstNodeModule* m_classOrPackagep = nullptr;  // Class/package of the task
     string m_name;  // Name of variable
     string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
@@ -449,7 +449,7 @@ class AstNodeVarRef VL_NOT_FINAL : public AstNodeExpr {
     VAccess m_access;  // Left hand side assignment
     AstVar* m_varp;  // [AfterLink] Pointer to variable itself
     AstVarScope* m_varScopep = nullptr;  // Varscope for hierarchy
-    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
+    AstNodeModule* m_classOrPackagep = nullptr;  // Class/package of the variable
     string m_selfPointer;  // Output code object pointer (e.g.: 'this')
 
 protected:
@@ -716,7 +716,7 @@ class AstClassOrPackageRef final : public AstNodeExpr {
 private:
     string m_name;
     // Node not NodeModule to appease some early parser usage
-    AstNode* m_classOrPackageNodep;  // Package hierarchy
+    AstNode* m_classOrPackageNodep;  // Pointer to class/package referenced
 public:
     AstClassOrPackageRef(FileLine* fl, const string& name, AstNode* classOrPackageNodep,
                          AstPin* paramsp)
@@ -1057,7 +1057,7 @@ public:
 };
 class AstEnumItemRef final : public AstNodeExpr {
     AstEnumItem* m_itemp;  // [AfterLink] Pointer to item
-    AstNodeModule* m_classOrPackagep;  // Package hierarchy
+    AstNodeModule* m_classOrPackagep;  // Class/package in which it was defined
 public:
     AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstNodeModule* classOrPackagep)
         : ASTGEN_SUPER_EnumItemRef(fl)

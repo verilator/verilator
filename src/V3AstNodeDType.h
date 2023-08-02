@@ -201,7 +201,7 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
 private:
     // MEMBERS
     string m_name;  // Name from upper typedef, if any
-    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
+    AstNodeModule* m_classOrPackagep = nullptr;  // Package it will be emitted with
     const int m_uniqueNum;
     bool m_packed;
     bool m_isFourstate = false;  // V3Width computes
@@ -1053,7 +1053,7 @@ private:
     // Post-width typedefs are removed and point to type directly
     AstNodeDType* m_refDTypep = nullptr;  // data type pointed to, BELOW the AstTypedef
     string m_name;  // Name of an AstTypedef
-    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
+    AstNodeModule* m_classOrPackagep = nullptr;  // Class/package in which it was defined
 public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER_RefDType(fl)

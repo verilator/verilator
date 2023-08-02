@@ -2138,7 +2138,7 @@ public:
 class AstClass final : public AstNodeModule {
     // @astgen op4 := extendsp : List[AstClassExtends]
     // MEMBERS
-    AstClassPackage* m_classOrPackagep = nullptr;  // Class package this is under
+    AstClassPackage* m_classOrPackagep = nullptr;  // Package it will be emitted with
     bool m_extended = false;  // Is extension or extended by other classes
     bool m_interfaceClass = false;  // Interface class
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
