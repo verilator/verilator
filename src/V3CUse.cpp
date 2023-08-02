@@ -48,13 +48,13 @@ class CUseVisitor final : public VNVisitor {
 
     // MEMBERS
     AstNodeModule* const m_modp;  // Current module
-    std::map<std::string, std::pair<FileLine*, uint8_t>> m_didUse;  // What we already used
+    std::map<std::string, std::pair<FileLine*, VUseType>> m_didUse;  // What we already used
 
     // METHODS
     void addNewUse(AstNode* nodep, VUseType useType, const string& name) {
         auto e = m_didUse.emplace(name, std::make_pair(nodep->fileline(), useType));
         if (e.second || ((e.first->second.second & useType) != useType)) {
-            e.first->second.second |= useType;
+            e.first->second.second = e.first->second.second | useType;
         }
     }
 
@@ -65,15 +65,12 @@ class CUseVisitor final : public VNVisitor {
     void visit(AstCFunc* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateAndNextNull(nodep->argsp());
-        if (nodep->stmtsp())
-            nodep->stmtsp()->forall([this](AstCReturn* retp) -> bool {
-                visit(retp);
-                return true;
-            });
+        iterateAndNextNull(nodep->stmtsp());
     }
+    void visit(AstCCall* nodep) override { return; }
     void visit(AstCReturn* nodep) override {
         UASSERT(!nodep->user1SetOnce(), "Visited same return twice.");
-        iterateChildren(nodep);
+        iterate(nodep->lhsp()->dtypep());
     }
     void visit(AstNodeDType* nodep) override {
         if (nodep->virtRefDTypep()) iterate(nodep->virtRefDTypep());
@@ -107,8 +104,7 @@ public:
         iterate(modp);
 
         for (auto& used : m_didUse) {
-            AstCUse* const newp =
-                new AstCUse{used.second.first, used.second.second, used.first};
+            AstCUse* const newp = new AstCUse{used.second.first, used.second.second, used.first};
             m_modp->addStmtsp(newp);
             UINFO(8, "Insert " << newp << endl);
         }

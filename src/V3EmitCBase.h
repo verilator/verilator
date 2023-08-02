@@ -114,13 +114,13 @@ public:
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
     void emitVarDecl(const AstVar* nodep, bool asRef = false);
     template <typename F>
-    static void forModCUse(const AstNodeModule* modp, uint8_t useType, F action) {
+    static void forModCUse(const AstNodeModule* modp, VUseType useType, F action) {
         for (AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {
             if (AstCUse* const usep = VN_CAST(itemp, CUse)) {
                 if (usep->useType() & useType) {
                     if (usep->useType() & VUseType::INT_INCLUDE) {
                         action("#include \"" + prefixNameProtect(usep) + ".h\"\n");
-                        continue; // Forward declaration is not necessary
+                        continue;  // Forward declaration is not necessary
                     }
                     if (usep->useType() & VUseType::INT_FWD_CLASS) {
                         action("class " + prefixNameProtect(usep) + ";\n");

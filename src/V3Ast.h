@@ -31,7 +31,6 @@
 #include "V3Ast__gen_forward_class_decls.h"  // From ./astgen
 
 #include <cmath>
-#include <cstdio>
 #include <functional>
 #include <map>
 #include <set>
@@ -1158,11 +1157,8 @@ inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) {
 class VUseType final {
 public:
     enum en : uint8_t {
-        INT_FWD_CLASS = 1<<0,  // Interface (.h) needs a forward class declaration
-        INT_INCLUDE = 1<<1,  // Interface (.h) needs an include
-        // Implementations currently include _Syms file which includes all headers.
-        // TODO: Rework SYMS CLASS so it can be used without including all headers, because
-        // it slows down the compilation for big projects.
+        INT_FWD_CLASS = 1 << 0,  // Interface (.h) needs a forward class declaration
+        INT_INCLUDE = 1 << 1,  // Interface (.h) needs an include
     };
     enum en m_e;
     VUseType()
@@ -1173,6 +1169,7 @@ public:
     explicit VUseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
+    bool contains(VUseType other) { return m_e & other.m_e; }
     const char* ascii() const {
         static const char* const names[] = {"INT_FWD", "INT_INC", "INT_FWD_INC"};
         return names[m_e - 1];
@@ -1181,6 +1178,12 @@ public:
 constexpr bool operator==(const VUseType& lhs, const VUseType& rhs) { return lhs.m_e == rhs.m_e; }
 constexpr bool operator==(const VUseType& lhs, VUseType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VUseType::en lhs, const VUseType& rhs) { return lhs == rhs.m_e; }
+constexpr VUseType::en operator|(VUseType::en lhs, VUseType::en rhs) {
+    return VUseType::en{lhs | rhs};
+}
+constexpr VUseType::en operator&(VUseType::en lhs, VUseType::en rhs) {
+    return VUseType::en{lhs & rhs};
+}
 inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
     return os << rhs.ascii();
 }

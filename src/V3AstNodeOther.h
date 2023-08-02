@@ -704,17 +704,17 @@ class AstCUse final : public AstNode {
     // Parents:  NODEMODULE
 private:
     const string m_name;
-    const uint8_t m_useType;  // What sort of use this is
+    const VUseType m_useType;  // What sort of use this is
 
 public:
-    AstCUse(FileLine* fl, uint8_t useType, const string& name)
+    AstCUse(FileLine* fl, VUseType useType, const string& name)
         : ASTGEN_SUPER_CUse(fl)
         , m_name{name}
         , m_useType{useType} {}
     ASTGEN_MEMBERS_AstCUse;
     void dump(std::ostream& str = std::cout) const override;
     string name() const override VL_MT_STABLE { return m_name; }
-    uint8_t useType() const { return m_useType; }
+    VUseType useType() const { return m_useType; }
 };
 class AstCaseItem final : public AstNode {
     // Single item of a case statement
