@@ -10,7 +10,7 @@
                            : ... In instance t
    11 |       x;  
       |       ^
-%Error-UNSUPPORTED: t/t_func_bad.v:11:7: Unsupported: Function output argument 'y' requires 1 bits, but connection's CONST '?32?h0' generates 32 bits.
+%Error-UNSUPPORTED: t/t_func_bad.v:11:7: Function output argument 'y' requires 1 bits, but connection's CONST '?32?h0' generates 32 bits. Casting of Output/Inout variables is currently unsupported.
                                        : ... In instance t
    11 |       x;  
       |       ^
