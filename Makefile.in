@@ -449,8 +449,8 @@ install-msg:
 
 IN_WILD := ${srcdir}/*.in ${srcdir}/*/*.in
 
-# autoheader might not change config_build.h.in, so touch it
-${srcdir}/config_build.h: ${srcdir}/config_build.h.in configure
+# autoheader might not change config_package.h.in, so touch it
+${srcdir}/config_package.h: ${srcdir}/config_package.h.in configure
 	cd ${srcdir} && autoheader
 	touch $@
 Makefile: Makefile.in config.status $(IN_WILD)

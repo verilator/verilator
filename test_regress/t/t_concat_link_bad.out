@@ -1,10 +1,10 @@
-%Error: t/t_concat_link_bad.v:13:20: Syntax Error: Not expecting REPLICATE under a DOT in dotted expression
+%Error: t/t_concat_link_bad.v:13:20: Syntax error: Not expecting REPLICATE under a DOT in dotted expression
    13 |     assign bar_s = {foo_s, foo_s}.f1;
       |                    ^
-%Error: t/t_concat_link_bad.v:13:26: Syntax Error: Not expecting CONCAT under a REPLICATE in dotted expression
+%Error: t/t_concat_link_bad.v:13:26: Syntax error: Not expecting CONCAT under a REPLICATE in dotted expression
    13 |     assign bar_s = {foo_s, foo_s}.f1;
       |                          ^
-%Error: t/t_concat_link_bad.v:13:20: Syntax Error: Not expecting CONST under a REPLICATE in dotted expression
+%Error: t/t_concat_link_bad.v:13:20: Syntax error: Not expecting CONST under a REPLICATE in dotted expression
    13 |     assign bar_s = {foo_s, foo_s}.f1;
       |                    ^
 %Warning-IMPLICIT: t/t_concat_link_bad.v:13:12: Signal definition not found, creating implicitly: 'bar_s'

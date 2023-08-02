@@ -13,6 +13,7 @@ class Cls;
       if (s[0] !== "R") $fatal(2, $sformatf("Bad get_randstate = '%s'", s));
 
       set_randstate("000bad");  // Bad
+      set_randstate("Zdlffjfmkmhodjcnddlffjfmkmhodjcnd");  // Bad
    endfunction
 endclass
 

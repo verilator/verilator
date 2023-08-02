@@ -1099,7 +1099,7 @@ private:
         if (nodep->isFunction()) {
             AstVar* const portp = VN_AS(nodep->fvarp(), Var);
             UASSERT_OBJ(portp, nodep, "function without function output variable");
-            if (!portp->isFuncReturn()) nodep->v3error("Not marked as function return var");
+            UASSERT_OBJ(portp->isFuncReturn(), nodep, "Not marked as function return var");
             if (nodep->dpiImport() || nodep->dpiExport()) {
                 AstBasicDType* const bdtypep = portp->dtypep()->basicp();
                 if (!bdtypep->isDpiPrimitive()) {
@@ -1114,7 +1114,7 @@ private:
                                        "other than a single 'logic' (IEEE 1800-2017 35.5.5)");
                     }
                 }
-            } else {
+            } else if (nodep->taskPublic()) {
                 if (portp->isWide()) {
                     nodep->v3warn(E_UNSUPPORTED,
                                   "Unsupported: Public functions with return > 64 bits wide.\n"

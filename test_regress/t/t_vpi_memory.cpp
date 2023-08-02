@@ -167,8 +167,10 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
         // check vpiRange
         TestVpiHandle iter_h = vpi_iterate(vpiRange, mem_h);
         TEST_CHECK_NZ(iter_h);
+        TEST_CHECK_EQ(vpi_get(vpiType, iter_h), vpiIterator);
         TestVpiHandle lcl_h = vpi_scan(iter_h);
         TEST_CHECK_NZ(lcl_h);
+        TEST_CHECK_EQ(vpi_get(vpiType, lcl_h), vpiRange);
         {
             TestVpiHandle side_h = vpi_handle(vpiLeftRange, lcl_h);
             TEST_CHECK_NZ(side_h);

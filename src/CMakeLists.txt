@@ -324,7 +324,7 @@ file(TO_NATIVE_PATH ${srcdir}/../bin/verilator_includer VERILATOR_INCLUDER)
 file(TO_NATIVE_PATH ${srcdir}/vlcovgen VLCOVGEN)
 file(TO_NATIVE_PATH ${srcdir}/config_rev CONFIG_REV)
 
-configure_file(config_build.h.in config_build.h @ONLY)
+configure_file(config_package.h.in config_package.h @ONLY)
 
 add_custom_command(
     OUTPUT V3Ast__gen_forward_class_decls.h V3Dfg__gen_forward_class_decls.h
