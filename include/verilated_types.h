@@ -33,6 +33,7 @@
 #include <atomic>
 #include <deque>
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <unordered_set>
@@ -172,17 +173,29 @@ public:
     VlEvent() = default;
     ~VlEvent() = default;
 
-    // METHODS
-    void fire() { m_fired = m_triggered = true; }
-    bool isFired() const { return m_fired; }
-    bool isTriggered() const { return m_triggered; }
-    void clearFired() { m_fired = false; }
-    void clearTriggered() { m_triggered = false; }
+    friend std::string VL_TO_STRING(const VlEvent& e);
+    friend class VlEventHandle;
 };
 
 inline std::string VL_TO_STRING(const VlEvent& e) {
-    return std::string{"triggered="} + (e.isTriggered() ? "true" : "false");
+    return std::string{"triggered="} + (e.m_triggered ? "true" : "false");
 }
+
+class VlEventHandle : public std::shared_ptr<VlEvent> {
+public:
+    // Constructor
+    VlEventHandle()
+        : std::shared_ptr<VlEvent>(new VlEvent) {}
+
+    // METHODS
+    void fire() { (*this)->m_fired = (*this)->m_triggered = true; }
+    bool isFired() const { return (*this)->m_fired; }
+    bool isTriggered() const { return (*this)->m_triggered; }
+    void clearFired() { (*this)->m_fired = false; }
+    void clearTriggered() { (*this)->m_triggered = false; }
+};
+
+inline std::string VL_TO_STRING(const VlEventHandle& e) { return "&{ " + VL_TO_STRING(*e) + " }"; }
 
 //===================================================================
 // Random

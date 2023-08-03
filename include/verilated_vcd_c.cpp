@@ -669,7 +669,7 @@ void VerilatedVcdBuffer::finishLine(uint32_t code, char* writep) {
 // so always inline them.
 
 VL_ATTR_ALWINLINE
-void VerilatedVcdBuffer::emitEvent(uint32_t code, VlEvent newval) {
+void VerilatedVcdBuffer::emitEvent(uint32_t code, VlEventHandle newval) {
     const bool triggered = newval.isTriggered();
     // TODO : It seems that untriggered events are not filtered
     // should be tested before this last step
