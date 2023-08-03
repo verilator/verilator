@@ -1179,10 +1179,10 @@ constexpr bool operator==(const VUseType& lhs, const VUseType& rhs) { return lhs
 constexpr bool operator==(const VUseType& lhs, VUseType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VUseType::en lhs, const VUseType& rhs) { return lhs == rhs.m_e; }
 constexpr VUseType::en operator|(VUseType::en lhs, VUseType::en rhs) {
-    return VUseType::en{lhs | rhs};
+    return VUseType::en((uint8_t)lhs | (uint8_t)rhs);
 }
 constexpr VUseType::en operator&(VUseType::en lhs, VUseType::en rhs) {
-    return VUseType::en{lhs & rhs};
+    return VUseType::en((uint8_t)lhs & (uint8_t)rhs);
 }
 inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
     return os << rhs.ascii();
