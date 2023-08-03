@@ -646,20 +646,6 @@ public:
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const VL_MT_STABLE { return dtypep() ? dtypep() : childDTypep(); }
 };
-class AstCastPackedToDynArray final : public AstNodeExpr {
-    // Cast from packed to unpacked data type
-    // @astgen op1 := fromp : AstNodeExpr
-public:
-    AstCastPackedToDynArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
-        : ASTGEN_SUPER_CastPackedToDynArray(fl) {
-        this->fromp(fromp);
-        dtypeFrom(dtp);
-    }
-    ASTGEN_MEMBERS_AstCastPackedToDynArray;
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return true; }
-};
 class AstCastParse final : public AstNodeExpr {
     // Cast to appropriate type, where we haven't determined yet what the data type is
     // @astgen op1 := lhsp : AstNodeExpr
@@ -1037,6 +1023,20 @@ public:
     // Parse string and create appropriate type of AstConst.
     // May return nullptr on parse failure.
     static AstConst* parseParamLiteral(FileLine* fl, const string& literal);
+};
+class AstCvtPackedToDynArray final : public AstNodeExpr {
+    // Cast from packed array to dynamic queue data type
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    AstCvtPackedToDynArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CvtPackedToDynArray(fl) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtPackedToDynArray;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
 };
 class AstDot final : public AstNodeExpr {
     // A dot separating paths in an AstVarXRef, AstFuncRef or AstTaskRef

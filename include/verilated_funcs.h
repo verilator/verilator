@@ -1527,11 +1527,11 @@ static inline WDataOutP VL_STREAML_WWI(int lbits, WDataOutP owp, WDataInP const 
 }
 
 template <typename T>
-static inline void VL_ASSIGN_DQ(VlQueue<T>& q, int elem_size, int lbits, QData fromp) {
+static inline void VL_ASSIGN_DYN_Q(VlQueue<T>& q, int elem_size, int lbits, QData fromp) {
     const int size = (lbits + elem_size - 1) / elem_size;
     q.renew(size);
+    const QData mask = VL_MASK_Q(elem_size);
     for (int i = 0; i < size; ++i) {
-        const QData mask = VL_MASK_Q(elem_size);
         q.at(i) = (T)((fromp >> (i * elem_size)) & mask);
     }
 }

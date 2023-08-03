@@ -2172,7 +2172,7 @@ private:
                 streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
             }
             if (dWidth == 0) {
-                streamp = new AstCastPackedToDynArray{nodep->fileline(), streamp, dstp->dtypep()};
+                streamp = new AstCvtPackedToDynArray{nodep->fileline(), streamp, dstp->dtypep()};
             } else if (sWidth > dWidth) {
                 streamp = new AstSel{streamp->fileline(), streamp, sWidth - dWidth, dWidth};
             }
@@ -2190,7 +2190,7 @@ private:
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
             if (dWidth == 0) {
-                srcp = new AstCastPackedToDynArray{nodep->fileline(), srcp, dstp->dtypep()};
+                srcp = new AstCvtPackedToDynArray{nodep->fileline(), srcp, dstp->dtypep()};
             } else if (sWidth > dWidth) {
                 srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
             }
