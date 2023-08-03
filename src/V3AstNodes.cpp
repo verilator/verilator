@@ -378,7 +378,7 @@ string AstVar::verilogKwd() const {
 }
 
 string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc,
-                         bool asRef) const VL_MT_STABLE {
+                         bool asRef) const {
     UASSERT_OBJ(!forReturn, this,
                 "Internal data is never passed as return, but as first argument");
     string ostatic;
@@ -695,12 +695,12 @@ public:
     }
 };
 
-string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const VL_MT_STABLE {
+string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const {
     const CTypeRecursed info = cTypeRecurse(false);
     return info.render(name, isRef);
 }
 
-AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const VL_MT_STABLE {
+AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
     // Legacy compound argument currently just passed through and unused
     CTypeRecursed info;
 
@@ -2075,6 +2075,10 @@ void AstVarRef::dump(std::ostream& str) const {
     } else {
         str << "UNLINKED";
     }
+}
+const char* AstVarRef::broken() const {
+    BROKEN_RTN(!varp());
+    return AstNodeVarRef::broken();
 }
 bool AstVarRef::same(const AstNode* samep) const {
     return same(static_cast<const AstVarRef*>(samep));

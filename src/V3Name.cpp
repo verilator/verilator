@@ -89,12 +89,7 @@ private:
             rename(nodep, false);
         }
     }
-    void visit(AstVarRef* nodep) override {
-        if (nodep->varp()) {
-            iterate(nodep->varp());
-            nodep->name(nodep->varp()->name());
-        }
-    }
+    void visit(AstVarRef* nodep) override { iterate(nodep->varp()); }
     void visit(AstCell* nodep) override {
         if (!nodep->user1()) {
             rename(nodep, (!nodep->modp()->modPublic() && !VN_IS(nodep->modp(), ClassPackage)));

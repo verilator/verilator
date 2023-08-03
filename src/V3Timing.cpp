@@ -96,7 +96,7 @@ private:
         AstNode* const m_nodep;  // AST node represented by this graph vertex
 
         // ACCESSORS
-        string name() const override VL_MT_STABLE {
+        string name() const override {
             if (m_classp) {
                 if (VN_IS(nodep(), CFunc)) {
                     return cvtToHex(nodep()) + ' ' + classp()->name() + "::" + nodep()->name();
