@@ -4702,7 +4702,7 @@ private:
         }
         // FIXME: This should still report an error in cases where events would be handled
         // by static scheduler (__VtrigSched), ie. evaluated in active loop.
-        //if (const AstBasicDType* const basicp = nodep->rhsp()->dtypep()->basicp()) {
+        // if (const AstBasicDType* const basicp = nodep->rhsp()->dtypep()->basicp()) {
         //    if (basicp->isEvent()) {
         //        // see t_event_copy.v for commentary on the mess involved
         //        nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
