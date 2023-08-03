@@ -3381,6 +3381,13 @@ private:
         }
         m_ds.m_dotSymp = m_curSymp = oldCurSymp;
     }
+    void visit(AstFireEvent* nodep) override {
+        visit(static_cast<AstNodeStmt*>(nodep));
+        if (!VN_IS(nodep->operandp(), VarRef)) {
+            nodep->v3warn(EVENTEXPR, "Non-identifier expression used to reference an event to be "
+                                     "sent. This is not a part of IEEE_1800-2017");
+        }
+    }
     void visit(AstWith* nodep) override {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);

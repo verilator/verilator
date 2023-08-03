@@ -4700,12 +4700,14 @@ private:
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
             // if (debug()) nodep->dumpTree("-  AssignOut: ");
         }
-        if (const AstBasicDType* const basicp = nodep->rhsp()->dtypep()->basicp()) {
-            if (basicp->isEvent()) {
-                // see t_event_copy.v for commentary on the mess involved
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
-            }
-        }
+        // FIXME: This should still report an error in cases where events would be handled
+        // by static scheduler (__VtrigSched), ie. evaluated in active loop.
+        //if (const AstBasicDType* const basicp = nodep->rhsp()->dtypep()->basicp()) {
+        //    if (basicp->isEvent()) {
+        //        // see t_event_copy.v for commentary on the mess involved
+        //        nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
+        //    }
+        //}
         if (auto* const controlp = nodep->timingControlp()) {
             if (VN_IS(m_ftaskp, Func)) {
                 controlp->v3error("Timing controls are not legal in functions. Suggest use a task "
