@@ -623,6 +623,12 @@ private:
         m_inLoop = true;
         iterateChildren(nodep);
     }
+    void visit(AstNodeAssign* nodep) override {
+        VL_RESTORER(m_inDly);
+        // Restoring is needed in nested assignments, like a <= (x = y);
+        m_inDly = false;
+        iterateChildren(nodep);
+    }
 
     //--------------------
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
