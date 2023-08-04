@@ -181,7 +181,7 @@ inline std::string VL_TO_STRING(const VlEvent& e) {
     return std::string{"triggered="} + (e.m_triggered ? "true" : "false");
 }
 
-class VlEventHandle : public std::shared_ptr<VlEvent> {
+class VlEventHandle final : public std::shared_ptr<VlEvent> {
 public:
     // Constructor
     VlEventHandle()
