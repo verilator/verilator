@@ -1157,6 +1157,7 @@ inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) {
 class VUseType final {
 public:
     enum en : uint8_t {
+        // Enum values are compared with <, so order matters
         INT_FWD_CLASS = 1 << 0,  // Interface (.h) needs a forward class declaration
         INT_INCLUDE = 1 << 1,  // Interface (.h) needs an include
     };
