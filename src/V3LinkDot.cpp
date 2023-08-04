@@ -3383,9 +3383,11 @@ private:
     }
     void visit(AstFireEvent* nodep) override {
         visit(static_cast<AstNodeStmt*>(nodep));
-        if (!VN_IS(nodep->operandp(), VarRef)) {
-            nodep->v3warn(EVENTEXPR, "Non-identifier expression used to reference an event to be "
-                                     "sent. This is not a part of IEEE_1800-2017");
+        const AstNodeExpr* operandp = nodep->operandp();
+        while (const AstMemberSel* mselp = VN_CAST(operandp, MemberSel)) operandp = mselp->fromp();
+        if (!VN_IS(operandp, VarRef)) {
+            operandp->v3warn(EVENTEXPR, "Non-identifier expression used to reference an event to "
+                                        "be sent. This is not a part of IEEE_1800-2017");
         }
     }
     void visit(AstWith* nodep) override {
