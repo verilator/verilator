@@ -60,6 +60,7 @@
 #include "V3UniqueNames.h"
 
 #include <queue>
+#include <regex>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -550,7 +551,9 @@ private:
             ss << '"';
             V3EmitV::verilogForTree(sensesp, ss);
             ss << '"';
-            auto* const commentp = new AstCExpr{sensesp->fileline(), ss.str(), 0};
+            // possibly a multiline string
+            const std::string comment = std::regex_replace(ss.str(), std::regex("\n"), "\"\n\"");
+            auto* const commentp = new AstCExpr{sensesp->fileline(), comment, 0};
             commentp->dtypeSetString();
             sensesp->user2p(commentp);
             return commentp;
