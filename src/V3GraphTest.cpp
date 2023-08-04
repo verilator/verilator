@@ -72,6 +72,11 @@ public:
     string dotColor() const override { return "blue"; }
 };
 
+template <>
+bool V3GraphVertex::privateTypeTest<V3GraphTestVertex>(const V3GraphVertex* vtxp) {
+    return dynamic_cast<const V3GraphTestVertex*>(vtxp);
+}
+
 //######################################################################
 //######################################################################
 // Test vertices and nodes

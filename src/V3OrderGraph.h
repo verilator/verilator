@@ -132,6 +132,11 @@ public:
     }
 };
 
+template <>
+inline bool V3GraphVertex::privateTypeTest<OrderEitherVertex>(const V3GraphVertex* vtxp) {
+    return dynamic_cast<const OrderEitherVertex*>(vtxp);
+}
+
 class OrderLogicVertex final : public OrderEitherVertex {
     AstNode* const m_nodep;  // The logic this vertex represents
     AstScope* const m_scopep;  // Scope the logic is under
@@ -187,6 +192,11 @@ public:
     }
     // LCOV_EXCL_STOP
 };
+
+template <>
+inline bool V3GraphVertex::privateTypeTest<OrderVarVertex>(const V3GraphVertex* vtxp) {
+    return dynamic_cast<const OrderVarVertex*>(vtxp);
+}
 
 class OrderVarStdVertex final : public OrderVarVertex {
 public:

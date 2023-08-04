@@ -37,6 +37,11 @@ public:
     virtual uint32_t cost() const = 0;
 };
 
+template <>
+inline bool V3GraphVertex::privateTypeTest<AbstractMTask>(const V3GraphVertex* vtxp) {
+    return dynamic_cast<const AbstractMTask*>(vtxp);
+}
+
 class AbstractLogicMTask VL_NOT_FINAL : public AbstractMTask {
 public:
     // TYPES
@@ -51,6 +56,11 @@ public:
     uint32_t id() const override = 0;  // Unique id of this mtask.
     uint32_t cost() const override = 0;
 };
+
+template <>
+inline bool V3GraphVertex::privateTypeTest<AbstractLogicMTask>(const V3GraphVertex* vtxp) {
+    return dynamic_cast<const AbstractLogicMTask*>(vtxp);
+}
 
 class ExecMTask final : public AbstractMTask {
 private:

@@ -222,7 +222,7 @@ private:
         UINFO(9, "  Mark tri " << level << "  " << vtxp << endl);
         if (!vtxp->varp()) {  // not a var where we stop the recursion
             for (V3GraphEdge* edgep = vtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                TristateVertex* const vvertexp = dynamic_cast<TristateVertex*>(edgep->top());
+                TristateVertex* const vvertexp = edgep->top()->as<TristateVertex>();
                 // Doesn't hurt to not check if already set, but by doing so when we
                 // print out the debug messages, we'll see this node at level 0 instead.
                 if (!vvertexp->isTristate()) {
@@ -234,7 +234,7 @@ private:
             // A variable is tristated.  Find all of the LHS VARREFs that
             // drive this signal now need tristate drivers
             for (V3GraphEdge* edgep = vtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                TristateVertex* const vvertexp = dynamic_cast<TristateVertex*>(edgep->fromp());
+                TristateVertex* const vvertexp = edgep->fromp()->as<TristateVertex>();
                 if (const AstVarRef* const refp = VN_CAST(vvertexp->nodep(), VarRef)) {
                     if (refp->access().isWriteOrRW()
                         // Doesn't hurt to not check if already set, but by doing so when we
@@ -259,7 +259,7 @@ private:
         UINFO(9, "  Mark feedstri " << level << "  " << vtxp << endl);
         if (!vtxp->varp()) {  // not a var where we stop the recursion
             for (V3GraphEdge* edgep = vtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                TristateVertex* const vvertexp = dynamic_cast<TristateVertex*>(edgep->fromp());
+                TristateVertex* const vvertexp = edgep->fromp()->as<TristateVertex>();
                 // Doesn't hurt to not check if already set, but by doing so when we
                 // print out the debug messages, we'll see this node at level 0 instead.
                 if (!vvertexp->feedsTri()) {

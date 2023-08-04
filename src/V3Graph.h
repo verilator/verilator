@@ -199,6 +199,14 @@ protected:
     // CONSTRUCTORS
     V3GraphVertex(V3Graph* graphp, const V3GraphVertex& old);
 
+private:
+    // For internal use only.
+    // Note: specializations for some vertex types are provided by 'astgen'
+    template <typename T>
+    static bool privateTypeTest(const V3GraphVertex* vtxp) {
+        return typeid(T) == typeid(*vtxp);
+    }
+
 public:
     explicit V3GraphVertex(V3Graph* graphp);
     //! Clone copy constructor. Doesn't copy edges or user/userp.
@@ -208,6 +216,37 @@ public:
     virtual ~V3GraphVertex() = default;
     void unlinkEdges(V3Graph* graphp);
     void unlinkDelete(V3Graph* graphp);
+
+    // METHODS
+    // Subtype test
+    template <typename T>
+    bool is() const {
+        static_assert(std::is_base_of<V3GraphVertex, T>::value,
+                      "'T' must be a subtype of V3GraphVertex");
+        return privateTypeTest<typename std::remove_cv<T>::type>(this);
+    }
+
+    // Ensure subtype, then cast to that type
+    template <typename T>
+    T* as() {
+        UASSERT_OBJ(is<T>(), this, "V3GraphVertex is not of expected type");
+        return static_cast<T*>(this);
+    }
+    template <typename T>
+    const T* as() const {
+        UASSERT_OBJ(is<T>(), this, "V3GraphVertex is not of expected type");
+        return static_cast<const T*>(this);
+    }
+
+    // Cast to subtype, or null if different
+    template <typename T>
+    T* cast() {
+        return is<T>() ? static_cast<T*>(this) : nullptr;
+    }
+    template <typename T>
+    const T* cast() const {
+        return is<T>() ? static_cast<const T*>(this) : nullptr;
+    }
 
     // ACCESSORS
     virtual string name() const { return ""; }
@@ -257,6 +296,9 @@ public:
     V3GraphEdge* findConnectingEdgep(GraphWay way, const V3GraphVertex* waywardp);
 };
 
+// Specializations of privateTypeTest
+#include "V3GraphVertex__gen_type_tests.h"  // From ./astgen
+
 std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp);
 
 //============================================================================
@@ -296,6 +338,14 @@ protected:
         init(graphp, fromp, top, old.m_weight, old.m_cutable);
     }
 
+private:
+    // For internal use only.
+    // Note: specializations for some vertex types are provided by 'astgen'
+    template <typename T>
+    static bool privateTypeTest(const V3GraphEdge* edgep) {
+        return typeid(T) == typeid(*edgep);
+    }
+
 public:
     //! Add DAG from one node to the specified node
     V3GraphEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
@@ -308,6 +358,36 @@ public:
     }
     virtual ~V3GraphEdge() = default;
     // METHODS
+    // Subtype test
+    template <typename T>
+    bool is() const {
+        static_assert(std::is_base_of<V3GraphEdge, T>::value,
+                      "'T' must be a subtype of V3GraphEdge");
+        return privateTypeTest<typename std::remove_cv<T>::type>(this);
+    }
+
+    // Ensure subtype, then cast to that type
+    template <typename T>
+    T* as() {
+        UASSERT(is<T>(), "V3GraphEdge is not of expected type");
+        return static_cast<T*>(this);
+    }
+    template <typename T>
+    const T* as() const {
+        UASSERT(is<T>(), "V3GraphEdge is not of expected type");
+        return static_cast<const T*>(this);
+    }
+
+    // Cast to subtype, or null if different
+    template <typename T>
+    T* cast() {
+        return is<T>() ? static_cast<T*>(this) : nullptr;
+    }
+    template <typename T>
+    const T* cast() const {
+        return is<T>() ? static_cast<const T*>(this) : nullptr;
+    }
+
     virtual string name() const { return m_fromp->name() + "->" + m_top->name(); }
     virtual string dotLabel() const { return ""; }
     virtual string dotColor() const { return cutable() ? "yellowGreen" : "red"; }
@@ -340,6 +420,9 @@ public:
     V3GraphEdge* inNextp() const { return m_ins.nextp(); }
     V3GraphEdge* nextp(GraphWay way) const { return way.forward() ? outNextp() : inNextp(); }
 };
+
+// Specializations of privateTypeTest
+#include "V3GraphEdge__gen_type_tests.h"  // From ./astgen
 
 //============================================================================
 

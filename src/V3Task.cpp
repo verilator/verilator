@@ -57,6 +57,11 @@ public:
     void noInline(bool flag) { m_noInline = flag; }
 };
 
+template <>
+bool V3GraphVertex::privateTypeTest<TaskBaseVertex>(const V3GraphVertex* vtxp) {
+    return dynamic_cast<const TaskBaseVertex*>(vtxp);
+}
+
 class TaskFTaskVertex final : public TaskBaseVertex {
     // Every task gets a vertex, and we link tasks together based on funcrefs.
     AstNodeFTask* const m_nodep;

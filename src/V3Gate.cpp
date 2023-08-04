@@ -121,6 +121,11 @@ public:
     }
 };
 
+template <>
+bool V3GraphVertex::privateTypeTest<GateEitherVertex>(const V3GraphVertex* vtxp) {
+    return dynamic_cast<const GateEitherVertex*>(vtxp);
+}
+
 class GateVarVertex final : public GateEitherVertex {
     AstVarScope* const m_varScp;
     bool m_isTop = false;
@@ -578,7 +583,7 @@ public:
 
 void GateVisitor::optimizeSignals(bool allowMultiIn) {
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp);
+        GateVarVertex* const vvertexp = itp->cast<GateVarVertex>();
 
         // Consider "inlining" variables
         if (!vvertexp) continue;
@@ -720,7 +725,7 @@ void GateVisitor::consumedMove() {
     // We need the "usually" block logic to do a better job at this
     for (V3GraphVertex* vertexp = m_graph.verticesBeginp(); vertexp;
          vertexp = vertexp->verticesNextp()) {
-        if (const GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(vertexp)) {
+        if (const GateVarVertex* const vvertexp = vertexp->cast<GateVarVertex>()) {
             if (!vvertexp->consumed() && !vvertexp->user()) {
                 UINFO(8, "Unconsumed " << vvertexp->varScp() << endl);
             }
@@ -744,7 +749,7 @@ void GateVisitor::consumedMove() {
 void GateVisitor::warnSignals() {
     AstNode::user2ClearTree();
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (const GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (const GateVarVertex* const vvertexp = itp->cast<GateVarVertex>()) {
             const AstVarScope* const vscp = vvertexp->varScp();
             const AstNode* const sp = vvertexp->rstSyncNodep();
             const AstNode* const ap = vvertexp->rstAsyncNodep();
@@ -1143,14 +1148,14 @@ void GateVisitor::dedupe() {
     // Traverse starting from each of the clocks
     UINFO(9, "Gate dedupe() clocks:\n");
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (GateVarVertex* const vvertexp = itp->cast<GateVarVertex>()) {
             if (vvertexp->isClock()) deduper.dedupeTree(vvertexp);
         }
     }
     // Traverse starting from each of the outputs
     UINFO(9, "Gate dedupe() outputs:\n");
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (GateVarVertex* const vvertexp = itp->cast<GateVarVertex>()) {
             if (vvertexp->isTop() && vvertexp->varScp()->varp()->isWritable()) {
                 deduper.dedupeTree(vvertexp);
             }
@@ -1194,8 +1199,7 @@ private:
         for (V3GraphEdge* edgep = vvertexp->inBeginp(); edgep;) {
             V3GraphEdge* oldedgep = edgep;
             edgep = edgep->inNextp();  // for recursive since the edge could be deleted
-            if (GateLogicVertex* const lvertexp
-                = dynamic_cast<GateLogicVertex*>(oldedgep->fromp())) {
+            if (GateLogicVertex* const lvertexp = oldedgep->fromp()->cast<GateLogicVertex>()) {
                 if (AstNodeAssign* const assignp = VN_CAST(lvertexp->nodep(), NodeAssign)) {
                     // if (lvertexp->outSize1() && VN_IS(assignp->lhsp(), Sel)) {
                     if (VN_IS(assignp->lhsp(), Sel) && lvertexp->outSize1()) {
@@ -1281,7 +1285,7 @@ void GateVisitor::mergeAssigns() {
     UINFO(6, "mergeAssigns\n");
     GateMergeAssignsGraphVisitor merger{&m_graph};
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (GateVarVertex* const vvertexp = itp->cast<GateVarVertex>()) {
             merger.mergeAssignsTree(vvertexp);
         }
     }
@@ -1467,7 +1471,7 @@ void GateVisitor::decomposeClkVectors() {
     AstNode::user2ClearTree();
     GateClkDecompGraphVisitor decomposer{&m_graph};
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* const vertp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (GateVarVertex* const vertp = itp->cast<GateVarVertex>()) {
             const AstVarScope* const vsp = vertp->varScp();
             if (vsp->varp()->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
                 if (vsp->varp()->width() > 1) {
