@@ -226,7 +226,6 @@ private:
     // STATE
     VMemberMap memberMap;  // Member names cached for fast lookup
     WidthVP* m_vup = nullptr;  // Current node state
-    AstClass* m_classp = nullptr;  // Current class
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -234,7 +233,6 @@ private:
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
-    AstPackage* m_pkgp = nullptr;  // Current package
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables = 0;  // Number of created data type tables
@@ -2630,27 +2628,34 @@ private:
     }
     void visit(AstClass* nodep) override {
         if (nodep->didWidthAndSet()) return;
-        // If the package is std::process, set m_process type to VlProcessRef
-        if (m_pkgp && m_pkgp->name() == "std" && nodep->name() == "process") {
-            if (AstVar* const varp = VN_CAST(memberMap.findMember(nodep, "m_process"), Var)) {
-                AstBasicDType* const dtypep = new AstBasicDType{
-                    nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
-                v3Global.rootp()->typeTablep()->addTypesp(dtypep);
-                varp->getChildDTypep()->unlinkFrBack();
-                varp->dtypep(dtypep);
+
+        // If the class is std::process
+        if (nodep->name() == "process") {
+            AstPackage* const packagep = getItemPackage(nodep);
+            if (packagep && packagep->name() == "std") {
+                // Change type of m_process to VlProcessRef
+                if (AstVar* const varp = VN_CAST(memberMap.findMember(nodep, "m_process"), Var)) {
+                    AstNodeDType* const dtypep = varp->getChildDTypep();
+                    if (!varp->dtypep()) {
+                        VL_DO_DANGLING(pushDeletep(dtypep->unlinkFrBack()), dtypep);
+                    }
+                    AstBasicDType* const newdtypep = new AstBasicDType{
+                        nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
+                    v3Global.rootp()->typeTablep()->addTypesp(newdtypep);
+                    varp->dtypep(newdtypep);
+                }
+                // Mark that self requires process instance
+                if (AstNodeFTask* const ftaskp
+                    = VN_CAST(memberMap.findMember(nodep, "self"), NodeFTask)) {
+                    ftaskp->setNeedProcess();
+                }
             }
         }
+
         // Must do extends first, as we may in functions under this class
         // start following a tree of extends that takes us to other classes
-        VL_RESTORER(m_classp);
-        m_classp = nodep;
         userIterateAndNext(nodep->extendsp(), nullptr);
         userIterateChildren(nodep, nullptr);  // First size all members
-    }
-    void visit(AstPackage* nodep) override {
-        VL_RESTORER(m_pkgp);
-        m_pkgp = nodep;
-        userIterateChildren(nodep, nullptr);
     }
     void visit(AstThisRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
@@ -5315,7 +5320,6 @@ private:
             nodep->didWidth(true);
             return;
         }
-        if (m_pkgp && m_pkgp->name() == "std") nodep->isFromStd(true);
         if (nodep->classMethod() && nodep->name() == "rand_mode") {
             nodep->v3error("The 'rand_mode' method is built-in and cannot be overridden"
                            " (IEEE 1800-2017 18.8)");
@@ -5592,22 +5596,17 @@ private:
             || (!nodep->taskp()
                 && (nodep->name() == "get_randstate" || nodep->name() == "set_randstate"))) {
             // TODO perhaps this should move to V3LinkDot
-            if (!m_classp) {
-                nodep->v3error("Calling implicit class method " << nodep->prettyNameQ()
-                                                                << " without being under class");
-                nodep->replaceWith(new AstConst{nodep->fileline(), 0});
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                return;
-            }
+            AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
+            UASSERT_OBJ(classp, nodep, "Should have failed in V3LinkDot");
             if (nodep->name() == "randomize") {
-                nodep->taskp(V3Randomize::newRandomizeFunc(m_classp));
+                nodep->taskp(V3Randomize::newRandomizeFunc(classp));
                 memberMap.clear();
             } else if (nodep->name() == "srandom") {
-                nodep->taskp(V3Randomize::newSRandomFunc(m_classp));
+                nodep->taskp(V3Randomize::newSRandomFunc(classp));
                 memberMap.clear();
             } else if (nodep->name() == "get_randstate") {
                 methodOkArguments(nodep, 0, 0);
-                m_classp->baseMostClassp()->needRNG(true);
+                classp->baseMostClassp()->needRNG(true);
                 v3Global.useRandomizeMethods(true);
                 AstCExpr* const newp
                     = new AstCExpr{nodep->fileline(), "__Vm_rng.get_randstate()", 1, true};
@@ -5620,7 +5619,7 @@ private:
                 AstNodeExpr* const expr1p = VN_AS(nodep->pinsp(), Arg)->exprp();  // May edit
                 iterateCheckString(nodep, "LHS", expr1p, BOTH);
                 AstNodeExpr* const exprp = VN_AS(nodep->pinsp(), Arg)->exprp();
-                m_classp->baseMostClassp()->needRNG(true);
+                classp->baseMostClassp()->needRNG(true);
                 v3Global.useRandomizeMethods(true);
                 AstCExpr* const newp
                     = new AstCExpr{nodep->fileline(), "__Vm_rng.set_randstate(", 1, true};
