@@ -80,9 +80,32 @@ module t;
         endtask
     endclass
 
+    class ClkClass;
+        logic clk;
+        int count;
+
+        function new;
+            clk = 0;
+            count = 0;
+        endfunction
+
+        task flip;
+            clk = ~clk;
+        endtask;
+
+        task count_5;
+            @(posedge clk) count++;
+            @(posedge clk) count++;
+            @(posedge clk) count++;
+            @(posedge clk) count++;
+            @(posedge clk) count++;
+        endtask
+    endclass
+
     EventClass ec = new;
     WaitClass wc = new;
     LocalWaitClass lc = new;
+    ClkClass cc = new;
 
     initial begin
         @ec.e;
@@ -105,8 +128,13 @@ module t;
         `WRITE_VERBOSE(("Event in class triggered at time %0t!\n", $time));
     end
 
+    always #5 cc.flip;
+
+    initial cc.count_5;
+
     initial begin
         #80
+        if (cc.count != 5) $stop;
         if (ec.trig_count != 3) $stop;
         if (!wc.ok) $stop;
         if (!lc.ok) $stop;
@@ -219,16 +247,18 @@ module t;
                     #10 done++;
                     `WRITE_VERBOSE(("Forked process %0d ending at time %0t\n", done, $time));
                 end
-                begin
-                    #20 done++;
-                    `WRITE_VERBOSE(("Forked process %0d ending at time %0t\n", done, $time));
-                    d = new;
-                end
-                begin
-                    #30 d.do_delay;
-                    done++;
-                    `WRITE_VERBOSE(("Forked process %0d ending at time %0t\n", done, $time));
-                end
+                fork
+                    begin
+                        #20 done++;
+                        `WRITE_VERBOSE(("Forked process %0d ending at time %0t\n", done, $time));
+                        d = new;
+                    end
+                    begin
+                        #30 d.do_delay;
+                        done++;
+                        `WRITE_VERBOSE(("Forked process %0d ending at time %0t\n", done, $time));
+                    end
+                join
             join
             done++;
             `WRITE_VERBOSE(("All forked processes ended at time %0t\n", $time));

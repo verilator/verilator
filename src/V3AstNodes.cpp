@@ -103,29 +103,8 @@ int AstNodeSel::bitConst() const {
     return (constp ? constp->toSInt() : 0);
 }
 
-void AstNodeUOrStructDType::repairMemberCache() {
-    clearCache();
-    for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_AS(itemp->nextp(), MemberDType)) {
-        if (m_members.find(itemp->name()) != m_members.end()) {
-            itemp->v3error("Duplicate declaration of member name: " << itemp->prettyNameQ());
-        } else {
-            m_members.emplace(itemp->name(), itemp);
-        }
-    }
-}
-
 const char* AstNodeUOrStructDType::broken() const {
     BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
-    std::unordered_set<AstMemberDType*> exists;
-    for (AstMemberDType* itemp = membersp(); itemp; itemp = VN_AS(itemp->nextp(), MemberDType)) {
-        exists.insert(itemp);
-    }
-    for (MemberNameMap::const_iterator it = m_members.begin(); it != m_members.end(); ++it) {
-        if (VL_UNCOVERABLE(exists.find(it->second) == exists.end())) {
-            this->v3error("Internal: Structure member broken: " << it->first);
-            return "member broken";
-        }
-    }
     return nullptr;
 }
 
@@ -399,7 +378,7 @@ string AstVar::verilogKwd() const {
 }
 
 string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc,
-                         bool asRef) const VL_MT_STABLE {
+                         bool asRef) const {
     UASSERT_OBJ(!forReturn, this,
                 "Internal data is never passed as return, but as first argument");
     string ostatic;
@@ -716,12 +695,12 @@ public:
     }
 };
 
-string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const VL_MT_STABLE {
+string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const {
     const CTypeRecursed info = cTypeRecurse(false);
     return info.render(name, isRef);
 }
 
-AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const VL_MT_STABLE {
+AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
     // Legacy compound argument currently just passed through and unused
     CTypeRecursed info;
 
@@ -1071,6 +1050,15 @@ AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
     return m_voidp;
 }
 
+AstStreamDType* AstTypeTable::findStreamDType(FileLine* fl) {
+    if (VL_UNLIKELY(!m_streamp)) {
+        AstStreamDType* const newp = new AstStreamDType{fl};
+        addTypesp(newp);
+        m_streamp = newp;
+    }
+    return m_streamp;
+}
+
 AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
     if (VL_UNLIKELY(!m_queueIndexp)) {
         AstQueueDType* const newp = new AstQueueDType{fl, AstNode::findUInt32DType(), nullptr};
@@ -1418,29 +1406,10 @@ const char* AstClassPackage::broken() const {
 void AstClassPackage::cloneRelink() {
     if (m_classp && m_classp->clonep()) m_classp = m_classp->clonep();
 }
-void AstClass::insertCache(AstNode* nodep) {
-    const bool doit = (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
-                       || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto())
-                       || VN_IS(nodep, CFunc));
-    if (doit) {
-        if (m_members.find(nodep->name()) != m_members.end()) {
-            nodep->v3error("Duplicate declaration of member name: " << nodep->prettyNameQ());
-        } else {
-            m_members.emplace(nodep->name(), nodep);
-        }
-    }
-}
-void AstClass::repairCache() {
-    clearCache();
-    for (auto* itemp = membersp(); itemp; itemp = itemp->nextp()) {
-        if (const auto* const scopep = VN_CAST(itemp, Scope)) {
-            for (auto* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
-                insertCache(blockp);
-            }
-        } else {
-            insertCache(itemp);
-        }
-    }
+bool AstClass::isCacheableChild(const AstNode* nodep) {
+    return (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
+            || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto())
+            || VN_IS(nodep, CFunc));
 }
 AstClass* AstClass::baseMostClassp() {
     AstClass* basep = this;
@@ -1665,6 +1634,12 @@ AstNodeUOrStructDType* AstMemberDType::getChildStructp() const {
         subdtp = asubdtp->subDTypep();
     }
     return VN_CAST(subdtp, NodeUOrStructDType);  // Maybe nullptr
+}
+
+bool AstMemberSel::same(const AstNode* samep) const {
+    const AstMemberSel* const sp = static_cast<const AstMemberSel*>(samep);
+    return sp != nullptr && access() == sp->access() && fromp()->same(sp->fromp())
+           && name() == sp->name() && varp()->same(sp->varp());
 }
 
 void AstMemberSel::dump(std::ostream& str) const {
@@ -2055,6 +2030,10 @@ void AstVoidDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "void";
 }
+void AstStreamDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "stream";
+}
 void AstVarScope::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isTrace()) str << " [T]";
@@ -2096,6 +2075,10 @@ void AstVarRef::dump(std::ostream& str) const {
     } else {
         str << "UNLINKED";
     }
+}
+const char* AstVarRef::broken() const {
+    BROKEN_RTN(!varp());
+    return AstNodeVarRef::broken();
 }
 bool AstVarRef::same(const AstNode* samep) const {
     return same(static_cast<const AstVarRef*>(samep));

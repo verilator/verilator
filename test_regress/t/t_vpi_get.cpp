@@ -66,7 +66,7 @@
 #define CHECK_RESULT_HEX(got, exp) \
     if ((got) != (exp)) { \
         std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << std::hex \
-                  << ": GOT = " << (got) << "   EXP = " << (exp) << endl; \
+                  << ": GOT = " << (got) << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
 

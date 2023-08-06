@@ -18,13 +18,6 @@
 #include <iomanip>
 #include <iostream>
 
-using std::cout;
-using std::dec;
-using std::endl;
-using std::hex;
-using std::setfill;
-using std::setw;
-
 // Convenience function to check we didn't finish unexpectedly
 static void checkFinish(VerilatedContext* contextp, const char* msg) {
     if (contextp->gotFinish()) {
@@ -37,7 +30,7 @@ static void checkFinish(VerilatedContext* contextp, const char* msg) {
 // mode.
 static void logReg(int clk, const char* desc, int val, const char* note) {
 #ifdef TEST_VERBOSE
-    cout << "clk = " << clk << ", " << desc << " = " << val << note << endl;
+    std::cout << "clk = " << clk << ", " << desc << " = " << val << note << std::endl;
 #endif
 }
 
@@ -45,9 +38,9 @@ static void logReg(int clk, const char* desc, int val, const char* note) {
 // mode.
 static void logRegHex(int clk, const char* desc, int bitWidth, int val, const char* note) {
 #ifdef TEST_VERBOSE
-    cout << "clk = " << clk << ", " << desc << " = " << bitWidth << "\'h" << hex
-         << setw((bitWidth - 1) / 4 + 1) << setfill('0') << val << setfill(' ') << setw(0) << dec
-         << note << endl;
+    std::cout << "clk = " << clk << ", " << desc << " = " << bitWidth << "\'h" << std::hex
+              << std::setw((bitWidth - 1) / 4 + 1) << std::setfill('0') << val << std::setfill(' ')
+              << std::setw(0) << std::dec << note << std::endl;
 #endif
 }
 
@@ -70,8 +63,8 @@ int main() {
     dut->eval();
 
 #ifdef TEST_VERBOSE
-    cout << "Initial DPI values\n";
-    cout << "==================\n";
+    std::cout << "Initial DPI values\n";
+    std::cout << "==================\n";
 #endif
 
     int a = (int)a_read();
@@ -83,19 +76,19 @@ int main() {
     int f = (int)f_read();
 
 #ifdef TEST_VERBOSE
-    cout << "Read  a     = " << a << endl;
-    cout << "Read  b     = 8'h" << hex << setw(2) << setfill('0') << b << setfill(' ') << setw(0)
-         << dec << endl;
-    cout << "Read  mem32 = 8'h" << hex << setw(2) << setfill('0') << mem32 << setfill(' ')
-         << setw(0) << dec << endl;
-    cout << "Read  c     = " << c << endl;
-    cout << "Read  d     = 8'h" << hex << setw(2) << setfill('0') << d << setfill(' ') << setw(0)
-         << dec << endl;
-    cout << "Read  e     = 8'h" << hex << setw(2) << setfill('0') << e << setfill(' ') << setw(0)
-         << dec << endl;
-    cout << "Read  f     = 8'h" << hex << setw(2) << setfill('0') << f << setfill(' ') << setw(0)
-         << dec << endl;
-    cout << endl;
+    std::cout << "Read  a     = " << a << std::endl;
+    std::cout << "Read  b     = 8'h" << std::hex << std::setw(2) << std::setfill('0') << b
+              << std::setfill(' ') << std::setw(0) << std::dec << std::endl;
+    std::cout << "Read  mem32 = 8'h" << std::hex << std::setw(2) << std::setfill('0') << mem32
+              << std::setfill(' ') << std::setw(0) << std::dec << std::endl;
+    std::cout << "Read  c     = " << c << std::endl;
+    std::cout << "Read  d     = 8'h" << std::hex << std::setw(2) << std::setfill('0') << d
+              << std::setfill(' ') << std::setw(0) << std::dec << std::endl;
+    std::cout << "Read  e     = 8'h" << std::hex << std::setw(2) << std::setfill('0') << e
+              << std::setfill(' ') << std::setw(0) << std::dec << std::endl;
+    std::cout << "Read  f     = 8'h" << std::hex << std::setw(2) << std::setfill('0') << f
+              << std::setfill(' ') << std::setw(0) << std::dec << std::endl;
+    std::cout << std::endl;
 #endif
 
     checkResult((0 == a) && (0x00 == b) && (0x20 == mem32) && (1 == c) && (0xff == d)
@@ -107,8 +100,8 @@ int main() {
 
     // Check we can read a scalar register.
 #ifdef TEST_VERBOSE
-    cout << "Test of scalar register reading\n";
-    cout << "===============================\n";
+    std::cout << "Test of scalar register reading\n";
+    std::cout << "===============================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -120,7 +113,7 @@ int main() {
         int a_after = (int)a_read();
         logReg(dut->clk, "read a", a_after, " (after clk)");
 #ifdef TEST_VERBOSE
-        cout << endl;
+        std::cout << std::endl;
 #endif
         // On a posedge, a should toggle, on a negedge it should stay the
         // same.
@@ -133,8 +126,8 @@ int main() {
 
     // Check we can read a vector register.
 #ifdef TEST_VERBOSE
-    cout << "Test of vector register reading\n";
-    cout << "===============================\n";
+    std::cout << "Test of vector register reading\n";
+    std::cout << "===============================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -156,9 +149,9 @@ int main() {
 
     // Test we can read an array element
 #ifdef TEST_VERBOSE
-    cout << endl;
-    cout << "Test of array element reading\n";
-    cout << "=============================\n";
+    std::cout << std::endl;
+    std::cout << "Test of array element reading\n";
+    std::cout << "=============================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -180,9 +173,9 @@ int main() {
 
     // Check we can read a scalar wire
 #ifdef TEST_VERBOSE
-    cout << endl;
-    cout << "Test of scalar wire reading\n";
-    cout << "===========================\n";
+    std::cout << std::endl;
+    std::cout << "Test of scalar wire reading\n";
+    std::cout << "===========================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -209,9 +202,9 @@ int main() {
 
     // Check we can read a vector wire
 #ifdef TEST_VERBOSE
-    cout << endl;
-    cout << "Test of vector wire reading\n";
-    cout << "===========================\n";
+    std::cout << std::endl;
+    std::cout << "Test of vector wire reading\n";
+    std::cout << "===========================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -239,9 +232,9 @@ int main() {
 
     // Check we can write a scalar register
 #ifdef TEST_VERBOSE
-    cout << endl;
-    cout << "Test of scalar register writing\n";
-    cout << "===============================\n";
+    std::cout << std::endl;
+    std::cout << "Test of scalar register writing\n";
+    std::cout << "===============================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -268,9 +261,9 @@ int main() {
 
     // Check we can write a vector register
 #ifdef TEST_VERBOSE
-    cout << endl;
-    cout << "Test of vector register writing\n";
-    cout << "===============================\n";
+    std::cout << std::endl;
+    std::cout << "Test of vector register writing\n";
+    std::cout << "===============================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -297,9 +290,9 @@ int main() {
 
     // Test we can write an array element
 #ifdef TEST_VERBOSE
-    cout << endl;
-    cout << "Test of array element writing\n";
-    cout << "=============================\n";
+    std::cout << std::endl;
+    std::cout << "Test of array element writing\n";
+    std::cout << "=============================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -326,9 +319,9 @@ int main() {
 
     // Check we can read a vector register slice
 #ifdef TEST_VERBOSE
-    cout << endl;
-    cout << "Test of vector register slice reading\n";
-    cout << "=====================================\n";
+    std::cout << std::endl;
+    std::cout << "Test of vector register slice reading\n";
+    std::cout << "=====================================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -353,9 +346,9 @@ int main() {
 
     // Test we can read an array element slice
 #ifdef TEST_VERBOSE
-    cout << endl;
-    cout << "Test of array element slice reading\n";
-    cout << "===================================\n";
+    std::cout << std::endl;
+    std::cout << "Test of array element slice reading\n";
+    std::cout << "===================================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -382,9 +375,9 @@ int main() {
 
     // Check we can read a vector wire slice
 #ifdef TEST_VERBOSE
-    cout << endl;
-    cout << "Test of vector wire slice reading\n";
-    cout << "=================================\n";
+    std::cout << std::endl;
+    std::cout << "Test of vector wire slice reading\n";
+    std::cout << "=================================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -413,9 +406,9 @@ int main() {
 
     // Check we can write a vector register slice
 #ifdef TEST_VERBOSE
-    cout << endl;
-    cout << "Test of vector register slice writing\n";
-    cout << "=====================================\n";
+    std::cout << std::endl;
+    std::cout << "Test of vector register slice writing\n";
+    std::cout << "=====================================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -452,9 +445,9 @@ int main() {
 
     // Test we can write an array element slice
 #ifdef TEST_VERBOSE
-    cout << endl;
-    cout << "Test of array element slice writing\n";
-    cout << "===================================\n";
+    std::cout << std::endl;
+    std::cout << "Test of array element slice writing\n";
+    std::cout << "===================================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -497,9 +490,9 @@ int main() {
 
     // Check we can read complex registers
 #ifdef TEST_VERBOSE
-    cout << endl;
-    cout << "Test of complex register reading\n";
-    cout << "================================\n";
+    std::cout << std::endl;
+    std::cout << "Test of complex register reading\n";
+    std::cout << "================================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -536,7 +529,7 @@ int main() {
     }
 
 #ifdef TEST_VERBOSE
-    cout << endl;
+    std::cout << std::endl;
 #endif
 
     checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
@@ -577,9 +570,9 @@ int main() {
 
     // Test we can write a complex register
 #ifdef TEST_VERBOSE
-    cout << endl;
-    cout << "Test of complex register writing\n";
-    cout << "================================\n";
+    std::cout << std::endl;
+    std::cout << "Test of complex register writing\n";
+    std::cout << "================================\n";
 #endif
 
     for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
@@ -628,7 +621,7 @@ int main() {
     }
 
 #ifdef TEST_VERBOSE
-    cout << endl;
+    std::cout << std::endl;
 #endif
 
     checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
@@ -674,7 +667,7 @@ int main() {
 
     // Tidy up
     dut->final();
-    cout << "*-* All Finished *-*\n";
+    std::cout << "*-* All Finished *-*\n";
 }
 
 // Local Variables:

@@ -36,9 +36,9 @@ jobs:
         m32: [0, 1]
         exclude:
           # Build pull requests only with ubuntu-22.04 and without m32
-          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-18.04' || 'do-not-exclude' }}
-          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-20.04' || 'do-not-exclude' }}
-          - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
+          # - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-18.04' || 'do-not-exclude' }}
+          # - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-20.04' || 'do-not-exclude' }}
+          # - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
           # Build -m32 only on ubuntu-22.04 clang++
           - {os: ubuntu-18.04, m32: 1}
           - {os: ubuntu-20.04, m32: 1}
@@ -107,9 +107,9 @@ jobs:
         suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, vltmt-0, vltmt-1]
         exclude:
           # Build pull requests only with ubuntu-22.04 and without m32
-          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-18.04' || 'do-not-exclude' }}
-          - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-20.04' || 'do-not-exclude' }}
-          - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
+          # - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-18.04' || 'do-not-exclude' }}
+          # - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-20.04' || 'do-not-exclude' }}
+          # - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
           # Build -m32 only on ubuntu-22.04
           - {os: ubuntu-18.04, m32: 1}
           - {os: ubuntu-20.04, m32: 1}

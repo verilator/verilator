@@ -384,7 +384,6 @@ private:
                 nodep->v3fatalSrc("Null connection?");
             }
         }
-        nodep->name(nodep->varp()->name());
     }
     void visit(AstVarXRef* nodep) override {
         // Track what scope it was originally under so V3LinkDot can resolve it

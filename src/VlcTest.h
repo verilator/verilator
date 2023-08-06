@@ -63,20 +63,21 @@ public:
 
     // METHODS
     static void dumpHeader() {
-        cout << "Tests:\n";
-        // cout<<"  Testrun, Computrons,";  // Currently not loaded
-        cout << "  Covered,     Rank,  RankPts,  Filename\n";
+        std::cout << "Tests:\n";
+        // std::cout<<"  Testrun, Computrons,";  // Currently not loaded
+        std::cout << "  Covered,     Rank,  RankPts,  Filename\n";
     }
     void dump(bool bucketsToo) {
         if (testrun() || computrons() != 0.0) {  // currently unused // LCOV_EXCL_LINE
-            cout << "  " << std::setw(8) << std::setfill('0') << testrun()  // LCOV_EXCL_LINE
-                 << ",  " << std::setw(7) << std::setfill(' ') << computrons()  // LCOV_EXCL_LINE
-                 << ",";  // LCOV_EXCL_LINE
+            std::cout << "  " << std::setw(8) << std::setfill('0') << testrun()  // LCOV_EXCL_LINE
+                      << ",  " << std::setw(7) << std::setfill(' ')
+                      << computrons()  // LCOV_EXCL_LINE
+                      << ",";  // LCOV_EXCL_LINE
         }
-        cout << "  " << std::setw(7) << std::setfill(' ') << bucketsCovered();
-        cout << ",  " << std::setw(7) << std::setfill(' ') << rank();
-        cout << ",  " << std::setw(7) << std::setfill(' ') << rankPoints();
-        cout << ",  \"" << name() << "\"\n";
+        std::cout << "  " << std::setw(7) << std::setfill(' ') << bucketsCovered();
+        std::cout << ",  " << std::setw(7) << std::setfill(' ') << rank();
+        std::cout << ",  " << std::setw(7) << std::setfill(' ') << rankPoints();
+        std::cout << ",  \"" << name() << "\"\n";
         if (bucketsToo) m_buckets.dump();
     }
 };

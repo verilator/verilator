@@ -26,6 +26,7 @@ foreach my $s (
     'Enum names without values only allowed on numeric types',  # Hard to hit
     'Enum ranges must be integral, per spec',  # Hard to hit
     'Return with return value isn\'t underneath a function',  # Hard to hit, get other bad return messages
+    'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance ',  # Instead get syntax error
     'Syntax error parsing real: \'',  # Instead can't lex the number
     'Unsupported: Ranges ignored in port-lists',  # Hard to hit
     'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
@@ -40,12 +41,10 @@ foreach my $s (
     'Assigned pin is neither input nor output',
     'Assignment pattern with no members',
     'Attempted parameter setting of non-parameter: Param ',
-    'Can\'t find typedef: ',
     'Can\'t find varpin scope of ',
     'Can\'t resolve module reference: \'',
     'Cannot write preprocessor output: ',
     'Circular logic when ordering code (non-cutable edge loop)',
-    'Deferred assertions must use \'#0\' (IEEE 1800-2017 16.4)',
     'Define or directive not defined: `',
     'Exceeded limit of ',
     'Extern declaration\'s scope is not a defined class',
@@ -62,22 +61,16 @@ foreach my $s (
     'Modport not referenced as <interface>.',
     'Modport not referenced from underneath an interface: ',
     'Non-interface used as an interface: ',
-    'Not marked as function return var',
     'Parameter not found in sub-module: Param ',
     'Parameter type pin value isn\'t a type: Param ',
     'Parameter type variable isn\'t a type: Param ',
     'Pattern replication value of 0 is not legal.',
     'Signals inside functions/tasks cannot be marked forceable',
-    'Size-changing cast to zero or negative size',
     'Slice size cannot be zero.',
     'Slices of arrays in assignments have different unpacked dimensions, ',
     'String of ',
     'Symbol matching ',
-    'Syntax Error: Range \':\', \'+:\' etc are not allowed in the instance ',
-    'Syntax error: \'virtual\' not allowed before var declaration',
     'Unexpected connection to arrayed port',
-    'Unhandled attribute type',
-    'Unknown Error Code: ',
     'Unknown `pragma',
     'Unknown built-in event method ',
     'Unsized numbers/parameters not allowed in streams.',

@@ -11,8 +11,6 @@
 
 #include "Vt_trace_open_wrong_order_bad.h"
 
-using namespace std;
-
 int main(int argc, char** argv) {
     VerilatedContext ctx;
     VerilatedVcdC tfp;

@@ -70,6 +70,7 @@
 
 #include "V3Const.h"
 #include "V3Global.h"
+#include "V3MemberMap.h"
 #include "V3Number.h"
 #include "V3Randomize.h"
 #include "V3String.h"
@@ -223,8 +224,8 @@ private:
     using DTypeMap = std::map<const std::string, AstPatMember*>;
 
     // STATE
+    VMemberMap memberMap;  // Member names cached for fast lookup
     WidthVP* m_vup = nullptr;  // Current node state
-    AstClass* m_classp = nullptr;  // Current class
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -232,7 +233,6 @@ private:
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
-    AstPackage* m_pkgp = nullptr;  // Current package
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables = 0;  // Number of created data type tables
@@ -615,9 +615,11 @@ private:
         }
         if (m_vup->final()) {
             if (nodep->lhsp()->isString() || nodep->rhsp()->isString()) {
-                AstNode* const newp
-                    = new AstConcatN{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-                                     nodep->rhsp()->unlinkFrBack()};
+                AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
+                AstNodeExpr* rhsp = nodep->rhsp()->unlinkFrBack();
+                if (!lhsp->isString()) lhsp = new AstCvtPackString{lhsp->fileline(), lhsp};
+                if (!rhsp->isString()) rhsp = new AstCvtPackString{rhsp->fileline(), rhsp};
+                AstNode* const newp = new AstConcatN{nodep->fileline(), lhsp, rhsp};
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
@@ -729,19 +731,12 @@ private:
         //   width: value(LHS) * width(RHS)
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
-            V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
+            V3Const::constifyParamsNoWarnEdit(nodep->rhsp());  // rhsp may change
+
+            uint32_t times = 1;
+
             const AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
-            if (!constp) {
-                nodep->v3error("Replication value isn't a constant.");
-                return;
-            }
-            uint32_t times = constp->toUInt();
-            if (times == 0
-                && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
-                nodep->v3error("Replication value of 0 is only legal under a concatenation"
-                               " (IEEE 1800-2017 11.4.12.1)");
-                times = 1;
-            }
+            if (constp) times = constp->toUInt();
 
             AstNodeDType* const vdtypep = m_vup->dtypeNullSkipRefp();
             if (VN_IS(vdtypep, QueueDType) || VN_IS(vdtypep, DynArrayDType)
@@ -775,7 +770,7 @@ private:
                                                  << vdtypep->prettyDTypeNameQ() << " data type");
             }
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
-            if (nodep->lhsp()->isString()) {
+            if ((vdtypep && vdtypep->isString()) || nodep->lhsp()->isString()) {
                 AstNode* const newp
                     = new AstReplicateN{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
                                         nodep->rhsp()->unlinkFrBack()};
@@ -783,6 +778,13 @@ private:
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             } else {
+                if (!constp) nodep->v3error("Replication value isn't a constant.");
+                if (times == 0
+                    && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
+                    nodep->v3error("Replication value of 0 is only legal under a concatenation"
+                                   " (IEEE 1800-2017 11.4.12.1)");
+                    times = 1;  // Set to 1, so we can continue looking for errors
+                }
                 nodep->dtypeSetLogicUnsized((nodep->lhsp()->width() * times),
                                             (nodep->lhsp()->widthMin() * times),
                                             VSigning::UNSIGNED);
@@ -801,18 +803,7 @@ private:
         if (m_vup->prelim()) {
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
-            V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
-            const AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
-            if (!constp) {
-                nodep->v3error("Replication value isn't a constant.");
-                return;
-            }
-            const uint32_t times = constp->toUInt();
-            if (times == 0
-                && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
-                nodep->v3error("Replication value of 0 is only legal under a concatenation"
-                               " (IEEE 1800-2017 11.4.12.1)");
-            }
+            V3Const::constifyParamsNoWarnEdit(nodep->rhsp());  // rhsp may change
             nodep->dtypeSetString();
         }
         if (m_vup->final()) {
@@ -848,8 +839,14 @@ private:
             } else {
                 nodep->v3error("Slice size isn't a constant or basic data type.");
             }
-            nodep->dtypeSetLogicUnsized(nodep->lhsp()->width(), nodep->lhsp()->widthMin(),
-                                        VSigning::UNSIGNED);
+            if (VN_IS(nodep->lhsp()->dtypep(), DynArrayDType)
+                || VN_IS(nodep->lhsp()->dtypep(), QueueDType)
+                || VN_IS(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
+                nodep->dtypeSetStream();
+            } else {
+                nodep->dtypeSetLogicUnsized(nodep->lhsp()->width(), nodep->lhsp()->widthMin(),
+                                            VSigning::UNSIGNED);
+            }
         }
         if (m_vup->final()) {
             if (!nodep->dtypep()->widthSized()) {
@@ -1550,7 +1547,7 @@ private:
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported: $bits for queue");
                     break;
                 }
-                default: nodep->v3error("Unhandled attribute type");
+                default: nodep->v3fatalSrc("Unhandled attribute type");
                 }
             } else {
                 const std::pair<uint32_t, uint32_t> dimpair = dtypep->skipRefp()->dimensions(true);
@@ -2115,6 +2112,10 @@ private:
                 v3Global.rootp()->typeTablep()->addTypesp(newp);
             }
         }
+        if (AstWildcardArrayDType* const wildp
+            = VN_CAST(nodep->dtypeSkipRefp(), WildcardArrayDType)) {
+            nodep->dtypep(wildp);  // Skip RefDType like for other dynamic array types
+        }
         if (VN_IS(nodep->dtypep()->skipRefToConstp(), ConstDType)) nodep->isConst(true);
         // Parameters if implicit untyped inherit from what they are assigned to
         const AstBasicDType* const bdtypep = VN_CAST(nodep->dtypep(), BasicDType);
@@ -2577,7 +2578,6 @@ private:
         // if (debug() >= 9) nodep->dumpTree("-  class-in: ");
         if (!nodep->packed() && v3Global.opt.structsPacked()) nodep->packed(true);
         userIterateChildren(nodep, nullptr);  // First size all members
-        nodep->repairMemberCache();
         nodep->dtypep(nodep);
         nodep->isFourstate(false);
         // Error checks
@@ -2628,28 +2628,34 @@ private:
     }
     void visit(AstClass* nodep) override {
         if (nodep->didWidthAndSet()) return;
-        // If the package is std::process, set m_process type to VlProcessRef
-        if (m_pkgp && m_pkgp->name() == "std" && nodep->name() == "process") {
-            if (AstVar* const varp = VN_CAST(nodep->findMember("m_process"), Var)) {
-                AstBasicDType* const dtypep = new AstBasicDType{
-                    nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
-                v3Global.rootp()->typeTablep()->addTypesp(dtypep);
-                varp->getChildDTypep()->unlinkFrBack();
-                varp->dtypep(dtypep);
+
+        // If the class is std::process
+        if (nodep->name() == "process") {
+            AstPackage* const packagep = getItemPackage(nodep);
+            if (packagep && packagep->name() == "std") {
+                // Change type of m_process to VlProcessRef
+                if (AstVar* const varp = VN_CAST(memberMap.findMember(nodep, "m_process"), Var)) {
+                    AstNodeDType* const dtypep = varp->getChildDTypep();
+                    if (!varp->dtypep()) {
+                        VL_DO_DANGLING(pushDeletep(dtypep->unlinkFrBack()), dtypep);
+                    }
+                    AstBasicDType* const newdtypep = new AstBasicDType{
+                        nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
+                    v3Global.rootp()->typeTablep()->addTypesp(newdtypep);
+                    varp->dtypep(newdtypep);
+                }
+                // Mark that self requires process instance
+                if (AstNodeFTask* const ftaskp
+                    = VN_CAST(memberMap.findMember(nodep, "self"), NodeFTask)) {
+                    ftaskp->setNeedProcess();
+                }
             }
         }
+
         // Must do extends first, as we may in functions under this class
         // start following a tree of extends that takes us to other classes
-        VL_RESTORER(m_classp);
-        m_classp = nodep;
         userIterateAndNext(nodep->extendsp(), nullptr);
         userIterateChildren(nodep, nullptr);  // First size all members
-        nodep->repairCache();
-    }
-    void visit(AstPackage* nodep) override {
-        VL_RESTORER(m_pkgp);
-        m_pkgp = nodep;
-        userIterateChildren(nodep, nullptr);
     }
     void visit(AstThisRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
@@ -2704,31 +2710,7 @@ private:
         if (AstNodeUOrStructDType* const adtypep = VN_CAST(fromDtp, NodeUOrStructDType)) {
             if (memberSelStruct(nodep, adtypep)) return;
         } else if (AstClassRefDType* const adtypep = VN_CAST(fromDtp, ClassRefDType)) {
-            if (AstNode* const foundp = memberSelClass(nodep, adtypep)) {
-                if (AstVar* const varp = VN_CAST(foundp, Var)) {
-                    if (!varp->didWidth()) userIterate(varp, nullptr);
-                    nodep->dtypep(foundp->dtypep());
-                    nodep->varp(varp);
-                    return;
-                }
-                if (AstEnumItemRef* const adfoundp = VN_CAST(foundp, EnumItemRef)) {
-                    nodep->replaceWith(adfoundp->cloneTree(false));
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    return;
-                }
-                if (AstNodeFTask* const methodp = VN_CAST(foundp, NodeFTask)) {
-                    nodep->replaceWith(new AstMethodCall{nodep->fileline(),
-                                                         nodep->fromp()->unlinkFrBack(),
-                                                         nodep->name(), nullptr});
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    return;
-                }
-                UINFO(1, "found object " << foundp << endl);
-                nodep->v3fatalSrc("MemberSel of non-variable\n"
-                                  << nodep->warnContextPrimary() << '\n'
-                                  << foundp->warnOther() << "... Location of found object\n"
-                                  << foundp->warnContextSecondary());
-            }
+            if (memberSelClass(nodep, adtypep)) return;
         } else if (AstIfaceRefDType* const adtypep = VN_CAST(fromDtp, IfaceRefDType)) {
             if (AstNode* const foundp = memberSelIface(nodep, adtypep)) {
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
@@ -2767,15 +2749,50 @@ private:
         nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    AstNode* memberSelClass(AstMemberSel* nodep, AstClassRefDType* adtypep) {
-        // Returns node if ok
+    bool memberSelClass(AstMemberSel* nodep, AstClassRefDType* adtypep) {
+        // Returns true if ok
         // No need to width-resolve the class, as it was done when we did the child
         AstClass* const first_classp = adtypep->classp();
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
-            if (AstNode* const foundp = classp->findMember(nodep->name())) return foundp;
+            if (AstNode* const foundp = memberMap.findMember(classp, nodep->name())) {
+                if (AstVar* const varp = VN_CAST(foundp, Var)) {
+                    if (!varp->didWidth()) userIterate(varp, nullptr);
+                    if (varp->lifetime().isStatic()) {
+                        // Static fiels are moved outside the class, so they shouldn't be accessed
+                        // by member select on a class object
+                        AstVarRef* const varRefp
+                            = new AstVarRef{nodep->fileline(), varp, nodep->access()};
+                        varRefp->classOrPackagep(classp);
+                        nodep->replaceWith(varRefp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                        return true;
+                    }
+                    nodep->dtypep(foundp->dtypep());
+                    nodep->varp(varp);
+                    return true;
+                }
+                if (AstEnumItemRef* const adfoundp = VN_CAST(foundp, EnumItemRef)) {
+                    nodep->replaceWith(adfoundp->cloneTree(false));
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return true;
+                }
+                if (AstNodeFTask* const methodp = VN_CAST(foundp, NodeFTask)) {
+                    nodep->replaceWith(new AstMethodCall{nodep->fileline(),
+                                                         nodep->fromp()->unlinkFrBack(),
+                                                         nodep->name(), nullptr});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return true;
+                }
+                UINFO(1, "found object " << foundp << endl);
+                nodep->v3fatalSrc("MemberSel of non-variable\n"
+                                  << nodep->warnContextPrimary() << '\n'
+                                  << foundp->warnOther() << "... Location of found object\n"
+                                  << foundp->warnContextSecondary());
+            }
             classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr;
         }
+
         VSpellCheck speller;
         for (AstClass* classp = first_classp; classp;) {
             for (AstNode* itemp = classp->membersp(); itemp; itemp = itemp->nextp()) {
@@ -2790,14 +2807,13 @@ private:
             "Member " << nodep->prettyNameQ() << " not found in class "
                       << first_classp->prettyNameQ() << "\n"
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
-        return nullptr;  // Caller handles error
+        return false;  // Caller handles error
     }
     AstNode* memberSelIface(AstMemberSel* nodep, AstIfaceRefDType* adtypep) {
         // Returns node if ok
         // No need to width-resolve the interface, as it was done when we did the child
         AstNodeModule* const ifacep = adtypep->ifacep();
         UASSERT_OBJ(ifacep, nodep, "Unlinked");
-        // if (AstNode* const foundp = ifacep->findMember(nodep->name())) return foundp;
         VSpellCheck speller;
         for (AstNode* itemp = ifacep->stmtsp(); itemp; itemp = itemp->nextp()) {
             if (itemp->name() == nodep->name()) return itemp;
@@ -2814,7 +2830,8 @@ private:
     }
     bool memberSelStruct(AstMemberSel* nodep, AstNodeUOrStructDType* adtypep) {
         // Returns true if ok
-        if (AstMemberDType* const memberp = adtypep->findMember(nodep->name())) {
+        if (AstMemberDType* const memberp
+            = VN_CAST(memberMap.findMember(adtypep, nodep->name()), MemberDType)) {
             if (m_attrp) {  // Looking for the base of the attribute
                 nodep->dtypep(memberp);
                 UINFO(9, "   MEMBERSEL(attr) -> " << nodep << endl);
@@ -3202,10 +3219,12 @@ private:
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "min" || nodep->name() == "max" || nodep->name() == "unique"
                    || nodep->name() == "unique_index") {
+            AstWith* const withp = methodWithArgument(
+                nodep, false, true, nullptr, nodep->findUInt32DType(), adtypep->subDTypep());
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      nodep->name()};
+                                      nodep->name(), withp};
             if (nodep->name() == "unique_index") {
                 newp->dtypep(queueDTypeIndexedBy(adtypep->keyDTypep()));
             } else {
@@ -3477,8 +3496,10 @@ private:
         AstClass* const first_classp = adtypep->classp();
         if (nodep->name() == "randomize") {
             V3Randomize::newRandomizeFunc(first_classp);
+            memberMap.clear();
         } else if (nodep->name() == "srandom") {
             V3Randomize::newSRandomFunc(first_classp);
+            memberMap.clear();
         }
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
@@ -3501,7 +3522,7 @@ private:
                 }
             }
             if (AstNodeFTask* const ftaskp
-                = VN_CAST(classp->findMember(nodep->name()), NodeFTask)) {
+                = VN_CAST(memberMap.findMember(classp, nodep->name()), NodeFTask)) {
                 userIterate(ftaskp, nullptr);
                 if (ftaskp->lifetime().isStatic()) {
                     AstNodeExpr* argsp = nullptr;
@@ -3771,7 +3792,7 @@ private:
 
             classp = refp->classp();
             UASSERT_OBJ(classp, nodep, "Unlinked");
-            if (AstNodeFTask* const ftaskp = VN_CAST(classp->findMember("new"), Func)) {
+            if (AstNodeFTask* const ftaskp = VN_CAST(memberMap.findMember(classp, "new"), Func)) {
                 nodep->taskp(ftaskp);
                 nodep->classOrPackagep(classp);
             } else {
@@ -3939,7 +3960,8 @@ private:
                         // '{member:value} or '{data_type: default_value}
                         if (const AstText* textp = VN_CAST(patp->keyp(), Text)) {
                             // member: value
-                            memp = vdtypep->findMember(textp->text());
+                            memp = VN_CAST(memberMap.findMember(vdtypep, textp->text()),
+                                           MemberDType);
                             if (!memp) {
                                 patp->keyp()->v3error("Assignment pattern key '"
                                                       << textp->text() << "' not found as member");
@@ -5298,7 +5320,6 @@ private:
             nodep->didWidth(true);
             return;
         }
-        if (m_pkgp && m_pkgp->name() == "std") nodep->isFromStd(true);
         if (nodep->classMethod() && nodep->name() == "rand_mode") {
             nodep->v3error("The 'rand_mode' method is built-in and cannot be overridden"
                            " (IEEE 1800-2017 18.8)");
@@ -5575,20 +5596,17 @@ private:
             || (!nodep->taskp()
                 && (nodep->name() == "get_randstate" || nodep->name() == "set_randstate"))) {
             // TODO perhaps this should move to V3LinkDot
-            if (!m_classp) {
-                nodep->v3error("Calling implicit class method " << nodep->prettyNameQ()
-                                                                << " without being under class");
-                nodep->replaceWith(new AstConst{nodep->fileline(), 0});
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                return;
-            }
+            AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
+            UASSERT_OBJ(classp, nodep, "Should have failed in V3LinkDot");
             if (nodep->name() == "randomize") {
-                nodep->taskp(V3Randomize::newRandomizeFunc(m_classp));
+                nodep->taskp(V3Randomize::newRandomizeFunc(classp));
+                memberMap.clear();
             } else if (nodep->name() == "srandom") {
-                nodep->taskp(V3Randomize::newSRandomFunc(m_classp));
+                nodep->taskp(V3Randomize::newSRandomFunc(classp));
+                memberMap.clear();
             } else if (nodep->name() == "get_randstate") {
                 methodOkArguments(nodep, 0, 0);
-                m_classp->baseMostClassp()->needRNG(true);
+                classp->baseMostClassp()->needRNG(true);
                 v3Global.useRandomizeMethods(true);
                 AstCExpr* const newp
                     = new AstCExpr{nodep->fileline(), "__Vm_rng.get_randstate()", 1, true};
@@ -5601,7 +5619,7 @@ private:
                 AstNodeExpr* const expr1p = VN_AS(nodep->pinsp(), Arg)->exprp();  // May edit
                 iterateCheckString(nodep, "LHS", expr1p, BOTH);
                 AstNodeExpr* const exprp = VN_AS(nodep->pinsp(), Arg)->exprp();
-                m_classp->baseMostClassp()->needRNG(true);
+                classp->baseMostClassp()->needRNG(true);
                 v3Global.useRandomizeMethods(true);
                 AstCExpr* const newp
                     = new AstCExpr{nodep->fileline(), "__Vm_rng.set_randstate(", 1, true};
@@ -5671,7 +5689,8 @@ private:
         }
         if (nodep->fileline()->timingOn()) {
             if (v3Global.opt.timing().isSetTrue()) {
-                userIterate(nodep->condp(), WidthVP{SELF, PRELIM}.p());
+                iterateCheckBool(nodep, "Wait", nodep->condp(),
+                                 BOTH);  // it's like an if() condition.
                 iterateNull(nodep->stmtsp());
                 return;
             } else if (v3Global.opt.timing().isSetFalse()) {
@@ -6371,7 +6390,7 @@ private:
     }
     void checkClassAssign(AstNode* nodep, const char* side, AstNode* rhsp,
                           AstNodeDType* lhsDTypep) {
-        if (AstClassRefDType* const lhsClassRefp = VN_CAST(lhsDTypep, ClassRefDType)) {
+        if (AstClassRefDType* const lhsClassRefp = VN_CAST(lhsDTypep->skipRefp(), ClassRefDType)) {
             UASSERT_OBJ(rhsp->dtypep(), rhsp, "Node has no type");
             AstNodeDType* const rhsDtypep = rhsp->dtypep()->skipRefp();
             if (AstClassRefDType* const rhsClassRefp = VN_CAST(rhsDtypep, ClassRefDType)) {
@@ -6379,7 +6398,7 @@ private:
             } else if (auto* const constp = VN_CAST(rhsp, Const)) {
                 if (constp->num().isNull()) return;
             }
-            nodep->v3error(side << " expects a " << lhsDTypep->prettyTypeName() << ", got "
+            nodep->v3error(side << " expects a " << lhsClassRefp->prettyTypeName() << ", got "
                                 << rhsDtypep->prettyTypeName());
         }
     }

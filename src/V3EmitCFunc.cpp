@@ -419,7 +419,7 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
     }
     if (nodep->funcp()->needProcess()) {
         if (comma) puts(", ");
-        if (VN_IS(nodep->backp(), CAwait)) {
+        if (VN_IS(nodep->backp(), CAwait) || !nodep->funcp()->isCoroutine()) {
             puts("vlProcess");
         } else {
             puts("std::make_shared<VlProcess>()");
@@ -452,6 +452,10 @@ void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
         putbs("std::string{");
         putsQuoted(constp->num().toString());
         puts("}");
+    } else if (VN_IS(nodep->dtypep(), StreamDType)) {
+        putbs("VL_CVT_PACK_STR_ND(");
+        iterateAndNextConstNull(nodep);
+        puts(")");
     } else {
         putbs("VL_CVT_PACK_STR_N");
         emitIQW(nodep);

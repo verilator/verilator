@@ -2166,7 +2166,12 @@ private:
             AstNodeExpr* const srcp = nodep->rhsp()->unlinkFrBack();
             // Connect the rhs to the stream operator and update its width
             VN_AS(streamp, StreamL)->lhsp(srcp);
-            streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
+            if (VN_IS(srcp->dtypep(), DynArrayDType) || VN_IS(srcp->dtypep(), QueueDType)
+                || VN_IS(srcp->dtypep(), UnpackArrayDType)) {
+                streamp->dtypeSetStream();
+            } else {
+                streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
+            }
             // Shrink the RHS if necessary
             if (sWidth > dWidth) {
                 streamp = new AstSel{streamp->fileline(), streamp, sWidth - dWidth, dWidth};
@@ -3650,6 +3655,7 @@ private:
 public:
     // Processing Mode Enum
     enum ProcMode : uint8_t {
+        PROC_PARAMS_NOWARN,
         PROC_PARAMS,
         PROC_GENERATE,
         PROC_LIVE,
@@ -3665,16 +3671,18 @@ public:
         , m_concswapNames{globalPass ? ("__Vconcswap_" + cvtToStr(s_globalPassNum++)) : ""} {
         // clang-format off
         switch (pmode) {
-        case PROC_PARAMS:       m_doV = true;  m_doNConst = true; m_params = true;
-                                m_required = true; break;
-        case PROC_GENERATE:     m_doV = true;  m_doNConst = true; m_params = true;
-                                m_required = true; m_doGenerate = true; break;
-        case PROC_LIVE:         break;
-        case PROC_V_WARN:       m_doV = true;  m_doNConst = true; m_warn = true; break;
-        case PROC_V_NOWARN:     m_doV = true;  m_doNConst = true; break;
-        case PROC_V_EXPENSIVE:  m_doV = true;  m_doNConst = true; m_doExpensive = true; break;
-        case PROC_CPP:          m_doV = false; m_doNConst = true; m_doCpp = true; break;
-        default:                v3fatalSrc("Bad case"); break;
+        case PROC_PARAMS_NOWARN:  m_doV = true;  m_doNConst = true; m_params = true;
+                                  m_required = false; break;
+        case PROC_PARAMS:         m_doV = true;  m_doNConst = true; m_params = true;
+                                  m_required = true; break;
+        case PROC_GENERATE:       m_doV = true;  m_doNConst = true; m_params = true;
+                                  m_required = true; m_doGenerate = true; break;
+        case PROC_LIVE:           break;
+        case PROC_V_WARN:         m_doV = true;  m_doNConst = true; m_warn = true; break;
+        case PROC_V_NOWARN:       m_doV = true;  m_doNConst = true; break;
+        case PROC_V_EXPENSIVE:    m_doV = true;  m_doNConst = true; m_doExpensive = true; break;
+        case PROC_CPP:            m_doV = false; m_doNConst = true; m_doCpp = true; break;
+        default:                  v3fatalSrc("Bad case"); break;
         }
         // clang-format on
     }
@@ -3709,6 +3717,29 @@ AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
     // Make sure we've sized everything first
     nodep = V3Width::widthParamsEdit(nodep);
     ConstVisitor visitor{ConstVisitor::PROC_PARAMS, /* globalPass: */ false};
+    if (AstVar* const varp = VN_CAST(nodep, Var)) {
+        // If a var wants to be constified, it's really a param, and
+        // we want the value to be constant.  We aren't passed just the
+        // init value because we need widthing above to handle the var's type.
+        if (varp->valuep()) visitor.mainAcceptEdit(varp->valuep());
+    } else {
+        nodep = visitor.mainAcceptEdit(nodep);
+    }
+    // Because we do edits, nodep links may get trashed and core dump this.
+    // if (debug() > 0) nodep->dumpTree("-  forceConDONE: ");
+    return nodep;
+}
+
+//! Constify this cell node's parameter list if possible
+//! @return  Pointer to the edited node.
+AstNode* V3Const::constifyParamsNoWarnEdit(AstNode* nodep) {
+    // if (debug() > 0) nodep->dumpTree("-  forceConPRE : ");
+    // Resize even if the node already has a width, because buried in the tree
+    // we may have a node we just created with signing, etc, that isn't sized yet.
+
+    // Make sure we've sized everything first
+    nodep = V3Width::widthParamsEdit(nodep);
+    ConstVisitor visitor{ConstVisitor::PROC_PARAMS_NOWARN, /* globalPass: */ false};
     if (AstVar* const varp = VN_CAST(nodep, Var)) {
         // If a var wants to be constified, it's really a param, and
         // we want the value to be constant.  We aren't passed just the

@@ -61,7 +61,7 @@ void V3ThreadPool::workerJobLoop(int id) VL_MT_SAFE {
     while (true) {
         // Wait for a notification
         waitIfStopRequested();
-        job_t job;
+        VAnyPackagedTask job;
         {
             V3LockGuard lock(m_mutex);
             m_cv.wait(m_mutex, [&]() VL_REQUIRES(m_mutex) {
@@ -72,46 +72,12 @@ void V3ThreadPool::workerJobLoop(int id) VL_MT_SAFE {
             // Get the job
             UASSERT(!m_queue.empty(), "Job should be available");
 
-            job = m_queue.front();
+            job = std::move(m_queue.front());
             m_queue.pop();
         }
 
         // Execute the job
         job();
-    }
-}
-
-template <>
-void V3ThreadPool::pushJob<void>(std::shared_ptr<std::promise<void>>& prom,
-                                 std::function<void()>&& f) VL_MT_SAFE {
-    if (willExecuteSynchronously()) {
-        f();
-        prom->set_value();
-    } else {
-        const V3LockGuard lock{m_mutex};
-        m_queue.push([prom, f] {
-            f();
-            prom->set_value();
-        });
-    }
-}
-
-void V3ThreadPool::requestExclusiveAccess(const V3ThreadPool::job_t&& exclusiveAccessJob)
-    VL_MT_SAFE {
-    if (willExecuteSynchronously()) {
-        exclusiveAccessJob();
-    } else {
-        V3LockGuard stoppedJobLock{m_stoppedJobsMutex};
-        // if some other job already requested exclusive access
-        // wait until it stops
-        if (stopRequested()) { waitStopRequested(); }
-        m_stopRequested = true;
-        waitOtherThreads();
-        m_exclusiveAccess = true;
-        exclusiveAccessJob();
-        m_exclusiveAccess = false;
-        m_stopRequested = false;
-        m_stoppedJobsCV.notify_all();
     }
 }
 
@@ -150,11 +116,10 @@ void V3ThreadPool::selfTest() {
 
     auto firstJob = [&](int sleep) -> void {
         std::this_thread::sleep_for(std::chrono::milliseconds{sleep});
-        s().requestExclusiveAccess([&]() {
-            commonValue = 10;
-            std::this_thread::sleep_for(std::chrono::milliseconds{sleep + 10});
-            UASSERT(commonValue == 10, "unexpected commonValue = " << commonValue);
-        });
+        const V3ThreadPool::ScopedExclusiveAccess exclusiveAccess;
+        commonValue = 10;
+        std::this_thread::sleep_for(std::chrono::milliseconds{sleep + 10});
+        UASSERT(commonValue == 10, "unexpected commonValue = " << commonValue);
     };
     auto secondJob = [&](int sleep) -> void {
         commonMutex.lock();
@@ -175,19 +140,19 @@ void V3ThreadPool::selfTest() {
     };
     std::list<std::future<void>> futures;
 
-    futures.push_back(s().enqueue<void>(std::bind(firstJob, 100)));
-    futures.push_back(s().enqueue<void>(std::bind(secondJob, 100)));
-    futures.push_back(s().enqueue<void>(std::bind(firstJob, 100)));
-    futures.push_back(s().enqueue<void>(std::bind(secondJob, 100)));
-    futures.push_back(s().enqueue<void>(std::bind(secondJob, 200)));
-    futures.push_back(s().enqueue<void>(std::bind(firstJob, 200)));
-    futures.push_back(s().enqueue<void>(std::bind(firstJob, 300)));
+    futures.push_back(s().enqueue(std::bind(firstJob, 100)));
+    futures.push_back(s().enqueue(std::bind(secondJob, 100)));
+    futures.push_back(s().enqueue(std::bind(firstJob, 100)));
+    futures.push_back(s().enqueue(std::bind(secondJob, 100)));
+    futures.push_back(s().enqueue(std::bind(secondJob, 200)));
+    futures.push_back(s().enqueue(std::bind(firstJob, 200)));
+    futures.push_back(s().enqueue(std::bind(firstJob, 300)));
     while (!futures.empty()) {
         s().waitForFuture(futures.front());
         futures.pop_front();
     }
-    futures.push_back(s().enqueue<void>(std::bind(thirdJob, 100)));
-    futures.push_back(s().enqueue<void>(std::bind(thirdJob, 100)));
+    futures.push_back(s().enqueue(std::bind(thirdJob, 100)));
+    futures.push_back(s().enqueue(std::bind(thirdJob, 100)));
     V3ThreadPool::waitForFutures(futures);
 
     s().waitIfStopRequested();
@@ -195,7 +160,7 @@ void V3ThreadPool::selfTest() {
 
     auto forthJob = [&]() -> int { return 1234; };
     std::list<std::future<int>> futuresInt;
-    futuresInt.push_back(s().enqueue<int>(forthJob));
+    futuresInt.push_back(s().enqueue(forthJob));
     auto result = V3ThreadPool::waitForFutures(futuresInt);
     UASSERT(result.back() == 1234, "unexpected future result = " << result.back());
 }

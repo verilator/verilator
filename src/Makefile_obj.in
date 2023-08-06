@@ -205,6 +205,7 @@ RAW_OBJS = \
 	V3File.o \
 	V3FileLine.o \
 	V3Force.o \
+	V3Fork.o \
 	V3Gate.o \
 	V3Global.o \
 	V3Graph.o \

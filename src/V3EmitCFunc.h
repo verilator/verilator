@@ -22,6 +22,7 @@
 
 #include "V3EmitCConstInit.h"
 #include "V3Global.h"
+#include "V3MemberMap.h"
 
 #include <algorithm>
 #include <map>
@@ -115,6 +116,7 @@ public:
 
 class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
 private:
+    VMemberMap m_memberMap;
     AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
     int m_labelNum = 0;  // Next label number
     int m_splitSize = 0;  // # of cfunc nodes placed into output file
@@ -148,6 +150,22 @@ protected:
     bool m_useSelfForThis = false;  // Replace "this" with "vlSelf"
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
+    bool m_instantiatesOwnProcess = false;
+
+    bool constructorNeedsProcess(const AstClass* const classp) {
+        const AstNode* const newp = m_memberMap.findMember(classp, "new");
+        if (!newp) return false;
+        const AstCFunc* const ctorp = VN_CAST(newp, CFunc);
+        if (!ctorp) return false;
+        UASSERT_OBJ(ctorp->isConstructor(), ctorp, "`new` is not a constructor!");
+        return ctorp->needProcess();
+    }
+
+    bool constructorNeedsProcess(const AstNodeDType* const dtypep) {
+        if (const AstClassRefDType* const crefdtypep = VN_CAST(dtypep, ClassRefDType))
+            return constructorNeedsProcess(crefdtypep->classp());
+        return false;
+    }
 
 public:
     // METHODS
@@ -212,13 +230,34 @@ public:
             comma = true;
         }
     }
+    template <typename T>
+    string optionalProcArg(const T* const nodep) {
+        return (nodep && constructorNeedsProcess(nodep)) ? "vlProcess, " : "";
+    }
+    const AstCNew* getSuperNewCallRecursep(AstNode* const nodep) {
+        // Get the super.new call
+        if (!nodep) return nullptr;
+        if (const AstCNew* const cnewp = VN_CAST(nodep, CNew)) return cnewp;
+        if (const AstStmtExpr* const stmtp = VN_CAST(nodep, StmtExpr)) {
+            if (const AstCNew* const cnewp = VN_CAST(stmtp->exprp(), CNew)) return cnewp;
+        }
+        if (const AstJumpBlock* const blockp = VN_CAST(nodep, JumpBlock)) {
+            if (const AstCNew* const cnewp = getSuperNewCallRecursep(blockp->stmtsp())) {
+                return cnewp;
+            }
+        }
+        if (const AstCNew* const cnewp = getSuperNewCallRecursep(nodep->nextp())) return cnewp;
+        return nullptr;
+    }
 
     // VISITORS
     using EmitCConstInit::visit;
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
+        VL_RESTORER(m_instantiatesOwnProcess)
         m_cfuncp = nodep;
+        m_instantiatesOwnProcess = false;
 
         splitSizeInc(nodep);
 
@@ -231,20 +270,16 @@ public:
         if (!nodep->baseCtors().empty()) {
             puts(": ");
             puts(nodep->baseCtors());
-            puts("(vlSymsp");
+            const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
             // Find call to super.new to get the arguments
-            for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                AstNode* exprp;
-                if (VN_IS(stmtp, StmtExpr)) {
-                    exprp = VN_CAST(stmtp, StmtExpr)->exprp();
-                } else {
-                    exprp = stmtp;
-                }
-                if (AstCNew* const newRefp = VN_CAST(exprp, CNew)) {
-                    putCommaIterateNext(newRefp->argsp(), true);
-                    break;
-                }
+            if (classp && constructorNeedsProcess(classp)) {
+                puts("(vlProcess, vlSymsp");
+            } else {
+                puts("(vlSymsp");
             }
+            const AstCNew* const superNewCallp = getSuperNewCallRecursep(nodep->stmtsp());
+            UASSERT_OBJ(superNewCallp, nodep, "super.new call not found");
+            putCommaIterateNext(superNewCallp->argsp(), true);
             puts(")");
         }
         puts(" {\n");
@@ -264,6 +299,23 @@ public:
         puts(prefixNameProtect(m_modp));
         puts(nodep->isLoose() ? "__" : "::");
         puts(nodep->nameProtect() + "\\n\"); );\n");
+
+        // Instantiate a process class if it's going to be needed somewhere later
+        nodep->forall([&](const AstNodeCCall* ccallp) -> bool {
+            if (ccallp->funcp()->needProcess()
+                && (ccallp->funcp()->isCoroutine() == VN_IS(ccallp->backp(), CAwait))) {
+                if (!nodep->needProcess() && !m_instantiatesOwnProcess) {
+                    m_instantiatesOwnProcess = true;
+                    return false;
+                }
+            }
+            return true;
+        });
+        if (m_instantiatesOwnProcess) {
+            AstNode* const vlprocp = new AstCStmt{
+                nodep->fileline(), "VlProcessRef vlProcess = std::make_shared<VlProcess>();\n"};
+            nodep->stmtsp()->addHereThisAsNext(vlprocp);
+        }
 
         for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
             if (AstVar* const varp = VN_CAST(subnodep, Var)) {
@@ -383,19 +435,17 @@ public:
     void visit(AstAssocSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         putbs(".at(");
-        AstAssocArrayDType* const adtypep = VN_AS(nodep->fromp()->dtypep(), AssocArrayDType);
+        AstAssocArrayDType* const adtypep
+            = VN_AS(nodep->fromp()->dtypep()->skipRefp(), AssocArrayDType);
         UASSERT_OBJ(adtypep, nodep, "Associative select on non-associative type");
-        if (adtypep->keyDTypep()->isWide()) {
-            emitCvtWideArray(nodep->bitp(), nodep->fromp());
-        } else {
-            iterateAndNextConstNull(nodep->bitp());
-        }
+        iterateAndNextConstNull(nodep->bitp());
         puts(")");
     }
     void visit(AstWildcardSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         putbs(".at(");
-        AstWildcardArrayDType* const adtypep = VN_AS(nodep->fromp()->dtypep(), WildcardArrayDType);
+        AstWildcardArrayDType* const adtypep
+            = VN_AS(nodep->fromp()->dtypep()->skipRefp(), WildcardArrayDType);
         UASSERT_OBJ(adtypep, nodep, "Wildcard select on non-wildcard-associative type");
         iterateAndNextConstNull(nodep->bitp());
         puts(")");
@@ -443,8 +493,9 @@ public:
             // super.new case
             return;
         }
-        // assignment case
-        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", vlSymsp");
+        // assignment case;
+        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", "
+             + optionalProcArg(nodep->dtypep()) + "vlSymsp");
         putCommaIterateNext(nodep->argsp(), true);
         puts(")");
     }
@@ -1026,6 +1077,7 @@ public:
         UASSERT_OBJ(!emitSimpleOk(nodep), nodep, "Triop cannot be described in a simple way");
         emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nodep->thsp());
     }
+    void visit(AstCvtPackString* nodep) override { emitCvtPackStr(nodep->lhsp()); }
     void visit(AstRedXor* nodep) override {
         if (nodep->lhsp()->isWide()) {
             visit(static_cast<AstNodeUniop*>(nodep));
@@ -1088,7 +1140,8 @@ public:
         puts(")");
     }
     void visit(AstNewCopy* nodep) override {
-        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", ");
+        puts("VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", "
+             + optionalProcArg(nodep->dtypep()));
         puts("*");  // i.e. make into a reference
         iterateAndNextConstNull(nodep->rhsp());
         puts(")");

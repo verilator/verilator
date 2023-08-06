@@ -56,7 +56,6 @@ foreach my $file (sort keys %hit) {
     if (!$hit{$file}
         && $file !~ /_sc/
         && $file !~ /_fst/
-        && $file !~ /_heavy/
         && ($file !~ /_timing/ || $Self->have_coroutines)
         && ($file !~ /_thread/)) {
         error("Include file not covered by t_verilated_all test: ", $file);

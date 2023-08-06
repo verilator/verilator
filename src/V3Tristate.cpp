@@ -154,7 +154,7 @@ public:
     // ACCESSORS
     AstNode* nodep() const VL_MT_STABLE { return m_nodep; }
     const AstVar* varp() const { return VN_CAST(nodep(), Var); }
-    string name() const override VL_MT_STABLE {
+    string name() const override {
         return ((isTristate() ? "tri\\n"
                  : feedsTri() ? "feed\\n"
                               : "-\\n")
@@ -672,8 +672,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                VFlagBitPacked{}, w};  // 2-state ok; sep enable
             UINFO(9, "       newout " << newLhsp << endl);
             nodep->addStmtsp(newLhsp);
-            refp->varp(newLhsp);  // assign the new var to the varref
-            refp->name(newLhsp->name());
+            refp->varp(newLhsp);
 
             // create a new var for this drivers enable signal
             AstVar* const newEnLhsp = new AstVar{varp->fileline(), VVarType::MODULETEMP,

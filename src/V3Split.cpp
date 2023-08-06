@@ -109,9 +109,7 @@ protected:
     // ACCESSORS
     // Do not make accessor for nodep(),  It may change due to
     // reordering a lower block, but we don't repair it
-    string name() const override VL_MT_STABLE {
-        return cvtToHex(m_nodep) + ' ' + m_nodep->prettyTypeName();
-    }
+    string name() const override { return cvtToHex(m_nodep) + ' ' + m_nodep->prettyTypeName(); }
     FileLine* fileline() const override { return nodep()->fileline(); }
 
 public:
@@ -148,7 +146,7 @@ public:
     SplitVarPostVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
     ~SplitVarPostVertex() override = default;
-    string name() const override VL_MT_STABLE { return string{"POST "} + SplitNodeVertex::name(); }
+    string name() const override { return string{"POST "} + SplitNodeVertex::name(); }
     string dotColor() const override { return "CadetBlue"; }
 };
 

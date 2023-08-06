@@ -2123,7 +2123,7 @@ Or in a hand-written C++ wrapper:
 ::
 
    #ifdef TEST_VERBOSE
-      cout << "Read a=" << a << endl;
+      std::cout << "Read a=" << a << std::endl;
    #endif
 
 A filename that should be used to check the output results is given with

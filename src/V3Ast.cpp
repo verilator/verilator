@@ -125,9 +125,7 @@ string AstNode::encodeNumber(int64_t num) {
     }
 }
 
-string AstNode::nameProtect() const VL_MT_STABLE {
-    return VIdProtect::protectIf(name(), protect());
-}
+string AstNode::nameProtect() const { return VIdProtect::protectIf(name(), protect()); }
 string AstNode::origNameProtect() const { return VIdProtect::protectIf(origName(), protect()); }
 
 string AstNode::shortName() const {
@@ -285,7 +283,7 @@ string AstNode::vpiName(const string& namein) {
     return pretty;
 }
 
-string AstNode::prettyTypeName() const VL_MT_STABLE {
+string AstNode::prettyTypeName() const {
     if (name() == "") return typeName();
     return std::string{typeName()} + " '" + prettyName() + "'";
 }
@@ -1081,10 +1079,12 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
     // private: Return true if the two trees are identical
     if (!node1p && !node2p) return true;
     if (!node1p || !node2p) return false;
-    if (node1p->type() != node2p->type() || node1p->dtypep() != node2p->dtypep()
-        || !node1p->same(node2p) || (gateOnly && !node1p->isGateOptimizable())) {
-        return false;
-    }
+    if (node1p->type() != node2p->type()) return false;
+    UASSERT_OBJ(
+        (!node1p->dtypep() && !node2p->dtypep()) || (node1p->dtypep() && node2p->dtypep()), node1p,
+        "Comparison of a node with dtypep() with a node without dtypep()\n-node2=" << node2p);
+    if (node1p->dtypep() && !node1p->dtypep()->similarDType(node2p->dtypep())) return false;
+    if (!node1p->same(node2p) || (gateOnly && !node1p->isGateOptimizable())) return false;
     return (sameTreeIter(node1p->m_op1p, node2p->m_op1p, false, gateOnly)
             && sameTreeIter(node1p->m_op2p, node2p->m_op2p, false, gateOnly)
             && sameTreeIter(node1p->m_op3p, node2p->m_op3p, false, gateOnly)
@@ -1405,6 +1405,9 @@ AstNodeDType* AstNode::findQueueIndexDType() const {
 }
 AstNodeDType* AstNode::findVoidDType() const {
     return v3Global.rootp()->typeTablep()->findVoidDType(fileline());
+}
+AstNodeDType* AstNode::findStreamDType() const {
+    return v3Global.rootp()->typeTablep()->findStreamDType(fileline());
 }
 
 //######################################################################

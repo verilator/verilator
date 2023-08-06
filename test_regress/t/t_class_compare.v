@@ -14,13 +14,22 @@ class Cls;
    int i;
 endclass
 
+class ExtendCls extends Cls;
+endclass
+
 module t;
    initial begin
       Cls a = new;
       Cls b = new;
+      ExtendCls ext = new;
       `check_ne(a, b)
+      `check_ne(a, ext)
+      `check_ne(ext, a)
       a = b;
       `check_eq(a, b)
+      a = ext;
+      `check_eq(a, ext)
+      `check_eq(ext, a)
       $write("*-* All Finished *-*\n");
       $finish;
    end

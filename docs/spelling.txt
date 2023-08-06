@@ -56,6 +56,7 @@ Das
 Dcache
 Deadman
 Debacker
+Deepa
 Defparams
 Denio
 Deprecations
@@ -246,6 +247,7 @@ Olof
 Olofsson
 Oyvind
 PLI
+Palaniappan
 Patricio
 Petr
 Piechotka
@@ -376,6 +378,7 @@ Wfuture
 Whatson
 Wildman
 Wim
+Wmisleading
 Wno
 Wojciech
 Wolfel
@@ -410,6 +413,7 @@ architected
 args
 arrarys
 assertOn
+astgen
 async
 ato
 atoi
@@ -905,6 +909,7 @@ undef
 undefineall
 undriven
 ungetc
+unhandled
 uniquified
 unistd
 unlink
@@ -971,4 +976,3 @@ ypq
 yurivict
 zdave
 Øyvind
-

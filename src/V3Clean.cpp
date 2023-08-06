@@ -95,6 +95,7 @@ private:
                 || VN_IS(nodep->dtypep()->skipRefp(), DynArrayDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), ClassRefDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), QueueDType)
+                || VN_IS(nodep->dtypep()->skipRefp(), StreamDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), VoidDType)) {
             } else {
@@ -233,11 +234,6 @@ private:
     void visit(AstSel* nodep) override {
         operandTriop(nodep);
         setClean(nodep, nodep->cleanOut());
-    }
-    void visit(AstStructSel* nodep) override {
-        iterateChildren(nodep);
-        AstStructDType* dtypep = VN_CAST(nodep->dtypep()->skipRefp(), StructDType);
-        setClean(nodep, dtypep && !dtypep->packed());
     }
     void visit(AstUCFunc* nodep) override {
         iterateChildren(nodep);

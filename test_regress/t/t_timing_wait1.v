@@ -14,6 +14,7 @@ module t;
    int a = 0;
    int b = 0;
    int c = 0;
+   int q[$];
 
    initial begin
       `WRITE_VERBOSE("start with a==0, b==0, c==0\n");
@@ -26,7 +27,8 @@ module t;
       #1 c = 3; `WRITE_VERBOSE("assign 3 to c\n");
       #1 c = 4; `WRITE_VERBOSE("assign 4 to c\n");  // a+b<c
       #1 c = 4; `WRITE_VERBOSE("assign 5 to b\n");  // a<b && b>c
-      b = 5;
+      b = 5;    `WRITE_VERBOSE("push_back b to q\n");
+      q.push_back(b);
    end
 
    initial begin
@@ -44,6 +46,8 @@ module t;
       wait(a + b < c) if (a + b >= c) $stop;
       `WRITE_VERBOSE("waiting for a<b && b>c\n");
       wait(a < b && b > c) if (a >= b || b <= c) $stop;
+      `WRITE_VERBOSE("waiting for q.size() > 0\n");
+      wait(q.size() > 0) if (q.size() <= 0) $stop;
 
       wait(1);
 
@@ -54,5 +58,5 @@ module t;
    initial wait(0) $stop;
    initial wait(1 == 0) $stop;
 
-   initial #11 $stop; // timeout
+   initial #12 $stop; // timeout
 endmodule

@@ -394,6 +394,11 @@ class ParamProcessor final : public VNDeleter {
         }
         return nullptr;
     }
+    bool isString(AstNodeDType* nodep) {
+        if (AstBasicDType* const basicp = VN_CAST(nodep->skipRefToEnump(), BasicDType))
+            return basicp->isString();
+        return false;
+    }
     void collectPins(CloneMap* clonemapp, AstNodeModule* modp, bool originalIsCopy) {
         // Grab all I/O so we can remap our pins later
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -670,6 +675,19 @@ class ParamProcessor final : public VNDeleter {
         return modInfop;
     }
 
+    void convertToStringp(AstNode* nodep) {
+        // Should be called on values of parameters of type string to convert them
+        // to properly typed string constants.
+        // Has no effect if the value is not a string constant.
+        AstConst* const constp = VN_CAST(nodep, Const);
+        // Check if it wasn't already converted
+        if (constp && !constp->num().isString()) {
+            constp->replaceWith(
+                new AstConst{constp->fileline(), AstConst::String{}, constp->num().toString()});
+            constp->deleteTree();
+        }
+    }
+
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstNodeModule* srcModp, string& longnamer,
                         bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
@@ -684,8 +702,16 @@ class ParamProcessor final : public VNDeleter {
                 any_overridesr = true;
             } else {
                 V3Const::constifyParamsEdit(pinp->exprp());
+                // String constants are parsed as logic arrays and converted to strings in V3Const.
+                // At this moment, some constants may have been already converted.
+                // To correctly compare constants, both should be of the same type,
+                // so they need to be converted.
+                if (isString(modvarp->subDTypep())) {
+                    convertToStringp(pinp->exprp());
+                    convertToStringp(modvarp->valuep());
+                }
                 AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
-                const AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
+                AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
                 if (!exprp) {
                     if (debug()) pinp->dumpTree("-  ");
                     pinp->v3error("Can't convert defparam value to constant: Param "
@@ -709,7 +735,7 @@ class ParamProcessor final : public VNDeleter {
             }
         } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
             AstNodeDType* const exprp = VN_CAST(pinp->exprp(), NodeDType);
-            const AstNodeDType* const origp = modvarp->subDTypep();
+            const AstNodeDType* const origp = modvarp->skipRefToEnump();
             if (!exprp) {
                 pinp->v3error("Parameter type pin value isn't a type: Param "
                               << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());

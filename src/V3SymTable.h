@@ -123,7 +123,8 @@ public:
                                      << "  " << entp->nodep() << endl);
         if (name != "" && m_idNameMap.find(name) != m_idNameMap.end()) {
             if (!V3Error::errorCount()) {  // Else may have just reported warning
-                if (debug() >= 9 || V3Error::debugDefault()) dumpSelf(cout, "- err-dump: ", 1);
+                if (debug() >= 9 || V3Error::debugDefault())
+                    dumpSelf(std::cout, "- err-dump: ", 1);
                 entp->nodep()->v3fatalSrc("Inserting two symbols with same name: " << name);
             }
         } else {

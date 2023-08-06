@@ -8,6 +8,55 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
+Verilator 5.014 2023-08-06
+==========================
+
+**Minor:**
+
+* Deprecation planned for 32-bit pointer -m32 mode (#4268).
+* Deprecate CMake config below version 3.13 (#4389) (#4390). [Vito Gamberini]
+* Support some stream operations on queues (#4292). [Ryszard Rozak, Antmicro Ltd]
+* Support property declaration with empty parentheses (#4313) (#4317). [Anthony Donlon]
+* Support locator methods with "with" on assoc arrays (#4335). [Ryszard Rozak, Antmicro Ltd]
+* Support string replication with variable (#4341). [Aleksander Kiryk, Antmicro Ltd]
+* Support more types in wait (#4374). [Aleksander Kiryk, Antmicro Ltd]
+* Support static method calls as default values of function arguments (#4378). [Ryszard Rozak, Antmicro Ltd]
+* Add GENUNNAMED lint warning. [Srinivasan Venkataramanan, Deepa Palaniappan]
+* Add MISINDENT lint warning for misleading indentation.
+* Fix 'VlForkSync' redeclaration (#4277). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix processes that can outlive their parents (#4253). [Krzysztof Boronski, Antmicro Ltd]
+* Fix duplicate fork names (#4295). [Ryszard Rozak, Antmicro Ltd]
+* Fix splitting coroutines (#4297) (#4307). [Jiamin Zhu]
+* Fix error when multiple duplicate DPI exports (#4301).
+* Fix class reference assignment checking (#4296). [Ryszard Rozak, Antmicro Ltd]
+* Fix handling of ref types in initial values of type parameters (#4304). [Ryszard Rozak, Antmicro Ltd]
+* Fix comparison of string parameters (#4308). [Ryszard Rozak, Antmicro Ltd]
+* Fix state update for always processes (#4311). [Aleksander Kiryk, Antmicro Ltd]
+* Fix multiple edge timing controls in class methods (#4318) (#4320) (#4344). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix implicit calls of base class constructors with optional arguments (#4319). [Ryszard Rozak, Antmicro Ltd]
+* Fix propagation of process requirement (#4321). [Krzysztof Boroński]
+* Fix unhandled overloads in V3InstrCount (#4324). [Krzysztof Boroński]
+* Fix selects of static members (#4326). [Ryszard Rozak, Antmicro Ltd]
+* Fix references to members of results of static methods (#4327). [Ryszard Rozak, Antmicro Ltd]
+* Fix unique..with method on queues of class objects (#4328). [Ryszard Rozak, Antmicro Ltd]
+* Fix queue slicing (#4329). [Aleksander Kiryk, Antmicro Ltd]
+* Fix wildcard referring types (#4336) (#4342). [Aleksander Kiryk, Antmicro Ltd]
+* Fix comparison of class objects (#4346). [Ryszard Rozak, Antmicro Ltd]
+* Fix unexpected RefDType on assoc arrays (#4337). [Aleksander Kiryk, Antmicro Ltd]
+* Fix cmake astgen for Rocky Linux 8.7 (#4343). [Julian Daube]
+* Fix class timescale in class packages (#4348). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix string concatenations (#4354). [Ryszard Rozak, Antmicro Ltd]
+* Fix unlinked task error from broken context (#4355) (#4402). [Aleksander Kiryk, Antmicro Ltd]
+* Fix selects on unpacked structs (#4359). [Ryszard Rozak, Antmicro Ltd]
+* Fix select operation on assoc array with wide keys (#4360). [Ryszard Rozak, Antmicro Ltd]
+* Fix non-public methods with wide output (#4364). [Ryszard Rozak, Antmicro Ltd]
+* Fix handling of super.new calls (#4366). [Ryszard Rozak, Antmicro Ltd]
+* Fix assign to input var in methods (#4367). [Aleksander Kiryk, Antmicro Ltd]
+* Fix VlProcess not found (#4368). [Aleksander Kiryk, Antmicro Ltd]
+* Fix order of evaluation of function calls in statements (#4375). [Ryszard Rozak, Antmicro Ltd]
+* Fix config_build.h issues (#4380) (#4381). [Andrew Miloradovsky]
+
+
 Verilator 5.012 2023-06-13
 ==========================
 

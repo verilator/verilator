@@ -670,6 +670,52 @@ List Of Warnings
    used as a clock.
 
 
+.. option:: GENUNNAMED
+
+   Warns that a generate block was unnamed and "genblk" will be used per
+   IEEE.
+
+   The potential issue is that adding additional generate blocks will
+   renumber the assigned names, which may cause eventual problems with
+   synthesis constraints or other tools that depend on hierarchical paths
+   remaining consistent.
+
+   Blocks that are empty may not be reported with this warning, as no
+   scopes are created for empty blocks, so there is no harm in having them
+   unnamed.
+
+   Disabled by default as this is a code-style warning; it will simulate
+   correctly.
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+         generate
+            if (PARAM == 1) begin  //<--- Warning
+            end
+
+   Results in:
+
+   .. code-block::
+
+         %Warning-GENUNNAMED: example.v:2:9: Unnamed generate block (IEEE 1800-2017 27.6)
+
+   To fix this assign a label (often with the naming convention prefix of
+   :code:`gen_` or :code:`g_`), for example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+         generate
+            if (PARAM == 1) begin : gen_param_1  //<--- Repaired
+            end
+
+   Other tools with similar warnings: Verible's generate-label, "All
+   generate block statements must have a label."
+
+
 .. option:: HIERBLOCK
 
    Warns that the top module is marked as a hierarchy block by the
@@ -876,6 +922,102 @@ List Of Warnings
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
+.. option:: LIFETIME
+
+   Error when a variable is referenced in a process that can outlive the process
+   in which it was declared. This can happen when using 'fork..join_none' or
+   'fork..join_any' blocks, which spawn process that can outlive their parents.
+   This error occurs only when Verilator can't replace the reference with a
+   reference to copy of this variable, local to the forked process. For example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 3
+
+         task foo(int local_var);
+            fork
+               #10 local_var++;
+               #20 $display("local_var = %d", local_var);
+            join_none
+         endtask
+
+   In the example above 'local_var' exists only within scope of 'foo', once foo
+   finishes, the stack frame containing 'i' gets removed. However, the process
+   forked from foo continues, as it contains a delay. After 10 units of time
+   pass, this process attempts to modify 'local_var'. However, this variable no
+   longer exits. It can't be made local to the forked process upon spawning, because
+   it's modified and can be referenced somewhere else, for example in the other
+   forked process, that was delayed by 20 units of time in this example. Thus,
+   there's no viable stack allocation for it.
+
+   In order to fix it, if the intent is not to share the variable's state outside
+   of the process, then create a local copy of the variable.
+
+   For example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 4
+
+         task foo(int local_var);
+            fork
+               #10 begin
+                  int forked_var = local_var;
+                  forked_var++;
+               end
+               #20 begin
+                  // Note that we are going to print the original value here,
+                  // as `forked_var`is a local copy that was initialized while
+                  // `foo` was still alive.
+                  int forked_var = local_var;
+                  $display("forked_var = %d", forked_var)
+               end
+            join_none
+         endtask
+
+   If you need to share its state, another strategy is to ensure it's allocated
+   statically:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 1
+
+         int static_var;
+
+         task foo();
+            fork
+               #10 static_var++;
+               #20 $display("static_var = %d", static_var);
+            join_none
+         endtask
+
+   However, if you need to be able to instantiate at runtime, the solution would be to
+   wrap it in an object, since the forked process can hold a reference to that object
+   and ensure that the variable stays alive this way:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+         class Wrapper;
+            int m_var;
+
+            // Here we implicitly hold a reference to `this`
+            task foo();
+               fork
+                  #10 m_var++;
+                  #20 $display("this.m_var = %d", m_var);
+               join_none
+            endtask
+         endclass
+
+         // Here we explicitly hold a handle to an object
+         task bar(Wrapper wrapper);
+            fork
+               #10 wrapper.m_var++;
+               #20 $display("wrapper.m_var = %d", wrapper.m_var);
+            join_none
+         endtask
 
 .. option:: LITENDIAN
 
@@ -895,6 +1037,51 @@ List Of Warnings
 
    Warns that minimum, typical, and maximum delay expressions are currently
    unsupported. Verilator uses only the typical delay value.
+
+
+.. option:: MISINDENT
+
+   Warns that the indentation of a statement is misleading, suggesting the
+   statement is part of a previous :code:`if` or :code:`while` block while
+   it is not.
+
+   Verilator suppresses this check when there is an inconsistent mix of
+   spaces and tabs, as it cannot ensure the width of tabs.  Verilator also
+   ignores blocks with :code:`begin`/:code:`end`, as the :code:`end`
+   visually indicates the earlier statement's end.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+   For example
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 3
+
+         if (something)
+            statement_in_if;
+            statement_not_in_if;  //<--- Warning
+
+   Results in:
+
+   .. code-block::
+
+         %Warning-MISINDENT: example.v:3:9: Misleading indentation
+
+   To fix this repair the indentation to match the correct earlier
+   statement, for example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 3
+
+         if (something)
+            statement_in_if;
+         statement_not_in_if;  //<--- Repaired
+
+   Other tools with similar warnings: GCC -Wmisleading-indentation,
+   clang-tidy readability-misleading-indentation.
 
 
 .. option:: MODDUP

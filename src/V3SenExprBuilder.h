@@ -232,7 +232,13 @@ public:
     }
 
     std::vector<AstNodeStmt*> getAndClearInits() { return std::move(m_inits); }
-    std::vector<AstVar*> getAndClearLocals() { return std::move(m_locals); }
+
+    std::vector<AstVar*> getAndClearLocals() {
+        // With m_locals empty, m_prev and m_curr are no longer valid
+        m_prev.clear();
+        m_curr.clear();
+        return std::move(m_locals);
+    }
 
     std::vector<AstNodeStmt*> getAndClearPreUpdates() {
         m_hasPreUpdate.clear();

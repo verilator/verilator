@@ -12,13 +12,6 @@ module t;
         #6 x = 4;
         #2 x++;
         x = #4 x * 3;
-        begin
-          #1 if (x != 1) $stop;
-          #2 if (x != 2) $stop;
-          #2 if (x != 3) $stop;
-          #2 if (x != 4) $stop;
-          $finish;
-        end
       join_none
       x = 1;
     endtask

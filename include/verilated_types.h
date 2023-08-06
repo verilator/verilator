@@ -74,6 +74,36 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 #define VL_OUTW(name, msb, lsb, words) VlWide<words> name  ///< Declare output signal, 65+ bits
 
 //===================================================================
+// VlProcess stores metadata of running processes
+
+class VlProcess final {
+    // MEMBERS
+    int m_state;  // Current state of the process
+
+public:
+    // TYPES
+    enum : int {  // Type int for compatibility with $c
+        FINISHED = 0,
+        RUNNING = 1,
+        WAITING = 2,
+        SUSPENDED = 3,
+        KILLED = 4,
+    };
+
+    // CONSTRUCTORS
+    VlProcess()
+        : m_state{RUNNING} {}
+
+    // METHODS
+    int state() { return m_state; }
+    void state(int s) { m_state = s; }
+};
+
+using VlProcessRef = std::shared_ptr<VlProcess>;
+
+inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
+
+//===================================================================
 // Activity trigger vector
 
 template <std::size_t T_size>  //
@@ -487,7 +517,7 @@ public:
     template <typename Func>
     VlQueue unique(Func with_func) const {
         VlQueue out;
-        std::set<T_Value> saw;
+        std::set<decltype(with_func(0, m_deque[0]))> saw;
         for (const auto& i : m_deque) {
             const auto i_mapped = with_func(0, i);
             const auto it = saw.find(i_mapped);
@@ -516,7 +546,7 @@ public:
     VlQueue<IData> unique_index(Func with_func) const {
         VlQueue<IData> out;
         IData index = 0;
-        std::unordered_set<T_Value> saw;
+        std::set<decltype(with_func(0, m_deque[0]))> saw;
         for (const auto& i : m_deque) {
             const auto i_mapped = with_func(index, i);
             auto it = saw.find(i_mapped);
@@ -830,6 +860,22 @@ public:
         }
         return out;
     }
+    template <typename Func>
+    VlQueue<T_Value> unique(Func with_func) const {
+        VlQueue<T_Value> out;
+        T_Key default_key;
+        using WithType = decltype(with_func(m_map.begin()->first, m_map.begin()->second));
+        std::set<WithType> saw;
+        for (const auto& i : m_map) {
+            const auto i_mapped = with_func(default_key, i.second);
+            const auto it = saw.find(i_mapped);
+            if (it == saw.end()) {
+                saw.insert(it, i_mapped);
+                out.push_back(i.second);
+            }
+        }
+        return out;
+    }
     VlQueue<T_Key> unique_index() const {
         VlQueue<T_Key> out;
         std::set<T_Key> saw;
@@ -837,6 +883,21 @@ public:
             auto it = saw.find(i.second);
             if (it == saw.end()) {
                 saw.insert(it, i.second);
+                out.push_back(i.first);
+            }
+        }
+        return out;
+    }
+    template <typename Func>
+    VlQueue<T_Key> unique_index(Func with_func) const {
+        VlQueue<T_Key> out;
+        using WithType = decltype(with_func(m_map.begin()->first, m_map.begin()->second));
+        std::set<WithType> saw;
+        for (const auto& i : m_map) {
+            const auto i_mapped = with_func(i.first, i.second);
+            auto it = saw.find(i_mapped);
+            if (it == saw.end()) {
+                saw.insert(it, i_mapped);
                 out.push_back(i.first);
             }
         }
@@ -903,12 +964,32 @@ public:
             });
         return VlQueue<T_Value>::cons(it->second);
     }
+    template <typename Func>
+    VlQueue<T_Value> min(Func with_func) const {
+        if (m_map.empty()) return VlQueue<T_Value>();
+        const auto it = std::min_element(
+            m_map.begin(), m_map.end(),
+            [&with_func](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
+                return with_func(a.first, a.second) < with_func(b.first, b.second);
+            });
+        return VlQueue<T_Value>::cons(it->second);
+    }
     VlQueue<T_Value> max() const {
         if (m_map.empty()) return VlQueue<T_Value>();
         const auto it = std::max_element(
             m_map.begin(), m_map.end(),
             [](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
                 return a.second < b.second;
+            });
+        return VlQueue<T_Value>::cons(it->second);
+    }
+    template <typename Func>
+    VlQueue<T_Value> max(Func with_func) const {
+        if (m_map.empty()) return VlQueue<T_Value>();
+        const auto it = std::max_element(
+            m_map.begin(), m_map.end(),
+            [&with_func](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
+                return with_func(a.first, a.second) < with_func(b.first, b.second);
             });
         return VlQueue<T_Value>::cons(it->second);
     }
@@ -1457,8 +1538,14 @@ public:
     // For 'if (ptr)...'
     operator bool() const { return m_objp; }
     // In SV A == B iff both are handles to the same object (IEEE 1800-2017 8.4)
-    bool operator==(const VlClassRef& rhs) const { return m_objp == rhs.m_objp; };
-    bool operator!=(const VlClassRef& rhs) const { return m_objp != rhs.m_objp; };
+    template <typename T_OtherClass>
+    bool operator==(const VlClassRef<T_OtherClass>& rhs) const {
+        return m_objp == rhs.m_objp;
+    };
+    template <typename T_OtherClass>
+    bool operator!=(const VlClassRef<T_OtherClass>& rhs) const {
+        return m_objp != rhs.m_objp;
+    };
 };
 
 template <typename T, typename U>

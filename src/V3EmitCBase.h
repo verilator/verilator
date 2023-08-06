@@ -62,7 +62,7 @@ public:
     static string symClassAssign() {
         return symClassName() + "* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;\n";
     }
-    static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE {  // C++ name with prefix
+    static string prefixNameProtect(const AstNode* nodep) {  // C++ name with prefix
         return v3Global.opt.modPrefix() + "_" + VIdProtect::protect(nodep->name());
     }
     static bool isAnonOk(const AstVar* varp) {

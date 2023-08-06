@@ -36,6 +36,10 @@ extern "C" int mon_check();
 `else
       status = mon_check();
 `endif
+      if (status != 0) begin
+         $write("%%Error: t_vpi_unimpl.cpp:%0d: C Test failed\n", status);
+         $stop;
+      end
       $write("*-* All Finished *-*\n");
       $finish;
    end

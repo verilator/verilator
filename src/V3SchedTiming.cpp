@@ -290,26 +290,18 @@ void transformForks(AstNetlist* const netlistp) {
             funcp->foreach([&](AstNodeVarRef* refp) {
                 AstVar* const varp = refp->varp();
                 AstBasicDType* const dtypep = varp->dtypep()->basicp();
-                // If it a fork sync or an intra-assignment variable, pass it by value
-                const bool passByValue = (dtypep && dtypep->isForkSync())
-                                         || VString::startsWith(varp->name(), "__Vintra");
-                if (passByValue) {
-                    // We can just pass it to the new function
+                bool passByValue = false;
+                if (VString::startsWith(varp->name(), "__Vintra")) {
+                    // Pass it by value to the new function, as otherwise there are issues with
+                    // -flocalize (see t_timing_intra_assign)
+                    passByValue = true;
                 } else if (!varp->user1() || !varp->isFuncLocal()) {
                     // Not func local, or not declared before the fork. Their lifetime is longer
                     // than the forked process. Skip
                     return;
-                } else if (m_forkp->joinType().join()) {
-                    // If it's fork..join, we can refer to variables from the parent process
-                } else {
-                    // TODO: It is possible to relax this by allowing the use of such variables up
-                    // until the first await. Also, variables defined within a forked process
-                    // (inside a begin) are extracted out by V3Begin, so they also trigger this
-                    // error. Preventing this (or detecting such cases and moving the vars back)
-                    // would also allow for using them freely.
-                    refp->v3warn(E_UNSUPPORTED, "Unsupported: variable local to a forking process "
-                                                "accessed in a fork..join_any or fork..join_none");
-                    return;
+                } else if (dtypep && dtypep->isForkSync()) {
+                    // We can just pass it by value to the new function
+                    passByValue = true;
                 }
                 // Remap the reference
                 AstVarScope* const vscp = refp->varScopep();

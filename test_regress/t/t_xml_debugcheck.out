@@ -543,15 +543,17 @@
             <assign loc="d,52,14,52,15" dtype_id="10">
               <concatn loc="d,52,20,52,21" dtype_id="10">
                 <varref loc="d,52,17,52,20" name="t.all" dtype_id="10"/>
-                <arraysel loc="d,52,24,52,28" dtype_id="10">
-                  <varref loc="d,16,12,16,16" name="__Venumtab_enum_name2" dtype_id="16"/>
-                  <and loc="d,52,24,52,28" dtype_id="13">
-                    <const loc="d,52,24,52,28" name="32&apos;h7" dtype_id="14"/>
-                    <ccast loc="d,52,22,52,23" dtype_id="13">
-                      <varref loc="d,52,22,52,23" name="t.unnamedblk1.e" dtype_id="13"/>
-                    </ccast>
-                  </and>
-                </arraysel>
+                <cvtpackstring loc="d,52,24,52,28" dtype_id="10">
+                  <arraysel loc="d,52,24,52,28" dtype_id="10">
+                    <varref loc="d,16,12,16,16" name="__Venumtab_enum_name2" dtype_id="16"/>
+                    <and loc="d,52,24,52,28" dtype_id="13">
+                      <const loc="d,52,24,52,28" name="32&apos;h7" dtype_id="14"/>
+                      <ccast loc="d,52,22,52,23" dtype_id="13">
+                        <varref loc="d,52,22,52,23" name="t.unnamedblk1.e" dtype_id="13"/>
+                      </ccast>
+                    </and>
+                  </arraysel>
+                </cvtpackstring>
               </concatn>
               <varref loc="d,52,10,52,13" name="t.all" dtype_id="10"/>
             </assign>
@@ -578,7 +580,7 @@
         <assign loc="d,55,11,55,12" dtype_id="10">
           <concatn loc="d,55,17,55,18" dtype_id="10">
             <varref loc="d,55,14,55,17" name="t.all" dtype_id="10"/>
-            <const loc="d,16,12,16,16" name="&quot;E04&quot;" dtype_id="10"/>
+            <const loc="d,55,21,55,25" name="&quot;E04&quot;" dtype_id="10"/>
           </concatn>
           <varref loc="d,55,7,55,10" name="t.all" dtype_id="10"/>
         </assign>

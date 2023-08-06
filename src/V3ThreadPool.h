@@ -29,13 +29,53 @@
 
 //============================================================================
 
+// Callable, type-erased wrapper for std::packaged_task<Signature> with any Signature.
+class VAnyPackagedTask final {
+    // TYPES
+    struct PTWrapperBase {
+        virtual ~PTWrapperBase() {}
+        virtual void operator()() = 0;
+    };
+
+    template <typename Signature>
+    struct PTWrapper final : PTWrapperBase {
+        std::packaged_task<Signature> m_pt;
+
+        PTWrapper(std::packaged_task<Signature>&& pt)
+            : m_pt(std::move(pt)) {}
+
+        void operator()() final override { m_pt(); }
+    };
+
+    // MEMBERS
+    std::unique_ptr<PTWrapperBase> m_ptWrapperp = nullptr;  // Wrapper to call
+
+public:
+    // CONSTRUCTORS
+    template <typename Signature>
+    VAnyPackagedTask(std::packaged_task<Signature>&& pt)
+        : m_ptWrapperp{std::make_unique<PTWrapper<Signature>>(std::move(pt))} {}
+
+    VAnyPackagedTask() = default;
+    ~VAnyPackagedTask() = default;
+
+    VAnyPackagedTask(const VAnyPackagedTask&) = delete;
+    VAnyPackagedTask& operator=(const VAnyPackagedTask&) = delete;
+
+    VAnyPackagedTask(VAnyPackagedTask&&) = default;
+    VAnyPackagedTask& operator=(VAnyPackagedTask&&) = default;
+
+    // METHODS
+    // Call the wrapped function
+    void operator()() { (*m_ptWrapperp)(); }
+};
+
 class V3ThreadPool final {
     // MEMBERS
     static constexpr unsigned int FUTUREWAITFOR_MS = 100;
-    using job_t = std::function<void()>;
 
-    mutable V3Mutex m_mutex;  // Mutex for use by m_queue
-    std::queue<job_t> m_queue VL_GUARDED_BY(m_mutex);  // Queue of jobs
+    V3Mutex m_mutex;  // Mutex for use by m_queue
+    std::queue<VAnyPackagedTask> m_queue VL_GUARDED_BY(m_mutex);  // Queue of jobs
     // We don't need to guard this condition_variable as
     // both `notify_one` and `notify_all` functions are atomic,
     // `wait` function is not atomic, but we are guarding `m_queue` that is
@@ -62,6 +102,9 @@ class V3ThreadPool final {
     }
 
 public:
+    // Request exclusive access to processing for the object lifetime.
+    class ScopedExclusiveAccess;
+
     // METHODS
     // Singleton
     static V3ThreadPool& s() VL_MT_SAFE {
@@ -79,8 +122,8 @@ public:
     // will call it. `VL_MT_START` here indicates that
     // every function call inside this `std::function` requires
     // annotations.
-    template <typename T>
-    std::future<T> enqueue(std::function<T()>&& f) VL_MT_START;
+    template <typename Callable>
+    auto enqueue(Callable&& f) VL_MT_START;
 
     // Request exclusive access to processing.
     // It sends request to stop all other threads and waits for them to stop.
@@ -88,7 +131,9 @@ public:
     // they can be stopped.
     // When all other threads are stopped, this function executes the job
     // and resumes execution of other jobs.
-    void requestExclusiveAccess(const job_t&& exclusiveAccessJob) VL_MT_SAFE;
+    template <typename Callable>
+    void requestExclusiveAccess(Callable&& exclusiveAccessJob) VL_MT_SAFE
+        VL_EXCLUDES(m_stoppedJobsMutex);
 
     // Check if other thread requested exclusive access to processing,
     // if so, it waits for it to complete. Afterwards it is resumed.
@@ -151,12 +196,37 @@ private:
     // Waits until all other jobs are stopped
     void waitOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex) VL_REQUIRES(m_stoppedJobsMutex);
 
-    template <typename T>
-    void pushJob(std::shared_ptr<std::promise<T>>& prom, std::function<T()>&& f) VL_MT_SAFE;
-
     void workerJobLoop(int id) VL_MT_SAFE;
 
     static void startWorker(V3ThreadPool* selfThreadp, int id) VL_MT_SAFE;
+};
+
+class VL_SCOPED_CAPABILITY V3ThreadPool::ScopedExclusiveAccess final {
+public:
+    ScopedExclusiveAccess() VL_ACQUIRE(V3ThreadPool::s().m_stoppedJobsMutex) VL_MT_SAFE {
+        if (!V3ThreadPool::s().willExecuteSynchronously()) {
+            V3ThreadPool::s().m_stoppedJobsMutex.lock();
+
+            if (V3ThreadPool::s().stopRequested()) { V3ThreadPool::s().waitStopRequested(); }
+            V3ThreadPool::s().m_stopRequested = true;
+            V3ThreadPool::s().waitOtherThreads();
+            V3ThreadPool::s().m_exclusiveAccess = true;
+        } else {
+            V3ThreadPool::s().m_stoppedJobsMutex.assumeLocked();
+        }
+    }
+    ~ScopedExclusiveAccess() VL_RELEASE(V3ThreadPool::s().m_stoppedJobsMutex) VL_MT_SAFE {
+        // Can't use `willExecuteSynchronously`, we're still in exclusive execution state.
+        if (V3ThreadPool::s().m_exclusiveAccess) {
+            V3ThreadPool::s().m_exclusiveAccess = false;
+            V3ThreadPool::s().m_stopRequested = false;
+            V3ThreadPool::s().m_stoppedJobsCV.notify_all();
+
+            V3ThreadPool::s().m_stoppedJobsMutex.unlock();
+        } else {
+            V3ThreadPool::s().m_stoppedJobsMutex.pretendUnlock();
+        }
+    }
 };
 
 template <typename T>
@@ -175,29 +245,28 @@ T V3ThreadPool::waitForFuture(std::future<T>& future) VL_MT_SAFE_EXCLUDES(m_mute
     }
 }
 
-template <typename T>
-std::future<T> V3ThreadPool::enqueue(std::function<T()>&& f) VL_MT_START {
-    std::shared_ptr<std::promise<T>> prom = std::make_shared<std::promise<T>>();
-    std::future<T> result = prom->get_future();
-    pushJob(prom, std::move(f));
-    const V3LockGuard guard{m_mutex};
-    m_cv.notify_one();
-    return result;
-}
-
-template <typename T>
-void V3ThreadPool::pushJob(std::shared_ptr<std::promise<T>>& prom,
-                           std::function<T()>&& f) VL_MT_SAFE {
+template <typename Callable>
+auto V3ThreadPool::enqueue(Callable&& f) VL_MT_START {
+    using result_t = decltype(f());
+    auto&& job = std::packaged_task<result_t()>{std::forward<Callable>(f)};
+    auto future = job.get_future();
     if (willExecuteSynchronously()) {
-        prom->set_value(f());
+        job();
     } else {
-        const V3LockGuard guard{m_mutex};
-        m_queue.push([prom, f] { prom->set_value(f()); });
+        {
+            const V3LockGuard guard{m_mutex};
+            m_queue.push(std::move(job));
+        }
+        m_cv.notify_one();
     }
+    return future;
 }
 
-template <>
-void V3ThreadPool::pushJob<void>(std::shared_ptr<std::promise<void>>& prom,
-                                 std::function<void()>&& f) VL_MT_SAFE;
+template <typename Callable>
+void V3ThreadPool::requestExclusiveAccess(Callable&& exclusiveAccessJob) VL_MT_SAFE
+    VL_EXCLUDES(m_stoppedJobsMutex) {
+    ScopedExclusiveAccess exclusive_access;
+    exclusiveAccessJob();
+}
 
 #endif  // Guard

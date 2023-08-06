@@ -1,4 +1,4 @@
-%Error: t/t_dpi_dup_bad.v:13:51: Duplicate declaration of DPI function with different signature: 't.oth_f_int2'
+%Error: t/t_dpi_dup_bad.v:13:51: Duplicate declaration of DPI function with different signature: 'dpii_fa_bit'
    13 |    import "DPI-C" pure dpii_fa_bit = function int oth_f_int2(input int i, input int bad);
       |                                                   ^~~~~~~~~~
                                : ... New signature:      pure int dpii_fa_bit (int, int)
