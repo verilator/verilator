@@ -4803,10 +4803,10 @@ private:
             newp->dtypeSetVoid();
             nodep->replaceWith(newp->makeStmt());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            // return;
+            return;
         }
 
-        if (nodep->dtypep()->isEvent()) checkEventAssignement(nodep);
+        if (nodep->hasDType() && nodep->dtypep()->isEvent()) checkEventAssignement(nodep);
     }
 
     void visit(AstRelease* nodep) override {
