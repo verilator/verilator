@@ -53,6 +53,8 @@ private:
         // Not defining main_time/vl_time_stamp, so
         v3Global.opt.addCFlags("-DVL_TIME_CONTEXT");  // On MSVC++ anyways
 
+        if (v3Global.assignsEvents()) v3Global.opt.addCFlags("-DVL_EVENT_ASSIGN");
+
         // Optional main top name argument, with empty string replacement
         string topArg;
         string topName = v3Global.opt.mainTopName();

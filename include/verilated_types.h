@@ -174,13 +174,23 @@ public:
     ~VlEvent() = default;
 
     friend std::string VL_TO_STRING(const VlEvent& e);
+#ifdef VL_EVENT_ASSIGN
     friend class VlEventHandle;
+#else
+    // METHODS
+    void fire() { m_fired = m_triggered = true; }
+    bool isFired() const { return m_fired; }
+    bool isTriggered() const { return m_triggered; }
+    void clearFired() { m_fired = false; }
+    void clearTriggered() { m_triggered = false; }
+#endif
 };
 
 inline std::string VL_TO_STRING(const VlEvent& e) {
     return std::string{"triggered="} + (e.m_triggered ? "true" : "false");
 }
 
+#ifdef VL_EVENT_ASSIGN
 class VlEventHandle final : public std::shared_ptr<VlEvent> {
 public:
     // Constructor
@@ -196,6 +206,9 @@ public:
 };
 
 inline std::string VL_TO_STRING(const VlEventHandle& e) { return "&{ " + VL_TO_STRING(*e) + " }"; }
+#else
+using VlEventHandle = VlEvent;
+#endif
 
 //===================================================================
 // Random

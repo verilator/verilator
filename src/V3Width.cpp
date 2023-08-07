@@ -4798,7 +4798,10 @@ private:
             return;
         }
 
-        if (nodep->hasDType() && nodep->dtypep()->isEvent()) checkEventAssignement(nodep);
+        if (nodep->hasDType() && nodep->dtypep()->isEvent()) {
+            checkEventAssignement(nodep);
+            v3Global.setAssignsEvents();
+        }
     }
 
     void visit(AstRelease* nodep) override {

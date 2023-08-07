@@ -464,7 +464,13 @@ void EmitCSyms::emitSymHdr() {
         puts("uint32_t __Vm_baseCode = 0;"
              "  ///< Used by trace routines when tracing multiple models\n");
     }
-    if (v3Global.hasEvents()) puts("std::vector<VlEventHandle> __Vm_triggeredEvents;\n");
+    if (v3Global.hasEvents()) {
+        if (v3Global.assignsEvents()) {
+            puts("std::vector<VlEventHandle> __Vm_triggeredEvents;\n");
+        } else {
+            puts("std::vector<VlEventHandle*> __Vm_triggeredEvents;\n");
+        }
+    }
     if (v3Global.hasClasses()) puts("VlDeleter __Vm_deleter;\n");
     puts("bool __Vm_didInit = false;\n");
 
@@ -539,10 +545,18 @@ void EmitCSyms::emitSymHdr() {
              "'enqueueTriggeredEventForClearing' was not triggered\");\n");
         puts("}\n");
         puts("#endif\n");
-        puts("__Vm_triggeredEvents.push_back(event);\n");
+        if (v3Global.assignsEvents()) {
+            puts("__Vm_triggeredEvents.push_back(event);\n");
+        } else {
+            puts("__Vm_triggeredEvents.push_back(&event);\n");
+        }
         puts("}\n");
         puts("void clearTriggeredEvents() {\n");
-        puts("for (auto& eventp : __Vm_triggeredEvents) eventp.clearTriggered();\n");
+        if (v3Global.assignsEvents()) {
+            puts("for (auto& event : __Vm_triggeredEvents) event.clearTriggered();\n");
+        } else {
+            puts("for (const auto eventp : __Vm_triggeredEvents) eventp->clearTriggered();\n");
+        }
         puts("__Vm_triggeredEvents.clear();\n");
         puts("}\n");
     }
