@@ -448,9 +448,6 @@ Summary:
    files on the command line that implement the main loop for your
    simulation.
 
-   :vlopt:`--exe` cannot be specified when using :vlopt:`-E`,
-   :vlopt:`--dpi-hdr-only`, :vlopt:`--lint-only`, or :vlopt:`--xml-only`.
-
 .. option:: --expand-limit <value>
 
    Rarely needed.  Fine-tune optimizations to set the maximum size of an

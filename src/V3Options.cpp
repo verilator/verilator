@@ -814,10 +814,6 @@ void V3Options::notify() {
         cmdfl->v3error("--exe cannot be used together with --lib-create. Suggest see manual");
     }
 
-    if (m_exe && (m_preprocOnly || m_dpiHdrOnly || m_lintOnly || m_xmlOnly)) {
-        cmdfl->v3error("--exe cannot be used together with -E, --dpi-hdr-only, --lint-only, or --xml-only. Suggest see manual");
-    }
-
     // Make sure at least one make system is enabled
     if (!m_gmake && !m_cmake) m_gmake = true;
 
