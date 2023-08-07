@@ -4806,8 +4806,7 @@ private:
             // return;
         }
 
-        if (nodep->dtypep()->isEvent())
-            checkEventAssignement(nodep);
+        if (nodep->dtypep()->isEvent()) checkEventAssignement(nodep);
     }
 
     void visit(AstRelease* nodep) override {
