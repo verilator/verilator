@@ -513,7 +513,8 @@ private:
                 AstNodeDType* commonClassTypep = nullptr;
                 if (nodep->thenp()->isClassHandleValue() && nodep->elsep()->isClassHandleValue()) {
                     // Get the most-deriving class type that both arguments can be casted to.
-                    commonClassTypep = getCommonClassTypep(nodep->thenp(), nodep->elsep());
+                    commonClassTypep
+                        = V3Width::getCommonClassTypep(nodep->thenp(), nodep->elsep());
                 }
                 if (commonClassTypep) {
                     nodep->dtypep(commonClassTypep);
@@ -7337,41 +7338,9 @@ private:
         if (nodep->subDTypep()) return hasOpenArrayIterateDType(nodep->subDTypep()->skipRefp());
         return false;
     }
-    AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) {
-        // Return the class type that both nodep1 and nodep2 are castable to.
-        // If both are null, return the type of null constant.
-        // If one is a class and one is null, return AstClassRefDType that points to that class.
-        // If no common class type exists, return nullptr.
-
-        // First handle cases with null values and when one class is a super class of the other.
-        if (VN_IS(nodep1, Const)) std::swap(nodep1, nodep2);
-        const Castable castable = computeCastable(nodep1->dtypep(), nodep2->dtypep(), nodep2);
-        if (castable == SAMEISH || castable == COMPATIBLE) {
-            return nodep1->dtypep()->cloneTree(false);
-        } else if (castable == DYNAMIC_CLASS) {
-            return nodep2->dtypep()->cloneTree(false);
-        }
-
-        AstClassRefDType* classDtypep1 = VN_CAST(nodep1->dtypep(), ClassRefDType);
-        while (classDtypep1) {
-            const Castable castable = computeCastable(classDtypep1, nodep2->dtypep(), nodep2);
-            if (castable == COMPATIBLE) return classDtypep1->cloneTree(false);
-            AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
-            classDtypep1 = extendsp ? VN_AS(extendsp->dtypep(), ClassRefDType) : nullptr;
-        }
-        return nullptr;
-    }
 
     //----------------------------------------------------------------------
     // METHODS - casting
-    static Castable computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
-                                    const AstNode* fromConstp) {
-        const auto castable = computeCastableImp(toDtp, fromDtp, fromConstp);
-        UINFO(9, "  castable=" << castable << "  for " << toDtp << endl);
-        UINFO(9, "     =?= " << fromDtp << endl);
-        UINFO(9, "     const= " << fromConstp << endl);
-        return castable;
-    }
     static Castable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
                                        const AstNode* fromConstp) {
         const Castable castable = UNSUPPORTED;
@@ -7536,6 +7505,15 @@ public:
         return userIterateSubtreeReturnEdits(nodep, WidthVP{SELF, BOTH}.p());
     }
     ~WidthVisitor() override = default;
+
+    static Castable computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
+                                    const AstNode* fromConstp) {
+        const auto castable = computeCastableImp(toDtp, fromDtp, fromConstp);
+        UINFO(9, "  castable=" << castable << "  for " << toDtp << endl);
+        UINFO(9, "     =?= " << fromDtp << endl);
+        UINFO(9, "     const= " << fromConstp << endl);
+        return castable;
+    }
 };
 
 //######################################################################
@@ -7552,6 +7530,33 @@ void V3Width::width(AstNetlist* nodep) {
         (void)rvisitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("width", 0, dumpTreeLevel() >= 3);
+}
+
+AstNodeDType* V3Width::getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) {
+    // Return the class type that both nodep1 and nodep2 are castable to.
+    // If both are null, return the type of null constant.
+    // If one is a class and one is null, return AstClassRefDType that points to that class.
+    // If no common class type exists, return nullptr.
+
+    // First handle cases with null values and when one class is a super class of the other.
+    if (VN_IS(nodep1, Const)) std::swap(nodep1, nodep2);
+    const Castable castable
+        = WidthVisitor::computeCastable(nodep1->dtypep(), nodep2->dtypep(), nodep2);
+    if (castable == SAMEISH || castable == COMPATIBLE) {
+        return nodep1->dtypep();
+    } else if (castable == DYNAMIC_CLASS) {
+        return nodep2->dtypep();
+    }
+
+    AstClassRefDType* classDtypep1 = VN_CAST(nodep1->dtypep(), ClassRefDType);
+    while (classDtypep1) {
+        const Castable castable
+            = WidthVisitor::computeCastable(classDtypep1, nodep2->dtypep(), nodep2);
+        if (castable == COMPATIBLE) return classDtypep1;
+        AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
+        classDtypep1 = extendsp ? VN_AS(extendsp->dtypep(), ClassRefDType) : nullptr;
+    }
+    return nullptr;
 }
 
 //! Single node parameter propagation
