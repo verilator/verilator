@@ -1,0 +1,2 @@
+%Error: --exe cannot be used together with -E, --dpi-hdr-only, --lint-only, or --xml-only. Suggest see manual
+%Error: Exiting due to

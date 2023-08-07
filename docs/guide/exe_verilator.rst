@@ -119,14 +119,21 @@ Summary:
    Create a Verilated simulator binary.  Alias for :vlopt:`--main`
    :vlopt:`--exe` :vlopt:`--build` :vlopt:`--timing`.
 
+   If :vlopt:`-E`, :vlopt:`--dpi-hdr-only`, :vlopt:`--lint-only`, or
+   :vlopt:`--xml-only` are enabled, :vlopt:`--binary` instead instead acts
+   as an alias for :vlopt:`--timing`.
+
    See also :vlopt:`-j`.
 
 .. option:: --build
 
    After generating the SystemC/C++ code, Verilator will invoke the
    toolchain to build the model library (and executable when :vlopt:`--exe`
-   is also used). Verilator manages the build itself, and for this --build
+   is also used).  Verilator manages the build itself, and for this --build
    requires GNU Make to be available on the platform.
+
+   :vlopt:`--build` cannot be specified when using :vlopt:`-E`,
+   :vlopt:`--dpi-hdr-only`, :vlopt:`--lint-only`, or :vlopt:`--xml-only`.
 
 .. option:: --build-dep-bin <filename>
 
@@ -440,6 +447,9 @@ Summary:
    Generate an executable.  You will also need to pass additional .cpp
    files on the command line that implement the main loop for your
    simulation.
+
+   :vlopt:`--exe` cannot be specified when using :vlopt:`-E`,
+   :vlopt:`--dpi-hdr-only`, :vlopt:`--lint-only`, or :vlopt:`--xml-only`.
 
 .. option:: --expand-limit <value>
 

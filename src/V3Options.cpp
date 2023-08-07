@@ -806,8 +806,16 @@ void V3Options::notify() {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
+    if (m_build && (m_preprocOnly || m_dpiHdrOnly || m_lintOnly || m_xmlOnly)) {
+        cmdfl->v3error("--build cannot be used together with -E, --dpi-hdr-only, --lint-only, or --xml-only. Suggest see manual");
+    }
+
     if (m_exe && !v3Global.opt.libCreate().empty()) {
         cmdfl->v3error("--exe cannot be used together with --lib-create. Suggest see manual");
+    }
+
+    if (m_exe && (m_preprocOnly || m_dpiHdrOnly || m_lintOnly || m_xmlOnly)) {
+        cmdfl->v3error("--exe cannot be used together with -E, --dpi-hdr-only, --lint-only, or --xml-only. Suggest see manual");
     }
 
     // Make sure at least one make system is enabled
@@ -1081,9 +1089,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         FileLine::globalWarnOff(V3ErrorCode::E_UNSUPPORTED, true);
     });
     DECL_OPTION("-binary", CbCall, [this]() {
-        m_build = true;
-        m_exe = true;
-        m_main = true;
+        m_binary = true;
         if (m_timing.isDefault()) m_timing = VOptionBool::OPT_TRUE;
     });
     DECL_OPTION("-build", Set, &m_build);
