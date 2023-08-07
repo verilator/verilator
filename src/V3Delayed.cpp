@@ -551,7 +551,9 @@ private:
             }
             if (!lhsp->backp()) VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
         } else {
-            iterateChildren(nodep);
+            iterate(nodep->lhsp());
+            m_inDly = false;
+            iterate(nodep->rhsp());
         }
     }
 
