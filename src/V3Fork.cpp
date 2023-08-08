@@ -105,7 +105,7 @@ public:
 
         // Move variables into the class
         for (AstVar* varp : m_captures) {
-            if (VL_UNLIKELY(varp->direction() == VDirection::INPUT)) {
+            if (varp->direction() == VDirection::INPUT) {
                 varp = varp->cloneTree(false);
                 varp->direction(VDirection::NONE);
             } else {
@@ -153,7 +153,7 @@ public:
 
         AstNode* initsp = nullptr;  // Arguments need to be copied
         for (AstVar* varp : m_captures) {
-            if (VL_LIKELY(varp->direction() != VDirection::INPUT)) continue;
+            if (varp->direction() != VDirection::INPUT) continue;
 
             AstMemberSel* const memberselp = new AstMemberSel{
                 varp->fileline(),
@@ -259,7 +259,7 @@ private:
             refp->fileline(), new AstVarRef{refp->fileline(), dynScope.m_handlep, refp->access()},
             refp->dtypep()};
         membersel->name(refp->varp()->name());
-        if (VL_UNLIKELY(refp->varp()->direction() == VDirection::INPUT)) {
+        if (refp->varp()->direction() == VDirection::INPUT) {
             membersel->varp(
                 VN_AS(m_memberMap.findMember(dynScope.m_classp, refp->varp()->name()), Var));
         } else {
