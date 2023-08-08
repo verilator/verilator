@@ -119,10 +119,6 @@ Summary:
    Create a Verilated simulator binary.  Alias for :vlopt:`--main`
    :vlopt:`--exe` :vlopt:`--build` :vlopt:`--timing`.
 
-   If :vlopt:`-E`, :vlopt:`--dpi-hdr-only`, :vlopt:`--lint-only`, or
-   :vlopt:`--xml-only` are enabled, :vlopt:`--binary` instead instead acts
-   as an alias for :vlopt:`--timing`.
-
    See also :vlopt:`-j`.
 
 .. option:: --build
