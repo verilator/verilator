@@ -14,31 +14,7 @@ top_filename("t/t_flag_main.v");
 compile(
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
-    verilator_flags2 => ["--build -E"],
-    fails => 1,
-    expect_filename => $Self->{golden_filename},
-    );
-
-compile(
-    verilator_make_cmake => 0,
-    verilator_make_gmake => 0,
-    verilator_flags2 => ["--build --dpi-hdr-only"],
-    fails => 1,
-    expect_filename => $Self->{golden_filename},
-    );
-
-compile(
-    verilator_make_cmake => 0,
-    verilator_make_gmake => 0,
-    verilator_flags2 => ["--build --lint-only"],
-    fails => 1,
-    expect_filename => $Self->{golden_filename},
-    );
-
-compile(
-    verilator_make_cmake => 0,
-    verilator_make_gmake => 0,
-    verilator_flags2 => ["--build --xml-only"],
+    verilator_flags2 => ["--build -E -Wno-fatal --dpi-hdr-only --lint-only --xml-only"],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

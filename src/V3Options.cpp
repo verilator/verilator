@@ -806,8 +806,22 @@ void V3Options::notify() {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
-    if (m_build && (m_preprocOnly || m_dpiHdrOnly || m_lintOnly || m_xmlOnly)) {
-        cmdfl->v3error("--build cannot be used together with -E, --dpi-hdr-only, --lint-only, or --xml-only. Suggest see manual");
+    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_xmlOnly are mutually exclusive
+    std::vector<std::string> backendFlags;
+    if (m_build) {
+        if (m_binary) backendFlags.push_back("--binary");
+        else backendFlags.push_back("--build");
+    }
+    if (m_preprocOnly) backendFlags.push_back("-E");
+    if (m_dpiHdrOnly) backendFlags.push_back("--dpi-hdr-only");
+    if (m_lintOnly) backendFlags.push_back("--lint-only");
+    if (m_xmlOnly) backendFlags.push_back("--xml-only");
+    if (backendFlags.size() > 1) {
+        std::string flagList = backendFlags.front();
+        for (size_t i = 1; i < backendFlags.size(); i++) {
+            flagList += ", " + backendFlags[i];
+        }
+        v3error("The following cannot be used together: " + flagList + ". Suggest see manual");
     }
 
     if (m_exe && !v3Global.opt.libCreate().empty()) {
@@ -1086,6 +1100,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     });
     DECL_OPTION("-binary", CbCall, [this]() {
         m_binary = true;
+        m_build = true;
+        m_exe = true;
+        m_main = true;
         if (m_timing.isDefault()) m_timing = VOptionBool::OPT_TRUE;
     });
     DECL_OPTION("-build", Set, &m_build);

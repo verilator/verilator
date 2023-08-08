@@ -442,14 +442,8 @@ public:
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
-    bool binary() const {
-        if (m_preprocOnly || m_dpiHdrOnly || m_lintOnly || m_xmlOnly)
-            return false;
-        return m_binary;
-    }
-    bool build() const {
-        return binary() || m_build;
-    }
+    bool binary() const { return m_binary; }
+    bool build() const { return m_build; }
     string buildDepBin() const { return m_buildDepBin; }
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }
     bool cmake() const { return m_cmake; }
@@ -477,7 +471,7 @@ public:
     bool dumpTreeDot() const {
         return m_dumpLevel.count("tree-dot") && m_dumpLevel.at("tree-dot");
     }
-    bool exe() const { return binary() || m_exe; }
+    bool exe() const { return m_exe; }
     bool flatten() const { return m_flatten; }
     bool gmake() const { return m_gmake; }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
@@ -489,7 +483,7 @@ public:
     bool traceParams() const { return m_traceParams; }
     bool traceStructs() const { return m_traceStructs; }
     bool traceUnderscore() const { return m_traceUnderscore; }
-    bool main() const { return binary() || m_main; }
+    bool main() const { return m_main; }
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault() != 0); }
     bool pedantic() const { return m_pedantic; }
