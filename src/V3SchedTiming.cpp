@@ -405,6 +405,7 @@ void transformForks(AstNetlist* const netlistp) {
             if (nodep->funcp()->needProcess()) m_beginNeedProcess = true;
             iterateChildrenConst(nodep);
         }
+        void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
 
         //--------------------
         void visit(AstNodeExpr*) override {}  // Accelerate
