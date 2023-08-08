@@ -102,6 +102,8 @@ public:
         : m_state{RUNNING} {}
 
     // METHODS
+    VlProcess* spawn() { return new VlProcess{}; }
+
     int state() { return m_state; }
     void state(int s) { m_state = s; }
 };
