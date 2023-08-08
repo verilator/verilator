@@ -47,6 +47,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Global.h"
 #include "V3Timing.h"
 
 #include "V3Ast.h"
@@ -388,6 +389,7 @@ private:
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     double m_timescaleFactor = 1.0;  // Factor to scale delays by
     int m_forkCnt = 0;  // Number of forks inside a module
+    bool m_underJumpBlock = false; // True if we are inside of a jump-block
 
     // Unique names
     V3UniqueNames m_contAssignVarNames{"__VassignWtmp"};  // Names for temp AssignW vars
@@ -601,7 +603,12 @@ private:
         if (insertBeforep) {
             varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
             varp->funcLocal(true);
-            insertBeforep->addHereThisAsNext(varp);
+            if (m_underJumpBlock) {
+                AstCLocalScope* cscopep = new AstCLocalScope{flp, varp};
+                insertBeforep->addHereThisAsNext(cscopep);
+            } else {
+                insertBeforep->addHereThisAsNext(varp);
+            }
         } else {
             varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
             m_scopep->modp()->addStmtsp(varp);
@@ -627,6 +634,14 @@ private:
         AstNode* const insertBeforep = m_classp ? forkp : nullptr;
         AstVarScope* forkVscp
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
+        if (m_underJumpBlock && m_classp) {
+            // If we are under a jump block, we need to limit the scope of out temporary variable,
+            // because we might jump over its initialization, yet before the end of scope,
+            // where the desctor would be called.
+            AstCLocalScope* cscopep = VN_AS(forkVscp->varp()->abovep(), CLocalScope);
+            forkp->unlinkFrBack();
+            cscopep->addStmtsp(forkp);
+        }
         unsigned joinCount = 0;  // Needed for join counter
         // Add a <fork sync>.done() to each begin
         for (AstNode* beginp = forkp->stmtsp(); beginp; beginp = beginp->nextp()) {
@@ -690,6 +705,11 @@ private:
             nodep->addStmtsp(
                 new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
         }
+    }
+    void visit(AstJumpBlock* nodep) override {
+        VL_RESTORER(m_underJumpBlock);
+        m_underJumpBlock = true;
+        visit(static_cast<AstNodeStmt*>(nodep));
     }
     void visit(AstAlways* nodep) override {
         if (nodep->user1SetOnce()) return;
