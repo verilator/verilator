@@ -817,11 +817,11 @@ void V3Options::notify() {
     if (m_lintOnly) backendFlags.push_back("--lint-only");
     if (m_xmlOnly) backendFlags.push_back("--xml-only");
     if (backendFlags.size() > 1) {
-        std::string flagList = backendFlags.front();
+        std::string backendFlagsString = backendFlags.front();
         for (size_t i = 1; i < backendFlags.size(); i++) {
-            flagList += ", " + backendFlags[i];
+            backendFlagsString += ", " + backendFlags[i];
         }
-        v3error("The following cannot be used together: " + flagList + ". Suggest see manual");
+        v3error("The following cannot be used together: " + backendFlagsString + ". Suggest see manual");
     }
 
     if (m_exe && !v3Global.opt.libCreate().empty()) {
