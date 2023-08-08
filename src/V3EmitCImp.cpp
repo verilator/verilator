@@ -147,7 +147,7 @@ class EmitCGatherDependencies final : VNVisitorConst {
     }
 
 public:
-    static const std::set<std::string> gather(AstCFunc* cfuncp) VL_MT_STABLE {
+    static const std::set<std::string> gather(AstCFunc* cfuncp) {
         const EmitCGatherDependencies visitor{cfuncp};
         return std::move(visitor.m_dependencies);
     }
@@ -566,8 +566,7 @@ class EmitCImp final : EmitCFunc {
     ~EmitCImp() override = default;
 
 public:
-    static void main(const AstNodeModule* modp, bool slow,
-                     std::deque<AstCFile*>& cfilesr) VL_MT_STABLE {
+    static void main(const AstNodeModule* modp, bool slow, std::deque<AstCFile*>& cfilesr) {
         EmitCImp{modp, slow, cfilesr};
     }
 };

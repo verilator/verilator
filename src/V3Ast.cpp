@@ -125,9 +125,7 @@ string AstNode::encodeNumber(int64_t num) {
     }
 }
 
-string AstNode::nameProtect() const VL_MT_STABLE {
-    return VIdProtect::protectIf(name(), protect());
-}
+string AstNode::nameProtect() const { return VIdProtect::protectIf(name(), protect()); }
 string AstNode::origNameProtect() const { return VIdProtect::protectIf(origName(), protect()); }
 
 string AstNode::shortName() const {
@@ -285,7 +283,7 @@ string AstNode::vpiName(const string& namein) {
     return pretty;
 }
 
-string AstNode::prettyTypeName() const VL_MT_STABLE {
+string AstNode::prettyTypeName() const {
     if (name() == "") return typeName();
     return std::string{typeName()} + " '" + prettyName() + "'";
 }

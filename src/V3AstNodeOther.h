@@ -86,7 +86,7 @@ private:
     bool m_recursive : 1;  // Recursive or part of recursion
     bool m_underGenerate : 1;  // Under generate (for warning)
     bool m_virtual : 1;  // Virtual method in class
-    bool m_fromStd : 1;  // Part of std
+    bool m_needProcess : 1;  // Implements part of a process that allocates std::process
     VLifetime m_lifetime;  // Lifetime
 protected:
     AstNodeFTask(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)
@@ -112,7 +112,7 @@ protected:
         , m_recursive{false}
         , m_underGenerate{false}
         , m_virtual{false}
-        , m_fromStd{false} {
+        , m_needProcess{false} {
         addStmtsp(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
     }
@@ -172,8 +172,8 @@ public:
     bool underGenerate() const { return m_underGenerate; }
     void isVirtual(bool flag) { m_virtual = flag; }
     bool isVirtual() const { return m_virtual; }
-    void isFromStd(bool flag) { m_fromStd = flag; }
-    bool isFromStd() const { return m_fromStd; }
+    void setNeedProcess() { m_needProcess = true; }
+    bool needProcess() const { return m_needProcess; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
@@ -1812,7 +1812,7 @@ public:
     string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
     string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc = "",
-                     bool asRef = false) const VL_MT_STABLE;
+                     bool asRef = false) const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
@@ -2138,7 +2138,7 @@ public:
 class AstClass final : public AstNodeModule {
     // @astgen op4 := extendsp : List[AstClassExtends]
     // MEMBERS
-    AstClassPackage* m_classOrPackagep = nullptr;  // Class package this is under
+    AstClassPackage* m_classOrPackagep = nullptr;  // Package it will be emitted with
     bool m_extended = false;  // Is extension or extended by other classes
     bool m_interfaceClass = false;  // Interface class
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize

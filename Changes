@@ -8,7 +8,14 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
-Verilator 5.013 devel
+Verilator 5.015 devel
+==========================
+
+**Minor:**
+
+
+
+Verilator 5.014 2023-08-06
 ==========================
 
 **Minor:**
@@ -46,6 +53,7 @@ Verilator 5.013 devel
 * Fix cmake astgen for Rocky Linux 8.7 (#4343). [Julian Daube]
 * Fix class timescale in class packages (#4348). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix string concatenations (#4354). [Ryszard Rozak, Antmicro Ltd]
+* Fix unlinked task error from broken context (#4355) (#4402). [Aleksander Kiryk, Antmicro Ltd]
 * Fix selects on unpacked structs (#4359). [Ryszard Rozak, Antmicro Ltd]
 * Fix select operation on assoc array with wide keys (#4360). [Ryszard Rozak, Antmicro Ltd]
 * Fix non-public methods with wide output (#4364). [Ryszard Rozak, Antmicro Ltd]
@@ -53,6 +61,7 @@ Verilator 5.013 devel
 * Fix assign to input var in methods (#4367). [Aleksander Kiryk, Antmicro Ltd]
 * Fix VlProcess not found (#4368). [Aleksander Kiryk, Antmicro Ltd]
 * Fix order of evaluation of function calls in statements (#4375). [Ryszard Rozak, Antmicro Ltd]
+* Fix config_build.h issues (#4380) (#4381). [Andrew Miloradovsky]
 
 
 Verilator 5.012 2023-06-13

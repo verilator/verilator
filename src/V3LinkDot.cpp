@@ -2065,40 +2065,38 @@ private:
     } m_ds;  // State to preserve across recursions
 
     // METHODS - Variables
-    void createImplicitVar(VSymEnt* /*lookupSymp*/, AstVarRef* nodep, AstNodeModule* modp,
-                           VSymEnt* moduleSymp, bool noWarn) {
+    AstVar* createImplicitVar(VSymEnt* /*lookupSymp*/, AstParseRef* nodep, AstNodeModule* modp,
+                              VSymEnt* moduleSymp, bool noWarn) {
         // Create implicit after warning
-        if (!nodep->varp()) {
-            if (!noWarn) {
-                if (nodep->fileline()->warnIsOff(V3ErrorCode::I_DEF_NETTYPE_WIRE)) {
-                    const string suggest = m_statep->suggestSymFallback(moduleSymp, nodep->name(),
-                                                                        LinkNodeMatcherVar{});
-                    nodep->v3error("Signal definition not found, and implicit disabled with "
-                                   "`default_nettype: "
-                                   << nodep->prettyNameQ() << '\n'
-                                   << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+        if (!noWarn) {
+            if (nodep->fileline()->warnIsOff(V3ErrorCode::I_DEF_NETTYPE_WIRE)) {
+                const string suggest = m_statep->suggestSymFallback(moduleSymp, nodep->name(),
+                                                                    LinkNodeMatcherVar{});
+                nodep->v3error("Signal definition not found, and implicit disabled with "
+                               "`default_nettype: "
+                               << nodep->prettyNameQ() << '\n'
+                               << (suggest.empty() ? "" : nodep->warnMore() + suggest));
 
-                }
-                // Bypass looking for suggestions if IMPLICIT is turned off
-                // as there could be thousands of these suppressed in large netlists
-                else if (!nodep->fileline()->warnIsOff(V3ErrorCode::IMPLICIT)) {
-                    const string suggest = m_statep->suggestSymFallback(moduleSymp, nodep->name(),
-                                                                        LinkNodeMatcherVar{});
-                    nodep->v3warn(IMPLICIT,
-                                  "Signal definition not found, creating implicitly: "
-                                      << nodep->prettyNameQ() << '\n'
-                                      << (suggest.empty() ? "" : nodep->warnMore() + suggest));
-                }
             }
-            AstVar* const newp = new AstVar{nodep->fileline(), VVarType::WIRE, nodep->name(),
-                                            VFlagLogicPacked{}, 1};
-            newp->trace(modp->modTrace());
-            nodep->varp(newp);
-            modp->addStmtsp(newp);
-            // Link it to signal list, must add the variable under the module;
-            // current scope might be lower now
-            m_statep->insertSym(moduleSymp, newp->name(), newp, nullptr /*classOrPackagep*/);
+            // Bypass looking for suggestions if IMPLICIT is turned off
+            // as there could be thousands of these suppressed in large netlists
+            else if (!nodep->fileline()->warnIsOff(V3ErrorCode::IMPLICIT)) {
+                const string suggest = m_statep->suggestSymFallback(moduleSymp, nodep->name(),
+                                                                    LinkNodeMatcherVar{});
+                nodep->v3warn(IMPLICIT,
+                              "Signal definition not found, creating implicitly: "
+                                  << nodep->prettyNameQ() << '\n'
+                                  << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+            }
         }
+        AstVar* const newp
+            = new AstVar{nodep->fileline(), VVarType::WIRE, nodep->name(), VFlagLogicPacked{}, 1};
+        newp->trace(modp->modTrace());
+        modp->addStmtsp(newp);
+        // Link it to signal list, must add the variable under the module;
+        // current scope might be lower now
+        m_statep->insertSym(moduleSymp, newp->name(), newp, nullptr /*classOrPackagep*/);
+        return newp;
     }
     AstVar* foundToVarp(const VSymEnt* symp, AstNode* nodep, VAccess access) {
         // Return a variable if possible, auto converting a modport to variable
@@ -2844,11 +2842,11 @@ private:
                     if (checkImplicit) {
                         // Create if implicit, and also if error (so only complain once)
                         // Else if a scope is allowed, making a signal won't help error cascade
+                        auto varp = createImplicitVar(m_curSymp, nodep, m_modp, m_modSymp, err);
                         AstVarRef* const newp
-                            = new AstVarRef{nodep->fileline(), nodep->name(), VAccess::READ};
+                            = new AstVarRef{nodep->fileline(), varp, VAccess::READ};
                         nodep->replaceWith(newp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                        createImplicitVar(m_curSymp, newp, m_modp, m_modSymp, err);
                     }
                 }
             }
@@ -3154,7 +3152,15 @@ private:
                 } else if (nodep->name() == "randomize" || nodep->name() == "srandom"
                            || nodep->name() == "get_randstate"
                            || nodep->name() == "set_randstate") {
-                    // Resolved in V3Width
+                    if (AstClass* const classp = VN_CAST(m_modp, Class)) {
+                        nodep->classOrPackagep(classp);
+                    } else {
+                        nodep->v3error("Calling implicit class method "
+                                       << nodep->prettyNameQ() << " without being under class");
+                        nodep->replaceWith(new AstConst{nodep->fileline(), 0});
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                        return;
+                    }
                 } else if (nodep->dotted() == "") {
                     if (nodep->pli()) {
                         if (v3Global.opt.bboxSys()) {

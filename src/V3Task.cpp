@@ -412,7 +412,6 @@ private:
                 AstVarScope* const newvscp = VN_AS(refp->varp()->user2p(), VarScope);
                 refp->varScopep(newvscp);
                 refp->varp(refp->varScopep()->varp());
-                refp->name(refp->varp()->name());
             }
         });
     }
@@ -1323,7 +1322,7 @@ private:
         }
 
         // Mark the fact that this function allocates std::process
-        if (nodep->isFromStd() && nodep->name() == "self") cfuncp->setNeedProcess();
+        if (nodep->needProcess()) cfuncp->setNeedProcess();
 
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
