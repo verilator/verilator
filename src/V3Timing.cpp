@@ -596,16 +596,29 @@ private:
         m_netlistp->typeTablep()->addTypesp(m_forkDtp);
         return m_forkDtp;
     }
+    // Move `insertBeforep` into `AstCLocalScope` if necessary to avoid jumping over
+    // a variable initialization that whould be inserted before `insertBeforep`. All
+    // access to this variable shoule be contained within returned `AstCLocalScope`.
+    AstCLocalScope* tempNeedCLocalScope(FileLine* const flp, AstNode* const insertBeforep,
+                                        bool safeForJumps = false) const {
+        if (!(insertBeforep && m_underJumpBlock && !safeForJumps)) return nullptr;
+        VNRelinker handle;
+        insertBeforep->unlinkFrBack(&handle);
+        AstCLocalScope* cscopep = new AstCLocalScope{flp, insertBeforep};
+        handle.relink(cscopep);
+        return cscopep;
+    }
     // Create a temp variable and optionally put it before the specified node (mark local if so)
     AstVarScope* createTemp(FileLine* const flp, const std::string& name,
-                            AstNodeDType* const dtypep, AstNode* const insertBeforep = nullptr) {
+                            AstNodeDType* const dtypep, AstNode* const insertBeforep = nullptr,
+                            AstCLocalScope* localCScopep = nullptr) {
         AstVar* varp;
         if (insertBeforep) {
             varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
             varp->funcLocal(true);
-            if (m_underJumpBlock) {
-                AstCLocalScope* cscopep = new AstCLocalScope{flp, varp};
-                insertBeforep->addHereThisAsNext(cscopep);
+            if (localCScopep) {
+                localCScopep->addStmtsp(varp);
+                insertBeforep->addHereThisAsNext(localCScopep);
             } else {
                 insertBeforep->addHereThisAsNext(varp);
             }
@@ -632,9 +645,9 @@ private:
         FileLine* const flp = forkp->fileline();
         // If we're in a function, insert the sync var directly before the fork
         AstNode* const insertBeforep = m_classp ? forkp : nullptr;
+        AstCLocalScope* cscopep = tempNeedCLocalScope(flp, insertBeforep);
         AstVarScope* forkVscp
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
-        adjustNodeIntoTemporarysScope(forkp, forkVscp);
         unsigned joinCount = 0;  // Needed for join counter
         // Add a <fork sync>.done() to each begin
         for (AstNode* beginp = forkp->stmtsp(); beginp; beginp = beginp->nextp()) {
@@ -657,16 +670,6 @@ private:
         AstCAwait* const awaitp = new AstCAwait{flp, joinp};
         awaitp->dtypeSetVoid();
         forkp->addNextHere(awaitp->makeStmt());
-    }
-    // If we are under a jump block, we need to limit the scope of out temporary variable,
-    // because we might jump over its initialization, but before the end of scope, where
-    // the destructor would be called.
-    void adjustNodeIntoTemporarysScope(AstNode* nodep, AstVarScope* varscopep) const {
-        if (m_underJumpBlock && m_classp) {
-            AstCLocalScope* const cscopep = VN_AS(varscopep->varp()->abovep(), CLocalScope);
-            nodep->unlinkFrBack();
-            cscopep->addStmtsp(nodep);
-        }
     }
 
     // VISITORS
@@ -838,7 +841,6 @@ private:
             // Create the trigger variable and init it with 0
             AstVarScope* const trigvscp
                 = createTemp(flp, m_dynTrigNames.get(nodep), nodep->findBitDType(), nodep);
-            adjustNodeIntoTemporarysScope(nodep, trigvscp);
             auto* const initp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
                                               new AstConst{flp, AstConst::BitFalse{}}};
             nodep->addHereThisAsNext(initp);
@@ -932,11 +934,11 @@ private:
         // Insert new vars before the timing control if we're in a function; in a process we can't
         // do that. These intra-assignment vars will later be passed to forked processes by value.
         AstNode* const insertBeforep = m_classp ? controlp : nullptr;
+        AstCLocalScope* cscopep = tempNeedCLocalScope(flp, insertBeforep);
         // Function for replacing values with intermediate variables
         const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
                                                  const std::string& name) {
             AstVarScope* const newvscp = createTemp(flp, name, valuep->dtypep(), insertBeforep);
-            adjustNodeIntoTemporarysScope(nodep, newvscp);
             valuep->replaceWith(new AstVarRef{flp, newvscp, VAccess::READ});
             controlp->addHereThisAsNext(
                 new AstAssign{flp, new AstVarRef{flp, newvscp, VAccess::WRITE}, valuep});
