@@ -645,7 +645,7 @@ private:
         FileLine* const flp = forkp->fileline();
         // If we're in a function, insert the sync var directly before the fork
         AstNode* const insertBeforep = m_classp ? forkp : nullptr;
-        AstCLocalScope* cscopep = tempNeedCLocalScope(flp, insertBeforep);
+        tempNeedCLocalScope(flp, insertBeforep);
         AstVarScope* forkVscp
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
         unsigned joinCount = 0;  // Needed for join counter
@@ -934,7 +934,7 @@ private:
         // Insert new vars before the timing control if we're in a function; in a process we can't
         // do that. These intra-assignment vars will later be passed to forked processes by value.
         AstNode* const insertBeforep = m_classp ? controlp : nullptr;
-        AstCLocalScope* cscopep = tempNeedCLocalScope(flp, insertBeforep);
+        tempNeedCLocalScope(flp, insertBeforep);
         // Function for replacing values with intermediate variables
         const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
                                                  const std::string& name) {
