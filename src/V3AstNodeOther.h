@@ -704,7 +704,7 @@ class AstCLocalScope final : public AstNode {
     // @astgen op1 := stmtsp : List[AstNode]
 public:
     AstCLocalScope(FileLine* fl, AstNode* stmtsp)
-        : ASTGEN_SUPER_CLocalScope(fl){
+        : ASTGEN_SUPER_CLocalScope(fl) {
         this->addStmtsp(stmtsp);
     }
     ASTGEN_MEMBERS_AstCLocalScope;

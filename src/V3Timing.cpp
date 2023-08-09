@@ -47,12 +47,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Global.h"
 #include "V3Timing.h"
 
 #include "V3Ast.h"
 #include "V3Const.h"
 #include "V3EmitV.h"
+#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3MemberMap.h"
 #include "V3SenExprBuilder.h"
@@ -389,7 +389,7 @@ private:
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     double m_timescaleFactor = 1.0;  // Factor to scale delays by
     int m_forkCnt = 0;  // Number of forks inside a module
-    bool m_underJumpBlock = false; // True if we are inside of a jump-block
+    bool m_underJumpBlock = false;  // True if we are inside of a jump-block
 
     // Unique names
     V3UniqueNames m_contAssignVarNames{"__VassignWtmp"};  // Names for temp AssignW vars
@@ -634,14 +634,7 @@ private:
         AstNode* const insertBeforep = m_classp ? forkp : nullptr;
         AstVarScope* forkVscp
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
-        if (m_underJumpBlock && m_classp) {
-            // If we are under a jump block, we need to limit the scope of out temporary variable,
-            // because we might jump over its initialization, yet before the end of scope,
-            // where the desctor would be called.
-            AstCLocalScope* cscopep = VN_AS(forkVscp->varp()->abovep(), CLocalScope);
-            forkp->unlinkFrBack();
-            cscopep->addStmtsp(forkp);
-        }
+        adjustNodeIntoTemporarysScope(forkp, forkVscp);
         unsigned joinCount = 0;  // Needed for join counter
         // Add a <fork sync>.done() to each begin
         for (AstNode* beginp = forkp->stmtsp(); beginp; beginp = beginp->nextp()) {
@@ -664,6 +657,16 @@ private:
         AstCAwait* const awaitp = new AstCAwait{flp, joinp};
         awaitp->dtypeSetVoid();
         forkp->addNextHere(awaitp->makeStmt());
+    }
+    // If we are under a jump block, we need to limit the scope of out temporary variable,
+    // because we might jump over its initialization, but before the end of scope, where
+    // the destructor would be called.
+    void adjustNodeIntoTemporarysScope(AstNode* nodep, AstVarScope* varscopep) const {
+        if (m_underJumpBlock && m_classp) {
+            AstCLocalScope* const cscopep = VN_AS(varscopep->varp()->abovep(), CLocalScope);
+            nodep->unlinkFrBack();
+            cscopep->addStmtsp(nodep);
+        }
     }
 
     // VISITORS
@@ -835,6 +838,7 @@ private:
             // Create the trigger variable and init it with 0
             AstVarScope* const trigvscp
                 = createTemp(flp, m_dynTrigNames.get(nodep), nodep->findBitDType(), nodep);
+            adjustNodeIntoTemporarysScope(nodep, trigvscp);
             auto* const initp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
                                               new AstConst{flp, AstConst::BitFalse{}}};
             nodep->addHereThisAsNext(initp);
@@ -932,6 +936,7 @@ private:
         const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
                                                  const std::string& name) {
             AstVarScope* const newvscp = createTemp(flp, name, valuep->dtypep(), insertBeforep);
+            adjustNodeIntoTemporarysScope(nodep, newvscp);
             valuep->replaceWith(new AstVarRef{flp, newvscp, VAccess::READ});
             controlp->addHereThisAsNext(
                 new AstAssign{flp, new AstVarRef{flp, newvscp, VAccess::WRITE}, valuep});
