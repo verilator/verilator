@@ -1427,6 +1427,12 @@ private:
             UASSERT_OBJ(cnewp, nodep, "didn't create cnew for new");
             nodep->replaceWith(cnewp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else if (VN_IS(nodep->backp(), NodeAssign)) {
+            UASSERT_OBJ(nodep->taskp()->isFunction(), nodep, "func reference to non-function");
+            visitp = insertBeforeStmt(nodep, beginp);
+            AstVarRef* const outrefp = new AstVarRef{nodep->fileline(), outvscp, VAccess::READ};
+            nodep->replaceWith(outrefp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else if (!VN_IS(nodep->backp(), StmtExpr)) {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep, "func reference to non-function");
             AstVarRef* const outrefp = new AstVarRef{nodep->fileline(), outvscp, VAccess::READ};
