@@ -2288,7 +2288,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    void visit(AstCLocalScope* nodep) {
+    void visit(AstCLocalScope* nodep) override {
         iterateChildren(nodep);
         if (!nodep->stmtsp()) {
             nodep->unlinkFrBack();
