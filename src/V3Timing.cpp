@@ -599,29 +599,22 @@ private:
     // Move `insertBeforep` into `AstCLocalScope` if necessary to avoid jumping over
     // a variable initialization that whould be inserted before `insertBeforep`. All
     // access to this variable shoule be contained within returned `AstCLocalScope`.
-    AstCLocalScope* tempNeedCLocalScope(FileLine* const flp, AstNode* const insertBeforep,
-                                        bool safeForJumps = false) const {
-        if (!(insertBeforep && m_underJumpBlock && !safeForJumps)) return nullptr;
+    AstCLocalScope* addCLocalScope(FileLine* const flp, AstNode* const insertBeforep) const {
+        if (!insertBeforep || !m_underJumpBlock) return nullptr;
         VNRelinker handle;
         insertBeforep->unlinkFrBack(&handle);
-        AstCLocalScope* cscopep = new AstCLocalScope{flp, insertBeforep};
+        AstCLocalScope* const cscopep = new AstCLocalScope{flp, insertBeforep};
         handle.relink(cscopep);
         return cscopep;
     }
     // Create a temp variable and optionally put it before the specified node (mark local if so)
     AstVarScope* createTemp(FileLine* const flp, const std::string& name,
-                            AstNodeDType* const dtypep, AstNode* const insertBeforep = nullptr,
-                            AstCLocalScope* localCScopep = nullptr) {
+                            AstNodeDType* const dtypep, AstNode* const insertBeforep = nullptr) {
         AstVar* varp;
         if (insertBeforep) {
             varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
             varp->funcLocal(true);
-            if (localCScopep) {
-                localCScopep->addStmtsp(varp);
-                insertBeforep->addHereThisAsNext(localCScopep);
-            } else {
-                insertBeforep->addHereThisAsNext(varp);
-            }
+            insertBeforep->addHereThisAsNext(varp);
         } else {
             varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
             m_scopep->modp()->addStmtsp(varp);
@@ -645,7 +638,7 @@ private:
         FileLine* const flp = forkp->fileline();
         // If we're in a function, insert the sync var directly before the fork
         AstNode* const insertBeforep = m_classp ? forkp : nullptr;
-        tempNeedCLocalScope(flp, insertBeforep);
+        addCLocalScope(flp, insertBeforep);
         AstVarScope* forkVscp
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
         unsigned joinCount = 0;  // Needed for join counter
@@ -934,7 +927,7 @@ private:
         // Insert new vars before the timing control if we're in a function; in a process we can't
         // do that. These intra-assignment vars will later be passed to forked processes by value.
         AstNode* const insertBeforep = m_classp ? controlp : nullptr;
-        tempNeedCLocalScope(flp, insertBeforep);
+        addCLocalScope(flp, insertBeforep);
         // Function for replacing values with intermediate variables
         const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
                                                  const std::string& name) {
