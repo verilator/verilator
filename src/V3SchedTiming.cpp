@@ -236,6 +236,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
                 m_writtenBySuspendable.push_back(nodep->varScopep());
             }
         }
+        void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
 
         //--------------------
         void visit(AstNodeExpr*) override {}  // Accelerate
