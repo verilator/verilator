@@ -2288,6 +2288,13 @@ private:
             iterateChildren(nodep);
         }
     }
+    void visit(AstCLocalScope* nodep) {
+        iterateChildren(nodep);
+        if (!nodep->stmtsp()) {
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        }
+    }
     void visit(AstScope* nodep) override {
         // No ASSIGNW removals under scope, we've long eliminated INITIALs
         VL_RESTORER(m_wremove);
