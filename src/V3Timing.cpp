@@ -52,6 +52,7 @@
 #include "V3Ast.h"
 #include "V3Const.h"
 #include "V3EmitV.h"
+#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3MemberMap.h"
 #include "V3SenExprBuilder.h"
@@ -388,6 +389,7 @@ private:
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     double m_timescaleFactor = 1.0;  // Factor to scale delays by
     int m_forkCnt = 0;  // Number of forks inside a module
+    bool m_underJumpBlock = false;  // True if we are inside of a jump-block
 
     // Unique names
     V3UniqueNames m_contAssignVarNames{"__VassignWtmp"};  // Names for temp AssignW vars
@@ -594,6 +596,17 @@ private:
         m_netlistp->typeTablep()->addTypesp(m_forkDtp);
         return m_forkDtp;
     }
+    // Move `insertBeforep` into `AstCLocalScope` if necessary to avoid jumping over
+    // a variable initialization that whould be inserted before `insertBeforep`. All
+    // access to this variable shoule be contained within returned `AstCLocalScope`.
+    AstCLocalScope* addCLocalScope(FileLine* const flp, AstNode* const insertBeforep) const {
+        if (!insertBeforep || !m_underJumpBlock) return nullptr;
+        VNRelinker handle;
+        insertBeforep->unlinkFrBack(&handle);
+        AstCLocalScope* const cscopep = new AstCLocalScope{flp, insertBeforep};
+        handle.relink(cscopep);
+        return cscopep;
+    }
     // Create a temp variable and optionally put it before the specified node (mark local if so)
     AstVarScope* createTemp(FileLine* const flp, const std::string& name,
                             AstNodeDType* const dtypep, AstNode* const insertBeforep = nullptr) {
@@ -625,6 +638,7 @@ private:
         FileLine* const flp = forkp->fileline();
         // If we're in a function, insert the sync var directly before the fork
         AstNode* const insertBeforep = m_classp ? forkp : nullptr;
+        addCLocalScope(flp, insertBeforep);
         AstVarScope* forkVscp
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
         unsigned joinCount = 0;  // Needed for join counter
@@ -690,6 +704,11 @@ private:
             nodep->addStmtsp(
                 new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
         }
+    }
+    void visit(AstJumpBlock* nodep) override {
+        VL_RESTORER(m_underJumpBlock);
+        m_underJumpBlock = true;
+        visit(static_cast<AstNodeStmt*>(nodep));
     }
     void visit(AstAlways* nodep) override {
         if (nodep->user1SetOnce()) return;
@@ -908,6 +927,7 @@ private:
         // Insert new vars before the timing control if we're in a function; in a process we can't
         // do that. These intra-assignment vars will later be passed to forked processes by value.
         AstNode* const insertBeforep = m_classp ? controlp : nullptr;
+        addCLocalScope(flp, insertBeforep);
         // Function for replacing values with intermediate variables
         const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
                                                  const std::string& name) {
