@@ -299,9 +299,9 @@ private:
         if (m_ftaskp) {
             bool classMethod = m_ftaskp->classMethod();
             if (!classMethod) {
-                AstClassOrPackageRef* pkgrefp
+                AstClassOrPackageRef* const pkgrefp
                     = VN_CAST(m_ftaskp->classOrPackagep(), ClassOrPackageRef);
-                if (pkgrefp && VN_IS(pkgrefp->classOrPackagep(), Class)) { classMethod = true; }
+                if (pkgrefp && VN_IS(pkgrefp->classOrPackagep(), Class)) classMethod = true;
             }
             if (classMethod && nodep->lifetime().isNone()) {
                 nodep->lifetime(VLifetime::AUTOMATIC);
