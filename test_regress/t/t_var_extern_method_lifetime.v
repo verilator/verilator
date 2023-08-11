@@ -11,7 +11,7 @@ class Foo;
     m_v = v;
   endfunction
 
-  extern task add_in_fork_delayed(Foo arg);
+  extern task add_in_fork_delayed(int delay, Foo arg);
 endclass
 
 task automatic Foo::add_in_fork_delayed(int delay, Foo arg);
