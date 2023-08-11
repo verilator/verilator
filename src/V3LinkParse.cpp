@@ -296,8 +296,16 @@ private:
             nodep->v3warn(STATICVAR, "Static variable with assignment declaration declared in a "
                                      "loop converted to automatic");
         }
-        if (m_ftaskp && m_ftaskp->classMethod() && nodep->lifetime().isNone()) {
-            nodep->lifetime(VLifetime::AUTOMATIC);
+        if (m_ftaskp) {
+            bool classMethod = m_ftaskp->classMethod();
+            if (!classMethod) {
+                AstClassOrPackageRef* const pkgrefp
+                    = VN_CAST(m_ftaskp->classOrPackagep(), ClassOrPackageRef);
+                if (pkgrefp && VN_IS(pkgrefp->classOrPackagep(), Class)) classMethod = true;
+            }
+            if (classMethod && nodep->lifetime().isNone()) {
+                nodep->lifetime(VLifetime::AUTOMATIC);
+            }
         }
         if (nodep->lifetime().isNone() && nodep->varType() != VVarType::PORT) {
             nodep->lifetime(m_lifetime);
