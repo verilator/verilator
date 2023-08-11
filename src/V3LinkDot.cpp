@@ -2646,8 +2646,8 @@ private:
                 }
             } else if (allowFTask && VN_IS(foundp->nodep(), NodeFTask)) {
                 AstNodeFTask* const ftaskp = VN_AS(foundp->nodep(), NodeFTask);
-                AstTaskRef* const taskrefp =
-                    new AstTaskRef{nodep->fileline(),nodep->name(), nullptr};
+                AstTaskRef* const taskrefp
+                    = new AstTaskRef{nodep->fileline(), nodep->name(), nullptr};
                 nodep->replaceWith(taskrefp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 if (start) m_ds = lastStates;
