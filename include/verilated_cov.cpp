@@ -210,8 +210,8 @@ private:
 
         std::string result = prefix + "*" + suffix;
 
-        // cout << "\nch pre="<<prefix<<"  s="<<suffix<<"\nch a="<<old<<"\nch b="<<add
-        // <<"\ncho="<<result<<endl;
+        // std::cout << "\nch pre=" << prefix << "  s=" << suffix << "\nch a="
+        // << old << "\nch b=" << add << "\ncho=" << result << std::endl;
         return result;
     }
     bool itemMatchesString(VerilatedCovImpItem* itemp, const std::string& match)
@@ -337,7 +337,7 @@ public:
             const std::string key = keys[i];
             if (!keys[i].empty()) {
                 const std::string val = valps[i];
-                // cout<<"   "<<__FUNCTION__<<"  "<<key<<" = "<<val<<endl;
+                // std::cout << "   " << __FUNCTION__ << "  " << key << " = " << val << std::endl;
                 m_insertp->m_keys[addKeynum] = valueIndex(key);
                 m_insertp->m_vals[addKeynum] = valueIndex(val);
                 ++addKeynum;

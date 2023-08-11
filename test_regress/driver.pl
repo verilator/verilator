@@ -2229,7 +2229,7 @@ sub files_identical {
                     && !/\+\+\+ \/tmp\//  # t_difftree.pl
             } @l1;
             @l1 = map {
-                s/(Internal Error: [^\n]+\.(cpp|h)):[0-9]+:/$1:#:/;
+                while (s/(Internal Error: [^\n]+\.(cpp|h)):[0-9]+/$1:#/g) {}
                 s/^-V\{t[0-9]+,[0-9]+\}/-V{t#,#}/;  # --vlt vs --vltmt run differences
                 $_;
             } @l1;

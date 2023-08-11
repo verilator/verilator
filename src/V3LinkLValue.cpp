@@ -41,7 +41,6 @@ private:
     bool m_setContinuously = false;  // Set that var has some continuous assignment
     bool m_setStrengthSpecified = false;  // Set that var has assignment with strength specified.
     VAccess m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
-    AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
 
     // VISITs
     // Result handing
@@ -55,7 +54,8 @@ private:
                 // so it is needed to check only if m_setContinuously is true
                 if (m_setStrengthSpecified) nodep->varp()->hasStrengthAssignment(true);
             }
-            if (nodep->access().isWriteOrRW() && !m_ftaskp && nodep->varp()->isReadOnly()) {
+            if (nodep->access().isWriteOrRW() && !nodep->varp()->isFuncLocal()
+                && nodep->varp()->isReadOnly()) {
                 nodep->v3warn(ASSIGNIN,
                               "Assigning to input/const variable: " << nodep->prettyNameQ());
             }
@@ -275,9 +275,14 @@ private:
             iterateAndNextNull(nodep->thsp());
         }
     }
-    void visit(AstNodeFTask* nodep) override {
-        VL_RESTORER(m_ftaskp);
-        m_ftaskp = nodep;
+    void visit(AstMemberSel* nodep) override {
+        if (m_setRefLvalue != VAccess::NOCHANGE) {
+            nodep->access(m_setRefLvalue);
+        } else {
+            // It is the only place where the access is set to member select nodes.
+            // If it doesn't have to be set to WRITE, it means that it is READ.
+            nodep->access(VAccess::READ);
+        }
         iterateChildren(nodep);
     }
     void visit(AstNodeFTaskRef* nodep) override {

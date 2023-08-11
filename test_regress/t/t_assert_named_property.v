@@ -60,12 +60,19 @@ module t (/*AUTOARG*/
    logic out = 1;
 
     property prop_a;
-        @(posedge clk) disable iff (cyc <= 10) out;
-    endproperty
+        @(posedge clk) disable iff (cyc <= 1) out;
+    endproperty : prop_a
+
+    property prop_b();
+        @(posedge clk) disable iff (cyc <= 1) out;
+    endproperty : prop_b
 
    assert property(disable iff (cyc < 5) check_if_gt_5(cyc + 1));
    assert property(@(posedge clk) pass_assertion(cyc));
    assert property (prop_a) else $error($sformatf("property check failed :assert: (False)"));
+   assert property (prop_a()) else $error($sformatf("property check failed :assert: (False)"));
+   assert property (prop_b) else $error($sformatf("property check failed :assert: (False)"));
+   assert property (prop_b()) else $error($sformatf("property check failed :assert: (False)"));
 
    always @(posedge clk) begin
       if (expected_fails == 2) begin

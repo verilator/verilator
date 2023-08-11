@@ -176,9 +176,7 @@ public:
         , m_slow{slow} {}
     ~GateLogicVertex() override = default;
     // ACCESSORS
-    string name() const override VL_MT_STABLE {
-        return (cvtToHex(m_nodep) + "@" + scopep()->prettyName());
-    }
+    string name() const override { return (cvtToHex(m_nodep) + "@" + scopep()->prettyName()); }
     string dotColor() const override { return "purple"; }
     FileLine* fileline() const override { return nodep()->fileline(); }
     AstNode* nodep() const { return m_nodep; }

@@ -1,0 +1,11 @@
+%Error-BLKANDNBLK: t/t_assign_on_rhs_of_nonblocking_unsup.v:15:8: Unsupported: Blocked and non-blocking assignments to same variable: 't.x'
+   15 |    int x;
+      |        ^
+                   t/t_assign_on_rhs_of_nonblocking_unsup.v:24:18: ... Location of blocking assignment
+   24 |          y <= (x = 2);
+      |                  ^
+                   t/t_assign_on_rhs_of_nonblocking_unsup.v:21:10: ... Location of nonblocking assignment
+   21 |          x <= 1;
+      |          ^
+                   ... For error description see https://verilator.org/warn/BLKANDNBLK?v=latest
+%Error: Exiting due to

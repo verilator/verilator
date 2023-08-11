@@ -157,7 +157,7 @@ private:
             sentreep->unlinkFrBack();
             if (m_procedurep) {
                 // To support this need queue of asserts to activate
-                nodep->v3error("Unsupported: Procedural concurent assertion with"
+                nodep->v3error("Unsupported: Procedural concurrent assertion with"
                                " clocking event inside always (IEEE 1800-2917 16.14.6)");
             }
         }

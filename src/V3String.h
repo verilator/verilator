@@ -113,6 +113,8 @@ public:
     static string removeWhitespace(const string& str);
     // Return true if only whitespace or ""
     static bool isWhitespace(const string& str);
+    // Return number of spaces/tabs leading in string
+    static string::size_type leadingWhitespaceCount(const string& str);
     // Return double by parsing string
     static double parseDouble(const string& str, bool* successp);
     // Replace all occurrences of the word 'from' in 'str' with 'to'. A word is considered

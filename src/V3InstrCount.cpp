@@ -147,12 +147,6 @@ private:
         iterateAndNextConstNull(nodep->lsbp());
         iterateAndNextConstNull(nodep->widthp());
     }
-    void visit(AstSliceSel* nodep) override {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc("AstSliceSel unhandled");
-    }
-    void visit(AstMemberSel* nodep) override {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc("AstMemberSel unhandled");
-    }
     void visit(AstConcat* nodep) override {
         if (m_ignoreRemaining) return;
         // Nop.

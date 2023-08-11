@@ -1539,7 +1539,7 @@ Summary:
 
    Disable all code style related warning messages (note that by default, they are
    already disabled).  This is equivalent to ``-Wno-DECLFILENAME -Wno-DEFPARAM
-   -Wno-EOFNEWLINE -Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY
+   -Wno-EOFNEWLINE -Wno-GENUNNAMED -Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY
    -Wno-PINNOCONNECT -Wno-SYNCASYNCNET -Wno-UNDRIVEN
    -Wno-UNUSEDGENVAR -Wno-UNUSEDPARAM -Wno-UNUSEDSIGNAL
    -Wno-VARHIDDEN``.
@@ -1562,16 +1562,17 @@ Summary:
 
    Enable all lint-related warning messages (note that by default, they are already
    enabled), but do not affect style messages.  This is equivalent to
-   ``-Wwarn-ALWCOMBORDER -Wwarn-BSSPACE -Wwarn-CASEINCOMPLETE
-   -Wwarn-CASEOVERLAP -Wwarn-CASEX -Wwarn-CASTCONST -Wwarn-CASEWITHX -Wwarn-CMPCONST
-   -Wwarn-COLONPLUS -Wwarn-IMPLICIT -Wwarn-ASCRANGE
-   -Wwarn-PINMISSING -Wwarn-REALCVT -Wwarn-UNSIGNED -Wwarn-WIDTH``.
+   ``-Wwarn-ALWCOMBORDER -Wwarn-ASCRANGE -Wwarn-BSSPACE -Wwarn-CASEINCOMPLETE
+   -Wwarn-CASEOVERLAP -Wwarn-CASEWITHX -Wwarn-CASEX -Wwarn-CASTCONST -Wwarn-CMPCONST
+   -Wwarn-COLONPLUS -Wwarn-IMPLICIT -Wwarn-IMPLICITSTATIC -Wwarn-LATCH -Wwarn-MISINDENT
+   -Wwarn-NEWERSTD -Wwarn-PINMISSING -Wwarn-REALCVT -Wwarn-STATICVAR -Wwarn-UNSIGNED
+   -Wwarn-WIDTHTRUNC -Wwarn-WIDTHEXPAND -Wwarn-WIDTHXZEXPAND``.
 
 .. option:: -Wwarn-style
 
    Enable all code style-related warning messages.  This is equivalent to
    ``-Wwarn ASSIGNDLY -Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-EOFNEWLINE
-   -Wwarn-INCABSPATH -Wwarn-PINNOCONNECT -Wwarn-SYNCASYNCNET -Wwarn-UNDRIVEN
+   -Wwarn-GENUNNAMED -Wwarn-INCABSPATH -Wwarn-PINNOCONNECT -Wwarn-SYNCASYNCNET -Wwarn-UNDRIVEN
    -Wwarn-UNUSEDGENVAR -Wwarn-UNUSEDPARAM -Wwarn-UNUSEDSIGNAL -Wwarn-VARHIDDEN``.
 
 .. option:: --x-assign 0

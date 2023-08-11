@@ -6,7 +6,7 @@
 
 module t_lint_declfilename_bbox ();
    parameter IN = 0;
-   if (IN) begin
+   if (IN) begin : gen_hasbbox
       // Should not warn, see bug2430
       BLACKBOXED bboxed ();
    end

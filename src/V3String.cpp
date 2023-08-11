@@ -158,6 +158,15 @@ bool VString::isWhitespace(const string& str) {
     return true;
 }
 
+string::size_type VString::leadingWhitespaceCount(const string& str) {
+    string::size_type result = 0;
+    for (const char c : str) {
+        ++result;
+        if (!std::isspace(c)) break;
+    }
+    return result;
+}
+
 double VString::parseDouble(const string& str, bool* successp) {
     char* const strgp = new char[str.size() + 1];
     char* dp = strgp;

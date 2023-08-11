@@ -71,8 +71,11 @@ module sub;
    end
 
    generate
-      if (0)
-        for (ok_gv = 0; ok_gv < 1; ++ok_gv) begin end
+      if (0) begin : gen_gv_if0
+         for (ok_gv = 0; ok_gv < 1; ++ok_gv)
+           begin : gen_gv_if0_for
+           end
+      end
    endgenerate
 
 endmodule

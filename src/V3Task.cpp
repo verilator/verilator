@@ -350,7 +350,6 @@ private:
     // TYPES
     enum InsertMode : uint8_t {
         IM_BEFORE,  // Pointing at statement ref is in, insert before this
-        IM_AFTER,  // Pointing at last inserted stmt, insert after
         IM_WHILE_PRECOND  // Pointing to for loop, add to body end
     };
     using DpiCFuncs = std::map<const string, std::tuple<AstNodeFTask*, std::string, AstCFunc*>>;
@@ -413,7 +412,6 @@ private:
                 AstVarScope* const newvscp = VN_AS(refp->varp()->user2p(), VarScope);
                 refp->varScopep(newvscp);
                 refp->varp(refp->varScopep()->varp());
-                refp->name(refp->varp()->name());
             }
         });
     }
@@ -1100,7 +1098,7 @@ private:
         if (nodep->isFunction()) {
             AstVar* const portp = VN_AS(nodep->fvarp(), Var);
             UASSERT_OBJ(portp, nodep, "function without function output variable");
-            if (!portp->isFuncReturn()) nodep->v3error("Not marked as function return var");
+            UASSERT_OBJ(portp->isFuncReturn(), nodep, "Not marked as function return var");
             if (nodep->dpiImport() || nodep->dpiExport()) {
                 AstBasicDType* const bdtypep = portp->dtypep()->basicp();
                 if (!bdtypep->isDpiPrimitive()) {
@@ -1115,7 +1113,7 @@ private:
                                        "other than a single 'logic' (IEEE 1800-2017 35.5.5)");
                     }
                 }
-            } else {
+            } else if (nodep->taskPublic()) {
                 if (portp->isWide()) {
                     nodep->v3warn(E_UNSUPPORTED,
                                   "Unsupported: Public functions with return > 64 bits wide.\n"
@@ -1324,7 +1322,7 @@ private:
         }
 
         // Mark the fact that this function allocates std::process
-        if (nodep->isFromStd() && nodep->name() == "self") cfuncp->setNeedProcess();
+        if (nodep->needProcess()) cfuncp->setNeedProcess();
 
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -1346,16 +1344,13 @@ private:
     AstNode* insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
         if (debug() >= 9) nodep->dumpTree("-  newstmt: ");
-        UASSERT_OBJ(m_insStmtp, nodep, "Function not underneath a statement");
+        UASSERT_OBJ(m_insStmtp, nodep, "Function call not underneath a statement");
         AstNode* visitp = nullptr;
         if (m_insMode == IM_BEFORE) {
             // Add the whole thing before insertAt
             UINFO(5, "     IM_Before  " << m_insStmtp << endl);
             if (debug() >= 9) newp->dumpTree("-  newfunc: ");
             m_insStmtp->addHereThisAsNext(newp);
-        } else if (m_insMode == IM_AFTER) {
-            UINFO(5, "     IM_After   " << m_insStmtp << endl);
-            m_insStmtp->addNextHere(newp);
         } else if (m_insMode == IM_WHILE_PRECOND) {
             UINFO(5, "     IM_While_Precond " << m_insStmtp << endl);
             AstWhile* const whilep = VN_AS(m_insStmtp, While);
@@ -1365,8 +1360,6 @@ private:
         } else {
             nodep->v3fatalSrc("Unknown InsertMode");
         }
-        m_insMode = IM_AFTER;
-        m_insStmtp = newp;
         return visitp;
     }
 
@@ -1546,6 +1539,13 @@ private:
         iterateChildren(nodep);
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
+    void visit(AstVar* nodep) override {
+        if (nodep->isFuncLocal() && nodep->direction() == VDirection::INPUT && nodep->valuep()) {
+            // It's the default value of optional argument.
+            // Such values are added to function calls on this stage and aren't needed here.
+            pushDeletep(nodep->valuep()->unlinkFrBack());
+        }
+    }
     void visit(AstStmtExpr* nodep) override {
         m_insMode = IM_BEFORE;
         m_insStmtp = nodep;
@@ -1658,7 +1658,14 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                                << portp->prettyNameQ() << " in function call to "
                                << nodep->taskp()->prettyTypeName());
                 newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
-            } else if (!VN_IS(portp->valuep(), Const)) {
+            } else if (AstFuncRef* const funcRefp = VN_CAST(portp->valuep(), FuncRef)) {
+                const AstNodeFTask* const funcp = funcRefp->taskp();
+                if (funcp->classMethod() && funcp->lifetime().isStatic()) newvaluep = funcRefp;
+            } else if (AstConst* const constp = VN_CAST(portp->valuep(), Const)) {
+                newvaluep = constp;
+            }
+
+            if (!newvaluep) {
                 // The default value for this port might be a constant
                 // expression that hasn't been folded yet. Try folding it
                 // now; we don't have much to lose if it fails.
@@ -1672,12 +1679,9 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                                       << portp->prettyNameQ() << " in function call to "
                                       << nodep->taskp()->prettyTypeName());
                     newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
-                } else {
-                    newvaluep = newvaluep->cloneTree(true);
                 }
-            } else {
-                newvaluep = VN_AS(portp->valuep(), NodeExpr)->cloneTree(true);
             }
+            newvaluep = newvaluep->cloneTree(true);
             // To avoid problems with callee needing to know to deleteTree
             // or not, we make this into a pin
             UINFO(9, "Default pin for " << portp << endl);

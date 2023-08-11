@@ -19,12 +19,7 @@
 //**********************************************************************
 //**** Version and host name
 
-// Autoconf substitutes this with the strings from AC_INIT.
-#define PACKAGE_STRING ""
-
-#define PACKAGE_VERSION_NUMBER_STRING "0.000"
-
-#define DTVERSION PACKAGE_STRING
+#include "config_package.h"
 
 //**********************************************************************
 //**** Functions
@@ -60,13 +55,13 @@
 //**********************************************************************
 //**** Compile options
 
-#include <sys/types.h>
-#include <iostream>
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
-#include <string>
 #include <iostream>
+#include <string>
+
+#include <sys/types.h>
 
 // Avoid needing std:: prefixes on some very common items
 using string = std::string;
@@ -74,21 +69,6 @@ using std::cout;
 using std::endl;
 
 //**********************************************************************
-//**** Configure-discovered library options
-
-// Define if struct stat has st_mtim.tv_nsec (from configure)
-#undef HAVE_STAT_NSEC
-// Define if SystemC found
-// - If defined, the default search path has it, so support is always enabled.
-// - If undef, not system-wide, user can set SYSTEMC_INCLUDE.
-#undef HAVE_SYSTEMC
-#undef HAVE_COROUTINES
-
-//**********************************************************************
 //**** OS and compiler specifics
 
 #include "verilatedos.h"
-
-//**********************************************************************
-//**** This file sometimes gets truncated, so check in consumers
-#define HAVE_CONFIG_BUILD

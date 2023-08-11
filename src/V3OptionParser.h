@@ -43,7 +43,7 @@ class VOptionBool;
 //        if (int consumed = parser.parse(i, argc, argv)) {
 //            i += consumed;
 //        } else {  // error
-//            cerr << parser.getSuggestion(argv[i]) << endl;
+//            std::cerr << parser.getSuggestion(argv[i]) << std::endl;
 //        }
 //    }
 //

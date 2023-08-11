@@ -40,12 +40,17 @@ module t (/*AUTOARG*/
    buf BARRAY [BITS-1:0] (ba, a);
 
 `ifdef verilator
+   specparam RAW_SP = 1;
+
+   specify
+   endspecify
+
    specify
       specparam CDS_LIBNAME  = "foobar";
       (nt0 *> nt0) = (0, 0);
    endspecify
 
-  specify
+   specify
     // delay parameters
     specparam
       a$A1$Y = 1.0,

@@ -214,7 +214,7 @@ class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op3 := pinsp : List[AstNodeExpr]
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
     AstNodeFTask* m_taskp = nullptr;  // [AfterLink] Pointer to task referenced
-    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
+    AstNodeModule* m_classOrPackagep = nullptr;  // Class/package of the task
     string m_name;  // Name of variable
     string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
@@ -360,14 +360,8 @@ class AstNodeCond VL_NOT_FINAL : public AstNodeTriop {
     // @astgen alias op2 := thenp
     // @astgen alias op3 := elsep
 protected:
-    AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep)
-        : AstNodeTriop{t, fl, condp, thenp, elsep} {
-        if (thenp) {
-            dtypeFrom(thenp);
-        } else if (elsep) {
-            dtypeFrom(elsep);
-        }
-    }
+    AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,
+                AstNodeExpr* elsep);
 
 public:
     ASTGEN_MEMBERS_AstNodeCond;
@@ -449,21 +443,18 @@ class AstNodeVarRef VL_NOT_FINAL : public AstNodeExpr {
     VAccess m_access;  // Left hand side assignment
     AstVar* m_varp;  // [AfterLink] Pointer to variable itself
     AstVarScope* m_varScopep = nullptr;  // Varscope for hierarchy
-    AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
-    string m_name;  // Name of variable
+    AstNodeModule* m_classOrPackagep = nullptr;  // Class/package of the variable
     string m_selfPointer;  // Output code object pointer (e.g.: 'this')
 
 protected:
-    AstNodeVarRef(VNType t, FileLine* fl, const string& name, const VAccess& access)
+    AstNodeVarRef(VNType t, FileLine* fl, const VAccess& access)
         : AstNodeExpr{t, fl}
-        , m_access{access}
-        , m_name{name} {
+        , m_access{access} {
         varp(nullptr);
     }
-    AstNodeVarRef(VNType t, FileLine* fl, const string& name, AstVar* varp, const VAccess& access)
+    AstNodeVarRef(VNType t, FileLine* fl, AstVar* varp, const VAccess& access)
         : AstNodeExpr{t, fl}
-        , m_access{access}
-        , m_name{name} {
+        , m_access{access} {
         // May have varp==nullptr
         this->varp(varp);
     }
@@ -474,8 +465,6 @@ public:
     const char* broken() const override;
     int instrCount() const override { return widthInstrs(); }
     void cloneRelink() override;
-    string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
-    void name(const string& name) override { m_name = name; }
     VAccess access() const { return m_access; }
     void access(const VAccess& flag) { m_access = flag; }  // Avoid using this; Set in constructor
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
@@ -721,7 +710,7 @@ class AstClassOrPackageRef final : public AstNodeExpr {
 private:
     string m_name;
     // Node not NodeModule to appease some early parser usage
-    AstNode* m_classOrPackageNodep;  // Package hierarchy
+    AstNode* m_classOrPackageNodep;  // Pointer to class/package referenced
 public:
     AstClassOrPackageRef(FileLine* fl, const string& name, AstNode* classOrPackageNodep,
                          AstPin* paramsp)
@@ -1062,7 +1051,7 @@ public:
 };
 class AstEnumItemRef final : public AstNodeExpr {
     AstEnumItem* m_itemp;  // [AfterLink] Pointer to item
-    AstNodeModule* m_classOrPackagep;  // Package hierarchy
+    AstNodeModule* m_classOrPackagep;  // Class/package in which it was defined
 public:
     AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstNodeModule* classOrPackagep)
         : ASTGEN_SUPER_EnumItemRef(fl)
@@ -1428,6 +1417,7 @@ class AstMemberSel final : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr
     // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
     string m_name;
+    VAccess m_access;  // Read or write, as in AstNodeVarRef
     AstVar* m_varp = nullptr;  // Post link, variable within class that is target of selection
 public:
     AstMemberSel(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, const string& name)
@@ -1448,10 +1438,12 @@ public:
     void dump(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
+    VAccess access() const { return m_access; }
+    void access(const VAccess& flag) { m_access = flag; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
-    bool same(const AstNode* samep) const override { return true; }  // dtype comparison does it
+    bool same(const AstNode* samep) const override;
     int instrCount() const override { return widthInstrs(); }
     AstVar* varp() const { return m_varp; }
     void varp(AstVar* nodep) { m_varp = nodep; }
@@ -1911,7 +1903,7 @@ public:
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstStructSel final : public AstNodeExpr {
-    // Unpacked struct member access
+    // Unpacked struct/union member access
     // Parents: math|stmt
     // Children: varref, math
     // @astgen op1 := fromp : AstNodeExpr
@@ -1929,7 +1921,10 @@ public:
     void name(const string& name) override { m_name = name; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return false; }
+    bool cleanOut() const override {
+        // Not a union
+        return VN_IS(fromp()->dtypep()->skipRefp(), StructDType);
+    }
     bool same(const AstNode* samep) const override {
         const AstStructSel* const sp = static_cast<const AstStructSel*>(samep);
         return m_name == sp->m_name;
@@ -5349,15 +5344,15 @@ public:
 class AstVarRef final : public AstNodeVarRef {
     // A reference to a variable (lvalue or rvalue)
 public:
-    AstVarRef(FileLine* fl, const string& name, const VAccess& access)
-        : ASTGEN_SUPER_VarRef(fl, name, nullptr, access) {}
     // This form only allowed post-link because output/wire compression may
     // lead to deletion of AstVar's
     inline AstVarRef(FileLine* fl, AstVar* varp, const VAccess& access);
     // This form only allowed post-link (see above)
     inline AstVarRef(FileLine* fl, AstVarScope* varscp, const VAccess& access);
     ASTGEN_MEMBERS_AstVarRef;
+    inline string name() const override;  // * = Var name
     void dump(std::ostream& str) const override;
+    const char* broken() const override;
     bool same(const AstNode* samep) const override;
     inline bool same(const AstVarRef* samep) const;
     inline bool sameNoLvalue(AstVarRef* samep) const;
@@ -5369,14 +5364,17 @@ public:
 class AstVarXRef final : public AstNodeVarRef {
     // A VarRef to something in another module before AstScope.
     // Includes pin on a cell, as part of a ASSIGN statement to connect I/Os until AstScope
+    string m_name;
     string m_dotted;  // Dotted part of scope the name()'ed reference is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
 public:
     AstVarXRef(FileLine* fl, const string& name, const string& dotted, const VAccess& access)
-        : ASTGEN_SUPER_VarXRef(fl, name, nullptr, access)
+        : ASTGEN_SUPER_VarXRef(fl, nullptr, access)
+        , m_name{name}
         , m_dotted{dotted} {}
     inline AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, const VAccess& access);
     ASTGEN_MEMBERS_AstVarXRef;
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     void dump(std::ostream& str) const override;
     string dotted() const { return m_dotted; }
     void dotted(const string& dotted) { m_dotted = dotted; }

@@ -486,7 +486,7 @@ From the sc_main.cpp file, you'd then:
 
       #include "Vour.h"
       #include "Vour_our.h"
-      cout << "clock is " << top->our->clk << endl;
+      std::cout << "clock is " << top->our->clk << std::endl;
 
 
 In this example, clk is a bool you can read or set as any other variable.

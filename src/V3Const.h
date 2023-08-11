@@ -30,6 +30,10 @@ public:
     static AstNodeExpr* constifyParamsEdit(AstNodeExpr* exprp) {
         return VN_AS(constifyParamsEdit(static_cast<AstNode*>(exprp)), NodeExpr);
     }
+    static AstNode* constifyParamsNoWarnEdit(AstNode* nodep);
+    static AstNodeExpr* constifyParamsNoWarnEdit(AstNodeExpr* exprp) {
+        return VN_AS(constifyParamsNoWarnEdit(static_cast<AstNode*>(exprp)), NodeExpr);
+    }
     static AstNode* constifyGenerateParamsEdit(AstNode* nodep);
     // Only do constant pushing, without removing dead logic
     static void constifyAllLive(AstNetlist* nodep);

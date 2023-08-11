@@ -222,20 +222,18 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
 #ifndef V3ERROR_NO_GLOBAL_
                 if (dumpTreeLevel() || debug()) {
                     V3Broken::allowMidvisitorCheck(true);
-                    V3ThreadPool::s().requestExclusiveAccess([&]() VL_REQUIRES(m_mutex) {
-                        if (dumpTreeLevel()) {
-                            v3Global.rootp()->dumpTreeFile(
-                                v3Global.debugFilename("final.tree", 990));
-                        }
-                        if (debug()) {
-                            execErrorExitCb();
-                            V3Stats::statsFinalAll(v3Global.rootp());
-                            V3Stats::statsReport();
-                        }
-                        // Abort in exclusive access to make sure other threads
-                        // don't change error code
-                        vlAbortOrExit();
-                    });
+                    const V3ThreadPool::ScopedExclusiveAccess exclusiveAccess;
+                    if (dumpTreeLevel()) {
+                        v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("final.tree", 990));
+                    }
+                    if (debug()) {
+                        execErrorExitCb();
+                        V3Stats::statsFinalAll(v3Global.rootp());
+                        V3Stats::statsReport();
+                    }
+                    // Abort in exclusive access to make sure other threads
+                    // don't change error code
+                    vlAbortOrExit();
                 }
 #endif
             }

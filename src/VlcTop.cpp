@@ -249,8 +249,8 @@ void VlcTop::annotateCalcNeeded() {
         }
     }
     const float pct = totCases ? (100 * totOk / totCases) : 0;
-    cout << "Total coverage (" << totOk << "/" << totCases << ") ";
-    cout << std::fixed << std::setw(3) << std::setprecision(2) << pct << "%\n";
+    std::cout << "Total coverage (" << totOk << "/" << totCases << ") ";
+    std::cout << std::fixed << std::setw(3) << std::setprecision(2) << pct << "%\n";
     if (totOk != totCases) cout << "See lines with '%00' in " << opt.annotateOut() << '\n';
 }
 

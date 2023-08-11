@@ -120,6 +120,16 @@ class Getter2 #(int T=5);
    endfunction
 endclass
 
+class ClsParamString #(string S="abcde");
+   typedef ClsParamString#(S) this_type;
+   static this_type m_inst;
+   int x = 0;
+   string name = S;
+endclass
+
+typedef ClsParamString#("abcde") cls_param_string_def_t;
+typedef ClsParamString#("xyz") cls_param_string_not_def_t;
+
 module t (/*AUTOARG*/);
 
    Cls c12;
@@ -137,6 +147,8 @@ module t (/*AUTOARG*/);
    Getter1 getter1;
    Getter1 #(1) getter1_param_1;
    Getter2 getter2;
+   cls_param_string_def_t cps_def;
+   cls_param_string_not_def_t cps_not_def;
    int arr [1:0] = '{1, 2};
    initial begin
       c12 = new;
@@ -216,6 +228,18 @@ module t (/*AUTOARG*/);
       if (getter2.get_2() != 2) $stop;
       if (Getter2#()::get_2() != 2) $stop;
       if (Getter2#(2)::get_2() != 2) $stop;
+
+      cls_param_string_def_t::m_inst = new;
+      cls_param_string_def_t::m_inst.x = 1;
+      cps_def = cls_param_string_def_t::m_inst;
+      if (cps_def.x != 1) $stop;
+      if (cps_def.name != "abcde") $stop;
+
+      cls_param_string_not_def_t::m_inst = new;
+      cls_param_string_not_def_t::m_inst.x = 2;
+      cps_not_def = cls_param_string_not_def_t::m_inst;
+      if (cps_not_def.x != 2) $stop;
+      if (cps_not_def.name != "xyz") $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
