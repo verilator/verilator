@@ -147,14 +147,11 @@ bool V3Broken::isLinkable(const AstNode* nodep) { return s_linkableTable.isLinka
 // Check every node in tree
 
 class BrokenCheckVisitor final : public VNVisitorConst {
-    bool m_inScope = false;  // Under AstScope
-
     // Constants for marking we are under/not under a node
     const uint8_t m_brokenCntCurrentNotUnder = s_brokenCntGlobal.get();  // Top bit is clear
     const uint8_t m_brokenCntCurrentUnder = m_brokenCntCurrentNotUnder | 0x80;  // Top bit is set
 
-    // Current CFunc, if any
-    const AstCFunc* m_cfuncp = nullptr;
+    // STATE - across all visitors
     // All local variables declared in current function
     std::set<const AstVar*> m_localVars;
     // Variable references in current function that do not reference an in-scope local
@@ -162,7 +159,12 @@ class BrokenCheckVisitor final : public VNVisitorConst {
     // Local variables declared in the scope of the current statement
     std::vector<std::unordered_set<const AstVar*>> m_localsStack;
 
+    // STATE - for current visit position (use VL_RESTORER)
+    const AstCFunc* m_cfuncp = nullptr;  // Current CFunc, if any
+    bool m_inScope = false;  // Under AstScope
+
 private:
+    // METHODS
     static void checkWidthMin(const AstNode* nodep) {
         UASSERT_OBJ(nodep->width() == nodep->widthMin()
                         || v3Global.widthMinUsage() != VWidthMinUsage::MATCHES_WIDTH,
@@ -220,6 +222,7 @@ private:
         }
         return false;
     }
+    // VISITORS
     void visit(AstNodeAssign* nodep) override {
         processAndIterate(nodep);
         UASSERT_OBJ(!(v3Global.assertDTypesResolved() && nodep->brokeLhsMustBeLvalue()
@@ -235,10 +238,8 @@ private:
     }
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_inScope);
-        {
-            m_inScope = true;
-            processAndIterate(nodep);
-        }
+        m_inScope = true;
+        processAndIterate(nodep);
     }
     void visit(AstNodeVarRef* nodep) override {
         processAndIterate(nodep);
@@ -260,6 +261,7 @@ private:
     }
     void visit(AstCFunc* nodep) override {
         UASSERT_OBJ(!m_cfuncp, nodep, "Nested AstCFunc");
+        VL_RESTORER(m_cfuncp);
         m_cfuncp = nodep;
         m_localVars.clear();
         m_suspectRefs.clear();
@@ -273,8 +275,6 @@ private:
             UASSERT_OBJ(m_localVars.count(pair.first) == 0, pair.second,
                         "Local variable not in scope where referenced: " << pair.first);
         }
-
-        m_cfuncp = nullptr;
     }
     void visit(AstNodeIf* nodep) override {
         // Each branch is a separate local variable scope
