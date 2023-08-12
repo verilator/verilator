@@ -162,6 +162,7 @@ class BrokenCheckVisitor final : public VNVisitorConst {
     // STATE - for current visit position (use VL_RESTORER)
     const AstCFunc* m_cfuncp = nullptr;  // Current CFunc, if any
     bool m_inScope = false;  // Under AstScope
+    std::set<std::string> m_cFuncNames;  // CFunc by name in current class/module
 
 private:
     // METHODS
@@ -239,6 +240,18 @@ private:
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_inScope);
         m_inScope = true;
+        VL_RESTORER(m_cFuncNames);
+        m_cFuncNames.clear();
+        processAndIterate(nodep);
+    }
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_cFuncNames);
+        m_cFuncNames.clear();
+        processAndIterate(nodep);
+    }
+    void visit(AstNodeUOrStructDType* nodep) override {
+        VL_RESTORER(m_cFuncNames);
+        m_cFuncNames.clear();
         processAndIterate(nodep);
     }
     void visit(AstNodeVarRef* nodep) override {
@@ -267,6 +280,14 @@ private:
         m_suspectRefs.clear();
         m_localsStack.clear();
         pushLocalScope();
+
+        // Check for duplicate names, otherwise linker might just ignore them
+        string nameArgs = nodep->name();
+        if (!nodep->argTypes().empty()) nameArgs += "(" + nodep->argTypes() + ")";
+        if (false) {  // bug4418
+            UASSERT_OBJ(m_cFuncNames.emplace(nameArgs).second, nodep,
+                        "Duplicate cfunc name: '" << nameArgs << "'");
+        }
 
         processAndIterate(nodep);
 
