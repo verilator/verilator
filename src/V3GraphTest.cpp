@@ -52,6 +52,7 @@ public:
 // Vertices and nodes
 
 class V3GraphTestVertex VL_NOT_FINAL : public V3GraphVertex {
+    VL_RTTI_IMPLEMENTATION(V3GraphTestVertex, V3GraphVertex)
     const string m_name;
 
 public:
@@ -71,11 +72,6 @@ public:
     // ACCESSORS
     string dotColor() const override { return "blue"; }
 };
-
-template <>
-bool V3GraphVertex::privateTypeTest<V3GraphTestVertex>(const V3GraphVertex* vtxp) {
-    return dynamic_cast<const V3GraphTestVertex*>(vtxp);
-}
 
 //######################################################################
 //######################################################################

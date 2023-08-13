@@ -56,6 +56,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Graph vertexes
 
 class TraceActivityVertex final : public V3GraphVertex {
+    VL_RTTI_IMPLEMENTATION(TraceActivityVertex, V3GraphVertex)
     AstNode* const m_insertp;
     int32_t m_activityCode;
     bool m_slow;  // If always slow, we can use the same code
@@ -100,6 +101,7 @@ public:
 };
 
 class TraceCFuncVertex final : public V3GraphVertex {
+    VL_RTTI_IMPLEMENTATION(TraceCFuncVertex, V3GraphVertex)
     AstCFunc* const m_nodep;
 
 public:
@@ -115,6 +117,7 @@ public:
 };
 
 class TraceTraceVertex final : public V3GraphVertex {
+    VL_RTTI_IMPLEMENTATION(TraceTraceVertex, V3GraphVertex)
     AstTraceDecl* const m_nodep;  // TRACEINC this represents
     // nullptr, or other vertex with the real code() that duplicates this one
     TraceTraceVertex* m_duplicatep = nullptr;
@@ -137,6 +140,7 @@ public:
 };
 
 class TraceVarVertex final : public V3GraphVertex {
+    VL_RTTI_IMPLEMENTATION(TraceVarVertex, V3GraphVertex)
     AstVarScope* const m_nodep;
 
 public:

@@ -172,7 +172,106 @@ public:
 
 //============================================================================
 
+// Holds list of types. For use mainly in compile-time code generation.
+template <typename... TN>
+struct VTypeList {
+    template <typename... UN>
+    constexpr VTypeList<TN..., UN...> operator+(VTypeList<UN...>) const {
+        return {};
+    }
+};
+
+namespace internal_vl {
+
+// Holds one type. Can be safely used as a return or argument type without any potential
+// limitations of held type.
+template <typename T>
+struct VTypeWrapper {
+    using type = T;
+};
+
+template <typename T0, typename... TN>
+static inline constexpr VTypeWrapper<T0> vlTlFront(VTypeList<T0, TN...>) {
+    return {};
+}
+
+}  // namespace internal_vl
+
+// Alias for front type held by type list `TL`.
+template <typename TL>
+using VTypeListFront = typename decltype(internal_vl::vlTlFront(TL{}))::type;
+
+template <typename TL1, typename TL2>
+using VJoinedTypeLists = decltype(TL1{} + TL2{});
+
+namespace internal_vl {
+
+inline static constexpr bool isClassIdOfOneOf(uintptr_t id, VTypeList<>) VL_PURE { return false; }
+
+template <typename Base0, typename... BaseN>
+inline static constexpr bool isClassIdOfOneOf(uintptr_t id, VTypeList<Base0, BaseN...>) VL_PURE {
+    return id == Base0::rttiClassId() || isClassIdOfOneOf(id, VTypeList<BaseN...>{});
+}
+
+#define INTERNAL_VL_RTTI_COMMON_IMPLEMENTATION(ThisClass) \
+private: \
+    struct RttiUniqueTypeForThisClass {}; \
+    static_assert( \
+        std::is_same<RttiUniqueTypeForThisClass, ThisClass::RttiUniqueTypeForThisClass>::value, \
+        "'ThisClass' argument (" #ThisClass ") does not match the class name"); \
+\
+public: \
+    /* Returns unique ID of the class. Useful with `isInstanceOfClassWithId()` method. */ \
+    static uintptr_t rttiClassId() VL_PURE { \
+        /* The only purpose of the following variable is to occupy an unique memory address. */ \
+        /* This address is used as an unique class ID. */ \
+        static char aStaticVariable; \
+        return reinterpret_cast<uintptr_t>(&aStaticVariable); \
+    }
+
+}  // namespace internal_vl
+
+// Call this macro at the beginning of class definition if the class derives from a
+// class with VL_RTTI_IMPLEMENTATION or VL_RTTI_IMPLEMENTATION_BASE calls.
+#define VL_RTTI_IMPLEMENTATION(ThisClass, DirectBaseClass) \
+    INTERNAL_VL_RTTI_COMMON_IMPLEMENTATION(ThisClass) \
+    static_assert( \
+        std::is_same<DirectBaseClass, \
+                     VTypeListFront<DirectBaseClass::RttiThisAndBaseClassesList>>::value, \
+        "Missing VL_RTTI_IMPLEMENTATION(...) in the direct base class (" #DirectBaseClass ")"); \
+\
+public: \
+    /* Type list containing this class and all base classes. */ \
+    using RttiThisAndBaseClassesList \
+        = VJoinedTypeLists<VTypeList<ThisClass>, \
+                           typename DirectBaseClass::RttiThisAndBaseClassesList>; \
+\
+protected: \
+    bool isInstanceOfClassWithId(uintptr_t id) const override VL_PURE { \
+        return ::internal_vl::isClassIdOfOneOf(id, RttiThisAndBaseClassesList{}); \
+    } \
+\
+private: /* Revert to private visibility after this macro */
+
+// Call this macro at the beginning of a base class to implement class type queries using
+// `p->isInstanceOfClassWithId(ClassName::rttiClassId())`.
+#define VL_RTTI_IMPLEMENTATION_BASE(ThisClass) \
+    INTERNAL_VL_RTTI_COMMON_IMPLEMENTATION(ThisClass) \
+public: \
+    /* Type list containing this class and all base classes. */ \
+    using RttiThisAndBaseClassesList = VTypeList<ThisClass>; \
+\
+protected: \
+    virtual bool isInstanceOfClassWithId(uintptr_t id) const VL_PURE { \
+        return id == rttiClassId(); \
+    } \
+\
+private: /* Revert to private visibility after this macro */
+
+//============================================================================
+
 class V3GraphVertex VL_NOT_FINAL {
+    VL_RTTI_IMPLEMENTATION_BASE(V3GraphVertex)
     // Vertices may be a 'gate'/wire statement OR a variable
 protected:
     friend class V3Graph;
@@ -199,14 +298,6 @@ protected:
     // CONSTRUCTORS
     V3GraphVertex(V3Graph* graphp, const V3GraphVertex& old);
 
-private:
-    // For internal use only.
-    // Note: specializations for some vertex types are provided by 'astgen'
-    template <typename T>
-    static bool privateTypeTest(const V3GraphVertex* vtxp) {
-        return typeid(T) == typeid(*vtxp);
-    }
-
 public:
     explicit V3GraphVertex(V3Graph* graphp);
     //! Clone copy constructor. Doesn't copy edges or user/userp.
@@ -223,7 +314,10 @@ public:
     bool is() const {
         static_assert(std::is_base_of<V3GraphVertex, T>::value,
                       "'T' must be a subtype of V3GraphVertex");
-        return privateTypeTest<typename std::remove_cv<T>::type>(this);
+        static_assert(std::is_same<typename std::remove_cv<T>::type,
+                                   VTypeListFront<typename T::RttiThisAndBaseClassesList>>::value,
+                      "Missing VL_RTTI_IMPLEMENTATION(...) call in 'T'");
+        return this->isInstanceOfClassWithId(T::rttiClassId());
     }
 
     // Ensure subtype, then cast to that type
@@ -296,14 +390,12 @@ public:
     V3GraphEdge* findConnectingEdgep(GraphWay way, const V3GraphVertex* waywardp);
 };
 
-// Specializations of privateTypeTest
-#include "V3GraphVertex__gen_type_tests.h"  // From ./astgen
-
 std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp);
 
 //============================================================================
 
 class V3GraphEdge VL_NOT_FINAL {
+    VL_RTTI_IMPLEMENTATION_BASE(V3GraphEdge)
     // Wires/variables aren't edges.  Edges have only a single to/from vertex
 public:
     // ENUMS
@@ -338,14 +430,6 @@ protected:
         init(graphp, fromp, top, old.m_weight, old.m_cutable);
     }
 
-private:
-    // For internal use only.
-    // Note: specializations for some vertex types are provided by 'astgen'
-    template <typename T>
-    static bool privateTypeTest(const V3GraphEdge* edgep) {
-        return typeid(T) == typeid(*edgep);
-    }
-
 public:
     //! Add DAG from one node to the specified node
     V3GraphEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
@@ -363,7 +447,10 @@ public:
     bool is() const {
         static_assert(std::is_base_of<V3GraphEdge, T>::value,
                       "'T' must be a subtype of V3GraphEdge");
-        return privateTypeTest<typename std::remove_cv<T>::type>(this);
+        static_assert(std::is_same<typename std::remove_cv<T>::type,
+                                   VTypeListFront<typename T::RttiThisAndBaseClassesList>>::value,
+                      "Missing VL_RTTI_IMPLEMENTATION(...) call in 'T'");
+        return this->isInstanceOfClassWithId(T::rttiClassId());
     }
 
     // Ensure subtype, then cast to that type
@@ -420,9 +507,6 @@ public:
     V3GraphEdge* inNextp() const { return m_ins.nextp(); }
     V3GraphEdge* nextp(GraphWay way) const { return way.forward() ? outNextp() : inNextp(); }
 };
-
-// Specializations of privateTypeTest
-#include "V3GraphEdge__gen_type_tests.h"  // From ./astgen
 
 //============================================================================
 

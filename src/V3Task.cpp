@@ -57,11 +57,6 @@ public:
     void noInline(bool flag) { m_noInline = flag; }
 };
 
-template <>
-bool V3GraphVertex::privateTypeTest<TaskBaseVertex>(const V3GraphVertex* vtxp) {
-    return dynamic_cast<const TaskBaseVertex*>(vtxp);
-}
-
 class TaskFTaskVertex final : public TaskBaseVertex {
     // Every task gets a vertex, and we link tasks together based on funcrefs.
     AstNodeFTask* const m_nodep;
@@ -90,6 +85,7 @@ public:
 };
 
 class TaskEdge final : public V3GraphEdge {
+    VL_RTTI_IMPLEMENTATION(TaskEdge, V3GraphEdge)
 public:
     TaskEdge(V3Graph* graphp, TaskBaseVertex* fromp, TaskBaseVertex* top)
         : V3GraphEdge{graphp, fromp, top, 1, false} {}

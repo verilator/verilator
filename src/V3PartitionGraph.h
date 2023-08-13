@@ -29,6 +29,7 @@
 // MTasks and graph structures
 
 class AbstractMTask VL_NOT_FINAL : public V3GraphVertex {
+    VL_RTTI_IMPLEMENTATION(AbstractMTask, V3GraphVertex)
 public:
     explicit AbstractMTask(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
@@ -37,12 +38,8 @@ public:
     virtual uint32_t cost() const = 0;
 };
 
-template <>
-inline bool V3GraphVertex::privateTypeTest<AbstractMTask>(const V3GraphVertex* vtxp) {
-    return dynamic_cast<const AbstractMTask*>(vtxp);
-}
-
 class AbstractLogicMTask VL_NOT_FINAL : public AbstractMTask {
+    VL_RTTI_IMPLEMENTATION(AbstractLogicMTask, AbstractMTask)
 public:
     // TYPES
     using VxList = std::list<MTaskMoveVertex*>;
@@ -57,12 +54,8 @@ public:
     uint32_t cost() const override = 0;
 };
 
-template <>
-inline bool V3GraphVertex::privateTypeTest<AbstractLogicMTask>(const V3GraphVertex* vtxp) {
-    return dynamic_cast<const AbstractLogicMTask*>(vtxp);
-}
-
 class ExecMTask final : public AbstractMTask {
+    VL_RTTI_IMPLEMENTATION(ExecMTask, AbstractMTask)
 private:
     AstMTaskBody* const m_bodyp;  // Task body
     const uint32_t m_id;  // Unique id of this mtask.
