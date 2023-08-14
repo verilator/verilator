@@ -1067,6 +1067,7 @@ private:
             }
             auto* const beginp = VN_AS(stmtp, Begin);
             stmtp = beginp->nextp();
+            if (m_procp->user2() & T_HAS_PROC) beginp->user2(T_HAS_PROC);
             iterate(beginp);
             // Even if we do not find any awaits, we cannot simply inline the process here, as new
             // awaits could be added later.
