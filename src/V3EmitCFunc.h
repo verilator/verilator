@@ -883,6 +883,11 @@ public:
         iterateAndNextConstNull(nodep->endStmtsp());
         puts("}\n");
     }
+    void visit(AstCLocalScope* nodep) override {
+        puts("{\n");
+        iterateAndNextConstNull(nodep->stmtsp());
+        puts("}\n");
+    }
     void visit(AstJumpGo* nodep) override {
         puts("goto __Vlabel" + cvtToStr(nodep->labelp()->blockp()->labelNum()) + ";\n");
     }

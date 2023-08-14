@@ -13,6 +13,7 @@ Verilator 5.015 devel
 
 **Minor:**
 
+* Fix multple function definitions in V3Sched (#4416). [Hennadii Chernyshchyk]
 
 
 Verilator 5.014 2023-08-06
