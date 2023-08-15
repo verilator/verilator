@@ -287,9 +287,7 @@ FileLine* FileLine::copyOrSameFileLine() {
     return newp;
 }
 
-string FileLine::filebasename() const VL_MT_SAFE {
-    return V3Os::filenameNonDir(filename());
-}
+string FileLine::filebasename() const VL_MT_SAFE { return V3Os::filenameNonDir(filename()); }
 
 string FileLine::filebasenameNoExt() const {
     string name = filebasename();
