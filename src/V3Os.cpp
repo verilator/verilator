@@ -124,7 +124,7 @@ void V3Os::setenvStr(const string& envvar, const string& value, const string& wh
 //######################################################################
 // Generic filename utilities
 
-static bool isSlash(char ch) { return ch == '/' || ch == '\\'; }
+static bool isSlash(char ch) VL_PURE { return ch == '/' || ch == '\\'; }
 
 string V3Os::filenameFromDirBase(const string& dir, const string& basename) VL_PURE {
     // Don't return ./{filename} because if filename was absolute, that makes it relative
