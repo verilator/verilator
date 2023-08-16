@@ -1144,7 +1144,7 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
             if (nodep) {
                 UASSERT_OBJ(!nodep->nextp(), this,
                             typeInfo.name << "::" << opName
-                                          << "() cannot have a non nullptr nextp()");
+                                          << "() cannot have a non-nullptr nextp()");
                 nodep->checkTreeIter(this);
             }
             break;
