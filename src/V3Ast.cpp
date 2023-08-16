@@ -1149,6 +1149,7 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
             }
             break;
         }
+        default: this->v3fatalSrc("Bad case");
     }
 }
 
