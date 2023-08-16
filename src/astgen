@@ -929,7 +929,8 @@ def write_ast_type_info(filename):
                         opTypeList.append('OP_LIST')
                     opNameList.append(name)
             # opTypeStr = ', '.join(opTypeList)
-            opTypeStr = ', '.join(['VNTypeInfo::{0}'.format(s) for s in opTypeList])
+            opTypeStr = ', '.join(
+                ['VNTypeInfo::{0}'.format(s) for s in opTypeList])
             opNameStr = ', '.join(['"{0}"'.format(s) for s in opNameList])
             fh.write(
                 '    {{ "Ast{name}", {{{opTypeStr}}}, {{{opNameStr}}} }},\n'.

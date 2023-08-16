@@ -1118,9 +1118,11 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
             UASSERT_OBJ(!nodep, this, typeInfo.m_namep << " must not use " << opName << "()");
             break;
         case VNTypeInfo::OP_USED:
-            UASSERT_OBJ(nodep, this, typeInfo.m_namep << " must have non nullptr " << opName << "()");
+            UASSERT_OBJ(nodep, this,
+                        typeInfo.m_namep << " must have non nullptr " << opName << "()");
             UASSERT_OBJ(!nodep->nextp(), this,
-                        typeInfo.m_namep << "::" << opName << "() cannot have a non nullptr nextp()");
+                        typeInfo.m_namep << "::" << opName
+                                         << "() cannot have a non nullptr nextp()");
             nodep->checkTreeIter(this);
             break;
         case VNTypeInfo::OP_LIST:
@@ -1145,7 +1147,7 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
             if (nodep) {
                 UASSERT_OBJ(!nodep->nextp(), this,
                             typeInfo.m_namep << "::" << opName
-                                                << "() cannot have a non-nullptr nextp()");
+                                             << "() cannot have a non-nullptr nextp()");
                 nodep->checkTreeIter(this);
             }
             break;
