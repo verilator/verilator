@@ -920,7 +920,7 @@ def write_ast_type_info(filename):
                     opTypeList.append('OP_UNUSED')
                     opNameList.append('op{0}p'.format(n))
                 else:
-                    name, monad, kind = op
+                    name, monad, _ = op
                     if not monad:
                         opTypeList.append('OP_USED')
                     elif monad == "Optional":
@@ -929,10 +929,8 @@ def write_ast_type_info(filename):
                         opTypeList.append('OP_LIST')
                     opNameList.append(name)
             # opTypeStr = ', '.join(opTypeList)
-            opTypeStr = ', '.join(
-                list(map(lambda s: 'VNTypeInfo::{0}'.format(s), opTypeList)))
-            opNameStr = ', '.join(
-                list(map(lambda s: '"{0}"'.format(s), opNameList)))
+            opTypeStr = ', '.join(['VNTypeInfo::{0}'.format(s) for s in opTypeList])
+            opNameStr = ', '.join(['"{0}"'.format(s) for s in opNameList])
             fh.write(
                 '    {{ "Ast{name}", {{{opTypeStr}}}, {{{opNameStr}}} }},\n'.
                 format(
