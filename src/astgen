@@ -246,7 +246,7 @@ class Cpt:
         with open_file(self.out_filename) as fho:
             togen = self.out_lines
             for line in togen:
-                if type(line) is str:
+                if isinstance(line, str):
                     self.out_lines = [line]
                 else:
                     self.out_lines = []
