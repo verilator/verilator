@@ -288,11 +288,11 @@ private:
             operp = new AstAdd{fl, readp->cloneTree(true), newconstp};
         }
 
-        AstAssign* assignp;
         if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PreSub)) {
             // PreAdd/PreSub operations
             // Immediately after declaration - increment it by one
-            assignp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, operp};
+            AstAssign* const assignp
+                = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, operp};
             insertNextToStmt(nodep, assignp);
             // Immediately after incrementing - assign it to the original variable
             assignp->addNextHere(new AstAssign{fl, writep->cloneTree(true),
@@ -300,8 +300,8 @@ private:
         } else {
             // PostAdd/PostSub operations
             // Assign the original variable to the temporary one
-            assignp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
-                                    readp->cloneTree(true)};
+            AstAssign* const assignp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                                     readp->cloneTree(true)};
             insertNextToStmt(nodep, assignp);
             // Increment the original variable by one
             assignp->addNextHere(new AstAssign{fl, writep->cloneTree(true), operp});
