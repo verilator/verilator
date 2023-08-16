@@ -138,7 +138,7 @@ string V3Os::filenameFromDirBase(const string& dir, const string& basename) VL_P
 string V3Os::filenameDir(const string& filename) VL_PURE {
     // std::filesystem::path::parent_path
     auto it = filename.rbegin();
-    for (; it != filename.rend(); it++) {
+    for (; it != filename.rend(); ++it) {
         if (isSlash(*it)) break;
     }
     if (it.base() == filename.begin()) {
@@ -151,10 +151,10 @@ string V3Os::filenameDir(const string& filename) VL_PURE {
 string V3Os::filenameNonDir(const string& filename) VL_PURE {
     // std::filesystem::path::filename
     auto it = filename.rbegin();
-    for (; it != filename.rend(); it++) {
+    for (; it != filename.rend(); ++it) {
         if (isSlash(*it)) break;
     }
-    return {it.base(), filename.end()};
+    return string{it.base(), filename.end()};
 }
 
 string V3Os::filenameNonExt(const string& filename) VL_PURE {
