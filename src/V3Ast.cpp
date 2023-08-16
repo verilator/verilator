@@ -1112,15 +1112,15 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
         case 4: nodep = op4p(); break;
         default: this->v3fatalSrc("Bad case"); break;
         }
-        const char* opName = typeInfo.opName[i - 1];
-        switch (typeInfo.opType[i - 1]) {
+        const char* opName = typeInfo.m_opNamep[i - 1];
+        switch (typeInfo.m_opType[i - 1]) {
         case VNTypeInfo::OP_UNUSED:
-            UASSERT_OBJ(!nodep, this, typeInfo.name << " must not use " << opName << "()");
+            UASSERT_OBJ(!nodep, this, typeInfo.m_namep << " must not use " << opName << "()");
             break;
         case VNTypeInfo::OP_USED:
-            UASSERT_OBJ(nodep, this, typeInfo.name << " must have non nullptr " << opName << "()");
+            UASSERT_OBJ(nodep, this, typeInfo.m_namep << " must have non nullptr " << opName << "()");
             UASSERT_OBJ(!nodep->nextp(), this,
-                        typeInfo.name << "::" << opName << "() cannot have a non nullptr nextp()");
+                        typeInfo.m_namep << "::" << opName << "() cannot have a non nullptr nextp()");
             nodep->checkTreeIter(this);
             break;
         case VNTypeInfo::OP_LIST:
@@ -1144,13 +1144,13 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
         case VNTypeInfo::OP_OPTIONAL:
             if (nodep) {
                 UASSERT_OBJ(!nodep->nextp(), this,
-                            typeInfo.name << "::" << opName
-                                          << "() cannot have a non-nullptr nextp()");
+                            typeInfo.m_namep << "::" << opName
+                                                << "() cannot have a non-nullptr nextp()");
                 nodep->checkTreeIter(this);
             }
             break;
+        default: this->v3fatalSrc("Bad case"); break;
         }
-    default: this->v3fatalSrc("Bad case"); break;
     }
 }
 
