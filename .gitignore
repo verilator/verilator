@@ -41,3 +41,5 @@ verilator-config-version.cmake
 **/_build/*
 **/obj_dir/*
 /.vscode/
+/.idea/
+/cmake-build-*/

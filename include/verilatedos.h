@@ -577,8 +577,8 @@ static inline double VL_ROUND(double n) {
 //=========================================================================
 // Stringify macros
 
-#define VL_STRINGIFY(x) VL_STRINGIFY2(x)
-#define VL_STRINGIFY2(x) #x
+#define VL_STRINGIFY(...) VL_STRINGIFY2(__VA_ARGS__)
+#define VL_STRINGIFY2(...) #__VA_ARGS__
 
 //=========================================================================
 // Offset of field in type
