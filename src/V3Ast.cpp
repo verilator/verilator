@@ -1110,6 +1110,7 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
         case 2: nodep = op2p(); break;
         case 3: nodep = op3p(); break;
         case 4: nodep = op4p(); break;
+        default: this->v3fatalSrc("Bad case"); break;
         }
         const char* opName = typeInfo.opName[i - 1];
         switch (typeInfo.opType[i - 1]) {
@@ -1149,7 +1150,7 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
             }
             break;
         }
-    default: this->v3fatalSrc("Bad case");
+    default: this->v3fatalSrc("Bad case"); break;
     }
 }
 
