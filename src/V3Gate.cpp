@@ -331,7 +331,6 @@ private:
     AstActive* m_activep = nullptr;  // Current active
     bool m_activeReducible = true;  // Is activation block reducible?
     bool m_inSenItem = false;  // Underneath AstSenItem; any varrefs are clocks
-    bool m_inExprStmt = false;  // Underneath ExprStmt; don't optimize LHS vars
     bool m_inSlow = false;  // Inside a slow structure
     std::vector<AstNode*> m_optimized;  // Logic blocks optimized
 
@@ -497,10 +496,6 @@ private:
             // the weight will increase
             if (nodep->access().isWriteOrRW()) {
                 new V3GraphEdge{&m_graph, m_logicVertexp, vvertexp, 1};
-                if (m_inExprStmt) {
-                    m_logicVertexp->clearReducibleAndDedupable("LHS var in ExprStmt");
-                    m_logicVertexp->setConsumed("LHS var in ExprStmt");
-                }
             }
             if (nodep->access().isReadOrRW()) {
                 new V3GraphEdge{&m_graph, vvertexp, m_logicVertexp, 1};
@@ -516,11 +511,7 @@ private:
         iterateNewStmt(nodep, "User C Function", "User C Function");
     }
     void visit(AstClocking* nodep) override { iterateNewStmt(nodep, nullptr, nullptr); }
-    void visit(AstExprStmt* nodep) override {
-        VL_RESTORER(m_inExprStmt);
-        m_inExprStmt = true;
-        iterateChildren(nodep);
-    }
+    void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
     void visit(AstSenItem* nodep) override {
         VL_RESTORER(m_inSenItem);
         m_inSenItem = true;
