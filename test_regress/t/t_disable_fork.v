@@ -7,20 +7,14 @@
 `define N 5
 
 module t;
-   process p = process::self();
    integer n = 0;
-   bit b = 0;
 
    initial begin
       for (integer i = 0; i < `N; i++) fork
-         begin
-            wait (b);
-            n++;
-         end
+            #1 n = n + 1;
       join_none
-      p.disable_fork();
-      b = 1;
-      #1;
+      process::self().disable_fork();
+      #2;
       if (n > 0) $stop;
       $write("*-* All Finished *-*\n");
       $finish;

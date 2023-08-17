@@ -166,6 +166,12 @@ package std;
 `endif
       endtask
 
+      task disable_fork();
+`ifdef VERILATOR_TIMING
+         $c(m_process, "->disable_fork();");
+`endif
+      endtask
+
       // When really implemented, srandom must operate on the process, but for
       // now rely on the srandom() that is automatically generated for all
       // classes.
