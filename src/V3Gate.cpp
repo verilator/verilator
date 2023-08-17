@@ -511,7 +511,6 @@ private:
         iterateNewStmt(nodep, "User C Function", "User C Function");
     }
     void visit(AstClocking* nodep) override { iterateNewStmt(nodep, nullptr, nullptr); }
-    void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
     void visit(AstSenItem* nodep) override {
         VL_RESTORER(m_inSenItem);
         m_inSenItem = true;
