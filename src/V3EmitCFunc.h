@@ -613,6 +613,9 @@ public:
             puts("]);\n");
         }
     }
+    void visit(AstDisableFork* nodep) override {
+        puts("vlProcess->disable_fork();\n");
+    }
     void visit(AstCReturn* nodep) override {
         puts("return (");
         iterateAndNextConstNull(nodep->lhsp());

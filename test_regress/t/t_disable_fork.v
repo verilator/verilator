@@ -13,7 +13,7 @@ module t;
       for (integer i = 0; i < `N; i++) fork
             #1 n = n + 1;
       join_none
-      process::self().disable_fork();
+      disable fork;
       #2;
       if (n > 0) $stop;
       $write("*-* All Finished *-*\n");

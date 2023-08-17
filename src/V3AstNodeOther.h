@@ -2708,6 +2708,7 @@ public:
     explicit AstDisableFork(FileLine* fl)
         : ASTGEN_SUPER_DisableFork(fl) {}
     ASTGEN_MEMBERS_AstDisableFork;
+    bool isTimingControl() const override { return true; }
 };
 class AstDisplay final : public AstNodeStmt {
     // Parents: stmtlist
