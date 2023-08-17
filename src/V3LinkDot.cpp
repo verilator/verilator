@@ -2645,7 +2645,6 @@ private:
                     }
                 }
             } else if (allowFTask && VN_IS(foundp->nodep(), NodeFTask)) {
-                AstNodeFTask* const ftaskp = VN_AS(foundp->nodep(), NodeFTask);
                 AstTaskRef* const taskrefp
                     = new AstTaskRef{nodep->fileline(), nodep->name(), nullptr};
                 nodep->replaceWith(taskrefp);
