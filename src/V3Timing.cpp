@@ -251,7 +251,7 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstDisableFork* nodep) override {
-        visit(static_cast<AstNode*>(nodep));
+        v3Global.setUsesTiming();
         addFlag(m_procp, T_HAS_PROC);
     }
     void visit(AstCFunc* nodep) override {

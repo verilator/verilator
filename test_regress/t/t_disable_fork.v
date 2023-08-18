@@ -4,7 +4,7 @@
 // any use, without warranty, 2023 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
-`define N 5
+`define N 3
 
 class Cls;
    task runforks(integer n);
@@ -31,6 +31,10 @@ module t;
          for (integer j = 0; j < `N; j++) fork
             #1 $stop;
          join_none
+      join_none
+
+      for (integer i = 0; i < `N; i++) fork
+         cls.runforks(`N);
       join_none
 
       // kill them all
