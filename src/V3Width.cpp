@@ -696,8 +696,15 @@ private:
         }
     }
     void visit(AstDisableFork* nodep) override {
-        // nodep->v3warn(E_UNSUPPORTED, "Unsupported: disable fork statements");
-        // VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        if (nodep->fileline()->timingOn()) {
+            if (v3Global.opt.timing().isSetFalse()) {
+                nodep->v3warn(E_NOTIMING,
+                            "Support for disable fork statement requires --timing");
+            } else if (!v3Global.opt.timing().isSetTrue()) {
+                nodep->v3warn(E_NEEDTIMINGOPT, "Use --timing or --no-timing to specify how "
+                              << "disable fork should be handled");
+            }
+        }
     }
     void visit(AstWaitFork* nodep) override {
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: wait fork statements");
