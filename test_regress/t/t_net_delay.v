@@ -4,6 +4,8 @@
 // any use, without warranty, 2022 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0)
+
 module t (/*AUTOARG*/
    // Inputs
    clk
@@ -21,7 +23,10 @@ module t (/*AUTOARG*/
 `ifdef TEST_VERBOSE
        $write("[%0t] cyc=%0d, val1=%0d, val2=%0d\n", $time, cyc, val1, val2);
 `endif
-       if (cyc >= 7 && val1 != cyc-1 && val2 != cyc-7) $stop;
+       if (cyc >= 7) begin
+          `checkh(val1, cyc - 1);
+          `checkh(val2, cyc - 7);
+       end
        if (cyc == 15) begin
            $write("*-* All Finished *-*\n");
            $finish;
