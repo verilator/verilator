@@ -114,8 +114,7 @@ public:
     }
 
     ~VlProcess() {
-        for (auto child : m_children)
-            child->m_parent = nullptr;
+        for (auto child : m_children) child->m_parent = nullptr;
         if (m_parent) m_parent->m_children.erase(this);
     }
 
@@ -129,8 +128,7 @@ public:
         state(KILLED);
     }
     void disable_fork() {
-        for (auto child : m_children)
-            child->disable();
+        for (auto child : m_children) child->disable();
     }
 };
 
