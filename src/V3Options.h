@@ -280,6 +280,7 @@ private:
     bool m_traceCoverage = false;   // main switch: --trace-coverage
     bool m_traceParams = true;      // main switch: --trace-params
     bool m_traceStructs = false;    // main switch: --trace-structs
+    bool m_noTraceTop;              // main switch: --no-trace-top
     bool m_traceUnderscore = false; // main switch: --trace-underscore
     bool m_underlineZero = false;   // main switch: --underline-zero; undocumented old Verilator 2
     bool m_verilate = true;         // main switch: --verilate
@@ -578,6 +579,7 @@ public:
     bool protectKeyProvided() const { return !m_protectKey.empty(); }
     string protectKeyDefaulted() VL_MT_SAFE;  // Set default key if not set by user
     string topModule() const { return m_topModule; }
+    bool noTraceTop() const { return m_noTraceTop; }
     string unusedRegexp() const { return m_unusedRegexp; }
     string waiverOutput() const { return m_waiverOutput; }
     bool isWaiverOutput() const { return !m_waiverOutput.empty(); }
