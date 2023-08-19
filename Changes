@@ -13,6 +13,12 @@ Verilator 5.015 devel
 
 **Minor:**
 
+* Add --no-trace-top to not trace top signals (#4412) (#4422). [Frans Skarman]
+* Fix Windows filename format, etc (#3873) (#4421). [Anthony Donlon].
+* Fix dtype of condition operation on class objects (#4345) (#4352). [Ryszard Rozak, Antmicro Ltd]
+* Fix detection of mixed blocking and nonblocking assignment in nested assignments (#4404). [Ryszard Rozak, Antmicro Ltd]
+* Fix jumping over object initialization (#4411). [Krzysztof Boroński]
+* Fix variable lifetimes in extern methods (#4414). [Krzysztof Boroński]
 * Fix multple function definitions in V3Sched (#4416). [Hennadii Chernyshchyk]
 
 
