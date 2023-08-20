@@ -178,12 +178,6 @@ class Node:
 AstNodes = {}
 AstNodeList = None
 
-GraphVertices = {}
-GraphVertexList = None
-
-GraphEdges = {}
-GraphEdgeList = None
-
 DfgVertices = {}
 DfgVertexList = None
 
@@ -553,57 +547,6 @@ def parseOpType(string):
     return None
 
 
-def read_graph_types(fh, vertex_types, edge_types):
-    has_errors = False
-
-    def handle_match(match, types):
-        keywrd = match.group(1)
-        if keywrd == "struct":
-            print(
-                filename + ":" + str(lineno) +
-                ": %Error: struct not allowed in graph vertex/edge declaration"
-            )
-            has_errors = True
-        classn = match.group(2)
-        supern = match.group(3)
-        super = types.get(supern)
-        if not super:
-            super = Node(supern, None)
-            types[supern] = super
-        node = types.get(classn)
-        if node:
-            node.superClass = supern
-        else:
-            node = Node(classn, super)
-            types[classn] = node
-        if super:
-            super.addSubClass(node)
-
-    re_first_part = r'^\s*(class|struct)\s*([a-zA-Z0-9_]+'
-    re_second_part = r')\s+(?:final|VL_NOT_FINAL)\s*:\s*(?:public|protected|private)?\s+([a-zA-Z0-9_]+)'
-    special_vertices = '|'.join(
-        ["AbstractMTask", "AbstractLogicMTask", "ExecMTask", "LogicMTask"])
-    if len(special_vertices) > 0:
-        special_vertices = '|' + special_vertices
-    vertex_re = re.compile(
-        f'{re_first_part}Vertex{special_vertices}{re_second_part}')
-    edge_re = re.compile(f'{re_first_part}Edge{re_second_part}')
-
-    for (lineno, line) in enumerate(fh, start=1):
-        line = line.strip()
-        if not line:
-            continue
-        match = re.search(vertex_re, line)
-        if match:
-            handle_match(match, vertex_types)
-        else:
-            match = re.search(edge_re, line)
-            if match:
-                handle_match(match, edge_types)
-    if has_errors:
-        sys.exit("%Error: Stopping due to errors reported above")
-
-
 def read_types(filename, Nodes, prefix):
     hasErrors = False
 
@@ -960,30 +903,6 @@ def write_type_tests(prefix, nodeList):
             fh.write(" }\n")
 
 
-def write_non_final_class_type_tests(prefix, nodeList):
-    with open_file("V3{p}__gen_type_tests.h".format(p=prefix)) as fh:
-        if prefix == "GraphVertex":
-            base = "V3GraphVertex"
-            variable = "vtxp"
-            enum = "VGraphVertexType"
-        elif prefix == "GraphEdge":
-            base = "V3GraphEdge"
-            variable = "edgep"
-            enum = "VGraphEdgeType"
-        for node in nodeList:
-            if node.isRoot:
-                fh.write(
-                    "template<> inline bool {b}::privateTypeTest<{n}>(const {b}*) {{ return true; }}"
-                    .format(b=base, n=node.name))
-            elif not node.isLeaf:
-                fh.write("class {n:<17} // ".format(n=node.name + ";"))
-                for superClass in node.allSuperClasses:
-                    fh.write("{n:<12}".format(n=superClass.name))
-                fh.write(
-                    "\ntemplate<> bool {b}::privateTypeTest<{n}>(const {b}* {v});\n"
-                    .format(b=base, n=node.name, v=variable))
-
-
 ################################################################################
 # Ast code genaration
 ################################################################################
@@ -1274,10 +1193,6 @@ parser.add_argument('infiles', nargs='*', help='list of input .cpp filenames')
 
 Args = parser.parse_args()
 
-source_files = glob.glob(Args.I + "/*.y")
-source_files.extend(glob.glob(Args.I + "/*.h"))
-source_files.extend(glob.glob(Args.I + "/*.cpp"))
-
 ###############################################################################
 # Read AstNode definitions
 ###############################################################################
@@ -1296,21 +1211,6 @@ AstNodes["Node"].complete()
 AstNodeList = tuple(map(lambda _: AstNodes[_], sorted(AstNodes.keys())))
 
 check_types(AstNodeList, "Ast", "Node")
-
-###############################################################################
-# Read and generate V3GraphVertex/Edge definitions
-###############################################################################
-
-for filename in source_files:
-    with open(filename, "r", encoding="utf8") as fh:
-        read_graph_types(fh, GraphVertices, GraphEdges)
-
-GraphVertices["V3GraphVertex"].complete()
-GraphEdges["V3GraphEdge"].complete()
-
-GraphVertexList = tuple(
-    map(lambda _: GraphVertices[_], sorted(GraphVertices.keys())))
-GraphEdgeList = tuple(map(lambda _: GraphEdges[_], sorted(GraphEdges.keys())))
 
 ###############################################################################
 # Read and generate DfgVertex definitions
@@ -1376,6 +1276,9 @@ check_types(DfgVertexList, "Dfg", "Vertex")
 
 read_stages(Args.I + "/Verilator.cpp")
 
+source_files = glob.glob(Args.I + "/*.y")
+source_files.extend(glob.glob(Args.I + "/*.h"))
+source_files.extend(glob.glob(Args.I + "/*.cpp"))
 for filename in source_files:
     read_refs(filename)
 
@@ -1394,11 +1297,6 @@ if Args.classes:
     write_ast_type_info("V3Ast__gen_type_info.h")
     write_ast_macros("V3Ast__gen_macros.h")
     write_ast_yystype("V3Ast__gen_yystype.h")
-    # Write V3Graph code
-    write_type_enum("GraphVertex", GraphVertexList)
-    write_non_final_class_type_tests("GraphVertex", GraphVertexList)
-    write_type_enum("GraphEdge", GraphEdgeList)
-    write_non_final_class_type_tests("GraphEdge", GraphEdgeList)
     # Write Dfg code
     write_forward_class_decls("Dfg", DfgVertexList)
     write_visitor_decls("Dfg", DfgVertexList)
