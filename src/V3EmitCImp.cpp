@@ -677,7 +677,7 @@ class EmitCTrace final : EmitCFunc {
             string fstvt;
             // Doubles have special decoding properties, so must indicate if a double
             if (nodep->dtypep()->basicp()->isDouble()) {
-                if (vartype == VVarType::GPARAM || vartype == VVarType::LPARAM) {
+                if (vartype.isParam()) {
                     fstvt = "FST_VT_VCD_REAL_PARAMETER";
                 } else {
                     fstvt = "FST_VT_VCD_REAL";
