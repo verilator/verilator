@@ -309,7 +309,7 @@ public:
     void unlinkDelete(V3Graph* graphp);
 
     // METHODS
-    // Subtype test
+    // Return true iff of type T
     template <typename T>
     bool is() const {
         static_assert(std::is_base_of<V3GraphVertex, T>::value,
@@ -320,7 +320,7 @@ public:
         return this->isInstanceOfClassWithId(T::rttiClassId());
     }
 
-    // Ensure subtype, then cast to that type
+    // Return cast to subtype T and assert of that type
     template <typename T>
     T* as() {
         UASSERT_OBJ(is<T>(), this, "V3GraphVertex is not of expected type");
@@ -332,7 +332,7 @@ public:
         return static_cast<const T*>(this);
     }
 
-    // Cast to subtype, or null if different
+    // Return cast to subtype T, else nullptr if different type
     template <typename T>
     T* cast() {
         return is<T>() ? static_cast<T*>(this) : nullptr;
@@ -442,7 +442,7 @@ public:
     }
     virtual ~V3GraphEdge() = default;
     // METHODS
-    // Subtype test
+    // Return true iff of type T
     template <typename T>
     bool is() const {
         static_assert(std::is_base_of<V3GraphEdge, T>::value,
@@ -453,7 +453,7 @@ public:
         return this->isInstanceOfClassWithId(T::rttiClassId());
     }
 
-    // Ensure subtype, then cast to that type
+    // Return cast to subtype T and assert of that type
     template <typename T>
     T* as() {
         UASSERT(is<T>(), "V3GraphEdge is not of expected type");
@@ -465,7 +465,7 @@ public:
         return static_cast<const T*>(this);
     }
 
-    // Cast to subtype, or null if different
+    // Return cast to subtype T, else nullptr if different type
     template <typename T>
     T* cast() {
         return is<T>() ? static_cast<T*>(this) : nullptr;
