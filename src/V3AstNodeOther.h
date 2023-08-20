@@ -1922,9 +1922,7 @@ public:
     bool isClassMember() const { return varType() == VVarType::MEMBER; }
     bool isStatementTemp() const { return (varType() == VVarType::STMTTEMP); }
     bool isXTemp() const { return (varType() == VVarType::XTEMP); }
-    bool isParam() const VL_MT_SAFE {
-        return (varType() == VVarType::LPARAM || varType() == VVarType::GPARAM);
-    }
+    bool isParam() const { return varType().isParam(); }
     bool isGParam() const { return (varType() == VVarType::GPARAM); }
     bool isGenVar() const { return (varType() == VVarType::GENVAR); }
     bool isBitLogic() const {

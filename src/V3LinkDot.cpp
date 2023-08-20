@@ -1616,6 +1616,7 @@ private:
             AstPin* const pinp = new AstPin{nodep->fileline(),
                                             -1,  // Pin# not relevant
                                             nodep->name(), exprp};
+            pinp->param(true);
             cellp->addParamsp(pinp);
         }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -2250,6 +2251,11 @@ private:
         if (classp->isInterfaceClass()) importImplementsClass(nodep, srcp, classp);
         if (!cextp->isImplements()) m_curSymp->importFromClass(m_statep->symsp(), srcp);
     }
+    bool checkPinRef(AstPin* pinp, VVarType refVarType) {
+        // In instantiations of modules/ifaces, we shouldn't connect port pins to submodule's
+        // parameters or vice versa
+        return pinp->param() == refVarType.isParam();
+    }
 
     // VISITs
     void visit(AstNetlist* nodep) override {
@@ -2344,7 +2350,32 @@ private:
             UASSERT_OBJ(m_pinSymp, nodep, "Pin not under instance?");
             VSymEnt* const foundp = m_pinSymp->findIdFlat(nodep->name());
             const char* const whatp = nodep->param() ? "parameter pin" : "pin";
-            if (!foundp) {
+            bool pinCheckFail = false;
+            if (foundp) {
+                if (AstVar* const refp = VN_CAST(foundp->nodep(), Var)) {
+                    if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
+                        nodep->v3error(ucfirst(whatp)
+                                       << " is not an in/out/inout/param/interface: "
+                                       << nodep->prettyNameQ());
+                    } else if (!checkPinRef(nodep, refp->varType())) {
+                        pinCheckFail = true;
+                    } else {
+                        nodep->modVarp(refp);
+                        markAndCheckPinDup(nodep, refp, whatp);
+                    }
+                } else if (AstParamTypeDType* const refp
+                           = VN_CAST(foundp->nodep(), ParamTypeDType)) {
+                    if (!checkPinRef(nodep, refp->varType())) {
+                        pinCheckFail = true;
+                    } else {
+                        nodep->modPTypep(refp);
+                        markAndCheckPinDup(nodep, refp, whatp);
+                    }
+                } else {
+                    nodep->v3error(ucfirst(whatp) << " not found: " << nodep->prettyNameQ());
+                }
+            }
+            if (!foundp || pinCheckFail) {
                 if (nodep->name() == "__paramNumber1" && m_cellp
                     && VN_IS(m_cellp->modp(), Primitive)) {
                     // Primitive parameter is really a delay we can just ignore
@@ -2360,19 +2391,6 @@ private:
                               ucfirst(whatp)
                                   << " not found: " << nodep->prettyNameQ() << '\n'
                                   << (suggest.empty() ? "" : nodep->warnMore() + suggest));
-            } else if (AstVar* const refp = VN_CAST(foundp->nodep(), Var)) {
-                if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
-                    nodep->v3error(ucfirst(whatp) << " is not an in/out/inout/param/interface: "
-                                                  << nodep->prettyNameQ());
-                } else {
-                    nodep->modVarp(refp);
-                    markAndCheckPinDup(nodep, refp, whatp);
-                }
-            } else if (AstParamTypeDType* const refp = VN_CAST(foundp->nodep(), ParamTypeDType)) {
-                nodep->modPTypep(refp);
-                markAndCheckPinDup(nodep, refp, whatp);
-            } else {
-                nodep->v3error(ucfirst(whatp) << " not found: " << nodep->prettyNameQ());
             }
         }
         // Early return() above when deleted

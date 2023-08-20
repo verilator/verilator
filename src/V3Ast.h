@@ -816,6 +816,7 @@ public:
             "BLOCKTEMP", "MODULETEMP", "STMTTEMP",     "XTEMP",   "IFACEREF", "MEMBER"};
         return names[m_e];
     }
+    bool isParam() const { return m_e == GPARAM || m_e == LPARAM; }
     bool isSignal() const {
         return (m_e == WIRE || m_e == WREAL || m_e == IMPLICITWIRE || m_e == TRIWIRE || m_e == TRI0
                 || m_e == TRI1 || m_e == PORT || m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == VAR);
