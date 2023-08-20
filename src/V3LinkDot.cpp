@@ -1616,6 +1616,7 @@ private:
             AstPin* const pinp = new AstPin{nodep->fileline(),
                                             -1,  // Pin# not relevant
                                             nodep->name(), exprp};
+            pinp->param(true);
             cellp->addParamsp(pinp);
         }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
