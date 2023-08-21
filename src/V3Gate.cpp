@@ -914,6 +914,7 @@ private:
                 m_dedupable = false;
             }
         }
+        iterateChildren(assignp);
     }
     void visit(AstAlways* alwaysp) override {
         if (m_dedupable) {
