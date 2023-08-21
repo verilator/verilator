@@ -698,11 +698,10 @@ private:
     void visit(AstDisableFork* nodep) override {
         if (nodep->fileline()->timingOn()) {
             if (v3Global.opt.timing().isSetFalse()) {
-                nodep->v3warn(E_NOTIMING,
-                            "Support for disable fork statement requires --timing");
+                nodep->v3warn(E_NOTIMING, "Support for disable fork statement requires --timing");
             } else if (!v3Global.opt.timing().isSetTrue()) {
                 nodep->v3warn(E_NEEDTIMINGOPT, "Use --timing or --no-timing to specify how "
-                              << "disable fork should be handled");
+                                                   << "disable fork should be handled");
             }
         }
     }
