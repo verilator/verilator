@@ -12,22 +12,22 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   wire[3:0] #4 val1 = cyc;
+   wire[3:0] #4 val1 = half_cyc;
    wire[3:0] #4 val2;
-   reg[3:0] cyc = 0;
+   reg[3:0] half_cyc = 0;
 
-   assign #4 val2 = cyc;
+   assign #4 val2 = half_cyc;
 
-   always @(posedge clk) begin
-       cyc <= cyc + 1;
+   always @(clk) begin
+       half_cyc <= half_cyc + 1;
 `ifdef TEST_VERBOSE
-       $write("[%0t] cyc=%0d, val1=%0d, val2=%0d\n", $time, cyc, val1, val2);
+       $strobe("[%0t] half_cyc=%0d, val1=%0d, val2=%0d", $time, half_cyc, val1, val2);
 `endif
-       if (cyc >= 7) begin
-          `checkh(val1, cyc - 1);
-          `checkh(val2, cyc - 7);
+       if (half_cyc >= 7) begin
+          `checkh(val1, half_cyc - 3);
+          `checkh(val2, half_cyc - 7);
        end
-       if (cyc == 15) begin
+       if (half_cyc == 15) begin
            $write("*-* All Finished *-*\n");
            $finish;
        end
