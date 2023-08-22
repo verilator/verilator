@@ -895,6 +895,7 @@ class GateDedupeVarVisitor final : public VNVisitor {
     //   (Note, the IF must be the only node under the always,
     //    and the assign must be the only node under the if, other than the ifcond)
     // Any other ordering or node type, except for an AstComment, makes it not dedupable
+    // AstExprStmt in the subtree of a node also makes the node not dedupable.
 private:
     // STATE
     GateDedupeHash m_ghash;  // Hash used to find dupes of rhs of assign
@@ -910,11 +911,11 @@ private:
             // non-blocking statements, but erring on side of caution here
             if (!m_assignp) {
                 m_assignp = assignp;
+                m_dedupable = !assignp->exists([&](AstExprStmt*) { return true; });
             } else {
                 m_dedupable = false;
             }
         }
-        iterateChildren(assignp);
     }
     void visit(AstAlways* alwaysp) override {
         if (m_dedupable) {
@@ -935,6 +936,7 @@ private:
             if (m_always && !m_ifCondp && !ifp->elsesp()) {
                 // we're under an always, this is the first IF, and there's no else
                 m_ifCondp = ifp->condp();
+                m_dedupable = !m_ifCondp->exists([&](AstExprStmt*) { return true; });
                 iterateAndNextNull(ifp->thensp());
             } else {
                 m_dedupable = false;
