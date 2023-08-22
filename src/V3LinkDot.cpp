@@ -2573,13 +2573,15 @@ private:
             string expectWhat;
             bool allowScope = false;
             bool allowVar = false;
+            bool allowFTask = false;
             bool staticAccess = false;
             if (m_ds.m_dotPos == DP_PACKAGE) {
                 // {package}::{a}
                 AstNodeModule* classOrPackagep = nullptr;
-                expectWhat = "scope/variable";
+                expectWhat = "scope/variable/func";
                 allowScope = true;
                 allowVar = true;
+                allowFTask = true;
                 staticAccess = true;
                 UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                             "Bad package link");
@@ -2660,6 +2662,13 @@ private:
                                                           << cellp->modp()->prettyNameQ());
                     }
                 }
+            } else if (allowFTask && VN_IS(foundp->nodep(), NodeFTask)) {
+                AstTaskRef* const taskrefp
+                    = new AstTaskRef{nodep->fileline(), nodep->name(), nullptr};
+                nodep->replaceWith(taskrefp);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                if (start) m_ds = lastStates;
+                return;
             } else if (AstVar* const varp = foundToVarp(foundp, nodep, VAccess::READ)) {
                 AstIfaceRefDType* const ifacerefp
                     = LinkDotState::ifaceRefFromArray(varp->subDTypep());
