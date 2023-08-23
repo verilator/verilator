@@ -138,7 +138,8 @@ private:
             ++m_extractedToConstPool;
         } else {
             // Keep as local temporary. Name based on hash of node for output stability.
-            varp = new AstVar{fl, VVarType::STMTTEMP, "__Vtemp_" + cvtToStr(++m_tmpVarCnt), nodep->dtypep()};
+            varp = new AstVar{fl, VVarType::STMTTEMP, "__Vtemp_" + cvtToStr(++m_tmpVarCnt),
+                              nodep->dtypep()};
             m_cfuncp->addInitsp(varp);
             // Put assignment before the referencing statement
             insertBeforeStmt(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, nodep});
@@ -392,9 +393,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit PremitVisitor(AstNetlist* nodep) {
-        iterate(nodep);
-    }
+    explicit PremitVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~PremitVisitor() override {
         V3Stats::addStat("Optimizations, Prelim extracted value to ConstPool",
                          m_extractedToConstPool);
