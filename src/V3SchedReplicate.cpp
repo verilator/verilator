@@ -228,7 +228,7 @@ void propagateDrivingRegions(SchedReplicateVertex* vtxp) {
     // Compute union of driving regions of all inputs
     uint8_t drivingRegions = 0;
     for (V3GraphEdge* edgep = vtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-        SchedReplicateVertex* const srcp = static_cast<SchedReplicateVertex*>(edgep->fromp());
+        SchedReplicateVertex* const srcp = edgep->fromp()->as<SchedReplicateVertex>();
         propagateDrivingRegions(srcp);
         drivingRegions |= srcp->drivingRegions();
     }
@@ -267,7 +267,7 @@ LogicReplicas replicateLogic(LogicRegions& logicRegionsRegions) {
     if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("sched-replicate");
     // Propagate driving region flags
     for (V3GraphVertex* vtxp = graphp->verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
-        propagateDrivingRegions(static_cast<SchedReplicateVertex*>(vtxp));
+        propagateDrivingRegions(vtxp->as<SchedReplicateVertex>());
     }
     // Dump for debug
     if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("sched-replicate-propagated");
