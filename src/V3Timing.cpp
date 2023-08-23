@@ -415,25 +415,19 @@ private:
 
     // METHODS
     // Find net delay on the LHS of an assignment
-    AstDelay* getLhsNetDelay(AstNodeAssign* nodep) const {
-        bool foundWrite = false;
-        AstDelay* delayp = nullptr;
-        nodep->lhsp()->foreach([&](const AstNodeVarRef* const refp) {
-            if (!refp->access().isWriteOrRW()) return;
-            UASSERT_OBJ(!foundWrite, nodep, "Should only be one variable written to on the LHS");
-            foundWrite = true;
-            if (refp->varp()->delayp()) {
-                delayp = refp->varp()->delayp();
-                delayp->unlinkFrBack();
-            }
-        });
-        return delayp;
+    AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) const {
+        if (const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+            if (refp->varp()->delayp()) return refp->varp()->delayp()->unlinkFrBack();
+        } else if (const AstSel* const selp = VN_CAST(nodep, Sel)) {
+            return getLhsNetDelayRecurse(selp->fromp());
+        }
+        return nullptr;
     }
     // Transform an assignment with an intra timing control into a timing control with the
     // assignment under it
     AstNode* factorOutTimingControl(AstNodeAssign* nodep) const {
         AstNode* stmtp = nodep;
-        AstDelay* delayp = getLhsNetDelay(nodep);
+        AstDelay* delayp = getLhsNetDelayRecurse(nodep->lhsp());
         FileLine* const flp = nodep->fileline();
         AstNode* const controlp = nodep->timingControlp();
         if (controlp) {
@@ -955,7 +949,7 @@ private:
         replaceWithIntermediate(nodep->rhsp(), m_intraValueNames.get(nodep));
     }
     void visit(AstAssignW* nodep) override {
-        AstDelay* const netDelayp = getLhsNetDelay(nodep);
+        AstDelay* const netDelayp = getLhsNetDelayRecurse(nodep->lhsp());
         if (!netDelayp && !nodep->timingControlp()) return;
         // This assignment will be converted to an always. In some cases this may generate an
         // UNOPTFLAT, e.g.: assign #1 clk = ~clk. We create a temp var for the LHS of this
