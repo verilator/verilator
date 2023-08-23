@@ -19,7 +19,7 @@ module t (/*AUTOARG*/
    assign #4 val2 = half_cyc;
 
    always @(clk) begin
-       half_cyc <= half_cyc + 1;
+       if ($time > 0) half_cyc <= half_cyc + 1;
 `ifdef TEST_VERBOSE
        $strobe("[%0t] half_cyc=%0d, val1=%0d, val2=%0d", $time, half_cyc, val1, val2);
 `endif
