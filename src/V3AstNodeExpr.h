@@ -2738,11 +2738,6 @@ public:
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstLogOr final : public AstNodeBiop {
-    // LOGOR with optional side effects
-    // Side effects currently used in some V3Width code
-    // TBD if this concept is generally adopted for side-effect tracking
-    // versus V3Const tracking it itself
-    bool m_sideEffect = false;  // Has side effect, relies on short-circuiting
 public:
     AstLogOr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LogOr(fl, lhsp, rhsp) {
@@ -2755,11 +2750,6 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opLogOr(lhs, rhs);
     }
-    bool same(const AstNode* samep) const override {
-        const AstLogOr* const sp = static_cast<const AstLogOr*>(samep);
-        return m_sideEffect == sp->m_sideEffect;
-    }
-    void dump(std::ostream& str = std::cout) const override;
     string emitVerilog() override { return "%k(%l %f|| %r)"; }
     string emitC() override { return "VL_LOGOR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     string emitSimpleOperator() override { return "||"; }
@@ -2769,9 +2759,6 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
-    bool isPure() const override { return !m_sideEffect; }
-    void sideEffect(bool flag) { m_sideEffect = flag; }
-    bool sideEffect() const { return m_sideEffect; }
 };
 class AstLt final : public AstNodeBiop {
 public:
