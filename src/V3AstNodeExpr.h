@@ -355,7 +355,9 @@ public:
     virtual bool sizeMattersThs() const = 0;  // True if output result depends on ths size
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode*) const override { return true; }
-    bool isPure() const override { return lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure(); }
+    bool isPure() const override {
+        return lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure();
+    }
 };
 class AstNodeCond VL_NOT_FINAL : public AstNodeTriop {
     // @astgen alias op1 := condp
