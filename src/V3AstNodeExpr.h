@@ -93,6 +93,7 @@ public:
     virtual bool stringFlavor() const { return false; }  // N flavor of nodes with both flavors?
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode*) const override { return true; }
+    bool isPure() const override { return lhsp()->isPure() && rhsp()->isPure(); }
 };
 class AstNodeBiCom VL_NOT_FINAL : public AstNodeBiop {
     // Binary expr with commutative properties
