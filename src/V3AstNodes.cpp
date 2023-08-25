@@ -161,7 +161,7 @@ bool AstNodeTriop::isPure() {
 
 bool AstNodePreSel::isPure() {
     if (!m_pureComputed) {
-        m_pure = fromp()->isPure() && rhsp()->isPure() && thsp()->isPure();
+        m_pure = fromp()->isPure() && rhsp()->isPure() && (!thsp() || thsp()->isPure());
         m_pureComputed = true;
     }
     return m_pure;
