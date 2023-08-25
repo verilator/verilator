@@ -127,12 +127,36 @@ const char* AstNodeCCall::broken() const {
     BROKEN_RTN(m_funcp && !m_funcp->brokeExists());
     return nullptr;
 }
-bool AstNodeCCall::isPure() const { return funcp()->pure(); }
+bool AstNodeCCall::isPure() { return funcp()->pure(); }
 
 string AstCCall::selfPointerProtect(bool useSelfForThis) const {
     const string& sp
         = useSelfForThis ? VString::replaceWord(selfPointer(), "this", "vlSelf") : selfPointer();
     return VIdProtect::protectWordsIf(sp, protect());
+}
+
+bool AstNodeUniop::isPure() {
+    if (!m_pureComputed) {
+        m_pure = lhsp()->isPure();
+        m_pureComputed = true;
+    }
+    return m_pure;
+}
+
+bool AstNodeBiop::isPure() {
+    if (!m_pureComputed) {
+        m_pure = lhsp()->isPure() && rhsp()->isPure();
+        m_pureComputed = true;
+    }
+    return m_pure;
+}
+
+bool AstNodeTriop::isPure() {
+    if (!m_pureComputed) {
+        m_pure = lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure();
+        m_pureComputed = true;
+    }
+    return m_pure;
 }
 
 AstNodeCond::AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,

@@ -1989,11 +1989,11 @@ public:
     // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
     virtual bool isGateDedupable() const { return isGateOptimizable(); }
     // Else creates output or exits, etc, not unconsumed
-    virtual bool isOutputter() const { return false; }
+    virtual bool isOutputter() { return false; }
     // Else a AstTime etc which output can't be predicted from input
     virtual bool isPredictOptimizable() const { return !isTimingControl(); }
     // Else a $display, etc, that must be ordered with other displays
-    virtual bool isPure() const { return true; }
+    virtual bool isPure() { return true; }
     // Else a AstTime etc that can't be substituted out
     virtual bool isSubstOptimizable() const { return true; }
     // An event control, delay, wait, etc.
