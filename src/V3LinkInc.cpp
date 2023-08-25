@@ -222,7 +222,7 @@ private:
         // Currently we can't reference the target, so we just copy the AST both for read and
         // write, but doing so would double any side-effects, so as a safety measure all
         // statements which could have side-effects are banned at the moment.
-        if (!nodep->rhsp()->isTreePureRecurse()) {
+        if (!nodep->rhsp()->isPure()) {
             nodep->rhsp()->v3warn(E_UNSUPPORTED,
                                   "Unsupported: Inc/Dec of expression with side-effects");
             return;
@@ -252,7 +252,7 @@ private:
         // Currently we can't reference the target, so we just copy the AST both for read and
         // write, but doing so would double any side-effects, so as a safety measure all
         // statements which could have side-effects are banned at the moment.
-        if (!nodep->rhsp()->isTreePureRecurse()) {
+        if (!nodep->rhsp()->isPure()) {
             nodep->rhsp()->v3warn(E_UNSUPPORTED,
                                   "Unsupported: Inc/Dec of expression with side-effects");
             return;

@@ -1981,8 +1981,6 @@ public:
     void dumpTreeDot(std::ostream& os = std::cout) const;
     void dumpTreeDotFile(const string& filename, bool append = false, bool doDump = true);
 
-    bool isTreePureRecurse() const;
-
     // METHODS - queries
     // Changes control flow, disable some optimizations
     virtual bool isBrancher() const { return false; }

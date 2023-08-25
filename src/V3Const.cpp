@@ -2989,7 +2989,7 @@ private:
                 }
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             } else if (!afterComment(nodep->thensp()) && !afterComment(nodep->elsesp())) {
-                if (!nodep->condp()->isTreePureRecurse()) {
+                if (!nodep->condp()->isPure()) {
                     // Condition has side effect - leave - perhaps in
                     // future simplify to remove all but side effect terms
                 } else {
