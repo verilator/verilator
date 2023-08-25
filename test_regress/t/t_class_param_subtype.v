@@ -8,20 +8,12 @@
 
 class CParam #(parameter PARAM=10);
     typedef int type_t;
-
-    function void check_param(int val);
-        if (val != PARAM) $stop;
-    endfunction
 endclass
 
 class CParam2 #(parameter PARAM=10);
     typedef int type_t;
 
     typedef logic [PARAM-1:0] type2_t;
-
-    function void check_param(int val);
-        if (val != PARAM) $stop;
-    endfunction
 endclass
 
 `ifdef CONSTSIM
