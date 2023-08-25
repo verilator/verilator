@@ -14,13 +14,19 @@ Verilator 5.015 devel
 **Minor:**
 
 * Add --no-trace-top to not trace top signals (#4412) (#4422). [Frans Skarman]
+* Support assignments of packed values to stream expressions on queues (#4401). [Ryszard Rozak, Antmicro Ltd]
+* Support no-parentheses calls to static methods (#4432). [Krzysztof Boroński]
 * Fix Windows filename format, etc (#3873) (#4421). [Anthony Donlon].
-* Fix dtype of condition operation on class objects (#4345) (#4352). [Ryszard Rozak, Antmicro Ltd]
+* Fix data type of condition operation on class objects (#4345) (#4352). [Ryszard Rozak, Antmicro Ltd]
+* Fix ++/-- under statements (#4399). [Aleksander Kiryk, Antmicro Ltd]
 * Fix detection of mixed blocking and nonblocking assignment in nested assignments (#4404). [Ryszard Rozak, Antmicro Ltd]
 * Fix jumping over object initialization (#4411). [Krzysztof Boroński]
 * Fix variable lifetimes in extern methods (#4414). [Krzysztof Boroński]
-* Fix multple function definitions in V3Sched (#4416). [Hennadii Chernyshchyk]
+* Fix multiple function definitions in V3Sched (#4416). [Hennadii Chernyshchyk]
 * Fix false UNUSEDPARAM on generate localparam (#4427). [Bill Pringlemeir]
+* Fix checking for parameter and port connections in the wrong place (#4428). [Anthony Donlon]
+* Fix coroutine handle movement during queue manipulation (#4431). [Aleksander Kiryk, Antmicro Ltd]
+* Fix nested assignments on the LHS (#4435). [Ryszard Rozak, Antmicro Ltd]
 * Fix false MULTITOP on bound interfaces (#4438). [Alex Solomatnikov]
 
 
