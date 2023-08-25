@@ -2158,12 +2158,11 @@ private:
             return true;
         } else if (m_doV && VN_IS(nodep->lhsp(), StreamL)) {
             // Push the stream operator to the rhs of the assignment statement
-            const int dWidth = VN_AS(nodep->lhsp(), StreamL)->lhsp()->width();
-            const int sWidth = nodep->rhsp()->width();
-            // Unlink the stuff
-            AstNodeExpr* const dstp = VN_AS(nodep->lhsp(), StreamL)->lhsp()->unlinkFrBack();
-            AstNodeExpr* streamp = VN_AS(nodep->lhsp(), StreamL)->unlinkFrBack();
+            AstNodeExpr* streamp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const dstp = VN_AS(streamp, StreamL)->lhsp()->unlinkFrBack();
             AstNodeExpr* const srcp = nodep->rhsp()->unlinkFrBack();
+            const int sWidth = srcp->width();
+            const int dWidth = dstp->width();
             // Connect the rhs to the stream operator and update its width
             VN_AS(streamp, StreamL)->lhsp(srcp);
             if (VN_IS(srcp->dtypep(), DynArrayDType) || VN_IS(srcp->dtypep(), QueueDType)
@@ -2172,11 +2171,11 @@ private:
             } else {
                 streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
             }
-            // Shrink the RHS if necessary
-            if (sWidth > dWidth) {
+            if (dWidth == 0) {
+                streamp = new AstCvtPackedToDynArray{nodep->fileline(), streamp, dstp->dtypep()};
+            } else if (sWidth > dWidth) {
                 streamp = new AstSel{streamp->fileline(), streamp, sWidth - dWidth, dWidth};
             }
-            // Link the nodes back in
             nodep->lhsp(dstp);
             nodep->rhsp(streamp);
             return true;
@@ -2184,14 +2183,15 @@ private:
             // The right stream operator on lhs of assignment statement does
             // not reorder bits. However, if the rhs is wider than the lhs,
             // then we select bits from the left-most, not the right-most.
-            const int dWidth = VN_AS(nodep->lhsp(), StreamR)->lhsp()->width();
-            const int sWidth = nodep->rhsp()->width();
-            // Unlink the stuff
-            AstNodeExpr* const dstp = VN_AS(nodep->lhsp(), StreamR)->lhsp()->unlinkFrBack();
-            AstNode* const sizep = VN_AS(nodep->lhsp(), StreamR)->rhsp()->unlinkFrBack();
-            AstNodeExpr* const streamp = VN_AS(nodep->lhsp(), StreamR)->unlinkFrBack();
+            AstNodeExpr* const streamp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const dstp = VN_AS(streamp, StreamR)->lhsp()->unlinkFrBack();
+            AstNode* const sizep = VN_AS(streamp, StreamR)->rhsp()->unlinkFrBack();
             AstNodeExpr* srcp = nodep->rhsp()->unlinkFrBack();
-            if (sWidth > dWidth) {
+            const int sWidth = srcp->width();
+            const int dWidth = dstp->width();
+            if (dWidth == 0) {
+                srcp = new AstCvtPackedToDynArray{nodep->fileline(), srcp, dstp->dtypep()};
+            } else if (sWidth > dWidth) {
                 srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
             }
             nodep->lhsp(dstp);
