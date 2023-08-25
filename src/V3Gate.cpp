@@ -65,7 +65,7 @@ public:
 // Support classes
 
 class GateEitherVertex VL_NOT_FINAL : public V3GraphVertex {
-    VL_RTTI_IMPLEMENTATION(GateEitherVertex, V3GraphVertex)
+    VL_RTTI_IMPL(GateEitherVertex, V3GraphVertex)
     AstScope* const m_scopep;  // Scope vertex refers to
     bool m_reducible = true;  // True if this node should be able to be eliminated
     bool m_dedupable = true;  // True if this node should be able to be deduped
@@ -123,7 +123,7 @@ public:
 };
 
 class GateVarVertex final : public GateEitherVertex {
-    VL_RTTI_IMPLEMENTATION(GateVarVertex, GateEitherVertex)
+    VL_RTTI_IMPL(GateVarVertex, GateEitherVertex)
     AstVarScope* const m_varScp;
     bool m_isTop = false;
     bool m_isClock = false;
@@ -166,7 +166,7 @@ public:
 };
 
 class GateLogicVertex final : public GateEitherVertex {
-    VL_RTTI_IMPLEMENTATION(GateLogicVertex, GateEitherVertex)
+    VL_RTTI_IMPL(GateLogicVertex, GateEitherVertex)
     AstNode* const m_nodep;
     AstActive* const m_activep;  // Under what active; nullptr is ok (under cfunc or such)
     const bool m_slow;  // In slow block

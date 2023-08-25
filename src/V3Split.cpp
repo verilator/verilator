@@ -99,7 +99,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Support classes
 
 class SplitNodeVertex VL_NOT_FINAL : public V3GraphVertex {
-    VL_RTTI_IMPLEMENTATION(SplitNodeVertex, V3GraphVertex)
+    VL_RTTI_IMPL(SplitNodeVertex, V3GraphVertex)
     AstNode* const m_nodep;
 
 protected:
@@ -118,7 +118,7 @@ public:
 };
 
 class SplitPliVertex final : public SplitNodeVertex {
-    VL_RTTI_IMPLEMENTATION(SplitPliVertex, SplitNodeVertex)
+    VL_RTTI_IMPL(SplitPliVertex, SplitNodeVertex)
 public:
     explicit SplitPliVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
@@ -128,7 +128,7 @@ public:
 };
 
 class SplitLogicVertex final : public SplitNodeVertex {
-    VL_RTTI_IMPLEMENTATION(SplitLogicVertex, SplitNodeVertex)
+    VL_RTTI_IMPL(SplitLogicVertex, SplitNodeVertex)
 public:
     SplitLogicVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
@@ -137,7 +137,7 @@ public:
 };
 
 class SplitVarStdVertex final : public SplitNodeVertex {
-    VL_RTTI_IMPLEMENTATION(SplitVarStdVertex, SplitNodeVertex)
+    VL_RTTI_IMPL(SplitVarStdVertex, SplitNodeVertex)
 public:
     SplitVarStdVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
@@ -146,7 +146,7 @@ public:
 };
 
 class SplitVarPostVertex final : public SplitNodeVertex {
-    VL_RTTI_IMPLEMENTATION(SplitVarPostVertex, SplitNodeVertex)
+    VL_RTTI_IMPL(SplitVarPostVertex, SplitNodeVertex)
 public:
     SplitVarPostVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
@@ -159,7 +159,7 @@ public:
 // Edge types
 
 class SplitEdge VL_NOT_FINAL : public V3GraphEdge {
-    VL_RTTI_IMPLEMENTATION(SplitEdge, V3GraphEdge)
+    VL_RTTI_IMPL(SplitEdge, V3GraphEdge)
     uint32_t m_ignoreInStep = 0;  // Step number that if set to, causes this edge to be ignored
     static uint32_t s_stepNum;  // Global step number
 protected:
@@ -191,7 +191,7 @@ public:
 uint32_t SplitEdge::s_stepNum = 0;
 
 class SplitPostEdge final : public SplitEdge {
-    VL_RTTI_IMPLEMENTATION(SplitPostEdge, SplitEdge)
+    VL_RTTI_IMPL(SplitPostEdge, SplitEdge)
 public:
     SplitPostEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL} {}
@@ -201,7 +201,7 @@ public:
 };
 
 class SplitLVEdge final : public SplitEdge {
-    VL_RTTI_IMPLEMENTATION(SplitLVEdge, SplitEdge)
+    VL_RTTI_IMPL(SplitLVEdge, SplitEdge)
 public:
     SplitLVEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL} {}
@@ -211,7 +211,7 @@ public:
 };
 
 class SplitRVEdge final : public SplitEdge {
-    VL_RTTI_IMPLEMENTATION(SplitRVEdge, SplitEdge)
+    VL_RTTI_IMPL(SplitRVEdge, SplitEdge)
 public:
     SplitRVEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL} {}
@@ -221,7 +221,7 @@ public:
 };
 
 class SplitScorebdEdge final : public SplitEdge {
-    VL_RTTI_IMPLEMENTATION(SplitScorebdEdge, SplitEdge)
+    VL_RTTI_IMPL(SplitScorebdEdge, SplitEdge)
 public:
     SplitScorebdEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
         : SplitEdge{graphp, fromp, top, WEIGHT_NORMAL} {}
@@ -231,7 +231,7 @@ public:
 };
 
 class SplitStrictEdge final : public SplitEdge {
-    VL_RTTI_IMPLEMENTATION(SplitStrictEdge, SplitEdge)
+    VL_RTTI_IMPL(SplitStrictEdge, SplitEdge)
     // A strict order, based on the original statement order in the graph
     // The only non-cutable edge type
 public:

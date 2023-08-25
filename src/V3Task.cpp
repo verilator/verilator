@@ -85,7 +85,7 @@ public:
 };
 
 class TaskEdge final : public V3GraphEdge {
-    VL_RTTI_IMPLEMENTATION(TaskEdge, V3GraphEdge)
+    VL_RTTI_IMPL(TaskEdge, V3GraphEdge)
 public:
     TaskEdge(V3Graph* graphp, TaskBaseVertex* fromp, TaskBaseVertex* top)
         : V3GraphEdge{graphp, fromp, top, 1, false} {}

@@ -60,7 +60,7 @@ namespace {
 //  Data structures (graph types)
 
 class SchedAcyclicLogicVertex final : public V3GraphVertex {
-    VL_RTTI_IMPLEMENTATION(SchedAcyclicLogicVertex, V3GraphVertex)
+    VL_RTTI_IMPL(SchedAcyclicLogicVertex, V3GraphVertex)
     AstNode* const m_logicp;  // The logic node this vertex represents
     AstScope* const m_scopep;  // The enclosing AstScope of the logic node
 
@@ -83,7 +83,7 @@ public:
 };
 
 class SchedAcyclicVarVertex final : public V3GraphVertex {
-    VL_RTTI_IMPLEMENTATION(SchedAcyclicVarVertex, V3GraphVertex)
+    VL_RTTI_IMPL(SchedAcyclicVarVertex, V3GraphVertex)
     AstVarScope* const m_vscp;  // The AstVarScope this vertex represents
 
 public:

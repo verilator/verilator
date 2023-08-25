@@ -142,7 +142,7 @@ public:
 // Graph support classes
 
 class TristateVertex final : public V3GraphVertex {
-    VL_RTTI_IMPLEMENTATION(TristateVertex, V3GraphVertex)
+    VL_RTTI_IMPL(TristateVertex, V3GraphVertex)
     AstNode* const m_nodep;
     bool m_isTristate = false;  // Logic indicates a tristate
     bool m_feedsTri = false;  // Propagates to a tristate node (on RHS)

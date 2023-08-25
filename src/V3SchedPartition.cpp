@@ -55,7 +55,7 @@ namespace V3Sched {
 namespace {
 
 class SchedSenVertex final : public V3GraphVertex {
-    VL_RTTI_IMPLEMENTATION(SchedSenVertex, V3GraphVertex)
+    VL_RTTI_IMPL(SchedSenVertex, V3GraphVertex)
     const AstSenItem* const m_senItemp;
 
 public:
@@ -75,7 +75,7 @@ public:
 };
 
 class SchedLogicVertex final : public V3GraphVertex {
-    VL_RTTI_IMPLEMENTATION(SchedLogicVertex, V3GraphVertex)
+    VL_RTTI_IMPL(SchedLogicVertex, V3GraphVertex)
     AstScope* const m_scopep;
     AstSenTree* const m_senTreep;
     AstNode* const m_logicp;
@@ -99,7 +99,7 @@ public:
 };
 
 class SchedVarVertex final : public V3GraphVertex {
-    VL_RTTI_IMPLEMENTATION(SchedVarVertex, V3GraphVertex)
+    VL_RTTI_IMPL(SchedVarVertex, V3GraphVertex)
     const AstVarScope* const m_vscp;
 
 public:

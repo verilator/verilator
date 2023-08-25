@@ -511,7 +511,7 @@ static_assert(!std::is_polymorphic<SiblingMC>::value, "Should not have a vtable"
 
 // GraphEdge for the MTask graph
 class MTaskEdge final : public V3GraphEdge, public MergeCandidate {
-    VL_RTTI_IMPLEMENTATION(MTaskEdge, V3GraphEdge)
+    VL_RTTI_IMPL(MTaskEdge, V3GraphEdge)
     friend class LogicMTask;
     template <GraphWay::en T_Way>
     friend class PartPropagateCp;

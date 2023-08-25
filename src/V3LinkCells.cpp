@@ -52,7 +52,7 @@ public:
 };
 
 class LinkCellsVertex final : public V3GraphVertex {
-    VL_RTTI_IMPLEMENTATION(LinkCellsVertex, V3GraphVertex)
+    VL_RTTI_IMPL(LinkCellsVertex, V3GraphVertex)
     AstNodeModule* const m_modp;
 
 public:
@@ -70,7 +70,7 @@ public:
 };
 
 class LibraryVertex final : public V3GraphVertex {
-    VL_RTTI_IMPLEMENTATION(LibraryVertex, V3GraphVertex)
+    VL_RTTI_IMPL(LibraryVertex, V3GraphVertex)
 public:
     explicit LibraryVertex(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
