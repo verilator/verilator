@@ -52,6 +52,10 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+namespace V3Sched {
+
+namespace {
+
 // ##############################################################################
 //  Data structures (graph types)
 
@@ -96,10 +100,6 @@ public:
     string dotColor() const override { return "blue"; }
     // LCOV_EXCL_STOP
 };
-
-namespace V3Sched {
-
-namespace {
 
 class Graph final : public V3Graph {
     void loopsVertexCb(V3GraphVertex* vtxp) override {

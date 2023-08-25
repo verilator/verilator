@@ -44,6 +44,10 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+namespace V3Sched {
+
+namespace {
+
 // Driving region flags
 enum RegionFlags : uint8_t {
     NONE = 0x0,  //
@@ -138,10 +142,6 @@ public:
     string name() const override VL_MT_STABLE { return m_vscp->name(); }
     string dotShape() const override { return varp()->isPrimaryInish() ? "invhouse" : "ellipse"; }
 };
-
-namespace V3Sched {
-
-namespace {
 
 class Graph final : public V3Graph {};
 

@@ -50,6 +50,10 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+namespace V3Sched {
+
+namespace {
+
 class SchedSenVertex final : public V3GraphVertex {
     const AstSenItem* const m_senItemp;
 
@@ -110,10 +114,6 @@ public:
     }
     // LCOV_EXCL_STOP
 };
-
-namespace V3Sched {
-
-namespace {
 
 class SchedGraphBuilder final : public VNVisitor {
     // NODE STATE
