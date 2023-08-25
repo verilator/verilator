@@ -24,6 +24,17 @@ class CParam2 #(parameter PARAM=10);
     endfunction
 endclass
 
+`ifdef CONSTSIM
+module sub();
+    parameter N = 32;
+    for (genvar i = 0; i < N/8; i = i + 1) begin
+        initial begin
+        end
+    end
+    // Test for bug4281, usage conflict of user2 with constant simulator in V3Param.cpp
+endmodule
+`endif
+
 module t;
 `ifdef BAD_PAREN
     CParam::type_t val_0 = 100;
@@ -31,20 +42,15 @@ module t;
     CParam#()::type_t val_0 = 100;
 `endif
     CParam2#()::type_t val_2 = 200;
-    //CParam cls = new;
 
 `ifdef CONSTSIM
-    parameter N = 32;
-    for (genvar i = 0; i < N/8; i = i + 1) begin
-        initial begin
-        end
-    end
+
+    sub i_sub();
 `endif
 
     initial begin
         if (val_0 != 100) $stop;
         if (val_2 != 200) $stop;
-        //cls.check_param(10);
         $write("*-* All Finished *-*\n");
         $finish;
     end

@@ -18,7 +18,7 @@
 //      For each cell:
 //          If parameterized,
 //              Determine all parameter widths, constant values.
-//              (Interfaces also matter, as if an interface is parameterized
+//              (Interfaces also matter, as if a module is parameterized
 //              this effectively changes the width behavior of all that
 //              reference the iface.)
 //              Clone module cell calls, renaming with __{par1}_{par2}_...
@@ -227,6 +227,10 @@ class ParamProcessor final : public VNDeleter {
     //                          //        (0=not processed, 1=iterated, but no number,
     //                          //         65+ parameter numbered)
     // NODE STATE - Shared with ParamVisitor
+    //   AstClass::user4p()     // AstClass* Unchanged copy of the parameterized class node.
+    //                                    The class node may be modified according to parameter
+    //                                    values and an unchanged copy is needed to instantiate
+    //                                    classes with different parameters.
     //   AstNodeModule::user5() // bool   True if processed
     //   AstGenFor::user5()     // bool   True if processed
     //   AstVar::user5()        // bool   True if constant propagated
@@ -574,8 +578,8 @@ class ParamProcessor final : public VNDeleter {
         // Note all module internal variables will be re-linked to the new modules by clone
         // However links outside the module (like on the upper cells) will not.
         AstNodeModule* newmodp;
-        if (srcModp->user2p()) {
-            newmodp = VN_CAST(srcModp->user2p()->cloneTree(false), NodeModule);
+        if (srcModp->user4p()) {
+            newmodp = VN_CAST(srcModp->user4p()->cloneTree(false), NodeModule);
         } else {
             newmodp = srcModp->cloneTree(false);
         }
@@ -617,7 +621,7 @@ class ParamProcessor final : public VNDeleter {
         // Grab all I/O so we can remap our pins later
         // Note we allow multiple users of a parameterized model,
         // thus we need to stash this info.
-        collectPins(clonemapp, newmodp, srcModp->user2p());
+        collectPins(clonemapp, newmodp, srcModp->user4p());
         // Relink parameter vars to the new module
         relinkPins(clonemapp, paramsp);
         // Fix any interface references
@@ -856,14 +860,14 @@ class ParamProcessor final : public VNDeleter {
 
         if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
-            // If it's the first use of the default instance, create a copy and store it in user2p.
-            // user2p will also be used to check if the default instance is used.
-            if (!srcModpr->user2p() && VN_IS(srcModpr, Class)) {
+            // If it's the first use of the default instance, create a copy and store it in user4p.
+            // user4p will also be used to check if the default instance is used.
+            if (!srcModpr->user4p() && VN_IS(srcModpr, Class)) {
                 AstClass* classCopyp = VN_AS(srcModpr, Class)->cloneTree(false);
                 // It is a temporary copy of the original class node, stored in order to create
                 // another instances. It is needed only during class instantiation.
                 pushDeletep(classCopyp);
-                srcModpr->user2p(classCopyp);
+                srcModpr->user4p(classCopyp);
                 storeOriginalParams(classCopyp);
             }
         } else if (AstNodeModule* const paramedModp
@@ -972,13 +976,8 @@ public:
 
 class ParamVisitor final : public VNVisitor {
     // NODE STATE
-    // AstNodeModule::user1 -> bool: already fixed level
-    // AstClass::user2p     -> AstClass*: Unchanged copy of the parameterized class node.
-    //                                    The class node may be modified according to parameter
-    //                                    values and an unchanged copy is needed to instantiate
-    //                                    classes with different parameters.
+    // AstNodeModule::user1 -> bool: already fixed level (temporary)
 
-    // STATE
     ParamProcessor m_processor;  // De-parameterize a cell, build modules
     UnrollStateful m_unroller;  // Loop unroller
 
@@ -1435,7 +1434,7 @@ public:
             for (AstNodeModule* const modp : modps) netlistp->addModulesp(modp);
 
             for (AstClass* const classp : m_paramClasses) {
-                if (!classp->user2p()) {
+                if (!classp->user4p()) {
                     // The default value isn't referenced, so it can be removed
                     VL_DO_DANGLING(pushDeletep(classp->unlinkFrBack()), classp);
                 } else {
