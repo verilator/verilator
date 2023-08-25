@@ -264,6 +264,8 @@ class AstNodePreSel VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := thsp : Optional[AstNodeExpr]
     // @astgen op4 := attrp : Optional[AstAttrOf]
+    bool m_pure;  // Cached results of isPure method
+    bool m_pureComputed = false;  // True if m_pure was already computed;
 protected:
     AstNodePreSel(VNType t, FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
         : AstNodeExpr{t, fl} {
@@ -280,6 +282,7 @@ public:
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
+    bool isPure() override;
 };
 class AstNodeQuadop VL_NOT_FINAL : public AstNodeExpr {
     // 4-ary expression
@@ -287,6 +290,8 @@ class AstNodeQuadop VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := thsp : AstNodeExpr
     // @astgen op4 := fhsp : AstNodeExpr
+    bool m_pure;  // Cached results of isPure method
+    bool m_pureComputed = false;  // True if m_pure was already computed;
 protected:
     AstNodeQuadop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp,
                   AstNodeExpr* fhsp)
@@ -314,6 +319,7 @@ public:
     virtual bool sizeMattersFhs() const = 0;  // True if output result depends on ths size
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode*) const override { return true; }
+    bool isPure() override;
 };
 class AstNodeTermop VL_NOT_FINAL : public AstNodeExpr {
     // Terminal operator -- an operator with no "inputs"

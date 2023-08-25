@@ -159,6 +159,22 @@ bool AstNodeTriop::isPure() {
     return m_pure;
 }
 
+bool AstNodePreSel::isPure() {
+    if (!m_pureComputed) {
+        m_pure = fromp()->isPure() && rhsp()->isPure() && thsp()->isPure();
+        m_pureComputed = true;
+    }
+    return m_pure;
+}
+
+bool AstNodeQuadop::isPure() {
+    if (!m_pureComputed) {
+        m_pure  = lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure() && fhsp()->isPure();
+        m_pureComputed = true;
+    }
+    return m_pure;
+}
+
 AstNodeCond::AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,
                          AstNodeExpr* elsep)
     : AstNodeTriop{t, fl, condp, thenp, elsep} {
