@@ -169,7 +169,7 @@ bool AstNodePreSel::isPure() {
 
 bool AstNodeQuadop::isPure() {
     if (!m_pureComputed) {
-        m_pure  = lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure() && fhsp()->isPure();
+        m_pure = lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure() && fhsp()->isPure();
         m_pureComputed = true;
     }
     return m_pure;
