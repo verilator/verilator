@@ -2256,6 +2256,11 @@ private:
         // parameters or vice versa
         return pinp->param() == refVarType.isParam();
     }
+    void updateVarUse(AstVar* nodep) {
+        // Avoid dotted.PARAM false positive when in a parameter block
+        // that is if ()'ed off by same dotted name as another block
+        if (nodep && nodep->isParam()) nodep->usedParam(true);
+    }
 
     // VISITs
     void visit(AstNetlist* nodep) override {
@@ -2922,6 +2927,7 @@ private:
             if (AstVar* const varp
                 = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr) {
                 nodep->varp(varp);
+                updateVarUse(nodep->varp());
                 // Generally set by parse, but might be an import
                 nodep->classOrPackagep(foundp->classOrPackagep());
             }
@@ -2964,6 +2970,7 @@ private:
                 AstVar* const varp
                     = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr;
                 nodep->varp(varp);
+                updateVarUse(nodep->varp());
                 UINFO(7, "         Resolved " << nodep << endl);  // Also prints varp
                 if (!nodep->varp()) {
                     nodep->v3error("Can't find definition of "
@@ -3001,6 +3008,7 @@ private:
                     // later optimizations to deal with VarXRef.
                     nodep->varp(vscp->varp());
                     nodep->varScopep(vscp);
+                    updateVarUse(nodep->varp());
                     UINFO(7, "         Resolved " << nodep << endl);  // Also prints taskp
                     AstVarRef* const newvscp
                         = new AstVarRef{nodep->fileline(), vscp, nodep->access()};
