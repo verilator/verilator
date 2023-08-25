@@ -21,6 +21,7 @@ Verilator 5.015 devel
 * Fix variable lifetimes in extern methods (#4414). [Krzysztof Boroński]
 * Fix multple function definitions in V3Sched (#4416). [Hennadii Chernyshchyk]
 * Fix false UNUSEDPARAM on generate localparam (#4427). [Bill Pringlemeir]
+* Fix false MULTITOP on bound interfaces (#4438). [Alex Solomatnikov]
 
 
 Verilator 5.014 2023-08-06
