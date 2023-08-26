@@ -60,9 +60,9 @@ endclass
    Wrap #(.P(16)) w16;
    Wrap2 #(.P(32)) w32;
    SelfRefClassTypeParam src_logic;
-   SelfRefClassTypeParam::self_int_t src_int;
+   SelfRefClassTypeParam#()::self_int_t src_int;
    SelfRefClassIntParam src1;
-   SelfRefClassIntParam::self_int_t src10;
+   SelfRefClassIntParam#()::self_int_t src10;
    initial begin
       c12 = new;
       c4 = new;
