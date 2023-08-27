@@ -485,9 +485,7 @@ class EmitCModel final : public EmitCFunc {
             puts("vlSymsp->__Vm_threadPoolp = static_cast<VlThreadPool*>(");
         }
         puts("contextp()->resetThreadPoolp()");
-        if (v3Global.opt.threads() > 1) {
-            puts(")");
-        }
+        if (v3Global.opt.threads() > 1) { puts(")"); }
         puts(";\n}\n");
 
         if (v3Global.opt.trace()) {
