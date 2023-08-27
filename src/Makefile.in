@@ -21,8 +21,6 @@ srcdir = @srcdir@
 PYTHON3 = @PYTHON3@
 EXEEXT = @EXEEXT@
 BEAR = @BEAR@
-BEAR_OUTPUT_FLAG = @CFG_BEAR_OUTPUT_FLAG@
-BEAR_CMD_FLAG = @CFG_BEAR_CMD_FLAG@
 # VPATH only does sources; fix install_test's not creating ../bin
 vpath %.h @srcdir@
 
@@ -41,7 +39,7 @@ UNDER_GIT = $(wildcard ${srcdir}/../.git/logs/HEAD)
 
 ifneq ($(BEAR),)
 RM_OBJ_OPT_COMPILE_COMMANDS := rm -f obj_opt/compile_commands.json
-BEAR_OBJ_OPT := $(BEAR) --append $(BEAR_OUTPUT_FLAG) obj_opt/compile_commands.json $(BEAR_CMD_FLAG)
+BEAR_OBJ_OPT := $(BEAR) --append --output obj_opt/compile_commands.json --
 else
 RM_OBJ_OPT_COMPILE_COMMANDS :=
 BEAR_OBJ_OPT :=

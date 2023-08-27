@@ -167,24 +167,13 @@ if test "$CFG_ENABLE_BEAR" = "yes"; then
   AC_MSG_RESULT([$BEAR --version = $bear_version])
 
   # Different versions of Bear use different flags for specifying output file.
-  # Version 3.x also requires "--" before command.
-  # Find out to use.
-  AC_MSG_CHECKING(supported syntax of bear command)
-  if $BEAR --output conftest.json -- true >/dev/null 2>&1; then
-    # Version 3.x
-    CFG_BEAR_OUTPUT_FLAG=--output
-    CFG_BEAR_CMD_FLAG=--
-  elif $BEAR -o conftest.json true >/dev/null 2>&1; then
-    # Version 2.x
-    CFG_BEAR_OUTPUT_FLAG=-o
-    CFG_BEAR_CMD_FLAG=
-  else
-    AC_MSG_RESULT(unknown)
+  # Only cmd line interface from version 3.x is supported.
+  AC_MSG_CHECKING(whether bear command line syntax is supported)
+  if ! $BEAR --output conftest.json -- true >/dev/null 2>&1; then
+    AC_MSG_RESULT(no)
     AC_MSG_ERROR([$BEAR uses unsupported syntax])
   fi
-  AC_SUBST(CFG_BEAR_OUTPUT_FLAG)
-  AC_SUBST(CFG_BEAR_CMD_FLAG)
-  AC_MSG_RESULT([$BEAR $CFG_BEAR_OUTPUT_FLAG <file> $CFG_BEAR_CMD_FLAG <cmd>])
+  AC_MSG_RESULT(yes)
 fi
 
 # Compiler flags (ensure they are not empty to avoid configure defaults)

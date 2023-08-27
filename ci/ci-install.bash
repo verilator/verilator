@@ -59,8 +59,8 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
   if [ "$CI_OS_NAME" = "linux" ]; then
     sudo apt-get update ||
     sudo apt-get update
-    sudo apt-get install bear ccache help2man libfl-dev ||
-    sudo apt-get install bear ccache help2man libfl-dev
+    sudo apt-get install ccache help2man libfl-dev ||
+    sudo apt-get install ccache help2man libfl-dev
     if [ "$CI_RUNS_ON" = "ubuntu-20.04" ]; then
       # Some conflict of libunwind verison on 22.04, can live without it for now
       sudo apt-get install libgoogle-perftools-dev ||
@@ -71,8 +71,8 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
       sudo apt-get install libsystemc libsystemc-dev
     fi
     if [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
-      sudo apt-get install mold ||
-      sudo apt-get install mold
+      sudo apt-get install bear mold ||
+      sudo apt-get install bear mold
     fi
     if [ "$COVERAGE" = 1 ]; then
       yes yes | sudo cpan -fi Parallel::Forker
@@ -83,9 +83,9 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     fi
   elif [ "$CI_OS_NAME" = "osx" ]; then
     brew update
-    brew install bear ccache perl gperftools
+    brew install ccache perl gperftools
   elif [ "$CI_OS_NAME" = "freebsd" ]; then
-    sudo pkg install -y autoconf bear bison ccache gmake perl5
+    sudo pkg install -y autoconf bison ccache gmake perl5
   else
     fatal "Unknown os: '$CI_OS_NAME'"
   fi
