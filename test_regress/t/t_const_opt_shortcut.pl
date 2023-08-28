@@ -16,10 +16,7 @@ compile(
     );
 
 execute(
-    # Shortcut is not properly implemented yet as in https://github.com/verilator/verilator/issues/487
-    # When the issue is fixed, change the following two lines.
-    check_finished => 0,
-    fails => $Self->{vlt_all},
+    check_finished => 1,
     );
 
 ok(1);
