@@ -296,8 +296,16 @@ private:
             nodep->v3warn(STATICVAR, "Static variable with assignment declaration declared in a "
                                      "loop converted to automatic");
         }
-        if (m_ftaskp && m_ftaskp->classMethod() && nodep->lifetime().isNone()) {
-            nodep->lifetime(VLifetime::AUTOMATIC);
+        if (m_ftaskp) {
+            bool classMethod = m_ftaskp->classMethod();
+            if (!classMethod) {
+                AstClassOrPackageRef* const pkgrefp
+                    = VN_CAST(m_ftaskp->classOrPackagep(), ClassOrPackageRef);
+                if (pkgrefp && VN_IS(pkgrefp->classOrPackagep(), Class)) classMethod = true;
+            }
+            if (classMethod && nodep->lifetime().isNone()) {
+                nodep->lifetime(VLifetime::AUTOMATIC);
+            }
         }
         if (nodep->lifetime().isNone() && nodep->varType() != VVarType::PORT) {
             nodep->lifetime(m_lifetime);
@@ -370,9 +378,11 @@ private:
                 // Making an AstAssign (vs AstAssignW) to a wire is an error, suppress it
                 FileLine* const newfl = new FileLine{fl};
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
-                auto* const assp
-                    = new AstAssign{newfl, new AstVarRef{newfl, nodep->name(), VAccess::WRITE},
-                                    VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)};
+                // Create a ParseRef to the wire. We cannot use the var as it may be deleted if
+                // it's a port (see t_var_set_link.v)
+                auto* const assp = new AstAssign{
+                    newfl, new AstParseRef{newfl, VParseRefExp::PX_TEXT, nodep->name()},
+                    VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)};
                 if (nodep->lifetime().isAutomatic()) {
                     nodep->addNextHere(new AstInitialAutomatic{newfl, assp});
                 } else {
@@ -381,7 +391,7 @@ private:
             }  // 4. Under blocks, it's an initial value to be under an assign
             else {
                 nodep->addNextHere(
-                    new AstAssign{fl, new AstVarRef{fl, nodep->name(), VAccess::WRITE},
+                    new AstAssign{fl, new AstVarRef{fl, nodep, VAccess::WRITE},
                                   VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)});
             }
         }

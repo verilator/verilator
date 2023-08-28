@@ -1,0 +1,12 @@
+%Warning-PINMISSING: t/t_inst_pin_place_bad.v:21:7: Cell has missing pin: 'pin_1'
+   21 |     ) i_sub (
+      |       ^~~~~
+                     ... For warning description see https://verilator.org/warn/PINMISSING?v=latest
+                     ... Use "/* verilator lint_off PINMISSING */" and lint_on around source to disable this message.
+%Error-PINNOTFOUND: t/t_inst_pin_place_bad.v:22:10: Pin not found: 'PARAM_A'
+   22 |         .PARAM_A(1)
+      |          ^~~~~~~
+%Error-PINNOTFOUND: t/t_inst_pin_place_bad.v:20:10: Parameter pin not found: 'pin_1'
+   20 |         .pin_1(1)
+      |          ^~~~~
+%Error: Exiting due to

@@ -8,7 +8,29 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
-Verilator 5.013 devel
+Verilator 5.015 devel
+==========================
+
+**Minor:**
+
+* Add --no-trace-top to not trace top signals (#4412) (#4422). [Frans Skarman]
+* Support assignments of packed values to stream expressions on queues (#4401). [Ryszard Rozak, Antmicro Ltd]
+* Support no-parentheses calls to static methods (#4432). [Krzysztof Boroński]
+* Fix Windows filename format, etc (#3873) (#4421). [Anthony Donlon].
+* Fix data type of condition operation on class objects (#4345) (#4352). [Ryszard Rozak, Antmicro Ltd]
+* Fix ++/-- under statements (#4399). [Aleksander Kiryk, Antmicro Ltd]
+* Fix detection of mixed blocking and nonblocking assignment in nested assignments (#4404). [Ryszard Rozak, Antmicro Ltd]
+* Fix jumping over object initialization (#4411). [Krzysztof Boroński]
+* Fix variable lifetimes in extern methods (#4414). [Krzysztof Boroński]
+* Fix multiple function definitions in V3Sched (#4416). [Hennadii Chernyshchyk]
+* Fix false UNUSEDPARAM on generate localparam (#4427). [Bill Pringlemeir]
+* Fix checking for parameter and port connections in the wrong place (#4428). [Anthony Donlon]
+* Fix coroutine handle movement during queue manipulation (#4431). [Aleksander Kiryk, Antmicro Ltd]
+* Fix nested assignments on the LHS (#4435). [Ryszard Rozak, Antmicro Ltd]
+* Fix false MULTITOP on bound interfaces (#4438). [Alex Solomatnikov]
+
+
+Verilator 5.014 2023-08-06
 ==========================
 
 **Minor:**
@@ -46,6 +68,7 @@ Verilator 5.013 devel
 * Fix cmake astgen for Rocky Linux 8.7 (#4343). [Julian Daube]
 * Fix class timescale in class packages (#4348). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix string concatenations (#4354). [Ryszard Rozak, Antmicro Ltd]
+* Fix unlinked task error from broken context (#4355) (#4402). [Aleksander Kiryk, Antmicro Ltd]
 * Fix selects on unpacked structs (#4359). [Ryszard Rozak, Antmicro Ltd]
 * Fix select operation on assoc array with wide keys (#4360). [Ryszard Rozak, Antmicro Ltd]
 * Fix non-public methods with wide output (#4364). [Ryszard Rozak, Antmicro Ltd]
@@ -53,6 +76,7 @@ Verilator 5.013 devel
 * Fix assign to input var in methods (#4367). [Aleksander Kiryk, Antmicro Ltd]
 * Fix VlProcess not found (#4368). [Aleksander Kiryk, Antmicro Ltd]
 * Fix order of evaluation of function calls in statements (#4375). [Ryszard Rozak, Antmicro Ltd]
+* Fix config_build.h issues (#4380) (#4381). [Andrew Miloradovsky]
 
 
 Verilator 5.012 2023-06-13

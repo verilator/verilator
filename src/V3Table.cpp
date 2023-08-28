@@ -181,7 +181,7 @@ public:
             // We'll make the table with a separate natural alignment for each output var, so
             // always have 8, 16 or 32 bit widths, so use widthTotalBytes
             m_outWidthBytes += nodep->varp()->dtypeSkipRefp()->widthTotalBytes();
-            m_outVarps.emplace_back(vscp, m_outVarps.size());
+            m_outVarps.emplace_back(vscp, static_cast<unsigned>(m_outVarps.size()));
         }
         if (nodep->access().isReadOrRW()) {
             m_inWidthBits += nodep->varp()->width();

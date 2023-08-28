@@ -293,10 +293,8 @@ public:
 void V3Graph::selfTest() {
     // Execute all of the tests
     UINFO(2, __FUNCTION__ << ": " << endl);
-    // clang-format off
     { V3GraphTestStrong{}.run(); }
     { V3GraphTestAcyc{}.run(); }
     { V3GraphTestVars{}.run(); }
     { V3GraphTestImport{}.run(); }
-    // clang-format on
 }

@@ -20,6 +20,7 @@
 // clang-format off
 #include "V3Error.h"
 #include "V3FileLine.h"
+#include "V3Os.h"
 #include "V3String.h"
 #ifndef V3ERROR_NO_GLOBAL_
 # include "V3Global.h"
@@ -286,12 +287,7 @@ FileLine* FileLine::copyOrSameFileLine() {
     return newp;
 }
 
-string FileLine::filebasename() const VL_MT_SAFE {
-    string name = filename();
-    string::size_type pos;
-    if ((pos = name.rfind('/')) != string::npos) name.erase(0, pos + 1);
-    return name;
-}
+string FileLine::filebasename() const VL_MT_SAFE { return V3Os::filenameNonDir(filename()); }
 
 string FileLine::filebasenameNoExt() const {
     string name = filebasename();

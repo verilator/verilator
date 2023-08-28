@@ -2251,7 +2251,7 @@ tf_variable_identifier<varp>:           // IEEE: part of list_of_tf_variable_ide
                 id variable_dimensionListE sigAttrListE exprEqE
                         { $$ = VARDONEA($<fl>1, *$1, $2, $3);
                           if ($4) AstNode::addNext<AstNode, AstNode>(
-                                      $$, new AstAssign{$4->fileline(), new AstVarRef{$<fl>1, *$1, VAccess::WRITE}, $4}); }
+                                      $$, new AstAssign{$4->fileline(), new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $4}); }
         ;
 
 variable_declExpr<nodep>:               // IEEE: part of variable_decl_assignment - rhs of expr
@@ -2995,7 +2995,7 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); }
         |       netId sigAttrListE '=' expr
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
-                          auto* const assignp = new AstAssignW{$3, new AstVarRef{$<fl>1, *$1, VAccess::WRITE}, $4};
+                          auto* const assignp = new AstAssignW{$3, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $4};
                           if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
                           AstNode::addNext<AstNode, AstNode>($$, assignp); }
         |       netId variable_dimensionList sigAttrListE
@@ -3912,14 +3912,14 @@ for_initializationItem<nodep>:          // IEEE: variable_assignment + for_varia
                           AstVar* const varp = VARDONEA($<fl>2, *$2, nullptr, nullptr);
                           varp->lifetime(VLifetime::AUTOMATIC);
                           $$ = varp;
-                          $$->addNext(new AstAssign{$3, new AstVarRef{$<fl>2, *$2, VAccess::WRITE}, $4}); }
+                          $$->addNext(new AstAssign{$3, new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2}, $4}); }
         //                      // IEEE-2012:
         |       yVAR data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($2);
                           AstVar* const varp = VARDONEA($<fl>3, *$3, nullptr, nullptr);
                           varp->lifetime(VLifetime::AUTOMATIC);
                           $$ = varp;
-                          $$->addNext(new AstAssign{$4, new AstVarRef{$<fl>3, *$3, VAccess::WRITE}, $5}); }
+                          $$->addNext(new AstAssign{$4, new AstParseRef{$<fl>3, VParseRefExp::PX_TEXT, *$3}, $5}); }
         //                      // IEEE: variable_assignment
         //                      // UNSUP variable_lvalue below
         |       varRefBase '=' expr                     { $$ = new AstAssign{$2, $1, $3}; }
@@ -4254,11 +4254,13 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_ONEHOT '(' expr ')'                  { $$ = new AstOneHot{$1, $3}; }
         |       yD_ONEHOT0 '(' expr ')'                 { $$ = new AstOneHot0{$1, $3}; }
         |       yD_PAST '(' expr ')'                    { $$ = new AstPast{$1, $3, nullptr}; }
-        |       yD_PAST '(' expr ',' expr ')'           { $$ = new AstPast{$1, $3, $5}; }
-        |       yD_PAST '(' expr ',' expr ',' expr ')'
-                        { $$ = $3; BBUNSUP($1, "Unsupported: $past expr2 and clock arguments"); }
-        |       yD_PAST '(' expr ',' expr ',' expr ',' expr')'
-                        { $$ = $3; BBUNSUP($1, "Unsupported: $past expr2 and clock arguments"); }
+        |       yD_PAST '(' expr ',' exprE ')'          { $$ = new AstPast{$1, $3, $5}; }
+        |       yD_PAST '(' expr ',' exprE ',' exprE ')'
+                        { if ($7) BBUNSUP($1, "Unsupported: $past expr2 and/or clock arguments");
+                          $$ = new AstPast{$1, $3, $5}; }
+        |       yD_PAST '(' expr ',' exprE ',' exprE ',' clocking_eventE ')'
+                        { if ($7 || $9) BBUNSUP($1, "Unsupported: $past expr2 and/or clock arguments");
+                          $$ = new AstPast{$1, $3, $5}; }
         |       yD_POW '(' expr ',' expr ')'            { $$ = new AstPowD{$1, $3, $5}; }
         |       yD_RANDOM '(' expr ')'                  { $$ = new AstRand{$1, $3, false}; }
         |       yD_RANDOM parenE                        { $$ = new AstRand{$1, nullptr, false}; }
@@ -4681,6 +4683,11 @@ exprOrDataTypeEqE<nodep>:       // IEEE: optional '=' expression (part of param_
 
 constExpr<nodeExprp>:
                 expr                                    { $$ = $1; }
+        ;
+
+exprE<nodep>:                   // IEEE: optional expression
+                /*empty*/                               { $$ = nullptr; }
+        |       expr                                    { $$ = $1; }
         ;
 
 expr<nodeExprp>:                // IEEE: part of expression/constant_expression/primary
@@ -5614,8 +5621,8 @@ idArrayedForeach<nodeExprp>:    // IEEE: id + select (under foreach expression)
         ;
 
 // VarRef without any dots or vectorizaion
-varRefBase<varRefp>:
-                id                                      { $$ = new AstVarRef{$<fl>1, *$1, VAccess::READ}; }
+varRefBase<parseRefp>:
+                id                                      { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}; }
         ;
 
 // ParseRef
@@ -5663,6 +5670,11 @@ clocking_declaration<nodep>:            // IEEE: clocking_declaration
                         { $$ = new AstClocking{$<fl>2, "", $3, $5, false, true}; }
         |       yGLOBAL__CLOCKING yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
                         { $$ = new AstClocking{$<fl>3, *$3, $4, $6, false, true}; }
+        ;
+
+clocking_eventE<senItemp>:      // IEEE: optional clocking_event
+                /* empty */                             { $$ = nullptr; }
+        |       clocking_event                          { $$ = $1; }
         ;
 
 clocking_event<senItemp>:       // IEEE: clocking_event

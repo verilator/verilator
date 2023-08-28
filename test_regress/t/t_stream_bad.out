@@ -6,4 +6,9 @@
                               : ... In instance t
    12 |    initial packed_data_32 = {<<$random{byte_in}};
       |                              ^~
+%Error-UNSUPPORTED: t/t_stream_bad.v:12:30: Unsupported: Stream operation on a variable of a type 'byte$[0:3]'
+                                          : ... In instance t
+   12 |    initial packed_data_32 = {<<$random{byte_in}};
+      |                              ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to
