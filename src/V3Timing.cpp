@@ -552,7 +552,7 @@ private:
             ss << '"';
             // possibly a multiline string
             std::string comment = ss.str();
-            comment.erase(std::remove(comment.begin(), comment.end(), '\n'), comment.end());
+            std::replace(comment.begin(), comment.end(), '\n', ' ');
             AstCExpr* const commentp = new AstCExpr{sensesp->fileline(), comment, 0};
             commentp->dtypeSetString();
             sensesp->user2p(commentp);
