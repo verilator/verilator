@@ -1420,18 +1420,27 @@ private:
             beginp = createInlinedFTask(nodep, namePrefix, outvscp);
         }
         // Replace the ref
-        AstNode* const visitp = insertBeforeStmt(nodep, beginp);
+        AstNode* visitp = nullptr;
 
         if (VN_IS(nodep, New)) {
+            visitp = insertBeforeStmt(nodep, beginp);
             UASSERT_OBJ(cnewp, nodep, "didn't create cnew for new");
             nodep->replaceWith(cnewp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else if (VN_IS(nodep->backp(), NodeAssign)) {
+            UASSERT_OBJ(nodep->taskp()->isFunction(), nodep, "func reference to non-function");
+            visitp = insertBeforeStmt(nodep, beginp);
+            AstVarRef* const outrefp = new AstVarRef{nodep->fileline(), outvscp, VAccess::READ};
+            nodep->replaceWith(outrefp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else if (!VN_IS(nodep->backp(), StmtExpr)) {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep, "func reference to non-function");
             AstVarRef* const outrefp = new AstVarRef{nodep->fileline(), outvscp, VAccess::READ};
-            nodep->replaceWith(outrefp);
+            beginp = new AstExprStmt{nodep->fileline(), beginp, outrefp};
+            nodep->replaceWith(beginp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
+            visitp = insertBeforeStmt(nodep, beginp);
             if (nodep->taskp()->isFunction()) {
                 nodep->v3warn(
                     IGNOREDRETURN,

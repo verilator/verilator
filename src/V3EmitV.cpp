@@ -664,6 +664,12 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         iterateAndNextConstNull(nodep->pinsp());
         puts(")");
     }
+    void visit(AstCCall* nodep) override {
+        puts(nodep->funcp()->name());
+        puts("(");
+        iterateAndNextConstNull(nodep->argsp());
+        puts(")");
+    }
     void visit(AstArg* nodep) override { iterateAndNextConstNull(nodep->exprp()); }
     void visit(AstPrintTimeScale* nodep) override {
         puts(nodep->verilogKwd());

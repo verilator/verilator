@@ -550,7 +550,10 @@ private:
             ss << '"';
             V3EmitV::verilogForTree(sensesp, ss);
             ss << '"';
-            auto* const commentp = new AstCExpr{sensesp->fileline(), ss.str(), 0};
+            // possibly a multiline string
+            std::string comment = ss.str();
+            std::replace(comment.begin(), comment.end(), '\n', ' ');
+            AstCExpr* const commentp = new AstCExpr{sensesp->fileline(), comment, 0};
             commentp->dtypeSetString();
             sensesp->user2p(commentp);
             return commentp;

@@ -331,7 +331,6 @@ private:
     AstActive* m_activep = nullptr;  // Current active
     bool m_activeReducible = true;  // Is activation block reducible?
     bool m_inSenItem = false;  // Underneath AstSenItem; any varrefs are clocks
-    bool m_inExprStmt = false;  // Underneath ExprStmt; don't optimize LHS vars
     bool m_inSlow = false;  // Inside a slow structure
     std::vector<AstNode*> m_optimized;  // Logic blocks optimized
 
@@ -497,10 +496,6 @@ private:
             // the weight will increase
             if (nodep->access().isWriteOrRW()) {
                 new V3GraphEdge{&m_graph, m_logicVertexp, vvertexp, 1};
-                if (m_inExprStmt) {
-                    m_logicVertexp->clearReducibleAndDedupable("LHS var in ExprStmt");
-                    m_logicVertexp->setConsumed("LHS var in ExprStmt");
-                }
             }
             if (nodep->access().isReadOrRW()) {
                 new V3GraphEdge{&m_graph, vvertexp, m_logicVertexp, 1};
@@ -516,11 +511,6 @@ private:
         iterateNewStmt(nodep, "User C Function", "User C Function");
     }
     void visit(AstClocking* nodep) override { iterateNewStmt(nodep, nullptr, nullptr); }
-    void visit(AstExprStmt* nodep) override {
-        VL_RESTORER(m_inExprStmt);
-        m_inExprStmt = true;
-        iterateChildren(nodep);
-    }
     void visit(AstSenItem* nodep) override {
         VL_RESTORER(m_inSenItem);
         m_inSenItem = true;
@@ -905,6 +895,7 @@ class GateDedupeVarVisitor final : public VNVisitor {
     //   (Note, the IF must be the only node under the always,
     //    and the assign must be the only node under the if, other than the ifcond)
     // Any other ordering or node type, except for an AstComment, makes it not dedupable
+    // AstExprStmt in the subtree of a node also makes the node not dedupable.
 private:
     // STATE
     GateDedupeHash m_ghash;  // Hash used to find dupes of rhs of assign
@@ -920,6 +911,7 @@ private:
             // non-blocking statements, but erring on side of caution here
             if (!m_assignp) {
                 m_assignp = assignp;
+                m_dedupable = !assignp->exists([&](AstExprStmt*) { return true; });
             } else {
                 m_dedupable = false;
             }
@@ -944,6 +936,7 @@ private:
             if (m_always && !m_ifCondp && !ifp->elsesp()) {
                 // we're under an always, this is the first IF, and there's no else
                 m_ifCondp = ifp->condp();
+                m_dedupable = !m_ifCondp->exists([&](AstExprStmt*) { return true; });
                 iterateAndNextNull(ifp->thensp());
             } else {
                 m_dedupable = false;

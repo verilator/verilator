@@ -10,8 +10,6 @@
 %Error: Line 136: Bad result, got=0 expect=1
 %Error: Line 148: Bad result, got=1 expect=0
 %Error: Line 152: Bad result, got=1 expect=0
-%Error: Line 166: Bad result, got=1 expect=0
-%Error: Line 170: Bad result, got=1 expect=0
 %Error: Line 179: Bad result, got=0 expect=1
 %Error: Line 219: Bad result, got=64 expect=32
 %Error: Line 220: Bad result, got=64 expect=16
