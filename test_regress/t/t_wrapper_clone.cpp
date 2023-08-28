@@ -9,6 +9,7 @@
 #include <verilated.h>
 
 #include <unistd.h>
+
 #include <sys/wait.h>
 
 // These require the above. Comment prevents clang-format moving them
@@ -31,16 +32,13 @@ void single_cycle(VM_PREFIX* top) {
     top->eval();
 }
 
-
 int main(int argc, char** argv) {
     std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{contextp.get()}};
 
     top->reset = 1;
     top->is_parent = 0;
-    for (int i = 0; i < 5; i++) {
-        single_cycle(top.get());
-    }
+    for (int i = 0; i < 5; i++) { single_cycle(top.get()); }
 
     top->reset = 0;
     while (!contextp->gotFinish()) {
@@ -50,13 +48,12 @@ int main(int argc, char** argv) {
             int pid = fork();
             if (pid < 0) {
                 printf("fork failed\n");
-            }
-            else if (pid == 0) {
+            } else if (pid == 0) {
                 printf("child: here we go\n");
                 top->atClone();
-            }
-            else {
-                while (wait(NULL) > 0);
+            } else {
+                while (wait(NULL) > 0)
+                    ;
                 printf("parent: here we go\n");
                 top->is_parent = 1;
             }
