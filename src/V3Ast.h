@@ -1916,9 +1916,9 @@ public:
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     // METHODS - dump and error
-    void v3errorEnd(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex);
+    void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
     void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN
-        VL_REQUIRES(V3Error::s().m_mutex);
+        VL_RELEASE(V3Error::s().m_mutex);
     string warnContextPrimary() const VL_REQUIRES(V3Error::s().m_mutex) {
         return fileline()->warnContextPrimary();
     }

@@ -379,7 +379,7 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
 
 // cppverilator-suppress constParameter
 void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
-    VL_REQUIRES(V3Error::s().m_mutex) {
+    VL_RELEASE(V3Error::s().m_mutex) {
     std::ostringstream nsstr;
     if (lastLineno()) nsstr << this;
     nsstr << sstr.str();
@@ -396,7 +396,7 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
         nsstr << warnContextPrimary();
     }
     if (!m_waive) V3Waiver::addEntry(V3Error::s().errorCode(), filename(), sstr.str());
-    V3Error::s().v3errorEnd(nsstr, lstr.str());
+    V3Error::v3errorEnd(nsstr, lstr.str());
 }
 
 string FileLine::warnMore() const VL_REQUIRES(V3Error::s().m_mutex) {

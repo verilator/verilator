@@ -185,7 +185,7 @@ public:
     // For getline()
     string m_lineChars;  ///< Characters left for next line
 
-    void v3errorEnd(std::ostringstream& str) VL_REQUIRES(V3Error::s().m_mutex) {
+    void v3errorEnd(std::ostringstream& str) VL_RELEASE(V3Error::s().m_mutex) {
         fileline()->v3errorEnd(str);
     }
 
