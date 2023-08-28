@@ -292,6 +292,7 @@ class V3ErrorGuarded final {
     // Should only be used by V3ErrorGuarded::m_mutex is already locked
     // contains guarded members
     friend class V3Error;
+
 public:
     using MessagesSet = std::set<std::string>;
     using ErrorExitCb = void (*)(void);
@@ -519,10 +520,12 @@ public:
     // Error end takes the string stream to output, be careful to seek() as needed
     static void v3errorAcquireLock() VL_ACQUIRE(s().m_mutex);
     static std::ostringstream& v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mutex);
-    static std::ostringstream& v3errorPrepFileLine(V3ErrorCode code, const char* file, int line) VL_ACQUIRE(s().m_mutex);
+    static std::ostringstream& v3errorPrepFileLine(V3ErrorCode code, const char* file, int line)
+        VL_ACQUIRE(s().m_mutex);
     static std::ostringstream& v3errorStr() VL_REQUIRES(s().m_mutex);
     // static, but often overridden in classes.
-    static void v3errorEnd(std::ostringstream& sstr, const string& extra = "") VL_RELEASE(s().m_mutex);
+    static void v3errorEnd(std::ostringstream& sstr, const string& extra = "")
+        VL_RELEASE(s().m_mutex);
     static void vlAbort();
 };
 
