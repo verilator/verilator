@@ -548,8 +548,8 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
-    if (modname[0] == '/') {
-        // If leading /, obey existing absolute path, so can find getStdPackagePath()
+    if (!V3Os::filenameIsRel(modname)) {
+        // modname is an absolute path, so can find getStdPackagePath()
         string exists = filePathCheckOneDir(modname, "");
         if (exists != "") return exists;
     }
@@ -1496,6 +1496,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-timing", OnOff, &m_timing);
     DECL_OPTION("-top-module", Set, &m_topModule);
     DECL_OPTION("-top", Set, &m_topModule);
+    DECL_OPTION("-no-trace-top", Set, &m_noTraceTop);
     DECL_OPTION("-trace", OnOff, &m_trace);
     DECL_OPTION("-trace-coverage", OnOff, &m_traceCoverage);
     DECL_OPTION("-trace-depth", Set, &m_traceDepth);

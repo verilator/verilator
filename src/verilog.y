@@ -4254,11 +4254,13 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_ONEHOT '(' expr ')'                  { $$ = new AstOneHot{$1, $3}; }
         |       yD_ONEHOT0 '(' expr ')'                 { $$ = new AstOneHot0{$1, $3}; }
         |       yD_PAST '(' expr ')'                    { $$ = new AstPast{$1, $3, nullptr}; }
-        |       yD_PAST '(' expr ',' expr ')'           { $$ = new AstPast{$1, $3, $5}; }
-        |       yD_PAST '(' expr ',' expr ',' expr ')'
-                        { $$ = $3; BBUNSUP($1, "Unsupported: $past expr2 and clock arguments"); }
-        |       yD_PAST '(' expr ',' expr ',' expr ',' expr')'
-                        { $$ = $3; BBUNSUP($1, "Unsupported: $past expr2 and clock arguments"); }
+        |       yD_PAST '(' expr ',' exprE ')'          { $$ = new AstPast{$1, $3, $5}; }
+        |       yD_PAST '(' expr ',' exprE ',' exprE ')'
+                        { if ($7) BBUNSUP($1, "Unsupported: $past expr2 and/or clock arguments");
+                          $$ = new AstPast{$1, $3, $5}; }
+        |       yD_PAST '(' expr ',' exprE ',' exprE ',' clocking_eventE ')'
+                        { if ($7 || $9) BBUNSUP($1, "Unsupported: $past expr2 and/or clock arguments");
+                          $$ = new AstPast{$1, $3, $5}; }
         |       yD_POW '(' expr ',' expr ')'            { $$ = new AstPowD{$1, $3, $5}; }
         |       yD_RANDOM '(' expr ')'                  { $$ = new AstRand{$1, $3, false}; }
         |       yD_RANDOM parenE                        { $$ = new AstRand{$1, nullptr, false}; }
@@ -4681,6 +4683,11 @@ exprOrDataTypeEqE<nodep>:       // IEEE: optional '=' expression (part of param_
 
 constExpr<nodeExprp>:
                 expr                                    { $$ = $1; }
+        ;
+
+exprE<nodep>:                   // IEEE: optional expression
+                /*empty*/                               { $$ = nullptr; }
+        |       expr                                    { $$ = $1; }
         ;
 
 expr<nodeExprp>:                // IEEE: part of expression/constant_expression/primary
@@ -5663,6 +5670,11 @@ clocking_declaration<nodep>:            // IEEE: clocking_declaration
                         { $$ = new AstClocking{$<fl>2, "", $3, $5, false, true}; }
         |       yGLOBAL__CLOCKING yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
                         { $$ = new AstClocking{$<fl>3, *$3, $4, $6, false, true}; }
+        ;
+
+clocking_eventE<senItemp>:      // IEEE: optional clocking_event
+                /* empty */                             { $$ = nullptr; }
+        |       clocking_event                          { $$ = $1; }
         ;
 
 clocking_event<senItemp>:       // IEEE: clocking_event

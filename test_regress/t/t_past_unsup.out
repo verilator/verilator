@@ -1,0 +1,11 @@
+%Error-UNSUPPORTED: t/t_past_unsup.v:16:11: Unsupported: $past expr2 and/or clock arguments
+   16 |       if ($past(d, 1, 1)) $stop;   
+      |           ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_past_unsup.v:17:11: Unsupported: $past expr2 and/or clock arguments
+   17 |       if ($past(d, 1, 1, )) $stop;   
+      |           ^~~~~
+%Error-UNSUPPORTED: t/t_past_unsup.v:18:11: Unsupported: $past expr2 and/or clock arguments
+   18 |       if ($past(d, 1, 1, @(posedge clk))) $stop;   
+      |           ^~~~~
+%Error: Exiting due to

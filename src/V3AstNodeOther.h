@@ -699,6 +699,16 @@ public:
                && finalsp() == nullptr;
     }
 };
+class AstCLocalScope final : public AstNode {
+    // Pack statements into an unnamed scope when generating C++
+    // @astgen op1 := stmtsp : List[AstNode]
+public:
+    AstCLocalScope(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_CLocalScope(fl) {
+        this->addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstCLocalScope;
+};
 class AstCUse final : public AstNode {
     // C++ use of a class or #include; indicates need of forward declaration
     // Parents:  NODEMODULE
@@ -1912,9 +1922,7 @@ public:
     bool isClassMember() const { return varType() == VVarType::MEMBER; }
     bool isStatementTemp() const { return (varType() == VVarType::STMTTEMP); }
     bool isXTemp() const { return (varType() == VVarType::XTEMP); }
-    bool isParam() const VL_MT_SAFE {
-        return (varType() == VVarType::LPARAM || varType() == VVarType::GPARAM);
-    }
+    bool isParam() const { return varType().isParam(); }
     bool isGParam() const { return (varType() == VVarType::GPARAM); }
     bool isGenVar() const { return (varType() == VVarType::GENVAR); }
     bool isBitLogic() const {

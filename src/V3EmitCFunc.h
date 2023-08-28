@@ -192,12 +192,10 @@ public:
     }
     void emitScIQW(AstVar* nodep) {
         UASSERT_OBJ(nodep->isSc(), nodep, "emitting SystemC operator on non-SC variable");
-        // clang-format off
         puts(nodep->isScBigUint() ? "SB"
              : nodep->isScUint()  ? "SU"
              : nodep->isScBv()    ? "SW"
-             : (nodep->isScQuad() ? "SQ" : "SI"));
-        // clang-format on
+                                  : (nodep->isScQuad() ? "SQ" : "SI"));
     }
     void emitDatap(AstNode* nodep) {
         // When passing to a function with va_args the compiler doesn't
@@ -401,6 +399,19 @@ public:
             puts(cvtToStr(nodep->widthMin()) + ",");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
+        } else if (const AstCvtPackedToDynArray* const castp
+                   = VN_CAST(nodep->rhsp(), CvtPackedToDynArray)) {
+            puts("VL_ASSIGN_DYN_Q<");
+            putbs(castp->dtypep()->subDTypep()->cType("", false, false));
+            puts(">(");
+            iterateAndNextConstNull(nodep->lhsp());
+            puts(", ");
+            puts(cvtToStr(castp->dtypep()->subDTypep()->widthMin()));
+            puts(", ");
+            puts(cvtToStr(castp->fromp()->widthMin()));
+            puts(", ");
+            rhs = false;
+            iterateAndNextConstNull(castp->fromp());
         } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), CExpr)  //
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //
@@ -881,6 +892,11 @@ public:
         puts("{\n");  // Make it visually obvious label jumps outside these
         iterateAndNextConstNull(nodep->stmtsp());
         iterateAndNextConstNull(nodep->endStmtsp());
+        puts("}\n");
+    }
+    void visit(AstCLocalScope* nodep) override {
+        puts("{\n");
+        iterateAndNextConstNull(nodep->stmtsp());
         puts("}\n");
     }
     void visit(AstJumpGo* nodep) override {
