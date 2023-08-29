@@ -125,8 +125,11 @@ Summary:
 
    After generating the SystemC/C++ code, Verilator will invoke the
    toolchain to build the model library (and executable when :vlopt:`--exe`
-   is also used). Verilator manages the build itself, and for this --build
+   is also used).  Verilator manages the build itself, and for this --build
    requires GNU Make to be available on the platform.
+
+   :vlopt:`--build` cannot be specified when using :vlopt:`-E`,
+   :vlopt:`--dpi-hdr-only`, :vlopt:`--lint-only`, or :vlopt:`--xml-only`.
 
 .. option:: --build-dep-bin <filename>
 

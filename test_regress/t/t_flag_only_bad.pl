@@ -8,25 +8,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-use IO::File;
-use strict;
-use vars qw($Self);
-
 scenarios(vlt => 1);
+top_filename("t/t_flag_main.v");
 
-sub gen {
-    my $filename = shift;
-
-    my $fh = IO::File->new(">$filename");
-    # Empty file should not EOFLINE warn
-}
-
-top_filename("$Self->{obj_dir}/t_lint_eofline_bad.v");
-
-gen($Self->{top_filename});
-
-lint(
-    verilator_flags2 => ["-E -Wall -Wno-DECLFILENAME"],
+compile(
+    verilator_make_cmake => 0,
+    verilator_make_gmake => 0,
+    verilator_flags2 => ["--binary -E --dpi-hdr-only --lint-only --xml-only -Wall"],
+    fails => 1,
     expect_filename => $Self->{golden_filename},
     );
 
