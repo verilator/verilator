@@ -28,6 +28,7 @@ Verilator 5.015 devel
 * Fix coroutine handle movement during queue manipulation (#4431). [Aleksander Kiryk, Antmicro Ltd]
 * Fix nested assignments on the LHS (#4435). [Ryszard Rozak, Antmicro Ltd]
 * Fix false MULTITOP on bound interfaces (#4438). [Alex Solomatnikov]
+* Fix internal error on real conversion (#4447). [vdhotre-ventana]
 
 
 Verilator 5.014 2023-08-06

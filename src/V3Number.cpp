@@ -511,6 +511,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
             out << "%E-bad-width-double";  // LCOV_EXCL_LINE
         } else {
             out << toDouble();
+            if (toDouble() == floor(toDouble())) out << ".0";
         }
         return out.str();
     } else if (isString()) {
@@ -2217,8 +2218,9 @@ V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
         } else if (VL_UNLIKELY(lhs.isString())) {
             // Non-compatible types, see also opAToN()
             setZero();
+        } else if (lhs.isDouble()) {
+            setDouble(lhs.toDouble());
         } else {
-            // Also handles double as is just bits
             for (int bit = 0; bit < this->width(); bit++) {
                 setBit(bit, ignoreXZ ? lhs.bitIs1(bit) : lhs.bitIs(bit));
             }
