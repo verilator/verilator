@@ -1970,8 +1970,10 @@ private:
                     newp = new AstNToI{nodep->fileline(), nodep->fromp()->unlinkFrBack(), toDtp};
                 } else if (!basicp->isDouble() && !fromDtp->isDouble()) {
                     AstNodeDType* const origDTypep = nodep->dtypep();
-                    const int width = toDtp->width();
-                    castSized(nodep, nodep->fromp(), width);
+                    if (!VN_IS(fromDtp, StreamDType)) {
+                        const int width = toDtp->width();
+                        castSized(nodep, nodep->fromp(), width);
+                    }
                     nodep->dtypeFrom(origDTypep);  // If was enum, need dtype to preserve as enum
                     // Note castSized might modify nodep->fromp()
                 } else {
@@ -7362,9 +7364,9 @@ private:
         // UNSUP unpacked struct/unions (treated like BasicDType)
         const AstNodeDType* fromBaseDtp = computeCastableBase(fromDtp);
 
-        const bool fromNumericable = VN_IS(fromBaseDtp, BasicDType)
-                                     || VN_IS(fromBaseDtp, EnumDType)
-                                     || VN_IS(fromBaseDtp, NodeUOrStructDType);
+        const bool fromNumericable
+            = VN_IS(fromBaseDtp, BasicDType) || VN_IS(fromBaseDtp, EnumDType)
+              || VN_IS(fromBaseDtp, StreamDType) || VN_IS(fromBaseDtp, NodeUOrStructDType);
 
         const AstNodeDType* toBaseDtp = computeCastableBase(toDtp);
         const bool toNumericable
