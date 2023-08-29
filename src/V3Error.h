@@ -541,10 +541,11 @@ void v3errorEndFatal(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex);
 // lock guard here, instead we are locking the mutex as first operation in temporary,
 // but we are unlocking the mutex after function using comma operator.
 // This way macros should also work when they are in 'if' stmt without '{}'.
-#define v3warnCode(code, msg) \
-    v3errorEnd((V3Error::v3errorPrep(code) << msg, V3Error::v3errorStr()))
+#define v3errorBuildMessage(prep, msg) \
+    (prep, static_cast<std::ostringstream&>(V3Error::v3errorStr() << msg))
+#define v3warnCode(code, msg) v3errorEnd(v3errorBuildMessage(V3Error::v3errorPrep(code), msg))
 #define v3warnCodeFatal(code, msg) \
-    v3errorEndFatal((V3Error::v3errorPrep(code) << msg, V3Error::v3errorStr()))
+    v3errorEndFatal(v3errorBuildMessage(V3Error::v3errorPrep(code), msg))
 #define v3warn(code, msg) v3warnCode(V3ErrorCode::code, msg)
 #define v3info(msg) v3warnCode(V3ErrorCode::EC_INFO, msg)
 #define v3error(msg) v3warnCode(V3ErrorCode::EC_ERROR, msg)
@@ -553,12 +554,11 @@ void v3errorEndFatal(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex);
 #define v3fatalExit(msg) v3warnCodeFatal(V3ErrorCode::EC_FATALEXIT, msg)
 // Use this instead of fatal() to mention the source code line.
 #define v3fatalSrc(msg) \
-    v3errorEndFatal( \
-        (V3Error::v3errorPrepFileLine(V3ErrorCode::EC_FATALSRC, __FILE__, __LINE__) << msg, \
-         V3Error::v3errorStr()))
+    v3errorEndFatal(v3errorBuildMessage( \
+        V3Error::v3errorPrepFileLine(V3ErrorCode::EC_FATALSRC, __FILE__, __LINE__), msg))
 // Use this when normal v3fatal is called in static method that overrides fileline.
 #define v3fatalStatic(msg) \
-    ::v3errorEndFatal((V3Error::v3errorPrep(V3ErrorCode::EC_FATAL) << msg, V3Error::v3errorStr()))
+    ::v3errorEndFatal(v3errorBuildMessage(V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), msg))
 
 #define UINFO(level, stmsg) \
     do { \
