@@ -28,8 +28,8 @@ double sc_time_stamp() { return 0; }
 // Without using pthread_atfork, the user can instead manually call
 // prepareClone and atClone before and after calling fork.
 static VM_PREFIX* top;
-static auto prepareClone = [](){ top->prepareClone(); };
-static auto atClone = [](){ top->atClone(); };
+static auto prepareClone = []() { top->prepareClone(); };
+static auto atClone = []() { top->atClone(); };
 
 void single_cycle(VM_PREFIX* top) {
     top->clock = 1;
