@@ -345,6 +345,19 @@ public:
         emitVarDecl(nodep);
     }
 
+    void visit(AstCvtDynArrayToPacked* nodep) override {
+        puts("VL_DYN_TO_");
+        emitIQW(nodep);
+        puts("<");
+        const AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
+        putbs(elemDTypep->cType("", false, false));
+        puts(">(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(", ");
+        puts(cvtToStr(elemDTypep->widthMin()));
+        puts(")");
+    }
+
     void visit(AstNodeAssign* nodep) override {
         bool paren = true;
         bool decind = false;
