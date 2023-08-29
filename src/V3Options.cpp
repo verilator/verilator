@@ -809,8 +809,10 @@ void V3Options::notify() {
     // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_xmlOnly are mutually exclusive
     std::vector<std::string> backendFlags;
     if (m_build) {
-        if (m_binary) backendFlags.push_back("--binary");
-        else backendFlags.push_back("--build");
+        if (m_binary)
+            backendFlags.push_back("--binary");
+        else
+            backendFlags.push_back("--build");
     }
     if (m_preprocOnly) backendFlags.push_back("-E");
     if (m_dpiHdrOnly) backendFlags.push_back("--dpi-hdr-only");
@@ -821,7 +823,8 @@ void V3Options::notify() {
         for (size_t i = 1; i < backendFlags.size(); i++) {
             backendFlagsString += ", " + backendFlags[i];
         }
-        v3error("The following cannot be used together: " + backendFlagsString + ". Suggest see manual");
+        v3error("The following cannot be used together: " + backendFlagsString
+                + ". Suggest see manual");
     }
 
     if (m_exe && !v3Global.opt.libCreate().empty()) {
