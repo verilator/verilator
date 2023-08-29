@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 if (!$::Driver) { use strict; use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
-# DESCRIPTION: Verilator: Verilog Multiple Model Test Module
+# DESCRIPTION: Verilator: Verilog Test module for the atClone API
 #
 # This file ONLY is placed into the Public Domain, for any use,
 # without warranty, 2023 by Yinan Xu.
