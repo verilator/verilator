@@ -318,9 +318,9 @@ public:
 
     // OPERATORS
     void v3errorEnd(std::ostringstream& str, const string& extra = "")
-        VL_REQUIRES(V3Error::s().m_mutex);
+        VL_RELEASE(V3Error::s().m_mutex);
     void v3errorEndFatal(std::ostringstream& str) VL_ATTR_NORETURN
-        VL_REQUIRES(V3Error::s().m_mutex) {
+        VL_RELEASE(V3Error::s().m_mutex) {
         v3errorEnd(str);
         assert(0);  // LCOV_EXCL_LINE
         VL_UNREACHABLE;

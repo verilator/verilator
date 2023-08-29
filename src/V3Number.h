@@ -566,9 +566,9 @@ private:
     }
 
 public:
-    void v3errorEnd(const std::ostringstream& sstr) const VL_REQUIRES(V3Error::s().m_mutex);
+    void v3errorEnd(const std::ostringstream& sstr) const VL_RELEASE(V3Error::s().m_mutex);
     void v3errorEndFatal(const std::ostringstream& sstr) const VL_ATTR_NORETURN
-        VL_REQUIRES(V3Error::s().m_mutex);
+        VL_RELEASE(V3Error::s().m_mutex);
     void width(int width, bool sized = true) {
         m_data.m_sized = sized;
         m_data.resize(width);
