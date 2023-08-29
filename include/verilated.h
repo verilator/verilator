@@ -568,7 +568,8 @@ public:
     void addModel(VerilatedModel*);
 
     VerilatedVirtualBase* threadPoolp();
-    VerilatedVirtualBase* resetThreadPoolp();
+    void prepareClone();
+    VerilatedVirtualBase* threadPoolpOnClone();
     VerilatedVirtualBase*
     enableExecutionProfiler(VerilatedVirtualBase* (*construct)(VerilatedContext&));
 

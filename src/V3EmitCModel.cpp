@@ -234,6 +234,7 @@ class EmitCModel final : public EmitCFunc {
         puts("const char* hierName() const override final;\n");
         puts("const char* modelName() const override final;\n");
         puts("unsigned threads() const override final;\n");
+        puts("void prepareClone() const;\n");
         puts("void atClone() const;\n");
         if (v3Global.opt.trace()) {
             puts("std::unique_ptr<VerilatedTraceConfig> traceConfig() const override final;\n");
@@ -480,11 +481,12 @@ class EmitCModel final : public EmitCFunc {
              + "\"; }\n");
         puts("unsigned " + topClassName() + "::threads() const { return "
              + cvtToStr(std::max(1, v3Global.opt.threads())) + "; }\n");
+        puts("void " + topClassName() + "::prepareClone() const { contextp()->prepareClone(); }\n");
         puts("void " + topClassName() + "::atClone() const {\n");
         if (v3Global.opt.threads() > 1) {
             puts("vlSymsp->__Vm_threadPoolp = static_cast<VlThreadPool*>(");
         }
-        puts("contextp()->resetThreadPoolp()");
+        puts("contextp()->threadPoolpOnClone()");
         if (v3Global.opt.threads() > 1) { puts(")"); }
         puts(";\n}\n");
 

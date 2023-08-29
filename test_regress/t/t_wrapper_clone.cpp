@@ -23,6 +23,14 @@
 
 double sc_time_stamp() { return 0; }
 
+// Note: Since pthread_atfork accepts only function pointers,
+// we are using a static variable for the TOP just for a simple example.
+// Without using pthread_atfork, the user can instead manually call
+// prepareClone and atClone before and after calling fork.
+static VM_PREFIX* top;
+static auto prepareClone = [](){ top->prepareClone(); };
+static auto atClone = [](){ top->atClone(); };
+
 void single_cycle(VM_PREFIX* top) {
     top->clock = 1;
     top->eval();
@@ -32,16 +40,17 @@ void single_cycle(VM_PREFIX* top) {
 }
 
 int main(int argc, char** argv) {
-    std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{contextp.get()}};
+    VerilatedContext* contextp = new VerilatedContext;
+    top = new VM_PREFIX{contextp};
+    pthread_atfork(prepareClone, atClone, atClone);
 
     top->reset = 1;
     top->is_parent = 0;
-    for (int i = 0; i < 5; i++) { single_cycle(top.get()); }
+    for (int i = 0; i < 5; i++) { single_cycle(top); }
 
     top->reset = 0;
     while (!contextp->gotFinish()) {
-        single_cycle(top.get());
+        single_cycle(top);
 
         if (top->do_clone) {
             int pid = fork();
@@ -49,7 +58,6 @@ int main(int argc, char** argv) {
                 printf("fork failed\n");
             } else if (pid == 0) {
                 printf("child: here we go\n");
-                top->atClone();
             } else {
                 while (wait(NULL) > 0)
                     ;
@@ -58,6 +66,11 @@ int main(int argc, char** argv) {
             }
         }
     }
+
+    top->final();
+
+    delete top;
+    delete contextp;
 
     return 0;
 }
