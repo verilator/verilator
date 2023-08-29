@@ -7,18 +7,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
-scenarios(vlt => 1);
 
-top_filename("t/t_clocking_sched.v");
+scenarios(simulator => 1);
 
 compile(
-    timing_loop => 1,
-    verilator_flags2 => ["--timing"],
+    verilator_flags2 => ["--exe --main --timing"],
+    make_main => 0,
     );
 
 execute(
     check_finished => 1,
-    expect_filename => $Self->{golden_filename}
     );
 
 ok(1);

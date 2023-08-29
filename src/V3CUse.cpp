@@ -64,7 +64,9 @@ class CUseVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstClassRefDType* nodep) override {
-        if (nodep->user1SetOnce()) return;  // Process once
+        if (nodep->user1()) return;  // Process once
+        if (!m_dtypesImplOnly)  // We might need to revisit this type for interface
+            nodep->user1(true);
         addNewUse(nodep, VUseType::INT_FWD_CLASS, nodep->classp()->name());
     }
     void visit(AstCFunc* nodep) override {
