@@ -127,7 +127,7 @@ std::ostream& operator<<(std::ostream& str, const Castable& rhs) {
                                                                  : V3ErrorCode::WIDTH), \
                             msg))
 
-// ######################################################################
+//######################################################################
 // Width state, as a visitor of each AstNode
 
 class WidthVP final {

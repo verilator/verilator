@@ -534,13 +534,11 @@ void v3errorEnd(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex);
 void v3errorEndFatal(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex);
 
 // Theses allow errors using << operators: v3error("foo"<<"bar");
-// Careful, you can't put () around msg, as you would in most macro definitions
-// Note the commas are the comma operator, not separating arguments. These are needed to ensure
-// evaluation order as otherwise we couldn't ensure v3errorPrep is called first.
-// Note: due to limitations of clang thread-safety analysis, we can't use
-// lock guard here, instead we are locking the mutex as first operation in temporary,
-// but we are unlocking the mutex after function using comma operator.
-// This way macros should also work when they are in 'if' stmt without '{}'.
+// Careful, you can't put () around msg, as you would in most macro definitions.
+// 'V3Error::v3errorPrep(code) << msg' could be more efficient but the order of function calls in a
+// single statement can be arbitrary until C++17, thus make it possible to execute
+// V3Error::v3errorPrep that acquires the lock after functions in the msg may require it. So we use
+// the comma operator (,) to guarantee the execution order here.
 #define v3errorBuildMessage(prep, msg) \
     (prep, static_cast<std::ostringstream&>(V3Error::v3errorStr() << msg))
 #define v3warnCode(code, msg) v3errorEnd(v3errorBuildMessage(V3Error::v3errorPrep(code), msg))
