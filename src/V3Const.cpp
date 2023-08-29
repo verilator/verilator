@@ -2145,12 +2145,14 @@ private:
             // Further reduce, either node may have more reductions.
             return true;
         } else if (m_doV && VN_IS(nodep->rhsp(), StreamL)) {
+            AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep();
             AstStreamL* streamp = VN_AS(nodep->rhsp(), StreamL);
             AstNodeExpr* const srcp = streamp->lhsp();
             const int sWidth = srcp->width();
             if (sWidth == 0) {
                 srcp->unlinkFrBack();
-                streamp->lhsp(new AstCvtDynArrayToPacked{srcp->fileline(), srcp, nodep->lhsp()->dtypep()});
+                streamp->lhsp(new AstCvtDynArrayToPacked{srcp->fileline(), srcp, lhsDtypep});
+                streamp->dtypeFrom(lhsDtypep);
             }
         } else if (m_doV && VN_IS(nodep->rhsp(), StreamR)) {
             // The right-streaming operator on rhs of assignment does not
