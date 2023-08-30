@@ -7203,6 +7203,7 @@ private:
                                         "__Venumtab_" + VString::downcase(attrType.ascii())
                                             + cvtToStr(m_dtTables++),
                                         vardtypep};
+        varp->lifetime(VLifetime::STATIC);
         varp->isConst(true);
         varp->isStatic(true);
         varp->valuep(initp);
