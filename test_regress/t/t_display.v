@@ -204,6 +204,8 @@ multiline", $time);
       $display("%d", 32'b11111z111);
       $display("%h", 12'b1zz1_zzzz_1x1z);
 
+      $display(,, 10);  // Strange but legal
+
       $write("*-* All Finished *-*\n");
       $finish;
    end
