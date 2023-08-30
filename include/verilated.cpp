@@ -2608,6 +2608,14 @@ VerilatedVirtualBase* VerilatedContext::threadPoolp() {
     return m_threadPool.get();
 }
 
+void VerilatedContext::prepareClone() { delete m_threadPool.release(); }
+
+VerilatedVirtualBase* VerilatedContext::threadPoolpOnClone() {
+    if (VL_UNLIKELY(m_threadPool)) m_threadPool.release();
+    m_threadPool = std::make_unique<VlThreadPool>(this, m_threads - 1);
+    return m_threadPool.get();
+}
+
 VerilatedVirtualBase*
 VerilatedContext::enableExecutionProfiler(VerilatedVirtualBase* (*construct)(VerilatedContext&)) {
     if (!m_executionProfiler) m_executionProfiler.reset(construct(*this));
