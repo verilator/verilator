@@ -24,8 +24,8 @@ double sc_time_stamp() { return 0; }
 // prepareClone and atClone before and after calling fork, and topp can be
 // allocated dynamically.
 static VM_PREFIX* topp = nullptr;
-static auto prepareClone = [](){ topp->prepareClone(); };
-static auto atClone = [](){ topp->atClone(); };
+static auto prepareClone = []() { topp->prepareClone(); };
+static auto atClone = []() { topp->atClone(); };
 
 void single_cycle(VM_PREFIX* topp) {
     topp->clock = 1;

@@ -485,7 +485,8 @@ class EmitCModel final : public EmitCFunc {
              + "\"; }\n");
         puts("unsigned " + topClassName() + "::threads() const { return "
              + cvtToStr(std::max(1, v3Global.opt.threads())) + "; }\n");
-        puts("void " + topClassName() + "::prepareClone() const { contextp()->prepareClone(); }\n");
+        puts("void " + topClassName()
+             + "::prepareClone() const { contextp()->prepareClone(); }\n");
         puts("void " + topClassName() + "::atClone() const {\n");
         if (v3Global.opt.threads() > 1) {
             puts("vlSymsp->__Vm_threadPoolp = static_cast<VlThreadPool*>(");

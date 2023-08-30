@@ -2608,9 +2608,7 @@ VerilatedVirtualBase* VerilatedContext::threadPoolp() {
     return m_threadPool.get();
 }
 
-void VerilatedContext::prepareClone() {
-    delete m_threadPool.release();
-}
+void VerilatedContext::prepareClone() { delete m_threadPool.release(); }
 
 VerilatedVirtualBase* VerilatedContext::threadPoolpOnClone() {
     if (VL_UNLIKELY(m_threadPool)) m_threadPool.release();
