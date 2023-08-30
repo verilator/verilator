@@ -4815,6 +4815,16 @@ private:
                     }
                     break;
                 }
+                case 'b':  // FALLTHRU
+                case 'o':  // FALLTHRU
+                case 'x': {
+                    if (argp) {
+                        AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
+                        if (argp->isDouble()) spliceCvtS(argp, true, 64);
+                        argp = nextp;
+                    }
+                    break;
+                }
                 case 'p': {  // Pattern
                     const AstNodeDType* const dtypep = argp ? argp->dtypep()->skipRefp() : nullptr;
                     const AstBasicDType* const basicp = dtypep ? dtypep->basicp() : nullptr;

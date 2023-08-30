@@ -30,6 +30,7 @@ Verilator 5.015 devel
 * Fix false MULTITOP on bound interfaces (#4438). [Alex Solomatnikov]
 * Fix internal error on real conversion (#4447). [vdhotre-ventana]
 * Fix lifetime unknown error on enum.name (#4448). [jwoutersymatra]
+* Fix display %x formatting of real.
 
 
 Verilator 5.014 2023-08-06
