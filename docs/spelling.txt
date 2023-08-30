@@ -654,6 +654,7 @@ ish
 isunbounded
 isunknown
 jobserver
+jwoutersymatra
 killua
 lang
 lcov
@@ -931,7 +932,9 @@ vc
 vcd
 vcddiff
 vcoverage
+vdhotre
 vec
+ventana
 ver
 verFiles
 verible

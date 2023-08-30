@@ -162,7 +162,7 @@ after :code:`fork()`.
 
 With the process-level clone APIs, users can create process-level snapshots
 for the verilated models. While the Verilator save/restore option provides
-persistent and circuit-independent snapshots, the process-level clone APIs
+persistent and circuit-dependent snapshots, the process-level clone APIs
 enable in-memory, circuit-transparent, and highly efficient snapshots.
 
 
