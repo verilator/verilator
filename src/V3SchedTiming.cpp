@@ -362,8 +362,9 @@ void transformForks(AstNetlist* const netlistp) {
                 UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
                 // Create a function to put this begin's statements in
                 FileLine* const flp = nodep->fileline();
-                AstCFunc* const newfuncp
-                    = new AstCFunc{flp, nodep->name(), m_funcp->scopep(), "VlCoroutine"};
+                AstCFunc* const newfuncp = new AstCFunc{
+                    flp, m_funcp->name() + "__" + nodep->name(), m_funcp->scopep(), "VlCoroutine"};
+
                 m_funcp->addNextHere(newfuncp);
                 newfuncp->isLoose(m_funcp->isLoose());
                 newfuncp->slow(m_funcp->slow());
