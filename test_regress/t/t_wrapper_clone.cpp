@@ -1,5 +1,5 @@
 //
-// DESCRIPTION: Verilator: Verilog Test module for the atClone API
+// DESCRIPTION: Verilator: Verilog Test module for prepareClone/atClone APIs
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2023 by Yinan Xu.
@@ -16,61 +16,74 @@
 
 #include VM_PREFIX_INCLUDE
 
-// Check we properly define the version integer
-#if VERILATOR_VERSION_INTEGER < 5015000  // Added in 5.015
-#error "VERILATOR_VERSION_INTEGER not set"
-#endif
-
 double sc_time_stamp() { return 0; }
 
-// Note: Since pthread_atfork accepts only function pointers,
+// Note: Since the pthread_atfork API accepts only function pointers,
 // we are using a static variable for the TOP just for a simple example.
-// Without using pthread_atfork, the user can instead manually call
-// prepareClone and atClone before and after calling fork.
-static VM_PREFIX* top;
-static auto prepareClone = [](){ top->prepareClone(); };
-static auto atClone = [](){ top->atClone(); };
+// Without using the pthread_atfork API, the user can instead manually call
+// prepareClone and atClone before and after calling fork, and topp can be
+// allocated dynamically.
+static VM_PREFIX* topp = nullptr;
+static auto prepareClone = [](){ topp->prepareClone(); };
+static auto atClone = [](){ topp->atClone(); };
 
-void single_cycle(VM_PREFIX* top) {
-    top->clock = 1;
-    top->eval();
+void single_cycle(VM_PREFIX* topp) {
+    topp->clock = 1;
+    topp->eval();
 
-    top->clock = 0;
-    top->eval();
+    topp->clock = 0;
+    topp->eval();
 }
 
 int main(int argc, char** argv) {
+    // We disable the buffering for stdout in this test.
+    // Redirecting the stdout to files with buffering causes duplicated stdout
+    // outputs in both parent and child processes, even if they are actually
+    // called before the fork.
+    setvbuf(stdout, nullptr, _IONBF, 0);
+
     VerilatedContext* contextp = new VerilatedContext;
-    top = new VM_PREFIX{contextp};
+    topp = new VM_PREFIX{contextp};
+
+    // To avoid resource leaks, prepareClone must be called before fork to
+    // free all the allocated resources. Though this would bring performance
+    // overhead to the parent process, we believe that fork should not be
+    // called frequently, and the overhead is minor compared to simulation.
     pthread_atfork(prepareClone, atClone, atClone);
 
-    top->reset = 1;
-    top->is_parent = 0;
-    for (int i = 0; i < 5; i++) { single_cycle(top); }
+    // If you care about critical performance, prepareClone can be avoided,
+    // with atClone being called only at the child process, as follows.
+    // It has the same functionality as the previous one, but has memory leaks.
+    // According to the sanitizer, 288 bytes are leaked for one fork call.
+    // pthread_atfork(nullptr, nullptr, atClone);
 
-    top->reset = 0;
+    topp->reset = 1;
+    topp->is_parent = 0;
+    for (int i = 0; i < 5; i++) { single_cycle(topp); }
+
+    topp->reset = 0;
     while (!contextp->gotFinish()) {
-        single_cycle(top);
+        single_cycle(topp);
 
-        if (top->do_clone) {
-            int pid = fork();
+        if (topp->do_clone) {
+            const int pid = fork();
             if (pid < 0) {
                 printf("fork failed\n");
             } else if (pid == 0) {
                 printf("child: here we go\n");
             } else {
-                while (wait(NULL) > 0)
+                while (wait(nullptr) > 0)
                     ;
                 printf("parent: here we go\n");
-                top->is_parent = 1;
+                topp->is_parent = 1;
             }
         }
     }
 
-    top->final();
+    topp->final();
 
-    delete top;
-    delete contextp;
+    VL_DO_DANGLING(delete topp, topp);
+    VL_DO_DANGLING(delete contextp, contextp);
 
     return 0;
 }
