@@ -370,7 +370,7 @@ private:
                 UINFO(4, "Autoflush " << nodep << endl);
                 nodep->addNextHere(
                     new AstFFlush{nodep->fileline(),
-                                  VN_AS(AstNode::cloneTreeNull(nodep->filep(), true), NodeExpr)});
+                                  nodep->filep() ? nodep->filep()->cloneTree(true) : nullptr});
             }
         }
     }

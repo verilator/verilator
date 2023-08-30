@@ -421,7 +421,7 @@ private:
         // outvscp is the variable for functions only, if nullptr, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstNode* const newbodysp
-            = AstNode::cloneTreeNull(refp->taskp()->stmtsp(), true);  // Maybe nullptr
+            = refp->taskp()->stmtsp() ? refp->taskp()->stmtsp()->cloneTree(true) : nullptr;
         AstNode* const beginp
             = new AstComment{refp->fileline(), string{"Function: "} + refp->name(), true};
         if (newbodysp) beginp->addNext(newbodysp);

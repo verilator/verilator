@@ -148,13 +148,14 @@ public:
             AstVar* const nodep = createVariable(fileline, name, rangelistp, nullptr);
             return nodep;
         }
-        AstCell* const nodep = new AstCell{fileline,
-                                           GRAMMARP->m_instModuleFl,
-                                           name,
-                                           GRAMMARP->m_instModule,
-                                           pinlistp,
-                                           AstPin::cloneTreeNull(GRAMMARP->m_instParamp, true),
-                                           GRAMMARP->scrubRange(rangelistp)};
+        AstCell* const nodep = new AstCell{
+            fileline,
+            GRAMMARP->m_instModuleFl,
+            name,
+            GRAMMARP->m_instModule,
+            pinlistp,
+            (GRAMMARP->m_instParamp ? GRAMMARP->m_instParamp->cloneTree(true) : nullptr),
+            GRAMMARP->scrubRange(rangelistp)};
         nodep->trace(GRAMMARP->allTracingOn(fileline));
         return nodep;
     }
@@ -284,7 +285,9 @@ public:
         setScopedSigAttr(new AstAttrOf{PARSEP->lexFileline(), vattrT});
     }
 
-    AstNode* cloneScopedSigAttr() const { return AstNode::cloneTreeNull(m_scopedSigAttr, true); }
+    AstNode* cloneScopedSigAttr() const {
+        return m_scopedSigAttr ? m_scopedSigAttr->cloneTree(true) : nullptr;
+    }
 };
 
 const VBasicDTypeKwd LOGIC = VBasicDTypeKwd::LOGIC;  // Shorthand "LOGIC"
@@ -2194,13 +2197,17 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
         //                      // So this is different from variable_decl_assignment
                 id variable_dimensionListE
                         { $$ = new AstMemberDType{$<fl>1, *$1, VFlagChildDType{},
-                                                  GRAMMARP->createArray(AstNodeDType::cloneTreeNull(GRAMMARP->m_memDTypep, true), $2, false),
+                                                  GRAMMARP->createArray((GRAMMARP->m_memDTypep
+                                                                         ? GRAMMARP->m_memDTypep->cloneTree(true) : nullptr),
+                                                                        $2, false),
                                                   nullptr};
                           PARSEP->tagNodep($$);
                         }
         |       id variable_dimensionListE '=' variable_declExpr
                         { $$ = new AstMemberDType{$<fl>1, *$1, VFlagChildDType{},
-                                                  GRAMMARP->createArray(AstNodeDType::cloneTreeNull(GRAMMARP->m_memDTypep, true), $2, false),
+                                                  GRAMMARP->createArray((GRAMMARP->m_memDTypep
+                                                                         ? GRAMMARP->m_memDTypep->cloneTree(true) : nullptr),
+                                                                        $2, false),
                                                   $4};
                           PARSEP->tagNodep($$);
                         }

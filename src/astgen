@@ -961,9 +961,6 @@ def write_ast_macros(filename):
             Ast{t}* cloneTree(bool cloneNext) {{
                 return static_cast<Ast{t}*>(AstNode::cloneTree(cloneNext));
             }}
-            static Ast{t}* cloneTreeNull(Ast{t}* nodep, bool cloneNextLink) {{
-                return nodep ? nodep->cloneTree(cloneNextLink) : nullptr;
-            }}
             Ast{t}* clonep() const {{ return static_cast<Ast{t}*>(AstNode::clonep()); }}
             Ast{t}* addNext(Ast{t}* nodep) {{ return static_cast<Ast{t}*>(AstNode::addNext(this, nodep)); }}
             ''',

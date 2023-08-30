@@ -1956,10 +1956,6 @@ public:
                              AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
-    // Clone or return nullptr if nullptr
-    static AstNode* cloneTreeNull(AstNode* nodep, bool cloneNextLink) {
-        return nodep ? nodep->cloneTree(cloneNextLink) : nullptr;
-    }
     AstNode* cloneTree(bool cloneNextLink);  // Not const, as sets clonep() on original nodep
     bool gateTree() { return gateTreeIter(); }  // Is tree isGateOptimizable?
     inline bool sameTree(const AstNode* node2p) const;  // Does tree of this == node2p?
