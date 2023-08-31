@@ -196,6 +196,7 @@ private:
         // Spec says value is integral, if negative is ignored
         AstVar* const varp
             = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findSigned32DType()};
+        varp->lifetime(VLifetime::AUTOMATIC);
         varp->usedLoopIdx(true);
         m_modp->addStmtsp(varp);
         AstNode* initsp = new AstAssign{
