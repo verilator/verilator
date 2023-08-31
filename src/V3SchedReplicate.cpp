@@ -59,11 +59,12 @@ enum RegionFlags : uint8_t {
 //##############################################################################
 // Data structures (graph types)
 
-class Vertex VL_NOT_FINAL : public V3GraphVertex {
-    RegionFlags m_drivingRegions{NONE};  // The regions driving this vertex
+class SchedReplicateVertex VL_NOT_FINAL : public V3GraphVertex {
+    VL_RTTI_IMPL(SchedReplicateVertex, V3GraphVertex)
+    RegionFlags m_drivingRegions{RegionFlags::NONE};  // The regions driving this vertex
 
 public:
-    explicit Vertex(V3Graph* graphp)
+    explicit SchedReplicateVertex(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
     uint8_t drivingRegions() const { return m_drivingRegions; }
     void addDrivingRegions(uint8_t regions) {
@@ -87,16 +88,17 @@ public:
     // LCOV_EXCL_STOP
 };
 
-class LogicVertex final : public Vertex {
+class SchedReplicateLogicVertex final : public SchedReplicateVertex {
+    VL_RTTI_IMPL(SchedReplicateLogicVertex, SchedReplicateVertex)
     AstScope* const m_scopep;  // The enclosing AstScope of the logic node
     AstSenTree* const m_senTreep;  // The sensitivity of the logic node
     AstNode* const m_logicp;  // The logic node this vertex represents
     RegionFlags const m_assignedRegion;  // The region this logic is originally assigned to
 
 public:
-    LogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* senTreep, AstNode* logicp,
-                RegionFlags assignedRegion)
-        : Vertex{graphp}
+    SchedReplicateLogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* senTreep,
+                              AstNode* logicp, RegionFlags assignedRegion)
+        : SchedReplicateVertex{graphp}
         , m_scopep{scopep}
         , m_senTreep{senTreep}
         , m_logicp{logicp}
@@ -113,12 +115,13 @@ public:
     string dotShape() const override { return "rectangle"; }
 };
 
-class VarVertex final : public Vertex {
+class SchedReplicateVarVertex final : public SchedReplicateVertex {
+    VL_RTTI_IMPL(SchedReplicateVarVertex, SchedReplicateVertex)
     AstVarScope* const m_vscp;  // The AstVarScope this vertex represents
 
 public:
-    VarVertex(V3Graph* graphp, AstVarScope* vscp)
-        : Vertex{graphp}
+    SchedReplicateVarVertex(V3Graph* graphp, AstVarScope* vscp)
+        : SchedReplicateVertex{graphp}
         , m_vscp{vscp} {
         // Top level inputs are
         if (varp()->isPrimaryInish() || varp()->isSigUserRWPublic() || varp()->isWrittenByDpi()) {
@@ -149,11 +152,11 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
     // AstVarScope::user1() -> VarVertx
     const VNUser1InUse user1InUse;
     const auto getVarVertex = [&](AstVarScope* vscp) {
-        if (!vscp->user1p()) vscp->user1p(new VarVertex{graphp.get(), vscp});
-        return vscp->user1u().to<VarVertex*>();
+        if (!vscp->user1p()) vscp->user1p(new SchedReplicateVarVertex{graphp.get(), vscp});
+        return vscp->user1u().to<SchedReplicateVarVertex*>();
     };
 
-    const auto addEdge = [&](Vertex* fromp, Vertex* top) {
+    const auto addEdge = [&](SchedReplicateVertex* fromp, SchedReplicateVertex* top) {
         new V3GraphEdge{graphp.get(), fromp, top, 1};
     };
 
@@ -182,14 +185,14 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
         }
 
         for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
-            LogicVertex* const lvtxp
-                = new LogicVertex{graphp.get(), scopep, senTreep, nodep, region};
+            SchedReplicateLogicVertex* const lvtxp
+                = new SchedReplicateLogicVertex{graphp.get(), scopep, senTreep, nodep, region};
             const VNUser2InUse user2InUse;
             const VNUser3InUse user3InUse;
 
             nodep->foreach([&](AstVarRef* refp) {
                 AstVarScope* const vscp = refp->varScopep();
-                VarVertex* const vvtxp = getVarVertex(vscp);
+                SchedReplicateVarVertex* const vvtxp = getVarVertex(vscp);
 
                 // If read, add var -> logic edge
                 // Note: Use same heuristic as ordering does to ignore written variables
@@ -216,7 +219,7 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
     return graphp;
 }
 
-void propagateDrivingRegions(Vertex* vtxp) {
+void propagateDrivingRegions(SchedReplicateVertex* vtxp) {
     // Note: The graph is always acyclic, so the recursion will terminate
 
     // Nothing to do if already visited
@@ -225,7 +228,7 @@ void propagateDrivingRegions(Vertex* vtxp) {
     // Compute union of driving regions of all inputs
     uint8_t drivingRegions = 0;
     for (V3GraphEdge* edgep = vtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-        Vertex* const srcp = static_cast<Vertex*>(edgep->fromp());
+        SchedReplicateVertex* const srcp = edgep->fromp()->as<SchedReplicateVertex>();
         propagateDrivingRegions(srcp);
         drivingRegions |= srcp->drivingRegions();
     }
@@ -240,7 +243,7 @@ void propagateDrivingRegions(Vertex* vtxp) {
 LogicReplicas replicate(Graph* graphp) {
     LogicReplicas result;
     for (V3GraphVertex* vtxp = graphp->verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
-        if (LogicVertex* const lvtxp = dynamic_cast<LogicVertex*>(vtxp)) {
+        if (SchedReplicateLogicVertex* const lvtxp = vtxp->cast<SchedReplicateLogicVertex>()) {
             const auto replicateTo = [&](LogicByScope& lbs) {
                 lbs.add(lvtxp->scopep(), lvtxp->senTreep(), lvtxp->logicp()->cloneTree(false));
             };
@@ -264,7 +267,7 @@ LogicReplicas replicateLogic(LogicRegions& logicRegionsRegions) {
     if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("sched-replicate");
     // Propagate driving region flags
     for (V3GraphVertex* vtxp = graphp->verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
-        propagateDrivingRegions(static_cast<Vertex*>(vtxp));
+        propagateDrivingRegions(vtxp->as<SchedReplicateVertex>());
     }
     // Dump for debug
     if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("sched-replicate-propagated");

@@ -33,6 +33,7 @@
 class OrderMoveDomScope;
 
 class OrderMoveVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(OrderMoveVertex, V3GraphVertex)
     enum OrderMState : uint8_t { POM_WAIT, POM_READY, POM_MOVED };
 
     OrderLogicVertex* const m_logicp;
@@ -92,6 +93,7 @@ public:
 
 // Similar to OrderMoveVertex, but modified for threaded code generation.
 class MTaskMoveVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(MTaskMoveVertex, V3GraphVertex)
     //  This could be more compact, since we know m_varp and m_logicp
     //  cannot both be set. Each MTaskMoveVertex represents a logic node
     //  or a var node, it can't be both.

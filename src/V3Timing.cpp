@@ -93,6 +93,7 @@ private:
     // Vertex of a dependency graph of suspendable nodes, e.g. if a node (process or task) is
     // suspendable, all its dependents should also be suspendable
     class DepVtx VL_NOT_FINAL : public V3GraphVertex {
+        VL_RTTI_IMPL(DepVtx, V3GraphVertex)
         AstClass* const m_classp;  // Class associated with a method
         AstNode* const m_nodep;  // AST node represented by this graph vertex
 
@@ -121,6 +122,7 @@ private:
     };
 
     class SuspendDepVtx final : public DepVtx {
+        VL_RTTI_IMPL(SuspendDepVtx, DepVtx)
         string dotColor() const override {
             if (nodep()->user2() & T_SUSPENDER) return "red";
             if (nodep()->user2() & T_SUSPENDEE) return "blue";
@@ -134,6 +136,7 @@ private:
     };
 
     class NeedsProcDepVtx final : public DepVtx {
+        VL_RTTI_IMPL(NeedsProcDepVtx, DepVtx)
         string dotColor() const override {
             if (nodep()->user2() & T_CALLS_PROC_SELF) return "red";
             if (nodep()->user2() & T_HAS_PROC) return "blue";

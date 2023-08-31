@@ -102,6 +102,7 @@ public:
 // Vertex types
 
 class OrderEitherVertex VL_NOT_FINAL : public V3GraphVertex {
+    VL_RTTI_IMPL(OrderEitherVertex, V3GraphVertex)
     // Event domain of vertex. For OrderLogicVertex this represents the conditions when the logic
     // block must be executed. For OrderVarVertex, this is the union of the domains of all the
     // OrderLogicVertex vertices that drive the variable. If initially set to nullptr (e.g.: all
@@ -133,6 +134,7 @@ public:
 };
 
 class OrderLogicVertex final : public OrderEitherVertex {
+    VL_RTTI_IMPL(OrderLogicVertex, OrderEitherVertex)
     AstNode* const m_nodep;  // The logic this vertex represents
     AstScope* const m_scopep;  // Scope the logic is under
     AstSenTree* const m_hybridp;  // Additional sensitivities for hybrid combinational logic
@@ -167,6 +169,7 @@ public:
 };
 
 class OrderVarVertex VL_NOT_FINAL : public OrderEitherVertex {
+    VL_RTTI_IMPL(OrderVarVertex, OrderEitherVertex)
     AstVarScope* const m_vscp;
 
 public:
@@ -189,6 +192,7 @@ public:
 };
 
 class OrderVarStdVertex final : public OrderVarVertex {
+    VL_RTTI_IMPL(OrderVarStdVertex, OrderVarVertex)
 public:
     // CONSTRUCTOR
     OrderVarStdVertex(OrderGraph* graphp, AstVarScope* vscp)
@@ -205,6 +209,7 @@ public:
 };
 
 class OrderVarPreVertex final : public OrderVarVertex {
+    VL_RTTI_IMPL(OrderVarPreVertex, OrderVarVertex)
 public:
     // CONSTRUCTOR
     OrderVarPreVertex(OrderGraph* graphp, AstVarScope* vscp)
@@ -221,6 +226,7 @@ public:
 };
 
 class OrderVarPostVertex final : public OrderVarVertex {
+    VL_RTTI_IMPL(OrderVarPostVertex, OrderVarVertex)
 public:
     // CONSTRUCTOR
     OrderVarPostVertex(OrderGraph* graphp, AstVarScope* vscp)
@@ -237,6 +243,7 @@ public:
 };
 
 class OrderVarPordVertex final : public OrderVarVertex {
+    VL_RTTI_IMPL(OrderVarPordVertex, OrderVarVertex)
 public:
     // CONSTRUCTOR
     OrderVarPordVertex(OrderGraph* graphp, AstVarScope* vscp)
@@ -256,6 +263,7 @@ public:
 // Edge type
 
 class OrderEdge final : public V3GraphEdge {
+    VL_RTTI_IMPL(OrderEdge, V3GraphEdge)
     friend class OrderGraph;  // Only the OrderGraph can create these
     // CONSTRUCTOR
     OrderEdge(OrderGraph* graphp, OrderEitherVertex* fromp, OrderEitherVertex* top, int weight,

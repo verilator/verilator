@@ -333,7 +333,7 @@ private:
         }
         for (V3GraphVertex* mtaskVxp = nodep->depGraphp()->verticesBeginp(); mtaskVxp;
              mtaskVxp = mtaskVxp->verticesNextp()) {
-            const ExecMTask* const mtaskp = dynamic_cast<ExecMTask*>(mtaskVxp);
+            const ExecMTask* const mtaskp = mtaskVxp->as<ExecMTask>();
             m_execMTaskp = mtaskp;
             m_sequence = 0;
             iterate(mtaskp->bodyp());

@@ -56,6 +56,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Graph vertexes
 
 class TraceActivityVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(TraceActivityVertex, V3GraphVertex)
     AstNode* const m_insertp;
     int32_t m_activityCode;
     bool m_slow;  // If always slow, we can use the same code
@@ -100,6 +101,7 @@ public:
 };
 
 class TraceCFuncVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(TraceCFuncVertex, V3GraphVertex)
     AstCFunc* const m_nodep;
 
 public:
@@ -115,6 +117,7 @@ public:
 };
 
 class TraceTraceVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(TraceTraceVertex, V3GraphVertex)
     AstTraceDecl* const m_nodep;  // TRACEINC this represents
     // nullptr, or other vertex with the real code() that duplicates this one
     TraceTraceVertex* m_duplicatep = nullptr;
@@ -137,6 +140,7 @@ public:
 };
 
 class TraceVarVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(TraceVarVertex, V3GraphVertex)
     AstVarScope* const m_nodep;
 
 public:
@@ -204,8 +208,7 @@ private:
         // Hash all of the values the traceIncs need
         for (const V3GraphVertex* itp = m_graph.verticesBeginp(); itp;
              itp = itp->verticesNextp()) {
-            if (const TraceTraceVertex* const vvertexp
-                = dynamic_cast<const TraceTraceVertex*>(itp)) {
+            if (const TraceTraceVertex* const vvertexp = itp->cast<const TraceTraceVertex>()) {
                 const AstTraceDecl* const nodep = vvertexp->nodep();
                 if (nodep->valuep()) {
                     UASSERT_OBJ(nodep->valuep()->backp() == nodep, nodep,
@@ -220,7 +223,7 @@ private:
         }
         // Find if there are any duplicates
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (TraceTraceVertex* const vvertexp = dynamic_cast<TraceTraceVertex*>(itp)) {
+            if (TraceTraceVertex* const vvertexp = itp->cast<TraceTraceVertex>()) {
                 const AstTraceDecl* const nodep = vvertexp->nodep();
                 if (nodep->valuep() && !vvertexp->duplicatep()) {
                     const auto dupit = dupFinder.findDuplicate(nodep->valuep());
@@ -229,7 +232,7 @@ private:
                             = VN_AS(dupit->second->backp(), TraceDecl);
                         UASSERT_OBJ(dupDeclp, nodep, "Trace duplicate of wrong type");
                         TraceTraceVertex* const dupvertexp
-                            = dynamic_cast<TraceTraceVertex*>(dupDeclp->user1u().toGraphVertex());
+                            = dupDeclp->user1u().toGraphVertex()->cast<TraceTraceVertex>();
                         UINFO(8, "  Orig " << nodep << endl);
                         UINFO(8, "   dup " << dupDeclp << endl);
                         // Mark the hashed node as the original and our
@@ -246,7 +249,7 @@ private:
             // Remove all variable nodes
             for (V3GraphVertex *nextp, *itp = m_graph.verticesBeginp(); itp; itp = nextp) {
                 nextp = itp->verticesNextp();
-                if (TraceVarVertex* const vvertexp = dynamic_cast<TraceVarVertex*>(itp)) {
+                if (TraceVarVertex* const vvertexp = itp->cast<TraceVarVertex>()) {
                     vvertexp->rerouteEdges(&m_graph);
                     vvertexp->unlinkDelete(&m_graph);
                 }
@@ -258,7 +261,7 @@ private:
             // Remove all Cfunc nodes
             for (V3GraphVertex *nextp, *itp = m_graph.verticesBeginp(); itp; itp = nextp) {
                 nextp = itp->verticesNextp();
-                if (TraceCFuncVertex* const vvertexp = dynamic_cast<TraceCFuncVertex*>(itp)) {
+                if (TraceCFuncVertex* const vvertexp = itp->cast<TraceCFuncVertex>()) {
                     vvertexp->rerouteEdges(&m_graph);
                     vvertexp->unlinkDelete(&m_graph);
                 }
@@ -271,16 +274,13 @@ private:
         // If there are any edges from a always, keep only the always
         for (const V3GraphVertex* itp = m_graph.verticesBeginp(); itp;
              itp = itp->verticesNextp()) {
-            if (const TraceTraceVertex* const vvertexp
-                = dynamic_cast<const TraceTraceVertex*>(itp)) {
+            if (const TraceTraceVertex* const vvertexp = itp->cast<const TraceTraceVertex>()) {
                 // Search for the incoming always edge
                 const V3GraphEdge* alwaysEdgep = nullptr;
                 for (const V3GraphEdge* edgep = vvertexp->inBeginp(); edgep;
                      edgep = edgep->inNextp()) {
                     const TraceActivityVertex* const actVtxp
-                        = dynamic_cast<const TraceActivityVertex*>(edgep->fromp());
-                    UASSERT_OBJ(actVtxp, vvertexp->nodep(),
-                                "Tracing a node with FROM non activity");
+                        = edgep->fromp()->as<const TraceActivityVertex>();
                     if (actVtxp->activityAlways()) {
                         alwaysEdgep = edgep;
                         break;
@@ -299,7 +299,7 @@ private:
         // Activity points with no outputs can be removed
         for (V3GraphVertex *nextp, *itp = m_graph.verticesBeginp(); itp; itp = nextp) {
             nextp = itp->verticesNextp();
-            if (TraceActivityVertex* const vtxp = dynamic_cast<TraceActivityVertex*>(itp)) {
+            if (TraceActivityVertex* const vtxp = itp->cast<TraceActivityVertex>()) {
                 // Leave in the always vertex for later use.
                 if (vtxp != m_alwaysVtxp && !vtxp->outBeginp()) vtxp->unlinkDelete(&m_graph);
             }
@@ -309,7 +309,7 @@ private:
     uint32_t assignactivityNumbers() {
         uint32_t activityNumber = 1;  // Note 0 indicates "slow" only
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (TraceActivityVertex* const vvertexp = dynamic_cast<TraceActivityVertex*>(itp)) {
+            if (TraceActivityVertex* const vvertexp = itp->cast<TraceActivityVertex>()) {
                 if (vvertexp != m_alwaysVtxp) {
                     if (vvertexp->slow()) {
                         vvertexp->activityCode(TraceActivityVertex::ACTIVITY_SLOW);
@@ -328,14 +328,14 @@ private:
         nFullCodes = 0;
         nChgCodes = 0;
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (TraceTraceVertex* const vtxp = dynamic_cast<TraceTraceVertex*>(itp)) {
+            if (TraceTraceVertex* const vtxp = itp->cast<TraceTraceVertex>()) {
                 ActCodeSet actSet;
                 UINFO(9, "  Add to sort: " << vtxp << endl);
                 if (debug() >= 9) vtxp->nodep()->dumpTree("-   trnode: ");
                 for (const V3GraphEdge* edgep = vtxp->inBeginp(); edgep;
                      edgep = edgep->inNextp()) {
                     const TraceActivityVertex* const cfvertexp
-                        = dynamic_cast<const TraceActivityVertex*>(edgep->fromp());
+                        = edgep->fromp()->cast<const TraceActivityVertex>();
                     UASSERT_OBJ(cfvertexp, vtxp->nodep(),
                                 "Should have been function pointing to this trace");
                     UINFO(9, "   Activity: " << cfvertexp << endl);
@@ -471,8 +471,7 @@ private:
         // Insert activity setters
         for (const V3GraphVertex* itp = m_graph.verticesBeginp(); itp;
              itp = itp->verticesNextp()) {
-            if (const TraceActivityVertex* const vtxp
-                = dynamic_cast<const TraceActivityVertex*>(itp)) {
+            if (const TraceActivityVertex* const vtxp = itp->cast<const TraceActivityVertex>()) {
                 if (vtxp->activitySlow()) {
                     // Just set all flags in slow code as it should be rare.
                     // This will be rolled up into a loop by V3Reloop.
@@ -787,7 +786,7 @@ private:
 
     TraceCFuncVertex* getCFuncVertexp(AstCFunc* nodep) {
         TraceCFuncVertex* vertexp
-            = dynamic_cast<TraceCFuncVertex*>(nodep->user1u().toGraphVertex());
+            = nodep->user1() ? nodep->user1u().toGraphVertex()->cast<TraceCFuncVertex>() : nullptr;
         if (!vertexp) {
             vertexp = new TraceCFuncVertex{&m_graph, nodep};
             nodep->user1p(vertexp);
@@ -796,7 +795,8 @@ private:
     }
     TraceActivityVertex* getActivityVertexp(AstNode* nodep, bool slow) {
         TraceActivityVertex* vertexp
-            = dynamic_cast<TraceActivityVertex*>(nodep->user3u().toGraphVertex());
+            = nodep->user3() ? nodep->user3u().toGraphVertex()->cast<TraceActivityVertex>()
+                             : nullptr;
         if (!vertexp) {
             vertexp = new TraceActivityVertex{&m_graph, nodep, slow};
             nodep->user3p(vertexp);

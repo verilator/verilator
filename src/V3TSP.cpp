@@ -54,6 +54,7 @@ static void selfTestString();
 // Vertex that tracks a per-vertex key
 template <typename T_Key>
 class TspVertexTmpl final : public V3GraphVertex {
+    VL_RTTI_IMPL(TspVertexTmpl, V3GraphVertex)
 private:
     const T_Key m_key;
 
