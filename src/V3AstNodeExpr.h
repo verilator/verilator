@@ -45,8 +45,8 @@ public:
     enum en m_e;
     VPurity()
         : m_e{NOT_CACHED} {}
-    bool isCached() { return m_e != NOT_CACHED; }
-    bool isPure() { return m_e == PURE; }
+    bool isCached() const { return m_e != NOT_CACHED; }
+    bool isPure() const { return m_e == PURE; }
     void setPurity(bool pure) { m_e = pure ? PURE : IMPURE; }
 };
 
@@ -108,6 +108,10 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
+    const char* broken() const override;
+
+private:
+    bool getChildrenPurity() const { return lhsp()->isPure() && rhsp()->isPure(); }
 };
 class AstNodeBiCom VL_NOT_FINAL : public AstNodeBiop {
     // Binary expr with commutative properties
@@ -295,6 +299,12 @@ public:
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
     bool isPure() override;
+    const char* broken() const override;
+
+private:
+    bool getChildrenPurity() const {
+        return fromp()->isPure() && rhsp()->isPure() && (!thsp() || thsp()->isPure());
+    }
 };
 class AstNodeQuadop VL_NOT_FINAL : public AstNodeExpr {
     // 4-ary expression
@@ -332,6 +342,12 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
+    const char* broken() const override;
+
+private:
+    bool getChildrenPurity() const {
+        return lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure() && fhsp()->isPure();
+    }
 };
 class AstNodeTermop VL_NOT_FINAL : public AstNodeExpr {
     // Terminal operator -- an operator with no "inputs"
@@ -378,6 +394,12 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
+    const char* broken() const override;
+
+private:
+    bool getChildrenPurity() const {
+        return lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure();
+    }
 };
 class AstNodeCond VL_NOT_FINAL : public AstNodeTriop {
     // @astgen alias op1 := condp
@@ -451,6 +473,7 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
+    const char* broken() const override;
 };
 class AstNodeSystemUniopD VL_NOT_FINAL : public AstNodeUniop {
 public:

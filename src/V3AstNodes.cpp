@@ -136,35 +136,48 @@ string AstCCall::selfPointerProtect(bool useSelfForThis) const {
 }
 
 bool AstNodeUniop::isPure() {
-    if (!m_purity.isCached()) { m_purity.setPurity(lhsp()->isPure()); }
+    if (!m_purity.isCached()) m_purity.setPurity(lhsp()->isPure());
     return m_purity.isPure();
+}
+const char* AstNodeUniop::broken() const {
+    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != lhsp()->isPure());
+    return nullptr;
 }
 
 bool AstNodeBiop::isPure() {
-    if (!m_purity.isCached()) { m_purity.setPurity(lhsp()->isPure() && rhsp()->isPure()); }
+    if (!m_purity.isCached()) m_purity.setPurity(getChildrenPurity());
     return m_purity.isPure();
+}
+const char* AstNodeBiop::broken() const {
+    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getChildrenPurity());
+    return nullptr;
 }
 
 bool AstNodeTriop::isPure() {
-    if (!m_purity.isCached()) {
-        m_purity.setPurity(lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure());
-    }
+    if (!m_purity.isCached()) m_purity.setPurity(getChildrenPurity());
     return m_purity.isPure();
+}
+const char* AstNodeTriop::broken() const {
+    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getChildrenPurity());
+    return nullptr;
 }
 
 bool AstNodePreSel::isPure() {
-    if (!m_purity.isCached()) {
-        m_purity.setPurity(fromp()->isPure() && rhsp()->isPure() && (!thsp() || thsp()->isPure()));
-    }
+    if (!m_purity.isCached()) m_purity.setPurity(getChildrenPurity());
     return m_purity.isPure();
+}
+const char* AstNodePreSel::broken() const {
+    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getChildrenPurity());
+    return nullptr;
 }
 
 bool AstNodeQuadop::isPure() {
-    if (!m_purity.isCached()) {
-        m_purity.setPurity(lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure()
-                           && fhsp()->isPure());
-    }
+    if (!m_purity.isCached()) m_purity.setPurity(getChildrenPurity());
     return m_purity.isPure();
+}
+const char* AstNodeQuadop::broken() const {
+    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getChildrenPurity());
+    return nullptr;
 }
 
 AstNodeCond::AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,
