@@ -38,6 +38,18 @@
 #define VL_NOT_FINAL  // This #define fixes broken code folding in the CLion IDE
 #endif
 
+class VPurity final {
+    // Used in some nodes to cache the result of isPure method
+public:
+    enum en : uint8_t { NOT_CACHED, PURE, IMPURE };
+    enum en m_e;
+    VPurity()
+        : m_e{NOT_CACHED} {}
+    bool isCached() { return m_e != NOT_CACHED; }
+    bool isPure() { return m_e == PURE; }
+    void setPurity(bool pure) { m_e = pure ? PURE : IMPURE; }
+};
+
 // === Abstract base node types (AstNode*) =====================================
 
 class AstNodeExpr VL_NOT_FINAL : public AstNode {
@@ -69,8 +81,8 @@ class AstNodeBiop VL_NOT_FINAL : public AstNodeExpr {
     // Binary expression
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
-    bool m_pure;  // Cached results of isPure method
-    bool m_pureComputed = false;  // True if m_pure was already computed;
+    VPurity m_purity;
+
 protected:
     AstNodeBiop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : AstNodeExpr{t, fl} {
@@ -264,8 +276,8 @@ class AstNodePreSel VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := thsp : Optional[AstNodeExpr]
     // @astgen op4 := attrp : Optional[AstAttrOf]
-    bool m_pure;  // Cached results of isPure method
-    bool m_pureComputed = false;  // True if m_pure was already computed;
+    VPurity m_purity;
+
 protected:
     AstNodePreSel(VNType t, FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
         : AstNodeExpr{t, fl} {
@@ -290,8 +302,8 @@ class AstNodeQuadop VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := thsp : AstNodeExpr
     // @astgen op4 := fhsp : AstNodeExpr
-    bool m_pure;  // Cached results of isPure method
-    bool m_pureComputed = false;  // True if m_pure was already computed;
+    VPurity m_purity;
+
 protected:
     AstNodeQuadop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp,
                   AstNodeExpr* fhsp)
@@ -339,8 +351,8 @@ class AstNodeTriop VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := thsp : AstNodeExpr
-    bool m_pure;  // Cached results of isPure method
-    bool m_pureComputed = false;  // True if m_pure was already computed;
+    VPurity m_purity;
+
 protected:
     AstNodeTriop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
         : AstNodeExpr{t, fl} {
@@ -415,8 +427,8 @@ public:
 class AstNodeUniop VL_NOT_FINAL : public AstNodeExpr {
     // Unary expression
     // @astgen op1 := lhsp : AstNodeExpr
-    bool m_pure;  // Cached results of isPure method
-    bool m_pureComputed = false;  // True if m_pure was already computed;
+    VPurity m_purity;
+
 protected:
     AstNodeUniop(VNType t, FileLine* fl, AstNodeExpr* lhsp)
         : AstNodeExpr{t, fl} {

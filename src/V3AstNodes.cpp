@@ -136,43 +136,35 @@ string AstCCall::selfPointerProtect(bool useSelfForThis) const {
 }
 
 bool AstNodeUniop::isPure() {
-    if (!m_pureComputed) {
-        m_pure = lhsp()->isPure();
-        m_pureComputed = true;
-    }
-    return m_pure;
+    if (!m_purity.isCached()) { m_purity.setPurity(lhsp()->isPure()); }
+    return m_purity.isPure();
 }
 
 bool AstNodeBiop::isPure() {
-    if (!m_pureComputed) {
-        m_pure = lhsp()->isPure() && rhsp()->isPure();
-        m_pureComputed = true;
-    }
-    return m_pure;
+    if (!m_purity.isCached()) { m_purity.setPurity(lhsp()->isPure() && rhsp()->isPure()); }
+    return m_purity.isPure();
 }
 
 bool AstNodeTriop::isPure() {
-    if (!m_pureComputed) {
-        m_pure = lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure();
-        m_pureComputed = true;
+    if (!m_purity.isCached()) {
+        m_purity.setPurity(lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure());
     }
-    return m_pure;
+    return m_purity.isPure();
 }
 
 bool AstNodePreSel::isPure() {
-    if (!m_pureComputed) {
-        m_pure = fromp()->isPure() && rhsp()->isPure() && (!thsp() || thsp()->isPure());
-        m_pureComputed = true;
+    if (!m_purity.isCached()) {
+        m_purity.setPurity(fromp()->isPure() && rhsp()->isPure() && (!thsp() || thsp()->isPure()));
     }
-    return m_pure;
+    return m_purity.isPure();
 }
 
 bool AstNodeQuadop::isPure() {
-    if (!m_pureComputed) {
-        m_pure = lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure() && fhsp()->isPure();
-        m_pureComputed = true;
+    if (!m_purity.isCached()) {
+        m_purity.setPurity(lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure()
+                           && fhsp()->isPure());
     }
-    return m_pure;
+    return m_purity.isPure();
 }
 
 AstNodeCond::AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,
