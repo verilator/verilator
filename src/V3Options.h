@@ -281,7 +281,7 @@ private:
     bool m_traceCoverage = false;   // main switch: --trace-coverage
     bool m_traceParams = true;      // main switch: --trace-params
     bool m_traceStructs = false;    // main switch: --trace-structs
-    bool m_noTraceTop;              // main switch: --no-trace-top
+    bool m_noTraceTop = false;      // main switch: --no-trace-top
     bool m_traceUnderscore = false; // main switch: --trace-underscore
     bool m_underlineZero = false;   // main switch: --underline-zero; undocumented old Verilator 2
     bool m_verilate = true;         // main switch: --verilate

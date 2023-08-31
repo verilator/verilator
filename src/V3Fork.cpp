@@ -358,7 +358,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    DynScopeVisitor(AstNetlist* nodep) {
+    explicit DynScopeVisitor(AstNetlist* nodep) {
         // Create Dynamic scope class prototypes and objects
         visit(nodep);
 
@@ -431,7 +431,7 @@ private:
         return taskp;
     }
 
-    string generateTaskName(AstNode* fromp, string kind) {
+    string generateTaskName(AstNode* fromp, const string& kind) {
         // TODO: Ensure no collisions occur
         return "__V" + kind + (!fromp->name().empty() ? (fromp->name() + "__") : "UNNAMED__")
                + cvtToHex(fromp);
@@ -566,7 +566,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    ForkVisitor(AstNetlist* nodep) { visit(nodep); }
+    explicit ForkVisitor(AstNetlist* nodep) { visit(nodep); }
     ~ForkVisitor() override = default;
 };
 

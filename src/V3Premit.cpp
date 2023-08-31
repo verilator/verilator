@@ -214,7 +214,7 @@ private:
         }
         iterateAndNextNull(nodep->rhsp());
         {
-            VL_RESTORER(m_assignLhs);
+            // VL_RESTORER(m_assignLhs);  // Not needed; part of RESTORER_START_STATEMENT()
             m_assignLhs = true;
             iterateAndNextNull(nodep->lhsp());
         }

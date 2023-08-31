@@ -102,6 +102,8 @@ class VlCoroutineHandle final {
 public:
     // CONSTRUCTORS
     // Construct
+    // non-explicit:
+    // cppcheck-suppress noExplicitConstructor
     VlCoroutineHandle(VlProcessRef process)
         : m_coro{nullptr}
         , m_process{process} {
@@ -114,6 +116,8 @@ public:
         if (m_process) m_process->state(VlProcess::WAITING);
     }
     // Move the handle, leaving a nullptr
+    // non-explicit:
+    // cppcheck-suppress noExplicitConstructor
     VlCoroutineHandle(VlCoroutineHandle&& moved)
         : m_coro{std::exchange(moved.m_coro, nullptr)}
         , m_process{std::exchange(moved.m_process, nullptr)}

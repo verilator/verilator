@@ -398,7 +398,7 @@ LogicByScope fixCuts(AstNetlist* netlistp,
 
 }  // namespace
 
-LogicByScope breakCycles(AstNetlist* netlistp, LogicByScope& combinationalLogic) {
+LogicByScope breakCycles(AstNetlist* netlistp, const LogicByScope& combinationalLogic) {
     // Build the dataflow (dependency) graph
     const std::unique_ptr<Graph> graphp = buildGraph(combinationalLogic);
 

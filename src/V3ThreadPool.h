@@ -41,7 +41,7 @@ class VAnyPackagedTask final {
     struct PTWrapper final : PTWrapperBase {
         std::packaged_task<Signature> m_pt;
 
-        PTWrapper(std::packaged_task<Signature>&& pt)
+        explicit PTWrapper(std::packaged_task<Signature>&& pt)
             : m_pt(std::move(pt)) {}
 
         void operator()() final override { m_pt(); }
@@ -53,6 +53,8 @@ class VAnyPackagedTask final {
 public:
     // CONSTRUCTORS
     template <typename Signature>
+    // non-explicit:
+    // cppcheck-suppress noExplicitConstructor
     VAnyPackagedTask(std::packaged_task<Signature>&& pt)
         : m_ptWrapperp{std::make_unique<PTWrapper<Signature>>(std::move(pt))} {}
 
