@@ -349,10 +349,6 @@ private:
     const VNUser2InUse m_inuser2;
 
     // TYPES
-    enum InsertMode : uint8_t {
-        IM_BEFORE,  // Pointing at statement ref is in, insert before this
-        IM_WHILE_PRECOND  // Pointing to for loop, add to body end
-    };
     using DpiCFuncs = std::map<const string, std::tuple<AstNodeFTask*, std::string, AstCFunc*>>;
 
     // STATE
@@ -360,7 +356,6 @@ private:
     AstNodeModule* m_modp = nullptr;  // Current module
     AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
-    InsertMode m_insMode = IM_BEFORE;  // How to insert
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_inSensesp = false;  // Are we under a senitem?
     int m_modNCalls = 0;  // Incrementing func # for making symbols
@@ -1335,33 +1330,17 @@ private:
         // Iterate into the FTask we are calling.  Note it may be under a different
         // scope then the caller, so we need to restore state.
         VL_RESTORER(m_scopep);
-        VL_RESTORER(m_insMode);
         VL_RESTORER(m_insStmtp);
         {
             m_scopep = m_statep->getScope(nodep);
             iterate(nodep);
         }
     }
-    AstNode* insertBeforeStmt(AstNode* nodep, AstNode* newp) {
-        // Return node that must be visited, if any
+    void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         if (debug() >= 9) nodep->dumpTree("-  newstmt: ");
         UASSERT_OBJ(m_insStmtp, nodep, "Function call not underneath a statement");
-        AstNode* visitp = nullptr;
-        if (m_insMode == IM_BEFORE) {
-            // Add the whole thing before insertAt
-            UINFO(5, "     IM_Before  " << m_insStmtp << endl);
-            if (debug() >= 9) newp->dumpTree("-  newfunc: ");
-            m_insStmtp->addHereThisAsNext(newp);
-        } else if (m_insMode == IM_WHILE_PRECOND) {
-            UINFO(5, "     IM_While_Precond " << m_insStmtp << endl);
-            AstWhile* const whilep = VN_AS(m_insStmtp, While);
-            UASSERT_OBJ(whilep, nodep, "Insert should be under WHILE");
-            whilep->addPrecondsp(newp);
-            visitp = newp;
-        } else {
-            nodep->v3fatalSrc("Unknown InsertMode");
-        }
-        return visitp;
+        if (debug() >= 9) newp->dumpTree("-  newfunc: ");
+        m_insStmtp->addHereThisAsNext(newp);
     }
 
     // VISITORS
@@ -1420,17 +1399,15 @@ private:
         } else {
             beginp = createInlinedFTask(nodep, namePrefix, outvscp);
         }
-        // Replace the ref
-        AstNode* visitp = nullptr;
 
         if (VN_IS(nodep, New)) {
-            visitp = insertBeforeStmt(nodep, beginp);
+            insertBeforeStmt(nodep, beginp);
             UASSERT_OBJ(cnewp, nodep, "didn't create cnew for new");
             nodep->replaceWith(cnewp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else if (VN_IS(nodep->backp(), NodeAssign)) {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep, "func reference to non-function");
-            visitp = insertBeforeStmt(nodep, beginp);
+            insertBeforeStmt(nodep, beginp);
             AstVarRef* const outrefp = new AstVarRef{nodep->fileline(), outvscp, VAccess::READ};
             nodep->replaceWith(outrefp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1441,7 +1418,7 @@ private:
             nodep->replaceWith(beginp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
-            visitp = insertBeforeStmt(nodep, beginp);
+            insertBeforeStmt(nodep, beginp);
             if (nodep->taskp()->isFunction()) {
                 nodep->v3warn(
                     IGNOREDRETURN,
@@ -1451,14 +1428,10 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
         UINFO(4, "  FTask REF Done.\n");
-        // Visit nodes that normal iteration won't find
-        if (visitp) iterateAndNextNull(visitp);
     }
     void visit(AstNodeFTask* nodep) override {
         UINFO(4, " visitFTask   " << nodep << endl);
-        VL_RESTORER(m_insMode);
         VL_RESTORER(m_insStmtp);
-        m_insMode = IM_BEFORE;
         m_insStmtp = nodep->stmtsp();  // Might be null if no statements, but we won't use it
         if (!nodep->user1SetOnce()) {  // Just one creation needed per function
             // Expand functions in it
@@ -1529,7 +1502,6 @@ private:
         m_insStmtp = nullptr;  // First thing should be new statement
         iterateAndNextNull(nodep->precondsp());
         // Conditions insert first at end of precondsp.
-        m_insMode = IM_WHILE_PRECOND;
         m_insStmtp = nodep;
         iterateAndNextNull(nodep->condp());
         // Body insert just before themselves
@@ -1544,7 +1516,6 @@ private:
             "For statements should have been converted to while statements in V3Begin.cpp");
     }
     void visit(AstNodeStmt* nodep) override {
-        m_insMode = IM_BEFORE;
         m_insStmtp = nodep;
         iterateChildren(nodep);
         m_insStmtp = nullptr;  // Next thing should be new statement
@@ -1557,7 +1528,6 @@ private:
         }
     }
     void visit(AstStmtExpr* nodep) override {
-        m_insMode = IM_BEFORE;
         m_insStmtp = nodep;
         iterateChildren(nodep);
         if (!nodep->exprp()) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
