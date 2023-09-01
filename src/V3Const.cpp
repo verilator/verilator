@@ -1809,6 +1809,7 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void replaceConcatMerge(AstConcat* nodep) {
+        // {llp OP lrp, rlp OP rrp} => {llp, rlp} OP {lrp, rrp}, where OP = AND/OR/XOR
         AstNodeBiop* const lp = VN_AS(nodep->lhsp(), NodeBiop);
         AstNodeBiop* const rp = VN_AS(nodep->rhsp(), NodeBiop);
         AstNodeExpr* const llp = lp->lhsp()->cloneTree(false);

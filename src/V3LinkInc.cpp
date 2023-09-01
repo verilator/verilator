@@ -263,7 +263,7 @@ private:
             return;
         }
         AstNodeExpr* const readp = nodep->rhsp();
-        AstNodeExpr* const writep = nodep->thsp();
+        AstNodeExpr* const writep = nodep->thsp()->unlinkFrBack();
 
         AstConst* const constp = VN_AS(nodep->lhsp(), Const);
         UASSERT_OBJ(nodep, constp, "Expecting CONST");
@@ -295,8 +295,8 @@ private:
                 = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, operp};
             insertNextToStmt(nodep, assignp);
             // Immediately after incrementing - assign it to the original variable
-            assignp->addNextHere(new AstAssign{fl, writep->cloneTree(true),
-                                               new AstVarRef{fl, varp, VAccess::READ}});
+            assignp->addNextHere(
+                new AstAssign{fl, writep, new AstVarRef{fl, varp, VAccess::READ}});
         } else {
             // PostAdd/PostSub operations
             // Assign the original variable to the temporary one
@@ -304,7 +304,7 @@ private:
                                                      readp->cloneTree(true)};
             insertNextToStmt(nodep, assignp);
             // Increment the original variable by one
-            assignp->addNextHere(new AstAssign{fl, writep->cloneTree(true), operp});
+            assignp->addNextHere(new AstAssign{fl, writep, operp});
         }
 
         // Replace the node with the temporary
