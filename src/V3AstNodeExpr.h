@@ -630,7 +630,6 @@ class AstCMethodHard final : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr // Subject of method call
     // @astgen op2 := pinsp : List[AstNodeExpr] // Arguments
     string m_name;  // Name of method
-    bool m_pure = false;  // Pure optimizable
 public:
     AstCMethodHard(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, const string& name,
                    AstNodeExpr* pinsp = nullptr)
@@ -655,8 +654,8 @@ public:
         const AstCMethodHard* asamep = static_cast<const AstCMethodHard*>(samep);
         return (m_name == asamep->m_name);
     }
-    bool isPure() override { return m_pure; }
-    void pure(bool flag) { m_pure = flag; }
+    // All non-void methods are pure.
+    bool isPure() override { return true; }
     int instrCount() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
