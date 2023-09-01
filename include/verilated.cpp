@@ -2612,7 +2612,7 @@ void VerilatedContext::prepareClone() { delete m_threadPool.release(); }
 
 VerilatedVirtualBase* VerilatedContext::threadPoolpOnClone() {
     if (VL_UNLIKELY(m_threadPool)) m_threadPool.release();
-    m_threadPool = std::make_unique<VlThreadPool>(this, m_threads - 1);
+    m_threadPool = std::unique_ptr<VlThreadPool>(new VlThreadPool{this, m_threads - 1});
     return m_threadPool.get();
 }
 
