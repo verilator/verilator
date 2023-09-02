@@ -1799,7 +1799,7 @@ private:
         UASSERT_OBJ((rstart + rwidth) == lstart, nodep,
                     "tried to merge two selects which are not adjacent");
         AstSel* const newselp = new AstSel{
-            lselp->fromp()->fileline(), rselp->fromp()->cloneTree(false), rstart, lwidth + rwidth};
+            lselp->fromp()->fileline(), rselp->fromp()->unlinkFrBack(), rstart, lwidth + rwidth};
         UINFO(5, "merged two adjacent sel " << lselp << " and " << rselp << " to one " << newselp
                                             << endl);
 
