@@ -37,7 +37,6 @@ foreach my $s (
     '/*verilator sformat*/ can only be applied to last argument of ',
     'Argument needed for string.',
     'Array initialization has too few elements, need element ',
-    'Assert not allowed under another assert',
     'Assigned pin is neither input nor output',
     'Assignment pattern with no members',
     'Attempted parameter setting of non-parameter: Param ',
