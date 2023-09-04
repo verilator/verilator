@@ -2146,18 +2146,15 @@ private:
             return true;
         } else if (m_doV && VN_IS(nodep->rhsp(), StreamR)) {
             // The right-streaming operator on rhs of assignment does not
-            // change the order of bits. Eliminate stream but keep its lhsp
-            // Unlink the stuff
+            // change the order of bits. Eliminate stream but keep its lhsp.
+            // Add a cast if needed.
             AstStreamR* const streamp = VN_AS(nodep->rhsp(), StreamR)->unlinkFrBack();
             AstNodeExpr* srcp = streamp->lhsp()->unlinkFrBack();
-            AstNode* const sizep = streamp->rhsp()->unlinkFrBack();
             AstNodeDType* const srcDTypep = srcp->dtypep();
             if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
                 srcp = new AstCvtDynArrayToPacked{srcp->fileline(), srcp, srcDTypep};
             }
             nodep->rhsp(srcp);
-            // Cleanup
-            VL_DO_DANGLING(sizep->deleteTree(), sizep);
             VL_DO_DANGLING(streamp->deleteTree(), streamp);
             // Further reduce, any of the nodes may have more reductions.
             return true;
@@ -2190,7 +2187,6 @@ private:
             // then we select bits from the left-most, not the right-most.
             AstNodeExpr* const streamp = nodep->lhsp()->unlinkFrBack();
             AstNodeExpr* const dstp = VN_AS(streamp, StreamR)->lhsp()->unlinkFrBack();
-            AstNode* const sizep = VN_AS(streamp, StreamR)->rhsp()->unlinkFrBack();
             AstNodeExpr* srcp = nodep->rhsp()->unlinkFrBack();
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
@@ -2201,8 +2197,6 @@ private:
             }
             nodep->lhsp(dstp);
             nodep->rhsp(srcp);
-            // Cleanup
-            VL_DO_DANGLING(sizep->deleteTree(), sizep);
             VL_DO_DANGLING(streamp->deleteTree(), streamp);
             // Further reduce, any of the nodes may have more reductions.
             return true;
