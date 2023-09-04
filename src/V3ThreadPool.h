@@ -95,6 +95,8 @@ class V3ThreadPool final {
     V3Mutex m_stoppedJobsMutex;  // Used to signal stopped jobs
     // Conditions to wake up stopped jobs
     std::condition_variable_any m_stoppedJobsCV VL_GUARDED_BY(m_stoppedJobsMutex);
+    // Conditions to wake up exclusive access thread
+    std::condition_variable_any m_exclusiveAccessThreadCV VL_GUARDED_BY(m_stoppedJobsMutex);
     std::atomic_uint m_stoppedJobs{0};  // Currently stopped jobs waiting for wake up
     std::atomic_bool m_stopRequested{false};  // Signals to resume stopped jobs
     std::atomic_bool m_exclusiveAccess{false};  // Signals that all other threads are stopped
@@ -269,6 +271,8 @@ public:
             V3ThreadPool::s().resumeOtherThreads();
 
             V3ThreadPool::s().m_stoppedJobsMutex.unlock();
+            // wait for all threads to resume
+            while (V3ThreadPool::s().m_stoppedJobs != 0) {}
         } else {
             V3ThreadPool::s().m_stoppedJobsMutex.pretendUnlock();
         }

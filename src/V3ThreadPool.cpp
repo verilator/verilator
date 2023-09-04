@@ -41,6 +41,7 @@ void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex)
         m_stoppedJobs = 0;
         m_cv.notify_all();
         m_stoppedJobsCV.notify_all();
+        m_exclusiveAccessThreadCV.notify_all();
     }
     while (!m_workers.empty()) {
         m_workers.front().join();
@@ -58,12 +59,7 @@ void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex)
 
 void V3ThreadPool::suspendMultithreading() VL_MT_SAFE VL_EXCLUDES(m_mutex)
     VL_EXCLUDES(m_stoppedJobsMutex) {
-    if (!m_stoppedJobsMutex.try_lock()) {
-        v3fatal("Tried to suspend thread pool when other thread uses it.");
-        assert(0);  // LCOV_EXCL_LINE
-        VL_UNREACHABLE;
-    }
-    V3LockGuard stoppedJobsLock{m_stoppedJobsMutex, std::adopt_lock_t{}};
+    V3LockGuard stoppedJobsLock{m_stoppedJobsMutex};
     if (!m_workers.empty()) { stopOtherThreads(); }
 
     if (!m_mutex.try_lock()) {
@@ -139,25 +135,23 @@ bool V3ThreadPool::waitIfStopRequested() VL_MT_SAFE VL_EXCLUDES(m_stoppedJobsMut
 
 void V3ThreadPool::waitForResumeRequest() VL_REQUIRES(m_stoppedJobsMutex) {
     ++m_stoppedJobs;
-    m_stoppedJobsCV.notify_all();
+    m_exclusiveAccessThreadCV.notify_one();
     m_stoppedJobsCV.wait(m_stoppedJobsMutex, [&]() VL_REQUIRES(m_stoppedJobsMutex) {
-        return !m_stopRequested.load();
+        return !m_stopRequested;
     });
     --m_stoppedJobs;
-    m_stoppedJobsCV.notify_all();
 }
 
 void V3ThreadPool::stopOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex)
     VL_REQUIRES(m_stoppedJobsMutex) {
     m_stopRequested = true;
-    ++m_stoppedJobs;
-    m_stoppedJobsCV.notify_all();
-    m_cv.notify_all();
-    m_stoppedJobsCV.wait(m_stoppedJobsMutex, [&]() VL_REQUIRES(m_stoppedJobsMutex) {
-        // count also the main thread
-        return m_stoppedJobs == (m_workers.size() + 1);
+    {
+        V3LockGuard lock {m_mutex};
+        m_cv.notify_all();
+    }
+    m_exclusiveAccessThreadCV.wait(m_stoppedJobsMutex, [&]() VL_REQUIRES(m_stoppedJobsMutex) {
+        return m_stoppedJobs == m_workers.size();
     });
-    --m_stoppedJobs;
 }
 
 void V3ThreadPool::selfTestMtDisabled() {
