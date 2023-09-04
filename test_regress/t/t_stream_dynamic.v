@@ -21,6 +21,9 @@ module t (/*AUTOARG*/);
       { >> bit {arr}} = bit6;
       v = $sformatf("%p", arr); `checks(v, "'{'h0, 'h0, 'h0, 'h1, 'h1, 'h1} ");
 
+      ans = { >> bit {arr} };
+      `checkh(ans, bit6);
+
       { << bit {arr}} = bit6;
       v = $sformatf("%p", arr); `checks(v, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0} ");
 
@@ -30,6 +33,9 @@ module t (/*AUTOARG*/);
       { >> bit[1:0] {arr2}} = bit6;
       v = $sformatf("%p", arr2); `checks(v, "'{'h0, 'h2, 'h3} ");
 
+      ans = { >> bit[1:0] {arr2} };
+      `checkh(ans, bit6);
+
       { << bit[1:0] {arr2}} = bit6;
       v = $sformatf("%p", arr2); `checks(v, "'{'h3, 'h2, 'h0} ");
 
@@ -38,6 +44,9 @@ module t (/*AUTOARG*/);
 
       { >> bit [5:0] {arr6} } = bit6;
       v = $sformatf("%p", arr6); `checks(v, "'{'h38} ");
+
+      ans = { >> bit[5:0] {arr6} };
+      `checkh(ans, bit6);
 
       { << bit [5:0] {arr6} } = bit6;
       v = $sformatf("%p", arr6); `checks(v, "'{'h38} ");
