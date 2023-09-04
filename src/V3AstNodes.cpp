@@ -2367,6 +2367,29 @@ void AstCAwait::dump(std::ostream& str) const {
         sensesp()->dump(str);
     }
 }
+bool AstCMethodHard::isPure() {
+    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
+    return m_purity.isPure();
+}
+const char* AstCMethodHard::broken() const {
+    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    return nullptr;
+}
+bool AstCMethodHard::getPurity() const {
+    static const char* pureMethods[] = {"size",        "exists",
+                                        "at",          "atBack",
+                                        "find",        "find_index",
+                                        "find_frst",   "find_first_index",
+                                        "find_last",   "find_last_index",
+                                        "min",         "max",
+                                        "unique",      "unique_index",
+                                        "sum",         "product",
+                                        "and",         "or",
+                                        "xor",         "isFired",
+                                        "isTriggered", "any"};
+    return std::find(std::begin(pureMethods), std::end(pureMethods), this->name())
+           != std::end(pureMethods);
+}
 int AstCMethodHard::instrCount() const {
     if (AstBasicDType* const basicp = fromp()->dtypep()->basicp()) {
         // TODO: add a more structured description of library methods, rather than using string

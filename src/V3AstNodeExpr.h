@@ -630,6 +630,8 @@ class AstCMethodHard final : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr // Subject of method call
     // @astgen op2 := pinsp : List[AstNodeExpr] // Arguments
     string m_name;  // Name of method
+    VPurity m_purity;
+
 public:
     AstCMethodHard(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, const string& name,
                    AstNodeExpr* pinsp = nullptr)
@@ -654,12 +656,15 @@ public:
         const AstCMethodHard* asamep = static_cast<const AstCMethodHard*>(samep);
         return (m_name == asamep->m_name);
     }
-    // All non-void methods are pure.
-    bool isPure() override { return true; }
+    bool isPure() override;
+    const char* broken() const override;
     int instrCount() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+
+private:
+    bool getPurity() const;
 };
 class AstCast final : public AstNodeExpr {
     // Cast to appropriate data type
