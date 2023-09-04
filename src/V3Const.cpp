@@ -2210,8 +2210,8 @@ private:
             AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep();
             AstStreamL* streamp = VN_AS(nodep->rhsp(), StreamL);
             AstNodeExpr* const srcp = streamp->lhsp();
-            const int sWidth = srcp->width();
-            if (sWidth == 0) {
+            const AstNodeDType* const srcDTypep = srcp->dtypep();
+            if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
                 srcp->unlinkFrBack();
                 streamp->lhsp(new AstCvtDynArrayToPacked{srcp->fileline(), srcp, lhsDtypep});
                 streamp->dtypeFrom(lhsDtypep);
