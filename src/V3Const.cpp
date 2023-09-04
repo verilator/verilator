@@ -2152,6 +2152,10 @@ private:
             AstNodeExpr* srcp = streamp->lhsp()->unlinkFrBack();
             AstNodeDType* const srcDTypep = srcp->dtypep();
             if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
+                if (nodep->lhsp()->widthMin() > 64) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment of stream of dynamic "
+                                                 "array to a variable of size greater than 64");
+                }
                 srcp = new AstCvtDynArrayToPacked{srcp->fileline(), srcp, srcDTypep};
             }
             nodep->rhsp(srcp);
@@ -2206,6 +2210,10 @@ private:
             AstNodeExpr* const srcp = streamp->lhsp();
             const AstNodeDType* const srcDTypep = srcp->dtypep();
             if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
+                if (lhsDtypep->widthMin() > 64) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment of stream of dynamic "
+                                                 "array to a variable of size greater than 64");
+                }
                 srcp->unlinkFrBack();
                 streamp->lhsp(new AstCvtDynArrayToPacked{srcp->fileline(), srcp, lhsDtypep});
                 streamp->dtypeFrom(lhsDtypep);
