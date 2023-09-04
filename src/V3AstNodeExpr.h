@@ -1317,7 +1317,9 @@ public:
     bool cleanOut() const override { return true; }
 };
 class AstImplication final : public AstNodeExpr {
-    // Verilog |-> |=>
+    // Verilog Implication Operator
+    // Nonoverlapping "|=>"
+    // Overlapping "|->" (doesn't currently use this - might make new Ast type)
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := sentreep : Optional[AstSenTree]
