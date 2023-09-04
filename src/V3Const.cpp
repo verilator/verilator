@@ -2148,9 +2148,13 @@ private:
             // The right-streaming operator on rhs of assignment does not
             // change the order of bits. Eliminate stream but keep its lhsp
             // Unlink the stuff
-            AstNodeExpr* const srcp = VN_AS(nodep->rhsp(), StreamR)->lhsp()->unlinkFrBack();
-            AstNode* const sizep = VN_AS(nodep->rhsp(), StreamR)->rhsp()->unlinkFrBack();
-            AstNodeExpr* const streamp = VN_AS(nodep->rhsp(), StreamR)->unlinkFrBack();
+            AstStreamR* const streamp = VN_AS(nodep->rhsp(), StreamR)->unlinkFrBack();
+            AstNodeExpr* srcp = streamp->lhsp()->unlinkFrBack();
+            AstNode* const sizep = streamp->rhsp()->unlinkFrBack();
+            AstNodeDType* const srcDTypep = srcp->dtypep();
+            if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
+                srcp = new AstCvtDynArrayToPacked{srcp->fileline(), srcp, srcDTypep};
+            }
             nodep->rhsp(srcp);
             // Cleanup
             VL_DO_DANGLING(sizep->deleteTree(), sizep);
