@@ -48,6 +48,7 @@ public:
     bool isCached() const { return m_e != NOT_CACHED; }
     bool isPure() const { return m_e == PURE; }
     void setPurity(bool pure) { m_e = pure ? PURE : IMPURE; }
+    void clearCache() { m_e = NOT_CACHED; }
 };
 
 // === Abstract base node types (AstNode*) =====================================
@@ -76,6 +77,7 @@ public:
 
     // Wrap This expression into an AstStmtExpr to denote it occurs in statement position
     inline AstStmtExpr* makeStmt();
+    virtual void clearCachedPurity(){};  // Most nodes don't cache their purity
 };
 class AstNodeBiop VL_NOT_FINAL : public AstNodeExpr {
     // Binary expression
@@ -109,6 +111,10 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
+    void clearCachedPurity() override {
+        m_purity.clearCache();
+        if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
+    }
 
 private:
     bool getChildrenPurity() const { return lhsp()->isPure() && rhsp()->isPure(); }
@@ -300,6 +306,10 @@ public:
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
     bool isPure() override;
     const char* broken() const override;
+    void clearCachedPurity() override {
+        m_purity.clearCache();
+        if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
+    }
 
 private:
     bool getChildrenPurity() const {
@@ -343,6 +353,10 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
+    void clearCachedPurity() override {
+        m_purity.clearCache();
+        if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
+    }
 
 private:
     bool getChildrenPurity() const {
@@ -395,6 +409,10 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
+    void clearCachedPurity() override {
+        m_purity.clearCache();
+        if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
+    }
 
 private:
     bool getChildrenPurity() const {
@@ -474,6 +492,10 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
+    void clearCachedPurity() override {
+        m_purity.clearCache();
+        if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
+    }
 };
 class AstNodeSystemUniopD VL_NOT_FINAL : public AstNodeUniop {
 public:
