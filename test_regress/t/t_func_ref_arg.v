@@ -13,12 +13,27 @@ function int get_val_set_5(ref int x);
    return y;
 endfunction
 
+class Cls;
+   function int get_val_set_2(ref int x);
+      automatic int y = x;
+      x = 2;
+      return y;
+   endfunction
+endclass
+
 module t (/*AUTOARG*/);
+   int a, b;
+   Cls cls;
    initial begin
-      int a = 10;
-      int b = get_val_set_5(a);
+      a = 10;
+      b = get_val_set_5(a);
       `checkh(a, 5);
       `checkh(b, 10);
+
+      cls = new;
+      b = cls.get_val_set_2(a);
+      `checkh(a, 2);
+      `checkh(b, 5);
 
       $write("*-* All Finished *-*\n");
       $finish;
