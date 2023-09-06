@@ -190,7 +190,7 @@ public:
 
 private:
     AstAssign* instantiateDynScope(VMemberMap& memberMap) {
-        AstNew* newp = new AstNew{m_procp->fileline(), nullptr};
+        AstNew* const newp = new AstNew{m_procp->fileline(), nullptr};
         newp->taskp(VN_AS(memberMap.findMember(m_instance.m_classp, "new"), NodeFTask));
         newp->dtypep(m_instance.m_refDTypep);
         newp->classOrPackagep(m_instance.m_classp);
@@ -213,7 +213,7 @@ private:
             m_instance.m_handlep, false, true};
         forkHandle.relink(beginp);
 
-        AstNode* instAsgnp = instantiateDynScope(memberMap);
+        AstNode* const instAsgnp = instantiateDynScope(memberMap);
 
         beginp->stmtsp()->addNext(instAsgnp);
         beginp->stmtsp()->addNext(forkp);
@@ -290,10 +290,10 @@ private:
     }
 
     ForkDynScopeFrame* pushDynScopeFrame(AstNode* procp) {
-        ForkDynScopeFrame* const frame = new ForkDynScopeFrame{m_modp, procp};
-        auto r = m_frames.emplace(std::make_pair(procp, frame));
+        ForkDynScopeFrame* const framep = new ForkDynScopeFrame{m_modp, procp};
+        auto r = m_frames.emplace(std::make_pair(procp, framep));
         UASSERT_OBJ(r.second, m_modp, "Procedure already contains a frame");
-        return frame;
+        return framep;
     }
 
     void replaceWithMemberSel(AstVarRef* refp, const ForkDynScopeInstance& dynScope) {
@@ -360,21 +360,21 @@ private:
 
         const bool oldAfterTimingControl = m_afterTimingControl;
 
-        ForkDynScopeFrame* frame = nullptr;
-        if (nodep->initsp()) frame = pushDynScopeFrame(nodep);
+        ForkDynScopeFrame* framep = nullptr;
+        if (nodep->initsp()) framep = pushDynScopeFrame(nodep);
 
         for (AstNode* stmtp = nodep->initsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* varp = VN_CAST(stmtp, Var)) {
                 // This can be probably optimized to detect cases in which dynscopes
                 // could be avoided
-                if (!frame->instance().initialized()) frame->createInstancePrototype();
-                frame->captureVarInsert(varp);
-                bindNodeToDynScope(varp, frame);
+                if (!framep->instance().initialized()) framep->createInstancePrototype();
+                framep->captureVarInsert(varp);
+                bindNodeToDynScope(varp, framep);
             } else {
                 AstAssign* const asgnp = VN_CAST(stmtp, Assign);
                 UASSERT_OBJ(asgnp, stmtp,
                             "Invalid node under block item initialization part of fork");
-                bindNodeToDynScope(asgnp->lhsp(), frame);
+                bindNodeToDynScope(asgnp->lhsp(), framep);
                 iterate(asgnp->rhsp());
             }
         }
