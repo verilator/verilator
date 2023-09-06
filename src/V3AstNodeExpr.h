@@ -111,10 +111,7 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override {
-        m_purity.clearCache();
-        if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
-    }
+    void clearCachedPurity() override;
 
 private:
     bool getChildrenPurity() const { return lhsp()->isPure() && rhsp()->isPure(); }
@@ -306,10 +303,7 @@ public:
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override {
-        m_purity.clearCache();
-        if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
-    }
+    void clearCachedPurity() override;
 
 private:
     bool getChildrenPurity() const {
@@ -353,10 +347,7 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override {
-        m_purity.clearCache();
-        if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
-    }
+    void clearCachedPurity() override;
 
 private:
     bool getChildrenPurity() const {
@@ -409,10 +400,7 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override {
-        m_purity.clearCache();
-        if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
-    }
+    void clearCachedPurity() override;
 
 private:
     bool getChildrenPurity() const {
@@ -492,10 +480,7 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override {
-        m_purity.clearCache();
-        if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
-    }
+    void clearCachedPurity() override;
 };
 class AstNodeSystemUniopD VL_NOT_FINAL : public AstNodeUniop {
 public:

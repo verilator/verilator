@@ -143,6 +143,10 @@ const char* AstNodeUniop::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != lhsp()->isPure());
     return nullptr;
 }
+void AstNodeUniop::clearCachedPurity() {
+    m_purity.clearCache();
+    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
+}
 
 bool AstNodeBiop::isPure() {
     if (!m_purity.isCached()) m_purity.setPurity(getChildrenPurity());
@@ -151,6 +155,10 @@ bool AstNodeBiop::isPure() {
 const char* AstNodeBiop::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getChildrenPurity());
     return nullptr;
+}
+void AstNodeBiop::clearCachedPurity() {
+    m_purity.clearCache();
+    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
 }
 
 bool AstNodeTriop::isPure() {
@@ -161,6 +169,10 @@ const char* AstNodeTriop::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getChildrenPurity());
     return nullptr;
 }
+void AstNodeTriop::clearCachedPurity() {
+    m_purity.clearCache();
+    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
+}
 
 bool AstNodePreSel::isPure() {
     if (!m_purity.isCached()) m_purity.setPurity(getChildrenPurity());
@@ -169,6 +181,10 @@ bool AstNodePreSel::isPure() {
 const char* AstNodePreSel::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getChildrenPurity());
     return nullptr;
+}
+void AstNodePreSel::clearCachedPurity() {
+    m_purity.clearCache();
+    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
 }
 
 bool AstNodeQuadop::isPure() {
@@ -179,6 +195,11 @@ const char* AstNodeQuadop::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getChildrenPurity());
     return nullptr;
 }
+void AstNodeQuadop::clearCachedPurity() {
+    m_purity.clearCache();
+    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
+}
+
 
 AstNodeCond::AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,
                          AstNodeExpr* elsep)
