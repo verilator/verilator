@@ -200,7 +200,6 @@ void AstNodeQuadop::clearCachedPurity() {
     if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
 }
 
-
 AstNodeCond::AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,
                          AstNodeExpr* elsep)
     : AstNodeTriop{t, fl, condp, thenp, elsep} {
