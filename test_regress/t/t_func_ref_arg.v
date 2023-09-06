@@ -7,6 +7,13 @@
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 
+class MyInt;
+   int x;
+   function new(int a);
+      x = a;
+   endfunction
+endclass
+
 function int get_val_set_5(ref int x);
    automatic int y = x;
    x = 5;
@@ -24,15 +31,25 @@ endclass
 module t (/*AUTOARG*/);
    int a, b;
    Cls cls;
+   MyInt mi;
    initial begin
+      mi = new(1);
       a = 10;
       b = get_val_set_5(a);
       `checkh(a, 5);
       `checkh(b, 10);
 
+      b = get_val_set_5(mi.x);
+      `checkh(mi.x, 5);
+      `checkh(b, 1);
+
       cls = new;
       b = cls.get_val_set_2(a);
       `checkh(a, 2);
+      `checkh(b, 5);
+
+      b = cls.get_val_set_2(mi.x);
+      `checkh(mi.x, 2);
       `checkh(b, 5);
 
       $write("*-* All Finished *-*\n");
