@@ -221,6 +221,17 @@ double V3ParseImp::lexParseTimenum(const char* textp) {
     return d / divisor;
 }
 
+void V3ParseImp::addForkStmtsp(AstFork* forkp, AstNode* stmtsp) {
+    forkp->addStmtsp(stmtsp);
+    for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+        AstVar* const varp = VN_CAST(stmtp, Var);
+        if (!varp) break;
+        varp->unlinkFrBack();
+        varp->funcLocal(true);
+        forkp->addInitsp(varp);
+    }
+}
+
 //######################################################################
 // Parser tokenization
 
