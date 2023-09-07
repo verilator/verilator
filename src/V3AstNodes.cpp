@@ -2400,6 +2400,7 @@ bool AstCMethodHard::getPurity() const {
                                         "any",
                                         "at",
                                         "atBack",
+                                        "awaitingCurrentTime",
                                         "exists",
                                         "find",
                                         "find_first_index",
@@ -2414,9 +2415,11 @@ bool AstCMethodHard::getPurity() const {
                                         "or",
                                         "product",
                                         "size",
+                                        "slice",
                                         "sum",
                                         "unique",
                                         "unique_index",
+                                        "word",
                                         "xor"};
     return std::find(std::begin(pureMethods), std::end(pureMethods), this->name())
            != std::end(pureMethods);
