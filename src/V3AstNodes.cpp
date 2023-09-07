@@ -2396,17 +2396,28 @@ const char* AstCMethodHard::broken() const {
     return nullptr;
 }
 bool AstCMethodHard::getPurity() const {
-    static const char* pureMethods[] = {"size",        "exists",
-                                        "at",          "atBack",
-                                        "find",        "find_index",
-                                        "find_frst",   "find_first_index",
-                                        "find_last",   "find_last_index",
-                                        "min",         "max",
-                                        "unique",      "unique_index",
-                                        "sum",         "product",
-                                        "and",         "or",
-                                        "xor",         "isFired",
-                                        "isTriggered", "any"};
+    static const char* pureMethods[] = {"and",
+                                        "any",
+                                        "at",
+                                        "atBack",
+                                        "exists",
+                                        "find",
+                                        "find_first_index",
+                                        "find_frst",
+                                        "find_index",
+                                        "find_last",
+                                        "find_last_index",
+                                        "isFired",
+                                        "isTriggered",
+                                        "max",
+                                        "min",
+                                        "or",
+                                        "product",
+                                        "size",
+                                        "sum",
+                                        "unique",
+                                        "unique_index",
+                                        "xor"};
     return std::find(std::begin(pureMethods), std::end(pureMethods), this->name())
            != std::end(pureMethods);
 }
