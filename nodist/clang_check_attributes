@@ -16,8 +16,8 @@ from dataclasses import dataclass
 import enum
 from enum import Enum
 import multiprocessing
-import tempfile
 import re
+import tempfile
 
 import clang.cindex
 from clang.cindex import (
@@ -302,7 +302,8 @@ class CallAnnotationsValidator:
 
         self._index = Index.create()
 
-        # Map key represents translation unit initial defines (from command line and source's lines before any include)
+        # Map key represents translation unit initial defines
+        # (from command line and source's lines before any include)
         self._processed_headers: dict[str, set[str]] = {}
         self._external_decls: dict[str, set[tuple[str, int]]] = {}
 
@@ -325,17 +326,17 @@ class CallAnnotationsValidator:
     @staticmethod
     def parse_initial_defines(source_file: str) -> dict[str, str]:
         defs: dict[str, str] = {}
-        with open(source_file, "r") as f:
-            for line in f:
+        with open(source_file, "r", encoding="utf-8") as file:
+            for line in file:
                 line = line.strip()
-                m = re.fullmatch(
+                match = re.fullmatch(
                     r"^#\s*(define\s+(\w+)(?:\s+(.*))?|include\s+.*)$", line)
-                if m:
-                    if m.group(1).startswith("define"):
-                        key = m.group(2)
-                        value = m.groups("1")[2]
+                if match:
+                    if match.group(1).startswith("define"):
+                        key = match.group(2)
+                        value = match.groups("1")[2]
                         defs[key] = value
-                    elif m.group(1).startswith("include"):
+                    elif match.group(1).startswith("include"):
                         break
         return defs
 
@@ -391,9 +392,9 @@ class CallAnnotationsValidator:
                     continue
 
                 # Keep track of defines for class' internal purposes.
-                kv = kv_str.split("=", 1)
-                key = kv[0]
-                val = "1" if len(kv) == 1 else kv[1]
+                key_value = kv_str.split("=", 1)
+                key = key_value[0]
+                val = "1" if len(key_value) == 1 else key_value[1]
 
                 if d_or_u == "D":
                     defines[key] = val
@@ -420,7 +421,7 @@ class CallAnnotationsValidator:
             os.chdir(build_dir)
         try:
             translation_unit = self._index.parse(filename, filtered_args)
-        except:
+        except TranslationUnitLoadError:
             translation_unit = None
         errors = []
         if translation_unit:
@@ -435,8 +436,8 @@ class CallAnnotationsValidator:
             self._defines = {}
         else:
             print(f"%Error: parsing failed: {filename}", file=sys.stderr)
-            for e in errors:
-                print(f"        {e}", file=sys.stderr)
+            for error in errors:
+                print(f"        {error}", file=sys.stderr)
         if build_dir:
             os.chdir(initial_cwd)
 
@@ -779,7 +780,8 @@ class CallAnnotationsValidator:
         self._call_location = self._caller
 
         if self.is_mt_disabled_code_unit():
-            # Report declarations of this functions that don't have MT_DISABLED annotation and are located in headers.
+            # Report declarations of this functions that don't have MT_DISABLED annotation
+            # and are located in headers.
             if node.location.file.name == self._main_source_file:
                 usr = node.get_usr()
                 declarations = self._external_decls.get(usr, set())
@@ -808,8 +810,8 @@ class CallAnnotationsValidator:
         ]:
             if node.is_definition():
                 return self.process_function_definition(node)
-            else:
-                return self.process_function_declaration(node)
+            # else:
+            return self.process_function_declaration(node)
 
         return self.iterate_children(node.get_children(), self.dispatch_node)
 
@@ -915,8 +917,8 @@ def precompile_header(compile_command: CompileCommand, tmp_dir: str) -> str:
             if pch_file:
                 return pch_file
 
-    except (TranslationUnitSaveError, TranslationUnitLoadError, OSError) as e:
-        print(f"%Warning: {e}", file=sys.stderr)
+    except (TranslationUnitSaveError, TranslationUnitLoadError, OSError) as exception:
+        print(f"%Warning: {exception}", file=sys.stderr)
 
     finally:
         os.chdir(initial_cwd)
@@ -924,8 +926,8 @@ def precompile_header(compile_command: CompileCommand, tmp_dir: str) -> str:
     print(
         f"%Warning: Precompilation failed, skipping: {compile_command.filename}",
         file=sys.stderr)
-    for e in errors:
-        print(f"          {e}", file=sys.stderr)
+    for error in errors:
+        print(f"          {error}", file=sys.stderr)
     return ""
 
 
