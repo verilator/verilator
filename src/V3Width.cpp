@@ -6605,8 +6605,8 @@ private:
         if (VN_IS(underp, NodeDType)) {  // Note the node itself, not node's data type
             // Must be near top of these checks as underp->dtypep() will look normal
             underp->v3error(ucfirst(nodep->prettyOperatorName())
-                            << " expected non-datatype " << side << " but '" << underp->name()
-                            << "' is a datatype.");
+                            << " expected non-datatype " << side << " but "
+                            << underp->prettyNameQ() << " is a datatype.");
         } else if (expDTypep == underp->dtypep()) {  // Perfect
             underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, FINAL}.p());
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
@@ -6674,8 +6674,8 @@ private:
             } else if (!VN_IS(expDTypep->skipRefp(), IfaceRefDType)
                        && VN_IS(underp->dtypep()->skipRefp(), IfaceRefDType)) {
                 underp->v3error(ucfirst(nodep->prettyOperatorName())
-                                << " expected non-interface on " << side << " but '"
-                                << underp->name() << "' is an interface.");
+                                << " expected non-interface on " << side << " but "
+                                << underp->prettyNameQ() << " is an interface.");
             } else if (const AstIfaceRefDType* expIfaceRefp
                        = VN_CAST(expDTypep->skipRefp(), IfaceRefDType)) {
                 const AstIfaceRefDType* underIfaceRefp
@@ -6688,8 +6688,8 @@ private:
                 } else if (expIfaceRefp->ifaceViaCellp() != underIfaceRefp->ifaceViaCellp()) {
                     underp->v3error(ucfirst(nodep->prettyOperatorName())
                                     << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
-                                    << " interface on " << side << " but '" << underp->name()
-                                    << "' is a different interface ("
+                                    << " interface on " << side << " but " << underp->prettyNameQ()
+                                    << " is a different interface ("
                                     << underIfaceRefp->ifaceViaCellp()->prettyNameQ() << ").");
                 } else if (underIfaceRefp->modportp()
                            && expIfaceRefp->modportp() != underIfaceRefp->modportp()) {

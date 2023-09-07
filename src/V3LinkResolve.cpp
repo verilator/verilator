@@ -89,7 +89,9 @@ private:
         }
     }
     void visit(AstNodeCoverOrAssert* nodep) override {
-        if (m_assertp) nodep->v3error("Assert not allowed under another assert");
+        if (m_assertp) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assert not allowed under another assert");
+        }
         m_assertp = nodep;
         iterateChildren(nodep);
         m_assertp = nullptr;

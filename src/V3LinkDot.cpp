@@ -2905,10 +2905,14 @@ private:
             UINFO(4, "(Backto) Link ClassOrPackageRef: " << nodep << endl);
             iterateChildren(nodep);
         }
-        if (m_statep->forPrimary() && VN_IS(nodep->classOrPackagep(), Class) && !nodep->paramsp()
+        AstClass* const refClassp = VN_CAST(nodep->classOrPackagep(), Class);
+        AstClass* const modClassp = VN_CAST(m_modp, Class);
+        if (m_statep->forPrimary() && refClassp && !nodep->paramsp()
             && nodep->classOrPackagep()->hasGParam()
             // Don't warn on typedefs, which are hard to know if there's a param somewhere buried
-            && VN_IS(nodep->classOrPackageNodep(), Class)) {
+            && VN_IS(nodep->classOrPackageNodep(), Class)
+            // References to class:: within class itself are OK per IEEE (UVM does this)
+            && modClassp != refClassp) {
             nodep->v3error("Reference to parameterized class without #() (IEEE 1800-2017 8.25.1)\n"
                            << nodep->warnMore() << "... Suggest use '"
                            << nodep->classOrPackageNodep()->prettyName() << "#()'");

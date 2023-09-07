@@ -1013,6 +1013,20 @@ public:
     // May return nullptr on parse failure.
     static AstConst* parseParamLiteral(FileLine* fl, const string& literal);
 };
+class AstCvtDynArrayToPacked final : public AstNodeExpr {
+    // Cast from dynamic queue data type to packed array
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    AstCvtDynArrayToPacked(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CvtDynArrayToPacked(fl) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtDynArrayToPacked;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
 class AstCvtPackedToDynArray final : public AstNodeExpr {
     // Cast from packed array to dynamic queue data type
     // @astgen op1 := fromp : AstNodeExpr
@@ -1317,7 +1331,9 @@ public:
     bool cleanOut() const override { return true; }
 };
 class AstImplication final : public AstNodeExpr {
-    // Verilog |-> |=>
+    // Verilog Implication Operator
+    // Nonoverlapping "|=>"
+    // Overlapping "|->" (doesn't currently use this - might make new Ast type)
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := sentreep : Optional[AstSenTree]

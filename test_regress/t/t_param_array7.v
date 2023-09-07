@@ -33,24 +33,27 @@ module a
     parameter s_t         p3 [2] = '{'{a: 1, b: 2, c: 3},
                                      '{a: 1, b: 2, c: 3}}
     );
+
+   int i;
+
    initial begin
       // Go via $c to ensure parameters are emitted
-      if (p0[$c("0")] !=  5) $stop;
-      if (p0[$c("1")] !=  6) $stop;
-      if (p0[$c("2")] !=  7) $stop;
-      if (p0[$c("3")] !=  8) $stop;
-      if (p1[$c("0")] !=  9) $stop;
-      if (p1[$c("1")] != 10) $stop;
-      if (p1[$c("2")] != 11) $stop;
-      if (p1[$c("3")] != 12) $stop;
-      if (p2[$c("0")] != "baz") $stop;
-      if (p2[$c("1")] != "quux") $stop;
-      if (p3[$c("0")].a != 100) $stop;
-      if (p3[$c("0")].b != 200) $stop;
-      if (p3[$c("0")].c != 300) $stop;
-      if (p3[$c("1")].a != 1000) $stop;
-      if (p3[$c("1")].b != 2000) $stop;
-      if (p3[$c("1")].c != 3000) $stop;
+      i = $c("0"); if (p0[i] !=  5) $stop;
+      i = $c("1"); if (p0[i] !=  6) $stop;
+      i = $c("2"); if (p0[i] !=  7) $stop;
+      i = $c("3"); if (p0[i] !=  8) $stop;
+      i = $c("0"); if (p1[i] !=  9) $stop;
+      i = $c("1"); if (p1[i] != 10) $stop;
+      i = $c("2"); if (p1[i] != 11) $stop;
+      i = $c("3"); if (p1[i] != 12) $stop;
+      i = $c("0"); if (p2[i] != "baz") $stop;
+      i = $c("1"); if (p2[i] != "quux") $stop;
+      i = $c("0"); if (p3[i].a != 100) $stop;
+      i = $c("0"); if (p3[i].b != 200) $stop;
+      i = $c("0"); if (p3[i].c != 300) $stop;
+      i = $c("1"); if (p3[i].a != 1000) $stop;
+      i = $c("1"); if (p3[i].b != 2000) $stop;
+      i = $c("1"); if (p3[i].c != 3000) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

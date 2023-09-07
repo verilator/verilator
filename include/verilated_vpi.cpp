@@ -175,7 +175,7 @@ public:
     VerilatedVpioVarBase(const VerilatedVar* varp, const VerilatedScope* scopep)
         : m_varp{varp}
         , m_scopep{scopep}
-        , m_fullname{std::string{m_scopep->name()} + '.' + name()} {}
+        , m_fullname{std::string{m_scopep->name()} + '.' + m_varp->name()} {}
     explicit VerilatedVpioVarBase(const VerilatedVpioVarBase* varp) {
         if (varp) {
             m_varp = varp->m_varp;
