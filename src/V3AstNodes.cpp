@@ -64,7 +64,7 @@ void AstNodeFTaskRef::cloneRelink() {
 bool AstNodeFTaskRef::isPure() const {
     // TODO: For non-DPI functions we could traverse the AST of function's body to determine
     // pureness.
-    return this->taskp() && this->taskp()->dpiImport() && this->taskp()->pure();
+    return this->taskp() && this->taskp()->dpiImport() && this->taskp()->dpiPure();
 }
 
 bool AstNodeFTaskRef::isGateOptimizable() const { return m_taskp && m_taskp->isGateOptimizable(); }
@@ -127,7 +127,7 @@ const char* AstNodeCCall::broken() const {
     BROKEN_RTN(m_funcp && !m_funcp->brokeExists());
     return nullptr;
 }
-bool AstNodeCCall::isPure() const { return funcp()->pure(); }
+bool AstNodeCCall::isPure() const { return funcp()->dpiPure(); }
 
 string AstCCall::selfPointerProtect(bool useSelfForThis) const {
     const string& sp
@@ -2299,7 +2299,7 @@ void AstCFile::dump(std::ostream& str) const {
 void AstCFunc::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (slow()) str << " [SLOW]";
-    if (pure()) str << " [PURE]";
+    if (dpiPure()) str << " [DPIPURE]";
     if (isStatic()) str << " [STATIC]";
     if (dpiExportDispatcher()) str << " [DPIED]";
     if (dpiExportImpl()) str << " [DPIEI]";
