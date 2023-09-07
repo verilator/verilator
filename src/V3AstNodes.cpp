@@ -2392,7 +2392,19 @@ bool AstCMethodHard::isPure() {
     return m_purity.isPure();
 }
 const char* AstCMethodHard::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    static const char* impureMethods[]
+        = {"evaluate", "first", "last", "next", "pop_back", "pop_front", "prev", "set"};
+    if (m_purity.isCached()) {
+        BROKEN_RTN(m_purity.isPure() != getPurity());
+        if (!m_purity.isPure() && !VN_IS(this->dtypep(), VoidDType)) {
+            // Check if it's on the list of impure methods. Just to be sure that its pureness was
+            // considered. Void methods should always be impure.
+            if (std::find(std::begin(impureMethods), std::end(impureMethods), this->name())
+                == std::end(impureMethods)) {
+                return "Non-void method isn't neither on pure nor on impure list";
+            }
+        }
+    }
     return nullptr;
 }
 bool AstCMethodHard::getPurity() const {
