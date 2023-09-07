@@ -2408,15 +2408,14 @@ const char* AstCMethodHard::broken() const {
     return nullptr;
 }
 bool AstCMethodHard::getPurity() const {
-    static const char* pureMethods[] = {"and",
-                                        "any",
+    static const char* pureMethods[] = {"any",
                                         "at",
                                         "atBack",
                                         "awaitingCurrentTime",
                                         "exists",
                                         "find",
+                                        "find_first",
                                         "find_first_index",
-                                        "find_frst",
                                         "find_index",
                                         "find_last",
                                         "find_last_index",
@@ -2424,15 +2423,16 @@ bool AstCMethodHard::getPurity() const {
                                         "isTriggered",
                                         "max",
                                         "min",
-                                        "or",
-                                        "product",
+                                        "r_and",
+                                        "r_or",
+                                        "r_product",
+                                        "r_sum",
+                                        "r_xor",
                                         "size",
                                         "slice",
-                                        "sum",
                                         "unique",
                                         "unique_index",
-                                        "word",
-                                        "xor"};
+                                        "word"};
     return std::find(std::begin(pureMethods), std::end(pureMethods), this->name())
            != std::end(pureMethods);
 }
