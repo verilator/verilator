@@ -288,6 +288,17 @@ public:
     AstNode* cloneScopedSigAttr() const {
         return m_scopedSigAttr ? m_scopedSigAttr->cloneTree(true) : nullptr;
     }
+
+    static void addForkStmtsp(AstFork* forkp, AstNode* stmtsp) {
+        forkp->addStmtsp(stmtsp);
+        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+            AstVar* const varp = VN_CAST(stmtp, Var);
+            if (!varp) break;
+            varp->unlinkFrBack();
+            varp->funcLocal(true);
+            forkp->addInitsp(varp);
+        }
+    }
 };
 
 const VBasicDTypeKwd LOGIC = VBasicDTypeKwd::LOGIC;  // Shorthand "LOGIC"
@@ -3388,30 +3399,30 @@ seq_blockPreId<nodep>:          // IEEE: seq_block, but called with leading ID
 par_block<nodep>:               // ==IEEE: par_block
                 par_blockFront blockDeclStmtListE yJOIN endLabelE
                         { $$ = $1; $1->joinType(VJoinType::JOIN);
-                          V3ParseImp::addForkStmtsp($1, $2);
+                          V3ParseGrammar::addForkStmtsp($1, $2);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         |       par_blockFront blockDeclStmtListE yJOIN_ANY endLabelE
                         { $$ = $1; $1->joinType(VJoinType::JOIN_ANY);
-                          V3ParseImp::addForkStmtsp($1, $2);
+                          V3ParseGrammar::addForkStmtsp($1, $2);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         |       par_blockFront blockDeclStmtListE yJOIN_NONE endLabelE
                         { $$ = $1; $1->joinType(VJoinType::JOIN_NONE);
-                          V3ParseImp::addForkStmtsp($1, $2);
+                          V3ParseGrammar::addForkStmtsp($1, $2);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         ;
 
 par_blockPreId<nodep>:          // ==IEEE: par_block but called with leading ID
                 par_blockFrontPreId blockDeclStmtListE yJOIN endLabelE
                         { $$ = $1; $1->joinType(VJoinType::JOIN);
-                          V3ParseImp::addForkStmtsp($1, $2);
+                          V3ParseGrammar::addForkStmtsp($1, $2);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         |       par_blockFrontPreId blockDeclStmtListE yJOIN_ANY endLabelE
                         { $$ = $1; $1->joinType(VJoinType::JOIN_ANY);
-                          V3ParseImp::addForkStmtsp($1, $2);
+                          V3ParseGrammar::addForkStmtsp($1, $2);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         |       par_blockFrontPreId blockDeclStmtListE yJOIN_NONE endLabelE
                         { $$ = $1; $1->joinType(VJoinType::JOIN_NONE);
-                          V3ParseImp::addForkStmtsp($1, $2);
+                          V3ParseGrammar::addForkStmtsp($1, $2);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         ;
 

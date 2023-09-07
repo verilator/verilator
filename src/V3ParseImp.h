@@ -188,7 +188,6 @@ public:
     void lexVerilatorCmtLintSave(const FileLine* fl);
     void lexVerilatorCmtLintRestore(FileLine* fl);
     static void lexVerilatorCmtBad(FileLine* fl, const char* textp);
-    static void addForkStmtsp(AstFork* forkp, AstNode* stmtsp);
 
     void lexPushKeywords(int state) {
         ++m_lexKwdDepth;
