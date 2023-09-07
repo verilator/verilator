@@ -2423,6 +2423,7 @@ bool AstCMethodHard::getPurity() const {
                                         "isTriggered",
                                         "max",
                                         "min",
+                                        "neq",
                                         "r_and",
                                         "r_or",
                                         "r_product",
