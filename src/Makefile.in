@@ -18,14 +18,12 @@
 #### Start of system configuration section. ####
 
 srcdir = @srcdir@
-PYTHON3 = @PYTHON3@
 EXEEXT = @EXEEXT@
-BEAR = @BEAR@
+PYTHON3 = @PYTHON3@
 # VPATH only does sources; fix install_test's not creating ../bin
 vpath %.h @srcdir@
 
 #### End of system configuration section. ####
-
 
 default: dbg opt
 debug: dbg
@@ -36,6 +34,20 @@ ifneq ($(words $(CURDIR)),1)
 endif
 
 UNDER_GIT = $(wildcard ${srcdir}/../.git/logs/HEAD)
+
+ifeq (,$(wildcard obj_opt/bear.o))
+  ifneq (, $(shell which bear 2>/dev/null))
+    BEAR := $(shell which bear)
+    ifeq (, $(shell $(BEAR) --output obj_opt/compile_commands.json -- true))
+      $(shell which bear 2>/dev/null >obj_opt/bear.o)
+    else
+      # unsupported version
+      BEAR :=
+    endif
+  endif
+else
+  BEAR := $(shell cat obj_opt/bear.o)
+endif
 
 ifneq ($(BEAR),)
 RM_OBJ_OPT_COMPILE_COMMANDS := rm -f obj_opt/compile_commands.json
