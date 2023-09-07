@@ -19,7 +19,13 @@ import multiprocessing
 import tempfile
 
 import clang.cindex
-from clang.cindex import CursorKind, Index, TranslationUnitSaveError, TranslationUnitLoadError, CompilationDatabase
+from clang.cindex import (
+    CursorKind,
+    Index,
+    TranslationUnitSaveError,
+    TranslationUnitLoadError,
+    CompilationDatabase,
+)
 
 
 def fully_qualified_name(node):
@@ -1005,22 +1011,23 @@ def main():
     compile_commands_list = []
     for refid, file in enumerate(cmdline.file):
         filename = os.path.abspath(file)
-        entry = compdb.getCompileCommands(filename) if compdb else None
-        entry = list(entry) if entry else None
         root = default_compilation_root
         cxxflags = []
-        # Compilation database can contain multiple entries for single file,
-        # e.g. when it has been updated by appending new entries.
-        # Use last entry for the file, if it exists, as it is the newest one.
-        if entry is not None and len(entry) > 0:
-            entry = entry[-1]
-            root = entry.directory
-            entry_args = list(entry.arguments)
-            # First argument in compile_commands.json arguments list is
-            # compiler executable name/path. CIndex (libclang) always
-            # implicitly prepends executable name, so it shouldn't be passed
-            # here.
-            cxxflags = common_cxxflags + entry_args[1:]
+        if compdb:
+            entry = compdb.getCompileCommands(filename)
+            entry_list = list(entry)
+            # Compilation database can contain multiple entries for single file,
+            # e.g. when it has been updated by appending new entries.
+            # Use last entry for the file, if it exists, as it is the newest one.
+            if len(entry_list) > 0:
+                last_entry = entry_list[-1]
+                root = last_entry.directory
+                entry_args = list(last_entry.arguments)
+                # First argument in compile_commands.json arguments list is
+                # compiler executable name/path. CIndex (libclang) always
+                # implicitly prepends executable name, so it shouldn't be passed
+                # here.
+                cxxflags = common_cxxflags + entry_args[1:]
         else:
             cxxflags = common_cxxflags[:]
 
