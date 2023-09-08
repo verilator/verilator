@@ -4334,13 +4334,15 @@ elaboration_system_task_guts<nodep>:    // IEEE: part of elaboration_system_task
         |       yD_FATAL '(' expr ',' exprListE ')'     { $$ = new AstElabDisplay{$1, VDisplayType::DT_FATAL, $5}; DEL($3); }
         ;
 
-//UNSUPproperty_actual_arg<nodeExprp>:  // ==IEEE: property_actual_arg
-//UNSUP //                      // IEEE: property_expr
-//UNSUP //                      // IEEE: sequence_actual_arg
-//UNSUP         pev_expr                                { $$ = $1; }
-//UNSUP //                      // IEEE: sequence_expr
-//UNSUP //                      // property_expr already includes sequence_expr
-//UNSUP ;
+property_actual_arg<nodeExprp>:  // ==IEEE: property_actual_arg
+        //                      // IEEE: property_expr
+        //                      // IEEE: sequence_actual_arg
+        //UNSUP pev_expr                                { $$ = $1; }
+        //UNSUP remove below:
+                pexpr                                   { $$ = $1; }
+        //                      // IEEE: sequence_expr
+        //                      // property_expr already includes sequence_expr
+        ;
 
 exprOrDataType<nodep>:          // expr | data_type: combined to prevent conflicts
                 expr                                    { $$ = $1; }
@@ -4902,7 +4904,7 @@ fexpr<nodeExprp>:                   // For use as first part of statement (disam
                 BISONPRE_COPY(expr,{s/~l~/f/g; s/~r~/f/g; s/~f__IGNORE~/__IGNORE/g;})   // {copied}
         ;
 
-//UNSUPev_expr<nodeExprp>:  // IEEE: event_expression
+//UNSUPpev_expr<nodeExprp>:  // IEEE: event_expression
 //UNSUP //                      // for yOR/, see event_expression
 //UNSUP //
 //UNSUP //                      // IEEE: [ edge_identifier ] expression [ yIFF expression ]
@@ -5938,8 +5940,9 @@ property_port_itemFront: // IEEE: part of property_port_item/sequence_port_item
 
 property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequence_port_item/checker_port_direction
                 id variable_dimensionListE         { $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
-        //UNSUP|id variable_dimensionListE '=' property_actual_arg
-        //UNSUP         { VARDONE($<fl>1, $1, $2, $4); PINNUMINC(); }
+        |       id variable_dimensionListE '=' property_actual_arg
+                        { $$ = VARDONEA($<fl>1, *$1, $2, $4);
+                          BBUNSUP($3, "Unsupported: property variable default value"); }
         ;
 
 property_port_itemDirE:
