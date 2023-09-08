@@ -35,22 +35,22 @@ endif
 
 UNDER_GIT = $(wildcard ${srcdir}/../.git/logs/HEAD)
 
-ifeq (,$(wildcard obj_opt/bear.o))
+ifeq (,$(wildcard obj_dbg/bear.o))
   ifneq (, $(shell which bear 2>/dev/null))
     BEAR := $(shell which bear)
-    ifeq (, $(shell $(BEAR) --output obj_opt/comptest.json -- true))
-      $(shell which bear 2>/dev/null >obj_opt/bear.o)
+    ifeq (, $(shell $(BEAR) --output obj_dbg/comptest.json -- true))
+      $(shell which bear 2>/dev/null >obj_dbg/bear.o)
     else
       # unsupported version
       BEAR :=
     endif
   endif
 else
-  BEAR := $(shell cat obj_opt/bear.o)
+  BEAR := $(shell cat obj_dbg/bear.o)
 endif
 
 ifneq ($(BEAR),)
-BEAR_OBJ_OPT := $(BEAR) --append --output obj_opt/compile_commands.json --
+BEAR_OBJ_OPT := $(BEAR) --append --output obj_dbg/compile_commands.json --
 else
 BEAR_OBJ_OPT :=
 endif
@@ -75,14 +75,14 @@ ifeq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... One build
 	-mv -f $@.tmp $@
 else
 ../bin/verilator_bin$(EXEEXT): obj_opt ../bin prefiles
-	$(BEAR_OBJ_OPT) $(MAKE) -C obj_opt -j 1  TGT=../$@ -f ../Makefile_obj serial
-	$(BEAR_OBJ_OPT) $(MAKE) -C obj_opt       TGT=../$@ -f ../Makefile_obj
+	$(MAKE) -C obj_opt -j 1  TGT=../$@ -f ../Makefile_obj serial
+	$(MAKE) -C obj_opt       TGT=../$@ -f ../Makefile_obj
 endif
 
 dbg: ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT)
 ../bin/verilator_bin_dbg$(EXEEXT): obj_dbg ../bin prefiles
-	$(MAKE) -C obj_dbg -j 1  TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
-	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
+	$(BEAR_OBJ_OPT) $(MAKE) -C obj_dbg -j 1  TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
+	$(BEAR_OBJ_OPT) $(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
 
 ../bin/verilator_coverage_bin_dbg$(EXEEXT): obj_dbg ../bin prefiles
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj serial_vlcov
