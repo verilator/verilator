@@ -5176,29 +5176,31 @@ stream_expressionOrDataType<nodep>:     // IEEE: from streaming_concatenation
 //************************************************
 // Let
 
-letId<nodeFTaskp>:      // IEEE: pert of let_declaration
+letId<letp>:  // IEEE: pert of let_declaration
                 idAny/*let_identifieer*/
                         { $<fl>$ = $<fl>1;
                           $<scp>$ = nullptr;
-                          // No unsupported message as caller has one, for now just use a func
-                          $$ = new AstFunc{$<fl>$, *$1, nullptr, nullptr};
+                          $$ = new AstLet{$<fl>$, *$1};
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>$); }
         ;
 
-let_declaration<nodep>:  // IEEE: let_declaration
+let_declaration<letp>:  // IEEE: let_declaration
                 yLET letId '=' expr ';'
-                        { $$ = nullptr;
-                          SYMP->popScope($2);
-                          BBUNSUP($<fl>1, "Unsupported: let"); }
+                        { $$ = $2;
+                          $$->addStmtsp(new AstStmtExpr{$1, $4});
+                          SYMP->popScope($2); }
         |       yLET letId '(' let_port_listE ')' '=' expr ';'
-                        { $$ = nullptr;
-                          SYMP->popScope($2);
-                          BBUNSUP($<fl>1, "Unsupported: let"); }
+                        { $$ = $2;
+                          $$->addStmtsp(new AstStmtExpr{$1, $7});
+                          $$->addStmtsp($4);
+                          SYMP->popScope($2); }
         ;
 
 let_port_listE<nodep>:   // IEEE: [ let_port_list ]
                 /*empty*/                               { $$ = nullptr; }
-        |       let_port_list                           { $$ = $1; }
+        |       /*emptyStart*/
+        /*mid*/         { VARRESET_LIST(UNKNOWN); VARIO(INOUT); }
+        /*cont*/  let_port_list                         { $$ = $2; VARRESET_NONLIST(UNKNOWN); }
         ;
 
 let_port_list<nodep>:   // IEEE: let_port_list
@@ -5206,14 +5208,31 @@ let_port_list<nodep>:   // IEEE: let_port_list
         |       let_port_list ',' let_port_item         { $$ = addNextNull($1, $3); }
         ;
 
-let_port_item<nodep>:   // IEEE: let_port_Item
+let_port_item<varp>:  // IEEE: let_port_Item
         //                      // IEEE: Expanded let_formal_type
                 yUNTYPED idAny/*formal_port_identifier*/ variable_dimensionListE exprEqE
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: let untyped ports"); }
+                        { $$ = new AstVar{$<fl>2, VVarType::PORT, *$2, VFlagChildDType{},
+                                          new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
+                          $$->direction(VDirection::INOUT);
+                          $$->lifetime(VLifetime::AUTOMATIC);
+                          if ($4) $$->valuep($4);
+                          PINNUMINC(); }
         |       data_type id/*formal_port_identifier*/ variable_dimensionListE exprEqE
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: let ports"); }
+                        { BBUNSUP($<fl>1, "Unsupported: let typed ports");
+                          $$ = new AstVar{$<fl>2, VVarType::PORT, *$2, VFlagChildDType{},
+                                          new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
+                          $$->direction(VDirection::INOUT);
+                          $$->lifetime(VLifetime::AUTOMATIC);
+                          if ($4) $$->valuep($4);
+                          PINNUMINC(); }
         |       implicit_typeE id/*formal_port_identifier*/ variable_dimensionListE exprEqE
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: let ports"); }
+                        { if ($1) BBUNSUP($<fl>1, "Unsupported: let typed ports");
+                          $$ = new AstVar{$<fl>2, VVarType::PORT, *$2, VFlagChildDType{},
+                                          new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
+                          $$->direction(VDirection::INOUT);
+                          $$->lifetime(VLifetime::AUTOMATIC);
+                          if ($4) $$->valuep($4);
+                          PINNUMINC(); }
         ;
 
 //************************************************

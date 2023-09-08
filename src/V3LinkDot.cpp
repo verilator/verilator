@@ -1121,9 +1121,9 @@ class LinkDotFindVisitor final : public VNVisitor {
                 m_statep->insertSym(m_curSymp, newvarp->name(), newvarp,
                                     nullptr /*classOrPackagep*/);
             }
+            VL_RESTORER(m_ftaskp);
             m_ftaskp = nodep;
             iterateChildren(nodep);
-            m_ftaskp = nullptr;
         }
     }
     void visit(AstClocking* nodep) override {

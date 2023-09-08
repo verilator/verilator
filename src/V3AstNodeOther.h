@@ -2093,6 +2093,20 @@ public:
     ASTGEN_MEMBERS_AstFunc;
     bool hasDType() const override { return true; }
 };
+class AstLet final : public AstNodeFTask {
+    // Verilog "let" statement
+    // Parents: MODULE
+    // stmtp is always a StmtExpr as Let always returns AstNodeExpr
+public:
+    AstLet(FileLine* fl, const string& name)
+        : ASTGEN_SUPER_Let(fl, name, nullptr) {}
+    ASTGEN_MEMBERS_AstLet;
+    bool hasDType() const override { return true; }
+    const char* broken() const override {
+        BROKEN_RTN(!VN_IS(stmtsp(), StmtExpr));
+        return nullptr;
+    }
+};
 class AstProperty final : public AstNodeFTask {
     // A property inside a module
 public:
