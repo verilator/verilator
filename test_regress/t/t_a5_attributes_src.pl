@@ -12,8 +12,8 @@ scenarios(dist => 1);
 rerunnable(0);
 if ($ENV{VERILATOR_TEST_NO_ATTRIBUTES}) {
     skip("Skipping due to VERILATOR_TEST_NO_ATTRIBUTES");
-} elsif (! -e "../src/obj_opt/compile_commands.json") {
-    skip("compile_commands.json not found. Pass '--enable-bear' flag to './configure' before building Verilator.");
+} elsif (! -e "../src/obj_dbg/compile_commands.json") {
+    skip("compile_commands.json not found. Please install 'bear > 3.0' and rebuild Verilator.");
 } else {
     check();
 }
@@ -22,7 +22,7 @@ sub check {
     # some of the files are only used in Verilation
     # and are only in "include" folder
     my @srcfiles = grep { !/\/(V3Const|Vlc\w*|\w*_test|\w*_sc|\w*.yy).cpp$/ }
-                   glob("$root/src/*.cpp $root/src/obj_opt/V3Const__gen.cpp");
+                   glob("$root/src/*.cpp $root/src/obj_dbg/V3Const__gen.cpp");
     my $srcfiles_str = join(" ", @srcfiles);
 
     sub run_clang_check {
@@ -37,8 +37,8 @@ sub check {
             cmd => ["python3",
                     "$root/nodist/clang_check_attributes",
                     "--verilator-root=$root",
-                    "--compilation-root=$root/src/obj_opt",
-                    "--compile-commands-dir=$root/src/obj_opt",
+                    "--compilation-root=$root/src/obj_dbg",
+                    "--compile-commands-dir=$root/src/obj_dbg",
                     "$srcfiles_str"]);
 
         file_grep($Self->{run_log_filename}, "Number of functions reported unsafe: 0");
