@@ -84,12 +84,6 @@ void AstNodeVarRef::cloneRelink() {
     }
 }
 
-string AstNodeVarRef::selfPointerProtect(bool useSelfForThis) const {
-    const string& sp
-        = useSelfForThis ? VString::replaceWord(selfPointer(), "this", "vlSelf") : selfPointer();
-    return VIdProtect::protectWordsIf(sp, protect());
-}
-
 void AstAddrOfCFunc::cloneRelink() {
     if (m_funcp && m_funcp->clonep()) m_funcp = m_funcp->clonep();
 }
@@ -128,12 +122,6 @@ const char* AstNodeCCall::broken() const {
     return nullptr;
 }
 bool AstNodeCCall::isPure() const { return funcp()->dpiPure(); }
-
-string AstCCall::selfPointerProtect(bool useSelfForThis) const {
-    const string& sp
-        = useSelfForThis ? VString::replaceWord(selfPointer(), "this", "vlSelf") : selfPointer();
-    return VIdProtect::protectWordsIf(sp, protect());
-}
 
 AstNodeCond::AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,
                          AstNodeExpr* elsep)

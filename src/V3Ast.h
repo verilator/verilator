@@ -1247,6 +1247,44 @@ public:
     ~VBasicTypeKey() = default;
 };
 
+// ######################################################################
+//  VSelfPointerText - Represents text to be emitted before a given var reference, call, etc. to
+//  serve as a pointer to a 'self' object. For example, it could be empty (no self pointer), or the
+//  string 'this', or 'vlSymsp->...'
+
+class VSelfPointerText final {
+private:
+    // STATIC MEMBERS
+    // Keep these in shared pointers to avoid branching for special cases
+    static const std::shared_ptr<const string> s_emptyp;  // Holds ""
+    static const std::shared_ptr<const string> s_thisp;  // Holds "this"
+
+    // MEMBERS
+    std::shared_ptr<const string> m_strp;
+
+public:
+    // CONSTRUCTORS
+    class Empty {};  // for creator type-overload selection
+    VSelfPointerText(Empty)
+        : m_strp{s_emptyp} {}
+    class This {};  // for creator type-overload selection
+    VSelfPointerText(This)
+        : m_strp{s_thisp} {}
+    VSelfPointerText(This, const string& field)
+        : m_strp{std::make_shared<const string>("this->" + field)} {}
+    class VlSyms {};  // for creator type-overload selection
+    VSelfPointerText(VlSyms, const string& field)
+        : m_strp{std::make_shared<const string>("(&vlSymsp->" + field + ')')} {}
+
+    // METHODS
+    bool isEmpty() const { return m_strp == s_emptyp; }
+    bool isVlSym() const { return m_strp->find("vlSymsp") != string::npos; }
+    bool hasThis() const { return m_strp == s_thisp || VString::startsWith(*m_strp, "this"); }
+    string protect(bool useSelfForThis, bool protect) const;
+    const std::string& asString() const { return *m_strp; }
+    bool operator==(const VSelfPointerText& other) const { return *m_strp == *other.m_strp; }
+};
+
 //######################################################################
 // AstNUser - Generic base class for AST User nodes.
 //          - Also used to allow parameter passing up/down iterate calls
