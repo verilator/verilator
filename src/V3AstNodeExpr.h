@@ -609,11 +609,13 @@ public:
         return (m_name == asamep->m_name);
     }
     bool isPure() const override { return m_pure; }
-    void pure(bool flag) { m_pure = flag; }
     int instrCount() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+
+private:
+    void setPurity();
 };
 class AstCast final : public AstNodeExpr {
     // Cast to appropriate data type

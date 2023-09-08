@@ -2326,6 +2326,48 @@ int AstCMethodHard::instrCount() const {
     }
     return 0;
 }
+void AstCMethodHard::setPurity() {
+    static const std::map<std::string, bool> isPureMethod{{"any", true},
+                                                          {"at", true},
+                                                          {"atBack", true},
+                                                          {"awaitingCurrentTime", true},
+                                                          {"exists", true},
+                                                          {"find", true},
+                                                          {"find_first", true},
+                                                          {"find_first_index", true},
+                                                          {"find_index", true},
+                                                          {"find_last", true},
+                                                          {"find_last_index", true},
+                                                          {"isFired", true},
+                                                          {"isTriggered", true},
+                                                          {"max", true},
+                                                          {"min", true},
+                                                          {"neq", true},
+                                                          {"r_and", true},
+                                                          {"r_or", true},
+                                                          {"r_product", true},
+                                                          {"r_sum", true},
+                                                          {"r_xor", true},
+                                                          {"size", true},
+                                                          {"slice", true},
+                                                          {"sliceBackBack", true},
+                                                          {"sliceFrontBack", true},
+                                                          {"unique", true},
+                                                          {"unique_index", true},
+                                                          {"word", true},
+                                                          {"evaluate", false},
+                                                          {"first", false},
+                                                          {"last", false},
+                                                          {"next", false},
+                                                          {"pop_back", false},
+                                                          {"pop_front", false},
+                                                          {"prev", false},
+                                                          {"set", false}};
+
+    auto isPureIt = isPureMethod.find(name());
+    UASSERT_OBJ(isPureIt != isPureMethod.end(), this, "Unknown purity of method " + name());
+    m_pure = isPureIt->second;
+}
 const char* AstCFunc::broken() const {
     BROKEN_RTN((m_scopep && !m_scopep->brokeExists()));
     return nullptr;
