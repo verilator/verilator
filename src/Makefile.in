@@ -38,7 +38,7 @@ UNDER_GIT = $(wildcard ${srcdir}/../.git/logs/HEAD)
 ifeq (,$(wildcard obj_opt/bear.o))
   ifneq (, $(shell which bear 2>/dev/null))
     BEAR := $(shell which bear)
-    ifeq (, $(shell $(BEAR) --output obj_opt/compile_commands.json -- true))
+    ifeq (, $(shell $(BEAR) --output obj_opt/comptest.json -- true))
       $(shell which bear 2>/dev/null >obj_opt/bear.o)
     else
       # unsupported version
@@ -50,10 +50,8 @@ else
 endif
 
 ifneq ($(BEAR),)
-RM_OBJ_OPT_COMPILE_COMMANDS := rm -f obj_opt/compile_commands.json
 BEAR_OBJ_OPT := $(BEAR) --append --output obj_opt/compile_commands.json --
 else
-RM_OBJ_OPT_COMPILE_COMMANDS :=
 BEAR_OBJ_OPT :=
 endif
 
@@ -77,7 +75,6 @@ ifeq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... One build
 	-mv -f $@.tmp $@
 else
 ../bin/verilator_bin$(EXEEXT): obj_opt ../bin prefiles
-	$(RM_OBJ_OPT_COMPILE_COMMANDS)
 	$(BEAR_OBJ_OPT) $(MAKE) -C obj_opt -j 1  TGT=../$@ -f ../Makefile_obj serial
 	$(BEAR_OBJ_OPT) $(MAKE) -C obj_opt       TGT=../$@ -f ../Makefile_obj
 endif
