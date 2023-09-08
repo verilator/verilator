@@ -32,7 +32,7 @@
 
 class AstNodeBlock VL_NOT_FINAL : public AstNode {
     // A Begin/fork block
-    // @astgen op1 := stmtsp : List[AstNode]
+    // @astgen op2 := stmtsp : List[AstNode]
     // Parents: statement
 private:
     string m_name;  // Name of block
@@ -2049,7 +2049,7 @@ public:
 class AstBegin final : public AstNodeBlock {
     // A Begin/end named block, only exists shortly after parsing until linking
     // Parents: statement
-    // @astgen op2 := genforp : Optional[AstNode]
+    // @astgen op1 := genforp : Optional[AstNode]
 
     bool m_generate;  // Underneath a generate
     const bool m_implied;  // Not inserted by user
@@ -2068,6 +2068,7 @@ public:
 };
 class AstFork final : public AstNodeBlock {
     // A fork named block
+    // @astgen op1 := initsp : List[AstNode]
     // Parents: statement
     // Children: statements
 private:
