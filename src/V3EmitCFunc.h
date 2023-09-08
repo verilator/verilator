@@ -494,7 +494,7 @@ public:
             puts(funcNameProtect(funcp));
         } else {
             // Calling regular method/function
-            if (!nodep->selfPointer().empty()) {
+            if (!nodep->selfPointer().isEmpty()) {
                 emitDereference(nodep->selfPointerProtect(m_useSelfForThis));
             }
             puts(funcp->nameProtect());
@@ -1265,7 +1265,7 @@ public:
         } else if (varp->isIfaceRef()) {
             puts(nodep->selfPointerProtect(m_useSelfForThis));
             return;
-        } else if (!nodep->selfPointer().empty()) {
+        } else if (!nodep->selfPointer().isEmpty()) {
             emitDereference(nodep->selfPointerProtect(m_useSelfForThis));
         }
         puts(nodep->varp()->nameProtect());

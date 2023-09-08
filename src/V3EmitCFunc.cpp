@@ -108,7 +108,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                     UASSERT_OBJ(m_wideTempRefp, nodep,
                                 "Wide Op w/ no temp, perhaps missing op in V3EmitC?");
                     COMMA;
-                    if (!m_wideTempRefp->selfPointer().empty()) {
+                    if (!m_wideTempRefp->selfPointer().isEmpty()) {
                         emitDereference(m_wideTempRefp->selfPointerProtect(m_useSelfForThis));
                     }
                     puts(m_wideTempRefp->varp()->nameProtect());
@@ -516,7 +516,7 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
             if (!assigntop) {
                 puts(assignString);
             } else {
-                if (!assigntop->selfPointer().empty()) {
+                if (!assigntop->selfPointer().isEmpty()) {
                     emitDereference(assigntop->selfPointerProtect(m_useSelfForThis));
                 }
                 puts(assigntop->varp()->nameProtect());
@@ -538,7 +538,7 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
             if (!assigntop) {
                 puts(assignString);
             } else {
-                if (!assigntop->selfPointer().empty()) {
+                if (!assigntop->selfPointer().isEmpty()) {
                     emitDereference(assigntop->selfPointerProtect(m_useSelfForThis));
                 }
                 puts(assigntop->varp()->nameProtect());

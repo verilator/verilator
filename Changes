@@ -16,6 +16,7 @@ Verilator 5.015 devel
 * Add --no-trace-top to not trace top signals (#4412) (#4422). [Frans Skarman]
 * Support assignments of packed values to stream expressions on queues (#4401). [Ryszard Rozak, Antmicro Ltd]
 * Support no-parentheses calls to static methods (#4432). [Krzysztof Boroński]
+* Support 'let'.
 * Fix Windows filename format, etc (#3873) (#4421). [Anthony Donlon].
 * Fix data type of condition operation on class objects (#4345) (#4352). [Ryszard Rozak, Antmicro Ltd]
 * Fix ++/-- under statements (#4399). [Aleksander Kiryk, Antmicro Ltd]
