@@ -71,8 +71,8 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
       sudo apt-get install libsystemc libsystemc-dev
     fi
     if [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
-      sudo apt-get install mold ||
-      sudo apt-get install mold
+      sudo apt-get install bear mold ||
+      sudo apt-get install bear mold
     fi
     if [ "$COVERAGE" = 1 ]; then
       yes yes | sudo cpan -fi Parallel::Forker
