@@ -248,6 +248,7 @@ private:
                         adtypep,
                         "Array extraction with width miscomputed " << adtypep->width() << "/"
                                                                    << fromRange.elements());
+            // cppcheck-suppress zerodivcond
             const int elwidth = adtypep->width() / fromRange.elements();
             AstSel* const newp = new AstSel{
                 nodep->fileline(), fromp,

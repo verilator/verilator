@@ -222,9 +222,9 @@ static void process() {
         V3Inst::dearrayAll(v3Global.rootp());
         V3LinkDot::linkDotArrayed(v3Global.rootp());
 
-        // Create dedicated tasks for fork..join_any / fork_join_none processes
-        if (V3Fork::makeTasks(v3Global.rootp()))
-            V3LinkDot::linkDotPrimary(v3Global.rootp());  // Link newly created tasks
+        // Generate classes and tasks required to maintain proper lifetimes for references in forks
+        V3Fork::makeDynamicScopes(v3Global.rootp());
+        V3Fork::makeTasks(v3Global.rootp());
 
         // Task inlining & pushing BEGINs names to variables/cells
         // Begin processing must be after Param, before module inlining

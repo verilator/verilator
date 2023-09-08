@@ -59,18 +59,18 @@ class EmitCGatherDependencies final : VNVisitorConst {
             }
         }
     }
-    void addSelfDependency(const string& selfPointer, AstNode* nodep) {
-        if (selfPointer.empty()) {
+    void addSelfDependency(VSelfPointerText selfPointer, AstNode* nodep) {
+        if (selfPointer.isEmpty()) {
             // No self pointer (e.g.: function locals, const pool values, loose static methods),
             // so no dependency
-        } else if (VString::startsWith(selfPointer, "this")) {
+        } else if (selfPointer.hasThis()) {
             // Dereferencing 'this', we need the definition of this module, which is also the
             // module that contains the variable.
             addModDependency(EmitCParentModule::get(nodep));
         } else {
             // Must be an absolute reference
-            UASSERT_OBJ(selfPointer.find("vlSymsp") != string::npos, nodep,
-                        "Unknown self pointer: '" << selfPointer << "'");
+            UASSERT_OBJ(selfPointer.isVlSym(), nodep,
+                        "Unknown self pointer: '" << selfPointer.asString() << "'");
             // Dereferencing vlSymsp, so we need it's definition...
             addSymsDependency();
         }

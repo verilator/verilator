@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_let_unsup.v:10:10: Unsupported: let typed ports
+   10 |    let G(int a) = 30 + a;
+      |          ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_let_unsup.v:11:10: Unsupported: let typed ports
+   11 |    let H(signed a) = 30 + a;
+      |          ^~~~~~
+%Error: Exiting due to

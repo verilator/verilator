@@ -64,6 +64,18 @@ const VNTypeInfo VNType::typeInfoTable[] = {
 std::ostream& operator<<(std::ostream& os, VNType rhs);
 
 //######################################################################
+// VSelfPointerText
+
+const std::shared_ptr<const string> VSelfPointerText::s_emptyp = std::make_shared<string>("");
+const std::shared_ptr<const string> VSelfPointerText::s_thisp = std::make_shared<string>("this");
+
+string VSelfPointerText::protect(bool useSelfForThis, bool protect) const {
+    const string& sp
+        = useSelfForThis ? VString::replaceWord(asString(), "this", "vlSelf") : asString();
+    return VIdProtect::protectWordsIf(sp, protect);
+}
+
+//######################################################################
 // AstNode
 
 AstNode::AstNode(VNType t, FileLine* fl)
@@ -1341,12 +1353,6 @@ bool AstNode::isTreePureRecurse() const {
     return true;
 }
 
-void AstNode::v3errorEndFatal(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex) {
-    v3errorEnd(str);
-    assert(0);  // LCOV_EXCL_LINE
-    VL_UNREACHABLE;
-}
-
 string AstNode::instanceStr() const {
     // Max iterations before giving up on location search,
     // in case we have some circular reference bug.
@@ -1371,9 +1377,9 @@ string AstNode::instanceStr() const {
 
     return "";
 }
-void AstNode::v3errorEnd(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex) {
+void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
     if (!m_fileline) {
-        V3Error::s().v3errorEnd(str, instanceStr());
+        V3Error::v3errorEnd(str, instanceStr());
     } else {
         std::ostringstream nsstr;
         nsstr << str.str();
@@ -1389,6 +1395,11 @@ void AstNode::v3errorEnd(std::ostringstream& str) const VL_REQUIRES(V3Error::s()
         m_fileline->v3errorEnd(
             nsstr, m_fileline->warnIsOff(V3Error::s().errorCode()) ? "" : instanceStr());
     }
+}
+void AstNode::v3errorEndFatal(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
+    v3errorEnd(str);
+    assert(0);  // LCOV_EXCL_LINE
+    VL_UNREACHABLE;
 }
 
 //======================================================================

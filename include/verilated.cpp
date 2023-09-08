@@ -320,7 +320,7 @@ std::string VlRNG::get_randstate() const VL_MT_UNSAFE {
     const char* const stateCharsp = reinterpret_cast<const char*>(&m_state);
     static_assert(sizeof(m_state) == 16, "");
     std::string result{"R00112233445566770011223344556677"};
-    for (int i = 0; i < sizeof(m_state); ++i) {
+    for (size_t i = 0; i < sizeof(m_state); ++i) {
         result[1 + i * 2] = 'a' + ((stateCharsp[i] >> 4) & 15);
         result[1 + i * 2 + 1] = 'a' + (stateCharsp[i] & 15);
     }
@@ -332,7 +332,7 @@ void VlRNG::set_randstate(const std::string& state) VL_MT_UNSAFE {
         return;
     }
     char* const stateCharsp = reinterpret_cast<char*>(&m_state);
-    for (int i = 0; i < sizeof(m_state); ++i) {
+    for (size_t i = 0; i < sizeof(m_state); ++i) {
         stateCharsp[i]
             = (((state[1 + i * 2] - 'a') & 15) << 4) | ((state[1 + i * 2 + 1] - 'a') & 15);
     }
@@ -2605,6 +2605,14 @@ void VerilatedContext::addModel(VerilatedModel* modelp) {
 VerilatedVirtualBase* VerilatedContext::threadPoolp() {
     if (m_threads == 1) return nullptr;
     if (!m_threadPool) m_threadPool.reset(new VlThreadPool{this, m_threads - 1});
+    return m_threadPool.get();
+}
+
+void VerilatedContext::prepareClone() { delete m_threadPool.release(); }
+
+VerilatedVirtualBase* VerilatedContext::threadPoolpOnClone() {
+    if (VL_UNLIKELY(m_threadPool)) m_threadPool.release();
+    m_threadPool = std::unique_ptr<VlThreadPool>(new VlThreadPool{this, m_threads - 1});
     return m_threadPool.get();
 }
 

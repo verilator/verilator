@@ -207,7 +207,7 @@ private:
                 iterateConstNull(nodep->varScopep());
             } else {
                 iterateConstNull(nodep->varp());
-                m_hash += nodep->selfPointer();
+                m_hash += nodep->selfPointer().asString();
             }
         });
     }

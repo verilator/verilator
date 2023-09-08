@@ -6,14 +6,17 @@
 
 event evt1;
 
+typedef enum {ENUM_VALUE} enum_t;
+
 class Foo;
   int m_member;
+  enum_t m_en;
 
   task do_something();
     fork
       #20 begin
         m_member++;
-        $display("this's m_member: ", m_member);
+        $display("this's m_member: %0d  m_en: %s", m_member, m_en.name());
         if (m_member != 3)
           $stop;
         ->evt1;
@@ -29,7 +32,7 @@ class Foo;
     fork
       begin
         foo.m_member++;
-        $display("foo's m_member: %d", foo.m_member);
+        $display("foo's m_member: %0d  m_en: %s", foo.m_member, foo.m_en.name());
         if (foo.m_member != 2)
           $stop;
       end

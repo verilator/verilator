@@ -121,12 +121,11 @@ std::ostream& operator<<(std::ostream& str, const Castable& rhs) {
 }
 
 #define v3widthWarn(lhs, rhs, msg) \
-    v3errorEnd((V3Error::s().m_mutex.lock(), \
-                V3Error::s().v3errorPrep((lhs) < (rhs)   ? V3ErrorCode::WIDTHTRUNC \
-                                         : (lhs) > (rhs) ? V3ErrorCode::WIDTHEXPAND \
-                                                         : V3ErrorCode::WIDTH), \
-                (V3Error::s().v3errorStr() << msg), V3Error::s().v3errorStr())), \
-        V3Error::s().m_mutex.unlock()
+    v3errorEnd( \
+        v3errorBuildMessage(V3Error::v3errorPrep((lhs) < (rhs)   ? V3ErrorCode::WIDTHTRUNC \
+                                                 : (lhs) > (rhs) ? V3ErrorCode::WIDTHEXPAND \
+                                                                 : V3ErrorCode::WIDTH), \
+                            msg))
 
 //######################################################################
 // Width state, as a visitor of each AstNode
@@ -2782,7 +2781,7 @@ private:
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return true;
                 }
-                if (AstNodeFTask* const methodp = VN_CAST(foundp, NodeFTask)) {
+                if (VN_IS(foundp, NodeFTask)) {
                     nodep->replaceWith(new AstMethodCall{nodep->fileline(),
                                                          nodep->fromp()->unlinkFrBack(),
                                                          nodep->name(), nullptr});
@@ -4816,6 +4815,16 @@ private:
                     }
                     break;
                 }
+                case 'b':  // FALLTHRU
+                case 'o':  // FALLTHRU
+                case 'x': {
+                    if (argp) {
+                        AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
+                        if (argp->isDouble()) spliceCvtS(argp, true, 64);
+                        argp = nextp;
+                    }
+                    break;
+                }
                 case 'p': {  // Pattern
                     const AstNodeDType* const dtypep = argp ? argp->dtypep()->skipRefp() : nullptr;
                     const AstBasicDType* const basicp = dtypep ? dtypep->basicp() : nullptr;
@@ -6596,8 +6605,8 @@ private:
         if (VN_IS(underp, NodeDType)) {  // Note the node itself, not node's data type
             // Must be near top of these checks as underp->dtypep() will look normal
             underp->v3error(ucfirst(nodep->prettyOperatorName())
-                            << " expected non-datatype " << side << " but '" << underp->name()
-                            << "' is a datatype.");
+                            << " expected non-datatype " << side << " but "
+                            << underp->prettyNameQ() << " is a datatype.");
         } else if (expDTypep == underp->dtypep()) {  // Perfect
             underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, FINAL}.p());
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
@@ -6665,8 +6674,8 @@ private:
             } else if (!VN_IS(expDTypep->skipRefp(), IfaceRefDType)
                        && VN_IS(underp->dtypep()->skipRefp(), IfaceRefDType)) {
                 underp->v3error(ucfirst(nodep->prettyOperatorName())
-                                << " expected non-interface on " << side << " but '"
-                                << underp->name() << "' is an interface.");
+                                << " expected non-interface on " << side << " but "
+                                << underp->prettyNameQ() << " is an interface.");
             } else if (const AstIfaceRefDType* expIfaceRefp
                        = VN_CAST(expDTypep->skipRefp(), IfaceRefDType)) {
                 const AstIfaceRefDType* underIfaceRefp
@@ -6679,8 +6688,8 @@ private:
                 } else if (expIfaceRefp->ifaceViaCellp() != underIfaceRefp->ifaceViaCellp()) {
                     underp->v3error(ucfirst(nodep->prettyOperatorName())
                                     << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
-                                    << " interface on " << side << " but '" << underp->name()
-                                    << "' is a different interface ("
+                                    << " interface on " << side << " but " << underp->prettyNameQ()
+                                    << " is a different interface ("
                                     << underIfaceRefp->ifaceViaCellp()->prettyNameQ() << ").");
                 } else if (underIfaceRefp->modportp()
                            && expIfaceRefp->modportp() != underIfaceRefp->modportp()) {
@@ -7204,6 +7213,7 @@ private:
                                         "__Venumtab_" + VString::downcase(attrType.ascii())
                                             + cvtToStr(m_dtTables++),
                                         vardtypep};
+        varp->lifetime(VLifetime::STATIC);
         varp->isConst(true);
         varp->isStatic(true);
         varp->valuep(initp);
@@ -7544,12 +7554,14 @@ AstNodeDType* V3Width::getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) {
 
     // First handle cases with null values and when one class is a super class of the other.
     if (VN_IS(nodep1, Const)) std::swap(nodep1, nodep2);
-    const Castable castable
-        = WidthVisitor::computeCastable(nodep1->dtypep(), nodep2->dtypep(), nodep2);
-    if (castable == SAMEISH || castable == COMPATIBLE) {
-        return nodep1->dtypep();
-    } else if (castable == DYNAMIC_CLASS) {
-        return nodep2->dtypep();
+    {
+        const Castable castable
+            = WidthVisitor::computeCastable(nodep1->dtypep(), nodep2->dtypep(), nodep2);
+        if (castable == SAMEISH || castable == COMPATIBLE) {
+            return nodep1->dtypep();
+        } else if (castable == DYNAMIC_CLASS) {
+            return nodep2->dtypep();
+        }
     }
 
     AstClassRefDType* classDtypep1 = VN_CAST(nodep1->dtypep(), ClassRefDType);

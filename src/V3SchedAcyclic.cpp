@@ -59,17 +59,18 @@ namespace {
 // ##############################################################################
 //  Data structures (graph types)
 
-class LogicVertex final : public V3GraphVertex {
+class SchedAcyclicLogicVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(SchedAcyclicLogicVertex, V3GraphVertex)
     AstNode* const m_logicp;  // The logic node this vertex represents
     AstScope* const m_scopep;  // The enclosing AstScope of the logic node
 
 public:
-    LogicVertex(V3Graph* graphp, AstNode* logicp, AstScope* scopep)
+    SchedAcyclicLogicVertex(V3Graph* graphp, AstNode* logicp, AstScope* scopep)
         : V3GraphVertex{graphp}
         , m_logicp{logicp}
         , m_scopep{scopep} {}
     V3GraphVertex* clone(V3Graph* graphp) const override {
-        return new LogicVertex{graphp, logicp(), scopep()};
+        return new SchedAcyclicLogicVertex{graphp, logicp(), scopep()};
     }
 
     AstNode* logicp() const { return m_logicp; }
@@ -81,16 +82,19 @@ public:
     // LCOV_EXCL_STOP
 };
 
-class VarVertex final : public V3GraphVertex {
+class SchedAcyclicVarVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(SchedAcyclicVarVertex, V3GraphVertex)
     AstVarScope* const m_vscp;  // The AstVarScope this vertex represents
 
 public:
-    VarVertex(V3Graph* graphp, AstVarScope* vscp)
+    SchedAcyclicVarVertex(V3Graph* graphp, AstVarScope* vscp)
         : V3GraphVertex{graphp}
         , m_vscp{vscp} {}
     AstVarScope* vscp() const { return m_vscp; }
     AstVar* varp() const { return m_vscp->varp(); }
-    V3GraphVertex* clone(V3Graph* graphp) const override { return new VarVertex{graphp, vscp()}; }
+    V3GraphVertex* clone(V3Graph* graphp) const override {
+        return new SchedAcyclicVarVertex{graphp, vscp()};
+    }
 
     // LCOV_EXCL_START // Debug code
     string name() const override VL_MT_STABLE { return m_vscp->name(); }
@@ -102,13 +106,12 @@ public:
 class Graph final : public V3Graph {
     void loopsVertexCb(V3GraphVertex* vtxp) override {
         // TODO: 'typeName' is an internal thing. This should be more human readable.
-        if (LogicVertex* const lvtxp = dynamic_cast<LogicVertex*>(vtxp)) {
+        if (SchedAcyclicLogicVertex* const lvtxp = vtxp->cast<SchedAcyclicLogicVertex>()) {
             AstNode* const logicp = lvtxp->logicp();
             std::cerr << logicp->fileline()->warnOtherStandalone()
                       << "     Example path: " << logicp->typeName() << endl;
         } else {
-            VarVertex* const vvtxp = dynamic_cast<VarVertex*>(vtxp);
-            UASSERT(vvtxp, "Cannot be anything else");
+            SchedAcyclicVarVertex* const vvtxp = vtxp->as<SchedAcyclicVarVertex>();
             AstVarScope* const vscp = vvtxp->vscp();
             std::cerr << vscp->fileline()->warnOtherStandalone()
                       << "     Example path: " << vscp->prettyName() << endl;
@@ -125,8 +128,8 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
     // AstVarScope::user1() -> VarVertx
     const VNUser1InUse user1InUse;
     const auto getVarVertex = [&](AstVarScope* vscp) {
-        if (!vscp->user1p()) vscp->user1p(new VarVertex{graphp.get(), vscp});
-        return vscp->user1u().to<VarVertex*>();
+        if (!vscp->user1p()) vscp->user1p(new SchedAcyclicVarVertex{graphp.get(), vscp});
+        return vscp->user1u().to<SchedAcyclicVarVertex*>();
     };
 
     const auto addEdge = [&](V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cuttable) {
@@ -141,13 +144,14 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
             // Can safely ignore Postponed as we generate them all
             if (VN_IS(nodep, AlwaysPostponed)) continue;
 
-            LogicVertex* const lvtxp = new LogicVertex{graphp.get(), nodep, scopep};
+            SchedAcyclicLogicVertex* const lvtxp
+                = new SchedAcyclicLogicVertex{graphp.get(), nodep, scopep};
             const VNUser2InUse user2InUse;
             const VNUser3InUse user3InUse;
 
             nodep->foreach([&](AstVarRef* refp) {
                 AstVarScope* const vscp = refp->varScopep();
-                VarVertex* const vvtxp = getVarVertex(vscp);
+                SchedAcyclicVarVertex* const vvtxp = getVarVertex(vscp);
                 // We want to cut the narrowest signals
                 const int weight = vscp->width() / 8 + 1;
                 // If written, add logic -> var edge
@@ -208,7 +212,7 @@ void removeNonCyclic(Graph* graphp) {
 }
 
 // Has this VarVertex been cut? (any edges in or out has been cut)
-bool isCut(const VarVertex* vtxp) {
+bool isCut(const SchedAcyclicVarVertex* vtxp) {
     for (V3GraphEdge* edgep = vtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
         if (edgep->weight() == 0) return true;
     }
@@ -218,33 +222,33 @@ bool isCut(const VarVertex* vtxp) {
     return false;
 }
 
-std::vector<VarVertex*> findCutVertices(Graph* graphp) {
-    std::vector<VarVertex*> result;
+std::vector<SchedAcyclicVarVertex*> findCutVertices(Graph* graphp) {
+    std::vector<SchedAcyclicVarVertex*> result;
     const VNUser1InUse user1InUse;  // bool: already added to result
     for (V3GraphVertex* vtxp = graphp->verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
-        if (VarVertex* const vvtxp = dynamic_cast<VarVertex*>(vtxp)) {
+        if (SchedAcyclicVarVertex* const vvtxp = vtxp->cast<SchedAcyclicVarVertex>()) {
             if (!vvtxp->vscp()->user1SetOnce() && isCut(vvtxp)) result.push_back(vvtxp);
         }
     }
     return result;
 }
 
-void resetEdgeWeights(const std::vector<VarVertex*>& cutVertices) {
-    for (VarVertex* const vvtxp : cutVertices) {
+void resetEdgeWeights(const std::vector<SchedAcyclicVarVertex*>& cutVertices) {
+    for (SchedAcyclicVarVertex* const vvtxp : cutVertices) {
         for (V3GraphEdge* ep = vvtxp->inBeginp(); ep; ep = ep->inNextp()) ep->weight(1);
         for (V3GraphEdge* ep = vvtxp->outBeginp(); ep; ep = ep->outNextp()) ep->weight(1);
     }
 }
 
 // A VarVertex together with its fanout
-using Candidate = std::pair<VarVertex*, unsigned>;
+using Candidate = std::pair<SchedAcyclicVarVertex*, unsigned>;
 
 // Gather all splitting candidates that are in the same SCC as the given vertex
 void gatherSCCCandidates(V3GraphVertex* vtxp, std::vector<Candidate>& candidates) {
     if (vtxp->user()) return;  // Already done
     vtxp->user(true);
 
-    if (VarVertex* const vvtxp = dynamic_cast<VarVertex*>(vtxp)) {
+    if (SchedAcyclicVarVertex* const vvtxp = vtxp->cast<SchedAcyclicVarVertex>()) {
         AstVar* const varp = vvtxp->varp();
         const string name = varp->prettyName();
         if (!varp->user3SetOnce()  // Only consider each AstVar once
@@ -270,7 +274,7 @@ void gatherSCCCandidates(V3GraphVertex* vtxp, std::vector<Candidate>& candidates
 }
 
 // Find all variables in a loop (SCC) that are candidates for splitting to break loops.
-void reportLoopVars(Graph* graphp, VarVertex* vvtxp) {
+void reportLoopVars(Graph* graphp, SchedAcyclicVarVertex* vvtxp) {
     // Vector of variables in UNOPTFLAT loop that are candidates for splitting.
     std::vector<Candidate> candidates;
     {
@@ -325,8 +329,8 @@ void reportLoopVars(Graph* graphp, VarVertex* vvtxp) {
     V3Stats::addStat("Scheduling, split_var, candidates", splittable);
 }
 
-void reportCycles(Graph* graphp, const std::vector<VarVertex*>& cutVertices) {
-    for (VarVertex* vvtxp : cutVertices) {
+void reportCycles(Graph* graphp, const std::vector<SchedAcyclicVarVertex*>& cutVertices) {
+    for (SchedAcyclicVarVertex* vvtxp : cutVertices) {
         AstVarScope* const vscp = vvtxp->vscp();
         FileLine* const flp = vscp->fileline();
 
@@ -350,16 +354,18 @@ void reportCycles(Graph* graphp, const std::vector<VarVertex*>& cutVertices) {
     }
 }
 
-LogicByScope fixCuts(AstNetlist* netlistp, const std::vector<VarVertex*>& cutVertices) {
+LogicByScope fixCuts(AstNetlist* netlistp,
+                     const std::vector<SchedAcyclicVarVertex*>& cutVertices) {
     // For all logic that reads a cut vertex, build a map from logic -> list of cut AstVarScope
     // they read. Also build a vector of the involved logic for deterministic results.
-    std::unordered_map<LogicVertex*, std::vector<AstVarScope*>> lvtx2Cuts;
-    std::vector<LogicVertex*> lvtxps;
+    std::unordered_map<SchedAcyclicLogicVertex*, std::vector<AstVarScope*>> lvtx2Cuts;
+    std::vector<SchedAcyclicLogicVertex*> lvtxps;
     {
         const VNUser1InUse user1InUse;  // bool: already added to 'lvtxps'
-        for (VarVertex* const vvtxp : cutVertices) {
+        for (SchedAcyclicVarVertex* const vvtxp : cutVertices) {
             for (V3GraphEdge* edgep = vvtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                LogicVertex* const lvtxp = static_cast<LogicVertex*>(edgep->top());
+                SchedAcyclicLogicVertex* const lvtxp
+                    = static_cast<SchedAcyclicLogicVertex*>(edgep->top());
                 if (!lvtxp->logicp()->user1SetOnce()) lvtxps.push_back(lvtxp);
                 lvtx2Cuts[lvtxp].push_back(vvtxp->vscp());
             }
@@ -370,7 +376,7 @@ LogicByScope fixCuts(AstNetlist* netlistp, const std::vector<VarVertex*>& cutVer
     // explicit additional triggers on the cut variables)
     LogicByScope result;
     SenTreeFinder finder{netlistp};
-    for (LogicVertex* const lvtxp : lvtxps) {
+    for (SchedAcyclicLogicVertex* const lvtxp : lvtxps) {
         AstNode* const logicp = lvtxp->logicp();
         logicp->unlinkFrBack();
         FileLine* const flp = logicp->fileline();
@@ -392,7 +398,7 @@ LogicByScope fixCuts(AstNetlist* netlistp, const std::vector<VarVertex*>& cutVer
 
 }  // namespace
 
-LogicByScope breakCycles(AstNetlist* netlistp, LogicByScope& combinationalLogic) {
+LogicByScope breakCycles(AstNetlist* netlistp, const LogicByScope& combinationalLogic) {
     // Build the dataflow (dependency) graph
     const std::unique_ptr<Graph> graphp = buildGraph(combinationalLogic);
 
@@ -412,7 +418,7 @@ LogicByScope breakCycles(AstNetlist* netlistp, LogicByScope& combinationalLogic)
     graphp->acyclic(&V3GraphEdge::followAlwaysTrue);
 
     // Find all cut vertices
-    const std::vector<VarVertex*> cutVertices = findCutVertices(graphp.get());
+    const std::vector<SchedAcyclicVarVertex*> cutVertices = findCutVertices(graphp.get());
 
     // Reset edge weights for reporting
     resetEdgeWeights(cutVertices);

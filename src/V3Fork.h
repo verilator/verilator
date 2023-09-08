@@ -27,9 +27,12 @@ class AstNetlist;
 
 class V3Fork final {
 public:
-    // Create tasks out of begin blocks that can outlive processes in which they were forked.
+    // Move/copy variables to "anonymous" objects if their lifetime might exceed the scope of a
+    // procedure that declared them. Update the references apropriately.
+    static void makeDynamicScopes(AstNetlist* nodep);
+    // Create tasks out of blocks/statments that can outlive processes in which they were forked.
     // Return value: number of tasks created
-    static int makeTasks(AstNetlist* nodep);
+    static void makeTasks(AstNetlist* nodep);
 };
 
 #endif  // Guard

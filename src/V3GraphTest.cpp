@@ -52,6 +52,7 @@ public:
 // Vertices and nodes
 
 class V3GraphTestVertex VL_NOT_FINAL : public V3GraphVertex {
+    VL_RTTI_IMPL(V3GraphTestVertex, V3GraphVertex)
     const string m_name;
 
 public:

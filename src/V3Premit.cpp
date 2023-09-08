@@ -54,11 +54,11 @@ private:
     const VNUser2InUse m_inuser2;
 
     // STATE - across all visitors
-    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
     VDouble0 m_extractedToConstPool;  // Statistic tracking
 
     // STATE - for current visit position (use VL_RESTORER)
     AstCFunc* m_cfuncp = nullptr;  // Current block
+    int m_tmpVarCnt = 0;  // Number of temporary variables created inside a function
     AstNode* m_stmtp = nullptr;  // Current statement
     AstCCall* m_callp = nullptr;  // Current AstCCall
     AstWhile* m_inWhilep = nullptr;  // Inside while loop, special statement additions
@@ -138,7 +138,8 @@ private:
             ++m_extractedToConstPool;
         } else {
             // Keep as local temporary. Name based on hash of node for output stability.
-            varp = new AstVar{fl, VVarType::STMTTEMP, m_tempNames.get(nodep), nodep->dtypep()};
+            varp = new AstVar{fl, VVarType::STMTTEMP, "__Vtemp_" + cvtToStr(++m_tmpVarCnt),
+                              nodep->dtypep()};
             m_cfuncp->addInitsp(varp);
             // Put assignment before the referencing statement
             insertBeforeStmt(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, nodep});
@@ -158,8 +159,9 @@ private:
     }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
+        VL_RESTORER(m_tmpVarCnt);
         m_cfuncp = nodep;
-        m_tempNames.reset();
+        m_tmpVarCnt = 0;
         iterateChildren(nodep);
     }
 
@@ -212,7 +214,7 @@ private:
         }
         iterateAndNextNull(nodep->rhsp());
         {
-            VL_RESTORER(m_assignLhs);
+            // VL_RESTORER(m_assignLhs);  // Not needed; part of RESTORER_START_STATEMENT()
             m_assignLhs = true;
             iterateAndNextNull(nodep->lhsp());
         }
@@ -368,7 +370,7 @@ private:
                 UINFO(4, "Autoflush " << nodep << endl);
                 nodep->addNextHere(
                     new AstFFlush{nodep->fileline(),
-                                  VN_AS(AstNode::cloneTreeNull(nodep->filep(), true), NodeExpr)});
+                                  nodep->filep() ? nodep->filep()->cloneTree(true) : nullptr});
             }
         }
     }
@@ -391,10 +393,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit PremitVisitor(AstNetlist* nodep)
-        : m_tempNames{"__Vtemp"} {
-        iterate(nodep);
-    }
+    explicit PremitVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~PremitVisitor() override {
         V3Stats::addStat("Optimizations, Prelim extracted value to ConstPool",
                          m_extractedToConstPool);

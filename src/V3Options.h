@@ -223,6 +223,7 @@ private:
     bool m_autoflush = false;       // main switch: --autoflush
     bool m_bboxSys = false;         // main switch: --bbox-sys
     bool m_bboxUnsup = false;       // main switch: --bbox-unsup
+    bool m_binary = false;          // main switch: --binary
     bool m_build = false;           // main switch: --build
     bool m_cmake = false;           // main switch: --make cmake
     bool m_context = true;          // main switch: --Wcontext
@@ -280,7 +281,7 @@ private:
     bool m_traceCoverage = false;   // main switch: --trace-coverage
     bool m_traceParams = true;      // main switch: --trace-params
     bool m_traceStructs = false;    // main switch: --trace-structs
-    bool m_noTraceTop;              // main switch: --no-trace-top
+    bool m_noTraceTop = false;      // main switch: --no-trace-top
     bool m_traceUnderscore = false; // main switch: --trace-underscore
     bool m_underlineZero = false;   // main switch: --underline-zero; undocumented old Verilator 2
     bool m_verilate = true;         // main switch: --verilate
@@ -442,6 +443,7 @@ public:
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
+    bool binary() const { return m_binary; }
     bool build() const { return m_build; }
     string buildDepBin() const { return m_buildDepBin; }
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }

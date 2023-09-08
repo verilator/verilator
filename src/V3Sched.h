@@ -158,7 +158,7 @@ void transformForks(AstNetlist* const netlistp);
 void schedule(AstNetlist*);
 
 // Sub-steps
-LogicByScope breakCycles(AstNetlist* netlistp, LogicByScope& combinationalLogic);
+LogicByScope breakCycles(AstNetlist* netlistp, const LogicByScope& combinationalLogic);
 LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLogic,
                        LogicByScope& hybridLogic);
 LogicReplicas replicateLogic(LogicRegions&);

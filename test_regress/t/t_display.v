@@ -21,11 +21,13 @@ module t;
 
    sub sub ();
    sub2 sub2 ();
+   sub3 sub3 ();
 
    initial begin
       $write("[%0t] In %m: Hi\n", $time);
       sub.write_m;
       sub2.write_m;
+      sub3.write_m;
 
       // Escapes
       $display("[%0t] Back \\ Quote \"", $time);  // Old bug when \" last on the line.
@@ -202,6 +204,8 @@ multiline", $time);
       $display("%d", 32'b11111z111);
       $display("%h", 12'b1zz1_zzzz_1x1z);
 
+      $display(,, 10);  // Strange but legal
+
       $write("*-* All Finished *-*\n");
       $finish;
    end
@@ -227,5 +231,20 @@ module sub2;
             $write("[%0t] In %m (%L)\n", $time);
          end
       end
+   endtask
+endmodule
+
+module sub3;
+   function real copyr(input real r);
+      copyr = r;
+   endfunction
+
+   real a, d;
+
+   task write_m;
+      a = 0.4;
+      // verilator lint_off REALCVT
+      $display("a: -0.4=> %.1f  %0d  %0x  %0b", copyr(a), copyr(a), copyr(a), copyr(a));
+      // verilator lint_on REALCVT
    endtask
 endmodule

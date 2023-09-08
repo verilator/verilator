@@ -284,10 +284,8 @@ private:
         // Check for duplicate names, otherwise linker might just ignore them
         string nameArgs = nodep->name();
         if (!nodep->argTypes().empty()) nameArgs += "(" + nodep->argTypes() + ")";
-        if (false) {  // bug4418
-            UASSERT_OBJ(m_cFuncNames.emplace(nameArgs).second, nodep,
-                        "Duplicate cfunc name: '" << nameArgs << "'");
-        }
+        UASSERT_OBJ(m_cFuncNames.emplace(nameArgs).second, nodep,
+                    "Duplicate cfunc name: '" << nameArgs << "'");
 
         processAndIterate(nodep);
 

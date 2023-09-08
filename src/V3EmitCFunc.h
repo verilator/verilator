@@ -345,6 +345,19 @@ public:
         emitVarDecl(nodep);
     }
 
+    void visit(AstCvtDynArrayToPacked* nodep) override {
+        puts("VL_DYN_TO_");
+        emitIQW(nodep);
+        puts("<");
+        const AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
+        putbs(elemDTypep->cType("", false, false));
+        puts(">(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(", ");
+        puts(cvtToStr(elemDTypep->widthMin()));
+        puts(")");
+    }
+
     void visit(AstNodeAssign* nodep) override {
         bool paren = true;
         bool decind = false;
@@ -419,7 +432,8 @@ public:
                    && !VN_IS(nodep->rhsp(), AssocSel)  //
                    && !VN_IS(nodep->rhsp(), MemberSel)  //
                    && !VN_IS(nodep->rhsp(), StructSel)  //
-                   && !VN_IS(nodep->rhsp(), ArraySel)) {
+                   && !VN_IS(nodep->rhsp(), ArraySel)  //
+                   && !VN_IS(nodep->rhsp(), ExprStmt)) {
             // Wide functions assign into the array directly, don't need separate assign statement
             m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
             paren = false;
@@ -480,7 +494,7 @@ public:
             puts(funcNameProtect(funcp));
         } else {
             // Calling regular method/function
-            if (!nodep->selfPointer().empty()) {
+            if (!nodep->selfPointer().isEmpty()) {
                 emitDereference(nodep->selfPointerProtect(m_useSelfForThis));
             }
             puts(funcp->nameProtect());
@@ -1251,7 +1265,7 @@ public:
         } else if (varp->isIfaceRef()) {
             puts(nodep->selfPointerProtect(m_useSelfForThis));
             return;
-        } else if (!nodep->selfPointer().empty()) {
+        } else if (!nodep->selfPointer().isEmpty()) {
             emitDereference(nodep->selfPointerProtect(m_useSelfForThis));
         }
         puts(nodep->varp()->nameProtect());

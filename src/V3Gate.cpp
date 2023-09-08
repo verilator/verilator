@@ -65,6 +65,7 @@ public:
 // Support classes
 
 class GateEitherVertex VL_NOT_FINAL : public V3GraphVertex {
+    VL_RTTI_IMPL(GateEitherVertex, V3GraphVertex)
     AstScope* const m_scopep;  // Scope vertex refers to
     bool m_reducible = true;  // True if this node should be able to be eliminated
     bool m_dedupable = true;  // True if this node should be able to be deduped
@@ -122,6 +123,7 @@ public:
 };
 
 class GateVarVertex final : public GateEitherVertex {
+    VL_RTTI_IMPL(GateVarVertex, GateEitherVertex)
     AstVarScope* const m_varScp;
     bool m_isTop = false;
     bool m_isClock = false;
@@ -164,6 +166,7 @@ public:
 };
 
 class GateLogicVertex final : public GateEitherVertex {
+    VL_RTTI_IMPL(GateLogicVertex, GateEitherVertex)
     AstNode* const m_nodep;
     AstActive* const m_activep;  // Under what active; nullptr is ok (under cfunc or such)
     const bool m_slow;  // In slow block
@@ -331,7 +334,6 @@ private:
     AstActive* m_activep = nullptr;  // Current active
     bool m_activeReducible = true;  // Is activation block reducible?
     bool m_inSenItem = false;  // Underneath AstSenItem; any varrefs are clocks
-    bool m_inExprStmt = false;  // Underneath ExprStmt; don't optimize LHS vars
     bool m_inSlow = false;  // Inside a slow structure
     std::vector<AstNode*> m_optimized;  // Logic blocks optimized
 
@@ -497,10 +499,6 @@ private:
             // the weight will increase
             if (nodep->access().isWriteOrRW()) {
                 new V3GraphEdge{&m_graph, m_logicVertexp, vvertexp, 1};
-                if (m_inExprStmt) {
-                    m_logicVertexp->clearReducibleAndDedupable("LHS var in ExprStmt");
-                    m_logicVertexp->setConsumed("LHS var in ExprStmt");
-                }
             }
             if (nodep->access().isReadOrRW()) {
                 new V3GraphEdge{&m_graph, vvertexp, m_logicVertexp, 1};
@@ -516,11 +514,6 @@ private:
         iterateNewStmt(nodep, "User C Function", "User C Function");
     }
     void visit(AstClocking* nodep) override { iterateNewStmt(nodep, nullptr, nullptr); }
-    void visit(AstExprStmt* nodep) override {
-        VL_RESTORER(m_inExprStmt);
-        m_inExprStmt = true;
-        iterateChildren(nodep);
-    }
     void visit(AstSenItem* nodep) override {
         VL_RESTORER(m_inSenItem);
         m_inSenItem = true;
@@ -578,7 +571,7 @@ public:
 
 void GateVisitor::optimizeSignals(bool allowMultiIn) {
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp);
+        GateVarVertex* const vvertexp = itp->cast<GateVarVertex>();
 
         // Consider "inlining" variables
         if (!vvertexp) continue;
@@ -720,7 +713,7 @@ void GateVisitor::consumedMove() {
     // We need the "usually" block logic to do a better job at this
     for (V3GraphVertex* vertexp = m_graph.verticesBeginp(); vertexp;
          vertexp = vertexp->verticesNextp()) {
-        if (const GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(vertexp)) {
+        if (const GateVarVertex* const vvertexp = vertexp->cast<GateVarVertex>()) {
             if (!vvertexp->consumed() && !vvertexp->user()) {
                 UINFO(8, "Unconsumed " << vvertexp->varScp() << endl);
             }
@@ -744,7 +737,7 @@ void GateVisitor::consumedMove() {
 void GateVisitor::warnSignals() {
     AstNode::user2ClearTree();
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (const GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (const GateVarVertex* const vvertexp = itp->cast<GateVarVertex>()) {
             const AstVarScope* const vscp = vvertexp->varScp();
             const AstNode* const sp = vvertexp->rstSyncNodep();
             const AstNode* const ap = vvertexp->rstAsyncNodep();
@@ -905,6 +898,7 @@ class GateDedupeVarVisitor final : public VNVisitor {
     //   (Note, the IF must be the only node under the always,
     //    and the assign must be the only node under the if, other than the ifcond)
     // Any other ordering or node type, except for an AstComment, makes it not dedupable
+    // AstExprStmt in the subtree of a node also makes the node not dedupable.
 private:
     // STATE
     GateDedupeHash m_ghash;  // Hash used to find dupes of rhs of assign
@@ -920,6 +914,7 @@ private:
             // non-blocking statements, but erring on side of caution here
             if (!m_assignp) {
                 m_assignp = assignp;
+                m_dedupable = !assignp->exists([&](AstExprStmt*) { return true; });
             } else {
                 m_dedupable = false;
             }
@@ -944,6 +939,7 @@ private:
             if (m_always && !m_ifCondp && !ifp->elsesp()) {
                 // we're under an always, this is the first IF, and there's no else
                 m_ifCondp = ifp->condp();
+                m_dedupable = !m_ifCondp->exists([&](AstExprStmt*) { return true; });
                 iterateAndNextNull(ifp->thensp());
             } else {
                 m_dedupable = false;
@@ -1143,14 +1139,14 @@ void GateVisitor::dedupe() {
     // Traverse starting from each of the clocks
     UINFO(9, "Gate dedupe() clocks:\n");
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (GateVarVertex* const vvertexp = itp->cast<GateVarVertex>()) {
             if (vvertexp->isClock()) deduper.dedupeTree(vvertexp);
         }
     }
     // Traverse starting from each of the outputs
     UINFO(9, "Gate dedupe() outputs:\n");
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (GateVarVertex* const vvertexp = itp->cast<GateVarVertex>()) {
             if (vvertexp->isTop() && vvertexp->varScp()->varp()->isWritable()) {
                 deduper.dedupeTree(vvertexp);
             }
@@ -1194,8 +1190,7 @@ private:
         for (V3GraphEdge* edgep = vvertexp->inBeginp(); edgep;) {
             V3GraphEdge* oldedgep = edgep;
             edgep = edgep->inNextp();  // for recursive since the edge could be deleted
-            if (GateLogicVertex* const lvertexp
-                = dynamic_cast<GateLogicVertex*>(oldedgep->fromp())) {
+            if (GateLogicVertex* const lvertexp = oldedgep->fromp()->cast<GateLogicVertex>()) {
                 if (AstNodeAssign* const assignp = VN_CAST(lvertexp->nodep(), NodeAssign)) {
                     // if (lvertexp->outSize1() && VN_IS(assignp->lhsp(), Sel)) {
                     if (VN_IS(assignp->lhsp(), Sel) && lvertexp->outSize1()) {
@@ -1281,7 +1276,7 @@ void GateVisitor::mergeAssigns() {
     UINFO(6, "mergeAssigns\n");
     GateMergeAssignsGraphVisitor merger{&m_graph};
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* const vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (GateVarVertex* const vvertexp = itp->cast<GateVarVertex>()) {
             merger.mergeAssignsTree(vvertexp);
         }
     }
@@ -1467,7 +1462,7 @@ void GateVisitor::decomposeClkVectors() {
     AstNode::user2ClearTree();
     GateClkDecompGraphVisitor decomposer{&m_graph};
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-        if (GateVarVertex* const vertp = dynamic_cast<GateVarVertex*>(itp)) {
+        if (GateVarVertex* const vertp = itp->cast<GateVarVertex>()) {
             const AstVarScope* const vsp = vertp->varScp();
             if (vsp->varp()->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
                 if (vsp->varp()->width() > 1) {

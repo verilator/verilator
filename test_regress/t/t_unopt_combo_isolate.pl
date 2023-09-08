@@ -18,7 +18,7 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep($Self->{stats}, qr/Optimizations, isolate_assignments blocks\s+5/i);
+    file_grep($Self->{stats}, qr/Optimizations, isolate_assignments blocks\s+3/i);
     file_grep("$out_filename", qr/\<var loc="e,23,.*?" name="t.b" dtype_id="\d+" vartype="logic" origName="b" isolate_assignments="true"\/\>/i);
     file_grep("$out_filename", qr/\<var loc="e,99,.*?" name="__Vfunc_t.file.get_31_16__0__Vfuncout" dtype_id="\d+" vartype="logic" origName="__Vfunc_t__DOT__file__DOT__get_31_16__0__Vfuncout" isolate_assignments="true"\/\>/i);
     file_grep("$out_filename", qr/\<var loc="e,100,.*?" name="__Vfunc_t.file.get_31_16__0__t_crc" dtype_id="\d+" vartype="logic" origName="__Vfunc_t__DOT__file__DOT__get_31_16__0__t_crc" isolate_assignments="true"\/\>/i);

@@ -47,6 +47,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Extend V3GraphVertex class for use in latch detection graph
 
 class LatchDetectGraphVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(LatchDetectGraphVertex, V3GraphVertex)
 public:
     enum VertexType : uint8_t { VT_BLOCK, VT_BRANCH, VT_OUTPUT };
 
