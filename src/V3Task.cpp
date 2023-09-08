@@ -639,7 +639,7 @@ private:
         // Return fancy signature for DPI function. Variable names are not included so differences
         // in only argument names will not matter (as required by the standard).
         string dpiproto;
-        if (nodep->pure()) dpiproto += "pure ";
+        if (nodep->dpiPure()) dpiproto += "pure ";
         if (nodep->dpiContext()) dpiproto += "context ";
         dpiproto += rtnvarp ? rtnvarp->dpiArgType(true, true) : "void";
         dpiproto += " " + nodep->cname() + " (";
@@ -908,7 +908,7 @@ private:
         funcp->entryPoint(false);
         funcp->isMethod(false);
         funcp->protect(false);
-        funcp->pure(nodep->pure());
+        funcp->dpiPure(nodep->dpiPure());
         // Add DPI Import to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
         makePortList(nodep, funcp);
@@ -1183,7 +1183,7 @@ private:
             cfuncp->isStatic(false);
         }
         cfuncp->isVirtual(nodep->isVirtual());
-        cfuncp->pure(nodep->pure());
+        cfuncp->dpiPure(nodep->dpiPure());
         if (nodep->name() == "new") {
             cfuncp->isConstructor(true);
             AstClass* const classp = m_statep->getClassp(nodep);

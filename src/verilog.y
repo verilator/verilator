@@ -4624,7 +4624,7 @@ dpi_import_export<nodep>:       // ==IEEE: dpi_import_export
                         { $$ = $5;
                           if (*$4 != "") $5->cname(*$4);
                           $5->dpiContext($3 == iprop_CONTEXT);
-                          $5->pure($3 == iprop_PURE);
+                          $5->dpiPure($3 == iprop_PURE);
                           $5->dpiImport(true);
                           $5->dpiTraceInit($6);
                           GRAMMARP->checkDpiVer($1, *$2); v3Global.dpi(true);
@@ -4634,7 +4634,7 @@ dpi_import_export<nodep>:       // ==IEEE: dpi_import_export
                         { $$ = $5;
                           if (*$4 != "") $5->cname(*$4);
                           $5->dpiContext($3 == iprop_CONTEXT);
-                          $5->pure($3 == iprop_PURE);
+                          $5->dpiPure($3 == iprop_PURE);
                           $5->dpiImport(true);
                           $5->dpiTask(true);
                           GRAMMARP->checkDpiVer($1, *$2); v3Global.dpi(true);
