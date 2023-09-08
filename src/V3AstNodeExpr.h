@@ -600,6 +600,7 @@ public:
         , m_name{name} {
         this->fromp(fromp);
         this->addPinsp(pinsp);
+        setPurity();
     }
     ASTGEN_MEMBERS_AstCMethodHard;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
