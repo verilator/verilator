@@ -3884,7 +3884,7 @@ private:
                  patp = VN_AS(patp->nextp(), PatMember)) {
                 const int times = visitPatMemberRep(patp);
                 for (int i = 1; i < times; i++) {
-                    AstNode* const newp = patp->cloneTree(false);
+                    AstPatMember* const newp = patp->cloneTree(false);
                     patp->addNextHere(newp);
                     // This loop will see the new elements as part of nextp()
                 }
