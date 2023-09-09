@@ -198,7 +198,10 @@ private:
         }
     }
     void visit(AstConst*) override {}  // Accelerate
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override {
+        if (!nodep->isPure()) m_ok = false;
+        iterateChildren(nodep);
+    }
 
 public:
     // CONSTRUCTORS
