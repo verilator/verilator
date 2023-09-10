@@ -218,10 +218,12 @@ private:
         beginp->stmtsp()->addNext(instAsgnp);
         beginp->stmtsp()->addNext(forkp);
 
-        forkp->initsp()->foreach([forkp](AstAssign* asgnp) {
-            asgnp->unlinkFrBack();
-            forkp->addHereThisAsNext(asgnp);
-        });
+        if (forkp->initsp()) {
+            forkp->initsp()->foreach([forkp](AstAssign* asgnp) {
+                asgnp->unlinkFrBack();
+                forkp->addHereThisAsNext(asgnp);
+            });
+        }
         UASSERT_OBJ(!forkp->initsp(), forkp, "Leftover nodes in block_item_declaration");
 
         m_modp->addStmtsp(m_instance.m_classp);
