@@ -276,11 +276,9 @@ public:
     V3GraphEdge* inBeginp() const { return m_ins.begin(); }
     bool inEmpty() const { return inBeginp() == nullptr; }
     bool inSize1() const;
-    uint32_t inHash() const;
     V3GraphEdge* outBeginp() const { return m_outs.begin(); }
     bool outEmpty() const { return outBeginp() == nullptr; }
     bool outSize1() const;
-    uint32_t outHash() const;
     V3GraphEdge* beginp(GraphWay way) const { return way.forward() ? outBeginp() : inBeginp(); }
     // METHODS
     /// Error reporting

@@ -101,7 +101,6 @@ foreach my $s (
     'Unsupported: no_inline for tasks',
     'Unsupported: static cast to ',
     'Unsupported: super',
-    '\'foreach\' loop variable expects simple variable name',
     ) { $Suppressed{$s} = 1; }
 
 if (!-r "$root/.git") {

@@ -247,7 +247,7 @@ private:
         } else if (AstNodeFTask* taskp = VN_CAST(m_procp, NodeFTask)) {
             stmtsp = taskp->stmtsp();
         } else {
-            v3fatal("m_procp is not a begin block or a procedure");
+            m_procp->v3fatalSrc("m_procp is not a begin block or a procedure");
         }
         return stmtsp;
     }
