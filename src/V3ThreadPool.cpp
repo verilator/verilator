@@ -84,11 +84,11 @@ void V3ThreadPool::workerJobLoop(int id) VL_MT_SAFE {
 bool V3ThreadPool::waitIfStopRequested() VL_MT_SAFE VL_EXCLUDES(m_stoppedJobsMutex) {
     if (!stopRequested()) return false;
     V3LockGuard stoppedJobLock(m_stoppedJobsMutex);
-    waitStopRequested();
+    waitForResumeRequest();
     return true;
 }
 
-void V3ThreadPool::waitStopRequested() VL_REQUIRES(m_stoppedJobsMutex) {
+void V3ThreadPool::waitForResumeRequest() VL_REQUIRES(m_stoppedJobsMutex) {
     ++m_stoppedJobs;
     m_stoppedJobsCV.notify_all();
     m_stoppedJobsCV.wait(m_stoppedJobsMutex, [&]() VL_REQUIRES(m_stoppedJobsMutex) {
@@ -98,8 +98,9 @@ void V3ThreadPool::waitStopRequested() VL_REQUIRES(m_stoppedJobsMutex) {
     m_stoppedJobsCV.notify_all();
 }
 
-void V3ThreadPool::waitOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex)
+void V3ThreadPool::stopOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex)
     VL_REQUIRES(m_stoppedJobsMutex) {
+    m_stopRequested = true;
     ++m_stoppedJobs;
     m_stoppedJobsCV.notify_all();
     m_cv.notify_all();
