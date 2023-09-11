@@ -2306,17 +2306,15 @@ const char* AstNodeFTask::broken() const {
 bool AstNodeFTask::getPurity() const {
     if (this->dpiImport()) return this->dpiPure();
 
-    // Check the list of statements if it contains any impure statement.
+    // Check the list of statements if it contains any impure statement
+    // or any write reference to a variable that isn't a function local.
     for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
         if (!stmtp->isPure()) return false;
-    }
-    // Check if any of the statements contains a write reference to a variable that isn't a
-    // function local.
-    if (this->stmtsp()->exists([](const AstNodeVarRef* const varrefp) {
-            if (!varrefp->varp()->isFuncLocal() && varrefp->access().isWriteOrRW()) return true;
-            return false;
+        if (stmtp->exists([](const AstNodeVarRef* const varrefp) {
+            return !varrefp->varp()->isFuncLocal() && varrefp->access().isWriteOrRW();
         }))
         return false;
+    }
     return true;
 }
 void AstNodeBlock::dump(std::ostream& str) const {
