@@ -101,7 +101,7 @@ private:
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         if (m_classp && !nodep->isParam()) nodep->varType(VVarType::MEMBER);
-        if (m_ftaskp) nodep->funcLocal(true);
+        if (m_ftaskp && !nodep->lifetime().isStatic()) nodep->funcLocal(true);
         if (nodep->isSigModPublic()) {
             nodep->sigModPublic(false);  // We're done with this attribute
             m_modp->modPublic(true);  // Avoid flattening if signals are exposed
