@@ -2304,6 +2304,8 @@ const char* AstNodeFTask::broken() const {
     return nullptr;
 }
 bool AstNodeFTask::getPurity() const {
+    if (this->dpiImport()) return this->dpiPure();
+
     // Check the list of statements if it contains any impure statement.
     for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
         if (!stmtp->isPure()) return false;
