@@ -91,7 +91,6 @@
 #include "V3Table.h"
 #include "V3Task.h"
 #include "V3ThreadPool.h"
-#include "V3ThreadSafety.h"
 #include "V3Timing.h"
 #include "V3Trace.h"
 #include "V3TraceDecl.h"
