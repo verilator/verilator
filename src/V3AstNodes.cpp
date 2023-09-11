@@ -2311,9 +2311,9 @@ bool AstNodeFTask::getPurity() const {
     for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
         if (!stmtp->isPure()) return false;
         if (stmtp->exists([](const AstNodeVarRef* const varrefp) {
-            return !varrefp->varp()->isFuncLocal() && varrefp->access().isWriteOrRW();
-        }))
-        return false;
+                return !varrefp->varp()->isFuncLocal() && varrefp->access().isWriteOrRW();
+            }))
+            return false;
     }
     return true;
 }
