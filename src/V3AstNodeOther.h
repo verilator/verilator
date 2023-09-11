@@ -88,6 +88,8 @@ private:
     bool m_virtual : 1;  // Virtual method in class
     bool m_needProcess : 1;  // Implements part of a process that allocates std::process
     VLifetime m_lifetime;  // Lifetime
+    VPurity m_purity;
+
 protected:
     AstNodeFTask(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)
         : AstNode{t, fl}
@@ -179,6 +181,11 @@ public:
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
+    bool isPure() override;
+    const char* broken() const override;
+
+private:
+    bool getPurity() const;
 };
 class AstNodeFile VL_NOT_FINAL : public AstNode {
     // Emitted Output file

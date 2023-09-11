@@ -1416,6 +1416,9 @@ private:
             AstVarRef* const outrefp = new AstVarRef{nodep->fileline(), outvscp, VAccess::READ};
             beginp = new AstExprStmt{nodep->fileline(), beginp, outrefp};
             nodep->replaceWith(beginp);
+            // AstExprStmt is currently treated as impure
+            if (AstNodeExpr* const backp = VN_CAST(nodep->backp(), NodeExpr))
+                backp->clearCachedPurity();
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
             insertBeforeStmt(nodep, beginp);

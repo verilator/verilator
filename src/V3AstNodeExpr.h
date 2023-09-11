@@ -38,19 +38,6 @@
 #define VL_NOT_FINAL  // This #define fixes broken code folding in the CLion IDE
 #endif
 
-class VPurity final {
-    // Used in some nodes to cache the result of isPure method
-public:
-    enum en : uint8_t { NOT_CACHED, PURE, IMPURE };
-    enum en m_e;
-    VPurity()
-        : m_e{NOT_CACHED} {}
-    bool isCached() const { return m_e != NOT_CACHED; }
-    bool isPure() const { return m_e == PURE; }
-    void setPurity(bool pure) { m_e = pure ? PURE : IMPURE; }
-    void clearCache() { m_e = NOT_CACHED; }
-};
-
 // === Abstract base node types (AstNode*) =====================================
 
 class AstNodeExpr VL_NOT_FINAL : public AstNode {
@@ -242,6 +229,7 @@ class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeExpr {
     string m_inlinedDots;  // Dotted hierarchy flattened out
     bool m_pli = false;  // Pli system call ($name)
     VPurity m_purity;
+
 protected:
     AstNodeFTaskRef(VNType t, FileLine* fl, AstNode* namep, AstNodeExpr* pinsp)
         : AstNodeExpr{t, fl} {
@@ -277,7 +265,8 @@ public:
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
-  private:
+
+private:
     bool getPurity() const;
 };
 class AstNodePreSel VL_NOT_FINAL : public AstNodeExpr {

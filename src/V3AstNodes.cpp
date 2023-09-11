@@ -63,7 +63,8 @@ void AstNodeFTaskRef::cloneRelink() {
 
 bool AstNodeFTaskRef::isPure() {
     if (!this->taskp()) {
-        // The task isn't linked yet, so it's assumed that it is impure, but the value shouldn't be cached.
+        // The task isn't linked yet, so it's assumed that it is impure, but the value shouldn't be
+        // cached.
         return false;
     } else {
         if (!m_purity.isCached()) m_purity.setPurity(this->getPurity());
@@ -81,11 +82,7 @@ bool AstNodeFTaskRef::getPurity() const {
         if (!pinp->isPure()) return false;
     }
 
-    if (taskp->dpiImport()) {
-        return taskp->dpiPure();
-    } else {
-        return taskp->isPure();
-    }
+    return taskp->isPure();
 }
 bool AstNodeFTaskRef::isGateOptimizable() const { return m_taskp && m_taskp->isGateOptimizable(); }
 
@@ -2297,6 +2294,28 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (recursive()) str << " [RECURSIVE]";
     if (taskPublic()) str << " [PUBLIC]";
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";
+}
+bool AstNodeFTask::isPure() {
+    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
+    return m_purity.isPure();
+}
+const char* AstNodeFTask::broken() const {
+    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    return nullptr;
+}
+bool AstNodeFTask::getPurity() const {
+    // Check the list of statements if it contains any impure statement.
+    for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        if (!stmtp->isPure()) return false;
+    }
+    // Check if any of the statements contains a write reference to a variable that isn't a
+    // function local.
+    if (this->stmtsp()->exists([](const AstNodeVarRef* const varrefp) {
+            if (!varrefp->varp()->isFuncLocal() && varrefp->access().isWriteOrRW()) return true;
+            return false;
+        }))
+        return false;
+    return true;
 }
 void AstNodeBlock::dump(std::ostream& str) const {
     this->AstNode::dump(str);
