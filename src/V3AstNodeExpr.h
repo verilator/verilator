@@ -585,15 +585,6 @@ class AstCMethodHard final : public AstNodeExpr {
     string m_name;  // Name of method
     bool m_pure = false;  // Pure optimizable
 public:
-    AstCMethodHard(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, const string& name,
-                   AstNodeExpr* pinsp = nullptr)
-        : ASTGEN_SUPER_CMethodHard(fl)
-        , m_name{name} {
-        // TODO: this constructor is exactly the same as the other, bar the ignored tag argument
-        this->fromp(fromp);
-        this->addPinsp(pinsp);
-        dtypep(nullptr);  // V3Width will resolve
-    }
     AstCMethodHard(FileLine* fl, AstNodeExpr* fromp, const string& name,
                    AstNodeExpr* pinsp = nullptr)
         : ASTGEN_SUPER_CMethodHard(fl)
