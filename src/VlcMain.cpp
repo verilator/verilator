@@ -24,7 +24,9 @@
 #include "verilatedos.h"
 
 // Cheat for speed and compile .cpp files into one object TODO: Reconsider
+#ifndef V3ERROR_NO_GLOBAL_
 #define V3ERROR_NO_GLOBAL_
+#endif
 #include "V3Error.h"
 static int debug() { return V3Error::debugDefault(); }
 #include "V3Error.cpp"
