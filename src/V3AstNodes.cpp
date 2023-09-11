@@ -72,18 +72,20 @@ bool AstNodeFTaskRef::isPure() {
 }
 
 bool AstNodeFTaskRef::getPurity() const {
+    AstNodeFTask* const taskp = this->taskp();
+    // Unlinked yet, so treat as impure
+    if (!taskp) return false;
+
+    // First compute the purity of arguments
     for (AstNode* pinp = this->pinsp(); pinp; pinp = pinp->nextp()) {
         if (!pinp->isPure()) return false;
     }
-    AstNodeFTask* const taskp = this->taskp();
-    if (!taskp) {
-        return false;
-    } else if (taskp->dpiImport()) {
+
+    if (taskp->dpiImport()) {
         return taskp->dpiPure();
     } else {
         return taskp->isPure();
     }
-
 }
 bool AstNodeFTaskRef::isGateOptimizable() const { return m_taskp && m_taskp->isGateOptimizable(); }
 
