@@ -79,7 +79,7 @@ bool AstNodeFTaskRef::getPurity() const {
     if (!taskp) {
         return false;
     } else if (taskp->dpiImport()) {
-        return taskp->pure();
+        return taskp->dpiPure();
     } else {
         return taskp->isPure();
     }
@@ -100,12 +100,6 @@ void AstNodeVarRef::cloneRelink() {
     if (m_classOrPackagep && m_classOrPackagep->clonep()) {
         m_classOrPackagep = m_classOrPackagep->clonep();
     }
-}
-
-string AstNodeVarRef::selfPointerProtect(bool useSelfForThis) const {
-    const string& sp
-        = useSelfForThis ? VString::replaceWord(selfPointer(), "this", "vlSelf") : selfPointer();
-    return VIdProtect::protectWordsIf(sp, protect());
 }
 
 void AstAddrOfCFunc::cloneRelink() {
@@ -145,14 +139,7 @@ const char* AstNodeCCall::broken() const {
     BROKEN_RTN(m_funcp && !m_funcp->brokeExists());
     return nullptr;
 }
-bool AstNodeCCall::isPure() { return funcp()->pure(); }
-
-string AstCCall::selfPointerProtect(bool useSelfForThis) const {
-    const string& sp
-        = useSelfForThis ? VString::replaceWord(selfPointer(), "this", "vlSelf") : selfPointer();
-    return VIdProtect::protectWordsIf(sp, protect());
-}
-
+bool AstNodeCCall::isPure() { return funcp()->dpiPure(); }
 bool AstNodeUniop::isPure() {
     if (!m_purity.isCached()) m_purity.setPurity(lhsp()->isPure());
     return m_purity.isPure();
@@ -2378,7 +2365,7 @@ void AstCFile::dump(std::ostream& str) const {
 void AstCFunc::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (slow()) str << " [SLOW]";
-    if (pure()) str << " [PURE]";
+    if (dpiPure()) str << " [DPIPURE]";
     if (isStatic()) str << " [STATIC]";
     if (dpiExportDispatcher()) str << " [DPIED]";
     if (dpiExportImpl()) str << " [DPIEI]";
@@ -2405,56 +2392,6 @@ void AstCAwait::dump(std::ostream& str) const {
         sensesp()->dump(str);
     }
 }
-bool AstCMethodHard::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
-    return m_purity.isPure();
-}
-const char* AstCMethodHard::broken() const {
-    static const char* impureMethods[]
-        = {"evaluate", "first", "last", "next", "pop_back", "pop_front", "prev", "set"};
-    if (m_purity.isCached()) {
-        BROKEN_RTN(m_purity.isPure() != getPurity());
-        if (!m_purity.isPure() && !VN_IS(this->dtypep(), VoidDType)) {
-            // Check if it's on the list of impure methods. Just to be sure that its pureness was
-            // considered. Void methods should always be impure.
-            if (std::find(std::begin(impureMethods), std::end(impureMethods), this->name())
-                == std::end(impureMethods)) {
-                return "Non-void method isn't neither on pure nor on impure list";
-            }
-        }
-    }
-    return nullptr;
-}
-bool AstCMethodHard::getPurity() const {
-    static const char* pureMethods[] = {"any",
-                                        "at",
-                                        "atBack",
-                                        "awaitingCurrentTime",
-                                        "exists",
-                                        "find",
-                                        "find_first",
-                                        "find_first_index",
-                                        "find_index",
-                                        "find_last",
-                                        "find_last_index",
-                                        "isFired",
-                                        "isTriggered",
-                                        "max",
-                                        "min",
-                                        "neq",
-                                        "r_and",
-                                        "r_or",
-                                        "r_product",
-                                        "r_sum",
-                                        "r_xor",
-                                        "size",
-                                        "slice",
-                                        "unique",
-                                        "unique_index",
-                                        "word"};
-    return std::find(std::begin(pureMethods), std::end(pureMethods), this->name())
-           != std::end(pureMethods);
-}
 int AstCMethodHard::instrCount() const {
     if (AstBasicDType* const basicp = fromp()->dtypep()->basicp()) {
         // TODO: add a more structured description of library methods, rather than using string
@@ -2466,6 +2403,74 @@ int AstCMethodHard::instrCount() const {
         }
     }
     return 0;
+}
+void AstCMethodHard::setPurity() {
+    static const std::map<std::string, bool> isPureMethod{{"andNot", false},
+                                                          {"any", true},
+                                                          {"assign", false},
+                                                          {"at", true},
+                                                          {"atBack", true},
+                                                          {"awaitingCurrentTime", true},
+                                                          {"clear", false},
+                                                          {"clearFired", false},
+                                                          {"commit", false},
+                                                          {"delay", false},
+                                                          {"done", false},
+                                                          {"erase", false},
+                                                          {"evaluate", false},
+                                                          {"evaluation", false},
+                                                          {"exists", true},
+                                                          {"find", true},
+                                                          {"find_first", true},
+                                                          {"find_first_index", true},
+                                                          {"find_index", true},
+                                                          {"find_last", true},
+                                                          {"find_last_index", true},
+                                                          {"fire", false},
+                                                          {"first", false},
+                                                          {"init", false},
+                                                          {"insert", false},
+                                                          {"isFired", true},
+                                                          {"isTriggered", true},
+                                                          {"join", false},
+                                                          {"last", false},
+                                                          {"max", true},
+                                                          {"min", true},
+                                                          {"neq", true},
+                                                          {"next", false},
+                                                          {"pop", false},
+                                                          {"pop_back", false},
+                                                          {"pop_front", false},
+                                                          {"prev", false},
+                                                          {"push", false},
+                                                          {"push_back", false},
+                                                          {"push_front", false},
+                                                          {"r_and", true},
+                                                          {"r_or", true},
+                                                          {"r_product", true},
+                                                          {"r_sum", true},
+                                                          {"r_xor", true},
+                                                          {"renew", false},
+                                                          {"renew_copy", false},
+                                                          {"resume", false},
+                                                          {"reverse", false},
+                                                          {"rsort", false},
+                                                          {"set", false},
+                                                          {"shuffle", false},
+                                                          {"size", true},
+                                                          {"slice", true},
+                                                          {"sliceBackBack", true},
+                                                          {"sliceFrontBack", true},
+                                                          {"sort", false},
+                                                          {"thisOr", false},
+                                                          {"trigger", false},
+                                                          {"unique", true},
+                                                          {"unique_index", true},
+                                                          {"word", true}};
+
+    auto isPureIt = isPureMethod.find(name());
+    UASSERT_OBJ(isPureIt != isPureMethod.end(), this, "Unknown purity of method " + name());
+    m_pure = isPureIt->second;
 }
 const char* AstCFunc::broken() const {
     BROKEN_RTN((m_scopep && !m_scopep->brokeExists()));

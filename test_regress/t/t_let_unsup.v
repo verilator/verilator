@@ -6,13 +6,14 @@
 
 module t(/*AUTOARG*/);
 
-   let NO_ARG = 10;
-   let ONE_ARG(a) = 10;
+   let F(untyped a) = 30 + a;
+   let G(int a) = 30 + a;
+   let H(signed a) = 30 + a;
 
    initial begin
-      if (NO_ARG(10) != 10) $stop;  // BAD
-      if (ONE_ARG() != 10) $stop;  // BAD
-      if (ONE_ARG(10, 20) != 10) $stop;  // BAD
+      if (F(1) != (30 + 1)) $stop;
+      if (G(1) != (30 + 1)) $stop;
+      if (H(1) != (30 + 1)) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

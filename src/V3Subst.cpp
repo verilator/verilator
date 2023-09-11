@@ -123,7 +123,7 @@ public:
         if (!m_varp->isWide() && !m_whole.m_complex && m_whole.m_assignp && !m_wordAssign) {
             const AstNodeAssign* const assp = m_whole.m_assignp;
             UASSERT_OBJ(assp, errp, "Reading whole that was never assigned");
-            return (assp->rhsp());
+            return assp->rhsp();
         } else {
             return nullptr;
         }
@@ -133,7 +133,7 @@ public:
         if (!m_whole.m_complex && !m_whole.m_assignp && !m_words[word].m_complex) {
             const AstNodeAssign* const assp = getWordAssignp(word);
             UASSERT_OBJ(assp, errp, "Reading a word that was never assigned, or bad word #");
-            return (assp->rhsp());
+            return assp->rhsp();
         } else {
             return nullptr;
         }
@@ -198,7 +198,10 @@ private:
         }
     }
     void visit(AstConst*) override {}  // Accelerate
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override {
+        if (!nodep->isPure()) m_ok = false;
+        iterateChildren(nodep);
+    }
 
 public:
     // CONSTRUCTORS

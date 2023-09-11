@@ -236,6 +236,7 @@ private:
     bool m_debugEmitV = false;      // main switch: --debug-emitv
     bool m_debugExitParse = false;  // main switch: --debug-exit-parse
     bool m_debugExitUvm = false;    // main switch: --debug-exit-uvm
+    bool m_debugExitUvm23 = false;  // main switch: --debug-exit-uvm23
     bool m_debugLeak = true;        // main switch: --debug-leak
     bool m_debugNondeterminism = false;  // main switch: --debug-nondeterminism
     bool m_debugPartition = false;  // main switch: --debug-partition
@@ -461,6 +462,7 @@ public:
     bool debugEmitV() const VL_MT_SAFE { return m_debugEmitV; }
     bool debugExitParse() const { return m_debugExitParse; }
     bool debugExitUvm() const { return m_debugExitUvm; }
+    bool debugExitUvm23() const { return m_debugExitUvm23; }
     bool debugLeak() const { return m_debugLeak; }
     bool debugNondeterminism() const { return m_debugNondeterminism; }
     bool debugPartition() const { return m_debugPartition; }

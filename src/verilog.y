@@ -288,6 +288,17 @@ public:
     AstNode* cloneScopedSigAttr() const {
         return m_scopedSigAttr ? m_scopedSigAttr->cloneTree(true) : nullptr;
     }
+
+    static void addForkStmtsp(AstFork* forkp, AstNode* stmtsp) {
+        forkp->addStmtsp(stmtsp);
+        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+            AstVar* const varp = VN_CAST(stmtp, Var);
+            if (!varp) break;
+            varp->unlinkFrBack();
+            varp->funcLocal(true);
+            forkp->addInitsp(varp);
+        }
+    }
 };
 
 const VBasicDTypeKwd LOGIC = VBasicDTypeKwd::LOGIC;  // Shorthand "LOGIC"
@@ -3387,31 +3398,31 @@ seq_blockPreId<nodep>:          // IEEE: seq_block, but called with leading ID
 
 par_block<nodep>:               // ==IEEE: par_block
                 par_blockFront blockDeclStmtListE yJOIN endLabelE
-                        { $$ = $1; $1->addStmtsp($2);
-                          $1->joinType(VJoinType::JOIN);
+                        { $$ = $1; $1->joinType(VJoinType::JOIN);
+                          V3ParseGrammar::addForkStmtsp($1, $2);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         |       par_blockFront blockDeclStmtListE yJOIN_ANY endLabelE
-                        { $$ = $1; $1->addStmtsp($2);
-                          $1->joinType(VJoinType::JOIN_ANY);
+                        { $$ = $1; $1->joinType(VJoinType::JOIN_ANY);
+                          V3ParseGrammar::addForkStmtsp($1, $2);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         |       par_blockFront blockDeclStmtListE yJOIN_NONE endLabelE
-                        { $$ = $1; $1->addStmtsp($2);
-                          $1->joinType(VJoinType::JOIN_NONE);
+                        { $$ = $1; $1->joinType(VJoinType::JOIN_NONE);
+                          V3ParseGrammar::addForkStmtsp($1, $2);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         ;
 
 par_blockPreId<nodep>:          // ==IEEE: par_block but called with leading ID
                 par_blockFrontPreId blockDeclStmtListE yJOIN endLabelE
-                        { $$ = $1; $1->addStmtsp($2);
-                          $1->joinType(VJoinType::JOIN);
+                        { $$ = $1; $1->joinType(VJoinType::JOIN);
+                          V3ParseGrammar::addForkStmtsp($1, $2);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         |       par_blockFrontPreId blockDeclStmtListE yJOIN_ANY endLabelE
-                        { $$ = $1; $1->addStmtsp($2);
-                          $1->joinType(VJoinType::JOIN_ANY);
+                        { $$ = $1; $1->joinType(VJoinType::JOIN_ANY);
+                          V3ParseGrammar::addForkStmtsp($1, $2);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         |       par_blockFrontPreId blockDeclStmtListE yJOIN_NONE endLabelE
-                        { $$ = $1; $1->addStmtsp($2);
-                          $1->joinType(VJoinType::JOIN_NONE);
+                        { $$ = $1; $1->joinType(VJoinType::JOIN_NONE);
+                          V3ParseGrammar::addForkStmtsp($1, $2);
                           SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
         ;
 
@@ -4334,13 +4345,15 @@ elaboration_system_task_guts<nodep>:    // IEEE: part of elaboration_system_task
         |       yD_FATAL '(' expr ',' exprListE ')'     { $$ = new AstElabDisplay{$1, VDisplayType::DT_FATAL, $5}; DEL($3); }
         ;
 
-//UNSUPproperty_actual_arg<nodeExprp>:  // ==IEEE: property_actual_arg
-//UNSUP //                      // IEEE: property_expr
-//UNSUP //                      // IEEE: sequence_actual_arg
-//UNSUP         pev_expr                                { $$ = $1; }
-//UNSUP //                      // IEEE: sequence_expr
-//UNSUP //                      // property_expr already includes sequence_expr
-//UNSUP ;
+property_actual_arg<nodeExprp>:  // ==IEEE: property_actual_arg
+        //                      // IEEE: property_expr
+        //                      // IEEE: sequence_actual_arg
+        //UNSUP pev_expr                                { $$ = $1; }
+        //UNSUP remove below:
+                pexpr                                   { $$ = $1; }
+        //                      // IEEE: sequence_expr
+        //                      // property_expr already includes sequence_expr
+        ;
 
 exprOrDataType<nodep>:          // expr | data_type: combined to prevent conflicts
                 expr                                    { $$ = $1; }
@@ -4624,7 +4637,7 @@ dpi_import_export<nodep>:       // ==IEEE: dpi_import_export
                         { $$ = $5;
                           if (*$4 != "") $5->cname(*$4);
                           $5->dpiContext($3 == iprop_CONTEXT);
-                          $5->pure($3 == iprop_PURE);
+                          $5->dpiPure($3 == iprop_PURE);
                           $5->dpiImport(true);
                           $5->dpiTraceInit($6);
                           GRAMMARP->checkDpiVer($1, *$2); v3Global.dpi(true);
@@ -4634,7 +4647,7 @@ dpi_import_export<nodep>:       // ==IEEE: dpi_import_export
                         { $$ = $5;
                           if (*$4 != "") $5->cname(*$4);
                           $5->dpiContext($3 == iprop_CONTEXT);
-                          $5->pure($3 == iprop_PURE);
+                          $5->dpiPure($3 == iprop_PURE);
                           $5->dpiImport(true);
                           $5->dpiTask(true);
                           GRAMMARP->checkDpiVer($1, *$2); v3Global.dpi(true);
@@ -4902,7 +4915,7 @@ fexpr<nodeExprp>:                   // For use as first part of statement (disam
                 BISONPRE_COPY(expr,{s/~l~/f/g; s/~r~/f/g; s/~f__IGNORE~/__IGNORE/g;})   // {copied}
         ;
 
-//UNSUPev_expr<nodeExprp>:  // IEEE: event_expression
+//UNSUPpev_expr<nodeExprp>:  // IEEE: event_expression
 //UNSUP //                      // for yOR/, see event_expression
 //UNSUP //
 //UNSUP //                      // IEEE: [ edge_identifier ] expression [ yIFF expression ]
@@ -5176,29 +5189,31 @@ stream_expressionOrDataType<nodep>:     // IEEE: from streaming_concatenation
 //************************************************
 // Let
 
-letId<nodeFTaskp>:      // IEEE: pert of let_declaration
+letId<letp>:  // IEEE: pert of let_declaration
                 idAny/*let_identifieer*/
                         { $<fl>$ = $<fl>1;
                           $<scp>$ = nullptr;
-                          // No unsupported message as caller has one, for now just use a func
-                          $$ = new AstFunc{$<fl>$, *$1, nullptr, nullptr};
+                          $$ = new AstLet{$<fl>$, *$1};
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>$); }
         ;
 
-let_declaration<nodep>:  // IEEE: let_declaration
+let_declaration<letp>:  // IEEE: let_declaration
                 yLET letId '=' expr ';'
-                        { $$ = nullptr;
-                          SYMP->popScope($2);
-                          BBUNSUP($<fl>1, "Unsupported: let"); }
+                        { $$ = $2;
+                          $$->addStmtsp(new AstStmtExpr{$1, $4});
+                          SYMP->popScope($2); }
         |       yLET letId '(' let_port_listE ')' '=' expr ';'
-                        { $$ = nullptr;
-                          SYMP->popScope($2);
-                          BBUNSUP($<fl>1, "Unsupported: let"); }
+                        { $$ = $2;
+                          $$->addStmtsp(new AstStmtExpr{$1, $7});
+                          $$->addStmtsp($4);
+                          SYMP->popScope($2); }
         ;
 
 let_port_listE<nodep>:   // IEEE: [ let_port_list ]
                 /*empty*/                               { $$ = nullptr; }
-        |       let_port_list                           { $$ = $1; }
+        |       /*emptyStart*/
+        /*mid*/         { VARRESET_LIST(UNKNOWN); VARIO(INOUT); }
+        /*cont*/  let_port_list                         { $$ = $2; VARRESET_NONLIST(UNKNOWN); }
         ;
 
 let_port_list<nodep>:   // IEEE: let_port_list
@@ -5206,14 +5221,31 @@ let_port_list<nodep>:   // IEEE: let_port_list
         |       let_port_list ',' let_port_item         { $$ = addNextNull($1, $3); }
         ;
 
-let_port_item<nodep>:   // IEEE: let_port_Item
+let_port_item<varp>:  // IEEE: let_port_Item
         //                      // IEEE: Expanded let_formal_type
                 yUNTYPED idAny/*formal_port_identifier*/ variable_dimensionListE exprEqE
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: let untyped ports"); }
+                        { $$ = new AstVar{$<fl>2, VVarType::PORT, *$2, VFlagChildDType{},
+                                          new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
+                          $$->direction(VDirection::INOUT);
+                          $$->lifetime(VLifetime::AUTOMATIC);
+                          if ($4) $$->valuep($4);
+                          PINNUMINC(); }
         |       data_type id/*formal_port_identifier*/ variable_dimensionListE exprEqE
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: let ports"); }
+                        { BBUNSUP($<fl>1, "Unsupported: let typed ports");
+                          $$ = new AstVar{$<fl>2, VVarType::PORT, *$2, VFlagChildDType{},
+                                          new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
+                          $$->direction(VDirection::INOUT);
+                          $$->lifetime(VLifetime::AUTOMATIC);
+                          if ($4) $$->valuep($4);
+                          PINNUMINC(); }
         |       implicit_typeE id/*formal_port_identifier*/ variable_dimensionListE exprEqE
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: let ports"); }
+                        { if ($1) BBUNSUP($<fl>1, "Unsupported: let typed ports");
+                          $$ = new AstVar{$<fl>2, VVarType::PORT, *$2, VFlagChildDType{},
+                                          new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
+                          $$->direction(VDirection::INOUT);
+                          $$->lifetime(VLifetime::AUTOMATIC);
+                          if ($4) $$->valuep($4);
+                          PINNUMINC(); }
         ;
 
 //************************************************
@@ -5919,8 +5951,9 @@ property_port_itemFront: // IEEE: part of property_port_item/sequence_port_item
 
 property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequence_port_item/checker_port_direction
                 id variable_dimensionListE         { $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
-        //UNSUP|id variable_dimensionListE '=' property_actual_arg
-        //UNSUP         { VARDONE($<fl>1, $1, $2, $4); PINNUMINC(); }
+        |       id variable_dimensionListE '=' property_actual_arg
+                        { $$ = VARDONEA($<fl>1, *$1, $2, $4);
+                          BBUNSUP($3, "Unsupported: property variable default value"); }
         ;
 
 property_port_itemDirE:

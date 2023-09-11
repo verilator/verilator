@@ -25,11 +25,11 @@ class uvm_reg;
 endclass
 
 class T;
-    function automatic string print_str(input string a_string);
+    function automatic string return_str(input string a_string);
        return a_string;
     endfunction
 
-    static function automatic string static_print_str(input string a_string);
+    static function automatic string static_return_str(input string a_string);
         return a_string;
     endfunction
 endclass
@@ -39,9 +39,9 @@ initial begin
     T t_c = new;
     uvm_reg u_r = new;
     if (u_r.get_string() != "user backdoor") $stop;
-    if (t_c.print_str("A") != "A") $stop;
-    if (t_c.static_print_str("B") != "B") $stop;
-    if (T::static_print_str("C") != "C") $stop;
+    if (t_c.return_str("A") != "A") $stop;
+    if (t_c.static_return_str("B") != "B") $stop;
+    if (T::static_return_str("C") != "C") $stop;
     $write("*-* All Finished *-*\n");
     $finish;
 end

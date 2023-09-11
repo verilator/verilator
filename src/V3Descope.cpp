@@ -46,6 +46,10 @@ private:
 
     // TYPES
     using FuncMmap = std::multimap<std::string, AstCFunc*>;
+    struct ScopeSelfPtr final {
+        VSelfPointerText thisPtr = VSelfPointerText{VSelfPointerText::Empty()};
+        VSelfPointerText vlSymsPtr = VSelfPointerText{VSelfPointerText::Empty()};
+    };
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -53,6 +57,7 @@ private:
     const AstCFunc* m_funcp = nullptr;  // Current function
     bool m_modSingleton = false;  // m_modp is only instantiated once
     FuncMmap m_modFuncs;  // Name of public functions added
+    std::map<const AstScope*, ScopeSelfPtr> m_scopeToSelf;  // Scope to self pointers
 
     // METHODS
 
@@ -68,12 +73,32 @@ private:
         return (instances == 1);
     }
 
+    // Construct a 'this' self pointer for the given scope
+    VSelfPointerText scopeThis(const AstScope* scopep) {
+        auto& ret = m_scopeToSelf[scopep];
+        if (ret.thisPtr.isEmpty()) {
+            string name = scopep->name();
+            string::size_type pos;
+            if ((pos = name.rfind('.')) != string::npos) name.erase(0, pos + 1);
+            ret.thisPtr = VSelfPointerText{VSelfPointerText::This(), name};
+        }
+        return ret.thisPtr;
+    }
+    // Construct a 'vlSyms' self pointer for the given scope
+    VSelfPointerText scopeVlSyms(const AstScope* scopep) {
+        auto& ret = m_scopeToSelf[scopep];
+        if (ret.vlSymsPtr.isEmpty()) {
+            ret.vlSymsPtr = VSelfPointerText{VSelfPointerText::VlSyms(), scopep->nameDotless()};
+        }
+        return ret.vlSymsPtr;
+    }
+
     // Construct the best self pointer to reference an object in 'scopep'  from a CFunc in
     // 'm_scopep'. Result may be relative ("this->[...]") or absolute ("vlSyms->[...]").
     //
     // Using relative references allows V3Combine'ing code across multiple instances of the same
     // module.
-    string descopedSelfPointer(const AstScope* scopep) {
+    VSelfPointerText descopedSelfPointer(const AstScope* scopep) {
         UASSERT(scopep, "Var/Func not scoped");
         // Static functions can't use relative references via 'this->'
         const bool relativeRefOk = !m_funcp->isStatic();
@@ -85,23 +110,20 @@ private:
         if (VN_IS(scopep->modp(), Class)) {
             // Direct reference to class members are from within the class itself, references from
             // outside the class must go via AstMemberSel
-            return "this";
+            return VSelfPointerText{VSelfPointerText::This()};
         } else if (relativeRefOk && scopep == m_scopep) {
-            return "this";
+            return VSelfPointerText{VSelfPointerText::This()};
         } else if (relativeRefOk && !m_modSingleton && scopep->aboveScopep() == m_scopep
                    && VN_IS(scopep->modp(), Module)) {
             // Reference to scope of instance directly under this module, can just "this->cell",
             // which can potentially be V3Combined, but note this requires one extra pointer
             // dereference which is slower, so we only use it if the source scope is not a
             // singleton.
-            string name = scopep->name();
-            string::size_type pos;
-            if ((pos = name.rfind('.')) != string::npos) name.erase(0, pos + 1);
-            return "this->" + name;
+            return scopeThis(scopep);
         } else {
             // Reference to something elsewhere, or relative references are disabled. Use global
             // variable
-            return "(&" + scopep->nameVlSym() + ")";
+            return scopeVlSyms(scopep);
         }
     }
 
@@ -163,11 +185,10 @@ private:
                     if (moreOfSame) {
                         AstIf* const ifp = new AstIf{
                             funcp->fileline(),
-                            new AstEq{
-                                funcp->fileline(), new AstCExpr{funcp->fileline(), "this", 64},
-                                new AstCExpr{funcp->fileline(),
-                                             string{"&("} + funcp->scopep()->nameVlSym() + ")",
-                                             64}},
+                            new AstEq{funcp->fileline(),
+                                      new AstCExpr{funcp->fileline(), "this", 64},
+                                      new AstCExpr{funcp->fileline(),
+                                                   scopeVlSyms(funcp->scopep()).asString(), 64}},
                             returnp};
                         newfuncp->addStmtsp(ifp);
                     } else {
@@ -225,15 +246,15 @@ private:
         const AstScope* const scopep = nodep->varScopep()->scopep();
         if (varp->isFuncLocal()) {
             // Reference to function locals need no self pointer
-            nodep->selfPointer("");
+            nodep->selfPointer(VSelfPointerText{VSelfPointerText::Empty()});
         } else if (scopep->modp() == v3Global.rootp()->constPoolp()->modp()) {
             // Reference to constant pool value need no self pointer
-            nodep->selfPointer("");
+            nodep->selfPointer(VSelfPointerText{VSelfPointerText::Empty()});
         } else {
             nodep->selfPointer(descopedSelfPointer(scopep));
         }
         nodep->varScopep(nullptr);
-        UINFO(9, "  refout " << nodep << " selfPtr=" << nodep->selfPointer() << endl);
+        UINFO(9, "  refout " << nodep << " selfPtr=" << nodep->selfPointer().asString() << endl);
     }
     void visit(AstCCall* nodep) override {
         // UINFO(9, "       " << nodep << endl);

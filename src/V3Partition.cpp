@@ -1840,8 +1840,8 @@ private:
         if (!m_tracingCall) return;
         m_tracingCall = false;
         if (nodep->dpiImportWrapper()) {
-            if (nodep->pure() ? !v3Global.opt.threadsDpiPure()
-                              : !v3Global.opt.threadsDpiUnpure()) {
+            if (nodep->dpiPure() ? !v3Global.opt.threadsDpiPure()
+                                 : !v3Global.opt.threadsDpiUnpure()) {
                 m_hasDpiHazard = true;
             }
         }

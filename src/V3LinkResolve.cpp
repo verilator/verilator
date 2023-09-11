@@ -32,6 +32,7 @@
 #include "V3Ast.h"
 #include "V3Global.h"
 #include "V3String.h"
+#include "V3Task.h"
 
 #include <algorithm>
 #include <map>
@@ -45,7 +46,8 @@ class LinkResolveVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  Entire netlist:
-    //   AstCaseItem::user2()   // bool           Moved default caseitems
+    //   AstCaseItem::user2()   // bool     Moved default caseitems
+    //   AstNodeFTaskRef::user2()  // bool  Processing - to check for recursion
     const VNUser2InUse m_inuser2;
 
     // STATE
@@ -89,7 +91,9 @@ private:
         }
     }
     void visit(AstNodeCoverOrAssert* nodep) override {
-        if (m_assertp) nodep->v3error("Assert not allowed under another assert");
+        if (m_assertp) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assert not allowed under another assert");
+        }
         m_assertp = nodep;
         iterateChildren(nodep);
         m_assertp = nullptr;
@@ -111,6 +115,7 @@ private:
     }
 
     void visit(AstNodeFTask* nodep) override {
+        // Note AstLet is handled specifically elsewhere
         // NodeTask: Remember its name for later resolution
         if (m_underGenerate) nodep->underGenerate(true);
         // Remember the existing symbol table scope
@@ -138,6 +143,47 @@ private:
     }
     void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
+        if (AstLet* letp = VN_CAST(nodep->taskp(), Let)) {
+            UINFO(7, "letSubstitute() " << nodep << " <- " << letp << endl);
+            if (letp->user2()) {
+                nodep->v3error("Recursive let substitution " << letp->prettyNameQ());
+                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+            letp->user2(true);
+            // letp->dumpTree("-let-let ");
+            // nodep->dumpTree("-let-ref ");
+            AstStmtExpr* const letStmtp = VN_AS(letp->stmtsp(), StmtExpr);
+            AstNodeExpr* const newp = letStmtp->exprp()->cloneTree(false);
+            const V3TaskConnects tconnects = V3Task::taskConnects(nodep, letp->stmtsp());
+            std::map<const AstVar*, AstNodeExpr*> portToExprs;
+            for (const auto& tconnect : tconnects) {
+                const AstVar* const portp = tconnect.first;
+                const AstArg* const argp = tconnect.second;
+                AstNodeExpr* const pinp = argp->exprp();
+                if (!pinp) continue;  // Argument error we'll find later
+                portToExprs.emplace(portp, pinp);
+            }
+            // Replace VarRefs of arguments with the argument values
+            newp->foreach([&](AstVarRef* refp) {  //
+                const auto it = portToExprs.find(refp->varp());
+                if (it != portToExprs.end()) {
+                    AstNodeExpr* const pinp = it->second;
+                    UINFO(9, "let pin subst " << refp << " <- " << pinp << endl);
+                    // Side effects are copied into pins, to match other simulators
+                    refp->replaceWith(pinp->cloneTree(false));
+                    VL_DO_DANGLING(pushDeletep(refp), refp);
+                }
+            });
+            // newp->dumpTree("-let-new ");
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            // Iterate to expand further now, so we can look for recursions
+            visit(newp);
+            letp->user2(false);
+            return;
+        }
         if (nodep->taskp() && (nodep->taskp()->dpiContext() || nodep->taskp()->dpiExport())) {
             nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
         }
@@ -166,6 +212,12 @@ private:
             nodep->unlinkFrBack();
             nextp->addNext(nodep);
         }
+    }
+
+    void visit(AstLet* nodep) override {
+        // Lets have been (or about to be) substituted, we can remove
+        nodep->unlinkFrBack();
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     void visit(AstPragma* nodep) override {

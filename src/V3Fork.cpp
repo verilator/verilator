@@ -45,6 +45,7 @@
 
 #include "V3Ast.h"
 #include "V3AstNodeExpr.h"
+#include "V3Error.h"
 #include "V3Global.h"
 #include "V3MemberMap.h"
 
@@ -131,6 +132,11 @@ public:
         UASSERT_OBJ(m_instance.initialized(), m_procp, "No dynamic scope prototype");
         UASSERT_OBJ(!linked(), m_instance.m_handlep, "Handle already linked");
 
+        if (VN_IS(m_procp, Fork)) {
+            linkNodesOfFork(memberMap);
+            return;
+        }
+
         AstNode* stmtp = getProcStmts();
         UASSERT(stmtp, "trying to instantiate dynamic scope while not under proc");
         VNRelinker stmtpHandle;
@@ -183,6 +189,46 @@ public:
     bool linked() const { return m_instance.initialized() && m_instance.m_handlep->backp(); }
 
 private:
+    AstAssign* instantiateDynScope(VMemberMap& memberMap) {
+        AstNew* const newp = new AstNew{m_procp->fileline(), nullptr};
+        newp->taskp(VN_AS(memberMap.findMember(m_instance.m_classp, "new"), NodeFTask));
+        newp->dtypep(m_instance.m_refDTypep);
+        newp->classOrPackagep(m_instance.m_classp);
+
+        return new AstAssign{
+            m_procp->fileline(),
+            new AstVarRef{m_procp->fileline(), m_instance.m_handlep, VAccess::WRITE}, newp};
+    }
+
+    void linkNodesOfFork(VMemberMap& memberMap) {
+        // Special case
+
+        AstFork* const forkp = VN_AS(m_procp, Fork);
+        VNRelinker forkHandle;
+        forkp->unlinkFrBack(&forkHandle);
+
+        AstBegin* const beginp = new AstBegin{
+            forkp->fileline(),
+            "_Vwrapped_" + (forkp->name().empty() ? cvtToHex(forkp) : forkp->name()),
+            m_instance.m_handlep, false, true};
+        forkHandle.relink(beginp);
+
+        AstNode* const instAsgnp = instantiateDynScope(memberMap);
+
+        beginp->stmtsp()->addNext(instAsgnp);
+        beginp->stmtsp()->addNext(forkp);
+
+        if (forkp->initsp()) {
+            forkp->initsp()->foreach([forkp](AstAssign* asgnp) {
+                asgnp->unlinkFrBack();
+                forkp->addHereThisAsNext(asgnp);
+            });
+        }
+        UASSERT_OBJ(!forkp->initsp(), forkp, "Leftover nodes in block_item_declaration");
+
+        m_modp->addStmtsp(m_instance.m_classp);
+    }
+
     static string generateDynScopeClassName(const AstNode* fromp) {
         string n = "__VDynScope__" + (!fromp->name().empty() ? (fromp->name() + "__") : "ANON__")
                    + cvtToHex(fromp);
@@ -201,7 +247,7 @@ private:
         } else if (AstNodeFTask* taskp = VN_CAST(m_procp, NodeFTask)) {
             stmtsp = taskp->stmtsp();
         } else {
-            v3fatal("m_procp is not a begin block or a procedure");
+            m_procp->v3fatalSrc("m_procp is not a begin block or a procedure");
         }
         return stmtsp;
     }
@@ -245,11 +291,11 @@ private:
         return frameIt->second;
     }
 
-    ForkDynScopeFrame* pushDynScopeFrame() {
-        ForkDynScopeFrame* const frame = new ForkDynScopeFrame{m_modp, m_procp};
-        auto r = m_frames.emplace(std::make_pair(m_procp, frame));
+    ForkDynScopeFrame* pushDynScopeFrame(AstNode* procp) {
+        ForkDynScopeFrame* const framep = new ForkDynScopeFrame{m_modp, procp};
+        auto r = m_frames.emplace(std::make_pair(procp, framep));
         UASSERT_OBJ(r.second, m_modp, "Procedure already contains a frame");
-        return frame;
+        return framep;
     }
 
     void replaceWithMemberSel(AstVarRef* refp, const ForkDynScopeInstance& dynScope) {
@@ -301,13 +347,13 @@ private:
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
-        if (hasAsyncFork(nodep)) pushDynScopeFrame();
+        if (hasAsyncFork(nodep)) pushDynScopeFrame(m_procp);
         iterateChildren(nodep);
     }
     void visit(AstBegin* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
-        if (hasAsyncFork(nodep)) pushDynScopeFrame();
+        if (hasAsyncFork(nodep)) pushDynScopeFrame(m_procp);
         iterateChildren(nodep);
     }
     void visit(AstFork* nodep) override {
@@ -315,6 +361,26 @@ private:
         if (!nodep->joinType().join()) ++m_forkDepth;
 
         const bool oldAfterTimingControl = m_afterTimingControl;
+
+        ForkDynScopeFrame* framep = nullptr;
+        if (nodep->initsp()) framep = pushDynScopeFrame(nodep);
+
+        for (AstNode* stmtp = nodep->initsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* varp = VN_CAST(stmtp, Var)) {
+                // This can be probably optimized to detect cases in which dynscopes
+                // could be avoided
+                if (!framep->instance().initialized()) framep->createInstancePrototype();
+                framep->captureVarInsert(varp);
+                bindNodeToDynScope(varp, framep);
+            } else {
+                AstAssign* const asgnp = VN_CAST(stmtp, Assign);
+                UASSERT_OBJ(asgnp, stmtp,
+                            "Invalid node under block item initialization part of fork");
+                bindNodeToDynScope(asgnp->lhsp(), framep);
+                iterate(asgnp->rhsp());
+            }
+        }
+
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             m_afterTimingControl = false;
             iterate(stmtp);
@@ -432,7 +498,6 @@ private:
     }
 
     string generateTaskName(AstNode* fromp, const string& kind) {
-        // TODO: Ensure no collisions occur
         return "__V" + kind + (!fromp->name().empty() ? (fromp->name() + "__") : "UNNAMED__")
                + cvtToHex(fromp);
     }

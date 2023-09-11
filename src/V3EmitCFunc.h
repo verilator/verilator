@@ -345,6 +345,19 @@ public:
         emitVarDecl(nodep);
     }
 
+    void visit(AstCvtDynArrayToPacked* nodep) override {
+        puts("VL_DYN_TO_");
+        emitIQW(nodep);
+        puts("<");
+        const AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
+        putbs(elemDTypep->cType("", false, false));
+        puts(">(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(", ");
+        puts(cvtToStr(elemDTypep->widthMin()));
+        puts(")");
+    }
+
     void visit(AstNodeAssign* nodep) override {
         bool paren = true;
         bool decind = false;
@@ -481,7 +494,7 @@ public:
             puts(funcNameProtect(funcp));
         } else {
             // Calling regular method/function
-            if (!nodep->selfPointer().empty()) {
+            if (!nodep->selfPointer().isEmpty()) {
                 emitDereference(nodep->selfPointerProtect(m_useSelfForThis));
             }
             puts(funcp->nameProtect());
@@ -1252,7 +1265,7 @@ public:
         } else if (varp->isIfaceRef()) {
             puts(nodep->selfPointerProtect(m_useSelfForThis));
             return;
-        } else if (!nodep->selfPointer().empty()) {
+        } else if (!nodep->selfPointer().isEmpty()) {
             emitDereference(nodep->selfPointerProtect(m_useSelfForThis));
         }
         puts(nodep->varp()->nameProtect());

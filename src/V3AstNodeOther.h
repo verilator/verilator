@@ -32,7 +32,7 @@
 
 class AstNodeBlock VL_NOT_FINAL : public AstNode {
     // A Begin/fork block
-    // @astgen op1 := stmtsp : List[AstNode]
+    // @astgen op2 := stmtsp : List[AstNode]
     // Parents: statement
 private:
     string m_name;  // Name of block
@@ -81,7 +81,7 @@ private:
     bool m_isConstructor : 1;  // Class constructor
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
-    bool m_pure : 1;  // DPI import pure (vs. virtual pure)
+    bool m_dpiPure : 1;  // DPI import pure (vs. virtual pure)
     bool m_pureVirtual : 1;  // Pure virtual
     bool m_recursive : 1;  // Recursive or part of recursion
     bool m_underGenerate : 1;  // Under generate (for warning)
@@ -107,7 +107,7 @@ protected:
         , m_isConstructor{false}
         , m_isHideLocal{false}
         , m_isHideProtected{false}
-        , m_pure{false}
+        , m_dpiPure{false}
         , m_pureVirtual{false}
         , m_recursive{false}
         , m_underGenerate{false}
@@ -122,7 +122,9 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     bool maybePointedTo() const override { return true; }
-    bool isGateOptimizable() const override { return !((m_dpiExport || m_dpiImport) && !m_pure); }
+    bool isGateOptimizable() const override {
+        return !((m_dpiExport || m_dpiImport) && !m_dpiPure);
+    }
     // {AstFunc only} op1 = Range output variable
     void name(const string& name) override { m_name = name; }
     string cname() const { return m_cname; }
@@ -162,8 +164,8 @@ public:
     void isHideLocal(bool flag) { m_isHideLocal = flag; }
     bool isHideProtected() const { return m_isHideProtected; }
     void isHideProtected(bool flag) { m_isHideProtected = flag; }
-    void pure(bool flag) { m_pure = flag; }
-    bool pure() const { return m_pure; }
+    void dpiPure(bool flag) { m_dpiPure = flag; }
+    bool dpiPure() const { return m_dpiPure; }
     void pureVirtual(bool flag) { m_pureVirtual = flag; }
     bool pureVirtual() const { return m_pureVirtual; }
     void recursive(bool flag) { m_recursive = flag; }
@@ -578,7 +580,7 @@ private:
     bool m_isInline : 1;  // Inline function
     bool m_isVirtual : 1;  // Virtual function
     bool m_entryPoint : 1;  // User may call into this top level function
-    bool m_pure : 1;  // Pure function
+    bool m_dpiPure : 1;  // Pure DPI function
     bool m_dpiContext : 1;  // Declared as 'context' DPI import/export function
     bool m_dpiExportDispatcher : 1;  // This is the DPI export entry point (i.e.: called by user)
     bool m_dpiExportImpl : 1;  // DPI export implementation (called from DPI dispatcher via lookup)
@@ -607,7 +609,7 @@ public:
         m_isVirtual = false;
         m_needProcess = false;
         m_entryPoint = false;
-        m_pure = false;
+        m_dpiPure = false;
         m_dpiContext = false;
         m_dpiExportDispatcher = false;
         m_dpiExportImpl = false;
@@ -678,8 +680,8 @@ public:
     void setNeedProcess() { m_needProcess = true; }
     bool entryPoint() const { return m_entryPoint; }
     void entryPoint(bool flag) { m_entryPoint = flag; }
-    bool pure() const { return m_pure; }
-    void pure(bool flag) { m_pure = flag; }
+    bool dpiPure() const { return m_dpiPure; }
+    void dpiPure(bool flag) { m_dpiPure = flag; }
     bool dpiContext() const { return m_dpiContext; }
     void dpiContext(bool flag) { m_dpiContext = flag; }
     bool dpiExportDispatcher() const VL_MT_SAFE { return m_dpiExportDispatcher; }
@@ -1388,7 +1390,6 @@ public:
     void dump(std::ostream& str) const override;
     bool same(const AstNode* samep) const override;
     string nameDotless() const;
-    string nameVlSym() const { return string{"vlSymsp->"} + nameDotless(); }
     AstNodeModule* modp() const { return m_modp; }
     //
     AstScope* aboveScopep() const VL_MT_SAFE { return m_aboveScopep; }
@@ -2048,7 +2049,7 @@ public:
 class AstBegin final : public AstNodeBlock {
     // A Begin/end named block, only exists shortly after parsing until linking
     // Parents: statement
-    // @astgen op2 := genforp : Optional[AstNode]
+    // @astgen op1 := genforp : Optional[AstNode]
 
     bool m_generate;  // Underneath a generate
     const bool m_implied;  // Not inserted by user
@@ -2067,6 +2068,7 @@ public:
 };
 class AstFork final : public AstNodeBlock {
     // A fork named block
+    // @astgen op1 := initsp : List[AstNode]
     // Parents: statement
     // Children: statements
 private:
@@ -2092,6 +2094,20 @@ public:
     }
     ASTGEN_MEMBERS_AstFunc;
     bool hasDType() const override { return true; }
+};
+class AstLet final : public AstNodeFTask {
+    // Verilog "let" statement
+    // Parents: MODULE
+    // stmtp is always a StmtExpr as Let always returns AstNodeExpr
+public:
+    AstLet(FileLine* fl, const string& name)
+        : ASTGEN_SUPER_Let(fl, name, nullptr) {}
+    ASTGEN_MEMBERS_AstLet;
+    bool hasDType() const override { return true; }
+    const char* broken() const override {
+        BROKEN_RTN(!VN_IS(stmtsp(), StmtExpr));
+        return nullptr;
+    }
 };
 class AstProperty final : public AstNodeFTask {
     // A property inside a module

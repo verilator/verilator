@@ -15,6 +15,8 @@ module t (/*AUTOARG*/);
 
       foreach (array.array[a]); // not supported
 
+      foreach (array[a.b]);  // no index
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

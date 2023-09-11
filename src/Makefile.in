@@ -18,13 +18,12 @@
 #### Start of system configuration section. ####
 
 srcdir = @srcdir@
-PYTHON3 = @PYTHON3@
 EXEEXT = @EXEEXT@
+PYTHON3 = @PYTHON3@
 # VPATH only does sources; fix install_test's not creating ../bin
 vpath %.h @srcdir@
 
 #### End of system configuration section. ####
-
 
 default: dbg opt
 debug: dbg
@@ -35,6 +34,26 @@ ifneq ($(words $(CURDIR)),1)
 endif
 
 UNDER_GIT = $(wildcard ${srcdir}/../.git/logs/HEAD)
+
+ifeq (,$(wildcard obj_dbg/bear.o))
+  ifneq (, $(shell which bear 2>/dev/null))
+    BEAR := $(shell which bear)
+    ifeq (, $(shell $(BEAR) --output obj_dbg/comptest.json -- true))
+      $(shell which bear 2>/dev/null >obj_dbg/bear.o)
+    else
+      # unsupported version
+      BEAR :=
+    endif
+  endif
+else
+  BEAR := $(shell cat obj_dbg/bear.o)
+endif
+
+ifneq ($(BEAR),)
+BEAR_OBJ_OPT := $(BEAR) --append --output obj_dbg/compile_commands.json --
+else
+BEAR_OBJ_OPT :=
+endif
 
 #*********************************************************************
 
@@ -62,8 +81,8 @@ endif
 
 dbg: ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT)
 ../bin/verilator_bin_dbg$(EXEEXT): obj_dbg ../bin prefiles
-	$(MAKE) -C obj_dbg -j 1  TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
-	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
+	$(BEAR_OBJ_OPT) $(MAKE) -C obj_dbg -j 1  TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
+	$(BEAR_OBJ_OPT) $(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
 
 ../bin/verilator_coverage_bin_dbg$(EXEEXT): obj_dbg ../bin prefiles
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj serial_vlcov
