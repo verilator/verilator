@@ -1351,7 +1351,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         if (!foundp && m_modSymp && nodep->name() == m_modSymp->nodep()->name()) {
             foundp = m_modSymp;  // Conflicts with modname?
         }
-        AstEnumItem* const findvarp = foundp ? VN_AS(foundp->nodep(), EnumItem) : nullptr;
+        AstEnumItem* const findvarp = foundp ? VN_CAST(foundp->nodep(), EnumItem) : nullptr;
         bool ins = false;
         if (!foundp) {
             ins = true;
@@ -1375,7 +1375,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                                       << nodep->warnContextPrimary() << '\n'
                                       << foundp->nodep()->warnOther()
                                       << "... Location of original declaration\n"
-                                      << nodep->warnContextSecondary());
+                                      << foundp->nodep()->warnContextSecondary());
                 }
                 ins = true;
             }

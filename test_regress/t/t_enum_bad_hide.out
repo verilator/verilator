@@ -2,8 +2,8 @@
    11 |    typedef enum { HIDE_VALUE = 0 } hide_enum_t;
       |                   ^~~~~~~~~~
                     t/t_enum_bad_hide.v:7:16: ... Location of original declaration
-   11 |    typedef enum { HIDE_VALUE = 0 } hide_enum_t;
-      |                   ^~~~~~~~~~
+    7 | typedef enum { HIDE_VALUE = 0 } hide_enum_t;
+      |                ^~~~~~~~~~
                     ... For warning description see https://verilator.org/warn/VARHIDDEN?v=latest
                     ... Use "/* verilator lint_off VARHIDDEN */" and lint_on around source to disable this message.
 %Error: Exiting due to
