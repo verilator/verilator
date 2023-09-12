@@ -17,7 +17,6 @@ module t (/*AUTOARG*/);
    initial begin
       bit arr[];
       bit [1:0] arr2[$];
-      bit [4:0] arr5[];
       bit [5:0] arr6[$];
       string v;
       bit [5:0] bit6 = 6'b111000;
