@@ -2311,7 +2311,6 @@ const char* AstNodeFTask::broken() const {
 }
 bool AstNodeFTask::getPurity() const {
     if (this->dpiImport()) return this->dpiPure();
-
     // Check the list of statements if it contains any impure statement
     // or any write reference to a variable that isn't an automatic function local.
     for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
