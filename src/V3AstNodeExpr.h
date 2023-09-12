@@ -101,7 +101,7 @@ public:
     void clearCachedPurity() override;
 
 private:
-    bool getChildrenPurity() const { return lhsp()->isPure() && rhsp()->isPure(); }
+    bool getPurity() const { return lhsp()->isPure() && rhsp()->isPure(); }
 };
 class AstNodeBiCom VL_NOT_FINAL : public AstNodeBiop {
     // Binary expr with commutative properties
@@ -299,7 +299,7 @@ public:
     void clearCachedPurity() override;
 
 private:
-    bool getChildrenPurity() const {
+    bool getPurity() const {
         return fromp()->isPure() && rhsp()->isPure() && (!thsp() || thsp()->isPure());
     }
 };
@@ -343,7 +343,7 @@ public:
     void clearCachedPurity() override;
 
 private:
-    bool getChildrenPurity() const {
+    bool getPurity() const {
         return lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure() && fhsp()->isPure();
     }
 };
@@ -396,9 +396,7 @@ public:
     void clearCachedPurity() override;
 
 private:
-    bool getChildrenPurity() const {
-        return lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure();
-    }
+    bool getPurity() const { return lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure(); }
 };
 class AstNodeCond VL_NOT_FINAL : public AstNodeTriop {
     // @astgen alias op1 := condp

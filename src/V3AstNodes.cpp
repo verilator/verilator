@@ -159,11 +159,11 @@ void AstNodeUniop::clearCachedPurity() {
 }
 
 bool AstNodeBiop::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getChildrenPurity());
+    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
     return m_purity.isPure();
 }
 const char* AstNodeBiop::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getChildrenPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
     return nullptr;
 }
 void AstNodeBiop::clearCachedPurity() {
@@ -172,11 +172,11 @@ void AstNodeBiop::clearCachedPurity() {
 }
 
 bool AstNodeTriop::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getChildrenPurity());
+    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
     return m_purity.isPure();
 }
 const char* AstNodeTriop::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getChildrenPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
     return nullptr;
 }
 void AstNodeTriop::clearCachedPurity() {
@@ -185,11 +185,11 @@ void AstNodeTriop::clearCachedPurity() {
 }
 
 bool AstNodePreSel::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getChildrenPurity());
+    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
     return m_purity.isPure();
 }
 const char* AstNodePreSel::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getChildrenPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
     return nullptr;
 }
 void AstNodePreSel::clearCachedPurity() {
@@ -198,11 +198,11 @@ void AstNodePreSel::clearCachedPurity() {
 }
 
 bool AstNodeQuadop::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getChildrenPurity());
+    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
     return m_purity.isPure();
 }
 const char* AstNodeQuadop::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getChildrenPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
     return nullptr;
 }
 void AstNodeQuadop::clearCachedPurity() {
