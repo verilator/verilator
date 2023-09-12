@@ -19,7 +19,6 @@
 #include "V3ThreadPool.h"
 
 #include "V3Error.h"
-#include "V3ThreadSafety.h"
 
 // c++11 requires definition of static constexpr as well as declaration
 constexpr unsigned int V3ThreadPool::FUTUREWAITFOR_MS;
@@ -221,6 +220,14 @@ void V3ThreadPool::selfTest() {
     {
         const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
         selfTestMtDisabled();
+        {
+            V3LockGuard lock{V3ThreadPool::s().m_mutex};
+            UASSERT(V3ThreadPool::s().m_multithreadingSuspended, "Multithreading should be suspended at this point");
+        }
+    }
+    {
+        V3LockGuard lock{V3ThreadPool::s().m_mutex};
+        UASSERT(!V3ThreadPool::s().m_multithreadingSuspended, "Multithreading should not be suspended at this point");
     }
 }
 
