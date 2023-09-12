@@ -168,6 +168,7 @@ public:
     }
 
     static void selfTest();
+    static void selfTestMtDisabled() VL_MT_DISABLED;
 
 private:
     template <typename T>

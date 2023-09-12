@@ -111,6 +111,10 @@ void V3ThreadPool::stopOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex)
     --m_stoppedJobs;
 }
 
+void V3ThreadPool::selfTestMtDisabled() {
+    // empty
+}
+
 void V3ThreadPool::selfTest() {
     V3Mutex commonMutex;
     int commonValue{0};
@@ -164,6 +168,10 @@ void V3ThreadPool::selfTest() {
     futuresInt.push_back(s().enqueue(forthJob));
     auto result = V3ThreadPool::waitForFutures(futuresInt);
     UASSERT(result.back() == 1234, "unexpected future result = " << result.back());
+    {
+        const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
+        selfTestMtDisabled();
+    }
 }
 
 V3MtDisabledLock V3MtDisabledLock::s_mtDisabledLock;
