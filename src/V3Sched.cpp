@@ -393,7 +393,6 @@ AstSenTree* createTriggerSenTree(AstNetlist* netlistp, AstVarScope* const vscp, 
     AstCMethodHard* const callp
         = new AstCMethodHard{flp, vrefp, "word", new AstConst{flp, wordIndex}};
     callp->dtypeSetUInt64();
-    callp->pure(true);
     AstNodeExpr* const termp
         = new AstAnd{flp, new AstConst{flp, AstConst::Unsized64{}, 1ULL << bitIndex}, callp};
     AstSenItem* const senItemp = new AstSenItem{flp, VEdgeType::ET_TRUE, termp};
@@ -479,7 +478,6 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
         AstCMethodHard* const callp
             = new AstCMethodHard{flp, vrefp, "word", new AstConst{flp, wordIndex}};
         callp->dtypeSetUInt64();
-        callp->pure(true);
         AstNodeExpr* const termp
             = new AstAnd{flp, new AstConst{flp, AstConst::Unsized64{}, 1ULL << bitIndex}, callp};
         return termp;

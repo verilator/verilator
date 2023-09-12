@@ -192,11 +192,17 @@ private:
         return m_stopRequested;
     }
 
-    // Waits until exclusive access job completes its job
-    void waitStopRequested() VL_REQUIRES(m_stoppedJobsMutex);
+    // Waits until `resumeOtherThreads()` is called or exclusive access scope end.
+    void waitForResumeRequest() VL_REQUIRES(m_stoppedJobsMutex);
 
-    // Waits until all other jobs are stopped
-    void waitOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex) VL_REQUIRES(m_stoppedJobsMutex);
+    // Sends stop request to other threads and waits until they stop.
+    void stopOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex) VL_REQUIRES(m_stoppedJobsMutex);
+
+    // Resumes threads stopped through previous call to `stopOtherThreads()`.
+    void resumeOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex) VL_REQUIRES(m_stoppedJobsMutex) {
+        m_stopRequested = false;
+        m_stoppedJobsCV.notify_all();
+    }
 
     void workerJobLoop(int id) VL_MT_SAFE;
 
@@ -209,9 +215,8 @@ public:
         if (!V3ThreadPool::s().willExecuteSynchronously()) {
             V3ThreadPool::s().m_stoppedJobsMutex.lock();
 
-            if (V3ThreadPool::s().stopRequested()) { V3ThreadPool::s().waitStopRequested(); }
-            V3ThreadPool::s().m_stopRequested = true;
-            V3ThreadPool::s().waitOtherThreads();
+            if (V3ThreadPool::s().stopRequested()) { V3ThreadPool::s().waitForResumeRequest(); }
+            V3ThreadPool::s().stopOtherThreads();
             V3ThreadPool::s().m_exclusiveAccess = true;
         } else {
             V3ThreadPool::s().m_stoppedJobsMutex.assumeLocked();
@@ -221,8 +226,7 @@ public:
         // Can't use `willExecuteSynchronously`, we're still in exclusive execution state.
         if (V3ThreadPool::s().m_exclusiveAccess) {
             V3ThreadPool::s().m_exclusiveAccess = false;
-            V3ThreadPool::s().m_stopRequested = false;
-            V3ThreadPool::s().m_stoppedJobsCV.notify_all();
+            V3ThreadPool::s().resumeOtherThreads();
 
             V3ThreadPool::s().m_stoppedJobsMutex.unlock();
         } else {

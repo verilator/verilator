@@ -1,22 +1,14 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2020 by Wilson Snyder.
+// any use, without warranty, 2023 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+`include "t_uvm_pkg_all.vh"
 
-   integer a, b;
-
-   reg [2:0][2:0] array;
+module t(/*AUTOARG*/);
 
    initial begin
-      foreach (array);  // no index
-
-      foreach (array.array[a]); // not supported
-
-      foreach (array[a.b]);  // no index
-
       $write("*-* All Finished *-*\n");
       $finish;
    end

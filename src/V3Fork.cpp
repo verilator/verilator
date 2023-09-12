@@ -218,10 +218,12 @@ private:
         beginp->stmtsp()->addNext(instAsgnp);
         beginp->stmtsp()->addNext(forkp);
 
-        forkp->initsp()->foreach([forkp](AstAssign* asgnp) {
-            asgnp->unlinkFrBack();
-            forkp->addHereThisAsNext(asgnp);
-        });
+        if (forkp->initsp()) {
+            forkp->initsp()->foreach([forkp](AstAssign* asgnp) {
+                asgnp->unlinkFrBack();
+                forkp->addHereThisAsNext(asgnp);
+            });
+        }
         UASSERT_OBJ(!forkp->initsp(), forkp, "Leftover nodes in block_item_declaration");
 
         m_modp->addStmtsp(m_instance.m_classp);
@@ -245,7 +247,7 @@ private:
         } else if (AstNodeFTask* taskp = VN_CAST(m_procp, NodeFTask)) {
             stmtsp = taskp->stmtsp();
         } else {
-            v3fatal("m_procp is not a begin block or a procedure");
+            m_procp->v3fatalSrc("m_procp is not a begin block or a procedure");
         }
         return stmtsp;
     }

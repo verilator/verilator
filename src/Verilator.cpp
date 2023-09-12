@@ -143,16 +143,22 @@ static void process() {
     V3Error::abortIfErrors();
 
     if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
-    if (v3Global.opt.debugExitUvm()) {
+    if (v3Global.opt.debugExitUvm23()) {
         V3Error::abortIfErrors();
         if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
-        cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
+        cout << "--debug-exit-uvm23: Exiting after UVM-supported pass\n";
         std::exit(0);
     }
 
     // Remove parameters by cloning modules to de-parameterized versions
     //   This requires some width calculations and constant propagation
     V3Param::param(v3Global.rootp());
+    if (v3Global.opt.debugExitUvm()) {
+        V3Error::abortIfErrors();
+        if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
+        cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
+        std::exit(0);
+    }
     V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
     V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
     V3Error::abortIfErrors();

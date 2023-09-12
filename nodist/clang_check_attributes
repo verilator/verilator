@@ -19,7 +19,13 @@ import multiprocessing
 import tempfile
 
 import clang.cindex
-from clang.cindex import CursorKind, Index, TranslationUnitSaveError, TranslationUnitLoadError
+from clang.cindex import (
+    CursorKind,
+    Index,
+    TranslationUnitSaveError,
+    TranslationUnitLoadError,
+    CompilationDatabase,
+)
 
 
 def fully_qualified_name(node):
@@ -761,7 +767,7 @@ def run_analysis(ccl: Iterable[CompileCommand], pccl: Iterable[CompileCommand],
                                        is_ignored_def, is_ignored_call)
         for compile_command in ccl:
             cav.compile_and_analyze_file(compile_command.filename,
-                                         compile_command.args + extra_args,
+                                         extra_args + compile_command.args,
                                          compile_command.directory)
 
 
@@ -947,10 +953,15 @@ def main():
                         type=int,
                         default=0,
                         help="Number of parallel jobs to use.")
+    parser.add_argument(
+        "--compile-commands-dir",
+        type=str,
+        default=None,
+        help="Path to directory containing compile_commands.json.")
     parser.add_argument("--cxxflags",
                         type=str,
                         default=None,
-                        help="Flags passed to clang++.")
+                        help="Extra flags passed to clang++.")
     parser.add_argument(
         "--compilation-root",
         type=str,
@@ -975,34 +986,52 @@ def main():
         cmdline.compilation_root = cmdline.verilator_root
 
     verilator_root = os.path.abspath(cmdline.verilator_root)
-    compilation_root = os.path.abspath(cmdline.compilation_root)
+    default_compilation_root = os.path.abspath(cmdline.compilation_root)
 
-    default_cxx_flags = [
-        f"-I{verilator_root}/src",
-        f"-I{verilator_root}/include",
-        f"-I{verilator_root}/src/obj_opt",
-        "-fcoroutines-ts",
-    ]
+    compdb: Optional[CompilationDatabase] = None
+    if cmdline.compile_commands_dir:
+        compdb = CompilationDatabase.fromDirectory(
+            cmdline.compile_commands_dir)
+
     if cmdline.cxxflags is not None:
-        cxxflags = shlex.split(cmdline.cxxflags)
+        common_cxxflags = shlex.split(cmdline.cxxflags)
     else:
-        cxxflags = default_cxx_flags
+        common_cxxflags = []
 
     precompile_commands_list = []
 
     if cmdline.precompile:
-        hdr_cxxflags = ['-xc++-header'] + cxxflags
+        hdr_cxxflags = ['-xc++-header'] + common_cxxflags
         for refid, file in enumerate(cmdline.precompile):
             filename = os.path.abspath(file)
             compile_command = CompileCommand(refid, filename, hdr_cxxflags,
-                                             compilation_root)
+                                             default_compilation_root)
             precompile_commands_list.append(compile_command)
 
     compile_commands_list = []
     for refid, file in enumerate(cmdline.file):
         filename = os.path.abspath(file)
-        compile_command = CompileCommand(refid, filename, cxxflags,
-                                         compilation_root)
+        root = default_compilation_root
+        cxxflags = []
+        if compdb:
+            entry = compdb.getCompileCommands(filename)
+            entry_list = list(entry)
+            # Compilation database can contain multiple entries for single file,
+            # e.g. when it has been updated by appending new entries.
+            # Use last entry for the file, if it exists, as it is the newest one.
+            if len(entry_list) > 0:
+                last_entry = entry_list[-1]
+                root = last_entry.directory
+                entry_args = list(last_entry.arguments)
+                # First argument in compile_commands.json arguments list is
+                # compiler executable name/path. CIndex (libclang) always
+                # implicitly prepends executable name, so it shouldn't be passed
+                # here.
+                cxxflags = common_cxxflags + entry_args[1:]
+        else:
+            cxxflags = common_cxxflags[:]
+
+        compile_command = CompileCommand(refid, filename, cxxflags, root)
         compile_commands_list.append(compile_command)
 
     summary_printer = TopDownSummaryPrinter()

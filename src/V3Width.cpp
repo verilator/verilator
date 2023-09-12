@@ -3107,7 +3107,6 @@ private:
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(), "exists",
                                       index_exprp->unlinkFrBack()};
             newp->dtypeSetSigned32();
-            newp->pure(true);
         } else if (nodep->name() == "delete") {  // function void delete([input integer index])
             methodOkArguments(nodep, 0, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
@@ -3192,7 +3191,6 @@ private:
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(), "exists",
                                       index_exprp->unlinkFrBack()};
             newp->dtypeSetSigned32();
-            newp->pure(true);
         } else if (nodep->name() == "delete") {  // function void delete([input integer index])
             methodOkArguments(nodep, 0, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
@@ -3657,7 +3655,6 @@ private:
             AstCMethodHard* const callp = new AstCMethodHard{
                 nodep->fileline(), nodep->fromp()->unlinkFrBack(), "isTriggered"};
             callp->dtypeSetBit();
-            callp->pure(true);
             nodep->replaceWith(callp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {
@@ -3884,7 +3881,7 @@ private:
                  patp = VN_AS(patp->nextp(), PatMember)) {
                 const int times = visitPatMemberRep(patp);
                 for (int i = 1; i < times; i++) {
-                    AstNode* const newp = patp->cloneTree(false);
+                    AstPatMember* const newp = patp->cloneTree(false);
                     patp->addNextHere(newp);
                     // This loop will see the new elements as part of nextp()
                 }
