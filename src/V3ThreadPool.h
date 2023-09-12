@@ -103,7 +103,7 @@ class V3ThreadPool final {
 
     // Indicates whether multithreading has been suspended.
     // Used for error detection in resumeMultithreading only. You probably should use
-    // m_exclusiveAcces for information whether something should be run in current thread.
+    // m_exclusiveAccess for information whether something should be run in current thread.
     bool m_multithreadingSuspended VL_GUARDED_BY(m_mutex) = false;
 
     // CONSTRUCTORS
@@ -113,7 +113,7 @@ class V3ThreadPool final {
             if (m_jobsInProgress != 0) {
                 // ThreadPool shouldn't be destroyed when jobs are running and mutex is locked,
                 // something is wrong. Most likely Verilator is exitting as a result of failed
-                // assert in critical section. Do noting, let it exit.
+                // assert in critical section. Do nothing, let it exit.
                 return;
             }
         } else {
