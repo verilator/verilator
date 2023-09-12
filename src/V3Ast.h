@@ -1183,30 +1183,34 @@ inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) {
 class VUseType final {
 public:
     enum en : uint8_t {
-        IMP_INCLUDE,  // Implementation (.cpp) needs an include
-        INT_INCLUDE,  // Interface (.h) needs an include
-        IMP_FWD_CLASS,  // Implementation (.cpp) needs a forward class declaration
-        INT_FWD_CLASS,  // Interface (.h) needs a forward class declaration
+        // Enum values are compared with <, so order matters
+        INT_FWD_CLASS = 1 << 0,  // Interface (.h) needs a forward class declaration
+        INT_INCLUDE = 1 << 1,  // Interface (.h) needs an include
     };
     enum en m_e;
     VUseType()
-        : m_e{IMP_FWD_CLASS} {}
+        : m_e{INT_FWD_CLASS} {}
     // cppcheck-suppress noExplicitConstructor
     constexpr VUseType(en _e)
         : m_e{_e} {}
     explicit VUseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    bool isInclude() const { return m_e == IMP_INCLUDE || m_e == INT_INCLUDE; }
-    bool isFwdClass() const { return m_e == IMP_FWD_CLASS || m_e == INT_FWD_CLASS; }
     constexpr operator en() const { return m_e; }
+    bool containsAny(VUseType other) { return m_e & other.m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"IMP_INC", "INT_INC", "IMP_FWD", "INT_FWD"};
-        return names[m_e];
+        static const char* const names[] = {"INT_FWD", "INT_INC", "INT_FWD_INC"};
+        return names[m_e - 1];
     }
 };
 constexpr bool operator==(const VUseType& lhs, const VUseType& rhs) { return lhs.m_e == rhs.m_e; }
 constexpr bool operator==(const VUseType& lhs, VUseType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VUseType::en lhs, const VUseType& rhs) { return lhs == rhs.m_e; }
+constexpr VUseType::en operator|(VUseType::en lhs, VUseType::en rhs) {
+    return VUseType::en((uint8_t)lhs | (uint8_t)rhs);
+}
+constexpr VUseType::en operator&(VUseType::en lhs, VUseType::en rhs) {
+    return VUseType::en((uint8_t)lhs & (uint8_t)rhs);
+}
 inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
     return os << rhs.ascii();
 }

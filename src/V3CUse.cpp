@@ -28,9 +28,11 @@
 #include "V3CUse.h"
 
 #include "V3Ast.h"
+#include "V3FileLine.h"
 #include "V3Global.h"
 
-#include <set>
+#include <map>
+#include <utility>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -46,54 +48,31 @@ class CUseVisitor final : public VNVisitor {
 
     // MEMBERS
     AstNodeModule* const m_modp;  // Current module
-    std::set<std::pair<VUseType, std::string>> m_didUse;  // What we already used
-    bool m_dtypesImplOnly = false;
+    std::map<std::string, std::pair<FileLine*, VUseType>> m_didUse;  // What we already used
 
     // METHODS
     void addNewUse(AstNode* nodep, VUseType useType, const string& name) {
-        if (m_dtypesImplOnly
-            && (useType == VUseType::INT_INCLUDE || useType == VUseType::INT_FWD_CLASS))
-            return;
-
-        if (m_didUse.emplace(useType, name).second) {
-            AstCUse* const newp = new AstCUse{nodep->fileline(), useType, name};
-            m_modp->addStmtsp(newp);
-            UINFO(8, "Insert " << newp << endl);
+        auto e = m_didUse.emplace(name, std::make_pair(nodep->fileline(), useType));
+        if (e.second || ((e.first->second.second & useType) != useType)) {
+            e.first->second.second = e.first->second.second | useType;
         }
     }
 
     // VISITORS
     void visit(AstClassRefDType* nodep) override {
-        if (nodep->user1()) return;  // Process once
-        if (!m_dtypesImplOnly)  // We might need to revisit this type for interface
-            nodep->user1(true);
         addNewUse(nodep, VUseType::INT_FWD_CLASS, nodep->classp()->name());
     }
     void visit(AstCFunc* nodep) override {
-        if (nodep->user1SetOnce()) return;  // Process once
+        if (nodep->user1SetOnce()) return;
         iterateAndNextNull(nodep->argsp());
-
-        {
-            VL_RESTORER(m_dtypesImplOnly);
-            m_dtypesImplOnly = true;
-
-            iterateAndNextNull(nodep->initsp());
-            iterateAndNextNull(nodep->stmtsp());
-            iterateAndNextNull(nodep->finalsp());
-        }
+        iterateAndNextNull(nodep->stmtsp());
     }
+    void visit(AstCCall* nodep) override { return; }
     void visit(AstCReturn* nodep) override {
-        if (nodep->user1SetOnce()) return;  // Process once
-        if (m_dtypesImplOnly) {
-            for (AstNode* exprp = nodep->op1p(); exprp; exprp = exprp->nextp()) {
-                if (exprp->dtypep()) iterate(exprp->dtypep());
-            }
-        } else {
-            iterateChildren(nodep);
-        }
+        UASSERT(!nodep->user1SetOnce(), "Visited same return twice.");
+        iterate(nodep->lhsp()->dtypep());
     }
     void visit(AstNodeDType* nodep) override {
-        if (nodep->user1SetOnce()) return;  // Process once
         if (nodep->virtRefDTypep()) iterate(nodep->virtRefDTypep());
         if (nodep->virtRefDType2p()) iterate(nodep->virtRefDType2p());
 
@@ -108,7 +87,7 @@ class CUseVisitor final : public VNVisitor {
     }
     void visit(AstNode* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
-        if (nodep->dtypep() && !nodep->dtypep()->user1()) iterate(nodep->dtypep());
+        if (nodep->dtypep()) iterate(nodep->dtypep());
         iterateChildren(nodep);
     }
     void visit(AstCell* nodep) override {
@@ -123,6 +102,12 @@ public:
     explicit CUseVisitor(AstNodeModule* modp)
         : m_modp(modp) {
         iterate(modp);
+
+        for (auto& used : m_didUse) {
+            AstCUse* const newp = new AstCUse{used.second.first, used.second.second, used.first};
+            m_modp->addStmtsp(newp);
+            UINFO(8, "Insert " << newp << endl);
+        }
     }
     ~CUseVisitor() override = default;
     VL_UNCOPYABLE(CUseVisitor);
