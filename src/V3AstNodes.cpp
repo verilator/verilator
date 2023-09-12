@@ -51,6 +51,7 @@ AstIface* AstIfaceRefDType::ifaceViaCellp() const {
 const char* AstNodeFTaskRef::broken() const {
     BROKEN_RTN(m_taskp && !m_taskp->brokeExists());
     BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
+    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
     return nullptr;
 }
 
@@ -70,6 +71,11 @@ bool AstNodeFTaskRef::isPure() {
         if (!m_purity.isCached()) m_purity.setPurity(this->getPurity());
         return m_purity.isPure();
     }
+}
+
+void AstNodeFTaskRef::clearCachedPurity() {
+    m_purity.clearCache();
+    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
 }
 
 bool AstNodeFTaskRef::getPurity() const {

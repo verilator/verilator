@@ -265,6 +265,7 @@ public:
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
+    void clearCachedPurity() override;
 
 private:
     bool getPurity() const;

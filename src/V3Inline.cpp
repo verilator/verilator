@@ -170,7 +170,10 @@ private:
     void visit(AstNodeFTaskRef* nodep) override {
         // Remove link. V3LinkDot will reestablish it after inlining.
         // MethodCalls not currently supported by inliner, so keep linked
-        if (!nodep->classOrPackagep() && !VN_IS(nodep, MethodCall)) nodep->taskp(nullptr);
+        if (!nodep->classOrPackagep() && !VN_IS(nodep, MethodCall)) {
+            nodep->taskp(nullptr);
+            nodep->clearCachedPurity();
+        }
         iterateChildren(nodep);
     }
     void visit(AstAlways* nodep) override {
