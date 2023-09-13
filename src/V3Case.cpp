@@ -167,8 +167,9 @@ private:
             for (uint32_t i = 0; i < numCases; ++i) {
                 if ((i & mask) == val) {
                     if (!m_valueItem[i]) {
-                        nodep->v3warn(CASEINCOMPLETE, "Enum item " << itemp->prettyNameQ()
-                                                                   << " not covered by case items\n");
+                        nodep->v3warn(CASEINCOMPLETE, "Enum item "
+                                                          << itemp->prettyNameQ()
+                                                          << " not covered by case items\n");
                         return false;  // enum has uncovered value by case items
                     }
                 }
@@ -293,7 +294,7 @@ private:
                     if (!m_valueItem[i]) {  // has uncovered case
                         nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
                                                       "(example pattern 0x"
-                                << std::hex << i << ")");
+                                                          << std::hex << i << ")");
                         m_caseNoOverlapsAllCovered = false;
                         return false;
                     }
@@ -585,9 +586,7 @@ private:
         m_alwaysp = nodep;
         iterateChildren(nodep);
     }
-    void visit(AstNode* nodep) override {
-        iterateChildren(nodep);
-    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
