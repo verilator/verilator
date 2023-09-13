@@ -531,7 +531,7 @@ public:
 
 // Global versions, so that if the class doesn't define an operator, we get the functions anyway.
 void v3errorEnd(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex);
-void v3errorEndFatal(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex);
+void v3errorEndFatal(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex) VL_ATTR_NORETURN;
 
 // Theses allow errors using << operators: v3error("foo"<<"bar");
 // Careful, you can't put () around msg, as you would in most macro definitions.

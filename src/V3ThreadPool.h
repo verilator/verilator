@@ -81,7 +81,11 @@ class V3ThreadPool final {
     // MEMBERS
     static constexpr unsigned int FUTUREWAITFOR_MS = 100;
 
+    // some functions locks both of this mutexes, be careful of lock inversion problems
+    // 'm_stoppedJobsMutex' mutex should always be locked before 'm_mutex' mutex
+    // check usage of both of them when you use either of them
     V3Mutex m_mutex;  // Mutex for use by m_queue
+    V3Mutex m_stoppedJobsMutex;  // Used to signal stopped jobs
     std::queue<VAnyPackagedTask> m_queue VL_GUARDED_BY(m_mutex);  // Queue of jobs
     // We don't need to guard this condition_variable as
     // both `notify_one` and `notify_all` functions are atomic,
@@ -92,7 +96,6 @@ class V3ThreadPool final {
     // Number of started and not yet finished jobs.
     // Reading is valid only after call to `stopOtherThreads()` or when no worker threads exist.
     std::atomic_uint m_jobsInProgress{0};
-    V3Mutex m_stoppedJobsMutex;  // Used to signal stopped jobs
     // Conditions to wake up stopped jobs
     std::condition_variable_any m_stoppedJobsCV VL_GUARDED_BY(m_stoppedJobsMutex);
     // Conditions to wake up exclusive access thread
