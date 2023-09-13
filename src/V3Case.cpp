@@ -139,7 +139,7 @@ private:
     std::array<AstNode*, 1 << CASE_OVERLAP_WIDTH> m_valueItem;
 
     // METHODS
-    bool caseIsEnumComplete(AstCase* nodep, uint32_t numCases) {
+    bool isCaseEnumComplete(AstCase* nodep, uint32_t numCases) {
         // Return true if case is across an enum, and every value in the case
         // statement corresponds to one of the enum values
         if (!nodep->uniquePragma() && !nodep->unique0Pragma()) return false;
@@ -149,22 +149,25 @@ private:
         AstBasicDType* const basicp = enumDtp->subDTypep()->basicp();
         if (!basicp) return false;  // Not simple type (perhaps IEEE illegal)
         if (basicp->width() > 32) return false;
-        // Find all case values into a set
-        std::set<uint32_t> caseSet;
-        for (uint32_t i = 0; i < numCases; ++i) {  // All case items
-            if (m_valueItem[i]) caseSet.emplace(i);
-        }
-        // Find all enum values into a set
-        std::set<uint32_t> enumSet;
         for (AstEnumItem* itemp = enumDtp->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), EnumItem)) {
             AstConst* const econstp = VN_AS(itemp->valuep(), Const);
-            const uint32_t val = econstp->toUInt();
-            // UINFO(9, "Complete enum item " << val << ": " << itemp << endl);
-            enumSet.emplace(val);
+            V3Number nummask{itemp, econstp->width()};
+            nummask.opBitsNonX(econstp->num());
+            const uint32_t mask = nummask.toUInt();
+            V3Number numval{itemp, econstp->width()};
+            numval.opBitsOne(econstp->num());
+            const uint32_t val = numval.toUInt();
+
+            for (uint32_t i = 0; i < numCases; ++i) {
+                if ((i & mask) == val) {
+                    if (!m_valueItem[i]) {
+                        return false;  // enum has uncovered value by case item
+                    }
+                }
+            }
         }
-        // If sets match, all covered
-        return (caseSet == enumSet);
+        return true;
     }
     bool isCaseTreeFast(AstCase* nodep) {
         int width = 0;
@@ -193,6 +196,7 @@ private:
         // We can cheat and use uint32_t's because we only support narrow case's
         bool reportedOverlap = false;
         bool reportedSubcase = false;
+        bool hasDefaultCase = false;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
@@ -251,11 +255,12 @@ private:
                 for (uint32_t i = 0; i < numCases; ++i) {
                     if (!m_valueItem[i]) m_valueItem[i] = itemp;
                 }
+                hasDefaultCase = true;
             }
         }
-        if (!caseIsEnumComplete(nodep, numCases)) {
+        if (/*!hasDefaultCase &&*/ !isCaseEnumComplete(nodep, numCases)) {
             for (uint32_t i = 0; i < numCases; ++i) {
-                if (!m_valueItem[i]) {
+                if (!m_valueItem[i]) {  // has uncovered case
                     nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
                                                   "(example pattern 0x"
                                                       << std::hex << i << ")");
