@@ -64,30 +64,59 @@ if there are multiple coverage points on a single line they will merge.
 The minimum coverage across all merged points will be used to report
 coverage of the line.
 
-The first character of the line shows a summary of the coverage; this
-allows use of grep to filter the report.  `%` indicates at least one point
-on the line was below the coverage limit.  `+` indicates an
-:option:`--annotate-points` point was at or above the limit, and `-` that
-the point was below the limit.
+Coverage data is annotated at the beginning of the line and is formatted
+as a special character followed by the number of coverage hits. The special
+characters " ,%,+,-" indicate summary of the coverage, and allow use of grep
+to filter the report.
+
+* " " (whitespace) indicates that all points on the line are above the coverage limit.
+* "%" indicates at least one point on the line was below the coverage limit.
+* "+" coverage point was at or above the limit. Only used with :option:`--annotate-points`.
+* "-" coverage point was below the limit.  Only used with :option:`--annotate-points`.
+
+.. code-block::
+
+   100000  input logic a;   // Begins with whitespace, because
+                            // number of hits (100000) is above the limit.
+  +100000  point: comment=a // Begins with +, because
+                            // number of hits (100000) is above the limit.
+  %000000  input logic b;   // Begins with %, because
+                            // number of hits (0) is below the limit.
+  -000000  point: comment=b // Begins with -, because
+                            // number of hits (0) is below the limit.
 
 .. option:: --annotate-all
 
 Specifies all files should be shown.  By default, only those source files
 with low coverage are written to the output directory.
 
+This option should be used together with :option:`--annotate`.
+
 .. option:: --annotate-min <count>
 
-Specifies if the coverage point does not include the count number of
-coverage hits, then the coverage point will be considered above the
-threshold, and the coverage report will put a "%" to indicate the coverage
-is insufficient.  Defaults to 10.
+Specifies the threshold (<count>) below which coverage point is considered
+sufficient. If the threshold is not exceeded, then the annotation will begin
+with a "%" symbol to indicate the coverage is insufficient.
+
+The <count> threshold defaults to 10.
+
+This option should be used together with :option:`--annotate`.
+
 
 .. option:: --annotate-points
 
 Specifies all coverage points should be shown after each line of text.  By
 default, only source lines are shown.
 
-with low coverage are written to the output directory.
+.. code-block::
+
+  100000  input logic a, b, c;
+ +100000 point: comment=a // These lines are only shown
+ +200000 point: comment=b // with option --annotate-points
+ +300000 point: comment=c // enabled.
+
+
+This option should be used together with :option:`--annotate`.
 
 .. option:: --help
 
