@@ -167,9 +167,8 @@ private:
             for (uint32_t i = 0; i < numCases; ++i) {
                 if ((i & mask) == val) {
                     if (!m_valueItem[i]) {
-                        nodep->v3warn(CASEINCOMPLETE, "Enum item "
-                                                          << itemp->prettyNameQ()
-                                                          << " not covered by case\n");
+                        nodep->v3warn(CASEINCOMPLETE, "Enum item " << itemp->prettyNameQ()
+                                                                   << " not covered by case\n");
                         return false;  // enum has uncovered value by case items
                     }
                 }
