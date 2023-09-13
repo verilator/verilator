@@ -94,20 +94,6 @@
 // Function requires a capability inbound (-fthread-safety)
 #define VL_CAPABILITY(x) \
         VL_CLANG_ATTR(capability(x))
-// Function requires not having a capability inbound (-fthread-safety)
-#define VL_REQUIRES(x) \
-        VL_CLANG_ATTR(annotate("REQUIRES")) \
-        VL_CLANG_ATTR(requires_capability(x))
-// Name of capability/lock (-fthread-safety)
-#define VL_GUARDED_BY(x) \
-        VL_CLANG_ATTR(annotate("GUARDED_BY")) \
-        VL_CLANG_ATTR(guarded_by(x))
-// The data that the annotated pointer points to is protected by the given capability.
-// The pointer itself is not protected.
-// Allowed on: pointer data member. (-fthread-safety)
-#define VL_PT_GUARDED_BY(x) \
-        VL_CLANG_ATTR(annotate("PT_GUARDED_BY")) \
-        VL_CLANG_ATTR(pt_guarded_by(x))
 // Name of mutex protecting this variable (-fthread-safety)
 #define VL_EXCLUDES(x) \
         VL_CLANG_ATTR(annotate("EXCLUDES")) \
@@ -123,6 +109,32 @@
 // Allowed on: function, method. (-fthread-safety)
 #define VL_ASSERT_CAPABILITY(x) \
         VL_CLANG_ATTR(assert_capability(x))
+
+// Require mutex locks only in code units which work with enabled multi-threading.
+#if !defined(VL_MT_DISABLED_CODE_UNIT)
+// Function requires not having a capability inbound (-fthread-safety)
+# define VL_REQUIRES(x) \
+        VL_CLANG_ATTR(annotate("REQUIRES")) \
+        VL_CLANG_ATTR(requires_capability(x))
+// Name of capability/lock (-fthread-safety)
+# define VL_GUARDED_BY(x) \
+        VL_CLANG_ATTR(annotate("GUARDED_BY")) \
+        VL_CLANG_ATTR(guarded_by(x))
+// The data that the annotated pointer points to is protected by the given capability.
+// The pointer itself is not protected.
+// Allowed on: pointer data member. (-fthread-safety)
+# define VL_PT_GUARDED_BY(x) \
+        VL_CLANG_ATTR(annotate("PT_GUARDED_BY")) \
+        VL_CLANG_ATTR(pt_guarded_by(x))
+#else
+// Keep annotations for clang_check_attributes
+# define VL_REQUIRES(x) \
+        VL_CLANG_ATTR(annotate("REQUIRES"))
+# define VL_GUARDED_BY(x) \
+        VL_CLANG_ATTR(annotate("GUARDED_BY"))
+# define VL_PT_GUARDED_BY(x) \
+        VL_CLANG_ATTR(annotate("PT_GUARDED_BY"))
+#endif
 
 // Defaults for unsupported compiler features
 #ifndef VL_ATTR_ALWINLINE
@@ -429,6 +441,11 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_UNCOPYABLE(Type) \
     Type(const Type& other) = delete; \
     Type& operator=(const Type&) = delete
+
+// Declare a class as unmovable; put after a private:
+#define VL_UNMOVABLE(Type) \
+    Type(Type&& other) = delete; \
+    Type& operator=(Type&&) = delete
 
 //=========================================================================
 // Verilated function size macros
