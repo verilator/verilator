@@ -1702,7 +1702,8 @@ public:
     const char* typeName() const VL_MT_SAFE { return type().ascii(); }  // See also prettyTypeName
     AstNode* nextp() const VL_MT_STABLE { return m_nextp; }
     AstNode* backp() const VL_MT_STABLE { return m_backp; }
-    AstNode* abovep() const;  // Parent node above, only when no nextp() as otherwise slow
+    AstNode* abovep() const;  // Get parent node above, only for list head and tail
+    AstNode* abovepIter() const;  // Get parent node above iteratively, could be slow
     AstNode* op1p() const VL_MT_STABLE { return m_op1p; }
     AstNode* op2p() const VL_MT_STABLE { return m_op2p; }
     AstNode* op3p() const VL_MT_STABLE { return m_op3p; }

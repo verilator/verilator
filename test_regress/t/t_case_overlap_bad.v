@@ -23,7 +23,17 @@ module t1;
         endcase
         casez (state)
             3'b111, 3'b0??: v++;
-            3'b00?: $stop;
+            3'b11?: $stop;
+            default;
+        endcase
+        casez (state)
+            3'b000, 3'b001, 3'b010, 3'b011: $stop;
+            3'b001: $stop;
+            default;
+        endcase
+        casez (state)
+            3'b000, 3'b001, 3'b010, 3'b011: $stop;
+            3'b011: $stop;
             default;
         endcase
     end

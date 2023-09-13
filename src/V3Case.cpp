@@ -228,7 +228,7 @@ private:
                     for (uint32_t i = 0; i < numCases; ++i) {
                         if ((i & mask) == val) {
                             if (!m_valueItem[i]) {
-                                m_valueItem[i] = itemp;
+                                m_valueItem[i] = icondp;
                                 foundHit = true;
                             } else if (!overlappedCase) {
                                 firstOverlap = i;
@@ -311,8 +311,10 @@ private:
         // Convert valueItem from AstCaseItem* to the expression
         // Not done earlier, as we may now have a nullptr because it's just a ";" NOP branch
         for (uint32_t i = 0; i < numCases; ++i) {
-            if (AstCaseItem* const itemp = VN_AS(m_valueItem[i], CaseItem)) {
-                m_valueItem[i] = itemp->stmtsp();
+            if (AstNode* const condp = m_valueItem[i]) {
+                AstCaseItem* caseItemp = VN_CAST(condp, CaseItem);
+                if (!caseItemp) caseItemp = VN_AS(condp->abovepIter(), CaseItem);
+                m_valueItem[i] = caseItemp->stmtsp();
             }
         }
         return true;  // All is fine

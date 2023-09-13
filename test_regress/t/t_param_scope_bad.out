@@ -1,6 +1,9 @@
-%Warning-CASEOVERLAP: t/t_param_scope_bad.v:28:9: Case values overlap (example pattern 0x2)
+%Warning-CASEOVERLAP: t/t_param_scope_bad.v:28:9: Case values overlap
    28 |         2'h2: $stop;
       |         ^~~~
+                      t/t_param_scope_bad.v:27:16: ... Location of overlapping case
+   27 |         CASEVAL: ;
+      |                ^
                       ... For warning description see https://verilator.org/warn/CASEOVERLAP?v=latest
                       ... Use "/* verilator lint_off CASEOVERLAP */" and lint_on around source to disable this message.
 %Error: Exiting due to
