@@ -917,7 +917,8 @@ def precompile_header(compile_command: CompileCommand, tmp_dir: str) -> str:
             if pch_file:
                 return pch_file
 
-    except (TranslationUnitSaveError, TranslationUnitLoadError, OSError) as exception:
+    except (TranslationUnitSaveError, TranslationUnitLoadError,
+            OSError) as exception:
         print(f"%Warning: {exception}", file=sys.stderr)
 
     finally:
