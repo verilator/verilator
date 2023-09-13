@@ -2314,6 +2314,9 @@ bool AstNodeFTask::getPurity() const {
     // Check the list of statements if it contains any impure statement
     // or any write reference to a variable that isn't an automatic function local.
     for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
+            if (varp->isInoutish() || varp->isRef()) return false;
+        }
         if (!stmtp->isPure()) return false;
         if (stmtp->exists([](const AstNodeVarRef* const varrefp) {
                 return (!varrefp->varp()->isFuncLocal() || varrefp->varp()->lifetime().isStatic())

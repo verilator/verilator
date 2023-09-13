@@ -1912,6 +1912,7 @@ public:
     bool isInoutish() const { return m_direction.isInoutish(); }
     bool isNonOutput() const { return m_direction.isNonOutput(); }
     bool isReadOnly() const VL_MT_SAFE { return m_direction.isReadOnly(); }
+    bool isRef() const VL_MT_SAFE { return m_direction.isRef(); }
     bool isWritable() const VL_MT_SAFE { return m_direction.isWritable(); }
     bool isTristate() const { return m_tristate; }
     bool isPrimaryIO() const { return m_primaryIO; }
