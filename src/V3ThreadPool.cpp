@@ -136,9 +136,8 @@ bool V3ThreadPool::waitIfStopRequested() VL_MT_SAFE VL_EXCLUDES(m_stoppedJobsMut
 void V3ThreadPool::waitForResumeRequest() VL_REQUIRES(m_stoppedJobsMutex) {
     ++m_stoppedJobs;
     m_exclusiveAccessThreadCV.notify_one();
-    m_stoppedJobsCV.wait(m_stoppedJobsMutex, [&]() VL_REQUIRES(m_stoppedJobsMutex) {
-        return !m_stopRequested;
-    });
+    m_stoppedJobsCV.wait(m_stoppedJobsMutex,
+                         [&]() VL_REQUIRES(m_stoppedJobsMutex) { return !m_stopRequested; });
     --m_stoppedJobs;
 }
 
@@ -146,7 +145,7 @@ void V3ThreadPool::stopOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex)
     VL_REQUIRES(m_stoppedJobsMutex) {
     m_stopRequested = true;
     {
-        V3LockGuard lock {m_mutex};
+        V3LockGuard lock{m_mutex};
         m_cv.notify_all();
     }
     m_exclusiveAccessThreadCV.wait(m_stoppedJobsMutex, [&]() VL_REQUIRES(m_stoppedJobsMutex) {
@@ -216,12 +215,14 @@ void V3ThreadPool::selfTest() {
         selfTestMtDisabled();
         {
             V3LockGuard lock{V3ThreadPool::s().m_mutex};
-            UASSERT(V3ThreadPool::s().m_multithreadingSuspended, "Multithreading should be suspended at this point");
+            UASSERT(V3ThreadPool::s().m_multithreadingSuspended,
+                    "Multithreading should be suspended at this point");
         }
     }
     {
         V3LockGuard lock{V3ThreadPool::s().m_mutex};
-        UASSERT(!V3ThreadPool::s().m_multithreadingSuspended, "Multithreading should not be suspended at this point");
+        UASSERT(!V3ThreadPool::s().m_multithreadingSuspended,
+                "Multithreading should not be suspended at this point");
     }
 }
 
