@@ -8,17 +8,65 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+use Cwd qw(abs_path);
+use JSON::PP;
+use IO::File;
+
 scenarios(dist => 1);
 if ($ENV{VERILATOR_TEST_NO_ATTRIBUTES}) {
     skip("Skipping due to VERILATOR_TEST_NO_ATTRIBUTES");
 } else {
     check();
 }
+
+sub gen_compile_commands_json {
+    my $json = JSON::PP->new->utf8->pretty;
+
+    my $root_dir = abs_path("..");
+    my $srcs_dir = abs_path("./t/t_dist_attributes");
+    my @common_args = ("clang++",
+                       "-std=c++14",
+                       "-I$root_dir/include",
+                       "-I$root_dir/src",
+                       "-c");
+
+    my $ccjson = [
+        {"directory" => "$srcs_dir",
+         "file" => "$srcs_dir/mt_enabled.cpp",
+         "output" => undef,
+         "arguments" => [@common_args]},
+        {"directory" => "$srcs_dir",
+         "file" => "$srcs_dir/mt_disabled.cpp",
+         "output" => undef,
+         "arguments" => [@common_args]},
+    ];
+
+    my @srcfiles;
+    foreach my $entry (@$ccjson) {
+        # Add "output" key
+        ($entry->{"output"} = $entry->{"file"}) =~ s/\.cpp$/.o/;
+        # Add "-o src.o src.cpp" arguments
+        push @{$entry->{"arguments"}}, ("-o", $entry->{"output"}, $entry->{"file"});
+
+        push @srcfiles, $entry->{"file"};
+    }
+
+    return (
+        \@srcfiles,
+        $json->encode($ccjson)
+    );
+}
+
 sub check {
-    my $root = "..";
-    my @srcfiles = glob("$root/test_regress/t/t_dist_attributes_bad.cpp");
-    my $srcfiles_str = join(" ", @srcfiles);
-    my $clang_args = "-I$root/include";
+    my $root = abs_path("..");
+    my $ccjson_file = "$Self->{obj_dir}/compile_commands.json";
+    my ($srcfiles, $ccjson) = gen_compile_commands_json();
+    my $srcfiles_str = join(" ", @$srcfiles);
+    {
+        my $fh = IO::File->new(">$ccjson_file") or die "%Error: $! $ccjson_file";
+        print $fh $ccjson;
+        $fh->close();
+    }
 
     sub run_clang_check {
         {
@@ -32,7 +80,11 @@ sub check {
             # With `--verilator-root` set to the current directory
             # (i.e. `test_regress`) the script will skip annotation issues in
             # headers from the `../include` directory.
-            cmd => ["python3", "$root/nodist/clang_check_attributes --verilator-root=. --cxxflags='$clang_args' $srcfiles_str"]);
+            cmd => ["python3",
+                    "$root/nodist/clang_check_attributes",
+                    "--verilator-root=.",
+                    "--compile-commands-dir=$Self->{obj_dir}",
+                    "$srcfiles_str"]);
 
         files_identical($Self->{run_log_filename}, $Self->{golden_filename});
     }

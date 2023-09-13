@@ -10,20 +10,20 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(dist => 1);
 rerunnable(0);
+my $root = "..";
 if ($ENV{VERILATOR_TEST_NO_ATTRIBUTES}) {
     skip("Skipping due to VERILATOR_TEST_NO_ATTRIBUTES");
+} elsif (! -e "$root/src/obj_dbg/compile_commands.json") {
+    skip("compile_commands.json not found. Please install 'bear > 3.0' and rebuild Verilator.");
 } else {
     check();
 }
 sub check {
-    my $root = "..";
     # some of the files are only used in Verilation
     # and are only in "include" folder
     my @srcfiles = grep { !/\/(V3Const|Vlc\w*|\w*_test|\w*_sc|\w*.yy).cpp$/ }
-                   glob("$root/src/*.cpp $root/src/obj_opt/V3Const__gen.cpp");
+                   glob("$root/src/*.cpp $root/src/obj_dbg/V3Const__gen.cpp");
     my $srcfiles_str = join(" ", @srcfiles);
-    my $precompile_args = "-c $root/src/V3Ast.h";
-    my $clang_args = "-I$root/src/ -I$root/include/ -I$root/src/obj_opt/ -fcoroutines-ts";
 
     sub run_clang_check {
         {
@@ -34,7 +34,12 @@ sub check {
         }
         run(logfile => $Self->{run_log_filename},
             tee => 1,
-            cmd => ["python3", "$root/nodist/clang_check_attributes --verilator-root=$root --cxxflags='$clang_args' $precompile_args $srcfiles_str"]);
+            cmd => ["python3",
+                    "$root/nodist/clang_check_attributes",
+                    "--verilator-root=$root",
+                    "--compilation-root=$root/src/obj_dbg",
+                    "--compile-commands-dir=$root/src/obj_dbg",
+                    "$srcfiles_str"]);
 
         file_grep($Self->{run_log_filename}, "Number of functions reported unsafe: 0");
     }
