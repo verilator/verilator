@@ -24,5 +24,8 @@ module t (/*AUTOARG*/);
       b = cls.get_x_set_1(a[1]);
       `checkh(b, 0);
       `checkh(a[1], 1);
+
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
 endmodule
