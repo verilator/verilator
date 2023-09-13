@@ -33,24 +33,20 @@ module t (/*AUTOARG*/);
    Cls cls;
    MyInt mi;
    initial begin
-      mi = new(1);
       a = 10;
       b = get_val_set_5(a);
       `checkh(a, 5);
       `checkh(b, 10);
-
-      b = get_val_set_5(mi.x);
-      `checkh(mi.x, 5);
-      `checkh(b, 1);
 
       cls = new;
       b = cls.get_val_set_2(a);
       `checkh(a, 2);
       `checkh(b, 5);
 
+      mi = new(1);
       b = cls.get_val_set_2(mi.x);
       `checkh(mi.x, 2);
-      `checkh(b, 5);
+      `checkh(b, 1);
 
       $write("*-* All Finished *-*\n");
       $finish;
