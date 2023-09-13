@@ -1,0 +1,15 @@
+%Warning-CASEOVERLAP: t/t_case_overlap_bad.v:21:13: Case values overlap
+   21 |             3'b001, 3'b000: $stop;
+      |             ^~~~~~
+                      t/t_case_overlap_bad.v:20:19: ... Location of overlapping case
+   20 |             3'b00?: $stop;
+      |                   ^
+                      ... For warning description see https://verilator.org/warn/CASEOVERLAP?v=latest
+                      ... Use "/* verilator lint_off CASEOVERLAP */" and lint_on around source to disable this message.
+%Warning-CASEOVERLAP: t/t_case_overlap_bad.v:26:13: Case values overlap (example pattern 0x0)
+   26 |             3'b00?: $stop;
+      |             ^~~~~~
+                      t/t_case_overlap_bad.v:25:27: ... Location of overlapping case
+   25 |             3'b111, 3'b0??: v++;
+      |                           ^
+%Error: Exiting due to
