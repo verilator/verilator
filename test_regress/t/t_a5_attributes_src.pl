@@ -10,15 +10,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(dist => 1);
 rerunnable(0);
+my $root = "..";
 if ($ENV{VERILATOR_TEST_NO_ATTRIBUTES}) {
     skip("Skipping due to VERILATOR_TEST_NO_ATTRIBUTES");
-} elsif (! -e "../src/obj_dbg/compile_commands.json") {
+} elsif (! -e "$root/src/obj_dbg/compile_commands.json") {
     skip("compile_commands.json not found. Please install 'bear > 3.0' and rebuild Verilator.");
 } else {
     check();
 }
 sub check {
-    my $root = "..";
     # some of the files are only used in Verilation
     # and are only in "include" folder
     my @srcfiles = grep { !/\/(V3Const|Vlc\w*|\w*_test|\w*_sc|\w*.yy).cpp$/ }
