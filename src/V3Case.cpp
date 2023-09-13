@@ -169,7 +169,7 @@ private:
                     if (!m_valueItem[i]) {
                         nodep->v3warn(CASEINCOMPLETE, "Enum item "
                                                           << itemp->prettyNameQ()
-                                                          << " not covered by case items\n");
+                                                          << " not covered by case\n");
                         return false;  // enum has uncovered value by case items
                     }
                 }
