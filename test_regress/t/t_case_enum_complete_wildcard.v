@@ -20,7 +20,7 @@ module t;
     int v = 0;
 
     initial begin
-        state = S00;
+        state = S01;
         unique case (state)
             S00: $stop;
             S01: v++;

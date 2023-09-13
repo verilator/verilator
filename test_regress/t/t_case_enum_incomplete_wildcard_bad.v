@@ -28,8 +28,8 @@ module t1;
             2'b01: $stop;
         endcase
         unique case (state)
-            2'd2: $stop;
-            2'd1: v++;
+            2'd2: v++;
+            2'd1: $stop;
         endcase
 
         unique casez (state)
@@ -39,8 +39,8 @@ module t1;
 
         case (state)
             S00: $stop;
-            S01: v++;
-            S10: $stop;
+            S01: $stop;
+            S10: v++;
         endcase
     end
 endmodule

@@ -139,9 +139,9 @@ private:
     std::array<AstNode*, 1 << CASE_OVERLAP_WIDTH> m_valueItem;
 
     // METHODS
+    //! Determine whether we should check case items are complete
+    //! @return  Enum's dtype if should check, nullptr if shouldn't
     const AstEnumDType* getEnumCompletionCheckDType(const AstCase* const nodep) {
-        // Return true if case is across an enum, and every value in the case
-        // statement corresponds to one of the enum values
         if (!nodep->uniquePragma() && !nodep->unique0Pragma()) return nullptr;
         const AstEnumDType* const enumDtp
             = VN_CAST(nodep->exprp()->dtypep()->skipRefToEnump(), EnumDType);
@@ -151,8 +151,8 @@ private:
         if (basicp->width() > 32) return nullptr;
         return enumDtp;
     }
-    ///< Returns false if there are uncovered cases, true if complete
-    bool checkCaseEnumComplete(const AstCase* nodep, const AstEnumDType* const dtype) {
+    //! @return  True if case items are complete, false if there are uncovered enums
+    bool checkCaseEnumComplete(const AstCase* const nodep, const AstEnumDType* const dtype) {
         const uint32_t numCases = 1UL << m_caseWidth;
         for (AstEnumItem* itemp = dtype->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), EnumItem)) {
@@ -167,9 +167,8 @@ private:
             for (uint32_t i = 0; i < numCases; ++i) {
                 if ((i & mask) == val) {
                     if (!m_valueItem[i]) {
-                        nodep->v3warn(CASEINCOMPLETE,
-                                      "Enum item " << itemp->prettyNameQ()
-                                                   << " not covered by case\n");
+                        nodep->v3warn(CASEINCOMPLETE, "Enum item " << itemp->prettyNameQ()
+                                                                   << " not covered by case items\n");
                         return false;  // enum has uncovered value by case items
                     }
                 }
@@ -223,16 +222,16 @@ private:
                     const uint32_t val = numval.toUInt();
 
                     uint32_t firstOverlap = 0;
-                    AstNode* overlappedCase = nullptr;
+                    AstNode* overlappedCondp = nullptr;
                     bool foundHit = false;
                     for (uint32_t i = 0; i < numCases; ++i) {
                         if ((i & mask) == val) {
                             if (!m_valueItem[i]) {
                                 m_valueItem[i] = icondp;
                                 foundHit = true;
-                            } else if (!overlappedCase) {
+                            } else if (!overlappedCondp) {
                                 firstOverlap = i;
-                                overlappedCase = m_valueItem[i];
+                                overlappedCondp = m_valueItem[i];
                                 m_caseNoOverlapsAllCovered = false;
                             }
                         }
@@ -240,19 +239,19 @@ private:
                     if (!nodep->priorityPragma()) {
                         // If this case statement doesn't have the priority
                         // keyword, we want to warn on any overlap.
-                        if (!reportedOverlap && overlappedCase) {
+                        if (!reportedOverlap && overlappedCondp) {
                             std::ostringstream examplePattern;
                             if (isCondWildcard) {
                                 examplePattern << " (example pattern 0x" << std::hex
-                                               << firstOverlap <<")";
+                                               << firstOverlap << ")";
                             }
                             icondp->v3warn(CASEOVERLAP,
-                                           "Case values overlap"
+                                           "Case conditions overlap"
                                                << examplePattern.str() << "\n"
                                                << icondp->warnContextPrimary() << '\n'
-                                               << overlappedCase->warnOther()
-                                                            << "... Location of overlapping case\n"
-                                                            << overlappedCase->warnContextSecondary());
+                                               << overlappedCondp->warnOther()
+                                               << "... Location of overlapping condition\n"
+                                               << overlappedCondp->warnContextSecondary());
                             reportedOverlap = true;
                         }
                     } else {
@@ -263,11 +262,11 @@ private:
                         if (!reportedSubcase && !foundHit) {
                             icondp->v3warn(CASEOVERLAP,
                                            "Case item ignored: every matching value is covered "
-                                           "by an earlier item\n"
+                                           "by an earlier condition\n"
                                                << icondp->warnContextPrimary() << '\n'
-                                               << overlappedCase->warnOther()
-                                               << "... Location of previous case\n"
-                                               << overlappedCase->warnContextPrimary());
+                                               << overlappedCondp->warnOther()
+                                               << "... Location of previous condition\n"
+                                               << overlappedCondp->warnContextPrimary());
                             reportedSubcase = true;
                         }
                     }

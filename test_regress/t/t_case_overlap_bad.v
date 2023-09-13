@@ -17,6 +17,10 @@ module t1;
     initial begin
         state = 2;
         casez (state)
+            3'b11?, 3'b???: v++;
+            default;
+        endcase
+        casez (state)
             3'b00?: $stop;
             3'b001, 3'b000: $stop;
             default;
@@ -27,12 +31,12 @@ module t1;
             default;
         endcase
         casez (state)
-            3'b000, 3'b001, 3'b010, 3'b011: $stop;
+            3'b000, 3'b001, 3'b010, 3'b011: v++;
             3'b001: $stop;
             default;
         endcase
         casez (state)
-            3'b000, 3'b001, 3'b010, 3'b011: $stop;
+            3'b000, 3'b001, 3'b010, 3'b011: v++;
             3'b011: $stop;
             default;
         endcase
