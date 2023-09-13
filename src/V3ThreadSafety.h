@@ -36,8 +36,10 @@ class VL_CAPABILITY("lock") V3MtDisabledLock final {
     VL_UNMOVABLE(V3MtDisabledLock);
 
 public:
-    constexpr void lock() VL_ACQUIRE() VL_MT_SAFE {}
-    constexpr void unlock() VL_RELEASE() VL_MT_SAFE {}
+    // lock() will disable multithreading while in MT Disabled regions
+    void lock() VL_ACQUIRE() VL_MT_SAFE;
+    // unlock() will reenable multithreading while in MT Disabled regions
+    void unlock() VL_RELEASE() VL_MT_SAFE;
 
     static constexpr V3MtDisabledLock& instance()
         VL_RETURN_CAPABILITY(V3MtDisabledLock::s_mtDisabledLock) {

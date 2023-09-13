@@ -139,12 +139,17 @@ private:
     T& m_mutexr;
 
 public:
-    /// Construct and hold given mutex lock until destruction or unlock()
+    /// Lock given mutex and hold it for the object lifetime.
     explicit V3LockGuardImp(T& mutexr) VL_ACQUIRE(mutexr) VL_MT_SAFE
         : m_mutexr(mutexr) {  // Need () or GCC 4.8 false warning
         mutexr.lock();
     }
-    /// Destruct and unlock the mutex
+    /// Take already locked mutex, and and hold the lock for the object lifetime.
+    explicit V3LockGuardImp(T& mutexr, std::adopt_lock_t) VL_REQUIRES(mutexr) VL_MT_SAFE
+        : m_mutexr(mutexr) {  // Need () or GCC 4.8 false warning
+    }
+
+    /// Unlock the mutex
     ~V3LockGuardImp() VL_RELEASE() { m_mutexr.unlock(); }
 };
 
