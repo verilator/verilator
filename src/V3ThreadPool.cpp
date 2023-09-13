@@ -75,9 +75,7 @@ void V3ThreadPool::suspendMultithreading() VL_MT_SAFE VL_EXCLUDES(m_mutex)
 
 void V3ThreadPool::resumeMultithreading() VL_MT_SAFE VL_EXCLUDES(m_mutex)
     VL_EXCLUDES(m_stoppedJobsMutex) {
-    if (!m_mutex.try_lock()) {
-        v3fatal("Tried to resume thread pool when other thread uses it.");
-    }
+    if (!m_mutex.try_lock()) { v3fatal("Tried to resume thread pool when other thread uses it."); }
     {
         V3LockGuard lock{m_mutex, std::adopt_lock_t{}};
         UASSERT(m_multithreadingSuspended, "Multithreading is not suspended");
