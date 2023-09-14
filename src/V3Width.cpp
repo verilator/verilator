@@ -5581,8 +5581,8 @@ private:
                     && !similarDTypeRecurse(portp->dtypep(), pinp->dtypep())) {
                     pinp->v3error("Ref argument requires matching types;"
                                   << " port " << portp->prettyNameQ() << " requires "
-                                  << portp->prettyTypeName() << " but connection is "
-                                  << pinp->prettyTypeName() << ".");
+                                  << portp->dtypep()->prettyDTypeName() << " but connection is "
+                                  << pinp->dtypep()->prettyDTypeName() << ".");
                 } else if (portp->isWritable() && pinp->width() != portp->width()) {
                     pinp->v3warn(E_UNSUPPORTED, "Unsupported: Function output argument "
                                                     << portp->prettyNameQ() << " requires "
