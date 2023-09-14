@@ -585,6 +585,7 @@ private:
     }
     //--------------------
     void visit(AstAlways* nodep) override {
+        VL_RESTORER(m_alwaysp)
         m_alwaysp = nodep;
         iterateChildren(nodep);
     }
