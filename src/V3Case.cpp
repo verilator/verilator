@@ -204,6 +204,7 @@ private:
         bool reportedOverlap = false;
         bool reportedSubcase = false;
         bool hasDefaultCase = false;
+        std::map<AstNode*, AstCaseItem*> caseItemMap;  // case condition -> case item
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
@@ -228,6 +229,7 @@ private:
                         if ((i & mask) == val) {
                             if (!m_valueItem[i]) {
                                 m_valueItem[i] = icondp;
+                                caseItemMap[icondp] = itemp;
                                 foundHit = true;
                             } else if (!overlappedCondp) {
                                 firstOverlap = i;
@@ -277,6 +279,7 @@ private:
                 for (uint32_t i = 0; i < numCases; ++i) {
                     if (!m_valueItem[i]) m_valueItem[i] = itemp;
                 }
+                caseItemMap[itemp] = itemp;
                 hasDefaultCase = true;
             }
         }
@@ -311,8 +314,8 @@ private:
         // Not done earlier, as we may now have a nullptr because it's just a ";" NOP branch
         for (uint32_t i = 0; i < numCases; ++i) {
             if (AstNode* const condp = m_valueItem[i]) {
-                AstCaseItem* caseItemp = VN_CAST(condp, CaseItem);
-                if (!caseItemp) caseItemp = VN_AS(condp->abovepIter(), CaseItem);
+                AstCaseItem* caseItemp = caseItemMap[condp];
+                UASSERT(caseItemp, "caseItemp should exist");
                 m_valueItem[i] = caseItemp->stmtsp();
             }
         }

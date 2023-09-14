@@ -98,14 +98,6 @@ AstNode* AstNode::abovep() const {
     const AstNode* const firstp = firstAbovep() ? this : m_headtailp;
     return firstp->backp();
 }
-AstNode* AstNode::abovepIter() const {
-    if (m_headtailp && !m_nextp) {  // tail
-        return m_headtailp->m_backp;
-    }
-    const AstNode* nodep = this;
-    while (!nodep->m_headtailp) nodep = nodep->m_backp;
-    return nodep->m_backp;
-}
 
 string AstNode::encodeName(const string& namein) {
     // Encode signal name raw from parser, then not called again on same signal
