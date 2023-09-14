@@ -3527,7 +3527,7 @@ statement_item<nodep>:          // IEEE: statement_item
                         { $$ = nullptr; BBUNSUP($4, "Unsupported: matches (for tagged union)"); }
         |       unique_priorityE caseStart caseAttrE yINSIDE case_insideListE yENDCASE
                         { $$ = $2; if ($5) $2->addItemsp($5);
-                          if (!$2->caseSimple()) $2->v3error("Illegal to have inside on a casex/casez");
+                          if (!$2->caseSimple()) $4->v3error("Illegal to have inside on a casex/casez");
                           $2->caseInsideSet();
                           if ($1 == uniq_UNIQUE) $2->uniquePragma(true);
                           if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
