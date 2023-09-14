@@ -5,14 +5,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Cls;
-   function bit get_x(ref bit x);
+   function logic get_x(ref logic x);
       return x;
    endfunction
 endclass
 
 module t (/*AUTOARG*/);
-   bit [10:0] a;
-   bit b;
+   logic [10:0] a;
+   logic b;
    Cls cls;
    initial begin
       cls = new;
