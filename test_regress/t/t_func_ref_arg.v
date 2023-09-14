@@ -30,6 +30,7 @@ endclass
 
 module t (/*AUTOARG*/);
    int a, b;
+   int arr[1];
    Cls cls;
    MyInt mi;
    initial begin
@@ -47,6 +48,11 @@ module t (/*AUTOARG*/);
       b = cls.get_val_set_2(mi.x);
       `checkh(mi.x, 2);
       `checkh(b, 1);
+
+      arr[0] = 10;
+      b = cls.get_val_set_2(arr[0]);
+      `checkh(arr[0], 2);
+      `checkh(b, 10);
 
       $write("*-* All Finished *-*\n");
       $finish;
