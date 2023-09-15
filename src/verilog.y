@@ -3558,9 +3558,11 @@ statement_item<nodep>:          // IEEE: statement_item
         //                      // Alternative would be shim with new AstVoidStmt.
         |       yVOID yP_TICK '(' task_subroutine_callNoMethod ')' ';'
                         { $$ = $4;
-                          FileLine* const newfl = new FileLine{$$->fileline()};
+                          AstNode* callp = $$;
+                          while (AstDot* const dotp = VN_CAST(callp, Dot)) callp = dotp->rhsp();
+                          FileLine* const newfl = new FileLine{callp->fileline()};
                           newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
-                          $$->fileline(newfl);
+                          callp->fileline(newfl);
                           $$ = VN_AS($$, NodeExpr)->makeStmt(); }
         |       yVOID yP_TICK '(' expr '.' task_subroutine_callNoMethod ')' ';'
                         { $$ = new AstDot{$5, false, $4, $6};
