@@ -174,6 +174,9 @@ private:
             iterateConstNull(nodep->refDTypep());
         });
     }
+    void visit(AstStreamDType* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {});
+    }
     void visit(AstVoidDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {});
     }
@@ -268,6 +271,9 @@ private:
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             iterateConstNull(nodep->sensesp());
         });
+    }
+    void visit(AstCLocalScope* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
     void visit(AstCoverInc* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {  //
