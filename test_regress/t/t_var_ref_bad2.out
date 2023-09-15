@@ -2,7 +2,7 @@
                                : ... In instance t
    13 |       bad_const_set = 32'h4567;   
       |       ^~~~~~~~~~~~~
-%Error: t/t_var_ref_bad2.v:23:17: Ref argument requires matching types; port 'int_ref' requires VAR 'int_ref' but connection is VARREF 'bad_non_int'.
+%Error: t/t_var_ref_bad2.v:23:17: Ref argument requires matching types; port 'int_ref' requires int but connection is byte.
                                 : ... In instance t
    23 |       checkset2(bad_non_int);   
       |                 ^~~~~~~~~~~

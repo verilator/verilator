@@ -1,4 +1,4 @@
-%Error: t/t_func_refio_bad.v:16:17: Ref argument requires matching types; port 'q' requires VAR 'q' but connection is CONST '?32?sh2a'.
+%Error: t/t_func_refio_bad.v:16:17: Ref argument requires matching types; port 'q' requires integer[$] but connection is logic[31:0].
                                   : ... In instance t
    16 |       queue_set(42);   
       |                 ^~

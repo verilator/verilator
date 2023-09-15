@@ -5577,12 +5577,14 @@ private:
                 const AstArg* const argp = tconnect.second;
                 AstNode* const pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
+                AstNodeDType* const portDTypep = portp->dtypep()->skipRefToEnump();
+                const AstNodeDType* const pinDTypep = pinp->dtypep()->skipRefToEnump();
                 if (portp->direction() == VDirection::REF
-                    && !similarDTypeRecurse(portp->dtypep(), pinp->dtypep())) {
+                    && !similarDTypeRecurse(portDTypep, pinDTypep)) {
                     pinp->v3error("Ref argument requires matching types;"
                                   << " port " << portp->prettyNameQ() << " requires "
-                                  << portp->prettyTypeName() << " but connection is "
-                                  << pinp->prettyTypeName() << ".");
+                                  << portDTypep->prettyDTypeName() << " but connection is "
+                                  << pinDTypep->prettyDTypeName() << ".");
                 } else if (portp->isWritable() && pinp->width() != portp->width()) {
                     pinp->v3warn(E_UNSUPPORTED, "Unsupported: Function output argument "
                                                     << portp->prettyNameQ() << " requires "
@@ -5593,10 +5595,10 @@ private:
                     // (get an ASSIGN with EXTEND on the lhs instead of rhs)
                 }
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
-                    checkClassAssign(nodep, "Function Argument", pinp, portp->dtypep());
-                    userIterate(pinp, WidthVP{portp->dtypep(), FINAL}.p());
+                    checkClassAssign(nodep, "Function Argument", pinp, portDTypep);
+                    userIterate(pinp, WidthVP{portDTypep, FINAL}.p());
                 } else {
-                    iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portp->dtypep());
+                    iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portDTypep);
                 }
             }
         }
@@ -6402,7 +6404,7 @@ private:
         return false;
     }
     void checkClassAssign(AstNode* nodep, const char* side, AstNode* rhsp,
-                          AstNodeDType* lhsDTypep) {
+                          const AstNodeDType* const lhsDTypep) {
         if (AstClassRefDType* const lhsClassRefp = VN_CAST(lhsDTypep->skipRefp(), ClassRefDType)) {
             UASSERT_OBJ(rhsp->dtypep(), rhsp, "Node has no type");
             AstNodeDType* const rhsDtypep = rhsp->dtypep()->skipRefp();
@@ -6415,7 +6417,8 @@ private:
                                 << rhsDtypep->prettyTypeName());
         }
     }
-    static bool similarDTypeRecurse(AstNodeDType* node1p, AstNodeDType* node2p) {
+    static bool similarDTypeRecurse(const AstNodeDType* const node1p,
+                                    const AstNodeDType* const node2p) {
         return node1p->skipRefp()->similarDType(node2p->skipRefp());
     }
     void iterateCheckFileDesc(AstNode* nodep, AstNode* underp, Stage stage) {
