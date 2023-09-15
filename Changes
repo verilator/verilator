@@ -35,6 +35,7 @@ Verilator 5.015 devel
 * Fix reference to extended class in parameterized class (#4466).
 * Fix display %x formatting of real.
 * Fix mis-warning on #() in classes' own functions.
+* Fix ZERODLY to not warn on 'wait(0)'.
 
 
 Verilator 5.014 2023-08-06

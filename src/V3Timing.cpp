@@ -997,7 +997,9 @@ private:
         AstNodeExpr* const condp = V3Const::constifyEdit(nodep->condp()->unlinkFrBack());
         auto* const constp = VN_CAST(condp, Const);
         if (constp) {
-            condp->v3warn(WAITCONST, "Wait statement condition is constant");
+            if (!nodep->fileline()->warnIsOff(V3ErrorCode::WAITCONST)) {
+                condp->v3warn(WAITCONST, "Wait statement condition is constant");
+            }
             if (constp->isZero()) {
                 // We have to await forever instead of simply returning in case we're deep in a
                 // callstack

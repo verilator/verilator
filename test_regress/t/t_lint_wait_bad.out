@@ -6,9 +6,6 @@
 %Warning-WAITCONST: t/t_timing_wait1.v:54:14: Wait statement condition is constant
    54 |       wait(0 < 1) $write("*-* All Finished *-*\n");
       |              ^
-%Warning-WAITCONST: t/t_timing_wait1.v:58:17: Wait statement condition is constant
-   58 |    initial wait(0) $stop;
-      |                 ^
 %Warning-WAITCONST: t/t_timing_wait1.v:59:19: Wait statement condition is constant
    59 |    initial wait(1 == 0) $stop;
       |                   ^~

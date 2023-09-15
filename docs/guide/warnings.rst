@@ -1990,10 +1990,14 @@ List Of Warnings
 
    .. code-block:: sv
 
-         wait(0);  // Blocks forever
+         wait(1);  // Blocks forever
 
    Warns that a `wait` statement awaits a constant condition, which means it
    either blocks forever or never blocks.
+
+   As a special case `wait(0)` with the literal constant `0` (as opposed to
+   something that elaborates to zero), does not warn, as it is presumed the
+   code is making the intent clear.
 
 
 .. option:: WIDTH

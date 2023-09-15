@@ -591,6 +591,17 @@ private:
             iterateChildren(nodep);
         }
     }
+    void visit(AstWait* nodep) override {
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+        if (nodep->condp()->isZero()) {
+            // Special case "wait(0)" we won't throw WAITCONST as user wrote
+            // it that way with presumed intent - UVM does this.
+            FileLine* const newfl = nodep->fileline();
+            newfl->warnOff(V3ErrorCode::WAITCONST, true);
+            nodep->fileline(newfl);
+        }
+    }
     void visit(AstWhile* nodep) override {
         cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
