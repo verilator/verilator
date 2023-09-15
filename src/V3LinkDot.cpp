@@ -2251,6 +2251,15 @@ private:
         if (baseClassp->isInterfaceClass()) importImplementsClass(nodep, srcp, baseClassp);
         if (!cextp->isImplements()) m_curSymp->importFromClass(m_statep->symsp(), srcp);
     }
+    void classExtendImport(AstClass* nodep) {
+        // A class reference might be to a class that is later in Ast due to
+        // e.g. parmaeterization or referring to a "class (type T) extends T"
+        // Resolve it so later Class:: references into its base classes work
+        VL_RESTORER(m_ds);
+        VSymEnt* const srcp = m_statep->getNodeSym(nodep);
+        m_ds.init(srcp);
+        iterate(nodep);
+    }
     bool checkPinRef(AstPin* pinp, VVarType refVarType) {
         // In instantiations of modules/ifaces, we shouldn't connect port pins to submodule's
         // parameters or vice versa
@@ -2901,12 +2910,14 @@ private:
         if (nodep->classOrPackagep()) {
             m_pinSymp = m_statep->getNodeSym(nodep->classOrPackagep());
         }
+        AstClass* const refClassp = VN_CAST(nodep->classOrPackagep(), Class);
+        // Make sure any extends() are properly imported within referenced class
+        if (refClassp && !m_statep->forPrimary()) classExtendImport(refClassp);
+
         m_ds.init(m_curSymp);
         UINFO(4, "(Backto) Link ClassOrPackageRef: " << nodep << endl);
-
         iterateChildren(nodep);
 
-        AstClass* const refClassp = VN_CAST(nodep->classOrPackagep(), Class);
         AstClass* const modClassp = VN_CAST(m_modp, Class);
         if (m_statep->forPrimary() && refClassp && !nodep->paramsp()
             && nodep->classOrPackagep()->hasGParam()
@@ -3511,6 +3522,8 @@ private:
                     // Already converted. Update symbol table to link unlinked members.
                     // Base class has to be visited in a case if its extends statement
                     // needs to be handled. Recursive inheritance was already checked.
+                    // Must be here instead of in LinkDotParam to handle
+                    // "class (type T) extends T".
                     if (baseClassp == nodep) {
                         cextp->v3error("Attempting to extend class " << nodep->prettyNameQ()
                                                                      << " from itself");
