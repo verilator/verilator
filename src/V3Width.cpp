@@ -6417,7 +6417,8 @@ private:
                                 << rhsDtypep->prettyTypeName());
         }
     }
-    static bool similarDTypeRecurse(const AstNodeDType* const node1p, const AstNodeDType* const node2p) {
+    static bool similarDTypeRecurse(const AstNodeDType* const node1p,
+                                    const AstNodeDType* const node2p) {
         return node1p->skipRefp()->similarDType(node2p->skipRefp());
     }
     void iterateCheckFileDesc(AstNode* nodep, AstNode* underp, Stage stage) {
