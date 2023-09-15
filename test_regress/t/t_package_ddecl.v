@@ -4,7 +4,7 @@
 // any use, without warranty, 2012 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-// see bug 474
+// See issue #474
 package functions;
    localparam LP_PACK = 512;
    localparam LP_PACK_AND_MOD = 19;

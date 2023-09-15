@@ -13,11 +13,11 @@ scenarios(simulator => 1);
 compile(
     verilator_flags2 => ["--exe --main --timing"],
     make_main => 0,
-    # bug#4471 - remove this
+    # issue #4471 - remove this
     verilator_make_gmake => 0,
     );
 
-#bug#4471 - add this
+# issue #4471 - add this
 #execute(
 #    check_finished => 1,
 #    );

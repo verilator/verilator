@@ -121,7 +121,7 @@ static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int 
         // check direction of object
         int vpidir = vpi_get(vpiDirection, handle);
         // Don't check port directions in verilator
-        // see #681
+        // See issue #681
         if (!TestSimulator::is_verilator()) CHECK_RESULT(vpidir, direction);
     }
 
@@ -129,7 +129,7 @@ static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int 
     int vpitype = vpi_get(vpiType, handle);
     if (!(TestSimulator::is_verilator() && type == vpiPort)) {
         // Don't check for ports in verilator
-        // see #681
+        // See issue #681
         CHECK_RESULT(vpitype, type);
     }
 

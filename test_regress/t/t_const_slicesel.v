@@ -13,7 +13,7 @@ localparam int unsigned A3 [2:0] = '{4,5,6};
 localparam int unsigned B22 [1:0] = A2[1:0];
 localparam int unsigned B33 [2:0] = A3[2:0];
 
-// bug #3186
+// See issue #3186
 localparam int unsigned B32_B [1:0] = A3[1:0];
 localparam int unsigned B32_T [1:0] = A3[2:1];
 

@@ -1,6 +1,6 @@
 // DESCRIPTION: Verilator: Check initialisation of cloned clock variables
 //
-// This tests issue 1327 (Strange initialisation behaviour with
+// This tests issue #1327 (Strange initialisation behaviour with
 // "VinpClk" cloned clock variables)
 //
 // This file ONLY is placed into the Public Domain, for any use,
