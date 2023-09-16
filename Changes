@@ -19,6 +19,7 @@ Verilator 5.015 devel
 * Support no-parentheses calls to static methods (#4432). [Krzysztof Boroński]
 * Support 'let'.
 * Fix Windows filename format, etc (#3873) (#4421). [Anthony Donlon].
+* Fix false INFINITELOOP on forever..mailbox.get() (#4323). [Srinivasan Venkataramanan]
 * Fix data type of condition operation on class objects (#4345) (#4352). [Ryszard Rozak, Antmicro Ltd]
 * Fix ++/-- under statements (#4399). [Aleksander Kiryk, Antmicro Ltd]
 * Fix detection of mixed blocking and nonblocking assignment in nested assignments (#4404). [Ryszard Rozak, Antmicro Ltd]

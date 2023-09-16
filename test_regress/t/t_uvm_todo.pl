@@ -15,7 +15,6 @@ compile(
                  "-Wno-PKGNODECL -Wno-IMPLICITSTATIC -Wno-CONSTRAINTIGN -Wno-MISINDENT",
                  "-Wno-CASEINCOMPLETE -Wno-CASTCONST -Wno-SYMRSVDWORD -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC",
                  "-Wno-REALCVT", # TODO note mostly related to $realtime - could suppress or fix upstream
-                 "-Wno-INFINITELOOP" , # TODO issue #4323, false warning
                  "-Wno-RANDC", # TODO issue #4349, add support
                  "-Wno-ZERODLY", # TODO issue #4494, add support
                  ],

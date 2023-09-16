@@ -3204,8 +3204,17 @@ private:
         iterateChildren(nodep);
     }
 
-    void visit(AstFuncRef* nodep) override {
+    void visit(AstNodeCCall* nodep) override {
         iterateChildren(nodep);
+        m_hasJumpDelay = true;  // As don't analyze inside tasks for timing controls
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        // Note excludes AstFuncRef as other visitor below
+        iterateChildren(nodep);
+        m_hasJumpDelay = true;  // As don't analyze inside tasks for timing controls
+    }
+    void visit(AstFuncRef* nodep) override {
+        visit(static_cast<AstNodeFTaskRef*>(nodep));
         if (m_params) {  // Only parameters force us to do constant function call propagation
             replaceWithSimulation(nodep);
         }
