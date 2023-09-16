@@ -2111,7 +2111,7 @@ public:
     }
     ASTGEN_MEMBERS_AstFunc;
     bool hasDType() const override { return true; }
-    AstNodeFTask* cloneType(const string& name) {
+    AstNodeFTask* cloneType(const string& name) override {
         return new AstFunc{fileline(), name, nullptr, nullptr};
     }
 };
@@ -2128,7 +2128,7 @@ public:
         BROKEN_RTN(!VN_IS(stmtsp(), StmtExpr));
         return nullptr;
     }
-    AstNodeFTask* cloneType(const string& name) { return new AstLet{fileline(), name}; }
+    AstNodeFTask* cloneType(const string& name) override { return new AstLet{fileline(), name}; }
 };
 class AstProperty final : public AstNodeFTask {
     // A property inside a module
@@ -2137,7 +2137,7 @@ public:
         : ASTGEN_SUPER_Property(fl, name, stmtp) {}
     ASTGEN_MEMBERS_AstProperty;
     bool hasDType() const override { return true; }
-    AstNodeFTask* cloneType(const string& name) {
+    AstNodeFTask* cloneType(const string& name) override {
         return new AstProperty{fileline(), name, nullptr};
     }
 };
@@ -2147,7 +2147,9 @@ public:
     AstTask(FileLine* fl, const string& name, AstNode* stmtp)
         : ASTGEN_SUPER_Task(fl, name, stmtp) {}
     ASTGEN_MEMBERS_AstTask;
-    AstNodeFTask* cloneType(const string& name) { return new AstTask{fileline(), name, nullptr}; }
+    AstNodeFTask* cloneType(const string& name) override {
+        return new AstTask{fileline(), name, nullptr};
+    }
 };
 
 // === AstNodeFile ===
