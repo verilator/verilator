@@ -224,6 +224,7 @@ private:
 
     // STATE
     VMemberMap m_memberMap;  // Member names cached for fast lookup
+    V3TaskConnectState m_taskConnectState;  // State to cache V3Task::taskConnects
     WidthVP* m_vup = nullptr;  // Current node state
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
@@ -5483,7 +5484,10 @@ private:
         // And do the arguments to the task/function too
         do {
         reloop:
-            const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+            // taskConnects may create a new task, and change nodep->taskp()
+            const V3TaskConnects tconnects
+                = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp(), &m_taskConnectState);
+            if (m_taskConnectState.didWrap()) m_memberMap.clear();  // As added a member
             for (const auto& tconnect : tconnects) {
                 const AstVar* const portp = tconnect.first;
                 AstArg* const argp = tconnect.second;

@@ -237,6 +237,15 @@ private:
             classEncapCheck(nodep, nodep->varp(), classrefp->classp());
         }  // else might be struct, etc
     }
+    void visit(AstVar* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        if (nodep->isFuncLocal() && nodep->direction() == VDirection::INPUT && nodep->valuep()) {
+            // It's the default value of optional argument.
+            // Such values are added to function calls in V3Width so can be removed now
+            pushDeletep(nodep->valuep()->unlinkFrBack());
+        }
+    }
     void visit(AstNodePreSel* nodep) override {  // LCOV_EXCL_LINE
         // This check could go anywhere after V3Param
         nodep->v3fatalSrc("Presels should have been removed before this point");

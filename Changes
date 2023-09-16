@@ -21,6 +21,7 @@ Verilator 5.015 devel
 * Support no-parentheses calls to static methods (#4432). [Krzysztof Boroński]
 * Support block_item_declaration in forks (#4455). [Krzysztof Boroński]
 * Support assignments of stream expressions on queues to packed values (#4458). [Ryszard Rozak, Antmicro Ltd]
+* Support function non-constant default arguments (#4470).
 * Support 'let'.
 * Optimize Verilator executable size by refactoring error reporting routines (#4446). [Anthony Donlon]
 * Optimize Verilation runtime pointers and graphs (#4396) (#4397) (#4398). [Krzysztof Bieganski, Antmicro Ltd]

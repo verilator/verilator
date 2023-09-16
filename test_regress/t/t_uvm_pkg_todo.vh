@@ -687,12 +687,8 @@ endfunction
 function void uvm_report( uvm_severity severity,
                           string id,
                           string message,
-//TODO issue #4470 - Fix UVM function non-constant default arguments
-//TODO  %Error: Internal Error: t/t_uvm_pkg_todo.vh:9957:54: ../V3Broken.cpp:262: VarRef missing VarScope pointer
-//TODO                          int verbosity = (severity == uvm_severity'(UVM_ERROR)) ? UVM_LOW :
-//TODO                                          (severity == uvm_severity'(UVM_FATAL)) ? UVM_NONE : UVM_MEDIUM,
-//TODO  remove next line:
-                          int verbosity = UVM_LOW,
+                          int verbosity = (severity == uvm_severity'(UVM_ERROR)) ? UVM_LOW :
+                                          (severity == uvm_severity'(UVM_FATAL)) ? UVM_NONE : UVM_MEDIUM,
                           string filename = "",
                           int line = 0,
                           string context_name = "",
@@ -7554,11 +7550,7 @@ class uvm_event#(type T=uvm_object) extends uvm_event_base;
                 wait_ptrigger();
                 data = get_trigger_data();
         endtask
-//TODO issue #4470 - Fix UVM function non-constant default arguments
-//TODO  %Error: t/t_uvm_pkg_todo.vh:7549:47: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_default_data'
-//TODO        virtual function void trigger (T data=get_default_data());
-//TODO  remove next line:
-        virtual function void trigger (T data=null);
+        virtual function void trigger (T data=get_default_data());
                 int skip;
                 cb_type cb_q[$];
                 skip=0;
@@ -9958,12 +9950,8 @@ class uvm_report_object extends uvm_object;
   virtual function void uvm_report( uvm_severity severity,
                                     string id,
                                     string message,
-//TODO issue #4470 - Fix UVM function non-constant default arguments
-//TODO  %Error: Internal Error: t/t_uvm_pkg_todo.vh:9957:54: ../V3Broken.cpp:262: VarRef missing VarScope pointer
-//TODO                                    int verbosity = (severity == uvm_severity'(UVM_ERROR)) ? UVM_LOW :
-//TODO                                                    (severity == uvm_severity'(UVM_FATAL)) ? UVM_NONE : UVM_MEDIUM,
-//TODO  remove next line:
-                                    int verbosity = UVM_ERROR,
+                                    int verbosity = (severity == uvm_severity'(UVM_ERROR)) ? UVM_LOW :
+                                                    (severity == uvm_severity'(UVM_FATAL)) ? UVM_NONE : UVM_MEDIUM,
                                     string filename = "",
                                     int line = 0,
                                     string context_name = "",
@@ -18797,13 +18785,8 @@ class uvm_sequence_item extends uvm_transaction;
   virtual function void uvm_report( uvm_severity severity,
                                     string id,
                                     string message,
-
-//TODO issue #4470 - Fix UVM function non-constant default arguments
-//TODO  %Error: Internal Error: t/t_uvm_pkg_todo.vh:18800:54: ../V3Broken.cpp:262: VarRef missing VarScope pointer
-//TODO                                    int verbosity = (severity == uvm_severity'(UVM_ERROR)) ? UVM_LOW :
-//TODO                                                    (severity == uvm_severity'(UVM_FATAL)) ? UVM_NONE : UVM_MEDIUM,
-//TODO  remove next line:
-                                    int verbosity = UVM_LOW,
+                                    int verbosity = (severity == uvm_severity'(UVM_ERROR)) ? UVM_LOW :
+                                                    (severity == uvm_severity'(UVM_FATAL)) ? UVM_NONE : UVM_MEDIUM,
                                     string filename = "",
                                     int line = 0,
                                     string context_name = "",
