@@ -214,6 +214,7 @@ Maupin
 Mdir
 Mednick
 Menküc
+Michail
 Michiels
 Microsystems
 Milanovic
@@ -278,6 +279,7 @@ Renga
 Requin
 Rodionov
 Rolfe
+Rontionov
 Roodselaar
 Runtime
 Ruud
@@ -416,6 +418,7 @@ arrarys
 assertOn
 astgen
 async
+atClone
 ato
 atoi
 autoconf
@@ -774,6 +777,7 @@ pragmas
 pre
 precisions
 predefines
+prepareClone
 prepend
 prepended
 preprocess
