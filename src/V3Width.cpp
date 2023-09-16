@@ -5322,13 +5322,7 @@ private:
         // Grab width from the output variable (if it's a function)
         if (nodep->didWidth()) return;
         if (nodep->doingWidth()) {
-            if (nodep->classMethod()) {
-                UINFO(5, "Recursive method call: " << nodep);
-            } else {
-                UINFO(5, "Recursive function or task call: " << nodep);
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Recursive function or task call: "
-                                                 << nodep->prettyNameQ());
-            }
+            UINFO(5, "Recursive function or task call: " << nodep);
             nodep->recursive(true);
             nodep->didWidth(true);
             return;

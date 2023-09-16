@@ -14,6 +14,7 @@ Verilator 5.015 devel
 **Minor:**
 
 * Add --no-trace-top to not trace top signals (#4412) (#4422). [Frans Skarman]
+* Support recursive function calls (#3267).
 * Support assignments of packed values to stream expressions on queues (#4401). [Ryszard Rozak, Antmicro Ltd]
 * Support no-parentheses calls to static methods (#4432). [Krzysztof Boroński]
 * Support 'let'.

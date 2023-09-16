@@ -765,10 +765,8 @@ function void uvm_report_fatal(string id,
   uvm_coreservice_t cs;
   cs = uvm_coreservice_t::get();
   top = cs.get_root();
-//TODO issue #3267 - Support recursive functions
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:753:15: Unsupported: Recursive function or task call: 'uvm_report_fatal'
-//TODO  top.uvm_report_fatal(id, message, verbosity, filename, line, context_name,
-//TODO    report_enabled_checked);
+  top.uvm_report_fatal(id, message, verbosity, filename, line, context_name,
+    report_enabled_checked);
 endfunction
 function void uvm_process_report_message(uvm_report_message report_message);
   uvm_root top;
