@@ -12,9 +12,13 @@ scenarios(vlt => 1);
 
 compile(
     v_flags2 => ["--timing",
-                 "-Wno-PKGNODECL -Wno-RANDC -Wno-IMPLICITSTATIC -Wno-CONSTRAINTIGN -Wno-MISINDENT",
-                 "-Wno-WIDTHEXPAND -Wno-WIDTHTRUNC -Wno-CASTCONST -Wno-REALCVT",
-                 "--error-limit 200 --debug-exit-uvm"],
+                 "-Wno-PKGNODECL -Wno-IMPLICITSTATIC -Wno-CONSTRAINTIGN -Wno-MISINDENT",
+                 "-Wno-CASEINCOMPLETE -Wno-CASTCONST -Wno-SYMRSVDWORD -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC",
+                 "-Wno-REALCVT", # TODO note mostly related to $realtime - could suppress or fix upstream
+                 "-Wno-INFINITELOOP" , # TODO issue #4323, false warning
+                 "-Wno-RANDC", # TODO issue #4349, add support
+                 "-Wno-ZERODLY", # TODO issue #4494, add support
+                 ],
     verilator_make_gmake => 0,
     );
 
