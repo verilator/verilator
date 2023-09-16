@@ -24,8 +24,9 @@ Verilator 5.015 devel
 * Support 'let'.
 * Optimize Verilator executable size by refactoring error reporting routines (#4446). [Anthony Donlon]
 * Optimize Verilation runtime pointers and graphs (#4396) (#4397) (#4398). [Krzysztof Bieganski, Antmicro Ltd]
-* Optimize preparations towards multithreading Verilation (#4463) (#4476) (#4477) (#4479).  [Kamil Rakoczy, Antmicro Ltd]
+* Optimize preparations towards multithreaded Verilation (#4291) (#4463) (#4476) (#4477) (#4479).  [Kamil Rakoczy, Antmicro Ltd]
 * Fix Windows filename format, etc (#3873) (#4421). [Anthony Donlon].
+* Fix t_dist_cppstyle Perl performance issue (#4085). [Srinivasan Venkataramanan]
 * Fix using type in parameterized classes without #() (#4281) (#4440). [Anthony Donlon]
 * Fix false INFINITELOOP on forever..mailbox.get() (#4323). [Srinivasan Venkataramanan]
 * Fix data type of condition operation on class objects (#4345) (#4352). [Ryszard Rozak, Antmicro Ltd]
