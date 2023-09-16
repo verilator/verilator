@@ -50,6 +50,7 @@ Verilator 5.015 devel
 * Fix error on enum with VARHIDDEN of cell (#4482). [Michail Rontionov]
 * Fix lint of case statements with enum and wildcard bits (#4464) (#4487). [Anthony Donlon]
 * Fix reference to extended class in parameterized class (#4466).
+* Fix recursive display causing segfault (#4480). [Kuoping Hsu]
 * Fix the error message when the type of ref argument is wrong (#4490). [Ryszard Rozak, Antmicro Ltd]
 * Fix display %x formatting of real.
 * Fix mis-warning on #() in classes' own functions.
