@@ -223,7 +223,7 @@ private:
     using DTypeMap = std::map<const std::string, AstPatMember*>;
 
     // STATE
-    VMemberMap memberMap;  // Member names cached for fast lookup
+    VMemberMap m_memberMap;  // Member names cached for fast lookup
     WidthVP* m_vup = nullptr;  // Current node state
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
@@ -2640,7 +2640,8 @@ private:
             AstPackage* const packagep = getItemPackage(nodep);
             if (packagep && packagep->name() == "std") {
                 // Change type of m_process to VlProcessRef
-                if (AstVar* const varp = VN_CAST(memberMap.findMember(nodep, "m_process"), Var)) {
+                if (AstVar* const varp
+                    = VN_CAST(m_memberMap.findMember(nodep, "m_process"), Var)) {
                     AstNodeDType* const dtypep = varp->getChildDTypep();
                     if (!varp->dtypep()) {
                         VL_DO_DANGLING(pushDeletep(dtypep->unlinkFrBack()), dtypep);
@@ -2652,7 +2653,7 @@ private:
                 }
                 // Mark that self requires process instance
                 if (AstNodeFTask* const ftaskp
-                    = VN_CAST(memberMap.findMember(nodep, "self"), NodeFTask)) {
+                    = VN_CAST(m_memberMap.findMember(nodep, "self"), NodeFTask)) {
                     ftaskp->setNeedProcess();
                 }
             }
@@ -2761,7 +2762,7 @@ private:
         AstClass* const first_classp = adtypep->classp();
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
-            if (AstNode* const foundp = memberMap.findMember(classp, nodep->name())) {
+            if (AstNode* const foundp = m_memberMap.findMember(classp, nodep->name())) {
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
                     if (!varp->didWidth()) userIterate(varp, nullptr);
                     if (varp->lifetime().isStatic()) {
@@ -2837,7 +2838,7 @@ private:
     bool memberSelStruct(AstMemberSel* nodep, AstNodeUOrStructDType* adtypep) {
         // Returns true if ok
         if (AstMemberDType* const memberp
-            = VN_CAST(memberMap.findMember(adtypep, nodep->name()), MemberDType)) {
+            = VN_CAST(m_memberMap.findMember(adtypep, nodep->name()), MemberDType)) {
             if (m_attrp) {  // Looking for the base of the attribute
                 nodep->dtypep(memberp);
                 UINFO(9, "   MEMBERSEL(attr) -> " << nodep << endl);
@@ -3500,10 +3501,10 @@ private:
         AstClass* const first_classp = adtypep->classp();
         if (nodep->name() == "randomize") {
             V3Randomize::newRandomizeFunc(first_classp);
-            memberMap.clear();
+            m_memberMap.clear();
         } else if (nodep->name() == "srandom") {
             V3Randomize::newSRandomFunc(first_classp);
-            memberMap.clear();
+            m_memberMap.clear();
         }
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
@@ -3526,7 +3527,7 @@ private:
                 }
             }
             if (AstNodeFTask* const ftaskp
-                = VN_CAST(memberMap.findMember(classp, nodep->name()), NodeFTask)) {
+                = VN_CAST(m_memberMap.findMember(classp, nodep->name()), NodeFTask)) {
                 userIterate(ftaskp, nullptr);
                 if (ftaskp->lifetime().isStatic()) {
                     AstNodeExpr* argsp = nullptr;
@@ -3795,7 +3796,8 @@ private:
 
             classp = refp->classp();
             UASSERT_OBJ(classp, nodep, "Unlinked");
-            if (AstNodeFTask* const ftaskp = VN_CAST(memberMap.findMember(classp, "new"), Func)) {
+            if (AstNodeFTask* const ftaskp
+                = VN_CAST(m_memberMap.findMember(classp, "new"), Func)) {
                 nodep->taskp(ftaskp);
                 nodep->classOrPackagep(classp);
             } else {
@@ -3963,7 +3965,7 @@ private:
                         // '{member:value} or '{data_type: default_value}
                         if (const AstText* textp = VN_CAST(patp->keyp(), Text)) {
                             // member: value
-                            memp = VN_CAST(memberMap.findMember(vdtypep, textp->text()),
+                            memp = VN_CAST(m_memberMap.findMember(vdtypep, textp->text()),
                                            MemberDType);
                             if (!memp) {
                                 patp->keyp()->v3error("Assignment pattern key '"
@@ -5609,10 +5611,10 @@ private:
             UASSERT_OBJ(classp, nodep, "Should have failed in V3LinkDot");
             if (nodep->name() == "randomize") {
                 nodep->taskp(V3Randomize::newRandomizeFunc(classp));
-                memberMap.clear();
+                m_memberMap.clear();
             } else if (nodep->name() == "srandom") {
                 nodep->taskp(V3Randomize::newSRandomFunc(classp));
-                memberMap.clear();
+                m_memberMap.clear();
             } else if (nodep->name() == "get_randstate") {
                 methodOkArguments(nodep, 0, 0);
                 classp->baseMostClassp()->needRNG(true);
