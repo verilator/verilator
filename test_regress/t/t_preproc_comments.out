@@ -23,29 +23,34 @@ At file "t/t_preproc_inc2.vh"  line 5
  
 `line 7 "t/t_preproc_inc2.vh" 0
 `line 1 "t/t_preproc_inc3.vh" 1
-`line 2 "inc3_a_filename_from_line_directive" 0
 // DESCRIPTION: Verilog::Preproc: Example source code 
+`line 2 "t/t_preproc_inc3.vh" 0
 // This file ONLY is placed under the Creative Commons Public Domain, for 
 // any use, without warranty, 2000-2007 by Wilson Snyder. 
 // SPDX-License-Identifier: CC0-1.0 
 
-`line 7 "inc3_a_filename_from_line_directive" 0
+`line 6 "t/t_preproc_inc3.vh" 0
  
   
   
   // FOO 
-  At file "inc3_a_filename_from_line_directive"  line 11
+  At file "t/t_preproc_inc3.vh"  line 10
+`line 12 "inc3_a_filename_from_line_directive_with_LINE" 0
+  At file "inc3_a_filename_from_line_directive_with_LINE"  line 12
+`line 100 "inc3_a_filename_from_line_directive" 0
+  At file "inc3_a_filename_from_line_directive"  line 100
 
-`line 13 "inc3_a_filename_from_line_directive" 0
+
+`line 103 "inc3_a_filename_from_line_directive" 0
    
  // guard 
 
-`line 16 "inc3_a_filename_from_line_directive" 0
+`line 106 "inc3_a_filename_from_line_directive" 0
  
   
 
 
-`line 20 "inc3_a_filename_from_line_directive" 2
+`line 110 "inc3_a_filename_from_line_directive" 2
 `line 7 "t/t_preproc_inc2.vh" 0
 
 
