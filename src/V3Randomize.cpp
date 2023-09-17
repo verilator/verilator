@@ -338,7 +338,7 @@ private:
                 = new AstIf{itemp->fileline(),
                             new AstLte{condp->fileline(),
                                        new AstVarRef{condp->fileline(), randVarp, VAccess::READ},
-                                       sump->cloneTree(true)},
+                                       sump->cloneTreePure(true)},
                             stmtsp, nullptr};
             ifsp->addElsesp(newifp);
             ifsp = newifp;

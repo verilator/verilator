@@ -98,10 +98,10 @@ class SliceVisitor final : public VNVisitor {
                 nodep->v3error("Array initialization has too few elements, need element "
                                << offset);
             }
-            newp = itemp ? itemp->cloneTree(false) : new AstConst{nodep->fileline(), 0};
+            newp = itemp ? itemp->cloneTreePure(false) : new AstConst{nodep->fileline(), 0};
         } else if (AstNodeCond* const snodep = VN_CAST(nodep, NodeCond)) {
             UINFO(9, "  cloneCond(" << elements << "," << offset << ") " << nodep << endl);
-            return snodep->cloneType(snodep->condp()->cloneTree(false),
+            return snodep->cloneType(snodep->condp()->cloneTreePure(false),
                                      cloneAndSel(snodep->thenp(), elements, offset),
                                      cloneAndSel(snodep->elsep(), elements, offset));
         } else if (const AstSliceSel* const snodep = VN_CAST(nodep, SliceSel)) {
@@ -110,7 +110,8 @@ class SliceVisitor final : public VNVisitor {
                                   + (!snodep->declRange().ascending()
                                          ? snodep->declRange().elements() - 1 - offset
                                          : offset));
-            newp = new AstArraySel{nodep->fileline(), snodep->fromp()->cloneTree(false), leOffset};
+            newp = new AstArraySel{nodep->fileline(), snodep->fromp()->cloneTreePure(false),
+                                   leOffset};
         } else if (VN_IS(nodep, ArraySel) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel)
                    || VN_IS(nodep, CMethodHard) || VN_IS(nodep, MemberSel)
                    || VN_IS(nodep, ExprStmt)) {
@@ -118,7 +119,7 @@ class SliceVisitor final : public VNVisitor {
             const int leOffset = !arrayp->rangep()->ascending()
                                      ? arrayp->rangep()->elementsConst() - 1 - offset
                                      : offset;
-            newp = new AstArraySel{nodep->fileline(), VN_AS(nodep, NodeExpr)->cloneTree(false),
+            newp = new AstArraySel{nodep->fileline(), VN_AS(nodep, NodeExpr)->cloneTreePure(false),
                                    leOffset};
         } else {
             if (!m_assignError) {

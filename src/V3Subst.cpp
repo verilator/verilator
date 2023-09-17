@@ -292,7 +292,7 @@ private:
     }
     void replaceSubstEtc(AstNode* nodep, AstNodeExpr* substp) {
         if (debug() > 5) nodep->dumpTree("-  substw_old: ");
-        AstNodeExpr* newp = substp->cloneTree(true);
+        AstNodeExpr* newp = substp->cloneTreePure(true);
         if (!nodep->isQuad() && newp->isQuad()) {
             newp = new AstCCast{newp->fileline(), newp, nodep};
         }

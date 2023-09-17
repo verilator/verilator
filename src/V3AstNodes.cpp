@@ -279,8 +279,8 @@ AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp);
 
 AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,
                                               AstNodeExpr* rhsp) {
-    AstNodeExpr* const ap = new AstGte{fileline(), exprp->cloneTree(true), lhsp};
-    AstNodeExpr* const bp = new AstLte{fileline(), exprp->cloneTree(true), rhsp};
+    AstNodeExpr* const ap = new AstGte{fileline(), exprp->cloneTreePure(true), lhsp};
+    AstNodeExpr* const bp = new AstLte{fileline(), exprp->cloneTreePure(true), rhsp};
     ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
     bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
     return new AstAnd{fileline(), ap, bp};

@@ -1858,7 +1858,7 @@ private:
             if (assoc) {
                 AstVar* const varp = enumVarp(enumDtp, VAttrType::ENUM_VALID, true, 0);
                 testp = new AstAssocSel{fl_novalue, newVarRefDollarUnit(varp),
-                                        nodep->fromp()->cloneTree(false)};
+                                        nodep->fromp()->cloneTreePure(false)};
             } else {
                 const int selwidth = V3Number::log2b(maxval) + 1;  // Width to address a bit
                 AstVar* const varp
@@ -1867,12 +1867,12 @@ private:
                 fl_nowidth->warnOff(V3ErrorCode::WIDTH, true);
                 testp = new AstCond{
                     fl,
-                    new AstGt{fl_nowidth, nodep->fromp()->cloneTree(false),
+                    new AstGt{fl_nowidth, nodep->fromp()->cloneTreePure(false),
                               new AstConst{fl_nowidth, AstConst::Unsized64{}, maxval}},
                     new AstConst{fl, AstConst::BitFalse{}},
-                    new AstArraySel{
-                        fl, newVarRefDollarUnit(varp),
-                        new AstSel{fl_novalue, nodep->fromp()->cloneTree(false), 0, selwidth}}};
+                    new AstArraySel{fl, newVarRefDollarUnit(varp),
+                                    new AstSel{fl_novalue, nodep->fromp()->cloneTreePure(false), 0,
+                                               selwidth}}};
             }
             newp = new AstCond{
                 fl, testp,
@@ -2550,7 +2550,7 @@ private:
                     "Inside operator not legal on non-unpacked arrays (IEEE 1800-2017 11.4.13)");
                 continue;
             } else {
-                inewp = AstEqWild::newTyped(itemp->fileline(), nodep->exprp()->cloneTree(true),
+                inewp = AstEqWild::newTyped(itemp->fileline(), nodep->exprp()->cloneTreePure(true),
                                             itemp->unlinkFrBack());
             }
             if (newp) {
@@ -3625,7 +3625,7 @@ private:
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* newp = nullptr;
             for (int i = 0; i < adtypep->elementsConst(); ++i) {
-                AstNodeExpr* const arrayRef = nodep->fromp()->cloneTree(false);
+                AstNodeExpr* const arrayRef = nodep->fromp()->cloneTreePure(false);
                 AstNodeExpr* const selector = new AstArraySel{fl, arrayRef, i};
                 if (!newp) {
                     newp = selector;
@@ -4552,8 +4552,9 @@ private:
                 if (adtypep->isString()) {
                     if (varp) {
                         AstConst* const leftp = new AstConst{fl, AstConst::Signed32{}, 0};
-                        AstLt* const condp = new AstLt{fl, new AstVarRef{fl, varp, VAccess::READ},
-                                                       new AstLenN{fl, fromp->cloneTree(false)}};
+                        AstLt* const condp
+                            = new AstLt{fl, new AstVarRef{fl, varp, VAccess::READ},
+                                        new AstLenN{fl, fromp->cloneTreePure(false)}};
                         AstAdd* const incp
                             = new AstAdd{fl, new AstConst{fl, AstConst::Signed32{}, 1},
                                          new AstVarRef{fl, varp, VAccess::READ}};
@@ -4576,7 +4577,8 @@ private:
             } else if (VN_IS(fromDtp, DynArrayDType) || VN_IS(fromDtp, QueueDType)) {
                 if (varp) {
                     auto* const leftp = new AstConst{fl, AstConst::Signed32{}, 0};
-                    auto* const sizep = new AstCMethodHard{fl, fromp->cloneTree(false), "size"};
+                    auto* const sizep
+                        = new AstCMethodHard{fl, fromp->cloneTreePure(false), "size"};
                     sizep->dtypeSetSigned32();
                     sizep->didWidth(true);
                     sizep->protect(false);
@@ -4601,10 +4603,10 @@ private:
                     fl, VVarType::BLOCKTEMP, varp->name() + "__Vfirst", VFlagBitPacked{}, 1};
                 first_varp->usedLoopIdx(true);
                 AstNodeExpr* const firstp = new AstMethodCall{
-                    fl, fromp->cloneTree(false), "first",
+                    fl, fromp->cloneTreePure(false), "first",
                     new AstArg{fl, "", new AstVarRef{fl, varp, VAccess::READWRITE}}};
                 AstNodeExpr* const nextp = new AstMethodCall{
-                    fl, fromp->cloneTree(false), "next",
+                    fl, fromp->cloneTreePure(false), "next",
                     new AstArg{fl, "", new AstVarRef{fl, varp, VAccess::READWRITE}}};
                 AstNode* const first_clearp
                     = new AstAssign{fl, new AstVarRef{fl, first_varp, VAccess::WRITE},

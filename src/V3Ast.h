@@ -1998,7 +1998,8 @@ public:
                              AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
-    AstNode* cloneTree(bool cloneNextLink);  // Not const, as sets clonep() on original nodep
+    AstNode* cloneTree(bool cloneNextLink);  // Not const, as sets clonep() on original nodep //
+    AstNode* cloneTreePure(bool cloneNextLink) { return cloneTree(cloneNextLink); }
     bool gateTree() { return gateTreeIter(); }  // Is tree isGateOptimizable?
     inline bool sameTree(const AstNode* node2p) const;  // Does tree of this == node2p?
     // Does tree of this == node2p?, not allowing non-isGateOptimizable

@@ -353,7 +353,7 @@ private:
         }
         if (bitselp) {
             selectsp = new AstSel{nodep->fileline(), selectsp, bitreadp,
-                                  bitselp->widthp()->cloneTree(false)};
+                                  bitselp->widthp()->cloneTreePure(false)};  // Always pure
         }
         // Build "IF (changeit) ...
         UINFO(9, "   For " << setvscp << endl);

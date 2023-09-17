@@ -243,7 +243,7 @@ private:
                 }
 
                 // Build a bitmask of the true predicates
-                AstNodeExpr* const predp = ifp->condp()->cloneTree(false);
+                AstNodeExpr* const predp = ifp->condp()->cloneTreePure(false);
                 if (propp) {
                     propp = new AstConcat{nodep->fileline(), predp, propp};
                 } else {
@@ -312,17 +312,17 @@ private:
                              icondp = VN_AS(icondp->nextp(), NodeExpr)) {
                             AstNodeExpr* onep;
                             if (AstInsideRange* const rcondp = VN_CAST(icondp, InsideRange)) {
-                                onep = rcondp->newAndFromInside(nodep->exprp(),
-                                                                rcondp->lhsp()->cloneTree(true),
-                                                                rcondp->rhsp()->cloneTree(true));
+                                onep = rcondp->newAndFromInside(
+                                    nodep->exprp(), rcondp->lhsp()->cloneTreePure(true),
+                                    rcondp->rhsp()->cloneTreePure(true));
                             } else if (nodep->casex() || nodep->casez() || nodep->caseInside()) {
                                 onep = AstEqWild::newTyped(itemp->fileline(),
-                                                           nodep->exprp()->cloneTree(false),
-                                                           icondp->cloneTree(false));
+                                                           nodep->exprp()->cloneTreePure(false),
+                                                           icondp->cloneTreePure(false));
                             } else {
                                 onep = AstEq::newTyped(icondp->fileline(),
-                                                       nodep->exprp()->cloneTree(false),
-                                                       icondp->cloneTree(false));
+                                                       nodep->exprp()->cloneTreePure(false),
+                                                       icondp->cloneTreePure(false));
                             }
                             if (propp) {
                                 propp = new AstConcat{icondp->fileline(), onep, propp};

@@ -1494,13 +1494,13 @@ private:
         const AstSel* rselp = VN_CAST(rhsp, Sel);
         // a[i:0] a
         if (lselp && !rselp && rhsp->sameGateTree(lselp->fromp()))
-            rselp = new AstSel{rhsp->fileline(), rhsp->cloneTree(false), 0, rhsp->width()};
+            rselp = new AstSel{rhsp->fileline(), rhsp->cloneTreePure(false), 0, rhsp->width()};
         // a[i:j] {a[j-1:k], b}
         if (lselp && !rselp && VN_IS(rhsp, Concat))
             return ifMergeAdjacent(lhsp, VN_CAST(rhsp, Concat)->lhsp());
         // a a[msb:j]
         if (rselp && !lselp && lhsp->sameGateTree(rselp->fromp()))
-            lselp = new AstSel{lhsp->fileline(), lhsp->cloneTree(false), 0, lhsp->width()};
+            lselp = new AstSel{lhsp->fileline(), lhsp->cloneTreePure(false), 0, lhsp->width()};
         // {b, a[j:k]} a[k-1:i]
         if (rselp && !lselp && VN_IS(lhsp, Concat))
             return ifMergeAdjacent(VN_CAST(lhsp, Concat)->rhsp(), rhsp);
@@ -1812,10 +1812,10 @@ private:
         // {llp OP lrp, rlp OP rrp} => {llp, rlp} OP {lrp, rrp}, where OP = AND/OR/XOR
         AstNodeBiop* const lp = VN_AS(nodep->lhsp(), NodeBiop);
         AstNodeBiop* const rp = VN_AS(nodep->rhsp(), NodeBiop);
-        AstNodeExpr* const llp = lp->lhsp()->cloneTree(false);
-        AstNodeExpr* const lrp = lp->rhsp()->cloneTree(false);
-        AstNodeExpr* const rlp = rp->lhsp()->cloneTree(false);
-        AstNodeExpr* const rrp = rp->rhsp()->cloneTree(false);
+        AstNodeExpr* const llp = lp->lhsp()->cloneTreePure(false);
+        AstNodeExpr* const lrp = lp->rhsp()->cloneTreePure(false);
+        AstNodeExpr* const rlp = rp->lhsp()->cloneTreePure(false);
+        AstNodeExpr* const rrp = rp->rhsp()->cloneTreePure(false);
         if (concatMergeable(lp, rp, 0)) {
             AstConcat* const newlp = new AstConcat{rlp->fileline(), llp, rlp};
             AstConcat* const newrp = new AstConcat{rrp->fileline(), lrp, rrp};
@@ -1897,9 +1897,9 @@ private:
         AstNodeExpr* const ap = lhsp->lhsp()->unlinkFrBack();
         AstNodeExpr* const bp = lhsp->rhsp()->unlinkFrBack();
         AstNodeBiop* const shift1p = nodep;
-        AstNodeBiop* const shift2p = nodep->cloneTree(true);
+        AstNodeBiop* const shift2p = nodep->cloneTreePure(true);
         shift1p->lhsp(ap);
-        shift1p->rhsp(shiftp->cloneTree(true));
+        shift1p->rhsp(shiftp->cloneTreePure(true));
         shift2p->lhsp(bp);
         shift2p->rhsp(shiftp);
         AstNodeBiop* const newp = lhsp;
@@ -2085,7 +2085,7 @@ private:
             AstNodeExpr* const lc2p = VN_AS(nodep->lhsp(), Concat)->rhsp()->unlinkFrBack();
             AstNodeExpr* const conp = VN_AS(nodep->lhsp(), Concat)->unlinkFrBack();
             AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-            AstNodeExpr* const rhs2p = rhsp->cloneTree(false);
+            AstNodeExpr* const rhs2p = rhsp->cloneTreePure(false);
             // Calc widths
             const int lsb2 = 0;
             const int msb2 = lsb2 + lc2p->width() - 1;
@@ -2430,8 +2430,8 @@ private:
             nodep->fileline(),
             new AstLogOr{nodep->fileline(), new AstLogNot{nodep->fileline(), lhsp}, rhsp},
             new AstLogOr{nodep->fileline(),
-                         new AstLogNot{nodep->fileline(), rhsp->cloneTree(false)},
-                         lhsp->cloneTree(false)}};
+                         new AstLogNot{nodep->fileline(), rhsp->cloneTreePure(false)},
+                         lhsp->cloneTreePure(false)}};
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -2588,8 +2588,8 @@ private:
         AstNodeExpr* const bilhsp = fromp->lhsp()->unlinkFrBack();
         AstNodeExpr* const birhsp = fromp->rhsp()->unlinkFrBack();
         //
-        fromp->lhsp(
-            new AstSel{nodep->fileline(), bilhsp, lsbp->cloneTree(true), widthp->cloneTree(true)});
+        fromp->lhsp(new AstSel{nodep->fileline(), bilhsp, lsbp->cloneTreePure(true),
+                               widthp->cloneTreePure(true)});
         fromp->rhsp(new AstSel{nodep->fileline(), birhsp, lsbp, widthp});
         fromp->dtypeFrom(nodep);
         nodep->replaceWith(fromp);

@@ -188,13 +188,13 @@ class ForceConvertVisitor final : public VNVisitor {
         V3Number ones{lhsp, isRangedDType(lhsp) ? lhsp->width() : 1};
         ones.setAllBits1();
         AstAssign* const setEnp
-            = new AstAssign{flp, lhsp->cloneTree(false), new AstConst{rhsp->fileline(), ones}};
+            = new AstAssign{flp, lhsp->cloneTreePure(false), new AstConst{rhsp->fileline(), ones}};
         transformWritenVarScopes(setEnp->lhsp(), [this](AstVarScope* vscp) {
             return getForceComponents(vscp).m_enVscp;
         });
         // Set corresponding value signals to the forced value
         AstAssign* const setValp
-            = new AstAssign{flp, lhsp->cloneTree(false), rhsp->cloneTree(false)};
+            = new AstAssign{flp, lhsp->cloneTreePure(false), rhsp->cloneTreePure(false)};
         transformWritenVarScopes(setValp->lhsp(), [this](AstVarScope* vscp) {
             return getForceComponents(vscp).m_valVscp;
         });
@@ -223,7 +223,7 @@ class ForceConvertVisitor final : public VNVisitor {
         V3Number zero{lhsp, isRangedDType(lhsp) ? lhsp->width() : 1};
         zero.setAllBits0();
         AstAssign* const resetEnp
-            = new AstAssign{flp, lhsp->cloneTree(false), new AstConst{lhsp->fileline(), zero}};
+            = new AstAssign{flp, lhsp->cloneTreePure(false), new AstConst{lhsp->fileline(), zero}};
         transformWritenVarScopes(resetEnp->lhsp(), [this](AstVarScope* vscp) {
             return getForceComponents(vscp).m_enVscp;
         });
@@ -235,7 +235,7 @@ class ForceConvertVisitor final : public VNVisitor {
         FileLine* const fl_nowarn = new FileLine{flp};
         fl_nowarn->warnOff(V3ErrorCode::BLKANDNBLK, true);
         AstAssign* const resetRdp
-            = new AstAssign{fl_nowarn, lhsp->cloneTree(false), lhsp->unlinkFrBack()};
+            = new AstAssign{fl_nowarn, lhsp->cloneTreePure(false), lhsp->unlinkFrBack()};
         // Replace write refs on the LHS
         resetRdp->lhsp()->foreach([this](AstNodeVarRef* refp) {
             if (refp->access() != VAccess::WRITE) return;

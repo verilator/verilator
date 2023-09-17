@@ -4187,10 +4187,10 @@ class AstCountBits final : public AstNodeQuadop {
     // Number of bits set in vector
 public:
     AstCountBits(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* ctrl1p)
-        : ASTGEN_SUPER_CountBits(fl, exprp, ctrl1p, ctrl1p->cloneTree(false),
-                                 ctrl1p->cloneTree(false)) {}
+        : ASTGEN_SUPER_CountBits(fl, exprp, ctrl1p, ctrl1p->cloneTreePure(false),
+                                 ctrl1p->cloneTreePure(false)) {}
     AstCountBits(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* ctrl1p, AstNodeExpr* ctrl2p)
-        : ASTGEN_SUPER_CountBits(fl, exprp, ctrl1p, ctrl2p, ctrl2p->cloneTree(false)) {}
+        : ASTGEN_SUPER_CountBits(fl, exprp, ctrl1p, ctrl2p, ctrl2p->cloneTreePure(false)) {}
     AstCountBits(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* ctrl1p, AstNodeExpr* ctrl2p,
                  AstNodeExpr* ctrl3p)
         : ASTGEN_SUPER_CountBits(fl, exprp, ctrl1p, ctrl2p, ctrl3p) {}
