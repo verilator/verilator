@@ -246,7 +246,7 @@ class Cpt:
         with open_file(self.out_filename) as fho:
             togen = self.out_lines
             for line in togen:
-                if type(line) is str:
+                if isinstance(line, str):
                     self.out_lines = [line]
                 else:
                     self.out_lines = []
@@ -908,6 +908,39 @@ def write_type_tests(prefix, nodeList):
 ################################################################################
 
 
+def write_ast_type_info(filename):
+    with open_file(filename) as fh:
+        for node in sorted(filter(lambda _: _.isLeaf, AstNodeList),
+                           key=lambda _: _.typeId):
+            opTypeList = []
+            opNameList = []
+            for n in range(1, 5):
+                op = node.getOp(n)
+                if not op:
+                    opTypeList.append('OP_UNUSED')
+                    opNameList.append('op{0}p'.format(n))
+                else:
+                    name, monad, _ = op
+                    if not monad:
+                        opTypeList.append('OP_USED')
+                    elif monad == "Optional":
+                        opTypeList.append('OP_OPTIONAL')
+                    elif monad == "List":
+                        opTypeList.append('OP_LIST')
+                    opNameList.append(name)
+            # opTypeStr = ', '.join(opTypeList)
+            opTypeStr = ', '.join(
+                ['VNTypeInfo::{0}'.format(s) for s in opTypeList])
+            opNameStr = ', '.join(['"{0}"'.format(s) for s in opNameList])
+            fh.write(
+                '    {{ "Ast{name}", {{{opTypeStr}}}, {{{opNameStr}}} }},\n'.
+                format(
+                    name=node.name,
+                    opTypeStr=opTypeStr,
+                    opNameStr=opNameStr,
+                ))
+
+
 def write_ast_macros(filename):
     with open_file(filename) as fh:
 
@@ -927,9 +960,6 @@ def write_ast_macros(filename):
             }}
             Ast{t}* cloneTree(bool cloneNext) {{
                 return static_cast<Ast{t}*>(AstNode::cloneTree(cloneNext));
-            }}
-            static Ast{t}* cloneTreeNull(Ast{t}* nodep, bool cloneNextLink) {{
-                return nodep ? nodep->cloneTree(cloneNextLink) : nullptr;
             }}
             Ast{t}* clonep() const {{ return static_cast<Ast{t}*>(AstNode::clonep()); }}
             Ast{t}* addNext(Ast{t}* nodep) {{ return static_cast<Ast{t}*>(AstNode::addNext(this, nodep)); }}
@@ -996,91 +1026,6 @@ def write_ast_yystype(filename):
             fh.write("Ast{t}* {m}p;\n".format(t=node.name,
                                               m=node.name[0].lower() +
                                               node.name[1:]))
-
-
-def write_ast_op_checks(filename):
-    with open_file(filename) as fh:
-
-        indent = ""
-
-        def emitBlock(pattern, **fmt):
-            fh.write(
-                textwrap.indent(textwrap.dedent(pattern),
-                                indent).format(**fmt))
-
-        for node in AstNodeList:
-            if not node.isLeaf:
-                continue
-
-            emitBlock('''\
-                case VNType::at{nodeName}: {{
-                    const Ast{nodeName}* const currp = static_cast<const Ast{nodeName}*>(this);
-                ''',
-                      nodeName=node.name)
-            indent = "    "
-            for n in range(1, 5):
-                op = node.getOp(n)
-                emitBlock("// Checking op{n}p\n", n=n)
-                if op:
-                    name, monad, kind = op
-                    if not monad:
-                        emitBlock('''\
-                            UASSERT_OBJ(currp->{opName}(), currp, "Ast{nodeName} must have non nullptr {opName}()");
-                            UASSERT_OBJ(!currp->{opName}()->nextp(), currp, "Ast{nodeName}::{opName}() cannot have a non nullptr nextp()");
-                            currp->{opName}()->checkTreeIter(currp);
-                            ''',
-                                  n=n,
-                                  nodeName=node.name,
-                                  opName=name)
-                    elif monad == "Optional":
-                        emitBlock('''\
-                            if (Ast{kind}* const opp = currp->{opName}()) {{
-                                UASSERT_OBJ(!currp->{opName}()->nextp(), currp, "Ast{nodeName}::{opName}() cannot have a non nullptr nextp()");
-                                opp->checkTreeIter(currp);
-                            }}
-                            ''',
-                                  n=n,
-                                  nodeName=node.name,
-                                  opName=name,
-                                  kind=kind)
-                    elif monad == "List":
-                        emitBlock('''\
-                            if (const Ast{kind}* const headp = currp->{opName}()) {{
-                                const AstNode* backp = currp;
-                                const Ast{kind}* tailp = headp;
-                                const Ast{kind}* opp = headp;
-                                do {{
-                                    opp->checkTreeIter(backp);
-                                    UASSERT_OBJ(opp == headp || !opp->nextp() || !opp->m_headtailp, opp, "Headtailp should be null in middle of lists");
-                                    backp = tailp = opp;
-                                    opp = {next};
-                                }} while (opp);
-                                // cppcheck-suppress knownConditionTrueFalse
-                                if (false && headp && tailp) {{}}  // Prevent unused
-                                UASSERT_OBJ(headp->m_headtailp == tailp, headp, "Tail in headtailp is inconsistent");
-                                UASSERT_OBJ(tailp->m_headtailp == headp, tailp, "Head in headtailp is inconsistent");
-                            }}
-                            ''',
-                                  n=n,
-                                  nodeName=node.name,
-                                  opName=name,
-                                  kind=kind,
-                                  next="VN_AS(opp->nextp(), {kind})".format(
-                                      kind=kind)
-                                  if kind != "Node" else "opp->nextp()")
-                    else:
-                        sys.exit("Unknown operand type")
-                else:
-                    emitBlock('''\
-                        UASSERT_OBJ(!currp->op{n}p(), currp, "Ast{nodeName} does not use op{n}p()");
-                        ''',
-                              n=n,
-                              nodeName=node.name)
-            indent = ""
-            emitBlock('''\
-                    break;
-                }}
-                ''')
 
 
 ################################################################################
@@ -1346,9 +1291,9 @@ if Args.classes:
     write_visitor_defns("Ast", AstNodeList, "VNVisitorConst")
     write_type_enum("Ast", AstNodeList)
     write_type_tests("Ast", AstNodeList)
+    write_ast_type_info("V3Ast__gen_type_info.h")
     write_ast_macros("V3Ast__gen_macros.h")
     write_ast_yystype("V3Ast__gen_yystype.h")
-    write_ast_op_checks("V3Ast__gen_op_checks.h")
     # Write Dfg code
     write_forward_class_decls("Dfg", DfgVertexList)
     write_visitor_decls("Dfg", DfgVertexList)

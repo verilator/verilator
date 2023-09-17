@@ -55,7 +55,7 @@ module t;
       $finish;
    end
 
-   initial wait(0) $stop;
+   initial wait(0) $stop;  // Note this doesn't give WAITCONST
    initial wait(1 == 0) $stop;
 
    initial #12 $stop; // timeout

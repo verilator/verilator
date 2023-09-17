@@ -53,7 +53,7 @@ void V3LinkLevel::modSortByLevel() {
     ModVec tops;  // Top level modules
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_AS(nodep->nextp(), NodeModule)) {
-        if (nodep->level() <= 2) tops.push_back(nodep);
+        if (nodep->level() <= 2 && !VN_IS(nodep, NotFoundModule)) tops.push_back(nodep);
         mods.push_back(nodep);
     }
     if (tops.size() >= 2) {
@@ -288,6 +288,8 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                         // Avoids packing & unpacking SC signals a second time
                         varp->trace(false);
                     }
+
+                    if (v3Global.opt.noTraceTop() && varp->isIO()) { varp->trace(false); }
 
                     AstPin* const pinp = new AstPin{
                         oldvarp->fileline(), 0, varp->name(),

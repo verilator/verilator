@@ -25,16 +25,18 @@ module t (/*AUTOARG*/);
                            32'h7777_7777,
                            32'h8888_8888};
 
+   int  i;
+
    initial begin
       // Note: Base index via $c to prevent optimizatoin by Verilator
-      $display("0x%8x", C[$c(0*32)+:32]);
-      $display("0x%8x", D[$c(1*32)+:32]);
-      $display("0x%8x", C[$c(2*32)+:32]);
-      $display("0x%8x", D[$c(3*32)+:32]);
-      $display("0x%8x", C[$c(4*32)+:32]);
-      $display("0x%8x", D[$c(5*32)+:32]);
-      $display("0x%8x", C[$c(6*32)+:32]);
-      $display("0x%8x", D[$c(7*32)+:32]);
+      i = $c(0*32); $display("0x%8x", C[i+:32]);
+      i = $c(1*32); $display("0x%8x", D[i+:32]);
+      i = $c(2*32); $display("0x%8x", C[i+:32]);
+      i = $c(3*32); $display("0x%8x", D[i+:32]);
+      i = $c(4*32); $display("0x%8x", C[i+:32]);
+      i = $c(5*32); $display("0x%8x", D[i+:32]);
+      i = $c(6*32); $display("0x%8x", C[i+:32]);
+      i = $c(7*32); $display("0x%8x", D[i+:32]);
       $write("*-* All Finished *-*\n");
       $finish;
    end

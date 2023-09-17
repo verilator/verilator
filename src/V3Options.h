@@ -223,6 +223,7 @@ private:
     bool m_autoflush = false;       // main switch: --autoflush
     bool m_bboxSys = false;         // main switch: --bbox-sys
     bool m_bboxUnsup = false;       // main switch: --bbox-unsup
+    bool m_binary = false;          // main switch: --binary
     bool m_build = false;           // main switch: --build
     bool m_cmake = false;           // main switch: --make cmake
     bool m_context = true;          // main switch: --Wcontext
@@ -235,6 +236,7 @@ private:
     bool m_debugEmitV = false;      // main switch: --debug-emitv
     bool m_debugExitParse = false;  // main switch: --debug-exit-parse
     bool m_debugExitUvm = false;    // main switch: --debug-exit-uvm
+    bool m_debugExitUvm23 = false;  // main switch: --debug-exit-uvm23
     bool m_debugLeak = true;        // main switch: --debug-leak
     bool m_debugNondeterminism = false;  // main switch: --debug-nondeterminism
     bool m_debugPartition = false;  // main switch: --debug-partition
@@ -280,6 +282,7 @@ private:
     bool m_traceCoverage = false;   // main switch: --trace-coverage
     bool m_traceParams = true;      // main switch: --trace-params
     bool m_traceStructs = false;    // main switch: --trace-structs
+    bool m_noTraceTop = false;      // main switch: --no-trace-top
     bool m_traceUnderscore = false; // main switch: --trace-underscore
     bool m_underlineZero = false;   // main switch: --underline-zero; undocumented old Verilator 2
     bool m_verilate = true;         // main switch: --verilate
@@ -441,6 +444,7 @@ public:
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
+    bool binary() const { return m_binary; }
     bool build() const { return m_build; }
     string buildDepBin() const { return m_buildDepBin; }
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }
@@ -458,6 +462,7 @@ public:
     bool debugEmitV() const VL_MT_SAFE { return m_debugEmitV; }
     bool debugExitParse() const { return m_debugExitParse; }
     bool debugExitUvm() const { return m_debugExitUvm; }
+    bool debugExitUvm23() const { return m_debugExitUvm23; }
     bool debugLeak() const { return m_debugLeak; }
     bool debugNondeterminism() const { return m_debugNondeterminism; }
     bool debugPartition() const { return m_debugPartition; }
@@ -578,6 +583,7 @@ public:
     bool protectKeyProvided() const { return !m_protectKey.empty(); }
     string protectKeyDefaulted() VL_MT_SAFE;  // Set default key if not set by user
     string topModule() const { return m_topModule; }
+    bool noTraceTop() const { return m_noTraceTop; }
     string unusedRegexp() const { return m_unusedRegexp; }
     string waiverOutput() const { return m_waiverOutput; }
     bool isWaiverOutput() const { return !m_waiverOutput.empty(); }

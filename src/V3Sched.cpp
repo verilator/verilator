@@ -119,28 +119,28 @@ void invertAndMergeSenTreeMap(
 //============================================================================
 // Split large function according to --output-split-cfuncs
 
+std::map<AstCFunc*, int> s_funcNums;  // What split number to attach to a function
+
+AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
+    auto funcNumItMatch = s_funcNums.emplace(std::make_pair(ofuncp, 0));
+    AstCFunc* const subFuncp = new AstCFunc{
+        ofuncp->fileline(), ofuncp->name() + "__" + cvtToStr(funcNumItMatch.first->second++),
+        ofuncp->scopep()};
+    subFuncp->dontCombine(true);
+    subFuncp->isStatic(false);
+    subFuncp->isLoose(true);
+    subFuncp->slow(ofuncp->slow());
+    subFuncp->declPrivate(ofuncp->declPrivate());
+    return subFuncp;
+};
+
 void splitCheck(AstCFunc* ofuncp) {
     if (!v3Global.opt.outputSplitCFuncs() || !ofuncp->stmtsp()) return;
     if (ofuncp->nodeCount() < v3Global.opt.outputSplitCFuncs()) return;
 
-    int funcnum = 0;
     int func_stmts = 0;
     const bool is_ofuncp_coroutine = ofuncp->isCoroutine();
     AstCFunc* funcp = nullptr;
-
-    const auto createNewSubFuncp = [&]() {
-        AstCFunc* const subFuncp = new AstCFunc{
-            ofuncp->fileline(), ofuncp->name() + "__" + cvtToStr(funcnum++), ofuncp->scopep()};
-        subFuncp->dontCombine(true);
-        subFuncp->isStatic(false);
-        subFuncp->isLoose(true);
-        subFuncp->slow(ofuncp->slow());
-        subFuncp->declPrivate(ofuncp->declPrivate());
-
-        func_stmts = 0;
-
-        return subFuncp;
-    };
 
     const auto finishSubFuncp = [&](AstCFunc* subFuncp) {
         ofuncp->scopep()->addBlocksp(subFuncp);
@@ -160,7 +160,8 @@ void splitCheck(AstCFunc* ofuncp) {
         }
     };
 
-    funcp = createNewSubFuncp();
+    funcp = splitCheckCreateNewSubFunc(ofuncp);
+    func_stmts = 0;
 
     // Unlink all statements, then add item by item to new sub-functions
     AstBegin* const tempp = new AstBegin{ofuncp->fileline(), "[EditWrapper]",
@@ -173,7 +174,8 @@ void splitCheck(AstCFunc* ofuncp) {
 
         if ((func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
             finishSubFuncp(funcp);
-            funcp = createNewSubFuncp();
+            funcp = splitCheckCreateNewSubFunc(ofuncp);
+            func_stmts = 0;
         }
 
         funcp->addStmtsp(itemp);
@@ -391,7 +393,6 @@ AstSenTree* createTriggerSenTree(AstNetlist* netlistp, AstVarScope* const vscp, 
     AstCMethodHard* const callp
         = new AstCMethodHard{flp, vrefp, "word", new AstConst{flp, wordIndex}};
     callp->dtypeSetUInt64();
-    callp->pure(true);
     AstNodeExpr* const termp
         = new AstAnd{flp, new AstConst{flp, AstConst::Unsized64{}, 1ULL << bitIndex}, callp};
     AstSenItem* const senItemp = new AstSenItem{flp, VEdgeType::ET_TRUE, termp};
@@ -477,7 +478,6 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
         AstCMethodHard* const callp
             = new AstCMethodHard{flp, vrefp, "word", new AstConst{flp, wordIndex}};
         callp->dtypeSetUInt64();
-        callp->pure(true);
         AstNodeExpr* const termp
             = new AstAnd{flp, new AstConst{flp, AstConst::Unsized64{}, 1ULL << bitIndex}, callp};
         return termp;

@@ -15,6 +15,12 @@ module t (clk);
       side_effect += in + 1;
    endfunction
 
+   class Cls;
+      static function int initialize();
+         return 6;
+      endfunction
+   endclass
+
    initial begin
       int got;
       side_effect = 1;
@@ -29,6 +35,8 @@ module t (clk);
       //
       void'(f1(30));
       if (side_effect != 64) $stop;
+      //
+      void'(Cls::initialize());
       //
       $write("*-* All Finished *-*\n");
       $finish;

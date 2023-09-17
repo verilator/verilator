@@ -1,0 +1,15 @@
+%Warning-CASEINCOMPLETE: t/t_case_enum_incomplete_wildcard_bad.v:26:16: Enum item 'S10' not covered by case
+   26 |         unique case (state)
+      |                ^~~~
+                         ... For warning description see https://verilator.org/warn/CASEINCOMPLETE?v=latest
+                         ... Use "/* verilator lint_off CASEINCOMPLETE */" and lint_on around source to disable this message.
+%Warning-CASEINCOMPLETE: t/t_case_enum_incomplete_wildcard_bad.v:30:16: Enum item 'S00' not covered by case
+   30 |         unique case (state)
+      |                ^~~~
+%Warning-CASEINCOMPLETE: t/t_case_enum_incomplete_wildcard_bad.v:35:16: Enum item 'S10' not covered by case
+   35 |         unique casez (state)
+      |                ^~~~~
+%Warning-CASEINCOMPLETE: t/t_case_enum_incomplete_wildcard_bad.v:40:9: Case values incompletely covered (example pattern 0x3)
+   40 |         case (state)
+      |         ^~~~
+%Error: Exiting due to

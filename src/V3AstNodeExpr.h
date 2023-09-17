@@ -360,14 +360,8 @@ class AstNodeCond VL_NOT_FINAL : public AstNodeTriop {
     // @astgen alias op2 := thenp
     // @astgen alias op3 := elsep
 protected:
-    AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep)
-        : AstNodeTriop{t, fl, condp, thenp, elsep} {
-        if (thenp) {
-            dtypeFrom(thenp);
-        } else if (elsep) {
-            dtypeFrom(elsep);
-        }
-    }
+    AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,
+                AstNodeExpr* elsep);
 
 public:
     ASTGEN_MEMBERS_AstNodeCond;
@@ -450,8 +444,9 @@ class AstNodeVarRef VL_NOT_FINAL : public AstNodeExpr {
     AstVar* m_varp;  // [AfterLink] Pointer to variable itself
     AstVarScope* m_varScopep = nullptr;  // Varscope for hierarchy
     AstNodeModule* m_classOrPackagep = nullptr;  // Class/package of the variable
-    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
-
+    VSelfPointerText m_selfPointer
+        = VSelfPointerText{VSelfPointerText::Empty()};  // Output code object
+                                                        // pointer (e.g.: 'this')
 protected:
     AstNodeVarRef(VNType t, FileLine* fl, const VAccess& access)
         : AstNodeExpr{t, fl}
@@ -480,9 +475,11 @@ public:
     }
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
-    string selfPointer() const { return m_selfPointer; }
-    void selfPointer(const string& value) { m_selfPointer = value; }
-    string selfPointerProtect(bool useSelfForThis) const;
+    const VSelfPointerText& selfPointer() const { return m_selfPointer; }
+    void selfPointer(const VSelfPointerText& selfPointer) { m_selfPointer = selfPointer; }
+    string selfPointerProtect(bool useSelfForThis) const {
+        return selfPointer().protect(useSelfForThis, protect());
+    }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     // Know no children, and hot function, so skip iterator for speed
@@ -588,21 +585,13 @@ class AstCMethodHard final : public AstNodeExpr {
     string m_name;  // Name of method
     bool m_pure = false;  // Pure optimizable
 public:
-    AstCMethodHard(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, const string& name,
-                   AstNodeExpr* pinsp = nullptr)
-        : ASTGEN_SUPER_CMethodHard(fl)
-        , m_name{name} {
-        // TODO: this constructor is exactly the same as the other, bar the ignored tag argument
-        this->fromp(fromp);
-        this->addPinsp(pinsp);
-        dtypep(nullptr);  // V3Width will resolve
-    }
     AstCMethodHard(FileLine* fl, AstNodeExpr* fromp, const string& name,
                    AstNodeExpr* pinsp = nullptr)
         : ASTGEN_SUPER_CMethodHard(fl)
         , m_name{name} {
         this->fromp(fromp);
         this->addPinsp(pinsp);
+        setPurity();
     }
     ASTGEN_MEMBERS_AstCMethodHard;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
@@ -612,11 +601,13 @@ public:
         return (m_name == asamep->m_name);
     }
     bool isPure() const override { return m_pure; }
-    void pure(bool flag) { m_pure = flag; }
     int instrCount() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+
+private:
+    void setPurity();
 };
 class AstCast final : public AstNodeExpr {
     // Cast to appropriate data type
@@ -1019,6 +1010,34 @@ public:
     // May return nullptr on parse failure.
     static AstConst* parseParamLiteral(FileLine* fl, const string& literal);
 };
+class AstCvtDynArrayToPacked final : public AstNodeExpr {
+    // Cast from dynamic queue data type to packed array
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    AstCvtDynArrayToPacked(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CvtDynArrayToPacked(fl) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtDynArrayToPacked;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
+class AstCvtPackedToDynArray final : public AstNodeExpr {
+    // Cast from packed array to dynamic queue data type
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    AstCvtPackedToDynArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CvtPackedToDynArray(fl) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtPackedToDynArray;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
 class AstDot final : public AstNodeExpr {
     // A dot separating paths in an AstVarXRef, AstFuncRef or AstTaskRef
     // These are eliminated in the link stage
@@ -1102,6 +1121,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+    bool isPure() const override { return false; }
     bool same(const AstNode*) const override { return true; }
 };
 class AstFError final : public AstNodeExpr {
@@ -1308,7 +1328,9 @@ public:
     bool cleanOut() const override { return true; }
 };
 class AstImplication final : public AstNodeExpr {
-    // Verilog |-> |=>
+    // Verilog Implication Operator
+    // Nonoverlapping "|=>"
+    // Overlapping "|->" (doesn't currently use this - might make new Ast type)
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := sentreep : Optional[AstSenTree]
@@ -4023,16 +4045,19 @@ public:
 // === AstNodeCCall ===
 class AstCCall final : public AstNodeCCall {
     // C++ function call
-    string m_selfPointer;  // Output code object pointer (e.g.: 'this')
-
+    VSelfPointerText m_selfPointer
+        = VSelfPointerText{VSelfPointerText::Empty()};  // Output code object
+                                                        // pointer (e.g.: 'this')
 public:
     AstCCall(FileLine* fl, AstCFunc* funcp, AstNodeExpr* argsp = nullptr)
         : ASTGEN_SUPER_CCall(fl, funcp, argsp) {}
     ASTGEN_MEMBERS_AstCCall;
 
-    string selfPointer() const { return m_selfPointer; }
-    void selfPointer(const string& value) { m_selfPointer = value; }
-    string selfPointerProtect(bool useSelfForThis) const;
+    const VSelfPointerText& selfPointer() const { return m_selfPointer; }
+    void selfPointer(const VSelfPointerText& selfPointer) { m_selfPointer = selfPointer; }
+    string selfPointerProtect(bool useSelfForThis) const {
+        return selfPointer().protect(useSelfForThis, protect());
+    }
 };
 class AstCMethodCall final : public AstNodeCCall {
     // C++ method call

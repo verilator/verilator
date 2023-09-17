@@ -63,18 +63,19 @@ sub checkPattern {
     my $pattern = shift;
     my $message = shift;
 
-    my $offset = 0;
-    my $buffer = $contents;
-    while ($buffer =~ s/.*?^($pattern)//sm) {
-      my $lineno = offset_to_lineno($contents, $offset + $-[-1]);
-      $offset += $+[1];
-      error("$filename:$lineno: $message");
+    my $lineno = 0;
+    my $buffer;
+    foreach my $line (split(/\n/, $contents . "\n\n")) {
+        ++$lineno;
+        if ($line ne "") {
+            # Don't do whole file at once - see issue #4085
+            # Build a buffer until a newline so we check a block at a time.
+            $buffer .= $line . "\n";
+            next;
+        }
+        if ($buffer =~ s/.*?^($pattern)//sm) {
+            error("$filename:$lineno: $message");
+        }
+        $buffer = "";
     }
-}
-
-sub offset_to_lineno {
-    my $contents = shift;
-    my $offset = shift;
-    my $count = (substr $contents, 0, $offset) =~ tr/\n//;
-    return $count + 1;
 }

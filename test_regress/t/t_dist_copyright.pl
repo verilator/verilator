@@ -41,6 +41,8 @@ our @Exempt_Files_List = qw(
     test_regress/t/t_fuzz_eof_bad.v
     test_regress/t/t_incr_void.v
     test_regress/t/t_timing_trace_fst.pl
+    test_regress/t/t_uvm_pkg_all.vh
+    test_regress/t/t_uvm_pkg_todo.vh
     test_regress/t/t_wrapper_context.pl
     test_regress/t/t_wrapper_context_fst.pl
     test_regress/t/t_wrapper_context_seq.pl

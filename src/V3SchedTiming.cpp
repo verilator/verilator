@@ -236,6 +236,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
                 m_writtenBySuspendable.push_back(nodep->varScopep());
             }
         }
+        void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
 
         //--------------------
         void visit(AstNodeExpr*) override {}  // Accelerate
@@ -361,8 +362,9 @@ void transformForks(AstNetlist* const netlistp) {
                 UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
                 // Create a function to put this begin's statements in
                 FileLine* const flp = nodep->fileline();
-                AstCFunc* const newfuncp
-                    = new AstCFunc{flp, nodep->name(), m_funcp->scopep(), "VlCoroutine"};
+                AstCFunc* const newfuncp = new AstCFunc{
+                    flp, m_funcp->name() + "__" + nodep->name(), m_funcp->scopep(), "VlCoroutine"};
+
                 m_funcp->addNextHere(newfuncp);
                 newfuncp->isLoose(m_funcp->isLoose());
                 newfuncp->slow(m_funcp->slow());
@@ -405,6 +407,7 @@ void transformForks(AstNetlist* const netlistp) {
             if (nodep->funcp()->needProcess()) m_beginNeedProcess = true;
             iterateChildrenConst(nodep);
         }
+        void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
 
         //--------------------
         void visit(AstNodeExpr*) override {}  // Accelerate

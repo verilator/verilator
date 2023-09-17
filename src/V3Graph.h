@@ -22,6 +22,7 @@
 
 #include "V3Error.h"
 #include "V3List.h"
+#include "V3Rtti.h"
 
 #include <algorithm>
 
@@ -173,6 +174,7 @@ public:
 //============================================================================
 
 class V3GraphVertex VL_NOT_FINAL {
+    VL_RTTI_IMPL_BASE(V3GraphVertex)
     // Vertices may be a 'gate'/wire statement OR a variable
 protected:
     friend class V3Graph;
@@ -209,6 +211,40 @@ public:
     void unlinkEdges(V3Graph* graphp);
     void unlinkDelete(V3Graph* graphp);
 
+    // METHODS
+    // Return true iff of type T
+    template <typename T>
+    bool is() const {
+        static_assert(std::is_base_of<V3GraphVertex, T>::value,
+                      "'T' must be a subtype of V3GraphVertex");
+        static_assert(std::is_same<typename std::remove_cv<T>::type,
+                                   VTypeListFront<typename T::RttiThisAndBaseClassesList>>::value,
+                      "Missing VL_RTTI_IMPL(...) call in 'T'");
+        return this->isInstanceOfClassWithId(T::rttiClassId());
+    }
+
+    // Return cast to subtype T and assert of that type
+    template <typename T>
+    T* as() {
+        UASSERT_OBJ(is<T>(), this, "V3GraphVertex is not of expected type");
+        return static_cast<T*>(this);
+    }
+    template <typename T>
+    const T* as() const {
+        UASSERT_OBJ(is<T>(), this, "V3GraphVertex is not of expected type");
+        return static_cast<const T*>(this);
+    }
+
+    // Return cast to subtype T, else nullptr if different type
+    template <typename T>
+    T* cast() {
+        return is<T>() ? static_cast<T*>(this) : nullptr;
+    }
+    template <typename T>
+    const T* cast() const {
+        return is<T>() ? static_cast<const T*>(this) : nullptr;
+    }
+
     // ACCESSORS
     virtual string name() const { return ""; }
     virtual string dotColor() const { return "black"; }
@@ -240,16 +276,14 @@ public:
     V3GraphEdge* inBeginp() const { return m_ins.begin(); }
     bool inEmpty() const { return inBeginp() == nullptr; }
     bool inSize1() const;
-    uint32_t inHash() const;
     V3GraphEdge* outBeginp() const { return m_outs.begin(); }
     bool outEmpty() const { return outBeginp() == nullptr; }
     bool outSize1() const;
-    uint32_t outHash() const;
     V3GraphEdge* beginp(GraphWay way) const { return way.forward() ? outBeginp() : inBeginp(); }
     // METHODS
     /// Error reporting
-    void v3errorEnd(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex);
-    void v3errorEndFatal(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex);
+    void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
+    void v3errorEndFatal(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
     /// Edges are routed around this vertex to point from "from" directly to "to"
     void rerouteEdges(V3Graph* graphp);
     /// Find the edge connecting ap and bp, where bp is wayward from ap.
@@ -262,6 +296,7 @@ std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp);
 //============================================================================
 
 class V3GraphEdge VL_NOT_FINAL {
+    VL_RTTI_IMPL_BASE(V3GraphEdge)
     // Wires/variables aren't edges.  Edges have only a single to/from vertex
 public:
     // ENUMS
@@ -308,6 +343,39 @@ public:
     }
     virtual ~V3GraphEdge() = default;
     // METHODS
+    // Return true iff of type T
+    template <typename T>
+    bool is() const {
+        static_assert(std::is_base_of<V3GraphEdge, T>::value,
+                      "'T' must be a subtype of V3GraphEdge");
+        static_assert(std::is_same<typename std::remove_cv<T>::type,
+                                   VTypeListFront<typename T::RttiThisAndBaseClassesList>>::value,
+                      "Missing VL_RTTI_IMPL(...) call in 'T'");
+        return this->isInstanceOfClassWithId(T::rttiClassId());
+    }
+
+    // Return cast to subtype T and assert of that type
+    template <typename T>
+    T* as() {
+        UASSERT(is<T>(), "V3GraphEdge is not of expected type");
+        return static_cast<T*>(this);
+    }
+    template <typename T>
+    const T* as() const {
+        UASSERT(is<T>(), "V3GraphEdge is not of expected type");
+        return static_cast<const T*>(this);
+    }
+
+    // Return cast to subtype T, else nullptr if different type
+    template <typename T>
+    T* cast() {
+        return is<T>() ? static_cast<T*>(this) : nullptr;
+    }
+    template <typename T>
+    const T* cast() const {
+        return is<T>() ? static_cast<const T*>(this) : nullptr;
+    }
+
     virtual string name() const { return m_fromp->name() + "->" + m_top->name(); }
     virtual string dotLabel() const { return ""; }
     virtual string dotColor() const { return cutable() ? "yellowGreen" : "red"; }

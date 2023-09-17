@@ -10,16 +10,36 @@ import argparse
 import os
 import sys
 import shlex
-from typing import Callable, Iterable, Optional, Union
+from typing import Callable, Iterable, Optional, Union, TYPE_CHECKING
 import dataclasses
 from dataclasses import dataclass
 import enum
 from enum import Enum
 import multiprocessing
+import re
 import tempfile
 
 import clang.cindex
-from clang.cindex import CursorKind, Index, TranslationUnitSaveError, TranslationUnitLoadError
+from clang.cindex import (
+    Index,
+    TranslationUnitSaveError,
+    TranslationUnitLoadError,
+    CompilationDatabase,
+)
+
+if not TYPE_CHECKING:
+    from clang.cindex import CursorKind
+else:
+    # Workaround for missing support for members defined out-of-class in Pylance:
+    # https://github.com/microsoft/pylance-release/issues/2365#issuecomment-1035803067
+
+    class CursorKindMeta(type):
+
+        def __getattr__(cls, name: str) -> clang.cindex.CursorKind:
+            return getattr(clang.cindex.CursorKind, name)
+
+    class CursorKind(clang.cindex.CursorKind, metaclass=CursorKindMeta):
+        pass
 
 
 def fully_qualified_name(node):
@@ -60,6 +80,7 @@ class VlAnnotations:
     stable_tree: bool = False
     mt_safe_postinit: bool = False
     mt_unsafe: bool = False
+    mt_disabled: bool = False
     mt_unsafe_one: bool = False
     pure: bool = False
     guarded: bool = False
@@ -81,7 +102,7 @@ class VlAnnotations:
         return self.stable_tree or self.mt_start
 
     def is_mt_unsafe_call(self):
-        return self.mt_unsafe or self.mt_unsafe_one
+        return self.mt_unsafe or self.mt_unsafe_one or self.mt_disabled
 
     def is_mt_safe_call(self):
         return (not self.is_mt_unsafe_call()
@@ -131,6 +152,8 @@ class VlAnnotations:
                     result.mt_unsafe = True
                 elif node.displayname == "MT_UNSAFE_ONE":
                     result.mt_unsafe_one = True
+                elif node.displayname == "MT_DISABLED":
+                    result.mt_disabled = True
                 elif node.displayname == "PURE":
                     result.pure = True
                 elif node.displayname in ["ACQUIRE", "ACQUIRE_SHARED"]:
@@ -204,6 +227,19 @@ class FunctionInfo:
         return dataclasses.replace(self, **changes)
 
     @staticmethod
+    def from_decl_file_line_and_refd_node(file: str, line: int,
+                                          refd: clang.cindex.Cursor,
+                                          annotations: VlAnnotations):
+        file = os.path.abspath(file)
+        refd = refd.canonical
+        assert refd is not None
+        name_parts = fully_qualified_name(refd)
+        usr = refd.get_usr()
+        ftype = FunctionType.from_node(refd)
+
+        return FunctionInfo(name_parts, usr, file, line, annotations, ftype)
+
+    @staticmethod
     def from_node(node: clang.cindex.Cursor,
                   refd: Optional[clang.cindex.Cursor] = None,
                   annotations: Optional[VlAnnotations] = None):
@@ -228,6 +264,7 @@ class DiagnosticKind(Enum):
     NON_PURE_CALL_IN_PURE_CTX = enum.auto()
     NON_MT_SAFE_CALL_IN_MT_SAFE_CTX = enum.auto()
     NON_STABLE_TREE_CALL_IN_STABLE_TREE_CTX = enum.auto()
+    MISSING_MT_DISABLED_ANNOTATION = enum.auto()
 
     def __lt__(self, other):
         return self.value < other.value
@@ -265,16 +302,109 @@ class CallAnnotationsValidator:
 
         self._index = Index.create()
 
-        self._processed_headers: set[str] = set()
+        # Map key represents translation unit initial defines
+        # (from command line and source's lines before any include)
+        self._processed_headers: dict[str, set[str]] = {}
+        self._external_decls: dict[str, set[tuple[str, int]]] = {}
 
         # Current context
+        self._main_source_file: str = ""
+        self._defines: dict[str, str] = {}
         self._call_location: Optional[FunctionInfo] = None
         self._caller: Optional[FunctionInfo] = None
-        self._level: int = 0
         self._constructor_context: list[clang.cindex.Cursor] = []
+        self._level: int = 0
+
+    def is_mt_disabled_code_unit(self):
+        return "VL_MT_DISABLED_CODE_UNIT" in self._defines
 
     def is_constructor_context(self):
         return len(self._constructor_context) > 0
+
+    # Parses all lines in a form: `#define KEY VALUE` located before any `#include` line.
+    # The parsing is very simple, there is no support for line breaks, etc.
+    @staticmethod
+    def parse_initial_defines(source_file: str) -> dict[str, str]:
+        defs: dict[str, str] = {}
+        with open(source_file, "r", encoding="utf-8") as file:
+            for line in file:
+                line = line.strip()
+                match = re.fullmatch(
+                    r"^#\s*(define\s+(\w+)(?:\s+(.*))?|include\s+.*)$", line)
+                if match:
+                    if match.group(1).startswith("define"):
+                        key = match.group(2)
+                        value = match.groups("1")[2]
+                        defs[key] = value
+                    elif match.group(1).startswith("include"):
+                        break
+        return defs
+
+    @staticmethod
+    def filter_out_unsupported_compiler_args(
+            args: list[str]) -> tuple[list[str], dict[str, str]]:
+        filtered_args = []
+        defines = {}
+        args_iter = iter(args)
+        try:
+            while arg := next(args_iter):
+                # Skip positional arguments (input file name).
+                if not arg.startswith("-") and (arg.endswith(".cpp")
+                                                or arg.endswith(".c")
+                                                or arg.endswith(".h")):
+                    continue
+
+                # Skipped options with separate value argument.
+                if arg in ["-o", "-T", "-MT", "-MQ", "-MF"
+                           "-L"]:
+                    next(args_iter)
+                    continue
+
+                # Skipped options without separate value argument.
+                if arg == "-c" or arg.startswith("-W") or arg.startswith("-L"):
+                    continue
+
+                # Preserved options with separate value argument.
+                if arg in [
+                        "-x"
+                        "-Xclang", "-I", "-isystem", "-iquote", "-include",
+                        "-include-pch"
+                ]:
+                    filtered_args += [arg, next(args_iter)]
+                    continue
+
+                kv_str = None
+                d_or_u = None
+                # Preserve define/undefine with separate value argument.
+                if arg in ["-D", "-U"]:
+                    filtered_args.append(arg)
+                    d_or_u = arg[1]
+                    kv_str = next(args_iter)
+                    filtered_args.append(kv_str)
+                # Preserve define/undefine without separate value argument.
+                elif arg[0:2] in ["-D", "-U"]:
+                    filtered_args.append(arg)
+                    kv_str = arg[2:]
+                    d_or_u = arg[1]
+                # Preserve everything else.
+                else:
+                    filtered_args.append(arg)
+                    continue
+
+                # Keep track of defines for class' internal purposes.
+                key_value = kv_str.split("=", 1)
+                key = key_value[0]
+                val = "1" if len(key_value) == 1 else key_value[1]
+
+                if d_or_u == "D":
+                    defines[key] = val
+                elif d_or_u == "U" and key in defines:
+                    del defines[key]
+
+        except StopIteration:
+            pass
+
+        return (filtered_args, defines)
 
     def compile_and_analyze_file(self, source_file: str,
                                  compiler_args: list[str],
@@ -282,18 +412,32 @@ class CallAnnotationsValidator:
         filename = os.path.abspath(source_file)
         initial_cwd = "."
 
+        filtered_args, defines = self.filter_out_unsupported_compiler_args(
+            compiler_args)
+        defines.update(self.parse_initial_defines(source_file))
+
         if build_dir:
             initial_cwd = os.getcwd()
             os.chdir(build_dir)
-        translation_unit = self._index.parse(filename, compiler_args)
-        has_errors = False
-        for diag in translation_unit.diagnostics:
-            if diag.severity > clang.cindex.Diagnostic.Error:
-                has_errors = True
-        if translation_unit and not has_errors:
+        try:
+            translation_unit = self._index.parse(filename, filtered_args)
+        except TranslationUnitLoadError:
+            translation_unit = None
+        errors = []
+        if translation_unit:
+            for diag in translation_unit.diagnostics:
+                if diag.severity >= clang.cindex.Diagnostic.Error:
+                    errors.append(str(diag))
+        if translation_unit and len(errors) == 0:
+            self._defines = defines
+            self._main_source_file = filename
             self.process_translation_unit(translation_unit)
+            self._main_source_file = ""
+            self._defines = {}
         else:
             print(f"%Error: parsing failed: {filename}", file=sys.stderr)
+            for error in errors:
+                print(f"        {error}", file=sys.stderr)
         if build_dir:
             os.chdir(initial_cwd)
 
@@ -563,6 +707,18 @@ class CallAnnotationsValidator:
                   f"    from: {node.location.file.name}:{node.location.line}")
         return True
 
+    def process_function_declaration(self, node: clang.cindex.Cursor):
+        # Ignore declarations in main .cpp file
+        if node.location.file.name != self._main_source_file:
+            children = list(node.get_children())
+            annotations = VlAnnotations.from_nodes_list(children)
+            if not annotations.mt_disabled:
+                self._external_decls.setdefault(node.get_usr(), set()).add(
+                    (str(node.location.file.name), int(node.location.line)))
+            return self.iterate_children(children, self.dispatch_node)
+
+        return self.iterate_children(node.get_children(), self.dispatch_node)
+
     # Definition handling
 
     def dispatch_node_inside_definition(self, node: clang.cindex.Cursor):
@@ -593,6 +749,18 @@ class CallAnnotationsValidator:
         assert refd is not None
 
         def_annotations = VlAnnotations.from_nodes_list(node_children)
+        # Implicitly mark definitions in VL_MT_DISABLED_CODE_UNIT .cpp files as
+        # VL_MT_DISABLED. Existence of the annotation on declarations in .h
+        # files is verified below.
+        # Also sets VL_REQUIRES, as this annotation is added together with
+        # explicit VL_MT_DISABLED.
+        if self.is_mt_disabled_code_unit():
+            if node.location.file.name == self._main_source_file:
+                annotations.mt_disabled = True
+                annotations.requires = True
+            if refd.location.file.name == self._main_source_file:
+                def_annotations.mt_disabled = True
+                def_annotations.requires = True
 
         if not (def_annotations.is_empty() or def_annotations == annotations):
             # Use definition's annotations for the diagnostic
@@ -605,11 +773,25 @@ class CallAnnotationsValidator:
                 DiagnosticKind.ANNOTATIONS_DEF_DECL_MISMATCH)
 
         # Use concatenation of definition and declaration annotations
-        # for callees validation.
+        # for calls validation.
         self._caller = FunctionInfo.from_node(node, refd,
                                               def_annotations | annotations)
         prev_call_location = self._call_location
         self._call_location = self._caller
+
+        if self.is_mt_disabled_code_unit():
+            # Report declarations of this functions that don't have MT_DISABLED annotation
+            # and are located in headers.
+            if node.location.file.name == self._main_source_file:
+                usr = node.get_usr()
+                declarations = self._external_decls.get(usr, set())
+                for file, line in declarations:
+                    self.emit_diagnostic(
+                        FunctionInfo.from_decl_file_line_and_refd_node(
+                            file, line, refd, def_annotations),
+                        DiagnosticKind.MISSING_MT_DISABLED_ANNOTATION)
+                if declarations:
+                    del self._external_decls[usr]
 
         self.iterate_children(node_children,
                               self.dispatch_node_inside_definition)
@@ -622,34 +804,36 @@ class CallAnnotationsValidator:
     # Nodes not located inside definition
 
     def dispatch_node(self, node: clang.cindex.Cursor):
-        if node.is_definition() and node.kind in [
+        if node.kind in [
                 CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL,
                 CursorKind.CONSTRUCTOR, CursorKind.CONVERSION_FUNCTION
         ]:
-            return self.process_function_definition(node)
-        if node.is_definition() and node.kind in [
-                CursorKind.NAMESPACE, CursorKind.STRUCT_DECL,
-                CursorKind.UNION_DECL, CursorKind.CLASS_DECL
-        ]:
-            return self.iterate_children(node.get_children(),
-                                         self.dispatch_node)
+            if node.is_definition():
+                return self.process_function_definition(node)
+            # else:
+            return self.process_function_declaration(node)
 
         return self.iterate_children(node.get_children(), self.dispatch_node)
 
     def process_translation_unit(
             self, translation_unit: clang.cindex.TranslationUnit):
         self._level += 1
+        kv_defines = sorted([f"{k}={v}" for k, v in self._defines.items()])
+        concat_defines = '\n'.join(kv_defines)
+        # List of headers already processed in a TU with specified set of defines.
+        tu_processed_headers = self._processed_headers.setdefault(
+            concat_defines, set())
         for child in translation_unit.cursor.get_children():
             if self._is_ignored_top_level(child):
                 continue
-            if self._processed_headers:
+            if tu_processed_headers:
                 filename = os.path.abspath(child.location.file.name)
-                if filename in self._processed_headers:
+                if filename in tu_processed_headers:
                     continue
             self.dispatch_node(child)
         self._level -= 1
 
-        self._processed_headers.update([
+        tu_processed_headers.update([
             os.path.abspath(str(hdr.source))
             for hdr in translation_unit.get_includes()
         ])
@@ -711,34 +895,40 @@ def get_filter_funcs(verilator_root: str):
 
 
 def precompile_header(compile_command: CompileCommand, tmp_dir: str) -> str:
+    initial_cwd = os.getcwd()
+    errors = []
     try:
-        initial_cwd = os.getcwd()
         os.chdir(compile_command.directory)
 
         index = Index.create()
         translation_unit = index.parse(compile_command.filename,
                                        compile_command.args)
         for diag in translation_unit.diagnostics:
-            if diag.severity > clang.cindex.Diagnostic.Error:
-                pch_file = None
-                break
-        else:
+            if diag.severity >= clang.cindex.Diagnostic.Error:
+                errors.append(str(diag))
+
+        if len(errors) == 0:
             pch_file = os.path.join(
                 tmp_dir,
                 f"{compile_command.refid:02}_{os.path.basename(compile_command.filename)}.pch"
             )
             translation_unit.save(pch_file)
 
+            if pch_file:
+                return pch_file
+
+    except (TranslationUnitSaveError, TranslationUnitLoadError,
+            OSError) as exception:
+        print(f"%Warning: {exception}", file=sys.stderr)
+
+    finally:
         os.chdir(initial_cwd)
 
-        if pch_file:
-            return pch_file
-
-    except (TranslationUnitSaveError, TranslationUnitLoadError, OSError):
-        pass
-
     print(
-        f"%Warning: Precompiling failed, skipping: {compile_command.filename}")
+        f"%Warning: Precompilation failed, skipping: {compile_command.filename}",
+        file=sys.stderr)
+    for error in errors:
+        print(f"          {error}", file=sys.stderr)
     return ""
 
 
@@ -761,7 +951,7 @@ def run_analysis(ccl: Iterable[CompileCommand], pccl: Iterable[CompileCommand],
                                        is_ignored_def, is_ignored_call)
         for compile_command in ccl:
             cav.compile_and_analyze_file(compile_command.filename,
-                                         compile_command.args + extra_args,
+                                         extra_args + compile_command.args,
                                          compile_command.directory)
 
 
@@ -881,6 +1071,10 @@ class TopDownSummaryPrinter():
                 name += "is pure but calls non-pure function(s)"
             elif func.reason == DiagnosticKind.NON_STABLE_TREE_CALL_IN_STABLE_TREE_CTX:
                 name += "is stable_tree but calls non-stable_tree or non-mtsafe"
+            elif func.reason == DiagnosticKind.MISSING_MT_DISABLED_ANNOTATION:
+                name += ("defined in a file marked as " +
+                         "VL_MT_DISABLED_CODE_UNIT has declaration(s) " +
+                         "without VL_MT_DISABLED annotation")
             else:
                 name += "for unknown reason (please add description)"
 
@@ -947,10 +1141,15 @@ def main():
                         type=int,
                         default=0,
                         help="Number of parallel jobs to use.")
+    parser.add_argument(
+        "--compile-commands-dir",
+        type=str,
+        default=None,
+        help="Path to directory containing compile_commands.json.")
     parser.add_argument("--cxxflags",
                         type=str,
                         default=None,
-                        help="Flags passed to clang++.")
+                        help="Extra flags passed to clang++.")
     parser.add_argument(
         "--compilation-root",
         type=str,
@@ -975,34 +1174,52 @@ def main():
         cmdline.compilation_root = cmdline.verilator_root
 
     verilator_root = os.path.abspath(cmdline.verilator_root)
-    compilation_root = os.path.abspath(cmdline.compilation_root)
+    default_compilation_root = os.path.abspath(cmdline.compilation_root)
 
-    default_cxx_flags = [
-        f"-I{verilator_root}/src",
-        f"-I{verilator_root}/include",
-        f"-I{verilator_root}/src/obj_opt",
-        "-fcoroutines-ts",
-    ]
+    compdb: Optional[CompilationDatabase] = None
+    if cmdline.compile_commands_dir:
+        compdb = CompilationDatabase.fromDirectory(
+            cmdline.compile_commands_dir)
+
     if cmdline.cxxflags is not None:
-        cxxflags = shlex.split(cmdline.cxxflags)
+        common_cxxflags = shlex.split(cmdline.cxxflags)
     else:
-        cxxflags = default_cxx_flags
+        common_cxxflags = []
 
     precompile_commands_list = []
 
     if cmdline.precompile:
-        hdr_cxxflags = ['-xc++-header'] + cxxflags
+        hdr_cxxflags = ['-xc++-header'] + common_cxxflags
         for refid, file in enumerate(cmdline.precompile):
             filename = os.path.abspath(file)
             compile_command = CompileCommand(refid, filename, hdr_cxxflags,
-                                             compilation_root)
+                                             default_compilation_root)
             precompile_commands_list.append(compile_command)
 
     compile_commands_list = []
     for refid, file in enumerate(cmdline.file):
         filename = os.path.abspath(file)
-        compile_command = CompileCommand(refid, filename, cxxflags,
-                                         compilation_root)
+        root = default_compilation_root
+        cxxflags = []
+        if compdb:
+            entry = compdb.getCompileCommands(filename)
+            entry_list = list(entry)
+            # Compilation database can contain multiple entries for single file,
+            # e.g. when it has been updated by appending new entries.
+            # Use last entry for the file, if it exists, as it is the newest one.
+            if len(entry_list) > 0:
+                last_entry = entry_list[-1]
+                root = last_entry.directory
+                entry_args = list(last_entry.arguments)
+                # First argument in compile_commands.json arguments list is
+                # compiler executable name/path. CIndex (libclang) always
+                # implicitly prepends executable name, so it shouldn't be passed
+                # here.
+                cxxflags = common_cxxflags + entry_args[1:]
+        else:
+            cxxflags = common_cxxflags[:]
+
+        compile_command = CompileCommand(refid, filename, cxxflags, root)
         compile_commands_list.append(compile_command)
 
     summary_printer = TopDownSummaryPrinter()

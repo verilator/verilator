@@ -125,8 +125,11 @@ Summary:
 
    After generating the SystemC/C++ code, Verilator will invoke the
    toolchain to build the model library (and executable when :vlopt:`--exe`
-   is also used). Verilator manages the build itself, and for this --build
+   is also used).  Verilator manages the build itself, and for this --build
    requires GNU Make to be available on the platform.
+
+   :vlopt:`--build` cannot be specified when using :vlopt:`-E`,
+   :vlopt:`--dpi-hdr-only`, :vlopt:`--lint-only`, or :vlopt:`--xml-only`.
 
 .. option:: --build-dep-bin <filename>
 
@@ -1314,6 +1317,7 @@ Summary:
    This is not needed with standard designs with only one top.  See also
    :option:`MULTITOP` warning.
 
+
 .. option:: --trace
 
    Adds waveform tracing code to the model using VCD format. This overrides
@@ -1391,6 +1395,17 @@ Summary:
 
    This option is accepted, but has absolutely no effect with
    :vlopt:`--trace`, which respects :vlopt:`--threads` instead.
+
+.. option:: --no-trace-top
+
+   Disables tracing for the input and output signals in the top wrapper which
+   Verilator adds to the design. The signals are still traced in the original
+   verilog top modules.
+
+   When combined with :option:`--main-top-name` set to "-" or when the name of
+   the top module is set to "" in its constructor, the generated trace file
+   will have the verilog top module as its root, rather than another module
+   added by Verilator.
 
 .. option:: --trace-underscore
 
@@ -1523,13 +1538,15 @@ Summary:
 
 .. option:: -Wno-lint
 
-   Disable all lint-related warning messages, and all style warnings.  This is
-   equivalent to ``-Wno-ALWCOMBORDER -Wno-ASCRANGE -Wno-BSSPACE -Wno-CASEINCOMPLETE
-   -Wno-CASEOVERLAP -Wno-CASEX -Wno-CASTCONST -Wno-CASEWITHX -Wno-CMPCONST -Wno-COLONPLUS
-   -Wno-IMPLICIT -Wno-IMPLICITSTATIC -Wno-PINCONNECTEMPTY
-   -Wno-PINMISSING -Wno-STATICVAR -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED
-   -Wno-UNUSEDGENVAR -Wno-UNUSEDPARAM -Wno-UNUSEDSIGNAL
-   -Wno-WIDTH`` plus the list shown for Wno-style.
+   Disable all lint-related warning messages, and all style warnings.  This
+   is equivalent to ``-Wno-ALWCOMBORDER`` ``-Wno-ASCRANGE``
+   ``-Wno-BSSPACE`` ``-Wno-CASEINCOMPLETE`` ``-Wno-CASEOVERLAP``
+   ``-Wno-CASEX`` ``-Wno-CASTCONST`` ``-Wno-CASEWITHX`` ``-Wno-CMPCONST``
+   ``-Wno-COLONPLUS`` ``-Wno-IMPLICIT`` ``-Wno-IMPLICITSTATIC``
+   ``-Wno-PINCONNECTEMPTY`` ``-Wno-PINMISSING`` ``-Wno-STATICVAR``
+   ``-Wno-SYNCASYNCNET`` ``-Wno-UNDRIVEN`` ``-Wno-UNSIGNED``
+   ``-Wno-UNUSEDGENVAR`` ``-Wno-UNUSEDPARAM`` ``-Wno-UNUSEDSIGNAL``
+   ``-Wno-WIDTH``, plus the list shown for :vlopt:`-Wno-style`.
 
    It is strongly recommended that you clean up your code rather than using this
    option; it is only intended to be used when running test-cases of code
@@ -1537,12 +1554,13 @@ Summary:
 
 .. option:: -Wno-style
 
-   Disable all code style related warning messages (note that by default, they are
-   already disabled).  This is equivalent to ``-Wno-DECLFILENAME -Wno-DEFPARAM
-   -Wno-EOFNEWLINE -Wno-GENUNNAMED -Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY
-   -Wno-PINNOCONNECT -Wno-SYNCASYNCNET -Wno-UNDRIVEN
-   -Wno-UNUSEDGENVAR -Wno-UNUSEDPARAM -Wno-UNUSEDSIGNAL
-   -Wno-VARHIDDEN``.
+   Disable all code style related warning messages (note that by default,
+   they are already disabled).  This is equivalent to ``-Wno-DECLFILENAME``
+   ``-Wno-DEFPARAM`` ``-Wno-EOFNEWLINE`` ``-Wno-GENUNNAMED``
+   ``-Wno-IMPORTSTAR`` ``-Wno-INCABSPATH`` ``-Wno-PINCONNECTEMPTY``
+   ``-Wno-PINNOCONNECT`` ``-Wno-SYNCASYNCNET`` ``-Wno-UNDRIVEN``
+   ``-Wno-UNUSEDGENVAR`` ``-Wno-UNUSEDPARAM`` ``-Wno-UNUSEDSIGNAL``
+   ``-Wno-VARHIDDEN``.
 
 .. option:: -Wpedantic
 
@@ -1560,20 +1578,25 @@ Summary:
 
 .. option:: -Wwarn-lint
 
-   Enable all lint-related warning messages (note that by default, they are already
-   enabled), but do not affect style messages.  This is equivalent to
-   ``-Wwarn-ALWCOMBORDER -Wwarn-ASCRANGE -Wwarn-BSSPACE -Wwarn-CASEINCOMPLETE
-   -Wwarn-CASEOVERLAP -Wwarn-CASEWITHX -Wwarn-CASEX -Wwarn-CASTCONST -Wwarn-CMPCONST
-   -Wwarn-COLONPLUS -Wwarn-IMPLICIT -Wwarn-IMPLICITSTATIC -Wwarn-LATCH -Wwarn-MISINDENT
-   -Wwarn-NEWERSTD -Wwarn-PINMISSING -Wwarn-REALCVT -Wwarn-STATICVAR -Wwarn-UNSIGNED
-   -Wwarn-WIDTHTRUNC -Wwarn-WIDTHEXPAND -Wwarn-WIDTHXZEXPAND``.
+   Enable all lint-related warning messages (note that by default, they are
+   already enabled), but do not affect style messages.  This is equivalent
+   to ``-Wwarn-ALWCOMBORDER`` ``-Wwarn-ASCRANGE`` ``-Wwarn-BSSPACE``
+   ``-Wwarn-CASEINCOMPLETE`` ``-Wwarn-CASEOVERLAP`` ``-Wwarn-CASEWITHX``
+   ``-Wwarn-CASEX`` ``-Wwarn-CASTCONST`` ``-Wwarn-CMPCONST``
+   ``-Wwarn-COLONPLUS`` ``-Wwarn-IMPLICIT`` ``-Wwarn-IMPLICITSTATIC``
+   ``-Wwarn-LATCH`` ``-Wwarn-MISINDENT`` ``-Wwarn-NEWERSTD``
+   ``-Wwarn-PINMISSING`` ``-Wwarn-REALCVT`` ``-Wwarn-STATICVAR``
+   ``-Wwarn-UNSIGNED`` ``-Wwarn-WIDTHTRUNC`` ``-Wwarn-WIDTHEXPAND``
+   ``-Wwarn-WIDTHXZEXPAND``.
 
 .. option:: -Wwarn-style
 
    Enable all code style-related warning messages.  This is equivalent to
-   ``-Wwarn ASSIGNDLY -Wwarn-DECLFILENAME -Wwarn-DEFPARAM -Wwarn-EOFNEWLINE
-   -Wwarn-GENUNNAMED -Wwarn-INCABSPATH -Wwarn-PINNOCONNECT -Wwarn-SYNCASYNCNET -Wwarn-UNDRIVEN
-   -Wwarn-UNUSEDGENVAR -Wwarn-UNUSEDPARAM -Wwarn-UNUSEDSIGNAL -Wwarn-VARHIDDEN``.
+   ``-Wwarn-ASSIGNDLY`` ``-Wwarn-DECLFILENAME`` ``-Wwarn-DEFPARAM``
+   ``-Wwarn-EOFNEWLINE`` ``-Wwarn-GENUNNAMED`` ``-Wwarn-INCABSPATH``
+   ``-Wwarn-PINNOCONNECT`` ``-Wwarn-SYNCASYNCNET`` ``-Wwarn-UNDRIVEN``
+   ``-Wwarn-UNUSEDGENVAR`` ``-Wwarn-UNUSEDPARAM`` ``-Wwarn-UNUSEDSIGNAL``
+   ``-Wwarn-VARHIDDEN``.
 
 .. option:: --x-assign 0
 

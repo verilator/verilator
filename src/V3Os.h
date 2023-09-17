@@ -35,20 +35,22 @@ public:
     static void setenvStr(const string& envvar, const string& value, const string& why);
 
     // METHODS (generic filename utilities)
-    static string filenameFromDirBase(const string& dir, const string& basename);
-    /// Return non-directory part of filename
+    static string filenameFromDirBase(const string& dir, const string& basename) VL_PURE;
+    ///< Return non-directory part of filename
     static string filenameNonDir(const string& filename) VL_PURE;
-    /// Return non-extensioned (no .) part of filename
+    ///< Return non-extensioned (no .) part of filename
     static string filenameNonExt(const string& filename) VL_PURE;
     ///< Return basename of filename
     static string filenameNonDirExt(const string& filename) VL_PURE {
         return filenameNonExt(filenameNonDir(filename));
     }
-    static string filenameDir(const string& filename);  ///< Return directory part of filename
+    ///< Return directory part of filename
+    static string filenameDir(const string& filename) VL_PURE;
     /// Return filename with env vars removed
     static string filenameSubstitute(const string& filename);
-    static string filenameRealPath(const string& filename);  ///< Return realpath of filename
-    static bool filenameIsRel(const string& filename);  ///< True if relative
+    ///< Return realpath of filename
+    static string filenameRealPath(const string& filename) VL_PURE;
+    static bool filenameIsRel(const string& filename) VL_PURE;  ///< True if relative
 
     // METHODS (file utilities)
     static string getline(std::istream& is, char delim = '\n');

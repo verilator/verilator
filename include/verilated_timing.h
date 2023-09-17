@@ -102,6 +102,8 @@ class VlCoroutineHandle final {
 public:
     // CONSTRUCTORS
     // Construct
+    // non-explicit:
+    // cppcheck-suppress noExplicitConstructor
     VlCoroutineHandle(VlProcessRef process)
         : m_coro{nullptr}
         , m_process{process} {
@@ -114,9 +116,11 @@ public:
         if (m_process) m_process->state(VlProcess::WAITING);
     }
     // Move the handle, leaving a nullptr
+    // non-explicit:
+    // cppcheck-suppress noExplicitConstructor
     VlCoroutineHandle(VlCoroutineHandle&& moved)
         : m_coro{std::exchange(moved.m_coro, nullptr)}
-        , m_process{moved.m_process}
+        , m_process{std::exchange(moved.m_process, nullptr)}
         , m_fileline{moved.m_fileline} {}
     // Destroy if the handle isn't null
     ~VlCoroutineHandle() {
@@ -133,6 +137,8 @@ public:
     // Move the handle, leaving a null handle
     auto& operator=(VlCoroutineHandle&& moved) {
         m_coro = std::exchange(moved.m_coro, nullptr);
+        m_process = std::exchange(moved.m_process, nullptr);
+        m_fileline = moved.m_fileline;
         return *this;
     }
     // Resume the coroutine if the handle isn't null and the process isn't killed

@@ -1680,8 +1680,12 @@ sub _run {
     if (!$param{fails} && $status) {
         my $firstline = "";
         if (my $fh = IO::File->new("<$param{logfile}")) {
-            $firstline = $fh->getline || '';
-            chomp $firstline;
+            while (defined(my $line = $fh->getline)) {
+                next if $line =~ /^- /;  # Debug message
+                $firstline = $line;
+                chomp $firstline;
+                last;
+            }
         }
         $self->error("Exec of $param{cmd}[0] failed: $firstline\n");
     }

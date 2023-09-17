@@ -620,6 +620,7 @@ private:
         // LCOV_EXCL_START
         if (debug()) rhsp->dumpTree("Don't know how to fold expression: ");
         rhsp->v3fatalSrc("Should not try to fold this during conditional merging");
+        return nullptr;
         // LCOV_EXCL_STOP
     }
 

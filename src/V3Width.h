@@ -22,6 +22,7 @@
 
 class AstNetlist;
 class AstNode;
+class AstNodeDType;
 
 //============================================================================
 
@@ -32,6 +33,8 @@ public:
     static AstNode* widthGenerateParamsEdit(AstNode* nodep);
     // Final step... Mark all widths as equal
     static void widthCommit(AstNetlist* nodep);
+
+    static AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2);
 
     // For use only in WidthVisitor
     // Replace AstSelBit, etc with AstSel/AstArraySel

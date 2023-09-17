@@ -551,7 +551,9 @@ private:
             }
             if (!lhsp->backp()) VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
         } else {
-            iterateChildren(nodep);
+            iterate(nodep->lhsp());
+            m_inDly = false;
+            iterate(nodep->rhsp());
         }
     }
 
@@ -621,6 +623,12 @@ private:
     void visit(AstWhile* nodep) override {
         VL_RESTORER(m_inLoop);
         m_inLoop = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstExprStmt* nodep) override {
+        VL_RESTORER(m_inDly);
+        // Restoring is needed, because AstExprStmt may contain assignments
+        m_inDly = false;
         iterateChildren(nodep);
     }
 

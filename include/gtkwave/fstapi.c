@@ -4181,7 +4181,7 @@ if(!(isfeof=feof(xc->fh)))
                                 if((xc->hier.u.attr.subtype == FST_MT_SOURCESTEM)||(xc->hier.u.attr.subtype == FST_MT_SOURCEISTEM))
                                         {
                                         int sidx_skiplen_dummy = 0;
-                                        xc->hier.u.attr.arg_from_name = fstGetVarint64((unsigned char *)xc->str_scope_nam, &sidx_skiplen_dummy);
+                                        xc->hier.u.attr.arg_from_name = fstGetVarint64((unsigned char *)xc->str_scope_attr, &sidx_skiplen_dummy);
                                         }
                                 }
                         break;

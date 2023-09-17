@@ -1,6 +1,6 @@
 // DESCRIPTION: Verilator: Test of select from constant
 //
-// This tests issue 509, bit select of constant fails
+// This tests issue #509, bit select of constant fails
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2012 by Jeremy Bennett.

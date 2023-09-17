@@ -124,7 +124,9 @@ void V3Os::setenvStr(const string& envvar, const string& value, const string& wh
 //######################################################################
 // Generic filename utilities
 
-string V3Os::filenameFromDirBase(const string& dir, const string& basename) {
+static bool isSlash(char ch) VL_PURE { return ch == '/' || ch == '\\'; }
+
+string V3Os::filenameFromDirBase(const string& dir, const string& basename) VL_PURE {
     // Don't return ./{filename} because if filename was absolute, that makes it relative
     if (dir.empty() || dir == ".") {
         return basename;
@@ -133,22 +135,26 @@ string V3Os::filenameFromDirBase(const string& dir, const string& basename) {
     }
 }
 
-string V3Os::filenameDir(const string& filename) {
-    string::size_type pos;
-    if ((pos = filename.rfind('/')) != string::npos) {
-        return filename.substr(0, pos);
-    } else {
+string V3Os::filenameDir(const string& filename) VL_PURE {
+    // std::filesystem::path::parent_path
+    auto it = filename.rbegin();
+    for (; it != filename.rend(); ++it) {
+        if (isSlash(*it)) break;
+    }
+    if (it.base() == filename.begin()) {
         return ".";
+    } else {
+        return {filename.begin(), (++it).base()};
     }
 }
 
 string V3Os::filenameNonDir(const string& filename) VL_PURE {
-    string::size_type pos;
-    if ((pos = filename.rfind('/')) != string::npos) {
-        return filename.substr(pos + 1);
-    } else {
-        return filename;
+    // std::filesystem::path::filename
+    auto it = filename.rbegin();
+    for (; it != filename.rend(); ++it) {
+        if (isSlash(*it)) break;
     }
+    return string{it.base(), filename.end()};
 }
 
 string V3Os::filenameNonExt(const string& filename) VL_PURE {
@@ -202,7 +208,7 @@ string V3Os::filenameSubstitute(const string& filename) {
     return result;
 }
 
-string V3Os::filenameRealPath(const string& filename) {
+string V3Os::filenameRealPath(const string& filename) VL_PURE {
     // Get rid of all the ../ behavior in the middle of the paths.
     // If there is a ../ that goes down from the 'root' of this path it is preserved.
     char retpath[PATH_MAX];
@@ -219,8 +225,12 @@ string V3Os::filenameRealPath(const string& filename) {
     }
 }
 
-bool V3Os::filenameIsRel(const string& filename) {
+bool V3Os::filenameIsRel(const string& filename) VL_PURE {
+#if defined(_MSC_VER)
+    return std::filesystem::path(filename).is_relative();
+#else
     return (filename.length() > 0 && filename[0] != '/');
+#endif
 }
 
 //######################################################################
@@ -251,12 +261,14 @@ void V3Os::createDir(const string& dirname) {
 
 void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
 #ifdef _MSC_VER
-    for (const auto& dirEntry : std::filesystem::directory_iterator(dir.c_str())) {
-        if (VString::wildmatch(dirEntry.path().filename().string(), regexp.c_str())) {
-            const string fullname = dir + "/" + dirEntry.path().filename().string();
-            _unlink(fullname.c_str());
+    try {
+        for (const auto& dirEntry : std::filesystem::directory_iterator(dir.c_str())) {
+            if (VString::wildmatch(dirEntry.path().filename().string(), regexp.c_str())) {
+                const string fullname = dir + "/" + dirEntry.path().filename().string();
+                _unlink(fullname.c_str());
+            }
         }
-    }
+    } catch (std::filesystem::filesystem_error const& ex) {}
 #else
     if (DIR* const dirp = opendir(dir.c_str())) {
         while (struct dirent* const direntp = readdir(dirp)) {

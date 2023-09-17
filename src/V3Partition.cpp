@@ -448,10 +448,10 @@ private:
 
 public:
     // METHODS
-    SiblingMC* toSiblingMC();  // Instead of dynamic_cast
-    const SiblingMC* toSiblingMC() const;  // Instead of dynamic_cast
-    MTaskEdge* toMTaskEdge();  // Instead of dynamic_cast
-    const MTaskEdge* toMTaskEdge() const;  // Instead of dynamic_cast
+    SiblingMC* toSiblingMC();  // Instead of cast<>/as<>
+    const SiblingMC* toSiblingMC() const;  // Instead of cast<>/as<>
+    MTaskEdge* toMTaskEdge();  // Instead of cast<>/as<>
+    const MTaskEdge* toMTaskEdge() const;  // Instead of cast<>/as<>
     bool mergeWouldCreateCycle() const;  // Instead of virtual method
 
     inline void rescore();
@@ -511,6 +511,7 @@ static_assert(!std::is_polymorphic<SiblingMC>::value, "Should not have a vtable"
 
 // GraphEdge for the MTask graph
 class MTaskEdge final : public V3GraphEdge, public MergeCandidate {
+    VL_RTTI_IMPL(MTaskEdge, V3GraphEdge)
     friend class LogicMTask;
     template <GraphWay::en T_Way>
     friend class PartPropagateCp;
@@ -806,7 +807,7 @@ public:
         UINFO(0, "    Parallelism factor = " << parallelismFactor() << endl);
     }
     static uint32_t vertexCost(const V3GraphVertex* vertexp) {
-        return dynamic_cast<const AbstractMTask*>(vertexp)->cost();
+        return vertexp->as<const AbstractMTask>()->cost();
     }
 
 private:
@@ -857,7 +858,7 @@ static void partInitCriticalPaths(V3Graph* mtasksp) {
     // They would have been all zeroes on initial creation of the MTaskEdges.
     for (V3GraphVertex* vxp = mtasksp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
         for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            MTaskEdge* const mtedgep = dynamic_cast<MTaskEdge*>(edgep);
+            MTaskEdge* const mtedgep = edgep->as<MTaskEdge>();
             mtedgep->resetCriticalPaths();
         }
     }
@@ -1839,8 +1840,8 @@ private:
         if (!m_tracingCall) return;
         m_tracingCall = false;
         if (nodep->dpiImportWrapper()) {
-            if (nodep->pure() ? !v3Global.opt.threadsDpiPure()
-                              : !v3Global.opt.threadsDpiUnpure()) {
+            if (nodep->dpiPure() ? !v3Global.opt.threadsDpiPure()
+                                 : !v3Global.opt.threadsDpiUnpure()) {
                 m_hasDpiHazard = true;
             }
         }
@@ -1966,14 +1967,14 @@ private:
     void findAdjacentTasks(const OrderVarStdVertex* varVtxp, TasksByRank& tasksByRank) {
         // Find all writer tasks for this variable, group by rank.
         for (V3GraphEdge* edgep = varVtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            if (const auto* const logicVtxp = dynamic_cast<OrderLogicVertex*>(edgep->fromp())) {
+            if (const auto* const logicVtxp = edgep->fromp()->cast<OrderLogicVertex>()) {
                 LogicMTask* const writerMtaskp = static_cast<LogicMTask*>(logicVtxp->userp());
                 tasksByRank[writerMtaskp->rank()].insert(writerMtaskp);
             }
         }
         // Not: Find all reader tasks for this variable, group by rank.
         // There was "broken" code here to find readers, but fixing it to
-        // work properly harmed performance on some tests, see #3360.
+        // work properly harmed performance on some tests, see issue #3360.
     }
     void mergeSameRankTasks(const TasksByRank& tasksByRank) {
         LogicMTask* lastRecipientp = nullptr;
@@ -2058,7 +2059,7 @@ public:
             nextp = vtxp->verticesNextp();
             // Only consider OrderVarStdVertex which reflects
             // an actual lvalue assignment; the others do not.
-            if (const OrderVarStdVertex* const vvtxp = dynamic_cast<OrderVarStdVertex*>(vtxp)) {
+            if (const OrderVarStdVertex* const vvtxp = vtxp->cast<OrderVarStdVertex>()) {
                 if (vvtxp->vscp()->varp()->isSc()) {
                     systemCVars.push_back(vvtxp);
                 } else {
@@ -2203,7 +2204,7 @@ public:
         const uint32_t thisThreadId = threadId(mtaskp);
         uint32_t result = 0;
         for (V3GraphEdge* edgep = mtaskp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            const ExecMTask* const prevp = dynamic_cast<ExecMTask*>(edgep->fromp());
+            const ExecMTask* const prevp = edgep->fromp()->as<ExecMTask>();
             if (threadId(prevp) != thisThreadId) ++result;
         }
         return result;
@@ -2248,7 +2249,7 @@ void ThreadSchedule::dumpDotFile(const V3Graph& graph, const string& filename) c
     // Find minimum cost MTask for scaling MTask node widths
     uint32_t minCost = UINT32_MAX;
     for (const V3GraphVertex* vxp = graph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-        if (const ExecMTask* const mtaskp = dynamic_cast<const ExecMTask*>(vxp)) {
+        if (const ExecMTask* const mtaskp = vxp->cast<const ExecMTask>()) {
             minCost = minCost > mtaskp->cost() ? mtaskp->cost() : minCost;
         }
     }
@@ -2271,13 +2272,13 @@ void ThreadSchedule::dumpDotFile(const V3Graph& graph, const string& filename) c
 
     // Emit MTasks
     for (const V3GraphVertex* vxp = graph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-        if (const ExecMTask* const mtaskp = dynamic_cast<const ExecMTask*>(vxp)) emitMTask(mtaskp);
+        if (const ExecMTask* const mtaskp = vxp->cast<const ExecMTask>()) emitMTask(mtaskp);
     }
 
     // Emit MTask dependency edges
     *logp << "\n  // MTask dependencies\n";
     for (const V3GraphVertex* vxp = graph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-        if (const ExecMTask* const mtaskp = dynamic_cast<const ExecMTask*>(vxp)) {
+        if (const ExecMTask* const mtaskp = vxp->cast<const ExecMTask>()) {
             for (V3GraphEdge* edgep = mtaskp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 const V3GraphVertex* const top = edgep->top();
                 *logp << "  " << vxp->name() << " -> " << top->name() << "\n";
@@ -2365,7 +2366,7 @@ private:
 
     bool isReady(ThreadSchedule& schedule, const ExecMTask* mtaskp) {
         for (V3GraphEdge* edgeInp = mtaskp->inBeginp(); edgeInp; edgeInp = edgeInp->inNextp()) {
-            const ExecMTask* const prevp = dynamic_cast<ExecMTask*>(edgeInp->fromp());
+            const ExecMTask* const prevp = edgeInp->fromp()->as<const ExecMTask>();
             if (schedule.threadId(prevp) == ThreadSchedule::UNASSIGNED) {
                 // This predecessor is not assigned yet
                 return false;
@@ -2388,7 +2389,7 @@ public:
 
         // Build initial ready list
         for (V3GraphVertex* vxp = mtaskGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            ExecMTask* const mtaskp = dynamic_cast<ExecMTask*>(vxp);
+            ExecMTask* const mtaskp = vxp->as<ExecMTask>();
             if (isReady(schedule, mtaskp)) readyMTasks.insert(mtaskp);
         }
 
@@ -2409,7 +2410,7 @@ public:
                     }
                     for (V3GraphEdge* edgep = mtaskp->inBeginp(); edgep;
                          edgep = edgep->inNextp()) {
-                        const ExecMTask* const priorp = dynamic_cast<ExecMTask*>(edgep->fromp());
+                        const ExecMTask* const priorp = edgep->fromp()->as<ExecMTask>();
                         const uint32_t priorEndTime = completionTime(schedule, priorp, threadId);
                         if (priorEndTime > timeBegin) timeBegin = priorEndTime;
                     }
@@ -2449,7 +2450,7 @@ public:
             UASSERT_OBJ(erased > 0, bestMtaskp, "Should have erased something?");
             for (V3GraphEdge* edgeOutp = bestMtaskp->outBeginp(); edgeOutp;
                  edgeOutp = edgeOutp->outNextp()) {
-                ExecMTask* const nextp = dynamic_cast<ExecMTask*>(edgeOutp->top());
+                ExecMTask* const nextp = edgeOutp->top()->as<ExecMTask>();
                 // Dependent MTask should not yet be assigned to a thread
                 UASSERT(schedule.threadId(nextp) == ThreadSchedule::UNASSIGNED,
                         "Tasks after one being assigned should not be assigned yet");
@@ -2540,7 +2541,7 @@ void V3Partition::debugMTaskGraphStats(const V3Graph* graphp, const string& stag
     for (const V3GraphVertex* mtaskp = graphp->verticesBeginp(); mtaskp;
          mtaskp = mtaskp->verticesNextp()) {
         ++mtaskCount;
-        uint32_t mtaskCost = dynamic_cast<const AbstractMTask*>(mtaskp)->cost();
+        uint32_t mtaskCost = mtaskp->as<const AbstractMTask>()->cost();
         totalCost += mtaskCost;
 
         unsigned log2Cost = 0;
@@ -2928,7 +2929,7 @@ static void fillinCosts(V3Graph* execMTaskGraphp) {
 
     for (const V3GraphVertex* vxp = execMTaskGraphp->verticesBeginp(); vxp;
          vxp = vxp->verticesNextp()) {
-        ExecMTask* const mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
+        ExecMTask* const mtp = const_cast<V3GraphVertex*>(vxp)->as<ExecMTask>();
         // Compute name of mtask, for hash lookup
         mtp->hashName(m_uniqueNames.get(mtp->bodyp()));
 
@@ -2949,7 +2950,7 @@ static void fillinCosts(V3Graph* execMTaskGraphp) {
     int missingProfiles = 0;
     for (const V3GraphVertex* vxp = execMTaskGraphp->verticesBeginp(); vxp;
          vxp = vxp->verticesNextp()) {
-        ExecMTask* const mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
+        ExecMTask* const mtp = const_cast<V3GraphVertex*>(vxp)->as<ExecMTask>();
         const uint32_t costEstimate = costs[mtp->id()].first;
         const uint64_t costProfiled = costs[mtp->id()].second;
         UINFO(9, "ce = " << costEstimate << " cp=" << costProfiled << endl);
@@ -2978,14 +2979,14 @@ static void fillinCosts(V3Graph* execMTaskGraphp) {
 static void finalizeCosts(V3Graph* execMTaskGraphp) {
     GraphStreamUnordered ser(execMTaskGraphp, GraphWay::REVERSE);
     while (const V3GraphVertex* const vxp = ser.nextp()) {
-        ExecMTask* const mtp = dynamic_cast<ExecMTask*>(const_cast<V3GraphVertex*>(vxp));
+        ExecMTask* const mtp = const_cast<V3GraphVertex*>(vxp)->as<ExecMTask>();
         // "Priority" is the critical path from the start of the mtask, to
         // the end of the graph reachable from this mtask.  Given the
         // choice among several ready mtasks, we'll want to start the
         // highest priority one first, so we're always working on the "long
         // pole"
         for (V3GraphEdge* edgep = mtp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            const ExecMTask* const followp = dynamic_cast<ExecMTask*>(edgep->top());
+            const ExecMTask* const followp = edgep->top()->as<ExecMTask>();
             if ((followp->priority() + mtp->cost()) > mtp->priority()) {
                 mtp->priority(followp->priority() + mtp->cost());
             }
@@ -2996,7 +2997,7 @@ static void finalizeCosts(V3Graph* execMTaskGraphp) {
     // (It's common for tasks to shrink to nothing when V3LifePost
     // removes dly assignments.)
     for (V3GraphVertex* vxp = execMTaskGraphp->verticesBeginp(); vxp;) {
-        ExecMTask* const mtp = dynamic_cast<ExecMTask*>(vxp);
+        ExecMTask* const mtp = vxp->as<ExecMTask>();
         vxp = vxp->verticesNextp();  // Advance before delete
 
         // Don't rely on checking mtp->cost() == 0 to detect an empty task.
@@ -3100,7 +3101,7 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
 
     // For any dependent mtask that's on another thread, signal one dependency completion.
     for (V3GraphEdge* edgep = mtaskp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-        const ExecMTask* const nextp = dynamic_cast<ExecMTask*>(edgep->top());
+        const ExecMTask* const nextp = edgep->top()->as<ExecMTask>();
         if (schedule.threadId(nextp) != threadId) {
             addStrStmt("vlSelf->__Vm_mtaskstate_" + cvtToStr(nextp->id())
                        + ".signalUpstreamDone(even_cycle);\n");

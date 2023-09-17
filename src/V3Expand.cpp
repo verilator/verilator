@@ -202,7 +202,9 @@ private:
                            new AstShiftR{fl, lhip,
                                          new AstConst{fl, static_cast<uint32_t>(nbitsonright)},
                                          VL_EDATASIZE}},
-                new AstAnd{fl, new AstConst{fl, AstConst::SizedEData{}, ~VL_MASK_E(loffset)},
+                new AstAnd{fl,
+                           new AstConst{fl, AstConst::SizedEData{},
+                                        static_cast<uint32_t>(~VL_MASK_E(loffset))},
                            new AstShiftL{fl, llowp,
                                          new AstConst{fl, static_cast<uint32_t>(loffset)},
                                          VL_EDATASIZE}}};

@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Verilog Test module for Issue#221
+// DESCRIPTION: Verilator: Verilog Test module for issue #221
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2023 by Julien Margetts (Originally provided by Adrien Le Masle)

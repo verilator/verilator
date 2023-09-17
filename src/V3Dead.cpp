@@ -288,7 +288,6 @@ private:
             VL_RESTORER(m_sideEffect);
             m_inAssign = true;
             m_sideEffect = false;
-            if (assignInAssign) m_sideEffect = true;
             iterateAndNextNull(nodep->rhsp());
             checkAll(nodep);
             // Has to be direct assignment without any EXTRACTing.

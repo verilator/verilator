@@ -98,7 +98,20 @@ using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
 
 //######################################################################
 
+struct VNTypeInfo {
+    const char* m_namep;
+    enum uint8_t {
+        OP_UNUSED,
+        OP_USED,
+        OP_LIST,
+        OP_OPTIONAL,
+    } m_opType[4];
+    const char* m_opNamep[4];
+};
+
 class VNType final {
+    static const VNTypeInfo typeInfoTable[];
+
 public:
 #include "V3Ast__gen_type_enum.h"  // From ./astgen
     // Above include has:
@@ -111,6 +124,7 @@ public:
     constexpr VNType(en _e) VL_MT_SAFE : m_e{_e} {}
     explicit VNType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    const VNTypeInfo* typeInfo() const VL_MT_SAFE { return &typeInfoTable[m_e]; }
     constexpr operator en() const VL_MT_SAFE { return m_e; }
 };
 constexpr bool operator==(const VNType& lhs, const VNType& rhs) VL_PURE {
@@ -802,6 +816,7 @@ public:
             "BLOCKTEMP", "MODULETEMP", "STMTTEMP",     "XTEMP",   "IFACEREF", "MEMBER"};
         return names[m_e];
     }
+    bool isParam() const { return m_e == GPARAM || m_e == LPARAM; }
     bool isSignal() const {
         return (m_e == WIRE || m_e == WREAL || m_e == IMPLICITWIRE || m_e == TRIWIRE || m_e == TRI0
                 || m_e == TRI1 || m_e == PORT || m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == VAR);
@@ -1168,30 +1183,34 @@ inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) {
 class VUseType final {
 public:
     enum en : uint8_t {
-        IMP_INCLUDE,  // Implementation (.cpp) needs an include
-        INT_INCLUDE,  // Interface (.h) needs an include
-        IMP_FWD_CLASS,  // Implementation (.cpp) needs a forward class declaration
-        INT_FWD_CLASS,  // Interface (.h) needs a forward class declaration
+        // Enum values are compared with <, so order matters
+        INT_FWD_CLASS = 1 << 0,  // Interface (.h) needs a forward class declaration
+        INT_INCLUDE = 1 << 1,  // Interface (.h) needs an include
     };
     enum en m_e;
     VUseType()
-        : m_e{IMP_FWD_CLASS} {}
+        : m_e{INT_FWD_CLASS} {}
     // cppcheck-suppress noExplicitConstructor
     constexpr VUseType(en _e)
         : m_e{_e} {}
     explicit VUseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    bool isInclude() const { return m_e == IMP_INCLUDE || m_e == INT_INCLUDE; }
-    bool isFwdClass() const { return m_e == IMP_FWD_CLASS || m_e == INT_FWD_CLASS; }
     constexpr operator en() const { return m_e; }
+    bool containsAny(VUseType other) { return m_e & other.m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"IMP_INC", "INT_INC", "IMP_FWD", "INT_FWD"};
-        return names[m_e];
+        static const char* const names[] = {"INT_FWD", "INT_INC", "INT_FWD_INC"};
+        return names[m_e - 1];
     }
 };
 constexpr bool operator==(const VUseType& lhs, const VUseType& rhs) { return lhs.m_e == rhs.m_e; }
 constexpr bool operator==(const VUseType& lhs, VUseType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VUseType::en lhs, const VUseType& rhs) { return lhs == rhs.m_e; }
+constexpr VUseType::en operator|(VUseType::en lhs, VUseType::en rhs) {
+    return VUseType::en((uint8_t)lhs | (uint8_t)rhs);
+}
+constexpr VUseType::en operator&(VUseType::en lhs, VUseType::en rhs) {
+    return VUseType::en((uint8_t)lhs & (uint8_t)rhs);
+}
 inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
     return os << rhs.ascii();
 }
@@ -1230,6 +1249,44 @@ public:
         , m_numeric{numeric}
         , m_keyword{kwd} {}
     ~VBasicTypeKey() = default;
+};
+
+// ######################################################################
+//  VSelfPointerText - Represents text to be emitted before a given var reference, call, etc. to
+//  serve as a pointer to a 'self' object. For example, it could be empty (no self pointer), or the
+//  string 'this', or 'vlSymsp->...'
+
+class VSelfPointerText final {
+private:
+    // STATIC MEMBERS
+    // Keep these in shared pointers to avoid branching for special cases
+    static const std::shared_ptr<const string> s_emptyp;  // Holds ""
+    static const std::shared_ptr<const string> s_thisp;  // Holds "this"
+
+    // MEMBERS
+    std::shared_ptr<const string> m_strp;
+
+public:
+    // CONSTRUCTORS
+    class Empty {};  // for creator type-overload selection
+    VSelfPointerText(Empty)
+        : m_strp{s_emptyp} {}
+    class This {};  // for creator type-overload selection
+    VSelfPointerText(This)
+        : m_strp{s_thisp} {}
+    VSelfPointerText(This, const string& field)
+        : m_strp{std::make_shared<const string>("this->" + field)} {}
+    class VlSyms {};  // for creator type-overload selection
+    VSelfPointerText(VlSyms, const string& field)
+        : m_strp{std::make_shared<const string>("(&vlSymsp->" + field + ')')} {}
+
+    // METHODS
+    bool isEmpty() const { return m_strp == s_emptyp; }
+    bool isVlSym() const { return m_strp->find("vlSymsp") != string::npos; }
+    bool hasThis() const { return m_strp == s_thisp || VString::startsWith(*m_strp, "this"); }
+    string protect(bool useSelfForThis, bool protect) const;
+    const std::string& asString() const { return *m_strp; }
+    bool operator==(const VSelfPointerText& other) const { return *m_strp == *other.m_strp; }
 };
 
 //######################################################################
@@ -1314,55 +1371,55 @@ protected:
 class VNUser1InUse final : VNUserInUseBase {
 protected:
     friend class AstNode;
-    static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
-    static bool         s_userBusy;     // Count is in use
+    static uint32_t s_userCntGbl;  // Count of which usage of userp() this is
+    static bool s_userBusy;  // Count is in use
 public:
-    VNUser1InUse()     { allocate(1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    ~VNUser1InUse()    { free    (1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    VNUser1InUse()      { allocate(1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~VNUser1InUse()     { free    (1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void clear() { clearcnt(1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(1, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 class VNUser2InUse final : VNUserInUseBase {
 protected:
     friend class AstNode;
-    static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
-    static bool         s_userBusy;     // Count is in use
+    static uint32_t s_userCntGbl;  // Count of which usage of userp() this is
+    static bool s_userBusy;  // Count is in use
 public:
-    VNUser2InUse()     { allocate(2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    ~VNUser2InUse()    { free    (2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    VNUser2InUse()      { allocate(2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~VNUser2InUse()     { free    (2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void clear() { clearcnt(2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(2, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 class VNUser3InUse final : VNUserInUseBase {
 protected:
     friend class AstNode;
-    static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
-    static bool         s_userBusy;     // Count is in use
+    static uint32_t s_userCntGbl;  // Count of which usage of userp() this is
+    static bool s_userBusy;  // Count is in use
 public:
-    VNUser3InUse()     { allocate(3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    ~VNUser3InUse()    { free    (3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    VNUser3InUse()      { allocate(3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~VNUser3InUse()     { free    (3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void clear() { clearcnt(3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(3, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 class VNUser4InUse final : VNUserInUseBase {
 protected:
     friend class AstNode;
-    static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
-    static bool         s_userBusy;     // Count is in use
+    static uint32_t s_userCntGbl;  // Count of which usage of userp() this is
+    static bool s_userBusy;  // Count is in use
 public:
-    VNUser4InUse()     { allocate(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    ~VNUser4InUse()    { free    (4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    VNUser4InUse()      { allocate(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~VNUser4InUse()     { free    (4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void clear() { clearcnt(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
 class VNUser5InUse final : VNUserInUseBase {
 protected:
     friend class AstNode;
-    static uint32_t     s_userCntGbl;   // Count of which usage of userp() this is
-    static bool         s_userBusy;     // Count is in use
+    static uint32_t s_userCntGbl;  // Count of which usage of userp() this is
+    static bool s_userBusy;  // Count is in use
 public:
-    VNUser5InUse()     { allocate(5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    ~VNUser5InUse()    { free    (5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    VNUser5InUse()      { allocate(5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
+    ~VNUser5InUse()     { free    (5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void clear() { clearcnt(5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
@@ -1645,7 +1702,7 @@ public:
     const char* typeName() const VL_MT_SAFE { return type().ascii(); }  // See also prettyTypeName
     AstNode* nextp() const VL_MT_STABLE { return m_nextp; }
     AstNode* backp() const VL_MT_STABLE { return m_backp; }
-    AstNode* abovep() const;  // Parent node above, only when no nextp() as otherwise slow
+    AstNode* abovep() const;  // Get parent node above, only for list head and tail
     AstNode* op1p() const VL_MT_STABLE { return m_op1p; }
     AstNode* op2p() const VL_MT_STABLE { return m_op2p; }
     AstNode* op3p() const VL_MT_STABLE { return m_op3p; }
@@ -1753,74 +1810,74 @@ public:
     inline bool isString() const VL_MT_STABLE;
 
     // clang-format off
-    VNUser      user1u() const VL_MT_STABLE {
+    VNUser user1u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
-        //UASSERT_STATIC(VNUser1InUse::s_userBusy, "userp set w/o busy");
-        return ((m_user1Cnt==VNUser1InUse::s_userCntGbl) ? m_user1u : VNUser{0});
+        //UASSERT_STATIC(VNUser1InUse::s_userBusy, "user1p used without AstUserInUse");
+        return ((m_user1Cnt == VNUser1InUse::s_userCntGbl) ? m_user1u : VNUser{0});
     }
-    AstNode*    user1p() const VL_MT_STABLE { return user1u().toNodep(); }
-    void        user1u(const VNUser& user) { m_user1u=user; m_user1Cnt=VNUser1InUse::s_userCntGbl; }
-    void        user1p(void* userp) { user1u(VNUser{userp}); }
-    int         user1() const { return user1u().toInt(); }
-    void        user1(int val) { user1u(VNUser{val}); }
-    int         user1Inc(int val=1) { int v=user1(); user1(v+val); return v; }
-    int         user1SetOnce() { int v=user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
+    AstNode* user1p() const VL_MT_STABLE { return user1u().toNodep(); }
+    void user1u(const VNUser& user) { m_user1u = user; m_user1Cnt = VNUser1InUse::s_userCntGbl; }
+    void user1p(void* userp) { user1u(VNUser{userp}); }
+    void user1(int val) { user1u(VNUser{val}); }
+    int user1() const { return user1u().toInt(); }
+    int user1Inc(int val = 1) { int v = user1(); user1(v + val); return v; }
+    int user1SetOnce() { int v = user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
     static void user1ClearTree() { VNUser1InUse::clear(); }  // Clear userp()'s across the entire tree
 
-    VNUser      user2u() const VL_MT_STABLE {
+    VNUser user2u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
-        //UASSERT_STATIC(VNUser2InUse::s_userBusy, "userp set w/o busy");
-        return ((m_user2Cnt==VNUser2InUse::s_userCntGbl) ? m_user2u : VNUser{0});
+        //UASSERT_STATIC(VNUser2InUse::s_userBusy, "user2p used without AstUserInUse");
+        return ((m_user2Cnt == VNUser2InUse::s_userCntGbl) ? m_user2u : VNUser{0});
     }
-    AstNode*    user2p() const VL_MT_STABLE { return user2u().toNodep(); }
-    void        user2u(const VNUser& user) { m_user2u=user; m_user2Cnt=VNUser2InUse::s_userCntGbl; }
-    void        user2p(void* userp) { user2u(VNUser{userp}); }
-    int         user2() const { return user2u().toInt(); }
-    void        user2(int val) { user2u(VNUser{val}); }
-    int         user2Inc(int val=1) { int v=user2(); user2(v+val); return v; }
-    int         user2SetOnce() { int v=user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
+    AstNode* user2p() const VL_MT_STABLE { return user2u().toNodep(); }
+    void user2u(const VNUser& user) { m_user2u = user; m_user2Cnt = VNUser2InUse::s_userCntGbl; }
+    void user2p(void* userp) { user2u(VNUser{userp}); }
+    void user2(int val) { user2u(VNUser{val}); }
+    int user2() const { return user2u().toInt(); }
+    int user2Inc(int val = 1) { int v = user2(); user2(v + val); return v; }
+    int user2SetOnce() { int v = user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
     static void user2ClearTree() { VNUser2InUse::clear(); }  // Clear userp()'s across the entire tree
 
-    VNUser      user3u() const VL_MT_STABLE {
+    VNUser user3u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
-        //UASSERT_STATIC(VNUser3InUse::s_userBusy, "userp set w/o busy");
-        return ((m_user3Cnt==VNUser3InUse::s_userCntGbl) ? m_user3u : VNUser{0});
+        //UASSERT_STATIC(VNUser3InUse::s_userBusy, "user3p used without AstUserInUse");
+        return ((m_user3Cnt == VNUser3InUse::s_userCntGbl) ? m_user3u : VNUser{0});
     }
-    AstNode*    user3p() const VL_MT_STABLE { return user3u().toNodep(); }
-    void        user3u(const VNUser& user) { m_user3u=user; m_user3Cnt=VNUser3InUse::s_userCntGbl; }
-    void        user3p(void* userp) { user3u(VNUser{userp}); }
-    int         user3() const { return user3u().toInt(); }
-    void        user3(int val) { user3u(VNUser{val}); }
-    int         user3Inc(int val=1) { int v=user3(); user3(v+val); return v; }
-    int         user3SetOnce() { int v=user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
+    AstNode* user3p() const VL_MT_STABLE { return user3u().toNodep(); }
+    void user3u(const VNUser& user) { m_user3u = user; m_user3Cnt = VNUser3InUse::s_userCntGbl; }
+    void user3p(void* userp) { user3u(VNUser{userp}); }
+    void user3(int val) { user3u(VNUser{val}); }
+    int user3() const { return user3u().toInt(); }
+    int user3Inc(int val = 1) { int v = user3(); user3(v + val); return v; }
+    int user3SetOnce() { int v = user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
     static void user3ClearTree() { VNUser3InUse::clear(); }  // Clear userp()'s across the entire tree
 
-    VNUser      user4u() const VL_MT_STABLE {
+    VNUser user4u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
-        //UASSERT_STATIC(VNUser4InUse::s_userBusy, "userp set w/o busy");
-        return ((m_user4Cnt==VNUser4InUse::s_userCntGbl) ? m_user4u : VNUser{0});
+        //UASSERT_STATIC(VNUser4InUse::s_userBusy, "user4p used without AstUserInUse");
+        return ((m_user4Cnt == VNUser4InUse::s_userCntGbl) ? m_user4u : VNUser{0});
     }
-    AstNode*    user4p() const VL_MT_STABLE { return user4u().toNodep(); }
-    void        user4u(const VNUser& user) { m_user4u=user; m_user4Cnt=VNUser4InUse::s_userCntGbl; }
-    void        user4p(void* userp) { user4u(VNUser{userp}); }
-    int         user4() const { return user4u().toInt(); }
-    void        user4(int val) { user4u(VNUser{val}); }
-    int         user4Inc(int val=1) { int v=user4(); user4(v+val); return v; }
-    int         user4SetOnce() { int v=user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
+    AstNode* user4p() const VL_MT_STABLE { return user4u().toNodep(); }
+    void user4u(const VNUser& user) { m_user4u = user; m_user4Cnt = VNUser4InUse::s_userCntGbl; }
+    void user4p(void* userp) { user4u(VNUser{userp}); }
+    void user4(int val) { user4u(VNUser{val}); }
+    int user4() const { return user4u().toInt(); }
+    int user4Inc(int val = 1) { int v = user4(); user4(v + val); return v; }
+    int user4SetOnce() { int v = user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
     static void user4ClearTree() { VNUser4InUse::clear(); }  // Clear userp()'s across the entire tree
 
-    VNUser      user5u() const VL_MT_STABLE {
+    VNUser user5u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
-        //UASSERT_STATIC(VNUser5InUse::s_userBusy, "userp set w/o busy");
-        return ((m_user5Cnt==VNUser5InUse::s_userCntGbl) ? m_user5u : VNUser{0});
+        //UASSERT_STATIC(VNUser5InUse::s_userBusy, "user5p used without AstUserInUse");
+        return ((m_user5Cnt == VNUser5InUse::s_userCntGbl) ? m_user5u : VNUser{0});
     }
-    AstNode*    user5p() const VL_MT_STABLE { return user5u().toNodep(); }
-    void        user5u(const VNUser& user) { m_user5u=user; m_user5Cnt=VNUser5InUse::s_userCntGbl; }
-    void        user5p(void* userp) { user5u(VNUser{userp}); }
-    int         user5() const { return user5u().toInt(); }
-    void        user5(int val) { user5u(VNUser{val}); }
-    int         user5Inc(int val=1) { int v=user5(); user5(v+val); return v; }
-    int         user5SetOnce() { int v=user5(); if (!v) user5(1); return v; }  // Better for cache than user5Inc()
+    AstNode* user5p() const VL_MT_STABLE { return user5u().toNodep(); }
+    void user5u(const VNUser& user) { m_user5u = user; m_user5Cnt = VNUser5InUse::s_userCntGbl; }
+    void user5p(void* userp) { user5u(VNUser{userp}); }
+    void user5(int val) { user5u(VNUser{val}); }
+    int user5() const { return user5u().toInt(); }
+    int user5Inc(int val = 1) { int v = user5(); user5(v + val); return v; }
+    int user5SetOnce() { int v = user5(); if (!v) user5(1); return v; }  // Better for cache than user5Inc()
     static void user5ClearTree() { VNUser5InUse::clear(); }  // Clear userp()'s across the entire tree
     // clang-format on
 
@@ -1901,9 +1958,9 @@ public:
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     // METHODS - dump and error
-    void v3errorEnd(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex);
+    void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
     void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN
-        VL_REQUIRES(V3Error::s().m_mutex);
+        VL_RELEASE(V3Error::s().m_mutex);
     string warnContextPrimary() const VL_REQUIRES(V3Error::s().m_mutex) {
         return fileline()->warnContextPrimary();
     }
@@ -1941,10 +1998,6 @@ public:
                              AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
-    // Clone or return nullptr if nullptr
-    static AstNode* cloneTreeNull(AstNode* nodep, bool cloneNextLink) {
-        return nodep ? nodep->cloneTree(cloneNextLink) : nullptr;
-    }
     AstNode* cloneTree(bool cloneNextLink);  // Not const, as sets clonep() on original nodep
     bool gateTree() { return gateTreeIter(); }  // Is tree isGateOptimizable?
     inline bool sameTree(const AstNode* node2p) const;  // Does tree of this == node2p?

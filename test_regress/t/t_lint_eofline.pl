@@ -26,7 +26,7 @@ top_filename("$Self->{obj_dir}/t_lint_eofline_bad.v");
 gen($Self->{top_filename});
 
 lint(
-    verilator_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME -E"],
+    verilator_flags2 => ["-E -Wall -Wno-DECLFILENAME"],
     expect_filename => $Self->{golden_filename},
     );
 

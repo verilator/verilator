@@ -12,6 +12,7 @@ module t();
       // verilator no_inline_task
 `endif
       q.push_back(42);
+      if (q.size() != 1) $stop;
    endfunction
 
    function void queue_check_nref(q_t q);
@@ -39,6 +40,7 @@ module t();
    initial begin
       q_t iq;
       queue_set(iq);
+      if (iq.size() != 1) $stop;
       queue_check_ref(iq);
 
       iq[0] = 44;

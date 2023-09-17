@@ -17,7 +17,12 @@
 #ifndef _V3THREADPOOL_H_
 #define _V3THREADPOOL_H_ 1
 
+#if defined(VL_MT_DISABLED_CODE_UNIT)
+#error "Source file has been declared as MT_DISABLED, threads use is prohibited."
+#endif
+
 #include "V3Mutex.h"
+#include "V3ThreadSafety.h"
 
 #include <condition_variable>
 #include <functional>
@@ -41,7 +46,7 @@ class VAnyPackagedTask final {
     struct PTWrapper final : PTWrapperBase {
         std::packaged_task<Signature> m_pt;
 
-        PTWrapper(std::packaged_task<Signature>&& pt)
+        explicit PTWrapper(std::packaged_task<Signature>&& pt)
             : m_pt(std::move(pt)) {}
 
         void operator()() final override { m_pt(); }
@@ -53,6 +58,8 @@ class VAnyPackagedTask final {
 public:
     // CONSTRUCTORS
     template <typename Signature>
+    // non-explicit:
+    // cppcheck-suppress noExplicitConstructor
     VAnyPackagedTask(std::packaged_task<Signature>&& pt)
         : m_ptWrapperp{std::make_unique<PTWrapper<Signature>>(std::move(pt))} {}
 
@@ -74,7 +81,11 @@ class V3ThreadPool final {
     // MEMBERS
     static constexpr unsigned int FUTUREWAITFOR_MS = 100;
 
+    // some functions locks both of this mutexes, be careful of lock inversion problems
+    // 'm_stoppedJobsMutex' mutex should always be locked before 'm_mutex' mutex
+    // check usage of both of them when you use either of them
     V3Mutex m_mutex;  // Mutex for use by m_queue
+    V3Mutex m_stoppedJobsMutex;  // Used to signal stopped jobs
     std::queue<VAnyPackagedTask> m_queue VL_GUARDED_BY(m_mutex);  // Queue of jobs
     // We don't need to guard this condition_variable as
     // both `notify_one` and `notify_all` functions are atomic,
@@ -82,20 +93,36 @@ class V3ThreadPool final {
     // used by this condition_variable, so clang checks that we have mutex locked
     std::condition_variable_any m_cv;  // Conditions to wake up workers
     std::list<std::thread> m_workers;  // Worker threads
-    V3Mutex m_stoppedJobsMutex;  // Used to signal stopped jobs
+    // Number of started and not yet finished jobs.
+    // Reading is valid only after call to `stopOtherThreads()` or when no worker threads exist.
+    std::atomic_uint m_jobsInProgress{0};
     // Conditions to wake up stopped jobs
     std::condition_variable_any m_stoppedJobsCV VL_GUARDED_BY(m_stoppedJobsMutex);
+    // Conditions to wake up exclusive access thread
+    std::condition_variable_any m_exclusiveAccessThreadCV VL_GUARDED_BY(m_stoppedJobsMutex);
     std::atomic_uint m_stoppedJobs{0};  // Currently stopped jobs waiting for wake up
     std::atomic_bool m_stopRequested{false};  // Signals to resume stopped jobs
     std::atomic_bool m_exclusiveAccess{false};  // Signals that all other threads are stopped
 
     std::atomic_bool m_shutdown{false};  // Termination pending
 
+    // Indicates whether multithreading has been suspended.
+    // Used for error detection in resumeMultithreading only. You probably should use
+    // m_exclusiveAccess for information whether something should be run in current thread.
+    bool m_multithreadingSuspended VL_GUARDED_BY(m_mutex) = false;
+
     // CONSTRUCTORS
     V3ThreadPool() = default;
     ~V3ThreadPool() {
-        {
-            V3LockGuard lock{m_mutex};
+        if (!m_mutex.try_lock()) {
+            if (m_jobsInProgress != 0) {
+                // ThreadPool shouldn't be destroyed when jobs are running and mutex is locked,
+                // something is wrong. Most likely Verilator is exitting as a result of failed
+                // assert in critical section. Do nothing, let it exit.
+                return;
+            }
+        } else {
+            V3LockGuard lock{m_mutex, std::adopt_lock_t{}};
             m_queue = {};  // make sure queue is empty
         }
         resize(0);
@@ -113,7 +140,8 @@ public:
     }
 
     // Resize thread pool to n workers (queue must be empty)
-    void resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_stoppedJobsMutex);
+    void resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_stoppedJobsMutex)
+        VL_EXCLUDES(V3MtDisabledLock::instance());
 
     // Enqueue a job for asynchronous execution
     // Due to missing support for lambda annotations in c++11,
@@ -161,8 +189,27 @@ public:
     }
 
     static void selfTest();
+    static void selfTestMtDisabled() VL_MT_DISABLED;
 
 private:
+    // For access to suspendMultithreading() and resumeMultithreading()
+    friend class V3MtDisabledLock;
+
+    // Temporarily suspends multithreading.
+    //
+    // Existing worker threads are not terminated. All jobs enqueued when multithreading is
+    // suspended are executed synchronously.
+    // Must be called from the main thread. Jobs queue must be empty. Existing worker threads must
+    // be idle.
+    //
+    // Only V3MtDisabledLock class is supposed to use this function.
+    void suspendMultithreading() VL_MT_SAFE VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_stoppedJobsMutex);
+
+    // Resumes multithreading suspended previously by call tosuspendMultithreading().
+    //
+    // Only V3MtDisabledLock class is supposed to use this function.
+    void resumeMultithreading() VL_MT_SAFE VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_stoppedJobsMutex);
+
     template <typename T>
     static std::list<T> waitForFuturesImp(std::list<std::future<T>>& futures) {
         std::list<T> results;
@@ -190,11 +237,17 @@ private:
         return m_stopRequested;
     }
 
-    // Waits until exclusive access job completes its job
-    void waitStopRequested() VL_REQUIRES(m_stoppedJobsMutex);
+    // Waits until `resumeOtherThreads()` is called or exclusive access scope end.
+    void waitForResumeRequest() VL_REQUIRES(m_stoppedJobsMutex);
 
-    // Waits until all other jobs are stopped
-    void waitOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex) VL_REQUIRES(m_stoppedJobsMutex);
+    // Sends stop request to other threads and waits until they stop.
+    void stopOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex) VL_REQUIRES(m_stoppedJobsMutex);
+
+    // Resumes threads stopped through previous call to `stopOtherThreads()`.
+    void resumeOtherThreads() VL_MT_SAFE_EXCLUDES(m_mutex) VL_REQUIRES(m_stoppedJobsMutex) {
+        m_stopRequested = false;
+        m_stoppedJobsCV.notify_all();
+    }
 
     void workerJobLoop(int id) VL_MT_SAFE;
 
@@ -207,9 +260,8 @@ public:
         if (!V3ThreadPool::s().willExecuteSynchronously()) {
             V3ThreadPool::s().m_stoppedJobsMutex.lock();
 
-            if (V3ThreadPool::s().stopRequested()) { V3ThreadPool::s().waitStopRequested(); }
-            V3ThreadPool::s().m_stopRequested = true;
-            V3ThreadPool::s().waitOtherThreads();
+            if (V3ThreadPool::s().stopRequested()) { V3ThreadPool::s().waitForResumeRequest(); }
+            V3ThreadPool::s().stopOtherThreads();
             V3ThreadPool::s().m_exclusiveAccess = true;
         } else {
             V3ThreadPool::s().m_stoppedJobsMutex.assumeLocked();
@@ -219,10 +271,11 @@ public:
         // Can't use `willExecuteSynchronously`, we're still in exclusive execution state.
         if (V3ThreadPool::s().m_exclusiveAccess) {
             V3ThreadPool::s().m_exclusiveAccess = false;
-            V3ThreadPool::s().m_stopRequested = false;
-            V3ThreadPool::s().m_stoppedJobsCV.notify_all();
+            V3ThreadPool::s().resumeOtherThreads();
 
             V3ThreadPool::s().m_stoppedJobsMutex.unlock();
+            // wait for all threads to resume
+            while (V3ThreadPool::s().m_stoppedJobs != 0) {}
         } else {
             V3ThreadPool::s().m_stoppedJobsMutex.pretendUnlock();
         }

@@ -166,14 +166,14 @@ module bug3197(input wire clk, input wire [31:0] in, output out);
 endmodule
 
 
-// Bug #3445
+// See issue #3445
 // An unoptimized node is kept as frozen node, but its LSB and polarity were not saved.
 // AST of RHS of result0 looks as below:
 //   AND(SHIFTR(AND(WORDSEL(ARRAYSEL(VARREF)), WORDSEL(ARRAYSEL(VARREF)))), 32'd11)
 //                  ~~~~~~~~~~~~~~~~~~~~~~~~~  ~~~~~~~~~~~~~~~~~~~~~~~~~
 // Two of WORDSELs are frozen nodes. They are under SHIFTR of 11 bits.
 //
-// Fixing #3445 needs to
+// Fixing issue #3445 needs to
 //  1. Take AstShiftR and AstNot into op count when diciding optimizable or not
 //     (result0 and result2 in the test)
 //  2. Insert AstShiftR if LSB of the frozen node is not 0 (result1 in the test)
@@ -368,10 +368,10 @@ module bug3824(input wire clk, input wire [31:0] in, output wire out);
   assign out = d_and ^ d_or ^ d_xor;
 endmodule
 
-/// Bug4059
+/// See issue #4059
 // Frozen node in an xor tree held unnecessary poloarity.
 // In an XOR tree, the entire result is flipped if necessary according to
-// total polarity. This bug was introduced when fixing #3445.
+// total polarity. This bug was introduced when fixing issue #3445.
 module bug4059(input wire clk, input wire [31:0] in, output wire out);
    wire [127:0] words_i;
    for (genvar i = 0; i < $bits(in); ++i) begin

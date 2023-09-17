@@ -1799,7 +1799,7 @@ private:
         UASSERT_OBJ((rstart + rwidth) == lstart, nodep,
                     "tried to merge two selects which are not adjacent");
         AstSel* const newselp = new AstSel{
-            lselp->fromp()->fileline(), rselp->fromp()->cloneTree(false), rstart, lwidth + rwidth};
+            lselp->fromp()->fileline(), rselp->fromp()->unlinkFrBack(), rstart, lwidth + rwidth};
         UINFO(5, "merged two adjacent sel " << lselp << " and " << rselp << " to one " << newselp
                                             << endl);
 
@@ -1809,6 +1809,7 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void replaceConcatMerge(AstConcat* nodep) {
+        // {llp OP lrp, rlp OP rrp} => {llp, rlp} OP {lrp, rrp}, where OP = AND/OR/XOR
         AstNodeBiop* const lp = VN_AS(nodep->lhsp(), NodeBiop);
         AstNodeBiop* const rp = VN_AS(nodep->rhsp(), NodeBiop);
         AstNodeExpr* const llp = lp->lhsp()->cloneTree(false);
@@ -2052,7 +2053,7 @@ private:
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                 return true;
             }
-        } else if (m_doV && VN_IS(nodep->lhsp(), Concat)) {
+        } else if (m_doV && VN_IS(nodep->lhsp(), Concat) && nodep->isTreePureRecurse()) {
             bool need_temp = false;
             if (m_warn && !VN_IS(nodep, AssignDly)) {  // Is same var on LHS and RHS?
                 // Note only do this (need user4) when m_warn, which is
@@ -2145,25 +2146,29 @@ private:
             return true;
         } else if (m_doV && VN_IS(nodep->rhsp(), StreamR)) {
             // The right-streaming operator on rhs of assignment does not
-            // change the order of bits. Eliminate stream but keep its lhsp
-            // Unlink the stuff
-            AstNodeExpr* const srcp = VN_AS(nodep->rhsp(), StreamR)->lhsp()->unlinkFrBack();
-            AstNode* const sizep = VN_AS(nodep->rhsp(), StreamR)->rhsp()->unlinkFrBack();
-            AstNodeExpr* const streamp = VN_AS(nodep->rhsp(), StreamR)->unlinkFrBack();
+            // change the order of bits. Eliminate stream but keep its lhsp.
+            // Add a cast if needed.
+            AstStreamR* const streamp = VN_AS(nodep->rhsp(), StreamR)->unlinkFrBack();
+            AstNodeExpr* srcp = streamp->lhsp()->unlinkFrBack();
+            AstNodeDType* const srcDTypep = srcp->dtypep();
+            if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
+                if (nodep->lhsp()->widthMin() > 64) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment of stream of dynamic "
+                                                 "array to a variable of size greater than 64");
+                }
+                srcp = new AstCvtDynArrayToPacked{srcp->fileline(), srcp, srcDTypep};
+            }
             nodep->rhsp(srcp);
-            // Cleanup
-            VL_DO_DANGLING(sizep->deleteTree(), sizep);
             VL_DO_DANGLING(streamp->deleteTree(), streamp);
             // Further reduce, any of the nodes may have more reductions.
             return true;
         } else if (m_doV && VN_IS(nodep->lhsp(), StreamL)) {
             // Push the stream operator to the rhs of the assignment statement
-            const int dWidth = VN_AS(nodep->lhsp(), StreamL)->lhsp()->width();
-            const int sWidth = nodep->rhsp()->width();
-            // Unlink the stuff
-            AstNodeExpr* const dstp = VN_AS(nodep->lhsp(), StreamL)->lhsp()->unlinkFrBack();
-            AstNodeExpr* streamp = VN_AS(nodep->lhsp(), StreamL)->unlinkFrBack();
+            AstNodeExpr* streamp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const dstp = VN_AS(streamp, StreamL)->lhsp()->unlinkFrBack();
             AstNodeExpr* const srcp = nodep->rhsp()->unlinkFrBack();
+            const int sWidth = srcp->width();
+            const int dWidth = dstp->width();
             // Connect the rhs to the stream operator and update its width
             VN_AS(streamp, StreamL)->lhsp(srcp);
             if (VN_IS(srcp->dtypep(), DynArrayDType) || VN_IS(srcp->dtypep(), QueueDType)
@@ -2172,11 +2177,11 @@ private:
             } else {
                 streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
             }
-            // Shrink the RHS if necessary
-            if (sWidth > dWidth) {
+            if (dWidth == 0) {
+                streamp = new AstCvtPackedToDynArray{nodep->fileline(), streamp, dstp->dtypep()};
+            } else if (sWidth > dWidth) {
                 streamp = new AstSel{streamp->fileline(), streamp, sWidth - dWidth, dWidth};
             }
-            // Link the nodes back in
             nodep->lhsp(dstp);
             nodep->rhsp(streamp);
             return true;
@@ -2184,23 +2189,35 @@ private:
             // The right stream operator on lhs of assignment statement does
             // not reorder bits. However, if the rhs is wider than the lhs,
             // then we select bits from the left-most, not the right-most.
-            const int dWidth = VN_AS(nodep->lhsp(), StreamR)->lhsp()->width();
-            const int sWidth = nodep->rhsp()->width();
-            // Unlink the stuff
-            AstNodeExpr* const dstp = VN_AS(nodep->lhsp(), StreamR)->lhsp()->unlinkFrBack();
-            AstNode* const sizep = VN_AS(nodep->lhsp(), StreamR)->rhsp()->unlinkFrBack();
-            AstNodeExpr* const streamp = VN_AS(nodep->lhsp(), StreamR)->unlinkFrBack();
+            AstNodeExpr* const streamp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const dstp = VN_AS(streamp, StreamR)->lhsp()->unlinkFrBack();
             AstNodeExpr* srcp = nodep->rhsp()->unlinkFrBack();
-            if (sWidth > dWidth) {
+            const int sWidth = srcp->width();
+            const int dWidth = dstp->width();
+            if (dWidth == 0) {
+                srcp = new AstCvtPackedToDynArray{nodep->fileline(), srcp, dstp->dtypep()};
+            } else if (sWidth > dWidth) {
                 srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
             }
             nodep->lhsp(dstp);
             nodep->rhsp(srcp);
-            // Cleanup
-            VL_DO_DANGLING(sizep->deleteTree(), sizep);
             VL_DO_DANGLING(streamp->deleteTree(), streamp);
             // Further reduce, any of the nodes may have more reductions.
             return true;
+        } else if (m_doV && VN_IS(nodep->rhsp(), StreamL)) {
+            AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep();
+            AstStreamL* streamp = VN_AS(nodep->rhsp(), StreamL);
+            AstNodeExpr* const srcp = streamp->lhsp();
+            const AstNodeDType* const srcDTypep = srcp->dtypep();
+            if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
+                if (lhsDtypep->widthMin() > 64) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment of stream of dynamic "
+                                                 "array to a variable of size greater than 64");
+                }
+                srcp->unlinkFrBack();
+                streamp->lhsp(new AstCvtDynArrayToPacked{srcp->fileline(), srcp, lhsDtypep});
+                streamp->dtypeFrom(lhsDtypep);
+            }
         } else if (m_doV && replaceAssignMultiSel(nodep)) {
             return true;
         }
@@ -2286,6 +2303,13 @@ private:
         {
             m_wremove = false;
             iterateChildren(nodep);
+        }
+    }
+    void visit(AstCLocalScope* nodep) override {
+        iterateChildren(nodep);
+        if (!nodep->stmtsp()) {
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
     void visit(AstScope* nodep) override {
@@ -3180,8 +3204,17 @@ private:
         iterateChildren(nodep);
     }
 
-    void visit(AstFuncRef* nodep) override {
+    void visit(AstNodeCCall* nodep) override {
         iterateChildren(nodep);
+        m_hasJumpDelay = true;  // As don't analyze inside tasks for timing controls
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        // Note excludes AstFuncRef as other visitor below
+        iterateChildren(nodep);
+        m_hasJumpDelay = true;  // As don't analyze inside tasks for timing controls
+    }
+    void visit(AstFuncRef* nodep) override {
+        visit(static_cast<AstNodeFTaskRef*>(nodep));
         if (m_params) {  // Only parameters force us to do constant function call propagation
             replaceWithSimulation(nodep);
         }

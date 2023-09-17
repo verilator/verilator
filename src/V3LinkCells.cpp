@@ -52,6 +52,7 @@ public:
 };
 
 class LinkCellsVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(LinkCellsVertex, V3GraphVertex)
     AstNodeModule* const m_modp;
 
 public:
@@ -69,6 +70,7 @@ public:
 };
 
 class LibraryVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(LibraryVertex, V3GraphVertex)
 public:
     explicit LibraryVertex(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
@@ -77,7 +79,7 @@ public:
 };
 
 void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
-    if (const LinkCellsVertex* const vvertexp = dynamic_cast<LinkCellsVertex*>(vertexp)) {
+    if (const LinkCellsVertex* const vvertexp = vertexp->cast<LinkCellsVertex>()) {
         vvertexp->modp()->v3warn(E_UNSUPPORTED,
                                  "Unsupported: Recursive multiple modules (module instantiates "
                                  "something leading back to itself): "
@@ -171,7 +173,7 @@ private:
         if (dumpGraphLevel()) m_graph.dumpDotFilePrefixed("linkcells");
         m_graph.rank();
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (const LinkCellsVertex* const vvertexp = dynamic_cast<LinkCellsVertex*>(itp)) {
+            if (const LinkCellsVertex* const vvertexp = itp->cast<LinkCellsVertex>()) {
                 // +1 so we leave level 1  for the new wrapper we'll make in a moment
                 AstNodeModule* const modp = vvertexp->modp();
                 modp->level(vvertexp->rank() + 1);

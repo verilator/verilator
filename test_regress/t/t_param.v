@@ -48,7 +48,7 @@ module m1;
    initial if (PACKED_PARAM != 8'h36) $stop;
 endmodule
 
-// bug 810
+// See issue #810
 module m2 #(/*parameter*/ integer PAR2 = 10);
    initial begin
       $display("%x",PAR2);

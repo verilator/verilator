@@ -64,10 +64,23 @@ module sub;
    genvar linter_genvar4;
    // verilator lint_on UNUSED
 
+   case (2)
+     1: begin : named
+        localparam BLOCK_PARAM = 10;
+     end
+     2: begin : named
+        localparam BLOCK_PARAM = 20;
+     end
+     3: begin : named
+        localparam BLOCK_PARAM = 30;
+     end
+   endcase
+
    initial begin
       if (0 && assunu1[0] != 0 && udrb2 != 0) begin end
       if (0 && assunub2[THREE] && assunub2[1:0]!=0) begin end
       if (0 && mixed[1:0] != 0) begin end
+      if (named.BLOCK_PARAM != 20) $stop;
    end
 
    generate

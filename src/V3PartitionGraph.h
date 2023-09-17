@@ -29,6 +29,7 @@
 // MTasks and graph structures
 
 class AbstractMTask VL_NOT_FINAL : public V3GraphVertex {
+    VL_RTTI_IMPL(AbstractMTask, V3GraphVertex)
 public:
     explicit AbstractMTask(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
@@ -38,6 +39,7 @@ public:
 };
 
 class AbstractLogicMTask VL_NOT_FINAL : public AbstractMTask {
+    VL_RTTI_IMPL(AbstractLogicMTask, AbstractMTask)
 public:
     // TYPES
     using VxList = std::list<MTaskMoveVertex*>;
@@ -53,6 +55,7 @@ public:
 };
 
 class ExecMTask final : public AbstractMTask {
+    VL_RTTI_IMPL(ExecMTask, AbstractMTask)
 private:
     AstMTaskBody* const m_bodyp;  // Task body
     const uint32_t m_id;  // Unique id of this mtask.

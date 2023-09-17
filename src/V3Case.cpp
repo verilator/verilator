@@ -139,32 +139,42 @@ private:
     std::array<AstNode*, 1 << CASE_OVERLAP_WIDTH> m_valueItem;
 
     // METHODS
-    bool caseIsEnumComplete(AstCase* nodep, uint32_t numCases) {
-        // Return true if case is across an enum, and every value in the case
-        // statement corresponds to one of the enum values
-        if (!nodep->uniquePragma() && !nodep->unique0Pragma()) return false;
-        AstEnumDType* const enumDtp
+    //! Determine whether we should check case items are complete
+    //! @return  Enum's dtype if should check, nullptr if shouldn't
+    const AstEnumDType* getEnumCompletionCheckDType(const AstCase* const nodep) {
+        if (!nodep->uniquePragma() && !nodep->unique0Pragma()) return nullptr;
+        const AstEnumDType* const enumDtp
             = VN_CAST(nodep->exprp()->dtypep()->skipRefToEnump(), EnumDType);
-        if (!enumDtp) return false;  // Case isn't enum
-        AstBasicDType* const basicp = enumDtp->subDTypep()->basicp();
-        if (!basicp) return false;  // Not simple type (perhaps IEEE illegal)
-        if (basicp->width() > 32) return false;
-        // Find all case values into a set
-        std::set<uint32_t> caseSet;
-        for (uint32_t i = 0; i < numCases; ++i) {  // All case items
-            if (m_valueItem[i]) caseSet.emplace(i);
-        }
-        // Find all enum values into a set
-        std::set<uint32_t> enumSet;
-        for (AstEnumItem* itemp = enumDtp->itemsp(); itemp;
+        if (!enumDtp) return nullptr;  // Case isn't enum
+        const AstBasicDType* const basicp = enumDtp->subDTypep()->basicp();
+        if (!basicp) return nullptr;  // Not simple type (perhaps IEEE illegal)
+        if (basicp->width() > 32) return nullptr;
+        return enumDtp;
+    }
+    //! @return  True if case items are complete, false if there are uncovered enums
+    bool checkCaseEnumComplete(const AstCase* const nodep, const AstEnumDType* const dtype) {
+        const uint32_t numCases = 1UL << m_caseWidth;
+        for (AstEnumItem* itemp = dtype->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), EnumItem)) {
             AstConst* const econstp = VN_AS(itemp->valuep(), Const);
-            const uint32_t val = econstp->toUInt();
-            // UINFO(9, "Complete enum item " << val << ": " << itemp << endl);
-            enumSet.emplace(val);
+            V3Number nummask{itemp, econstp->width()};
+            nummask.opBitsNonX(econstp->num());
+            const uint32_t mask = nummask.toUInt();
+            V3Number numval{itemp, econstp->width()};
+            numval.opBitsOne(econstp->num());
+            const uint32_t val = numval.toUInt();
+
+            for (uint32_t i = 0; i < numCases; ++i) {
+                if ((i & mask) == val) {
+                    if (!m_valueItem[i]) {
+                        nodep->v3warn(CASEINCOMPLETE, "Enum item " << itemp->prettyNameQ()
+                                                                   << " not covered by case\n");
+                        return false;  // enum has uncovered value by case items
+                    }
+                }
+            }
         }
-        // If sets match, all covered
-        return (caseSet == enumSet);
+        return true;  // enum is fully covered
     }
     bool isCaseTreeFast(AstCase* nodep) {
         int width = 0;
@@ -193,6 +203,8 @@ private:
         // We can cheat and use uint32_t's because we only support narrow case's
         bool reportedOverlap = false;
         bool reportedSubcase = false;
+        bool hasDefaultCase = false;
+        std::map<AstNode*, AstCaseItem*> caseItemMap;  // case condition -> case item
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), CaseItem)) {
             for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
@@ -202,6 +214,7 @@ private:
                 if (neverItem(nodep, iconstp)) {
                     // X in casez can't ever be executed
                 } else {
+                    const bool isCondWildcard = iconstp->num().isAnyXZ();
                     V3Number nummask{itemp, iconstp->width()};
                     nummask.opBitsNonX(iconstp->num());
                     const uint32_t mask = nummask.toUInt();
@@ -210,16 +223,17 @@ private:
                     const uint32_t val = numval.toUInt();
 
                     uint32_t firstOverlap = 0;
-                    bool foundOverlap = false;
+                    AstNode* overlappedCondp = nullptr;
                     bool foundHit = false;
                     for (uint32_t i = 0; i < numCases; ++i) {
                         if ((i & mask) == val) {
                             if (!m_valueItem[i]) {
-                                m_valueItem[i] = itemp;
+                                m_valueItem[i] = icondp;
+                                caseItemMap[icondp] = itemp;
                                 foundHit = true;
-                            } else if (!foundOverlap) {
+                            } else if (!overlappedCondp) {
                                 firstOverlap = i;
-                                foundOverlap = true;
+                                overlappedCondp = m_valueItem[i];
                                 m_caseNoOverlapsAllCovered = false;
                             }
                         }
@@ -227,9 +241,19 @@ private:
                     if (!nodep->priorityPragma()) {
                         // If this case statement doesn't have the priority
                         // keyword, we want to warn on any overlap.
-                        if (!reportedOverlap && foundOverlap) {
-                            icondp->v3warn(CASEOVERLAP, "Case values overlap (example pattern 0x"
-                                                            << std::hex << firstOverlap << ")");
+                        if (!reportedOverlap && overlappedCondp) {
+                            std::ostringstream examplePattern;
+                            if (isCondWildcard) {
+                                examplePattern << " (example pattern 0x" << std::hex
+                                               << firstOverlap << ")";
+                            }
+                            icondp->v3warn(CASEOVERLAP,
+                                           "Case conditions overlap"
+                                               << examplePattern.str() << "\n"
+                                               << icondp->warnContextPrimary() << '\n'
+                                               << overlappedCondp->warnOther()
+                                               << "... Location of overlapping condition\n"
+                                               << overlappedCondp->warnContextSecondary());
                             reportedOverlap = true;
                         }
                     } else {
@@ -240,7 +264,11 @@ private:
                         if (!reportedSubcase && !foundHit) {
                             icondp->v3warn(CASEOVERLAP,
                                            "Case item ignored: every matching value is covered "
-                                           "by an earlier item");
+                                           "by an earlier condition\n"
+                                               << icondp->warnContextPrimary() << '\n'
+                                               << overlappedCondp->warnOther()
+                                               << "... Location of previous condition\n"
+                                               << overlappedCondp->warnContextPrimary());
                             reportedSubcase = true;
                         }
                     }
@@ -251,16 +279,27 @@ private:
                 for (uint32_t i = 0; i < numCases; ++i) {
                     if (!m_valueItem[i]) m_valueItem[i] = itemp;
                 }
+                caseItemMap[itemp] = itemp;
+                hasDefaultCase = true;
             }
         }
-        if (!caseIsEnumComplete(nodep, numCases)) {
-            for (uint32_t i = 0; i < numCases; ++i) {
-                if (!m_valueItem[i]) {
-                    nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
-                                                  "(example pattern 0x"
-                                                      << std::hex << i << ")");
+        if (!hasDefaultCase) {
+            const AstEnumDType* const dtype = getEnumCompletionCheckDType(nodep);
+            if (dtype) {
+                if (!checkCaseEnumComplete(nodep, dtype)) {
+                    // checkCaseEnumComplete has already warned of incompletion
                     m_caseNoOverlapsAllCovered = false;
                     return false;
+                }
+            } else {
+                for (uint32_t i = 0; i < numCases; ++i) {
+                    if (!m_valueItem[i]) {  // has uncovered case
+                        nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
+                                                      "(example pattern 0x"
+                                                          << std::hex << i << ")");
+                        m_caseNoOverlapsAllCovered = false;
+                        return false;
+                    }
                 }
             }
         }
@@ -274,8 +313,10 @@ private:
         // Convert valueItem from AstCaseItem* to the expression
         // Not done earlier, as we may now have a nullptr because it's just a ";" NOP branch
         for (uint32_t i = 0; i < numCases; ++i) {
-            if (AstCaseItem* const itemp = VN_AS(m_valueItem[i], CaseItem)) {
-                m_valueItem[i] = itemp->stmtsp();
+            if (AstNode* const condp = m_valueItem[i]) {
+                AstCaseItem* caseItemp = caseItemMap[condp];
+                UASSERT(caseItemp, "caseItemp should exist");
+                m_valueItem[i] = caseItemp->stmtsp();
             }
         }
         return true;  // All is fine
@@ -543,10 +584,12 @@ private:
         }
     }
     //--------------------
-    void visit(AstNode* nodep) override {
-        if (VN_IS(nodep, Always)) m_alwaysp = nodep;
+    void visit(AstAlways* nodep) override {
+        VL_RESTORER(m_alwaysp)
+        m_alwaysp = nodep;
         iterateChildren(nodep);
     }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

@@ -52,6 +52,7 @@
 #include "V3Ast.h"
 #include "V3Const.h"
 #include "V3EmitV.h"
+#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3MemberMap.h"
 #include "V3SenExprBuilder.h"
@@ -92,6 +93,7 @@ private:
     // Vertex of a dependency graph of suspendable nodes, e.g. if a node (process or task) is
     // suspendable, all its dependents should also be suspendable
     class DepVtx VL_NOT_FINAL : public V3GraphVertex {
+        VL_RTTI_IMPL(DepVtx, V3GraphVertex)
         AstClass* const m_classp;  // Class associated with a method
         AstNode* const m_nodep;  // AST node represented by this graph vertex
 
@@ -120,6 +122,7 @@ private:
     };
 
     class SuspendDepVtx final : public DepVtx {
+        VL_RTTI_IMPL(SuspendDepVtx, DepVtx)
         string dotColor() const override {
             if (nodep()->user2() & T_SUSPENDER) return "red";
             if (nodep()->user2() & T_SUSPENDEE) return "blue";
@@ -133,6 +136,7 @@ private:
     };
 
     class NeedsProcDepVtx final : public DepVtx {
+        VL_RTTI_IMPL(NeedsProcDepVtx, DepVtx)
         string dotColor() const override {
             if (nodep()->user2() & T_CALLS_PROC_SELF) return "red";
             if (nodep()->user2() & T_HAS_PROC) return "blue";
@@ -161,7 +165,7 @@ private:
     const VNUser5InUse m_user5InUse;
 
     // STATE
-    VMemberMap memberMap;  // Member names cached for fast lookup
+    VMemberMap m_memberMap;  // Member names cached for fast lookup
     AstClass* m_classp = nullptr;  // Current class
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     uint8_t m_underFork = F_NONE;  // F_NONE or flags of a fork we are under
@@ -261,7 +265,7 @@ private:
                 // the root of the inheritance hierarchy and check if the original method is
                 // virtual or not.
                 if (auto* const overriddenp
-                    = VN_CAST(memberMap.findMember(cextp->classp(), nodep->name()), CFunc)) {
+                    = VN_CAST(m_memberMap.findMember(cextp->classp(), nodep->name()), CFunc)) {
                     // Suspendability and process affects typing, so they propagate both ways
                     DepVtx* const overriddenSVxp = getSuspendDepVtx(overriddenp);
                     DepVtx* const overriddenPVxp = getNeedsProcDepVtx(overriddenp);
@@ -388,6 +392,7 @@ private:
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     double m_timescaleFactor = 1.0;  // Factor to scale delays by
     int m_forkCnt = 0;  // Number of forks inside a module
+    bool m_underJumpBlock = false;  // True if we are inside of a jump-block
 
     // Unique names
     V3UniqueNames m_contAssignVarNames{"__VassignWtmp"};  // Names for temp AssignW vars
@@ -413,25 +418,19 @@ private:
 
     // METHODS
     // Find net delay on the LHS of an assignment
-    AstDelay* getLhsNetDelay(AstNodeAssign* nodep) const {
-        bool foundWrite = false;
-        AstDelay* delayp = nullptr;
-        nodep->lhsp()->foreach([&](const AstNodeVarRef* const refp) {
-            if (!refp->access().isWriteOrRW()) return;
-            UASSERT_OBJ(!foundWrite, nodep, "Should only be one variable written to on the LHS");
-            foundWrite = true;
-            if (refp->varp()->delayp()) {
-                delayp = refp->varp()->delayp();
-                delayp->unlinkFrBack();
-            }
-        });
-        return delayp;
+    AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) const {
+        if (const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+            if (refp->varp()->delayp()) return refp->varp()->delayp()->unlinkFrBack();
+        } else if (const AstSel* const selp = VN_CAST(nodep, Sel)) {
+            return getLhsNetDelayRecurse(selp->fromp());
+        }
+        return nullptr;
     }
     // Transform an assignment with an intra timing control into a timing control with the
     // assignment under it
     AstNode* factorOutTimingControl(AstNodeAssign* nodep) const {
         AstNode* stmtp = nodep;
-        AstDelay* delayp = getLhsNetDelay(nodep);
+        AstDelay* delayp = getLhsNetDelayRecurse(nodep->lhsp());
         FileLine* const flp = nodep->fileline();
         AstNode* const controlp = nodep->timingControlp();
         if (controlp) {
@@ -554,7 +553,10 @@ private:
             ss << '"';
             V3EmitV::verilogForTree(sensesp, ss);
             ss << '"';
-            auto* const commentp = new AstCExpr{sensesp->fileline(), ss.str(), 0};
+            // possibly a multiline string
+            std::string comment = ss.str();
+            std::replace(comment.begin(), comment.end(), '\n', ' ');
+            AstCExpr* const commentp = new AstCExpr{sensesp->fileline(), comment, 0};
             commentp->dtypeSetString();
             sensesp->user2p(commentp);
             return commentp;
@@ -594,6 +596,17 @@ private:
         m_netlistp->typeTablep()->addTypesp(m_forkDtp);
         return m_forkDtp;
     }
+    // Move `insertBeforep` into `AstCLocalScope` if necessary to avoid jumping over
+    // a variable initialization that whould be inserted before `insertBeforep`. All
+    // access to this variable shoule be contained within returned `AstCLocalScope`.
+    AstCLocalScope* addCLocalScope(FileLine* const flp, AstNode* const insertBeforep) const {
+        if (!insertBeforep || !m_underJumpBlock) return nullptr;
+        VNRelinker handle;
+        insertBeforep->unlinkFrBack(&handle);
+        AstCLocalScope* const cscopep = new AstCLocalScope{flp, insertBeforep};
+        handle.relink(cscopep);
+        return cscopep;
+    }
     // Create a temp variable and optionally put it before the specified node (mark local if so)
     AstVarScope* createTemp(FileLine* const flp, const std::string& name,
                             AstNodeDType* const dtypep, AstNode* const insertBeforep = nullptr) {
@@ -625,6 +638,7 @@ private:
         FileLine* const flp = forkp->fileline();
         // If we're in a function, insert the sync var directly before the fork
         AstNode* const insertBeforep = m_classp ? forkp : nullptr;
+        addCLocalScope(flp, insertBeforep);
         AstVarScope* forkVscp
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
         unsigned joinCount = 0;  // Needed for join counter
@@ -690,6 +704,11 @@ private:
             nodep->addStmtsp(
                 new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
         }
+    }
+    void visit(AstJumpBlock* nodep) override {
+        VL_RESTORER(m_underJumpBlock);
+        m_underJumpBlock = true;
+        visit(static_cast<AstNodeStmt*>(nodep));
     }
     void visit(AstAlways* nodep) override {
         if (nodep->user1SetOnce()) return;
@@ -908,6 +927,7 @@ private:
         // Insert new vars before the timing control if we're in a function; in a process we can't
         // do that. These intra-assignment vars will later be passed to forked processes by value.
         AstNode* const insertBeforep = m_classp ? controlp : nullptr;
+        addCLocalScope(flp, insertBeforep);
         // Function for replacing values with intermediate variables
         const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
                                                  const std::string& name) {
@@ -935,7 +955,7 @@ private:
         replaceWithIntermediate(nodep->rhsp(), m_intraValueNames.get(nodep));
     }
     void visit(AstAssignW* nodep) override {
-        AstDelay* const netDelayp = getLhsNetDelay(nodep);
+        AstDelay* const netDelayp = getLhsNetDelayRecurse(nodep->lhsp());
         if (!netDelayp && !nodep->timingControlp()) return;
         // This assignment will be converted to an always. In some cases this may generate an
         // UNOPTFLAT, e.g.: assign #1 clk = ~clk. We create a temp var for the LHS of this
@@ -977,7 +997,9 @@ private:
         AstNodeExpr* const condp = V3Const::constifyEdit(nodep->condp()->unlinkFrBack());
         auto* const constp = VN_CAST(condp, Const);
         if (constp) {
-            condp->v3warn(WAITCONST, "Wait statement condition is constant");
+            if (!nodep->fileline()->warnIsOff(V3ErrorCode::WAITCONST)) {
+                condp->v3warn(WAITCONST, "Wait statement condition is constant");
+            }
             if (constp->isZero()) {
                 // We have to await forever instead of simply returning in case we're deep in a
                 // callstack

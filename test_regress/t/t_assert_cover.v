@@ -94,7 +94,6 @@ module Test
         end
    endgenerate
 
-`ifndef verilator // Unsupported
    //============================================================
    // Using a more complicated property
    property C1;
@@ -104,6 +103,8 @@ module Test
    endproperty
    cover property (C1) $display("*COVER: Cyc==5");
 
+`ifndef verilator // Unsupported
+   //============================================================
    // Using covergroup
    // Note a covergroup is really inheritance of a special system "covergroup" class.
    covergroup counter1 @ (posedge cyc);
@@ -131,9 +132,9 @@ module Test
 
       // option.at_least = {number};    // Default 1 - Hits to be considered covered
       // option.auto_bin_max = {number}; // Default 64
-      // option.comment = {string}
+      // option.comment = {string};     // Default ""
       // option.goal = {number};        // Default 90%
-      // option.name = {string}
+      // option.name = {string};        // Default ""
       // option.per_instance = 1;       // Default 0 - each instance separately counted (cadence default is 1)
       // option.weight = {number};      // Default 1
 

@@ -1526,6 +1526,28 @@ static inline WDataOutP VL_STREAML_WWI(int lbits, WDataOutP owp, WDataInP const 
     return owp;
 }
 
+template <typename T>
+static inline void VL_ASSIGN_DYN_Q(VlQueue<T>& q, int elem_size, int lbits, QData from) {
+    const int size = (lbits + elem_size - 1) / elem_size;
+    q.renew(size);
+    const QData mask = VL_MASK_Q(elem_size);
+    for (int i = 0; i < size; ++i) q.at(i) = (T)((from >> (i * elem_size)) & mask);
+}
+
+template <typename T>
+static inline IData VL_DYN_TO_I(const VlQueue<T>& q, int elem_size) {
+    IData ret = 0;
+    for (int i = 0; i < q.size(); ++i) ret |= q.at(i) << (i * elem_size);
+    return ret;
+}
+
+template <typename T>
+static inline QData VL_DYN_TO_Q(const VlQueue<T>& q, int elem_size) {
+    QData ret = 0;
+    for (int i = 0; i < q.size(); ++i) ret |= q.at(i) << (i * elem_size);
+    return ret;
+}
+
 // Because concats are common and wide, it's valuable to always have a clean output.
 // Thus we specify inputs must be clean, so we don't need to clean the output.
 // Note the bit shifts are always constants, so the adds in these constify out.

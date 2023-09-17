@@ -1,0 +1,10 @@
+%Error: t/t_assert_property_var_unsup.v:17:11: syntax error, unexpected IDENTIFIER, expecting "'{"
+   17 |       int prevcyc;
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_var_unsup.v:24:31: Unsupported: property variable default value
+   24 |    property with_def(int nine = 9);
+      |                               ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Internal Error: t/t_assert_property_var_unsup.v:7:8: ../V3ParseSym.h:#: Symbols suggest ending PROPERTY 'prop' but parser thinks ending MODULE 't'
+    7 | module t ( 
+      |        ^

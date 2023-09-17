@@ -82,7 +82,7 @@ module Test(/*AUTOARG*/
       integer x;
       row_idx = {2{1'b0}};
       row_found = 1'b0;
-      // Bug #3409: After unrolling, these conditionals should not be merged
+      // Issue #3409: After unrolling, these conditionals should not be merged
       // as row_found is assigned.
       for (x = 0; $unsigned(x) < 4; x = x + 1) begin
          row_idx = !row_found ? x[1:0] : row_idx;

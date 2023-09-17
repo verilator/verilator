@@ -128,6 +128,43 @@ in the distribution.  These headers use Doxygen comments, `///` and `//<`,
 to indicate and document those functions that are part of the Verilated
 public API.
 
+Process-Level Clone APIs
+--------------------------
+
+Modern operating systems support process-level clone (a.k.a copying, forking)
+with system call interfaces in C/C++, e.g., :code:`fork()` in Linux.
+
+However, after cloning a parent process, some resources cannot be inherited
+in the child process. For example, in POSIX systems, when you fork a process,
+the child process inherits all the memory of the parent process. However,
+only the thread that called fork is replicated in the child process. Other
+threads are not.
+
+Therefore, to support the process-level clone mechanisms, Verilator supports
+:code:`prepareClone()` and :code:`atClone()` APIs to allow the user to manually
+re-construct the model in the child process. The two APIs handle all necessary
+resources required for releasing and re-initializing before and after cloning.
+
+The two APIs are supported in the verilated models. Here is an example of usage
+with Linux :code:`fork()` and :code:`pthread_atfork` APIs:
+
+.. code-block:: C++
+
+    // static function pointers to fit pthread_atfork
+    static auto prepareClone = [](){ topp->prepareClone(); };
+    static auto atClone = [](){ topp->atClone(); };
+
+    // in main function, register the handlers:
+    pthread_atfork(prepareClone, atClone, atClone);
+
+For better flexibility, you can also manually call the handlers before and
+after :code:`fork()`.
+
+With the process-level clone APIs, users can create process-level snapshots
+for the verilated models. While the Verilator save/restore option provides
+persistent and circuit-dependent snapshots, the process-level clone APIs
+enable in-memory, circuit-transparent, and highly efficient snapshots.
+
 
 Direct Programming Interface (DPI)
 ==================================

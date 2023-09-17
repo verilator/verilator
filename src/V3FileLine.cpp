@@ -20,6 +20,7 @@
 // clang-format off
 #include "V3Error.h"
 #include "V3FileLine.h"
+#include "V3Os.h"
 #include "V3String.h"
 #ifndef V3ERROR_NO_GLOBAL_
 # include "V3Global.h"
@@ -286,12 +287,7 @@ FileLine* FileLine::copyOrSameFileLine() {
     return newp;
 }
 
-string FileLine::filebasename() const VL_MT_SAFE {
-    string name = filename();
-    string::size_type pos;
-    if ((pos = name.rfind('/')) != string::npos) name.erase(0, pos + 1);
-    return name;
-}
+string FileLine::filebasename() const VL_MT_SAFE { return V3Os::filenameNonDir(filename()); }
 
 string FileLine::filebasenameNoExt() const {
     string name = filebasename();
@@ -383,7 +379,7 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
 
 // cppverilator-suppress constParameter
 void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
-    VL_REQUIRES(V3Error::s().m_mutex) {
+    VL_RELEASE(V3Error::s().m_mutex) {
     std::ostringstream nsstr;
     if (lastLineno()) nsstr << this;
     nsstr << sstr.str();
@@ -400,7 +396,7 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
         nsstr << warnContextPrimary();
     }
     if (!m_waive) V3Waiver::addEntry(V3Error::s().errorCode(), filename(), sstr.str());
-    V3Error::s().v3errorEnd(nsstr, lstr.str());
+    V3Error::v3errorEnd(nsstr, lstr.str());
 }
 
 string FileLine::warnMore() const VL_REQUIRES(V3Error::s().m_mutex) {

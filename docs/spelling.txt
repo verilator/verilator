@@ -214,6 +214,7 @@ Maupin
 Mdir
 Mednick
 Menküc
+Michail
 Michiels
 Microsystems
 Milanovic
@@ -263,6 +264,7 @@ Pre
 Preprocess
 Pretet
 Pretl
+Pringlemeir
 Priyadharshini
 Pullup
 Pulver
@@ -277,6 +279,7 @@ Renga
 Requin
 Rodionov
 Rolfe
+Rontionov
 Roodselaar
 Runtime
 Ruud
@@ -415,6 +418,7 @@ arrarys
 assertOn
 astgen
 async
+atClone
 ato
 atoi
 autoconf
@@ -653,6 +657,7 @@ ish
 isunbounded
 isunknown
 jobserver
+jwoutersymatra
 killua
 lang
 lcov
@@ -772,6 +777,7 @@ pragmas
 pre
 precisions
 predefines
+prepareClone
 prepend
 prepended
 preprocess
@@ -930,7 +936,9 @@ vc
 vcd
 vcddiff
 vcoverage
+vdhotre
 vec
+ventana
 ver
 verFiles
 verible

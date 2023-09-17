@@ -1,6 +1,6 @@
 // DESCRIPTION: Verilator:
 //  Test an error where a shift amount was out of bounds and the compiler treats the
-//  value as undefined (Issue #803)
+//  value as undefined (issue #803)
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2014 by Jeff Bush.

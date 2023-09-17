@@ -55,6 +55,7 @@ namespace V3Sched {
 namespace {
 
 class SchedSenVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(SchedSenVertex, V3GraphVertex)
     const AstSenItem* const m_senItemp;
 
 public:
@@ -74,6 +75,7 @@ public:
 };
 
 class SchedLogicVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(SchedLogicVertex, V3GraphVertex)
     AstScope* const m_scopep;
     AstSenTree* const m_senTreep;
     AstNode* const m_logicp;
@@ -97,6 +99,7 @@ public:
 };
 
 class SchedVarVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(SchedVarVertex, V3GraphVertex)
     const AstVarScope* const m_vscp;
 
 public:
@@ -299,7 +302,7 @@ void colorActiveRegion(const V3Graph& graph) {
 
     // Trace from all SchedSenVertex
     for (V3GraphVertex* vtxp = graph.verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
-        if (const auto activeEventVtxp = dynamic_cast<SchedSenVertex*>(vtxp)) {
+        if (const auto activeEventVtxp = vtxp->cast<SchedSenVertex>()) {
             queue.push_back(activeEventVtxp);
         }
     }
@@ -323,9 +326,9 @@ void colorActiveRegion(const V3Graph& graph) {
         // If this is a logic vertex, also enqueue all variable vertices that are driven from this
         // logic. This will ensure that if a variable is set in the active region, then all
         // settings of that variable will be in the active region.
-        if (dynamic_cast<SchedLogicVertex*>(&vtx)) {
+        if (vtx.is<SchedLogicVertex>()) {
             for (V3GraphEdge* edgep = vtx.outBeginp(); edgep; edgep = edgep->outNextp()) {
-                UASSERT(dynamic_cast<SchedVarVertex*>(edgep->top()), "Should be var vertex");
+                UASSERT(edgep->top()->is<SchedVarVertex>(), "Should be var vertex");
                 queue.push_back(edgep->top());
             }
         }
@@ -350,7 +353,7 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
     LogicRegions result;
 
     for (V3GraphVertex* vtxp = graphp->verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
-        if (const auto lvtxp = dynamic_cast<SchedLogicVertex*>(vtxp)) {
+        if (const auto lvtxp = vtxp->cast<SchedLogicVertex>()) {
             LogicByScope& lbs = lvtxp->color() ? result.m_act : result.m_nba;
             AstNode* const logicp = lvtxp->logicp();
             logicp->unlinkFrBack();

@@ -285,7 +285,7 @@ module Vt_debug_emitv_t;
             if ((PKG_PARAM != 'sh1)) begin
                 $stop;
             end
-            sub.r = 62;
+            sub.r = 62.0;
             $display("%g", $log10(r));
             $display("%g", $ln(r));
             $display("%g", $exp(r));

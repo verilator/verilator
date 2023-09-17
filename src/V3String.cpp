@@ -237,9 +237,8 @@ static void sha256Block(uint32_t* h, const uint32_t* chunk) VL_PURE {
     // Initialize working variables to current hash value
     for (unsigned i = 0; i < 8; i++) ah[i] = h[i];
     // Compression function main loop
+    uint32_t w[16] = {};
     for (unsigned i = 0; i < 4; ++i) {
-        uint32_t w[16];
-
         for (unsigned j = 0; j < 16; ++j) {
             if (i == 0) {
                 w[j] = *p++;

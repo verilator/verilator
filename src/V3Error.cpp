@@ -291,3 +291,35 @@ void V3Error::vlAbort() {
     VL_GCOV_DUMP();
     std::abort();
 }
+void V3Error::v3errorAcquireLock() VL_ACQUIRE(s().m_mutex) {
+#ifndef V3ERROR_NO_GLOBAL_
+    V3Error::s().m_mutex.lockCheckStopRequest(
+        []() -> void { V3ThreadPool::s().waitIfStopRequested(); });
+#else
+    V3Error::s().m_mutex.lock();
+#endif
+}
+std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mutex) {
+    v3errorAcquireLock();
+    s().v3errorPrep(code);
+    return v3errorStr();
+}
+std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* file, int line)
+    VL_ACQUIRE(s().m_mutex) {
+    v3errorPrep(code) << file << ":" << std::dec << line << ": ";
+    return v3errorStr();
+}
+std::ostringstream& V3Error::v3errorStr() VL_REQUIRES(s().m_mutex) { return s().v3errorStr(); }
+void V3Error::v3errorEnd(std::ostringstream& sstr, const string& extra) VL_RELEASE(s().m_mutex) {
+    s().v3errorEnd(sstr, extra);
+    V3Error::s().m_mutex.unlock();
+}
+
+void v3errorEnd(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex) {
+    V3Error::v3errorEnd(sstr);
+}
+void v3errorEndFatal(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex) {
+    V3Error::v3errorEnd(sstr);
+    assert(0);  // LCOV_EXCL_LINE
+    VL_UNREACHABLE;
+}

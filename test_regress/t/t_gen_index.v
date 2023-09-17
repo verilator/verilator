@@ -3,7 +3,7 @@
 // The code illustrates a problem in Verilator's handling of constant
 // expressions inside generate indexes.
 //
-// This is a regression test against issue 517.
+// This is a regression test against issue #517.
 //
 // **If you do not wish for your code to be released to the public
 // please note it here, otherwise:**

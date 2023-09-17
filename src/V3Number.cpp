@@ -76,7 +76,7 @@ constexpr int MAX_SPRINTF_DOUBLE_SIZE
 //======================================================================
 // Errors
 
-void V3Number::v3errorEnd(const std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex) {
+void V3Number::v3errorEnd(const std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
     std::ostringstream nsstr;
     nsstr << str.str();
     if (m_nodep) {
@@ -84,12 +84,12 @@ void V3Number::v3errorEnd(const std::ostringstream& str) const VL_REQUIRES(V3Err
     } else if (m_fileline) {
         m_fileline->v3errorEnd(nsstr);
     } else {
-        V3Error::s().v3errorEnd(nsstr);
+        V3Error::v3errorEnd(nsstr);
     }
 }
 
 void V3Number::v3errorEndFatal(const std::ostringstream& str) const
-    VL_REQUIRES(V3Error::s().m_mutex) {
+    VL_RELEASE(V3Error::s().m_mutex) {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE;
@@ -511,6 +511,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
             out << "%E-bad-width-double";  // LCOV_EXCL_LINE
         } else {
             out << toDouble();
+            if (toDouble() == floor(toDouble())) out << ".0";
         }
         return out.str();
     } else if (isString()) {
@@ -2217,8 +2218,9 @@ V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
         } else if (VL_UNLIKELY(lhs.isString())) {
             // Non-compatible types, see also opAToN()
             setZero();
+        } else if (lhs.isDouble()) {
+            setDouble(lhs.toDouble());
         } else {
-            // Also handles double as is just bits
             for (int bit = 0; bit < this->width(); bit++) {
                 setBit(bit, ignoreXZ ? lhs.bitIs1(bit) : lhs.bitIs(bit));
             }

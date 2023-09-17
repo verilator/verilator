@@ -256,7 +256,7 @@ private:
                 ifp = nextifp;
             } while (ifp);
 
-            AstNode* const newifp = nodep->cloneTree(false);
+            AstIf* const newifp = nodep->cloneTree(false);
             const bool allow_none = nodep->unique0Pragma();
 
             // Empty case means no property

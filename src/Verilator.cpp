@@ -143,10 +143,10 @@ static void process() {
     V3Error::abortIfErrors();
 
     if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
-    if (v3Global.opt.debugExitUvm()) {
+    if (v3Global.opt.debugExitUvm23()) {
         V3Error::abortIfErrors();
         if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
-        cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
+        cout << "--debug-exit-uvm23: Exiting after UVM-supported pass\n";
         std::exit(0);
     }
 
@@ -170,6 +170,12 @@ static void process() {
             reportStatsIfEnabled();
             return;
         }
+    }
+    if (v3Global.opt.debugExitUvm()) {
+        V3Error::abortIfErrors();
+        if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
+        cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
+        std::exit(0);
     }
 
     // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches
@@ -222,9 +228,9 @@ static void process() {
         V3Inst::dearrayAll(v3Global.rootp());
         V3LinkDot::linkDotArrayed(v3Global.rootp());
 
-        // Create dedicated tasks for fork..join_any / fork_join_none processes
-        if (V3Fork::makeTasks(v3Global.rootp()))
-            V3LinkDot::linkDotPrimary(v3Global.rootp());  // Link newly created tasks
+        // Generate classes and tasks required to maintain proper lifetimes for references in forks
+        V3Fork::makeDynamicScopes(v3Global.rootp());
+        V3Fork::makeTasks(v3Global.rootp());
 
         // Task inlining & pushing BEGINs names to variables/cells
         // Begin processing must be after Param, before module inlining

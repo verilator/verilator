@@ -151,6 +151,7 @@ set(HEADERS
     V3Table.h
     V3Task.h
     V3ThreadPool.h
+    V3ThreadSafety.h
     V3Timing.h
     V3Trace.h
     V3TraceDecl.h
@@ -490,11 +491,13 @@ target_include_directories(${verilator}
 )
 
 if (WIN32)
+    target_compile_options(${verilator} PRIVATE /bigobj)
     target_compile_definitions(${verilator} PRIVATE
         YY_NO_UNISTD_H
     )
     target_include_directories(${verilator} PRIVATE ../platform/win32)
     target_link_libraries(${verilator} PRIVATE bcrypt psapi)
+    target_link_options(${verilator} PRIVATE /STACK:10000000)
 endif()
 
 install(TARGETS ${verilator})

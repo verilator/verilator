@@ -44,7 +44,7 @@ The best place to get started is to try the :ref:`Examples`.
 .. [#] Verilog is defined by the `Institute of Electrical and Electronics
        Engineers (IEEE) Standard for Verilog Hardware Description
        Language`, Std. 1364, released in 1995, 2001, and 2005.  The
-       Verilator documentation uses the shorthand, e.g., "IEEE 1394-2005",
+       Verilator documentation uses the shorthand, e.g., "IEEE 1364-2005",
        to refer to the, e.g., 2005 version of this standard.
 
 .. [#] SystemVerilog is defined by the `Institute of Electrical and

@@ -55,12 +55,28 @@ bool VNUser5InUse::s_userBusy = false;
 int AstNodeDType::s_uniqueNum = 0;
 
 //######################################################################
-// V3AstType
+// VNType
+
+const VNTypeInfo VNType::typeInfoTable[] = {
+#include "V3Ast__gen_type_info.h"  // From ./astgen
+};
 
 std::ostream& operator<<(std::ostream& os, VNType rhs);
 
 //######################################################################
-// Creators
+// VSelfPointerText
+
+const std::shared_ptr<const string> VSelfPointerText::s_emptyp = std::make_shared<string>("");
+const std::shared_ptr<const string> VSelfPointerText::s_thisp = std::make_shared<string>("this");
+
+string VSelfPointerText::protect(bool useSelfForThis, bool protect) const {
+    const string& sp
+        = useSelfForThis ? VString::replaceWord(asString(), "this", "vlSelf") : asString();
+    return VIdProtect::protectWordsIf(sp, protect);
+}
+
+//######################################################################
+// AstNode
 
 AstNode::AstNode(VNType t, FileLine* fl)
     : m_type{t}
@@ -1098,9 +1114,57 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
     // private: Check a tree and children
     UASSERT_OBJ(prevBackp == this->backp(), this, "Back node inconsistent");
-    switch (this->type()) {
-#include "V3Ast__gen_op_checks.h"
-    default: VL_UNREACHABLE;  // LCOV_EXCL_LINE
+    const VNTypeInfo& typeInfo = *type().typeInfo();
+    for (int i = 1; i <= 4; i++) {
+        AstNode* nodep = nullptr;
+        switch (i) {
+        case 1: nodep = op1p(); break;
+        case 2: nodep = op2p(); break;
+        case 3: nodep = op3p(); break;
+        case 4: nodep = op4p(); break;
+        default: this->v3fatalSrc("Bad case"); break;
+        }
+        const char* opName = typeInfo.m_opNamep[i - 1];
+        switch (typeInfo.m_opType[i - 1]) {
+        case VNTypeInfo::OP_UNUSED:
+            UASSERT_OBJ(!nodep, this, typeInfo.m_namep << " must not use " << opName << "()");
+            break;
+        case VNTypeInfo::OP_USED:
+            UASSERT_OBJ(nodep, this,
+                        typeInfo.m_namep << " must have non nullptr " << opName << "()");
+            UASSERT_OBJ(!nodep->nextp(), this,
+                        typeInfo.m_namep << "::" << opName
+                                         << "() cannot have a non nullptr nextp()");
+            nodep->checkTreeIter(this);
+            break;
+        case VNTypeInfo::OP_LIST:
+            if (const AstNode* const headp = nodep) {
+                const AstNode* backp = this;
+                const AstNode* tailp = headp;
+                const AstNode* opp = headp;
+                do {
+                    opp->checkTreeIter(backp);
+                    UASSERT_OBJ(opp == headp || !opp->nextp() || !opp->m_headtailp, opp,
+                                "Headtailp should be null in middle of lists");
+                    backp = tailp = opp;
+                    opp = opp->nextp();
+                } while (opp);
+                UASSERT_OBJ(headp->m_headtailp == tailp, headp,
+                            "Tail in headtailp is inconsistent");
+                UASSERT_OBJ(tailp->m_headtailp == headp, tailp,
+                            "Head in headtailp is inconsistent");
+            }
+            break;
+        case VNTypeInfo::OP_OPTIONAL:
+            if (nodep) {
+                UASSERT_OBJ(!nodep->nextp(), this,
+                            typeInfo.m_namep << "::" << opName
+                                             << "() cannot have a non-nullptr nextp()");
+                nodep->checkTreeIter(this);
+            }
+            break;
+        default: this->v3fatalSrc("Bad case"); break;
+        }
     }
 }
 
@@ -1289,12 +1353,6 @@ bool AstNode::isTreePureRecurse() const {
     return true;
 }
 
-void AstNode::v3errorEndFatal(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex) {
-    v3errorEnd(str);
-    assert(0);  // LCOV_EXCL_LINE
-    VL_UNREACHABLE;
-}
-
 string AstNode::instanceStr() const {
     // Max iterations before giving up on location search,
     // in case we have some circular reference bug.
@@ -1319,9 +1377,9 @@ string AstNode::instanceStr() const {
 
     return "";
 }
-void AstNode::v3errorEnd(std::ostringstream& str) const VL_REQUIRES(V3Error::s().m_mutex) {
+void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
     if (!m_fileline) {
-        V3Error::s().v3errorEnd(str, instanceStr());
+        V3Error::v3errorEnd(str, instanceStr());
     } else {
         std::ostringstream nsstr;
         nsstr << str.str();
@@ -1337,6 +1395,11 @@ void AstNode::v3errorEnd(std::ostringstream& str) const VL_REQUIRES(V3Error::s()
         m_fileline->v3errorEnd(
             nsstr, m_fileline->warnIsOff(V3Error::s().errorCode()) ? "" : instanceStr());
     }
+}
+void AstNode::v3errorEndFatal(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
+    v3errorEnd(str);
+    assert(0);  // LCOV_EXCL_LINE
+    VL_UNREACHABLE;
 }
 
 //======================================================================

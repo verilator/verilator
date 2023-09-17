@@ -1121,9 +1121,9 @@ class LinkDotFindVisitor final : public VNVisitor {
                 m_statep->insertSym(m_curSymp, newvarp->name(), newvarp,
                                     nullptr /*classOrPackagep*/);
             }
+            VL_RESTORER(m_ftaskp);
             m_ftaskp = nodep;
             iterateChildren(nodep);
-            m_ftaskp = nullptr;
         }
     }
     void visit(AstClocking* nodep) override {
@@ -1351,7 +1351,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         if (!foundp && m_modSymp && nodep->name() == m_modSymp->nodep()->name()) {
             foundp = m_modSymp;  // Conflicts with modname?
         }
-        AstEnumItem* const findvarp = foundp ? VN_AS(foundp->nodep(), EnumItem) : nullptr;
+        AstEnumItem* const findvarp = foundp ? VN_CAST(foundp->nodep(), EnumItem) : nullptr;
         bool ins = false;
         if (!foundp) {
             ins = true;
@@ -1375,7 +1375,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                                       << nodep->warnContextPrimary() << '\n'
                                       << foundp->nodep()->warnOther()
                                       << "... Location of original declaration\n"
-                                      << nodep->warnContextSecondary());
+                                      << foundp->nodep()->warnContextSecondary());
                 }
                 ins = true;
             }
@@ -1616,6 +1616,7 @@ private:
             AstPin* const pinp = new AstPin{nodep->fileline(),
                                             -1,  // Pin# not relevant
                                             nodep->name(), exprp};
+            pinp->param(true);
             cellp->addParamsp(pinp);
         }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -2245,10 +2246,29 @@ private:
         }
     }
     void importSymbolsFromExtended(AstClass* const nodep, AstClassExtends* const cextp) {
-        AstClass* const classp = cextp->classp();
-        VSymEnt* const srcp = m_statep->getNodeSym(classp);
-        if (classp->isInterfaceClass()) importImplementsClass(nodep, srcp, classp);
+        AstClass* const baseClassp = cextp->classp();
+        VSymEnt* const srcp = m_statep->getNodeSym(baseClassp);
+        if (baseClassp->isInterfaceClass()) importImplementsClass(nodep, srcp, baseClassp);
         if (!cextp->isImplements()) m_curSymp->importFromClass(m_statep->symsp(), srcp);
+    }
+    void classExtendImport(AstClass* nodep) {
+        // A class reference might be to a class that is later in Ast due to
+        // e.g. parmaeterization or referring to a "class (type T) extends T"
+        // Resolve it so later Class:: references into its base classes work
+        VL_RESTORER(m_ds);
+        VSymEnt* const srcp = m_statep->getNodeSym(nodep);
+        m_ds.init(srcp);
+        iterate(nodep);
+    }
+    bool checkPinRef(AstPin* pinp, VVarType refVarType) {
+        // In instantiations of modules/ifaces, we shouldn't connect port pins to submodule's
+        // parameters or vice versa
+        return pinp->param() == refVarType.isParam();
+    }
+    void updateVarUse(AstVar* nodep) {
+        // Avoid dotted.PARAM false positive when in a parameter block
+        // that is if ()'ed off by same dotted name as another block
+        if (nodep && nodep->isParam()) nodep->usedParam(true);
     }
 
     // VISITs
@@ -2344,7 +2364,32 @@ private:
             UASSERT_OBJ(m_pinSymp, nodep, "Pin not under instance?");
             VSymEnt* const foundp = m_pinSymp->findIdFlat(nodep->name());
             const char* const whatp = nodep->param() ? "parameter pin" : "pin";
-            if (!foundp) {
+            bool pinCheckFail = false;
+            if (foundp) {
+                if (AstVar* const refp = VN_CAST(foundp->nodep(), Var)) {
+                    if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
+                        nodep->v3error(ucfirst(whatp)
+                                       << " is not an in/out/inout/param/interface: "
+                                       << nodep->prettyNameQ());
+                    } else if (!checkPinRef(nodep, refp->varType())) {
+                        pinCheckFail = true;
+                    } else {
+                        nodep->modVarp(refp);
+                        markAndCheckPinDup(nodep, refp, whatp);
+                    }
+                } else if (AstParamTypeDType* const refp
+                           = VN_CAST(foundp->nodep(), ParamTypeDType)) {
+                    if (!checkPinRef(nodep, refp->varType())) {
+                        pinCheckFail = true;
+                    } else {
+                        nodep->modPTypep(refp);
+                        markAndCheckPinDup(nodep, refp, whatp);
+                    }
+                } else {
+                    nodep->v3error(ucfirst(whatp) << " not found: " << nodep->prettyNameQ());
+                }
+            }
+            if (!foundp || pinCheckFail) {
                 if (nodep->name() == "__paramNumber1" && m_cellp
                     && VN_IS(m_cellp->modp(), Primitive)) {
                     // Primitive parameter is really a delay we can just ignore
@@ -2360,19 +2405,6 @@ private:
                               ucfirst(whatp)
                                   << " not found: " << nodep->prettyNameQ() << '\n'
                                   << (suggest.empty() ? "" : nodep->warnMore() + suggest));
-            } else if (AstVar* const refp = VN_CAST(foundp->nodep(), Var)) {
-                if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
-                    nodep->v3error(ucfirst(whatp) << " is not an in/out/inout/param/interface: "
-                                                  << nodep->prettyNameQ());
-                } else {
-                    nodep->modVarp(refp);
-                    markAndCheckPinDup(nodep, refp, whatp);
-                }
-            } else if (AstParamTypeDType* const refp = VN_CAST(foundp->nodep(), ParamTypeDType)) {
-                nodep->modPTypep(refp);
-                markAndCheckPinDup(nodep, refp, whatp);
-            } else {
-                nodep->v3error(ucfirst(whatp) << " not found: " << nodep->prettyNameQ());
             }
         }
         // Early return() above when deleted
@@ -2422,9 +2454,9 @@ private:
                         } else {
                             const auto cextp = classp->extendsp();
                             UASSERT_OBJ(cextp, nodep, "Bad super extends link");
-                            const auto sclassp = cextp->classp();
-                            UASSERT_OBJ(sclassp, nodep, "Bad superclass");
-                            m_ds.m_dotSymp = m_statep->getNodeSym(sclassp);
+                            const auto baseClassp = cextp->classp();
+                            UASSERT_OBJ(baseClassp, nodep, "Bad superclass");
+                            m_ds.m_dotSymp = m_statep->getNodeSym(baseClassp);
                             UINFO(8, "     super. " << m_ds.ascii() << endl);
                         }
                     }
@@ -2555,13 +2587,15 @@ private:
             string expectWhat;
             bool allowScope = false;
             bool allowVar = false;
+            bool allowFTask = false;
             bool staticAccess = false;
             if (m_ds.m_dotPos == DP_PACKAGE) {
                 // {package}::{a}
                 AstNodeModule* classOrPackagep = nullptr;
-                expectWhat = "scope/variable";
+                expectWhat = "scope/variable/func";
                 allowScope = true;
                 allowVar = true;
+                allowFTask = true;
                 staticAccess = true;
                 UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                             "Bad package link");
@@ -2642,6 +2676,13 @@ private:
                                                           << cellp->modp()->prettyNameQ());
                     }
                 }
+            } else if (allowFTask && VN_IS(foundp->nodep(), NodeFTask)) {
+                AstTaskRef* const taskrefp
+                    = new AstTaskRef{nodep->fileline(), nodep->name(), nullptr};
+                nodep->replaceWith(taskrefp);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                if (start) m_ds = lastStates;
+                return;
             } else if (AstVar* const varp = foundToVarp(foundp, nodep, VAccess::READ)) {
                 AstIfaceRefDType* const ifacerefp
                     = LinkDotState::ifaceRefFromArray(varp->subDTypep());
@@ -2864,19 +2905,26 @@ private:
                     "class reference parameter not removed by V3Param");
         VL_RESTORER(m_ds);
         VL_RESTORER(m_pinSymp);
-        {
-            // ClassRef's have pins, so track
-            if (nodep->classOrPackagep()) {
-                m_pinSymp = m_statep->getNodeSym(nodep->classOrPackagep());
-            }
-            m_ds.init(m_curSymp);
-            UINFO(4, "(Backto) Link ClassOrPackageRef: " << nodep << endl);
-            iterateChildren(nodep);
+
+        // ClassRef's have pins, so track
+        if (nodep->classOrPackagep()) {
+            m_pinSymp = m_statep->getNodeSym(nodep->classOrPackagep());
         }
-        if (m_statep->forPrimary() && VN_IS(nodep->classOrPackagep(), Class) && !nodep->paramsp()
+        AstClass* const refClassp = VN_CAST(nodep->classOrPackagep(), Class);
+        // Make sure any extends() are properly imported within referenced class
+        if (refClassp && !m_statep->forPrimary()) classExtendImport(refClassp);
+
+        m_ds.init(m_curSymp);
+        UINFO(4, "(Backto) Link ClassOrPackageRef: " << nodep << endl);
+        iterateChildren(nodep);
+
+        AstClass* const modClassp = VN_CAST(m_modp, Class);
+        if (m_statep->forPrimary() && refClassp && !nodep->paramsp()
             && nodep->classOrPackagep()->hasGParam()
             // Don't warn on typedefs, which are hard to know if there's a param somewhere buried
-            && VN_IS(nodep->classOrPackageNodep(), Class)) {
+            && VN_IS(nodep->classOrPackageNodep(), Class)
+            // References to class:: within class itself are OK per IEEE (UVM does this)
+            && modClassp != refClassp) {
             nodep->v3error("Reference to parameterized class without #() (IEEE 1800-2017 8.25.1)\n"
                            << nodep->warnMore() << "... Suggest use '"
                            << nodep->classOrPackageNodep()->prettyName() << "#()'");
@@ -2895,6 +2943,7 @@ private:
             if (AstVar* const varp
                 = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr) {
                 nodep->varp(varp);
+                updateVarUse(nodep->varp());
                 // Generally set by parse, but might be an import
                 nodep->classOrPackagep(foundp->classOrPackagep());
             }
@@ -2937,6 +2986,7 @@ private:
                 AstVar* const varp
                     = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr;
                 nodep->varp(varp);
+                updateVarUse(nodep->varp());
                 UINFO(7, "         Resolved " << nodep << endl);  // Also prints varp
                 if (!nodep->varp()) {
                     nodep->v3error("Can't find definition of "
@@ -2974,6 +3024,7 @@ private:
                     // later optimizations to deal with VarXRef.
                     nodep->varp(vscp->varp());
                     nodep->varScopep(vscp);
+                    updateVarUse(nodep->varp());
                     UINFO(7, "         Resolved " << nodep << endl);  // Also prints taskp
                     AstVarRef* const newvscp
                         = new AstVarRef{nodep->fileline(), vscp, nodep->access()};
@@ -3467,26 +3518,28 @@ private:
                     }
                 }
 
-                if (AstClass* const classp = cextp->classOrNullp()) {
+                if (AstClass* const baseClassp = cextp->classOrNullp()) {
                     // Already converted. Update symbol table to link unlinked members.
                     // Base class has to be visited in a case if its extends statement
                     // needs to be handled. Recursive inheritance was already checked.
-                    if (classp == nodep) {
+                    // Must be here instead of in LinkDotParam to handle
+                    // "class (type T) extends T".
+                    if (baseClassp == nodep) {
                         cextp->v3error("Attempting to extend class " << nodep->prettyNameQ()
                                                                      << " from itself");
-                    } else if (cextp->isImplements() && !classp->isInterfaceClass()) {
+                    } else if (cextp->isImplements() && !baseClassp->isInterfaceClass()) {
                         cextp->v3error("Attempting to implement from non-interface class "
-                                       << classp->prettyNameQ() << '\n'
+                                       << baseClassp->prettyNameQ() << '\n'
                                        << "... Suggest use 'extends'");
                     } else if (!cextp->isImplements() && !nodep->isInterfaceClass()
-                               && classp->isInterfaceClass()) {
+                               && baseClassp->isInterfaceClass()) {
                         cextp->v3error("Attempting to extend from interface class "
-                                       << classp->prettyNameQ() << '\n'
+                                       << baseClassp->prettyNameQ() << '\n'
                                        << "... Suggest use 'implements'");
                     }
-                    classp->isExtended(true);
+                    baseClassp->isExtended(true);
                     nodep->isExtended(true);
-                    iterate(classp);
+                    iterate(baseClassp);
                     importSymbolsFromExtended(nodep, cextp);
                     continue;
                 }
@@ -3518,7 +3571,8 @@ private:
         if (nodep->user3SetOnce()) return;
         if (AstNode* const cpackagep = nodep->classOrPackageOpp()) {
             if (AstClassOrPackageRef* const cpackagerefp = VN_CAST(cpackagep, ClassOrPackageRef)) {
-                if (cpackagerefp->paramsp()) {
+                const AstClass* const clsp = VN_CAST(cpackagerefp->classOrPackageNodep(), Class);
+                if (clsp && clsp->isParameterized()) {
                     // Unable to link before the instantiation of parameter classes.
                     // The class reference node has to be visited to properly link parameters.
                     iterate(cpackagep);
@@ -3702,6 +3756,7 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     state.computeScopeAliases();
     state.dumpSelf();
     { LinkDotResolveVisitor{rootp, &state}; }
+    state.dumpSelf();
 }
 
 void V3LinkDot::linkDotPrimary(AstNetlist* nodep) {

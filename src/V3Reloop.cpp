@@ -253,6 +253,7 @@ private:
         m_mgIndexHi = lindex;
         UINFO(9, "Start merge i=" << lindex << " o=" << m_mgOffset << nodep << endl);
     }
+    void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
     //--------------------
     void visit(AstVar*) override {}  // Accelerate
     void visit(AstNodeExpr*) override {}  // Accelerate

@@ -42,7 +42,7 @@ module t (/*AUTOARG*/
       else if (cyc == 4) begin
          dly_s.dly = 55;
          dly0 <= #(dly_s.dly) 32'h55;
-         //dly0 <= # dly_s.dly 32'h55;  // Unsupported, issue-2410
+         //dly0 <= # dly_s.dly 32'h55;  // Unsupported, issue #2410
       end
       else if (cyc == 99) begin
          if (dly3 !== 32'h57) $stop;

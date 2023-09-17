@@ -52,6 +52,7 @@ public:
 // Vertices and nodes
 
 class V3GraphTestVertex VL_NOT_FINAL : public V3GraphVertex {
+    VL_RTTI_IMPL(V3GraphTestVertex, V3GraphVertex)
     const string m_name;
 
 public:
@@ -293,10 +294,8 @@ public:
 void V3Graph::selfTest() {
     // Execute all of the tests
     UINFO(2, __FUNCTION__ << ": " << endl);
-    // clang-format off
     { V3GraphTestStrong{}.run(); }
     { V3GraphTestAcyc{}.run(); }
     { V3GraphTestVars{}.run(); }
     { V3GraphTestImport{}.run(); }
-    // clang-format on
 }

@@ -355,6 +355,13 @@ private:
         if (nodep->isOutputter()) m_isOutputter = true;
     }
 
+    void knownBadNodeType(AstNode* nodep) {
+        // Call for node types we know we can't handle
+        checkNodeInfo(nodep);
+        if (optimizable()) {
+            clearOptimizable(nodep, std::string{"Known unhandled node type "} + nodep->typeName());
+        }
+    }
     void badNodeType(AstNode* nodep) {
         // Call for default node types, or other node types we don't know how to handle
         checkNodeInfo(nodep);
@@ -1163,6 +1170,20 @@ private:
         }
     }
 
+    // ====
+    // Known Bad
+    void visit(AstCMethodHard* nodep) override {
+        // Some CMethods such as size() on queues could be supported, but
+        // instead we should change those methods to new Ast types so we can
+        // properly dispatch them
+        if (jumpingOver(nodep)) return;
+        knownBadNodeType(nodep);
+    }
+    void visit(AstMemberSel* nodep) override {
+        if (jumpingOver(nodep)) return;
+        knownBadNodeType(nodep);
+    }
+    // ====
     // default
     // These types are definitely not reducible
     //   AstCoverInc, AstFinish,
