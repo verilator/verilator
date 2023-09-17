@@ -13,6 +13,7 @@ Verilator 5.017 devel
 
 **Minor:**
 
+* Support resizing function call inout arguments (#4467).
 
 
 Verilator 5.016 2023-09-16

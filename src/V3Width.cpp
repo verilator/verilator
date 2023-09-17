@@ -5577,7 +5577,7 @@ private:
             for (const auto& tconnect : tconnects) {
                 const AstVar* const portp = tconnect.first;
                 const AstArg* const argp = tconnect.second;
-                AstNode* const pinp = argp->exprp();
+                AstNodeExpr* const pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
                 AstNodeDType* const portDTypep = portp->dtypep()->skipRefToEnump();
                 const AstNodeDType* const pinDTypep = pinp->dtypep()->skipRefToEnump();
@@ -5588,13 +5588,15 @@ private:
                                   << portDTypep->prettyDTypeName() << " but connection is "
                                   << pinDTypep->prettyDTypeName() << ".");
                 } else if (portp->isWritable() && pinp->width() != portp->width()) {
-                    pinp->v3warn(E_UNSUPPORTED, "Unsupported: Function output argument "
-                                                    << portp->prettyNameQ() << " requires "
-                                                    << portp->width() << " bits, but connection's "
-                                                    << pinp->prettyTypeName() << " generates "
-                                                    << pinp->width() << " bits.");
-                    // otherwise would need some mess to force both sides to proper size
-                    // (get an ASSIGN with EXTEND on the lhs instead of rhs)
+                    pinp->v3widthWarn(portp->width(), pinp->width(),
+                                      "Function output argument "
+                                          << portp->prettyNameQ() << " requires " << portp->width()
+                                          << " bits, but connection's " << pinp->prettyTypeName()
+                                          << " generates " << pinp->width() << " bits.");
+                    VNRelinker relinkHandle;
+                    pinp->unlinkFrBack(&relinkHandle);
+                    AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
+                    relinkHandle.relink(newp);
                 }
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
                     checkClassAssign(nodep, "Function Argument", pinp, portDTypep);

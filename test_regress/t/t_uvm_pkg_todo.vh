@@ -13464,10 +13464,8 @@ function uvm_component::new (string name, uvm_component parent);
   event_pool = new("event_pool");
   m_domain = parent.m_domain;
   reseed();
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:13463:76: Unsupported: Function output argument 'value' requires 4096 bits, but connection's VARREF 'recording_detail' generates 32 bits.
-//TODO  if (!uvm_config_db #(uvm_bitstream_t)::get(this, "", "recording_detail", recording_detail))
-//TODO        void'(uvm_config_db #(int)::get(this, "", "recording_detail", recording_detail));
+  if (!uvm_config_db #(uvm_bitstream_t)::get(this, "", "recording_detail", recording_detail))
+        void'(uvm_config_db #(int)::get(this, "", "recording_detail", recording_detail));
   m_rh.set_name(get_full_name());
   set_report_verbosity_level(parent.get_report_verbosity_level());
   m_set_cl_msg_args();
@@ -15876,10 +15874,8 @@ virtual class uvm_port_base #(type IF=uvm_void) extends IF;
     m_min_size  = min_size;
     m_max_size  = max_size;
     m_comp = new(name, parent, this);
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:15875:75: Unsupported: Function output argument 'value' requires 4096 bits, but connection's VARREF 'tmp' generates 32 bits.
-//TODO    if (!uvm_config_int::get(m_comp, "", "check_connection_relationships",tmp))
-//TODO      m_comp.set_report_id_action(s_connection_warning_id, UVM_NO_ACTION);
+    if (!uvm_config_int::get(m_comp, "", "check_connection_relationships",tmp))
+      m_comp.set_report_id_action(s_connection_warning_id, UVM_NO_ACTION);
   endfunction
   function string get_name();
     return m_comp.get_name();
@@ -26304,17 +26300,13 @@ function uvm_status_e uvm_reg::backdoor_read_func(uvm_reg_item rw);
        uvm_report_info ("RegMem", $sformatf("backdoor_read from %s ", hdl_concat.slices[j].path), UVM_DEBUG, "t/uvm/src/reg/uvm_reg.svh", 2192, "", 1);
    end
         if (hdl_concat.slices[j].offset < 0) begin
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:26297:57: Unsupported: Function output argument 'value' requires 1024 bits, but connection's VARREF 'val' generates 64 bits.
-//TODO           ok &= uvm_hdl_read(hdl_concat.slices[j].path,val);
+           ok &= uvm_hdl_read(hdl_concat.slices[j].path,val);
            continue;
         end
         begin
            uvm_reg_data_t slice;
            int k = hdl_concat.slices[j].offset;
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:26303:58: Unsupported: Function output argument 'value' requires 1024 bits, but connection's VARREF 'slice' generates 64 bits.
-//TODO           ok &= uvm_hdl_read(hdl_concat.slices[j].path, slice);
+           ok &= uvm_hdl_read(hdl_concat.slices[j].path, slice);
            repeat (hdl_concat.slices[j].size) begin
               val[k++] = slice[0];
               slice >>= 1;
@@ -29572,17 +29564,13 @@ function uvm_status_e uvm_mem::backdoor_read_func(uvm_reg_item rw);
        uvm_report_info ("RegModel", {"backdoor_read from ",hdl_path}, UVM_DEBUG, "t/uvm/src/reg/uvm_mem.svh", 1691, "", 1);
    end
            if (hdl_concat.slices[j].offset < 0) begin
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:29567:44: Unsupported: Function output argument 'value' requires 1024 bits, but connection's VARREF 'slice' generates 64 bits.
-//TODO              ok &= uvm_hdl_read(hdl_path, val);
+              ok &= uvm_hdl_read(hdl_path, val);
               continue;
            end
            begin
               uvm_reg_data_t slice;
               int k = hdl_concat.slices[j].offset;
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:34181:38: Unsupported: Function output argument 'value' requires 1024 bits, but connection's VARREF 'd' generates 64 bits.
-//TODO              ok &= uvm_hdl_read(hdl_path, slice);
+              ok &= uvm_hdl_read(hdl_path, slice);
               repeat (hdl_concat.slices[j].size) begin
                  val[k++] = slice[0];
                  slice >>= 1;
@@ -34196,13 +34184,11 @@ endfunction : __m_uvm_execute_field_op
             foreach (path.slices[j]) begin
                 string p_ = path.slices[j].path;
                 uvm_reg_data_t d;
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error: t/t_uvm_pkg_todo.vh:19861:21: Function Argument expects a CLASSREFDTYPE 'uvm_sequencer__Tz97_TBz97', got CLASSREFDTYPE 'uvm_sequencer__Tz97'
-//TODO                if (!uvm_hdl_read(p_,d))
-//TODO   begin
-//TODO     if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"uvm_reg_mem_hdl_paths_seq"))
-//TODO       uvm_report_error ("uvm_reg_mem_hdl_paths_seq", $sformatf("HDL path \"%s\" for register \"%s\" is not readable", p_, r.get_full_name()), UVM_NONE, "t/uvm/src/reg/sequences/uvm_reg_mem_hdl_paths_seq.svh", 145, "", 1);
-//TODO   end
+                if (!uvm_hdl_read(p_,d))
+   begin
+     if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"uvm_reg_mem_hdl_paths_seq"))
+       uvm_report_error ("uvm_reg_mem_hdl_paths_seq", $sformatf("HDL path \"%s\" for register \"%s\" is not readable", p_, r.get_full_name()), UVM_NONE, "t/uvm/src/reg/sequences/uvm_reg_mem_hdl_paths_seq.svh", 145, "", 1);
+   end
                 if (!uvm_hdl_check_path(p_))
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"uvm_reg_mem_hdl_paths_seq"))

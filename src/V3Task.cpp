@@ -412,6 +412,53 @@ private:
         });
     }
 
+    AstAssign* connectPortMakeInAssign(AstNodeExpr* pinp, AstVarScope* newvscp, bool pureCheck) {
+        // Create input assignment to go in FRONT of function call
+        AstNodeExpr* inPinp = pinp;
+        if (AstResizeLValue* sinPinp = VN_CAST(inPinp, ResizeLValue)) inPinp = sinPinp->lhsp();
+        AstNodeExpr* const inPinClonep
+            = pureCheck ? inPinp->cloneTreePure(true) : inPinp->cloneTree(true);
+        AstAssign* const assp = new AstAssign{
+            pinp->fileline(), new AstVarRef{newvscp->fileline(), newvscp, VAccess::WRITE},
+            inPinClonep};
+        assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
+        return assp;
+    }
+    AstAssign* connectPortMakeOutAssign(AstVar* portp, AstNodeExpr* pinp, AstVarScope* newvscp,
+                                        bool pureCheck) {
+        // If needed, remap size of function to caller's output size
+        AstNodeExpr* outPinp = pinp;
+        AstNodeExpr* postRhsp = new AstVarRef{newvscp->fileline(), newvscp, VAccess::READ};
+        if (AstResizeLValue* soutPinp = VN_CAST(outPinp, ResizeLValue)) {
+            outPinp = soutPinp->lhsp();
+            if (AstNodeUniop* soutPinp = VN_CAST(outPinp, Extend)) {
+                outPinp = soutPinp->lhsp();
+            } else if (AstNodeUniop* soutPinp = VN_CAST(outPinp, ExtendS)) {
+                outPinp = soutPinp->lhsp();
+            } else if (AstSel* soutPinp = VN_CAST(outPinp, Sel)) {
+                outPinp = soutPinp->fromp();
+            } else {
+                outPinp->v3fatalSrc("Inout pin resizing should have had extend or select");
+            }
+            if (outPinp->width() < portp->width()) {
+                postRhsp = new AstSel{pinp->fileline(), postRhsp, 0, pinp->width()};
+            } else {  // pin width > port width
+                if (pinp->isSigned() && postRhsp->isSigned()) {
+                    postRhsp = new AstExtendS{pinp->fileline(), postRhsp};
+                } else {
+                    postRhsp = new AstExtend{pinp->fileline(), postRhsp};
+                }
+            }
+            postRhsp->dtypeFrom(outPinp);
+        }
+        // Put output assignment AFTER function call
+        AstNodeExpr* const outPinClonep
+            = pureCheck ? outPinp->cloneTreePure(true) : outPinp->cloneTree(true);
+        AstAssign* const assp = new AstAssign{pinp->fileline(), outPinClonep, postRhsp};
+        assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
+        return assp;
+    }
+
     void connectPort(AstVar* portp, AstArg* argp, const string& namePrefix, AstNode* beginp,
                      bool inlineTask) {
         AstNodeExpr* const pinp = argp->exprp();
@@ -432,23 +479,31 @@ private:
                 pinp->v3error("Function/task " + portp->direction().prettyName()  // e.g. "output"
                               + " connected to constant instead of variable: "
                               + portp->prettyNameQ());
-            } else if (portp->isInoutish()) {
-                // Correct lvalue; see comments below
+            }
+            // else if (portp->direction() == VDirection::REF) {
+            // TODO References need to instead pass a real reference var, see issue #3385
+            else if (portp->isInoutish()) {
+                // if (debug() >= 9) pinp->dumpTree("-pinrsize- ");
                 V3LinkLValue::linkLValueSet(pinp);
 
-                if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
-                    // Connect to this exact variable
-                    if (inlineTask) {
-                        AstVarScope* const localVscp = varrefp->varScopep();
-                        UASSERT_OBJ(localVscp, varrefp, "Null var scope");
-                        portp->user2p(localVscp);
-                        pushDeletep(pinp);
-                    }
-                } else {
-                    pinp->v3warn(
-                        E_TASKNSVAR,
-                        "Unsupported: Function/task input argument is not simple variable");
+                AstVarScope* const newvscp
+                    = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                portp->user2p(newvscp);
+                if (!inlineTask)
+                    pinp->replaceWith(
+                        new AstVarRef{newvscp->fileline(), newvscp, VAccess::READWRITE});
+
+                // Put input assignment in FRONT of all other statements
+                AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, true);
+                if (AstNode* const afterp = beginp->nextp()) {
+                    afterp->unlinkFrBackWithNext();
+                    AstNode::addNext<AstNode, AstNode>(preassp, afterp);
                 }
+                beginp->addNext(preassp);
+
+                AstAssign* const postassp = connectPortMakeOutAssign(portp, pinp, newvscp, true);
+                beginp->addNext(postassp);
+                // if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-pinrsize-out- ");
             } else if (portp->isWritable()) {
                 // Make output variables
                 // Correct lvalue; we didn't know when we linked
@@ -463,29 +518,21 @@ private:
                 portp->user2p(newvscp);
                 if (!inlineTask)
                     pinp->replaceWith(new AstVarRef{newvscp->fileline(), newvscp, VAccess::WRITE});
-                AstAssign* const assp
-                    = new AstAssign{pinp->fileline(), pinp,
-                                    new AstVarRef{newvscp->fileline(), newvscp, VAccess::READ}};
-                assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
-                                                true);  // Ok if in <= block
+                AstAssign* const postassp = connectPortMakeOutAssign(portp, pinp, newvscp, false);
                 // Put assignment BEHIND of all other statements
-                beginp->addNext(assp);
+                beginp->addNext(postassp);
             } else if (inlineTask && portp->isNonOutput()) {
                 // Make input variable
-                AstVarScope* const inVscp
+                AstVarScope* const newvscp
                     = createVarScope(portp, namePrefix + "__" + portp->shortName());
-                portp->user2p(inVscp);
-                AstAssign* const assp = new AstAssign{
-                    pinp->fileline(), new AstVarRef{inVscp->fileline(), inVscp, VAccess::WRITE},
-                    pinp};
-                assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
-                                                true);  // Ok if in <= block
+                portp->user2p(newvscp);
+                AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, false);
                 // Put assignment in FRONT of all other statements
                 if (AstNode* const afterp = beginp->nextp()) {
                     afterp->unlinkFrBackWithNext();
-                    AstNode::addNext<AstNode, AstNode>(assp, afterp);
+                    AstNode::addNext<AstNode, AstNode>(preassp, afterp);
                 }
-                beginp->addNext(assp);
+                beginp->addNext(preassp);
             }
         }
     }

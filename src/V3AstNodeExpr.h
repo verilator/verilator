@@ -5083,6 +5083,21 @@ public:
     bool sizeMattersLhs() const override { return false; }
     int instrCount() const override { return 1 + V3Number::log2b(width()); }
 };
+class AstResizeLValue final : public AstNodeUniop {
+    // Resize a LValue into a wider/narrower entity at function argument boundry
+    // Width and signness is implied from nodep->width()
+public:
+    AstResizeLValue(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_ResizeLValue(fl, lhsp) {}
+    ASTGEN_MEMBERS_AstResizeLValue;
+    void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
+    string emitVerilog() override { return "%l"; }
+    string emitC() final override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+    int instrCount() const override { return 0; }
+};
 class AstSigned final : public AstNodeUniop {
     // $signed(lhs)
 public:
