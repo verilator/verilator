@@ -306,15 +306,15 @@ private:
         }
         if (dropop[0]) {
             nodep->rhsp()->unlinkFrBack()->deleteTree();
-            nodep->rhsp(nonXp->cloneTree(true));
+            nodep->rhsp(nonXp->cloneTreePure(true));
         }
         if (dropop[1]) {
             nodep->thsp()->unlinkFrBack()->deleteTree();
-            nodep->thsp(nonXp->cloneTree(true));
+            nodep->thsp(nonXp->cloneTreePure(true));
         }
         if (dropop[2]) {
             nodep->fhsp()->unlinkFrBack()->deleteTree();
-            nodep->fhsp(nonXp->cloneTree(true));
+            nodep->fhsp(nonXp->cloneTreePure(true));
         }
         iterateChildren(nodep);
     }
@@ -398,7 +398,7 @@ private:
                 = new AstGte{nodep->fileline(),
                              new AstConst(nodep->fileline(), AstConst::WidthedValue{},
                                           nodep->lsbp()->width(), maxmsb),
-                             nodep->lsbp()->cloneTree(false)};
+                             nodep->lsbp()->cloneTreePure(false)};
             // See if the condition is constant true (e.g. always in bound due to constant select)
             // Note below has null backp(); the Edit function knows how to deal with that.
             condp = V3Const::constifyEdit(condp);
@@ -457,7 +457,7 @@ private:
                 = new AstGte{nodep->fileline(),
                              new AstConst(nodep->fileline(), AstConst::WidthedValue{},
                                           nodep->bitp()->width(), declElements - 1),
-                             nodep->bitp()->cloneTree(false)};
+                             nodep->bitp()->cloneTreePure(false)};
             // Note below has null backp(); the Edit function knows how to deal with that.
             condp = V3Const::constifyEdit(condp);
             if (condp->isOne()) {

@@ -2,7 +2,7 @@
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2003 by Wilson Snyder. This program is free software; you
+# Copyright 2023 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -10,9 +10,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-lint(
-    fails => 1,
-    expect_filename => $Self->{golden_filename},
+compile(
+    v_flags2 => ["-Wno-PKGNODECL -Wno-UNPACKED -Wno-RANDC -Wno-IMPLICITSTATIC -Wno-CONSTRAINTIGN -Wno-MISINDENT",
+                 "--error-limit 200"],
+    );
+
+execute(
+    check_finished => 1,
     );
 
 ok(1);

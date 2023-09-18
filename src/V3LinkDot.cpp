@@ -1351,7 +1351,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         if (!foundp && m_modSymp && nodep->name() == m_modSymp->nodep()->name()) {
             foundp = m_modSymp;  // Conflicts with modname?
         }
-        AstEnumItem* const findvarp = foundp ? VN_AS(foundp->nodep(), EnumItem) : nullptr;
+        AstEnumItem* const findvarp = foundp ? VN_CAST(foundp->nodep(), EnumItem) : nullptr;
         bool ins = false;
         if (!foundp) {
             ins = true;
@@ -1375,7 +1375,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                                       << nodep->warnContextPrimary() << '\n'
                                       << foundp->nodep()->warnOther()
                                       << "... Location of original declaration\n"
-                                      << nodep->warnContextSecondary());
+                                      << foundp->nodep()->warnContextSecondary());
                 }
                 ins = true;
             }
@@ -2246,10 +2246,19 @@ private:
         }
     }
     void importSymbolsFromExtended(AstClass* const nodep, AstClassExtends* const cextp) {
-        AstClass* const classp = cextp->classp();
-        VSymEnt* const srcp = m_statep->getNodeSym(classp);
-        if (classp->isInterfaceClass()) importImplementsClass(nodep, srcp, classp);
+        AstClass* const baseClassp = cextp->classp();
+        VSymEnt* const srcp = m_statep->getNodeSym(baseClassp);
+        if (baseClassp->isInterfaceClass()) importImplementsClass(nodep, srcp, baseClassp);
         if (!cextp->isImplements()) m_curSymp->importFromClass(m_statep->symsp(), srcp);
+    }
+    void classExtendImport(AstClass* nodep) {
+        // A class reference might be to a class that is later in Ast due to
+        // e.g. parmaeterization or referring to a "class (type T) extends T"
+        // Resolve it so later Class:: references into its base classes work
+        VL_RESTORER(m_ds);
+        VSymEnt* const srcp = m_statep->getNodeSym(nodep);
+        m_ds.init(srcp);
+        iterate(nodep);
     }
     bool checkPinRef(AstPin* pinp, VVarType refVarType) {
         // In instantiations of modules/ifaces, we shouldn't connect port pins to submodule's
@@ -2445,9 +2454,9 @@ private:
                         } else {
                             const auto cextp = classp->extendsp();
                             UASSERT_OBJ(cextp, nodep, "Bad super extends link");
-                            const auto sclassp = cextp->classp();
-                            UASSERT_OBJ(sclassp, nodep, "Bad superclass");
-                            m_ds.m_dotSymp = m_statep->getNodeSym(sclassp);
+                            const auto baseClassp = cextp->classp();
+                            UASSERT_OBJ(baseClassp, nodep, "Bad superclass");
+                            m_ds.m_dotSymp = m_statep->getNodeSym(baseClassp);
                             UINFO(8, "     super. " << m_ds.ascii() << endl);
                         }
                     }
@@ -2896,16 +2905,19 @@ private:
                     "class reference parameter not removed by V3Param");
         VL_RESTORER(m_ds);
         VL_RESTORER(m_pinSymp);
-        {
-            // ClassRef's have pins, so track
-            if (nodep->classOrPackagep()) {
-                m_pinSymp = m_statep->getNodeSym(nodep->classOrPackagep());
-            }
-            m_ds.init(m_curSymp);
-            UINFO(4, "(Backto) Link ClassOrPackageRef: " << nodep << endl);
-            iterateChildren(nodep);
+
+        // ClassRef's have pins, so track
+        if (nodep->classOrPackagep()) {
+            m_pinSymp = m_statep->getNodeSym(nodep->classOrPackagep());
         }
         AstClass* const refClassp = VN_CAST(nodep->classOrPackagep(), Class);
+        // Make sure any extends() are properly imported within referenced class
+        if (refClassp && !m_statep->forPrimary()) classExtendImport(refClassp);
+
+        m_ds.init(m_curSymp);
+        UINFO(4, "(Backto) Link ClassOrPackageRef: " << nodep << endl);
+        iterateChildren(nodep);
+
         AstClass* const modClassp = VN_CAST(m_modp, Class);
         if (m_statep->forPrimary() && refClassp && !nodep->paramsp()
             && nodep->classOrPackagep()->hasGParam()
@@ -3506,26 +3518,28 @@ private:
                     }
                 }
 
-                if (AstClass* const classp = cextp->classOrNullp()) {
+                if (AstClass* const baseClassp = cextp->classOrNullp()) {
                     // Already converted. Update symbol table to link unlinked members.
                     // Base class has to be visited in a case if its extends statement
                     // needs to be handled. Recursive inheritance was already checked.
-                    if (classp == nodep) {
+                    // Must be here instead of in LinkDotParam to handle
+                    // "class (type T) extends T".
+                    if (baseClassp == nodep) {
                         cextp->v3error("Attempting to extend class " << nodep->prettyNameQ()
                                                                      << " from itself");
-                    } else if (cextp->isImplements() && !classp->isInterfaceClass()) {
+                    } else if (cextp->isImplements() && !baseClassp->isInterfaceClass()) {
                         cextp->v3error("Attempting to implement from non-interface class "
-                                       << classp->prettyNameQ() << '\n'
+                                       << baseClassp->prettyNameQ() << '\n'
                                        << "... Suggest use 'extends'");
                     } else if (!cextp->isImplements() && !nodep->isInterfaceClass()
-                               && classp->isInterfaceClass()) {
+                               && baseClassp->isInterfaceClass()) {
                         cextp->v3error("Attempting to extend from interface class "
-                                       << classp->prettyNameQ() << '\n'
+                                       << baseClassp->prettyNameQ() << '\n'
                                        << "... Suggest use 'implements'");
                     }
-                    classp->isExtended(true);
+                    baseClassp->isExtended(true);
                     nodep->isExtended(true);
-                    iterate(classp);
+                    iterate(baseClassp);
                     importSymbolsFromExtended(nodep, cextp);
                     continue;
                 }
@@ -3742,6 +3756,7 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     state.computeScopeAliases();
     state.dumpSelf();
     { LinkDotResolveVisitor{rootp, &state}; }
+    state.dumpSelf();
 }
 
 void V3LinkDot::linkDotPrimary(AstNetlist* nodep) {

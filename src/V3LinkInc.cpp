@@ -283,9 +283,9 @@ private:
         // Define what operation will we be doing
         AstNodeExpr* operp;
         if (VN_IS(nodep, PostSub) || VN_IS(nodep, PreSub)) {
-            operp = new AstSub{fl, readp->cloneTree(true), newconstp};
+            operp = new AstSub{fl, readp->cloneTreePure(true), newconstp};
         } else {
-            operp = new AstAdd{fl, readp->cloneTree(true), newconstp};
+            operp = new AstAdd{fl, readp->cloneTreePure(true), newconstp};
         }
 
         if (VN_IS(nodep, PreAdd) || VN_IS(nodep, PreSub)) {
@@ -301,7 +301,7 @@ private:
             // PostAdd/PostSub operations
             // Assign the original variable to the temporary one
             AstAssign* const assignp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
-                                                     readp->cloneTree(true)};
+                                                     readp->cloneTreePure(true)};
             insertNextToStmt(nodep, assignp);
             // Increment the original variable by one
             assignp->addNextHere(new AstAssign{fl, writep, operp});

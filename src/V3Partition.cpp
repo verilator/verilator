@@ -1974,7 +1974,7 @@ private:
         }
         // Not: Find all reader tasks for this variable, group by rank.
         // There was "broken" code here to find readers, but fixing it to
-        // work properly harmed performance on some tests, see #3360.
+        // work properly harmed performance on some tests, see issue #3360.
     }
     void mergeSameRankTasks(const TasksByRank& tasksByRank) {
         LogicMTask* lastRecipientp = nullptr;

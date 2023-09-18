@@ -516,14 +516,14 @@ class TristateVisitor final : public TristateBaseVisitor {
 
             // Unlink lhsp before copying to save unnecessary copy of lhsp
             AstNodeExpr* const lhsp = extendp->lhsp()->unlinkFrBack();
-            AstExtend* const enExtendp = extendp->cloneTree(false);
+            AstExtend* const enExtendp = extendp->cloneTreePure(false);
             extendp->lhsp(lhsp);
             AstNodeExpr* const enLhsp = getEnExprBasedOnOriginalp(lhsp);
             enExtendp->lhsp(new AstNot{enLhsp->fileline(), enLhsp});
             return new AstNot{enExtendp->fileline(), enExtendp};
         } else if (AstSel* const selp = VN_CAST(nodep, Sel)) {
             AstNodeExpr* const fromp = selp->fromp()->unlinkFrBack();
-            AstSel* const enSelp = selp->cloneTree(false);
+            AstSel* const enSelp = selp->cloneTreePure(false);
             selp->fromp(fromp);
             AstNodeExpr* const enFromp = getEnExprBasedOnOriginalp(fromp);
             enSelp->fromp(enFromp);
@@ -572,7 +572,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Would be nicer if we made this a new AST type
         AstNodeExpr* const newp = new AstShiftL{
             selp->fileline(), new AstExtend{selp->fileline(), enp, selp->fromp()->width()},
-            selp->lsbp()->cloneTree(false), selp->fromp()->width()};
+            selp->lsbp()->cloneTreePure(false), selp->fromp()->width()};
         return newp;
     }
 
@@ -779,7 +779,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 // If weaker driver should be overwritten by a stronger, replace its value with z
                 exprCurrentStrengthp
                     = new AstAnd{fl, new AstVarRef{fl, varStrengthp, VAccess::READ},
-                                 new AstNot{fl, enp->cloneTree(false)}};
+                                 new AstNot{fl, enp->cloneTreePure(false)}};
             } else {
                 exprCurrentStrengthp = new AstVarRef{fl, varStrengthp, VAccess::READ};
             }
@@ -1086,7 +1086,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 if (nodep->fromp()->user1p()) {  // SEL(VARREF, lsb)
                     AstNodeExpr* const en1p = getEnp(nodep->fromp());
                     AstNodeExpr* const enp
-                        = new AstSel{nodep->fileline(), en1p, nodep->lsbp()->cloneTree(true),
+                        = new AstSel{nodep->fileline(), en1p, nodep->lsbp()->cloneTreePure(true),
                                      nodep->widthp()->cloneTree(true)};
                     UINFO(9, "       newsel " << enp << endl);
                     nodep->user1p(enp);  // propagate up SEL(fromp->enable, value)
@@ -1113,7 +1113,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     // Each half of the concat gets a select of the enable expression
                     AstNodeExpr* const enp = VN_AS(nodep->user1p(), NodeExpr);
                     nodep->user1p(nullptr);
-                    nodep->lhsp()->user1p(new AstSel{nodep->fileline(), enp->cloneTree(true),
+                    nodep->lhsp()->user1p(new AstSel{nodep->fileline(), enp->cloneTreePure(true),
                                                      nodep->rhsp()->width(),
                                                      nodep->lhsp()->width()});
                     nodep->rhsp()->user1p(
@@ -1208,8 +1208,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             m_tgraph.didProcess(nodep);
             AstNodeExpr* const en1p = getEnp(expr1p);
             AstNodeExpr* const en2p = getEnp(expr2p);
-            AstNodeExpr* subexpr1p = expr1p->cloneTree(false);
-            AstNodeExpr* subexpr2p = expr2p->cloneTree(false);
+            AstNodeExpr* subexpr1p = expr1p->cloneTreePure(false);
+            AstNodeExpr* subexpr2p = expr2p->cloneTreePure(false);
             if (isAnd) {
                 subexpr1p = new AstNot{nodep->fileline(), subexpr1p};
                 subexpr2p = new AstNot{nodep->fileline(), subexpr2p};
@@ -1407,15 +1407,15 @@ class TristateVisitor final : public TristateBaseVisitor {
                 if (nonXp) {  // Need to still count '0 or '1 or 'x's
                     if (dropop[0]) {
                         nodep->rhsp()->unlinkFrBack()->deleteTree();
-                        nodep->rhsp(nonXp->cloneTree(true));
+                        nodep->rhsp(nonXp->cloneTreePure(true));
                     }
                     if (dropop[1]) {
                         nodep->thsp()->unlinkFrBack()->deleteTree();
-                        nodep->thsp(nonXp->cloneTree(true));
+                        nodep->thsp(nonXp->cloneTreePure(true));
                     }
                     if (dropop[2]) {
                         nodep->fhsp()->unlinkFrBack()->deleteTree();
-                        nodep->fhsp(nonXp->cloneTree(true));
+                        nodep->fhsp(nonXp->cloneTreePure(true));
                     }
                     newp = new AstAdd{nodep->fileline(), nodep, newp};
                 }
@@ -1582,8 +1582,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                      << nodep->prettyNameQ());
                 }
             } else {
-                AstNodeExpr* const outexprp
-                    = VN_AS(nodep->exprp(), NodeExpr)->cloneTree(false);  // Note has lvalue() set
+                AstNodeExpr* const outexprp = VN_AS(nodep->exprp(), NodeExpr)
+                                                  ->cloneTreePure(false);  // Note has lvalue() set
                 outpinp = new AstPin{nodep->fileline(), nodep->pinNum(),
                                      outModVarp->name(),  // should be {var}"__out"
                                      outexprp};

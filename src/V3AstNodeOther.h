@@ -121,6 +121,7 @@ protected:
 
 public:
     ASTGEN_MEMBERS_AstNodeFTask;
+    virtual AstNodeFTask* cloneType(const string& name) = 0;
     void dump(std::ostream& str = std::cout) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     bool maybePointedTo() const override { return true; }
@@ -183,6 +184,15 @@ public:
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
     bool isPure() override;
     const char* broken() const override;
+    void propagateAttrFrom(const AstNodeFTask* fromp) {
+        // Creating a wrapper with e.g. cloneType(); preserve some attributes
+        classMethod(fromp->classMethod());
+        isHideLocal(fromp->isHideLocal());
+        isHideProtected(fromp->isHideProtected());
+        isVirtual(fromp->isVirtual());
+        lifetime(fromp->lifetime());
+        underGenerate(fromp->underGenerate());
+    }
 
 private:
     bool getPurity() const;
@@ -1972,18 +1982,25 @@ public:
     string verilogKwd() const override;
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
-    void propagateAttrFrom(AstVar* fromp) {
+    void propagateAttrFrom(const AstVar* fromp) {
         // This is getting connected to fromp; keep attributes
         // Note the method below too
         if (fromp->attrFileDescr()) attrFileDescr(true);
         if (fromp->attrIsolateAssign()) attrIsolateAssign(true);
         if (fromp->isContinuously()) isContinuously(true);
     }
+    void propagateWrapAttrFrom(const AstVar* fromp) {
+        // Creating a function wrapper; keep attributes
+        propagateAttrFrom(fromp);
+        direction(fromp->direction());
+        declDirection(fromp->declDirection());
+        lifetime(fromp->lifetime());
+    }
     bool gateMultiInputOptimizable() const {
         // Ok to gate optimize; must return false if propagateAttrFrom would do anything
         return !isUsedClock();
     }
-    void combineType(AstVar* typevarp) {
+    void combineType(const AstVar* typevarp) {
         // This is same as typevarp (for combining input & reg decls)
         // "this" is the input var. typevarp is the reg var.
         propagateAttrFrom(typevarp);
@@ -2102,6 +2119,9 @@ public:
     }
     ASTGEN_MEMBERS_AstFunc;
     bool hasDType() const override { return true; }
+    AstNodeFTask* cloneType(const string& name) override {
+        return new AstFunc{fileline(), name, nullptr, nullptr};
+    }
 };
 class AstLet final : public AstNodeFTask {
     // Verilog "let" statement
@@ -2116,6 +2136,7 @@ public:
         BROKEN_RTN(!VN_IS(stmtsp(), StmtExpr));
         return nullptr;
     }
+    AstNodeFTask* cloneType(const string& name) override { return new AstLet{fileline(), name}; }
 };
 class AstProperty final : public AstNodeFTask {
     // A property inside a module
@@ -2124,6 +2145,9 @@ public:
         : ASTGEN_SUPER_Property(fl, name, stmtp) {}
     ASTGEN_MEMBERS_AstProperty;
     bool hasDType() const override { return true; }
+    AstNodeFTask* cloneType(const string& name) override {
+        return new AstProperty{fileline(), name, nullptr};
+    }
 };
 class AstTask final : public AstNodeFTask {
     // A task inside a module
@@ -2131,6 +2155,9 @@ public:
     AstTask(FileLine* fl, const string& name, AstNode* stmtp)
         : ASTGEN_SUPER_Task(fl, name, stmtp) {}
     ASTGEN_MEMBERS_AstTask;
+    AstNodeFTask* cloneType(const string& name) override {
+        return new AstTask{fileline(), name, nullptr};
+    }
 };
 
 // === AstNodeFile ===

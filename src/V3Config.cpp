@@ -590,8 +590,8 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
     }
 }
 
-void V3Config::addWaiver(V3ErrorCode code, const string& filename, const string& message) {
-    V3ConfigResolver::s().files().at(filename).addWaiver(code, message);
+void V3Config::addWaiver(V3ErrorCode code, const string& filename, const string& match) {
+    V3ConfigResolver::s().files().at(filename).addWaiver(code, match);
 }
 
 void V3Config::applyCase(AstCase* nodep) {

@@ -314,6 +314,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstScopeName* scopenamep, const stri
 
     // Convert Verilog display to C printf formats
     //          "%0t" becomes "%d"
+    VL_RESTORER(m_emitDispState);
     m_emitDispState.clear();
     string vfmt;
     string::const_iterator pos = vformat.begin();

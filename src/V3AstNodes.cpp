@@ -366,8 +366,8 @@ AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp);
 
 AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,
                                               AstNodeExpr* rhsp) {
-    AstNodeExpr* const ap = new AstGte{fileline(), exprp->cloneTree(true), lhsp};
-    AstNodeExpr* const bp = new AstLte{fileline(), exprp->cloneTree(true), rhsp};
+    AstNodeExpr* const ap = new AstGte{fileline(), exprp->cloneTreePure(true), lhsp};
+    AstNodeExpr* const bp = new AstLte{fileline(), exprp->cloneTreePure(true), rhsp};
     ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
     bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
     return new AstAnd{fileline(), ap, bp};
@@ -2425,7 +2425,7 @@ void AstCAwait::dump(std::ostream& str) const {
 int AstCMethodHard::instrCount() const {
     if (AstBasicDType* const basicp = fromp()->dtypep()->basicp()) {
         // TODO: add a more structured description of library methods, rather than using string
-        //       matching. See #3715.
+        //       matching. See issue #3715.
         if (basicp->isTriggerVec() && m_name == "word") {
             // This is an important special case for scheduling so we compute it precisely,
             // it is simply a load.

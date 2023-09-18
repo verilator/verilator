@@ -8,20 +8,43 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
-Verilator 5.015 devel
+Verilator 5.017 devel
 ==========================
 
 **Minor:**
 
+* Support resizing function call inout arguments (#4467).
+
+
+Verilator 5.016 2023-09-16
+==========================
+
+**Minor:**
+
+* Add prepareClone and atClone APIs for Verilated models (#3503) (#4444). [Yinan Xu]
+* Add check for conflicting options e.g. binary and lint-only (#4409). [Ethan Sifferman]
 * Add --no-trace-top to not trace top signals (#4412) (#4422). [Frans Skarman]
+* Support recursive function calls (#3267).
 * Support assignments of packed values to stream expressions on queues (#4401). [Ryszard Rozak, Antmicro Ltd]
 * Support no-parentheses calls to static methods (#4432). [Krzysztof Boroński]
+* Support block_item_declaration in forks (#4455). [Krzysztof Boroński]
+* Support assignments of stream expressions on queues to packed values (#4458). [Ryszard Rozak, Antmicro Ltd]
+* Support function non-constant default arguments (#4470).
 * Support 'let'.
+* Optimize Verilator executable size by refactoring error reporting routines (#4446). [Anthony Donlon]
+* Optimize Verilation runtime pointers and graphs (#4396) (#4397) (#4398). [Krzysztof Bieganski, Antmicro Ltd]
+* Optimize preparations towards multithreaded Verilation (#4291) (#4463) (#4476) (#4477) (#4479).  [Kamil Rakoczy, Antmicro Ltd]
 * Fix Windows filename format, etc (#3873) (#4421). [Anthony Donlon].
+* Fix t_dist_cppstyle Perl performance issue (#4085). [Srinivasan Venkataramanan]
+* Fix using type in parameterized classes without #() (#4281) (#4440). [Anthony Donlon]
+* Fix false INFINITELOOP on forever..mailbox.get() (#4323). [Srinivasan Venkataramanan]
 * Fix data type of condition operation on class objects (#4345) (#4352). [Ryszard Rozak, Antmicro Ltd]
+* Fix variables mutated under fork..join_none/join_any blocks into anonymous objects (#4356). [Krzysztof Boroński]
+* Fix V3CUse, do not consider implementations (.cpp) at all (#4386). [Krzysztof Boroński]
 * Fix ++/-- under statements (#4399). [Aleksander Kiryk, Antmicro Ltd]
 * Fix detection of mixed blocking and nonblocking assignment in nested assignments (#4404). [Ryszard Rozak, Antmicro Ltd]
 * Fix jumping over object initialization (#4411). [Krzysztof Boroński]
+* Fix multiple issues towards short circuit support (#4413) (#4460). [Ryszard Rozak, Antmicro Ltd]
 * Fix variable lifetimes in extern methods (#4414). [Krzysztof Boroński]
 * Fix multiple function definitions in V3Sched (#4416). [Hennadii Chernyshchyk]
 * Fix false UNUSEDPARAM on generate localparam (#4427). [Bill Pringlemeir]
@@ -31,8 +54,17 @@ Verilator 5.015 devel
 * Fix false MULTITOP on bound interfaces (#4438). [Alex Solomatnikov]
 * Fix internal error on real conversion (#4447). [vdhotre-ventana]
 * Fix lifetime unknown error on enum.name (#4448). [jwoutersymatra]
+* Fix unstable output of VHashSha256 (#4453). [Anthony Donlon]
+* Fix static cast from a stream type (#4469) (#4485). [Ryszard Rozak, Antmicro Ltd]
+* Fix error on enum with VARHIDDEN of cell (#4482). [Michail Rontionov]
+* Fix lint of case statements with enum and wildcard bits (#4464) (#4487). [Anthony Donlon]
+* Fix reference to extended class in parameterized class (#4466).
+* Fix recursive display causing segfault (#4480). [Kuoping Hsu]
+* Fix the error message when the type of ref argument is wrong (#4490). [Ryszard Rozak, Antmicro Ltd]
 * Fix display %x formatting of real.
 * Fix mis-warning on #() in classes' own functions.
+* Fix IGNOREDRETURN to not warn on void-cast static function calls.
+* Fix ZERODLY to not warn on 'wait(0)'.
 
 
 Verilator 5.014 2023-08-06

@@ -10,7 +10,7 @@
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.015 devel],
+AC_INIT([Verilator],[5.017 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
@@ -574,7 +574,7 @@ ACO_SAVE_LIBS="$LIBS"
 LIBS="$LIBS -lsystemc"
 AC_LINK_IFELSE(
     [AC_LANG_PROGRAM([[#include <systemc.h>
-                     extern "C" int sc_main(int argc, char* argv[]) {}
+                     extern "C" int sc_main(int argc, char* argv[]) { return 0; }
                      ]],[[sc_version()]])],
     [_my_result=yes
      AC_DEFINE([HAVE_SYSTEMC],[1],[Defined if have SystemC library])],

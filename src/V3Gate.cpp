@@ -395,7 +395,7 @@ private:
     void optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode* consumerp) {
         if (debug() >= 5) consumerp->dumpTree("-    elimUsePre: ");
         if (!m_substitutions.tryGet(consumerp)) m_optimized.push_back(consumerp);
-        m_substitutions(consumerp).emplace(varscp, substp->cloneTree(false));
+        m_substitutions(consumerp).emplace(varscp, substp->cloneTreePure(false));
     }
 
     void commitElimVar(AstNode* logicp) {
@@ -1008,7 +1008,7 @@ static void eliminate(AstNode* logicp,
                     // Prevent an infinite loop...
                     substp, "Replacing node with itself; perhaps circular logic?");
         // The replacement
-        AstNode* const newp = substp->cloneTree(false);
+        AstNode* const newp = substp->cloneTreePure(false);
         // Which fileline() to use? If replacing with logic, an error/warning is likely to want
         // to point to the logic IE what we're replacing with. However, a VARREF should point
         // to the original as it's otherwise confusing to throw warnings that point to a PIN
@@ -1219,9 +1219,10 @@ private:
                             preselp->replaceWith(newselp);
                             VL_DO_DANGLING(preselp->deleteTree(), preselp);
                             // create new rhs for pre assignment
-                            AstNode* const newrhsp = new AstConcat{
-                                m_assignp->rhsp()->fileline(), m_assignp->rhsp()->cloneTree(false),
-                                assignp->rhsp()->cloneTree(false)};
+                            AstNode* const newrhsp
+                                = new AstConcat{m_assignp->rhsp()->fileline(),
+                                                m_assignp->rhsp()->cloneTreePure(false),
+                                                assignp->rhsp()->cloneTreePure(false)};
                             AstNode* const oldrhsp = m_assignp->rhsp();
                             oldrhsp->replaceWith(newrhsp);
                             VL_DO_DANGLING(oldrhsp->deleteTree(), oldrhsp);

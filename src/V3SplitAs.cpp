@@ -142,6 +142,9 @@ private:
     void splitAlways(AstAlways* nodep, AstVarScope* splitVscp) {
         if (debug() >= 9) nodep->dumpTree("-  in: ");
         // Duplicate it and link in
+        // Below cloneTree should perhaps be cloneTreePure, but given
+        // isolate_assignments is required to hit this code, we presume the user
+        // knows what they are asking for
         AstAlways* const newp = nodep->cloneTree(false);
         newp->user1(true);  // So we don't clone it again
         nodep->addNextHere(newp);

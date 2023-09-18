@@ -1,6 +1,6 @@
 // DESCRIPTION: Verilator: Test of select from constant
 //
-// This tests issue 508, bit select of constant fails
+// This tests issue #508, bit select of constant fails
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2022 by Wilson Snyder.

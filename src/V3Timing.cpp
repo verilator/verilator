@@ -165,7 +165,7 @@ private:
     const VNUser5InUse m_user5InUse;
 
     // STATE
-    VMemberMap memberMap;  // Member names cached for fast lookup
+    VMemberMap m_memberMap;  // Member names cached for fast lookup
     AstClass* m_classp = nullptr;  // Current class
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
     uint8_t m_underFork = F_NONE;  // F_NONE or flags of a fork we are under
@@ -265,7 +265,7 @@ private:
                 // the root of the inheritance hierarchy and check if the original method is
                 // virtual or not.
                 if (auto* const overriddenp
-                    = VN_CAST(memberMap.findMember(cextp->classp(), nodep->name()), CFunc)) {
+                    = VN_CAST(m_memberMap.findMember(cextp->classp(), nodep->name()), CFunc)) {
                     // Suspendability and process affects typing, so they propagate both ways
                     DepVtx* const overriddenSVxp = getSuspendDepVtx(overriddenp);
                     DepVtx* const overriddenPVxp = getNeedsProcDepVtx(overriddenp);
@@ -997,7 +997,9 @@ private:
         AstNodeExpr* const condp = V3Const::constifyEdit(nodep->condp()->unlinkFrBack());
         auto* const constp = VN_CAST(condp, Const);
         if (constp) {
-            condp->v3warn(WAITCONST, "Wait statement condition is constant");
+            if (!nodep->fileline()->warnIsOff(V3ErrorCode::WAITCONST)) {
+                condp->v3warn(WAITCONST, "Wait statement condition is constant");
+            }
             if (constp->isZero()) {
                 // We have to await forever instead of simply returning in case we're deep in a
                 // callstack

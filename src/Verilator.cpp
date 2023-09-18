@@ -153,12 +153,6 @@ static void process() {
     // Remove parameters by cloning modules to de-parameterized versions
     //   This requires some width calculations and constant propagation
     V3Param::param(v3Global.rootp());
-    if (v3Global.opt.debugExitUvm()) {
-        V3Error::abortIfErrors();
-        if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
-        cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
-        std::exit(0);
-    }
     V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
     V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
     V3Error::abortIfErrors();
@@ -176,6 +170,12 @@ static void process() {
             reportStatsIfEnabled();
             return;
         }
+    }
+    if (v3Global.opt.debugExitUvm()) {
+        V3Error::abortIfErrors();
+        if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
+        cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
+        std::exit(0);
     }
 
     // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches

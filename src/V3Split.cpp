@@ -767,6 +767,8 @@ protected:
             // Clone this if into its set of split blocks
             AstSplitPlaceholder* const if_placeholderp = makePlaceholderp();
             AstSplitPlaceholder* const else_placeholderp = makePlaceholderp();
+            // We check for condition isPure earlier, but may still clone a
+            // non-pure to separate from other pure statements.
             AstIf* const clonep = new AstIf{nodep->fileline(), nodep->condp()->cloneTree(true),
                                             if_placeholderp, else_placeholderp};
             const AstIf* const origp = VN_CAST(nodep, If);

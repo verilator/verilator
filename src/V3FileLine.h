@@ -121,7 +121,7 @@ std::ostream& operator<<(std::ostream& os, VFileContent* contentp);
 
 // File and line number of an object, mostly for error reporting
 
-// This class is instantiated for every source code line (potentially millions), and  instances
+// This class is instantiated for every source code line (potentially millions), and instances
 // created at any point usually persist until the end of the program. To save space, per-file
 // information (e.g. filename, source language) is held in tables in the FileLineSingleton class.
 // Similarly, message enablement flags are interned in FileLineSingleton.

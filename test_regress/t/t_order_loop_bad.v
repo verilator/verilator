@@ -4,7 +4,7 @@
 // the use of ready in the first two always blocks. However it should
 // trivially trigger the $write on the first clk posedge.
 //
-// This is a regression test against issue 513.
+// This is a regression test against issue #513.
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2012 by Jeremy Bennett.

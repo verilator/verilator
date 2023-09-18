@@ -139,7 +139,7 @@ private:
     const VNUser2InUse m_inuser2;
 
     // STATE
-    VMemberMap memberMap;  // Member names cached for fast lookup
+    VMemberMap m_memberMap;  // Member names cached for fast lookup
     AstNodeModule* m_modp = nullptr;  // Current module
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
@@ -215,7 +215,7 @@ private:
         }
     }
     void addPrePostCall(AstClass* classp, AstFunc* funcp, const string& name) {
-        if (AstTask* userFuncp = VN_CAST(memberMap.findMember(classp, name), Task)) {
+        if (AstTask* userFuncp = VN_CAST(m_memberMap.findMember(classp, name), Task)) {
             AstTaskRef* const callp
                 = new AstTaskRef{userFuncp->fileline(), userFuncp->name(), nullptr};
             callp->taskp(userFuncp);
@@ -338,7 +338,7 @@ private:
                 = new AstIf{itemp->fileline(),
                             new AstLte{condp->fileline(),
                                        new AstVarRef{condp->fileline(), randVarp, VAccess::READ},
-                                       sump->cloneTree(true)},
+                                       sump->cloneTreePure(true)},
                             stmtsp, nullptr};
             ifsp->addElsesp(newifp);
             ifsp = newifp;

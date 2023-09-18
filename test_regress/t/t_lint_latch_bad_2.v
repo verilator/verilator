@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Verilog Test module for Issue#1609
+// DESCRIPTION: Verilator: Verilog Test module for issue #1609
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2020 by Julien Margetts.

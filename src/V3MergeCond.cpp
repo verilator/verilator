@@ -601,7 +601,7 @@ private:
             if (condp == rhsp) return resp;
             if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
                 UASSERT_OBJ(andp->rhsp() == condp, rhsp, "Should not try to fold this");
-                return new AstAnd{andp->fileline(), andp->lhsp()->cloneTree(false), resp};
+                return new AstAnd{andp->fileline(), andp->lhsp()->cloneTreePure(false), resp};
             }
         } else if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
             if (andp->lhsp()->sameTree(m_mgCondp)) {
@@ -655,7 +655,7 @@ private:
 
             // We need a copy of the condition in the new equivalent 'if' statement,
             // and we also need to keep track of it for comparisons later.
-            m_mgCondp = m_mgCondp->cloneTree(false);
+            m_mgCondp = m_mgCondp->cloneTreePure(false);
             // Create equivalent 'if' statement and insert it before the first node
             AstIf* const resultp = new AstIf{m_mgCondp->fileline(), m_mgCondp};
             m_mgFirstp->addHereThisAsNext(resultp);

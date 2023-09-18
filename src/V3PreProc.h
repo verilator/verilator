@@ -28,9 +28,6 @@
 #include <list>
 #include <map>
 
-// Compatibility with Verilog-Perl's preprocessor
-#define fatalSrc(msg) v3fatalSrc(msg)
-
 class VInFilter;
 class VSpellCheck;
 

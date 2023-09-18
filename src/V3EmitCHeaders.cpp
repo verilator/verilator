@@ -380,11 +380,10 @@ class EmitCHeader final : public EmitCConstInit {
         std::set<string> cuse_set;
         auto add_to_cuse_set = [&](string s) { cuse_set.insert(s); };
 
-        forModCUse(modp, VUseType::INT_INCLUDE, add_to_cuse_set);
-        forModCUse(modp, VUseType::INT_FWD_CLASS, add_to_cuse_set);
+        forModCUse(modp, VUseType::INT_FWD_CLASS | VUseType::INT_INCLUDE, add_to_cuse_set);
         if (const AstClassPackage* const packagep = VN_CAST(modp, ClassPackage)) {
-            forModCUse(packagep->classp(), VUseType::INT_INCLUDE, add_to_cuse_set);
-            forModCUse(packagep->classp(), VUseType::INT_FWD_CLASS, add_to_cuse_set);
+            forModCUse(packagep->classp(), VUseType::INT_INCLUDE | VUseType::INT_FWD_CLASS,
+                       add_to_cuse_set);
         }
 
         for (const string& s : cuse_set) puts(s);

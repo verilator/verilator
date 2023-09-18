@@ -12,8 +12,8 @@
 //
 //*************************************************************************
 
-#ifndef T_DIST_ATTRIBUTES_BAD_H_
-#define T_DIST_ATTRIBUTES_BAD_H_
+#ifndef T_DIST_ATTRIBUTES_MT_ENABLED_H_
+#define T_DIST_ATTRIBUTES_MT_ENABLED_H_
 
 #include "verilatedos.h"
 
@@ -410,4 +410,4 @@ class TestClassConstructor {
     }
 };
 
-#endif  // T_DIST_ATTRIBUTES_BAD_H_
+#endif  // T_DIST_ATTRIBUTES_MT_ENABLED_H_

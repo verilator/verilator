@@ -1199,30 +1199,34 @@ inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) {
 class VUseType final {
 public:
     enum en : uint8_t {
-        IMP_INCLUDE,  // Implementation (.cpp) needs an include
-        INT_INCLUDE,  // Interface (.h) needs an include
-        IMP_FWD_CLASS,  // Implementation (.cpp) needs a forward class declaration
-        INT_FWD_CLASS,  // Interface (.h) needs a forward class declaration
+        // Enum values are compared with <, so order matters
+        INT_FWD_CLASS = 1 << 0,  // Interface (.h) needs a forward class declaration
+        INT_INCLUDE = 1 << 1,  // Interface (.h) needs an include
     };
     enum en m_e;
     VUseType()
-        : m_e{IMP_FWD_CLASS} {}
+        : m_e{INT_FWD_CLASS} {}
     // cppcheck-suppress noExplicitConstructor
     constexpr VUseType(en _e)
         : m_e{_e} {}
     explicit VUseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    bool isInclude() const { return m_e == IMP_INCLUDE || m_e == INT_INCLUDE; }
-    bool isFwdClass() const { return m_e == IMP_FWD_CLASS || m_e == INT_FWD_CLASS; }
     constexpr operator en() const { return m_e; }
+    bool containsAny(VUseType other) { return m_e & other.m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"IMP_INC", "INT_INC", "IMP_FWD", "INT_FWD"};
-        return names[m_e];
+        static const char* const names[] = {"INT_FWD", "INT_INC", "INT_FWD_INC"};
+        return names[m_e - 1];
     }
 };
 constexpr bool operator==(const VUseType& lhs, const VUseType& rhs) { return lhs.m_e == rhs.m_e; }
 constexpr bool operator==(const VUseType& lhs, VUseType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VUseType::en lhs, const VUseType& rhs) { return lhs == rhs.m_e; }
+constexpr VUseType::en operator|(VUseType::en lhs, VUseType::en rhs) {
+    return VUseType::en((uint8_t)lhs | (uint8_t)rhs);
+}
+constexpr VUseType::en operator&(VUseType::en lhs, VUseType::en rhs) {
+    return VUseType::en((uint8_t)lhs & (uint8_t)rhs);
+}
 inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
     return os << rhs.ascii();
 }
@@ -1714,7 +1718,7 @@ public:
     const char* typeName() const VL_MT_SAFE { return type().ascii(); }  // See also prettyTypeName
     AstNode* nextp() const VL_MT_STABLE { return m_nextp; }
     AstNode* backp() const VL_MT_STABLE { return m_backp; }
-    AstNode* abovep() const;  // Parent node above, only when no nextp() as otherwise slow
+    AstNode* abovep() const;  // Get parent node above, only for list head and tail
     AstNode* op1p() const VL_MT_STABLE { return m_op1p; }
     AstNode* op2p() const VL_MT_STABLE { return m_op2p; }
     AstNode* op3p() const VL_MT_STABLE { return m_op3p; }
@@ -2010,7 +2014,8 @@ public:
                              AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
-    AstNode* cloneTree(bool cloneNextLink);  // Not const, as sets clonep() on original nodep
+    AstNode* cloneTree(bool cloneNextLink);  // Not const, as sets clonep() on original nodep //
+    AstNode* cloneTreePure(bool cloneNextLink) { return cloneTree(cloneNextLink); }
     bool gateTree() { return gateTreeIter(); }  // Is tree isGateOptimizable?
     inline bool sameTree(const AstNode* node2p) const;  // Does tree of this == node2p?
     // Does tree of this == node2p?, not allowing non-isGateOptimizable

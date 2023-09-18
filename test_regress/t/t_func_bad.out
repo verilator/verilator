@@ -10,11 +10,12 @@
                            : ... In instance t
    11 |       x;  
       |       ^
-%Error-UNSUPPORTED: t/t_func_bad.v:11:7: Unsupported: Function output argument 'y' requires 1 bits, but connection's CONST '?32?h0' generates 32 bits.
-                                       : ... In instance t
+%Warning-WIDTHTRUNC: t/t_func_bad.v:11:7: Function output argument 'y' requires 1 bits, but connection's CONST '?32?h0' generates 32 bits.
+                                        : ... In instance t
    11 |       x;  
       |       ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
 %Error: t/t_func_bad.v:14:17: No such argument 'no_such' in function call to FUNC 'f'
                             : ... In instance t
    14 |       f(.j(1), .no_such(2));  

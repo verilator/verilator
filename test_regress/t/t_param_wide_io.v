@@ -4,7 +4,7 @@
 // any use, without warranty, 2016 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-// issue 1991
+// See issue #1991
 
 module t
   #(
