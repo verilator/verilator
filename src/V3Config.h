@@ -41,7 +41,7 @@ public:
     static void addScopeTraceOn(bool on, const string& scope, int levels);
     static void addVarAttr(FileLine* fl, const string& module, const string& ftask,
                            const string& signal, VAttrType type, AstSenTree* nodep);
-    static void addWaiver(V3ErrorCode code, const string& filename, const string& message);
+    static void addWaiver(V3ErrorCode code, const string& filename, const string& match);
 
     static void applyCase(AstCase* nodep);
     static void applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep);

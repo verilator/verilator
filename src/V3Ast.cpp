@@ -372,8 +372,8 @@ AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp) {
 
 void AstNode::addNextHere(AstNode* newp) {
     // Add to m_nextp on exact node passed, not at the end.
-    //  This could be at head, tail, or both (single)
-    //  New  could be head of single node, or list
+    //  'this' could be at head, tail, or both (single)
+    //  'newp' could be head of single node, or list
     UASSERT(newp, "Null item passed to addNext");
     UASSERT_OBJ(!newp->backp(), newp, "New node (back) already assigned?");
     debugTreeChange(this, "-addHereThs: ", __LINE__, false);
