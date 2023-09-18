@@ -479,10 +479,31 @@ private:
                 pinp->v3error("Function/task " + portp->direction().prettyName()  // e.g. "output"
                               + " connected to constant instead of variable: "
                               + portp->prettyNameQ());
-            }
-            // else if (portp->direction() == VDirection::REF) {
-            // TODO References need to instead pass a real reference var, see issue #3385
-            else if (portp->isInoutish()) {
+            } else if (portp->isRef()) {
+                if (inlineTask) {
+                    if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
+                        // Connect to this exact variable
+                        AstVarScope* const localVscp = varrefp->varScopep();
+                        UASSERT_OBJ(localVscp, varrefp, "Null var scope");
+                        portp->user2p(localVscp);
+                        pushDeletep(pinp);
+                    } else {
+                        pinp->v3warn(E_TASKNSVAR, "Unsupported: ref argument of inlined "
+                                                  "function/task is not a simple variable");
+                    }
+                } else {
+                    bool refArgOk = false;
+                    if (VN_IS(pinp, VarRef) || VN_IS(pinp, MemberSel) || VN_IS(pinp, StructSel)
+                        || VN_IS(pinp, ArraySel)) {
+                        refArgOk = true;
+                    } else if (const AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
+                        refArgOk = cMethodp->name() == "at";
+                    }
+                    if (!refArgOk) {
+                        pinp->v3error("Function/task ref argument is not of allowed type");
+                    }
+                }
+            } else if (portp->isInoutish()) {
                 // if (debug() >= 9) pinp->dumpTree("-pinrsize- ");
                 V3LinkLValue::linkLValueSet(pinp);
 
