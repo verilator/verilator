@@ -1217,13 +1217,13 @@ private:
     bool operandHugeShiftL(const AstNodeBiop* nodep) {
         return (VN_IS(nodep->rhsp(), Const) && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
                 && (VN_AS(nodep->rhsp(), Const)->toUInt() >= static_cast<uint32_t>(nodep->width()))
-                && isTPure(nodep->lhsp()));
+                && nodep->lhsp()->isPure());
     }
     bool operandHugeShiftR(const AstNodeBiop* nodep) {
         return (VN_IS(nodep->rhsp(), Const) && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
                 && (VN_AS(nodep->rhsp(), Const)->toUInt()
                     >= static_cast<uint32_t>(nodep->lhsp()->width()))
-                && isTPure(nodep->lhsp()));
+                && nodep->lhsp()->isPure());
     }
     bool operandIsTwo(const AstNode* nodep) {
         return (VN_IS(nodep, Const) && !VN_AS(nodep, Const)->num().isFourState()
@@ -1375,14 +1375,6 @@ private:
         // nodep may be null, if so return null.
         while (nodep && VN_IS(nodep, Comment)) { nodep = nodep->nextp(); }
         return nodep;
-    }
-
-    bool isTPure(AstNode* nodep) {
-        // Pure checks - if this node and all nodes under it are free of
-        // side effects can do this optimization
-        // Eventually we'll recurse through tree when unknown, memoizing results so far,
-        // but for now can disable en masse until V3Purify takes effect.
-        return m_doShort || VN_IS(nodep, VarRef) || VN_IS(nodep, Const);
     }
 
     // Extraction checks
@@ -1587,7 +1579,7 @@ private:
         // For example, "0 * n" -> 0 if n has no side effects
         // Else strength reduce it to 0 & n.
         // If ever change the operation note AstAnd rule specially ignores this created pattern
-        if (isTPure(checkp)) {
+        if (checkp->isPure()) {
             VL_DO_DANGLING(replaceNum(nodep, 0), nodep);
         } else {
             AstNode* const newp = new AstAnd{nodep->fileline(), new AstConst{nodep->fileline(), 0},
@@ -2053,7 +2045,7 @@ private:
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                 return true;
             }
-        } else if (m_doV && VN_IS(nodep->lhsp(), Concat) && nodep->isTreePureRecurse()) {
+        } else if (m_doV && VN_IS(nodep->lhsp(), Concat) && nodep->isPure()) {
             bool need_temp = false;
             if (m_warn && !VN_IS(nodep, AssignDly)) {  // Is same var on LHS and RHS?
                 // Note only do this (need user4) when m_warn, which is
@@ -3014,7 +3006,7 @@ private:
                 }
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             } else if (!afterComment(nodep->thensp()) && !afterComment(nodep->elsesp())) {
-                if (!nodep->condp()->isTreePureRecurse()) {
+                if (!nodep->condp()->isPure()) {
                     // Condition has side effect - leave - perhaps in
                     // future simplify to remove all but side effect terms
                 } else {
@@ -3374,7 +3366,7 @@ private:
     TREEOPA("AstNodeQuadop{$lhsp.castConst, $rhsp.castConst, $thsp.castConst, $fhsp.castConst}",  "replaceConst(nodep)");
     // Zero on one side or the other
     TREEOP ("AstAdd   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
-    TREEOP ("AstAnd   {$lhsp.isZero, $rhsp, isTPure($rhsp)}",   "replaceZero(nodep)");  // Can't use replaceZeroChkPure as we make this pattern in ChkPure
+    TREEOP ("AstAnd   {$lhsp.isZero, $rhsp, $rhsp.isPure}",   "replaceZero(nodep)");  // Can't use replaceZeroChkPure as we make this pattern in ChkPure
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstLogAnd   {$lhsp.isZero}",       "replaceZero(nodep)");
     TREEOP ("AstLogAnd{$lhsp.isZero, $rhsp}",   "replaceZero(nodep)");
@@ -3414,12 +3406,12 @@ private:
     // Non-zero on one side or the other
     TREEOP ("AstAnd   {$lhsp.isAllOnes, $rhsp}",        "replaceWRhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp.isNeqZero, $rhsp}",        "replaceWRhsBool(nodep)");
-    TREEOP ("AstOr    {$lhsp.isAllOnes, $rhsp, isTPure($rhsp)}",        "replaceWLhs(nodep)");  // ->allOnes
+    TREEOP ("AstOr    {$lhsp.isAllOnes, $rhsp, $rhsp.isPure}",        "replaceWLhs(nodep)");  // ->allOnes
     TREEOP ("AstLogOr {$lhsp.isNeqZero, $rhsp}",        "replaceNum(nodep,1)");
     TREEOP ("AstAnd   {$lhsp, $rhsp.isAllOnes}",        "replaceWLhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp, $rhsp.isNeqZero}",        "replaceWLhsBool(nodep)");
-    TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, isTPure($lhsp)}",        "replaceWRhs(nodep)");  // ->allOnes
-    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, isTPure($lhsp), nodep->isPure()}",        "replaceNum(nodep,1)");
+    TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, $lhsp.isPure}",        "replaceWRhs(nodep)");  // ->allOnes
+    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, $lhsp.isPure, nodep->isPure()}",        "replaceNum(nodep,1)");
     TREEOP ("AstXor   {$lhsp.isAllOnes, $rhsp}",        "AstNot{$rhsp}");
     TREEOP ("AstMul   {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
@@ -3591,9 +3583,9 @@ private:
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
-    TREEOPV("AstLogAnd{$lhsp.width1, $rhsp.width1, isTPure($lhsp), isTPure($rhsp)}", "AstAnd{$lhsp,$rhsp}");
-    TREEOPV("AstLogOr {$lhsp.width1, $rhsp.width1, nodep->isPure(), isTPure($lhsp), isTPure($rhsp)}", "AstOr{$lhsp,$rhsp}");
-    TREEOPV("AstLogNot{$lhsp.width1, isTPure($lhsp)}",  "AstNot{$lhsp}");
+    TREEOPV("AstLogAnd{$lhsp.width1, $rhsp.width1, nodep->isPure()}", "AstAnd{$lhsp,$rhsp}");
+    TREEOPV("AstLogOr {$lhsp.width1, $rhsp.width1, nodep->isPure()}", "AstOr{$lhsp,$rhsp}");
+    TREEOPV("AstLogNot{$lhsp.width1}",  "AstNot{$lhsp}");
     // CONCAT(CONCAT({a},{b}),{c}) -> CONCAT({a},CONCAT({b},{c}))
     // CONCAT({const},CONCAT({const},{c})) -> CONCAT((constifiedCONC{const|const},{c}))
     TREEOPV("AstConcat{matchConcatRand(nodep)}",      "DONE");

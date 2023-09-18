@@ -4613,7 +4613,6 @@ private:
                                     new AstConst{fl, AstConst::BitFalse{}}};
                 auto* const orp = new AstLogOr{fl, new AstVarRef{fl, first_varp, VAccess::READ},
                                                new AstNeq{fl, new AstConst{fl, 0}, nextp}};
-                orp->sideEffect(true);
                 AstNode* const whilep = new AstWhile{fl, orp, first_clearp};
                 first_clearp->addNext(bodyPointp);
                 AstNode* const ifbodyp

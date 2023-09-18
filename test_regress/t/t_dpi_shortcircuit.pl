@@ -16,10 +16,7 @@ compile(
     );
 
 execute(
-    # Should pass, Verilator unsupported, bug413 short circuit");
-    fails => $Self->{vlt},
-    check_finished => !$Self->{vlt},
-    expect_filename => $Self->{golden_filename},
+    check_finished => 1,
     );
 
 ok(1);

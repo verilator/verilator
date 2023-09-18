@@ -442,6 +442,7 @@ m4_foreach([cflag],[
         [-mno-cet],
         [-Qunused-arguments],
         [-Wno-bool-operation],
+        [-Wno-constant-logical-operand],
         [-Wno-tautological-bitwise-compare],
         [-Wno-parentheses-equality],
         [-Wno-sign-compare],

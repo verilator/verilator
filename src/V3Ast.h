@@ -167,6 +167,21 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 // ######################################################################
 
+class VPurity final {
+    // Used in some nodes to cache the result of isPure method
+public:
+    enum en : uint8_t { NOT_CACHED, PURE, IMPURE };
+    enum en m_e;
+    VPurity()
+        : m_e{NOT_CACHED} {}
+    bool isCached() const { return m_e != NOT_CACHED; }
+    bool isPure() const { return m_e == PURE; }
+    void setPurity(bool pure) { m_e = pure ? PURE : IMPURE; }
+    void clearCache() { m_e = NOT_CACHED; }
+};
+
+// ######################################################################
+
 class VAccess final {
 public:
     enum en : uint8_t {
@@ -690,6 +705,7 @@ public:
     }
     bool isReadOnly() const VL_MT_SAFE { return m_e == INPUT || m_e == CONSTREF; }
     bool isWritable() const VL_MT_SAFE { return m_e == OUTPUT || m_e == INOUT || m_e == REF; }
+    bool isRef() const VL_MT_SAFE { return m_e == REF; }
     bool isRefOrConstRef() const VL_MT_SAFE { return m_e == REF || m_e == CONSTREF; }
 };
 constexpr bool operator==(const VDirection& lhs, const VDirection& rhs) {
@@ -2024,8 +2040,6 @@ public:
     void dumpTreeDot(std::ostream& os = std::cout) const;
     void dumpTreeDotFile(const string& filename, bool append = false, bool doDump = true);
 
-    bool isTreePureRecurse() const;
-
     // METHODS - queries
     // Changes control flow, disable some optimizations
     virtual bool isBrancher() const { return false; }
@@ -2034,11 +2048,11 @@ public:
     // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
     virtual bool isGateDedupable() const { return isGateOptimizable(); }
     // Else creates output or exits, etc, not unconsumed
-    virtual bool isOutputter() const { return false; }
+    virtual bool isOutputter() { return false; }
     // Else a AstTime etc which output can't be predicted from input
     virtual bool isPredictOptimizable() const { return !isTimingControl(); }
     // Else a $display, etc, that must be ordered with other displays
-    virtual bool isPure() const { return true; }
+    virtual bool isPure() { return true; }
     // Else a AstTime etc that can't be substituted out
     virtual bool isSubstOptimizable() const { return true; }
     // An event control, delay, wait, etc.

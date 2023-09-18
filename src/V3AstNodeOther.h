@@ -88,6 +88,8 @@ private:
     bool m_virtual : 1;  // Virtual method in class
     bool m_needProcess : 1;  // Implements part of a process that allocates std::process
     VLifetime m_lifetime;  // Lifetime
+    VPurity m_purity;  // Pure state
+
 protected:
     AstNodeFTask(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)
         : AstNode{t, fl}
@@ -180,6 +182,8 @@ public:
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
+    bool isPure() override;
+    const char* broken() const override;
     void propagateAttrFrom(const AstNodeFTask* fromp) {
         // Creating a wrapper with e.g. cloneType(); preserve some attributes
         classMethod(fromp->classMethod());
@@ -189,6 +193,9 @@ public:
         lifetime(fromp->lifetime());
         underGenerate(fromp->underGenerate());
     }
+
+private:
+    bool getPurity() const;
 };
 class AstNodeFile VL_NOT_FINAL : public AstNode {
     // Emitted Output file
@@ -469,8 +476,8 @@ public:
     ASTGEN_MEMBERS_AstNodeReadWriteMem;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* samep) const override {
         return isHex() == static_cast<const AstNodeReadWriteMem*>(samep)->isHex();
@@ -994,8 +1001,8 @@ public:
     string verilogKwd() const override { return string{"$"} + string{displayType().ascii()}; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
-    bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
+    bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isOutputter() override { return true; }  // SPECIAL: $display makes output
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* samep) const override {
         return displayType() == static_cast<const AstElabDisplay*>(samep)->displayType();
@@ -1915,6 +1922,7 @@ public:
     bool isInoutish() const { return m_direction.isInoutish(); }
     bool isNonOutput() const { return m_direction.isNonOutput(); }
     bool isReadOnly() const VL_MT_SAFE { return m_direction.isReadOnly(); }
+    bool isRef() const VL_MT_SAFE { return m_direction.isRef(); }
     bool isWritable() const VL_MT_SAFE { return m_direction.isWritable(); }
     bool isTristate() const { return m_tristate; }
     bool isPrimaryIO() const { return m_primaryIO; }
@@ -2616,7 +2624,7 @@ public:
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isOutputter() override { return true; }
     // but isPure()  true
     AstCoverDecl* declp() const { return m_declp; }  // Where defined
 };
@@ -2638,7 +2646,7 @@ public:
     bool same(const AstNode* /*samep*/) const override { return true; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return true; }
-    bool isOutputter() const override {
+    bool isOutputter() override {
         return false;  // Though the AstCoverInc under this is an outputter
     }
     // but isPure()  true
@@ -2715,8 +2723,8 @@ public:
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
-    bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
+    bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isOutputter() override { return true; }  // SPECIAL: $display makes output
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* samep) const override {
         return displayType() == static_cast<const AstDisplay*>(samep)->displayType();
@@ -2758,7 +2766,7 @@ public:
     string verilogKwd() const override { return ctlType().ascii(); }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isOutputter() override { return true; }
     virtual bool cleanOut() const { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
     VDumpCtlType ctlType() const { return m_ctlType; }
@@ -2790,8 +2798,8 @@ public:
     string verilogKwd() const override { return "$fclose"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
@@ -2807,8 +2815,8 @@ public:
     string verilogKwd() const override { return "$fflush"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
@@ -2819,8 +2827,8 @@ public:
     ASTGEN_MEMBERS_AstFinish;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
-    bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
+    bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isOutputter() override { return true; }  // SPECIAL: $display makes output
     bool isUnlikely() const override { return true; }
     int instrCount() const override { return 0; }  // Rarely executes
     bool same(const AstNode* samep) const override { return fileline() == samep->fileline(); }
@@ -2942,8 +2950,8 @@ public:
     string verilogKwd() const override { return m_off ? "$monitoroff" : "$monitoron"; }
     bool isGateOptimizable() const override { return false; }  // Though deleted before opt
     bool isPredictOptimizable() const override { return false; }  // Though deleted before opt
-    bool isPure() const override { return false; }  // Though deleted before opt
-    bool isOutputter() const override { return true; }  // Though deleted before opt
+    bool isPure() override { return false; }  // Though deleted before opt
+    bool isOutputter() override { return true; }  // Though deleted before opt
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool same(const AstNode* samep) const override {
         return m_off == static_cast<const AstMonitorOff*>(samep)->m_off;
@@ -2964,8 +2972,8 @@ public:
     string verilogKwd() const override { return "$printtimescale"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
@@ -3042,8 +3050,8 @@ public:
     string verilogKwd() const override { return "$sformat"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return true; }
-    bool isPure() const override { return true; }
-    bool isOutputter() const override { return false; }
+    bool isPure() override { return true; }
+    bool isOutputter() override { return false; }
     virtual bool cleanOut() const { return false; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool same(const AstNode* /*samep*/) const override { return true; }
@@ -3057,8 +3065,8 @@ public:
     string verilogKwd() const override { return "$stacktrace"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
@@ -3079,8 +3087,8 @@ public:
     ASTGEN_MEMBERS_AstStop;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
-    bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
+    bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isOutputter() override { return true; }  // SPECIAL: $display makes output
     bool isUnlikely() const override { return true; }
     int instrCount() const override { return 0; }  // Rarely executes
     bool same(const AstNode* samep) const override { return fileline() == samep->fileline(); }
@@ -3098,8 +3106,8 @@ public:
     string verilogKwd() const override { return ""; }
     bool isGateOptimizable() const override { return true; }
     bool isPredictOptimizable() const override { return true; }
-    bool isPure() const override { return true; }
-    bool isOutputter() const override { return false; }
+    bool isPure() override { return true; }
+    bool isOutputter() override { return false; }
     int instrCount() const override { return 0; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
@@ -3115,8 +3123,8 @@ public:
     string verilogKwd() const override { return "$system"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
@@ -3139,8 +3147,8 @@ public:
     string verilogKwd() const override { return "$timeformat"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
 };
 class AstTraceDecl final : public AstNodeStmt {
@@ -3229,7 +3237,7 @@ public:
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isOutputter() override { return true; }
     // but isPure()  true
     AstTraceDecl* declp() const { return m_declp; }
     bool full() const { return m_full; }
@@ -3266,8 +3274,8 @@ public:
     ASTGEN_MEMBERS_AstUCStmt;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstWait final : public AstNodeStmt {
@@ -3557,48 +3565,48 @@ public:
     AstScCtor(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScCtor(fl, textp) {}
     ASTGEN_MEMBERS_AstScCtor;
-    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
 };
 class AstScDtor final : public AstNodeText {
 public:
     AstScDtor(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScDtor(fl, textp) {}
     ASTGEN_MEMBERS_AstScDtor;
-    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
 };
 class AstScHdr final : public AstNodeText {
 public:
     AstScHdr(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScHdr(fl, textp) {}
     ASTGEN_MEMBERS_AstScHdr;
-    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
 };
 class AstScImp final : public AstNodeText {
 public:
     AstScImp(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScImp(fl, textp) {}
     ASTGEN_MEMBERS_AstScImp;
-    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
 };
 class AstScImpHdr final : public AstNodeText {
 public:
     AstScImpHdr(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScImpHdr(fl, textp) {}
     ASTGEN_MEMBERS_AstScImpHdr;
-    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
 };
 class AstScInt final : public AstNodeText {
 public:
     AstScInt(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScInt(fl, textp) {}
     ASTGEN_MEMBERS_AstScInt;
-    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
 };
 
 // === AstNodeSimpleText ===
