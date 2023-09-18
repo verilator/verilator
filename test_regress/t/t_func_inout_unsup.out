@@ -1,5 +1,0 @@
-%Error-TASKNSVAR: t/t_func_inout_unsup.v:24:28: Unsupported: Function/task inout argument is not of supported type
-   24 |       b = cls.get_x_set_1(a[1]);
-      |                            ^
-                  ... For error description see https://verilator.org/warn/TASKNSVAR?v=latest
-%Error: Exiting due to
