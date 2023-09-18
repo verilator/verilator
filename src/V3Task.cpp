@@ -479,7 +479,17 @@ private:
                 pinp->v3error("Function/task " + portp->direction().prettyName()  // e.g. "output"
                               + " connected to constant instead of variable: "
                               + portp->prettyNameQ());
-            } else if (portp->isRef()) {
+            } else if (portp->isRef() || portp->isConstRef()) {
+                bool refArgOk = false;
+                if (VN_IS(pinp, VarRef) || VN_IS(pinp, MemberSel) || VN_IS(pinp, StructSel)
+                    || VN_IS(pinp, ArraySel)) {
+                    refArgOk = true;
+                } else if (const AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
+                    refArgOk = cMethodp->name() == "at";
+                }
+                if (!refArgOk) {
+                    pinp->v3error("Function/task ref argument is not of allowed type");
+                }
                 if (inlineTask) {
                     if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
                         // Connect to this exact variable
@@ -490,17 +500,6 @@ private:
                     } else {
                         pinp->v3warn(E_TASKNSVAR, "Unsupported: ref argument of inlined "
                                                   "function/task is not a simple variable");
-                    }
-                } else {
-                    bool refArgOk = false;
-                    if (VN_IS(pinp, VarRef) || VN_IS(pinp, MemberSel) || VN_IS(pinp, StructSel)
-                        || VN_IS(pinp, ArraySel)) {
-                        refArgOk = true;
-                    } else if (const AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
-                        refArgOk = cMethodp->name() == "at";
-                    }
-                    if (!refArgOk) {
-                        pinp->v3error("Function/task ref argument is not of allowed type");
                     }
                 }
             } else if (portp->isInoutish()) {
