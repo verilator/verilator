@@ -224,7 +224,8 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     if (0 == strncmp(ln, "`__LINE__", strlen("`__LINE__"))) {
         // Special case - see docs - don't change other than accounting for `line itself
         lineno(lineno() + 1);
-    } if (std::isdigit(*ln)) {
+    }
+    if (std::isdigit(*ln)) {
         lineno(std::atoi(ln));
     } else {
         fail = true;
