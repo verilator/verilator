@@ -500,6 +500,10 @@ private:
                     } else {
                         pinp->v3warn(E_TASKNSVAR, "Unsupported: ref argument of inlined "
                                                   "function/task is not a simple variable");
+                        // Providing a var to avoid an internal error.
+                        AstVarScope* const newvscp
+                            = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                        portp->user2p(newvscp);
                     }
                 }
             } else if (portp->isInoutish()) {
