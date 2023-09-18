@@ -487,7 +487,11 @@ private:
                 } else if (const AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
                     refArgOk = cMethodp->name() == "at";
                 }
-                if (!refArgOk) {
+                if (refArgOk) {
+                    if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
+                        varrefp->access(VAccess::READWRITE);
+                    }
+                } else {
                     pinp->v3error("Function/task ref argument is not of allowed type");
                 }
                 if (inlineTask) {
