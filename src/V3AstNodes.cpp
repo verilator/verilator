@@ -475,7 +475,8 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     if (isStatic() && namespc.empty()) ostatic = "static ";
 
     const bool isRef = isDpiOpenArray()
-                       || (forFunc && (isWritable() || direction().isRefOrConstRef())) || asRef;
+                       || (forFunc && (isWritable() || this->isRef() || this->isConstRef()))
+                       || asRef;
 
     if (forFunc && isReadOnly() && isRef) ostatic = ostatic + "const ";
 
@@ -589,7 +590,7 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     if (forReturn) named = false;
     string arg;
     if (isWide() && isReadOnly()) arg += "const ";
-    const bool isRef = !forReturn && (isWritable() || direction().isRefOrConstRef());
+    const bool isRef = !forReturn && (isWritable() || this->isRef() || this->isConstRef());
     if (VN_IS(dtypeSkipRefp(), BasicDType) && !dtypeSkipRefp()->isDouble()
         && !dtypeSkipRefp()->isString()) {
         // Backward compatible type declaration

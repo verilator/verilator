@@ -1928,10 +1928,10 @@ public:
     bool isAnsi() const { return m_ansi; }
     bool isContinuously() const { return m_isContinuously; }
     bool isDeclTyped() const { return m_declTyped; }
-    bool isRef() const { return m_direction.isRefOrConstRef(); }
     bool isInoutish() const { return m_direction.isInoutish(); }
     bool isNonOutput() const { return m_direction.isNonOutput(); }
     bool isReadOnly() const VL_MT_SAFE { return m_direction.isReadOnly(); }
+    bool isConstRef() const VL_MT_SAFE { return m_direction.isConstRef(); }
     bool isRef() const VL_MT_SAFE { return m_direction.isRef(); }
     bool isWritable() const VL_MT_SAFE { return m_direction.isWritable(); }
     bool isTristate() const { return m_tristate; }
