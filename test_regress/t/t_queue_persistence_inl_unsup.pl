@@ -19,11 +19,8 @@ else {
     compile(
         timing_loop => 1,
         verilator_flags2 => ["--timing"],
-        );
-
-    execute(
-        fails => $Self->{vlt_all},  # bug3385 need to fix "ref"
-        check_finished => !$Self->{vlt_all},
+        fails => 1,   # bug3385 need to fix "ref"
+        expect_filename => $Self->{golden_filename},
         );
 }
 
