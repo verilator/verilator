@@ -220,7 +220,7 @@ public:
     size_t operator()() { return VL_MASK_I(31) & vl_rand64(); }
 };
 
-template <class T_Value, std::size_t T_numValues>
+template <class T_Value, uint64_t T_numValues>
 class VlRandC final {
     T_Value m_remaining = 0;  // Number of values to pull before re-randomize
     T_Value m_lfsr = 1;  // LFSR state
