@@ -516,9 +516,11 @@ private:
         VL_RESTORER(m_capturedVarsp);
         VL_RESTORER(m_capturedVarRefsp);
         VL_RESTORER(m_newProcess);
+        VL_RESTORER(m_forkLocalsp);
         m_capturedVarsp = nullptr;
         m_capturedVarRefsp = nullptr;
         m_newProcess = false;
+        m_forkLocalsp.clear();
 
         iterateChildren(nodep);
 
@@ -566,7 +568,6 @@ private:
         if (!nodep->joinType().join()) {
             ++m_forkDepth;
             m_newProcess = true;
-            m_forkLocalsp.clear();
             // Nested forks get moved into separate tasks
             if (nested) {
                 visitTaskifiable(nodep);
@@ -604,9 +605,10 @@ private:
             UASSERT_OBJ(
                 !nodep->varp()->lifetime().isNone(), nodep,
                 "Variable's lifetime is unknown. Can't determine if a capture is necessary.");
-
-            AstVar* const varp = captureRef(nodep);
-            nodep->varp(varp);
+            if (m_forkLocalsp.count(nodep->varp()) == 0) {
+                AstVar* const varp = captureRef(nodep);
+                nodep->varp(varp);
+            }
         }
     }
     void visit(AstAssign* nodep) override {

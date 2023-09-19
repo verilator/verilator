@@ -13,13 +13,11 @@ scenarios(simulator => 1);
 compile(
     verilator_flags2 => ["--exe --main --timing"],
     make_main => 0,
-    fails => $Self->{vlt_all},  # issue #4493
     );
 
-# issue #4493
-#execute(
-#    check_finished => 1,
-#    );
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

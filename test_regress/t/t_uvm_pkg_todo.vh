@@ -19192,9 +19192,7 @@ task uvm_sequencer_base::m_wait_for_available_sequence();
                 fork
                     automatic int k = i;
                   begin
-//TODO issue #4493 - Fix UVM fork..join_none local variable can't locate varref scope
-//TODO %Error: Internal Error: t/t_uvm_pkg_todo.vh:19203:56: ../V3Scope.cpp:80: Can't locate varref scope
-//TODO                    arb_sequence_q[is_relevant_entries[k]].sequence_ptr.wait_for_relevant();
+                    arb_sequence_q[is_relevant_entries[k]].sequence_ptr.wait_for_relevant();
                     if ($realtime != m_last_wait_relevant_time) begin
                        m_last_wait_relevant_time = $realtime ;
                        m_wait_relevant_count = 0 ;

@@ -22,7 +22,7 @@ module t(/*AUTOARG*/);
                            fork
                               automatic int k = i;
                               begin
-                                 // issue #4493
+                                 // see issue #4493
                                  $display("[%0t] start %0d", $time, k);
                                  // UVM's arb_sequence_q[is_relevant_entries[k]].wait_for_relevant();
                                  m_mask[k] = 1;
