@@ -13,6 +13,7 @@ Verilator 5.017 devel
 
 **Minor:**
 
+* Support randc (#4349).
 * Support resizing function call inout arguments (#4467).
 
 

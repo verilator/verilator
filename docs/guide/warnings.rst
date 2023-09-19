@@ -1360,7 +1360,10 @@ List Of Warnings
 
 .. option:: RANDC
 
-   Warns that the :code:`randc` keyword is unsupported and being converted
+   Historical, never issued since version 5.018, when :code:`randc` became
+   fully supported.
+
+   Warned that the :code:`randc` keyword was unsupported and was converted
    to :code:`rand`.
 
 

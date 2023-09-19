@@ -74,8 +74,18 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 #define VL_OUTW(name, msb, lsb, words) VlWide<words> name  ///< Declare output signal, 65+ bits
 
 //===================================================================
-// VlProcess stores metadata of running processes
+// Functions needed here
 
+constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
+    if (VL_UNLIKELY(!lhs)) return 0;
+    --lhs;
+    int shifts = 0;
+    for (; lhs != 0; ++shifts) lhs = lhs >> 1ULL;
+    return shifts;
+}
+
+//===================================================================
+// VlProcess stores metadata of running processes
 class VlProcess final {
     // MEMBERS
     int m_state;  // Current state of the process
@@ -208,6 +218,58 @@ public:
     static constexpr size_t min() { return 0; }
     static constexpr size_t max() { return 1ULL << 31; }
     size_t operator()() { return VL_MASK_I(31) & vl_rand64(); }
+};
+
+template <class T_Value, std::size_t T_numValues>
+class VlRandC final {
+    T_Value m_remaining = 0;  // Number of values to pull before re-randomize
+    T_Value m_lfsr = 1;  // LFSR state
+    // Polynomials are first listed at https://users.ece.cmu.edu/~koopman/lfsr/
+    static constexpr uint64_t s_polynomials[] = {
+        0x0ULL,  // 0 never used (constant, no randomization)
+        0x0ULL,  // 1
+        0x3ULL,        0x5ULL,       0x9ULL,        0x12ULL,       0x21ULL,
+        0x41ULL,       0x8eULL,      0x108ULL,      0x204ULL,      0x402ULL,
+        0x829ULL,      0x100dULL,    0x2015ULL,     0x4001ULL,
+        0x8016ULL,  // 16
+        0x10004ULL,    0x20040ULL,   0x40013ULL,    0x80004ULL,    0x100002ULL,
+        0x200001ULL,   0x400010ULL,  0x80000dULL,   0x1000004ULL,  0x2000023ULL,
+        0x4000013ULL,  0x8000004ULL, 0x10000002ULL, 0x20000029ULL, 0x40000004ULL,
+        0x80000057ULL,  // 32
+        0x100000029ULL  // 33
+    };
+
+public:
+    // CONSTRUCTORS
+    VlRandC() {
+        static_assert(T_numValues >= 1, "");
+        static_assert(sizeof(T_Value) == 8 || (T_numValues < (1ULL << (8 * sizeof(T_Value)))), "");
+    }
+    // METHODS
+    T_Value randomize(VlRNG& rngr) {
+        if (VL_UNLIKELY(!m_remaining)) reseed(rngr);
+        constexpr uint32_t clogWidth = VL_CLOG2_CE_Q(T_numValues) + 1;
+        constexpr uint32_t lfsrWidth = (clogWidth < 2) ? 2 : clogWidth;
+        constexpr T_Value polynomial = static_cast<T_Value>(s_polynomials[lfsrWidth]);
+        // printf("  numV=%ld w=%d poly=%x\n", T_numValues, lfsrWidth, polynomial);
+        //  Loop until get reasonable value. Because we picked a LFSR of at most one
+        //  extra bit in width, this will only require at most on average 1.5 loops
+        do {
+            m_lfsr = (m_lfsr & 1ULL) ? ((m_lfsr >> 1ULL) ^ polynomial) : (m_lfsr >> 1ULL);
+        } while (m_lfsr > T_numValues);  // Note if == then output value 0
+        --m_remaining;
+        T_Value result = (m_lfsr == T_numValues) ? 0 : m_lfsr;
+        // printf("    result=%x  (numv=%ld, rem=%d)\n", result, T_numValues, m_remaining);
+        return result;
+    }
+    void reseed(VlRNG& rngr) {
+        constexpr uint32_t lfsrWidth = VL_CLOG2_CE_Q(T_numValues) + 1;
+        m_remaining = T_numValues;
+        do {
+            m_lfsr = rngr.rand64() & VL_MASK_Q(lfsrWidth);
+            // printf("    lfsr.reseed=%x\n", m_lfsr);
+        } while (!m_lfsr);  // 0 not a legal seed
+    }
 };
 
 // These require the class object to have the thread safety lock

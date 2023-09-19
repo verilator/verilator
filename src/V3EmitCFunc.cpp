@@ -667,6 +667,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
         return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
                                    suffix + ".atDefault()" + cvtarray);
+    } else if (VN_IS(dtypep, CDType)) {
+        return "";  // Constructor does it
     } else if (VN_IS(dtypep, ClassRefDType)) {
         return "";  // Constructor does it
     } else if (VN_IS(dtypep, IfaceRefDType)) {

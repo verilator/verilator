@@ -494,6 +494,41 @@ public:
     int widthTotalBytes() const override { V3ERROR_NA_RETURN(0); }
     bool isCompound() const override { return true; }
 };
+class AstCDType final : public AstNodeDType {
+    // Raw "C" data type passed directly to output
+    string m_name;  // Name of data type, printed when do V3EmitC
+public:
+    AstCDType(FileLine* fl, const string& name)
+        : ASTGEN_SUPER_CDType(fl)
+        , m_name{name} {
+        this->dtypep(this);
+    }
+
+public:
+    ASTGEN_MEMBERS_AstCDType;
+    bool same(const AstNode* samep) const override {
+        const AstCDType* const asamep = static_cast<const AstCDType*>(samep);
+        return m_name == asamep->m_name;
+    }
+    bool similarDType(const AstNodeDType* samep) const override { return same(samep); }
+    string name() const override VL_MT_STABLE { return m_name; }
+    string prettyDTypeName() const override { return m_name; }
+    const char* broken() const override { return nullptr; }
+    // METHODS
+    AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
+    int widthAlignBytes() const override { return 8; }  // Assume
+    int widthTotalBytes() const override { return 8; }  // Assume
+    bool isCompound() const override { return true; }
+    static string typeToHold(uint64_t maxItem) {
+        return (maxItem < (1ULL << 8))    ? "CData"
+               : (maxItem < (1ULL << 16)) ? "SData"
+               : (maxItem < (1ULL << 32)) ? "IData"
+                                          : "QData";
+    }
+};
 class AstClassRefDType final : public AstNodeDType {
     // Reference to a class
     // @astgen op1 := paramsp: List[AstPin]

@@ -1684,6 +1684,7 @@ class AstVar final : public AstNode {
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
     bool m_fileDescr : 1;  // File descriptor
     bool m_isRand : 1;  // Random variable
+    bool m_isRandC : 1;  // Random cyclic variable (isRand also set)
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
@@ -1691,6 +1692,7 @@ class AstVar final : public AstNode {
     bool m_isPulldown : 1;  // Tri0
     bool m_isPullup : 1;  // Tri1
     bool m_isIfaceParent : 1;  // dtype is reference to interface present in this module
+    bool m_isInternal : 1;  // Internal state, don't add to method pinter
     bool m_isDpiOpenArray : 1;  // DPI import open array
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
@@ -1728,6 +1730,7 @@ class AstVar final : public AstNode {
         m_attrSplitVar = false;
         m_fileDescr = false;
         m_isRand = false;
+        m_isRandC = false;
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
@@ -1735,6 +1738,7 @@ class AstVar final : public AstNode {
         m_isPulldown = false;
         m_isPullup = false;
         m_isIfaceParent = false;
+        m_isInternal = false;
         m_isDpiOpenArray = false;
         m_isHideLocal = false;
         m_isHideProtected = false;
@@ -1880,10 +1884,15 @@ public:
     void scSensitive(bool flag) { m_scSensitive = flag; }
     void primaryIO(bool flag) { m_primaryIO = flag; }
     void isRand(bool flag) { m_isRand = flag; }
+    void isRandC(bool flag) {
+        m_isRandC = flag;
+        if (flag) isRand(true);
+    }
     void isConst(bool flag) { m_isConst = flag; }
     void isContinuously(bool flag) { m_isContinuously = flag; }
     void isStatic(bool flag) { m_isStatic = flag; }
     void isIfaceParent(bool flag) { m_isIfaceParent = flag; }
+    void isInternal(bool flag) { m_isInternal = flag; }
     void funcLocal(bool flag) {
         m_funcLocal = flag;
         if (flag) m_funcLocalSticky = true;
@@ -1929,6 +1938,7 @@ public:
     bool isPrimaryInish() const { return isPrimaryIO() && isNonOutput(); }
     bool isIfaceRef() const { return (varType() == VVarType::IFACEREF); }
     bool isIfaceParent() const { return m_isIfaceParent; }
+    bool isInternal() const { return m_isInternal; }
     bool isSignal() const { return varType().isSignal(); }
     bool isNet() const { return varType().isNet(); }
     bool isTemp() const { return varType().isTemp(); }
@@ -1964,6 +1974,7 @@ public:
     bool isSigUserRWPublic() const { return m_sigUserRWPublic; }
     bool isTrace() const { return m_trace; }
     bool isRand() const { return m_isRand; }
+    bool isRandC() const { return m_isRandC; }
     bool isConst() const VL_MT_SAFE { return m_isConst; }
     bool isStatic() const VL_MT_SAFE { return m_isStatic; }
     bool isLatched() const { return m_isLatched; }

@@ -147,6 +147,11 @@ private:
             m_hash += nodep->nrange().right();
         });
     }
+    void visit(AstCDType* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
+            m_hash += nodep->name();
+        });
+    }
     void visit(AstConstDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {  //
             iterateConstNull(nodep->virtRefDTypep());

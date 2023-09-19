@@ -452,6 +452,18 @@ private:
             }
             if (debug() >= 9) nodep->dumpTree("-  arraysel_old: ");
 
+            // If value MODDIV constant, where constant <= declElements, known ok
+            // V3Random makes these to intentionally prevent exceeding enum array bounds.
+            if (const AstModDiv* const moddivp = VN_CAST(nodep->bitp(), ModDiv)) {
+                if (const AstConst* const modconstp = VN_CAST(moddivp->rhsp(), Const)) {
+                    if (modconstp->width() <= 32
+                        && modconstp->toUInt() <= static_cast<uint32_t>(declElements)) {
+                        UINFO(9, "arraysel mod const " << declElements
+                                                       << " >= " << modconstp->toUInt() << endl);
+                        return;
+                    }
+                }
+            }
             // See if the condition is constant true
             AstNodeExpr* condp
                 = new AstGte{nodep->fileline(),
