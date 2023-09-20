@@ -199,13 +199,7 @@ private:
         return nodep->user5u().to<NeedsProcDepVtx*>();
     }
     // Add timing flag to a node
-    bool addFlag(AstNode* nodep, uint8_t flag) {
-        if (~nodep->user2() & flag) {
-            nodep->user2(nodep->user2() | flag);
-            return true;
-        }
-        return false;
-    }
+    void addFlag(AstNode* const nodep, uint8_t flag) { nodep->user2(nodep->user2() | flag); }
     // Pass timing flag between nodes
     bool passFlag(const AstNode* from, AstNode* to, NodeFlag flag) {
         if ((from->user2() & flag) && !(to->user2() & flag)) {
