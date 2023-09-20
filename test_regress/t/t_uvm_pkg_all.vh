@@ -517,7 +517,7 @@ virtual class uvm_coreservice_t;
         pure virtual function uvm_resource_pool get_resource_pool();
         pure virtual function void set_resource_pool_default_precedence(int unsigned precedence);
         pure virtual function int unsigned get_resource_pool_default_precedence();
-        static uvm_coreservice_t inst;
+        local static uvm_coreservice_t inst;
         static function uvm_coreservice_t get();
                 if(inst==null)
                         uvm_init(null);
@@ -830,11 +830,11 @@ function void uvm_init(uvm_coreservice_t cs=null);
     end
     else begin
       uvm_coreservice_t actual;
-      actual = uvm_coreservice_t::inst;
+      actual = uvm_coreservice_t::get();
       if ((cs != actual) && (cs != null))
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"UVM/INIT/MULTI"))
-       uvm_report_warning ("UVM/INIT/MULTI", "uvm_init() called after library has already completed initialization, subsequent calls are ignored!", UVM_NONE, "t/uvm/src/base/uvm_globals.svh", 349, "", 1);
+       uvm_report_warning ("UVM/INIT/MULTI", "uvm_init() called after library has already completed initialization, subsequent calls are ignored!", UVM_NONE, "t/uvm/src/base/uvm_globals.svh", 344, "", 1);
    end
     end
     return;
