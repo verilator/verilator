@@ -1,0 +1,8 @@
+%Error-TASKNSVAR: t/t_func_ref_unsup.v:29:28: Unsupported: ref argument of inlined function/task is not a simple variable
+   29 |       b = get_val_set_5(mi.x);
+      |                            ^
+                  ... For error description see https://verilator.org/warn/TASKNSVAR?v=latest
+%Error-TASKNSVAR: t/t_func_ref_unsup.v:34:28: Unsupported: ref argument of inlined function/task is not a simple variable
+   34 |       b = get_val_set_5(arr[0]);
+      |                            ^
+%Error: Exiting due to

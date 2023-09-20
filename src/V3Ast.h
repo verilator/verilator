@@ -706,7 +706,7 @@ public:
     bool isReadOnly() const VL_MT_SAFE { return m_e == INPUT || m_e == CONSTREF; }
     bool isWritable() const VL_MT_SAFE { return m_e == OUTPUT || m_e == INOUT || m_e == REF; }
     bool isRef() const VL_MT_SAFE { return m_e == REF; }
-    bool isRefOrConstRef() const VL_MT_SAFE { return m_e == REF || m_e == CONSTREF; }
+    bool isConstRef() const VL_MT_SAFE { return m_e == CONSTREF; }
 };
 constexpr bool operator==(const VDirection& lhs, const VDirection& rhs) {
     return lhs.m_e == rhs.m_e;

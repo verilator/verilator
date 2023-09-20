@@ -1,0 +1,4 @@
+%Error: t/t_func_ref_bad.v:19:22: Function/task ref argument is not of allowed type
+   19 |       b = cls.get_x(a[1]);
+      |                      ^
+%Error: Exiting due to
