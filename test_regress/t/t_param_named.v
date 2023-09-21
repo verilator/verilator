@@ -11,10 +11,7 @@ module t (/*AUTOARG*/
    parameter PAR = 3;
    input clk;
 
-`ifdef verilator
-   // Else it becomes a localparam, per IEEE 4.10.1, but we don't check it
    defparam m3.FROMDEFP = 19;
-`endif
 
    m3 #(.P3(PAR),
         .P2(2))
@@ -36,7 +33,8 @@ module m3
     parameter  UNCH = 99,
     parameter  P1 = 10,
     parameter  P2 = 20,
-               P3 = 30
+               P3 = 30,
+    parameter  FROMDEFP = 11
     )
     (/*AUTOARG*/
      // Inputs
@@ -44,8 +42,6 @@ module m3
      );
    input       clk;
    localparam  LOC = 13;
-
-   parameter   FROMDEFP = 11;
 
    initial begin
       $display("%x %x %x",P1,P2,P3);
@@ -55,8 +51,6 @@ module m3
       if (P1 !== 10) $stop;
       if (P2 !== 2) $stop;
       if (P3 !== 3) $stop;
-`ifdef verilator
       if (FROMDEFP !== 19) $stop;
-`endif
    end
 endmodule

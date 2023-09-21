@@ -217,6 +217,7 @@ private:
     bool m_inLibrary : 1;  // From a library, no error if not used, never top level
     bool m_dead : 1;  // LinkDot believes is dead; will remove in Dead visitors
     bool m_hasGParam : 1;  // Has global parameter (for link)
+    bool m_hasParameterList : 1;  // Has #() for parameter declaration
     bool m_hierBlock : 1;  // Hierarchical Block marked by HIER_BLOCK pragma
     bool m_internal : 1;  // Internally created
     bool m_recursive : 1;  // Recursive module
@@ -231,6 +232,7 @@ protected:
         , m_inLibrary{false}
         , m_dead{false}
         , m_hasGParam{false}
+        , m_hasParameterList{false}
         , m_hierBlock{false}
         , m_internal{false}
         , m_recursive{false}
@@ -260,6 +262,8 @@ public:
     bool dead() const { return m_dead; }
     void hasGParam(bool flag) { m_hasGParam = flag; }
     bool hasGParam() const { return m_hasGParam; }
+    void hasParameterList(bool flag) { m_hasParameterList = flag; }
+    bool hasParameterList() const { return m_hasParameterList; }
     void hierBlock(bool flag) { m_hierBlock = flag; }
     bool hierBlock() const { return m_hierBlock; }
     void internal(bool flag) { m_internal = flag; }
@@ -1643,7 +1647,7 @@ class AstVar final : public AstNode {
     VVarAttrClocker m_attrClocker;
     MTaskIdSet m_mtaskIds;  // MTaskID's that read or write this var
     int m_pinNum = 0;  // For XML, if non-zero the connection pin number
-    bool m_ansi : 1;  // ANSI port list variable (for dedup check)
+    bool m_ansi : 1;  // Params or pins declared in the module header, rather than the body
     bool m_declTyped : 1;  // Declared as type (for dedup check)
     bool m_tristate : 1;  // Inout or triwire or trireg
     bool m_primaryIO : 1;  // In/out to top level (or directly assigned from same)

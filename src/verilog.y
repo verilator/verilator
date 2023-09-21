@@ -93,7 +93,7 @@ public:
     VLifetime m_varLifetime;  // Static/Automatic for next signal
     bool m_impliedDecl = false;  // Allow implied wire declarations
     bool m_varDeclTyped = false;  // Var got reg/wire for dedup check
-    bool m_pinAnsi = false;  // In ANSI port list
+    bool m_pinAnsi = false;  // In ANSI parameter or port list
     bool m_tracingParse = true;  // Tracing disable for parser
     bool m_inImplements = false;  // Is inside class implements list
     bool m_insideClass = false;  // Is inside a class body
@@ -316,14 +316,12 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 #define VARRESET_LIST(decl) \
     { \
         GRAMMARP->m_pinNum = 1; \
-        GRAMMARP->m_pinAnsi = false; \
         VARRESET(); \
         VARDECL(decl); \
     }  // Start of pinlist
 #define VARRESET_NONLIST(decl) \
     { \
         GRAMMARP->m_pinNum = 0; \
-        GRAMMARP->m_pinAnsi = false; \
         VARRESET(); \
         VARDECL(decl); \
     }  // Not in a pinlist
@@ -1419,13 +1417,17 @@ parameter_value_assignmentClass<pinp>:  // IEEE: [ parameter_value_assignment ] 
 
 parameter_port_listE<nodep>:    // IEEE: parameter_port_list + empty == parameter_value_assignment
                 /* empty */                             { $$ = nullptr; }
-        |       '#' '(' ')'                             { $$ = nullptr; }
+        |       '#' '(' ')'                             { $$ = nullptr; GRAMMARP->m_modp->hasParameterList(true); }
         //                      // IEEE: '#' '(' list_of_param_assignments { ',' parameter_port_declaration } ')'
         //                      // IEEE: '#' '(' parameter_port_declaration { ',' parameter_port_declaration } ')'
         //                      // Can't just do that as "," conflicts with between vars and between stmts, so
         //                      // split into pre-comma and post-comma parts
-        |       '#' '(' {VARRESET_LIST(GPARAM);} paramPortDeclOrArgList ')'
-                        { $$ = $4; VARRESET_NONLIST(UNKNOWN); }
+        |       '#' '('                                 { VARRESET_LIST(GPARAM);
+                                                          GRAMMARP->m_modp->hasParameterList(true);
+                                                          GRAMMARP->m_pinAnsi = true; }
+                paramPortDeclOrArgList ')'              { $$ = $4;
+                                                          VARRESET_NONLIST(UNKNOWN);
+                                                          GRAMMARP->m_pinAnsi = false; }
         //                      // Note legal to start with "a=b" with no parameter statement
         ;
 
@@ -1451,7 +1453,10 @@ portsStarE<nodep>:              // IEEE: .* + list_of_ports + list_of_port_decla
         |       '(' ')'                                 { $$ = nullptr; }
         //                      // .* expanded from module_declaration
         //UNSUP '(' yP_DOTSTAR ')'                              { UNSUP }
-        |       '(' {VARRESET_LIST(PORT);} list_of_ports ')'    { $$ = $3; VARRESET_NONLIST(UNKNOWN); }
+        |       '('                                     { VARRESET_LIST(PORT);
+                                                          GRAMMARP->m_pinAnsi = true; }
+                list_of_ports ')'                       { $$ = $3; VARRESET_NONLIST(UNKNOWN);
+                                                          GRAMMARP->m_pinAnsi = false; }
         ;
 
 list_of_portsE<nodep>:          // IEEE: list_of_ports + list_of_port_declarations
@@ -1596,7 +1601,7 @@ portDirNetE:                    // IEEE: part of port, optional net type and/or 
         //                      // The higher level rule may override this VARDTYPE with one later in the parse.
         |       port_direction                                  { VARDECL(PORT); VARDTYPE_NDECL(nullptr); }
         |       port_direction { VARDECL(PORT); } net_type      { VARDTYPE_NDECL(nullptr); }  // net_type calls VARDECL
-        |       net_type                                        { VARDTYPE_NDECL(nullptr); } // net_type calls VARDECL
+        |       net_type                                        { VARDTYPE_NDECL(nullptr); }  // net_type calls VARDECL
         ;
 
 port_declNetE:                  // IEEE: part of port_declaration, optional net type
@@ -1621,6 +1626,7 @@ interface_declaration:          // IEEE: interface_declaration + interface_nonan
                         { if ($2) $1->addStmtsp($2);
                           if ($3) $1->addStmtsp($3);
                           if ($5) $1->addStmtsp($5);
+                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1); }
         |       yEXTERN intFront parameter_port_listE portsStarE ';'
                         { BBUNSUP($<fl>1, "Unsupported: extern interface"); }
@@ -1632,7 +1638,8 @@ intFront<nodeModulep>:
                           $$->inLibrary(true);
                           $$->lifetime($2);
                           PARSEP->rootp()->addModulesp($$);
-                          SYMP->pushNew($$); }
+                          SYMP->pushNew($$);
+                          GRAMMARP->m_modp = $$; }
         |       intFront sigAttrScope                   { $$ = $1; }
         ;
 
@@ -1958,23 +1965,18 @@ net_type:                       // ==IEEE: net_type
         ;
 
 varParamReset:
-                yPARAMETER
-                        { if (GRAMMARP->m_insideClass) {
-                             VARRESET_NONLIST(LPARAM);
-                          } else {
-                             VARRESET_NONLIST(GPARAM);
-                          } }
+                yPARAMETER                              { VARRESET_NONLIST(GPARAM); }
         |       yLOCALPARAM                             { VARRESET_NONLIST(LPARAM); }
         ;
 
 port_direction:                 // ==IEEE: port_direction + tf_port_direction
         //                      // IEEE 19.8 just "input" FIRST forces type to wire - we'll ignore that here
         //                      // Only used for ANSI declarations
-                yINPUT                                  { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
-        |       yOUTPUT                                 { GRAMMARP->m_pinAnsi = true; VARIO(OUTPUT); }
-        |       yINOUT                                  { GRAMMARP->m_pinAnsi = true; VARIO(INOUT); }
-        |       yREF                                    { GRAMMARP->m_pinAnsi = true; VARIO(REF); }
-        |       yCONST__REF yREF                        { GRAMMARP->m_pinAnsi = true; VARIO(CONSTREF); }
+                yINPUT                                  { VARIO(INPUT); }
+        |       yOUTPUT                                 { VARIO(OUTPUT); }
+        |       yINOUT                                  { VARIO(INOUT); }
+        |       yREF                                    { VARIO(REF); }
+        |       yCONST__REF yREF                        { VARIO(CONSTREF); }
         ;
 
 port_directionReset:            // IEEE: port_direction that starts a port_declaraiton
@@ -5960,12 +5962,12 @@ property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequen
 
 property_port_itemDirE:
                 /* empty */
-                        { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
+                        { VARIO(INPUT); }
         |       yLOCAL__ETC
-                        { GRAMMARP->m_pinAnsi = true; VARIO(INPUT);
+                        { VARIO(INPUT);
                           BBUNSUP($1, "Unsupported: property port 'local'"); }
         |       yLOCAL__ETC yINPUT
-                        { GRAMMARP->m_pinAnsi = true; VARIO(INPUT);
+                        { VARIO(INPUT);
                           BBUNSUP($1, "Unsupported: property port 'local'"); }
         ;
 
@@ -6833,7 +6835,6 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
                 classFront parameter_port_listE classExtendsE classImplementsE ';'
         /*mid*/         { // Allow resolving types declared in base extends class
                           if ($<scp>3) SYMP->importExtends($<scp>3);
-                          GRAMMARP->m_insideClass = true;
                         }
         /*cont*/    class_itemListE yENDCLASS endLabelE
                         { $$ = $1; $1->addMembersp($2);
@@ -6841,8 +6842,8 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
                           $1->addExtendsp($3);
                           $1->addExtendsp($4);
                           $1->addMembersp($7);
+                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($$);
-                          GRAMMARP->m_insideClass = false;
                           GRAMMARP->endLabel($<fl>9, $1, $9); }
         ;
 
@@ -6852,6 +6853,7 @@ classFront<classp>:             // IEEE: part of class_declaration
                           $$->isVirtual($1);
                           $$->lifetime($3);
                           SYMP->pushNew($<classp>$);
+                          GRAMMARP->m_modp = $$;
                           v3Global.setHasClasses(); }
         //                      // IEEE: part of interface_class_declaration
         |       yINTERFACE yCLASS lifetimeE idAny/*class_identifier*/
@@ -6859,6 +6861,7 @@ classFront<classp>:             // IEEE: part of class_declaration
                           $$->isInterfaceClass(true);
                           $$->lifetime($3);
                           SYMP->pushNew($<classp>$);
+                          GRAMMARP->m_modp = $$;
                           v3Global.setHasClasses(); }
         ;
 
