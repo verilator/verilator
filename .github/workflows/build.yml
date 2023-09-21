@@ -27,7 +27,7 @@ jobs:
 
   build:
     concurrency:
-      group: ${{ github.job }}-${{ strategy.job-index }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+      group: build-${{ strategy.job-index }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
       cancel-in-progress: true
     strategy:
       fail-fast: false
@@ -100,7 +100,7 @@ jobs:
   test:
     needs: build
     concurrency:
-      group: ${{ github.job }}-${{ strategy.job-index }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+      group: test-${{ strategy.job-index }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
       cancel-in-progress: true
     strategy:
       fail-fast: false

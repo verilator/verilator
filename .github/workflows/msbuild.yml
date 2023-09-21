@@ -28,7 +28,7 @@ jobs:
     name: run on windows
     runs-on: windows-latest
     concurrency:
-      group: ${{ github.job }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+      group: windows-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
       cancel-in-progress: true
     steps:
     - uses: actions/checkout@v3
