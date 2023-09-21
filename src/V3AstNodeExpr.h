@@ -2775,9 +2775,10 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool containsMemberAccess() override;
+    const char* broken() const override;
 
 private:
-    bool containsMemberAccessImpl();
+    bool containsMemberAccessImpl() const;
 };
 class AstLogIf final : public AstNodeBiop {
 public:
@@ -2826,9 +2827,10 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool containsMemberAccess() override;
+    const char* broken() const override;
 
 private:
-    bool containsMemberAccessImpl();
+    bool containsMemberAccessImpl() const;
 };
 class AstLt final : public AstNodeBiop {
 public:

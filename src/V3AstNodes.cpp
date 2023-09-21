@@ -997,20 +997,30 @@ bool AstLogAnd::containsMemberAccess() {
     if (!m_containsMemberAccess.isCached()) m_containsMemberAccess.set(containsMemberAccessImpl());
     return m_containsMemberAccess.get();
 }
-bool AstLogAnd::containsMemberAccessImpl() {
+bool AstLogAnd::containsMemberAccessImpl() const {
     if (lhsp()->containsMemberAccess()) return true;
     if (rhsp()->containsMemberAccess()) return true;
     return false;
+}
+const char* AstLogAnd::broken() const {
+    BROKEN_RTN(m_containsMemberAccess.isCached()
+               && m_containsMemberAccess.get() != containsMemberAccessImpl());
+    return nullptr;
 }
 
 bool AstLogOr::containsMemberAccess() {
     if (!m_containsMemberAccess.isCached()) m_containsMemberAccess.set(containsMemberAccessImpl());
     return m_containsMemberAccess.get();
 }
-bool AstLogOr::containsMemberAccessImpl() {
+bool AstLogOr::containsMemberAccessImpl() const {
     if (lhsp()->containsMemberAccess()) return true;
     if (rhsp()->containsMemberAccess()) return true;
     return false;
+}
+const char* AstLogOr::broken() const {
+    BROKEN_RTN(m_containsMemberAccess.isCached()
+               && m_containsMemberAccess.get() != containsMemberAccessImpl());
+    return nullptr;
 }
 
 const char* AstJumpBlock::broken() const {
@@ -2360,6 +2370,8 @@ bool AstNodeFTask::containsMemberAccessImpl() const {
 }
 const char* AstNodeFTask::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    BROKEN_RTN(m_containsMemberAccess.isCached()
+               && m_containsMemberAccess.get() != containsMemberAccessImpl());
     return nullptr;
 }
 bool AstNodeFTask::getPurity() const {
