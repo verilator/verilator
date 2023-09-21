@@ -229,6 +229,7 @@ class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeExpr {
     string m_inlinedDots;  // Dotted hierarchy flattened out
     bool m_pli = false;  // Pli system call ($name)
     VPurity m_purity;  // Pure state
+    VSafeConversionLogicToBit m_safeConversion;  // Cached result of safeConversionLogicToBit
 
 protected:
     AstNodeFTaskRef(VNType t, FileLine* fl, AstNode* namep, AstNodeExpr* pinsp)
@@ -261,6 +262,8 @@ public:
     bool pli() const { return m_pli; }
     void pli(bool flag) { m_pli = flag; }
     bool isPure() override;
+    bool safeConversionLogicToBit() override;
+    bool getSafeConversion() const;
 
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
@@ -1157,6 +1160,7 @@ class AstExprStmt final : public AstNodeExpr {
     // resultp is evaluated AFTER the statement(s).
     // @astgen op1 := stmtsp : List[AstNode]
     // @astgen op2 := resultp : AstNodeExpr
+    VSafeConversionLogicToBit m_safeConversion;  // Cached result of safeConversionLogicToBit
 public:
     AstExprStmt(FileLine* fl, AstNode* stmtsp, AstNodeExpr* resultp)
         : ASTGEN_SUPER_ExprStmt(fl) {
@@ -1170,6 +1174,8 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     bool isPure() override { return false; }
+    bool safeConversionLogicToBit() override;
+    bool getSafeConversion() const;
     bool same(const AstNode*) const override { return true; }
 };
 class AstFError final : public AstNodeExpr {

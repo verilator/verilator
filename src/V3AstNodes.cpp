@@ -90,6 +90,24 @@ bool AstNodeFTaskRef::getPurity() const {
 
     return taskp->isPure();
 }
+
+bool AstNodeFTaskRef::safeConversionLogicToBit() {
+    if (!m_safeConversion.isCached()) m_safeConversion.set(getSafeConversion());
+    return m_safeConversion.isSafe();
+}
+bool AstNodeFTaskRef::getSafeConversion() const {
+    AstNodeFTask* const taskp = this->taskp();
+    // Unlinked yet, so treat as unsafe
+    if (!taskp) return false;
+
+    // First compute the safety of arguments
+    for (AstNode* pinp = this->pinsp(); pinp; pinp = pinp->nextp()) {
+        if (!pinp->safeConversionLogicToBit()) return false;
+    }
+
+    return taskp->getSafeConversion();
+}
+
 bool AstNodeFTaskRef::isGateOptimizable() const { return m_taskp && m_taskp->isGateOptimizable(); }
 
 const char* AstNodeVarRef::broken() const {
@@ -2369,6 +2387,17 @@ bool AstNodeFTask::getPurity() const {
             }))
             return false;
     }
+    return true;
+}
+bool AstExprStmt::safeConversionLogicToBit() {
+    if (!m_safeConversion.isCached()) m_safeConversion.set(getSafeConversion());
+    return m_safeConversion.isSafe();
+}
+bool AstExprStmt::getSafeConversion() const {
+    for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        if (!stmtp->safeConversionLogicToBit()) return false;
+    }
+    if (!resultp()->safeConversionLogicToBit()) return false;
     return true;
 }
 void AstNodeBlock::dump(std::ostream& str) const {
