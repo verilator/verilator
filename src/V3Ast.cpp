@@ -1063,6 +1063,16 @@ AstNode* AstNode::iterateSubtreeReturnEdits(VNVisitor& v) {
 
 //======================================================================
 
+bool AstNode::safeConversionLogicToBit() {
+    if (m_op1p && !m_op1p->safeConversionLogicToBit()) return false;
+    if (m_op2p && !m_op2p->safeConversionLogicToBit()) return false;
+    if (m_op3p && !m_op3p->safeConversionLogicToBit()) return false;
+    if (m_op4p && !m_op4p->safeConversionLogicToBit()) return false;
+    return true;
+}
+
+//======================================================================
+
 void AstNode::cloneRelinkTree() {
     // private: Cleanup clone() operation on whole tree. Publicly call cloneTree() instead.
     for (AstNode* nodep = this; nodep; nodep = nodep->m_nextp) {

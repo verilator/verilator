@@ -1523,6 +1523,7 @@ public:
     int instrCount() const override { return widthInstrs(); }
     AstVar* varp() const { return m_varp; }
     void varp(AstVar* nodep) { m_varp = nodep; }
+    bool safeConversionLogicToBit() override { return false; }
 };
 class AstNewCopy final : public AstNodeExpr {
     // New as shallow copy
@@ -2750,6 +2751,7 @@ public:
     bool signedFlavor() const override { return true; }
 };
 class AstLogAnd final : public AstNodeBiop {
+    VSafeConversionLogicToBit m_safeConversion;  // Cached result of safeConversionLogicToBit
 public:
     AstLogAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LogAnd(fl, lhsp, rhsp) {
@@ -2771,6 +2773,8 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    bool safeConversionLogicToBit() override;
+    bool getSafeConversion();
 };
 class AstLogIf final : public AstNodeBiop {
 public:
@@ -2796,6 +2800,7 @@ public:
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstLogOr final : public AstNodeBiop {
+    VSafeConversionLogicToBit m_safeConversion;  // Cached result of safeConversionLogicToBit
 public:
     AstLogOr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LogOr(fl, lhsp, rhsp) {
@@ -2817,6 +2822,8 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    bool safeConversionLogicToBit() override;
+    bool getSafeConversion();
 };
 class AstLt final : public AstNodeBiop {
 public:
@@ -4149,6 +4156,7 @@ public:
         BROKEN_RTN(!fromp());
         return nullptr;
     }
+    bool safeConversionLogicToBit() override { return false; }
 };
 class AstNew final : public AstNodeFTaskRef {
     // New as constructor

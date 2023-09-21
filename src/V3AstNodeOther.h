@@ -89,6 +89,7 @@ private:
     bool m_needProcess : 1;  // Implements part of a process that allocates std::process
     VLifetime m_lifetime;  // Lifetime
     VPurity m_purity;  // Pure state
+    VSafeConversionLogicToBit m_safeConversion;  // Cached result of safeConversionLogicToBit
 
 protected:
     AstNodeFTask(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)
@@ -183,6 +184,8 @@ public:
     VLifetime lifetime() const { return m_lifetime; }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
     bool isPure() override;
+    bool safeConversionLogicToBit() override;
+    bool getSafeConversion() const;
     const char* broken() const override;
     void propagateAttrFrom(const AstNodeFTask* fromp) {
         // Creating a wrapper with e.g. cloneType(); preserve some attributes

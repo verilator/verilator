@@ -979,6 +979,32 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
     return nodep;
 }
 
+bool AstLogAnd::safeConversionLogicToBit() {
+    if (!m_safeConversion.isCached()) m_safeConversion.set(getSafeConversion());
+    return m_safeConversion.isSafe();
+}
+bool AstLogAnd::getSafeConversion() {
+    if (!lhsp()->width1()) return false;
+    if (!rhsp()->width1()) return false;
+    if (!isPure()) return false;
+    if (!lhsp()->safeConversionLogicToBit()) return false;
+    if (!rhsp()->safeConversionLogicToBit()) return false;
+    return true;
+}
+
+bool AstLogOr::safeConversionLogicToBit() {
+    if (!m_safeConversion.isCached()) m_safeConversion.set(getSafeConversion());
+    return m_safeConversion.isSafe();
+}
+bool AstLogOr::getSafeConversion() {
+    if (!lhsp()->width1()) return false;
+    if (!rhsp()->width1()) return false;
+    if (!isPure()) return false;
+    if (!lhsp()->safeConversionLogicToBit()) return false;
+    if (!rhsp()->safeConversionLogicToBit()) return false;
+    return true;
+}
+
 const char* AstJumpBlock::broken() const {
     BROKEN_RTN(!labelp()->brokeExistsBelow());
     return nullptr;
@@ -2313,6 +2339,16 @@ void AstNodeFTask::dump(std::ostream& str) const {
 bool AstNodeFTask::isPure() {
     if (!m_purity.isCached()) m_purity.setPurity(getPurity());
     return m_purity.isPure();
+}
+bool AstNodeFTask::safeConversionLogicToBit() {
+    if (!m_safeConversion.isCached()) m_safeConversion.set(getSafeConversion());
+    return m_safeConversion.isSafe();
+}
+bool AstNodeFTask::getSafeConversion() const {
+    for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        if (!stmtp->safeConversionLogicToBit()) return false;
+    }
+    return true;
 }
 const char* AstNodeFTask::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
