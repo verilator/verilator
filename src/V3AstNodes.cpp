@@ -995,7 +995,7 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
 
 bool AstLogAnd::containsMemberAccess() {
     if (!m_containsMemberAccess.isCached()) m_containsMemberAccess.set(containsMemberAccessImpl());
-    return m_containsMemberAccess.isSafe();
+    return m_containsMemberAccess.get();
 }
 bool AstLogAnd::containsMemberAccessImpl() {
     if (lhsp()->containsMemberAccess()) return true;
@@ -1005,7 +1005,7 @@ bool AstLogAnd::containsMemberAccessImpl() {
 
 bool AstLogOr::containsMemberAccess() {
     if (!m_containsMemberAccess.isCached()) m_containsMemberAccess.set(containsMemberAccessImpl());
-    return m_containsMemberAccess.isSafe();
+    return m_containsMemberAccess.get();
 }
 bool AstLogOr::containsMemberAccessImpl() {
     if (lhsp()->containsMemberAccess()) return true;
@@ -2350,7 +2350,7 @@ bool AstNodeFTask::isPure() {
 }
 bool AstNodeFTask::containsMemberAccess() {
     if (!m_containsMemberAccess.isCached()) m_containsMemberAccess.set(containsMemberAccessImpl());
-    return m_containsMemberAccess.isSafe();
+    return m_containsMemberAccess.get();
 }
 bool AstNodeFTask::containsMemberAccessImpl() const {
     for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {

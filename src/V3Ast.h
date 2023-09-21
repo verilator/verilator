@@ -175,7 +175,7 @@ public:
     VContainsMemberAccess()
         : m_e{NOT_CACHED} {}
     bool isCached() const { return m_e != NOT_CACHED; }
-    bool isSafe() const { return m_e == YES; }
+    bool get() const { return m_e == YES; }
     void set(bool flag) { m_e = flag ? YES : NO; }
 };
 
