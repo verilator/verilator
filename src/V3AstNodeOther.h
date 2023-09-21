@@ -185,7 +185,6 @@ public:
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
     bool isPure() override;
     bool containsMemberAccess() override;
-    bool containsMemberAccessImpl() const;
     const char* broken() const override;
     void propagateAttrFrom(const AstNodeFTask* fromp) {
         // Creating a wrapper with e.g. cloneType(); preserve some attributes
@@ -199,6 +198,7 @@ public:
 
 private:
     bool getPurity() const;
+    bool containsMemberAccessImpl() const;
 };
 class AstNodeFile VL_NOT_FINAL : public AstNode {
     // Emitted Output file

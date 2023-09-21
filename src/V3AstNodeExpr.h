@@ -262,7 +262,6 @@ public:
     void pli(bool flag) { m_pli = flag; }
     bool isPure() override;
     bool containsMemberAccess() override;
-
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
@@ -2776,6 +2775,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool containsMemberAccess() override;
+private:
     bool containsMemberAccessImpl();
 };
 class AstLogIf final : public AstNodeBiop {
@@ -2825,6 +2825,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool containsMemberAccess() override;
+private:
     bool containsMemberAccessImpl();
 };
 class AstLt final : public AstNodeBiop {

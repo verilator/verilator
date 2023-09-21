@@ -101,7 +101,7 @@ bool AstNodeFTaskRef::containsMemberAccess() {
         if (pinp->containsMemberAccess()) return true;
     }
 
-    return taskp->containsMemberAccessImpl();
+    return taskp->containsMemberAccess();
 }
 
 bool AstNodeFTaskRef::isGateOptimizable() const { return m_taskp && m_taskp->isGateOptimizable(); }
