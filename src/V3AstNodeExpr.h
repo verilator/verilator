@@ -2775,6 +2775,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool containsMemberAccess() override;
+
 private:
     bool containsMemberAccessImpl();
 };
@@ -2825,6 +2826,7 @@ public:
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool containsMemberAccess() override;
+
 private:
     bool containsMemberAccessImpl();
 };
