@@ -312,10 +312,11 @@ private:
             nodep->lifetime(m_lifetime);
         }
 
-        if (nodep->isGParam() && !nodep->isAnsi()) { // shadow some parameters into localparams
+        if (nodep->isGParam() && !nodep->isAnsi()) {  // shadow some parameters into localparams
             if (m_hierarchyDepth > 0
-                || m_hierarchyDepth == 0 && (m_modp->hasParameterList()
-                        || VN_IS(m_modp, Class) || VN_IS(m_modp, Package))) {
+                || m_hierarchyDepth == 0
+                       && (m_modp->hasParameterList() || VN_IS(m_modp, Class)
+                           || VN_IS(m_modp, Package))) {
                 nodep->varType(VVarType::LPARAM);
             }
         }
