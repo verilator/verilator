@@ -96,7 +96,6 @@ public:
     bool m_pinAnsi = false;  // In ANSI parameter or port list
     bool m_tracingParse = true;  // Tracing disable for parser
     bool m_inImplements = false;  // Is inside class implements list
-    bool m_insideClass = false;  // Is inside a class body
     bool m_insideProperty = false;  // Is inside property declaration
     bool m_typedPropertyPort = false;  // Typed property port occurred on port lists
     bool m_modportImpExpActive
