@@ -167,12 +167,12 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 // ######################################################################
 
-class VSafeConversionLogicToBit final {
-    // Used in some nodes that cache the result of safeConversionLogicToBit method
+class VContainsMemberAccess final {
+    // Used in some nodes that cache the result of containsMemberAccess method
 public:
     enum en : uint8_t { NOT_CACHED, YES, NO };
     enum en m_e;
-    VSafeConversionLogicToBit()
+    VContainsMemberAccess()
         : m_e{NOT_CACHED} {}
     bool isCached() const { return m_e != NOT_CACHED; }
     bool isSafe() const { return m_e == YES; }
@@ -2067,7 +2067,7 @@ public:
     virtual bool isPredictOptimizable() const { return !isTimingControl(); }
     // Else a $display, etc, that must be ordered with other displays
     virtual bool isPure() { return true; }
-    virtual bool safeConversionLogicToBit();
+    virtual bool containsMemberAccess();
     // Else a AstTime etc that can't be substituted out
     virtual bool isSubstOptimizable() const { return true; }
     // An event control, delay, wait, etc.

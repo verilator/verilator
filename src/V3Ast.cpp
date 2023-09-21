@@ -1063,11 +1063,11 @@ AstNode* AstNode::iterateSubtreeReturnEdits(VNVisitor& v) {
 
 //======================================================================
 
-bool AstNode::safeConversionLogicToBit() {
-    if (m_op1p && !m_op1p->safeConversionLogicToBit()) return false;
-    if (m_op2p && !m_op2p->safeConversionLogicToBit()) return false;
-    if (m_op3p && !m_op3p->safeConversionLogicToBit()) return false;
-    if (m_op4p && !m_op4p->safeConversionLogicToBit()) return false;
+bool AstNode::containsMemberAccess() {
+    if (m_op1p && !m_op1p->containsMemberAccess()) return false;
+    if (m_op2p && !m_op2p->containsMemberAccess()) return false;
+    if (m_op3p && !m_op3p->containsMemberAccess()) return false;
+    if (m_op4p && !m_op4p->containsMemberAccess()) return false;
     return true;
 }
 

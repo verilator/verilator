@@ -229,7 +229,7 @@ class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeExpr {
     string m_inlinedDots;  // Dotted hierarchy flattened out
     bool m_pli = false;  // Pli system call ($name)
     VPurity m_purity;  // Pure state
-    VSafeConversionLogicToBit m_safeConversion;  // Cached result of safeConversionLogicToBit
+    VContainsMemberAccess m_containsMemberAccess;  // Cached result of containsMemberAccess
 
 protected:
     AstNodeFTaskRef(VNType t, FileLine* fl, AstNode* namep, AstNodeExpr* pinsp)
@@ -262,8 +262,8 @@ public:
     bool pli() const { return m_pli; }
     void pli(bool flag) { m_pli = flag; }
     bool isPure() override;
-    bool safeConversionLogicToBit() override;
-    bool getSafeConversion() const;
+    bool containsMemberAccess() override;
+    bool containsMemberAccessImpl() const;
 
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
@@ -1160,7 +1160,7 @@ class AstExprStmt final : public AstNodeExpr {
     // resultp is evaluated AFTER the statement(s).
     // @astgen op1 := stmtsp : List[AstNode]
     // @astgen op2 := resultp : AstNodeExpr
-    VSafeConversionLogicToBit m_safeConversion;  // Cached result of safeConversionLogicToBit
+    VContainsMemberAccess m_containsMemberAccess;  // Cached result of containsMemberAccess
 public:
     AstExprStmt(FileLine* fl, AstNode* stmtsp, AstNodeExpr* resultp)
         : ASTGEN_SUPER_ExprStmt(fl) {
@@ -1174,8 +1174,8 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     bool isPure() override { return false; }
-    bool safeConversionLogicToBit() override;
-    bool getSafeConversion() const;
+    bool containsMemberAccess() override;
+    bool containsMemberAccessImpl() const;
     bool same(const AstNode*) const override { return true; }
 };
 class AstFError final : public AstNodeExpr {
@@ -1529,7 +1529,7 @@ public:
     int instrCount() const override { return widthInstrs(); }
     AstVar* varp() const { return m_varp; }
     void varp(AstVar* nodep) { m_varp = nodep; }
-    bool safeConversionLogicToBit() override { return false; }
+    bool containsMemberAccess() override { return false; }
 };
 class AstNewCopy final : public AstNodeExpr {
     // New as shallow copy
@@ -2757,7 +2757,7 @@ public:
     bool signedFlavor() const override { return true; }
 };
 class AstLogAnd final : public AstNodeBiop {
-    VSafeConversionLogicToBit m_safeConversion;  // Cached result of safeConversionLogicToBit
+    VContainsMemberAccess m_containsMemberAccess;  // Cached result of containsMemberAccess
 public:
     AstLogAnd(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LogAnd(fl, lhsp, rhsp) {
@@ -2779,8 +2779,8 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
-    bool safeConversionLogicToBit() override;
-    bool getSafeConversion();
+    bool containsMemberAccess() override;
+    bool containsMemberAccessImpl();
 };
 class AstLogIf final : public AstNodeBiop {
 public:
@@ -2806,7 +2806,7 @@ public:
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstLogOr final : public AstNodeBiop {
-    VSafeConversionLogicToBit m_safeConversion;  // Cached result of safeConversionLogicToBit
+    VContainsMemberAccess m_containsMemberAccess;  // Cached result of containsMemberAccess
 public:
     AstLogOr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_LogOr(fl, lhsp, rhsp) {
@@ -2828,8 +2828,8 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
-    bool safeConversionLogicToBit() override;
-    bool getSafeConversion();
+    bool containsMemberAccess() override;
+    bool containsMemberAccessImpl();
 };
 class AstLt final : public AstNodeBiop {
 public:
@@ -4162,7 +4162,7 @@ public:
         BROKEN_RTN(!fromp());
         return nullptr;
     }
-    bool safeConversionLogicToBit() override { return false; }
+    bool containsMemberAccess() override { return false; }
 };
 class AstNew final : public AstNodeFTaskRef {
     // New as constructor

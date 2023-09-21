@@ -91,21 +91,21 @@ bool AstNodeFTaskRef::getPurity() const {
     return taskp->isPure();
 }
 
-bool AstNodeFTaskRef::safeConversionLogicToBit() {
-    if (!m_safeConversion.isCached()) m_safeConversion.set(getSafeConversion());
-    return m_safeConversion.isSafe();
+bool AstNodeFTaskRef::containsMemberAccess() {
+    if (!m_containsMemberAccess.isCached()) m_containsMemberAccess.set(containsMemberAccessImpl());
+    return m_containsMemberAccess.isSafe();
 }
-bool AstNodeFTaskRef::getSafeConversion() const {
+bool AstNodeFTaskRef::containsMemberAccessImpl() const {
     AstNodeFTask* const taskp = this->taskp();
     // Unlinked yet, so treat as unsafe
     if (!taskp) return false;
 
     // First compute the safety of arguments
     for (AstNode* pinp = this->pinsp(); pinp; pinp = pinp->nextp()) {
-        if (!pinp->safeConversionLogicToBit()) return false;
+        if (!pinp->containsMemberAccess()) return false;
     }
 
-    return taskp->getSafeConversion();
+    return taskp->containsMemberAccessImpl();
 }
 
 bool AstNodeFTaskRef::isGateOptimizable() const { return m_taskp && m_taskp->isGateOptimizable(); }
@@ -997,29 +997,29 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
     return nodep;
 }
 
-bool AstLogAnd::safeConversionLogicToBit() {
-    if (!m_safeConversion.isCached()) m_safeConversion.set(getSafeConversion());
-    return m_safeConversion.isSafe();
+bool AstLogAnd::containsMemberAccess() {
+    if (!m_containsMemberAccess.isCached()) m_containsMemberAccess.set(containsMemberAccessImpl());
+    return m_containsMemberAccess.isSafe();
 }
-bool AstLogAnd::getSafeConversion() {
+bool AstLogAnd::containsMemberAccessImpl() {
     if (!lhsp()->width1()) return false;
     if (!rhsp()->width1()) return false;
     if (!isPure()) return false;
-    if (!lhsp()->safeConversionLogicToBit()) return false;
-    if (!rhsp()->safeConversionLogicToBit()) return false;
+    if (!lhsp()->containsMemberAccess()) return false;
+    if (!rhsp()->containsMemberAccess()) return false;
     return true;
 }
 
-bool AstLogOr::safeConversionLogicToBit() {
-    if (!m_safeConversion.isCached()) m_safeConversion.set(getSafeConversion());
-    return m_safeConversion.isSafe();
+bool AstLogOr::containsMemberAccess() {
+    if (!m_containsMemberAccess.isCached()) m_containsMemberAccess.set(containsMemberAccessImpl());
+    return m_containsMemberAccess.isSafe();
 }
-bool AstLogOr::getSafeConversion() {
+bool AstLogOr::containsMemberAccessImpl() {
     if (!lhsp()->width1()) return false;
     if (!rhsp()->width1()) return false;
     if (!isPure()) return false;
-    if (!lhsp()->safeConversionLogicToBit()) return false;
-    if (!rhsp()->safeConversionLogicToBit()) return false;
+    if (!lhsp()->containsMemberAccess()) return false;
+    if (!rhsp()->containsMemberAccess()) return false;
     return true;
 }
 
@@ -2358,13 +2358,13 @@ bool AstNodeFTask::isPure() {
     if (!m_purity.isCached()) m_purity.setPurity(getPurity());
     return m_purity.isPure();
 }
-bool AstNodeFTask::safeConversionLogicToBit() {
-    if (!m_safeConversion.isCached()) m_safeConversion.set(getSafeConversion());
-    return m_safeConversion.isSafe();
+bool AstNodeFTask::containsMemberAccess() {
+    if (!m_containsMemberAccess.isCached()) m_containsMemberAccess.set(containsMemberAccessImpl());
+    return m_containsMemberAccess.isSafe();
 }
-bool AstNodeFTask::getSafeConversion() const {
+bool AstNodeFTask::containsMemberAccessImpl() const {
     for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-        if (!stmtp->safeConversionLogicToBit()) return false;
+        if (!stmtp->containsMemberAccess()) return false;
     }
     return true;
 }
@@ -2389,15 +2389,15 @@ bool AstNodeFTask::getPurity() const {
     }
     return true;
 }
-bool AstExprStmt::safeConversionLogicToBit() {
-    if (!m_safeConversion.isCached()) m_safeConversion.set(getSafeConversion());
-    return m_safeConversion.isSafe();
+bool AstExprStmt::containsMemberAccess() {
+    if (!m_containsMemberAccess.isCached()) m_containsMemberAccess.set(containsMemberAccessImpl());
+    return m_containsMemberAccess.isSafe();
 }
-bool AstExprStmt::getSafeConversion() const {
+bool AstExprStmt::containsMemberAccessImpl() const {
     for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-        if (!stmtp->safeConversionLogicToBit()) return false;
+        if (!stmtp->containsMemberAccess()) return false;
     }
-    if (!resultp()->safeConversionLogicToBit()) return false;
+    if (!resultp()->containsMemberAccess()) return false;
     return true;
 }
 void AstNodeBlock::dump(std::ostream& str) const {

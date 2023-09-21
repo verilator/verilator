@@ -3585,8 +3585,8 @@ private:
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
-    TREEOPV("AstLogAnd{nodep->safeConversionLogicToBit()}", "AstAnd{$lhsp,$rhsp}");
-    TREEOPV("AstLogOr {nodep->safeConversionLogicToBit()}", "AstOr{$lhsp,$rhsp}");
+    TREEOPV("AstLogAnd{nodep->containsMemberAccess()}", "AstAnd{$lhsp,$rhsp}");
+    TREEOPV("AstLogOr {nodep->containsMemberAccess()}", "AstOr{$lhsp,$rhsp}");
     TREEOPV("AstLogNot{$lhsp.width1}",  "AstNot{$lhsp}");
     // CONCAT(CONCAT({a},{b}),{c}) -> CONCAT({a},CONCAT({b},{c}))
     // CONCAT({const},CONCAT({const},{c})) -> CONCAT((constifiedCONC{const|const},{c}))
