@@ -129,7 +129,7 @@ public:
     string cType(const string& name, bool forFunc, bool isRef) const;
     // Represents a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_STABLE;
-    bool containsMemberAccess() override { return true; }
+    bool containsMemberAccess() override { return false; }
 
 private:
     class CTypeRecursed;

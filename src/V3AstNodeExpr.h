@@ -1529,7 +1529,7 @@ public:
     int instrCount() const override { return widthInstrs(); }
     AstVar* varp() const { return m_varp; }
     void varp(AstVar* nodep) { m_varp = nodep; }
-    bool containsMemberAccess() override { return false; }
+    bool containsMemberAccess() override { return true; }
 };
 class AstNewCopy final : public AstNodeExpr {
     // New as shallow copy
@@ -4162,7 +4162,7 @@ public:
         BROKEN_RTN(!fromp());
         return nullptr;
     }
-    bool containsMemberAccess() override { return false; }
+    bool containsMemberAccess() override { return true; }
 };
 class AstNew final : public AstNodeFTaskRef {
     // New as constructor

@@ -2327,6 +2327,14 @@ private:
         iterate(nodep);  // Again?
     }
 
+    bool mayConvertToBitwise(AstNodeBiop* const nodep) {
+        if (!nodep->lhsp()->width1()) return false;
+        if (!nodep->rhsp()->width1()) return false;
+        if (!nodep->isPure()) return false;
+        if (nodep->containsMemberAccess()) return false;
+        return true;
+    }
+
     bool matchConcatRand(AstConcat* nodep) {
         //    CONCAT(RAND, RAND) - created by Chisel code
         AstRand* const aRandp = VN_CAST(nodep->lhsp(), Rand);
@@ -3585,8 +3593,8 @@ private:
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
-    TREEOPV("AstLogAnd{nodep->containsMemberAccess()}", "AstAnd{$lhsp,$rhsp}");
-    TREEOPV("AstLogOr {nodep->containsMemberAccess()}", "AstOr{$lhsp,$rhsp}");
+    TREEOPV("AstLogAnd{mayConvertToBitwise(nodep)}", "AstAnd{$lhsp,$rhsp}");
+    TREEOPV("AstLogOr {mayConvertToBitwise(nodep)}", "AstOr{$lhsp,$rhsp}");
     TREEOPV("AstLogNot{$lhsp.width1}",  "AstNot{$lhsp}");
     // CONCAT(CONCAT({a},{b}),{c}) -> CONCAT({a},CONCAT({b},{c}))
     // CONCAT({const},CONCAT({const},{c})) -> CONCAT((constifiedCONC{const|const},{c}))

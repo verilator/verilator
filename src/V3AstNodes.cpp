@@ -97,12 +97,12 @@ bool AstNodeFTaskRef::containsMemberAccess() {
 }
 bool AstNodeFTaskRef::containsMemberAccessImpl() const {
     AstNodeFTask* const taskp = this->taskp();
-    // Unlinked yet, so treat as unsafe
-    if (!taskp) return false;
+    // Unlinked yet, so assume that it contains
+    if (!taskp) return true;
 
     // First compute the safety of arguments
     for (AstNode* pinp = this->pinsp(); pinp; pinp = pinp->nextp()) {
-        if (!pinp->containsMemberAccess()) return false;
+        if (pinp->containsMemberAccess()) return true;
     }
 
     return taskp->containsMemberAccessImpl();
@@ -1002,12 +1002,9 @@ bool AstLogAnd::containsMemberAccess() {
     return m_containsMemberAccess.isSafe();
 }
 bool AstLogAnd::containsMemberAccessImpl() {
-    if (!lhsp()->width1()) return false;
-    if (!rhsp()->width1()) return false;
-    if (!isPure()) return false;
-    if (!lhsp()->containsMemberAccess()) return false;
-    if (!rhsp()->containsMemberAccess()) return false;
-    return true;
+    if (lhsp()->containsMemberAccess()) return true;
+    if (rhsp()->containsMemberAccess()) return true;
+    return false;
 }
 
 bool AstLogOr::containsMemberAccess() {
@@ -1015,12 +1012,9 @@ bool AstLogOr::containsMemberAccess() {
     return m_containsMemberAccess.isSafe();
 }
 bool AstLogOr::containsMemberAccessImpl() {
-    if (!lhsp()->width1()) return false;
-    if (!rhsp()->width1()) return false;
-    if (!isPure()) return false;
-    if (!lhsp()->containsMemberAccess()) return false;
-    if (!rhsp()->containsMemberAccess()) return false;
-    return true;
+    if (lhsp()->containsMemberAccess()) return true;
+    if (rhsp()->containsMemberAccess()) return true;
+    return false;
 }
 
 const char* AstJumpBlock::broken() const {
@@ -2364,9 +2358,9 @@ bool AstNodeFTask::containsMemberAccess() {
 }
 bool AstNodeFTask::containsMemberAccessImpl() const {
     for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-        if (!stmtp->containsMemberAccess()) return false;
+        if (stmtp->containsMemberAccess()) return true;
     }
-    return true;
+    return false;
 }
 const char* AstNodeFTask::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
@@ -2395,10 +2389,10 @@ bool AstExprStmt::containsMemberAccess() {
 }
 bool AstExprStmt::containsMemberAccessImpl() const {
     for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-        if (!stmtp->containsMemberAccess()) return false;
+        if (stmtp->containsMemberAccess()) return true;
     }
-    if (!resultp()->containsMemberAccess()) return false;
-    return true;
+    if (resultp()->containsMemberAccess()) return true;
+    return false;
 }
 void AstNodeBlock::dump(std::ostream& str) const {
     this->AstNode::dump(str);
