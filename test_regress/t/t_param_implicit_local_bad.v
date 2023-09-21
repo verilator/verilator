@@ -6,6 +6,14 @@
 
 
 module t;
+    class NestedCls #(
+        parameter A = 0
+    );
+        parameter B = 0;
+    endclass
+
+    NestedCls #(1, 2) cls;
+
     mod1  # ( 3, 4, 5 )   i_mod1 ();
     mod2  # ( 5, 12, 13 ) i_mod2 ();
     mod3  # ( 7, 24, 25 ) i_mod3 ();
