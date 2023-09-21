@@ -92,10 +92,6 @@ bool AstNodeFTaskRef::getPurity() const {
 }
 
 bool AstNodeFTaskRef::containsMemberAccess() {
-    if (!m_containsMemberAccess.isCached()) m_containsMemberAccess.set(containsMemberAccessImpl());
-    return m_containsMemberAccess.isSafe();
-}
-bool AstNodeFTaskRef::containsMemberAccessImpl() const {
     AstNodeFTask* const taskp = this->taskp();
     // Unlinked yet, so assume that it contains
     if (!taskp) return true;
@@ -2384,10 +2380,6 @@ bool AstNodeFTask::getPurity() const {
     return true;
 }
 bool AstExprStmt::containsMemberAccess() {
-    if (!m_containsMemberAccess.isCached()) m_containsMemberAccess.set(containsMemberAccessImpl());
-    return m_containsMemberAccess.isSafe();
-}
-bool AstExprStmt::containsMemberAccessImpl() const {
     for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
         if (stmtp->containsMemberAccess()) return true;
     }

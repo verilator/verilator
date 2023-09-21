@@ -229,7 +229,6 @@ class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeExpr {
     string m_inlinedDots;  // Dotted hierarchy flattened out
     bool m_pli = false;  // Pli system call ($name)
     VPurity m_purity;  // Pure state
-    VContainsMemberAccess m_containsMemberAccess;  // Cached result of containsMemberAccess
 
 protected:
     AstNodeFTaskRef(VNType t, FileLine* fl, AstNode* namep, AstNodeExpr* pinsp)
@@ -263,7 +262,6 @@ public:
     void pli(bool flag) { m_pli = flag; }
     bool isPure() override;
     bool containsMemberAccess() override;
-    bool containsMemberAccessImpl() const;
 
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
@@ -1160,7 +1158,6 @@ class AstExprStmt final : public AstNodeExpr {
     // resultp is evaluated AFTER the statement(s).
     // @astgen op1 := stmtsp : List[AstNode]
     // @astgen op2 := resultp : AstNodeExpr
-    VContainsMemberAccess m_containsMemberAccess;  // Cached result of containsMemberAccess
 public:
     AstExprStmt(FileLine* fl, AstNode* stmtsp, AstNodeExpr* resultp)
         : ASTGEN_SUPER_ExprStmt(fl) {
@@ -1175,7 +1172,6 @@ public:
     bool cleanOut() const override { return true; }
     bool isPure() override { return false; }
     bool containsMemberAccess() override;
-    bool containsMemberAccessImpl() const;
     bool same(const AstNode*) const override { return true; }
 };
 class AstFError final : public AstNodeExpr {
