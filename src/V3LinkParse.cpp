@@ -319,9 +319,8 @@ private:
                 nodep->varType(VVarType::LPARAM);
             }
         }
-        if (nodep->isGParam() && m_modp) {
-            m_modp->hasGParam(true);
-        }
+        if (nodep->isGParam() && m_modp) m_modp->hasGParam(true);
+
         if (nodep->isParam() && !nodep->valuep()
             && nodep->fileline()->language() < V3LangCode::L1800_2009) {
             nodep->v3warn(NEWERSTD,
