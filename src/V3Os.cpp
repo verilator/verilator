@@ -153,13 +153,17 @@ string V3Os::filenameCleanup(const string& filename) VL_PURE {
     return str;
 }
 
-string V3Os::filenameFromDirBase(const string& dir, const string& basename) VL_PURE {
-    // Don't return ./{filename} because if filename was absolute, that makes it relative
-    if (dir.empty() || dir == ".") {
-        return basename;
-    } else {
-        return dir + s_slash + basename;
+string V3Os::filenameJoin(std::initializer_list<const std::string> paths) VL_PURE {
+    string fullpath;
+    for (const auto& item : paths) {
+        if (item.empty() || item == ".") {
+            continue;
+        } else {
+            if (!fullpath.empty()) fullpath += s_slash;
+            fullpath += item;
+        }
     }
+    return fullpath;
 }
 
 string V3Os::filenameDir(const string& filename) VL_PURE {

@@ -293,12 +293,7 @@ FileLine* FileLine::copyOrSameFileLine() {
 
 string FileLine::filebasename() const VL_MT_SAFE { return V3Os::filenameNonDir(filename()); }
 
-string FileLine::filebasenameNoExt() const {
-    string name = filebasename();
-    string::size_type pos;
-    if ((pos = name.find('.')) != string::npos) name = name.substr(0, pos);
-    return name;
-}
+string FileLine::filebasenameNoExt() const { return V3Os::filenameNonDirExt(filename()); }
 
 string FileLine::firstColumnLetters() const VL_MT_SAFE {
     const char a = ((firstColumn() / 26) % 26) + 'a';

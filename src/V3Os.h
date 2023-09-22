@@ -36,8 +36,12 @@ public:
 
     // METHODS (generic filename utilities)
     ///< @return concatenated path
-    static string filenameFromDirBase(const string& dir, const string& basename) VL_PURE;
-    ///< @return file path without repeated separator and ./ prefix
+    static string filenameJoin(std::initializer_list<const std::string> paths) VL_PURE;
+    template<typename ...Args>
+    static string filenameJoin(Args ...args) VL_PURE {
+        return filenameJoin({args...});
+    };
+    ///< @return file path without repeated separators and ./ prefix
     static string filenameCleanup(const string& filename) VL_PURE;
     ///< @return non-directory part of filename
     static string filenameNonDir(const string& filename) VL_PURE;
@@ -51,7 +55,7 @@ public:
     static string filenameSubstitute(const string& filename);
     ///< @return realpath of filename
     static string filenameRealPath(const string& filename) VL_PURE;
-    ///< True if filename is relative
+    ///< @return filename is relative
     static bool filenameIsRel(const string& filename) VL_PURE;
 
     // METHODS (file utilities)

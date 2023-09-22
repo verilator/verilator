@@ -510,14 +510,14 @@ string V3Options::fileExists(const string& filename) {
         return "";  // Not found
     }
     // Check if it is a directory, ignore if so
-    string filenameOut = V3Os::filenameFromDirBase(dir, basename);
+    string filenameOut = V3Os::filenameJoin(dir, basename);
     if (!fileStatNormal(filenameOut)) return "";  // Directory
     return filenameOut;
 }
 
 string V3Options::filePathCheckOneDir(const string& modname, const string& dirname) {
     for (const string& i : m_impp->m_libExtVs) {
-        const string fn = V3Os::filenameFromDirBase(dirname, modname + i);
+        const string fn = V3Os::filenameJoin(dirname, modname + i);
         string exists = fileExists(fn);
         if (exists != "") return exists;
     }
@@ -591,13 +591,13 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
         std::cerr << V3Error::warnMoreStandalone() << "... Looked in:" << endl;
         for (const string& dir : m_impp->m_incDirUsers) {
             for (const string& ext : m_impp->m_libExtVs) {
-                const string fn = V3Os::filenameFromDirBase(dir, modname + ext);
+                const string fn = V3Os::filenameJoin(dir, modname + ext);
                 std::cerr << V3Error::warnMoreStandalone() << "     " << fn << endl;
             }
         }
         for (const string& dir : m_impp->m_incDirFallbacks) {
             for (const string& ext : m_impp->m_libExtVs) {
-                const string fn = V3Os::filenameFromDirBase(dir, modname + ext);
+                const string fn = V3Os::filenameJoin(dir, modname + ext);
                 std::cerr << V3Error::warnMoreStandalone() << "     " << fn << endl;
             }
         }
@@ -753,7 +753,7 @@ string V3Options::getenvVERILATOR_ROOT() {
 }
 
 string V3Options::getStdPackagePath() {
-    return V3Os::filenameFromDirBase(getenvVERILATOR_ROOT(), "include/verilated_std.sv");
+    return V3Os::filenameJoin(getenvVERILATOR_ROOT(), "include", "verilated_std.sv");
 }
 
 string V3Options::getSupported(const string& var) {
@@ -1887,7 +1887,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
 string V3Options::parseFileArg(const string& optdir, const string& relfilename) {
     string filename = V3Os::filenameSubstitute(relfilename);
     if (optdir != "." && V3Os::filenameIsRel(filename))
-        filename = V3Os::filenameFromDirBase(optdir, filename);
+        filename = V3Os::filenameJoin(optdir, filename);
     return filename;
 }
 
