@@ -722,6 +722,7 @@ public:
                && finalsp() == nullptr;
     }
     bool containsMemberAccess() override;
+
 private:
     bool containsMemberAccessImpl() const;
 };
