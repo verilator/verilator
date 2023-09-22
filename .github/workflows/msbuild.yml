@@ -22,14 +22,15 @@ defaults:
   run:
     working-directory: repo
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
 
    windows:
     name: run on windows
     runs-on: windows-latest
-    concurrency:
-      group: windows-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
-      cancel-in-progress: true
     steps:
     - uses: actions/checkout@v3
       with:
