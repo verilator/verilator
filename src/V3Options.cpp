@@ -519,9 +519,7 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
     for (const string& i : m_impp->m_libExtVs) {
         const string fn = V3Os::filenameFromDirBase(dirname, modname + i);
         string exists = fileExists(fn);
-        if (exists != "") {
-            return exists;
-        }
+        if (exists != "") { return exists; }
     }
     return "";
 }
@@ -1888,7 +1886,8 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
 
 string V3Options::parseFileArg(const string& optdir, const string& relfilename) {
     string filename = V3Os::filenameSubstitute(relfilename);
-    if (optdir != "." && V3Os::filenameIsRel(filename)) filename = V3Os::filenameFromDirBase(optdir, filename);
+    if (optdir != "." && V3Os::filenameIsRel(filename))
+        filename = V3Os::filenameFromDirBase(optdir, filename);
     return filename;
 }
 
