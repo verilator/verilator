@@ -37,8 +37,8 @@ public:
     // METHODS (generic filename utilities)
     ///< @return concatenated path
     static string filenameJoin(std::initializer_list<const std::string> paths) VL_PURE;
-    template<typename ...Args>
-    static string filenameJoin(Args ...args) VL_PURE {
+    template <typename... Args>
+    static string filenameJoin(Args... args) VL_PURE {
         return filenameJoin({args...});
     };
     ///< @return file path without repeated separators and ./ prefix
