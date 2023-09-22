@@ -626,6 +626,7 @@ static void verilate(const string& argString) {
     // and after removing files as may make debug output)
     VBasicDTypeKwd::selfTest();
     if (v3Global.opt.debugSelfTest()) {
+        V3Os::selfTest();
         VHashSha256::selfTest();
         VSpellCheck::selfTest();
         V3Graph::selfTest();

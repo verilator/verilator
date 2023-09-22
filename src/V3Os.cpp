@@ -124,14 +124,44 @@ void V3Os::setenvStr(const string& envvar, const string& value, const string& wh
 //######################################################################
 // Generic filename utilities
 
-static bool isSlash(char ch) VL_PURE { return ch == '/' || ch == '\\'; }
+#if defined(_WIN32) || defined(__MINGW32__)
+static const char s_slash = '\\';
+#else
+static const char s_slash = '/';
+#endif
+
+static bool isSlash(char ch) VL_PURE {
+#if defined(_WIN32) || defined(__MINGW32__)
+    return ch == '/' || ch == '\\';
+#else
+    return ch == '/';
+#endif
+}
+
+string V3Os::filenameCleanup(const string& filename) VL_PURE {
+    if (filename.size() <= 1) return filename;
+    size_t offset = 0;
+    string str;
+    str.reserve(filename.length());
+    bool lastIsSlash = false;
+    for (; offset < filename.length(); offset++) {
+        const char ch = filename[offset];
+        const bool lastIsSlashOld = lastIsSlash;
+        lastIsSlash = isSlash(ch);
+        if (lastIsSlash && lastIsSlashOld) continue;
+        str += ch;
+    }
+    if (str.size() > 1 && isSlash(str.back())) str.pop_back();
+    while (str.size() > 2 && str[0] == '.' && isSlash(str[1])) str.erase(0, 2);
+    return str;
+}
 
 string V3Os::filenameFromDirBase(const string& dir, const string& basename) VL_PURE {
     // Don't return ./{filename} because if filename was absolute, that makes it relative
     if (dir.empty() || dir == ".") {
         return basename;
     } else {
-        return dir + "/" + basename;
+        return dir + s_slash + basename;
     }
 }
 
@@ -144,7 +174,7 @@ string V3Os::filenameDir(const string& filename) VL_PURE {
     if (it.base() == filename.begin()) {
         return ".";
     } else {
-        return {filename.begin(), (++it).base()};
+        return string{filename.begin(), (++it).base()};
     }
 }
 
@@ -162,6 +192,10 @@ string V3Os::filenameNonExt(const string& filename) VL_PURE {
     string::size_type pos;
     if ((pos = base.find('.')) != string::npos) base.erase(pos);
     return base;
+}
+
+string V3Os::filenameNonDirExt(const string& filename) VL_PURE {
+    return filenameNonExt(filenameNonDir(filename));
 }
 
 string V3Os::filenameSubstitute(const string& filename) {
@@ -391,4 +425,28 @@ int V3Os::system(const string& command) {
         UASSERT(exit_code >= 0, "exit code must not be negative");
         return exit_code;
     }
+}
+
+void V3Os::selfTest() {
+#ifdef VL_DEBUG
+    UASSERT_SELFTEST(string, filenameCleanup(""), "");
+    UASSERT_SELFTEST(string, filenameCleanup("."), ".");
+    UASSERT_SELFTEST(string, filenameCleanup(".."), "..");
+    UASSERT_SELFTEST(string, filenameCleanup("/"), "/");
+    UASSERT_SELFTEST(string, filenameCleanup("../"), "..");
+    UASSERT_SELFTEST(string, filenameCleanup("//"), "/");
+    UASSERT_SELFTEST(string, filenameCleanup("//."), "/.");
+    UASSERT_SELFTEST(string, filenameCleanup("./"), ".");
+    UASSERT_SELFTEST(string, filenameCleanup("././"), ".");
+    UASSERT_SELFTEST(string, filenameCleanup(".///"), ".");
+    UASSERT_SELFTEST(string, filenameCleanup("a"), "a");
+    UASSERT_SELFTEST(string, filenameCleanup("a/"), "a");
+    UASSERT_SELFTEST(string, filenameCleanup("a/b"), "a/b");
+    UASSERT_SELFTEST(string, filenameCleanup("././//./a/b"), "a/b");
+    UASSERT_SELFTEST(string, filenameCleanup("a///"), "a");
+    UASSERT_SELFTEST(string, filenameCleanup("///a/./b///."), "/a/./b/.");
+    UASSERT_SELFTEST(string, filenameCleanup("aaa/bbb/ccc/"), "aaa/bbb/ccc");
+    UASSERT_SELFTEST(string, filenameCleanup("./aaa/bbb/ccc/"), "aaa/bbb/ccc");
+    UASSERT_SELFTEST(string, filenameCleanup("../aaa/bbb/ccc/"), "../aaa/bbb/ccc");
+#endif
 }

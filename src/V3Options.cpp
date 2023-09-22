@@ -81,19 +81,21 @@ public:
 
     // ACCESSOR METHODS
     void addIncDirUser(const string& incdir) {
-        const auto itFoundPair = m_incDirUserSet.insert(incdir);
+        const string& dir = V3Os::filenameCleanup(incdir);
+        const auto itFoundPair = m_incDirUserSet.insert(dir);
         if (itFoundPair.second) {
             // cppcheck-suppress stlFindInsert  // cppcheck 1.90 bug
-            m_incDirUsers.push_back(incdir);
-            m_incDirFallbacks.remove(incdir);  // User has priority over Fallback
-            m_incDirFallbackSet.erase(incdir);  // User has priority over Fallback
+            m_incDirUsers.push_back(dir);
+            m_incDirFallbacks.remove(dir);  // User has priority over Fallback
+            m_incDirFallbackSet.erase(dir);  // User has priority over Fallback
         }
     }
     void addIncDirFallback(const string& incdir) {
-        if (m_incDirUserSet.find(incdir)
+        const string& dir = V3Os::filenameCleanup(incdir);
+        if (m_incDirUserSet.find(dir)
             == m_incDirUserSet.end()) {  // User has priority over Fallback
-            const auto itFoundPair = m_incDirFallbackSet.insert(incdir);
-            if (itFoundPair.second) m_incDirFallbacks.push_back(incdir);
+            const auto itFoundPair = m_incDirFallbackSet.insert(dir);
+            if (itFoundPair.second) m_incDirFallbacks.push_back(dir);
         }
     }
     void addLangExt(const string& langext, const V3LangCode& lc) {
@@ -518,8 +520,6 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
         const string fn = V3Os::filenameFromDirBase(dirname, modname + i);
         string exists = fileExists(fn);
         if (exists != "") {
-            // Strip ./, it just looks ugly
-            if (exists.substr(0, 2) == "./") exists.erase(0, 2);
             return exists;
         }
     }
@@ -548,29 +548,30 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
-    if (!V3Os::filenameIsRel(modname)) {
-        // modname is an absolute path, so can find getStdPackagePath()
-        string exists = filePathCheckOneDir(modname, "");
+    const string modnameNew = V3Os::filenameCleanup(modname);
+    if (!V3Os::filenameIsRel(modnameNew)) {
+        // modnameNew is an absolute path, so can find getStdPackagePath()
+        string exists = filePathCheckOneDir(modnameNew, "");
         if (exists != "") return exists;
     }
     for (const string& dir : m_impp->m_incDirUsers) {
-        string exists = filePathCheckOneDir(modname, dir);
+        string exists = filePathCheckOneDir(modnameNew, dir);
         if (exists != "") return exists;
     }
     for (const string& dir : m_impp->m_incDirFallbacks) {
-        string exists = filePathCheckOneDir(modname, dir);
+        string exists = filePathCheckOneDir(modnameNew, dir);
         if (exists != "") return exists;
     }
 
     if (m_relativeIncludes) {
-        const string exists = filePathCheckOneDir(modname, lastpath);
+        const string exists = filePathCheckOneDir(modnameNew, lastpath);
         if (exists != "") return V3Os::filenameRealPath(exists);
     }
 
     // Warn and return not found
     if (errmsg != "") {
-        fl->v3error(errmsg + modname);
-        filePathLookedMsg(fl, modname);
+        fl->v3error(errmsg + modnameNew);
+        filePathLookedMsg(fl, modnameNew);
     }
     return "";
 }
@@ -1887,7 +1888,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
 
 string V3Options::parseFileArg(const string& optdir, const string& relfilename) {
     string filename = V3Os::filenameSubstitute(relfilename);
-    if (optdir != "." && V3Os::filenameIsRel(filename)) filename = optdir + "/" + filename;
+    if (optdir != "." && V3Os::filenameIsRel(filename)) filename = V3Os::filenameFromDirBase(optdir, filename);
     return filename;
 }
 
