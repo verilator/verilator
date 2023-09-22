@@ -139,13 +139,10 @@ static bool isSlash(char ch) VL_PURE {
 }
 
 string V3Os::filenameCleanup(const string& filename) VL_PURE {
-    if (filename.size() <= 1) return filename;
-    size_t offset = 0;
     string str;
     str.reserve(filename.length());
     bool lastIsSlash = false;
-    for (; offset < filename.length(); offset++) {
-        const char ch = filename[offset];
+    for (const char ch : filename) {
         const bool lastIsSlashOld = lastIsSlash;
         lastIsSlash = isSlash(ch);
         if (lastIsSlash && lastIsSlashOld) continue;

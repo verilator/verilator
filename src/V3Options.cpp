@@ -519,7 +519,7 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
     for (const string& i : m_impp->m_libExtVs) {
         const string fn = V3Os::filenameFromDirBase(dirname, modname + i);
         string exists = fileExists(fn);
-        if (exists != "") { return exists; }
+        if (exists != "") return exists;
     }
     return "";
 }
@@ -546,30 +546,30 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
-    const string modnameNew = V3Os::filenameCleanup(modname);
-    if (!V3Os::filenameIsRel(modnameNew)) {
-        // modnameNew is an absolute path, so can find getStdPackagePath()
-        string exists = filePathCheckOneDir(modnameNew, "");
+    const string filename = V3Os::filenameCleanup(modname);
+    if (!V3Os::filenameIsRel(filename)) {
+        // filename is an absolute path, so can find getStdPackagePath()
+        string exists = filePathCheckOneDir(filename, "");
         if (exists != "") return exists;
     }
     for (const string& dir : m_impp->m_incDirUsers) {
-        string exists = filePathCheckOneDir(modnameNew, dir);
+        string exists = filePathCheckOneDir(filename, dir);
         if (exists != "") return exists;
     }
     for (const string& dir : m_impp->m_incDirFallbacks) {
-        string exists = filePathCheckOneDir(modnameNew, dir);
+        string exists = filePathCheckOneDir(filename, dir);
         if (exists != "") return exists;
     }
 
     if (m_relativeIncludes) {
-        const string exists = filePathCheckOneDir(modnameNew, lastpath);
+        const string exists = filePathCheckOneDir(filename, lastpath);
         if (exists != "") return V3Os::filenameRealPath(exists);
     }
 
     // Warn and return not found
     if (errmsg != "") {
-        fl->v3error(errmsg + modnameNew);
-        filePathLookedMsg(fl, modnameNew);
+        fl->v3error(errmsg + filename);
+        filePathLookedMsg(fl, filename);
     }
     return "";
 }
