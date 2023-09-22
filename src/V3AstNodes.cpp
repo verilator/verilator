@@ -159,6 +159,16 @@ const char* AstNodeCCall::broken() const {
     return nullptr;
 }
 bool AstNodeCCall::isPure() { return funcp()->dpiPure(); }
+bool AstNodeCCall::containsMemberAccess() {
+    AstCFunc* const funcp = this->funcp();
+    UASSERT_OBJ(funcp, this, "Unlinked function call");
+
+    // First compute the safety of arguments
+    for (AstNodeExpr* argp = this->argsp(); argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+        if (argp->containsMemberAccess()) return true;
+    }
+    return funcp->containsMemberAccess();
+}
 bool AstNodeUniop::isPure() {
     if (!m_purity.isCached()) m_purity.setPurity(lhsp()->isPure());
     return m_purity.isPure();
@@ -2576,10 +2586,28 @@ void AstCMethodHard::setPurity() {
 }
 const char* AstCFunc::broken() const {
     BROKEN_RTN((m_scopep && !m_scopep->brokeExists()));
+    BROKEN_RTN(m_containsMemberAccess.isCached()
+               && m_containsMemberAccess.get() != containsMemberAccessImpl());
     return nullptr;
 }
 void AstCFunc::cloneRelink() {
     if (m_scopep && m_scopep->clonep()) m_scopep = m_scopep->clonep();
+}
+bool AstCFunc::containsMemberAccess() {
+    if (!m_containsMemberAccess.isCached()) m_containsMemberAccess.set(containsMemberAccessImpl());
+    return m_containsMemberAccess.get();
+}
+bool AstCFunc::containsMemberAccessImpl() const {
+    for (AstNode* stmtp = initsp(); stmtp; stmtp = stmtp->nextp()) {
+        if (stmtp->containsMemberAccess()) return true;
+    }
+    for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        if (stmtp->containsMemberAccess()) return true;
+    }
+    for (AstNode* stmtp = finalsp(); stmtp; stmtp = stmtp->nextp()) {
+        if (stmtp->containsMemberAccess()) return true;
+    }
+    return false;
 }
 
 void AstCUse::dump(std::ostream& str) const {

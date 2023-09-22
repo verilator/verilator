@@ -608,6 +608,7 @@ private:
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
     bool m_dpiTraceInit : 1;  // DPI trace_init
     bool m_needProcess : 1;  // Implements part of a process that allocates std::process
+    VContainsMemberAccess m_containsMemberAccess;  // Cached result of containsMemberAccess
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
@@ -720,6 +721,9 @@ public:
         return argsp() == nullptr && initsp() == nullptr && stmtsp() == nullptr
                && finalsp() == nullptr;
     }
+    bool containsMemberAccess() override;
+private:
+    bool containsMemberAccessImpl() const;
 };
 class AstCLocalScope final : public AstNode {
     // Pack statements into an unnamed scope when generating C++
