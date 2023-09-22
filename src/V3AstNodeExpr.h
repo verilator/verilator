@@ -4122,6 +4122,7 @@ public:
         BROKEN_RTN(!fromp());
         return nullptr;
     }
+    bool containsMemberAccess() override { return true; }
 };
 class AstCNew final : public AstNodeCCall {
     // C++ new() call
