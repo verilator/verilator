@@ -749,11 +749,11 @@ string V3Options::getenvVERILATOR_ROOT() {
         V3Os::setenvStr("VERILATOR_ROOT", var, "Hardcoded at build time");
     }
     if (var == "") v3fatal("$VERILATOR_ROOT needs to be in environment\n");
-    return var;
+    return V3Os::filenameCleanup(var);
 }
 
 string V3Options::getStdPackagePath() {
-    return getenvVERILATOR_ROOT() + "/include/verilated_std.sv";
+    return V3Os::filenameFromDirBase(getenvVERILATOR_ROOT(), "include/verilated_std.sv");
 }
 
 string V3Options::getSupported(const string& var) {
