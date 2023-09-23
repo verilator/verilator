@@ -131,6 +131,7 @@ string VString::escapeStringForPath(const string& str) {
     return result;
 }
 
+#ifndef VL_COVERAGE
 static int vl_decodexdigit(char c) {
     return std::isdigit(c) ? c - '0' : std::tolower(c) - 'a' + 10;
 }
@@ -193,6 +194,7 @@ string VString::unquoteSVString(FileLine* fileline, string text) {
     }
     return newtext;
 }
+#endif
 
 string VString::spaceUnprintable(const string& str) VL_PURE {
     string result;

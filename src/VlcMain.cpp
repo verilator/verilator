@@ -14,6 +14,8 @@
 //
 //*************************************************************************
 
+#define VL_COVERAGE
+
 // clang-format off
 #include "config_build.h"
 #ifndef HAVE_CONFIG_PACKAGE
