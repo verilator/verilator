@@ -756,7 +756,7 @@ int main(int argc, char** argv) {
     V3PreShell::boot();
 
     // Command option parsing
-    v3Global.opt.buildDepBin(VString::escapeStringForPath(argv[0]));
+    v3Global.opt.buildDepBin(V3Os::filenameCleanup(VString::escapeStringForPath(argv[0])));
     const string argString = V3Options::argString(argc - 1, argv + 1);
     v3Global.opt.parseOpts(new FileLine{FileLine::commandLineFilename()}, argc - 1, argv + 1);
 
