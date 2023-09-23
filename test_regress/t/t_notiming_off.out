@@ -1,29 +1,29 @@
 %Error-NOTIMING: t/t_timing_off.v:25:8: Event control statement in this location requires --timing
-                                      : ... In instance t
+                                      : ... note: In instance 't'
                                       : ... With --no-timing, suggest have one event control statement per procedure, at the top of the procedure
    25 |        @e1;
       |        ^
                  ... For error description see https://verilator.org/warn/NOTIMING?v=latest
 %Warning-STMTDLY: t/t_timing_off.v:33:12: Ignoring delay on this statement due to --no-timing
-                                        : ... In instance t
+                                        : ... note: In instance 't'
    33 |    initial #2 ->e1;
       |            ^
                   ... Use "/* verilator lint_off STMTDLY */" and lint_on around source to disable this message.
 %Warning-STMTDLY: t/t_timing_off.v:37:12: Ignoring delay on this statement due to --no-timing
-                                        : ... In instance t
+                                        : ... note: In instance 't'
    37 |    initial #3 $stop;  
       |            ^
 %Warning-STMTDLY: t/t_timing_off.v:38:12: Ignoring delay on this statement due to --no-timing
-                                        : ... In instance t
+                                        : ... note: In instance 't'
    38 |    initial #1 @(e1, e2) #1 $stop;  
       |            ^
 %Error-NOTIMING: t/t_timing_off.v:38:15: Event control statement in this location requires --timing
-                                       : ... In instance t
+                                       : ... note: In instance 't'
                                        : ... With --no-timing, suggest have one event control statement per procedure, at the top of the procedure
    38 |    initial #1 @(e1, e2) #1 $stop;  
       |               ^
 %Warning-STMTDLY: t/t_timing_off.v:38:25: Ignoring delay on this statement due to --no-timing
-                                        : ... In instance t
+                                        : ... note: In instance 't'
    38 |    initial #1 @(e1, e2) #1 $stop;  
       |                         ^
 %Error: Exiting due to

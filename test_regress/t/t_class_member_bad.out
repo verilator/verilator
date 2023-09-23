@@ -1,10 +1,10 @@
 %Error: t/t_class_member_bad.v:18:9: Member 'memb3' not found in class 'Cls2'
-                                   : ... In instance t
+                                   : ... note: In instance 't'
                                    : ... Suggested alternative: 'memb2'
    18 |       c.memb3 = 3;   
       |         ^~~~~
 %Warning-WIDTHTRUNC: t/t_class_member_bad.v:18:15: Operator ASSIGN expects 1 bits on the Assign RHS, but Assign RHS's CONST '?32?sh3' generates 32 or 2 bits.
-                                                 : ... In instance t
+                                                 : ... note: In instance 't'
    18 |       c.memb3 = 3;   
       |               ^
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest

@@ -1,21 +1,27 @@
-%Warning-GENUNNAMED: t/t_lint_genunnamed_bad.v:14:6: Unnamed generate block 'genblk2' (IEEE 1800-2017 27.6)                                                   : ... Suggest assign a label with 'begin : gen_<label_name>'
+%Warning-GENUNNAMED: t/t_lint_genunnamed_bad.v:14:6: Unnamed generate block 'genblk2' (IEEE 1800-2017 27.6)
+                                                   : ... Suggest assign a label with 'begin : gen_<label_name>'
    14 |      begin
       |      ^~~~~
                      ... For warning description see https://verilator.org/warn/GENUNNAMED?v=latest
                      ... Use "/* verilator lint_off GENUNNAMED */" and lint_on around source to disable this message.
-%Warning-GENUNNAMED: t/t_lint_genunnamed_bad.v:18:6: Unnamed generate block 'genblk2' (IEEE 1800-2017 27.6)                                                   : ... Suggest assign a label with 'begin : gen_<label_name>'
+%Warning-GENUNNAMED: t/t_lint_genunnamed_bad.v:18:6: Unnamed generate block 'genblk2' (IEEE 1800-2017 27.6)
+                                                   : ... Suggest assign a label with 'begin : gen_<label_name>'
    18 |      begin
       |      ^~~~~
-%Warning-GENUNNAMED: t/t_lint_genunnamed_bad.v:22:4: Unnamed generate block 'genblk3' (IEEE 1800-2017 27.6)                                                   : ... Suggest assign a label with 'begin : gen_<label_name>'
+%Warning-GENUNNAMED: t/t_lint_genunnamed_bad.v:22:4: Unnamed generate block 'genblk3' (IEEE 1800-2017 27.6)
+                                                   : ... Suggest assign a label with 'begin : gen_<label_name>'
    22 |    for (genvar v = 0; v < P; ++v) ;
       |    ^~~
-%Warning-GENUNNAMED: t/t_lint_genunnamed_bad.v:24:4: Unnamed generate block 'genblk4' (IEEE 1800-2017 27.6)                                                   : ... Suggest assign a label with 'begin : gen_<label_name>'
+%Warning-GENUNNAMED: t/t_lint_genunnamed_bad.v:24:4: Unnamed generate block 'genblk4' (IEEE 1800-2017 27.6)
+                                                   : ... Suggest assign a label with 'begin : gen_<label_name>'
    24 |    for (genvar v = 0; v < P; ++v)
       |    ^~~
-%Warning-GENUNNAMED: t/t_lint_genunnamed_bad.v:30:9: Unnamed generate block 'genblk5' (IEEE 1800-2017 27.6)                                                   : ... Suggest assign a label with 'begin : gen_<label_name>'
+%Warning-GENUNNAMED: t/t_lint_genunnamed_bad.v:30:9: Unnamed generate block 'genblk5' (IEEE 1800-2017 27.6)
+                                                   : ... Suggest assign a label with 'begin : gen_<label_name>'
    30 |      1: initial begin end
       |         ^~~~~~~
-%Warning-GENUNNAMED: t/t_lint_genunnamed_bad.v:31:9: Unnamed generate block 'genblk5' (IEEE 1800-2017 27.6)                                                   : ... Suggest assign a label with 'begin : gen_<label_name>'
+%Warning-GENUNNAMED: t/t_lint_genunnamed_bad.v:31:9: Unnamed generate block 'genblk5' (IEEE 1800-2017 27.6)
+                                                   : ... Suggest assign a label with 'begin : gen_<label_name>'
    31 |      2: begin
       |         ^~~~~
 %Error: Exiting due to

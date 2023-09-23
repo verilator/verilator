@@ -1,5 +1,5 @@
 %Error: t/t_math_repl2_bad.v:28:30: More than a 16 Mbit replication, perhaps the replication factor was two's-complement negative: 4294967291
-                                  : ... In instance t
+                                  : ... note: In instance 't'
    28 |          out <= {{(P24 - P29){1'b0}}, in};
       |                              ^
 %Error: Internal Error: ../V3Number.h:#: `num` member accessed when data type is UNINITIALIZED

@@ -1,9 +1,9 @@
 %Error: t/t_array_list_bad.v:38:25: Assignment pattern missed initializing elements: 'logic' 't3'
-                                  : ... In instance t
+                                  : ... note: In instance 't'
    38 |             test_out <= '{'0, '0};  
       |                         ^~
 %Warning-WIDTHEXPAND: t/t_array_list_bad.v:38:22: Operator ASSIGNDLY expects 3 bits on the Assign RHS, but Assign RHS's CONCAT generates 2 bits.
-                                                : ... In instance t
+                                                : ... note: In instance 't'
    38 |             test_out <= '{'0, '0};  
       |                      ^~
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest

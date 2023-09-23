@@ -1,5 +1,5 @@
 %Error-CONTASSREG: t/t_lint_contassreg_bad.v:14:11: Continuous assignment to reg, perhaps intended wire (IEEE 1364-2005 6.1; Verilog only, legal in SV): 'r'
-                                                  : ... In instance t
+                                                  : ... note: In instance 't'
    14 |    assign r = 1'b0;   
       |           ^
                    ... For error description see https://verilator.org/warn/CONTASSREG?v=latest

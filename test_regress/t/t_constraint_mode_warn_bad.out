@@ -4,51 +4,51 @@
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
 %Warning-CONSTRAINTIGN: t/t_constraint_mode.v:14:11: rand_mode ignored (unsupported)
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    14 |       one.rand_mode(0);
       |           ^~~~~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_mode.v:15:11: rand_mode ignored (unsupported)
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    15 |       one.rand_mode(1);
       |           ^~~~~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_mode.v:16:15: rand_mode ignored (unsupported)
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    16 |       if (one.rand_mode() != 1) $stop;
       |               ^~~~~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_mode.v:19:9: constraint_mode ignored (unsupported)
-                                                  : ... In instance t
+                                                  : ... note: In instance 't'
    19 |       a.constraint_mode(1);
       |         ^~~~~~~~~~~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_mode.v:20:9: constraint_mode ignored (unsupported)
-                                                  : ... In instance t
+                                                  : ... note: In instance 't'
    20 |       a.constraint_mode(0);
       |         ^~~~~~~~~~~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_mode.v:21:13: constraint_mode ignored (unsupported)
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    21 |       if (a.constraint_mode() != 0) $stop;
       |             ^~~~~~~~~~~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_mode.v:41:13: rand_mode ignored (unsupported)
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    41 |       p.one.rand_mode(0);
       |             ^~~~~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_mode.v:42:13: rand_mode ignored (unsupported)
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    42 |       p.one.rand_mode(1);
       |             ^~~~~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_mode.v:43:17: rand_mode ignored (unsupported)
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    43 |       if (p.one.rand_mode() != 1) $stop;
       |                 ^~~~~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_mode.v:46:11: constraint_mode ignored (unsupported)
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    46 |       p.a.constraint_mode(1);
       |           ^~~~~~~~~~~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_mode.v:47:11: constraint_mode ignored (unsupported)
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    47 |       p.a.constraint_mode(0);
       |           ^~~~~~~~~~~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_mode.v:48:15: constraint_mode ignored (unsupported)
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    48 |       if (p.a.constraint_mode() != 0) $stop;
       |               ^~~~~~~~~~~~~~~
 %Error: Exiting due to

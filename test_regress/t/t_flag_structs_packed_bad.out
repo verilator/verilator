@@ -1,5 +1,5 @@
 %Error: t/t_flag_structs_packed.v:14:19: Unpacked data type 'STRUCTDTYPE 'x.notpacked_t'' in packed struct/union (IEEE 1800-2017 7.2.1)
-                                       : ... In instance x
+                                       : ... note: In instance 'x'
    14 |       notpacked_t b;
       |                   ^
 %Error: Exiting due to

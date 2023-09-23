@@ -1,31 +1,31 @@
 %Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:21:20: Shape of the argument does not match the shape of the parameter ('logic[2:0]' v.s. 'logic[3:0]')
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    21 |       import_func0(sig0);
       |                    ^~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Warning-WIDTHEXPAND: t/t_dpi_unpack_bad.v:21:7: Operator TASKREF 'import_func0' expects 4 bits on the Function Argument, but Function Argument's VARREF 'sig0' generates 3 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
    21 |       import_func0(sig0);
       |       ^~~~~~~~~~~~
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:23:20: Shape of the argument does not match the shape of the parameter ('logic[2:0]$[0:2][0:1]' v.s. 'logic[2:0]$[0:2]')
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    23 |       import_func1(sig1);
       |                    ^~~~
 %Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:25:20: Shape of the argument does not match the shape of the parameter ('logic[2:0]$[0:2][0:1]' v.s. 'logic[2:0]$[0:2][0:2]')
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    25 |       import_func2(sig1);
       |                    ^~~~
 %Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:27:20: Shape of the argument does not match the shape of the parameter ('bit[2:0]' v.s. 'logic[2:0]')
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    27 |       import_func2(sig2);
       |                    ^~~~
 %Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:29:24: Argument is not an unpacked array while parameter 'in' is
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    29 |       import_func0(sig0[1]);
       |                        ^
 %Warning-WIDTHEXPAND: t/t_dpi_unpack_bad.v:29:7: Operator TASKREF 'import_func0' expects 4 bits on the Function Argument, but Function Argument's ARRAYSEL generates 3 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
    29 |       import_func0(sig0[1]);
       |       ^~~~~~~~~~~~
 %Error: Exiting due to

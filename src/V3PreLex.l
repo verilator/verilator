@@ -125,7 +125,7 @@ bom             [\357\273\277]
                           int res;
                           char enctype[16]; // long enough to hold "quote-printable"
                           if (LEXP->m_protBytes > 0) {
-                              LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "multiple `pragma protected encoding sections");
+                              LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "Multiple `pragma protected encoding sections");
                           }
                           res = sscanf(yytext + std::strlen("encoding"), " = (enctype = \"%15[A-Za-z0-9]\", line_length = %d, bytes = %d)", &enctype[0], &LEXP->m_protLength, &LEXP->m_protBytes);
                           if (res == 0)

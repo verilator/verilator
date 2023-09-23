@@ -674,7 +674,7 @@ private:
             if (nodep->stmtsp()) {
                 nodep->v3warn(GENUNNAMED,
                               "Unnamed generate block "
-                                  << nodep->prettyNameQ() << " (IEEE 1800-2017 27.6)"
+                                  << nodep->prettyNameQ() << " (IEEE 1800-2017 27.6)\n"
                                   << nodep->warnMore()
                                   << "... Suggest assign a label with 'begin : gen_<label_name>'");
             }

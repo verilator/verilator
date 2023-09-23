@@ -1,5 +1,5 @@
 %Error-UNSUPPORTED: t/t_castdyn_unsup_bad.v:13:7: Unsupported: $cast to 'string[$]' from 'int[string]'
-                                                : ... In instance t
+                                                : ... note: In instance 't'
                                                 : ... Suggest try static cast
    13 |       $cast(q, aarray);
       |       ^~~~~

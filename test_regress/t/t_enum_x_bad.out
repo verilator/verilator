@@ -1,9 +1,9 @@
 %Error: t/t_enum_x_bad.v:9:21: Enum value with X/Zs cannot be assigned to non-fourstate type (IEEE 1800-2017 6.19)
-                             : ... In instance t
+                             : ... note: In instance 't'
     9 |    enum bit [1:0] { BADX = 2'b1x } BAD1;
       |                     ^~~~
 %Error: t/t_enum_x_bad.v:12:23: Enum value that is unassigned cannot follow value with X/Zs (IEEE 1800-2017 6.19)
-                              : ... In instance t
+                              : ... note: In instance 't'
    12 |                       e1
       |                       ^~
 %Error: Exiting due to

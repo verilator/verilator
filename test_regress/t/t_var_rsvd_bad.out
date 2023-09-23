@@ -4,7 +4,7 @@
                       ... For warning description see https://verilator.org/warn/SYMRSVDWORD?v=latest
                       ... Use "/* verilator lint_off SYMRSVDWORD */" and lint_on around source to disable this message.
 %Warning-SYMRSVDWORD: t/t_var_rsvd_port.v:15:9: Symbol matches C++ keyword: 'switch'
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    15 |    reg  switch /*verilator public*/ ;     
       |         ^~~~~~
 %Error: Exiting due to

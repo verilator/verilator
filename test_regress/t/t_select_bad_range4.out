@@ -1,79 +1,79 @@
 %Error: t/t_select_bad_range4.v:17:8: Width of bit range is huge; vector of over 1 billion bits: 0x20000001
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    17 |    reg [1<<29 : 0] hugerange;
       |        ^
 %Error: t/t_select_bad_range4.v:20:16: Width of :+ or :- is < 0: 32'hffffffff
-                                     : ... In instance t
+                                     : ... note: In instance 't'
    20 |       sel2 = mi[44 +: -1];
       |                ^
 %Error-UNSUPPORTED: t/t_select_bad_range4.v:20:16: Unsupported: left < right of bit extract: 2<4
-                                                 : ... In instance t
+                                                 : ... note: In instance 't'
    20 |       sel2 = mi[44 +: -1];
       |                ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Warning-WIDTHEXPAND: t/t_select_bad_range4.v:20:12: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 3 bits.
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    20 |       sel2 = mi[44 +: -1];
       |            ^
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Error: t/t_select_bad_range4.v:21:16: Width of :+ or :- is huge; vector of over 1 billion bits: 32'h20000000
-                                     : ... In instance t
+                                     : ... note: In instance 't'
    21 |       sel2 = mi[44 +: 1<<29];
       |                ^
 %Warning-SELRANGE: t/t_select_bad_range4.v:21:16: Extracting 20000000 bits from only 6 bit number
-                                                : ... In instance t
+                                                : ... note: In instance 't'
    21 |       sel2 = mi[44 +: 1<<29];
       |                ^
 %Warning-SELRANGE: t/t_select_bad_range4.v:21:16: Selection index out of range: 20000003:4 outside 2d:28
-                                                : ... In instance t
+                                                : ... note: In instance 't'
    21 |       sel2 = mi[44 +: 1<<29];
       |                ^
 %Warning-WIDTHTRUNC: t/t_select_bad_range4.v:21:12: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 20000000 bits.
-                                                  : ... In instance t
+                                                  : ... note: In instance 't'
    21 |       sel2 = mi[44 +: 1<<29];
       |            ^
 %Error: t/t_select_bad_range4.v:22:23: Expecting expression to be constant, but variable isn't const: 'nonconst'
-                                     : ... In instance t
+                                     : ... note: In instance 't'
    22 |       sel2 = mi[44 +: nonconst];
       |                       ^~~~~~~~
 %Error: t/t_select_bad_range4.v:22:23: Width of :+ or :- bit slice range isn't a constant
-                                     : ... In instance t
+                                     : ... note: In instance 't'
    22 |       sel2 = mi[44 +: nonconst];
       |                       ^~~~~~~~
 %Warning-WIDTHEXPAND: t/t_select_bad_range4.v:22:12: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 1 bits.
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    22 |       sel2 = mi[44 +: nonconst];
       |            ^
 %Warning-WIDTHEXPAND: t/t_select_bad_range4.v:23:17: Operator SUB expects 20 or 6 bits on the LHS, but LHS's VARREF 'nonconst' generates 1 bits.
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    23 |       sel2 = mi[nonconst];
       |                 ^~~~~~~~
 %Warning-WIDTHEXPAND: t/t_select_bad_range4.v:23:12: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 1 bits.
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    23 |       sel2 = mi[nonconst];
       |            ^
 %Error: t/t_select_bad_range4.v:24:17: First value of [a:b] isn't a constant, maybe you want +: or -:
-                                     : ... In instance t
+                                     : ... note: In instance 't'
    24 |       sel2 = mi[nonconst : nonconst];
       |                 ^~~~~~~~
 %Error: t/t_select_bad_range4.v:24:28: Second value of [a:b] isn't a constant, maybe you want +: or -:
-                                     : ... In instance t
+                                     : ... note: In instance 't'
    24 |       sel2 = mi[nonconst : nonconst];
       |                            ^~~~~~~~
 %Warning-WIDTHEXPAND: t/t_select_bad_range4.v:24:12: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 1 bits.
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    24 |       sel2 = mi[nonconst : nonconst];
       |            ^
 %Warning-SELRANGE: t/t_select_bad_range4.v:25:16: Extracting 20000001 bits from only 6 bit number
-                                                : ... In instance t
+                                                : ... note: In instance 't'
    25 |       sel2 = mi[1<<29 : 0];
       |                ^
 %Warning-SELRANGE: t/t_select_bad_range4.v:25:16: Selection index out of range: 1fffffd8:ffffffd8 outside 2d:28
-                                                : ... In instance t
+                                                : ... note: In instance 't'
    25 |       sel2 = mi[1<<29 : 0];
       |                ^
 %Warning-WIDTHTRUNC: t/t_select_bad_range4.v:25:12: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 20000001 bits.
-                                                  : ... In instance t
+                                                  : ... note: In instance 't'
    25 |       sel2 = mi[1<<29 : 0];
       |            ^
 %Error: Exiting due to

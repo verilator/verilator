@@ -1,19 +1,19 @@
 %Error: t/t_math_repl_bad.v:12:14: Replication value of 0 is only legal under a concatenation (IEEE 1800-2017 11.4.12.1)
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    12 |       o = {0 {1'b1}};   
       |              ^
 %Warning-WIDTHEXPAND: t/t_math_repl_bad.v:12:9: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's REPLICATE generates 1 bits.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    12 |       o = {0 {1'b1}};   
       |         ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Error: t/t_math_repl_bad.v:13:43: Replication value isn't a constant.
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    13 |       o = {$test$plusargs("NON-CONSTANT") {1'b1}};   
       |                                           ^
 %Warning-WIDTHEXPAND: t/t_math_repl_bad.v:13:9: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's REPLICATE generates 1 bits.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    13 |       o = {$test$plusargs("NON-CONSTANT") {1'b1}};   
       |         ^
 %Error: Exiting due to

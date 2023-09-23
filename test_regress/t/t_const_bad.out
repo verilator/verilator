@@ -1,15 +1,15 @@
 %Warning-WIDTHXZEXPAND: t/t_const_bad.v:13:39: Unsized constant being X/Z extended to 68 bits: ?32?bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    13 |       if (68'hx_xxxxxxxx_xxxxxxxx !== 'dX) $stop;
       |                                       ^~~
                         ... For warning description see https://verilator.org/warn/WIDTHXZEXPAND?v=latest
                         ... Use "/* verilator lint_off WIDTHXZEXPAND */" and lint_on around source to disable this message.
 %Warning-WIDTHXZEXPAND: t/t_const_bad.v:14:39: Unsized constant being X/Z extended to 68 bits: ?32?bzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    14 |       if (68'hz_zzzzzzzz_zzzzzzzz !== 'dZ) $stop;
       |                                       ^~~
 %Warning-WIDTHXZEXPAND: t/t_const_bad.v:15:39: Unsized constant being X/Z extended to 68 bits: ?32?bzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    15 |       if (68'h?_????????_???????? !== 'd?) $stop;
       |                                       ^~~
 %Error: Exiting due to

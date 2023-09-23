@@ -1,5 +1,5 @@
 %Error: t/t_randc_oversize_bad.v:8:21: Maxiumum implemented width for randc is 32 bits, 'i' is 38 bits
-                                     : ... In instance t
+                                     : ... note: In instance 't'
     8 |    randc bit [37:0] i;
       |                     ^
 %Error: Exiting due to

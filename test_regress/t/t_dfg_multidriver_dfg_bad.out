@@ -1,5 +1,5 @@
 %Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:13:18: Bits [3:1] of signal 'a' have multiple combinational drivers
-                                                         : ... In instance t
+                                                         : ... note: In instance 't'
                       t/t_dfg_multidriver_dfg_bad.v:14:19: ... Location of first driver
    14 |     assign a[3:0] = i[3:0];
       |                   ^
@@ -10,7 +10,7 @@
                       ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
                       ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
 %Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:13:18: Bits [3:3] of signal 'a' have multiple combinational drivers
-                                                         : ... In instance t
+                                                         : ... note: In instance 't'
                       t/t_dfg_multidriver_dfg_bad.v:14:19: ... Location of first driver
    14 |     assign a[3:0] = i[3:0];
       |                   ^
@@ -19,7 +19,7 @@
       |                 ^
                       t/t_dfg_multidriver_dfg_bad.v:13:18: ... Only the first driver will be respected
 %Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:13:18: Bits [7:6] of signal 'a' have multiple combinational drivers
-                                                         : ... In instance t
+                                                         : ... note: In instance 't'
                       t/t_dfg_multidriver_dfg_bad.v:17:19: ... Location of first driver
    17 |     assign a[8:5] = i[8:5];
       |                   ^
@@ -28,7 +28,7 @@
       |                   ^
                       t/t_dfg_multidriver_dfg_bad.v:13:18: ... Only the first driver will be respected
 %Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:13:18: Bits [9:9] of signal 'a' have multiple combinational drivers
-                                                         : ... In instance t
+                                                         : ... note: In instance 't'
                       t/t_dfg_multidriver_dfg_bad.v:19:17: ... Location of first driver
    19 |     assign a[9] = i[9];
       |                 ^

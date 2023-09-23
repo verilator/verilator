@@ -3348,7 +3348,7 @@ private:
         }
         if (nodep->isExternProto()) {
             if (!m_curSymp->findIdFallback(nodep->name())) {
-                nodep->v3error("definition not found for extern " + nodep->prettyNameQ());
+                nodep->v3error("Definition not found for extern " + nodep->prettyNameQ());
             }
         }
         VSymEnt* const oldCurSymp = m_curSymp;

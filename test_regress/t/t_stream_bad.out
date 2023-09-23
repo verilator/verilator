@@ -1,13 +1,13 @@
 %Error: t/t_stream_bad.v:12:32: Expecting expression to be constant, but can't convert a RAND to constant.
-                              : ... In instance t
+                              : ... note: In instance 't'
    12 |    initial packed_data_32 = {<<$random{byte_in}};
       |                                ^~~~~~~
 %Error: t/t_stream_bad.v:12:30: Slice size isn't a constant or basic data type.
-                              : ... In instance t
+                              : ... note: In instance 't'
    12 |    initial packed_data_32 = {<<$random{byte_in}};
       |                              ^~
 %Error-UNSUPPORTED: t/t_stream_bad.v:12:30: Unsupported: Stream operation on a variable of a type 'byte$[0:3]'
-                                          : ... In instance t
+                                          : ... note: In instance 't'
    12 |    initial packed_data_32 = {<<$random{byte_in}};
       |                              ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest

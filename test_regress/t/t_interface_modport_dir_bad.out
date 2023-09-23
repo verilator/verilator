@@ -1,5 +1,5 @@
 %Error: t/t_interface_modport_dir_bad.v:52:25: Port connection 'ctrl' expected 'source' interface modport on pin connection but got 'sink' modport.
-                                             : ... In instance t.source_i
+                                             : ... note: In instance 't.source_i'
    52 |    sourceMod source_i (.ctrl);
       |                         ^~~~
 %Error: Exiting due to

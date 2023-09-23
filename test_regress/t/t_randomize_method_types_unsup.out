@@ -1,22 +1,22 @@
 %Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:12:13: Unsupported: random member variable with type 'int[string]'
-                                                            : ... In instance t
+                                                            : ... note: In instance 't'
    12 |    rand int assocarr[string];
       |             ^~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:13:13: Unsupported: random member variable with type 'int[]'
-                                                            : ... In instance t
+                                                            : ... note: In instance 't'
    13 |    rand int dynarr[];
       |             ^~~~~~
 %Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:14:13: Unsupported: random member variable with type 'int$[0:4]'
-                                                            : ... In instance t
+                                                            : ... note: In instance 't'
    14 |    rand int unpackarr[5];
       |             ^~~~~~~~~
 %Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:15:15: Unsupported: random member variable with type '$unit::Union'
-                                                            : ... In instance t
+                                                            : ... note: In instance 't'
    15 |    rand Union uni;
       |               ^~~
 %Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:16:13: Unsupported: random member variable with type of a current class
-                                                            : ... In instance t
+                                                            : ... note: In instance 't'
    16 |    rand Cls cls;
       |             ^~~
 %Error: Exiting due to

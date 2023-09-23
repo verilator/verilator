@@ -1,5 +1,5 @@
 %Error: t/t_type_compare_bad.v:12:9: Case(type) statement requires items that have type() items
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    12 |         1: $stop;   
       |         ^
 %Error: Exiting due to

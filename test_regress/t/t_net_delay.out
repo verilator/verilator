@@ -1,15 +1,15 @@
 %Warning-STMTDLY: t/t_net_delay.v:15:14: Ignoring delay on this statement due to --no-timing
-                                       : ... In instance t
+                                       : ... note: In instance 't'
    15 |    wire[3:0] #4 val1 = half_cyc;
       |              ^
                   ... For warning description see https://verilator.org/warn/STMTDLY?v=latest
                   ... Use "/* verilator lint_off STMTDLY */" and lint_on around source to disable this message.
 %Warning-STMTDLY: t/t_net_delay.v:16:14: Ignoring delay on this statement due to --no-timing
-                                       : ... In instance t
+                                       : ... note: In instance 't'
    16 |    wire[3:0] #4 val2;
       |              ^
 %Warning-ASSIGNDLY: t/t_net_delay.v:19:11: Ignoring timing control on this assignment/primitive due to --no-timing
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    19 |    assign #4 val2 = half_cyc;
       |           ^
 %Error: Exiting due to

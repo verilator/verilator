@@ -1,22 +1,22 @@
 %Error-PROCASSWIRE: t/t_wire_beh1364_bad.v:26:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'w'
-                                               : ... In instance t
+                                               : ... note: In instance 't'
    26 |       w = 0;
       |       ^
                     ... For error description see https://verilator.org/warn/PROCASSWIRE?v=latest
 %Error-PROCASSWIRE: t/t_wire_beh1364_bad.v:27:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'o'
-                                               : ... In instance t
+                                               : ... note: In instance 't'
    27 |       o = 0;
       |       ^
 %Error-PROCASSWIRE: t/t_wire_beh1364_bad.v:28:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'oa'
-                                               : ... In instance t
+                                               : ... note: In instance 't'
    28 |       oa = 0;
       |       ^~
 %Error-PROCASSWIRE: t/t_wire_beh1364_bad.v:29:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'wo'
-                                               : ... In instance t
+                                               : ... note: In instance 't'
    29 |       wo = 0;
       |       ^~
 %Error-PROCASSWIRE: t/t_wire_beh1364_bad.v:30:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'woa'
-                                               : ... In instance t
+                                               : ... note: In instance 't'
    30 |       woa = 0;
       |       ^~~
 %Error: Exiting due to

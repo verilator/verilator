@@ -1,37 +1,37 @@
 %Error: t/t_class_assign_bad.v:28:9: Assign RHS expects a CLASSREFDTYPE 'Cls', got BASICDTYPE 'logic'
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    28 |       c = 0;
       |         ^
 %Error: t/t_class_assign_bad.v:29:9: Assign RHS expects a CLASSREFDTYPE 'Cls', got BASICDTYPE 'logic'
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    29 |       c = 1;
       |         ^
 %Error: t/t_class_assign_bad.v:30:9: Assign RHS expects a CLASSREFDTYPE 'Cls', got CLASSREFDTYPE 'Cls2'
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    30 |       c = c2;
       |         ^
 %Error: t/t_class_assign_bad.v:31:13: Assign RHS expects a CLASSREFDTYPE 'ClsExt', got CLASSREFDTYPE 'Cls'
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    31 |       c_ext = c;
       |             ^
 %Error: t/t_class_assign_bad.v:32:11: Assign RHS expects a CLASSREFDTYPE 'Cls2', got CLASSREFDTYPE 'Cls'
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    32 |       ct2 = c;
       |           ^
 %Error: t/t_class_assign_bad.v:34:7: Function Argument expects a CLASSREFDTYPE 'Cls', got BASICDTYPE 'logic'
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    34 |       t(0);
       |       ^
 %Error: t/t_class_assign_bad.v:35:7: Function Argument expects a CLASSREFDTYPE 'Cls', got BASICDTYPE 'logic'
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    35 |       t(1);
       |       ^
 %Error: t/t_class_assign_bad.v:36:7: Function Argument expects a CLASSREFDTYPE 'Cls', got CLASSREFDTYPE 'Cls2'
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    36 |       t(c2);
       |       ^
 %Error: t/t_class_assign_bad.v:37:7: Function Argument expects a CLASSREFDTYPE 'ClsExt', got CLASSREFDTYPE 'Cls'
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    37 |       f(c);
       |       ^
 %Error: Exiting due to

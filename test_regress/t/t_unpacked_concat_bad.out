@@ -1,10 +1,10 @@
 %Error-UNSUPPORTED: t/t_unpacked_concat_bad.v:17:46: Unsupported: Non-1 replication to form 'bit[31:0]$[1:0]' data type
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    17 |    localparam bit_int_t count_bits [1:0] = {2{$bits(count_t)}};
       |                                              ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: t/t_unpacked_concat_bad.v:17:46: Assignment pattern missed initializing elements: 0
-                                       : ... In instance t
+                                       : ... note: In instance 't'
    17 |    localparam bit_int_t count_bits [1:0] = {2{$bits(count_t)}};
       |                                              ^
 %Error: Exiting due to

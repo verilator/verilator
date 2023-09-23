@@ -7289,7 +7289,7 @@ vltOffFront<errcodeen>:
                         { const char *codemsg = (*$3).c_str();
                           if (V3ErrorCode::unusedMsg(codemsg)) {$$ = V3ErrorCode::I_UNUSED; }
                           else {$$ = V3ErrorCode{codemsg}; }
-                          if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown error code: " << *$3);  } }
+                          if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown error code: '" << *$3 << "'"); } }
         ;
 
 vltOnFront<errcodeen>:
@@ -7301,7 +7301,7 @@ vltOnFront<errcodeen>:
                         { const char *codemsg = (*$3).c_str();
                           if (V3ErrorCode::unusedMsg(codemsg)) {$$ = V3ErrorCode::I_UNUSED; }
                           else {$$ = V3ErrorCode{codemsg}; }
-                          if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown error code: " << *$3);  } }
+                          if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown error code: '" << *$3 << "'"); } }
         ;
 
 vltDModuleE<strp>:

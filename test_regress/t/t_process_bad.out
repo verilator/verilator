@@ -1,9 +1,9 @@
 %Error: t/t_process_bad.v:13:13: Class method 'bad_method' not found in class 'process'
-                               : ... In instance t
+                               : ... note: In instance 't'
    13 |       if (p.bad_method() != 0) $stop;
       |             ^~~~~~~~~~
 %Error: t/t_process_bad.v:15:9: Class method 'bad_method_2' not found in class 'process'
-                              : ... In instance t
+                              : ... note: In instance 't'
    15 |       p.bad_method_2();
       |         ^~~~~~~~~~~~
 %Error: Exiting due to

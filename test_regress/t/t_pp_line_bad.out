@@ -9,5 +9,5 @@
     7 | `line
       | ^~~~~
 %Error: somefile:100:1: `line was not properly formed with '`line number "filename" level'
-        t/t_pp_line_bad.v:101:1: ... note: In file included from t_pp_line_bad.v
+        t/t_pp_line_bad.v:101:1: ... note: In file included from 't_pp_line_bad.v'
 %Error: Exiting due to

@@ -1,10 +1,10 @@
 %Error-UNSUPPORTED: t/t_event_copy.v:100:13: Unsupported: assignment of event data type
-                                           : ... In instance t
+                                           : ... note: In instance 't'
   100 |          e4 = e3;   
       |             ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_event_copy.v:101:13: Unsupported: assignment of event data type
-                                           : ... In instance t
+                                           : ... note: In instance 't'
   101 |          e3 = e2;   
       |             ^
 %Error: Exiting due to

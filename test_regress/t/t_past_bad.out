@@ -1,17 +1,17 @@
 %Error: t/t_past_bad.v:16:20: Expecting expression to be constant, but variable isn't const: 'num'
-                            : ... In instance t
+                            : ... note: In instance 't'
    16 |       if ($past(d, num)) $stop;   
       |                    ^~~
 %Error: t/t_past_bad.v:16:11: $past tick value must be constant (IEEE 1800-2017 16.9.3)
-                            : ... In instance t
+                            : ... note: In instance 't'
    16 |       if ($past(d, num)) $stop;   
       |           ^~~~~
 %Error: t/t_past_bad.v:17:20: $past tick value must be >= 1 (IEEE 1800-2017 16.9.3)
-                            : ... In instance t
+                            : ... note: In instance 't'
    17 |       if ($past(d, 0)) $stop;   
       |                    ^
 %Warning-TICKCOUNT: t/t_past_bad.v:18:20: $past tick value of 10000 may have a large performance cost
-                                        : ... In instance t
+                                        : ... note: In instance 't'
    18 |       if ($past(d, 10000)) $stop;   
       |                    ^~~~~
                     ... For warning description see https://verilator.org/warn/TICKCOUNT?v=latest
