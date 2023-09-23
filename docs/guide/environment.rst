@@ -7,6 +7,21 @@ Environment
 This section describes the environment variables used by Verilator and
 associated programs.
 
+.. option:: AR
+
+   Optionally overrides the default :command:`ar` (archive) binary used by
+   the Verilated makefiles. If AR is not set, the version found at
+   configure time is used.
+
+.. option:: CXX
+
+   Optionally overrides the default compiler binary used by the Verilated
+   makefiles. If CXX is not set, the version found at configure time is
+   used.  Note the default flags passed to the compiler are determined at
+   configuration time, so changing the CXX compiler version using this
+   variable, as opposed to passing it at configuration time, may not give
+   desired results.
+
 .. option:: LD_LIBRARY_PATH
 
    A generic Linux/OS variable specifying what directories have shared
@@ -34,6 +49,12 @@ associated programs.
    generally be run under :command:`ccache`; see the documentation for
    those programs.  If OBJCACHE is not set, and at configure time ccache
    was present, ccache will be used as a default.
+
+.. option:: PYTHON3
+
+   Optionally overrides the default :command:`python3` binary used by the
+   Verilated makefiles. If PYTHON3 is not set, the version found at
+   configure time is used.
 
 .. option:: SYSTEMC
 

@@ -486,6 +486,7 @@ countbits
 countones
 cout
 cpp
+cppstyle
 cpu
 ctor
 ctrace
