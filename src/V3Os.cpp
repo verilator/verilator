@@ -444,7 +444,7 @@ void V3Os::selfTest() {
     UASSERT_SELFTEST(string, filenameCleanup("a/"), "a");
     UASSERT_SELFTEST(string, filenameCleanup("a/b"), "a/b");
     UASSERT_SELFTEST(string, filenameCleanup("././//./a/b"), "a/b");
-    UASSERT_SELFTEST(string, filenameCleanup("a///"), "a");
+    UASSERT_SELFTEST(string, filenameCleanup(".//./a///"), "a");
     UASSERT_SELFTEST(string, filenameCleanup("///a/./b///."), "/a/./b/.");
     UASSERT_SELFTEST(string, filenameCleanup("aaa/bbb/ccc/"), "aaa/bbb/ccc");
     UASSERT_SELFTEST(string, filenameCleanup("./aaa/bbb/ccc/"), "aaa/bbb/ccc");
