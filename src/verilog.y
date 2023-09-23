@@ -130,7 +130,7 @@ public:
                            AstNode* attrsp);
     AstNode* createSupplyExpr(FileLine* fileline, const string& name, int value);
     AstText* createTextQuoted(FileLine* fileline, const string& text) {
-        string newtext = deQuote(fileline, text);
+        string newtext = VString::unquoteSVString(fileline, text);
         return new AstText{fileline, newtext};
     }
     AstNode* createCellOrIfaceRef(FileLine* fileline, const string& name, AstPin* pinlistp,
@@ -254,7 +254,6 @@ public:
             return createArray(dtypep, rangearraysp, isPacked);
         }
     }
-    string deQuote(FileLine* fileline, string text);
     void checkDpiVer(FileLine* fileline, const string& str) {
         if (str != "DPI-C" && !v3Global.opt.bboxSys()) {
             fileline->v3error("Unsupported DPI type '" << str << "': Use 'DPI-C'");
@@ -5679,13 +5678,13 @@ parseRefBase<nodep>:
 
 // yaSTRING shouldn't be used directly, instead via an abstraction below
 str<strp>:                      // yaSTRING but with \{escapes} need decoded
-                yaSTRING                                { $$ = PARSEP->newString(GRAMMARP->deQuote($<fl>1, *$1)); }
+                yaSTRING                                { $$ = PARSEP->newString(VString::unquoteSVString($<fl>1, *$1)); }
         ;
 
 strAsInt<nodeExprp>:
                 yaSTRING
                         { // Numeric context, so IEEE 1800-2017 11.10.3 "" is a "\000"
-                          $$ = new AstConst{$<fl>1, AstConst::VerilogStringLiteral{}, GRAMMARP->deQuote($<fl>1, *$1)}; }
+                          $$ = new AstConst{$<fl>1, AstConst::VerilogStringLiteral{}, VString::unquoteSVString($<fl>1, *$1)}; }
         ;
 
 strAsIntIgnore<nodeExprp>:          // strAsInt, but never matches for when expr shouldn't parse strings

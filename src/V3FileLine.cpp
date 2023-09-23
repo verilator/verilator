@@ -203,8 +203,8 @@ string FileLine::xmlDetailedLocation() const {
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
-    return std::string{"`line "} + cvtToStr(lastLineno()) + " \"" + filename() + "\" "
-           + cvtToStr(enterExit) + "\n";
+    return std::string{"`line "} + cvtToStr(lastLineno()) + " \""
+           + V3OutFormatter::quoteNameControls(filename()) + "\" " + cvtToStr(enterExit) + "\n";
 }
 
 void FileLine::lineDirective(const char* textp, int& enterExitRef) {
@@ -221,26 +221,23 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     bool fail = false;
     const char* const ln = textp;
     while (*textp && !std::isspace(*textp)) ++textp;
-    if (0 == strncmp(ln, "`__LINE__", strlen("`__LINE__"))) {
+    if (0 == strncmp(ln, "`__LINE__", textp - ln)) {
         // Special case - see docs - don't change other than accounting for `line itself
         lineno(lineno() + 1);
-    }
-    if (std::isdigit(*ln)) {
+    } else if (std::isdigit(*ln)) {
         lineno(std::atoi(ln));
     } else {
         fail = true;
     }
     while (*textp && (std::isspace(*textp))) ++textp;
     if (*textp != '"') fail = true;
-    while (*textp && (std::isspace(*textp) || *textp == '"')) ++textp;
+    while (*textp && *textp == '"') ++textp;
 
     // Grab filename
     const char* const fn = textp;
-    while (*textp && !(std::isspace(*textp) || *textp == '"')) ++textp;
+    while (*textp && *textp != '"') ++textp;
     if (textp != fn) {
-        string strfn = fn;
-        strfn = strfn.substr(0, textp - fn);
-        filename(strfn);
+        filename(VString::unquoteSVString(this, string{fn, textp}));
     } else {
         fail = true;
     }

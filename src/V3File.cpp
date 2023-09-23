@@ -859,7 +859,7 @@ void V3OutFormatter::putcNoTracking(char chr) {
 string V3OutFormatter::quoteNameControls(const string& namein,
                                          V3OutFormatter::Language lang) VL_PURE {
     // Encode control chars into output-appropriate escapes
-    // Reverse is V3Parse::deQuote
+    // Reverse is VString::unquoteSVString
     string out;
     if (lang == LA_XML) {
         // Encode chars into XML string
