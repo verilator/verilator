@@ -1068,6 +1068,7 @@ bool AstNode::containsMemberAccess() {
     if (m_op2p && m_op2p->containsMemberAccess()) return true;
     if (m_op3p && m_op3p->containsMemberAccess()) return true;
     if (m_op4p && m_op4p->containsMemberAccess()) return true;
+    if (m_nextp && m_nextp->containsMemberAccess()) return true;
     return false;
 }
 
