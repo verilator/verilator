@@ -1400,7 +1400,7 @@ Controlling the Test Driver
 ---------------------------
 
 The test driver script `driver.pl` runs tests; see the `Test Driver`
-section.  The individual test drivers are written in PERL; see `Test
+section.  The individual test drivers are written in Perl; see `Test
 Language`.
 
 
@@ -1432,7 +1432,7 @@ Developers will also want to call ./configure with two extra flags:
    disabled by default, as SystemC installation problems would otherwise
    falsely indicate a Verilator problem.
 
-When enabling the long tests, some additional PERL modules are needed,
+When enabling the long tests, some additional Perl modules are needed,
 which you can install using cpan.
 
 ::

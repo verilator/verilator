@@ -1,5 +1,5 @@
 %Error-PORTSHORT: t/t_lint_setout_bad.v:17:8: Output port is connected to a constant pin, electrical short
-                                            : ... In instance t
+                                            : ... note: In instance 't'
    17 |       .cpu_if_timeout(1'b0)
       |        ^~~~~~~~~~~~~~
                   ... For error description see https://verilator.org/warn/PORTSHORT?v=latest

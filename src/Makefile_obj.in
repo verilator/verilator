@@ -389,7 +389,7 @@ HEADER_CC_H := $(filter-out $(NON_STANDALONE_HEADERS), $(notdir $(wildcard $(src
 header_cc: $(addsuffix __header_cc.o, $(basename $(HEADER_CC_H)))
 
 %__header_cc.cpp: %.h
-	$(PYTHON3) $(srcdir)/../bin/verilator_includer $^ > $@
+	$(PYTHON3) $(srcdir)/../bin/verilator_includer -DVL_MT_DISABLED_CODE_UNIT=1 $^ > $@
 
 .SUFFIXES:
 

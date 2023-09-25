@@ -1,26 +1,26 @@
 %Error-NEEDTIMINGOPT: t/t_timing_off.v:25:8: Use --timing or --no-timing to specify how event controls should be handled
-                                           : ... In instance t
+                                           : ... note: In instance 't'
    25 |        @e1;
       |        ^
                       ... For error description see https://verilator.org/warn/NEEDTIMINGOPT?v=latest
 %Error-NEEDTIMINGOPT: t/t_timing_off.v:33:12: Use --timing or --no-timing to specify how delays should be handled
-                                            : ... In instance t
+                                            : ... note: In instance 't'
    33 |    initial #2 ->e1;
       |            ^
 %Error-NEEDTIMINGOPT: t/t_timing_off.v:37:12: Use --timing or --no-timing to specify how delays should be handled
-                                            : ... In instance t
+                                            : ... note: In instance 't'
    37 |    initial #3 $stop;  
       |            ^
 %Error-NEEDTIMINGOPT: t/t_timing_off.v:38:12: Use --timing or --no-timing to specify how delays should be handled
-                                            : ... In instance t
+                                            : ... note: In instance 't'
    38 |    initial #1 @(e1, e2) #1 $stop;  
       |            ^
 %Error-NEEDTIMINGOPT: t/t_timing_off.v:38:15: Use --timing or --no-timing to specify how event controls should be handled
-                                            : ... In instance t
+                                            : ... note: In instance 't'
    38 |    initial #1 @(e1, e2) #1 $stop;  
       |               ^
 %Error-NEEDTIMINGOPT: t/t_timing_off.v:38:25: Use --timing or --no-timing to specify how delays should be handled
-                                            : ... In instance t
+                                            : ... note: In instance 't'
    38 |    initial #1 @(e1, e2) #1 $stop;  
       |                         ^
 %Error: Exiting due to

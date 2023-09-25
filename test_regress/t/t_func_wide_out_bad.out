@@ -1,83 +1,83 @@
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:76:27: Function output argument 'value' requires 12 bits, but connection's VARREF 'ds70' generates 70 bits.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    76 |          Cls#(s12_t)::get(ds70);
       |                           ^~~~
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:76:23: Operator TASKREF 'get' expects 12 bits on the Function Argument, but Function Argument's VARREF 'ds70' generates 70 bits.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    76 |          Cls#(s12_t)::get(ds70);
       |                       ^~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:79:27: Function output argument 'value' requires 12 bits, but connection's VARREF 'ds70' generates 70 bits.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    79 |          Cls#(s12_t)::get(ds70);
       |                           ^~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:79:23: Operator TASKREF 'get' expects 12 bits on the Function Argument, but Function Argument's VARREF 'ds70' generates 70 bits.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    79 |          Cls#(s12_t)::get(ds70);
       |                       ^~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:83:27: Function output argument 'value' requires 12 bits, but connection's VARREF 'du70' generates 70 bits.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    83 |          Cls#(u12_t)::get(du70);
       |                           ^~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:83:23: Operator TASKREF 'get' expects 12 bits on the Function Argument, but Function Argument's VARREF 'du70' generates 70 bits.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    83 |          Cls#(u12_t)::get(du70);
       |                       ^~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:86:27: Function output argument 'value' requires 12 bits, but connection's VARREF 'du70' generates 70 bits.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    86 |          Cls#(u12_t)::get(du70);
       |                           ^~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:86:23: Operator TASKREF 'get' expects 12 bits on the Function Argument, but Function Argument's VARREF 'du70' generates 70 bits.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    86 |          Cls#(u12_t)::get(du70);
       |                       ^~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:108:10: Operator TASKREF 'dpii_inv_s12' expects 12 bits on the Function Argument, but Function Argument's VARREF 'ds70' generates 70 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
   108 |          dpii_inv_s12(ds70, qs70);
       |          ^~~~~~~~~~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:108:29: Function output argument 'out' requires 12 bits, but connection's VARREF 'qs70' generates 70 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
   108 |          dpii_inv_s12(ds70, qs70);
       |                             ^~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:108:10: Operator TASKREF 'dpii_inv_s12' expects 12 bits on the Function Argument, but Function Argument's VARREF 'qs70' generates 70 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
   108 |          dpii_inv_s12(ds70, qs70);
       |          ^~~~~~~~~~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:111:10: Operator TASKREF 'dpii_inv_s12' expects 12 bits on the Function Argument, but Function Argument's VARREF 'ds70' generates 70 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
   111 |          dpii_inv_s12(ds70, qs70);
       |          ^~~~~~~~~~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:111:29: Function output argument 'out' requires 12 bits, but connection's VARREF 'qs70' generates 70 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
   111 |          dpii_inv_s12(ds70, qs70);
       |                             ^~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:111:10: Operator TASKREF 'dpii_inv_s12' expects 12 bits on the Function Argument, but Function Argument's VARREF 'qs70' generates 70 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
   111 |          dpii_inv_s12(ds70, qs70);
       |          ^~~~~~~~~~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:115:10: Operator TASKREF 'dpii_inv_u12' expects 12 bits on the Function Argument, but Function Argument's VARREF 'du70' generates 70 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
   115 |          dpii_inv_u12(du70, qu70);
       |          ^~~~~~~~~~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:115:29: Function output argument 'out' requires 12 bits, but connection's VARREF 'qu70' generates 70 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
   115 |          dpii_inv_u12(du70, qu70);
       |                             ^~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:115:10: Operator TASKREF 'dpii_inv_u12' expects 12 bits on the Function Argument, but Function Argument's VARREF 'qu70' generates 70 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
   115 |          dpii_inv_u12(du70, qu70);
       |          ^~~~~~~~~~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:118:10: Operator TASKREF 'dpii_inv_u12' expects 12 bits on the Function Argument, but Function Argument's VARREF 'du70' generates 70 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
   118 |          dpii_inv_u12(du70, qu70);
       |          ^~~~~~~~~~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:118:29: Function output argument 'out' requires 12 bits, but connection's VARREF 'qu70' generates 70 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
   118 |          dpii_inv_u12(du70, qu70);
       |                             ^~~~
 %Warning-WIDTHTRUNC: t/t_func_wide_out.v:118:10: Operator TASKREF 'dpii_inv_u12' expects 12 bits on the Function Argument, but Function Argument's VARREF 'qu70' generates 70 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
   118 |          dpii_inv_u12(du70, qu70);
       |          ^~~~~~~~~~~~
 %Error: Exiting due to

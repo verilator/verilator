@@ -35,6 +35,8 @@
 // simplified to look primarily for SLICESELs.
 //*************************************************************************
 
+#define VL_MT_DISABLED_CODE_UNIT 1
+
 #include "config_build.h"
 #include "verilatedos.h"
 

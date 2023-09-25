@@ -1,5 +1,5 @@
 %Warning-STMTDLY: t/t_lint_stmtdly_bad.v:10:7: Ignoring delay on this statement due to --no-timing
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    10 |       #100 $finish;   
       |       ^
                   ... For warning description see https://verilator.org/warn/STMTDLY?v=latest

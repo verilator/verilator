@@ -1,11 +1,11 @@
 %Warning-UNDRIVEN: t/t_lint_unused_iface_bad.v:8:10: Signal is not driven: 'sig_udrv'
-                                                   : ... In instance t.sub
+                                                   : ... note: In instance 't.sub'
     8 |    logic sig_udrv;
       |          ^~~~~~~~
                    ... For warning description see https://verilator.org/warn/UNDRIVEN?v=latest
                    ... Use "/* verilator lint_off UNDRIVEN */" and lint_on around source to disable this message.
 %Warning-UNUSEDSIGNAL: t/t_lint_unused_iface_bad.v:9:10: Signal is not used: 'sig_uusd'
-                                                       : ... In instance t.sub
+                                                       : ... note: In instance 't.sub'
     9 |    logic sig_uusd;
       |          ^~~~~~~~
 %Error: Exiting due to

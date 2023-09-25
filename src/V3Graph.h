@@ -23,6 +23,7 @@
 #include "V3Error.h"
 #include "V3List.h"
 #include "V3Rtti.h"
+#include "V3ThreadSafety.h"
 
 #include <algorithm>
 
@@ -88,19 +89,20 @@ protected:
     friend class V3GraphEdge;
     friend class GraphAcyc;
     // METHODS
-    double orderDFSIterate(V3GraphVertex* vertexp);
-    void dumpEdge(std::ostream& os, const V3GraphVertex* vertexp, const V3GraphEdge* edgep);
+    double orderDFSIterate(V3GraphVertex* vertexp) VL_MT_DISABLED;
+    void dumpEdge(std::ostream& os, const V3GraphVertex* vertexp,
+                  const V3GraphEdge* edgep) VL_MT_DISABLED;
     void verticesUnlink() { m_vertices.reset(); }
     // ACCESSORS
 
 public:
-    V3Graph();
-    virtual ~V3Graph();
+    V3Graph() VL_MT_DISABLED;
+    virtual ~V3Graph() VL_MT_DISABLED;
     virtual string dotRankDir() const { return "TB"; }  // rankdir for dot plotting
 
     // METHODS
-    void clear();  // Empty it of all vertices/edges, as if making a new object
-    void clearColors();
+    void clear() VL_MT_DISABLED;  // Empty it of all vertices/edges, as if making a new object
+    void clearColors() VL_MT_DISABLED;
     bool empty() const { return m_vertices.empty(); }
 
     V3GraphVertex* verticesBeginp() const { return m_vertices.begin(); }
@@ -109,66 +111,69 @@ public:
 
     /// Assign same color to all vertices in the same weakly connected component
     /// Thus different color if there's no edges between the two subgraphs
-    void weaklyConnected(V3EdgeFuncP edgeFuncp);
+    void weaklyConnected(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
 
     /// Assign same color to all vertices that are strongly connected
     /// Thus different color if there's no directional circuit within the subgraphs.
     /// (I.E. all loops will occur within each color, not between them.)
-    void stronglyConnected(V3EdgeFuncP edgeFuncp);
+    void stronglyConnected(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
 
     /// Assign an ordering number to all vertexes in a tree.
     /// All nodes with no inputs will get rank 1
-    void rank(V3EdgeFuncP edgeFuncp);
-    void rank();
+    void rank(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
+    void rank() VL_MT_DISABLED;
 
     /// Sort all vertices and edges using the V3GraphVertex::sortCmp() function
-    void sortVertices();
+    void sortVertices() VL_MT_DISABLED;
     /// Sort all edges and edges using the V3GraphEdge::sortCmp() function
-    void sortEdges();
+    void sortEdges() VL_MT_DISABLED;
 
     /// Order all vertices by rank and fanout, lowest first
     /// Sort all vertices by rank and fanout, lowest first
     /// Sort all edges by weight, lowest first
     /// Side-effect: assigns ranks to every node.
-    void order();
+    void order() VL_MT_DISABLED;
 
     // Similar to order() but does not assign ranks. Caller must
     // ensure that the graph has been ranked ahead of the call.
-    void orderPreRanked();
+    void orderPreRanked() VL_MT_DISABLED;
 
     /// Make acyclical (into a tree) by breaking a minimal subset of cutable edges.
-    void acyclic(V3EdgeFuncP edgeFuncp);
+    void acyclic(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
 
     /// Remove any redundant edges, weights become MAX of any other weight
-    void removeRedundantEdges(V3EdgeFuncP edgeFuncp);
+    void removeRedundantEdges(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
 
     /// Remove any redundant edges, weights become SUM of any other weight
-    void removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp);
+    void removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
 
     /// Remove any transitive edges.  E.g. if have edges A->B, B->C, and A->C
     /// then A->C is a "transitive" edge; it's implied by the first two
     /// (assuming the DAG is a dependency graph.)
     /// This algorithm can be expensive.
-    void removeTransitiveEdges();
+    void removeTransitiveEdges() VL_MT_DISABLED;
 
     /// Call loopsVertexCb on any one loop starting where specified
-    void reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp);
+    void reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) VL_MT_DISABLED;
 
     /// Build a subgraph of all loops starting where specified
-    void subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp, V3Graph* loopGraphp);
+    void subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp,
+                      V3Graph* loopGraphp) VL_MT_DISABLED;
 
     /// Debugging
-    void dump(std::ostream& os = std::cout);
-    void dumpDotFile(const string& filename, bool colorAsSubgraph) const;
-    void dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgraph = false) const;
-    void dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsSubgraph = false) const;
-    void userClearVertices();
-    void userClearEdges();
-    static void selfTest();
+    void dump(std::ostream& os = std::cout) VL_MT_DISABLED;
+    void dumpDotFile(const string& filename, bool colorAsSubgraph) const VL_MT_DISABLED;
+    void dumpDotFilePrefixed(const string& nameComment,
+                             bool colorAsSubgraph = false) const VL_MT_DISABLED;
+    void dumpDotFilePrefixedAlways(const string& nameComment,
+                                   bool colorAsSubgraph = false) const VL_MT_DISABLED;
+    void userClearVertices() VL_MT_DISABLED;
+    void userClearEdges() VL_MT_DISABLED;
+    static void selfTest() VL_MT_DISABLED;
 
     // CALLBACKS
-    virtual void loopsMessageCb(V3GraphVertex* vertexp);
-    virtual void loopsVertexCb(V3GraphVertex* vertexp);
+    virtual void loopsMessageCb(V3GraphVertex* vertexp) VL_MT_DISABLED;
+    virtual void loopsVertexCb(V3GraphVertex* vertexp) VL_MT_DISABLED;
 };
 
 //============================================================================
@@ -192,24 +197,24 @@ protected:
         uint32_t m_user;  // Marker for some algorithms
     };
     // METHODS
-    void verticesPushBack(V3Graph* graphp);
+    void verticesPushBack(V3Graph* graphp) VL_MT_DISABLED;
     // ACCESSORS
     void fanout(double fanout) { m_fanout = fanout; }
     void inUnlink() { m_ins.reset(); }  // Low level; normally unlinkDelete is what you want
     void outUnlink() { m_outs.reset(); }  // Low level; normally unlinkDelete is what you want
 protected:
     // CONSTRUCTORS
-    V3GraphVertex(V3Graph* graphp, const V3GraphVertex& old);
+    V3GraphVertex(V3Graph* graphp, const V3GraphVertex& old) VL_MT_DISABLED;
 
 public:
-    explicit V3GraphVertex(V3Graph* graphp);
+    explicit V3GraphVertex(V3Graph* graphp) VL_MT_DISABLED;
     //! Clone copy constructor. Doesn't copy edges or user/userp.
-    virtual V3GraphVertex* clone(V3Graph* graphp) const {
+    virtual V3GraphVertex* clone(V3Graph* graphp) const VL_MT_DISABLED {
         return new V3GraphVertex{graphp, *this};
     }
     virtual ~V3GraphVertex() = default;
-    void unlinkEdges(V3Graph* graphp);
-    void unlinkDelete(V3Graph* graphp);
+    void unlinkEdges(V3Graph* graphp) VL_MT_DISABLED;
+    void unlinkDelete(V3Graph* graphp) VL_MT_DISABLED;
 
     // METHODS
     // Return true iff of type T
@@ -275,23 +280,24 @@ public:
     V3GraphVertex* verticesNextp() const { return m_vertices.nextp(); }
     V3GraphEdge* inBeginp() const { return m_ins.begin(); }
     bool inEmpty() const { return inBeginp() == nullptr; }
-    bool inSize1() const;
+    bool inSize1() const VL_MT_DISABLED;
     V3GraphEdge* outBeginp() const { return m_outs.begin(); }
     bool outEmpty() const { return outBeginp() == nullptr; }
-    bool outSize1() const;
+    bool outSize1() const VL_MT_DISABLED;
     V3GraphEdge* beginp(GraphWay way) const { return way.forward() ? outBeginp() : inBeginp(); }
     // METHODS
     /// Error reporting
-    void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
-    void v3errorEndFatal(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
+    void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) VL_MT_DISABLED;
+    void v3errorEndFatal(std::ostringstream& str) const
+        VL_RELEASE(V3Error::s().m_mutex) VL_MT_DISABLED;
     /// Edges are routed around this vertex to point from "from" directly to "to"
-    void rerouteEdges(V3Graph* graphp);
+    void rerouteEdges(V3Graph* graphp) VL_MT_DISABLED;
     /// Find the edge connecting ap and bp, where bp is wayward from ap.
     /// If edge is not found returns nullptr. O(edges) performance.
-    V3GraphEdge* findConnectingEdgep(GraphWay way, const V3GraphVertex* waywardp);
+    V3GraphEdge* findConnectingEdgep(GraphWay way, const V3GraphVertex* waywardp) VL_MT_DISABLED;
 };
 
-std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp);
+std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp) VL_MT_DISABLED;
 
 //============================================================================
 
@@ -320,25 +326,26 @@ protected:
     };
     // METHODS
     void init(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
-              bool cutable = false);
+              bool cutable = false) VL_MT_DISABLED;
     void cut() { m_weight = 0; }  // 0 weight is same as disconnected
-    void outPushBack();
-    void inPushBack();
+    void outPushBack() VL_MT_DISABLED;
+    void inPushBack() VL_MT_DISABLED;
     // CONSTRUCTORS
 protected:
     V3GraphEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top,
-                const V3GraphEdge& old) {
+                const V3GraphEdge& old) VL_MT_DISABLED {
         init(graphp, fromp, top, old.m_weight, old.m_cutable);
     }
 
 public:
     //! Add DAG from one node to the specified node
     V3GraphEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
-                bool cutable = false) {
+                bool cutable = false) VL_MT_DISABLED {
         init(graphp, fromp, top, weight, cutable);
     }
     //! Clone copy constructor.  Doesn't copy existing vertices or user/userp.
-    virtual V3GraphEdge* clone(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top) const {
+    virtual V3GraphEdge* clone(V3Graph* graphp, V3GraphVertex* fromp,
+                               V3GraphVertex* top) const VL_MT_DISABLED {
         return new V3GraphEdge{graphp, fromp, top, *this};
     }
     virtual ~V3GraphEdge() = default;
@@ -384,9 +391,9 @@ public:
         if (!m_weight || !rhsp->m_weight) return 0;
         return top()->sortCmp(rhsp->top());
     }
-    void unlinkDelete();
-    V3GraphEdge* relinkFromp(V3GraphVertex* newFromp);
-    V3GraphEdge* relinkTop(V3GraphVertex* newTop);
+    void unlinkDelete() VL_MT_DISABLED;
+    V3GraphEdge* relinkFromp(V3GraphVertex* newFromp) VL_MT_DISABLED;
+    V3GraphEdge* relinkTop(V3GraphVertex* newTop) VL_MT_DISABLED;
     // ACCESSORS
     int weight() const { return m_weight; }
     void weight(int weight) { m_weight = weight; }

@@ -120,15 +120,16 @@ public:
     }
 
     // METHODS
-    AstArg* argWrapList(AstNodeExpr* nodep);
+    AstArg* argWrapList(AstNodeExpr* nodep) VL_MT_DISABLED;
     bool allTracingOn(FileLine* fl) {
         return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }
-    AstRange* scrubRange(AstNodeRange* rangep);
-    AstNodeDType* createArray(AstNodeDType* basep, AstNodeRange* rangep, bool isPacked);
+    AstRange* scrubRange(AstNodeRange* rangep) VL_MT_DISABLED;
+    AstNodeDType* createArray(AstNodeDType* basep, AstNodeRange* rangep,
+                              bool isPacked) VL_MT_DISABLED;
     AstVar* createVariable(FileLine* fileline, const string& name, AstNodeRange* arrayp,
-                           AstNode* attrsp);
-    AstNode* createSupplyExpr(FileLine* fileline, const string& name, int value);
+                           AstNode* attrsp) VL_MT_DISABLED;
+    AstNode* createSupplyExpr(FileLine* fileline, const string& name, int value) VL_MT_DISABLED;
     AstText* createTextQuoted(FileLine* fileline, const string& text) {
         string newtext = VString::unquoteSVString(fileline, text);
         return new AstText{fileline, newtext};
@@ -7288,7 +7289,7 @@ vltOffFront<errcodeen>:
                         { const char *codemsg = (*$3).c_str();
                           if (V3ErrorCode::unusedMsg(codemsg)) {$$ = V3ErrorCode::I_UNUSED; }
                           else {$$ = V3ErrorCode{codemsg}; }
-                          if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown error code: " << *$3);  } }
+                          if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown error code: '" << *$3 << "'"); } }
         ;
 
 vltOnFront<errcodeen>:
@@ -7300,7 +7301,7 @@ vltOnFront<errcodeen>:
                         { const char *codemsg = (*$3).c_str();
                           if (V3ErrorCode::unusedMsg(codemsg)) {$$ = V3ErrorCode::I_UNUSED; }
                           else {$$ = V3ErrorCode{codemsg}; }
-                          if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown error code: " << *$3);  } }
+                          if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown error code: '" << *$3 << "'"); } }
         ;
 
 vltDModuleE<strp>:

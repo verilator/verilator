@@ -1,5 +1,5 @@
 %Error: t/t_lint_modport_dir_bad.v:26:20: Attempt to drive input-only modport: 'signal'
-                                        : ... In instance t.sub
+                                        : ... note: In instance 't.sub'
    26 |    assign dummy_in.signal = signal_i;
       |                    ^~~~~~
 %Error: Exiting due to

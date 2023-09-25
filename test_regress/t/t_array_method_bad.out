@@ -1,5 +1,5 @@
 %Error: t/t_array_method_bad.v:11:9: Unknown built-in array method 'mex'
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    11 |       q.mex;
       |         ^~~
 %Error: Exiting due to

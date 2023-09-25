@@ -1,5 +1,5 @@
 %Error: t/t_inst_array_bad.v:19:28: Input port connection 'onebit' as part of a module instance array requires 1 or 8 bits, but connection's VARREF 'onebitbad' generates 9 bits. (IEEE 1800-2017 23.3.3)
-                                  : ... In instance t
+                                  : ... note: In instance 't'
    19 |    sub sub [7:0] (allbits, onebitbad, bitout);
       |                            ^~~~~~~~~
 %Error: Exiting due to

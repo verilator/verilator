@@ -19,17 +19,19 @@
 
 //============================================================================
 
+#include "V3ThreadSafety.h"
+
 class AstNetlist;
 class AstVar;
 
 class V3SplitVar final {
 public:
     // Split variables marked with split_var metacomment.
-    static void splitVariable(AstNetlist* nodep);
+    static void splitVariable(AstNetlist* nodep) VL_MT_DISABLED;
 
     // Return true if the variable can be split.
     // This check is not perfect.
-    static bool canSplitVar(const AstVar* varp);
+    static bool canSplitVar(const AstVar* varp) VL_MT_DISABLED;
 };
 
 #endif  // Guard

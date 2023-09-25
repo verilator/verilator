@@ -1,5 +1,5 @@
 %Error-UNSUPPORTED: t/t_tri_pull2_bad.v:12:11: Unsupported: Conflicting pull directions.
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    12 |    pullup p1(A);
       |           ^~
                     t/t_tri_pull2_bad.v:22:13: ... Location of conflicting pull.

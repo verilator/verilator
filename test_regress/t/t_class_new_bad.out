@@ -1,20 +1,20 @@
 %Error: t/t_class_new_bad.v:31:16: Too many arguments in function call to FUNC 'new'
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    31 |       c1 = new(3);   
       |                ^
 %Error: t/t_class_new_bad.v:32:16: Too many arguments in function call to FUNC 'new'
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    32 |       c2 = new(3);   
       |                ^
 %Error: t/t_class_new_bad.v:33:12: Missing argument on non-defaulted argument 'i' in function call to FUNC 'new'
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    33 |       c3 = new();   
       |            ^~~
 %Error: t/t_class_new_bad.v:34:12: dynamic new() not expected in this context (data type must be dynamic array)
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    34 |       c1 = new[2];
       |            ^~~
 %Error: Internal Error: t/t_class_new_bad.v:34:12: ../V3Width.cpp:#: Node has no type
-                                                 : ... In instance t
+                                                 : ... note: In instance 't'
    34 |       c1 = new[2];
       |            ^~~

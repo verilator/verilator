@@ -61,6 +61,8 @@
 //      b          (VSymEnt->AstCell)
 //*************************************************************************
 
+#define VL_MT_DISABLED_CODE_UNIT 1
+
 #include "config_build.h"
 #include "verilatedos.h"
 
@@ -3348,7 +3350,7 @@ private:
         }
         if (nodep->isExternProto()) {
             if (!m_curSymp->findIdFallback(nodep->name())) {
-                nodep->v3error("definition not found for extern " + nodep->prettyNameQ());
+                nodep->v3error("Definition not found for extern " + nodep->prettyNameQ());
             }
         }
         VSymEnt* const oldCurSymp = m_curSymp;

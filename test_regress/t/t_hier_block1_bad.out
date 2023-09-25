@@ -1,16 +1,16 @@
 %Warning-HIERBLOCK: t/t_hier_block1_bad.v:16:8: Top module illegally marked hierarchical block, ignoring marking
-                                              : ... In instance t
+                                              : ... note: In instance 't'
                                               : ... Suggest remove verilator hier_block on this module
    16 | module t ( 
       |        ^
                     ... For warning description see https://verilator.org/warn/HIERBLOCK?v=latest
                     ... Use "/* verilator lint_off HIERBLOCK */" and lint_on around source to disable this message.
 %Error: t/t_hier_block1_bad.v:45:32: Modport cannot be used at the hierarchical block boundary
-                                   : ... In instance t.i_sub1
+                                   : ... note: In instance 't.i_sub1'
    45 | module sub1 (byte_ifs.receiver in, byte_ifs.sender out); /*verilator hier_block*/ 
       |                                ^~
 %Error: t/t_hier_block1_bad.v:45:52: Modport cannot be used at the hierarchical block boundary
-                                   : ... In instance t.i_sub1
+                                   : ... note: In instance 't.i_sub1'
    45 | module sub1 (byte_ifs.receiver in, byte_ifs.sender out); /*verilator hier_block*/ 
       |                                                    ^~~
 %Error: Exiting due to

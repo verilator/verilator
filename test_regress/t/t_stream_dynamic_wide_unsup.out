@@ -1,10 +1,10 @@
 %Error-UNSUPPORTED: t/t_stream_dynamic_wide_unsup.v:15:14: Unsupported: Assignment of stream of dynamic array to a variable of size greater than 64
-                                                         : ... In instance t
+                                                         : ... note: In instance 't'
    15 |       bit100 = { >> bit {arr} };
       |              ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_stream_dynamic_wide_unsup.v:17:14: Unsupported: Assignment of stream of dynamic array to a variable of size greater than 64
-                                                         : ... In instance t
+                                                         : ... note: In instance 't'
    17 |       bit100 = { << bit {arr} };
       |              ^
 %Error: Exiting due to

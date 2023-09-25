@@ -16,6 +16,8 @@
 
 #define YYDEBUG 1  // Nicer errors
 
+#define VL_MT_DISABLED_CODE_UNIT 1
+
 #include "V3Ast.h"  // This must be before V3ParseBison.cpp, as we don't want #defines to conflict
 
 VL_DEFINE_DEBUG_FUNCTIONS;

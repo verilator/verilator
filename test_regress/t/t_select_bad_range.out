@@ -1,11 +1,11 @@
 %Warning-SELRANGE: t/t_select_bad_range.v:16:15: Selection index out of range: 44:44 outside 43:0
-                                               : ... In instance t
+                                               : ... note: In instance 't'
    16 |       sel = mi[44];
       |               ^
                    ... For warning description see https://verilator.org/warn/SELRANGE?v=latest
                    ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
 %Warning-SELRANGE: t/t_select_bad_range.v:17:16: Selection index out of range: 44:41 outside 43:0
-                                               : ... In instance t
+                                               : ... note: In instance 't'
    17 |       sel2 = mi[44:41];
       |                ^
 %Error: Exiting due to

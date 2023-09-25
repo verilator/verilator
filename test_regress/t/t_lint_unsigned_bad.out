@@ -1,5 +1,5 @@
 %Warning-UNSIGNED: t/t_lint_unsigned_bad.v:13:15: Comparison is constant due to unsigned arithmetic
-                                                : ... In instance t
+                                                : ... note: In instance 't'
    13 |       if (uns < 0) $stop;
       |               ^
                    ... For warning description see https://verilator.org/warn/UNSIGNED?v=latest

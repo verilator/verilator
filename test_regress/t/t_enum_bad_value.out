@@ -1,5 +1,5 @@
 %Error: t/t_enum_bad_value.v:10:19: Enum value exceeds width of enum type (IEEE 1800-2017 6.19)
-                                  : ... In instance t
+                                  : ... note: In instance 't'
    10 |       VALUE_BAD = 8
       |                   ^
 %Error: Exiting due to

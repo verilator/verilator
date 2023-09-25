@@ -1348,23 +1348,19 @@ string AstNode::instanceStr() const {
     // in case we have some circular reference bug.
     constexpr unsigned maxIterations = 10000;
     unsigned iterCount = 0;
-
     for (const AstNode* backp = this; backp; backp = backp->backp(), ++iterCount) {
         if (VL_UNCOVERABLE(iterCount >= maxIterations)) return "";  // LCOV_EXCL_LINE
-
         // Prefer the enclosing scope, if there is one. This is always under the enclosing module,
         // so just pick it up when encountered
         if (const AstScope* const scopep = VN_CAST(backp, Scope)) {
-            return scopep->isTop() ? "" : "... In instance " + scopep->prettyName();
+            return scopep->isTop() ? "" : "... note: In instance " + scopep->prettyNameQ();
         }
-
         // If scopes don't exist, report an example instance of the enclosing module
         if (const AstModule* const modp = VN_CAST(backp, Module)) {
             const string instanceName = modp->someInstanceName();
-            return instanceName.empty() ? "" : "... In instance " + instanceName;
+            return instanceName.empty() ? "" : "... note: In instance '" + instanceName + "'";
         }
     }
-
     return "";
 }
 void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {

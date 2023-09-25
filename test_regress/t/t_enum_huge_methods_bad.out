@@ -2,7 +2,7 @@
    15 |         ELARGE = 160'h1234_4567_abcd_1234_4567_abcd
       |                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 %Error-UNSUPPORTED: t/t_enum_huge_methods_bad.v:30:21: Unsupported: enum next/prev/name method on enum with > 64 bits
-                                                     : ... In instance t
+                                                     : ... note: In instance 't'
    30 |          $display(e.name);
       |                     ^~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest

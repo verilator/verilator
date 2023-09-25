@@ -1,10 +1,10 @@
 %Error-UNSUPPORTED: t/t_queue_method3_bad.v:16:52: Unsupported: Member call on object 'SEL' which is a 'BASICDTYPE 'int''
-                                                 : ... In instance t
+                                                 : ... note: In instance 't'
    16 |       points_qv = points_q.find_first(a) with (a.x.index == 0);
       |                                                    ^~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Internal Error: t/t_queue_method3_bad.v:16:58: ../V3Width.cpp:#: Node has no type
-                                                     : ... In instance t
+                                                     : ... note: In instance 't'
    16 |       points_qv = points_q.find_first(a) with (a.x.index == 0);
       |                                                          ^~
                         ... See the manual at https://verilator.org/verilator_doc.html for more assistance.

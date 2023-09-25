@@ -20,14 +20,16 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 //============================================================================
 
 class V3CCtors final {
 public:
-    static void cctorsAll();
+    static void cctorsAll() VL_MT_DISABLED;
 
 private:
-    static void evalAsserts();
+    static void evalAsserts() VL_MT_DISABLED;
 };
 
 #endif  // Guard

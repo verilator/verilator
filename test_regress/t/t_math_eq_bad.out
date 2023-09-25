@@ -1,5 +1,5 @@
 %Error: t/t_math_eq_bad.v:13:13: Real is illegal operand to ?== operator
-                               : ... In instance t
+                               : ... note: In instance 't'
    13 |       if (a ==? 1.0) $stop;   
       |             ^~~
 %Error: Exiting due to

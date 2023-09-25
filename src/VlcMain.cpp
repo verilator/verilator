@@ -17,6 +17,8 @@
 #define VL_COVERAGE
 
 // clang-format off
+#define VL_MT_DISABLED_CODE_UNIT 1
+
 #include "config_build.h"
 #ifndef HAVE_CONFIG_PACKAGE
 # error "Something failed during ./configure as config_package.h is incomplete. Perhaps you used autoreconf, don't."

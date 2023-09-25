@@ -468,8 +468,8 @@ string FileLine::warnContextParent() const VL_REQUIRES(V3Error::s().m_mutex) {
     string result;
     for (FileLine* parentFl = parent(); parentFl; parentFl = parentFl->parent()) {
         if (parentFl->filenameIsGlobal()) break;
-        result += parentFl->warnOther() + "... note: In file included from "
-                  + parentFl->filebasename() + "\n";
+        result += parentFl->warnOther() + "... note: In file included from '"
+                  + parentFl->filebasename() + "'\n";
     }
     return result;
 }

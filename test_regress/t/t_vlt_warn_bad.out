@@ -1,5 +1,5 @@
 %Warning-WIDTHTRUNC: t/t_vlt_warn.v:21:33: Operator ASSIGN expects 1 bits on the Assign RHS, but Assign RHS's CONST '2'h3' generates 2 bits.
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    21 |    reg width_warn3_var_line20 = 2'b11;   
       |                                 ^~~~~
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest

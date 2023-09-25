@@ -1,9 +1,9 @@
 %Error: t/t_cast_size_bad.v:14:15: Size-changing cast to zero or negative size
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    14 |       b = (-1)'(a);   
       |               ^
 %Warning-WIDTHEXPAND: t/t_cast_size_bad.v:14:9: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 1 bits.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    14 |       b = (-1)'(a);   
       |         ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest

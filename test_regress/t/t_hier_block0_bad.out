@@ -1,9 +1,9 @@
 %Error: t/t_hier_block0_bad.v:21:11: 'sub0' has hier_block metacomment, hierarchical Verilation supports only integer/floating point/string parameters
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    21 |    sub0 #(UNPACKED) i_sub0(.clk(clk), .in(8'(count)), .out(out0));
       |           ^~~~~~~~
 %Error: t/t_hier_block0_bad.v:23:12: 'sub1' has hier_block metacomment, but 'parameter type' is not supported
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    23 |    sub1 #(.T(logic[7:0])) i_sub1(.in(out0), .out(out1));
       |            ^
 %Error: t/t_hier_block0_bad.v:27:42: Cannot access inside hierarchical block

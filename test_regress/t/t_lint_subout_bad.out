@@ -1,14 +1,14 @@
 %Error-PORTSHORT: t/t_lint_subout_bad.v:12:14: Output port is connected to a constant pin, electrical short
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    12 |    sub sub1(.out({32'b0, sig}));
       |              ^~~
                   ... For error description see https://verilator.org/warn/PORTSHORT?v=latest
 %Error-PORTSHORT: t/t_lint_subout_bad.v:13:14: Output port is connected to a constant pin, electrical short
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    13 |    sub sub2(.out({32'b1, sig}));
       |              ^~~
 %Error-PORTSHORT: t/t_lint_subout_bad.v:11:14: Output port is connected to a constant pin, electrical short
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    11 |    sub sub0(.out(33'b0));
       |              ^~~
 %Error: Exiting due to

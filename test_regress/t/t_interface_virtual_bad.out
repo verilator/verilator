@@ -1,33 +1,33 @@
 %Error: t/t_interface_virtual_bad.v:31:12: Operator ASSIGN expected 'PBus' interface on Assign RHS but 'q8__Viftop' is a different interface ('QBus').
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    31 |       v8 = q8;   
       |            ^~
 %Error: t/t_interface_virtual_bad.v:35:12: Operator ASSIGN expected no interface modport on Assign RHS but got 'phy' modport.
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    35 |       v8 = v8_phy;   
       |            ^~~~~~
 %Error: t/t_interface_virtual_bad.v:37:17: Operator ASSIGN expected non-interface on Assign RHS but 'p8__Viftop' is an interface.
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    37 |       data = p8.phy;   
       |                 ^~~
 %Error: t/t_interface_virtual_bad.v:38:14: Operator ASSIGN expected non-interface on Assign RHS but 'v8_phy' is an interface.
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    38 |       data = v8_phy;   
       |              ^~~~~~
 %Error: t/t_interface_virtual_bad.v:39:14: Operator ASSIGN expected non-interface on Assign RHS but 'v8' is an interface.
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    39 |       data = v8;   
       |              ^~
 %Error: t/t_interface_virtual_bad.v:40:14: Operator ASSIGN expected non-interface on Assign RHS but 'p8__Viftop' is an interface.
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    40 |       data = p8;   
       |              ^~
 %Error: t/t_interface_virtual_bad.v:41:12: Operator ASSIGN expected 'PBus' interface on Assign RHS but 'data' is not an interface.
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    41 |       v8 = data;   
       |            ^~~~
 %Error: t/t_interface_virtual_bad.v:44:79: Member 'gran' not found in interface 'PBus'
-                                         : ... In instance t
+                                         : ... note: In instance 't'
                                          : ... Suggested alternative: 'grant'
    44 |       $display("q8.grant=", p8.grant, " v8.grant=", v8.grant, v8_phy.addr, v8.gran);
       |                                                                               ^~~~

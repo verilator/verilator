@@ -22,6 +22,7 @@
 
 #include "V3Error.h"
 #include "V3LangCode.h"
+#include "V3ThreadSafety.h"
 
 #include <map>
 #include <set>
@@ -385,7 +386,7 @@ private:
 private:
     // METHODS
     void addArg(const string& arg);
-    void addDefine(const string& defline, bool allowPlus);
+    void addDefine(const string& defline, bool allowPlus) VL_MT_DISABLED;
     void addFuture(const string& flag);
     void addFuture0(const string& flag);
     void addFuture1(const string& flag);
@@ -426,7 +427,7 @@ public:
     void addForceInc(const string& filename);
     bool available() const VL_MT_SAFE { return m_available; }
     void ccSet();
-    void notify();
+    void notify() VL_MT_DISABLED;
 
     // ACCESSORS (options)
     bool preprocOnly() const { return m_preprocOnly; }
@@ -666,9 +667,9 @@ public:
     // Return options for child hierarchical blocks when forTop==false, otherwise returns args for
     // the top module.
     string allArgsStringForHierBlock(bool forTop) const;
-    void parseOpts(FileLine* fl, int argc, char** argv);
-    void parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv);
-    void parseOptsFile(FileLine* fl, const string& filename, bool rel);
+    void parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED;
+    void parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv) VL_MT_DISABLED;
+    void parseOptsFile(FileLine* fl, const string& filename, bool rel) VL_MT_DISABLED;
 
     // METHODS (environment)
     // Most of these may be built into the executable with --enable-defenv,

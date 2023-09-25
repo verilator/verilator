@@ -1,7 +1,7 @@
-%Error: t/t_vlt_warn_ecode_bad.vlt:9:1: Unknown error code: BADRULENAME
+%Error: t/t_vlt_warn_ecode_bad.vlt:9:1: Unknown error code: 'BADRULENAME'
     9 | lint_off -rule BADRULENAME -file "t/t_vlt_warn.v"
       | ^~~~~~~~
-%Error: t/t_vlt_warn_ecode_bad.vlt:10:1: Unknown error code: BADRULENAME
+%Error: t/t_vlt_warn_ecode_bad.vlt:10:1: Unknown error code: 'BADRULENAME'
    10 | lint_on -rule BADRULENAME -file "t/t_vlt_warn.v"
       | ^~~~~~~
 %Error: Exiting due to

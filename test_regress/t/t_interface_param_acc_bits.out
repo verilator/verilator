@@ -1,5 +1,5 @@
 %Error: t/t_interface_param_acc_bits.v:15:42: Parameter-resolved constants must not use dotted references: 'dummy'
-                                            : ... In instance t
+                                            : ... note: In instance 't'
    15 |    simple_bus #(.PARAMETER($bits(sb_intf.dummy))) simple();
       |                                          ^~~~~
 %Error: Exiting due to

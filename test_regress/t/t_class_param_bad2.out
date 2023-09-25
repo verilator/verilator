@@ -1,5 +1,5 @@
 %Error: t/t_class_param_bad2.v:12:4: Missing type parameter: 'PARAMB'
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    12 |    Cls c;   
       |    ^~~
 %Error: Exiting due to

@@ -1,19 +1,19 @@
 %Warning-ASCRANGE: t/t_interface_array_nocolon_bad.v:26:26: Ascending instance range connecting to vector: left < right of instance range: [0:2]
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
    26 |    foo_intf foos [N] (.x(X));  
       |                          ^
                    ... For warning description see https://verilator.org/warn/ASCRANGE?v=latest
                    ... Use "/* verilator lint_off ASCRANGE */" and lint_on around source to disable this message.
 %Warning-ASCRANGE: t/t_interface_array_nocolon_bad.v:27:28: Ascending instance range connecting to vector: left < right of instance range: [1:3]
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
    27 |    foo_intf fool [1:3] (.x(X));  
       |                            ^
 %Warning-ASCRANGE: t/t_interface_array_nocolon_bad.v:30:26: Ascending instance range connecting to vector: left < right of instance range: [0:2]
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
    30 |    foo_subm subs [N] (.x(X));  
       |                          ^
 %Warning-ASCRANGE: t/t_interface_array_nocolon_bad.v:31:28: Ascending instance range connecting to vector: left < right of instance range: [1:3]
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
    31 |    foo_subm subl [1:3] (.x(X));  
       |                            ^
 %Error: Exiting due to

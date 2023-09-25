@@ -1,25 +1,25 @@
 %Error: t/t_timing_func_bad.v:10:7: Delays are not legal in functions. Suggest use a task (IEEE 1800-2017 13.4.4)
-                                  : ... In instance t
+                                  : ... note: In instance 't'
    10 |       #1 $stop;
       |       ^
 %Error: t/t_timing_func_bad.v:15:12: Timing controls are not legal in functions. Suggest use a task (IEEE 1800-2017 13.4.4)
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    15 |       f2 = #5 0; $stop;
       |            ^
 %Error: t/t_timing_func_bad.v:20:7: Event controls are not legal in functions. Suggest use a task (IEEE 1800-2017 13.4.4)
-                                  : ... In instance t
+                                  : ... note: In instance 't'
    20 |       @e $stop;
       |       ^
 %Error: t/t_timing_func_bad.v:25:12: Timing controls are not legal in functions. Suggest use a task (IEEE 1800-2017 13.4.4)
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    25 |       f4 = @e 0; $stop;
       |            ^
 %Error: t/t_timing_func_bad.v:31:7: Wait statements are not legal in functions. Suggest use a task (IEEE 1800-2017 13.4.4)
-                                  : ... In instance t
+                                  : ... note: In instance 't'
    31 |       wait(i == 0) $stop;
       |       ^~~~
 %Error: t/t_timing_func_bad.v:42:7: Delays are not legal in final blocks (IEEE 1800-2017 9.2.3)
-                                  : ... In instance t
+                                  : ... note: In instance 't'
    42 |       #1;
       |       ^
 %Error: Exiting due to

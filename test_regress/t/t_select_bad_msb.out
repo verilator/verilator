@@ -1,11 +1,11 @@
 %Warning-ASCRANGE: t/t_select_bad_msb.v:12:8: Ascending bit range vector: left < right of bit range: [0:22]
-                                            : ... In instance t
+                                            : ... note: In instance 't'
    12 |    reg [0:22] backwd;
       |        ^
                    ... For warning description see https://verilator.org/warn/ASCRANGE?v=latest
                    ... Use "/* verilator lint_off ASCRANGE */" and lint_on around source to disable this message.
 %Warning-SELRANGE: t/t_select_bad_msb.v:16:16: [1:4] Slice range has ascending bit ordering, perhaps you wanted [4:1]
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    16 |       sel2 = mi[1:4];
       |                ^
 %Error: Exiting due to

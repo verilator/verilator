@@ -27,6 +27,7 @@
 #include "V3Ast.h"
 #include "V3Graph.h"
 #include "V3OrderGraph.h"
+#include "V3ThreadSafety.h"
 
 #include <unordered_map>
 
@@ -49,11 +50,11 @@ protected:
     V3ListEnt<OrderMoveVertex*> m_readyVerticesE;  // List of ready under domain/scope
 public:
     // CONSTRUCTORS
-    OrderMoveVertex(V3Graph* graphp, OrderLogicVertex* logicp)
-        : V3GraphVertex{graphp}
-        , m_logicp{logicp}
-        , m_state{POM_WAIT}
-        , m_domScopep{nullptr} {}
+    OrderMoveVertex(V3Graph* graphp, OrderLogicVertex* logicp) VL_MT_DISABLED
+        : V3GraphVertex{graphp},
+          m_logicp{logicp},
+          m_state{POM_WAIT},
+          m_domScopep{nullptr} {}
     ~OrderMoveVertex() override = default;
 
     // METHODS
@@ -78,11 +79,11 @@ public:
     }
     OrderLogicVertex* logicp() const VL_MT_STABLE { return m_logicp; }
     bool isWait() const { return m_state == POM_WAIT; }
-    void setReady() {
+    void setReady() VL_MT_DISABLED {
         UASSERT(m_state == POM_WAIT, "Wait->Ready on node not in proper state");
         m_state = POM_READY;
     }
-    void setMoved() {
+    void setMoved() VL_MT_DISABLED {
         UASSERT(m_state == POM_READY, "Ready->Moved on node not in proper state");
         m_state = POM_MOVED;
     }
@@ -103,11 +104,10 @@ class MTaskMoveVertex final : public V3GraphVertex {
 
 public:
     MTaskMoveVertex(V3Graph* graphp, OrderLogicVertex* logicp, const OrderEitherVertex* varp,
-                    const AstSenTree* domainp)
-        : V3GraphVertex{graphp}
-        , m_logicp{logicp}
-        , m_varp{varp}
-        , m_domainp{domainp} {
+                    const AstSenTree* domainp) VL_MT_DISABLED : V3GraphVertex{graphp},
+                                                                m_logicp{logicp},
+                                                                m_varp{varp},
+                                                                m_domainp{domainp} {
         UASSERT(!(logicp && varp), "MTaskMoveVertex: logicp and varp may not both be set!\n");
     }
     ~MTaskMoveVertex() override = default;

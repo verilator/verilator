@@ -20,6 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 class V3HierBlockPlan;
 
 //============================================================================
@@ -29,8 +31,8 @@ public:
     // Number of source files after which to use parallel compiles
     static const size_t PARALLEL_FILE_CNT_THRESHOLD = 128;
 
-    static void emitmk();
-    static void emitHierVerilation(const V3HierBlockPlan* planp);
+    static void emitmk() VL_MT_DISABLED;
+    static void emitHierVerilation(const V3HierBlockPlan* planp) VL_MT_DISABLED;
 };
 
 #endif  // Guard

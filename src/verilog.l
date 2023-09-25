@@ -1084,9 +1084,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`verilog"                            { FL_FWD; BEGIN PARSEP->lexKwdLastState(); FL_BRK; }
 
   /* Errors */
-  "<<<<<<<"[^\n\r]*                     { FL; yylval.fl->v3error("version control conflict marker in file"); FL_BRK; }
-  "======="[^\n\r]*                     { FL; yylval.fl->v3error("version control conflict marker in file"); FL_BRK; }
-  ">>>>>>>"[^\n\r]*                     { FL; yylval.fl->v3error("version control conflict marker in file"); FL_BRK; }
+  "<<<<<<<"[^\n\r]*                     { FL; yylval.fl->v3error("Version control conflict marker in file"); FL_BRK; }
+  "======="[^\n\r]*                     { FL; yylval.fl->v3error("Version control conflict marker in file"); FL_BRK; }
+  ">>>>>>>"[^\n\r]*                     { FL; yylval.fl->v3error("Version control conflict marker in file"); FL_BRK; }
 
   /* If add to this list also add to V3LanguageWords.h */
 }

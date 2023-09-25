@@ -1,7 +1,7 @@
 %Warning-WIDTHTRUNC: t/t_flag_context_bad.v:9:19: Operator ASSIGNW expects 3 bits on the Assign RHS, but Assign RHS's CONST '5'h1f' generates 5 bits.
-                                                : ... In instance t
+                                                : ... note: In instance 't'
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
 %Warning-UNUSEDSIGNAL: t/t_flag_context_bad.v:9:15: Signal is not used: 'foo'
-                                                  : ... In instance t
+                                                  : ... note: In instance 't'
 %Error: Exiting due to

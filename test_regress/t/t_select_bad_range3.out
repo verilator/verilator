@@ -1,5 +1,5 @@
 %Warning-SELRANGE: t/t_select_bad_range3.v:19:33: Selection index out of range: 13 outside 12:10
-                                                : ... In instance t
+                                                : ... note: In instance 't'
    19 |    assign outwires[12] = inwires[13];   
       |                                 ^
                    ... For warning description see https://verilator.org/warn/SELRANGE?v=latest

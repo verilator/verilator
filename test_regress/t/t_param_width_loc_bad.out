@@ -1,5 +1,5 @@
 %Warning-WIDTHTRUNC: t/t_param_width_loc_bad.v:25:21: Operator VAR 'param' expects 1 bits on the Initial value, but Initial value's CONST '32'h0' generates 32 bits.
-                                                    : ... In instance t.test_i
+                                                    : ... note: In instance 't.test_i'
    25 |     parameter logic param = 1'b0
       |                     ^~~~~
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest

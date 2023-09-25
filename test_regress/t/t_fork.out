@@ -1,5 +1,5 @@
 %Error-NOTIMING: t/t_fork.v:10:14: Fork statements require --timing
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    10 |       fork : fblk
       |              ^~~~
                  ... For error description see https://verilator.org/warn/NOTIMING?v=latest

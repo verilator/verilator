@@ -1,54 +1,54 @@
 %Error-NOTIMING: t/t_process.v:26:20: process::self() requires --timing
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    26 |       p = process::self();
       |                    ^~~~
                  ... For error description see https://verilator.org/warn/NOTIMING?v=latest
 %Error-NOTIMING: t/t_process.v:27:13: process::status() requires --timing
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    27 |       if (p.status() != process::RUNNING) $stop;
       |             ^~~~~~
 %Error-NOTIMING: t/t_process.v:28:13: process::status() requires --timing
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    28 |       if (p.status() == process::WAITING) $stop;
       |             ^~~~~~
 %Error-NOTIMING: t/t_process.v:29:13: process::status() requires --timing
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    29 |       if (p.status() == process::SUSPENDED) $stop;
       |             ^~~~~~
 %Error-NOTIMING: t/t_process.v:30:13: process::status() requires --timing
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    30 |       if (p.status() == process::KILLED) $stop;
       |             ^~~~~~
 %Error-NOTIMING: t/t_process.v:31:13: process::status() requires --timing
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    31 |       if (p.status() == process::FINISHED) $stop;
       |             ^~~~~~
 %Error-NOTIMING: t/t_process.v:33:16: process::kill() requires --timing
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    33 |       if (0) p.kill();
       |                ^~~~
 %Error-NOTIMING: t/t_process.v:34:16: process::await() requires --timing
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    34 |       if (0) p.await();
       |                ^~~~~
 %Error-NOTIMING: t/t_process.v:35:16: process::suspend() requires --timing
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    35 |       if (0) p.suspend();
       |                ^~~~~~~
 %Error-NOTIMING: t/t_process.v:36:16: process::resume() requires --timing
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    36 |       if (0) p.resume();
       |                ^~~~~~
 %Error-NOTIMING: t/t_process.v:38:9: process::srandom() requires --timing
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    38 |       p.srandom(0);
       |         ^~~~~~~
 %Error-NOTIMING: t/t_process.v:39:25: process::get_randstate() requires --timing
-                                    : ... In instance t
+                                    : ... note: In instance 't'
    39 |       p.set_randstate(p.get_randstate());
       |                         ^~~~~~~~~~~~~
 %Error-NOTIMING: t/t_process.v:39:9: process::set_randstate() requires --timing
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    39 |       p.set_randstate(p.get_randstate());
       |         ^~~~~~~~~~~~~
 %Error: Exiting due to

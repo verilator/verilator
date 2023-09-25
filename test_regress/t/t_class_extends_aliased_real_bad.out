@@ -1,5 +1,5 @@
 %Error: t/t_class_extends_aliased_real_bad.v:14:10: Attempting to extend using non-class
-                                                  : ... In instance t
+                                                  : ... note: In instance 't'
    14 |    bar #(real_t) bar_real_t;
       |          ^~~~~~
 %Error: Exiting due to

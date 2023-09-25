@@ -1,11 +1,11 @@
 %Warning-WIDTHEXPAND: t/t_func_bad_width.v:13:13: Operator FUNCREF 'MUX' expects 40 bits on the Function Argument, but Function Argument's VARREF 'in' generates 39 bits.
-                                                : ... In instance t
+                                                : ... note: In instance 't'
    13 |       out = MUX (in);
       |             ^~~
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Warning-WIDTHTRUNC: t/t_func_bad_width.v:13:11: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's FUNCREF 'MUX' generates 32 bits.
-                                               : ... In instance t
+                                               : ... note: In instance 't'
    13 |       out = MUX (in);
       |           ^
 %Error: Exiting due to

@@ -16,63 +16,63 @@
    40 |       i_sub0.cannot_split1[0] = 0;
       |              ^~~~~~~~~~~~~
 %Warning-SELRANGE: t/t_split_var_1_bad.v:90:33: Selection index out of range: 13 outside 12:10
-                                              : ... In instance t.i_sub3
+                                              : ... note: In instance 't.i_sub3'
    90 |    assign outwires[12] = inwires[13];   
       |                                 ^
 %Warning-WIDTHTRUNC: t/t_split_var_1_bad.v:41:31: Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's FUNCREF 'bad_func' generates 32 bits.
-                                                : ... In instance t
+                                                : ... note: In instance 't'
    41 |       i_sub0.cannot_split1[1] = bad_func(addr, rd_data0);
       |                               ^
 %Error: t/t_split_var_1_bad.v:79:16: Illegal assignment of constant to unpacked array
-                                   : ... In instance t.i_sub2
+                                   : ... note: In instance 't.i_sub2'
    79 |    assign b = a[0];   
       |                ^
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:56:31: 'cannot_split0' has split_var metacomment but will not be split because index cannot be determined statically.
-                                              : ... In instance t.i_sub0
+                                              : ... note: In instance 't.i_sub0'
    56 |       rd_data = cannot_split0[addr];
       |                               ^~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:90:34: 'inwires' has split_var metacomment but will not be split because index is out of range.
-                                              : ... In instance t.i_sub3
+                                              : ... note: In instance 't.i_sub3'
    90 |    assign outwires[12] = inwires[13];   
       |                                  ^~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:17:9: 'should_show_warning0' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic.
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    17 |    real should_show_warning0                  /*verilator split_var*/ ;
       |         ^~~~~~~~~~~~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:18:11: 'should_show_warning1' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    18 |    string should_show_warning1                /*verilator split_var*/ ;
       |           ^~~~~~~~~~~~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:19:11: 'should_show_warning2' has split_var metacomment but will not be split because its bitwidth is 1.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    19 |    wire   should_show_warning2                /*verilator split_var*/ ;
       |           ^~~~~~~~~~~~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:23:16: 'public_signal' has split_var metacomment but will not be split because it is public.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    23 |    logic [1:0] public_signal /*verilator public*/  /*verilator split_var*/ ;
       |                ^~~~~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:31:44: 'inout_port' has split_var metacomment but will not be split because it is an inout port.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    31 |    function int bad_func(inout logic [3:0] inout_port /*verilator split_var*/ ,
       |                                            ^~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:32:42: 'ref_port' has split_var metacomment but will not be split because it is a ref argument.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    32 |                          ref logic [7:0] ref_port /*verilator split_var*/ );
       |                                          ^~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:37:19: 'loop_idx' has split_var metacomment but will not be split because it is used as a loop variable.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    37 |       logic [7:0] loop_idx /*verilator split_var*/ ;
       |                   ^~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:62:11: 'cannot_split_genvar' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic.
-                                              : ... In instance t.i_sub1
+                                              : ... note: In instance 't.i_sub1'
    62 |    genvar cannot_split_genvar /*verilator split_var*/ ;
       |           ^~~~~~~~~~~~~~~~~~~
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:65:65: 'cannot_split' has split_var metacomment but will not be split because its bit range cannot be determined statically.
-                                              : ... In instance t.i_sub1
+                                              : ... note: In instance 't.i_sub1'
    65 |       logic [8:0] rd_tmp /*verilator split_var*/  = cannot_split[addr];
       |                                                                 ^
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:66:23: 'rd_tmp' has split_var metacomment but will not be split because its bit range cannot be determined statically.
-                                              : ... In instance t.i_sub1
+                                              : ... note: In instance 't.i_sub1'
    66 |       rd_data = rd_tmp[{3'b0, addr[0]}+:8];
       |                       ^
 %Error: Exiting due to

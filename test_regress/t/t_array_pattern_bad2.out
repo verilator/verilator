@@ -1,5 +1,5 @@
 %Error: t/t_array_pattern_bad2.v:22:16: Multiple '{ default: } clauses
-                                      : ... In instance t
+                                      : ... note: In instance 't'
    22 |       myinfo = '{default: '0,
       |                ^~
 %Error: Exiting due to

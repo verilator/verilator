@@ -1,39 +1,39 @@
 %Error-NOTIMING: t/t_wait.v:12:7: Wait statements require --timing
-                                : ... In instance t
+                                : ... note: In instance 't'
    12 |       wait (value == 1);
       |       ^~~~
                  ... For error description see https://verilator.org/warn/NOTIMING?v=latest
 %Error-NOTIMING: t/t_wait.v:14:7: Wait statements require --timing
-                                : ... In instance t
+                                : ... note: In instance 't'
    14 |       wait (0);
       |       ^~~~
 %Error-NOTIMING: t/t_wait.v:17:7: Wait statements require --timing
-                                : ... In instance t
+                                : ... note: In instance 't'
    17 |       wait (value == 2);
       |       ^~~~
 %Error-NOTIMING: t/t_wait.v:20:7: Wait statements require --timing
-                                : ... In instance t
+                                : ... note: In instance 't'
    20 |       wait (value == 3) if (value != 3) $stop;
       |       ^~~~
 %Warning-STMTDLY: t/t_wait.v:25:7: Ignoring delay on this statement due to --no-timing
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    25 |       #10;
       |       ^
                   ... Use "/* verilator lint_off STMTDLY */" and lint_on around source to disable this message.
 %Warning-STMTDLY: t/t_wait.v:27:7: Ignoring delay on this statement due to --no-timing
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    27 |       #10;
       |       ^
 %Warning-STMTDLY: t/t_wait.v:29:7: Ignoring delay on this statement due to --no-timing
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    29 |       #10;
       |       ^
 %Warning-STMTDLY: t/t_wait.v:31:7: Ignoring delay on this statement due to --no-timing
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    31 |       #10;
       |       ^
 %Warning-STMTDLY: t/t_wait.v:33:7: Ignoring delay on this statement due to --no-timing
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    33 |       #10;
       |       ^
 %Error: Exiting due to

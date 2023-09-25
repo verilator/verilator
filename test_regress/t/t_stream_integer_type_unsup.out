@@ -1,146 +1,146 @@
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:118:31: Unsupported: Stream operation on a variable of a type 'byte$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   118 |          packed_data_32    = {<<8{byte_in}};
       |                               ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:119:31: Unsupported: Stream operation on a variable of a type 'shortint$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   119 |          packed_data_64    = {<<16{shortint_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:120:31: Unsupported: Stream operation on a variable of a type 'int$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   120 |          packed_data_128   = {<<32{int_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:121:31: Unsupported: Stream operation on a variable of a type 'integer$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   121 |          packed_data_128_i = {<<32{integer_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:122:31: Unsupported: Stream operation on a variable of a type 'longint$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   122 |          packed_data_256   = {<<64{longint_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:123:31: Unsupported: Stream operation on a variable of a type 'time$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   123 |          packed_time_256   = {<<64{time_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:124:31: Unsupported: Stream operation on a variable of a type 'bit[7:0]$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   124 |          v_packed_data_32  = {<<8{bit_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:125:31: Unsupported: Stream operation on a variable of a type 'bit[15:0]$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   125 |          v_packed_data_64  = {<<16{logic_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:126:31: Unsupported: Stream operation on a variable of a type 'bit[31:0]$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   126 |          v_packed_data_128 = {<<32{reg_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:128:11: Unsupported: Stream operation on a variable of a type 'byte$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   128 |          {<<8{byte_out}}      = packed_data_32;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:129:11: Unsupported: Stream operation on a variable of a type 'shortint$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   129 |          {<<16{shortint_out}} = packed_data_64;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:130:11: Unsupported: Stream operation on a variable of a type 'int$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   130 |          {<<32{int_out}}      = packed_data_128;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:131:11: Unsupported: Stream operation on a variable of a type 'integer$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   131 |          {<<32{integer_out}}  = packed_data_128_i;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:132:11: Unsupported: Stream operation on a variable of a type 'longint$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   132 |          {<<64{longint_out}}  = packed_data_256;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:133:11: Unsupported: Stream operation on a variable of a type 'time$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   133 |          {<<64{time_out}}     = packed_time_256;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:134:11: Unsupported: Stream operation on a variable of a type 'bit[7:0]$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   134 |          {<<8{bit_out}}       = v_packed_data_32;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:135:11: Unsupported: Stream operation on a variable of a type 'bit[15:0]$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   135 |          {<<16{logic_out}}    = v_packed_data_64;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:136:11: Unsupported: Stream operation on a variable of a type 'bit[31:0]$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   136 |          {<<32{reg_out}}      = v_packed_data_128;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:150:31: Unsupported: Stream operation on a variable of a type 'byte$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   150 |          packed_data_32    = {<<byte{byte_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:151:31: Unsupported: Stream operation on a variable of a type 'shortint$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   151 |          packed_data_64    = {<<shortint{shortint_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:152:31: Unsupported: Stream operation on a variable of a type 'int$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   152 |          packed_data_128   = {<<int{int_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:153:31: Unsupported: Stream operation on a variable of a type 'integer$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   153 |          packed_data_128_i = {<<integer{integer_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:154:31: Unsupported: Stream operation on a variable of a type 'longint$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   154 |          packed_data_256   = {<<longint{longint_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:155:31: Unsupported: Stream operation on a variable of a type 'time$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   155 |          packed_time_256   = {<<time{time_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:156:31: Unsupported: Stream operation on a variable of a type 'bit[7:0]$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   156 |          v_packed_data_32  = {<<test_byte{bit_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:157:31: Unsupported: Stream operation on a variable of a type 'bit[15:0]$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   157 |          v_packed_data_64  = {<<test_short{logic_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:158:31: Unsupported: Stream operation on a variable of a type 'bit[31:0]$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   158 |          v_packed_data_128 = {<<test_word{reg_in}};
       |                               ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:160:11: Unsupported: Stream operation on a variable of a type 'byte$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   160 |          {<<byte{byte_out}}         = packed_data_32;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:161:11: Unsupported: Stream operation on a variable of a type 'shortint$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   161 |          {<<shortint{shortint_out}} = packed_data_64;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:162:11: Unsupported: Stream operation on a variable of a type 'int$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   162 |          {<<int{int_out}}           = packed_data_128;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:163:11: Unsupported: Stream operation on a variable of a type 'integer$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   163 |          {<<integer{integer_out}}   = packed_data_128_i;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:164:11: Unsupported: Stream operation on a variable of a type 'longint$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   164 |          {<<longint{longint_out}}   = packed_data_256;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:165:11: Unsupported: Stream operation on a variable of a type 'time$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   165 |          {<<time{time_out}}         = packed_time_256;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:166:11: Unsupported: Stream operation on a variable of a type 'bit[7:0]$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   166 |          {<<test_byte{bit_out}}     = v_packed_data_32;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:167:11: Unsupported: Stream operation on a variable of a type 'bit[15:0]$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   167 |          {<<test_short{logic_out}}  = v_packed_data_64;
       |           ^~
 %Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:168:11: Unsupported: Stream operation on a variable of a type 'bit[31:0]$[0:3]'
-                                                          : ... In instance t
+                                                          : ... note: In instance 't'
   168 |          {<<test_word{reg_out}}     = v_packed_data_128;
       |           ^~
 %Error: Exiting due to

@@ -1,5 +1,5 @@
 %Error: t/t_mailbox_bad.v:12:13: Class method 'bad_method' not found in class 'mailbox__Tz1'
-                               : ... In instance t
+                               : ... note: In instance 't'
    12 |       if (m.bad_method() != 0) $stop;
       |             ^~~~~~~~~~
 %Error: Exiting due to

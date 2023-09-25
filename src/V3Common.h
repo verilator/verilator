@@ -20,11 +20,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 //============================================================================
 
 class V3Common final {
 public:
-    static void commonAll();
+    static void commonAll() VL_MT_DISABLED;
 };
 
 #endif  // Guard

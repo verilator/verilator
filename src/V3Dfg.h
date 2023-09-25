@@ -35,8 +35,10 @@
 
 #include "V3Ast.h"
 #include "V3Error.h"
+#include "V3Global.h"
 #include "V3Hash.h"
 #include "V3List.h"
+#include "V3ThreadSafety.h"
 
 #include "V3Dfg__gen_forward_class_decls.h"  // From ./astgen
 
@@ -140,8 +142,8 @@ class DfgGraph final {
 
 public:
     // CONSTRUCTOR
-    explicit DfgGraph(AstModule& module, const string& name = "");
-    ~DfgGraph();
+    explicit DfgGraph(AstModule& module, const string& name = "") VL_MT_DISABLED;
+    ~DfgGraph() VL_MT_DISABLED;
     VL_UNCOPYABLE(DfgGraph);
 
     // METHODS
@@ -183,12 +185,12 @@ public:
     inline void forEachVertex(std::function<void(const DfgVertex&)> f) const;
 
     // Add contents of other graph to this graph. Leaves other graph empty.
-    void addGraph(DfgGraph& other);
+    void addGraph(DfgGraph& other) VL_MT_DISABLED;
 
     // Split this graph into individual components (unique sub-graphs with no edges between them).
     // Also removes any vertices that are not weakly connected to any variable.
     // Leaves 'this' graph empty.
-    std::vector<std::unique_ptr<DfgGraph>> splitIntoComponents(std::string label);
+    std::vector<std::unique_ptr<DfgGraph>> splitIntoComponents(std::string label) VL_MT_DISABLED;
 
     // Extract cyclic sub-graphs from 'this' graph. Cyclic sub-graphs are those that contain at
     // least one strongly connected component (SCC) plus any other vertices that feed or sink from
@@ -198,26 +200,27 @@ public:
     // of a cycle) are left in 'this' graph. This means that at the end 'this' graph is guaranteed
     // to be a DAG (acyclic). 'this' will not necessarily be a connected graph at the end, even if
     // it was originally connected.
-    std::vector<std::unique_ptr<DfgGraph>> extractCyclicComponents(std::string label);
+    std::vector<std::unique_ptr<DfgGraph>>
+    extractCyclicComponents(std::string label) VL_MT_DISABLED;
 
     // Dump graph in Graphviz format into the given stream 'os'. 'label' is added to the name of
     // the graph which is included in the output.
-    void dumpDot(std::ostream& os, const string& label = "") const;
+    void dumpDot(std::ostream& os, const string& label = "") const VL_MT_DISABLED;
     // Dump graph in Graphviz format into a new file with the given 'fileName'. 'label' is added to
     // the name of the graph which is included in the output.
-    void dumpDotFile(const string& fileName, const string& label = "") const;
+    void dumpDotFile(const string& fileName, const string& label = "") const VL_MT_DISABLED;
     // Dump graph in Graphviz format into a new automatically numbered debug file. 'label' is
     // added to the name of the graph, which is included in the file name and the output.
-    void dumpDotFilePrefixed(const string& label = "") const;
+    void dumpDotFilePrefixed(const string& label = "") const VL_MT_DISABLED;
     // Dump upstream (source) logic cone starting from given vertex into a file with the given
     // 'fileName'. 'name' is the name of the graph, which is included in the output.
     void dumpDotUpstreamCone(const string& fileName, const DfgVertex& vtx,
-                             const string& name = "") const;
+                             const string& name = "") const VL_MT_DISABLED;
     // Dump all individual logic cones driving external variables in Graphviz format into separate
     // new automatically numbered debug files. 'label' is added to the name of the graph, which is
     // included in the file names and the output. This is useful for very large graphs that are
     // otherwise difficult to browse visually due to their size.
-    void dumpDotAllVarConesPrefixed(const string& label = "") const;
+    void dumpDotAllVarConesPrefixed(const string& label = "") const VL_MT_DISABLED;
 };
 
 //------------------------------------------------------------------------------
@@ -243,9 +246,9 @@ public:
     // The sink (consumer) of this edge
     DfgVertex* sinkp() const { return m_sinkp; }
     // Remove driver of this edge
-    void unlinkSource();
+    void unlinkSource() VL_MT_DISABLED;
     // Relink this edge to be driven from the given new source vertex
-    void relinkSource(DfgVertex* newSourcep);
+    void relinkSource(DfgVertex* newSourcep) VL_MT_DISABLED;
 };
 
 //------------------------------------------------------------------------------
@@ -272,10 +275,10 @@ protected:
     UserDataStorage m_userDataStorage;  // User data storage
 
     // CONSTRUCTOR
-    DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep);
+    DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep) VL_MT_DISABLED;
 
 public:
-    virtual ~DfgVertex();
+    virtual ~DfgVertex() VL_MT_DISABLED;
 
     // METHODS
 private:
@@ -283,10 +286,10 @@ private:
     virtual void accept(DfgVisitor& v) = 0;
 
     // Part of Vertex equality only dependent on this vertex
-    virtual bool selfEquals(const DfgVertex& that) const;
+    virtual bool selfEquals(const DfgVertex& that) const VL_MT_DISABLED;
 
     // Part of Vertex hash only dependent on this vertex
-    virtual V3Hash selfHash() const;
+    virtual V3Hash selfHash() const VL_MT_DISABLED;
 
 public:
     // Supported packed types
@@ -409,7 +412,7 @@ public:
     // semantics of the logic. The 'cache' argument is used to store results to avoid repeat
     // evaluations, but it requires that the upstream sources of the compared vertices do not
     // change between invocations.
-    bool equals(const DfgVertex& that, EqualsCache& cache) const;
+    bool equals(const DfgVertex& that, EqualsCache& cache) const VL_MT_DISABLED;
 
     // Uncached version of 'equals'
     bool equals(const DfgVertex& that) const {
@@ -419,7 +422,7 @@ public:
 
     // Hash of vertex (depends on this vertex and all upstream vertices feeding into this vertex).
     // Uses user data for caching hashes
-    V3Hash hash();
+    V3Hash hash() VL_MT_DISABLED;
 
     // Source edges of this vertex
     virtual std::pair<DfgEdge*, size_t> sourceEdges() = 0;
@@ -437,13 +440,13 @@ public:
     bool hasMultipleSinks() const { return m_sinksp && m_sinksp->m_nextp; }
 
     // Fanout (number of sinks) of this vertex (expensive to compute)
-    uint32_t fanout() const;
+    uint32_t fanout() const VL_MT_DISABLED;
 
     // Unlink from container (graph or builder), then delete this vertex
-    void unlinkDelete(DfgGraph& dfg);
+    void unlinkDelete(DfgGraph& dfg) VL_MT_DISABLED;
 
     // Relink all sinks to be driven from the given new source
-    void replaceWith(DfgVertex* newSourcep);
+    void replaceWith(DfgVertex* newSourcep) VL_MT_DISABLED;
 
     // Access to vertex list for faster iteration in important contexts
     DfgVertex* verticesNext() const { return m_verticesEnt.nextp(); }
@@ -451,56 +454,58 @@ public:
 
     // Calls given function 'f' for each source vertex of this vertex
     // Unconnected source edges are not iterated.
-    inline void forEachSource(std::function<void(DfgVertex&)> f);
+    inline void forEachSource(std::function<void(DfgVertex&)> f) VL_MT_DISABLED;
 
     // Calls given function 'f' for each source vertex of this vertex
     // Unconnected source edges are not iterated.
-    inline void forEachSource(std::function<void(const DfgVertex&)> f) const;
+    inline void forEachSource(std::function<void(const DfgVertex&)> f) const VL_MT_DISABLED;
 
     // Calls given function 'f' for each source edge of this vertex. Also passes source index.
-    inline void forEachSourceEdge(std::function<void(DfgEdge&, size_t)> f);
+    inline void forEachSourceEdge(std::function<void(DfgEdge&, size_t)> f) VL_MT_DISABLED;
 
     // Calls given function 'f' for each source edge of this vertex. Also passes source index.
-    inline void forEachSourceEdge(std::function<void(const DfgEdge&, size_t)> f) const;
+    inline void
+    forEachSourceEdge(std::function<void(const DfgEdge&, size_t)> f) const VL_MT_DISABLED;
 
     // Calls given function 'f' for each sink vertex of this vertex
     // Unlinking/deleting the given sink during iteration is safe, but not other sinks of this
     // vertex.
-    inline void forEachSink(std::function<void(DfgVertex&)> f);
+    inline void forEachSink(std::function<void(DfgVertex&)> f) VL_MT_DISABLED;
 
     // Calls given function 'f' for each sink vertex of this vertex
-    inline void forEachSink(std::function<void(const DfgVertex&)> f) const;
+    inline void forEachSink(std::function<void(const DfgVertex&)> f) const VL_MT_DISABLED;
 
     // Calls given function 'f' for each sink edge of this vertex.
     // Unlinking/deleting the given sink during iteration is safe, but not other sinks of this
     // vertex.
-    inline void forEachSinkEdge(std::function<void(DfgEdge&)> f);
+    inline void forEachSinkEdge(std::function<void(DfgEdge&)> f) VL_MT_DISABLED;
 
     // Calls given function 'f' for each sink edge of this vertex.
-    inline void forEachSinkEdge(std::function<void(const DfgEdge&)> f) const;
+    inline void forEachSinkEdge(std::function<void(const DfgEdge&)> f) const VL_MT_DISABLED;
 
     // Returns first source edge which satisfies the given predicate 'p', or nullptr if no such
     // sink vertex exists
-    inline const DfgEdge* findSourceEdge(std::function<bool(const DfgEdge&, size_t)> p) const;
+    inline const DfgEdge*
+    findSourceEdge(std::function<bool(const DfgEdge&, size_t)> p) const VL_MT_DISABLED;
 
     // Returns first sink vertex of type 'Vertex' which satisfies the given predicate 'p',
     // or nullptr if no such sink vertex exists
     template <typename Vertex>
-    inline Vertex* findSink(std::function<bool(const Vertex&)> p) const;
+    inline Vertex* findSink(std::function<bool(const Vertex&)> p) const VL_MT_DISABLED;
 
     // Returns first sink vertex of type 'Vertex', or nullptr if no such sink vertex exists.
     // This is a special case of 'findSink' above with the predicate always true.
     template <typename Vertex>
-    inline Vertex* findSink() const;
+    inline Vertex* findSink() const VL_MT_DISABLED;
 
     // Is this a DfgConst that is all zeroes
-    inline bool isZero() const;
+    inline bool isZero() const VL_MT_DISABLED;
 
     // Is this a DfgConst that is all ones
-    inline bool isOnes() const;
+    inline bool isOnes() const VL_MT_DISABLED;
 
     // Should this vertex be inlined when rendering to Ast, or be stored to a temporary
-    inline bool inlined() const;
+    inline bool inlined() const VL_MT_DISABLED;
 
     // Methods that allow DfgVertex to participate in error reporting/messaging
     void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {

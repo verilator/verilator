@@ -185,8 +185,8 @@ public:
             std::ostringstream stack;
             for (const auto& callstack : vlstd::reverse_view(m_callStack)) {
                 AstFuncRef* const funcp = callstack->m_funcp;
-                stack << "\n        " << funcp->fileline() << "... Called from "
-                      << funcp->prettyName() << "() with parameters:";
+                stack << "\n        " << funcp->fileline() << "... Called from '"
+                      << funcp->prettyName() << "()' with parameters:";
                 V3TaskConnects* tconnects = callstack->m_tconnects;
                 for (V3TaskConnects::iterator conIt = tconnects->begin();
                      conIt != tconnects->end(); ++conIt) {

@@ -1,35 +1,35 @@
 %Warning-ASSIGNDLY: t/t_delay.v:25:11: Ignoring timing control on this assignment/primitive due to --no-timing
-                                     : ... In instance t
+                                     : ... note: In instance 't'
    25 |    assign #(1.2000000000000000) dly1 = dly0 + 32'h1;
       |           ^
                     ... For warning description see https://verilator.org/warn/ASSIGNDLY?v=latest
                     ... Use "/* verilator lint_off ASSIGNDLY */" and lint_on around source to disable this message.
 %Warning-ASSIGNDLY: t/t_delay.v:26:11: Ignoring timing control on this assignment/primitive due to --no-timing
-                                     : ... In instance t
+                                     : ... note: In instance 't'
    26 |    assign #(sub.delay) dly3 = dly1 + 1;
       |           ^
 %Warning-ASSIGNDLY: t/t_delay.v:33:18: Ignoring timing control on this assignment/primitive due to --no-timing
-                                     : ... In instance t
+                                     : ... note: In instance 't'
    33 |          dly0 <= #0 32'h11;
       |                  ^
 %Warning-ASSIGNDLY: t/t_delay.v:36:18: Ignoring timing control on this assignment/primitive due to --no-timing
-                                     : ... In instance t
+                                     : ... note: In instance 't'
    36 |          dly0 <= #0.12 dly0 + 32'h12;
       |                  ^
 %Warning-ASSIGNDLY: t/t_delay.v:44:18: Ignoring timing control on this assignment/primitive due to --no-timing
-                                     : ... In instance t
+                                     : ... note: In instance 't'
    44 |          dly0 <= #(dly_s.dly) 32'h55;
       |                  ^
 %Warning-STMTDLY: t/t_delay.v:50:10: Ignoring delay on this statement due to --no-timing
-                                   : ... In instance t
+                                   : ... note: In instance 't'
    50 |          #100 $finish;
       |          ^
 %Warning-UNUSEDSIGNAL: t/t_delay.v:23:12: Signal is not used: 'dly_s'
-                                        : ... In instance t
+                                        : ... note: In instance 't'
    23 |    dly_s_t dly_s;
       |            ^~~~~
 %Warning-UNUSEDSIGNAL: t/t_delay.v:57:13: Signal is not used: 'delay'
-                                        : ... In instance t.sub
+                                        : ... note: In instance 't.sub'
    57 |    realtime delay = 2.3;
       |             ^~~~~
 %Warning-BLKSEQ: t/t_delay.v:43:20: Blocking assignment '=' in sequential logic process
