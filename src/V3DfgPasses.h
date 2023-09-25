@@ -20,6 +20,7 @@
 #include "config_build.h"
 
 #include "V3DfgPeephole.h"
+#include "V3ThreadSafety.h"
 
 class AstModule;
 class DfgGraph;
@@ -35,7 +36,7 @@ public:
     VDouble0 m_eliminated;  // Number of common sub-expressions eliminated
     explicit V3DfgCseContext(const std::string& label)
         : m_label{label} {}
-    ~V3DfgCseContext();
+    ~V3DfgCseContext() VL_MT_DISABLED;
 };
 
 class DfgRemoveVarsContext final {
@@ -45,7 +46,7 @@ public:
     VDouble0 m_removed;  // Number of redundant variables removed
     explicit DfgRemoveVarsContext(const std::string& label)
         : m_label{label} {}
-    ~DfgRemoveVarsContext();
+    ~DfgRemoveVarsContext() VL_MT_DISABLED;
 };
 
 class V3DfgOptimizationContext final {
@@ -73,8 +74,8 @@ public:
     V3DfgCseContext m_cseContext1{m_label + " 2nd"};
     V3DfgPeepholeContext m_peepholeContext{m_label};
     DfgRemoveVarsContext m_removeVarsContext{m_label};
-    explicit V3DfgOptimizationContext(const std::string& label);
-    ~V3DfgOptimizationContext();
+    explicit V3DfgOptimizationContext(const std::string& label) VL_MT_DISABLED;
+    ~V3DfgOptimizationContext() VL_MT_DISABLED;
 
     const std::string& prefix() const { return m_prefix; }
 };
@@ -87,29 +88,29 @@ namespace V3DfgPasses {
 // Construct a DfGGraph representing the combinational logic in the given AstModule. The logic
 // that is represented by the graph is removed from the given AstModule. Returns the
 // constructed DfgGraph.
-DfgGraph* astToDfg(AstModule&, V3DfgOptimizationContext&);
+DfgGraph* astToDfg(AstModule&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 
 // Optimize the given DfgGraph
-void optimize(DfgGraph&, V3DfgOptimizationContext&);
+void optimize(DfgGraph&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 
 // Convert DfgGraph back into Ast, and insert converted graph back into its parent module.
 // Returns the parent module.
-AstModule* dfgToAst(DfgGraph&, V3DfgOptimizationContext&);
+AstModule* dfgToAst(DfgGraph&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 
 //===========================================================================
 // Intermediate/internal operations
 //===========================================================================
 
 // Common subexpression elimination
-void cse(DfgGraph&, V3DfgCseContext&);
+void cse(DfgGraph&, V3DfgCseContext&) VL_MT_DISABLED;
 // Inline fully driven variables
-void inlineVars(const DfgGraph&);
+void inlineVars(const DfgGraph&) VL_MT_DISABLED;
 // Peephole optimizations
-void peephole(DfgGraph&, V3DfgPeepholeContext&);
+void peephole(DfgGraph&, V3DfgPeepholeContext&) VL_MT_DISABLED;
 // Remove redundant variables
-void removeVars(DfgGraph&, DfgRemoveVarsContext&);
+void removeVars(DfgGraph&, DfgRemoveVarsContext&) VL_MT_DISABLED;
 // Remove unused nodes
-void removeUnused(DfgGraph&);
+void removeUnused(DfgGraph&) VL_MT_DISABLED;
 }  // namespace V3DfgPasses
 
 #endif

@@ -22,19 +22,20 @@
 
 #include "V3Ast.h"
 #include "V3Error.h"
+#include "V3ThreadSafety.h"
 
 //============================================================================
 
 enum VLinkDotStep : uint8_t { LDS_PRIMARY, LDS_PARAMED, LDS_ARRAYED, LDS_SCOPED };
 
 class V3LinkDot final {
-    static void linkDotGuts(AstNetlist* rootp, VLinkDotStep step);
+    static void linkDotGuts(AstNetlist* rootp, VLinkDotStep step) VL_MT_DISABLED;
 
 public:
-    static void linkDotPrimary(AstNetlist* nodep);
-    static void linkDotParamed(AstNetlist* nodep);
-    static void linkDotArrayed(AstNetlist* nodep);
-    static void linkDotScope(AstNetlist* nodep);
+    static void linkDotPrimary(AstNetlist* nodep) VL_MT_DISABLED;
+    static void linkDotParamed(AstNetlist* nodep) VL_MT_DISABLED;
+    static void linkDotArrayed(AstNetlist* nodep) VL_MT_DISABLED;
+    static void linkDotScope(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

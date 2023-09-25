@@ -357,10 +357,10 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* r
     }
 }
 
-AstExecGraph::AstExecGraph(FileLine* fileline, const string& name)
-    : ASTGEN_SUPER_ExecGraph(fileline)
-    , m_depGraphp{new V3Graph}
-    , m_name{name} {}
+AstExecGraph::AstExecGraph(FileLine* fileline, const string& name) VL_MT_DISABLED
+    : ASTGEN_SUPER_ExecGraph(fileline),
+      m_depGraphp{new V3Graph},
+      m_name{name} {}
 
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
 

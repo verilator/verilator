@@ -20,11 +20,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 //============================================================================
 
 class V3CUse final {
 public:
-    static void cUseAll();
+    static void cUseAll() VL_MT_DISABLED;
 };
 
 #endif  // Guard

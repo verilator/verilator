@@ -15,6 +15,8 @@
 //*************************************************************************
 
 #ifndef V3OPTION_PARSER_NO_VOPTION_BOOL
+#define VL_MT_DISABLED_CODE_UNIT 1
+
 #include "V3Global.h"
 #include "V3Options.h"
 #endif

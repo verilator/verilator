@@ -23,6 +23,7 @@
 #include "V3Graph.h"
 #include "V3OrderGraph.h"
 #include "V3OrderMoveGraph.h"
+#include "V3ThreadSafety.h"
 
 #include <list>
 #include <unordered_map>
@@ -51,24 +52,24 @@ public:
 
     // Fill in the provided empty graph with AbstractLogicMTask's and their
     // interdependencies.
-    void go(V3Graph* mtasksp);
+    void go(V3Graph* mtasksp) VL_MT_DISABLED;
 
-    static void selfTest();
-    static void selfTestNormalizeCosts();
+    static void selfTest() VL_MT_DISABLED;
+    static void selfTestNormalizeCosts() VL_MT_DISABLED;
 
     // Print out a hash of the shape of graphp.  Only needed to debug the
     // origin of some nondeterminism; otherwise this is pretty useless.
-    static void hashGraphDebug(const V3Graph* graphp, const char* debugName);
+    static void hashGraphDebug(const V3Graph* graphp, const char* debugName) VL_MT_DISABLED;
 
     // Print debug stats about graphp whose nodes must be AbstractMTask's.
-    static void debugMTaskGraphStats(const V3Graph* graphp, const string& stage);
+    static void debugMTaskGraphStats(const V3Graph* graphp, const string& stage) VL_MT_DISABLED;
 
     // Operate on the final ExecMTask graph, immediately prior to code
     // generation time.
-    static void finalize(AstNetlist* netlistp);
+    static void finalize(AstNetlist* netlistp) VL_MT_DISABLED;
 
 private:
-    uint32_t setupMTaskDeps(V3Graph* mtasksp);
+    uint32_t setupMTaskDeps(V3Graph* mtasksp) VL_MT_DISABLED;
 
     VL_UNCOPYABLE(V3Partition);
 };

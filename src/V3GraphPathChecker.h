@@ -20,6 +20,7 @@
 #include "V3Error.h"
 #include "V3Graph.h"
 #include "V3GraphAlg.h"
+#include "V3ThreadSafety.h"
 
 //######################################################################
 
@@ -39,21 +40,22 @@ class GraphPathChecker final : GraphAlg<const V3Graph> {
 public:
     // CONSTRUCTORS
     explicit GraphPathChecker(const V3Graph* graphp,
-                              V3EdgeFuncP edgeFuncp = V3GraphEdge::followAlwaysTrue);
-    ~GraphPathChecker();
+                              V3EdgeFuncP edgeFuncp
+                              = V3GraphEdge::followAlwaysTrue) VL_MT_DISABLED;
+    ~GraphPathChecker() VL_MT_DISABLED;
 
     // METHODS
-    bool pathExistsFrom(const V3GraphVertex* fromp, const V3GraphVertex* top);
+    bool pathExistsFrom(const V3GraphVertex* fromp, const V3GraphVertex* top) VL_MT_DISABLED;
 
     // If have edges A->B, B->C, and A->C then A->C is considered a
     // "transitive" edge (implied by A->B and B->C) and it could be safely
     // removed. Detect such an edge.
-    bool isTransitiveEdge(const V3GraphEdge* edgep);
+    bool isTransitiveEdge(const V3GraphEdge* edgep) VL_MT_DISABLED;
 
 private:
     bool pathExistsInternal(const V3GraphVertex* ap, const V3GraphVertex* bp,
-                            unsigned* costp = nullptr);
-    void initHalfCriticalPaths(GraphWay way, bool checkOnly);
+                            unsigned* costp = nullptr) VL_MT_DISABLED;
+    void initHalfCriticalPaths(GraphWay way, bool checkOnly) VL_MT_DISABLED;
     void incGeneration() { ++m_generation; }
 
     VL_UNCOPYABLE(GraphPathChecker);

@@ -24,6 +24,8 @@
 //          SenItems: Convert pos/negedge of non-simple signals to temporaries
 //*************************************************************************
 
+#define VL_MT_DISABLED_CODE_UNIT 1
+
 #include "config_build.h"
 #include "verilatedos.h"
 

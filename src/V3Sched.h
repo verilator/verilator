@@ -21,6 +21,7 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
+#include "V3ThreadSafety.h"
 
 #include <functional>
 #include <unordered_map>
@@ -130,12 +131,12 @@ public:
     AstNodeStmt* m_postUpdates = nullptr;  // Post updates for the trigger eval function
 
     // Remaps external domains using the specified trigger map
-    std::map<const AstVarScope*, std::vector<AstSenTree*>>
-    remapDomains(const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) const;
+    std::map<const AstVarScope*, std::vector<AstSenTree*>> remapDomains(
+        const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) const VL_MT_DISABLED;
     // Creates a timing resume call (if needed, else returns null)
-    AstCCall* createResume(AstNetlist* const netlistp);
+    AstCCall* createResume(AstNetlist* const netlistp) VL_MT_DISABLED;
     // Creates a timing commit call (if needed, else returns null)
-    AstCCall* createCommit(AstNetlist* const netlistp);
+    AstCCall* createCommit(AstNetlist* const netlistp) VL_MT_DISABLED;
 
     TimingKit() = default;
     TimingKit(LogicByScope&& lbs, AstNodeStmt* postUpdates,
@@ -149,19 +150,20 @@ public:
 };
 
 // Creates the timing kit and marks variables written by suspendables
-TimingKit prepareTiming(AstNetlist* const netlistp);
+TimingKit prepareTiming(AstNetlist* const netlistp) VL_MT_DISABLED;
 
 // Transforms fork sub-statements into separate functions
-void transformForks(AstNetlist* const netlistp);
+void transformForks(AstNetlist* const netlistp) VL_MT_DISABLED;
 
 // Top level entry point to scheduling
-void schedule(AstNetlist*);
+void schedule(AstNetlist*) VL_MT_DISABLED;
 
 // Sub-steps
-LogicByScope breakCycles(AstNetlist* netlistp, const LogicByScope& combinationalLogic);
+LogicByScope breakCycles(AstNetlist* netlistp,
+                         const LogicByScope& combinationalLogic) VL_MT_DISABLED;
 LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLogic,
-                       LogicByScope& hybridLogic);
-LogicReplicas replicateLogic(LogicRegions&);
+                       LogicByScope& hybridLogic) VL_MT_DISABLED;
+LogicReplicas replicateLogic(LogicRegions&) VL_MT_DISABLED;
 
 }  // namespace V3Sched
 

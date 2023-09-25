@@ -20,6 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 #include <functional>
 #include <unordered_map>
 #include <vector>
@@ -48,7 +50,7 @@ AstCFunc* order(
     bool parallel,  //
     bool slow,  //
     const ExternalDomainsProvider& externalDomains
-    = [](const AstVarScope*, std::vector<AstSenTree*>&) {});
+    = [](const AstVarScope*, std::vector<AstSenTree*>&) {}) VL_MT_DISABLED;
 
 };  // namespace V3Order
 

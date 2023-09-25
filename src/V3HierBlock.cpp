@@ -72,6 +72,8 @@
 //       Used for b) and c).
 //       This options is repeated for all instantiating hierarchical blocks.
 
+#define VL_MT_DISABLED_CODE_UNIT 1
+
 #include "V3HierBlock.h"
 
 #include "V3Ast.h"

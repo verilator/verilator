@@ -23,6 +23,7 @@
 #include "V3EmitCConstInit.h"
 #include "V3Global.h"
 #include "V3MemberMap.h"
+#include "V3ThreadSafety.h"
 
 #include <algorithm>
 #include <map>

@@ -20,11 +20,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 //============================================================================
 
 class V3EmitXml final {
 public:
-    static void emitxml();
+    static void emitxml() VL_MT_DISABLED;
 };
 
 #endif  // Guard

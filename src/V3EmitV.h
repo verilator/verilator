@@ -20,6 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 class AstNode;
 class AstSenTree;
 

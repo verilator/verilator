@@ -28,7 +28,9 @@
 
 #include "V3Error.h"
 #include "V3FileLine.h"
+#include "V3Mutex.h"
 #include "V3Options.h"
+#include "V3ThreadSafety.h"
 
 #include <string>
 #include <unordered_map>
@@ -127,6 +129,7 @@ public:
     V3Global() {}
     void boot();
     void shutdown();  // Release allocated resources
+
     // ACCESSORS (general)
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }
     VWidthMinUsage widthMinUsage() const { return m_widthMinUsage; }
@@ -134,8 +137,8 @@ public:
     bool assertScoped() const { return m_assertScoped; }
 
     // METHODS
-    void readFiles();
-    void removeStd();
+    void readFiles() VL_MT_DISABLED;
+    void removeStd() VL_MT_DISABLED;
     void checkTree() const;
     static void dumpCheckGlobalTree(const string& stagename, int newNumber = 0,
                                     bool doDump = true);

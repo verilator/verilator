@@ -23,6 +23,7 @@
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
+#include "V3ThreadSafety.h"
 
 #include <iostream>
 #include <list>
@@ -57,7 +58,7 @@ public:
     virtual bool isEof() const = 0;  // Return true on EOF.
     virtual void insertUnreadback(const string& text) = 0;
 
-    FileLine* fileline();  ///< File/Line number for last getline call
+    FileLine* fileline() VL_MT_DISABLED;  ///< File/Line number for last getline call
 
     // CONTROL METHODS
     // These options control how the parsing proceeds
@@ -96,7 +97,7 @@ protected:
     void configure(FileLine* fl);
 
 public:
-    static V3PreProc* createPreProc(FileLine* fl);
+    static V3PreProc* createPreProc(FileLine* fl) VL_MT_DISABLED;
     virtual ~V3PreProc() = default;  // LCOV_EXCL_LINE  // Persistent
 };
 

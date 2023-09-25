@@ -292,7 +292,7 @@ void V3Options::addLangExt(const string& langext, const V3LangCode& lc) {
     m_impp->addLangExt(langext, lc);
 }
 void V3Options::addLibExtV(const string& libext) { m_impp->addLibExtV(libext); }
-void V3Options::addDefine(const string& defline, bool allowPlus) {
+void V3Options::addDefine(const string& defline, bool allowPlus) VL_MT_DISABLED {
     // Split +define+foo=value into the appropriate parts and parse
     // Optional + says to allow multiple defines on the line
     // + is not quotable, as other simulators do not allow that
@@ -792,7 +792,7 @@ bool V3Options::coroutineSupport() {
 //######################################################################
 // V3 Options notification methods
 
-void V3Options::notify() {
+void V3Options::notify() VL_MT_DISABLED {
     // Notify that all arguments have been passed and final modification can be made.
     FileLine* const cmdfl = new FileLine{FileLine::commandLineFilename()};
 
@@ -978,7 +978,7 @@ string V3Options::argString(int argc, char** argv) {
 //######################################################################
 // V3 Options Parsing
 
-void V3Options::parseOpts(FileLine* fl, int argc, char** argv) {
+void V3Options::parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED {
     // Parse all options
     // Initial entry point from Verilator.cpp
     parseOptsList(fl, ".", argc, argv);
@@ -1009,7 +1009,8 @@ bool V3Options::suffixed(const string& sw, const char* arg) {
     return (0 == std::strcmp(sw.c_str() + sw.length() - std::strlen(arg), arg));
 }
 
-void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv) {
+void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
+                              char** argv) VL_MT_DISABLED {
     // Parse parameters
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
     // May be called recursively when there are -f files.
@@ -1057,7 +1058,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     // (If DECL_OPTION is a macro, then lambda would be collapsed into a single line).
 
     // Plus options
-    DECL_OPTION("+define+", CbPartialMatch, [this](const char* optp) { addDefine(optp, true); });
+    DECL_OPTION("+define+", CbPartialMatch,
+                [this](const char* optp) VL_MT_DISABLED { addDefine(optp, true); });
     DECL_OPTION("+incdir+", CbPartialMatch,
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
     DECL_OPTION("+libext+", CbPartialMatch, [this](const char* optp) {
@@ -1159,7 +1161,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);
     DECL_OPTION("-coverage-user", OnOff, &m_coverageUser);
 
-    DECL_OPTION("-D", CbPartialMatch, [this](const char* valp) { addDefine(valp, false); });
+    DECL_OPTION("-D", CbPartialMatch,
+                [this](const char* valp) VL_MT_DISABLED { addDefine(valp, false); });
     DECL_OPTION("-debug", CbCall, [this]() { setDebugMode(3); });
     DECL_OPTION("-debugi", CbVal, [this](int v) { setDebugMode(v); });
     DECL_OPTION("-debugi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
@@ -1199,12 +1202,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-expand-limit", CbVal,
                 [this](const char* valp) { m_expandLimit = std::atoi(valp); });
 
-    DECL_OPTION("-F", CbVal, [this, fl, &optdir](const char* valp) {
+    DECL_OPTION("-F", CbVal, [this, fl, &optdir](const char* valp) VL_MT_DISABLED {
         parseOptsFile(fl, parseFileArg(optdir, valp), true);
     });
     DECL_OPTION("-FI", CbVal,
                 [this, &optdir](const char* valp) { addForceInc(parseFileArg(optdir, valp)); });
-    DECL_OPTION("-f", CbVal, [this, fl, &optdir](const char* valp) {
+    DECL_OPTION("-f", CbVal, [this, fl, &optdir](const char* valp) VL_MT_DISABLED {
         parseOptsFile(fl, parseFileArg(optdir, valp), false);
     });
     DECL_OPTION("-flatten", OnOff, &m_flatten);
@@ -1604,7 +1607,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         // Note it may not be a future option, but one that is currently implemented.
         addFuture(optp);
     });
-    DECL_OPTION("-Wno-", CbPartialMatch, [fl, &parser](const char* optp) {
+    DECL_OPTION("-Wno-", CbPartialMatch, [fl, &parser](const char* optp) VL_MT_DISABLED {
         if (!FileLine::globalWarnOff(optp, true)) {
             const string fullopt = std::string{"-Wno-"} + optp;
             fl->v3fatal("Unknown warning specified: " << fullopt
@@ -1624,7 +1627,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     DECL_OPTION("-Wno-style", CbCall, []() { FileLine::globalWarnStyleOff(true); });
     DECL_OPTION("-Wno-UNUSED", CbCall, []() { FileLine::globalWarnUnusedOff(true); });
     DECL_OPTION("-Wno-WIDTH", CbCall, []() { FileLine::globalWarnOff(V3ErrorCode::WIDTH, true); });
-    DECL_OPTION("-Wwarn-", CbPartialMatch, [this, fl, &parser](const char* optp) {
+    DECL_OPTION("-Wwarn-", CbPartialMatch, [this, fl, &parser](const char* optp) VL_MT_DISABLED {
         const V3ErrorCode code{optp};
         if (code == V3ErrorCode::EC_ERROR) {
             if (!isFuture(optp)) {
@@ -1741,7 +1744,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 
 //======================================================================
 
-void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
+void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) VL_MT_DISABLED {
     // Read the specified -f filename and process as arguments
     UINFO(1, "Reading Options File " << filename << endl);
 

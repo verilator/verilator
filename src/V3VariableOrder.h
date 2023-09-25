@@ -20,11 +20,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 //============================================================================
 
 class V3VariableOrder final {
 public:
-    static void orderAll();
+    static void orderAll() VL_MT_DISABLED;
 };
 
 #endif  // Guard

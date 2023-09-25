@@ -20,13 +20,15 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 class AstNetlist;
 
 //============================================================================
 
 class V3Active final {
 public:
-    static void activeAll(AstNetlist* nodep);
+    static void activeAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

@@ -20,6 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 class AstNetlist;
 class AstNode;
 class AstNodeDType;
@@ -28,18 +30,18 @@ class AstNodeDType;
 
 class V3Width final {
 public:
-    static void width(AstNetlist* nodep);
-    static AstNode* widthParamsEdit(AstNode* nodep);
-    static AstNode* widthGenerateParamsEdit(AstNode* nodep);
+    static void width(AstNetlist* nodep) VL_MT_DISABLED;
+    static AstNode* widthParamsEdit(AstNode* nodep) VL_MT_DISABLED;
+    static AstNode* widthGenerateParamsEdit(AstNode* nodep) VL_MT_DISABLED;
     // Final step... Mark all widths as equal
-    static void widthCommit(AstNetlist* nodep);
+    static void widthCommit(AstNetlist* nodep) VL_MT_DISABLED;
 
-    static AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2);
+    static AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) VL_MT_DISABLED;
 
     // For use only in WidthVisitor
     // Replace AstSelBit, etc with AstSel/AstArraySel
     // Returns replacement node if nodep was deleted, or null if none.
-    static AstNode* widthSelNoIterEdit(AstNode* nodep);
+    static AstNode* widthSelNoIterEdit(AstNode* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

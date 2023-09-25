@@ -20,17 +20,19 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 //============================================================================
 
 class V3EmitC final {
 public:
-    static void emitcConstPool();
-    static void emitcHeaders();
+    static void emitcConstPool() VL_MT_DISABLED;
+    static void emitcHeaders() VL_MT_DISABLED;
     static void emitcImp();
-    static void emitcInlines();
-    static void emitcModel();
-    static void emitcSyms(bool dpiHdrOnly = false);
-    static void emitcFiles();
+    static void emitcInlines() VL_MT_DISABLED;
+    static void emitcModel() VL_MT_DISABLED;
+    static void emitcSyms(bool dpiHdrOnly = false) VL_MT_DISABLED;
+    static void emitcFiles() VL_MT_DISABLED;
 };
 
 #endif  // Guard

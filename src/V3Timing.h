@@ -21,12 +21,13 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
+#include "V3ThreadSafety.h"
 
 //============================================================================
 
 class V3Timing final {
 public:
-    static void timingAll(AstNetlist* nodep);
+    static void timingAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

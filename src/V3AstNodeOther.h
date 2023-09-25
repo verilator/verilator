@@ -1034,7 +1034,7 @@ class AstExecGraph final : public AstNode {
     const string m_name;  // Name of this AstExecGraph (for uniqueness at code generation)
 
 public:
-    explicit AstExecGraph(FileLine* fl, const string& name);
+    explicit AstExecGraph(FileLine* fl, const string& name) VL_MT_DISABLED;
     ASTGEN_MEMBERS_AstExecGraph;
     ~AstExecGraph() override;
     const char* broken() const override {
