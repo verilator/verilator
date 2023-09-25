@@ -2373,6 +2373,7 @@ bool AstNodeFTask::containsMemberAccess() {
     return m_containsMemberAccess.get();
 }
 bool AstNodeFTask::containsMemberAccessImpl() const {
+    if (this->recursive()) return true;
     for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
         if (stmtp->containsMemberAccess()) return true;
     }
@@ -2598,6 +2599,7 @@ bool AstCFunc::containsMemberAccess() {
     return m_containsMemberAccess.get();
 }
 bool AstCFunc::containsMemberAccessImpl() const {
+    if (this->recursive()) return true;
     for (AstNode* stmtp = initsp(); stmtp; stmtp = stmtp->nextp()) {
         if (stmtp->containsMemberAccess()) return true;
     }
