@@ -66,6 +66,7 @@ private:
     AstNodeExpr* m_defaultOutSkewp = nullptr;  // Current default output skew
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
     int m_genblkNum = 0;  // Begin block number, 0=none seen
+    int m_beginDepth = 0;  // How many begin blocks above current node within current AstNodeModule
     VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
     bool m_insideLoop = false;  // True if the node is inside a loop
 
@@ -312,7 +313,17 @@ private:
         if (nodep->lifetime().isNone() && nodep->varType() != VVarType::PORT) {
             nodep->lifetime(m_lifetime);
         }
+
+        if (nodep->isGParam() && !nodep->isAnsi()) {  // shadow some parameters into localparams
+            if (m_beginDepth > 0
+                || (m_beginDepth == 0
+                    && (m_modp->hasParameterList() || VN_IS(m_modp, Class)
+                        || VN_IS(m_modp, Package)))) {
+                nodep->varType(VVarType::LPARAM);
+            }
+        }
         if (nodep->isGParam() && m_modp) m_modp->hasGParam(true);
+
         if (nodep->isParam() && !nodep->valuep()
             && nodep->fileline()->language() < V3LangCode::L1800_2009) {
             nodep->v3warn(NEWERSTD,
@@ -619,6 +630,7 @@ private:
         VL_RESTORER(m_modp);
         VL_RESTORER(m_genblkAbove);
         VL_RESTORER(m_genblkNum);
+        VL_RESTORER(m_beginDepth);
         VL_RESTORER(m_lifetime);
         {
             // Module: Create sim table for entire module and iterate
@@ -628,6 +640,7 @@ private:
             m_modp = nodep;
             m_genblkAbove = 0;
             m_genblkNum = 0;
+            m_beginDepth = 0;
             m_valueModp = nodep;
             m_lifetime = nodep->lifetime();
             if (m_lifetime.isNone()) {
@@ -658,6 +671,8 @@ private:
     void visit(AstBegin* nodep) override {
         V3Config::applyCoverageBlock(m_modp, nodep);
         cleanFileline(nodep);
+        VL_RESTORER(m_beginDepth);
+        m_beginDepth++;
         const AstNode* const backp = nodep->backp();
         // IEEE says directly nested item is not a new block
         // The genblk name will get attached to the if true/false LOWER begin block(s)

@@ -84,7 +84,6 @@ public:
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
     AstDelay* m_netDelayp = nullptr;  // Pointer to delay for next signal declaration
     AstStrengthSpec* m_netStrengthp = nullptr;  // Pointer to strength for next net declaration
-    AstNodeModule* m_modp = nullptr;  // Last module for timeunits
     FileLine* m_instModuleFl = nullptr;  // Fileline of module referenced for instantiations
     AstPin* m_instParamp = nullptr;  // Parameters for instantiations
     string m_instModule;  // Name of module referenced for instantiations
@@ -93,10 +92,9 @@ public:
     VLifetime m_varLifetime;  // Static/Automatic for next signal
     bool m_impliedDecl = false;  // Allow implied wire declarations
     bool m_varDeclTyped = false;  // Var got reg/wire for dedup check
-    bool m_pinAnsi = false;  // In ANSI port list
+    bool m_pinAnsi = false;  // In ANSI parameter or port list
     bool m_tracingParse = true;  // Tracing disable for parser
     bool m_inImplements = false;  // Is inside class implements list
-    bool m_insideClass = false;  // Is inside a class body
     bool m_insideProperty = false;  // Is inside property declaration
     bool m_typedPropertyPort = false;  // Typed property port occurred on port lists
     bool m_modportImpExpActive
@@ -317,14 +315,12 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 #define VARRESET_LIST(decl) \
     { \
         GRAMMARP->m_pinNum = 1; \
-        GRAMMARP->m_pinAnsi = false; \
         VARRESET(); \
         VARDECL(decl); \
     }  // Start of pinlist
 #define VARRESET_NONLIST(decl) \
     { \
         GRAMMARP->m_pinNum = 0; \
-        GRAMMARP->m_pinAnsi = false; \
         VARRESET(); \
         VARDECL(decl); \
     }  // Not in a pinlist
@@ -1209,11 +1205,14 @@ description:                    // ==IEEE: description
 
 timeunits_declaration<nodep>:   // ==IEEE: timeunits_declaration
                 yTIMEUNIT yaTIMENUM ';'
-                        { PARSEP->timescaleMod($<fl>2, GRAMMARP->m_modp, true, $2, false, 0); $$ = nullptr; }
+                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule($<fl>1, false), true, $2, false, 0);
+                          $$ = nullptr; }
         |       yTIMEUNIT yaTIMENUM '/' yaTIMENUM ';'
-                        { PARSEP->timescaleMod($<fl>2, GRAMMARP->m_modp, true, $2, true, $4); $$ = nullptr; }
+                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule($<fl>1, false), true, $2, true, $4);
+                          $$ = nullptr; }
         |       yTIMEPRECISION yaTIMENUM ';'
-                        { PARSEP->timescaleMod($<fl>2, GRAMMARP->m_modp, false, 0, true, $2); $$ = nullptr; }
+                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule($<fl>1, false), false, 0, true, $2);
+                          $$ = nullptr; }
         ;
 
 //**********************************************************************
@@ -1223,7 +1222,6 @@ package_declaration:            // ==IEEE: package_declaration
                 packageFront package_itemListE yENDPACKAGE endLabelE
                         { $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
                           if ($2) $1->addStmtsp($2);
-                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>4, $1, $4); }
         ;
@@ -1243,8 +1241,7 @@ packageFront<nodeModulep>:
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
                           PARSEP->rootp()->addModulesp($$);
-                          SYMP->pushNew($$);
-                          GRAMMARP->m_modp = $$; }
+                          SYMP->pushNew($$); }
         ;
 
 package_itemListE<nodep>:       // IEEE: [{ package_item }]
@@ -1343,7 +1340,6 @@ module_declaration:             // ==IEEE: module_declaration
                           if ($2) $1->addStmtsp($2);
                           if ($3) $1->addStmtsp($3);
                           if ($5) $1->addStmtsp($5);
-                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>7, $1, $7); }
         |       udpFront portsStarE ';'
@@ -1352,7 +1348,6 @@ module_declaration:             // ==IEEE: module_declaration
                           if ($2) $1->addStmtsp($2);
                           if ($4) $1->addStmtsp($4);
                           GRAMMARP->m_tracingParse = true;
-                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>6, $1, $6); }
         //
@@ -1371,8 +1366,7 @@ modFront<nodeModulep>:
                           $$->timeunit(PARSEP->timeLastUnit());
                           $$->unconnectedDrive(PARSEP->unconnectedDrive());
                           PARSEP->rootp()->addModulesp($$);
-                          SYMP->pushNew($$);
-                          GRAMMARP->m_modp = $$; }
+                          SYMP->pushNew($$); }
         |       modFront sigAttrScope                   { $$ = $1; }
         ;
 
@@ -1419,13 +1413,18 @@ parameter_value_assignmentClass<pinp>:  // IEEE: [ parameter_value_assignment ] 
 
 parameter_port_listE<nodep>:    // IEEE: parameter_port_list + empty == parameter_value_assignment
                 /* empty */                             { $$ = nullptr; }
-        |       '#' '(' ')'                             { $$ = nullptr; }
+        |       '#' '(' ')'                             { $$ = nullptr;
+                                                          SYMP->findTopNodeModule($<fl>1)->hasParameterList(true); }
         //                      // IEEE: '#' '(' list_of_param_assignments { ',' parameter_port_declaration } ')'
         //                      // IEEE: '#' '(' parameter_port_declaration { ',' parameter_port_declaration } ')'
         //                      // Can't just do that as "," conflicts with between vars and between stmts, so
         //                      // split into pre-comma and post-comma parts
-        |       '#' '(' {VARRESET_LIST(GPARAM);} paramPortDeclOrArgList ')'
-                        { $$ = $4; VARRESET_NONLIST(UNKNOWN); }
+        |       '#' '('                                 { VARRESET_LIST(GPARAM);
+                                                          SYMP->findTopNodeModule($<fl>1)->hasParameterList(true);
+                                                          GRAMMARP->m_pinAnsi = true; }
+        /*cont*/    paramPortDeclOrArgList ')'          { $$ = $4;
+                                                          VARRESET_NONLIST(UNKNOWN);
+                                                          GRAMMARP->m_pinAnsi = false; }
         //                      // Note legal to start with "a=b" with no parameter statement
         ;
 
@@ -1451,7 +1450,10 @@ portsStarE<nodep>:              // IEEE: .* + list_of_ports + list_of_port_decla
         |       '(' ')'                                 { $$ = nullptr; }
         //                      // .* expanded from module_declaration
         //UNSUP '(' yP_DOTSTAR ')'                              { UNSUP }
-        |       '(' {VARRESET_LIST(PORT);} list_of_ports ')'    { $$ = $3; VARRESET_NONLIST(UNKNOWN); }
+        |       '('                                     { VARRESET_LIST(PORT);
+                                                          GRAMMARP->m_pinAnsi = true; }
+        /*cont*/    list_of_ports ')'                   { $$ = $3; VARRESET_NONLIST(UNKNOWN);
+                                                          GRAMMARP->m_pinAnsi = false; }
         ;
 
 list_of_portsE<nodep>:          // IEEE: list_of_ports + list_of_port_declarations
@@ -1596,7 +1598,7 @@ portDirNetE:                    // IEEE: part of port, optional net type and/or 
         //                      // The higher level rule may override this VARDTYPE with one later in the parse.
         |       port_direction                                  { VARDECL(PORT); VARDTYPE_NDECL(nullptr); }
         |       port_direction { VARDECL(PORT); } net_type      { VARDTYPE_NDECL(nullptr); }  // net_type calls VARDECL
-        |       net_type                                        { VARDTYPE_NDECL(nullptr); } // net_type calls VARDECL
+        |       net_type                                        { VARDTYPE_NDECL(nullptr); }  // net_type calls VARDECL
         ;
 
 port_declNetE:                  // IEEE: part of port_declaration, optional net type
@@ -1706,7 +1708,6 @@ program_declaration:            // IEEE: program_declaration + program_nonansi_h
                           if ($2) $1->addStmtsp($2);
                           if ($3) $1->addStmtsp($3);
                           if ($5) $1->addStmtsp($5);
-                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>7, $1, $7); }
         |       yEXTERN pgmFront parameter_port_listE portsStarE ';'
@@ -1722,8 +1723,7 @@ pgmFront<nodeModulep>:
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
                           PARSEP->rootp()->addModulesp($$);
-                          SYMP->pushNew($$);
-                          GRAMMARP->m_modp = $$; }
+                          SYMP->pushNew($$); }
         ;
 
 program_itemListE<nodep>:       // ==IEEE: [{ program_item }]
@@ -1958,23 +1958,19 @@ net_type:                       // ==IEEE: net_type
         ;
 
 varParamReset:
-                yPARAMETER
-                        { if (GRAMMARP->m_insideClass) {
-                             VARRESET_NONLIST(LPARAM);
-                          } else {
-                             VARRESET_NONLIST(GPARAM);
-                          } }
+                yPARAMETER                              { VARRESET_NONLIST(GPARAM); }
         |       yLOCALPARAM                             { VARRESET_NONLIST(LPARAM); }
+        // Note that the type of these params could be modified later according to context (see V3LinkParse)
         ;
 
 port_direction:                 // ==IEEE: port_direction + tf_port_direction
         //                      // IEEE 19.8 just "input" FIRST forces type to wire - we'll ignore that here
         //                      // Only used for ANSI declarations
-                yINPUT                                  { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
-        |       yOUTPUT                                 { GRAMMARP->m_pinAnsi = true; VARIO(OUTPUT); }
-        |       yINOUT                                  { GRAMMARP->m_pinAnsi = true; VARIO(INOUT); }
-        |       yREF                                    { GRAMMARP->m_pinAnsi = true; VARIO(REF); }
-        |       yCONST__REF yREF                        { GRAMMARP->m_pinAnsi = true; VARIO(CONSTREF); }
+                yINPUT                                  { VARIO(INPUT); }
+        |       yOUTPUT                                 { VARIO(OUTPUT); }
+        |       yINOUT                                  { VARIO(INOUT); }
+        |       yREF                                    { VARIO(REF); }
+        |       yCONST__REF yREF                        { VARIO(CONSTREF); }
         ;
 
 port_directionReset:            // IEEE: port_direction that starts a port_declaraiton
@@ -5960,12 +5956,12 @@ property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequen
 
 property_port_itemDirE:
                 /* empty */
-                        { GRAMMARP->m_pinAnsi = true; VARIO(INPUT); }
+                        { VARIO(INPUT); }
         |       yLOCAL__ETC
-                        { GRAMMARP->m_pinAnsi = true; VARIO(INPUT);
+                        { VARIO(INPUT);
                           BBUNSUP($1, "Unsupported: property port 'local'"); }
         |       yLOCAL__ETC yINPUT
-                        { GRAMMARP->m_pinAnsi = true; VARIO(INPUT);
+                        { VARIO(INPUT);
                           BBUNSUP($1, "Unsupported: property port 'local'"); }
         ;
 
@@ -6743,7 +6739,6 @@ checker_declaration<nodep>:  // ==IEEE: part of checker_declaration
                           $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));
                           if ($2) $1->addStmtsp($2);
                           if ($4) $1->addStmtsp($4);
-                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>6, $1, $6); }
         ;
@@ -6756,8 +6751,7 @@ checkerFront<nodeModulep>:  // IEEE: part of checker_declaration
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
                           $$->unconnectedDrive(PARSEP->unconnectedDrive());
-                          SYMP->pushNew($$);
-                          GRAMMARP->m_modp = $$; }
+                          SYMP->pushNew($$); }
         ;
 
 checker_port_listE<nodep>:  // IEEE: [ ( [ checker_port_list ] ) ]
@@ -6833,7 +6827,6 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
                 classFront parameter_port_listE classExtendsE classImplementsE ';'
         /*mid*/         { // Allow resolving types declared in base extends class
                           if ($<scp>3) SYMP->importExtends($<scp>3);
-                          GRAMMARP->m_insideClass = true;
                         }
         /*cont*/    class_itemListE yENDCLASS endLabelE
                         { $$ = $1; $1->addMembersp($2);
@@ -6842,7 +6835,6 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
                           $1->addExtendsp($4);
                           $1->addMembersp($7);
                           SYMP->popScope($$);
-                          GRAMMARP->m_insideClass = false;
                           GRAMMARP->endLabel($<fl>9, $1, $9); }
         ;
 
