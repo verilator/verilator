@@ -75,8 +75,6 @@ inline string ucfirst(const string& text) {
     return result;
 }
 
-class FileLine;
-
 //######################################################################
 // VString - String manipulation
 
@@ -106,7 +104,7 @@ public:
     static string escapeStringForPath(const string& str);
     // Convert SV quoted string input from source code to normal form.
     // Reverse is V3OutFormatter::quoteNameControls(...)
-    static string unquoteSVString(FileLine* fileline, string text);
+    static string unquoteSVString(const string& text, string& errOut);
     // Escape path in Windows
     // e.g. input `C:\Program Files\My Program\My Program.exe` becomes
     // `C:\\Program\ Files\\My\ Program\\My\ Program.exe`

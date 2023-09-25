@@ -125,9 +125,9 @@ void V3Os::setenvStr(const string& envvar, const string& value, const string& wh
 // Generic filename utilities
 
 #if defined(_WIN32) || defined(__MINGW32__)
-static const char s_slash = '\\';
+static constexpr char V3OS_SLASH = '\\';
 #else
-static const char s_slash = '/';
+static constexpr char V3OS_SLASH = '/';
 #endif
 
 static bool isSlash(char ch) VL_PURE {
@@ -159,7 +159,7 @@ string V3Os::filenameJoin(std::initializer_list<const std::string> paths) VL_PUR
         if (item.empty() || item == ".") {
             continue;
         } else {
-            if (!fullpath.empty()) fullpath += s_slash;
+            if (!fullpath.empty()) fullpath += V3OS_SLASH;
             fullpath += item;
         }
     }

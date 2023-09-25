@@ -250,3 +250,10 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     PARSEP->tagNodep(GRAMMARP->m_varAttrp);
     return nodep;
 }
+
+string V3ParseGrammar::unquoteString(FileLine* fileline, string text) {
+    string errMsg;
+    string res = VString::unquoteSVString(text, errMsg);
+    if (!errMsg.empty()) fileline->v3error(errMsg.c_str());
+    return res;
+}

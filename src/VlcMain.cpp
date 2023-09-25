@@ -14,8 +14,6 @@
 //
 //*************************************************************************
 
-#define VL_COVERAGE
-
 // clang-format off
 #define VL_MT_DISABLED_CODE_UNIT 1
 

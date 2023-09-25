@@ -237,8 +237,10 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
         const char* const fn = ++textp;
         while (*textp && *textp != '"') ++textp;
         if (*textp != '"') break;  // Fail
-        const string& filenameNew = VString::unquoteSVString(this, string{fn, textp});
-        filename(filenameNew);
+        string errMsg;
+        const string& parsedFilename = VString::unquoteSVString(string{fn, textp}, errMsg);
+        if (!errMsg.empty()) this->v3error(errMsg.c_str());
+        filename(parsedFilename);
         ++textp;
         while (*textp && std::isspace(*textp)) ++textp;
 
