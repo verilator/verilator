@@ -1341,14 +1341,15 @@ module_declaration:             // ==IEEE: module_declaration
                           if ($5) $1->addStmtsp($5);
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>7, $1, $7); }
-        |       udpFront portsStarE ';'
+        |       udpFront parameter_port_listE portsStarE ';'
         /*cont*/    module_itemListE yENDPRIMITIVE endLabelE
                         { $1->modTrace(false);  // Stash for implicit wires, etc
                           if ($2) $1->addStmtsp($2);
-                          if ($4) $1->addStmtsp($4);
+                          if ($3) $1->addStmtsp($3);
+                          if ($5) $1->addStmtsp($5);
                           GRAMMARP->m_tracingParse = true;
                           SYMP->popScope($1);
-                          GRAMMARP->endLabel($<fl>6, $1, $6); }
+                          GRAMMARP->endLabel($<fl>7, $1, $7); }
         //
         |       yEXTERN modFront parameter_port_listE portsStarE ';'
                         { BBUNSUP($<fl>1, "Unsupported: extern module"); }
