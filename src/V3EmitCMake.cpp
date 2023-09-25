@@ -84,8 +84,8 @@ class CMakeEmitter final {
         *of << "# which becomes available after executing `find_package(verilator).\n";
 
         *of << "\n### Constants...\n";
-        cmake_set(*of, "PERL", V3Options::getenvPERL(), "FILEPATH",
-                  "Perl executable (from $PERL)");
+        cmake_set(*of, "PERL", V3OutFormatter::quoteNameControls(V3Options::getenvPERL()),
+                  "FILEPATH", "Perl executable (from $PERL)");
         cmake_set(*of, "VERILATOR_ROOT",
                   V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_ROOT()), "PATH",
                   "Path to Verilator kit (from $VERILATOR_ROOT)");

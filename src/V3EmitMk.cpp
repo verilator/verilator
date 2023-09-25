@@ -154,7 +154,7 @@ public:
         }
         of.puts("\n### Constants...\n");
         of.puts("# Perl executable (from $PERL)\n");
-        of.puts("PERL = " + V3Options::getenvPERL() + "\n");
+        of.puts("PERL = " + V3OutFormatter::quoteNameControls(V3Options::getenvPERL()) + "\n");
         of.puts("# Path to Verilator kit (from $VERILATOR_ROOT)\n");
         of.puts("VERILATOR_ROOT = "
                 + V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_ROOT()) + "\n");

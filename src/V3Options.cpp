@@ -656,7 +656,7 @@ string V3Options::getenvMAKEFLAGS() {  //
 }
 
 string V3Options::getenvPERL() {  //
-    return V3Os::getenvStr("PERL", "perl");
+    return V3Os::filenameCleanup(V3Os::getenvStr("PERL", "perl"));
 }
 
 string V3Options::getenvSYSTEMC() {
@@ -668,7 +668,7 @@ string V3Options::getenvSYSTEMC() {
         var = defenv;
         V3Os::setenvStr("SYSTEMC", var, "Hardcoded at build time");
     }
-    return var;
+    return V3Os::filenameCleanup(var);
 }
 
 string V3Options::getenvSYSTEMC_ARCH() {
@@ -717,9 +717,9 @@ string V3Options::getenvSYSTEMC_INCLUDE() {
     }
     if (var == "") {
         const string sc = getenvSYSTEMC();
-        if (sc != "") var = sc + "/include";
+        if (sc != "") var = V3Os::filenameJoin(sc, "include");
     }
-    return var;
+    return V3Os::filenameCleanup(var);
 }
 
 string V3Options::getenvSYSTEMC_LIBDIR() {
@@ -734,9 +734,9 @@ string V3Options::getenvSYSTEMC_LIBDIR() {
     if (var == "") {
         const string sc = getenvSYSTEMC();
         const string arch = getenvSYSTEMC_ARCH();
-        if (sc != "" && arch != "") var = sc + "/lib-" + arch;
+        if (sc != "" && arch != "") var = V3Os::filenameJoin(sc, "lib-" + arch);
     }
-    return var;
+    return V3Os::filenameCleanup(var);
 }
 
 string V3Options::getenvVERILATOR_ROOT() {
