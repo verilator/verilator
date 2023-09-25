@@ -84,7 +84,6 @@ public:
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
     AstDelay* m_netDelayp = nullptr;  // Pointer to delay for next signal declaration
     AstStrengthSpec* m_netStrengthp = nullptr;  // Pointer to strength for next net declaration
-    AstNodeModule* m_modp = nullptr;  // Last module for timeunits
     FileLine* m_instModuleFl = nullptr;  // Fileline of module referenced for instantiations
     AstPin* m_instParamp = nullptr;  // Parameters for instantiations
     string m_instModule;  // Name of module referenced for instantiations
@@ -1205,11 +1204,14 @@ description:                    // ==IEEE: description
 
 timeunits_declaration<nodep>:   // ==IEEE: timeunits_declaration
                 yTIMEUNIT yaTIMENUM ';'
-                        { PARSEP->timescaleMod($<fl>2, GRAMMARP->m_modp, true, $2, false, 0); $$ = nullptr; }
+                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule(false), true, $2, false, 0);
+                          $$ = nullptr; }
         |       yTIMEUNIT yaTIMENUM '/' yaTIMENUM ';'
-                        { PARSEP->timescaleMod($<fl>2, GRAMMARP->m_modp, true, $2, true, $4); $$ = nullptr; }
+                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule(false), true, $2, true, $4);
+                          $$ = nullptr; }
         |       yTIMEPRECISION yaTIMENUM ';'
-                        { PARSEP->timescaleMod($<fl>2, GRAMMARP->m_modp, false, 0, true, $2); $$ = nullptr; }
+                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule(false), false, 0, true, $2);
+                          $$ = nullptr; }
         ;
 
 //**********************************************************************
@@ -1219,7 +1221,6 @@ package_declaration:            // ==IEEE: package_declaration
                 packageFront package_itemListE yENDPACKAGE endLabelE
                         { $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
                           if ($2) $1->addStmtsp($2);
-                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>4, $1, $4); }
         ;
@@ -1239,8 +1240,7 @@ packageFront<nodeModulep>:
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
                           PARSEP->rootp()->addModulesp($$);
-                          SYMP->pushNew($$);
-                          GRAMMARP->m_modp = $$; }
+                          SYMP->pushNew($$); }
         ;
 
 package_itemListE<nodep>:       // IEEE: [{ package_item }]
@@ -1339,7 +1339,6 @@ module_declaration:             // ==IEEE: module_declaration
                           if ($2) $1->addStmtsp($2);
                           if ($3) $1->addStmtsp($3);
                           if ($5) $1->addStmtsp($5);
-                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>7, $1, $7); }
         |       udpFront portsStarE ';'
@@ -1348,7 +1347,6 @@ module_declaration:             // ==IEEE: module_declaration
                           if ($2) $1->addStmtsp($2);
                           if ($4) $1->addStmtsp($4);
                           GRAMMARP->m_tracingParse = true;
-                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>6, $1, $6); }
         //
@@ -1367,8 +1365,7 @@ modFront<nodeModulep>:
                           $$->timeunit(PARSEP->timeLastUnit());
                           $$->unconnectedDrive(PARSEP->unconnectedDrive());
                           PARSEP->rootp()->addModulesp($$);
-                          SYMP->pushNew($$);
-                          GRAMMARP->m_modp = $$; }
+                          SYMP->pushNew($$); }
         |       modFront sigAttrScope                   { $$ = $1; }
         ;
 
@@ -1387,8 +1384,7 @@ udpFront<nodeModulep>:
                           $$->addStmtsp(new AstPragma{$<fl>3, VPragmaType::INLINE_MODULE});
                           GRAMMARP->m_tracingParse = false;
                           PARSEP->rootp()->addModulesp($$);
-                          SYMP->pushNew($$);
-                          GRAMMARP->m_modp = $$; }
+                          SYMP->pushNew($$); }
         ;
 
 parameter_value_assignmentE<pinp>:      // IEEE: [ parameter_value_assignment ]
@@ -1416,13 +1412,14 @@ parameter_value_assignmentClass<pinp>:  // IEEE: [ parameter_value_assignment ] 
 
 parameter_port_listE<nodep>:    // IEEE: parameter_port_list + empty == parameter_value_assignment
                 /* empty */                             { $$ = nullptr; }
-        |       '#' '(' ')'                             { $$ = nullptr; GRAMMARP->m_modp->hasParameterList(true); }
+        |       '#' '(' ')'                             { $$ = nullptr;
+                                                          SYMP->findTopNodeModule()->hasParameterList(true); }
         //                      // IEEE: '#' '(' list_of_param_assignments { ',' parameter_port_declaration } ')'
         //                      // IEEE: '#' '(' parameter_port_declaration { ',' parameter_port_declaration } ')'
         //                      // Can't just do that as "," conflicts with between vars and between stmts, so
         //                      // split into pre-comma and post-comma parts
         |       '#' '('                                 { VARRESET_LIST(GPARAM);
-                                                          GRAMMARP->m_modp->hasParameterList(true);
+                                                          SYMP->findTopNodeModule()->hasParameterList(true);
                                                           GRAMMARP->m_pinAnsi = true; }
         /*cont*/    paramPortDeclOrArgList ')'          { $$ = $4;
                                                           VARRESET_NONLIST(UNKNOWN);
@@ -1625,7 +1622,6 @@ interface_declaration:          // IEEE: interface_declaration + interface_nonan
                         { if ($2) $1->addStmtsp($2);
                           if ($3) $1->addStmtsp($3);
                           if ($5) $1->addStmtsp($5);
-                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1); }
         |       yEXTERN intFront parameter_port_listE portsStarE ';'
                         { BBUNSUP($<fl>1, "Unsupported: extern interface"); }
@@ -1637,8 +1633,7 @@ intFront<nodeModulep>:
                           $$->inLibrary(true);
                           $$->lifetime($2);
                           PARSEP->rootp()->addModulesp($$);
-                          SYMP->pushNew($$);
-                          GRAMMARP->m_modp = $$; }
+                          SYMP->pushNew($$); }
         |       intFront sigAttrScope                   { $$ = $1; }
         ;
 
@@ -1712,7 +1707,6 @@ program_declaration:            // IEEE: program_declaration + program_nonansi_h
                           if ($2) $1->addStmtsp($2);
                           if ($3) $1->addStmtsp($3);
                           if ($5) $1->addStmtsp($5);
-                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>7, $1, $7); }
         |       yEXTERN pgmFront parameter_port_listE portsStarE ';'
@@ -1728,8 +1722,7 @@ pgmFront<nodeModulep>:
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
                           PARSEP->rootp()->addModulesp($$);
-                          SYMP->pushNew($$);
-                          GRAMMARP->m_modp = $$; }
+                          SYMP->pushNew($$); }
         ;
 
 program_itemListE<nodep>:       // ==IEEE: [{ program_item }]
@@ -6745,7 +6738,6 @@ checker_declaration<nodep>:  // ==IEEE: part of checker_declaration
                           $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));
                           if ($2) $1->addStmtsp($2);
                           if ($4) $1->addStmtsp($4);
-                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>6, $1, $6); }
         ;
@@ -6758,8 +6750,7 @@ checkerFront<nodeModulep>:  // IEEE: part of checker_declaration
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
                           $$->unconnectedDrive(PARSEP->unconnectedDrive());
-                          SYMP->pushNew($$);
-                          GRAMMARP->m_modp = $$; }
+                          SYMP->pushNew($$); }
         ;
 
 checker_port_listE<nodep>:  // IEEE: [ ( [ checker_port_list ] ) ]
@@ -6842,7 +6833,6 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
                           $1->addExtendsp($3);
                           $1->addExtendsp($4);
                           $1->addMembersp($7);
-                          GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($$);
                           GRAMMARP->endLabel($<fl>9, $1, $9); }
         ;
@@ -6853,7 +6843,6 @@ classFront<classp>:             // IEEE: part of class_declaration
                           $$->isVirtual($1);
                           $$->lifetime($3);
                           SYMP->pushNew($<classp>$);
-                          GRAMMARP->m_modp = $$;
                           v3Global.setHasClasses(); }
         //                      // IEEE: part of interface_class_declaration
         |       yINTERFACE yCLASS lifetimeE idAny/*class_identifier*/
@@ -6861,7 +6850,6 @@ classFront<classp>:             // IEEE: part of class_declaration
                           $$->isInterfaceClass(true);
                           $$->lifetime($3);
                           SYMP->pushNew($<classp>$);
-                          GRAMMARP->m_modp = $$;
                           v3Global.setHasClasses(); }
         ;
 
