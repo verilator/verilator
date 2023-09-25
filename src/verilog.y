@@ -1204,13 +1204,13 @@ description:                    // ==IEEE: description
 
 timeunits_declaration<nodep>:   // ==IEEE: timeunits_declaration
                 yTIMEUNIT yaTIMENUM ';'
-                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule(false), true, $2, false, 0);
+                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule($<fl>1, false), true, $2, false, 0);
                           $$ = nullptr; }
         |       yTIMEUNIT yaTIMENUM '/' yaTIMENUM ';'
-                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule(false), true, $2, true, $4);
+                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule($<fl>1, false), true, $2, true, $4);
                           $$ = nullptr; }
         |       yTIMEPRECISION yaTIMENUM ';'
-                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule(false), false, 0, true, $2);
+                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule($<fl>1, false), false, 0, true, $2);
                           $$ = nullptr; }
         ;
 
@@ -1414,13 +1414,13 @@ parameter_value_assignmentClass<pinp>:  // IEEE: [ parameter_value_assignment ] 
 parameter_port_listE<nodep>:    // IEEE: parameter_port_list + empty == parameter_value_assignment
                 /* empty */                             { $$ = nullptr; }
         |       '#' '(' ')'                             { $$ = nullptr;
-                                                          SYMP->findTopNodeModule()->hasParameterList(true); }
+                                                          SYMP->findTopNodeModule($<fl>1)->hasParameterList(true); }
         //                      // IEEE: '#' '(' list_of_param_assignments { ',' parameter_port_declaration } ')'
         //                      // IEEE: '#' '(' parameter_port_declaration { ',' parameter_port_declaration } ')'
         //                      // Can't just do that as "," conflicts with between vars and between stmts, so
         //                      // split into pre-comma and post-comma parts
         |       '#' '('                                 { VARRESET_LIST(GPARAM);
-                                                          SYMP->findTopNodeModule()->hasParameterList(true);
+                                                          SYMP->findTopNodeModule($<fl>1)->hasParameterList(true);
                                                           GRAMMARP->m_pinAnsi = true; }
         /*cont*/    paramPortDeclOrArgList ')'          { $$ = $4;
                                                           VARRESET_NONLIST(UNKNOWN);
