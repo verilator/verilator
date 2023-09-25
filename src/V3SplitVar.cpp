@@ -717,7 +717,6 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                         adtypep = VN_AS(refp->dtypep()->skipRefp(), UnpackArrayDType);
                     } else {
                         AstSliceSel* const selp = VN_AS(ref.nodep(), SliceSel);
-                        UASSERT_OBJ(selp, ref.nodep(), "Unexpected op is registered");
                         refp = VN_AS(selp->fromp(), VarRef);
                         UASSERT_OBJ(refp, selp, "Unexpected op is registered");
                         adtypep = VN_AS(selp->dtypep()->skipRefp(), UnpackArrayDType);
