@@ -64,7 +64,7 @@ private:
     AstNodeExpr* m_defaultOutSkewp = nullptr;  // Current default output skew
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
     int m_genblkNum = 0;  // Begin block number, 0=none seen
-    int m_beginDepth = 0;  // How many begin blocks above current node inside an AstNodeModule
+    int m_beginDepth = 0;  // How many begin blocks above current node within current AstNodeModule
     VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
     bool m_insideLoop = false;  // True if the node is inside a loop
 

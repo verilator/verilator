@@ -1342,16 +1342,15 @@ module_declaration:             // ==IEEE: module_declaration
                           GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
                           GRAMMARP->endLabel($<fl>7, $1, $7); }
-        |       udpFront parameter_port_listE portsStarE ';'
+        |       udpFront portsStarE ';'
         /*cont*/    module_itemListE yENDPRIMITIVE endLabelE
                         { $1->modTrace(false);  // Stash for implicit wires, etc
                           if ($2) $1->addStmtsp($2);
-                          if ($3) $1->addStmtsp($3);
-                          if ($5) $1->addStmtsp($5);
+                          if ($4) $1->addStmtsp($4);
                           GRAMMARP->m_tracingParse = true;
                           GRAMMARP->m_modp = nullptr;
                           SYMP->popScope($1);
-                          GRAMMARP->endLabel($<fl>7, $1, $7); }
+                          GRAMMARP->endLabel($<fl>6, $1, $6); }
         //
         |       yEXTERN modFront parameter_port_listE portsStarE ';'
                         { BBUNSUP($<fl>1, "Unsupported: extern module"); }
@@ -1388,7 +1387,8 @@ udpFront<nodeModulep>:
                           $$->addStmtsp(new AstPragma{$<fl>3, VPragmaType::INLINE_MODULE});
                           GRAMMARP->m_tracingParse = false;
                           PARSEP->rootp()->addModulesp($$);
-                          SYMP->pushNew($$); }
+                          SYMP->pushNew($$);
+                          GRAMMARP->m_modp = $$; }
         ;
 
 parameter_value_assignmentE<pinp>:      // IEEE: [ parameter_value_assignment ]
@@ -1424,7 +1424,7 @@ parameter_port_listE<nodep>:    // IEEE: parameter_port_list + empty == paramete
         |       '#' '('                                 { VARRESET_LIST(GPARAM);
                                                           GRAMMARP->m_modp->hasParameterList(true);
                                                           GRAMMARP->m_pinAnsi = true; }
-                paramPortDeclOrArgList ')'              { $$ = $4;
+        /*cont*/    paramPortDeclOrArgList ')'          { $$ = $4;
                                                           VARRESET_NONLIST(UNKNOWN);
                                                           GRAMMARP->m_pinAnsi = false; }
         //                      // Note legal to start with "a=b" with no parameter statement
@@ -1454,7 +1454,7 @@ portsStarE<nodep>:              // IEEE: .* + list_of_ports + list_of_port_decla
         //UNSUP '(' yP_DOTSTAR ')'                              { UNSUP }
         |       '('                                     { VARRESET_LIST(PORT);
                                                           GRAMMARP->m_pinAnsi = true; }
-                list_of_ports ')'                       { $$ = $3; VARRESET_NONLIST(UNKNOWN);
+        /*cont*/    list_of_ports ')'                   { $$ = $3; VARRESET_NONLIST(UNKNOWN);
                                                           GRAMMARP->m_pinAnsi = false; }
         ;
 
