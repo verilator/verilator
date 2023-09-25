@@ -1171,7 +1171,6 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     bool isPure() override { return false; }
-    bool containsMemberAccess() override;
     bool same(const AstNode*) const override { return true; }
 };
 class AstFError final : public AstNodeExpr {

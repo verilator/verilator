@@ -2402,13 +2402,6 @@ bool AstNodeFTask::getPurity() const {
     }
     return true;
 }
-bool AstExprStmt::containsMemberAccess() {
-    for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-        if (stmtp->containsMemberAccess()) return true;
-    }
-    if (resultp()->containsMemberAccess()) return true;
-    return false;
-}
 void AstNodeBlock::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (unnamed()) str << " [UNNAMED]";
