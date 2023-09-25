@@ -17,4 +17,7 @@
 %Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:20:22: Parameter pin not found: '__paramNumber3'
    20 |     intf1 # ( 8, 15, 17 ) i_intf1 ();
       |                      ^~
+%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:21:22: Parameter pin not found: '__paramNumber3'
+   21 |     prgm1 # ( 9, 40, 41 ) i_prgm1 ();
+      |                      ^~
 %Error: Exiting due to

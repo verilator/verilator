@@ -18,6 +18,7 @@ module t;
     mod2  # ( 5, 12, 13 ) i_mod2 ();
     mod3  # ( 7, 24, 25 ) i_mod3 ();
     intf1 # ( 8, 15, 17 ) i_intf1 ();
+    prgm1 # ( 9, 40, 41 ) i_prgm1 ();
 endmodule
 
 `define CHECK_PARAMS  if (A**2 + B**2 != C**2) $error("A**2 + B**2 != C**2")
@@ -45,3 +46,10 @@ interface intf1 # (
     parameter C = 1;
     `CHECK_PARAMS;
 endinterface
+
+program prgm1 # (
+    parameter A = 1, B = 1
+);
+    parameter C = 1;
+    `CHECK_PARAMS;
+endprogram
