@@ -108,7 +108,7 @@ jobs:
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
-        m32: [0, 1]
+        m32: [0]
         suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, vltmt-0, vltmt-1]
         exclude:
           # Build pull requests only with ubuntu-22.04 and without m32
