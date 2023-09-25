@@ -1966,6 +1966,7 @@ net_type:                       // ==IEEE: net_type
 varParamReset:
                 yPARAMETER                              { VARRESET_NONLIST(GPARAM); }
         |       yLOCALPARAM                             { VARRESET_NONLIST(LPARAM); }
+        // Note that the type of these params could be modified later according to context (see V3LinkParse)
         ;
 
 port_direction:                 // ==IEEE: port_direction + tf_port_direction
