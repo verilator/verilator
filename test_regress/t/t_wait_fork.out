@@ -1,5 +1,5 @@
 %Error-UNSUPPORTED: t/t_wait_fork.v:17:7: Unsupported: wait fork statements
-                                        : ... In instance t
+                                        : ... note: In instance 't'
    17 |       wait fork;
       |       ^~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
