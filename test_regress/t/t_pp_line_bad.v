@@ -6,6 +6,8 @@
 
 `line
 `line 100
-`line 100 somefile 1
-`line 100 "somefile"
-`line 100 "somefile" 3
+`line 200 somefile
+`line 300 "somefile 1
+`line 400 "some file"
+`line 500 "somefile" 3
+`line 600 "some file" 3

@@ -642,6 +642,7 @@ static void verilate(const string& argString) {
         {
             const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
 
+            V3Os::selfTest();
             VHashSha256::selfTest();
             VSpellCheck::selfTest();
             V3Graph::selfTest();
@@ -782,7 +783,7 @@ int main(int argc, char** argv) {
         V3PreShell::boot();
 
         // Command option parsing
-        v3Global.opt.buildDepBin(VString::escapeStringForPath(argv[0]));
+        v3Global.opt.buildDepBin(V3Os::filenameCleanup(argv[0]));
         v3Global.opt.parseOpts(new FileLine{FileLine::commandLineFilename()}, argc - 1, argv + 1);
 
         // Validate settings (aka Boost.Program_options)

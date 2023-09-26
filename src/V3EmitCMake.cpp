@@ -43,15 +43,11 @@ class CMakeEmitter final {
     template <typename List>
     static string cmake_list(const List& strs) {
         string s;
-        if (strs.begin() != strs.end()) {
-            s.append("\"");
-            s.append(VString::quoteAny(*strs.begin(), '"', '\\'));
-            s.append("\"");
-            for (typename List::const_iterator it = ++strs.begin(); it != strs.end(); ++it) {
-                s.append(" \"");
-                s.append(VString::quoteAny(*it, '"', '\\'));
-                s.append("\"");
-            }
+        for (auto it = strs.begin(); it != strs.end(); ++it) {
+            s += '"';
+            s += V3OutFormatter::quoteNameControls(*it);
+            s += '"';
+            if (it != strs.end()) s += ' ';
         }
         return s;
     }
@@ -63,13 +59,13 @@ class CMakeEmitter final {
     static void cmake_set_raw(std::ofstream& of, const string& name, const string& raw_value,
                               const string& cache_type = "", const string& docstring = "") {
         of << "set(" << name << " " << raw_value;
-        if (!cache_type.empty()) of << " CACHE " << cache_type << " \"" << docstring << "\"";
+        if (!cache_type.empty()) of << " CACHE " << cache_type << " \"" << docstring << '"';
         of << ")\n";
     }
 
     static void cmake_set(std::ofstream& of, const string& name, const string& value,
                           const string& cache_type = "", const string& docstring = "") {
-        const string raw_value = "\"" + value + "\"";
+        const string raw_value = '"' + value + '"';
         cmake_set_raw(of, name, raw_value, cache_type, docstring);
     }
 
@@ -88,9 +84,10 @@ class CMakeEmitter final {
         *of << "# which becomes available after executing `find_package(verilator).\n";
 
         *of << "\n### Constants...\n";
-        cmake_set(*of, "PERL", V3Options::getenvPERL(), "FILEPATH",
-                  "Perl executable (from $PERL)");
-        cmake_set(*of, "VERILATOR_ROOT", V3Options::getenvVERILATOR_ROOT(), "PATH",
+        cmake_set(*of, "PERL", V3OutFormatter::quoteNameControls(V3Options::getenvPERL()),
+                  "FILEPATH", "Perl executable (from $PERL)");
+        cmake_set(*of, "VERILATOR_ROOT",
+                  V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_ROOT()), "PATH",
                   "Path to Verilator kit (from $VERILATOR_ROOT)");
 
         *of << "\n### Compiler flags...\n";

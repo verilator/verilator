@@ -251,63 +251,9 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     return nodep;
 }
 
-string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
-    // Fix up the quoted strings the user put in, for example "\"" becomes "
-    // Reverse is V3OutFormatter::quoteNameControls(...)
-    bool quoted = false;
-    string newtext;
-    unsigned char octal_val = 0;
-    int octal_digits = 0;
-    for (string::const_iterator cp = text.begin(); cp != text.end(); ++cp) {
-        if (quoted) {
-            if (std::isdigit(*cp)) {
-                octal_val = octal_val * 8 + (*cp - '0');
-                if (++octal_digits == 3) {
-                    octal_digits = 0;
-                    quoted = false;
-                    newtext += octal_val;
-                }
-            } else {
-                if (octal_digits) {
-                    // Spec allows 1-3 digits
-                    octal_digits = 0;
-                    quoted = false;
-                    newtext += octal_val;
-                    --cp;  // Backup to reprocess terminating character as non-escaped
-                    continue;
-                }
-                quoted = false;
-                if (*cp == 'n') {
-                    newtext += '\n';
-                } else if (*cp == 'a') {
-                    newtext += '\a';  // SystemVerilog 3.1
-                } else if (*cp == 'f') {
-                    newtext += '\f';  // SystemVerilog 3.1
-                } else if (*cp == 'r') {
-                    newtext += '\r';
-                } else if (*cp == 't') {
-                    newtext += '\t';
-                } else if (*cp == 'v') {
-                    newtext += '\v';  // SystemVerilog 3.1
-                } else if (*cp == 'x' && std::isxdigit(cp[1])
-                           && std::isxdigit(cp[2])) {  // SystemVerilog 3.1
-#define vl_decodexdigit(c) ((std::isdigit(c) ? ((c) - '0') : (std::tolower((c)) - 'a' + 10)))
-                    newtext
-                        += static_cast<char>(16 * vl_decodexdigit(cp[1]) + vl_decodexdigit(cp[2]));
-                    cp += 2;
-                } else if (std::isalnum(*cp)) {
-                    fileline->v3error("Unknown escape sequence: \\" << *cp);
-                    break;
-                } else {
-                    newtext += *cp;
-                }
-            }
-        } else if (*cp == '\\') {
-            quoted = true;
-            octal_digits = 0;
-        } else {
-            newtext += *cp;
-        }
-    }
-    return newtext;
+string V3ParseGrammar::unquoteString(FileLine* fileline, string text) {
+    string errMsg;
+    string res = VString::unquoteSVString(text, errMsg);
+    if (!errMsg.empty()) fileline->v3error(errMsg.c_str());
+    return res;
 }

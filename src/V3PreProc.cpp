@@ -358,7 +358,7 @@ string V3PreProcImp::removeDefines(const string& text) {
     string rtnsym = text;
     for (int loopprevent = 0; loopprevent < 100; loopprevent++) {
         string xsym = rtnsym;
-        if (xsym.substr(0, 1) == "`") xsym.replace(0, 1, "");
+        if (xsym[0] == '`') xsym.erase(0, 1);
         if (defExists(xsym)) {
             val = defValue(xsym);
             if (val != rtnsym) {

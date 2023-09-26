@@ -1,13 +1,22 @@
 %Error: t/t_pp_line_bad.v:100:1: `line was not properly formed with '`line number "filename" level'
   100 | `line 100
       | ^
-%Error: somefile:100:1: `line was not properly formed with '`line number "filename" level'
-  100 | `line 100
+%Error: t/t_pp_line_bad.v:200:1: `line was not properly formed with '`line number "filename" level'
+  200 | `line 100
       | ^
-%Error: somefile:100:1: `line was not properly formed with '`line number "filename" level'
+%Error: t/t_pp_line_bad.v:300:1: `line was not properly formed with '`line number "filename" level'
+  300 | `line 100
+      | ^
+%Error: some file:400:1: `line was not properly formed with '`line number "filename" level'
+  400 | `line 100
+      | ^
+%Error: somefile:500:1: `line was not properly formed with '`line number "filename" level'
+  500 | `line 100
+      | ^
+%Error: some file:600:1: `line was not properly formed with '`line number "filename" level'
+  600 | `line 100
+      | ^
 %Error: t/t_pp_line_bad.v:7:1: Define or directive not defined: '`line'
     7 | `line
       | ^~~~~
-%Error: somefile:100:1: `line was not properly formed with '`line number "filename" level'
-        t/t_pp_line_bad.v:101:1: ... note: In file included from 't_pp_line_bad.v'
 %Error: Exiting due to

@@ -663,7 +663,8 @@ std::pair<AstVarScope*, AstNodeStmt*> makeEvalLoop(AstNetlist* netlistp, const s
                 newcallp->dtypeSetVoid();
                 blockp->addNodesp(newcallp->makeStmt());
                 add("#endif\n");
-                add("VL_FATAL_MT(\"" + file + "\", " + line + ", \"\", ");
+                add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line
+                    + ", \"\", ");
                 add("\"" + name + " region did not converge.\");\n");
             }
 

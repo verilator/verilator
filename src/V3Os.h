@@ -35,22 +35,28 @@ public:
     static void setenvStr(const string& envvar, const string& value, const string& why);
 
     // METHODS (generic filename utilities)
-    static string filenameFromDirBase(const string& dir, const string& basename) VL_PURE;
-    ///< Return non-directory part of filename
+    ///< @return concatenated path
+    static string filenameJoin(std::initializer_list<const std::string> paths) VL_PURE;
+    template <typename... Args>
+    static string filenameJoin(Args... args) VL_PURE {
+        return filenameJoin({args...});
+    };
+    ///< @return file path without repeated separators and ./ prefix
+    static string filenameCleanup(const string& filename) VL_PURE;
+    ///< @return non-directory part of filename
     static string filenameNonDir(const string& filename) VL_PURE;
-    ///< Return non-extensioned (no .) part of filename
+    ///< @return non-extensioned (no .) part of filename
     static string filenameNonExt(const string& filename) VL_PURE;
-    ///< Return basename of filename
-    static string filenameNonDirExt(const string& filename) VL_PURE {
-        return filenameNonExt(filenameNonDir(filename));
-    }
-    ///< Return directory part of filename
+    ///< @return basename of filename
+    static string filenameNonDirExt(const string& filename) VL_PURE;
+    ///< @return directory part of filename
     static string filenameDir(const string& filename) VL_PURE;
-    /// Return filename with env vars removed
+    ///< @return filename with env vars removed
     static string filenameSubstitute(const string& filename);
-    ///< Return realpath of filename
+    ///< @return realpath of filename
     static string filenameRealPath(const string& filename) VL_PURE;
-    static bool filenameIsRel(const string& filename) VL_PURE;  ///< True if relative
+    ///< @return filename is relative
+    static bool filenameIsRel(const string& filename) VL_PURE;
 
     // METHODS (file utilities)
     static string getline(std::istream& is, char delim = '\n');
@@ -72,6 +78,7 @@ public:
     // METHODS (sub command)
     /// Run system command, returns the exit code of the child process.
     static int system(const string& command);
+    static void selfTest();
 };
 
 #endif  // Guard

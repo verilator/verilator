@@ -203,63 +203,62 @@ string FileLine::xmlDetailedLocation() const {
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
-    return std::string{"`line "} + cvtToStr(lastLineno()) + " \"" + filename() + "\" "
-           + cvtToStr(enterExit) + "\n";
+    return std::string{"`line "} + cvtToStr(lastLineno()) + " \""
+           + V3OutFormatter::quoteNameControls(filename()) + "\" " + cvtToStr(enterExit) + "\n";
 }
 
 void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     // Handle `line directive
     // Does not parse streamNumber/streamLineno as the next input token
     // will come from the same stream as the previous line.
+    do {
+        int lineNo;
+        // Skip `line
+        while (*textp && std::isspace(*textp)) ++textp;
+        while (*textp && !std::isspace(*textp)) ++textp;
+        while (*textp && std::isspace(*textp)) ++textp;
 
-    // Skip `line
-    while (*textp && std::isspace(*textp)) ++textp;
-    while (*textp && !std::isspace(*textp)) ++textp;
-    while (*textp && (std::isspace(*textp) || *textp == '"')) ++textp;
+        // Grab linenumber
+        const char* const ln = textp;
+        while (*textp && !std::isspace(*textp)) ++textp;
+        if (0 == strncmp(ln, "`__LINE__", textp - ln)) {
+            // Special case - see docs - don't change other than accounting for `line itself
+            lineNo = lineno() + 1;
+        } else if (std::isdigit(*ln)) {
+            lineNo = std::atoi(ln);
+        } else {
+            break;  // Fail
+        }
+        lineno(lineNo);
+        while (*textp && (std::isspace(*textp))) ++textp;
 
-    // Grab linenumber
-    bool fail = false;
-    const char* const ln = textp;
-    while (*textp && !std::isspace(*textp)) ++textp;
-    if (0 == strncmp(ln, "`__LINE__", strlen("`__LINE__"))) {
-        // Special case - see docs - don't change other than accounting for `line itself
-        lineno(lineno() + 1);
-    }
-    if (std::isdigit(*ln)) {
-        lineno(std::atoi(ln));
-    } else {
-        fail = true;
-    }
-    while (*textp && (std::isspace(*textp))) ++textp;
-    if (*textp != '"') fail = true;
-    while (*textp && (std::isspace(*textp) || *textp == '"')) ++textp;
+        // Grab filename
+        if (*textp != '"') break;  // Fail
+        const char* const fn = ++textp;
+        while (*textp && *textp != '"') ++textp;
+        if (*textp != '"') break;  // Fail
+        string errMsg;
+        const string& parsedFilename = VString::unquoteSVString(string{fn, textp}, errMsg);
+        if (!errMsg.empty()) this->v3error(errMsg.c_str());
+        filename(parsedFilename);
+        ++textp;
+        while (*textp && std::isspace(*textp)) ++textp;
 
-    // Grab filename
-    const char* const fn = textp;
-    while (*textp && !(std::isspace(*textp) || *textp == '"')) ++textp;
-    if (textp != fn) {
-        string strfn = fn;
-        strfn = strfn.substr(0, textp - fn);
-        filename(strfn);
-    } else {
-        fail = true;
-    }
+        // Grab level
+        if (!std::isdigit(*textp)) break;  // Fail
+        const int level = std::atoi(textp);
+        if (level < 0 || level >= 3) break;  // Fail
+        /// TODO: store lineno/filename only when the `line directive is valid
+        /// lineno(lineNo);
+        /// filename(filenameNew);
+        enterExitRef = level;
+        return;
+    } while (false);
 
-    // Grab level
-    while (*textp && (std::isspace(*textp) || *textp == '"')) ++textp;
-    if (std::isdigit(*textp)) {
-        enterExitRef = std::atoi(textp);
-        if (enterExitRef >= 3) fail = true;
-    } else {
-        enterExitRef = 0;
-        fail = true;
-    }
-
-    if (fail && v3Global.opt.pedantic()) {
-        v3error("`line was not properly formed with '`line number \"filename\" level'\n");
-    }
-
-    // printf ("PPLINE %d '%s'\n", s_lineno, s_filename.c_str());
+    // Fail
+    // TODO: show correct place of the code
+    v3error("`line was not properly formed with '`line number \"filename\" level'\n");
+    enterExitRef = 0;
 }
 
 void FileLine::forwardToken(const char* textp, size_t size, bool trackLines) {
@@ -293,12 +292,7 @@ FileLine* FileLine::copyOrSameFileLine() {
 
 string FileLine::filebasename() const VL_MT_SAFE { return V3Os::filenameNonDir(filename()); }
 
-string FileLine::filebasenameNoExt() const {
-    string name = filebasename();
-    string::size_type pos;
-    if ((pos = name.find('.')) != string::npos) name = name.substr(0, pos);
-    return name;
-}
+string FileLine::filebasenameNoExt() const { return V3Os::filenameNonDirExt(filename()); }
 
 string FileLine::firstColumnLetters() const VL_MT_SAFE {
     const char a = ((firstColumn() / 26) % 26) + 'a';

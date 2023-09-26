@@ -16,6 +16,7 @@
 
 // clang-format off
 #include "V3Error.h"
+#include "V3Os.h"
 #ifndef V3ERROR_NO_GLOBAL_
 # include "V3Ast.h"
 # include "V3Global.h"
@@ -262,13 +263,8 @@ void V3Error::init() {
 
 string V3Error::lineStr(const char* filename, int lineno) VL_PURE {
     std::ostringstream out;
-    const char* const fnslashp = std::strrchr(filename, '/');
-    if (fnslashp) filename = fnslashp + 1;
-    out << filename << ":" << std::dec << lineno << ":";
-    const char* const spaces = "                    ";
-    size_t numsp = out.str().length();
-    if (numsp > 20) numsp = 20;
-    out << (spaces + numsp);
+    out << V3Os::filenameNonDir(filename) << ":" << std::dec << lineno << ":";
+    out << std::string(std::max<int>(0, 20 - static_cast<int>(out.str().length())), ' ');
     return out.str();
 }
 

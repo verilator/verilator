@@ -636,7 +636,7 @@ public:
                 puts("vlSymsp->_traceDumpOpen();\n");
             } else {
                 puts("VL_PRINTF_MT(\"-Info: ");
-                puts(protect(nodep->fileline()->filename()));
+                puts(V3OutFormatter::quoteNameControls(protect(nodep->fileline()->filename())));
                 puts(":");
                 puts(cvtToStr(nodep->fileline()->lineno()));
                 puts(": $dumpvar ignored, as Verilated without --trace");
