@@ -108,21 +108,20 @@ int main()
 
 #endif
 
-    // clang-format off
 #ifdef SYSTEMC_VERSION
     sc_start(1, SC_NS);
 #else
     tb->eval();
 #endif
     // This testcase is testing multi-thread safe VL_ASSIGN_SBW and VL_ASSIGN_WSB macros.
-    // Testbench is assigning different number of bits from VlWide input_var variable to different inputs.
-    // Values around multiple of 30 (i.e. BITS_PER_DIGIT defined in SystemC sc_nbdefs.h) are tested with the special care, since
-    // it is the value by which the data_ptr of sc_biguint underlying data type is increased by (and not expected 32, as width of uint32_t).
-    // Correctness of the output is compared against the 'old' macro, which is correct but has multi-threaded issue since it's using range function.
-    // Second part is testing VL_ASSIGN_WSB in a reverse way, it is reading signals from the previous test,
-    // and comparing the output with (fraction) of VlWide input_var variable.
-
-    // clang-format on
+    // Testbench is assigning different number of bits from VlWide input_var variable to different
+    // inputs. Values around multiple of 30 (i.e. BITS_PER_DIGIT defined in SystemC sc_nbdefs.h)
+    // are tested with the special care, since it is the value by which the data_ptr of sc_biguint
+    // underlying data type is increased by (and not expected 32, as width of uint32_t).
+    // Correctness of the output is compared against the 'old' macro, which is correct but has
+    // multi-threaded issue since it's using range function. Second part is testing VL_ASSIGN_WSB
+    // in a reverse way, it is reading signals from the previous test, and comparing the output
+    // with (fraction) of VlWide input_var variable.
     VL_ASSIGN_SBW(29, i_29_s, input_var);
     VL_ASSIGN_SBW_MT_ISSUE(29, i_29_old_s, input_var);
     VL_ASSIGN_SBW(30, i_30_s, input_var);

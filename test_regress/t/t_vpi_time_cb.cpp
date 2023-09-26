@@ -35,11 +35,9 @@ int main(int argc, char** argv) {
                                                         // Note null name - we're flattening it out
                                                         ""}};
 
-    // clang-format off
 #ifdef TEST_VERBOSE
     contextp->scopesDump();
 #endif
-    // clang-format on
 
 #if VM_TRACE
     contextp->traceEverOn(true);
