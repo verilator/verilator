@@ -33,7 +33,7 @@ void poke_value(int i) {
     const char* const scopeNamep = svGetNameFromScope(svGetScope());
     printf("svGetNameFromScope=\"%s\"\n", scopeNamep);
 
-// clang-format off
+    // clang-format off
 #ifdef VERILATOR
     static int didDump = 0;
     if (didDump++ == 0) {

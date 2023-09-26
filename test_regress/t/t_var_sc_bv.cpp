@@ -108,7 +108,7 @@ int main()
 
 #endif
 
-// clang-format off
+    // clang-format off
 #ifdef SYSTEMC_VERSION
     sc_start(1, SC_NS);
 #else

@@ -48,7 +48,7 @@ int main()
 #endif
 
     // loop through every possibility and check the result
-// clang-format off
+    // clang-format off
 #ifdef SYSTEMC_VERSION
     sc_start(1, SC_NS);
 # define ASSIGN(s, v) s.write(v)

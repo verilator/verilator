@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
                                                         // Note null name - we're flattening it out
                                                         ""}};
 
-// clang-format off
+    // clang-format off
 #ifdef TEST_VERBOSE
     contextp->scopesDump();
 #endif
