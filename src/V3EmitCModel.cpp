@@ -197,15 +197,13 @@ class EmitCModel final : public EmitCFunc {
         puts("/// Returns time at next time slot. Aborts if !eventsPending()\n");
         puts("uint64_t nextTimeSlot();\n");
 
-        if (v3Global.opt.trace()) {
-            puts("/// Trace signals in the model; called by application code\n");
-            puts("void trace(" + v3Global.opt.traceClassBase()
-                 + "C* tfp, int levels, int options = 0);\n");
-            if (optSystemC()) {
-                puts("/// SC tracing; avoid overloaded virtual function lint warning\n");
-                puts("void trace(sc_trace_file* tfp) const override { "
-                     "::sc_core::sc_module::trace(tfp); }\n");
-            }
+        puts("/// Trace signals in the model; called by application code\n");
+        puts("void trace(" + v3Global.opt.traceClassBase()
+             + "C* tfp, int levels, int options = 0);\n");
+        if (v3Global.opt.trace() && optSystemC()) {
+            puts("/// SC tracing; avoid overloaded virtual function lint warning\n");
+            puts("void trace(sc_trace_file* tfp) const override { "
+                 "::sc_core::sc_module::trace(tfp); }\n");
         }
 
         if (!optSystemC()) {
@@ -591,6 +589,15 @@ class EmitCModel final : public EmitCFunc {
 
         puts("}\n");
     }
+    void emitTraceOffMethods(AstNodeModule* modp) {
+        putSectionDelimiter("Trace configuration");
+        // ::trace
+        puts("\nVL_ATTR_COLD void " + topClassName() + "::trace(");
+        puts(v3Global.opt.traceClassBase() + "C* tfp, int levels, int options) {\n");
+        puts(/**/ "vl_fatal(__FILE__, __LINE__, __FILE__,\"'" + topClassName()
+             + +"::trace()' called on model that was Verilated without --trace option\");\n");
+        puts("}\n");
+    }
 
     void emitSerializationFunctions() {
         putSectionDelimiter("Model serialization");
@@ -635,8 +642,11 @@ class EmitCModel final : public EmitCFunc {
         emitDestructorImplementation();
         emitStandardMethods1(modp);
         emitStandardMethods2(modp);
-        if (v3Global.opt.trace()) { emitTraceMethods(modp); }
-        if (v3Global.opt.savable()) { emitSerializationFunctions(); }
+        if (v3Global.opt.trace())
+            emitTraceMethods(modp);
+        else
+            emitTraceOffMethods(modp);
+        if (v3Global.opt.savable()) emitSerializationFunctions();
 
         VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
     }
