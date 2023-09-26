@@ -642,10 +642,11 @@ class EmitCModel final : public EmitCFunc {
         emitDestructorImplementation();
         emitStandardMethods1(modp);
         emitStandardMethods2(modp);
-        if (v3Global.opt.trace())
+        if (v3Global.opt.trace()) {
             emitTraceMethods(modp);
-        else
+        } else if (!v3Global.opt.systemC()) {
             emitTraceOffMethods(modp);
+        }
         if (v3Global.opt.savable()) emitSerializationFunctions();
 
         VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
