@@ -344,8 +344,8 @@ uint64_t vl_time_pow10(int n) VL_PURE;
 
 // Output clean
 // EMIT_RULE: VL_CLEAN:  oclean=clean; obits=lbits;
-#define VL_CLEAN_II(obits, lbits, lhs) ((lhs)&VL_MASK_I(obits))
-#define VL_CLEAN_QQ(obits, lbits, lhs) ((lhs)&VL_MASK_Q(obits))
+#define VL_CLEAN_II(obits, lbits, lhs) ((lhs) & (VL_MASK_I(obits)))
+#define VL_CLEAN_QQ(obits, lbits, lhs) ((lhs) & (VL_MASK_Q(obits)))
 
 // EMIT_RULE: VL_ASSIGNCLEAN:  oclean=clean; obits==lbits;
 #define VL_ASSIGNCLEAN_W(obits, owp, lwp) VL_CLEAN_WW((obits), (owp), (lwp))

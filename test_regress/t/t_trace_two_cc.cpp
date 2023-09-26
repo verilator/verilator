@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     ap = new VM_PREFIX{contextp.get(), "topa"};
     bp = new Vt_trace_two_b{contextp.get(), "topb"};
 
-// clang-format off
+    // clang-format off
 #ifdef TEST_HDR_TRACE
     contextp->traceEverOn(true);
 # ifdef TEST_FST

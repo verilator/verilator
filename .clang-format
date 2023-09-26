@@ -112,6 +112,9 @@ SpacesBeforeTrailingComments: 2
 SpacesInAngles:  false
 SpacesInContainerLiterals: true
 SpacesInCStyleCastParentheses: false
+SpacesInLineCommentPrefix:
+  Minimum: 0
+  Maximum: -1
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
 Standard:        Cpp11

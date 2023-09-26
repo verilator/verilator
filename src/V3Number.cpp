@@ -314,8 +314,7 @@ void V3Number::create(const char* sourcep) {
 
             case 'o':
             case 'c': {
-                switch (std::tolower(*cp)) {
-                // clang-format off
+                switch (std::tolower(*cp)) {  // clang-format off
                 case '0': setBit(obit++, 0); setBit(obit++, 0);  setBit(obit++, 0);  break;
                 case '1': setBit(obit++, 1); setBit(obit++, 0);  setBit(obit++, 0);  break;
                 case '2': setBit(obit++, 0); setBit(obit++, 1);  setBit(obit++, 0);  break;
@@ -335,8 +334,7 @@ void V3Number::create(const char* sourcep) {
             }
 
             case 'h': {
-                switch (std::tolower(*cp)) {
-                    // clang-format off
+                switch (std::tolower(*cp)) {  // clang-format off
                 case '0': setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); break;
                 case '1': setBit(obit++,1); setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); break;
                 case '2': setBit(obit++,0); setBit(obit++,1); setBit(obit++,0); setBit(obit++,0); break;
