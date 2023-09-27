@@ -197,9 +197,11 @@ class EmitCModel final : public EmitCFunc {
         puts("/// Returns time at next time slot. Aborts if !eventsPending()\n");
         puts("uint64_t nextTimeSlot();\n");
 
-        puts("/// Trace signals in the model; called by application code\n");
-        puts("void trace(" + v3Global.opt.traceClassBase()
-             + "C* tfp, int levels, int options = 0);\n");
+        if (v3Global.opt.trace() || !optSystemC()) {
+            puts("/// Trace signals in the model; called by application code\n");
+            puts("void trace(" + v3Global.opt.traceClassBase()
+                 + "C* tfp, int levels, int options = 0);\n");
+        }
         if (v3Global.opt.trace() && optSystemC()) {
             puts("/// SC tracing; avoid overloaded virtual function lint warning\n");
             puts("void trace(sc_trace_file* tfp) const override { "
