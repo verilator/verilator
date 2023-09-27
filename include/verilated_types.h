@@ -69,7 +69,7 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 #define VL_INOUTW(name, msb, lsb, words) VlWide<words> name  ///< Declare bidir signal, 65+ bits
 #define VL_OUT8(name, msb, lsb) CData name  ///< Declare output signal, 1-8 bits
 #define VL_OUT16(name, msb, lsb) SData name  ///< Declare output signal, 9-16 bits
-#define VL_OUT64(name, msb, lsb) QData name  ///< Declare output signal, 33-64bits
+#define VL_OUT64(name, msb, lsb) QData name  ///< Declare output signal, 33-64 bits
 #define VL_OUT(name, msb, lsb) IData name  ///< Declare output signal, 17-32 bits
 #define VL_OUTW(name, msb, lsb, words) VlWide<words> name  ///< Declare output signal, 65+ bits
 
@@ -77,11 +77,8 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 // Functions needed here
 
 constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
-    if (VL_UNLIKELY(!lhs)) return 0;
-    --lhs;
-    int shifts = 0;
-    for (; lhs != 0; ++shifts) lhs = lhs >> 1ULL;
-    return shifts;
+    // constexpr usage only! Recuses to meet C++11 constexpr func limitations
+    return lhs <= 1 ? 0 : VL_CLOG2_CE_Q((lhs + 1) >> 1ULL) + 1;
 }
 
 //===================================================================
