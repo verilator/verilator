@@ -8,7 +8,7 @@
 
 class Cls;
    task runforks(integer n);
-      for (integer i = 0; i < `N; i++) fork
+      for (integer i = 0; i < n; i++) fork
          #1 $stop;
       join_none
    endtask
