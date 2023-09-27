@@ -455,6 +455,12 @@ private:
                 nodep->addNextHere(varp);
                 nodep->hasIfaceVar(true);
             }
+            if (nodep->hasNoParens()) {
+                nodep->v3error("Interface instantiation "
+                               << nodep->prettyNameQ() << " requires parenthesis\n"
+                               << nodep->warnMore() << "... Suggest use '" << nodep->prettyName()
+                               << "()'");
+            }
         }
         if (nodep->modp()) {  //
             iterateChildren(nodep);

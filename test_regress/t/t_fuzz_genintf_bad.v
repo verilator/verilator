@@ -18,7 +18,7 @@ module m1
 endmodule
 
 module t;
-   intf ifs;
+   intf ifs();
 
    m1 m0(
          j.e(0),

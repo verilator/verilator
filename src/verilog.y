@@ -133,7 +133,7 @@ public:
         return new AstText{fileline, newtext};
     }
     AstNode* createCellOrIfaceRef(FileLine* fileline, const string& name, AstPin* pinlistp,
-                                  AstNodeRange* rangelistp) {
+                                  AstNodeRange* rangelistp, bool parens) {
         // Must clone m_instParamp as may be comma'ed list of instances
         VSymEnt* const foundp = SYMP->symCurrentp()->findIdFallback(name);
         if (foundp && VN_IS(foundp->nodep(), Port)) {
@@ -155,6 +155,7 @@ public:
             pinlistp,
             (GRAMMARP->m_instParamp ? GRAMMARP->m_instParamp->cloneTree(true) : nullptr),
             GRAMMARP->scrubRange(rangelistp)};
+        nodep->hasNoParens(!parens);
         nodep->trace(GRAMMARP->allTracingOn(fileline));
         return nodep;
     }
@@ -3187,9 +3188,9 @@ instnameList<nodep>:
 
 instnameParen<nodep>:
                 id instRangeListE '(' cellpinListE ')'
-                        { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, $4, $2); }
+                        { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, $4, $2, true); }
         |       id instRangeListE
-                        { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, nullptr, $2); }
+                        { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, nullptr, $2, false); }
         //UNSUP instRangeListE '(' cellpinListE ')'      { UNSUP } // UDP
         //                      // Adding above and switching to the Verilog-Perl syntax
         //                      // causes a shift conflict due to use of idClassSel inside exprScope.

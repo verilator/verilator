@@ -25,7 +25,7 @@ endclass
 
 module t (/*AUTOARG*/);
 
-   PBus ia, ib;
+   PBus ia(), ib();
    virtual PBus va, vb;
    virtual PBus.phy pa, pb;
    Cls ca, cb;
