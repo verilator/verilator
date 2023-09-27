@@ -12,7 +12,7 @@ scenarios(vlt => 1);
 
 compile(
     v_flags2 => ["--timing",
-                 "-Wno-PKGNODECL -Wno-RANDC -Wno-IMPLICITSTATIC -Wno-CONSTRAINTIGN -Wno-MISINDENT",
+                 "-Wno-PKGNODECL -Wno-IMPLICITSTATIC -Wno-CONSTRAINTIGN -Wno-MISINDENT",
                  "-Wno-WIDTHEXPAND -Wno-WIDTHTRUNC -Wno-CASTCONST -Wno-REALCVT",
                  "--error-limit 200 --debug-exit-uvm"],
     verilator_make_gmake => 0,

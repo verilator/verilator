@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 compile(
-    v_flags2 => ["-Wno-PKGNODECL -Wno-UNPACKED -Wno-RANDC -Wno-IMPLICITSTATIC -Wno-CONSTRAINTIGN -Wno-MISINDENT",
+    v_flags2 => ["-Wno-PKGNODECL -Wno-UNPACKED -Wno-IMPLICITSTATIC -Wno-CONSTRAINTIGN -Wno-MISINDENT",
                  "--error-limit 200"],
     );
 
