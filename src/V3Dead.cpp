@@ -457,7 +457,7 @@ private:
             if ((enump = VN_CAST((*it), EnumDType))) {
                 UINFO(1, "Enum with count " << enump->user1() << endl);
                 if (std::any_of(enump->m_tableMap.begin(), enump->m_tableMap.end(),
-                        [](const auto& p) { return !p.second->brokeExists();} )){
+                                [](const auto& p) { return !p.second->brokeExists(); })) {
                     VL_DO_DANGLING((*it)->unlinkFrBack()->deleteTree(), *it);
                     continue;
                 }
