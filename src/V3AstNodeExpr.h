@@ -101,7 +101,7 @@ public:
     void clearCachedPurity() override;
 
 private:
-    bool getPurity() const { return lhsp()->isPure() && rhsp()->isPure(); }
+    bool getPurityRecurse() const { return lhsp()->isPure() && rhsp()->isPure(); }
 };
 class AstNodeBiCom VL_NOT_FINAL : public AstNodeBiop {
     // Binary expr with commutative properties
@@ -268,7 +268,7 @@ public:
     void clearCachedPurity() override;
 
 private:
-    bool getPurity() const;
+    bool getPurityRecurse() const;
 };
 class AstNodePreSel VL_NOT_FINAL : public AstNodeExpr {
     // Something that becomes an AstSel
@@ -299,7 +299,7 @@ public:
     void clearCachedPurity() override;
 
 private:
-    bool getPurity() const {
+    bool getPurityRecurse() const {
         return fromp()->isPure() && rhsp()->isPure() && (!thsp() || thsp()->isPure());
     }
 };
@@ -343,7 +343,7 @@ public:
     void clearCachedPurity() override;
 
 private:
-    bool getPurity() const {
+    bool getPurityRecurse() const {
         return lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure() && fhsp()->isPure();
     }
 };
@@ -396,7 +396,9 @@ public:
     void clearCachedPurity() override;
 
 private:
-    bool getPurity() const { return lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure(); }
+    bool getPurityRecurse() const {
+        return lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure();
+    }
 };
 class AstNodeCond VL_NOT_FINAL : public AstNodeTriop {
     // @astgen alias op1 := condp

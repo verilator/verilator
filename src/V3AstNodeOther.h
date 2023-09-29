@@ -195,7 +195,7 @@ public:
     }
 
 private:
-    bool getPurity() const;
+    bool getPurityRecurse() const;
 };
 class AstNodeFile VL_NOT_FINAL : public AstNode {
     // Emitted Output file
