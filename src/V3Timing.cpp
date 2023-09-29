@@ -72,7 +72,8 @@ enum NodeFlag : uint8_t {
     T_SUSPENDER = 1 << 1,  // Suspendable (has timing control)
     T_HAS_PROC = 1 << 2,  // Has an associated std::process
     T_CALLS_PROC_SELF = 1 << 3,  // Calls std::process::self
-    T_NEEDS_COND_PROC = 1 << 4,  // Needs a process but only if it is under a node that has std::process
+    T_NEEDS_COND_PROC
+    = 1 << 4,  // Needs a process but only if it is under a node that has std::process
 };
 
 enum ForkType : uint8_t {
@@ -363,7 +364,8 @@ public:
         // Propagate conditional need for process
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
-            if (depVxp->nodep()->user2() & T_NEEDS_COND_PROC) propagateFlags(depVxp, T_NEEDS_COND_PROC);
+            if (depVxp->nodep()->user2() & T_NEEDS_COND_PROC)
+                propagateFlags(depVxp, T_NEEDS_COND_PROC);
         }
 
         // Propagate process downwards (from caller to callee) for suspendable calls
