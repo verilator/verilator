@@ -246,7 +246,7 @@ private:
     }
     void visit(AstDisableFork* nodep) override {
         v3Global.setUsesTiming();
-        addFlag(m_procp, T_HAS_PROC);
+        addFlag(m_procp, T_HAS_PROC | T_CALLS_PROC_SELF);
     }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
