@@ -15,6 +15,7 @@ Verilator 5.017 devel
 
 * Add trace() API even when Verilated without --trace (#4462). [phelter]
 * Add warning on interface instantiation without parens (#4094). [Gökçe Aydos]
+* Fix constification of $realtobits, $bitstoreal (#4522).  [Andrew Nolte]
 * Support randc (#4349).
 * Support resizing function call inout arguments (#4467).
 

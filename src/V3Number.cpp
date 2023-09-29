@@ -2388,19 +2388,23 @@ V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
 V3Number& V3Number::opRealToBits(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_DOUBLE_ARGS1(lhs);
-    // Conveniently our internal format is identical so we can copy bits...
     if (lhs.width() != 64 || width() != 64) v3fatalSrc("Real operation on wrong sized number");
-    m_data.setLogic();
-    opAssign(lhs);
-    return *this;
+    union {
+        double m_d;
+        uint64_t m_v;
+    } u;
+    u.m_d = lhs.toDouble();
+    return setQuad(u.m_v);
 }
 V3Number& V3Number::opBitsToRealD(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
-    // Conveniently our internal format is identical so we can copy bits...
     if (lhs.width() != 64 || width() != 64) v3fatalSrc("Real operation on wrong sized number");
-    m_data.setDouble();
-    opAssign(lhs);
-    return *this;
+    union {
+        double m_d;
+        uint64_t m_v;
+    } u;
+    u.m_v = lhs.toUQuad();
+    return setDouble(u.m_d);
 }
 V3Number& V3Number::opNegateD(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
