@@ -51,7 +51,7 @@ AstIface* AstIfaceRefDType::ifaceViaCellp() const {
 const char* AstNodeFTaskRef::broken() const {
     BROKEN_RTN(m_taskp && !m_taskp->brokeExists());
     BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
 }
 
@@ -68,8 +68,8 @@ bool AstNodeFTaskRef::isPure() {
         // cached.
         return false;
     } else {
-        if (!m_purity.isCached()) m_purity.setPurity(this->getPurity());
-        return m_purity.isPure();
+        if (!m_purity.isCached()) m_purity.set(this->getPurityRecurse());
+        return m_purity.get();
     }
 }
 
@@ -78,7 +78,7 @@ void AstNodeFTaskRef::clearCachedPurity() {
     if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
 }
 
-bool AstNodeFTaskRef::getPurity() const {
+bool AstNodeFTaskRef::getPurityRecurse() const {
     AstNodeFTask* const taskp = this->taskp();
     // Unlinked yet, so treat as impure
     if (!taskp) return false;
@@ -146,11 +146,11 @@ const char* AstNodeCCall::broken() const {
 }
 bool AstNodeCCall::isPure() { return funcp()->dpiPure(); }
 bool AstNodeUniop::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(lhsp()->isPure());
-    return m_purity.isPure();
+    if (!m_purity.isCached()) m_purity.set(lhsp()->isPure());
+    return m_purity.get();
 }
 const char* AstNodeUniop::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != lhsp()->isPure());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != lhsp()->isPure());
     return nullptr;
 }
 void AstNodeUniop::clearCachedPurity() {
@@ -159,11 +159,11 @@ void AstNodeUniop::clearCachedPurity() {
 }
 
 bool AstNodeBiop::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
-    return m_purity.isPure();
+    if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
+    return m_purity.get();
 }
 const char* AstNodeBiop::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
 }
 void AstNodeBiop::clearCachedPurity() {
@@ -172,11 +172,11 @@ void AstNodeBiop::clearCachedPurity() {
 }
 
 bool AstNodeTriop::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
-    return m_purity.isPure();
+    if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
+    return m_purity.get();
 }
 const char* AstNodeTriop::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
 }
 void AstNodeTriop::clearCachedPurity() {
@@ -185,11 +185,11 @@ void AstNodeTriop::clearCachedPurity() {
 }
 
 bool AstNodePreSel::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
-    return m_purity.isPure();
+    if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
+    return m_purity.get();
 }
 const char* AstNodePreSel::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
 }
 void AstNodePreSel::clearCachedPurity() {
@@ -198,11 +198,11 @@ void AstNodePreSel::clearCachedPurity() {
 }
 
 bool AstNodeQuadop::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
-    return m_purity.isPure();
+    if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
+    return m_purity.get();
 }
 const char* AstNodeQuadop::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
 }
 void AstNodeQuadop::clearCachedPurity() {
@@ -2311,14 +2311,14 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";
 }
 bool AstNodeFTask::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
-    return m_purity.isPure();
+    if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
+    return m_purity.get();
 }
 const char* AstNodeFTask::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
 }
-bool AstNodeFTask::getPurity() const {
+bool AstNodeFTask::getPurityRecurse() const {
     if (this->dpiImport()) return this->dpiPure();
     // Check the list of statements if it contains any impure statement
     // or any write reference to a variable that isn't an automatic function local.
