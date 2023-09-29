@@ -51,7 +51,7 @@ AstIface* AstIfaceRefDType::ifaceViaCellp() const {
 const char* AstNodeFTaskRef::broken() const {
     BROKEN_RTN(m_taskp && !m_taskp->brokeExists());
     BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurity());
     return nullptr;
 }
 
@@ -68,8 +68,8 @@ bool AstNodeFTaskRef::isPure() {
         // cached.
         return false;
     } else {
-        if (!m_purity.isCached()) m_purity.setPurity(this->getPurity());
-        return m_purity.isPure();
+        if (!m_purity.isCached()) m_purity.set(this->getPurity());
+        return m_purity.get();
     }
 }
 
@@ -146,11 +146,11 @@ const char* AstNodeCCall::broken() const {
 }
 bool AstNodeCCall::isPure() { return funcp()->dpiPure(); }
 bool AstNodeUniop::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(lhsp()->isPure());
-    return m_purity.isPure();
+    if (!m_purity.isCached()) m_purity.set(lhsp()->isPure());
+    return m_purity.get();
 }
 const char* AstNodeUniop::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != lhsp()->isPure());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != lhsp()->isPure());
     return nullptr;
 }
 void AstNodeUniop::clearCachedPurity() {
@@ -159,11 +159,11 @@ void AstNodeUniop::clearCachedPurity() {
 }
 
 bool AstNodeBiop::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
-    return m_purity.isPure();
+    if (!m_purity.isCached()) m_purity.set(getPurity());
+    return m_purity.get();
 }
 const char* AstNodeBiop::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurity());
     return nullptr;
 }
 void AstNodeBiop::clearCachedPurity() {
@@ -172,11 +172,11 @@ void AstNodeBiop::clearCachedPurity() {
 }
 
 bool AstNodeTriop::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
-    return m_purity.isPure();
+    if (!m_purity.isCached()) m_purity.set(getPurity());
+    return m_purity.get();
 }
 const char* AstNodeTriop::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurity());
     return nullptr;
 }
 void AstNodeTriop::clearCachedPurity() {
@@ -185,11 +185,11 @@ void AstNodeTriop::clearCachedPurity() {
 }
 
 bool AstNodePreSel::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
-    return m_purity.isPure();
+    if (!m_purity.isCached()) m_purity.set(getPurity());
+    return m_purity.get();
 }
 const char* AstNodePreSel::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurity());
     return nullptr;
 }
 void AstNodePreSel::clearCachedPurity() {
@@ -198,11 +198,11 @@ void AstNodePreSel::clearCachedPurity() {
 }
 
 bool AstNodeQuadop::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
-    return m_purity.isPure();
+    if (!m_purity.isCached()) m_purity.set(getPurity());
+    return m_purity.get();
 }
 const char* AstNodeQuadop::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurity());
     return nullptr;
 }
 void AstNodeQuadop::clearCachedPurity() {
@@ -2311,11 +2311,11 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";
 }
 bool AstNodeFTask::isPure() {
-    if (!m_purity.isCached()) m_purity.setPurity(getPurity());
-    return m_purity.isPure();
+    if (!m_purity.isCached()) m_purity.set(getPurity());
+    return m_purity.get();
 }
 const char* AstNodeFTask::broken() const {
-    BROKEN_RTN(m_purity.isCached() && m_purity.isPure() != getPurity());
+    BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurity());
     return nullptr;
 }
 bool AstNodeFTask::getPurity() const {

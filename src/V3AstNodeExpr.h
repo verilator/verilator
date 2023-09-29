@@ -70,7 +70,7 @@ class AstNodeBiop VL_NOT_FINAL : public AstNodeExpr {
     // Binary expression
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
-    VPurity m_purity;  // Pure state
+    VIsCached m_purity;  // Pure state
 
 protected:
     AstNodeBiop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
@@ -228,7 +228,7 @@ class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeExpr {
     string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
     bool m_pli = false;  // Pli system call ($name)
-    VPurity m_purity;  // Pure state
+    VIsCached m_purity;  // Pure state
 
 protected:
     AstNodeFTaskRef(VNType t, FileLine* fl, AstNode* namep, AstNodeExpr* pinsp)
@@ -276,7 +276,7 @@ class AstNodePreSel VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := thsp : Optional[AstNodeExpr]
     // @astgen op4 := attrp : Optional[AstAttrOf]
-    VPurity m_purity;  // Pure state
+    VIsCached m_purity;  // Pure state
 
 protected:
     AstNodePreSel(VNType t, FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
@@ -309,7 +309,7 @@ class AstNodeQuadop VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := thsp : AstNodeExpr
     // @astgen op4 := fhsp : AstNodeExpr
-    VPurity m_purity;  // Pure state
+    VIsCached m_purity;  // Pure state
 
 protected:
     AstNodeQuadop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp,
@@ -365,7 +365,7 @@ class AstNodeTriop VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := thsp : AstNodeExpr
-    VPurity m_purity;  // Pure state
+    VIsCached m_purity;  // Pure state
 
 protected:
     AstNodeTriop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
@@ -446,7 +446,7 @@ public:
 class AstNodeUniop VL_NOT_FINAL : public AstNodeExpr {
     // Unary expression
     // @astgen op1 := lhsp : AstNodeExpr
-    VPurity m_purity;  // Pure state
+    VIsCached m_purity;  // Pure state
 
 protected:
     AstNodeUniop(VNType t, FileLine* fl, AstNodeExpr* lhsp)

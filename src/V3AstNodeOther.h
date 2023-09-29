@@ -88,7 +88,7 @@ private:
     bool m_virtual : 1;  // Virtual method in class
     bool m_needProcess : 1;  // Implements part of a process that allocates std::process
     VLifetime m_lifetime;  // Lifetime
-    VPurity m_purity;  // Pure state
+    VIsCached m_purity;  // Pure state
 
 protected:
     AstNodeFTask(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)

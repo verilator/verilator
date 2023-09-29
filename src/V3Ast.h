@@ -167,16 +167,16 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 // ######################################################################
 
-class VPurity final {
-    // Used in some nodes to cache the result of isPure method
+class VIsCached final {
+    // Used in some nodes to cache results of boolean methods
 public:
-    enum en : uint8_t { NOT_CACHED, PURE, IMPURE };
+    enum en : uint8_t { NOT_CACHED, YES, NO };
     enum en m_e;
-    VPurity()
+    VIsCached()
         : m_e{NOT_CACHED} {}
     bool isCached() const { return m_e != NOT_CACHED; }
-    bool isPure() const { return m_e == PURE; }
-    void setPurity(bool pure) { m_e = pure ? PURE : IMPURE; }
+    bool get() const { return m_e == YES; }
+    void set(bool flag) { m_e = flag ? YES : NO; }
     void clearCache() { m_e = NOT_CACHED; }
 };
 
