@@ -4893,6 +4893,7 @@ private:
                     }
                     break;
                 }
+                case 'e':  // FALLTHRU
                 case 'f':  // FALLTHRU
                 case 'g': {
                     if (argp) {

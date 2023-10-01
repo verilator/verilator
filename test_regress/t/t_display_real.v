@@ -11,6 +11,7 @@ module t;
    real n3; initial n3 = 1.2345e-15;
    real n4; initial n4 = 2.579e+15;
    reg [7:0] r8;  initial r8 = 3;
+   integer iconst = 0;
 
    initial begin
       // Display formatting
@@ -36,6 +37,8 @@ module t;
       $display;
       $display("r8=%d n1=%g n2=%g", r8, n1, n2);
       $display("n1=%g n2=%g r8=%d", n1, n2, r8);
+      $display;
+      $display("iconst=%e %f %g", iconst, iconst, iconst);
       $write("*-* All Finished *-*\n");
       $finish;
    end
