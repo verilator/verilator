@@ -1053,6 +1053,11 @@ public:
         const AstConst* const sp = static_cast<const AstConst*>(samep);
         return num().isCaseEq(sp->num());
     }
+    void cloneRelink() override { m_num.nodep(this); }
+    const char* broken() const override {
+        BROKEN_RTN(m_num.nodep() && m_num.nodep() != this);
+        return nullptr;
+    }
     int instrCount() const override { return widthInstrs(); }
     bool isEqAllOnes() const { return num().isEqAllOnes(width()); }
     bool isEqAllOnesV() const { return num().isEqAllOnes(widthMinV()); }
