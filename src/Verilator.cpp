@@ -273,6 +273,7 @@ static void process() {
                 V3LinkDot::linkDotArrayed(v3Global.rootp());  // Cleanup as made new modules
             }
         }
+        V3Inline::interfaceRefs(v3Global.rootp());
 
         if (v3Global.opt.fDfgPostInline()) {
             // Post inline DFG optimization

@@ -21,7 +21,9 @@
       <var loc="d,15,11,15,17" name="rst_ip" dtype_id="1" dir="input" pinIndex="2" vartype="logic" origName="rst_ip"/>
       <var loc="d,16,11,16,17" name="foo_op" tag="foo_op" dtype_id="1" dir="output" pinIndex="3" vartype="logic" origName="foo_op"/>
       <typedef loc="d,25,6,25,15" name="my_struct" tag="my_struct" dtype_id="2"/>
-      <instance loc="d,29,8,29,12" name="itop" defName="ifc" origName="itop"/>
+      <instance loc="d,29,8,29,12" name="itop" defName="ifc" origName="itop">
+        <intfref loc="d,29,8,29,12" name="itop"/>
+      </instance>
       <var loc="d,29,8,29,12" name="itop__Viftop" dtype_id="3" vartype="ifaceref" origName="itop__Viftop"/>
       <var loc="d,31,14,31,25" name="this_struct" tag="this_struct" dtype_id="4" vartype="" origName="this_struct"/>
       <var loc="d,33,16,33,22" name="dotted" dtype_id="5" vartype="logic" origName="dotted"/>

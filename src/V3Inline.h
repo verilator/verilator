@@ -29,6 +29,7 @@ class AstNetlist;
 class V3Inline final {
 public:
     static void inlineAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void interfaceRefs(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard
