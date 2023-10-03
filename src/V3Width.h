@@ -36,8 +36,6 @@ public:
     // Final step... Mark all widths as equal
     static void widthCommit(AstNetlist* nodep) VL_MT_DISABLED;
 
-    static AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) VL_MT_DISABLED;
-
     // For use only in WidthVisitor
     // Replace AstSelBit, etc with AstSel/AstArraySel
     // Returns replacement node if nodep was deleted, or null if none.

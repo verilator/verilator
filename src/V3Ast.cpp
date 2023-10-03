@@ -1459,6 +1459,102 @@ AstNodeDType* AstNode::findStreamDType() const {
     return v3Global.rootp()->typeTablep()->findStreamDType(fileline());
 }
 
+static const AstNodeDType* computeCastableBase(const AstNodeDType* nodep) {
+    while (true) {
+        if (const AstPackArrayDType* const packp = VN_CAST(nodep, PackArrayDType)) {
+            nodep = packp->subDTypep();
+            continue;
+        } else if (const AstNodeDType* const refp = nodep->skipRefToEnump()) {
+            if (refp != nodep) {
+                nodep = refp;
+                continue;
+            }
+        }
+        return nodep;
+    }
+}
+
+static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
+                                    const AstNode* fromConstp) {
+    const VCastable castable = VCastable::UNSUPPORTED;
+    toDtp = toDtp->skipRefToEnump();
+    fromDtp = fromDtp->skipRefToEnump();
+    if (toDtp == fromDtp) return VCastable::SAMEISH;
+    if (toDtp->similarDType(fromDtp)) return VCastable::SAMEISH;
+    // UNSUP unpacked struct/unions (treated like BasicDType)
+    const AstNodeDType* fromBaseDtp = computeCastableBase(fromDtp);
+
+    const bool fromNumericable = VN_IS(fromBaseDtp, BasicDType) || VN_IS(fromBaseDtp, EnumDType)
+                                 || VN_IS(fromBaseDtp, StreamDType)
+                                 || VN_IS(fromBaseDtp, NodeUOrStructDType);
+
+    const AstNodeDType* toBaseDtp = computeCastableBase(toDtp);
+    const bool toNumericable
+        = VN_IS(toBaseDtp, BasicDType) || VN_IS(toBaseDtp, NodeUOrStructDType);
+
+    if (toBaseDtp == fromBaseDtp) {
+        return VCastable::COMPATIBLE;
+    } else if (toNumericable) {
+        if (fromNumericable) return VCastable::COMPATIBLE;
+    } else if (VN_IS(toDtp, EnumDType)) {
+        if (VN_IS(fromBaseDtp, EnumDType) && toDtp->sameTree(fromDtp))
+            return VCastable::ENUM_IMPLICIT;
+        if (fromNumericable) return VCastable::ENUM_EXPLICIT;
+    } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromConstp, Const)) {
+        if (VN_IS(fromConstp, Const) && VN_AS(fromConstp, Const)->num().isNull())
+            return VCastable::COMPATIBLE;
+    } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromDtp, ClassRefDType)) {
+        const auto toClassp = VN_AS(toDtp, ClassRefDType)->classp();
+        const auto fromClassp = VN_AS(fromDtp, ClassRefDType)->classp();
+        const bool downcast = AstClass::isClassExtendedFrom(toClassp, fromClassp);
+        const bool upcast = AstClass::isClassExtendedFrom(fromClassp, toClassp);
+        if (upcast) {
+            return VCastable::COMPATIBLE;
+        } else if (downcast) {
+            return VCastable::DYNAMIC_CLASS;
+        } else {
+            return VCastable::INCOMPATIBLE;
+        }
+    }
+    return castable;
+}
+
+VCastable AstNode::computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
+                                   const AstNode* fromConstp) {
+    const auto castable = computeCastableImp(toDtp, fromDtp, fromConstp);
+    UINFO(9, "  castable=" << castable << "  for " << toDtp << endl);
+    UINFO(9, "     =?= " << fromDtp << endl);
+    UINFO(9, "     const= " << fromConstp << endl);
+    return castable;
+}
+
+AstNodeDType* AstNode::getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) {
+    // Return the class type that both nodep1 and nodep2 are castable to.
+    // If both are null, return the type of null constant.
+    // If one is a class and one is null, return AstClassRefDType that points to that class.
+    // If no common class type exists, return nullptr.
+
+    // First handle cases with null values and when one class is a super class of the other.
+    if (VN_IS(nodep1, Const)) std::swap(nodep1, nodep2);
+    {
+        const VCastable castable = computeCastable(nodep1->dtypep(), nodep2->dtypep(), nodep2);
+        if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE) {
+            return nodep1->dtypep();
+        } else if (castable == VCastable::DYNAMIC_CLASS) {
+            return nodep2->dtypep();
+        }
+    }
+
+    AstClassRefDType* classDtypep1 = VN_CAST(nodep1->dtypep(), ClassRefDType);
+    while (classDtypep1) {
+        const VCastable castable = computeCastable(classDtypep1, nodep2->dtypep(), nodep2);
+        if (castable == VCastable::COMPATIBLE) return classDtypep1;
+        AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
+        classDtypep1 = extendsp ? VN_AS(extendsp->dtypep(), ClassRefDType) : nullptr;
+    }
+    return nullptr;
+}
+
 //######################################################################
 // VNDeleter
 
