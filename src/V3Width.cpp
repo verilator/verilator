@@ -843,7 +843,7 @@ private:
             } else {
                 nodep->v3error("Slice size isn't a constant or basic data type.");
             }
-            const AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep();
+            const AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep()->skipRefToEnump();
             if (VN_IS(lhsDtypep, DynArrayDType) || VN_IS(lhsDtypep, QueueDType)) {
                 nodep->dtypeSetStream();
             } else if (VN_IS(lhsDtypep, UnpackArrayDType) || lhsDtypep->isCompound()) {
