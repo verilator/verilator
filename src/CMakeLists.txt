@@ -96,6 +96,7 @@ set(HEADERS
     V3Inline.h
     V3Inst.h
     V3InstrCount.h
+    V3Interface.h
     V3LangCode.h
     V3LanguageWords.h
     V3Life.h
@@ -243,6 +244,7 @@ set(COMMON_SOURCES
     V3Inline.cpp
     V3Inst.cpp
     V3InstrCount.cpp
+    V3Interface.cpp
     V3Life.cpp
     V3LifePost.cpp
     V3LinkCells.cpp
