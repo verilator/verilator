@@ -1477,7 +1477,7 @@ class VlClass VL_NOT_FINAL : public VlDeletable {
 
 public:
     // CONSTRUCTORS
-    VlClass() = default;
+    VlClass() { refCountInc(); }
     VlClass(const VlClass& copied) {}
     ~VlClass() override = default;
 };
@@ -1526,8 +1526,9 @@ public:
         // () required here to avoid narrowing conversion warnings,
         // when a new() has an e.g. CData type and passed a 1U.
         : m_objp{new T_Class(std::forward<T_Args>(args)...)} {
+        // refCountInc was moved to the constructor of T_Class
+        // to fix self references in constructor.
         m_objp->m_deleterp = &deleter;
-        refCountInc();
     }
     // Explicit to avoid implicit conversion from 0
     explicit VlClassRef(T_Class* objp)
