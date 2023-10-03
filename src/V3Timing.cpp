@@ -70,10 +70,10 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 enum NodeFlag : uint8_t {
     T_SUSPENDEE = 1 << 0,  // Suspendable (due to dependence on another suspendable)
     T_SUSPENDER = 1 << 1,  // Suspendable (has timing control)
-    T_HAS_PROC = 1 << 2,  // Has an associated std::process
-    T_CALLS_PROC_SELF = 1 << 3,  // Calls std::process::self
-    T_NEEDS_COND_PROC
-    = 1 << 4,  // Needs a process but only if it is under a node that has std::process
+
+    T_FORCES_PROC = 1 << 2,  // Forces VlProcess allocation
+    T_NEEDS_PROC = 1 << 3,  // Needs access to VlProcess if it's allocated
+    T_HAS_PROC = 1 << 4,  // Has VlProcess argument in the signature
 };
 
 enum ForkType : uint8_t {
@@ -142,9 +142,10 @@ private:
     class NeedsProcDepVtx final : public DepVtx {
         VL_RTTI_IMPL(NeedsProcDepVtx, DepVtx)
         string dotColor() const override {
-            if (nodep()->user2() & T_CALLS_PROC_SELF) return "red";
+            if ((nodep()->user2() & T_HAS_PROC) && (nodep()->user2() & T_FORCES_PROC)) return "yellow";
             if (nodep()->user2() & T_HAS_PROC) return "blue";
-            if (nodep()->user2() & T_NEEDS_COND_PROC) return "green";
+            if (nodep()->user2() & T_NEEDS_PROC) return "green";
+            if (nodep()->user2() & T_FORCES_PROC) return "red";
             return "black";
         }
 
@@ -241,7 +242,7 @@ private:
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
-        if (nodep->needProcess()) addFlag(nodep, T_HAS_PROC | T_CALLS_PROC_SELF);
+        addFlag(nodep, T_HAS_PROC);
         if (VN_IS(nodep, Always)) {
             UINFO(1, "Always does " << (nodep->needProcess() ? "" : "NOT ") << "need process\n");
         }
@@ -249,13 +250,16 @@ private:
     }
     void visit(AstDisableFork* nodep) override {
         v3Global.setUsesTiming();
-        addFlag(m_procp, T_HAS_PROC | T_CALLS_PROC_SELF);
+        addFlag(m_procp, T_FORCES_PROC | T_NEEDS_PROC);
+    }
+    void visit(AstDelay* nodep) override {
+        addFlag(m_procp, T_NEEDS_PROC);
     }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
         iterateChildren(nodep);
-        if (nodep->needProcess()) addFlag(nodep, T_HAS_PROC | T_CALLS_PROC_SELF);
+        if (nodep->needProcess()) addFlag(nodep, T_FORCES_PROC | T_NEEDS_PROC);
         DepVtx* const sVxp = getSuspendDepVtx(nodep);
         DepVtx* const pVxp = getNeedsProcDepVtx(nodep);
         if (!m_classp) return;
@@ -310,12 +314,13 @@ private:
             new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep), getSuspendDepVtx(m_procp),
                             m_underFork ? P_FORK : P_CALL};
 
-        if (!m_underFork)
-            new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep), getNeedsProcDepVtx(m_procp),
-                            P_CALL};
+        // if (!m_underFork)
+        new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep), getNeedsProcDepVtx(m_procp),
+                        P_CALL};
+
+        if (m_underFork) addFlag(nodep, T_NEEDS_PROC | T_HAS_PROC);
 
         m_procp = nodep;
-        addFlag(nodep, T_NEEDS_COND_PROC);
         m_underFork = 0;
         iterateChildren(nodep);
     }
@@ -355,26 +360,29 @@ public:
             if (depVxp->nodep()->user2() & T_SUSPENDEE) propagateFlags(depVxp, T_SUSPENDEE);
         }
         if (dumpGraphLevel() >= 6) m_suspGraph.dumpDotFilePrefixed("timing_deps");
+
         // Propagate process
+        // WIP: Step 1. Find processes that need to allocate process
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
-            if (depVxp->nodep()->user2() & T_HAS_PROC) propagateFlags(depVxp, T_HAS_PROC);
+            if (depVxp->nodep()->user2() & T_FORCES_PROC) propagateFlags(depVxp, T_FORCES_PROC);
         }
+        if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps_1");
 
-        // Propagate conditional need for process
+        // WIP: Step 2. Mark paths between processes and nodes that need VlProcess
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
-            if (depVxp->nodep()->user2() & T_NEEDS_COND_PROC)
-                propagateFlags(depVxp, T_NEEDS_COND_PROC);
+            if (depVxp->nodep()->user2() & T_NEEDS_PROC) propagateFlags(depVxp, T_NEEDS_PROC);
         }
+        if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps_2");
 
-        // Propagate process downwards (from caller to callee) for suspendable calls
-        for (V3GraphVertex* vxp = m_suspGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
+        // WIP: Step 3. Starting from processes marked in Step 1. propagate process argument
+        //      traversing nodes marked in Step 2.
+        for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
-            if (depVxp->nodep()->user2() & T_HAS_PROC)
+            if ((depVxp->nodep()->user2() & T_FORCES_PROC) && (depVxp->nodep()->user2() & T_HAS_PROC))
                 propagateFlagsReversedIf(depVxp, T_HAS_PROC, [&](const V3GraphEdge* e) -> bool {
-                    return (e->weight() != P_FORK)
-                           && (static_cast<DepVtx*>(e->top())->nodep()->user2() & T_SUSPENDEE);
+                    return static_cast<DepVtx*>(e->fromp())->nodep()->user2() & T_NEEDS_PROC;
                 });
         }
         if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps");
