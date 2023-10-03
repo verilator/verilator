@@ -58,6 +58,7 @@
 #include "V3HierBlock.h"
 #include "V3Inline.h"
 #include "V3Inst.h"
+#include "V3Interface.h"
 #include "V3Life.h"
 #include "V3LifePost.h"
 #include "V3LinkDot.h"
@@ -273,7 +274,8 @@ static void process() {
                 V3LinkDot::linkDotArrayed(v3Global.rootp());  // Cleanup as made new modules
             }
         }
-        V3Inline::interfaceRefs(v3Global.rootp());
+
+        if (v3Global.opt.trace()) V3Interface::interfaceAll(v3Global.rootp());
 
         if (v3Global.opt.fDfgPostInline()) {
             // Post inline DFG optimization

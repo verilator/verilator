@@ -219,6 +219,7 @@ RAW_OBJS = \
 	V3Inline.o \
 	V3Inst.o \
 	V3InstrCount.o \
+	V3Interface.o \
 	V3Life.o \
 	V3LifePost.o \
 	V3LinkCells.o \

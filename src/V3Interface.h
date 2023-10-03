@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Inlining of modules
+// DESCRIPTION: Verilator: Interface references for tracing
 //
 // Code available from: https://verilator.org
 //
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3INLINE_H_
-#define VERILATOR_V3INLINE_H_
+#ifndef VERILATOR_V3INTERFACE_H_
+#define VERILATOR_V3INTERFACE_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -26,9 +26,9 @@ class AstNetlist;
 
 //============================================================================
 
-class V3Inline final {
+class V3Interface final {
 public:
-    static void inlineAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void interfaceAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard
