@@ -142,7 +142,6 @@ private:
     class NeedsProcDepVtx final : public DepVtx {
         VL_RTTI_IMPL(NeedsProcDepVtx, DepVtx)
         string dotColor() const override {
-            if ((nodep()->user2() & T_HAS_PROC) && (nodep()->user2() & T_FORCES_PROC)) return "yellow";
             if (nodep()->user2() & T_HAS_PROC) return "blue";
             if (nodep()->user2() & T_NEEDS_PROC) return "green";
             if (nodep()->user2() & T_FORCES_PROC) return "red";
@@ -204,6 +203,8 @@ private:
     }
     // Add timing flag to a node
     void addFlag(AstNode* const nodep, uint8_t flag) { nodep->user2(nodep->user2() | flag); }
+    // Remove timing flag from a node
+    void removeFlag(AstNode* const nodep, uint8_t flag) { nodep->user2(nodep->user2() & ~flag); }
     // Pass timing flag between nodes
     bool passFlag(const AstNode* from, AstNode* to, NodeFlag flag) {
         if ((from->user2() & flag) && !(to->user2() & flag)) {
@@ -219,6 +220,16 @@ private:
             auto* const depVxp = static_cast<DepVtx*>(edgep->top());
             AstNode* const depp = depVxp->nodep();
             if (passFlag(parentp, depp, flag)) propagateFlags(depVxp, flag);
+        }
+    }
+    template <typename Predicate>
+    void propagateFlagsIf(DepVtx* const vxp, NodeFlag flag, Predicate p) {
+        auto* const parentp = vxp->nodep();
+        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            AstNode* const depp = depVxp->nodep();
+            if (p(edgep) && passFlag(parentp, depp, flag))
+                propagateFlagsIf(depVxp, flag, p);
         }
     }
     template <typename Predicate>
@@ -253,7 +264,8 @@ private:
         addFlag(m_procp, T_FORCES_PROC | T_NEEDS_PROC);
     }
     void visit(AstDelay* nodep) override {
-        addFlag(m_procp, T_NEEDS_PROC);
+        if (m_procp) addFlag(m_procp, T_NEEDS_PROC);
+        iterateChildren(nodep);
     }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
@@ -300,9 +312,11 @@ private:
             new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep->funcp()),
                             getSuspendDepVtx(m_procp), m_underFork ? P_FORK : P_CALL};
 
-        if (!m_underFork)
-            new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep->funcp()),
-                            getNeedsProcDepVtx(m_procp), P_CALL};
+        // if (!m_underFork)
+        new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep->funcp()),
+                        getNeedsProcDepVtx(m_procp), P_CALL};
+
+        if (m_underFork & F_MIGHT_SUSPEND) addFlag(nodep, T_NEEDS_PROC | T_HAS_PROC);
 
         iterateChildren(nodep);
     }
@@ -318,7 +332,7 @@ private:
         new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep), getNeedsProcDepVtx(m_procp),
                         P_CALL};
 
-        if (m_underFork) addFlag(nodep, T_NEEDS_PROC | T_HAS_PROC);
+        if (m_underFork & F_MIGHT_SUSPEND) addFlag(nodep, T_NEEDS_PROC | T_HAS_PROC);
 
         m_procp = nodep;
         m_underFork = 0;
@@ -365,13 +379,20 @@ public:
         // WIP: Step 1. Find processes that need to allocate process
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
-            if (depVxp->nodep()->user2() & T_FORCES_PROC) propagateFlags(depVxp, T_FORCES_PROC);
+            if ((depVxp->nodep()->user2() & T_FORCES_PROC)) {
+                propagateFlagsIf(depVxp, T_FORCES_PROC, [&](const V3GraphEdge* e) -> bool {
+                    return !(static_cast<DepVtx*>(e->fromp())->nodep()->user2() & T_HAS_PROC);
+                });
+            }
         }
         if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps_1");
 
         // WIP: Step 2. Mark paths between processes and nodes that need VlProcess
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
+            if ((depVxp->nodep()->user2() & T_HAS_PROC) && !(depVxp->nodep()->user2() & T_FORCES_PROC)) {
+                removeFlag(depVxp->nodep(), T_HAS_PROC);
+            }
             if (depVxp->nodep()->user2() & T_NEEDS_PROC) propagateFlags(depVxp, T_NEEDS_PROC);
         }
         if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps_2");
@@ -380,10 +401,11 @@ public:
         //      traversing nodes marked in Step 2.
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
-            if ((depVxp->nodep()->user2() & T_FORCES_PROC) && (depVxp->nodep()->user2() & T_HAS_PROC))
+            if ((depVxp->nodep()->user2() & T_HAS_PROC)) {
                 propagateFlagsReversedIf(depVxp, T_HAS_PROC, [&](const V3GraphEdge* e) -> bool {
                     return static_cast<DepVtx*>(e->fromp())->nodep()->user2() & T_NEEDS_PROC;
                 });
+            }
         }
         if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps");
     }
