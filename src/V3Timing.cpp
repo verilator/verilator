@@ -312,7 +312,6 @@ private:
             new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep->funcp()),
                             getSuspendDepVtx(m_procp), m_underFork ? P_FORK : P_CALL};
 
-        // if (!m_underFork)
         new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep->funcp()),
                         getNeedsProcDepVtx(m_procp), P_CALL};
 
@@ -328,7 +327,6 @@ private:
             new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep), getSuspendDepVtx(m_procp),
                             m_underFork ? P_FORK : P_CALL};
 
-        // if (!m_underFork)
         new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep), getNeedsProcDepVtx(m_procp),
                         P_CALL};
 
@@ -385,7 +383,6 @@ public:
                 });
             }
         }
-        if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps_1");
 
         // WIP: Step 2. Mark paths between processes and nodes that need VlProcess
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
@@ -395,7 +392,6 @@ public:
             }
             if (depVxp->nodep()->user2() & T_NEEDS_PROC) propagateFlags(depVxp, T_NEEDS_PROC);
         }
-        if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps_2");
 
         // WIP: Step 3. Starting from processes marked in Step 1. propagate process argument
         //      traversing nodes marked in Step 2.
