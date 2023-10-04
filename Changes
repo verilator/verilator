@@ -17,6 +17,7 @@ Verilator 5.017 devel
 * Add warning on interface instantiation without parens (#4094). [Gökçe Aydos]
 * Fix constification of $realtobits, $bitstoreal (#4522).  [Andrew Nolte]
 * Fix conversion of integers in $display '%e' (#4528). [muzafferkal]
+* Fix stream of 32 bit (#4536). [Julien Faucher]
 * Support randc (#4349).
 * Support resizing function call inout arguments (#4467).
 

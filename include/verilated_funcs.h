@@ -1437,7 +1437,7 @@ static inline IData VL_STREAML_FAST_III(int lbits, IData ld, IData rd_log2) VL_P
     if (rd_log2) {
         const uint32_t lbitsFloor = lbits & ~VL_MASK_I(rd_log2);  // max multiple of rd <= lbits
         const uint32_t lbitsRem = lbits - lbitsFloor;  // number of bits in most-sig slice (MSS)
-        const IData msbMask = VL_MASK_I(lbitsRem) << lbitsFloor;  // mask to sel only bits in MSS
+        const IData msbMask = lbitsFloor == 32 ? 0UL : VL_MASK_I(lbitsRem) << lbitsFloor;
         ret = (ret & ~msbMask) | ((ret & msbMask) << ((VL_UL(1) << rd_log2) - lbitsRem));
     }
     switch (rd_log2) {
