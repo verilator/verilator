@@ -253,6 +253,7 @@ private:
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
+        new NeedsProcDepVtx{&m_procGraph, nodep, nullptr};
         addFlag(nodep, T_HAS_PROC);
         if (VN_IS(nodep, Always)) {
             UINFO(1, "Always does " << (nodep->needProcess() ? "" : "NOT ") << "need process\n");
@@ -260,12 +261,8 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstDisableFork* nodep) override {
-        v3Global.setUsesTiming();
+        visit(static_cast<AstNode*>(nodep));
         addFlag(m_procp, T_FORCES_PROC | T_NEEDS_PROC);
-    }
-    void visit(AstDelay* nodep) override {
-        if (m_procp) addFlag(m_procp, T_NEEDS_PROC);
-        iterateChildren(nodep);
     }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
@@ -352,7 +349,7 @@ private:
     void visit(AstNode* nodep) override {
         if (nodep->isTimingControl()) {
             v3Global.setUsesTiming();
-            if (m_procp) addFlag(m_procp, T_SUSPENDEE | T_SUSPENDER);
+            if (m_procp) addFlag(m_procp, T_SUSPENDEE | T_SUSPENDER | T_NEEDS_PROC);
         }
         iterateChildren(nodep);
     }
