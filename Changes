@@ -15,11 +15,22 @@ Verilator 5.017 devel
 
 * Add trace() API even when Verilated without --trace (#4462). [phelter]
 * Add warning on interface instantiation without parens (#4094). [Gökçe Aydos]
-* Fix constification of $realtobits, $bitstoreal (#4522).  [Andrew Nolte]
-* Fix conversion of integers in $display '%e' (#4528). [muzafferkal]
-* Fix stream of 32 bit (#4536). [Julien Faucher]
 * Support randc (#4349).
 * Support resizing function call inout arguments (#4467).
+* Support converting parameters inside modules to localparams (#4511). [Anthony Donlon]
+* Fix conversion of impure logical expressions to bit expressions (#487 partial) (#4437). [Ryszard Rozak, Antmicro Ltd.]
+* Fix passing arguments by reference (#3385 partial) (#4489). [Ryszard Rozak, Antmicro Ltd.]
+* Fix multithreading handling to separate by code units that use/never use it (#4228). [Mariusz Glebocki, Antmicro Ltd.]
+* Fix usage of annotation options (#4486) (#4504). [Michal Czyz]
+* Fix detecting local vars in nested forks (#4493) (#4506). [Kamil Rakoczy]
+* Fix handling input file path separator (#4515) (#4516). [Anthony Donlon]
+* Fix mis-support for parameterized UDPs (#4518). [Anthony Donlon]
+* Fix constant conversion of $realtobits, $bitstoreal (#4522).  [Andrew Nolte]
+* Fix conversion of integers in $display '%e' (#4528). [muzafferkal]
+* Fix non-inlined interface tracing (#3984) (#4530). [Todd Strader]
+* Fix stream operations with operands of struct type (#4531) (#4532). [Ryszard Rozak, Antmicro Ltd.]
+* Fix 'this' in a constructor (#4533). [Ryszard Rozak, Antmicro Ltd.]
+* Fix stream shift operator of 32 bits (#4536). [Julien Faucher]
 
 
 Verilator 5.016 2023-09-16

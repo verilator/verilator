@@ -89,6 +89,7 @@ Engstrom
 Enzo
 Eugen
 Fabrizio
+Faucher
 Fekete
 Ferrandi
 Flachs
@@ -722,6 +723,7 @@ multithreading
 musl
 mutexes
 mux
+muzafferkal
 myftptoyman
 mysignal
 namespace
@@ -760,6 +762,7 @@ pdf
 perf
 perftools
 pgo
+phelter
 picoChip
 pinIndex
 pinout
@@ -815,6 +818,7 @@ readmemb
 readmemh
 realpath
 realtime
+realtobits
 recoding
 recrem
 redeclaring
