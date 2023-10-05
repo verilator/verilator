@@ -392,18 +392,16 @@ public:
         }
         if (dumpGraphLevel() >= 6) m_suspGraph.dumpDotFilePrefixed("timing_deps");
 
-        // Find processes that'll allocate VlProcess
+        // Propagate needProcess
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
+            // Find processes that'll allocate VlProcess
             if ((depVxp->nodep()->user2() & T_FORCES_PROC)) {
                 propagateFlagsIf(depVxp, T_FORCES_PROC, [&](const V3GraphEdge* e) -> bool {
                     return !(static_cast<DepVtx*>(e->fromp())->nodep()->user2() & T_ALLOCS_PROC);
                 });
             }
-        }
-        // Mark nodes on paths between processes and statements using VlProcess
-        for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
+            // Mark nodes on paths between processes and statements that use VlProcess
             if ((depVxp->nodep()->user2() & T_NEEDS_PROC)) {
                 propagateFlagsIf(depVxp, T_NEEDS_PROC, [&](const V3GraphEdge* e) -> bool {
                     return !(static_cast<DepVtx*>(e->top())->nodep()->user2() & T_ALLOCS_PROC);
