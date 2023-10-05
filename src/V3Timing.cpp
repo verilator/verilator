@@ -71,9 +71,10 @@ enum NodeFlag : uint8_t {
     T_SUSPENDEE = 1 << 0,  // Suspendable (due to dependence on another suspendable)
     T_SUSPENDER = 1 << 1,  // Suspendable (has timing control)
 
-    T_FORCES_PROC = 1 << 2,  // Forces VlProcess allocation
-    T_NEEDS_PROC = 1 << 3,  // Needs access to VlProcess if it's allocated
-    T_HAS_PROC = 1 << 4,  // Has VlProcess argument in the signature
+    T_ALLOCS_PROC = 1 << 2,  // Can allocate VlProcess
+    T_FORCES_PROC = 1 << 3,  // Forces VlProcess allocation
+    T_NEEDS_PROC = 1 << 4,  // Needs access to VlProcess if it's allocated
+    T_HAS_PROC = 1 << 5,  // Has VlProcess argument in the signature
 };
 
 enum ForkType : uint8_t {
@@ -253,8 +254,8 @@ private:
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
-        new NeedsProcDepVtx{&m_procGraph, nodep, nullptr};
-        addFlag(nodep, T_HAS_PROC);
+        getNeedsProcDepVtx(nodep);
+        addFlag(nodep, T_ALLOCS_PROC);
         if (VN_IS(nodep, Always)) {
             UINFO(1, "Always does " << (nodep->needProcess() ? "" : "NOT ") << "need process\n");
         }
@@ -312,7 +313,9 @@ private:
         new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep->funcp()),
                         getNeedsProcDepVtx(m_procp), P_CALL};
 
-        if (m_underFork & F_MIGHT_SUSPEND) addFlag(nodep, T_NEEDS_PROC | T_HAS_PROC);
+        if (m_underFork && !(m_underFork & F_MIGHT_SUSPEND)) {
+            addFlag(nodep, T_NEEDS_PROC | T_ALLOCS_PROC);
+        }
 
         iterateChildren(nodep);
     }
@@ -327,7 +330,9 @@ private:
         new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep), getNeedsProcDepVtx(m_procp),
                         P_CALL};
 
-        if (m_underFork & F_MIGHT_SUSPEND) addFlag(nodep, T_NEEDS_PROC | T_HAS_PROC);
+        if (m_underFork && !(m_underFork & F_MIGHT_SUSPEND)) {
+            addFlag(nodep, T_NEEDS_PROC | T_ALLOCS_PROC);
+        }
 
         m_procp = nodep;
         m_underFork = 0;
@@ -376,7 +381,7 @@ public:
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
             if ((depVxp->nodep()->user2() & T_FORCES_PROC)) {
                 propagateFlagsIf(depVxp, T_FORCES_PROC, [&](const V3GraphEdge* e) -> bool {
-                    return !(static_cast<DepVtx*>(e->fromp())->nodep()->user2() & T_HAS_PROC);
+                    return !(static_cast<DepVtx*>(e->fromp())->nodep()->user2() & T_ALLOCS_PROC);
                 });
             }
         }
@@ -384,17 +389,19 @@ public:
         // WIP: Step 2. Mark paths between processes and nodes that need VlProcess
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
-            if ((depVxp->nodep()->user2() & T_HAS_PROC) && !(depVxp->nodep()->user2() & T_FORCES_PROC)) {
-                removeFlag(depVxp->nodep(), T_HAS_PROC);
+            if ((depVxp->nodep()->user2() & T_NEEDS_PROC)) {
+                propagateFlagsIf(depVxp, T_NEEDS_PROC, [&](const V3GraphEdge* e) -> bool {
+                    return !(static_cast<DepVtx*>(e->top())->nodep()->user2() & T_ALLOCS_PROC);
+                });
             }
-            if (depVxp->nodep()->user2() & T_NEEDS_PROC) propagateFlags(depVxp, T_NEEDS_PROC);
         }
 
         // WIP: Step 3. Starting from processes marked in Step 1. propagate process argument
         //      traversing nodes marked in Step 2.
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
-            if ((depVxp->nodep()->user2() & T_HAS_PROC)) {
+            if ((depVxp->nodep()->user2() & T_ALLOCS_PROC) && (depVxp->nodep()->user2() & T_FORCES_PROC)) {
+                addFlag(depVxp->nodep(), T_HAS_PROC);
                 propagateFlagsReversedIf(depVxp, T_HAS_PROC, [&](const V3GraphEdge* e) -> bool {
                     return static_cast<DepVtx*>(e->fromp())->nodep()->user2() & T_NEEDS_PROC;
                 });
