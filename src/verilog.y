@@ -4465,7 +4465,8 @@ taskId<nodeFTaskp>:
 
 funcId<nodeFTaskp>:                     // IEEE: function_data_type_or_implicit + part of function_body_declaration
         //                      // IEEE: function_data_type_or_implicit must be expanded here to prevent conflict
-        //                      // function_data_type expanded here to prevent conflicts with implicit_type:empty vs data_type:ID
+        //                      // function_data_type expanded here to prevent conflicts with
+        //                      // implicit_type:empty vs data_type:ID
                 /**/ fIdScoped
                         { $$ = $1;
                           $$->fvarp(new AstBasicDType{$<fl>1, LOGIC_IMPLICIT});
@@ -4932,7 +4933,7 @@ fexpr<nodeExprp>:                   // For use as first part of statement (disam
 //UNSUP //
 //UNSUP //---------------------
 //UNSUP //                      // IEEE: expr
-//UNSUP |       BISONPRE_COPY(expr,{s/~l~/ev_/g; s/~r~/ev_/g; s/~p~/ev_/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g;})       // {copied}
+//UNSUP |       BISONPRE_COPY(expr,{s/~l~/ev_/g; s/~r~/ev_/g; s/~p~/ev_/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g;})  // {copied}
 //UNSUP //
 //UNSUP //                      // IEEE: '(' event_expression ')'
 //UNSUP //                      // expr:'(' x ')' conflicts with event_expression:'(' event_expression ')'
@@ -5722,7 +5723,8 @@ clocking_eventE<senItemp>:      // IEEE: optional clocking_event
 
 clocking_event<senItemp>:       // IEEE: clocking_event
                 '@' id
-                        { $$ = new AstSenItem{$<fl>2, VEdgeType::ET_CHANGED, new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}}; }
+                        { $$ = new AstSenItem{$<fl>2, VEdgeType::ET_CHANGED,
+                                              new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}}; }
         |       '@' '(' event_expression ')'            { $$ = $3; }
         ;
 
@@ -5787,9 +5789,12 @@ clocking_skew<nodeExprp>:           // IEEE: clocking_skew
         ;
 
 cycle_delay<delayp>:  // IEEE: cycle_delay
-               yP_POUNDPOUND yaINTNUM                   { $$ = new AstDelay{$<fl>1, new AstConst{$<fl>2, *$2}, true}; }
-        |      yP_POUNDPOUND id                         { $$ = new AstDelay{$<fl>1, new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}, true}; }
-        |      yP_POUNDPOUND '(' expr ')'               { $$ = new AstDelay{$<fl>1, $3, true}; }
+               yP_POUNDPOUND yaINTNUM
+                       { $$ = new AstDelay{$<fl>1, new AstConst{$<fl>2, *$2}, true}; }
+        |      yP_POUNDPOUND id
+                       { $$ = new AstDelay{$<fl>1, new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}, true}; }
+        |      yP_POUNDPOUND '(' expr ')'
+                       { $$ = new AstDelay{$<fl>1, $3, true}; }
         ;
 
 //************************************************
