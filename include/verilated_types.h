@@ -1478,7 +1478,7 @@ class VlClass VL_NOT_FINAL : public VlDeletable {
 public:
     // CONSTRUCTORS
     VlClass() { refCountInc(); }
-    VlClass(const VlClass& copied) {}
+    VlClass(const VlClass& copied) { refCountInc(); }
     ~VlClass() override = default;
 };
 
