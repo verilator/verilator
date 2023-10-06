@@ -22,17 +22,17 @@
 //     TimingSuspendableVisitor creates a dependency graph to propagate this property.
 // - flag "needs process": (for detecting what needs a VlProcess argument in signature)
 //   The visitor distinguishes 4 types of nodes:
-//     1. nodes that can allocate VlProcess (forks, always, initial etc.),
-//     2. nodes that make it necessary for the previous type to allocate VlProcess
-//        (like process::self which then wraps it, allowing use inside Verilog).
-//     3. nodes that should obtain VlProcess if it will be allocated
-//        (all of the previous type + timing controls, so they could update process state),
-//     4. nodes that are going to be emitted with a VlProcess argument.
-//   flags 2. and 3. are propagated upwards up to the nodes type 1., this is to detect
-//   which 1s are forced to allocate VlProcess. Then such 1s get marked as 4s and the flag is
-//   propagated downwards through nodes type 2. Using only 2s assures the flags are only
-//   propagated through paths leading to nodes that actually use VlProcess
-//   (see NodeFlag enum).
+//     - T_ALLOCS_PROC: nodes that can allocate VlProcess (forks, always, initial etc.),
+//     - T_FORCES_PROC: nodes that make it necessary for the previous type to allocate VlProcess
+//       (like process::self which then wraps it, allowing use inside Verilog).
+//     - T_NEEDS_PROC: nodes that should obtain VlProcess if it will be allocated
+//       (all of the previous type + timing controls, so they could update process state),
+//     - T_HAS_PROC: nodes that are going to be emitted with a VlProcess argument.
+//   T_FORCES_PROC and T_NEEDS_PROC are propagated upwards up to the nodes type T_ALLOCS_PROC,
+//   this is to detect which processes have to allocate VlProcess. Then nodes of these processes
+//   get marked as T_HAS_PROC and the flag is propagated downwards through nodes
+//   type T_NEEDS_PROC. Using only nodes type T_NEEDS_PROC assures the flags are only propagated
+//   through paths leading to nodes that actually use VlProcess.
 //
 // TimingControlVisitor is the one that actually performs transformations:
 // - for each intra-assignment timing control:
