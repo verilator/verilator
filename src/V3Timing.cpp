@@ -144,8 +144,8 @@ private:
     class SuspendDepVtx final : public DepVtx {
         VL_RTTI_IMPL(SuspendDepVtx, DepVtx)
         string dotColor() const override {
-            if (nodep()->user2() & T_SUSPENDER) return "red";
-            if (nodep()->user2() & T_SUSPENDEE) return "blue";
+            if (hasFlags(nodep(), T_SUSPENDER)) return "red";
+            if (hasFlags(nodep(), T_SUSPENDEE)) return "blue";
             return "black";
         }
 
@@ -158,9 +158,9 @@ private:
     class NeedsProcDepVtx final : public DepVtx {
         VL_RTTI_IMPL(NeedsProcDepVtx, DepVtx)
         string dotColor() const override {
-            if (nodep()->user2() & T_HAS_PROC) return "blue";
-            if (nodep()->user2() & T_NEEDS_PROC) return "green";
-            if (nodep()->user2() & T_FORCES_PROC) return "red";
+            if (hasFlags(nodep(), T_HAS_PROC)) return "blue";
+            if (hasFlags(nodep(), T_NEEDS_PROC)) return "green";
+            if (hasFlags(nodep(), T_FORCES_PROC)) return "red";
             return "black";
         }
 
@@ -218,7 +218,13 @@ private:
         return nodep->user5u().to<NeedsProcDepVtx*>();
     }
     // Add timing flag to a node
-    void addFlags(AstNode* const nodep, uint8_t flag) { nodep->user2(nodep->user2() | flag); }
+    static void addFlags(AstNode* const nodep, uint8_t flags) {
+        nodep->user2(nodep->user2() | flags);
+    }
+    // Check if a node has ALL of the expected flags set
+    static bool hasFlags(AstNode* const nodep, uint8_t flags) {
+        return !(~nodep->user2() & flags);
+    }
     // Pass timing flag between nodes
     bool passFlag(const AstNode* from, AstNode* to, NodeFlag flag) {
         if ((from->user2() & flag) && !(to->user2() & flag)) {
@@ -384,7 +390,7 @@ public:
         // Propagate suspendability
         for (V3GraphVertex* vxp = m_suspGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
-            if (depVxp->nodep()->user2() & T_SUSPENDEE) propagateFlags(depVxp, T_SUSPENDEE);
+            if (hasFlags(depVxp->nodep(), T_SUSPENDEE)) propagateFlags(depVxp, T_SUSPENDEE);
         }
         if (dumpGraphLevel() >= 6) m_suspGraph.dumpDotFilePrefixed("timing_deps");
 
@@ -392,25 +398,25 @@ public:
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
             // Find processes that'll allocate VlProcess
-            if (depVxp->nodep()->user2() & T_FORCES_PROC) {
+            if (hasFlags(depVxp->nodep(), T_FORCES_PROC)) {
                 propagateFlagsIf(depVxp, T_FORCES_PROC, [&](const V3GraphEdge* e) -> bool {
-                    return !(static_cast<DepVtx*>(e->fromp())->nodep()->user2() & T_ALLOCS_PROC);
+                    return !hasFlags(static_cast<DepVtx*>(e->fromp())->nodep(), T_ALLOCS_PROC);
                 });
             }
             // Mark nodes on paths between processes and statements that use VlProcess
-            if (depVxp->nodep()->user2() & T_NEEDS_PROC) {
+            if (hasFlags(depVxp->nodep(), T_NEEDS_PROC)) {
                 propagateFlagsIf(depVxp, T_NEEDS_PROC, [&](const V3GraphEdge* e) -> bool {
-                    return !(static_cast<DepVtx*>(e->top())->nodep()->user2() & T_ALLOCS_PROC);
+                    return !hasFlags(static_cast<DepVtx*>(e->top())->nodep(), T_ALLOCS_PROC);
                 });
             }
         }
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
             // Mark nodes that will be emitted with a VlProcess argument
-            if ((depVxp->nodep()->user2() & T_ALLOCS_PROC) && (depVxp->nodep()->user2() & T_FORCES_PROC)) {
+            if (hasFlags(depVxp->nodep(), T_ALLOCS_PROC | T_FORCES_PROC)) {
                 addFlags(depVxp->nodep(), T_HAS_PROC);
                 propagateFlagsReversedIf(depVxp, T_HAS_PROC, [&](const V3GraphEdge* e) -> bool {
-                    return static_cast<DepVtx*>(e->fromp())->nodep()->user2() & T_NEEDS_PROC;
+                    return hasFlags(static_cast<DepVtx*>(e->fromp())->nodep(), T_NEEDS_PROC);
                 });
             }
         }
