@@ -28,7 +28,7 @@
 //     - T_NEEDS_PROC: nodes that should obtain VlProcess if it will be allocated
 //       (all of the previous type + timing controls, so they could update process state),
 //     - T_HAS_PROC: nodes that are going to be emitted with a VlProcess argument.
-//   T_FORCES_PROC and T_NEEDS_PROC are propagated upwards up to the nodes type T_ALLOCS_PROC,
+//   T_FORCES_PROC and T_NEEDS_PROC are propagated upwards up to the nodes of type T_ALLOCS_PROC,
 //   this is to detect which processes have to allocate VlProcess. Then nodes of these processes
 //   get marked as T_HAS_PROC and the flag is propagated downwards through nodes
 //   type T_NEEDS_PROC. Using only nodes type T_NEEDS_PROC assures the flags are only propagated
