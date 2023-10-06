@@ -218,9 +218,7 @@ private:
         return nodep->user5u().to<NeedsProcDepVtx*>();
     }
     // Add timing flag to a node
-    void addFlag(AstNode* const nodep, uint8_t flag) { nodep->user2(nodep->user2() | flag); }
-    // Remove timing flag from a node
-    void removeFlag(AstNode* const nodep, uint8_t flag) { nodep->user2(nodep->user2() & ~flag); }
+    void addFlags(AstNode* const nodep, uint8_t flag) { nodep->user2(nodep->user2() | flag); }
     // Pass timing flag between nodes
     bool passFlag(const AstNode* from, AstNode* to, NodeFlag flag) {
         if ((from->user2() & flag) && !(to->user2() & flag)) {
@@ -270,7 +268,7 @@ private:
         VL_RESTORER(m_procp);
         m_procp = nodep;
         getNeedsProcDepVtx(nodep);
-        addFlag(nodep, T_ALLOCS_PROC);
+        addFlags(nodep, T_ALLOCS_PROC);
         if (VN_IS(nodep, Always)) {
             UINFO(1, "Always does " << (nodep->needProcess() ? "" : "NOT ") << "need process\n");
         }
@@ -278,13 +276,13 @@ private:
     }
     void visit(AstDisableFork* nodep) override {
         visit(static_cast<AstNode*>(nodep));
-        addFlag(m_procp, T_FORCES_PROC | T_NEEDS_PROC);
+        addFlags(m_procp, T_FORCES_PROC | T_NEEDS_PROC);
     }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
         iterateChildren(nodep);
-        if (nodep->needProcess()) addFlag(nodep, T_FORCES_PROC | T_NEEDS_PROC);
+        if (nodep->needProcess()) addFlags(nodep, T_FORCES_PROC | T_NEEDS_PROC);
         DepVtx* const sVxp = getSuspendDepVtx(nodep);
         DepVtx* const pVxp = getNeedsProcDepVtx(nodep);
         if (!m_classp) return;
@@ -329,7 +327,7 @@ private:
                         getNeedsProcDepVtx(m_procp), P_CALL};
 
         if (m_underFork && !(m_underFork & F_MIGHT_SUSPEND)) {
-            addFlag(nodep, T_NEEDS_PROC | T_ALLOCS_PROC);
+            addFlags(nodep, T_NEEDS_PROC | T_ALLOCS_PROC);
         }
 
         iterateChildren(nodep);
@@ -346,7 +344,7 @@ private:
                         P_CALL};
 
         if (m_underFork && !(m_underFork & F_MIGHT_SUSPEND)) {
-            addFlag(nodep, T_NEEDS_PROC | T_ALLOCS_PROC);
+            addFlags(nodep, T_NEEDS_PROC | T_ALLOCS_PROC);
         }
 
         m_procp = nodep;
@@ -360,7 +358,7 @@ private:
                                    // so that transformForks() in V3SchedTiming gets called and
                                    // removes all forks and begins
         if (nodep->isTimingControl() && m_procp) {
-            addFlag(m_procp, T_SUSPENDEE | T_SUSPENDER);
+            addFlags(m_procp, T_SUSPENDEE | T_SUSPENDER);
             m_underFork |= F_MIGHT_SUSPEND;
         }
         m_underFork |= F_MIGHT_NEED_PROC;
@@ -369,7 +367,7 @@ private:
     void visit(AstNode* nodep) override {
         if (nodep->isTimingControl()) {
             v3Global.setUsesTiming();
-            if (m_procp) addFlag(m_procp, T_SUSPENDEE | T_SUSPENDER | T_NEEDS_PROC);
+            if (m_procp) addFlags(m_procp, T_SUSPENDEE | T_SUSPENDER | T_NEEDS_PROC);
         }
         iterateChildren(nodep);
     }
@@ -410,7 +408,7 @@ public:
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
             if ((depVxp->nodep()->user2() & T_ALLOCS_PROC) && (depVxp->nodep()->user2() & T_FORCES_PROC)) {
-                addFlag(depVxp->nodep(), T_HAS_PROC);
+                addFlags(depVxp->nodep(), T_HAS_PROC);
                 propagateFlagsReversedIf(depVxp, T_HAS_PROC, [&](const V3GraphEdge* e) -> bool {
                     return static_cast<DepVtx*>(e->fromp())->nodep()->user2() & T_NEEDS_PROC;
                 });
