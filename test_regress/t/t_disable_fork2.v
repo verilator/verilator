@@ -12,7 +12,7 @@
 // - indirect use of disable fork (through a task),
 // - indirect use of forks that are to be disabled,
 // - forks in forks,
-// - a function taking VlProcess argument shared between a proces that
+// - a function taking VlProcess argument shared between a process that
 //   allocates VlProcess, and one that doesnt,
 // - a function that has a delay and obtains VlProcess argument,
 // - a function that has a delay and doesn't obtain it.
