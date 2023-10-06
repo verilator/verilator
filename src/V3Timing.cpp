@@ -388,7 +388,7 @@ public:
         }
         if (dumpGraphLevel() >= 6) m_suspGraph.dumpDotFilePrefixed("timing_deps");
 
-        // Propagate needProcess
+        // Propagate T_HAS_PROCESS
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
             // Find processes that'll allocate VlProcess
@@ -404,9 +404,9 @@ public:
                 });
             }
         }
-        // Mark nodes that will be emitted with a VlProcess argument
         for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
+            // Mark nodes that will be emitted with a VlProcess argument
             if ((depVxp->nodep()->user2() & T_ALLOCS_PROC) && (depVxp->nodep()->user2() & T_FORCES_PROC)) {
                 addFlags(depVxp->nodep(), T_HAS_PROC);
                 propagateFlagsReversedIf(depVxp, T_HAS_PROC, [&](const V3GraphEdge* e) -> bool {
