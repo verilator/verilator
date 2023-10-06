@@ -2320,14 +2320,29 @@ private:
         iterate(nodep);  // Again?
     }
 
+    bool containsMemberAccessRecurse(const AstNode* const nodep) const {
+        if (!nodep) return false;
+        if (VN_IS(nodep, MemberSel) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall))
+            return true;
+        if (const AstNodeFTaskRef* const funcRefp = VN_CAST(nodep, NodeFTaskRef)) {
+            if (containsMemberAccessRecurse(funcRefp->taskp())) return true;
+        }
+        if (containsMemberAccessRecurse(nodep->op1p())) return true;
+        if (containsMemberAccessRecurse(nodep->op2p())) return true;
+        if (containsMemberAccessRecurse(nodep->op3p())) return true;
+        if (containsMemberAccessRecurse(nodep->op4p())) return true;
+        if (!VN_IS(nodep, NodeFTask) && !VN_IS(nodep, CFunc)  // don't enter into next function
+            && containsMemberAccessRecurse(nodep->nextp()))
+            return true;
+        return false;
+    }
+
     bool mayConvertToBitwise(AstNodeBiop* const nodep) {
+        if (!m_doExpensive) return false;
         if (!nodep->lhsp()->width1()) return false;
         if (!nodep->rhsp()->width1()) return false;
         if (!nodep->isPure()) return false;
-        if (nodep->exists([](const AstNodeExpr* const exprp) {
-                return VN_IS(exprp, MethodCall) || VN_IS(exprp, MemberSel);
-            }))
-            return false;
+        if (containsMemberAccessRecurse(nodep)) return false;
         return true;
     }
     bool matchConcatRand(AstConcat* nodep) {
