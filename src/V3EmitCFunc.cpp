@@ -410,7 +410,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstScopeName* scopenamep, const stri
     displayEmit(nodep, isScan);
 }
 
-void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer, bool inproc) {
+void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer, bool inProcess) {
     puts("(");
     bool comma = false;
     if (nodep->funcp()->isLoose() && !nodep->funcp()->isStatic()) {
@@ -422,7 +422,7 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
         if (comma) puts(", ");
         if (VN_IS(nodep->backp(), CAwait) || !nodep->funcp()->isCoroutine()) {
             puts("vlProcess");
-        } else if (inproc) {
+        } else if (inProcess) {
             puts("vlProcess->spawn()");
         } else {
             puts("std::make_shared<VlProcess>()");
