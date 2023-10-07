@@ -583,7 +583,7 @@ string V3PreLex::endOfStream(bool& againr) {
     } else if (curStreamp()->m_termState == 2) {
         // Now ending `line
         curStreamp()->m_termState = 3;
-        return curFilelinep()->lineDirectiveStrg(2);  // Exit old file
+        return curFilelinep()->lineDirectiveStrg(0);  // THe "2" exit is below
     } else {
         // Final shutdown phase for a stream, we can finally change the
         // current fileline to the new stream
@@ -603,7 +603,7 @@ string V3PreLex::endOfStream(bool& againr) {
         if (curStreamp()->m_eof) {
             return "";
         } else {
-            return curFilelinep()->lineDirectiveStrg(0);  // Reenter resumed file
+            return curFilelinep()->lineDirectiveStrg(2);  // Reenter resumed file
         }
     }
 }

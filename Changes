@@ -33,6 +33,7 @@ Verilator 5.017 devel
 * Fix 'this' in a constructor (#4533). [Ryszard Rozak, Antmicro Ltd.]
 * Fix stream shift operator of 32 bits (#4536). [Julien Faucher]
 * Fix inlining of real functions miscasting (#4543). [Andrew Nolte]
+* Fix preprocessor to show `line 2 on resumed file.
 
 
 Verilator 5.016 2023-09-16

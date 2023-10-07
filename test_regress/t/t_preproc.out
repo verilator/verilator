@@ -50,12 +50,12 @@ At file "t/t_preproc_inc2.vh"  line 5
   
 
 
-`line 110 "inc3_a_filename_from_line_directive" 2
-`line 7 "t/t_preproc_inc2.vh" 0
+`line 110 "inc3_a_filename_from_line_directive" 0
+`line 7 "t/t_preproc_inc2.vh" 2
 
 
-`line 9 "t/t_preproc_inc2.vh" 2
-`line 10 "t/t_preproc.v" 0
+`line 9 "t/t_preproc_inc2.vh" 0
+`line 10 "t/t_preproc.v" 2
 
 
 `line 12 "t/t_preproc.v" 0
@@ -372,8 +372,8 @@ begin addr <= ({regs[6], regs[7]}); wdata <= (rdata); wr <= 1; end  more
 `line 6 "t/t_preproc_inc4.vh" 0
  
 
-`line 8 "t/t_preproc_inc4.vh" 2
-`line 236 "t/t_preproc.v" 0
+`line 8 "t/t_preproc_inc4.vh" 0
+`line 236 "t/t_preproc.v" 2
 
 `line 237 "t/t_preproc.v" 0
  
@@ -701,8 +701,8 @@ hello4hello4hello4hello4
 `line 6 "t/t_preproc_inc4.vh" 0
  
 
-`line 8 "t/t_preproc_inc4.vh" 2
-`line 444 "t/t_preproc.v" 0
+`line 8 "t/t_preproc_inc4.vh" 0
+`line 444 "t/t_preproc.v" 2
 
 `line 445 "t/t_preproc.v" 0
    
@@ -1045,4 +1045,4 @@ predef 2 2
  
  
 
-`line 729 "t/t_preproc.v" 2
+`line 729 "t/t_preproc.v" 0
