@@ -58,7 +58,7 @@ class CastVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
-    //   AstNode::user()                // bool.  Indicates node is of known size
+    //   AstNode::user1()               // bool.  Indicates node is of known size
     const VNUser1InUse m_inuser1;
 
     // STATE
@@ -66,12 +66,12 @@ private:
     // METHODS
 
     void insertCast(AstNodeExpr* nodep, int needsize) {  // We'll insert ABOVE passed node
-        UINFO(4, "  NeedCast " << nodep << endl);
         VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         //
         AstCCast* const castp
             = new AstCCast{nodep->fileline(), nodep, needsize, nodep->widthMin()};
+        UINFO(4, "  MadeCast " << static_cast<void*>(castp) << " for " << nodep << endl);
         relinkHandle.relink(castp);
         // if (debug() > 8) castp->dumpTree("-  castins: ");
         //
@@ -168,6 +168,10 @@ private:
     void visit(AstCCast* nodep) override {
         iterateChildren(nodep);
         ensureLower32Cast(nodep);
+        nodep->user1(1);
+    }
+    void visit(AstExprStmt* nodep) override {
+        iterateChildren(nodep);
         nodep->user1(1);
     }
     void visit(AstNegate* nodep) override {

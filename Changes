@@ -31,6 +31,7 @@ Verilator 5.017 devel
 * Fix stream operations with operands of struct type (#4531) (#4532). [Ryszard Rozak, Antmicro Ltd.]
 * Fix 'this' in a constructor (#4533). [Ryszard Rozak, Antmicro Ltd.]
 * Fix stream shift operator of 32 bits (#4536). [Julien Faucher]
+* Fix inlining of real functions miscasting (#4543). [Andrew Nolte]
 
 
 Verilator 5.016 2023-09-16
