@@ -1,0 +1,10 @@
+%Error: t/t_inst_param_override_bad.v:26:23: 'PACKED_DATA_WIDTH' is not a valid parameter
+   26 |     axi_stream_if # (.PACKED_DATA_WIDTH(14)) axis1(clk);
+      |                       ^~~~~~~~~~~~~~~~~
+%Error: t/t_inst_param_override_bad.v:28:23: 'mytask' is not a valid parameter
+   28 |     axi_stream_if # (.mytask(14)) axis2(clk);
+      |                       ^~~~~~
+%Error: t/t_inst_param_override_bad.v:30:23: 'my_genvar' is not a valid parameter
+   30 |     axi_stream_if # (.my_genvar(14)) axis3(clk);
+      |                       ^~~~~~~~~
+%Error: Exiting due to
