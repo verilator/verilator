@@ -184,11 +184,16 @@ private:
         nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visit(AstNodeDType* nodep) override {  //
+    void visit(AstNodeDType* nodep) override {
+        // Note some specific dtypes have unique visitors
         visitIterateNodeDType(nodep);
     }
     void visit(AstNodeUOrStructDType* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
+        visitIterateNodeDType(nodep);
+    }
+    void visit(AstEnumDType* nodep) override {
+        nodep->tableMap().clear();  // Only needed up through V3Width process
         visitIterateNodeDType(nodep);
     }
     void visit(AstParamTypeDType* nodep) override {

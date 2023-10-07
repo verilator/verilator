@@ -754,10 +754,14 @@ class AstEnumDType final : public AstNodeDType {
     // Parents: TYPEDEF/MODULE
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     // @astgen op2 := itemsp : List[AstEnumItem]
+public:
+    using TableMap = std::map<VAttrType, AstVar*>;
+
 private:
     string m_name;  // Name from upper typedef, if any
     AstNodeDType* m_refDTypep = nullptr;  // Elements are of this type after V3Width
     const int m_uniqueNum = 0;
+    TableMap m_tableMap;  // Created table for V3Width only to remove duplicates
 
 public:
     AstEnumDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstEnumItem* itemsp)
@@ -770,9 +774,12 @@ public:
         widthFromSub(subDTypep());
     }
     ASTGEN_MEMBERS_AstEnumDType;
+
     const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep())));
+        BROKEN_RTN(std::any_of(m_tableMap.begin(), m_tableMap.end(),
+                               [](const auto& p) { return !p.second->brokeExists(); }));
         return nullptr;
     }
     void cloneRelink() override {
@@ -809,6 +816,8 @@ public:
         return count;
     }
     bool isCompound() const override { return false; }
+    TableMap& tableMap() { return m_tableMap; }
+    const TableMap& tableMap() const { return m_tableMap; }
 };
 class AstIfaceRefDType final : public AstNodeDType {
     // Reference to an interface, either for a port, or inside parent cell

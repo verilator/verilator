@@ -19,6 +19,7 @@ Verilator 5.017 devel
 * Support resizing function call inout arguments (#4467).
 * Support converting parameters inside modules to localparams (#4511). [Anthony Donlon]
 * Fix conversion of impure logical expressions to bit expressions (#487 partial) (#4437). [Ryszard Rozak, Antmicro Ltd.]
+* Fix enum functions in localparams (#3999). [Andrew Nolte]
 * Fix passing arguments by reference (#3385 partial) (#4489). [Ryszard Rozak, Antmicro Ltd.]
 * Fix multithreading handling to separate by code units that use/never use it (#4228). [Mariusz Glebocki, Antmicro Ltd.]
 * Fix usage of annotation options (#4486) (#4504). [Michal Czyz]
