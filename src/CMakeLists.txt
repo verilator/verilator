@@ -166,6 +166,7 @@ set(HEADERS
     V3Waiver.h
     V3Width.h
     V3WidthCommit.h
+    V3WidthRemove.h
     VlcBucket.h
     VlcOptions.h
     VlcPoint.h
@@ -298,6 +299,7 @@ set(COMMON_SOURCES
     V3VariableOrder.cpp
     V3Waiver.cpp
     V3Width.cpp
+    V3WidthCommit.cpp
     V3WidthSel.cpp
     V3ParseImp.cpp
     V3ParseGrammar.cpp

@@ -77,12 +77,13 @@
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3Task.h"
+#include "V3WidthCommit.h"
 
 #include <algorithm>
 
 // More code; this file was getting too large; see actions there
 #define VERILATOR_V3WIDTH_CPP_
-#include "V3WidthCommit.h"
+#include "V3WidthRemove.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -4311,8 +4312,7 @@ private:
         if (VN_IS(valuep, Const)) {
             // Forming a AstConcat will cause problems with
             // unsized (uncommitted sized) constants
-            if (AstConst* const newp
-                = WidthCommitVisitor::newIfConstCommitSize(VN_AS(valuep, Const))) {
+            if (AstConst* const newp = V3WidthCommit::newIfConstCommitSize(VN_AS(valuep, Const))) {
                 VL_DO_DANGLING(pushDeletep(valuep), valuep);
                 valuep = newp;
             }
@@ -7613,10 +7613,4 @@ AstNode* V3Width::widthGenerateParamsEdit(
     nodep = visitor.mainAcceptEdit(nodep);
     // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
-}
-
-void V3Width::widthCommit(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
-    { WidthCommitVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("widthcommit", 0, dumpTreeLevel() >= 6);
 }

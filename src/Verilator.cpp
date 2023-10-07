@@ -104,6 +104,7 @@
 #include "V3VariableOrder.h"
 #include "V3Waiver.h"
 #include "V3Width.h"
+#include "V3WidthCommit.h"
 
 #include <ctime>
 
@@ -189,7 +190,7 @@ static void process() {
         V3Error::abortIfErrors();
 
         // Commit to the widths we've chosen; Make widthMin==width
-        V3Width::widthCommit(v3Global.rootp());
+        V3WidthCommit::widthCommit(v3Global.rootp());
         v3Global.assertDTypesResolved(true);
         v3Global.widthMinUsage(VWidthMinUsage::MATCHES_WIDTH);
 

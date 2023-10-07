@@ -278,6 +278,7 @@ RAW_OBJS = \
 	V3VariableOrder.o \
 	V3Waiver.o \
 	V3Width.o \
+	V3WidthCommit.o \
 	V3WidthSel.o \
 
 # verilator_coverage
@@ -291,7 +292,7 @@ NON_STANDALONE_HEADERS = \
 	V3AstNodeOther.h  \
 	V3DfgVertices.h  \
 	V3ThreadPool.h \
-	V3WidthCommit.h  \
+	V3WidthRemove.h \
 
 AST_DEFS := \
   V3AstNodeDType.h \
