@@ -579,7 +579,7 @@ class ParamProcessor final {
         AstNodeModule* const newmodp = origmodp->cloneTree(false);
 
         if (AstClass* const newClassp = VN_CAST(newmodp, Class)) {
-            newClassp->isParameterized(false);
+            newClassp->hasGParam(false);
             replaceRefsRecurse(newmodp->stmtsp(), newClassp, VN_AS(srcModp, Class));
         }
 
@@ -1096,7 +1096,7 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->recursiveClone()) nodep->dead(true);  // Fake, made for recursive elimination
         if (nodep->dead()) return;  // Marked by LinkDot (and above)
         if (AstClass* const classp = VN_CAST(nodep, Class)) {
-            if (classp->isParameterized()) {
+            if (classp->hasGParam()) {
                 // Don't enter into a definition.
                 // If a class is used, it will be visited through a reference
                 m_paramClasses.push_back(classp);
@@ -1427,7 +1427,7 @@ public:
                 } else {
                     // Referenced. classp became a specialized class with the default
                     // values of parameters and is not a parameterized class anymore
-                    classp->isParameterized(false);
+                    classp->hasGParam(false);
                 }
             }
         }
