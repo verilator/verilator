@@ -2222,7 +2222,6 @@ class AstClass final : public AstNodeModule {
     bool m_interfaceClass = false;  // Interface class
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
     bool m_virtual = false;  // Virtual class
-    bool m_parameterized = false;  // Parameterized class
 
 public:
     AstClass(FileLine* fl, const string& name)
@@ -2246,8 +2245,6 @@ public:
     void isVirtual(bool flag) { m_virtual = flag; }
     bool needRNG() const { return m_needRNG; }
     void needRNG(bool flag) { m_needRNG = flag; }
-    bool isParameterized() const { return m_parameterized; }
-    void isParameterized(bool flag) { m_parameterized = flag; }
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
