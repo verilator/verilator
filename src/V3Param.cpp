@@ -773,10 +773,8 @@ class ParamProcessor final {
             const AstNode* const exprp = pinp->exprp();
             const AstVarRef* varrefp = VN_CAST(exprp, VarRef);
             if (!varrefp) {
-                if (const AstSelBit* const selBitp = VN_CAST(exprp, SelBit)) {
-                    if (const AstVarRef* const selBitVarRefp = VN_CAST(selBitp->fromp(), VarRef)) {
-                        varrefp = selBitVarRefp;
-                    }
+                if (const AstNodePreSel* const preselp = VN_CAST(exprp, NodePreSel)) {
+                    varrefp = VN_CAST(preselp->fromp(), VarRef);
                 }
             }
             AstIfaceRefDType* pinIrefp = nullptr;
