@@ -765,58 +765,53 @@ class ParamProcessor final {
                               bool& any_overridesr, IfaceRefRefs& ifaceRefRefs) {
         for (AstPin* pinp = pinsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             const AstVar* const modvarp = pinp->modVarp();
-            if (modvarp->isIfaceRef()) {
-                AstIfaceRefDType* portIrefp = VN_CAST(modvarp->subDTypep(), IfaceRefDType);
-                if (!portIrefp && arraySubDTypep(modvarp->subDTypep())) {
-                    portIrefp = VN_CAST(arraySubDTypep(modvarp->subDTypep()), IfaceRefDType);
-                }
-                AstIfaceRefDType* pinIrefp = nullptr;
-                const AstNode* const exprp = pinp->exprp();
-                const AstVar* const varp
-                    = (exprp && VN_IS(exprp, VarRef)) ? VN_AS(exprp, VarRef)->varp() : nullptr;
-                if (varp && varp->subDTypep() && VN_IS(varp->subDTypep(), IfaceRefDType)) {
-                    pinIrefp = VN_AS(varp->subDTypep(), IfaceRefDType);
-                } else if (varp && varp->subDTypep() && arraySubDTypep(varp->subDTypep())
-                           && VN_CAST(arraySubDTypep(varp->subDTypep()), IfaceRefDType)) {
-                    pinIrefp = VN_CAST(arraySubDTypep(varp->subDTypep()), IfaceRefDType);
-                } else if (exprp && exprp->op1p() && VN_IS(exprp->op1p(), VarRef)
-                           && VN_CAST(exprp->op1p(), VarRef)->varp()
-                           && VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()
-                           && arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep())
-                           && VN_CAST(
-                               arraySubDTypep(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()),
-                               IfaceRefDType)) {
-                    pinIrefp
-                        = VN_AS(arraySubDTypep(VN_AS(exprp->op1p(), VarRef)->varp()->subDTypep()),
-                                IfaceRefDType);
-                }
+            if (!modvarp->isIfaceRef()) continue;
+            AstNodeDType* const ifaceDtypep = modvarp->subDTypep();
+            AstIfaceRefDType* portIrefp = VN_CAST(ifaceDtypep, IfaceRefDType);
+            if (!portIrefp) portIrefp = VN_CAST(arraySubDTypep(ifaceDtypep), IfaceRefDType);
 
-                UINFO(9, "     portIfaceRef " << portIrefp << endl);
+            const AstNode* const exprp = pinp->exprp();
+            const AstVarRef* varrefp = VN_CAST(exprp, VarRef);
+            if (!varrefp) {
+                if (const AstSelBit* const selBitp = VN_CAST(exprp, SelBit)) {
+                    if (const AstVarRef* const selBitVarRefp = VN_CAST(selBitp->fromp(), VarRef)) {
+                        varrefp = selBitVarRefp;
+                    }
+                }
+            }
+            AstIfaceRefDType* pinIrefp = nullptr;
+            if (varrefp) {
+                if (const AstVar* const varp = varrefp->varp()) {
+                    AstNodeDType* const pinDtypep = varp->subDTypep();
+                    pinIrefp = VN_CAST(pinDtypep, IfaceRefDType);
+                    if (!pinIrefp) pinIrefp = VN_CAST(arraySubDTypep(pinDtypep), IfaceRefDType);
+                }
+            }
+            UINFO(9, "     portIfaceRef " << portIrefp << endl);
 
-                if (!portIrefp) {
-                    pinp->v3error("Interface port " << modvarp->prettyNameQ()
-                                                    << " is not an interface " << modvarp);
-                } else if (!pinIrefp) {
-                    pinp->v3error("Interface port "
-                                  << modvarp->prettyNameQ()
-                                  << " is not connected to interface/modport pin expression");
-                } else {
-                    UINFO(9, "     pinIfaceRef " << pinIrefp << endl);
-                    if (portIrefp->ifaceViaCellp() != pinIrefp->ifaceViaCellp()) {
-                        UINFO(9, "     IfaceRefDType needs reconnect  " << pinIrefp << endl);
-                        longnamer += ("_" + paramSmallName(srcModp, pinp->modVarp())
-                                      + paramValueNumber(pinIrefp));
-                        any_overridesr = true;
-                        ifaceRefRefs.push_back(std::make_pair(portIrefp, pinIrefp));
-                        if (portIrefp->ifacep() != pinIrefp->ifacep()
-                            // Might be different only due to param cloning, so check names too
-                            && portIrefp->ifaceName() != pinIrefp->ifaceName()) {
-                            pinp->v3error("Port " << pinp->prettyNameQ() << " expects "
-                                                  << AstNode::prettyNameQ(portIrefp->ifaceName())
-                                                  << " interface but pin connects "
-                                                  << AstNode::prettyNameQ(pinIrefp->ifaceName())
-                                                  << " interface");
-                        }
+            if (!portIrefp) {
+                pinp->v3error("Interface port " << modvarp->prettyNameQ()
+                                                << " is not an interface " << modvarp);
+            } else if (!pinIrefp) {
+                pinp->v3error("Interface port "
+                              << modvarp->prettyNameQ()
+                              << " is not connected to interface/modport pin expression");
+            } else {
+                UINFO(9, "     pinIfaceRef " << pinIrefp << endl);
+                if (portIrefp->ifaceViaCellp() != pinIrefp->ifaceViaCellp()) {
+                    UINFO(9, "     IfaceRefDType needs reconnect  " << pinIrefp << endl);
+                    longnamer += ("_" + paramSmallName(srcModp, pinp->modVarp())
+                                  + paramValueNumber(pinIrefp));
+                    any_overridesr = true;
+                    ifaceRefRefs.push_back(std::make_pair(portIrefp, pinIrefp));
+                    if (portIrefp->ifacep() != pinIrefp->ifacep()
+                        // Might be different only due to param cloning, so check names too
+                        && portIrefp->ifaceName() != pinIrefp->ifaceName()) {
+                        pinp->v3error("Port " << pinp->prettyNameQ() << " expects "
+                                              << AstNode::prettyNameQ(portIrefp->ifaceName())
+                                              << " interface but pin connects "
+                                              << AstNode::prettyNameQ(pinIrefp->ifaceName())
+                                              << " interface");
                     }
                 }
             }

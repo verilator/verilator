@@ -41,7 +41,7 @@ const char* AstIfaceRefDType::broken() const {
 }
 
 AstIface* AstIfaceRefDType::ifaceViaCellp() const {
-    return ((m_cellp && m_cellp->modp()) ? VN_AS(m_cellp->modp(), Iface) : m_ifacep);
+    return m_cellp ? VN_CAST(m_cellp->modp(), Iface) : m_ifacep;
 }
 
 const char* AstNodeFTaskRef::broken() const {
