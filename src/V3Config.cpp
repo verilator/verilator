@@ -303,7 +303,7 @@ public:
         m_ignLines.insert(V3ConfigIgnoresLine{code, lineno, on});
         m_lastIgnore.it = m_ignLines.begin();
     }
-    void addWaiver(V3ErrorCode code, const string& match) {
+    void addIgnoreMatch(V3ErrorCode code, const string& match) {
         m_waivers.push_back(std::make_pair(code, match));
     }
 
@@ -518,6 +518,10 @@ void V3Config::addIgnore(V3ErrorCode code, bool on, const string& filename, int 
     }
 }
 
+void V3Config::addIgnoreMatch(V3ErrorCode code, const string& filename, const string& match) {
+    V3ConfigResolver::s().files().at(filename).addIgnoreMatch(code, match);
+}
+
 void V3Config::addInline(FileLine* fl, const string& module, const string& ftask, bool on) {
     if (ftask.empty()) {
         V3ConfigResolver::s().modules().at(module).setInline(on);
@@ -588,10 +592,6 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
             }
         }
     }
-}
-
-void V3Config::addWaiver(V3ErrorCode code, const string& filename, const string& match) {
-    V3ConfigResolver::s().files().at(filename).addWaiver(code, match);
 }
 
 void V3Config::applyCase(AstCase* nodep) {

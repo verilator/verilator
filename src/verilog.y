@@ -7213,9 +7213,9 @@ vltItem:
         |       vltOffFront yVLT_D_FILE yaSTRING
                         { V3Config::addIgnore($1, false, *$3, 0, 0); }
         |       vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
-                        { V3Config::addIgnore($1, false, *$3, $5->toUInt(), $5->toUInt()+1); }
+                        { V3Config::addIgnore($1, false, *$3, $5->toUInt(), $5->toUInt() + 1); }
         |       vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM
-                        { V3Config::addIgnore($1, false, *$3, $5->toUInt(), $7->toUInt()+1); }
+                        { V3Config::addIgnore($1, false, *$3, $5->toUInt(), $7->toUInt() + 1); }
         |       vltOffFront yVLT_D_SCOPE yaSTRING
                         { if ($1 != V3ErrorCode::I_TRACING) {
                               $<fl>1->v3error("Argument -scope only supported for tracing_on/off");
@@ -7232,16 +7232,16 @@ vltItem:
                         { if (($1 == V3ErrorCode::I_COVERAGE) || ($1 == V3ErrorCode::I_TRACING)) {
                               $<fl>1->v3error("Argument -match only supported for lint_off");
                           } else {
-                              V3Config::addWaiver($1, *$3, *$5);
+                              V3Config::addIgnoreMatch($1, *$3, *$5);
                           }}
         |       vltOnFront
                         { V3Config::addIgnore($1, true, "*", 0, 0); }
         |       vltOnFront yVLT_D_FILE yaSTRING
                         { V3Config::addIgnore($1, true, *$3, 0, 0); }
         |       vltOnFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
-                        { V3Config::addIgnore($1, true, *$3, $5->toUInt(), $5->toUInt()+1); }
+                        { V3Config::addIgnore($1, true, *$3, $5->toUInt(), $5->toUInt() + 1); }
         |       vltOnFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM
-                        { V3Config::addIgnore($1, true, *$3, $5->toUInt(), $7->toUInt()+1); }
+                        { V3Config::addIgnore($1, true, *$3, $5->toUInt(), $7->toUInt() + 1); }
         |       vltOnFront yVLT_D_SCOPE yaSTRING
                         { if ($1 != V3ErrorCode::I_TRACING) {
                               $<fl>1->v3error("Argument -scope only supported for tracing_on/off");

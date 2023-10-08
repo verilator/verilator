@@ -2046,17 +2046,18 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_WIDTHEXPAND_1_fixed.rst
 
+
 .. option:: WIDTHTRUNC
 
-   A more granular WIDTH warning, for when a value is truncated
+   A more granular WIDTH warning, for when a value is truncated.
 
 .. option:: WIDTHEXPAND
 
-   A more granular WIDTH warning, for when a value is zero expanded
+   A more granular WIDTH warning, for when a value is zero expanded.
 
 .. option:: WIDTHXZEXPAND
 
-   A more granular WIDTH warning, for when a value is X/Z expanded
+   A more granular WIDTH warning, for when a value is X/Z expanded.
 
 .. option:: WIDTHCONCAT
 
