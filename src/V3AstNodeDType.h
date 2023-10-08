@@ -1108,7 +1108,7 @@ public:
     AstRefDType(FileLine* fl, const string& name, AstNodeExpr* classOrPackagep, AstPin* paramsp)
         : ASTGEN_SUPER_RefDType(fl)
         , m_name{name} {
-        this->classOrPackageOpp(classOrPackagep);
+        classOrPackageOpp(classOrPackagep);
         addParamsp(paramsp);
     }
     class FlagTypeOfExpr {};  // type(expr) for parser only
