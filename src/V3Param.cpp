@@ -574,12 +574,9 @@ class ParamProcessor final {
         // Deep clone of new module
         // Note all module internal variables will be re-linked to the new modules by clone
         // However links outside the module (like on the upper cells) will not.
-        AstNodeModule* newmodp;
-        if (srcModp->user4p()) {
-            newmodp = VN_CAST(srcModp->user4p()->cloneTree(false), NodeModule);
-        } else {
-            newmodp = srcModp->cloneTree(false);
-        }
+        AstNodeModule* origmodp = VN_CAST(srcModp->user4p(), NodeModule);
+        if (!origmodp) origmodp = srcModp;
+        AstNodeModule* const newmodp = origmodp->cloneTree(false);
 
         if (AstClass* const newClassp = VN_CAST(newmodp, Class)) {
             newClassp->isParameterized(false);
@@ -610,9 +607,8 @@ class ParamProcessor final {
         }
         insertp->addNextHere(newmodp);
 
-        m_modNameMap.emplace(newmodp->name(), ModInfo(newmodp));
-        const auto iter = m_modNameMap.find(newname);
-        CloneMap* const clonemapp = &(iter->second.m_cloneMap);
+        auto modInfo = m_modNameMap.emplace(newmodp->name(), ModInfo(newmodp));
+        CloneMap* const clonemapp = &(modInfo.first->second.m_cloneMap);
         UINFO(4, "     De-parameterize to new: " << newmodp << endl);
 
         // Grab all I/O so we can remap our pins later
@@ -622,9 +618,9 @@ class ParamProcessor final {
         // Relink parameter vars to the new module
         relinkPins(clonemapp, paramsp);
         // Fix any interface references
-        for (auto it = ifaceRefRefs.cbegin(); it != ifaceRefRefs.cend(); ++it) {
-            const AstIfaceRefDType* const portIrefp = it->first;
-            const AstIfaceRefDType* const pinIrefp = it->second;
+        for (const auto& item : ifaceRefRefs) {
+            const AstIfaceRefDType *portIrefp, *pinIrefp;
+            std::tie(portIrefp, pinIrefp) = item;
             AstIfaceRefDType* const cloneIrefp = portIrefp->clonep();
             UINFO(8, "     IfaceOld " << portIrefp << endl);
             UINFO(8, "     IfaceTo  " << pinIrefp << endl);
