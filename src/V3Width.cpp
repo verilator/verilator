@@ -108,21 +108,6 @@ std::ostream& operator<<(std::ostream& str, const Determ& rhs) {
     return str << s_det[rhs];
 }
 
-enum Castable : uint8_t {
-    UNSUPPORTED,
-    SAMEISH,
-    COMPATIBLE,
-    ENUM_EXPLICIT,
-    ENUM_IMPLICIT,
-    DYNAMIC_CLASS,
-    INCOMPATIBLE
-};
-std::ostream& operator<<(std::ostream& str, const Castable& rhs) {
-    static const char* const s_det[]
-        = {"UNSUP", "IDENT", "COMPAT", "ENUM_EXP", "ENUM_IMP", "DYN_CLS", "INCOMPAT"};
-    return str << s_det[rhs];
-}
-
 #define v3widthWarn(lhs, rhs, msg) \
     v3errorEnd( \
         v3errorBuildMessage(V3Error::v3errorPrep((lhs) < (rhs)   ? V3ErrorCode::WIDTHTRUNC \
@@ -518,7 +503,7 @@ private:
                 if (nodep->thenp()->isClassHandleValue() && nodep->elsep()->isClassHandleValue()) {
                     // Get the most-deriving class type that both arguments can be casted to.
                     commonClassTypep
-                        = V3Width::getCommonClassTypep(nodep->thenp(), nodep->elsep());
+                        = AstNode::getCommonClassTypep(nodep->thenp(), nodep->elsep());
                 }
                 if (commonClassTypep) {
                     nodep->dtypep(commonClassTypep);
@@ -1842,12 +1827,12 @@ private:
         AstNodeDType* const toDtp = nodep->top()->dtypep()->skipRefToEnump();
         AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         FileLine* const fl = nodep->fileline();
-        const auto castable = computeCastable(toDtp, fromDtp, nodep->fromp());
+        const auto castable = AstNode::computeCastable(toDtp, fromDtp, nodep->fromp());
         AstNode* newp;
-        if (castable == DYNAMIC_CLASS) {
+        if (castable == VCastable::DYNAMIC_CLASS) {
             // Keep in place, will compute at runtime
             return;
-        } else if (castable == ENUM_EXPLICIT || castable == ENUM_IMPLICIT) {
+        } else if (castable == VCastable::ENUM_EXPLICIT || castable == VCastable::ENUM_IMPLICIT) {
             // TODO is from is a constant we could simplify, though normal constant
             // elimination should do much the same
             // Form: "( ((v > size) ? false : enum_valid[v[N:0]])
@@ -1885,7 +1870,7 @@ private:
                                               nodep->fromp()->unlinkFrBack()},
                                 new AstConst{fl, AstConst::Signed32{}, 1}},
                 new AstConst{fl, AstConst::Signed32{}, 0}};
-        } else if (castable == SAMEISH || castable == COMPATIBLE) {
+        } else if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE) {
             nodep->v3warn(CASTCONST, "$cast will always return one as "
                                          << toDtp->prettyDTypeNameQ()
                                          << " is always castable from "
@@ -1896,7 +1881,7 @@ private:
                 new AstAssign{fl, nodep->top()->unlinkFrBack(),
                               new AstCast{fl, nodep->fromp()->unlinkFrBack(), toDtp}},
                 new AstConst{fl, AstConst::Signed32{}, 1}};
-        } else if (castable == INCOMPATIBLE) {
+        } else if (castable == VCastable::INCOMPATIBLE) {
             newp = new AstConst{fl, 0};
             nodep->v3warn(CASTCONST, "$cast will always return zero as "
                                          << toDtp->prettyDTypeNameQ() << " is not castable from "
@@ -1941,23 +1926,24 @@ private:
             userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM}.p());
             AstNodeDType* const toDtp = nodep->dtypep()->skipRefToEnump();
             AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
-            const auto castable = computeCastable(toDtp, fromDtp, nodep->fromp());
+            const auto castable = AstNode::computeCastable(toDtp, fromDtp, nodep->fromp());
             bool bad = false;
-            if (castable == UNSUPPORTED) {
+            if (castable == VCastable::UNSUPPORTED) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: static cast to "
                                                  << toDtp->prettyDTypeNameQ() << " from "
                                                  << fromDtp->prettyDTypeNameQ());
                 bad = true;
-            } else if (castable == SAMEISH || castable == COMPATIBLE || castable == ENUM_IMPLICIT
-                       || castable == ENUM_EXPLICIT) {
+            } else if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE
+                       || castable == VCastable::ENUM_IMPLICIT
+                       || castable == VCastable::ENUM_EXPLICIT) {
                 ;  // Continue
-            } else if (castable == DYNAMIC_CLASS) {
+            } else if (castable == VCastable::DYNAMIC_CLASS) {
                 nodep->v3error("Dynamic, not static cast, required to cast "
                                << toDtp->prettyDTypeNameQ() << " from "
                                << fromDtp->prettyDTypeNameQ() << '\n'
                                << nodep->warnMore() << "... Suggest dynamic $cast");
                 bad = true;
-            } else if (castable == INCOMPATIBLE) {
+            } else if (castable == VCastable::INCOMPATIBLE) {
                 nodep->v3error("Incompatible types to static cast to "
                                << toDtp->prettyDTypeNameQ() << " from "
                                << fromDtp->prettyDTypeNameQ() << '\n');
@@ -4407,7 +4393,8 @@ private:
                                     "Case(type) statement requires items that have type() items");
                             } else {
                                 AstNodeDType* const condDtp = VN_AS(condAttrp->fromp(), NodeDType);
-                                if (computeCastable(exprDtp, condDtp, nodep) == SAMEISH) {
+                                if (AstNode::computeCastable(exprDtp, condDtp, nodep)
+                                    == VCastable::SAMEISH) {
                                     hit = true;
                                     break;
                                 }
@@ -6004,7 +5991,8 @@ private:
             UINFO(9, "==type lhsDtp " << lhsDtp << endl);
             UINFO(9, "==type rhsDtp " << lhsDtp << endl);
             const bool invert = VN_IS(nodep, NeqT);
-            const bool identical = computeCastable(lhsDtp, rhsDtp, nodep) == SAMEISH;
+            const bool identical
+                = AstNode::computeCastable(lhsDtp, rhsDtp, nodep) == VCastable::SAMEISH;
             UINFO(9, "== " << identical << endl);
             const bool eq = invert ^ identical;
             AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitTrue{}, eq};
@@ -6641,9 +6629,11 @@ private:
             if (expBasicp && underBasicp) {
                 if (const AstEnumDType* const expEnump
                     = VN_CAST(expDTypep->skipRefToEnump(), EnumDType)) {
-                    const auto castable = computeCastable(expEnump, underp->dtypep(), underp);
-                    if (castable != SAMEISH && castable != COMPATIBLE && castable != ENUM_IMPLICIT
-                        && !VN_IS(underp, Cast) && !VN_IS(underp, CastDynamic) && !m_enumItemp
+                    const auto castable
+                        = AstNode::computeCastable(expEnump, underp->dtypep(), underp);
+                    if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE
+                        && castable != VCastable::ENUM_IMPLICIT && !VN_IS(underp, Cast)
+                        && !VN_IS(underp, CastDynamic) && !m_enumItemp
                         && !nodep->fileline()->warnIsOff(V3ErrorCode::ENUMVALUE) && warnOn) {
                         underp->v3warn(ENUMVALUE,
                                        "Implicit conversion to enum "
@@ -7364,67 +7354,8 @@ private:
     }
 
     //----------------------------------------------------------------------
-    // METHODS - casting
-    static Castable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
-                                       const AstNode* fromConstp) {
-        const Castable castable = UNSUPPORTED;
-        toDtp = toDtp->skipRefToEnump();
-        fromDtp = fromDtp->skipRefToEnump();
-        if (toDtp == fromDtp) return SAMEISH;
-        if (toDtp->similarDType(fromDtp)) return SAMEISH;
-        // UNSUP unpacked struct/unions (treated like BasicDType)
-        const AstNodeDType* fromBaseDtp = computeCastableBase(fromDtp);
-
-        const bool fromNumericable
-            = VN_IS(fromBaseDtp, BasicDType) || VN_IS(fromBaseDtp, EnumDType)
-              || VN_IS(fromBaseDtp, StreamDType) || VN_IS(fromBaseDtp, NodeUOrStructDType);
-
-        const AstNodeDType* toBaseDtp = computeCastableBase(toDtp);
-        const bool toNumericable
-            = VN_IS(toBaseDtp, BasicDType) || VN_IS(toBaseDtp, NodeUOrStructDType);
-
-        if (toBaseDtp == fromBaseDtp) {
-            return COMPATIBLE;
-        } else if (toNumericable) {
-            if (fromNumericable) return COMPATIBLE;
-        } else if (VN_IS(toDtp, EnumDType)) {
-            if (VN_IS(fromBaseDtp, EnumDType) && toDtp->sameTree(fromDtp)) return ENUM_IMPLICIT;
-            if (fromNumericable) return ENUM_EXPLICIT;
-        } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromConstp, Const)) {
-            if (VN_IS(fromConstp, Const) && VN_AS(fromConstp, Const)->num().isNull())
-                return COMPATIBLE;
-        } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromDtp, ClassRefDType)) {
-            const auto toClassp = VN_AS(toDtp, ClassRefDType)->classp();
-            const auto fromClassp = VN_AS(fromDtp, ClassRefDType)->classp();
-            const bool downcast = AstClass::isClassExtendedFrom(toClassp, fromClassp);
-            const bool upcast = AstClass::isClassExtendedFrom(fromClassp, toClassp);
-            if (upcast) {
-                return COMPATIBLE;
-            } else if (downcast) {
-                return DYNAMIC_CLASS;
-            } else {
-                return INCOMPATIBLE;
-            }
-        }
-        return castable;
-    }
-    static const AstNodeDType* computeCastableBase(const AstNodeDType* nodep) {
-        while (true) {
-            if (const AstPackArrayDType* const packp = VN_CAST(nodep, PackArrayDType)) {
-                nodep = packp->subDTypep();
-                continue;
-            } else if (const AstNodeDType* const refp = nodep->skipRefToEnump()) {
-                if (refp != nodep) {
-                    nodep = refp;
-                    continue;
-                }
-            }
-            return nodep;
-        }
-    }
-
-    //----------------------------------------------------------------------
     // METHODS - special type detection
+
     void assertAtStatement(AstNode* nodep) {
         if (VL_UNCOVERABLE(m_vup && !m_vup->selfDtm())) {
             UINFO(1, "-: " << m_vup << endl);
@@ -7529,15 +7460,6 @@ public:
         return userIterateSubtreeReturnEdits(nodep, WidthVP{SELF, BOTH}.p());
     }
     ~WidthVisitor() override = default;
-
-    static Castable computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
-                                    const AstNode* fromConstp) {
-        const auto castable = computeCastableImp(toDtp, fromDtp, fromConstp);
-        UINFO(9, "  castable=" << castable << "  for " << toDtp << endl);
-        UINFO(9, "     =?= " << fromDtp << endl);
-        UINFO(9, "     const= " << fromConstp << endl);
-        return castable;
-    }
 };
 
 //######################################################################
@@ -7555,36 +7477,6 @@ void V3Width::width(AstNetlist* nodep) {
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("width", 0, dumpTreeLevel() >= 3);
 }
-
-AstNodeDType* V3Width::getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) {
-    // Return the class type that both nodep1 and nodep2 are castable to.
-    // If both are null, return the type of null constant.
-    // If one is a class and one is null, return AstClassRefDType that points to that class.
-    // If no common class type exists, return nullptr.
-
-    // First handle cases with null values and when one class is a super class of the other.
-    if (VN_IS(nodep1, Const)) std::swap(nodep1, nodep2);
-    {
-        const Castable castable
-            = WidthVisitor::computeCastable(nodep1->dtypep(), nodep2->dtypep(), nodep2);
-        if (castable == SAMEISH || castable == COMPATIBLE) {
-            return nodep1->dtypep();
-        } else if (castable == DYNAMIC_CLASS) {
-            return nodep2->dtypep();
-        }
-    }
-
-    AstClassRefDType* classDtypep1 = VN_CAST(nodep1->dtypep(), ClassRefDType);
-    while (classDtypep1) {
-        const Castable castable
-            = WidthVisitor::computeCastable(classDtypep1, nodep2->dtypep(), nodep2);
-        if (castable == COMPATIBLE) return classDtypep1;
-        AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
-        classDtypep1 = extendsp ? VN_AS(extendsp->dtypep(), ClassRefDType) : nullptr;
-    }
-    return nullptr;
-}
-
 //! Single node parameter propagation
 //! Smaller step... Only do a single node for parameter propagation
 AstNode* V3Width::widthParamsEdit(AstNode* nodep) {

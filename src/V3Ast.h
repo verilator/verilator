@@ -1249,6 +1249,45 @@ inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
 
 // ######################################################################
 
+class VCastable final {
+public:
+    enum en : uint8_t {
+        UNSUPPORTED,
+        SAMEISH,
+        COMPATIBLE,
+        ENUM_EXPLICIT,
+        ENUM_IMPLICIT,
+        DYNAMIC_CLASS,
+        INCOMPATIBLE,
+        _ENUM_MAX  // Leave last
+    };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[]
+            = {"UNSUPPORTED",   "SAMEISH",       "COMPATIBLE",  "ENUM_EXPLICIT",
+               "ENUM_IMPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
+        return names[m_e];
+    }
+    VCastable()
+        : m_e{UNSUPPORTED} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCastable(en _e)
+        : m_e{_e} {}
+    explicit VCastable(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+};
+constexpr bool operator==(const VCastable& lhs, const VCastable& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCastable& lhs, VCastable::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VCastable::en lhs, const VCastable& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VCastable& rhs) {
+    return os << rhs.ascii();
+}
+
+// ######################################################################
+
 class VBasicTypeKey final {
 public:
     const int m_width;  // From AstNodeDType: Bit width of operation
@@ -1988,6 +2027,10 @@ public:
     AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin, VSigning numeric) const;
     AstNodeDType* findBasicDType(VBasicDTypeKwd kwd) const;
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
+
+    static VCastable computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
+                                     const AstNode* fromConstp);
+    static AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2);
 
     // METHODS - dump and error
     void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
