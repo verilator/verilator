@@ -2330,6 +2330,13 @@ private:
         if (const AstNodeCCall* const funcRefp = VN_CAST(nodep, NodeCCall)) {
             if (containsMemberAccessRecurse(funcRefp->funcp())) return true;
         }
+        if (const AstNodeFTask* const funcp = VN_CAST(nodep, NodeFTask)) {
+            // Assume that it has a member access
+            if (funcp->recursive()) return true;
+        }
+        if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
+            if (funcp->recursive()) return true;
+        }
         if (containsMemberAccessRecurse(nodep->op1p())) return true;
         if (containsMemberAccessRecurse(nodep->op2p())) return true;
         if (containsMemberAccessRecurse(nodep->op3p())) return true;
