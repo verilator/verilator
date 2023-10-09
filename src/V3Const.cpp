@@ -1372,13 +1372,6 @@ private:
         return true;
     }
 
-    AstNode* afterComment(AstNode* nodep) {
-        // Ignore comments, such as to determine if a AstIf is empty.
-        // nodep may be null, if so return null.
-        while (nodep && VN_IS(nodep, Comment)) nodep = nodep->nextp();
-        return nodep;
-    }
-
     // Extraction checks
     bool warnSelect(AstSel* nodep) {
         if (m_doGenerate) {
@@ -1459,7 +1452,7 @@ private:
         const AstNodeIf* const lowerIfp = VN_CAST(nodep->thensp(), NodeIf);
         if (!lowerIfp || lowerIfp->nextp()) return false;
         if (nodep->type() != lowerIfp->type()) return false;
-        if (afterComment(lowerIfp->elsesp())) return false;
+        if (AstNode::afterCommentp(lowerIfp->elsesp())) return false;
         return true;
     }
     bool ifConcatMergeableBiop(const AstNode* nodep) {
@@ -3007,7 +3000,8 @@ private:
                     nodep->unlinkFrBack();
                 }
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            } else if (!afterComment(nodep->thensp()) && !afterComment(nodep->elsesp())) {
+            } else if (!AstNode::afterCommentp(nodep->thensp())
+                       && !AstNode::afterCommentp(nodep->elsesp())) {
                 if (!nodep->condp()->isPure()) {
                     // Condition has side effect - leave - perhaps in
                     // future simplify to remove all but side effect terms
@@ -3015,7 +3009,7 @@ private:
                     // Empty block, remove it
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                 }
-            } else if (!afterComment(nodep->thensp())) {
+            } else if (!AstNode::afterCommentp(nodep->thensp())) {
                 UINFO(4, "IF({x}) nullptr {...} => IF(NOT{x}}: " << nodep << endl);
                 AstNodeExpr* const condp = nodep->condp();
                 AstNode* const elsesp = nodep->elsesp();

@@ -2040,6 +2040,15 @@ public:
     void dumpTreeDot(std::ostream& os = std::cout) const;
     void dumpTreeDotFile(const string& filename, bool append = false, bool doDump = true);
 
+    // METHODS - static advancement
+    static AstNode* afterCommentp(AstNode* nodep) {
+        // Skip over comments starting at provided nodep,
+        // such as to determine if a AstIf is empty.
+        // nodep may be null, if so return nullptr.
+        while (nodep && VN_IS(nodep, Comment)) nodep = nodep->nextp();
+        return nodep;
+    }
+
     // METHODS - queries
     // Changes control flow, disable some optimizations
     virtual bool isBrancher() const { return false; }
