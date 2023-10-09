@@ -3,8 +3,4 @@
    17 |    localparam bit_int_t count_bits [1:0] = {2{$bits(count_t)}};
       |                                              ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_unpacked_concat_bad.v:17:46: Assignment pattern missed initializing elements: 0
-                                       : ... note: In instance 't'
-   17 |    localparam bit_int_t count_bits [1:0] = {2{$bits(count_t)}};
-      |                                              ^
 %Error: Exiting due to
