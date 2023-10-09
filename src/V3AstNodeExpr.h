@@ -1176,7 +1176,10 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
-    bool isPure() override { return false; }
+    bool isPure() override {
+        if (AstNode::afterCommentp(stmtsp())) return false;
+        return resultp()->isPure();
+    }
     bool same(const AstNode*) const override { return true; }
 };
 class AstFError final : public AstNodeExpr {

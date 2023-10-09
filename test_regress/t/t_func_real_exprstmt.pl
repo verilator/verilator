@@ -11,7 +11,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
+    verilator_flags2 => ["--stats"],
     );
+
+if ($Self->{vlt_all}) {
+    # Check no EXPRSTMTs in final output - should get optimized away
+    file_grep_not($Self->{stats}, qr/Node count, EXPRSTMT/i);
+}
 
 execute(
     check_finished => 1,

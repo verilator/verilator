@@ -169,15 +169,31 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 class VIsCached final {
     // Used in some nodes to cache results of boolean methods
+    // If cachedCnt == 0, not cached
+    // else if cachedCnt == s_cachedCntGbl, then m_state is if cached
+    uint32_t m_cachedCnt : 31;  // Mark of when cache was computed
+    uint32_t m_state : 1;
+    static uint32_t s_cachedCntGbl;  // Global computed count
+    static constexpr uint32_t MAX_CNT = (1UL << 31) - 1;  // Max for m_cachedCnt
+
 public:
-    enum en : uint8_t { NOT_CACHED, YES, NO };
-    enum en m_e;
     VIsCached()
-        : m_e{NOT_CACHED} {}
-    bool isCached() const { return m_e != NOT_CACHED; }
-    bool get() const { return m_e == YES; }
-    void set(bool flag) { m_e = flag ? YES : NO; }
-    void clearCache() { m_e = NOT_CACHED; }
+        : m_cachedCnt{0}
+        , m_state{0} {}
+    bool isCached() const { return m_cachedCnt == s_cachedCntGbl; }
+    bool get() const { return m_state; }
+    void set(bool flag) {
+        m_cachedCnt = s_cachedCntGbl;
+        m_state = flag;
+    }
+    void clearCache() {
+        m_cachedCnt = 0;
+        m_state = 0;
+    }
+    static void clearCacheTree() {
+        ++s_cachedCntGbl;
+        UASSERT_STATIC(s_cachedCntGbl < MAX_CNT, "Overflow of cache counting");
+    }
 };
 
 // ######################################################################

@@ -533,6 +533,7 @@ public:
 
         // We may have removed some datatypes, cleanup
         nodep->typeTablep()->repairCache();
+        VIsCached::clearCacheTree();  // Removing assignments may affect isPure
     }
     ~DeadVisitor() override = default;
 };

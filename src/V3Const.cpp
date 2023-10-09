@@ -2689,6 +2689,15 @@ private:
                            << nodep->varp()->prettyNameQ());
         }
     }
+    void visit(AstExprStmt* nodep) override {
+        iterateChildren(nodep);
+        if (!AstNode::afterCommentp(nodep->stmtsp())) {
+            UINFO(8, "ExprStmt(...) " << nodep << " " << nodep->resultp() << endl);
+            nodep->replaceWith(nodep->resultp()->unlinkFrBack());
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            // Removing the ExprStmt might have made something impure above now pure
+        }
+    }
     void visit(AstEnumItemRef* nodep) override {
         iterateChildren(nodep);
         UASSERT_OBJ(nodep->itemp(), nodep, "Not linked");
@@ -3718,6 +3727,7 @@ public:
     }
 
     AstNode* mainAcceptEdit(AstNode* nodep) {
+        VIsCached::clearCacheTree();  // Avoid using any stale isPure
         // Operate starting at a random place
         return iterateSubtreeReturnEdits(nodep);
     }
