@@ -2013,7 +2013,7 @@ public:
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     static VCastable computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
-                                    const AstNode* fromConstp);
+                                     const AstNode* fromConstp);
     static AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2);
 
     // METHODS - dump and error
