@@ -104,6 +104,15 @@ enum PropagationType : uint8_t {
     P_SIGNATURE = 3,  // Propagation required to maintain C++ function's signature requirements
 };
 
+// Add timing flag to a node
+static void addFlags(AstNode* const nodep, uint8_t flags) {
+    nodep->user2(nodep->user2() | flags);
+}
+// Check if a node has ALL of the expected flags set
+static bool hasFlags(AstNode* const nodep, uint8_t flags) {
+    return !(~nodep->user2() & flags);
+}
+
 // ######################################################################
 //  Detect nodes affected by timing and/or requiring a process
 
@@ -217,18 +226,10 @@ private:
         if (!nodep->user5p()) nodep->user5p(new NeedsProcDepVtx{&m_procGraph, nodep, classp});
         return nodep->user5u().to<NeedsProcDepVtx*>();
     }
-    // Add timing flag to a node
-    static void addFlags(AstNode* const nodep, uint8_t flags) {
-        nodep->user2(nodep->user2() | flags);
-    }
-    // Check if a node has ALL of the expected flags set
-    static bool hasFlags(AstNode* const nodep, uint8_t flags) {
-        return !(~nodep->user2() & flags);
-    }
     // Pass timing flag between nodes
     bool passFlag(const AstNode* from, AstNode* to, NodeFlag flag) {
         if ((from->user2() & flag) && !(to->user2() & flag)) {
-            to->user2(to->user2() | flag);
+            addFlags(to, flag);
             return true;
         }
         return false;
@@ -647,7 +648,7 @@ private:
     void addProcessInfo(AstCMethodHard* const methodp) const {
         FileLine* const flp = methodp->fileline();
         AstCExpr* const ap = new AstCExpr{
-            flp, m_procp && (m_procp->user2() & T_HAS_PROC) ? "vlProcess" : "nullptr", 0};
+            flp, m_procp && (hasFlags(m_procp, T_HAS_PROC)) ? "vlProcess" : "nullptr", 0};
         ap->dtypeSetVoid();
         methodp->addPinsp(ap);
     }
@@ -758,8 +759,8 @@ private:
         VL_RESTORER(m_procp);
         m_procp = nodep;
         iterateChildren(nodep);
-        if (nodep->user2() & T_SUSPENDEE) nodep->setSuspendable();
-        if (nodep->user2() & T_HAS_PROC) nodep->setNeedProcess();
+        if (hasFlags(nodep, T_SUSPENDEE)) nodep->setSuspendable();
+        if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
     }
     void visit(AstInitial* nodep) override {
         visit(static_cast<AstNodeProcedure*>(nodep));
@@ -780,11 +781,11 @@ private:
 
         // Workaround for killing `always` processes (doing that is pretty much UB)
         // TODO: Disallow killing `always` at runtime (throw an error)
-        if (nodep->user2() & T_HAS_PROC) nodep->user2(nodep->user2() | T_SUSPENDEE);
+        if (hasFlags(nodep, T_HAS_PROC)) addFlags(nodep, T_SUSPENDEE);
 
         iterateChildren(nodep);
-        if (nodep->user2() & T_HAS_PROC) nodep->setNeedProcess();
-        if (!(nodep->user2() & T_SUSPENDEE)) return;
+        if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
+        if (!hasFlags(nodep, T_SUSPENDEE)) return;
         nodep->setSuspendable();
         FileLine* const flp = nodep->fileline();
         AstSenTree* const sensesp = m_activep->sensesp();
@@ -805,8 +806,8 @@ private:
         VL_RESTORER(m_procp);
         m_procp = nodep;
         iterateChildren(nodep);
-        if (nodep->user2() & T_HAS_PROC) nodep->setNeedProcess();
-        if (!(nodep->user2() & T_SUSPENDEE)) return;
+        if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
+        if (!(hasFlags(nodep, T_SUSPENDEE))) return;
 
         nodep->rtnType("VlCoroutine");
         // If in a class, create a shared pointer to 'this'
@@ -829,7 +830,7 @@ private:
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        if ((nodep->funcp()->user2() & T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
+        if (hasFlags(nodep->funcp(), T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
             VNRelinker relinker;
             nodep->unlinkFrBack(&relinker);
             AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), nodep};
@@ -1128,7 +1129,7 @@ private:
             }
             auto* const beginp = VN_AS(stmtp, Begin);
             stmtp = beginp->nextp();
-            if (m_procp->user2() & T_HAS_PROC) beginp->user2(T_HAS_PROC);
+            if (hasFlags(m_procp, T_HAS_PROC)) addFlags(beginp, T_HAS_PROC);
             iterate(beginp);
             // Even if we do not find any awaits, we cannot simply inline the process here, as new
             // awaits could be added later.
