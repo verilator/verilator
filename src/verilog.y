@@ -309,8 +309,8 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 //======================================================================
 // Macro functions
 
-#define CRELINE() \
-    (PARSEP->copyOrSameFileLine())  // Only use in empty rules, so lines point at beginnings
+// Only use in empty rules, so lines point at beginnings
+#define CRELINE() (PARSEP->bisonLastFileline()->copyOrSameFileLineApplied())
 #define FILELINE_OR_CRE(nodep) ((nodep) ? (nodep)->fileline() : CRELINE())
 
 #define VARRESET_LIST(decl) \

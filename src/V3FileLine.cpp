@@ -208,17 +208,30 @@ string FileLine::lineDirectiveStrg(int enterExit) const {
 }
 
 void FileLine::lineDirective(const char* textp, int& enterExitRef) {
+    string newFilename;
+    int newLineno = -1;
+    lineDirectiveParse(textp, newFilename /*ref*/, newLineno /*ref*/, enterExitRef);
+    if (enterExitRef != -1) {
+        filename(newFilename);
+        lineno(newLineno);
+    } else {  // Advance line number to account for bogus `line
+        linenoInc();
+    }
+}
+
+void FileLine::lineDirectiveParse(const char* textp, string& filenameRef, int& linenoRef,
+                                  int& enterExitRef) {
     // Handle `line directive
     // Does not parse streamNumber/streamLineno as the next input token
     // will come from the same stream as the previous line.
     do {
-        int lineNo;
         // Skip `line
         while (*textp && std::isspace(*textp)) ++textp;
         while (*textp && !std::isspace(*textp)) ++textp;
         while (*textp && std::isspace(*textp)) ++textp;
 
         // Grab linenumber
+        int lineNo;
         const char* const ln = textp;
         while (*textp && !std::isspace(*textp)) ++textp;
         if (0 == strncmp(ln, "`__LINE__", textp - ln)) {
@@ -229,7 +242,6 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
         } else {
             break;  // Fail
         }
-        lineno(lineNo);
         while (*textp && (std::isspace(*textp))) ++textp;
 
         // Grab filename
@@ -240,7 +252,6 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
         string errMsg;
         const string& parsedFilename = VString::unquoteSVString(string{fn, textp}, errMsg);
         if (!errMsg.empty()) this->v3error(errMsg.c_str());
-        filename(parsedFilename);
         ++textp;
         while (*textp && std::isspace(*textp)) ++textp;
 
@@ -248,17 +259,16 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
         if (!std::isdigit(*textp)) break;  // Fail
         const int level = std::atoi(textp);
         if (level < 0 || level >= 3) break;  // Fail
-        /// TODO: store lineno/filename only when the `line directive is valid
-        /// lineno(lineNo);
-        /// filename(filenameNew);
+
+        linenoRef = lineNo;
+        filenameRef = parsedFilename;
         enterExitRef = level;
         return;
     } while (false);
 
     // Fail
-    // TODO: show correct place of the code
     v3error("`line was not properly formed with '`line number \"filename\" level'\n");
-    enterExitRef = 0;
+    enterExitRef = -1;
 }
 
 void FileLine::forwardToken(const char* textp, size_t size, bool trackLines) {
@@ -273,14 +283,22 @@ void FileLine::forwardToken(const char* textp, size_t size, bool trackLines) {
     }
 }
 
+void FileLine::applyIgnores() {
+#ifndef V3ERROR_NO_GLOBAL_
+    V3Config::applyIgnores(this);  // Toggle warnings based on global config file
+#endif
+}
+
+FileLine* FileLine::copyOrSameFileLineApplied() {
+    applyIgnores();
+    return copyOrSameFileLine();
+}
+
 FileLine* FileLine::copyOrSameFileLine() {
     // When a fileline is "used" to produce a node, calls this function.
     // Return this, or a copy of this
     // There are often more than one token per line, thus we use the
     // same pointer as long as we're on the same line, file & warn state.
-#ifndef V3ERROR_NO_GLOBAL_
-    V3Config::applyIgnores(this);  // Toggle warnings based on global config file
-#endif
     static FileLine* lastNewp = nullptr;
     if (lastNewp && *lastNewp == *this) {  // Compares lineno, filename, etc
         return lastNewp;

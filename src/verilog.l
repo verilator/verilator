@@ -40,7 +40,7 @@
 // Use this to break between tokens whereever not return'ing a token (e.g. skipping inside lexer)
 #define FL_BRK (PARSEP->lexFileline()->startToken())
 
-#define CRELINE() (PARSEP->lexCopyOrSameFileLine())
+#define CRELINE() (PARSEP->lexFileline()->copyOrSameFileLineApplied())
 
 #define FL \
     do { \

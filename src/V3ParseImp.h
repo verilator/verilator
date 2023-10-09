@@ -176,8 +176,8 @@ public:
                       bool precSet, double precVal) VL_MT_DISABLED;
     VTimescale timeLastUnit() const { return m_timeLastUnit; }
 
+    void lexFileline(FileLine* fl) { m_lexFileline = fl; }
     FileLine* lexFileline() const { return m_lexFileline; }
-    FileLine* lexCopyOrSameFileLine() { return lexFileline()->copyOrSameFileLine(); }
     static void lexErrorPreprocDirective(FileLine* fl, const char* textp) VL_MT_DISABLED;
     static string lexParseTag(const char* textp) VL_MT_DISABLED;
     static double lexParseTimenum(const char* text) VL_MT_DISABLED;
@@ -243,7 +243,6 @@ public:
 
     // Return next token, for bison, since bison isn't class based, use a global THIS
     AstNetlist* rootp() const { return m_rootp; }
-    FileLine* copyOrSameFileLine() { return bisonLastFileline()->copyOrSameFileLine(); }
     bool inLibrary() const { return m_inLibrary; }
     VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
     void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }

@@ -195,7 +195,9 @@ public:
         , m_parent{fromp->m_parent} {
         if (m_contentp) m_contentp->refInc();
     }
+    void applyIgnores();
     FileLine* copyOrSameFileLine();
+    FileLine* copyOrSameFileLineApplied();
     static void deleteAllRemaining();
     ~FileLine();
 #ifdef VL_LEAK_CHECKS
@@ -221,6 +223,8 @@ public:
     void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }
     void parent(FileLine* fileline) { m_parent = fileline; }
     void lineDirective(const char* textp, int& enterExitRef);
+    void lineDirectiveParse(const char* textp, string& filenameRef, int& linenoRef,
+                            int& enterExitRef);
     void linenoInc() {
         m_lastLineno++;
         m_lastColumn = 1;

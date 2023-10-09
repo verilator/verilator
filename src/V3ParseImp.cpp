@@ -72,7 +72,7 @@ V3ParseImp::~V3ParseImp() {
 
 void V3ParseImp::lexPpline(const char* textp) {
     // Handle lexer `line directive
-    FileLine* const prevFl = copyOrSameFileLine();
+    FileLine* const prevFl = lexFileline()->copyOrSameFileLineApplied();
     int enterExit;
     lexFileline()->lineDirective(textp, enterExit /*ref*/);
     if (enterExit == 1) {  // Enter
