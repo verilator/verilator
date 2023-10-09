@@ -76,10 +76,12 @@ void V3ParseImp::lexPpline(const char* textp) {
     string newFilename;
     int newLineno = -1;
     int enterExit = 0;
-    lexFileline()->lineDirectiveParse(textp, newFilename /*ref*/, newLineno /*ref*/, enterExit /*ref*/);
+    lexFileline()->lineDirectiveParse(textp, newFilename /*ref*/, newLineno /*ref*/,
+                                      enterExit /*ref*/);
     if (enterExit == 1) {  // Enter
         FileLine* const prevFl = lexFileline()->copyOrSameFileLine();  // Without applyIgnores
-        FileLine* const newFl = new FileLine{prevFl}; // Not copyOrSameFileLine as need to keep old value
+        FileLine* const newFl
+            = new FileLine{prevFl};  // Not copyOrSameFileLine as need to keep old value
         lexFileline(newFl);
         lexFileline()->parent(prevFl);
     } else if (enterExit == 2) {  // Exit
