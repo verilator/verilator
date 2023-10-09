@@ -25,7 +25,5 @@
 %Error: t/t_pp_line_bad.v:7:1: Define or directive not defined: '`line'
     7 | `line
       | ^~~~~
-%Error: t/t_pp_line_bad.v:15:1: `line was not properly formed with '`line number "filename" level'
-%Error: t/t_pp_line_bad.v:17:1: `line was not properly formed with '`line number "filename" level'
-%Error: t/t_pp_line_bad.v:19:1: `line was not properly formed with '`line number "filename" level'
+%Error: t/t_pp_line_bad.v:14:1: `line was not properly formed with '`line number "filename" level'
 %Error: Exiting due to

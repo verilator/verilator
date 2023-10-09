@@ -12,16 +12,30 @@ Disabling Warnings
 
 Warnings may be disabled in multiple ways:
 
-#. Disable the warning in the source code.  When the warning is printed, it
-   will include a warning code.  Surround the offending line with a
-   :code:`/*verilator&32;lint_off*/` and :code:`/*verilator&32;lint_on*/`
-   metacomment pair:
+#. Disable the warning globally by invoking Verilator with the
+   :code:`-Wno-{warning-code}` option.
+
+   Global disables should be avoided, as they removes all checking across
+   the source files, and prevents other users from compiling the sources
+   without knowing the magic set of disables needed to compile those
+   sources successfully.
+
+#. Disable the warning in the design source code.  When the warning is
+   printed, it will include a warning code.  Surround the offending line
+   with a :code:`/*verilator&32;lint_off*/` and
+   :code:`/*verilator&32;lint_on*/` metacomment pair:
 
    .. code-block:: sv
 
          // verilator lint_off UNSIGNED
          if (`DEF_THAT_IS_EQ_ZERO <= 3) $stop;
          // verilator lint_on UNSIGNED
+
+
+   A lint_off in the design source code will propagate down to any child
+   files (files later included by the file with the lint_off), but will not
+   propagate upwards to any parent file (file that included the file with
+   the lint_off).
 
 #. Disable the warning using :ref:`Configuration Files` with a
    :option:`lint_off` command.  This is useful when a script suppresses
@@ -31,12 +45,6 @@ Warnings may be disabled in multiple ways:
    .. code-block:: sv
 
          lint_off -rule UNSIGNED -file "*/example.v" -line 1
-
-#. Disable the warning globally invoking Verilator with the
-   :code:`-Wno-{warning-code}` option.  This should be avoided, as it
-   removes all checking across the designs, and prevents other users from
-   compiling your code without knowing the magic set of disables needed to
-   compile your design successfully.
 
 
 Error And Warning Format

@@ -72,15 +72,25 @@ V3ParseImp::~V3ParseImp() {
 
 void V3ParseImp::lexPpline(const char* textp) {
     // Handle lexer `line directive
-    FileLine* const prevFl = lexFileline()->copyOrSameFileLineApplied();
-    int enterExit;
-    lexFileline()->lineDirective(textp, enterExit /*ref*/);
+    // FileLine* const prevFl = lexFileline();
+    string newFilename;
+    int newLineno = -1;
+    int enterExit = 0;
+    lexFileline()->lineDirectiveParse(textp, newFilename /*ref*/, newLineno /*ref*/, enterExit /*ref*/);
     if (enterExit == 1) {  // Enter
+        FileLine* const prevFl = lexFileline()->copyOrSameFileLine();  // Without applyIgnores
+        FileLine* const newFl = new FileLine{prevFl}; // Not copyOrSameFileLine as need to keep old value
+        lexFileline(newFl);
         lexFileline()->parent(prevFl);
     } else if (enterExit == 2) {  // Exit
-        FileLine* upFl = lexFileline()->parent();
-        if (upFl) upFl = upFl->parent();
-        if (upFl) lexFileline()->parent(upFl);
+        if (FileLine* upFl = lexFileline()->parent()) {
+            lexFileline(upFl);  // Restore warning state to upper file
+        }
+    }
+    if (enterExit != -1) {  // Line/fn change
+        lexFileline()->filename(newFilename);
+        lexFileline()->lineno(newLineno);
+        lexFileline()->applyIgnores();
     }
 }
 
