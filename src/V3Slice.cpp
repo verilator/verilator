@@ -63,7 +63,7 @@ class SliceVisitor final : public VNVisitor {
     bool m_okInitArray = false;  // Allow InitArray children
 
     // METHODS
-    AstNodeExpr* cloneAndSel(AstNode* nodep, int elements, int offset) {
+    AstNodeExpr* cloneAndSel(AstNode* nodep, int elements, int elemIdx) {
         // Insert an ArraySel, except for a few special cases
         const AstUnpackArrayDType* const arrayp
             = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
@@ -87,40 +87,40 @@ class SliceVisitor final : public VNVisitor {
             }
             m_assignError = true;
             elements = 1;
-            offset = 0;
+            elemIdx = 0;
         }
         AstNodeExpr* newp;
         if (const AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
-            UINFO(9, "  cloneInitArray(" << elements << "," << offset << ") " << nodep << endl);
+            UINFO(9, "  cloneInitArray(" << elements << "," << elemIdx << ") " << nodep << endl);
             const int leOffset = !arrayp->rangep()->ascending()
-                                     ? arrayp->rangep()->elementsConst() - 1 - offset
-                                     : offset;
+                                     ? arrayp->rangep()->elementsConst() - 1 - elemIdx
+                                     : elemIdx;
             AstNodeExpr* const itemp = initp->getIndexDefaultedValuep(leOffset);
             if (!itemp) {
                 nodep->v3error("Array initialization has too few elements, need element "
-                               << offset);
+                               << elemIdx);
             }
             newp = itemp ? itemp->cloneTreePure(false) : new AstConst{nodep->fileline(), 0};
         } else if (AstNodeCond* const snodep = VN_CAST(nodep, NodeCond)) {
-            UINFO(9, "  cloneCond(" << elements << "," << offset << ") " << nodep << endl);
+            UINFO(9, "  cloneCond(" << elements << "," << elemIdx << ") " << nodep << endl);
             return snodep->cloneType(snodep->condp()->cloneTreePure(false),
-                                     cloneAndSel(snodep->thenp(), elements, offset),
-                                     cloneAndSel(snodep->elsep(), elements, offset));
+                                     cloneAndSel(snodep->thenp(), elements, elemIdx),
+                                     cloneAndSel(snodep->elsep(), elements, elemIdx));
         } else if (const AstSliceSel* const snodep = VN_CAST(nodep, SliceSel)) {
-            UINFO(9, "  cloneSliceSel(" << elements << "," << offset << ") " << nodep << endl);
+            UINFO(9, "  cloneSliceSel(" << elements << "," << elemIdx << ") " << nodep << endl);
             const int leOffset = (snodep->declRange().lo()
                                   + (!snodep->declRange().ascending()
-                                         ? snodep->declRange().elements() - 1 - offset
-                                         : offset));
+                                         ? snodep->declRange().elements() - 1 - elemIdx
+                                         : elemIdx));
             newp = new AstArraySel{nodep->fileline(), snodep->fromp()->cloneTreePure(false),
                                    leOffset};
         } else if (VN_IS(nodep, ArraySel) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel)
                    || VN_IS(nodep, CMethodHard) || VN_IS(nodep, MemberSel)
                    || VN_IS(nodep, ExprStmt)) {
-            UINFO(9, "  cloneSel(" << elements << "," << offset << ") " << nodep << endl);
+            UINFO(9, "  cloneSel(" << elements << "," << elemIdx << ") " << nodep << endl);
             const int leOffset = !arrayp->rangep()->ascending()
-                                     ? arrayp->rangep()->elementsConst() - 1 - offset
-                                     : offset;
+                                     ? arrayp->rangep()->elementsConst() - 1 - elemIdx
+                                     : elemIdx;
             newp = new AstArraySel{nodep->fileline(), VN_AS(nodep, NodeExpr)->cloneTreePure(false),
                                    leOffset};
         } else {
@@ -149,10 +149,10 @@ class SliceVisitor final : public VNVisitor {
                 // elements
                 AstNodeAssign* newlistp = nullptr;
                 const int elements = arrayp->rangep()->elementsConst();
-                for (int offset = 0; offset < elements; ++offset) {
+                for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
                     AstNodeAssign* const newp
-                        = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, offset),
-                                           cloneAndSel(nodep->rhsp(), elements, offset));
+                        = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
+                                           cloneAndSel(nodep->rhsp(), elements, elemIdx));
                     if (debug() >= 9) newp->dumpTree("-  new: ");
                     newlistp = AstNode::addNext(newlistp, newp);
                 }
@@ -199,12 +199,12 @@ class SliceVisitor final : public VNVisitor {
                         << " on non-slicable (e.g. non-vector) right-hand-side operand");
                 } else {
                     const int elements = adtypep->rangep()->elementsConst();
-                    for (int offset = 0; offset < elements; ++offset) {
+                    for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
                         // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
-                        AstNodeBiop* const clonep
-                            = VN_AS(nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, offset),
-                                                     cloneAndSel(nodep->rhsp(), elements, offset)),
-                                    NodeBiop);
+                        AstNodeBiop* const clonep = VN_AS(
+                            nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
+                                             cloneAndSel(nodep->rhsp(), elements, elemIdx)),
+                            NodeBiop);
                         if (!logp) {
                             logp = clonep;
                         } else {
