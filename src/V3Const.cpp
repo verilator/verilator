@@ -2341,7 +2341,6 @@ private:
     }
 
     bool mayConvertToBitwise(AstNodeBiop* const nodep) {
-        if (!m_doExpensive) return false;
         if (!nodep->lhsp()->width1()) return false;
         if (!nodep->rhsp()->width1()) return false;
         if (!nodep->isPure()) return false;
