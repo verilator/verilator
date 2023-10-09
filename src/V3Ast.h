@@ -1505,6 +1505,7 @@ public:
 class VNDeleter VL_NOT_FINAL {
     // MEMBERS
     std::vector<AstNode*> m_deleteps;  // Nodes to delete
+    std::vector<AstNode*> m_unlinkDeleteps;  // Nodes to unlink and delete
 
 public:
     // METHODS
@@ -1513,6 +1514,10 @@ public:
     void pushDeletep(AstNode* nodep) {
         UASSERT_STATIC(nodep, "Cannot delete nullptr node");
         m_deleteps.push_back(nodep);
+    }
+    void pushUnlinkDeletep(AstNode* nodep) {
+        UASSERT_STATIC(nodep, "Cannot delete nullptr node");
+        m_unlinkDeleteps.push_back(nodep);
     }
 
     // Delete all previously pushed nodes (by callint deleteTree)

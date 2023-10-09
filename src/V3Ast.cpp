@@ -1563,6 +1563,8 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) {
 void VNDeleter::doDeletes() {
     for (AstNode* const nodep : m_deleteps) nodep->deleteTree();
     m_deleteps.clear();
+    for (AstNode* const nodep : m_unlinkDeleteps) nodep->unlinkFrBack()->deleteTree();
+    m_unlinkDeleteps.clear();
 }
 
 //######################################################################
