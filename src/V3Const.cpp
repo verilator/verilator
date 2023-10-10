@@ -3765,6 +3765,7 @@ public:
         // clang-format on
     }
     ~ConstVisitor() override {
+        V3Const::s_containsMemberAccess.clear();
         if (m_doCpp) {
             if (m_globalPass) {
                 V3Stats::addStat("Optimizations, Const bit op reduction", m_statBitOpReduction);
@@ -3776,7 +3777,6 @@ public:
 
     AstNode* mainAcceptEdit(AstNode* nodep) {
         VIsCached::clearCacheTree();  // Avoid using any stale isPure
-        V3Const::s_containsMemberAccess.clear();
         // Operate starting at a random place
         return iterateSubtreeReturnEdits(nodep);
     }
