@@ -10,7 +10,7 @@
 ######################################################################
 
 AR = @AR@
-CXX = @CXX@
+CXX ?= @CXX@
 LINK = @CXX@
 OBJCACHE ?= @OBJCACHE@
 PERL = @PERL@
