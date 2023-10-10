@@ -910,6 +910,7 @@ private:
     const bool m_globalPass;  // ConstVisitor invoked as a global pass
     static uint32_t s_globalPassNum;  // Counts number of times ConstVisitor invoked as global pass
     V3UniqueNames m_concswapNames;  // For generating unique temporary variable names
+    static std::map<const AstNode*, bool> s_containsMemberAccess;
 
     // METHODS
 
@@ -2322,29 +2323,34 @@ private:
 
     bool containsMemberAccessRecurse(const AstNode* const nodep) const {
         if (!nodep) return false;
-        if (VN_IS(nodep, MemberSel) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall))
-            return true;
-        if (const AstNodeFTaskRef* const funcRefp = VN_CAST(nodep, NodeFTaskRef)) {
-            if (containsMemberAccessRecurse(funcRefp->taskp())) return true;
-        }
-        if (const AstNodeCCall* const funcRefp = VN_CAST(nodep, NodeCCall)) {
-            if (containsMemberAccessRecurse(funcRefp->funcp())) return true;
-        }
-        if (const AstNodeFTask* const funcp = VN_CAST(nodep, NodeFTask)) {
+        const auto it = s_containsMemberAccess.find(nodep);
+        if (it != s_containsMemberAccess.end()) return it->second;
+        bool result = false;
+        if (VN_IS(nodep, MemberSel) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall)) {
+            result = true;
+        } else if (const AstNodeFTaskRef* const funcRefp = VN_CAST(nodep, NodeFTaskRef)) {
+            if (containsMemberAccessRecurse(funcRefp->taskp())) result = true;
+        } else if (const AstNodeCCall* const funcRefp = VN_CAST(nodep, NodeCCall)) {
+            if (containsMemberAccessRecurse(funcRefp->funcp())) result = true;
+        } else if (const AstNodeFTask* const funcp = VN_CAST(nodep, NodeFTask)) {
             // Assume that it has a member access
-            if (funcp->recursive()) return true;
+            if (funcp->recursive()) result = true;
+        } else if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
+            if (funcp->recursive()) result = true;
         }
-        if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
-            if (funcp->recursive()) return true;
+        if (!result) {
+            result = containsMemberAccessRecurse(nodep->op1p())
+                     || containsMemberAccessRecurse(nodep->op2p())
+                     || containsMemberAccessRecurse(nodep->op3p())
+                     || containsMemberAccessRecurse(nodep->op4p());
         }
-        if (containsMemberAccessRecurse(nodep->op1p())) return true;
-        if (containsMemberAccessRecurse(nodep->op2p())) return true;
-        if (containsMemberAccessRecurse(nodep->op3p())) return true;
-        if (containsMemberAccessRecurse(nodep->op4p())) return true;
-        if (!VN_IS(nodep, NodeFTask) && !VN_IS(nodep, CFunc)  // don't enter into next function
-            && containsMemberAccessRecurse(nodep->nextp()))
-            return true;
-        return false;
+        if (!result && !VN_IS(nodep, NodeFTask)
+            && !VN_IS(nodep, CFunc)  // don't enter into next function
+            && containsMemberAccessRecurse(nodep->nextp())) {
+            result = true;
+        }
+        s_containsMemberAccess[nodep] = result;
+        return result;
     }
 
     bool mayConvertToBitwise(AstNodeBiop* const nodep) {
@@ -3768,6 +3774,7 @@ public:
 };
 
 uint32_t ConstVisitor::s_globalPassNum = 0;
+std::map<const AstNode*, bool> ConstVisitor::s_containsMemberAccess;
 
 //######################################################################
 // Const class functions
