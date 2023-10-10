@@ -908,6 +908,7 @@ private:
     bool m_doNConst = false;  // Enable non-constant-child simplifications
     bool m_doV = false;  // Verilog, not C++ conversion
     bool m_doGenerate = false;  // Postpone width checking inside generate
+    bool m_convertLogicToBit = false;  // Sonvert logical operators to bitwise
     bool m_hasJumpDelay = false;  // JumpGo or Delay under this while
     bool m_underRecFunc = false;  // Under a recursive function
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -2362,6 +2363,7 @@ private:
     }
 
     bool mayConvertToBitwise(AstNodeBiop* const nodep) {
+        if (!m_convertLogicToBit) return false;
         if (!nodep->lhsp()->width1()) return false;
         if (!nodep->rhsp()->width1()) return false;
         if (!nodep->isPure()) return false;
@@ -3756,7 +3758,7 @@ public:
         case PROC_GENERATE:       m_doV = true;  m_doNConst = true; m_params = true;
                                   m_required = true; m_doGenerate = true; break;
         case PROC_LIVE:           break;
-        case PROC_V_WARN:         m_doV = true;  m_doNConst = true; m_warn = true; break;
+        case PROC_V_WARN:         m_doV = true;  m_doNConst = true; m_warn = true; m_convertLogicToBit = true; break;
         case PROC_V_NOWARN:       m_doV = true;  m_doNConst = true; break;
         case PROC_V_EXPENSIVE:    m_doV = true;  m_doNConst = true; m_doExpensive = true; break;
         case PROC_CPP:            m_doV = false; m_doNConst = true; m_doCpp = true; break;
