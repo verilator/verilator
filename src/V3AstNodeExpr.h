@@ -1144,9 +1144,7 @@ public:
     string name() const override VL_MT_STABLE { return itemp()->name(); }
     int instrCount() const override { return 0; }
     const char* broken() const override;
-    void cloneRelink() override {
-        if (m_itemp->clonep()) m_itemp = m_itemp->clonep();
-    }
+    void cloneRelink() override;
     bool same(const AstNode* samep) const override {
         const AstEnumItemRef* const sp = static_cast<const AstEnumItemRef*>(samep);
         return itemp() == sp->itemp();
