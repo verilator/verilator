@@ -56,6 +56,9 @@ class SliceVisitor final : public VNVisitor {
     //  AstNodeUniop::user1()       -> bool.  True if find is complete
     //  AstArraySel::user1p()       -> AstVarRef. The VarRef that the final ArraySel points to
     const VNUser1InUse m_inuser1;
+    //  AstInitArray::user2()       -> Previously accessed itemIdx
+    //  AstInitItem::user2()        -> Corresponding first elemIdx
+    const VNUser2InUse m_inuser2;
 
     // STATE
     AstNode* m_assignp = nullptr;  // Assignment we are under
@@ -96,7 +99,7 @@ class SliceVisitor final : public VNVisitor {
             elemIdx = 0;
         }
         AstNodeExpr* newp;
-        if (const AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
+        if (AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
             UINFO(9, "  cloneInitArray(" << elements << "," << elemIdx << ") " << nodep << endl);
 
             auto considerOrder = [](const auto* nodep, int idxFromLeft) -> int {
@@ -107,6 +110,18 @@ class SliceVisitor final : public VNVisitor {
             newp = nullptr;
             int itemIdx = 0;
             int i = 0;
+            if (const int prevItemIdx = initp->user2()) {
+                const AstInitArray::KeyItemMap& itemMap = initp->map();
+                const auto it = itemMap.find(considerOrder(arrayp, prevItemIdx));
+                if (it != itemMap.end()) {
+                    const AstInitItem* itemp = it->second;
+                    if (itemp->user2() && itemp->user2() < elemIdx) {
+                        // Let's resume traversal from the previous position
+                        itemIdx = prevItemIdx;
+                        i = itemp->user2();
+                    }
+                }
+            }
             const AstNodeDType* const expectedItemDTypep = arrayp->subDTypep()->skipRefp();
             while (i <= elemIdx) {
                 AstNodeExpr* const itemp
@@ -169,8 +184,15 @@ class SliceVisitor final : public VNVisitor {
                                << i + initp->map().size() - itemIdx << " elements exist.");
                 m_assignError = true;
             }
+            if (newp) {
+                const AstInitArray::KeyItemMap& itemMap = initp->map();
+                const auto it = itemMap.find(considerOrder(arrayp, itemIdx));
+                if (it != itemMap.end()) {  // Remember current position for the next invocation.
+                    initp->user2(itemIdx);
+                    it->second->user2(i);
+                }
+            }
             if (!newp) newp = new AstConst{nodep->fileline(), 0};
-
         } else if (AstNodeCond* const snodep = VN_CAST(nodep, NodeCond)) {
             UINFO(9, "  cloneCond(" << elements << "," << elemIdx << ") " << nodep << endl);
             return snodep->cloneType(snodep->condp()->cloneTreePure(false),
