@@ -716,7 +716,10 @@ public:
                 }
                 // Set width and widthMin precisely
                 resultp->dtypeChgWidth(resultWidth, 1);
-                for (AstNode* const termp : termps) termp->deleteTree();
+                for (AstNode* const termp : termps) {
+                    ConstVisitor::s_containsMemberAccess.erase(termp);
+                    termp->deleteTree();
+                }
                 return resultp;
             }
             const ResultTerm result = v->getResultTerm();
@@ -792,7 +795,10 @@ public:
 
         // Only substitute the result if beneficial as determined by operation count
         if (visitor.m_ops <= resultOps) {
-            for (AstNode* const termp : termps) termp->deleteTree();
+            for (AstNode* const termp : termps) {
+                ConstVisitor::s_containsMemberAccess.erase(termp);
+                termp->deleteTree();
+            }
             return nullptr;
         }
 
@@ -1044,6 +1050,7 @@ private:
         if (!operandsSame(ap, bp)) return false;
         // Do it
         cp->unlinkFrBack();
+        ConstVisitor::s_containsMemberAccess.erase(andp);
         VL_DO_DANGLING(andp->unlinkFrBack()->deleteTree(), andp);
         VL_DANGLING(notp);
         // Replace whichever branch is now dangling
@@ -3768,6 +3775,7 @@ public:
 
     AstNode* mainAcceptEdit(AstNode* nodep) {
         VIsCached::clearCacheTree();  // Avoid using any stale isPure
+        s_containsMemberAccess.clear();
         // Operate starting at a random place
         return iterateSubtreeReturnEdits(nodep);
     }
