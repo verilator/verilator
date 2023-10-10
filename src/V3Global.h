@@ -47,6 +47,7 @@ class V3HierBlockPlan;
 // Constructor needs () or GCC 4.8 false warning.
 #define VL_RESTORER(var) \
     const VRestorer<typename std::decay<decltype(var)>::type> restorer_##var(var);
+#define VL_GET_SAVED(var) restorer_##var.saved()
 
 // Object used by VL_RESTORER.  This object must be an auto variable, not
 // allocated on the heap or otherwise.
@@ -60,6 +61,7 @@ public:
         : m_ref{permr}
         , m_saved{permr} {}
     ~VRestorer() { m_ref = m_saved; }
+    const T& saved() const { return m_saved; }
     VL_UNCOPYABLE(VRestorer);
 };
 

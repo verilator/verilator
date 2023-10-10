@@ -1038,12 +1038,11 @@ class LinkDotFindVisitor final : public VNVisitor {
         } else {
             VL_RESTORER(m_blockp);
             VL_RESTORER(m_curSymp);
-            VSymEnt* const oldCurSymp = m_curSymp;
             {
                 m_blockp = nodep;
                 m_curSymp
                     = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
-                m_curSymp->fallbackp(oldCurSymp);
+                m_curSymp->fallbackp(VL_GET_SAVED(m_curSymp));
                 // Iterate
                 iterateChildren(nodep);
             }
@@ -1428,12 +1427,11 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstForeach* nodep) override {
         // Symbol table needs nodep->name() as the index variable's name
         VL_RESTORER(m_curSymp);
-        VSymEnt* const oldCurSymp = m_curSymp;
         {
             ++m_modWithNum;
             m_curSymp = m_statep->insertBlock(m_curSymp, "__Vforeach" + cvtToStr(m_modWithNum),
                                               nodep, m_classOrPackagep);
-            m_curSymp->fallbackp(oldCurSymp);
+            m_curSymp->fallbackp(VL_GET_SAVED(m_curSymp));
             // DOT(x, SELLOOPVARS(var, loops)) -> SELLOOPVARS(DOT(x, var), loops)
             if (AstDot* const dotp = VN_CAST(nodep->arrayp(), Dot)) {
                 if (AstSelLoopVars* const loopvarsp = VN_CAST(dotp->rhsp(), SelLoopVars)) {
@@ -1508,12 +1506,11 @@ class LinkDotFindVisitor final : public VNVisitor {
         // Symbol table needs nodep->name() as the index variable's name
         // Iteration will pickup the AstVar we made under AstWith
         VL_RESTORER(m_curSymp);
-        VSymEnt* const oldCurSymp = m_curSymp;
         {
             ++m_modWithNum;
             m_curSymp = m_statep->insertBlock(m_curSymp, "__Vwith" + cvtToStr(m_modWithNum), nodep,
                                               m_classOrPackagep);
-            m_curSymp->fallbackp(oldCurSymp);
+            m_curSymp->fallbackp(VL_GET_SAVED(m_curSymp));
             UASSERT_OBJ(nodep->indexArgRefp(), nodep, "Missing lambda argref");
             UASSERT_OBJ(nodep->valueArgRefp(), nodep, "Missing lambda argref");
             // Insert argref's name into symbol table
@@ -1915,11 +1912,10 @@ class LinkDotIfaceVisitor final : public VNVisitor {
         // Modport: Remember its name for later resolution
         UINFO(5, "   fiv: " << nodep << endl);
         VL_RESTORER(m_curSymp);
-        VSymEnt* const oldCurSymp = m_curSymp;
         {
             // Create symbol table for the vars
             m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, nullptr);
-            m_curSymp->fallbackp(oldCurSymp);
+            m_curSymp->fallbackp(VL_GET_SAVED(m_curSymp));
             iterateChildren(nodep);
         }
     }
@@ -2455,7 +2451,6 @@ private:
                             m_ds.m_unresolvedClass = true;
                         } else {
                             const auto cextp = classp->extendsp();
-                            UASSERT_OBJ(cextp, nodep, "Bad super extends link");
                             const auto baseClassp = cextp->classp();
                             UASSERT_OBJ(baseClassp, nodep, "Bad superclass");
                             m_ds.m_dotSymp = m_statep->getNodeSym(baseClassp);
@@ -3136,12 +3131,16 @@ private:
         } else {
             string baddot;
             VSymEnt* okSymp = nullptr;
-            VSymEnt* dotSymp = nodep->dotted().empty()
-                                   ? m_ds.m_dotSymp  // Non-'super.' dotted reference
-                                   : m_curSymp;  // Start search at dotted point
-            // of same name under a subtask isn't a relevant hit however a
-            // function under a begin/end is.  So we want begins, but not
-            // the function
+            VSymEnt* dotSymp;
+            if (nodep->dotted().empty()) {
+                // Non-'super.' dotted reference
+                dotSymp = m_ds.m_dotSymp;
+            } else {
+                // Start search at module, as a variable of same name under a subtask isn't a
+                // relevant hit however a function under a begin/end is.  So we want begins, but
+                // not the function
+                dotSymp = m_curSymp;
+            }
             if (nodep->classOrPackagep()) {  // Look only in specified package
                 dotSymp = m_statep->getNodeSym(nodep->classOrPackagep());
                 UINFO(8, "    Override classOrPackage " << dotSymp << endl);
@@ -3320,7 +3319,7 @@ private:
     void visit(AstNodeBlock* nodep) override {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
-        VSymEnt* const oldCurSymp = m_curSymp;
+        VL_RESTORER(m_curSymp);
         {
             if (nodep->name() != "") {
                 m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
@@ -3328,7 +3327,7 @@ private:
             }
             iterateChildren(nodep);
         }
-        m_ds.m_dotSymp = m_curSymp = oldCurSymp;
+        m_ds.m_dotSymp = VL_GET_SAVED(m_curSymp);
         UINFO(5, "   cur=se" << cvtToHex(m_curSymp) << endl);
     }
     void visit(AstNodeFTask* nodep) override {
@@ -3353,7 +3352,7 @@ private:
                 nodep->v3error("Definition not found for extern " + nodep->prettyNameQ());
             }
         }
-        VSymEnt* const oldCurSymp = m_curSymp;
+        VL_RESTORER(m_curSymp);
         {
             m_ftaskp = nodep;
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
@@ -3368,28 +3367,28 @@ private:
                 }
             }
         }
-        m_ds.m_dotSymp = m_curSymp = oldCurSymp;
+        m_ds.m_dotSymp = VL_GET_SAVED(m_curSymp);
         m_ftaskp = nullptr;
     }
     void visit(AstForeach* nodep) override {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
-        VSymEnt* const oldCurSymp = m_curSymp;
+        VL_RESTORER(m_curSymp);
         {
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
             iterateChildren(nodep);
         }
-        m_ds.m_dotSymp = m_curSymp = oldCurSymp;
+        m_ds.m_dotSymp = VL_GET_SAVED(m_curSymp);
     }
     void visit(AstWith* nodep) override {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
-        VSymEnt* const oldCurSymp = m_curSymp;
+        VL_RESTORER(m_curSymp);
         {
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
             iterateChildren(nodep);
         }
-        m_ds.m_dotSymp = m_curSymp = oldCurSymp;
+        m_ds.m_dotSymp = VL_GET_SAVED(m_curSymp);
     }
     void visit(AstLambdaArgRef* nodep) override {
         UINFO(5, "   " << nodep << endl);
@@ -3567,6 +3566,7 @@ private:
                 }
             }
         }
+        m_ds.m_dotSymp = VL_GET_SAVED(m_curSymp);
     }
     void visit(AstRefDType* nodep) override {
         // Resolve its reference
