@@ -1614,6 +1614,12 @@ const char* AstEnumItemRef::broken() const {
     BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
     return nullptr;
 }
+void AstEnumItemRef::cloneRelink() {
+    if (m_itemp->clonep()) m_itemp = m_itemp->clonep();
+    if (m_classOrPackagep && m_classOrPackagep->clonep()) {
+        m_classOrPackagep = m_classOrPackagep->clonep();
+    }
+}
 void AstIfaceRefDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
     if (cellName() != "") str << " cell=" << cellName();
