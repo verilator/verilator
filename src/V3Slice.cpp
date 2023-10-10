@@ -111,9 +111,10 @@ class SliceVisitor final : public VNVisitor {
             while (i <= elemIdx) {
                 AstNodeExpr* const itemp
                     = initp->getIndexDefaultedValuep(considerOrder(arrayp, itemIdx));
-                if (!itemp) {
+                if (!itemp && !m_assignError) {
                     nodep->v3error("Array initialization has too few elements, need element "
                                    << elemIdx);
+                    m_assignError = true;
                 }
                 const AstNodeDType* itemRawDTypep = itemp->dtypep()->skipRefp();
                 if (areCompatible(expectedItemDTypep, itemRawDTypep)) {
@@ -129,7 +130,10 @@ class SliceVisitor final : public VNVisitor {
                         = VN_CAST(itemRawDTypep, UnpackArrayDType);
                     if (!itemDTypep
                         || !expectedItemDTypep->same(itemDTypep->subDTypep()->skipRefp())) {
-                        itemp->v3error("Item is incompatible with the array type.");
+                        if (!m_assignError) {
+                            itemp->v3error("Item is incompatible with the array type.");
+                        }
+                        m_assignError = true;
                         break;
                     }
                     if (i + itemDTypep->elementsConst()
@@ -143,12 +147,27 @@ class SliceVisitor final : public VNVisitor {
                             newp = new AstArraySel{nodep->fileline(), itemp->cloneTreePure(false),
                                                    offset};
                         }
+                        if (!m_assignError && elemIdx + 1 == elements
+                            && i + itemDTypep->elementsConst() < elements) {
+                            nodep->v3error("Array initialization has too many elements. "
+                                           << elements << " elements are expected, but at least "
+                                           << i + itemDTypep->elementsConst()
+                                           << " elements exist.");
+                            m_assignError = true;
+                        }
                         break;
                     } else {  // Check the next item
                         i += itemDTypep->elementsConst();
                         ++itemIdx;
                     }
                 }
+            }
+            if (elemIdx + 1 == elements && static_cast<size_t>(itemIdx) + 1 < initp->map().size()
+                && !m_assignError) {
+                nodep->v3error("Array initialization has too many elements. "
+                               << elements << " elements are expected, but at least "
+                               << i + initp->map().size() - itemIdx << " elements exist.");
+                m_assignError = true;
             }
             if (!newp) newp = new AstConst{nodep->fileline(), 0};
 
