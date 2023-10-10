@@ -176,8 +176,9 @@ private:
         nodep->brokenState(m_brokenCntCurrentUnder);
         const char* const whyp = nodep->broken();
         if (whyp) {
-            nodep->v3error("Broken link in node (or something without maybePointedTo): " << whyp);
-            v3fatal("Node: " << nodep);
+            UINFO(0, "In node: " << nodep << endl);
+            nodep->v3fatalSrc(
+                "Broken link in node (or something without maybePointedTo): " << whyp);
         }
         if (!s_brokenAllowMidvisitorCheck) nodep->checkIter();
         if (nodep->dtypep()) {
