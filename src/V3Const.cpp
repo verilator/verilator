@@ -69,6 +69,8 @@ static int countTrailingZeroes(uint64_t val) {
 #endif
 }
 
+std::map<const AstNode*, bool> V3Const::s_containsMemberAccess;
+
 // This visitor can be used in the post-expanded Ast from V3Expand, where the Ast satisfies:
 // - Constants are 64 bit at most (because words are accessed via AstWordSel)
 // - Variables are scoped.
@@ -717,7 +719,7 @@ public:
                 // Set width and widthMin precisely
                 resultp->dtypeChgWidth(resultWidth, 1);
                 for (AstNode* const termp : termps) {
-                    ConstVisitor::s_containsMemberAccess.erase(termp);
+                    V3Const::s_containsMemberAccess.erase(termp);
                     termp->deleteTree();
                 }
                 return resultp;
@@ -796,7 +798,7 @@ public:
         // Only substitute the result if beneficial as determined by operation count
         if (visitor.m_ops <= resultOps) {
             for (AstNode* const termp : termps) {
-                ConstVisitor::s_containsMemberAccess.erase(termp);
+                V3Const::s_containsMemberAccess.erase(termp);
                 termp->deleteTree();
             }
             return nullptr;
@@ -916,7 +918,6 @@ private:
     const bool m_globalPass;  // ConstVisitor invoked as a global pass
     static uint32_t s_globalPassNum;  // Counts number of times ConstVisitor invoked as global pass
     V3UniqueNames m_concswapNames;  // For generating unique temporary variable names
-    static std::map<const AstNode*, bool> s_containsMemberAccess;
 
     // METHODS
 
@@ -1050,7 +1051,7 @@ private:
         if (!operandsSame(ap, bp)) return false;
         // Do it
         cp->unlinkFrBack();
-        ConstVisitor::s_containsMemberAccess.erase(andp);
+        V3Const::s_containsMemberAccess.erase(andp);
         VL_DO_DANGLING(andp->unlinkFrBack()->deleteTree(), andp);
         VL_DANGLING(notp);
         // Replace whichever branch is now dangling
@@ -2330,8 +2331,8 @@ private:
 
     bool containsMemberAccessRecurse(const AstNode* const nodep) const {
         if (!nodep) return false;
-        const auto it = s_containsMemberAccess.find(nodep);
-        if (it != s_containsMemberAccess.end()) return it->second;
+        const auto it = V3Const::s_containsMemberAccess.find(nodep);
+        if (it != V3Const::s_containsMemberAccess.end()) return it->second;
         bool result = false;
         if (VN_IS(nodep, MemberSel) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall)) {
             result = true;
@@ -2356,7 +2357,7 @@ private:
             && containsMemberAccessRecurse(nodep->nextp())) {
             result = true;
         }
-        s_containsMemberAccess[nodep] = result;
+        V3Const::s_containsMemberAccess[nodep] = result;
         return result;
     }
 
@@ -3775,14 +3776,13 @@ public:
 
     AstNode* mainAcceptEdit(AstNode* nodep) {
         VIsCached::clearCacheTree();  // Avoid using any stale isPure
-        s_containsMemberAccess.clear();
+        V3Const::s_containsMemberAccess.clear();
         // Operate starting at a random place
         return iterateSubtreeReturnEdits(nodep);
     }
 };
 
 uint32_t ConstVisitor::s_globalPassNum = 0;
-std::map<const AstNode*, bool> ConstVisitor::s_containsMemberAccess;
 
 //######################################################################
 // Const class functions
