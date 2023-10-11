@@ -2442,7 +2442,8 @@ private:
                     m_ds.m_dotErr = true;
                 } else {
                     const auto classp = VN_AS(classSymp->nodep(), Class);
-                    if (!classp->extendsp()) {
+                    const auto cextp = classp->extendsp();
+                    if (!cextp) {
                         nodep->v3error("'super' used on non-extended class (IEEE 1800-2017 8.15)");
                         m_ds.m_dotErr = true;
                     } else {
@@ -2450,7 +2451,6 @@ private:
                             && m_extendsParam.find(classp) != m_extendsParam.end()) {
                             m_ds.m_unresolvedClass = true;
                         } else {
-                            const auto cextp = classp->extendsp();
                             const auto baseClassp = cextp->classp();
                             UASSERT_OBJ(baseClassp, nodep, "Bad superclass");
                             m_ds.m_dotSymp = m_statep->getNodeSym(baseClassp);
