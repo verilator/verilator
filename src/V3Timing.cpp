@@ -1110,6 +1110,7 @@ private:
     void visit(AstBegin* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
+        if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
         iterateChildren(nodep);
     }
     void visit(AstFork* nodep) override {
@@ -1123,13 +1124,13 @@ private:
         while (stmtp) {
             if (!VN_IS(stmtp, Begin)) {
                 auto* const beginp = new AstBegin{stmtp->fileline(), "", nullptr};
+                if (hasFlags(stmtp, T_HAS_PROC)) addFlags(beginp, T_HAS_PROC);
                 stmtp->replaceWith(beginp);
                 beginp->addStmtsp(stmtp);
                 stmtp = beginp;
             }
             auto* const beginp = VN_AS(stmtp, Begin);
             stmtp = beginp->nextp();
-            if (hasFlags(m_procp, T_HAS_PROC)) addFlags(beginp, T_HAS_PROC);
             iterate(beginp);
             // Even if we do not find any awaits, we cannot simply inline the process here, as new
             // awaits could be added later.

@@ -86,7 +86,7 @@ private:
     bool m_recursive : 1;  // Recursive or part of recursion
     bool m_underGenerate : 1;  // Under generate (for warning)
     bool m_virtual : 1;  // Virtual method in class
-    bool m_needProcess : 1;  // Implements part of a process that allocates std::process
+    bool m_needProcess : 1;  // Needs access to VlProcess of the caller
     VLifetime m_lifetime;  // Lifetime
     VIsCached m_purity;  // Pure state
 
@@ -300,7 +300,7 @@ class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
     // @astgen op2 := stmtsp : List[AstNode] // Note: op1 is used in some sub-types only
     bool m_suspendable : 1;  // Is suspendable by a Delay, EventControl, etc.
-    bool m_needProcess : 1;  // Implements part of a process that allocates std::process
+    bool m_needProcess : 1;  // Uses VlProcess
 protected:
     AstNodeProcedure(VNType t, FileLine* fl, AstNode* stmtsp)
         : AstNode{t, fl} {
@@ -608,7 +608,7 @@ private:
     bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
     bool m_dpiTraceInit : 1;  // DPI trace_init
-    bool m_needProcess : 1;  // Implements part of a process that allocates std::process
+    bool m_needProcess : 1;  // Needs access to VlProcess of the caller
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
@@ -2096,8 +2096,9 @@ class AstBegin final : public AstNodeBlock {
     // Parents: statement
     // @astgen op1 := genforp : Optional[AstNode]
 
-    bool m_generate;  // Underneath a generate
-    const bool m_implied;  // Not inserted by user
+    bool m_generate : 1;  // Underneath a generate
+    bool m_needProcess : 1;  // Uses VlProcess
+    const bool m_implied : 1;  // Not inserted by user
 public:
     // Node that puts name into the output stream
     AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool generate = false,
@@ -2109,6 +2110,8 @@ public:
     void dump(std::ostream& str) const override;
     void generate(bool flag) { m_generate = flag; }
     bool generate() const { return m_generate; }
+    void setNeedProcess() { m_needProcess = true; }
+    bool needProcess() const { return m_needProcess; }
     bool implied() const { return m_implied; }
 };
 class AstFork final : public AstNodeBlock {

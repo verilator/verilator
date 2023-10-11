@@ -2349,6 +2349,7 @@ void AstBegin::dump(std::ostream& str) const {
     if (generate()) str << " [GEN]";
     if (genforp()) str << " [GENFOR]";
     if (implied()) str << " [IMPLIED]";
+    if (needProcess()) str << " [NPRC]";
 }
 void AstCoverDecl::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
