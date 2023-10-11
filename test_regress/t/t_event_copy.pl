@@ -13,6 +13,7 @@ scenarios(simulator => 1);
 compile(
     fails => $Self->{vlt_all},
     expect_filename => $Self->{golden_filename},
+    threads => 1,
     );
 
 execute(

@@ -13,6 +13,8 @@ scenarios(simulator => 1);
 compile(
     verilator_flags2 => ["--exe --main --timing"],
     make_main => 0,
+    # Multithreading would cause a warning on event assignments
+    threads => 1,
     );
 
 execute(
