@@ -2332,8 +2332,8 @@ private:
 
     bool containsMemberAccessRecurse(const AstNode* const nodep) const {
         if (!nodep) return false;
-        const auto it = V3Const::s_containsMemberAccess.find(nodep);
-        if (it != V3Const::s_containsMemberAccess.end()) return it->second;
+        const auto it = V3Const::s_containsMemberAccess.lower_bound(nodep);
+        if (it != V3Const::s_containsMemberAccess.end() && it->first == nodep) return it->second;
         bool result = false;
         if (VN_IS(nodep, MemberSel) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall)) {
             result = true;
@@ -2358,7 +2358,7 @@ private:
             && containsMemberAccessRecurse(nodep->nextp())) {
             result = true;
         }
-        V3Const::s_containsMemberAccess[nodep] = result;
+        V3Const::s_containsMemberAccess.insert(it, std::make_pair(nodep, result));
         return result;
     }
 
