@@ -90,7 +90,7 @@ class VlProcess final {
     // MEMBERS
     int m_state;  // Current state of the process
     VlProcess* m_parentp = nullptr;  // Parent process, if exists
-    std::set<VlProcess*> m_children;  // Alive child processes
+    std::set<VlProcessRef> m_children;  // Active child processes
 
 public:
     // TYPES
@@ -109,27 +109,41 @@ public:
     // Construct child process of parent
     VlProcess(VlProcess* const parentp)
         : m_state{RUNNING}
-        , m_parentp{parentp} {
-        m_parentp->m_children.insert(this);
-    }
-
-    ~VlProcess() {
-        for (VlProcess* const childp : m_children) childp->m_parentp = nullptr;
-        if (m_parentp) m_parentp->m_children.erase(this);
-    }
+        , m_parentp{parentp} {}
 
     // METHODS
-    VlProcessRef spawn() { return std::make_shared<VlProcess>(this); }
+    VlProcessRef spawn() {
+        VlProcessRef childp = std::make_shared<VlProcess>(this);
+
+        m_children.insert(childp);
+        return childp;
+    }
 
     int state() { return m_state; }
-    void state(int s) { m_state = s; }
+    void state(int s) {
+        m_state = s;
+        if (!isActive()) sweep();
+    }
+    void sweep() {
+        for (auto it = begin(m_children); it != end(m_children);) {
+            if (!(*it)->isActive()) {
+                m_children.erase(it++);
+            } else {
+                it++;
+            }
+        }
+        if (!isActive() && m_parentp) m_parentp->sweep();
+    }
     void disable() {
         disable_fork();
         state(KILLED);
     }
     void disable_fork() {
-        for (VlProcess* const childp : m_children) childp->disable();
+        while (!isLeaf()) (*begin(m_children))->disable();
     }
+    bool isActive() { return !isLeaf() || isAlive(); }
+    bool isAlive() { return m_state != FINISHED && m_state != KILLED; }
+    bool isLeaf() { return m_children.empty(); }
 };
 
 inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
