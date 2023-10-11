@@ -2362,7 +2362,7 @@ private:
         return result;
     }
 
-    bool mayConvertToBitwise(AstNodeBiop* const nodep) {
+    bool matchBiopToBitwise(AstNodeBiop* const nodep) {
         if (!m_convertLogicToBit) return false;
         if (!nodep->lhsp()->width1()) return false;
         if (!nodep->rhsp()->width1()) return false;
