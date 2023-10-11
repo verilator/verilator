@@ -1,6 +1,10 @@
-%Warning-EVENTEXPR: t/t_event_control_eventexpr_bad.v:13:7: Non-identifier expression used to reference an event to be sent. This is not a part of IEEE_1800-2017
-   13 |     ->get_event();
+%Warning-EVENTEXPR: t/t_event_control_eventexpr_bad.v:19:7: Non-identifier expression used to reference an event to be sent. This is not a part of IEEE_1800-2017
+   19 |     ->get_event();  
       |       ^~~~~~~~~
                     ... For warning description see https://verilator.org/warn/EVENTEXPR?v=latest
                     ... Use "/* verilator lint_off EVENTEXPR */" and lint_on around source to disable this message.
-%Error: Exiting due to
+%Warning-EVENTEXPR: t/t_event_control_eventexpr_bad.v:22:18: Non-identifier expression used to reference an event to be sent. This is not a part of IEEE_1800-2017
+   22 |       ->evt_array[i];  
+      |                  ^
+%Error: Verilator internal fault, sorry. Suggest trying --debug --gdbbt
+%Error: Command Failed
