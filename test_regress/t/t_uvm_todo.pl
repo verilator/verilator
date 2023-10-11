@@ -14,6 +14,7 @@ compile(
     v_flags2 => ["--timing",
                  "-Wno-PKGNODECL -Wno-IMPLICITSTATIC -Wno-CONSTRAINTIGN -Wno-MISINDENT",
                  "-Wno-CASEINCOMPLETE -Wno-CASTCONST -Wno-SYMRSVDWORD -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC",
+                 "-Wno-EVENTEXPR",
                  "-Wno-REALCVT", # TODO note mostly related to $realtime - could suppress or fix upstream
                  "-Wno-ZERODLY", # TODO issue #4494, add support
                  ],
