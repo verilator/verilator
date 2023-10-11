@@ -1042,7 +1042,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                 m_blockp = nodep;
                 m_curSymp
                     = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
-                m_curSymp->fallbackp(VL_GET_SAVED(m_curSymp));
+                m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
                 // Iterate
                 iterateChildren(nodep);
             }
@@ -1431,7 +1431,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             ++m_modWithNum;
             m_curSymp = m_statep->insertBlock(m_curSymp, "__Vforeach" + cvtToStr(m_modWithNum),
                                               nodep, m_classOrPackagep);
-            m_curSymp->fallbackp(VL_GET_SAVED(m_curSymp));
+            m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
             // DOT(x, SELLOOPVARS(var, loops)) -> SELLOOPVARS(DOT(x, var), loops)
             if (AstDot* const dotp = VN_CAST(nodep->arrayp(), Dot)) {
                 if (AstSelLoopVars* const loopvarsp = VN_CAST(dotp->rhsp(), SelLoopVars)) {
@@ -1510,7 +1510,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             ++m_modWithNum;
             m_curSymp = m_statep->insertBlock(m_curSymp, "__Vwith" + cvtToStr(m_modWithNum), nodep,
                                               m_classOrPackagep);
-            m_curSymp->fallbackp(VL_GET_SAVED(m_curSymp));
+            m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
             UASSERT_OBJ(nodep->indexArgRefp(), nodep, "Missing lambda argref");
             UASSERT_OBJ(nodep->valueArgRefp(), nodep, "Missing lambda argref");
             // Insert argref's name into symbol table
@@ -1915,7 +1915,7 @@ class LinkDotIfaceVisitor final : public VNVisitor {
         {
             // Create symbol table for the vars
             m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, nullptr);
-            m_curSymp->fallbackp(VL_GET_SAVED(m_curSymp));
+            m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
             iterateChildren(nodep);
         }
     }
@@ -3327,7 +3327,7 @@ private:
             }
             iterateChildren(nodep);
         }
-        m_ds.m_dotSymp = VL_GET_SAVED(m_curSymp);
+        m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
         UINFO(5, "   cur=se" << cvtToHex(m_curSymp) << endl);
     }
     void visit(AstNodeFTask* nodep) override {
@@ -3367,7 +3367,7 @@ private:
                 }
             }
         }
-        m_ds.m_dotSymp = VL_GET_SAVED(m_curSymp);
+        m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
         m_ftaskp = nullptr;
     }
     void visit(AstForeach* nodep) override {
@@ -3378,7 +3378,7 @@ private:
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
             iterateChildren(nodep);
         }
-        m_ds.m_dotSymp = VL_GET_SAVED(m_curSymp);
+        m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }
     void visit(AstWith* nodep) override {
         UINFO(5, "   " << nodep << endl);
@@ -3388,7 +3388,7 @@ private:
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
             iterateChildren(nodep);
         }
-        m_ds.m_dotSymp = VL_GET_SAVED(m_curSymp);
+        m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }
     void visit(AstLambdaArgRef* nodep) override {
         UINFO(5, "   " << nodep << endl);
@@ -3566,7 +3566,7 @@ private:
                 }
             }
         }
-        m_ds.m_dotSymp = VL_GET_SAVED(m_curSymp);
+        m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }
     void visit(AstRefDType* nodep) override {
         // Resolve its reference
