@@ -63,6 +63,12 @@ class SliceVisitor final : public VNVisitor {
     bool m_okInitArray = false;  // Allow InitArray children
 
     // METHODS
+
+    static bool areCompatible(const AstNodeDType* atypep, const AstNodeDType* btypep) {
+        if (atypep->type() == btypep->type() && atypep->same(btypep)) return true;
+        return atypep->isIntegralOrPacked() && btypep->isIntegralOrPacked();
+    }
+
     AstNodeExpr* cloneAndSel(AstNode* nodep, int elements, int elemIdx) {
         // Insert an ArraySel, except for a few special cases
         const AstUnpackArrayDType* const arrayp
@@ -92,15 +98,60 @@ class SliceVisitor final : public VNVisitor {
         AstNodeExpr* newp;
         if (const AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
             UINFO(9, "  cloneInitArray(" << elements << "," << elemIdx << ") " << nodep << endl);
-            const int leOffset = !arrayp->rangep()->ascending()
-                                     ? arrayp->rangep()->elementsConst() - 1 - elemIdx
-                                     : elemIdx;
-            AstNodeExpr* const itemp = initp->getIndexDefaultedValuep(leOffset);
-            if (!itemp) {
-                nodep->v3error("Array initialization has too few elements, need element "
-                               << elemIdx);
+
+            auto considerOrder = [](const auto* nodep, int idxFromLeft) -> int {
+                return !nodep->rangep()->ascending()
+                           ? nodep->rangep()->elementsConst() - 1 - idxFromLeft
+                           : idxFromLeft;
+            };
+            newp = nullptr;
+            int itemIdx = 0;
+            int i = 0;
+            const AstNodeDType* const expectedItemDTypep = arrayp->subDTypep()->skipRefp();
+            while (i <= elemIdx) {
+                AstNodeExpr* const itemp
+                    = initp->getIndexDefaultedValuep(considerOrder(arrayp, itemIdx));
+                if (!itemp) {
+                    nodep->v3error("Array initialization has too few elements, need element "
+                                   << elemIdx);
+                }
+                const AstNodeDType* itemRawDTypep = itemp->dtypep()->skipRefp();
+                if (areCompatible(expectedItemDTypep, itemRawDTypep)) {
+                    if (i == elemIdx) {
+                        newp = itemp->cloneTreePure(false);
+                        break;
+                    } else {  // Check the next item
+                        ++i;
+                        ++itemIdx;
+                    }
+                } else {
+                    const AstUnpackArrayDType* const itemDTypep
+                        = VN_CAST(itemRawDTypep, UnpackArrayDType);
+                    if (!itemDTypep
+                        || !expectedItemDTypep->same(itemDTypep->subDTypep()->skipRefp())) {
+                        itemp->v3error("Item is incompatible with the array type.");
+                        break;
+                    }
+                    if (i + itemDTypep->elementsConst()
+                        > elemIdx) {  // This item contains the element
+                        int offset = considerOrder(itemDTypep, elemIdx - i);
+                        if (AstSliceSel* const slicep = VN_CAST(itemp, SliceSel)) {
+                            offset += slicep->declRange().lo();
+                            newp = new AstArraySel{nodep->fileline(),
+                                                   slicep->lhsp()->cloneTreePure(false), offset};
+                        } else {
+                            newp = new AstArraySel{nodep->fileline(), itemp->cloneTreePure(false),
+                                                   offset};
+                        }
+                        break;
+                    } else {  // Check the next item
+                        i += itemDTypep->elementsConst();
+                        ++itemIdx;
+                    }
+                }
             }
-            newp = itemp ? itemp->cloneTreePure(false) : new AstConst{nodep->fileline(), 0};
+            if (!newp) newp = new AstConst{nodep->fileline(), 0};
+
         } else if (AstNodeCond* const snodep = VN_CAST(nodep, NodeCond)) {
             UINFO(9, "  cloneCond(" << elements << "," << elemIdx << ") " << nodep << endl);
             return snodep->cloneType(snodep->condp()->cloneTreePure(false),
