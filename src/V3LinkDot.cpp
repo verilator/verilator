@@ -2273,6 +2273,25 @@ private:
         if (nodep && nodep->isParam()) nodep->usedParam(true);
     }
 
+    static bool isTreeHierarchicalIdentExpr(AstNode* nodep) {
+        while (true) {
+            if (const AstMemberSel* mselp = VN_CAST(nodep, MemberSel)) {
+                nodep = mselp->fromp();
+                continue;
+            }
+            if (const AstSelBit* selbp = VN_CAST(nodep, SelBit)) {
+                if (VN_IS(selbp->bitp(), Const)) {
+                    nodep = selbp->fromp();
+                    continue;
+                } else {
+                    return false;
+                }
+            }
+            break;
+        }
+        return VN_IS(nodep, VarRef);
+    }
+
     // VISITs
     void visit(AstNetlist* nodep) override {
         // Recurse..., backward as must do packages before using packages
@@ -3383,11 +3402,10 @@ private:
     }
     void visit(AstFireEvent* nodep) override {
         visit(static_cast<AstNodeStmt*>(nodep));
-        const AstNodeExpr* operandp = nodep->operandp();
-        while (const AstMemberSel* mselp = VN_CAST(operandp, MemberSel)) operandp = mselp->fromp();
-        if (!VN_IS(operandp, VarRef)) {
-            operandp->v3warn(EVENTEXPR, "Non-identifier expression used to reference an event to "
-                                        "be sent. This is not a part of IEEE_1800-2017");
+        if (!isTreeHierarchicalIdentExpr(nodep->operandp())) {
+            nodep->operandp()->v3warn(EVENTEXPR,
+                                      "Non-identifier expression used to reference an event to "
+                                      "be sent. This is not a part of IEEE_1800-2017");
         }
     }
     void visit(AstWith* nodep) override {
