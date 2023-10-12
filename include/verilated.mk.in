@@ -9,13 +9,17 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 ######################################################################
 
-AR ?= @AR@
-CXX ?= @CXX@
-LINK ?= @CXX@
+# Tool names.
+# These are computed at configuration time, and most are not ?=
+# to avoid picking up potentilly incorrect Make implicit variables
+AR = @AR@
+CXX = @CXX@
+LINK = @CXX@
 OBJCACHE ?= @OBJCACHE@
-PERL ?= @PERL@
-PYTHON3 ?= @PYTHON3@
+PERL = @PERL@
+PYTHON3 = @PYTHON3@
 
+# Configuration time options
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
 
