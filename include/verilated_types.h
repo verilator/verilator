@@ -90,7 +90,7 @@ class VlProcess final {
     // MEMBERS
     int m_state;  // Current state of the process
     VlProcess* m_parentp = nullptr;  // Parent process, if exists
-    std::set<VlProcessRef> m_children;  // Active child processes
+    std::vector<VlProcessRef> m_children;  // Active child processes
 
 public:
     // TYPES
@@ -115,7 +115,7 @@ public:
     VlProcessRef spawn() {
         VlProcessRef childp = std::make_shared<VlProcess>(this);
 
-        m_children.insert(childp);
+        m_children.push_back(childp);
         return childp;
     }
 
@@ -125,13 +125,7 @@ public:
         if (!isActive()) sweep();
     }
     void sweep() {
-        for (auto it = begin(m_children); it != end(m_children);) {
-            if (!(*it)->isActive()) {
-                m_children.erase(it++);
-            } else {
-                it++;
-            }
-        }
+        m_children.erase(std::remove_if(m_children.begin(), m_children.end(), [](VlProcessRef p) { return !p->isActive(); }), m_children.end());
         if (!isActive() && m_parentp) m_parentp->sweep();
     }
     void disable() {
@@ -139,7 +133,7 @@ public:
         state(KILLED);
     }
     void disable_fork() {
-        while (!isLeaf()) (*begin(m_children))->disable();
+        while (!isLeaf()) m_children.front()->disable();
     }
     bool isActive() { return !isLeaf() || isAlive(); }
     bool isAlive() { return m_state != FINISHED && m_state != KILLED; }

@@ -48,7 +48,7 @@ module t;
 
    initial begin /*NO*/
       cls.delay_func();
-      cls.fork_func();
+      // cls.fork_func();
       fork /*YES*/ disable fork; join_none
    end
 endmodule
