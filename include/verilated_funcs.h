@@ -2111,60 +2111,60 @@ static inline WDataOutP VL_CONST_W_8X(int obits, WDataOutP o,
     VL_C_END_(obits, 8);
 }
 //
-static inline WDataOutP VL_CONSTHI_W_1X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_1X(int obits, int lsb, WDataOutP o,
                                         EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 1);
 }
-static inline WDataOutP VL_CONSTHI_W_2X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_2X(int obits, int lsb, WDataOutP o,
                                         EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 2);
 }
-static inline WDataOutP VL_CONSTHI_W_3X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_3X(int obits, int lsb, WDataOutP o,
                                         EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;  o[2] = d2;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 3);
 }
-static inline WDataOutP VL_CONSTHI_W_4X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_4X(int obits, int lsb, WDataOutP o,
                                         EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 4);
 }
-static inline WDataOutP VL_CONSTHI_W_5X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_5X(int obits, int lsb, WDataOutP o,
                                         EData d4,
                                         EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
+    ohi[4] = d4;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 5);
 }
-static inline WDataOutP VL_CONSTHI_W_6X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_6X(int obits, int lsb, WDataOutP o,
                                         EData d5, EData d4,
                                         EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;  o[5] = d5;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
+    ohi[4] = d4;  ohi[5] = d5;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 6);
 }
-static inline WDataOutP VL_CONSTHI_W_7X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_7X(int obits, int lsb, WDataOutP o,
                                         EData d6, EData d5, EData d4,
                                         EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;  o[5] = d5;  o[6] = d6;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
+    ohi[4] = d4;  ohi[5] = d5;  ohi[6] = d6;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 7);
 }
-static inline WDataOutP VL_CONSTHI_W_8X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_8X(int obits, int lsb, WDataOutP o,
                                         EData d7, EData d6, EData d5, EData d4,
                                         EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;  o[5] = d5;  o[6] = d6;  o[7] = d7;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
+    ohi[4] = d4;  ohi[5] = d5;  ohi[6] = d6;  ohi[7] = d7;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 8);
 }
 
