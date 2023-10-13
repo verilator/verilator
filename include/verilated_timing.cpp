@@ -153,11 +153,12 @@ void VlTriggerScheduler::dump(const char* eventDescription) const {
 // VlDynamicTriggerScheduler:: Methods
 
 bool VlDynamicTriggerScheduler::evaluate() {
+    m_anyTriggered = false;
     VL_DEBUG_IF(dump(););
     std::swap(m_suspended, m_evaluated);
     for (auto& coro : m_evaluated) coro.resume();
     m_evaluated.clear();
-    return !m_triggered.empty();
+    return m_anyTriggered;
 }
 
 void VlDynamicTriggerScheduler::doPostUpdates() {
