@@ -110,19 +110,15 @@ public:
     VlProcess(VlProcessRef parentp)
         : m_state{RUNNING}
         , m_parentp{parentp} {
-        parentp->attach(this);
+        m_parentp->attach(this);
     }
 
     ~VlProcess() {
         if (m_parentp) m_parentp->detach(this);
     }
 
-    void attach(VlProcess* childp) {
-        m_children.insert(childp);
-    }
-    void detach(VlProcess* childp) {
-        m_children.erase(childp);
-    }
+    void attach(VlProcess* childp) { m_children.insert(childp); }
+    void detach(VlProcess* childp) { m_children.erase(childp); }
 
     int state() { return m_state; }
     void state(int s) {
@@ -135,8 +131,6 @@ public:
     void disable_fork() {
         for (VlProcess* childp : m_children) childp->disable();
     }
-    bool isAlive() { return m_state != FINISHED && m_state != KILLED; }
-    bool isLeaf() { return m_children.empty(); }
 };
 
 inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
