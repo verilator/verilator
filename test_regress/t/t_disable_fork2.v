@@ -26,8 +26,11 @@ class Cls;
    task print; /*NO*/
       $write("*-* All ");
    endtask
-   task task_disable_fork; /*YES*/
+   task disable_fork_func; /*YES*/
       disable fork;
+   endtask
+   task common_func; /*YES*/
+      fork /*YES*/ #1; join_none
    endtask
    task fork_func; /*YES*/
       fork /*YES*/ #1 $stop; join_none
@@ -41,14 +44,15 @@ module t;
    Cls cls = new;
 
    initial begin /*YES*/
-      fork /*YES*/ cls.fork_func(); join_none
+      fork /*YES*/ cls.common_func(); join_none
+      cls.fork_func();
+      cls.disable_fork_func();
       cls.print();
-      cls.task_disable_fork();
    end
 
    initial begin /*NO*/
       cls.delay_func();
-      // cls.fork_func();
+      cls.common_func();
       fork /*YES*/ disable fork; join_none
    end
 endmodule
