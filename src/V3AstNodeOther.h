@@ -2105,6 +2105,7 @@ public:
              bool implied = false)
         : ASTGEN_SUPER_Begin(fl, name, stmtsp)
         , m_generate{generate}
+        , m_needProcess{false}
         , m_implied{implied} {}
     ASTGEN_MEMBERS_AstBegin;
     void dump(std::ostream& str) const override;
