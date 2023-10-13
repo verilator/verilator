@@ -160,14 +160,14 @@ public:
         if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     bool same(const AstNode* samep) const override {
-        const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
-        return (hi() == asamep->hi() && subDTypep() == asamep->subDTypep()
+        const AstNodeArrayDType* const asamep = VN_CAST(samep, NodeArrayDType);
+        return (asamep && hi() == asamep->hi() && subDTypep() == asamep->subDTypep()
                 && rangenp()->sameTree(asamep->rangenp()));
     }  // HashedDT doesn't recurse, so need to check children
     bool similarDType(const AstNodeDType* samep) const override {
-        const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
-        return (asamep && type() == samep->type() && hi() == asamep->hi()
-                && rangenp()->sameTree(asamep->rangenp())
+        if (type() != samep->type()) return false;
+        const AstNodeArrayDType* const asamep = VN_AS(samep, NodeArrayDType);
+        return (hi() == asamep->hi() && rangenp()->sameTree(asamep->rangenp())
                 && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
@@ -314,14 +314,16 @@ public:
         if (m_keyDTypep && m_keyDTypep->clonep()) m_keyDTypep = m_keyDTypep->clonep();
     }
     bool same(const AstNode* samep) const override {
-        const AstAssocArrayDType* const asamep = static_cast<const AstAssocArrayDType*>(samep);
+        const AstAssocArrayDType* const asamep = VN_CAST(samep, AssocArrayDType);
+        if (!asamep) return false;
         if (!asamep->subDTypep()) return false;
         if (!asamep->keyDTypep()) return false;
         return (subDTypep() == asamep->subDTypep() && keyDTypep() == asamep->keyDTypep());
     }
     bool similarDType(const AstNodeDType* samep) const override {
-        const AstAssocArrayDType* const asamep = static_cast<const AstAssocArrayDType*>(samep);
-        return type() == samep->type() && asamep->subDTypep()
+        if (type() != samep->type()) return false;
+        const AstAssocArrayDType* const asamep = VN_AS(samep, AssocArrayDType);
+        return asamep->subDTypep()
                && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
     string prettyDTypeName() const override;
@@ -507,8 +509,8 @@ public:
 public:
     ASTGEN_MEMBERS_AstCDType;
     bool same(const AstNode* samep) const override {
-        const AstCDType* const asamep = static_cast<const AstCDType*>(samep);
-        return m_name == asamep->m_name;
+        const AstCDType* const asamep = VN_CAST(samep, CDType);
+        return asamep && m_name == asamep->m_name;
     }
     bool similarDType(const AstNodeDType* samep) const override { return same(samep); }
     string name() const override VL_MT_STABLE { return m_name; }
@@ -547,8 +549,9 @@ public:
     const char* broken() const override;
     void cloneRelink() override;
     bool same(const AstNode* samep) const override {
-        const AstClassRefDType* const asamep = static_cast<const AstClassRefDType*>(samep);
-        return (m_classp == asamep->m_classp && m_classOrPackagep == asamep->m_classOrPackagep);
+        const AstClassRefDType* const asamep = VN_CAST(samep, ClassRefDType);
+        return (asamep && m_classp == asamep->m_classp
+                && m_classOrPackagep == asamep->m_classOrPackagep);
     }
     bool similarDType(const AstNodeDType* samep) const override {
         return this == samep || (type() == samep->type() && same(samep));
@@ -596,8 +599,8 @@ public:
         if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     bool same(const AstNode* samep) const override {
-        const AstConstDType* const sp = static_cast<const AstConstDType*>(samep);
-        return (m_refDTypep == sp->m_refDTypep);
+        const AstConstDType* const sp = VN_CAST(samep, ConstDType);
+        return (sp && m_refDTypep == sp->m_refDTypep);
     }
     bool similarDType(const AstNodeDType* samep) const override {
         return skipRefp()->similarDType(samep->skipRefp());
@@ -645,8 +648,8 @@ public:
     ASTGEN_MEMBERS_AstDefImplicitDType;
     int uniqueNum() const { return m_uniqueNum; }
     bool same(const AstNode* samep) const override {
-        const AstDefImplicitDType* const sp = static_cast<const AstDefImplicitDType*>(samep);
-        return uniqueNum() == sp->uniqueNum();
+        const AstDefImplicitDType* const sp = VN_CAST(samep, DefImplicitDType);
+        return sp && uniqueNum() == sp->uniqueNum();
     }
     bool similarDType(const AstNodeDType* samep) const override {
         return type() == samep->type() && same(samep);
@@ -696,13 +699,14 @@ public:
         if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     bool same(const AstNode* samep) const override {
-        const AstAssocArrayDType* const asamep = static_cast<const AstAssocArrayDType*>(samep);
-        if (!asamep->subDTypep()) return false;
+        const AstDynArrayDType* const asamep = VN_CAST(samep, DynArrayDType);
+        if (!asamep || !asamep->subDTypep()) return false;
         return subDTypep() == asamep->subDTypep();
     }
     bool similarDType(const AstNodeDType* samep) const override {
-        const AstAssocArrayDType* const asamep = static_cast<const AstAssocArrayDType*>(samep);
-        return type() == samep->type() && asamep->subDTypep()
+        if (type() != samep->type()) return false;
+        const AstDynArrayDType* const asamep = VN_AS(samep, DynArrayDType);
+        return asamep->subDTypep()
                && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
     string prettyDTypeName() const override;
@@ -787,8 +791,8 @@ public:
     }
     int uniqueNum() const { return m_uniqueNum; }
     bool same(const AstNode* samep) const override {
-        const AstEnumDType* const sp = static_cast<const AstEnumDType*>(samep);
-        return uniqueNum() == sp->uniqueNum();
+        const AstEnumDType* const sp = VN_CAST(samep, EnumDType);
+        return sp && uniqueNum() == sp->uniqueNum();
     }
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
@@ -982,9 +986,9 @@ public:
     AstNodeDType* skipRefToConstp() const override { return subDTypep()->skipRefToConstp(); }
     AstNodeDType* skipRefToEnump() const override { return subDTypep()->skipRefToEnump(); }
     bool similarDType(const AstNodeDType* samep) const override {
-        const AstParamTypeDType* const sp = static_cast<const AstParamTypeDType*>(samep);
-        return type() == samep->type() && sp
-               && this->subDTypep()->skipRefp()->similarDType(sp->subDTypep()->skipRefp());
+        if (type() != samep->type()) return false;
+        const AstParamTypeDType* const sp = VN_AS(samep, ParamTypeDType);
+        return this->subDTypep()->skipRefp()->similarDType(sp->subDTypep()->skipRefp());
     }
     int widthAlignBytes() const override { return dtypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return dtypep()->widthTotalBytes(); }
@@ -1055,13 +1059,14 @@ public:
         if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     bool same(const AstNode* samep) const override {
-        const AstQueueDType* const asamep = static_cast<const AstQueueDType*>(samep);
-        if (!asamep->subDTypep()) return false;
+        const AstQueueDType* const asamep = VN_CAST(samep, QueueDType);
+        if (!asamep || !asamep->subDTypep()) return false;
         return (subDTypep() == asamep->subDTypep());
     }
     bool similarDType(const AstNodeDType* samep) const override {
-        const AstQueueDType* const asamep = static_cast<const AstQueueDType*>(samep);
-        return type() == samep->type() && asamep->subDTypep()
+        if (type() != samep->type()) return false;
+        const AstQueueDType* const asamep = VN_AS(samep, QueueDType);
+        return asamep->subDTypep()
                && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
     void dumpSmall(std::ostream& str) const override;
@@ -1119,8 +1124,8 @@ public:
     const char* broken() const override;
     void cloneRelink() override;
     bool same(const AstNode* samep) const override {
-        const AstRefDType* const asamep = static_cast<const AstRefDType*>(samep);
-        return (m_typedefp == asamep->m_typedefp && m_refDTypep == asamep->m_refDTypep
+        const AstRefDType* const asamep = VN_CAST(samep, RefDType);
+        return (asamep && m_typedefp == asamep->m_typedefp && m_refDTypep == asamep->m_refDTypep
                 && m_name == asamep->m_name && m_classOrPackagep == asamep->m_classOrPackagep);
     }
     bool similarDType(const AstNodeDType* samep) const override {
@@ -1197,13 +1202,14 @@ public:
         if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }
     bool same(const AstNode* samep) const override {
-        const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
-        if (!asamep->subDTypep()) return false;
+        const AstSampleQueueDType* const asamep = VN_CAST(samep, SampleQueueDType);
+        if (!asamep || !asamep->subDTypep()) return false;
         return (subDTypep() == asamep->subDTypep());
     }
     bool similarDType(const AstNodeDType* samep) const override {
-        const AstSampleQueueDType* const asamep = static_cast<const AstSampleQueueDType*>(samep);
-        return type() == samep->type() && asamep->subDTypep()
+        if (type() != samep->type()) return false;
+        const AstSampleQueueDType* const asamep = VN_AS(samep, SampleQueueDType);
+        return asamep->subDTypep()
                && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
     void dumpSmall(std::ostream& str) const override;
@@ -1396,8 +1402,8 @@ public:
     ASTGEN_MEMBERS_AstUnpackArrayDType;
     string prettyDTypeName() const override;
     bool same(const AstNode* samep) const override {
-        const AstUnpackArrayDType* const sp = static_cast<const AstUnpackArrayDType*>(samep);
-        return m_isCompound == sp->m_isCompound;
+        const AstUnpackArrayDType* const sp = VN_CAST(samep, UnpackArrayDType);
+        return sp && m_isCompound == sp->m_isCompound;
     }
     // Outer dimension comes first. The first element is this node.
     std::vector<AstUnpackArrayDType*> unpackDimensions();
