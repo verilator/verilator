@@ -224,8 +224,22 @@ public:
 
     // METHODS
     static string nodeTextType(AstNode* nodep) {
-        if (VN_IS(nodep, Var)) {
-            return "variable";
+        if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+            if (varp->isIO() || varp->isIfaceRef()) {
+                return "port";
+            } else if (varp->isGParam()) {
+                return "parameter";
+            } else if (varp->varType() == VVarType::LPARAM) {
+                return "local parameter";
+            } else {
+                return "variable";
+            }
+        } else if (const AstParamTypeDType* const dtypep = VN_CAST(nodep, ParamTypeDType)) {
+            if (dtypep->isGParam()) {
+                return "parameter";
+            } else {
+                return "local parameter";
+            }
         } else if (VN_IS(nodep, Cell)) {
             return "instance";
         } else if (VN_IS(nodep, Task)) {
@@ -236,8 +250,6 @@ public:
             return "block";
         } else if (VN_IS(nodep, Iface)) {
             return "interface";
-        } else if (VN_IS(nodep, ParamTypeDType)) {
-            return "parameter type";
         } else {
             return nodep->prettyTypeName();
         }
@@ -2398,7 +2410,17 @@ private:
             // Don't connect parameter pin to module ports or vice versa
             if (nodep->param() != (refVarType == VVarType::GPARAM)) wrongPinType = true;
             if (wrongPinType) {
-                nodep->v3error(nodep->prettyNameQ() << " is not a valid " << whatp);
+                string targetTypep = LinkDotState::nodeTextType(foundp->nodep());
+                const bool isTypeNameVowel = targetTypep.c_str()[0] == 'i';  // for word 'instance'
+                targetTypep = (isTypeNameVowel ? "an " : "a ") + targetTypep;
+                if (nodep->param()) {
+                    nodep->v3error("Instance attempts to override "
+                                   << nodep->prettyNameQ() << " as a " << whatp << ", but it is "
+                                   << targetTypep);
+                } else {
+                    nodep->v3error("Instance attempts to connect to "
+                                   << nodep->prettyNameQ() << ", but it is " << targetTypep);
+                }
                 return;
             }
             markAndCheckPinDup(nodep, foundp->nodep(), whatp);
