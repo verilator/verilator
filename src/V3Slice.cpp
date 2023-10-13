@@ -67,11 +67,6 @@ class SliceVisitor final : public VNVisitor {
 
     // METHODS
 
-    static bool areCompatible(const AstNodeDType* atypep, const AstNodeDType* btypep) {
-        if (atypep->type() == btypep->type() && atypep->same(btypep)) return true;
-        return atypep->isIntegralOrPacked() && btypep->isIntegralOrPacked();
-    }
-
     AstNodeExpr* cloneAndSel(AstNode* nodep, int elements, int elemIdx) {
         // Insert an ArraySel, except for a few special cases
         const AstUnpackArrayDType* const arrayp
@@ -132,7 +127,9 @@ class SliceVisitor final : public VNVisitor {
                     m_assignError = true;
                 }
                 const AstNodeDType* itemRawDTypep = itemp->dtypep()->skipRefp();
-                if (areCompatible(expectedItemDTypep, itemRawDTypep)) {
+                const VCastable castable
+                    = AstNode::computeCastable(expectedItemDTypep, itemRawDTypep, itemp);
+                if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE) {
                     if (i == elemIdx) {
                         newp = itemp->cloneTreePure(false);
                         break;
