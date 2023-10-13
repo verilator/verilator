@@ -4130,7 +4130,10 @@ private:
                 if (defaultp) {
                     newpatp = defaultp->cloneTree(false);
                     patp = newpatp;
-                } else if (!VN_IS(arrayDtp, UnpackArrayDType) || allConstant) {
+                } else if (!(VN_IS(arrayDtp, UnpackArrayDType) && !allConstant)) {
+                    // If arrayDtp is an unpacked array and item is not constant,
+                    // the number of elemnt cannot be determined here as the dtype of each element
+                    // is not set yet. V3Slice checks for such cases.
                     nodep->v3error("Assignment pattern missed initializing elements: " << ent);
                 }
             } else {
