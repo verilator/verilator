@@ -965,6 +965,7 @@ class ParamVisitor final : public VNVisitor {
     std::vector<AstDot*> m_dots;  // Dot references to process
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
     std::multimap<int, AstNodeModule*> m_workQueue;  // Modules left to process
+    std::vector<AstClass*> m_paramClasses;  // Parameterized classes
 
     // Map from AstNodeModule to set of all AstNodeModules that instantiates it.
     std::unordered_map<AstNodeModule*, std::unordered_set<AstNodeModule*>> m_parentps;
@@ -1090,7 +1091,7 @@ class ParamVisitor final : public VNVisitor {
             if (classp->hasGParam()) {
                 // Don't enter into a definition.
                 // If a class is used, it will be visited through a reference
-                VL_DO_DANGLING(pushUnlinkDeletep(classp), classp);
+                m_paramClasses.push_back(classp);
                 return;
             }
         }
@@ -1410,6 +1411,10 @@ public:
 
             // Re-insert modules
             for (AstNodeModule* const modp : modps) netlistp->addModulesp(modp);
+
+            for (AstClass* const classp : m_paramClasses) {
+                VL_DO_DANGLING(pushDeletep(classp->unlinkFrBack()), classp);
+            }
         }
     }
     ~ParamVisitor() override = default;
