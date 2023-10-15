@@ -836,9 +836,9 @@ class ParamProcessor final : public VNDeleter {
                              ifaceRefRefs /*ref*/);
 
         if (!any_overrides && srcModpr->hasGParam() && VN_IS(srcModpr, Class)) {
-            // For classes, parameter propagation may modify the original node, which makes
-            // further copies incorrect, so we must make a copy even for the class references
-            // without parameter overrides.
+            // Parameter propagation may modify the original node, which makes further copies
+            // incorrect. For classes, we must make a copy even for the class references without
+            // parameter overrides.
             // For other modules and interfaces, the original node is visited after copying is
             // done, so there's no such problem.
             longname += "_original";
@@ -1013,8 +1013,7 @@ class ParamVisitor final : public VNVisitor {
                     srcModp = modCellp->modp();
                 } else if (const auto* classRefp = VN_CAST(cellp, ClassOrPackageRef)) {
                     const AstNode* const clsOrPkgNodep = classRefp->classOrPackageNodep();
-                    if (VN_IS(clsOrPkgNodep, Typedef) || VN_IS(clsOrPkgNodep, ParamTypeDType))
-                        continue;
+                    if (!VN_IS(clsOrPkgNodep, Class)) continue;  // Skip Typedef/ParamTypeDType
                     srcModp = classRefp->classOrPackagep();
                 } else if (const auto* classRefp = VN_CAST(cellp, ClassRefDType)) {
                     srcModp = classRefp->classp();
@@ -1413,6 +1412,7 @@ public:
             for (AstNodeModule* const modp : modps) netlistp->addModulesp(modp);
 
             for (AstClass* const classp : m_paramClasses) {
+                // Remove the original unparameterized node, which is not necessary anymore
                 VL_DO_DANGLING(pushDeletep(classp->unlinkFrBack()), classp);
             }
         }
