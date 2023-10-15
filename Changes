@@ -38,6 +38,7 @@ Verilator 5.017 devel
 * Fix inlining of real functions miscasting (#4543). [Andrew Nolte]
 * Fix broken link error for enum references (#4551). [Anthony Donlon]
 * Fix instance arrays connecting to array of structs (#4557). [raphmaster]
+* Fix shift to remove operation side effects (#4563).
 * Fix preprocessor to show `line 2 on resumed file.
 
 
