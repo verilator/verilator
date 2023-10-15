@@ -4120,6 +4120,7 @@ private:
         PatVecMap patmap = patVectorMap(nodep, range);
         UINFO(9, "ent " << range.left() << " to " << range.right() << endl);
         AstNode* newp = nullptr;
+        bool allConstant = true;
         for (int entn = 0, ent = range.left(); entn < range.elements();
              ++entn, ent += range.leftToRightInc()) {
             AstPatMember* newpatp = nullptr;
@@ -4129,7 +4130,10 @@ private:
                 if (defaultp) {
                     newpatp = defaultp->cloneTree(false);
                     patp = newpatp;
-                } else {
+                } else if (!(VN_IS(arrayDtp, UnpackArrayDType) && !allConstant)) {
+                    // If arrayDtp is an unpacked array and item is not constant,
+                    // the number of elemnt cannot be determined here as the dtype of each element
+                    // is not set yet. V3Slice checks for such cases.
                     nodep->v3error("Assignment pattern missed initializing elements: " << ent);
                 }
             } else {
@@ -4140,6 +4144,7 @@ private:
             if (patp) {
                 // Don't want the RHS an array
                 patp->dtypep(arrayDtp->subDTypep());
+                allConstant &= VN_IS(patp->lhssp(), Const);
                 AstNodeExpr* const valuep = patternMemberValueIterate(patp);
                 if (VN_IS(arrayDtp, UnpackArrayDType)) {
                     if (!newp) {
