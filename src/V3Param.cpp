@@ -838,7 +838,7 @@ class ParamProcessor final : public VNDeleter {
         if (!any_overrides && srcModpr->hasGParam() && VN_IS(srcModpr, Class)) {
             // For classes, parameter propagation may modify the original node, which makes
             // further copies incorrect, so we must make a copy even for the class references
-            // without parameter override.
+            // without parameter overrides.
             // For other modules and interfaces, the original node is visited after copying is
             // done, so there's no such problem.
             longname += "_original";
