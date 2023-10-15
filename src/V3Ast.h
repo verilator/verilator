@@ -1713,8 +1713,8 @@ class AstNode VL_NOT_FINAL {
     }
 
 private:
-    AstNode* cloneTreeIter();
-    AstNode* cloneTreeIterList();
+    AstNode* cloneTreeIter(bool needPure);
+    AstNode* cloneTreeIterList(bool needPure);
     void checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE;
     bool gateTreeIter() const;
     static bool sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext,
@@ -2074,8 +2074,8 @@ public:
                              AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
-    AstNode* cloneTree(bool cloneNextLink);  // Not const, as sets clonep() on original nodep //
-    AstNode* cloneTreePure(bool cloneNextLink) { return cloneTree(cloneNextLink); }
+    AstNode* cloneTree(bool cloneNextLink, bool needPure = false);  // Not const, as sets clonep() on original nodep
+    AstNode* cloneTreePure(bool cloneNextLink) { return cloneTree(cloneNextLink, true); }
     bool gateTree() { return gateTreeIter(); }  // Is tree isGateOptimizable?
     inline bool sameTree(const AstNode* node2p) const;  // Does tree of this == node2p?
     // Does tree of this == node2p?, not allowing non-isGateOptimizable

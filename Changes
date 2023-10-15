@@ -13,6 +13,7 @@ Verilator 5.017 devel
 
 **Minor:**
 
+* Add SIDEEFFECT warning on mishandled side effect cases.
 * Add trace() API even when Verilated without --trace (#4462). [phelter]
 * Add warning on interface instantiation without parens (#4094). [Gökçe Aydos]
 * Support randc (#4349).

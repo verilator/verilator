@@ -112,10 +112,12 @@ module ports
       // - Setup read multiplexer -
       for ( j = PORTID_A; j <= PORTID_D; j++ )
         begin
+          // verilator lint_off SIDEEFFECT
           if ( padsif.IsPort( j ) )
             data[j] = '{ port[j].dir, port[j].out, 8'h00, 8'h00 };
           else
             data[j] = '{ 8'h00, 8'h00, 8'h00, 8'h00 };
+          // verilator lint_on SIDEEFFECT
         end
 
       // - Connect "genbusif" -
