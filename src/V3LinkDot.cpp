@@ -236,9 +236,9 @@ public:
             }
         } else if (const AstParamTypeDType* const dtypep = VN_CAST(nodep, ParamTypeDType)) {
             if (dtypep->isGParam()) {
-                return "parameter";
+                return "type parameter";
             } else {
-                return "local parameter";
+                return "local type parameter";
             }
         } else if (VN_IS(nodep, Cell)) {
             return "instance";
@@ -2410,16 +2410,15 @@ private:
             // Don't connect parameter pin to module ports or vice versa
             if (nodep->param() != (refVarType == VVarType::GPARAM)) wrongPinType = true;
             if (wrongPinType) {
-                string targetTypep = LinkDotState::nodeTextType(foundp->nodep());
-                const bool isTypeNameVowel = targetTypep.c_str()[0] == 'i';  // for word 'instance'
-                targetTypep = (isTypeNameVowel ? "an " : "a ") + targetTypep;
+                string targetType = LinkDotState::nodeTextType(foundp->nodep());
+                targetType = VString::aOrAn(targetType) + ' ' + targetType;
                 if (nodep->param()) {
                     nodep->v3error("Instance attempts to override "
                                    << nodep->prettyNameQ() << " as a " << whatp << ", but it is "
-                                   << targetTypep);
+                                   << targetType);
                 } else {
                     nodep->v3error("Instance attempts to connect to "
-                                   << nodep->prettyNameQ() << ", but it is " << targetTypep);
+                                   << nodep->prettyNameQ() << ", but it is " << targetType);
                 }
                 return;
             }
