@@ -2066,8 +2066,9 @@ bool AstWildcardArrayDType::same(const AstNode* samep) const {
     return (subDTypep() == asamep->subDTypep());
 }
 bool AstWildcardArrayDType::similarDType(const AstNodeDType* samep) const {
+    if (type() != samep->type()) return false;
     const AstWildcardArrayDType* const asamep = VN_DBG_AS(samep, WildcardArrayDType);
-    return type() == samep->type() && asamep->subDTypep()
+    return asamep->subDTypep()
            && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
 }
 void AstSampleQueueDType::dumpSmall(std::ostream& str) const {
@@ -2084,8 +2085,9 @@ bool AstUnsizedArrayDType::same(const AstNode* samep) const {
     return (subDTypep() == asamep->subDTypep());
 }
 bool AstUnsizedArrayDType::similarDType(const AstNodeDType* samep) const {
+    if (type() != samep->type()) return false;
     const AstUnsizedArrayDType* const asamep = VN_DBG_AS(samep, UnsizedArrayDType);
-    return type() == samep->type() && asamep->subDTypep()
+    return asamep->subDTypep()
            && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
 }
 void AstEmptyQueueDType::dumpSmall(std::ostream& str) const {

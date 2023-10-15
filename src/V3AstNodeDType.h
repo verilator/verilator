@@ -165,9 +165,9 @@ public:
                 && rangenp()->sameTree(asamep->rangenp()));
     }  // HashedDT doesn't recurse, so need to check children
     bool similarDType(const AstNodeDType* samep) const override {
+        if (type() != samep->type()) return false;
         const AstNodeArrayDType* const asamep = VN_DBG_AS(samep, NodeArrayDType);
-        return (asamep && type() == samep->type() && hi() == asamep->hi()
-                && rangenp()->sameTree(asamep->rangenp())
+        return (hi() == asamep->hi() && rangenp()->sameTree(asamep->rangenp())
                 && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
@@ -320,8 +320,9 @@ public:
         return (subDTypep() == asamep->subDTypep() && keyDTypep() == asamep->keyDTypep());
     }
     bool similarDType(const AstNodeDType* samep) const override {
+        if (type() != samep->type()) return false;
         const AstAssocArrayDType* const asamep = VN_DBG_AS(samep, AssocArrayDType);
-        return type() == samep->type() && asamep->subDTypep()
+        return asamep->subDTypep()
                && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
     string prettyDTypeName() const override;
@@ -701,8 +702,9 @@ public:
         return subDTypep() == asamep->subDTypep();
     }
     bool similarDType(const AstNodeDType* samep) const override {
+        if (type() != samep->type()) return false;
         const AstDynArrayDType* const asamep = VN_DBG_AS(samep, DynArrayDType);
-        return type() == samep->type() && asamep->subDTypep()
+        return asamep->subDTypep()
                && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
     string prettyDTypeName() const override;
@@ -982,9 +984,9 @@ public:
     AstNodeDType* skipRefToConstp() const override { return subDTypep()->skipRefToConstp(); }
     AstNodeDType* skipRefToEnump() const override { return subDTypep()->skipRefToEnump(); }
     bool similarDType(const AstNodeDType* samep) const override {
+        if (type() != samep->type()) return false;
         const AstParamTypeDType* const sp = VN_DBG_AS(samep, ParamTypeDType);
-        return type() == samep->type() && sp
-               && this->subDTypep()->skipRefp()->similarDType(sp->subDTypep()->skipRefp());
+        return this->subDTypep()->skipRefp()->similarDType(sp->subDTypep()->skipRefp());
     }
     int widthAlignBytes() const override { return dtypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return dtypep()->widthTotalBytes(); }
@@ -1060,8 +1062,9 @@ public:
         return (subDTypep() == asamep->subDTypep());
     }
     bool similarDType(const AstNodeDType* samep) const override {
+        if (type() != samep->type()) return false;
         const AstQueueDType* const asamep = VN_DBG_AS(samep, QueueDType);
-        return type() == samep->type() && asamep->subDTypep()
+        return asamep->subDTypep()
                && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
     void dumpSmall(std::ostream& str) const override;
@@ -1202,8 +1205,9 @@ public:
         return (subDTypep() == asamep->subDTypep());
     }
     bool similarDType(const AstNodeDType* samep) const override {
+        if (type() != samep->type()) return false;
         const AstSampleQueueDType* const asamep = VN_DBG_AS(samep, SampleQueueDType);
-        return type() == samep->type() && asamep->subDTypep()
+        return asamep->subDTypep()
                && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
     void dumpSmall(std::ostream& str) const override;
