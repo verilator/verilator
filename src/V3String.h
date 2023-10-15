@@ -131,8 +131,8 @@ public:
     // Return true if char is valid character in word
     static bool isWordChar(char c) { return isalnum(c) || c == '_'; }
     // Return proper article (a/an) for a word. May be inaccurate for some special words
-    static string aOrAn(const char *word);
-    static string aOrAn(const string &word) { return aOrAn(word.c_str()); }
+    static string aOrAn(const char* word);
+    static string aOrAn(const string& word) { return aOrAn(word.c_str()); }
 };
 
 //######################################################################
