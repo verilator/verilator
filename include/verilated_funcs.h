@@ -1647,6 +1647,14 @@ static inline void _vl_shiftl_inplace_w(int obits, WDataOutP iowp,
 // EMIT_RULE: VL_SHIFTL:  oclean=lclean; rclean==clean;
 // Important: Unlike most other funcs, the shift might well be a computed
 // expression.  Thus consider this when optimizing.  (And perhaps have 2 funcs?)
+static inline IData VL_SHIFTL_IIQ(int obits, int, int, IData lhs, QData rhs) VL_MT_SAFE {
+    if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
+    return VL_CLEAN_II(obits, obits, lhs << rhs);
+}
+static inline QData VL_SHIFTL_QQQ(int obits, int, int, QData lhs, QData rhs) VL_MT_SAFE {
+    if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
+    return VL_CLEAN_QQ(obits, obits, lhs << rhs);
+}
 static inline WDataOutP VL_SHIFTL_WWI(int obits, int, int, WDataOutP owp, WDataInP const lwp,
                                       IData rd) VL_MT_SAFE {
     const int word_shift = VL_BITWORD_E(rd);
@@ -1686,10 +1694,6 @@ static inline IData VL_SHIFTL_IIW(int obits, int, int rbits, IData lhs,
     }
     return VL_CLEAN_II(obits, obits, lhs << rwp[0]);
 }
-static inline IData VL_SHIFTL_IIQ(int obits, int, int, IData lhs, QData rhs) VL_MT_SAFE {
-    if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
-    return VL_CLEAN_II(obits, obits, lhs << rhs);
-}
 static inline QData VL_SHIFTL_QQW(int obits, int, int rbits, QData lhs,
                                   WDataInP const rwp) VL_MT_SAFE {
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) {
@@ -1700,14 +1704,18 @@ static inline QData VL_SHIFTL_QQW(int obits, int, int rbits, QData lhs,
     // Above checks rwp[1]==0 so not needed in below shift
     return VL_CLEAN_QQ(obits, obits, lhs << (static_cast<QData>(rwp[0])));
 }
-static inline QData VL_SHIFTL_QQQ(int obits, int, int, QData lhs, QData rhs) VL_MT_SAFE {
-    if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
-    return VL_CLEAN_QQ(obits, obits, lhs << rhs);
-}
 
 // EMIT_RULE: VL_SHIFTR:  oclean=lclean; rclean==clean;
 // Important: Unlike most other funcs, the shift might well be a computed
 // expression.  Thus consider this when optimizing.  (And perhaps have 2 funcs?)
+static inline IData VL_SHIFTR_IIQ(int obits, int, int, IData lhs, QData rhs) VL_PURE {
+    if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
+    return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
+}
+static inline QData VL_SHIFTR_QQQ(int obits, int, int, QData lhs, QData rhs) VL_PURE {
+    if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
+    return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
+}
 static inline WDataOutP VL_SHIFTR_WWI(int obits, int, int, WDataOutP owp, WDataInP const lwp,
                                       IData rd) VL_MT_SAFE {
     const int word_shift = VL_BITWORD_E(rd);  // Maybe 0
@@ -1751,29 +1759,17 @@ static inline WDataOutP VL_SHIFTR_WWQ(int obits, int lbits, int rbits, WDataOutP
 static inline IData VL_SHIFTR_IIW(int obits, int, int rbits, IData lhs,
                                   WDataInP const rwp) VL_PURE {
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) {
-        if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
-            return 0;
-        }
+        if (VL_UNLIKELY(rwp[i])) return 0;  // Huge shift 1>>32 or more
     }
     return VL_CLEAN_II(obits, obits, lhs >> rwp[0]);
 }
 static inline QData VL_SHIFTR_QQW(int obits, int, int rbits, QData lhs,
                                   WDataInP const rwp) VL_PURE {
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) {
-        if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
-            return 0;
-        }
+        if (VL_UNLIKELY(rwp[i])) return 0;  // Huge shift 1>>32 or more
     }
     // Above checks rwp[1]==0 so not needed in below shift
     return VL_CLEAN_QQ(obits, obits, lhs >> (static_cast<QData>(rwp[0])));
-}
-static inline IData VL_SHIFTR_IIQ(int obits, int, int, IData lhs, QData rhs) VL_PURE {
-    if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
-    return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
-}
-static inline QData VL_SHIFTR_QQQ(int obits, int, int, QData lhs, QData rhs) VL_PURE {
-    if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
-    return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
 }
 
 // EMIT_RULE: VL_SHIFTRS:  oclean=false; lclean=clean, rclean==clean;
