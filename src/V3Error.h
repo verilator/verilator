@@ -136,6 +136,7 @@ public:
         RISEFALLDLY,    // Unsupported: rise/fall/turn-off delays
         SELRANGE,       // Selection index out of range
         SHORTREAL,      // Shortreal not supported
+        SIDEEFFECT,     // Sideeffect ignored
         SPLITVAR,       // Cannot split the variable
         STATICVAR,      // Static variable declared in a loop with a declaration assignment
         STMTDLY,        // Delayed statement
@@ -203,7 +204,8 @@ public:
             "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
             "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
-            "SELRANGE", "SHORTREAL", "SPLITVAR", "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
+            "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPLITVAR",
+            "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDPARAM", "UNUSEDSIGNAL",
@@ -231,7 +233,8 @@ public:
     }
     // Warnings to mention manual
     bool mentionManual() const VL_MT_SAFE {
-        return (m_e == EC_FATALSRC || m_e == SYMRSVDWORD || m_e == ZERODLY || pretendError());
+        return (m_e == EC_FATALSRC || m_e == SIDEEFFECT || m_e == SYMRSVDWORD || m_e == ZERODLY
+                || pretendError());
     }
     // Warnings that are lint only
     bool lintError() const VL_MT_SAFE {

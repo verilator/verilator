@@ -33,7 +33,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //======================================================================
 // Statics
 
-uint32_t VIsCached::s_cachedCntGbl = 1;
+uint64_t VIsCached::s_cachedCntGbl = 1;
 
 uint64_t AstNode::s_editCntLast = 0;
 uint64_t AstNode::s_editCntGbl = 0;  // Hot cache line
@@ -801,26 +801,34 @@ void AstNode::swapWith(AstNode* bp) {
 //======================================================================
 // Clone
 
-AstNode* AstNode::cloneTreeIter() {
+AstNode* AstNode::cloneTreeIter(bool needPure) {
     // private: Clone single node and children
+    if (VL_UNLIKELY(needPure && !isPure())) {
+        this->v3warn(SIDEEFFECT,
+                     "Expression side effect may be mishandled\n"
+                         << this->warnMore()
+                         << "... Suggest use a temporary variable in place of this expression");
+        // this->v3fatalSrc("cloneTreePure debug backtrace");  // Comment in to debug where caused
+        // it
+    }
     AstNode* const newp = this->clone();
-    if (this->m_op1p) newp->op1p(this->m_op1p->cloneTreeIterList());
-    if (this->m_op2p) newp->op2p(this->m_op2p->cloneTreeIterList());
-    if (this->m_op3p) newp->op3p(this->m_op3p->cloneTreeIterList());
-    if (this->m_op4p) newp->op4p(this->m_op4p->cloneTreeIterList());
+    if (this->m_op1p) newp->op1p(this->m_op1p->cloneTreeIterList(needPure));
+    if (this->m_op2p) newp->op2p(this->m_op2p->cloneTreeIterList(needPure));
+    if (this->m_op3p) newp->op3p(this->m_op3p->cloneTreeIterList(needPure));
+    if (this->m_op4p) newp->op4p(this->m_op4p->cloneTreeIterList(needPure));
     newp->m_iterpp = nullptr;
     newp->clonep(this);  // Save pointers to/from both to simplify relinking.
     this->clonep(newp);  // Save pointers to/from both to simplify relinking.
     return newp;
 }
 
-AstNode* AstNode::cloneTreeIterList() {
+AstNode* AstNode::cloneTreeIterList(bool needPure) {
     // private: Clone list of nodes, set m_headtailp
     AstNode* newheadp = nullptr;
     AstNode* newtailp = nullptr;
     // Audited to make sure this is never nullptr
     for (AstNode* oldp = this; oldp; oldp = oldp->m_nextp) {
-        AstNode* const newp = oldp->cloneTreeIter();
+        AstNode* const newp = oldp->cloneTreeIter(needPure);
         newp->m_headtailp = nullptr;
         newp->m_backp = newtailp;
         if (newtailp) newtailp->m_nextp = newp;
@@ -832,14 +840,14 @@ AstNode* AstNode::cloneTreeIterList() {
     return newheadp;
 }
 
-AstNode* AstNode::cloneTree(bool cloneNextLink) {
+AstNode* AstNode::cloneTree(bool cloneNextLink, bool needPure) {
     debugTreeChange(this, "-cloneThs: ", __LINE__, cloneNextLink);
     cloneClearTree();
     AstNode* newp;
     if (cloneNextLink && this->m_nextp) {
-        newp = cloneTreeIterList();
+        newp = cloneTreeIterList(needPure);
     } else {
-        newp = cloneTreeIter();
+        newp = cloneTreeIter(needPure);
         newp->m_nextp = nullptr;
         newp->m_headtailp = newp;
     }

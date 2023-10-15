@@ -64,7 +64,6 @@ public:
 
     // Wrap This expression into an AstStmtExpr to denote it occurs in statement position
     inline AstStmtExpr* makeStmt();
-    virtual void clearCachedPurity(){};  // Most nodes don't cache their purity
 };
 class AstNodeBiop VL_NOT_FINAL : public AstNodeExpr {
     // Binary expression
@@ -98,7 +97,6 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override;
 
 private:
     bool getPurityRecurse() const { return lhsp()->isPure() && rhsp()->isPure(); }
@@ -265,7 +263,6 @@ public:
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
-    void clearCachedPurity() override;
 
 private:
     bool getPurityRecurse() const;
@@ -296,7 +293,6 @@ public:
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override;
 
 private:
     bool getPurityRecurse() const {
@@ -340,7 +336,6 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override;
 
 private:
     bool getPurityRecurse() const {
@@ -393,7 +388,6 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override;
 
 private:
     bool getPurityRecurse() const {
@@ -473,7 +467,6 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override;
 };
 class AstNodeSystemUniopD VL_NOT_FINAL : public AstNodeUniop {
 public:
@@ -3279,6 +3272,30 @@ public:
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return false; }
 };
+class AstShiftLOvr final : public AstNodeBiop {
+    // Like ShiftL but checks for an over shift and returns zeros
+    // TODO: All Verilog shifts should start as these and later get demoted to AstShiftL
+public:
+    AstShiftLOvr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
+        : ASTGEN_SUPER_ShiftLOvr(fl, lhsp, rhsp) {
+        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+    }
+    ASTGEN_MEMBERS_AstShiftLOvr;
+    AstNodeExpr* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
+        return new AstShiftLOvr{fileline(), lhsp, rhsp};
+    }
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opShiftL(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %f<< %r)"; }
+    string emitC() override { return "VL_SHIFTL_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitSimpleOperator() override { return ""; }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return true; }
+    bool sizeMattersLhs() const override { return true; }
+    bool sizeMattersRhs() const override { return false; }
+};
 class AstShiftR final : public AstNodeBiop {
 public:
     AstShiftR(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
@@ -3304,6 +3321,31 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
 };
+class AstShiftROvr final : public AstNodeBiop {
+    // Like ShiftR but checks for an over shift and returns zeros
+    // TODO: All Verilog shifts should start as these and later get demoted to AstShiftR
+public:
+    AstShiftROvr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
+        : ASTGEN_SUPER_ShiftROvr(fl, lhsp, rhsp) {
+        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+    }
+    ASTGEN_MEMBERS_AstShiftROvr;
+    AstNodeExpr* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
+        return new AstShiftROvr{fileline(), lhsp, rhsp};
+    }
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opShiftR(lhs, rhs);
+    }
+    string emitVerilog() override { return "%k(%l %f>> %r)"; }
+    string emitC() override { return "VL_SHIFTR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitSimpleOperator() override { return ""; }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return true; }
+    bool cleanRhs() const override { return true; }
+    // LHS size might be > output size, so don't want to force size
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+};
 class AstShiftRS final : public AstNodeBiop {
     // Shift right with sign extension, >>> operator
     // Output data type's width determines which bit is used for sign extension
@@ -3316,6 +3358,33 @@ public:
     ASTGEN_MEMBERS_AstShiftRS;
     AstNodeExpr* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         return new AstShiftRS{fileline(), lhsp, rhsp};
+    }
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
+        out.opShiftRS(lhs, rhs, lhsp()->widthMinV());
+    }
+    string emitVerilog() override { return "%k(%l %f>>> %r)"; }
+    string emitC() override { return "VL_SHIFTRS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitSimpleOperator() override { return ""; }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return true; }
+    bool cleanRhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    bool signedFlavor() const override { return true; }
+};
+class AstShiftRSOvr final : public AstNodeBiop {
+    // Shift right with sign extension, >>> operator, checks for an over shift and returns zeros
+    // Output data type's width determines which bit is used for sign extension
+    // TODO: All Verilog shifts should start as these and later get demoted to AstShiftRSOvr
+public:
+    AstShiftRSOvr(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
+        : ASTGEN_SUPER_ShiftRSOvr(fl, lhsp, rhsp) {
+        // Important that widthMin be correct, as opExtend requires it after V3Expand
+        if (setwidth) dtypeSetLogicSized(setwidth, VSigning::SIGNED);
+    }
+    ASTGEN_MEMBERS_AstShiftRSOvr;
+    AstNodeExpr* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
+        return new AstShiftRSOvr{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opShiftRS(lhs, rhs, lhsp()->widthMinV());

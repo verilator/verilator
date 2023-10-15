@@ -396,7 +396,7 @@ private:
             UINFO(9, "   New pkg-taskref " << nodep << endl);
         } else if (!VN_IS(nodep, MethodCall)) {
             nodep->taskp(nullptr);
-            nodep->clearCachedPurity();
+            VIsCached::clearCacheTree();
             UINFO(9, "   New pkg-taskref " << nodep << endl);
         }
         iterateChildren(nodep);
