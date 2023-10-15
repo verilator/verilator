@@ -159,8 +159,9 @@ class SliceVisitor final : public VNVisitor {
                             newp = new AstArraySel{nodep->fileline(), itemp->cloneTreePure(false),
                                                    offset};
                         }
+
                         if (!m_assignError && elemIdx + 1 == elements
-                            && i + itemDTypep->elementsConst() < elements) {
+                            && i + itemDTypep->elementsConst() > elements) {
                             nodep->v3error("Array initialization has too many elements. "
                                            << elements << " elements are expected, but at least "
                                            << i + itemDTypep->elementsConst()
