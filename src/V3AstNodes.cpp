@@ -277,11 +277,9 @@ int AstBasicDType::widthTotalBytes() const {
 
 bool AstBasicDType::same(const AstNode* samep) const {
     const AstBasicDType* const sp = static_cast<const AstBasicDType*>(samep);
-    if (!rangep() && !sp->rangep() && m == sp->m) {
-        return true;
-    } else {
-        return m == sp->m && rangep() && rangep()->sameTree(sp->rangep());
-    }
+    if (!(m == sp->m) || numeric() != sp->numeric()) return false;
+    if (!rangep() && !sp->rangep()) return true;
+    return rangep() && rangep()->sameTree(sp->rangep());
 }
 
 int AstNodeUOrStructDType::widthTotalBytes() const {
