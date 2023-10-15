@@ -273,6 +273,17 @@ bool VString::endsWith(const string& str, const string& suffix) {
     if (str.length() < suffix.length()) return false;
     return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
 }
+string VString::aOrAn(const char* word) {
+    switch (word[0]) {
+    case '\0': return "";
+    case 'a':
+    case 'e':
+    case 'i':
+    case 'o':
+    case 'u': return "an";
+    default: return "a";
+    }
+}
 
 //######################################################################
 // VHashSha256

@@ -6,12 +6,6 @@
 
 // Contributed by M W Lund, Atmel Corporation.
 
-`ifdef VERILATOR  //TODO
- `define PACKED packed
-`else
- `define  packed
-`endif
-
 module ports
  #( parameter
       ID = 1 )
@@ -42,12 +36,12 @@ module ports
 
 
   // **** Interal Registers ****
-  struct `PACKED
+  struct
   {
     logic [7:0][1:0] in;
     logic [7:0]      dir;
     logic [7:0]      out;
-    struct `PACKED
+    struct
     {
     logic [7:2]      reserved;
     logic            pullupen;
@@ -118,10 +112,12 @@ module ports
       // - Setup read multiplexer -
       for ( j = PORTID_A; j <= PORTID_D; j++ )
         begin
+          // verilator lint_off SIDEEFFECT
           if ( padsif.IsPort( j ) )
             data[j] = '{ port[j].dir, port[j].out, 8'h00, 8'h00 };
           else
             data[j] = '{ 8'h00, 8'h00, 8'h00, 8'h00 };
+          // verilator lint_on SIDEEFFECT
         end
 
       // - Connect "genbusif" -

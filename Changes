@@ -13,6 +13,7 @@ Verilator 5.017 devel
 
 **Minor:**
 
+* Add SIDEEFFECT warning on mishandled side effect cases.
 * Add trace() API even when Verilated without --trace (#4462). [phelter]
 * Add warning on interface instantiation without parens (#4094). [Gökçe Aydos]
 * Support randc (#4349).
@@ -37,6 +38,8 @@ Verilator 5.017 devel
 * Fix object destruction after a copy constructor (#4540) (#4541). [Ryszard Rozak, Antmicro Ltd.]
 * Fix inlining of real functions miscasting (#4543). [Andrew Nolte]
 * Fix broken link error for enum references (#4551). [Anthony Donlon]
+* Fix instance arrays connecting to array of structs (#4557). [raphmaster]
+* Fix shift to remove operation side effects (#4563).
 * Fix preprocessor to show `line 2 on resumed file.
 
 

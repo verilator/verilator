@@ -171,10 +171,9 @@ class VIsCached final {
     // Used in some nodes to cache results of boolean methods
     // If cachedCnt == 0, not cached
     // else if cachedCnt == s_cachedCntGbl, then m_state is if cached
-    uint32_t m_cachedCnt : 31;  // Mark of when cache was computed
-    uint32_t m_state : 1;
-    static uint32_t s_cachedCntGbl;  // Global computed count
-    static constexpr uint32_t MAX_CNT = (1UL << 31) - 1;  // Max for m_cachedCnt
+    uint64_t m_cachedCnt : 63;  // Mark of when cache was computed
+    uint64_t m_state : 1;
+    static uint64_t s_cachedCntGbl;  // Global computed count
 
 public:
     VIsCached()
@@ -192,7 +191,8 @@ public:
     }
     static void clearCacheTree() {
         ++s_cachedCntGbl;
-        UASSERT_STATIC(s_cachedCntGbl < MAX_CNT, "Overflow of cache counting");
+        // 64 bits so won't overflow
+        // UASSERT_STATIC(s_cachedCntGbl < MAX_CNT, "Overflow of cache counting");
     }
 };
 
@@ -1713,8 +1713,8 @@ class AstNode VL_NOT_FINAL {
     }
 
 private:
-    AstNode* cloneTreeIter();
-    AstNode* cloneTreeIterList();
+    AstNode* cloneTreeIter(bool needPure);
+    AstNode* cloneTreeIterList(bool needPure);
     void checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE;
     bool gateTreeIter() const;
     static bool sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext,
@@ -1956,6 +1956,7 @@ public:
     uint64_t editCount() const { return m_editCount; }
     void editCountInc() {
         m_editCount = ++s_editCntGbl;  // Preincrement, so can "watch AstNode::s_editCntGbl=##"
+        VIsCached::clearCacheTree();  // Any edit clears all caching
     }
 #else
     void editCountInc() { ++s_editCntGbl; }
@@ -2073,8 +2074,9 @@ public:
                              AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
-    AstNode* cloneTree(bool cloneNextLink);  // Not const, as sets clonep() on original nodep //
-    AstNode* cloneTreePure(bool cloneNextLink) { return cloneTree(cloneNextLink); }
+    AstNode* cloneTree(bool cloneNextLink,
+                       bool needPure = false);  // Not const, as sets clonep() on original nodep
+    AstNode* cloneTreePure(bool cloneNextLink) { return cloneTree(cloneNextLink, true); }
     bool gateTree() { return gateTreeIter(); }  // Is tree isGateOptimizable?
     inline bool sameTree(const AstNode* node2p) const;  // Does tree of this == node2p?
     // Does tree of this == node2p?, not allowing non-isGateOptimizable

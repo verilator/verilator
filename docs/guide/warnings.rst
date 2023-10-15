@@ -1514,6 +1514,39 @@ List Of Warnings
    modeled values, or DPI calls.
 
 
+.. option:: SIDEEFFECT
+
+   Warns that an expression has a side effect that might not properly be
+   executed by Verilator.
+
+   This often represents a bug in Verilator, as opposed to a bad code
+   construct, however the Verilog code can typically be changed to avoid
+   the warning.
+
+   Faulty example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 1
+
+         x = y[a++];
+
+   This example warns because Verilator does not currently handle side
+   effects inside array subscripts; the a++ may be executed multiple times.
+
+   Rewrite the code to avoid expression side effects, typically by using a
+   temporary:
+
+   .. code-block:: sv
+      :linenos:
+
+         temp = a++;
+         x = y[temp];
+
+   Ignoring this warning may make Verilator simulations differ from other
+   simulators.
+
+
 .. option:: SPLITVAR
 
    Warns that a variable with a :option:`/*verilator&32;split_var*/`
