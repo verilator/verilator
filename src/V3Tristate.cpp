@@ -518,14 +518,14 @@ class TristateVisitor final : public TristateBaseVisitor {
 
             // Unlink lhsp before copying to save unnecessary copy of lhsp
             AstNodeExpr* const lhsp = extendp->lhsp()->unlinkFrBack();
-            AstExtend* const enExtendp = extendp->cloneTreePure(false);
+            AstExtend* const enExtendp = extendp->cloneTree(false);
             extendp->lhsp(lhsp);
             AstNodeExpr* const enLhsp = getEnExprBasedOnOriginalp(lhsp);
             enExtendp->lhsp(new AstNot{enLhsp->fileline(), enLhsp});
             return new AstNot{enExtendp->fileline(), enExtendp};
         } else if (AstSel* const selp = VN_CAST(nodep, Sel)) {
             AstNodeExpr* const fromp = selp->fromp()->unlinkFrBack();
-            AstSel* const enSelp = selp->cloneTreePure(false);
+            AstSel* const enSelp = selp->cloneTree(false);
             selp->fromp(fromp);
             AstNodeExpr* const enFromp = getEnExprBasedOnOriginalp(fromp);
             enSelp->fromp(enFromp);

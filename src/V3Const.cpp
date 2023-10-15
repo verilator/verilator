@@ -1884,7 +1884,7 @@ private:
         AstNodeExpr* const ap = lhsp->lhsp()->unlinkFrBack();
         AstNodeExpr* const bp = lhsp->rhsp()->unlinkFrBack();
         AstNodeBiop* const shift1p = nodep;
-        AstNodeBiop* const shift2p = nodep->cloneTreePure(true);
+        AstNodeBiop* const shift2p = nodep->cloneTree(true);
         shift1p->lhsp(ap);
         shift1p->rhsp(shiftp->cloneTreePure(true));
         shift2p->lhsp(bp);
