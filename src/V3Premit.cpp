@@ -331,7 +331,7 @@ private:
             // We're going to need the expression several times in the expanded code,
             // so might as well make it a common expression
             createDeepTemp(nodep->condp(), false);
-            nodep->clearCachedPurity();
+            VIsCached::clearCacheTree();
         }
         checkNode(nodep);
     }

@@ -72,11 +72,6 @@ bool AstNodeFTaskRef::isPure() {
     }
 }
 
-void AstNodeFTaskRef::clearCachedPurity() {
-    m_purity.clearCache();
-    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
-}
-
 bool AstNodeFTaskRef::getPurityRecurse() const {
     AstNodeFTask* const taskp = this->taskp();
     // Unlinked yet, so treat as impure
@@ -152,11 +147,6 @@ const char* AstNodeUniop::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != lhsp()->isPure());
     return nullptr;
 }
-void AstNodeUniop::clearCachedPurity() {
-    m_purity.clearCache();
-    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
-}
-
 bool AstNodeBiop::isPure() {
     if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
     return m_purity.get();
@@ -164,10 +154,6 @@ bool AstNodeBiop::isPure() {
 const char* AstNodeBiop::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
-}
-void AstNodeBiop::clearCachedPurity() {
-    m_purity.clearCache();
-    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
 }
 
 bool AstNodeTriop::isPure() {
@@ -178,10 +164,6 @@ const char* AstNodeTriop::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
 }
-void AstNodeTriop::clearCachedPurity() {
-    m_purity.clearCache();
-    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
-}
 
 bool AstNodePreSel::isPure() {
     if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
@@ -191,10 +173,6 @@ const char* AstNodePreSel::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
 }
-void AstNodePreSel::clearCachedPurity() {
-    m_purity.clearCache();
-    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
-}
 
 bool AstNodeQuadop::isPure() {
     if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
@@ -203,10 +181,6 @@ bool AstNodeQuadop::isPure() {
 const char* AstNodeQuadop::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
-}
-void AstNodeQuadop::clearCachedPurity() {
-    m_purity.clearCache();
-    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
 }
 
 AstNodeCond::AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,

@@ -33,7 +33,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //======================================================================
 // Statics
 
-uint32_t VIsCached::s_cachedCntGbl = 1;
+uint64_t VIsCached::s_cachedCntGbl = 1;
 
 uint64_t AstNode::s_editCntLast = 0;
 uint64_t AstNode::s_editCntGbl = 0;  // Hot cache line

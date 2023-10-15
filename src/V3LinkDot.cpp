@@ -3726,6 +3726,7 @@ public:
 // Link class functions
 
 void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
+    VIsCached::clearCacheTree();  // Avoid using any stale isPure
     if (debug() >= 5 || dumpTreeLevel() >= 9) {
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
     }

@@ -64,7 +64,6 @@ public:
 
     // Wrap This expression into an AstStmtExpr to denote it occurs in statement position
     inline AstStmtExpr* makeStmt();
-    virtual void clearCachedPurity(){};  // Most nodes don't cache their purity
 };
 class AstNodeBiop VL_NOT_FINAL : public AstNodeExpr {
     // Binary expression
@@ -98,7 +97,6 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override;
 
 private:
     bool getPurityRecurse() const { return lhsp()->isPure() && rhsp()->isPure(); }
@@ -265,7 +263,6 @@ public:
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
-    void clearCachedPurity() override;
 
 private:
     bool getPurityRecurse() const;
@@ -296,7 +293,6 @@ public:
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override;
 
 private:
     bool getPurityRecurse() const {
@@ -340,7 +336,6 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override;
 
 private:
     bool getPurityRecurse() const {
@@ -393,7 +388,6 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override;
 
 private:
     bool getPurityRecurse() const {
@@ -473,7 +467,6 @@ public:
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
     const char* broken() const override;
-    void clearCachedPurity() override;
 };
 class AstNodeSystemUniopD VL_NOT_FINAL : public AstNodeUniop {
 public:

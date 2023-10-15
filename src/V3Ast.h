@@ -171,10 +171,9 @@ class VIsCached final {
     // Used in some nodes to cache results of boolean methods
     // If cachedCnt == 0, not cached
     // else if cachedCnt == s_cachedCntGbl, then m_state is if cached
-    uint32_t m_cachedCnt : 31;  // Mark of when cache was computed
-    uint32_t m_state : 1;
-    static uint32_t s_cachedCntGbl;  // Global computed count
-    static constexpr uint32_t MAX_CNT = (1UL << 31) - 1;  // Max for m_cachedCnt
+    uint64_t m_cachedCnt : 63;  // Mark of when cache was computed
+    uint64_t m_state : 1;
+    static uint64_t s_cachedCntGbl;  // Global computed count
 
 public:
     VIsCached()
@@ -192,7 +191,8 @@ public:
     }
     static void clearCacheTree() {
         ++s_cachedCntGbl;
-        UASSERT_STATIC(s_cachedCntGbl < MAX_CNT, "Overflow of cache counting");
+        // 64 bits so won't overflow
+        // UASSERT_STATIC(s_cachedCntGbl < MAX_CNT, "Overflow of cache counting");
     }
 };
 
@@ -1956,6 +1956,7 @@ public:
     uint64_t editCount() const { return m_editCount; }
     void editCountInc() {
         m_editCount = ++s_editCntGbl;  // Preincrement, so can "watch AstNode::s_editCntGbl=##"
+        VIsCached::clearCacheTree();  // Any edit clears all caching
     }
 #else
     void editCountInc() { ++s_editCntGbl; }

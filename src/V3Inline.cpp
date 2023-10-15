@@ -174,7 +174,7 @@ private:
         // MethodCalls not currently supported by inliner, so keep linked
         if (!nodep->classOrPackagep() && !VN_IS(nodep, MethodCall)) {
             nodep->taskp(nullptr);
-            nodep->clearCachedPurity();
+            VIsCached::clearCacheTree();
         }
         iterateChildren(nodep);
     }
