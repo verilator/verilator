@@ -808,7 +808,8 @@ AstNode* AstNode::cloneTreeIter(bool needPure) {
                      "Expression side effect may be mishandled\n"
                          << this->warnMore()
                          << "... Suggest use a temporary variable in place of this expression");
-        // this->v3fatalSrc("cloneTreePure debug backtrace");  // Comment in to debug where caused it
+        // this->v3fatalSrc("cloneTreePure debug backtrace");  // Comment in to debug where caused
+        // it
     }
     AstNode* const newp = this->clone();
     if (this->m_op1p) newp->op1p(this->m_op1p->cloneTreeIterList(needPure));
