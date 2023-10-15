@@ -1,23 +1,23 @@
-%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:15:20: Parameter pin not found: '__paramNumber2'
+%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:15:20: Parameter not found: '__paramNumber2'
    15 |     NestedCls #(1, 2) cls;
       |                    ^
                     ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
-%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:17:21: Parameter pin not found: '__paramNumber3'
+%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:17:21: Parameter not found: '__paramNumber3'
    17 |     mod1  # ( 3, 4, 5 )   i_mod1 ();
       |                     ^
-%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:19:15: Parameter pin not found: '__paramNumber1'
+%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:19:15: Parameter not found: '__paramNumber1'
    19 |     mod3  # ( 7, 24, 25 ) i_mod3 ();
       |               ^
-%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:19:18: Parameter pin not found: '__paramNumber2'
+%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:19:18: Parameter not found: '__paramNumber2'
    19 |     mod3  # ( 7, 24, 25 ) i_mod3 ();
       |                  ^~
-%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:19:22: Parameter pin not found: '__paramNumber3'
+%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:19:22: Parameter not found: '__paramNumber3'
    19 |     mod3  # ( 7, 24, 25 ) i_mod3 ();
       |                      ^~
-%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:20:22: Parameter pin not found: '__paramNumber3'
+%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:20:22: Parameter not found: '__paramNumber3'
    20 |     intf1 # ( 8, 15, 17 ) i_intf1 ();
       |                      ^~
-%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:21:22: Parameter pin not found: '__paramNumber3'
+%Error-PINNOTFOUND: t/t_param_implicit_local_bad.v:21:22: Parameter not found: '__paramNumber3'
    21 |     prgm1 # ( 9, 40, 41 ) i_prgm1 ();
       |                      ^~
 %Error: Exiting due to

@@ -1,0 +1,19 @@
+%Error: t/t_inst_param_override_bad.v:33:23: Instance attempts to override 'PACKED_DATA_WIDTH' as a parameter, but it is a local parameter
+   33 |     axi_stream_if # (.PACKED_DATA_WIDTH(10)) axis1(clk);
+      |                       ^~~~~~~~~~~~~~~~~
+%Error: t/t_inst_param_override_bad.v:35:23: Instance attempts to override 'mytask' as a parameter, but it is a task
+   35 |     axi_stream_if # (.mytask(10)) axis2(clk);
+      |                       ^~~~~~
+%Error: t/t_inst_param_override_bad.v:37:23: Instance attempts to override 'my_genvar' as a parameter, but it is a variable
+   37 |     axi_stream_if # (.my_genvar(10)) axis3(clk);
+      |                       ^~~~~~~~~
+%Error: t/t_inst_param_override_bad.v:39:23: Instance attempts to override 'clk' as a parameter, but it is a port
+   39 |     axi_stream_if # (.clk(10)) axis4(clk);
+      |                       ^~~
+%Error: t/t_inst_param_override_bad.v:41:23: Instance attempts to override 'tvalid' as a parameter, but it is a variable
+   41 |     axi_stream_if # (.tvalid(10)) axis5(clk);
+      |                       ^~~~~~
+%Error: t/t_inst_param_override_bad.v:43:23: Instance attempts to override 'i_sub' as a parameter, but it is an instance
+   43 |     axi_stream_if # (.i_sub(10)) axis6(clk);
+      |                       ^~~~~
+%Error: Exiting due to

@@ -699,8 +699,8 @@ class ParamProcessor final : public VNDeleter {
         if (!pinp->exprp()) return;  // No-connect
         if (AstVar* const modvarp = pinp->modVarp()) {
             if (!modvarp->isGParam()) {
-                pinp->v3error("Attempted parameter setting of non-parameter: Param "
-                              << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
+                pinp->v3fatalSrc("Attempted parameter setting of non-parameter: Param "
+                                 << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
             } else if (VN_IS(pinp->exprp(), InitArray) && arraySubDTypep(modvarp->subDTypep())) {
                 // Array assigned to array
                 AstNode* const exprp = pinp->exprp();
@@ -761,8 +761,8 @@ class ParamProcessor final : public VNDeleter {
                 }
             }
         } else {
-            pinp->v3error("Parameter not found in sub-module: Param "
-                          << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
+            pinp->v3fatalSrc("Parameter not found in sub-module: Param "
+                             << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
         }
     }
 
