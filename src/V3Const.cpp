@@ -1012,7 +1012,7 @@ private:
         return (lp && rp && lp->width() == rp->width() && lp->type() == rp->type()
                 && (operandsSame(lp->lhsp(), rp->lhsp()) || operandsSame(lp->rhsp(), rp->rhsp())));
     }
-    static bool matchOrAndNot(AstNodeBiop* nodep) {
+    bool matchOrAndNot(AstNodeBiop* nodep) {
         // AstOr{$a, AstAnd{AstNot{$b}, $c}} if $a.width1, $a==$b => AstOr{$a,$c}
         // Someday we'll sort the biops completely and this can be simplified
         // This often results from our simplified clock generation:
@@ -1043,7 +1043,7 @@ private:
         if (!operandsSame(ap, bp)) return false;
         // Do it
         cp->unlinkFrBack();
-        VL_DO_DANGLING(andp->unlinkFrBack()->deleteTree(), andp);
+        VL_DO_DANGLING(pushDeletep(andp->unlinkFrBack()), andp);
         VL_DANGLING(notp);
         // Replace whichever branch is now dangling
         if (nodep->rhsp()) {
