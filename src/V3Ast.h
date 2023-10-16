@@ -1555,7 +1555,7 @@ public:
 // type without changing the base classes.  See "Modern C++ Design".
 
 class VNVisitor VL_NOT_FINAL : public VNVisitorConst {
-    VNDeleter deleter;  // Used to delete nodes
+    VNDeleter m_deleter;  // Used to delay deletion of nodes
 public:
     /// Call visit()s on nodep
     inline void iterate(AstNode* nodep);
@@ -1568,9 +1568,9 @@ public:
     /// Return edited nodep; see comments in V3Ast.cpp
     inline AstNode* iterateSubtreeReturnEdits(AstNode* nodep);
 
-    VNDeleter& getDeleter() { return deleter; }
-    void pushDeletep(AstNode* nodep) { deleter.pushDeletep(nodep); }
-    void doDeletes() { deleter.doDeletes(); }
+    VNDeleter& deleter() { return m_deleter; }
+    void pushDeletep(AstNode* nodep) { deleter().pushDeletep(nodep); }
+    void doDeletes() { deleter().doDeletes(); }
 };
 
 //######################################################################
