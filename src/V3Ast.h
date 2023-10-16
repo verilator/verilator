@@ -1568,9 +1568,9 @@ public:
     /// Return edited nodep; see comments in V3Ast.cpp
     inline AstNode* iterateSubtreeReturnEdits(AstNode* nodep);
 
-    inline VNDeleter& getDeleter() { return deleter; }
-    inline void pushDeletep(AstNode* nodep) { deleter.pushDeletep(nodep); }
-    inline void doDeletes() { deleter.doDeletes(); }
+    VNDeleter& getDeleter() { return deleter; }
+    void pushDeletep(AstNode* nodep) { deleter.pushDeletep(nodep); }
+    void doDeletes() { deleter.doDeletes(); }
 };
 
 //######################################################################
