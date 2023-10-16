@@ -280,6 +280,10 @@ private:
         visit(static_cast<AstNode*>(nodep));
         addFlags(m_procp, T_FORCES_PROC | T_NEEDS_PROC);
     }
+    void visit(AstWaitFork* nodep) override {
+        visit(static_cast<AstNode*>(nodep));
+        addFlags(m_procp, T_FORCES_PROC | T_NEEDS_PROC);
+    }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
@@ -1047,6 +1051,12 @@ private:
         // Put the AssignW right after the always. Different order can produce UNOPTFLAT on the LHS
         // var
         alwaysp->addNextHere(nodep);
+    }
+    void visit(AstWaitFork* nodep) override {
+        AstCExpr* exprp = new AstCExpr{nodep->fileline(), "vlProcess->completedFork()", 1};
+        AstWait* waitp = new AstWait{nodep->fileline(), exprp, nullptr};
+        nodep->replaceWith(waitp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstWait* nodep) override {
         // Wait on changed events related to the vars in the wait statement
