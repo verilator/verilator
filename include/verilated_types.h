@@ -124,9 +124,9 @@ public:
     void state(int s) { m_state = s; }
     void disable() {
         state(KILLED);
-        disable_fork();
+        disableFork();
     }
-    void disable_fork() {
+    void disableFork() {
         for (VlProcess* childp : m_children) childp->disable();
     }
 };
