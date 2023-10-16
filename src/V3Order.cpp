@@ -829,7 +829,7 @@ class OrderProcess final {
     friend class OrderMoveDomScope;
     V3List<OrderMoveDomScope*> m_pomReadyDomScope;  // List of ready domain/scope pairs, by loopId
     std::map<std::pair<AstNodeModule*, std::string>, unsigned> m_funcNums;  // Function ordinals
-    VNDeleter m_deleter;  // Used to delete nodes
+    VNDeleter m_deleter;  // Used to delay deletion of nodes
 
     // METHODS
 
