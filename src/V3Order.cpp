@@ -901,7 +901,7 @@ class OrderProcess final {
         , m_deleteDomainp{makeDeleteDomainSenTree(netlistp->fileline())}
         , m_tag{tag}
         , m_slow{slow} {
-        deleter.pushDeletep(m_deleteDomainp);
+        m_deleter.pushDeletep(m_deleteDomainp);
     }
 
     ~OrderProcess() = default;
@@ -1224,7 +1224,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
         needProcess = procp->needProcess();
         if (suspendable) slow = slow && !VN_IS(procp, Always);
         nodep = procp->stmtsp();
-        deleter.pushDeletep(procp);
+        m_deleter.pushDeletep(procp);
     }
 
     // Put suspendable processes into individual functions on their own
@@ -1271,7 +1271,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
         if (nodep->backp()) nodep->unlinkFrBack();
 
         if (domainp == m_deleteDomainp) {
-            VL_DO_DANGLING(deleter.pushDeletep(nodep), nodep);
+            VL_DO_DANGLING(m_deleter.pushDeletep(nodep), nodep);
         } else {
             newFuncpr->addStmtsp(nodep);
             // Add in the number of nodes we're adding

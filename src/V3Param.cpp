@@ -869,7 +869,7 @@ class ParamProcessor final {
                 AstClass* classCopyp = VN_AS(srcModpr, Class)->cloneTree(false);
                 // It is a temporary copy of the original class node, stored in order to create
                 // another instances. It is needed only during class instantiation.
-                deleter.pushDeletep(classCopyp);
+                m_deleter.pushDeletep(classCopyp);
                 srcModpr->user4p(classCopyp);
                 storeOriginalParams(classCopyp);
             }

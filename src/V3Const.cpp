@@ -716,7 +716,7 @@ public:
                 }
                 // Set width and widthMin precisely
                 resultp->dtypeChgWidth(resultWidth, 1);
-                for (AstNode* const termp : termps) deleter.pushDeletep(termp);
+                for (AstNode* const termp : termps) deleterr.pushDeletep(termp);
                 return resultp;
             }
             const ResultTerm result = v->getResultTerm();
@@ -792,7 +792,7 @@ public:
 
         // Only substitute the result if beneficial as determined by operation count
         if (visitor.m_ops <= resultOps) {
-            for (AstNode* const termp : termps) deleter.pushDeletep(termp);
+            for (AstNode* const termp : termps) deleterr.pushDeletep(termp);
             return nullptr;
         }
 
@@ -1176,10 +1176,10 @@ private:
         const int width = nodep->width();
         if (andp && isConst(andp->lhsp(), 1)) {  // 1 & BitOpTree
             newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), width, 1, m_statBitOpReduction,
-                                                   getDeleter());
+                                                   deleter());
         } else {  // BitOpTree
             newp = ConstBitOpTreeVisitor::simplify(nodep, width, 0, m_statBitOpReduction,
-                                                   getDeleter());
+                                                   deleter());
         }
 
         if (newp) {
