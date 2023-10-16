@@ -366,6 +366,10 @@ private:
         m_underFork |= F_MIGHT_NEED_PROC;
         iterateChildren(nodep);
     }
+    void visit(AstAssignDly* nodep) override {
+        if (!VN_IS(m_procp, NodeProcedure)) v3Global.setUsesTiming();
+        visit(static_cast<AstNode*>(nodep));
+    }
     void visit(AstNode* nodep) override {
         if (nodep->isTimingControl()) {
             v3Global.setUsesTiming();
@@ -452,8 +456,10 @@ private:
     double m_timescaleFactor = 1.0;  // Factor to scale delays by
     int m_forkCnt = 0;  // Number of forks inside a module
     bool m_underJumpBlock = false;  // True if we are inside of a jump-block
+    bool m_underProcedure = false;  // True if we are under an always or initial
 
     // Unique names
+    V3UniqueNames m_dlyforkNames{"__Vdlyfork"};  // Names for temp AssignW vars
     V3UniqueNames m_contAssignVarNames{"__VassignWtmp"};  // Names for temp AssignW vars
     V3UniqueNames m_intraValueNames{"__Vintraval"};  // Intra assign delay value var names
     V3UniqueNames m_intraIndexNames{"__Vintraidx"};  // Intra assign delay index var names
@@ -574,6 +580,31 @@ private:
             = new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_TRUE, awaitingCurrentTimep}};
         m_netlistp->topScopep()->addSenTreesp(m_dynamicSensesp);
         return m_dynamicSensesp;
+    }
+    // Creates the event variable to trigger in NBA region
+    AstEventControl* createNbaEventControl(FileLine* flp) {
+        if (!m_netlistp->nbaEventp()) {
+            auto* const nbaEventDtp = new AstBasicDType{m_scopeTopp->fileline(),
+                                                        VBasicDTypeKwd::EVENT, VSigning::UNSIGNED};
+            m_netlistp->typeTablep()->addTypesp(nbaEventDtp);
+            m_netlistp->nbaEventp(m_scopeTopp->createTemp("__VnbaEvent", nbaEventDtp));
+            v3Global.setHasEvents();
+        }
+        return new AstEventControl{
+            flp,
+            new AstSenTree{
+                flp, new AstSenItem{flp, VEdgeType::ET_EVENT,
+                                    new AstVarRef{flp, m_netlistp->nbaEventp(), VAccess::READ}}},
+            nullptr};
+    }
+    // Creates the variable that, if set, causes the NBA event to be triggered
+    AstAssign* createNbaEventTriggerAssignment(FileLine* flp) {
+        if (!m_netlistp->nbaEventTriggerp()) {
+            m_netlistp->nbaEventTriggerp(m_scopeTopp->createTemp("__VnbaEventTrigger", 1));
+        }
+        return new AstAssign{flp,
+                             new AstVarRef{flp, m_netlistp->nbaEventTriggerp(), VAccess::WRITE},
+                             new AstConst{flp, AstConst::BitTrue{}}};
     }
     // Returns true if we are under a class or the given tree has any references to locals. These
     // are cases where static, globally-evaluated triggers are not suitable.
@@ -753,6 +784,8 @@ private:
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
+        VL_RESTORER(m_underProcedure);
+        m_underProcedure = true;
         iterateChildren(nodep);
         if (hasFlags(nodep, T_SUSPENDEE)) nodep->setSuspendable();
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
@@ -773,7 +806,8 @@ private:
         if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_procp);
         m_procp = nodep;
-
+        VL_RESTORER(m_underProcedure);
+        m_underProcedure = true;
         // Workaround for killing `always` processes (doing that is pretty much UB)
         // TODO: Disallow killing `always` at runtime (throw an error)
         if (hasFlags(nodep, T_HAS_PROC)) addFlags(nodep, T_SUSPENDEE);
@@ -979,20 +1013,37 @@ private:
     void visit(AstNodeAssign* nodep) override {
         // Only process once to avoid infinite loops (due to the net delay)
         if (nodep->user1SetOnce()) return;
-        AstNode* const controlp = factorOutTimingControl(nodep);
-        if (!controlp) return;
-        // Handle the intra assignment timing control
         FileLine* const flp = nodep->fileline();
-        if (VN_IS(nodep, AssignDly)) {
-            // If it's an NBA with an intra assignment delay, put it in a fork
+        AstNode* controlp = factorOutTimingControl(nodep);
+        const bool inAssignDly = VN_IS(nodep, AssignDly);
+        // Handle the intra assignment timing control
+        // Transform if:
+        // * there's a timing control in the assignment
+        // * the assignment is an AssignDly and it's in a non-inlined function
+        if (!controlp && (!inAssignDly || m_underProcedure)) return;
+        // Insert new vars before the timing control if we're in a function; in a process we can't
+        // do that. These intra-assignment vars will later be passed to forked processes by value.
+        AstNode* insertBeforep = m_underProcedure ? nullptr : controlp;
+        // Special case for NBA
+        if (inAssignDly) {
+            // Put it in a fork so it doesn't block
             auto* const forkp = new AstFork{flp, "", nullptr};
             forkp->joinType(VJoinType::JOIN_NONE);
+            if (!m_underProcedure) {
+                // If it's in a function, it won't be handled by V3Delayed
+                // Put it behind an additional named event that gets triggered in the NBA region
+                AstEventControl* const nbaEventControlp = createNbaEventControl(flp);
+                AstAssign* const trigAssignp = createNbaEventTriggerAssignment(flp);
+                nodep->replaceWith(trigAssignp);
+                trigAssignp->addNextHere(nbaEventControlp);
+                nbaEventControlp->addStmtsp(nodep);
+                insertBeforep = forkp;
+                if (!controlp) controlp = nbaEventControlp;
+            }
             controlp->replaceWith(forkp);
             forkp->addStmtsp(controlp);
         }
-        // Insert new vars before the timing control if we're in a function; in a process we can't
-        // do that. These intra-assignment vars will later be passed to forked processes by value.
-        AstNode* const insertBeforep = m_classp ? controlp : nullptr;
+        UASSERT_OBJ(nodep, controlp, "Assignment should have timing control");
         addCLocalScope(flp, insertBeforep);
         // Function for replacing values with intermediate variables
         const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,

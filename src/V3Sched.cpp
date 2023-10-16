@@ -899,72 +899,86 @@ void createEval(AstNetlist* netlistp,  //
     if (icoLoop) funcp->addStmtsp(icoLoop);
 
     // Create the active eval loop
-    AstNodeStmt* const activeEvalLoopp
-        = makeEvalLoop(
-              netlistp, "act", "Active", actKit.m_vscp, actKit.m_dumpp,
-              [&]() {  // Trigger
-                  AstNodeStmt* resultp = nullptr;
+    const auto& activeEvalLoop = makeEvalLoop(
+        netlistp, "act", "Active", actKit.m_vscp, actKit.m_dumpp,
+        [&]() {  // Trigger
+            AstNodeStmt* resultp = nullptr;
 
-                  // Compute the current triggers
-                  {
-                      AstCCall* const trigsp = new AstCCall{flp, actKit.m_triggerComputep};
-                      trigsp->dtypeSetVoid();
-                      resultp = AstNode::addNext(resultp, trigsp->makeStmt());
-                  }
+            // Compute the current triggers
+            {
+                AstCCall* const trigsp = new AstCCall{flp, actKit.m_triggerComputep};
+                trigsp->dtypeSetVoid();
+                resultp = AstNode::addNext(resultp, trigsp->makeStmt());
+            }
 
-                  // Commit trigger awaits from the previous iteration
-                  if (AstCCall* const commitp = timingKit.createCommit(netlistp)) {
-                      resultp = AstNode::addNext(resultp, commitp->makeStmt());
-                  }
+            // Commit trigger awaits from the previous iteration
+            if (AstCCall* const commitp = timingKit.createCommit(netlistp)) {
+                resultp = AstNode::addNext(resultp, commitp->makeStmt());
+            }
 
-                  return resultp;
-              },
-              [&]() {  // Body
-                  // Compute the pre triggers
-                  AstNodeStmt* resultp
-                      = createTriggerAndNotCall(flp, preTrigsp, actKit.m_vscp, nbaKit.m_vscp);
-                  // Latch the active trigger flags under the NBA trigger flags
-                  resultp = AstNode::addNext(
-                      resultp, createTriggerSetCall(flp, nbaKit.m_vscp, actKit.m_vscp));
-                  // Resume triggered timing schedulers
-                  if (AstCCall* const resumep = timingKit.createResume(netlistp)) {
-                      resultp = AstNode::addNext(resultp, resumep->makeStmt());
-                  }
-                  // Invoke body function
-                  {
-                      AstCCall* const callp = new AstCCall{flp, actKit.m_funcp};
-                      callp->dtypeSetVoid();
-                      resultp = AstNode::addNext(resultp, callp->makeStmt());
-                  }
+            return resultp;
+        },
+        [&]() {  // Body
+            // Compute the pre triggers
+            AstNodeStmt* resultp
+                = createTriggerAndNotCall(flp, preTrigsp, actKit.m_vscp, nbaKit.m_vscp);
+            // Latch the active trigger flags under the NBA trigger flags
+            resultp = AstNode::addNext(resultp,
+                                       createTriggerSetCall(flp, nbaKit.m_vscp, actKit.m_vscp));
+            // Resume triggered timing schedulers
+            if (AstCCall* const resumep = timingKit.createResume(netlistp)) {
+                resultp = AstNode::addNext(resultp, resumep->makeStmt());
+            }
+            // Invoke body function
+            {
+                AstCCall* const callp = new AstCCall{flp, actKit.m_funcp};
+                callp->dtypeSetVoid();
+                resultp = AstNode::addNext(resultp, callp->makeStmt());
+            }
 
-                  return resultp;
-              })
-              .stmtsp;
+            return resultp;
+        });
 
     // Create the NBA eval loop. This uses the Active eval loop in the trigger section.
-    AstNodeStmt* topEvalLoopp
-        = makeEvalLoop(
-              netlistp, "nba", "NBA", nbaKit.m_vscp, nbaKit.m_dumpp,
-              [&]() {  // Trigger
-                  // Reset NBA triggers
-                  AstNodeStmt* resultp = createTriggerClearCall(flp, nbaKit.m_vscp);
-                  // Run the Active eval loop
-                  resultp = AstNode::addNext(resultp, activeEvalLoopp);
-                  return resultp;
-              },
-              [&]() {  // Body
-                  AstCCall* const callp = new AstCCall{flp, nbaKit.m_funcp};
-                  callp->dtypeSetVoid();
-                  AstNodeStmt* resultp = callp->makeStmt();
-                  // Latch the NBA trigger flags under the following region's trigger flags
-                  AstVarScope* const nextVscp = obsKit.m_vscp ? obsKit.m_vscp : reactKit.m_vscp;
-                  if (nextVscp) {
-                      resultp = AstNode::addNext(
-                          resultp, createTriggerSetCall(flp, nextVscp, nbaKit.m_vscp));
-                  }
-                  return resultp;
-              })
-              .stmtsp;
+    const auto& nbaEvalLoop = makeEvalLoop(
+        netlistp, "nba", "NBA", nbaKit.m_vscp, nbaKit.m_dumpp,
+        [&]() {  // Trigger
+            // Reset NBA triggers
+            AstNodeStmt* resultp = createTriggerClearCall(flp, nbaKit.m_vscp);
+            // Run the Active eval loop
+            resultp = AstNode::addNext(resultp, activeEvalLoop.stmtsp);
+            return resultp;
+        },
+        [&]() {  // Body
+            AstCCall* const callp = new AstCCall{flp, nbaKit.m_funcp};
+            callp->dtypeSetVoid();
+            AstNodeStmt* resultp = callp->makeStmt();
+            // Latch the NBA trigger flags under the following region's trigger flags
+            AstVarScope* const nextVscp = obsKit.m_vscp ? obsKit.m_vscp : reactKit.m_vscp;
+            if (nextVscp) {
+                resultp = AstNode::addNext(resultp,
+                                           createTriggerSetCall(flp, nextVscp, nbaKit.m_vscp));
+            }
+            return resultp;
+        });
+
+    // If the NBA event exists, trigger it in 'nba'
+    if (netlistp->nbaEventp()) {
+        UASSERT(netlistp->nbaEventTriggerp(), "NBA event trigger var should exist");
+        AstIf* const ifp
+            = new AstIf{flp, new AstVarRef{flp, netlistp->nbaEventTriggerp(), VAccess::READ}};
+        ifp->addThensp(setVar(nbaEvalLoop.continuep, 1));
+        ifp->addThensp(setVar(netlistp->nbaEventTriggerp(), 0));
+        AstCMethodHard* const firep = new AstCMethodHard{
+            flp, new AstVarRef{flp, netlistp->nbaEventp(), VAccess::WRITE}, "fire"};
+        firep->dtypeSetVoid();
+        ifp->addThensp(firep->makeStmt());
+        activeEvalLoop.stmtsp->addNext(ifp);
+        netlistp->nbaEventp(nullptr);
+        netlistp->nbaEventTriggerp(nullptr);
+    }
+
+    AstNodeStmt* topEvalLoopp = nbaEvalLoop.stmtsp;
 
     if (obsKit.m_funcp) {
         // Create the Observed eval loop. This uses the NBA eval loop in the trigger section.

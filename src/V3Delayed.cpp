@@ -527,8 +527,12 @@ private:
         m_nextDlyp
             = VN_CAST(nodep->nextp(), AssignDly);  // Next assignment in same block, maybe nullptr.
         if (m_cfuncp) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Delayed assignment inside public function/task");
+            if (!v3Global.rootp()->nbaEventp()) {
+                nodep->v3warn(
+                    E_NOTIMING,
+                    "Delayed assignment in a non-inlined function/task requires --timing");
+            }
+            return;
         }
         UASSERT_OBJ(m_procp, nodep, "Delayed assignment not under process");
         const bool isArray = VN_IS(nodep->lhsp(), ArraySel)
