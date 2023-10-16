@@ -592,17 +592,26 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 }
 
 //============================================================================
+// EvalLoop contains elements of an evaluation loop created by makeEvalLoop()
+
+struct EvalLoop {
+    // Loop iteration counter for enforcing the converge limit
+    AstVarScope* counterp = nullptr;
+    // The loop condition
+    AstVarScope* continuep = nullptr;
+    // The loop itself and statements around it
+    AstNodeStmt* stmtsp = nullptr;
+};
+
+//============================================================================
 // Helpers to construct an evaluation loop.
 
-AstNodeStmt* buildLoop(AstNetlist* netlistp, const string& name,
-                       const std::function<void(AstVarScope*, AstWhile*)>& build)  //
+AstNodeStmt* buildLoop(AstNetlist* netlistp, AstVarScope* const condp,
+                       const std::function<void(AstWhile*)>& build)  //
 {
     AstTopScope* const topScopep = netlistp->topScopep();
     AstScope* const scopeTopp = topScopep->scopep();
     FileLine* const flp = scopeTopp->fileline();
-    // Create the loop condition variable
-    AstVarScope* const condp = scopeTopp->createTemp("__V" + name + "Continue", 1);
-    condp->varp()->noReset(true);
     // Initialize the loop condition variable to true
     AstNodeStmt* const resp = setVar(condp, 1);
     // Add the loop
@@ -611,16 +620,15 @@ AstNodeStmt* buildLoop(AstNetlist* netlistp, const string& name,
     // Clear the loop condition variable in the loop
     loopp->addStmtsp(setVar(condp, 0));
     // Build the body
-    build(condp, loopp);
+    build(loopp);
     // Done
     return resp;
 };
 
-std::pair<AstVarScope*, AstNodeStmt*> makeEvalLoop(AstNetlist* netlistp, const string& tag,
-                                                   const string& name, AstVarScope* trigVscp,
-                                                   AstCFunc* trigDumpp,
-                                                   std::function<AstNodeStmt*()> computeTriggers,
-                                                   std::function<AstNodeStmt*()> makeBody) {
+EvalLoop makeEvalLoop(AstNetlist* netlistp, const string& tag, const string& name,
+                      AstVarScope* trigVscp, AstCFunc* trigDumpp,
+                      std::function<AstNodeStmt*()> computeTriggers,
+                      std::function<AstNodeStmt*()> makeBody) {
     UASSERT_OBJ(trigVscp->dtypep()->basicp()->isTriggerVec(), trigVscp, "Not TRIGGERVEC");
     AstTopScope* const topScopep = netlistp->topScopep();
     AstScope* const scopeTopp = topScopep->scopep();
@@ -629,8 +637,11 @@ std::pair<AstVarScope*, AstNodeStmt*> makeEvalLoop(AstNetlist* netlistp, const s
     AstVarScope* const counterp = scopeTopp->createTemp("__V" + tag + "IterCount", 32);
     counterp->varp()->noReset(true);
 
+    AstVarScope* const continuep = scopeTopp->createTemp("__V" + tag + "Continue", 1);
+    continuep->varp()->noReset(true);
+
     AstNodeStmt* nodep = setVar(counterp, 0);
-    nodep->addNext(buildLoop(netlistp, tag, [&](AstVarScope* continuep, AstWhile* loopp) {
+    nodep->addNext(buildLoop(netlistp, continuep, [&](AstWhile* loopp) {
         // Compute triggers
         loopp->addStmtsp(computeTriggers());
         // Invoke body if triggered
@@ -682,7 +693,7 @@ std::pair<AstVarScope*, AstNodeStmt*> makeEvalLoop(AstNetlist* netlistp, const s
         }
     }));
 
-    return {counterp, nodep};
+    return {counterp, continuep, nodep};
 }
 
 //============================================================================
@@ -727,7 +738,7 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
     splitCheck(stlFuncp);
 
     // Create the eval loop
-    const auto& pair = makeEvalLoop(
+    const auto& loop = makeEvalLoop(
         netlistp, "stl", "Settle", trig.m_vscp, trig.m_dumpp,
         [&]() {  // Trigger
             AstCCall* const callp = new AstCCall{stlFuncp->fileline(), trig.m_funcp};
@@ -741,10 +752,10 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
         });
 
     // Add the first iteration trigger to the trigger computation function
-    trig.addFirstIterationTriggerAssignment(pair.first, firstIterationTrigger);
+    trig.addFirstIterationTriggerAssignment(loop.counterp, firstIterationTrigger);
 
     // Add the eval loop to the top function
-    funcp->addStmtsp(pair.second);
+    funcp->addStmtsp(loop.stmtsp);
 }
 
 //============================================================================
@@ -816,7 +827,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     splitCheck(icoFuncp);
 
     // Create the eval loop
-    const auto& pair = makeEvalLoop(
+    const auto& loop = makeEvalLoop(
         netlistp, "ico", "Input combinational", trig.m_vscp, trig.m_dumpp,
         [&]() {  // Trigger
             AstCCall* const callp = new AstCCall{icoFuncp->fileline(), trig.m_funcp};
@@ -830,10 +841,10 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
         });
 
     // Add the first iteration trigger to the trigger computation function
-    trig.addFirstIterationTriggerAssignment(pair.first, firstIterationTrigger);
+    trig.addFirstIterationTriggerAssignment(loop.counterp, firstIterationTrigger);
 
     // Return the eval loop itself
-    return pair.second;
+    return loop.stmtsp;
 }
 
 //============================================================================
@@ -928,7 +939,7 @@ void createEval(AstNetlist* netlistp,  //
 
                   return resultp;
               })
-              .second;
+              .stmtsp;
 
     // Create the NBA eval loop. This uses the Active eval loop in the trigger section.
     AstNodeStmt* topEvalLoopp
@@ -953,7 +964,7 @@ void createEval(AstNetlist* netlistp,  //
                   }
                   return resultp;
               })
-              .second;
+              .stmtsp;
 
     if (obsKit.m_funcp) {
         // Create the Observed eval loop. This uses the NBA eval loop in the trigger section.
@@ -978,7 +989,7 @@ void createEval(AstNetlist* netlistp,  //
                       }
                       return resultp;
                   })
-                  .second;
+                  .stmtsp;
     }
 
     if (reactKit.m_funcp) {
@@ -997,7 +1008,7 @@ void createEval(AstNetlist* netlistp,  //
                                callp->dtypeSetVoid();
                                return callp->makeStmt();
                            })
-                           .second;
+                           .stmtsp;
     }
     funcp->addStmtsp(topEvalLoopp);
 
