@@ -129,6 +129,12 @@ public:
     void disableFork() {
         for (VlProcess* childp : m_children) childp->disable();
     }
+    bool completed() { return state() == FINISHED || state() == KILLED; }
+    bool completedFork() {
+        for (VlProcess* childp : m_children)
+            if (!childp->completed()) return false;
+        return true;
+    }
 };
 
 inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
