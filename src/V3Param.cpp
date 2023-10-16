@@ -223,7 +223,7 @@ public:
 //######################################################################
 // Remove parameters from cells and build new modules
 
-class ParamProcessor final : public VNDeleter {
+class ParamProcessor final {
     // NODE STATE - Local
     //   AstVar::user4()        // int    Global parameter number (for naming new module)
     //                          //        (0=not processed, 1=iterated, but no number,
@@ -277,6 +277,7 @@ class ParamProcessor final : public VNDeleter {
     using DefaultValueMap = std::map<std::string, AstConst*>;
     // Default parameter values of hierarchical blocks
     std::map<AstNodeModule*, DefaultValueMap> m_defaultParameterValues;
+    VNDeleter deleter;  // Used to delete nodes
 
     // METHODS
 
@@ -868,7 +869,7 @@ class ParamProcessor final : public VNDeleter {
                 AstClass* classCopyp = VN_AS(srcModpr, Class)->cloneTree(false);
                 // It is a temporary copy of the original class node, stored in order to create
                 // another instances. It is needed only during class instantiation.
-                pushDeletep(classCopyp);
+                deleter.pushDeletep(classCopyp);
                 srcModpr->user4p(classCopyp);
                 storeOriginalParams(classCopyp);
             }

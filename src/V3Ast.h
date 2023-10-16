@@ -1502,7 +1502,7 @@ public:
 // nodes needs to be deferred to a later time, because pointers to the
 // removed nodes might still exist.
 
-class VNDeleter {
+class VNDeleter final {
     // MEMBERS
     std::vector<AstNode*> m_deleteps;  // Nodes to delete
 
