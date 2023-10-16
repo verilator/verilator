@@ -14764,9 +14764,7 @@ class uvm_objection extends uvm_report_object;
       if (m_trace_mode)
         m_report(obj,source_obj,description,count,"all_dropped");
       all_dropped(obj,source_obj,description, count);
-//TODO issue #4465 - Support wait fork
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:14761:7: Unsupported: wait fork statements
-//TODO      wait fork;
+      wait fork;
       if (m_source_count.exists(obj) && m_source_count[obj] == 0)
         m_source_count.delete(obj);
       if (m_total_count.exists(obj) && m_total_count[obj] == 0)
