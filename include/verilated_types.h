@@ -121,9 +121,7 @@ public:
     void detach(VlProcess* childp) { m_children.erase(childp); }
 
     int state() { return m_state; }
-    void state(int s) {
-        m_state = s;
-    }
+    void state(int s) { m_state = s; }
     void disable() {
         state(KILLED);
         disable_fork();

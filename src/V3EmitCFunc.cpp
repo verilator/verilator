@@ -410,7 +410,8 @@ void EmitCFunc::displayNode(AstNode* nodep, AstScopeName* scopenamep, const stri
     displayEmit(nodep, isScan);
 }
 
-void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer, bool inProcess) {
+void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer,
+                              bool inProcess) {
     puts("(");
     bool comma = false;
     if (nodep->funcp()->isLoose() && !nodep->funcp()->isStatic()) {

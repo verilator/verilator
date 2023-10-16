@@ -105,13 +105,9 @@ enum PropagationType : uint8_t {
 };
 
 // Add timing flag to a node
-static void addFlags(AstNode* const nodep, uint8_t flags) {
-    nodep->user2(nodep->user2() | flags);
-}
+static void addFlags(AstNode* const nodep, uint8_t flags) { nodep->user2(nodep->user2() | flags); }
 // Check if a node has ALL of the expected flags set
-static bool hasFlags(AstNode* const nodep, uint8_t flags) {
-    return !(~nodep->user2() & flags);
-}
+static bool hasFlags(AstNode* const nodep, uint8_t flags) { return !(~nodep->user2() & flags); }
 
 // ######################################################################
 //  Detect nodes affected by timing and/or requiring a process
@@ -249,8 +245,7 @@ private:
         for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
             auto* const depVxp = static_cast<DepVtx*>(edgep->top());
             AstNode* const depp = depVxp->nodep();
-            if (p(edgep) && passFlag(parentp, depp, flag))
-                propagateFlagsIf(depVxp, flag, p);
+            if (p(edgep) && passFlag(parentp, depp, flag)) propagateFlagsIf(depVxp, flag, p);
         }
     }
     template <typename Predicate>
