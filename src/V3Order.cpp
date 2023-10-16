@@ -801,7 +801,7 @@ struct MTaskVxIdLessThan final {
 //######################################################################
 // OrderProcess class
 
-class OrderProcess final : VNDeleter {
+class OrderProcess final {
     // NODE STATE
     //  AstNode::user4  -> Used by V3Const::constifyExpensiveEdit
 
@@ -829,6 +829,7 @@ class OrderProcess final : VNDeleter {
     friend class OrderMoveDomScope;
     V3List<OrderMoveDomScope*> m_pomReadyDomScope;  // List of ready domain/scope pairs, by loopId
     std::map<std::pair<AstNodeModule*, std::string>, unsigned> m_funcNums;  // Function ordinals
+    VNDeleter deleter;  // Used to delete nodes
 
     // METHODS
 
@@ -900,10 +901,10 @@ class OrderProcess final : VNDeleter {
         , m_deleteDomainp{makeDeleteDomainSenTree(netlistp->fileline())}
         , m_tag{tag}
         , m_slow{slow} {
-        pushDeletep(m_deleteDomainp);
+        deleter.pushDeletep(m_deleteDomainp);
     }
 
-    ~OrderProcess() override = default;
+    ~OrderProcess() = default;
 
 public:
     // Order the logic
@@ -1223,7 +1224,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
         needProcess = procp->needProcess();
         if (suspendable) slow = slow && !VN_IS(procp, Always);
         nodep = procp->stmtsp();
-        pushDeletep(procp);
+        deleter.pushDeletep(procp);
     }
 
     // Put suspendable processes into individual functions on their own
@@ -1270,7 +1271,7 @@ AstActive* OrderProcess::processMoveOneLogic(const OrderLogicVertex* lvertexp,
         if (nodep->backp()) nodep->unlinkFrBack();
 
         if (domainp == m_deleteDomainp) {
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            VL_DO_DANGLING(deleter.pushDeletep(nodep), nodep);
         } else {
             newFuncpr->addStmtsp(nodep);
             // Add in the number of nodes we're adding
