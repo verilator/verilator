@@ -1,0 +1,6 @@
+%Error-NOTIMING: t/t_disable_fork_notiming.v:8:12: Support for disable fork statement requires --timing
+                                                 : ... note: In instance 't'
+    8 |    initial disable fork;
+      |            ^~~~~~~
+                 ... For error description see https://verilator.org/warn/NOTIMING?v=latest
+%Error: Exiting due to
