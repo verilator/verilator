@@ -931,6 +931,13 @@ private:
             }
             // Then the trigger check and assignment
             loopp->addStmtsp(assignp);
+            // Let the dynamic trigger scheduler know if this trigger was set
+            // If it was, a call to the scheduler's evaluate() will return true
+            AstCMethodHard* const anyTriggeredMethodp = new AstCMethodHard{
+                flp, new AstVarRef{flp, getCreateDynamicTriggerScheduler(), VAccess::WRITE},
+                "anyTriggered", new AstVarRef{flp, trigvscp, VAccess::READ}};
+            anyTriggeredMethodp->dtypeSetVoid();
+            loopp->addStmtsp(anyTriggeredMethodp->makeStmt());
             // If the post update is destructive (e.g. event vars are cleared), create an await for
             // the post update step
             if (destructivePostUpdate(sensesp)) {
