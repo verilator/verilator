@@ -3405,7 +3405,7 @@ private:
         if (!isTreeHierarchicalIdentExpr(nodep->operandp())) {
             nodep->operandp()->v3warn(EVENTEXPR,
                                       "Non-identifier expression used to reference an event to "
-                                      "be sent. This is not a part of IEEE_1800-2017");
+                                      "be sent. This is not a part of IEEE 1800-2017.");
         }
     }
     void visit(AstWith* nodep) override {

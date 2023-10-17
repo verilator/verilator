@@ -4319,8 +4319,9 @@ private:
                                              << " event in statically scheduled context.\n"
                                              << asgnp->warnMore()
                                              << "Static event "
-                                                "scheduling won't be able to handle this. "
-                                                "Your best bet is to move the event into a "
+                                                "scheduling won't be able to handle this.\n"
+                                                << asgnp->warnMore() <<
+                                                "... Suggest move the event into a "
                                                 "completely dynamic context, eg. a class,  and "
                                                 "reference it only from such context.");
         }
