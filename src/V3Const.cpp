@@ -673,7 +673,7 @@ public:
     // Reduction ops are transformed in the same way.
     // &{v[0], v[1]} => 2'b11 == (2'b11 & v)
     static AstNodeExpr* simplify(AstNodeExpr* nodep, int resultWidth, unsigned externalOps,
-                                 VDouble0& reduction) {
+                                 VDouble0& reduction, VNDeleter& deleterr) {
         UASSERT_OBJ(1 <= resultWidth && resultWidth <= 64, nodep, "resultWidth out of range");
 
         // Walk tree, gathering all terms referenced in expression
@@ -716,7 +716,7 @@ public:
                 }
                 // Set width and widthMin precisely
                 resultp->dtypeChgWidth(resultWidth, 1);
-                for (AstNode* const termp : termps) termp->deleteTree();
+                for (AstNode* const termp : termps) deleterr.pushDeletep(termp);
                 return resultp;
             }
             const ResultTerm result = v->getResultTerm();
@@ -792,7 +792,7 @@ public:
 
         // Only substitute the result if beneficial as determined by operation count
         if (visitor.m_ops <= resultOps) {
-            for (AstNode* const termp : termps) termp->deleteTree();
+            for (AstNode* const termp : termps) deleterr.pushDeletep(termp);
             return nullptr;
         }
 
@@ -1012,7 +1012,7 @@ private:
         return (lp && rp && lp->width() == rp->width() && lp->type() == rp->type()
                 && (operandsSame(lp->lhsp(), rp->lhsp()) || operandsSame(lp->rhsp(), rp->rhsp())));
     }
-    static bool matchOrAndNot(AstNodeBiop* nodep) {
+    bool matchOrAndNot(AstNodeBiop* nodep) {
         // AstOr{$a, AstAnd{AstNot{$b}, $c}} if $a.width1, $a==$b => AstOr{$a,$c}
         // Someday we'll sort the biops completely and this can be simplified
         // This often results from our simplified clock generation:
@@ -1043,7 +1043,7 @@ private:
         if (!operandsSame(ap, bp)) return false;
         // Do it
         cp->unlinkFrBack();
-        VL_DO_DANGLING(andp->unlinkFrBack()->deleteTree(), andp);
+        VL_DO_DANGLING(pushDeletep(andp->unlinkFrBack()), andp);
         VL_DANGLING(notp);
         // Replace whichever branch is now dangling
         if (nodep->rhsp()) {
@@ -1175,9 +1175,11 @@ private:
         const AstAnd* const andp = VN_CAST(nodep, And);
         const int width = nodep->width();
         if (andp && isConst(andp->lhsp(), 1)) {  // 1 & BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), width, 1, m_statBitOpReduction);
+            newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), width, 1, m_statBitOpReduction,
+                                                   deleter());
         } else {  // BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(nodep, width, 0, m_statBitOpReduction);
+            newp = ConstBitOpTreeVisitor::simplify(nodep, width, 0, m_statBitOpReduction,
+                                                   deleter());
         }
 
         if (newp) {
