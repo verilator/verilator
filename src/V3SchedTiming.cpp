@@ -293,13 +293,17 @@ void transformForks(AstNetlist* const netlistp) {
                 AstVar* const varp = refp->varp();
                 AstBasicDType* const dtypep = varp->dtypep()->basicp();
                 bool passByValue = false;
-                if (VString::startsWith(varp->name(), "__Vintra")) {
-                    // Pass it by value to the new function, as otherwise there are issues with
-                    // -flocalize (see t_timing_intra_assign)
-                    passByValue = true;
-                } else if (!varp->user1() || !varp->isFuncLocal()) {
-                    // Not func local, or not declared before the fork. Their lifetime is longer
-                    // than the forked process. Skip
+                if (!varp->isFuncLocal()) {
+                    if (VString::startsWith(varp->name(), "__Vintra")) {
+                        // Pass it by value to the new function, as otherwise there are issues with
+                        // -flocalize (see t_timing_intra_assign)
+                        passByValue = true;
+                    } else {
+                        // Not func local. Its lifetime is longer than the forked process. Skip
+                        return;
+                    }
+                } else if (!varp->user1()) {
+                    // Not declared before the fork. It cannot outlive the forked process
                     return;
                 } else if (dtypep && dtypep->isForkSync()) {
                     // We can just pass it by value to the new function
