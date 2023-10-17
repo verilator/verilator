@@ -69,8 +69,6 @@ static int countTrailingZeroes(uint64_t val) {
 #endif
 }
 
-std::map<const AstNode*, bool> V3Const::s_containsMemberAccess;
-
 // This visitor can be used in the post-expanded Ast from V3Expand, where the Ast satisfies:
 // - Constants are 64 bit at most (because words are accessed via AstWordSel)
 // - Variables are scoped.
@@ -913,6 +911,7 @@ private:
     const bool m_globalPass;  // ConstVisitor invoked as a global pass
     static uint32_t s_globalPassNum;  // Counts number of times ConstVisitor invoked as global pass
     V3UniqueNames m_concswapNames;  // For generating unique temporary variable names
+    std::map<const AstNode*, bool> m_containsMemberAccess;  // Caches results of matchBiopToBitwise
 
     // METHODS
 
@@ -2325,10 +2324,10 @@ private:
         iterate(nodep);  // Again?
     }
 
-    bool containsMemberAccessRecurse(const AstNode* const nodep) const {
+    bool containsMemberAccessRecurse(const AstNode* const nodep) {
         if (!nodep) return false;
-        const auto it = V3Const::s_containsMemberAccess.lower_bound(nodep);
-        if (it != V3Const::s_containsMemberAccess.end() && it->first == nodep) return it->second;
+        const auto it = m_containsMemberAccess.lower_bound(nodep);
+        if (it != m_containsMemberAccess.end() && it->first == nodep) return it->second;
         bool result = false;
         if (VN_IS(nodep, MemberSel) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall)) {
             result = true;
@@ -2353,7 +2352,7 @@ private:
             && containsMemberAccessRecurse(nodep->nextp())) {
             result = true;
         }
-        V3Const::s_containsMemberAccess.insert(it, std::make_pair(nodep, result));
+        m_containsMemberAccess.insert(it, std::make_pair(nodep, result));
         return result;
     }
 
@@ -3770,7 +3769,6 @@ public:
         // clang-format on
     }
     ~ConstVisitor() override {
-        V3Const::s_containsMemberAccess.clear();
         if (m_doCpp) {
             if (m_globalPass) {
                 V3Stats::addStat("Optimizations, Const bit op reduction", m_statBitOpReduction);

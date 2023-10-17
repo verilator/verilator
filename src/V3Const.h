@@ -27,7 +27,6 @@
 
 class V3Const final {
 public:
-    static std::map<const AstNode*, bool> s_containsMemberAccess;
     static AstNode* constifyParamsEdit(AstNode* nodep) VL_MT_DISABLED;
     static AstNodeExpr* constifyParamsEdit(AstNodeExpr* exprp) VL_MT_DISABLED {
         return VN_AS(constifyParamsEdit(static_cast<AstNode*>(exprp)), NodeExpr);
