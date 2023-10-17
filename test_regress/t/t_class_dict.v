@@ -22,6 +22,7 @@ module t (/*AUTOARG*/);
       dict[c1] = 1;
       dict[c2] = 2;
       `checkh(dict[c1], 1);
+      `checkh(dict[c2], 2);
 
       $write("*-* All Finished *-*\n");
       $finish;
