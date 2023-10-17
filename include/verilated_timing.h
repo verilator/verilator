@@ -275,6 +275,7 @@ public:
 //         co_await __VdynSched.evaluation();
 //         <pre updates>;
 //         __Vtrigger = <trigger eval>;
+//         __VdynShed.anyTriggered(__Vtrigger);
 //         [optionally] co_await __VdynSched.postUpdate();
 //         <post updates>;
 //     }
@@ -288,6 +289,7 @@ class VlDynamicTriggerScheduler final {
     using VlCoroutineVec = std::vector<VlCoroutineHandle>;
 
     // MEMBERS
+    bool m_anyTriggered = false;  // If true, at least one trigger was set
     VlCoroutineVec m_suspended;  // Suspended coroutines awaiting trigger evaluation
     VlCoroutineVec m_evaluated;  // Coroutines currently being evaluated (for evaluate())
     VlCoroutineVec m_triggered;  // Coroutines whose triggers were set, and are awaiting resumption
@@ -313,6 +315,8 @@ class VlDynamicTriggerScheduler final {
 public:
     // Evaluates all dynamic triggers (resumed coroutines that co_await evaluation())
     bool evaluate();
+    // Called by coroutines that evaluate triggers to notify the scheduler if any triggers were set
+    void anyTriggered(bool triggered) { m_anyTriggered = m_anyTriggered || triggered; }
     // Runs post updates for all dynamic triggers (resumes coroutines that co_await postUpdate())
     void doPostUpdates();
     // Resumes all coroutines whose triggers are set (those that co_await resumption())

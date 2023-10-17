@@ -171,10 +171,9 @@ class VIsCached final {
     // Used in some nodes to cache results of boolean methods
     // If cachedCnt == 0, not cached
     // else if cachedCnt == s_cachedCntGbl, then m_state is if cached
-    uint32_t m_cachedCnt : 31;  // Mark of when cache was computed
-    uint32_t m_state : 1;
-    static uint32_t s_cachedCntGbl;  // Global computed count
-    static constexpr uint32_t MAX_CNT = (1UL << 31) - 1;  // Max for m_cachedCnt
+    uint64_t m_cachedCnt : 63;  // Mark of when cache was computed
+    uint64_t m_state : 1;
+    static uint64_t s_cachedCntGbl;  // Global computed count
 
 public:
     VIsCached()
@@ -192,7 +191,8 @@ public:
     }
     static void clearCacheTree() {
         ++s_cachedCntGbl;
-        UASSERT_STATIC(s_cachedCntGbl < MAX_CNT, "Overflow of cache counting");
+        // 64 bits so won't overflow
+        // UASSERT_STATIC(s_cachedCntGbl < MAX_CNT, "Overflow of cache counting");
     }
 };
 
@@ -1502,7 +1502,7 @@ public:
 // nodes needs to be deferred to a later time, because pointers to the
 // removed nodes might still exist.
 
-class VNDeleter VL_NOT_FINAL {
+class VNDeleter final {
     // MEMBERS
     std::vector<AstNode*> m_deleteps;  // Nodes to delete
 
@@ -1515,11 +1515,11 @@ public:
         m_deleteps.push_back(nodep);
     }
 
-    // Delete all previously pushed nodes (by callint deleteTree)
+    // Delete all previously pushed nodes (by calling deleteTree)
     void doDeletes();
 
     // Do the deletions on destruction
-    virtual ~VNDeleter() { doDeletes(); }
+    ~VNDeleter() { doDeletes(); }
 };
 
 //######################################################################
@@ -1528,7 +1528,7 @@ public:
 // This only has the constant fuctions for non-modifying visitors.
 // For more typical usage see VNVisitor
 
-class VNVisitorConst VL_NOT_FINAL : public VNDeleter {
+class VNVisitorConst VL_NOT_FINAL {
     friend class AstNode;
 
 public:
@@ -1546,6 +1546,7 @@ public:
     inline void iterateAndNextConstNullBackwards(AstNode* nodep);
 
     virtual void visit(AstNode* nodep) = 0;
+    virtual ~VNVisitorConst() {}
 #include "V3Ast__gen_visitor_decls.h"  // From ./astgen
 };
 
@@ -1554,6 +1555,7 @@ public:
 // type without changing the base classes.  See "Modern C++ Design".
 
 class VNVisitor VL_NOT_FINAL : public VNVisitorConst {
+    VNDeleter m_deleter;  // Used to delay deletion of nodes
 public:
     /// Call visit()s on nodep
     inline void iterate(AstNode* nodep);
@@ -1565,6 +1567,10 @@ public:
     inline void iterateAndNextNull(AstNode* nodep);
     /// Return edited nodep; see comments in V3Ast.cpp
     inline AstNode* iterateSubtreeReturnEdits(AstNode* nodep);
+
+    VNDeleter& deleter() { return m_deleter; }
+    void pushDeletep(AstNode* nodep) { deleter().pushDeletep(nodep); }
+    void doDeletes() { deleter().doDeletes(); }
 };
 
 //######################################################################
@@ -1713,8 +1719,8 @@ class AstNode VL_NOT_FINAL {
     }
 
 private:
-    AstNode* cloneTreeIter();
-    AstNode* cloneTreeIterList();
+    AstNode* cloneTreeIter(bool needPure);
+    AstNode* cloneTreeIterList(bool needPure);
     void checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE;
     bool gateTreeIter() const;
     static bool sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext,
@@ -1956,6 +1962,7 @@ public:
     uint64_t editCount() const { return m_editCount; }
     void editCountInc() {
         m_editCount = ++s_editCntGbl;  // Preincrement, so can "watch AstNode::s_editCntGbl=##"
+        VIsCached::clearCacheTree();  // Any edit clears all caching
     }
 #else
     void editCountInc() { ++s_editCntGbl; }
@@ -2073,8 +2080,9 @@ public:
                              AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
-    AstNode* cloneTree(bool cloneNextLink);  // Not const, as sets clonep() on original nodep //
-    AstNode* cloneTreePure(bool cloneNextLink) { return cloneTree(cloneNextLink); }
+    AstNode* cloneTree(bool cloneNextLink,
+                       bool needPure = false);  // Not const, as sets clonep() on original nodep
+    AstNode* cloneTreePure(bool cloneNextLink) { return cloneTree(cloneNextLink, true); }
     bool gateTree() { return gateTreeIter(); }  // Is tree isGateOptimizable?
     inline bool sameTree(const AstNode* node2p) const;  // Does tree of this == node2p?
     // Does tree of this == node2p?, not allowing non-isGateOptimizable

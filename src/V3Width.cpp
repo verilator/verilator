@@ -696,8 +696,14 @@ private:
         }
     }
     void visit(AstDisableFork* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: disable fork statements");
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        if (nodep->fileline()->timingOn()) {
+            if (v3Global.opt.timing().isSetFalse()) {
+                nodep->v3warn(E_NOTIMING, "Support for disable fork statement requires --timing");
+            } else if (!v3Global.opt.timing().isSetTrue()) {
+                nodep->v3warn(E_NEEDTIMINGOPT, "Use --timing or --no-timing to specify how "
+                                                   << "disable fork should be handled");
+            }
+        }
     }
     void visit(AstWaitFork* nodep) override {
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: wait fork statements");
@@ -4120,6 +4126,7 @@ private:
         PatVecMap patmap = patVectorMap(nodep, range);
         UINFO(9, "ent " << range.left() << " to " << range.right() << endl);
         AstNode* newp = nullptr;
+        bool allConstant = true;
         for (int entn = 0, ent = range.left(); entn < range.elements();
              ++entn, ent += range.leftToRightInc()) {
             AstPatMember* newpatp = nullptr;
@@ -4129,7 +4136,10 @@ private:
                 if (defaultp) {
                     newpatp = defaultp->cloneTree(false);
                     patp = newpatp;
-                } else {
+                } else if (!(VN_IS(arrayDtp, UnpackArrayDType) && !allConstant)) {
+                    // If arrayDtp is an unpacked array and item is not constant,
+                    // the number of elemnt cannot be determined here as the dtype of each element
+                    // is not set yet. V3Slice checks for such cases.
                     nodep->v3error("Assignment pattern missed initializing elements: " << ent);
                 }
             } else {
@@ -4140,6 +4150,7 @@ private:
             if (patp) {
                 // Don't want the RHS an array
                 patp->dtypep(arrayDtp->subDTypep());
+                allConstant &= VN_IS(patp->lhssp(), Const);
                 AstNodeExpr* const valuep = patternMemberValueIterate(patp);
                 if (VN_IS(arrayDtp, UnpackArrayDType)) {
                     if (!newp) {
@@ -6670,7 +6681,8 @@ private:
                 // child node's width to end up correct for the assignment (etc)
                 widthCheckSized(nodep, side, VN_AS(underp, NodeExpr), expDTypep, extendRule,
                                 warnOn);
-            } else if (!VN_IS(expDTypep->skipRefp(), IfaceRefDType)
+            } else if (!VN_IS(nodep, Eq) && !VN_IS(nodep, Neq)
+                       && !VN_IS(expDTypep->skipRefp(), IfaceRefDType)
                        && VN_IS(underp->dtypep()->skipRefp(), IfaceRefDType)) {
                 underp->v3error(ucfirst(nodep->prettyOperatorName())
                                 << " expected non-interface on " << side << " but "

@@ -1470,9 +1470,9 @@ private:
             beginp = new AstExprStmt{nodep->fileline(), beginp, outrefp};
             // AstExprStmt is currently treated as impure, so clear the cached purity of its
             // parents
-            nodep->clearCachedPurity();
             nodep->replaceWith(beginp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VIsCached::clearCacheTree();
         } else {
             insertBeforeStmt(nodep, beginp);
             if (nodep->taskp()->isFunction()) {
