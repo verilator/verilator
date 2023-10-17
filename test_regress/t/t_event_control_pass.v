@@ -48,7 +48,4 @@ module t();
     $write("*-* All Finished *-*\n");
     $finish;
   end
-
-  initial begin
-  end
 endmodule
