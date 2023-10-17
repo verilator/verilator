@@ -900,7 +900,7 @@ private:
     bool m_doNConst = false;  // Enable non-constant-child simplifications
     bool m_doV = false;  // Verilog, not C++ conversion
     bool m_doGenerate = false;  // Postpone width checking inside generate
-    bool m_convertLogicToBit = false;  // Sonvert logical operators to bitwise
+    bool m_convertLogicToBit = false;  // Convert logical operators to bitwise
     bool m_hasJumpDelay = false;  // JumpGo or Delay under this while
     bool m_underRecFunc = false;  // Under a recursive function
     AstNodeModule* m_modp = nullptr;  // Current module

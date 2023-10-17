@@ -608,7 +608,7 @@ private:
     bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
     bool m_dpiTraceInit : 1;  // DPI trace_init
-    bool m_needProcess : 1;  // Implements part of a process that allocates std::process
+    bool m_needProcess : 1;  // Needs access to VlProcess of the caller
     bool m_recursive : 1;  // Recursive or part of recursion
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
