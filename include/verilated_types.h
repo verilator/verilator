@@ -1629,6 +1629,10 @@ public:
     bool operator!=(const VlClassRef<T_OtherClass>& rhs) const {
         return m_objp != rhs.m_objp;
     };
+    template <typename T_OtherClass>
+    bool operator<(const VlClassRef<T_OtherClass>& rhs) const {
+        return m_objp < rhs.m_objp;
+    };
 };
 
 template <typename T, typename U>
