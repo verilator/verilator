@@ -900,6 +900,7 @@ private:
     bool m_doNConst = false;  // Enable non-constant-child simplifications
     bool m_doV = false;  // Verilog, not C++ conversion
     bool m_doGenerate = false;  // Postpone width checking inside generate
+    bool m_convertLogicToBit = false;  // Convert logical operators to bitwise
     bool m_hasJumpDelay = false;  // JumpGo or Delay under this while
     bool m_underRecFunc = false;  // Under a recursive function
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -910,6 +911,7 @@ private:
     const bool m_globalPass;  // ConstVisitor invoked as a global pass
     static uint32_t s_globalPassNum;  // Counts number of times ConstVisitor invoked as global pass
     V3UniqueNames m_concswapNames;  // For generating unique temporary variable names
+    std::map<const AstNode*, bool> m_containsMemberAccess;  // Caches results of matchBiopToBitwise
 
     // METHODS
 
@@ -2322,6 +2324,46 @@ private:
         iterate(nodep);  // Again?
     }
 
+    bool containsMemberAccessRecurse(const AstNode* const nodep) {
+        if (!nodep) return false;
+        const auto it = m_containsMemberAccess.lower_bound(nodep);
+        if (it != m_containsMemberAccess.end() && it->first == nodep) return it->second;
+        bool result = false;
+        if (VN_IS(nodep, MemberSel) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall)) {
+            result = true;
+        } else if (const AstNodeFTaskRef* const funcRefp = VN_CAST(nodep, NodeFTaskRef)) {
+            if (containsMemberAccessRecurse(funcRefp->taskp())) result = true;
+        } else if (const AstNodeCCall* const funcRefp = VN_CAST(nodep, NodeCCall)) {
+            if (containsMemberAccessRecurse(funcRefp->funcp())) result = true;
+        } else if (const AstNodeFTask* const funcp = VN_CAST(nodep, NodeFTask)) {
+            // Assume that it has a member access
+            if (funcp->recursive()) result = true;
+        } else if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
+            if (funcp->recursive()) result = true;
+        }
+        if (!result) {
+            result = containsMemberAccessRecurse(nodep->op1p())
+                     || containsMemberAccessRecurse(nodep->op2p())
+                     || containsMemberAccessRecurse(nodep->op3p())
+                     || containsMemberAccessRecurse(nodep->op4p());
+        }
+        if (!result && !VN_IS(nodep, NodeFTask)
+            && !VN_IS(nodep, CFunc)  // don't enter into next function
+            && containsMemberAccessRecurse(nodep->nextp())) {
+            result = true;
+        }
+        m_containsMemberAccess.insert(it, std::make_pair(nodep, result));
+        return result;
+    }
+
+    bool matchBiopToBitwise(AstNodeBiop* const nodep) {
+        if (!m_convertLogicToBit) return false;
+        if (!nodep->lhsp()->width1()) return false;
+        if (!nodep->rhsp()->width1()) return false;
+        if (!nodep->isPure()) return false;
+        if (containsMemberAccessRecurse(nodep)) return false;
+        return true;
+    }
     bool matchConcatRand(AstConcat* nodep) {
         //    CONCAT(RAND, RAND) - created by Chisel code
         AstRand* const aRandp = VN_CAST(nodep->lhsp(), Rand);
@@ -3598,8 +3640,8 @@ private:
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
-    TREEOPV("AstLogAnd{$lhsp.width1, $rhsp.width1, nodep->isPure()}", "AstAnd{$lhsp,$rhsp}");
-    TREEOPV("AstLogOr {$lhsp.width1, $rhsp.width1, nodep->isPure()}", "AstOr{$lhsp,$rhsp}");
+    TREEOPV("AstLogAnd{matchBiopToBitwise(nodep)}", "AstAnd{$lhsp,$rhsp}");
+    TREEOPV("AstLogOr {matchBiopToBitwise(nodep)}", "AstOr{$lhsp,$rhsp}");
     TREEOPV("AstLogNot{$lhsp.width1}",  "AstNot{$lhsp}");
     // CONCAT(CONCAT({a},{b}),{c}) -> CONCAT({a},CONCAT({b},{c}))
     // CONCAT({const},CONCAT({const},{c})) -> CONCAT((constifiedCONC{const|const},{c}))
@@ -3718,7 +3760,7 @@ public:
         case PROC_GENERATE:       m_doV = true;  m_doNConst = true; m_params = true;
                                   m_required = true; m_doGenerate = true; break;
         case PROC_LIVE:           break;
-        case PROC_V_WARN:         m_doV = true;  m_doNConst = true; m_warn = true; break;
+        case PROC_V_WARN:         m_doV = true;  m_doNConst = true; m_warn = true; m_convertLogicToBit = true; break;
         case PROC_V_NOWARN:       m_doV = true;  m_doNConst = true; break;
         case PROC_V_EXPENSIVE:    m_doV = true;  m_doNConst = true; m_doExpensive = true; break;
         case PROC_CPP:            m_doV = false; m_doNConst = true; m_doCpp = true; break;
