@@ -582,8 +582,11 @@ private:
     // Returns true if we are under a class or the given tree has any references to locals. These
     // are cases where static, globally-evaluated triggers are not suitable.
     bool needDynamicTrigger(AstNode* const nodep) const {
-        return m_classp || nodep->exists([](const AstNodeVarRef* const refp) {
-            return refp->varp()->isFuncLocal();
+        return m_classp || nodep->exists([](AstNode* const nodep) {
+            if (AstNodeVarRef* varp = VN_CAST(nodep, NodeVarRef)) {
+                return varp->varp()->isFuncLocal();
+            }
+            return !nodep->isPure();
         });
     }
     // Returns true if the given trigger expression needs a destructive post update after trigger
