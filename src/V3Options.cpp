@@ -14,18 +14,15 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
-
 #include "V3Options.h"
 
-#include "V3Ast.h"
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3Global.h"
 #include "V3Mutex.h"
 #include "V3OptionParser.h"
 #include "V3Os.h"
+#include "V3PchAstMT.h"
 #include "V3PreShell.h"
 #include "V3String.h"
 

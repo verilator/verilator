@@ -673,7 +673,7 @@ public:
     // Reduction ops are transformed in the same way.
     // &{v[0], v[1]} => 2'b11 == (2'b11 & v)
     static AstNodeExpr* simplify(AstNodeExpr* nodep, int resultWidth, unsigned externalOps,
-                                 VDouble0& reduction) {
+                                 VDouble0& reduction, VNDeleter& deleterr) {
         UASSERT_OBJ(1 <= resultWidth && resultWidth <= 64, nodep, "resultWidth out of range");
 
         // Walk tree, gathering all terms referenced in expression
@@ -716,7 +716,7 @@ public:
                 }
                 // Set width and widthMin precisely
                 resultp->dtypeChgWidth(resultWidth, 1);
-                for (AstNode* const termp : termps) termp->deleteTree();
+                for (AstNode* const termp : termps) deleterr.pushDeletep(termp);
                 return resultp;
             }
             const ResultTerm result = v->getResultTerm();
@@ -792,7 +792,7 @@ public:
 
         // Only substitute the result if beneficial as determined by operation count
         if (visitor.m_ops <= resultOps) {
-            for (AstNode* const termp : termps) termp->deleteTree();
+            for (AstNode* const termp : termps) deleterr.pushDeletep(termp);
             return nullptr;
         }
 
@@ -900,6 +900,7 @@ private:
     bool m_doNConst = false;  // Enable non-constant-child simplifications
     bool m_doV = false;  // Verilog, not C++ conversion
     bool m_doGenerate = false;  // Postpone width checking inside generate
+    bool m_convertLogicToBit = false;  // Convert logical operators to bitwise
     bool m_hasJumpDelay = false;  // JumpGo or Delay under this while
     bool m_underRecFunc = false;  // Under a recursive function
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -910,6 +911,7 @@ private:
     const bool m_globalPass;  // ConstVisitor invoked as a global pass
     static uint32_t s_globalPassNum;  // Counts number of times ConstVisitor invoked as global pass
     V3UniqueNames m_concswapNames;  // For generating unique temporary variable names
+    std::map<const AstNode*, bool> m_containsMemberAccess;  // Caches results of matchBiopToBitwise
 
     // METHODS
 
@@ -1012,7 +1014,7 @@ private:
         return (lp && rp && lp->width() == rp->width() && lp->type() == rp->type()
                 && (operandsSame(lp->lhsp(), rp->lhsp()) || operandsSame(lp->rhsp(), rp->rhsp())));
     }
-    static bool matchOrAndNot(AstNodeBiop* nodep) {
+    bool matchOrAndNot(AstNodeBiop* nodep) {
         // AstOr{$a, AstAnd{AstNot{$b}, $c}} if $a.width1, $a==$b => AstOr{$a,$c}
         // Someday we'll sort the biops completely and this can be simplified
         // This often results from our simplified clock generation:
@@ -1043,7 +1045,7 @@ private:
         if (!operandsSame(ap, bp)) return false;
         // Do it
         cp->unlinkFrBack();
-        VL_DO_DANGLING(andp->unlinkFrBack()->deleteTree(), andp);
+        VL_DO_DANGLING(pushDeletep(andp->unlinkFrBack()), andp);
         VL_DANGLING(notp);
         // Replace whichever branch is now dangling
         if (nodep->rhsp()) {
@@ -1175,9 +1177,11 @@ private:
         const AstAnd* const andp = VN_CAST(nodep, And);
         const int width = nodep->width();
         if (andp && isConst(andp->lhsp(), 1)) {  // 1 & BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), width, 1, m_statBitOpReduction);
+            newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), width, 1, m_statBitOpReduction,
+                                                   deleter());
         } else {  // BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(nodep, width, 0, m_statBitOpReduction);
+            newp = ConstBitOpTreeVisitor::simplify(nodep, width, 0, m_statBitOpReduction,
+                                                   deleter());
         }
 
         if (newp) {
@@ -2320,6 +2324,46 @@ private:
         iterate(nodep);  // Again?
     }
 
+    bool containsMemberAccessRecurse(const AstNode* const nodep) {
+        if (!nodep) return false;
+        const auto it = m_containsMemberAccess.lower_bound(nodep);
+        if (it != m_containsMemberAccess.end() && it->first == nodep) return it->second;
+        bool result = false;
+        if (VN_IS(nodep, MemberSel) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall)) {
+            result = true;
+        } else if (const AstNodeFTaskRef* const funcRefp = VN_CAST(nodep, NodeFTaskRef)) {
+            if (containsMemberAccessRecurse(funcRefp->taskp())) result = true;
+        } else if (const AstNodeCCall* const funcRefp = VN_CAST(nodep, NodeCCall)) {
+            if (containsMemberAccessRecurse(funcRefp->funcp())) result = true;
+        } else if (const AstNodeFTask* const funcp = VN_CAST(nodep, NodeFTask)) {
+            // Assume that it has a member access
+            if (funcp->recursive()) result = true;
+        } else if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
+            if (funcp->recursive()) result = true;
+        }
+        if (!result) {
+            result = containsMemberAccessRecurse(nodep->op1p())
+                     || containsMemberAccessRecurse(nodep->op2p())
+                     || containsMemberAccessRecurse(nodep->op3p())
+                     || containsMemberAccessRecurse(nodep->op4p());
+        }
+        if (!result && !VN_IS(nodep, NodeFTask)
+            && !VN_IS(nodep, CFunc)  // don't enter into next function
+            && containsMemberAccessRecurse(nodep->nextp())) {
+            result = true;
+        }
+        m_containsMemberAccess.insert(it, std::make_pair(nodep, result));
+        return result;
+    }
+
+    bool matchBiopToBitwise(AstNodeBiop* const nodep) {
+        if (!m_convertLogicToBit) return false;
+        if (!nodep->lhsp()->width1()) return false;
+        if (!nodep->rhsp()->width1()) return false;
+        if (!nodep->isPure()) return false;
+        if (containsMemberAccessRecurse(nodep)) return false;
+        return true;
+    }
     bool matchConcatRand(AstConcat* nodep) {
         //    CONCAT(RAND, RAND) - created by Chisel code
         AstRand* const aRandp = VN_CAST(nodep->lhsp(), Rand);
@@ -3596,8 +3640,8 @@ private:
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
-    TREEOPV("AstLogAnd{$lhsp.width1, $rhsp.width1, nodep->isPure()}", "AstAnd{$lhsp,$rhsp}");
-    TREEOPV("AstLogOr {$lhsp.width1, $rhsp.width1, nodep->isPure()}", "AstOr{$lhsp,$rhsp}");
+    TREEOPV("AstLogAnd{matchBiopToBitwise(nodep)}", "AstAnd{$lhsp,$rhsp}");
+    TREEOPV("AstLogOr {matchBiopToBitwise(nodep)}", "AstOr{$lhsp,$rhsp}");
     TREEOPV("AstLogNot{$lhsp.width1}",  "AstNot{$lhsp}");
     // CONCAT(CONCAT({a},{b}),{c}) -> CONCAT({a},CONCAT({b},{c}))
     // CONCAT({const},CONCAT({const},{c})) -> CONCAT((constifiedCONC{const|const},{c}))
@@ -3716,7 +3760,7 @@ public:
         case PROC_GENERATE:       m_doV = true;  m_doNConst = true; m_params = true;
                                   m_required = true; m_doGenerate = true; break;
         case PROC_LIVE:           break;
-        case PROC_V_WARN:         m_doV = true;  m_doNConst = true; m_warn = true; break;
+        case PROC_V_WARN:         m_doV = true;  m_doNConst = true; m_warn = true; m_convertLogicToBit = true; break;
         case PROC_V_NOWARN:       m_doV = true;  m_doNConst = true; break;
         case PROC_V_EXPENSIVE:    m_doV = true;  m_doNConst = true; m_doExpensive = true; break;
         case PROC_CPP:            m_doV = false; m_doNConst = true; m_doCpp = true; break;

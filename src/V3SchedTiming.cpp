@@ -24,13 +24,8 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
-
 #include "V3EmitCBase.h"
-#include "V3Error.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Sched.h"
 
 #include <unordered_map>
@@ -279,7 +274,6 @@ void transformForks(AstNetlist* const netlistp) {
         // STATE
         bool m_inClass = false;  // Are we in a class?
         bool m_beginHasAwaits = false;  // Does the current begin have awaits?
-        bool m_beginNeedProcess = false;  // Does the current begin have process::self dependency?
         AstFork* m_forkp = nullptr;  // Current fork
         AstCFunc* m_funcp = nullptr;  // Current function
 
@@ -358,9 +352,8 @@ void transformForks(AstNetlist* const netlistp) {
             UASSERT_OBJ(m_forkp, nodep, "Begin outside of a fork");
             // Start with children, so later we only find awaits that are actually in this begin
             m_beginHasAwaits = false;
-            m_beginNeedProcess = false;
             iterateChildrenConst(nodep);
-            if (m_beginHasAwaits || m_beginNeedProcess) {
+            if (m_beginHasAwaits || nodep->needProcess()) {
                 UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
                 // Create a function to put this begin's statements in
                 FileLine* const flp = nodep->fileline();
@@ -384,7 +377,7 @@ void transformForks(AstNetlist* const netlistp) {
                 }
                 // Put the begin's statements in the function, delete the begin
                 newfuncp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
-                if (m_beginNeedProcess) {
+                if (nodep->needProcess()) {
                     newfuncp->setNeedProcess();
                     newfuncp->addStmtsp(new AstCStmt{nodep->fileline(),
                                                      "vlProcess->state(VlProcess::FINISHED);\n"});
@@ -403,10 +396,6 @@ void transformForks(AstNetlist* const netlistp) {
         }
         void visit(AstCAwait* nodep) override {
             m_beginHasAwaits = true;
-            iterateChildrenConst(nodep);
-        }
-        void visit(AstCCall* nodep) override {
-            if (nodep->funcp()->needProcess()) m_beginNeedProcess = true;
             iterateChildrenConst(nodep);
         }
         void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }

@@ -35,15 +35,9 @@
 // simplified to look primarily for SLICESELs.
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
-
 #include "V3Slice.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 

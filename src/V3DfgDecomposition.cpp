@@ -18,13 +18,9 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
-
 #include "V3Dfg.h"
 #include "V3File.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include <deque>
 #include <unordered_map>

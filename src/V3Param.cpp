@@ -44,26 +44,19 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
-
 #include "V3Param.h"
 
-#include "V3Ast.h"
 #include "V3Case.h"
 #include "V3Const.h"
-#include "V3Global.h"
 #include "V3Hasher.h"
 #include "V3Os.h"
 #include "V3Parse.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Unroll.h"
 #include "V3Width.h"
 
 #include <cctype>
 #include <deque>
-#include <map>
 #include <memory>
 #include <vector>
 
@@ -223,7 +216,7 @@ public:
 //######################################################################
 // Remove parameters from cells and build new modules
 
-class ParamProcessor final : public VNDeleter {
+class ParamProcessor final {
     // NODE STATE - Local
     //   AstVar::user4()        // int    Global parameter number (for naming new module)
     //                          //        (0=not processed, 1=iterated, but no number,
@@ -270,6 +263,7 @@ class ParamProcessor final : public VNDeleter {
     using DefaultValueMap = std::map<std::string, AstConst*>;
     // Default parameter values of hierarchical blocks
     std::map<AstNodeModule*, DefaultValueMap> m_defaultParameterValues;
+    VNDeleter m_deleter;  // Used to delay deletion of nodes
 
     // METHODS
 

@@ -11190,9 +11190,7 @@ task uvm_phase::execute_phase();
                end
              end
            join_any
-//TODO issue #4125 - Support disable fork
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:11187:12: Unsupported: disable fork statements
-//TODO           disable fork;
+           disable fork;
           end
         join
     end
@@ -15172,9 +15170,7 @@ class uvm_heartbeat extends uvm_object;
       end
       @(m_stop_event);
     join_any
-//TODO issue #4125 - Support disable fork
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:15167:12: Unsupported: disable fork statements
-//TODO    disable fork;
+    disable fork;
   endtask
 endclass
 class uvm_heartbeat_callback extends uvm_objection_callback;
@@ -19218,9 +19214,7 @@ task uvm_sequencer_base::m_wait_for_available_sequence();
           join_any
         end
       join_any
-//TODO issue #4125 - Support disable fork
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:19213:12: Unsupported: disable fork statements
-//TODO      disable fork;
+      disable fork;
     end
   join
 endtask

@@ -44,9 +44,10 @@ set(HEADERS
     V3Begin.h
     V3Branch.h
     V3Broken.h
+    V3CCtors.h
+    V3CUse.h
     V3Case.h
     V3Cast.h
-    V3CCtors.h
     V3Class.h
     V3Clean.h
     V3Clock.h
@@ -56,7 +57,6 @@ set(HEADERS
     V3Const.h
     V3Coverage.h
     V3CoverageJoin.h
-    V3CUse.h
     V3Dead.h
     V3Delayed.h
     V3Depth.h
@@ -105,8 +105,8 @@ set(HEADERS
     V3LinkDot.h
     V3LinkInc.h
     V3LinkJump.h
-    V3LinkLevel.h
     V3LinkLValue.h
+    V3LinkLevel.h
     V3LinkParse.h
     V3LinkResolve.h
     V3List.h
@@ -127,10 +127,12 @@ set(HEADERS
     V3ParseSym.h
     V3Partition.h
     V3PartitionGraph.h
+    V3PchAstMT.h
+    V3PchAstNoMT.h
     V3PreLex.h
-    V3Premit.h
     V3PreProc.h
     V3PreShell.h
+    V3Premit.h
     V3ProtectLib.h
     V3Randomize.h
     V3Reloop.h
@@ -149,6 +151,7 @@ set(HEADERS
     V3String.h
     V3Subst.h
     V3SymTable.h
+    V3TSP.h
     V3Table.h
     V3Task.h
     V3ThreadPool.h
@@ -157,7 +160,6 @@ set(HEADERS
     V3Trace.h
     V3TraceDecl.h
     V3Tristate.h
-    V3TSP.h
     V3Undriven.h
     V3UniqueNames.h
     V3Unknown.h

@@ -560,6 +560,21 @@ Verilator requires a C++11 or newer compiler.]])
 fi
 AC_SUBST(CFG_CXXFLAGS_STD)
 
+# Compiler precompiled header options (assumes either gcc or clang++)
+AC_MSG_CHECKING([for $CXX precompile header include option])
+if $CXX --help | grep include-pch >/dev/null 2>/dev/null ; then
+   # clang
+   CFG_CXXFLAGS_PCH_I=-include-pch
+   CFG_GCH_IF_CLANG=.gch
+else
+   # GCC
+   CFG_CXXFLAGS_PCH_I=-include
+   CFG_GCH_IF_CLANG=
+fi
+AC_MSG_RESULT($CFG_CXXFLAGS_PCH_I)
+AC_SUBST(CFG_CXXFLAGS_PCH_I)
+AC_SUBST(CFG_GCH_IF_CLANG)
+
 # Checks for library functions.
 AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],
     [AC_DEFINE([HAVE_STAT_NSEC],[1],[Defined if struct stat has st_mtim.tv_nsec])],

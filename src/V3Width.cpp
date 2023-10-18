@@ -63,23 +63,16 @@
 // iterateSubtreeReturnEdits.
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
-
 #include "V3Width.h"
 
 #include "V3Const.h"
-#include "V3Global.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3Task.h"
 #include "V3WidthCommit.h"
-
-#include <algorithm>
 
 // More code; this file was getting too large; see actions there
 #define VERILATOR_V3WIDTH_CPP_
@@ -696,8 +689,14 @@ private:
         }
     }
     void visit(AstDisableFork* nodep) override {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: disable fork statements");
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        if (nodep->fileline()->timingOn()) {
+            if (v3Global.opt.timing().isSetFalse()) {
+                nodep->v3warn(E_NOTIMING, "Support for disable fork statement requires --timing");
+            } else if (!v3Global.opt.timing().isSetTrue()) {
+                nodep->v3warn(E_NEEDTIMINGOPT, "Use --timing or --no-timing to specify how "
+                                                   << "disable fork should be handled");
+            }
+        }
     }
     void visit(AstWaitFork* nodep) override {
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: wait fork statements");
@@ -6675,7 +6674,8 @@ private:
                 // child node's width to end up correct for the assignment (etc)
                 widthCheckSized(nodep, side, VN_AS(underp, NodeExpr), expDTypep, extendRule,
                                 warnOn);
-            } else if (!VN_IS(expDTypep->skipRefp(), IfaceRefDType)
+            } else if (!VN_IS(nodep, Eq) && !VN_IS(nodep, Neq)
+                       && !VN_IS(expDTypep->skipRefp(), IfaceRefDType)
                        && VN_IS(underp->dtypep()->skipRefp(), IfaceRefDType)) {
                 underp->v3error(ucfirst(nodep->prettyOperatorName())
                                 << " expected non-interface on " << side << " but "

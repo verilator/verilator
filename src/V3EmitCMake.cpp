@@ -14,17 +14,12 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
-
 #include "V3EmitCMake.h"
 
 #include "V3EmitCBase.h"
-#include "V3Global.h"
 #include "V3HierBlock.h"
 #include "V3Os.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include <memory>
 

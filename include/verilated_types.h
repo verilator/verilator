@@ -81,11 +81,16 @@ constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
     return lhs <= 1 ? 0 : VL_CLOG2_CE_Q((lhs + 1) >> 1ULL) + 1;
 }
 
-//===================================================================
-// VlProcess stores metadata of running processes
+// Metadata of processes
+class VlProcess;
+
+using VlProcessRef = std::shared_ptr<VlProcess>;
+
 class VlProcess final {
     // MEMBERS
     int m_state;  // Current state of the process
+    VlProcessRef m_parentp = nullptr;  // Parent process, if exists
+    std::set<VlProcess*> m_children;  // Active child processes
 
 public:
     // TYPES
@@ -98,15 +103,33 @@ public:
     };
 
     // CONSTRUCTORS
+    // Construct independent process
     VlProcess()
         : m_state{RUNNING} {}
+    // Construct child process of parent
+    VlProcess(VlProcessRef parentp)
+        : m_state{RUNNING}
+        , m_parentp{parentp} {
+        m_parentp->attach(this);
+    }
 
-    // METHODS
+    ~VlProcess() {
+        if (m_parentp) m_parentp->detach(this);
+    }
+
+    void attach(VlProcess* childp) { m_children.insert(childp); }
+    void detach(VlProcess* childp) { m_children.erase(childp); }
+
     int state() { return m_state; }
     void state(int s) { m_state = s; }
+    void disable() {
+        state(KILLED);
+        disable_fork();
+    }
+    void disable_fork() {
+        for (VlProcess* childp : m_children) childp->disable();
+    }
 };
-
-using VlProcessRef = std::shared_ptr<VlProcess>;
 
 inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
 
@@ -1605,6 +1628,10 @@ public:
     template <typename T_OtherClass>
     bool operator!=(const VlClassRef<T_OtherClass>& rhs) const {
         return m_objp != rhs.m_objp;
+    };
+    template <typename T_OtherClass>
+    bool operator<(const VlClassRef<T_OtherClass>& rhs) const {
+        return m_objp < rhs.m_objp;
     };
 };
 

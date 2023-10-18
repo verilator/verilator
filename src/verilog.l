@@ -82,7 +82,6 @@ static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
 %s ATTRMODE QQQ STRING TABLE
 %s VA5 SAX VLT
 %s SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
-%s IGNORE
 
 ws      [ \t\f\r]+
 wsnr    [ \t\f]+
@@ -1010,7 +1009,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
   /* If add to this list also add to V3LanguageWords.h */
-<V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,SAX,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
+<V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,SAX,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR>{
   "`accelerate"                         { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`autoexpand_vectornets"              { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`celldefine"                         { FL_FWD; PARSEP->lexFileline()->celldefineOn(true); FL_BRK; }
@@ -1097,10 +1096,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <SYSCIMPH>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; yylval.strp = PARSEP->newString(yytext); return yaSCIMPH; }
 <SYSCCTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; yylval.strp = PARSEP->newString(yytext); return yaSCCTOR; }
 <SYSCDTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; yylval.strp = PARSEP->newString(yytext); return yaSCDTOR; }
-<IGNORE>[ \t]*[^` \t\n\r][^\n\r]*{crnl}         { FL_FWD; FL_BRK; }
 
   /* Pick up text-type data */
-<SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
+<SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR>{
   {wsnr}*               { yymore(); }
   {crnl}                { yymore(); }
 }

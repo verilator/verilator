@@ -14,11 +14,9 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
-
 #include "V3EmitCBase.h"
 
+#include "V3PchAstMT.h"
 #include "V3Task.h"
 
 //######################################################################

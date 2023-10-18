@@ -14,10 +14,9 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
-
 #include "V3Hasher.h"
+
+#include "V3PchAstMT.h"
 
 #include <functional>
 
@@ -143,6 +142,7 @@ private:
     void visit(AstBasicDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [=]() {
             m_hash += nodep->keyword();
+            m_hash += nodep->numeric();
             m_hash += nodep->nrange().left();
             m_hash += nodep->nrange().right();
         });

@@ -33,15 +33,8 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
-
-#include "V3Ast.h"
-#include "V3Error.h"
-#include "V3Global.h"
 #include "V3Graph.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Sched.h"
 #include "V3SenTree.h"
 #include "V3SplitVar.h"
