@@ -72,12 +72,10 @@
 //       Used for b) and c).
 //       This options is repeated for all instantiating hierarchical blocks.
 
-#define VL_MT_DISABLED_CODE_UNIT 1
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3HierBlock.h"
 
-#include "V3Ast.h"
-#include "V3Error.h"
 #include "V3File.h"
 #include "V3Os.h"
 #include "V3Stats.h"

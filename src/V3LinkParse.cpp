@@ -18,19 +18,12 @@
 //          Move some attributes around
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3LinkParse.h"
 
-#include "V3Ast.h"
 #include "V3Config.h"
-#include "V3Global.h"
 
-#include <algorithm>
-#include <map>
 #include <set>
 #include <vector>
 

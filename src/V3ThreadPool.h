@@ -17,7 +17,7 @@
 #ifndef _V3THREADPOOL_H_
 #define _V3THREADPOOL_H_ 1
 
-#if defined(VL_MT_DISABLED_CODE_UNIT)
+#ifdef VL_MT_DISABLED_CODE_UNIT
 #error "Source file has been declared as MT_DISABLED, threads use is prohibited."
 #endif
 

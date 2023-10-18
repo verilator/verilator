@@ -14,13 +14,9 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstMT.h"
 
 #include "V3Number.h"
-
-#include "V3Ast.h"
-#include "V3Global.h"
 
 #include <algorithm>
 #include <cerrno>

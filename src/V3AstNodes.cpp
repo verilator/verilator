@@ -14,6 +14,8 @@
 //
 //*************************************************************************
 
+#include "V3PchAstMT.h"
+
 #include "config_build.h"
 #include "verilatedos.h"
 

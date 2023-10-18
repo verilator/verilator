@@ -19,6 +19,7 @@ Verilator 5.017 devel
 * Support randc (#4349).
 * Support resizing function call inout arguments (#4467).
 * Support converting parameters inside modules to localparams (#4511). [Anthony Donlon]
+* Support compilation with precompiled headers with Make and GCC or CLang.
 * Change lint_off to not propagate upwards to files including where the lint_off is.
 * Optimize empty expression statements (#4544).
 * Fix conversion of impure logical expressions to bit expressions (#487 partial) (#4437). [Ryszard Rozak, Antmicro Ltd.]

@@ -23,21 +23,14 @@
 //              Link to module that instantiates it
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3LinkCells.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3Parse.h"
 #include "V3SymTable.h"
 
-#include <algorithm>
-#include <map>
 #include <unordered_set>
 #include <vector>
 
