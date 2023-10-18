@@ -19,5 +19,5 @@ endinterface
 module t (
     my_if top_if
 );
-    // No other parameterized interfaces used here, so the module referenced by top_if won't be parameterized
+    // No other reference to the parameterizable interface 'my_if' here
 endmodule
