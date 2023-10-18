@@ -193,6 +193,7 @@ RAW_OBJS_PCH_ASTMT = \
 	V3EmitCHeaders.o \
 	V3EmitCImp.o \
 	V3EmitCInlines.o \
+	V3EmitCPch.o \
 	V3EmitV.o \
 	V3File.o \
 	V3Global.o \

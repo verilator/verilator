@@ -627,13 +627,9 @@ class EmitCModel final : public EmitCFunc {
              "Model implementation (design independent parts)\n");
 
         puts("\n");
-        puts("#include \"" + topClassName() + ".h\"\n");
-        puts("#include \"" + symClassName() + ".h\"\n");
+        puts("#include \"" + pchClassName() + ".h\"\n");
         if (v3Global.opt.trace()) {
             puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
-        }
-        if (v3Global.dpi()) {  //
-            puts("#include \"verilated_dpi.h\"\n");
         }
 
         emitConstructorImplementation(modp);
