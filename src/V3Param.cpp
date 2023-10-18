@@ -264,7 +264,6 @@ class ParamProcessor final {
     using DefaultValueMap = std::map<std::string, AstConst*>;
     // Default parameter values of hierarchical blocks
     std::map<AstNodeModule*, DefaultValueMap> m_defaultParameterValues;
-    VNDeleter m_deleter;  // Used to delay deletion of nodes
 
     // METHODS
 
