@@ -33,8 +33,9 @@
 //
 //*************************************************************************
 
-#include "V3Graph.h"
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
+#include "V3Graph.h"
 #include "V3Sched.h"
 #include "V3SenTree.h"
 #include "V3SplitVar.h"

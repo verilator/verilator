@@ -18,13 +18,14 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3DfgOptimizer.h"
 
 #include "V3AstUserAllocator.h"
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
 #include "V3Graph.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3UniqueNames.h"
 
 #include <vector>

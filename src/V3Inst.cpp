@@ -21,10 +21,11 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3Inst.h"
 
 #include "V3Const.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 

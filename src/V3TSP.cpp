@@ -19,11 +19,12 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3TSP.h"
 
 #include "V3File.h"
 #include "V3Graph.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include <cmath>
 #include <list>

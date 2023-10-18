@@ -111,7 +111,10 @@ set(HEADERS
     V3LinkResolve.h
     V3List.h
     V3Localize.h
+    V3MemberMap.h
     V3MergeCond.h
+    V3Mutex.h
+    V3Name.h
     V3Name.h
     V3Number.h
     V3OptionParser.h
@@ -136,6 +139,7 @@ set(HEADERS
     V3ProtectLib.h
     V3Randomize.h
     V3Reloop.h
+    V3Rtti.h
     V3Sched.h
     V3Scope.h
     V3Scoreboard.h

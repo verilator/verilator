@@ -19,9 +19,9 @@
 //          Create new MODULE TOP with connections to below signals
 //*************************************************************************
 
-#include "V3LinkLevel.h"
-
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
+#include "V3LinkLevel.h"
 
 #include <vector>
 

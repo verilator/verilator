@@ -24,10 +24,11 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3Unroll.h"
 
 #include "V3Const.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Simulate.h"
 #include "V3Stats.h"
 

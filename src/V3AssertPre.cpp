@@ -19,10 +19,11 @@
 //      Transform clocking blocks into imperative logic
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3AssertPre.h"
 
 #include "V3Const.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Task.h"
 #include "V3UniqueNames.h"
 

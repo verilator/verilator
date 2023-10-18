@@ -21,13 +21,14 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3Gate.h"
 
 #include "V3AstUserAllocator.h"
 #include "V3Const.h"
 #include "V3DupFinder.h"
 #include "V3Graph.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Stats.h"
 
 #include <list>

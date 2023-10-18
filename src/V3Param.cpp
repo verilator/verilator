@@ -44,6 +44,8 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3Param.h"
 
 #include "V3Case.h"
@@ -51,7 +53,6 @@
 #include "V3Hasher.h"
 #include "V3Os.h"
 #include "V3Parse.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Unroll.h"
 #include "V3Width.h"
 

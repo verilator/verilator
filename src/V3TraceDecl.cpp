@@ -20,13 +20,14 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3TraceDecl.h"
 
 #include "verilated_trace_defs.h"  // For VLT_TRACE_SCOPE_*
 
 #include "V3Config.h"
 #include "V3EmitCBase.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Stats.h"
 
 #include <functional>
