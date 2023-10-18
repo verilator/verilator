@@ -15,9 +15,9 @@
 //
 //*************************************************************************
 
-#include "V3InstrCount.h"
-
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
+#include "V3InstrCount.h"
 
 #include <iomanip>
 

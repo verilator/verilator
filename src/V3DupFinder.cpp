@@ -14,10 +14,11 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3DupFinder.h"
 
 #include "V3File.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include <iomanip>
 #include <memory>

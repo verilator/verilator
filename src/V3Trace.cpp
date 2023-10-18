@@ -35,12 +35,13 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3Trace.h"
 
 #include "V3DupFinder.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Stats.h"
 
 #include <limits>

@@ -22,9 +22,10 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3Subst.h"
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Stats.h"
 
 #include <algorithm>

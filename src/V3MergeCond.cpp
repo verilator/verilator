@@ -72,12 +72,13 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3MergeCond.h"
 
 #include "V3AstUserAllocator.h"
 #include "V3DupFinder.h"
 #include "V3Hasher.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Stats.h"
 
 #include <queue>
