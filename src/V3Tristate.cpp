@@ -115,12 +115,11 @@
 // unsupported.
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
-
 #include "V3Tristate.h"
 
 #include "V3Graph.h"
 #include "V3Inst.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Stats.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;

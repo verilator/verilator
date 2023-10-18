@@ -63,13 +63,12 @@
 // iterateSubtreeReturnEdits.
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
-
 #include "V3Width.h"
 
 #include "V3Const.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3Task.h"

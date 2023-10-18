@@ -14,9 +14,9 @@
 //
 //*************************************************************************
 
-#include "V3PchAstMT.h"
-
 #include "V3Hasher.h"
+
+#include "V3PchAstMT.h"
 
 #include <functional>
 

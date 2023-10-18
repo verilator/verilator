@@ -27,10 +27,9 @@
 //
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
-
 #include "V3Clock.h"
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Sched.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;

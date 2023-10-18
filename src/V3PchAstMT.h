@@ -24,8 +24,6 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include <algorithm>
-
 #include "V3Ast.h"
 #include "V3Broken.h"
 #include "V3Error.h"
@@ -38,5 +36,7 @@
 #include "V3StdFuture.h"
 #include "V3String.h"
 #include "V3ThreadSafety.h"
+
+#include <algorithm>
 
 #endif  // Guard

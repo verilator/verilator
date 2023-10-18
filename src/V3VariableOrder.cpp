@@ -20,12 +20,11 @@
 //
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
-
 #include "V3VariableOrder.h"
 
 #include "V3AstUserAllocator.h"
 #include "V3EmitCBase.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3TSP.h"
 
 #include <vector>

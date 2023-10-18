@@ -18,9 +18,9 @@
 //          Set lvalue() attributes on appropriate VARREFs.
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
-
 #include "V3LinkLValue.h"
+
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 

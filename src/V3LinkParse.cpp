@@ -18,11 +18,10 @@
 //          Move some attributes around
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
-
 #include "V3LinkParse.h"
 
 #include "V3Config.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include <set>
 #include <vector>

@@ -14,10 +14,9 @@
 //
 //*************************************************************************
 
-#include "V3PchAstMT.h"
-
 #include "V3EmitC.h"
 #include "V3EmitCFunc.h"
+#include "V3PchAstMT.h"
 #include "V3ThreadPool.h"
 #include "V3UniqueNames.h"
 

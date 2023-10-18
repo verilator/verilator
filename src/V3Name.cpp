@@ -19,11 +19,10 @@
 //              Prepend __PVT__ to variable names
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
-
 #include "V3Name.h"
 
 #include "V3LanguageWords.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 

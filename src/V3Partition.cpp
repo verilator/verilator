@@ -14,8 +14,6 @@
 //
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
-
 #include "V3Partition.h"
 
 #include "V3Config.h"
@@ -27,6 +25,7 @@
 #include "V3Os.h"
 #include "V3PairingHeap.h"
 #include "V3PartitionGraph.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Scoreboard.h"
 #include "V3Stats.h"
 #include "V3UniqueNames.h"

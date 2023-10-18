@@ -23,11 +23,10 @@
 //
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
-
 #include "V3ActiveTop.h"
 
 #include "V3Const.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3SenTree.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;

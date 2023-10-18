@@ -14,10 +14,9 @@
 //
 //*************************************************************************
 
-#include "V3PchAstMT.h"
-
 #include "V3EmitC.h"
 #include "V3EmitCConstInit.h"
+#include "V3PchAstMT.h"
 
 #include <algorithm>
 #include <cstdint>

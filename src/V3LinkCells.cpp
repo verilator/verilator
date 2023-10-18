@@ -23,12 +23,11 @@
 //              Link to module that instantiates it
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
-
 #include "V3LinkCells.h"
 
 #include "V3Graph.h"
 #include "V3Parse.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3SymTable.h"
 
 #include <unordered_set>

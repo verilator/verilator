@@ -61,12 +61,11 @@
 //      b          (VSymEnt->AstCell)
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
-
 #include "V3LinkDot.h"
 
 #include "V3Graph.h"
 #include "V3MemberMap.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3String.h"
 #include "V3SymTable.h"
 

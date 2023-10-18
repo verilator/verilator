@@ -14,9 +14,9 @@
 //
 //*************************************************************************
 
-#include "V3PchAstMT.h"
-
 #include "V3Stats.h"
+
+#include "V3PchAstMT.h"
 
 // This visitor does not edit nodes, and is called at error-exit, so should use constant iterators
 #include "V3AstConstOnly.h"

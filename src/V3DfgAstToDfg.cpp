@@ -26,10 +26,9 @@
 //
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
-
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 

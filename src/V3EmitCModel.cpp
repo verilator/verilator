@@ -14,10 +14,9 @@
 //
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
-
 #include "V3EmitC.h"
 #include "V3EmitCFunc.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3UniqueNames.h"
 
 #include <algorithm>

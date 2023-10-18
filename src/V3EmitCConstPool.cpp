@@ -14,11 +14,10 @@
 //
 //*************************************************************************
 
-#include "V3PchAstMT.h"
-
 #include "V3EmitC.h"
 #include "V3EmitCConstInit.h"
 #include "V3File.h"
+#include "V3PchAstMT.h"
 #include "V3Stats.h"
 
 #include <algorithm>
