@@ -35,21 +35,16 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Trace.h"
 
 #include "V3DupFinder.h"
 #include "V3EmitCBase.h"
-#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
 
 #include <limits>
-#include <map>
 #include <set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;

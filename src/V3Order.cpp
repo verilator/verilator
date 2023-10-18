@@ -71,19 +71,14 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Order.h"
 
-#include "V3Ast.h"
 #include "V3AstUserAllocator.h"
 #include "V3Const.h"
 #include "V3EmitV.h"
 #include "V3File.h"
-#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3GraphStream.h"
 #include "V3List.h"
@@ -96,10 +91,8 @@
 #include "V3SplitVar.h"
 #include "V3Stats.h"
 
-#include <algorithm>
 #include <deque>
 #include <iomanip>
-#include <map>
 #include <memory>
 #include <sstream>
 #include <unordered_map>

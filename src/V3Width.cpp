@@ -63,23 +63,17 @@
 // iterateSubtreeReturnEdits.
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Width.h"
 
 #include "V3Const.h"
-#include "V3Global.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3Task.h"
 #include "V3WidthCommit.h"
-
-#include <algorithm>
 
 // More code; this file was getting too large; see actions there
 #define VERILATOR_V3WIDTH_CPP_

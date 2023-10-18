@@ -61,22 +61,15 @@
 //      b          (VSymEnt->AstCell)
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3LinkDot.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3MemberMap.h"
 #include "V3String.h"
 #include "V3SymTable.h"
 
-#include <algorithm>
-#include <map>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;

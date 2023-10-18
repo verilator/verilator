@@ -14,17 +14,13 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstMT.h"
 
 #include "V3Config.h"
 
-#include "V3Global.h"
 #include "V3String.h"
 
-#include <map>
 #include <set>
-#include <string>
 #include <unordered_map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
