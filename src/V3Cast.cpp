@@ -162,6 +162,11 @@ private:
         ensureLower32Cast(nodep);
         nodep->user1(1);
     }
+    void visit(AstConsPackMember* nodep) override {
+        iterateChildren(nodep);
+        if (VN_IS(nodep->rhsp()->dtypep()->skipRefp(), BasicDType)) ensureCast(nodep->rhsp());
+        nodep->user1(1);
+    }
     void visit(AstExprStmt* nodep) override {
         iterateChildren(nodep);
         nodep->user1(1);
