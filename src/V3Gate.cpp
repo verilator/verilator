@@ -1000,7 +1000,7 @@ static void eliminate(AstNode* logicp,
         // Substitute in the new tree
         UASSERT_OBJ(nodep->access().isReadOnly(), nodep,
                     "Can't replace lvalue assignments with const var");
-        UASSERT_OBJ(!(VN_IS(substp, NodeVarRef) && nodep->same(substp)),
+        UASSERT_OBJ(!(VN_IS(substp, NodeVarRef) && nodep->isSame(substp)),
                     // Prevent an infinite loop...
                     substp, "Replacing node with itself; perhaps circular logic?");
         // The replacement

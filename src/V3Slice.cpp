@@ -135,7 +135,7 @@ class SliceVisitor final : public VNVisitor {
                     const AstUnpackArrayDType* const itemDTypep
                         = VN_CAST(itemRawDTypep, UnpackArrayDType);
                     if (!itemDTypep
-                        || !expectedItemDTypep->same(itemDTypep->subDTypep()->skipRefp())) {
+                        || !expectedItemDTypep->isSame(itemDTypep->subDTypep()->skipRefp())) {
                         if (!m_assignError) {
                             itemp->v3error("Item is incompatible with the array type.");
                         }

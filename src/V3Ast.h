@@ -1773,6 +1773,9 @@ protected:
         UASSERT_STATIC(s_cloneCntGbl, "Rollover");
     }
 
+    // Use instead isSame(), this is for each Ast* class, and assumes node is of same type
+    virtual bool same(const AstNode*) const { return true; }
+
 public:
     // ACCESSORS
     VNType type() const VL_MT_SAFE { return m_type; }
@@ -2137,7 +2140,10 @@ public:
     // statement is unlikely to be taken
     virtual bool isUnlikely() const { return false; }
     virtual int instrCount() const { return 0; }
-    virtual bool same(const AstNode*) const { return true; }
+    // Iff node is identical to anouther node
+    virtual bool isSame(const AstNode* samep) const {
+        return type() == samep->type() && same(samep);
+    }
     // Iff has a data type; dtype() must be non null
     virtual bool hasDType() const VL_MT_SAFE { return false; }
     // Iff has a non-null childDTypep(), as generic node function

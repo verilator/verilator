@@ -1434,7 +1434,7 @@ private:
             // Avoid comparing widthMin's, which results in lost optimization attempts
             // If cleanup sameGateTree to be smarter, this can be restored.
             // return node1p->sameGateTree(node2p);
-            return node1p->same(node2p);
+            return node1p->isSame(node2p);
         } else {
             return false;
         }

@@ -1701,7 +1701,7 @@ AstNodeUOrStructDType* AstMemberDType::getChildStructp() const {
 
 bool AstMemberSel::same(const AstNode* samep) const {
     const AstMemberSel* const sp = VN_DBG_AS(samep, MemberSel);
-    return sp != nullptr && access() == sp->access() && fromp()->same(sp->fromp())
+    return sp != nullptr && access() == sp->access() && fromp()->isSame(sp->fromp())
            && name() == sp->name() && varp()->same(sp->varp());
 }
 
