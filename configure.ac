@@ -443,14 +443,15 @@ m4_foreach([cflag],[
         [-Qunused-arguments],
         [-Wno-bool-operation],
         [-Wno-constant-logical-operand],
-        [-Wno-tautological-bitwise-compare],
         [-Wno-parentheses-equality],
+        [-Wno-shadow],
         [-Wno-sign-compare],
+        [-Wno-tautological-bitwise-compare],
         [-Wno-uninitialized],
+        [-Wno-unused-but-set-parameter],
         [-Wno-unused-but-set-variable],
         [-Wno-unused-parameter],
-        [-Wno-unused-variable],
-        [-Wno-shadow]],[
+        [-Wno-unused-variable]],[
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,cflag)
     # CMake will test what flags work itself, so pass all flags through to it
     CFG_CXX_FLAGS_CMAKE="$CFG_CXX_FLAGS_CMAKE cflag"
