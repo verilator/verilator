@@ -466,9 +466,9 @@ void EmitCSyms::emitSymHdr() {
     }
     if (v3Global.hasEvents()) {
         if (v3Global.assignsEvents()) {
-            puts("std::vector<VlEventHandle> __Vm_triggeredEvents;\n");
+            puts("std::vector<VlAssignableEvent> __Vm_triggeredEvents;\n");
         } else {
-            puts("std::vector<VlEventHandle*> __Vm_triggeredEvents;\n");
+            puts("std::vector<VlEvent*> __Vm_triggeredEvents;\n");
         }
     }
     if (v3Global.hasClasses()) puts("VlDeleter __Vm_deleter;\n");
@@ -538,7 +538,11 @@ void EmitCSyms::emitSymHdr() {
     puts("const char* name() { return TOP.name(); }\n");
 
     if (v3Global.hasEvents()) {
-        puts("void enqueueTriggeredEventForClearing(VlEventHandle& event) {\n");
+        if (v3Global.assignsEvents()) {
+            puts("void enqueueTriggeredEventForClearing(VlAssignableEvent& event) {\n");
+        } else {
+            puts("void enqueueTriggeredEventForClearing(VlEvent& event) {\n");
+        }
         puts("#ifdef VL_DEBUG\n");
         puts("if (VL_UNLIKELY(!event.isTriggered())) {\n");
         puts("VL_FATAL_MT(__FILE__, __LINE__, __FILE__, \"event passed to "
