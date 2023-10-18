@@ -190,11 +190,8 @@ class EmitCImp final : EmitCFunc {
         puts("// DESCRIPTION: Verilator output: Design implementation internals\n");
         puts("// See " + topClassName() + ".h for the primary calling header\n");
 
-        // Include files
-        puts("\n#include \"verilated.h\"\n");
-        if (v3Global.dpi()) puts("#include \"verilated_dpi.h\"\n");
         puts("\n");
-        puts("#include \"" + symClassName() + ".h\"\n");
+        puts("#include \"" + pchClassName() + ".h\"\n");
         for (const string& name : headers) puts("#include \"" + name + ".h\"\n");
 
         emitTextSection(m_modp, VNType::atScImpHdr);

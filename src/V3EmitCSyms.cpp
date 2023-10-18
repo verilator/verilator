@@ -606,7 +606,7 @@ void EmitCSyms::emitSymImpPreamble() {
     puts("\n");
 
     // Includes
-    puts("#include \"" + symClassName() + ".h\"\n");
+    puts("#include \"" + pchClassName() + ".h\"\n");
     puts("#include \"" + topClassName() + ".h\"\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_AS(nodep->nextp(), NodeModule)) {

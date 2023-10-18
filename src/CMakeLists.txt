@@ -228,6 +228,7 @@ set(COMMON_SOURCES
     V3EmitCMain.cpp
     V3EmitCMake.cpp
     V3EmitCModel.cpp
+    V3EmitCPch.cpp
     V3EmitCSyms.cpp
     V3EmitMk.cpp
     V3EmitV.cpp

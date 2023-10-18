@@ -1,2 +1,2 @@
-%Error: Vt_trace_noflag_bad.cpp:106: 'Vt_trace_noflag_bad::trace()' called on model that was Verilated without --trace option
+%Error: Vt_trace_noflag_bad.cpp:105: 'Vt_trace_noflag_bad::trace()' called on model that was Verilated without --trace option
 Aborting...
