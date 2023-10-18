@@ -34,9 +34,10 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3EmitV.h"
 #include "V3Graph.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Sched.h"
 
 #include <tuple>

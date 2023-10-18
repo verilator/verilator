@@ -63,6 +63,8 @@ ForEachMacros:
 SortIncludes:    true
 IncludeBlocks:   Regroup
 IncludeCategories:
+  - Regex:           '"V3Pch.*\.h"'
+    Priority:        -2 # Precompiled headers
   - Regex:           '"(config_build|verilated_config|verilatedos)\.h"'
     Priority:        -1 # Sepecials before main header
   - Regex:           '(<|")verilated.*'

@@ -14,9 +14,10 @@
 //
 //*************************************************************************
 
+#include "V3PchAstMT.h"
+
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
-#include "V3PchAstMT.h"
 #include "V3Stats.h"
 
 #include <map>

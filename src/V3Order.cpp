@@ -71,6 +71,8 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3Order.h"
 
 #include "V3AstUserAllocator.h"
@@ -84,7 +86,6 @@
 #include "V3OrderMoveGraph.h"
 #include "V3Partition.h"
 #include "V3PartitionGraph.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3Sched.h"
 #include "V3SenTree.h"
 #include "V3SplitVar.h"

@@ -60,13 +60,14 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3Timing.h"
 
 #include "V3Const.h"
 #include "V3EmitV.h"
 #include "V3Graph.h"
 #include "V3MemberMap.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 #include "V3SenExprBuilder.h"
 #include "V3SenTree.h"
 #include "V3UniqueNames.h"

@@ -21,9 +21,9 @@
 //
 //*************************************************************************
 
-#include "V3Scope.h"
-
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
+#include "V3Scope.h"
 
 #include <unordered_map>
 #include <unordered_set>

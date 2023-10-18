@@ -14,12 +14,13 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3EmitCMake.h"
 
 #include "V3EmitCBase.h"
 #include "V3HierBlock.h"
 #include "V3Os.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include <memory>
 

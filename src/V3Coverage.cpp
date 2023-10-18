@@ -24,9 +24,9 @@
 //
 //*************************************************************************
 
-#include "V3Coverage.h"
-
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
+#include "V3Coverage.h"
 
 #include <unordered_map>
 

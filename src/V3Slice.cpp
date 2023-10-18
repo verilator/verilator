@@ -35,9 +35,9 @@
 // simplified to look primarily for SLICESELs.
 //*************************************************************************
 
-#include "V3Slice.h"
-
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
+#include "V3Slice.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 

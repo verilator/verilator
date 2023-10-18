@@ -38,11 +38,12 @@
 //
 //*************************************************************************
 
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+
 #include "V3Fork.h"
 
 #include "V3AstNodeExpr.h"
 #include "V3MemberMap.h"
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include <set>
 #include <vector>
