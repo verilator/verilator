@@ -1054,6 +1054,7 @@ private:
     }
     void visit(AstWaitFork* nodep) override {
         AstCExpr* exprp = new AstCExpr{nodep->fileline(), "vlProcess->completedFork()", 1};
+        exprp->pure(false);
         AstWait* waitp = new AstWait{nodep->fileline(), exprp, nullptr};
         nodep->replaceWith(waitp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
