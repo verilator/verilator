@@ -259,9 +259,11 @@ $(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
 ### Compile rules
 
 ifneq ($(VM_DEFAULT_RULES),0)
-# Anything not in $(VK_OBJS_SLOW) or $(VK_GLOBAL_OBJS), including verilated.o
-# and user files passed on the Verilator command line use this rule.
-# We put OPT_FAST/OPT_SLOW/OPT_GLOBAL before the other flags to
+# Compilation rule for anything not in $(VK_OBJS_FAST), $(VK_OBJS_SLOW), or
+# $(VK_GLOBAL_OBJS) including verilated.o.  This typically means user files
+# passed on the Verilator command line.
+#
+# These rules put OPT_FAST/OPT_SLOW/OPT_GLOBAL before the other flags to
 # allow USER_CPPFLAGS to override them
 %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
@@ -276,8 +278,8 @@ $(VK_GLOBAL_OBJS): %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(OPT_GLOBAL) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 # Precompile a header file
-# PCH's compiler flags must match exactly the fast/slow arguments used in the .cpp file,
-# or the PCH file won't be used.
+# PCH's compiler flags must match exactly the rules' above FAST/SLOW
+# arguments used for the .cpp files, or the PCH file won't be used.
 %.fast.gch: %
 	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
 %.slow.gch: %
