@@ -2132,6 +2132,8 @@ public:
     virtual bool isPredictOptimizable() const { return !isTimingControl(); }
     // Else a $display, etc, that must be ordered with other displays
     virtual bool isPure() { return true; }
+    // Iff isPure on current node and any nextp()
+    bool isPureAndNext() { return isPure() && (!nextp() || nextp()->isPure()); }
     // Else a AstTime etc that can't be substituted out
     virtual bool isSubstOptimizable() const { return true; }
     // An event control, delay, wait, etc.

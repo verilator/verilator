@@ -3149,6 +3149,8 @@ private:
         // right line numbers, nor scopeNames as might be different scopes (late in process)
         if (!m_doCpp && pformatp->exprsp()) return false;
         if (!m_doCpp && nformatp->exprsp()) return false;
+        if (pformatp->exprsp() && !pformatp->exprsp()->isPureAndNext()) return false;
+        if (nformatp->exprsp() && !nformatp->exprsp()->isPureAndNext()) return false;
         // Avoid huge merges
         static constexpr int DISPLAY_MAX_MERGE_LENGTH = 500;
         if (pformatp->text().length() + nformatp->text().length() > DISPLAY_MAX_MERGE_LENGTH)
