@@ -559,6 +559,7 @@ static void process() {
             V3EmitC::emitcSyms();
             V3EmitC::emitcConstPool();
             V3EmitC::emitcModel();
+            V3EmitC::emitcPch();
             V3EmitC::emitcHeaders();
         } else if (v3Global.opt.dpiHdrOnly()) {
             V3EmitC::emitcSyms(true);

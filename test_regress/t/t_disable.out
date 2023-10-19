@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_disable.v:11:10: Unsupported: disabling fork by name
+   11 |          disable foo;
+      |          ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

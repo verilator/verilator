@@ -14,14 +14,10 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3EmitC.h"
 #include "V3EmitCFunc.h"
-#include "V3Global.h"
 #include "V3UniqueNames.h"
 
 #include <algorithm>
@@ -631,13 +627,9 @@ class EmitCModel final : public EmitCFunc {
              "Model implementation (design independent parts)\n");
 
         puts("\n");
-        puts("#include \"" + topClassName() + ".h\"\n");
-        puts("#include \"" + symClassName() + ".h\"\n");
+        puts("#include \"" + pchClassName() + ".h\"\n");
         if (v3Global.opt.trace()) {
             puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
-        }
-        if (v3Global.dpi()) {  //
-            puts("#include \"verilated_dpi.h\"\n");
         }
 
         emitConstructorImplementation(modp);

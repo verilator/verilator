@@ -1,0 +1,7 @@
+%Warning-WIDTHTRUNC: the_line_file:13:17: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's CONST '64'h1' generates 64 bits.
+                                        : ... note: In instance 't'
+   13 |    int warn_t = 64'h1;   
+      |                 ^~~~~
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Error: Exiting due to

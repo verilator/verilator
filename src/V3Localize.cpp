@@ -22,16 +22,11 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Localize.h"
 
-#include "V3Ast.h"
 #include "V3AstUserAllocator.h"
-#include "V3Global.h"
 #include "V3Stats.h"
 
 #include <vector>

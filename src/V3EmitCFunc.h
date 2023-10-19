@@ -205,7 +205,7 @@ public:
     }
     void emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, AstNode* rhsp,
                     AstNode* thsp);
-    void emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer);
+    void emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer, bool inProcess);
     void emitDereference(const string& pointer);
     void emitCvtPackStr(AstNode* nodep);
     void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
@@ -500,7 +500,7 @@ public:
             }
             puts(funcp->nameProtect());
         }
-        emitCCallArgs(nodep, nodep->selfPointerProtect(m_useSelfForThis));
+        emitCCallArgs(nodep, nodep->selfPointerProtect(m_useSelfForThis), m_cfuncp->needProcess());
     }
     void visit(AstCMethodCall* nodep) override {
         const AstCFunc* const funcp = nodep->funcp();
@@ -508,7 +508,7 @@ public:
         iterateConst(nodep->fromp());
         putbs("->");
         puts(funcp->nameProtect());
-        emitCCallArgs(nodep, "");
+        emitCCallArgs(nodep, "", m_cfuncp->needProcess());
     }
     void visit(AstCAwait* nodep) override {
         puts("co_await ");
@@ -613,6 +613,7 @@ public:
             puts("]);\n");
         }
     }
+    void visit(AstDisableFork* nodep) override { puts("vlProcess->disable_fork();\n"); }
     void visit(AstCReturn* nodep) override {
         puts("return (");
         iterateAndNextConstNull(nodep->lhsp());
@@ -1129,6 +1130,10 @@ public:
         // Extending a value of the same word width is just a NOP.
         if (const AstClassRefDType* const classDtypep = VN_CAST(nodep->dtypep(), ClassRefDType)) {
             puts("(" + classDtypep->cType("", false, false) + ")(");
+        } else if (nodep->size() <= VL_BYTESIZE) {
+            puts("(CData)(");
+        } else if (nodep->size() <= VL_SHORTSIZE) {
+            puts("(SData)(");
         } else if (nodep->size() <= VL_IDATASIZE) {
             puts("(IData)(");
         } else {

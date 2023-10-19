@@ -23,21 +23,15 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Task.h"
 
-#include "V3Ast.h"
 #include "V3Const.h"
 #include "V3EmitCBase.h"
-#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3LinkLValue.h"
 
-#include <map>
 #include <tuple>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -1226,6 +1220,7 @@ private:
         cfuncp->dpiExportImpl(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
         cfuncp->dpiTraceInit(nodep->dpiTraceInit());
+        cfuncp->recursive(nodep->recursive());
         if (nodep->dpiImport() || nodep->dpiExport()) {
             cfuncp->isStatic(true);
             cfuncp->isLoose(true);
@@ -1469,9 +1464,9 @@ private:
             beginp = new AstExprStmt{nodep->fileline(), beginp, outrefp};
             // AstExprStmt is currently treated as impure, so clear the cached purity of its
             // parents
-            nodep->clearCachedPurity();
             nodep->replaceWith(beginp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VIsCached::clearCacheTree();
         } else {
             insertBeforeStmt(nodep, beginp);
             if (nodep->taskp()->isFunction()) {

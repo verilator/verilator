@@ -21,18 +21,10 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Scope.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
-
-#include <algorithm>
-#include <map>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -396,7 +388,7 @@ private:
             UINFO(9, "   New pkg-taskref " << nodep << endl);
         } else if (!VN_IS(nodep, MethodCall)) {
             nodep->taskp(nullptr);
-            nodep->clearCachedPurity();
+            VIsCached::clearCacheTree();
             UINFO(9, "   New pkg-taskref " << nodep << endl);
         }
         iterateChildren(nodep);

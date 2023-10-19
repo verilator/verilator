@@ -14,10 +14,7 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Partition.h"
 
@@ -34,7 +31,6 @@
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
-#include <algorithm>
 #include <array>
 #include <list>
 #include <memory>

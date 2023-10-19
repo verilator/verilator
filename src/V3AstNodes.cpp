@@ -14,13 +14,10 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstMT.h"
 
-#include "V3Ast.h"
 #include "V3EmitCBase.h"
 #include "V3File.h"
-#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3Hasher.h"
 #include "V3PartitionGraph.h"  // Just for mtask dumping
@@ -70,11 +67,6 @@ bool AstNodeFTaskRef::isPure() {
         if (!m_purity.isCached()) m_purity.set(this->getPurityRecurse());
         return m_purity.get();
     }
-}
-
-void AstNodeFTaskRef::clearCachedPurity() {
-    m_purity.clearCache();
-    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
 }
 
 bool AstNodeFTaskRef::getPurityRecurse() const {
@@ -152,11 +144,6 @@ const char* AstNodeUniop::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != lhsp()->isPure());
     return nullptr;
 }
-void AstNodeUniop::clearCachedPurity() {
-    m_purity.clearCache();
-    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
-}
-
 bool AstNodeBiop::isPure() {
     if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
     return m_purity.get();
@@ -164,10 +151,6 @@ bool AstNodeBiop::isPure() {
 const char* AstNodeBiop::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
-}
-void AstNodeBiop::clearCachedPurity() {
-    m_purity.clearCache();
-    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
 }
 
 bool AstNodeTriop::isPure() {
@@ -178,10 +161,6 @@ const char* AstNodeTriop::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
 }
-void AstNodeTriop::clearCachedPurity() {
-    m_purity.clearCache();
-    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
-}
 
 bool AstNodePreSel::isPure() {
     if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
@@ -191,10 +170,6 @@ const char* AstNodePreSel::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
 }
-void AstNodePreSel::clearCachedPurity() {
-    m_purity.clearCache();
-    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
-}
 
 bool AstNodeQuadop::isPure() {
     if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
@@ -203,10 +178,6 @@ bool AstNodeQuadop::isPure() {
 const char* AstNodeQuadop::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
-}
-void AstNodeQuadop::clearCachedPurity() {
-    m_purity.clearCache();
-    if (AstNodeExpr* const exprp = VN_CAST(backp(), NodeExpr)) exprp->clearCachedPurity();
 }
 
 AstNodeCond::AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,
@@ -302,12 +273,10 @@ int AstBasicDType::widthTotalBytes() const {
 }
 
 bool AstBasicDType::same(const AstNode* samep) const {
-    const AstBasicDType* const sp = static_cast<const AstBasicDType*>(samep);
-    if (!rangep() && !sp->rangep() && m == sp->m) {
-        return true;
-    } else {
-        return m == sp->m && rangep() && rangep()->sameTree(sp->rangep());
-    }
+    const AstBasicDType* const sp = VN_DBG_AS(samep, BasicDType);
+    if (!(m == sp->m) || numeric() != sp->numeric()) return false;
+    if (!rangep() && !sp->rangep()) return true;
+    return rangep() && rangep()->sameTree(sp->rangep());
 }
 
 int AstNodeUOrStructDType::widthTotalBytes() const {
@@ -1614,6 +1583,12 @@ const char* AstEnumItemRef::broken() const {
     BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());
     return nullptr;
 }
+void AstEnumItemRef::cloneRelink() {
+    if (m_itemp->clonep()) m_itemp = m_itemp->clonep();
+    if (m_classOrPackagep && m_classOrPackagep->clonep()) {
+        m_classOrPackagep = m_classOrPackagep->clonep();
+    }
+}
 void AstIfaceRefDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
     if (cellName() != "") str << " cell=" << cellName();
@@ -1725,8 +1700,8 @@ AstNodeUOrStructDType* AstMemberDType::getChildStructp() const {
 }
 
 bool AstMemberSel::same(const AstNode* samep) const {
-    const AstMemberSel* const sp = static_cast<const AstMemberSel*>(samep);
-    return sp != nullptr && access() == sp->access() && fromp()->same(sp->fromp())
+    const AstMemberSel* const sp = VN_DBG_AS(samep, MemberSel);
+    return sp != nullptr && access() == sp->access() && fromp()->isSame(sp->fromp())
            && name() == sp->name() && varp()->same(sp->varp());
 }
 
@@ -2083,13 +2058,14 @@ void AstWildcardArrayDType::dumpSmall(std::ostream& str) const {
     str << "[*]";
 }
 bool AstWildcardArrayDType::same(const AstNode* samep) const {
-    const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
+    const AstWildcardArrayDType* const asamep = VN_DBG_AS(samep, WildcardArrayDType);
     if (!asamep->subDTypep()) return false;
     return (subDTypep() == asamep->subDTypep());
 }
 bool AstWildcardArrayDType::similarDType(const AstNodeDType* samep) const {
-    const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
-    return type() == samep->type() && asamep->subDTypep()
+    if (type() != samep->type()) return false;
+    const AstWildcardArrayDType* const asamep = VN_DBG_AS(samep, WildcardArrayDType);
+    return asamep->subDTypep()
            && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
 }
 void AstSampleQueueDType::dumpSmall(std::ostream& str) const {
@@ -2101,13 +2077,14 @@ void AstUnsizedArrayDType::dumpSmall(std::ostream& str) const {
     str << "[]";
 }
 bool AstUnsizedArrayDType::same(const AstNode* samep) const {
-    const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
+    const AstUnsizedArrayDType* const asamep = VN_DBG_AS(samep, UnsizedArrayDType);
     if (!asamep->subDTypep()) return false;
     return (subDTypep() == asamep->subDTypep());
 }
 bool AstUnsizedArrayDType::similarDType(const AstNodeDType* samep) const {
-    const AstNodeArrayDType* const asamep = static_cast<const AstNodeArrayDType*>(samep);
-    return type() == samep->type() && asamep->subDTypep()
+    if (type() != samep->type()) return false;
+    const AstUnsizedArrayDType* const asamep = VN_DBG_AS(samep, UnsizedArrayDType);
+    return asamep->subDTypep()
            && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
 }
 void AstEmptyQueueDType::dumpSmall(std::ostream& str) const {
@@ -2134,7 +2111,7 @@ void AstVarScope::dump(std::ostream& str) const {
     }
 }
 bool AstVarScope::same(const AstNode* samep) const {
-    const AstVarScope* const asamep = static_cast<const AstVarScope*>(samep);
+    const AstVarScope* const asamep = VN_DBG_AS(samep, VarScope);
     return varp()->same(asamep->varp()) && scopep()->same(asamep->scopep());
 }
 void AstNodeVarRef::dump(std::ostream& str) const {
@@ -2168,9 +2145,7 @@ const char* AstVarRef::broken() const {
     BROKEN_RTN(!varp());
     return AstNodeVarRef::broken();
 }
-bool AstVarRef::same(const AstNode* samep) const {
-    return same(static_cast<const AstVarRef*>(samep));
-}
+bool AstVarRef::same(const AstNode* samep) const { return same(VN_DBG_AS(samep, VarRef)); }
 int AstVarRef::instrCount() const {
     // Account for the target of hard-coded method calls as just an address computation
     if (const AstCMethodHard* const callp = VN_CAST(backp(), CMethodHard)) {
@@ -2211,7 +2186,7 @@ void AstVar::dump(std::ostream& str) const {
     str << " " << varType();
 }
 bool AstVar::same(const AstNode* samep) const {
-    const AstVar* const asamep = static_cast<const AstVar*>(samep);
+    const AstVar* const asamep = VN_DBG_AS(samep, Var);
     return name() == asamep->name() && varType() == asamep->varType();
 }
 void AstScope::dump(std::ostream& str) const {
@@ -2221,7 +2196,7 @@ void AstScope::dump(std::ostream& str) const {
     str << " [modp=" << reinterpret_cast<const void*>(modp()) << "]";
 }
 bool AstScope::same(const AstNode* samep) const {
-    const AstScope* const asamep = static_cast<const AstScope*>(samep);
+    const AstScope* const asamep = VN_DBG_AS(samep, Scope);
     return name() == asamep->name()
            && ((!aboveScopep() && !asamep->aboveScopep())
                || (aboveScopep() && asamep->aboveScopep()
@@ -2343,6 +2318,7 @@ void AstBegin::dump(std::ostream& str) const {
     if (generate()) str << " [GEN]";
     if (genforp()) str << " [GENFOR]";
     if (implied()) str << " [IMPLIED]";
+    if (needProcess()) str << " [NPRC]";
 }
 void AstCoverDecl::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
@@ -2445,6 +2421,7 @@ int AstCMethodHard::instrCount() const {
 void AstCMethodHard::setPurity() {
     static const std::map<std::string, bool> isPureMethod{{"andNot", false},
                                                           {"any", true},
+                                                          {"anyTriggered", false},
                                                           {"assign", false},
                                                           {"at", true},
                                                           {"atBack", true},

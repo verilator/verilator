@@ -443,14 +443,15 @@ m4_foreach([cflag],[
         [-Qunused-arguments],
         [-Wno-bool-operation],
         [-Wno-constant-logical-operand],
-        [-Wno-tautological-bitwise-compare],
         [-Wno-parentheses-equality],
+        [-Wno-shadow],
         [-Wno-sign-compare],
+        [-Wno-tautological-bitwise-compare],
         [-Wno-uninitialized],
+        [-Wno-unused-but-set-parameter],
         [-Wno-unused-but-set-variable],
         [-Wno-unused-parameter],
-        [-Wno-unused-variable],
-        [-Wno-shadow]],[
+        [-Wno-unused-variable]],[
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,cflag)
     # CMake will test what flags work itself, so pass all flags through to it
     CFG_CXX_FLAGS_CMAKE="$CFG_CXX_FLAGS_CMAKE cflag"
@@ -559,6 +560,21 @@ Verilator requires a C++11 or newer compiler.]])
 
 fi
 AC_SUBST(CFG_CXXFLAGS_STD)
+
+# Compiler precompiled header options (assumes either gcc or clang++)
+AC_MSG_CHECKING([for $CXX precompile header include option])
+if $CXX --help | grep include-pch >/dev/null 2>/dev/null ; then
+   # clang
+   CFG_CXXFLAGS_PCH_I=-include-pch
+   CFG_GCH_IF_CLANG=.gch
+else
+   # GCC
+   CFG_CXXFLAGS_PCH_I=-include
+   CFG_GCH_IF_CLANG=
+fi
+AC_MSG_RESULT($CFG_CXXFLAGS_PCH_I)
+AC_SUBST(CFG_CXXFLAGS_PCH_I)
+AC_SUBST(CFG_GCH_IF_CLANG)
 
 # Checks for library functions.
 AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],

@@ -35,15 +35,9 @@
 // simplified to look primarily for SLICESELs.
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Slice.h"
-
-#include "V3Ast.h"
-#include "V3Global.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -56,6 +50,9 @@ class SliceVisitor final : public VNVisitor {
     //  AstNodeUniop::user1()       -> bool.  True if find is complete
     //  AstArraySel::user1p()       -> AstVarRef. The VarRef that the final ArraySel points to
     const VNUser1InUse m_inuser1;
+    //  AstInitArray::user2()       -> Previously accessed itemIdx
+    //  AstInitItem::user2()        -> Corresponding first elemIdx
+    const VNUser2InUse m_inuser2;
 
     // STATE
     AstNode* m_assignp = nullptr;  // Assignment we are under
@@ -63,7 +60,8 @@ class SliceVisitor final : public VNVisitor {
     bool m_okInitArray = false;  // Allow InitArray children
 
     // METHODS
-    AstNodeExpr* cloneAndSel(AstNode* nodep, int elements, int offset) {
+
+    AstNodeExpr* cloneAndSel(AstNode* nodep, int elements, int elemIdx) {
         // Insert an ArraySel, except for a few special cases
         const AstUnpackArrayDType* const arrayp
             = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
@@ -87,40 +85,126 @@ class SliceVisitor final : public VNVisitor {
             }
             m_assignError = true;
             elements = 1;
-            offset = 0;
+            elemIdx = 0;
         }
         AstNodeExpr* newp;
-        if (const AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
-            UINFO(9, "  cloneInitArray(" << elements << "," << offset << ") " << nodep << endl);
-            const int leOffset = !arrayp->rangep()->ascending()
-                                     ? arrayp->rangep()->elementsConst() - 1 - offset
-                                     : offset;
-            AstNodeExpr* const itemp = initp->getIndexDefaultedValuep(leOffset);
-            if (!itemp) {
-                nodep->v3error("Array initialization has too few elements, need element "
-                               << offset);
+        if (AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
+            UINFO(9, "  cloneInitArray(" << elements << "," << elemIdx << ") " << nodep << endl);
+
+            auto considerOrder = [](const auto* nodep, int idxFromLeft) -> int {
+                return !nodep->rangep()->ascending()
+                           ? nodep->rangep()->elementsConst() - 1 - idxFromLeft
+                           : idxFromLeft;
+            };
+            newp = nullptr;
+            int itemIdx = 0;
+            int i = 0;
+            if (const int prevItemIdx = initp->user2()) {
+                const AstInitArray::KeyItemMap& itemMap = initp->map();
+                const auto it = itemMap.find(considerOrder(arrayp, prevItemIdx));
+                if (it != itemMap.end()) {
+                    const AstInitItem* itemp = it->second;
+                    if (itemp->user2() && itemp->user2() < elemIdx) {
+                        // Let's resume traversal from the previous position
+                        itemIdx = prevItemIdx;
+                        i = itemp->user2();
+                    }
+                }
             }
-            newp = itemp ? itemp->cloneTreePure(false) : new AstConst{nodep->fileline(), 0};
+            const AstNodeDType* const expectedItemDTypep = arrayp->subDTypep()->skipRefp();
+            while (i <= elemIdx) {
+                AstNodeExpr* const itemp
+                    = initp->getIndexDefaultedValuep(considerOrder(arrayp, itemIdx));
+                if (!itemp && !m_assignError) {
+                    nodep->v3error("Array initialization has too few elements, need element "
+                                   << elemIdx);
+                    m_assignError = true;
+                }
+                const AstNodeDType* itemRawDTypep = itemp->dtypep()->skipRefp();
+                const VCastable castable
+                    = AstNode::computeCastable(expectedItemDTypep, itemRawDTypep, itemp);
+                if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE) {
+                    if (i == elemIdx) {
+                        newp = itemp->cloneTreePure(false);
+                        break;
+                    } else {  // Check the next item
+                        ++i;
+                        ++itemIdx;
+                    }
+                } else {
+                    const AstUnpackArrayDType* const itemDTypep
+                        = VN_CAST(itemRawDTypep, UnpackArrayDType);
+                    if (!itemDTypep
+                        || !expectedItemDTypep->isSame(itemDTypep->subDTypep()->skipRefp())) {
+                        if (!m_assignError) {
+                            itemp->v3error("Item is incompatible with the array type.");
+                        }
+                        m_assignError = true;
+                        break;
+                    }
+                    if (i + itemDTypep->elementsConst()
+                        > elemIdx) {  // This item contains the element
+                        int offset = considerOrder(itemDTypep, elemIdx - i);
+                        if (AstSliceSel* const slicep = VN_CAST(itemp, SliceSel)) {
+                            offset += slicep->declRange().lo();
+                            newp = new AstArraySel{nodep->fileline(),
+                                                   slicep->lhsp()->cloneTreePure(false), offset};
+                        } else {
+                            newp = new AstArraySel{nodep->fileline(), itemp->cloneTreePure(false),
+                                                   offset};
+                        }
+
+                        if (!m_assignError && elemIdx + 1 == elements
+                            && i + itemDTypep->elementsConst() > elements) {
+                            nodep->v3error("Array initialization has too many elements. "
+                                           << elements << " elements are expected, but at least "
+                                           << i + itemDTypep->elementsConst()
+                                           << " elements exist.");
+                            m_assignError = true;
+                        }
+                        break;
+                    } else {  // Check the next item
+                        i += itemDTypep->elementsConst();
+                        ++itemIdx;
+                    }
+                }
+            }
+            if (elemIdx + 1 == elements && static_cast<size_t>(itemIdx) + 1 < initp->map().size()
+                && !m_assignError) {
+                nodep->v3error("Array initialization has too many elements. "
+                               << elements << " elements are expected, but at least "
+                               << i + initp->map().size() - itemIdx << " elements exist.");
+                m_assignError = true;
+            }
+            if (newp) {
+                const AstInitArray::KeyItemMap& itemMap = initp->map();
+                const auto it = itemMap.find(considerOrder(arrayp, itemIdx));
+                if (it != itemMap.end()) {  // Remember current position for the next invocation.
+                    initp->user2(itemIdx);
+                    it->second->user2(i);
+                }
+            }
+            if (!newp) newp = new AstConst{nodep->fileline(), 0};
         } else if (AstNodeCond* const snodep = VN_CAST(nodep, NodeCond)) {
-            UINFO(9, "  cloneCond(" << elements << "," << offset << ") " << nodep << endl);
+            UINFO(9, "  cloneCond(" << elements << "," << elemIdx << ") " << nodep << endl);
             return snodep->cloneType(snodep->condp()->cloneTreePure(false),
-                                     cloneAndSel(snodep->thenp(), elements, offset),
-                                     cloneAndSel(snodep->elsep(), elements, offset));
+                                     cloneAndSel(snodep->thenp(), elements, elemIdx),
+                                     cloneAndSel(snodep->elsep(), elements, elemIdx));
         } else if (const AstSliceSel* const snodep = VN_CAST(nodep, SliceSel)) {
-            UINFO(9, "  cloneSliceSel(" << elements << "," << offset << ") " << nodep << endl);
+            UINFO(9, "  cloneSliceSel(" << elements << "," << elemIdx << ") " << nodep << endl);
             const int leOffset = (snodep->declRange().lo()
                                   + (!snodep->declRange().ascending()
-                                         ? snodep->declRange().elements() - 1 - offset
-                                         : offset));
+                                         ? snodep->declRange().elements() - 1 - elemIdx
+                                         : elemIdx));
             newp = new AstArraySel{nodep->fileline(), snodep->fromp()->cloneTreePure(false),
                                    leOffset};
         } else if (VN_IS(nodep, ArraySel) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel)
                    || VN_IS(nodep, CMethodHard) || VN_IS(nodep, MemberSel)
                    || VN_IS(nodep, ExprStmt)) {
-            UINFO(9, "  cloneSel(" << elements << "," << offset << ") " << nodep << endl);
+            UINFO(9, "  cloneSel(" << elements << "," << elemIdx << ") " << nodep << endl);
             const int leOffset = !arrayp->rangep()->ascending()
-                                     ? arrayp->rangep()->elementsConst() - 1 - offset
-                                     : offset;
+                                     ? arrayp->rangep()->elementsConst() - 1 - elemIdx
+                                     : elemIdx;
             newp = new AstArraySel{nodep->fileline(), VN_AS(nodep, NodeExpr)->cloneTreePure(false),
                                    leOffset};
         } else {
@@ -149,10 +233,10 @@ class SliceVisitor final : public VNVisitor {
                 // elements
                 AstNodeAssign* newlistp = nullptr;
                 const int elements = arrayp->rangep()->elementsConst();
-                for (int offset = 0; offset < elements; ++offset) {
+                for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
                     AstNodeAssign* const newp
-                        = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, offset),
-                                           cloneAndSel(nodep->rhsp(), elements, offset));
+                        = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
+                                           cloneAndSel(nodep->rhsp(), elements, elemIdx));
                     if (debug() >= 9) newp->dumpTree("-  new: ");
                     newlistp = AstNode::addNext(newlistp, newp);
                 }
@@ -199,12 +283,12 @@ class SliceVisitor final : public VNVisitor {
                         << " on non-slicable (e.g. non-vector) right-hand-side operand");
                 } else {
                     const int elements = adtypep->rangep()->elementsConst();
-                    for (int offset = 0; offset < elements; ++offset) {
+                    for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
                         // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
-                        AstNodeBiop* const clonep
-                            = VN_AS(nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, offset),
-                                                     cloneAndSel(nodep->rhsp(), elements, offset)),
-                                    NodeBiop);
+                        AstNodeBiop* const clonep = VN_AS(
+                            nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
+                                             cloneAndSel(nodep->rhsp(), elements, elemIdx)),
+                            NodeBiop);
                         if (!logp) {
                             logp = clonep;
                         } else {

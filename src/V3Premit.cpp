@@ -24,19 +24,12 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Premit.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
-
-#include <algorithm>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -49,11 +42,8 @@ class PremitVisitor final : public VNVisitor {
 private:
     // NODE STATE
     //  AstNodeExpr::user()     -> bool.  True if iterated already
-    //  AstShiftL::user2()      -> bool.  True if converted to conditional
-    //  AstShiftR::user2()      -> bool.  True if converted to conditional
     //  *::user3()              -> Used when visiting AstNodeAssign
     const VNUser1InUse m_inuser1;
-    const VNUser2InUse m_inuser2;
 
     // STATE - across all visitors
     VDouble0 m_extractedToConstPool;  // Statistic tracking
@@ -236,47 +226,33 @@ private:
     }
     void visitShift(AstNodeBiop* nodep) {
         // Shifts of > 32/64 bits in C++ will wrap-around and generate non-0s
-        if (!nodep->user2SetOnce()) {
-            UINFO(4, "  ShiftFix  " << nodep << endl);
-            const AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
-            if (shiftp && shiftp->num().mostSetBitP1() > 32) {
-                shiftp->v3error(
-                    "Unsupported: Shifting of by over 32-bit number isn't supported."
-                    << " (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
+        UINFO(4, "  ShiftFix  " << nodep << endl);
+        const AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
+        if (shiftp && shiftp->num().mostSetBitP1() > 32) {
+            shiftp->v3error(
+                "Unsupported: Shifting of by over 32-bit number isn't supported."
+                << " (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
+        }
+        if (nodep->widthMin() <= 64  // Else we'll use large operators which work right
+                                     // C operator's width must be < maximum shift which is
+                                     // based on Verilog width
+            && nodep->width() < (1LL << nodep->rhsp()->widthMin())) {
+            AstNode* newp;
+            if (VN_IS(nodep, ShiftL)) {
+                newp = new AstShiftLOvr{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                        nodep->rhsp()->unlinkFrBack()};
+            } else if (VN_IS(nodep, ShiftR)) {
+                newp = new AstShiftROvr{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                        nodep->rhsp()->unlinkFrBack()};
+            } else {
+                UASSERT_OBJ(VN_IS(nodep, ShiftRS), nodep, "Bad case");
+                newp = new AstShiftRSOvr{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                         nodep->rhsp()->unlinkFrBack()};
             }
-            if (nodep->widthMin() <= 64  // Else we'll use large operators which work right
-                                         // C operator's width must be < maximum shift which is
-                                         // based on Verilog width
-                && nodep->width() < (1LL << nodep->rhsp()->widthMin())) {
-                VNRelinker replaceHandle;
-                nodep->unlinkFrBack(&replaceHandle);
-                AstNodeExpr* constzerop;
-                const int m1value
-                    = nodep->widthMin() - 1;  // Constant of width-1; not changing dtype width
-                if (nodep->signedFlavor()) {
-                    // Then over shifting gives the sign bit, not all zeros
-                    // Note *NOT* clean output -- just like normal shift!
-                    // Create equivalent of VL_SIGNONES_(node_width)
-                    constzerop = new AstNegate{
-                        nodep->fileline(),
-                        new AstShiftR{nodep->fileline(), nodep->lhsp()->cloneTreePure(false),
-                                      new AstConst(nodep->fileline(), m1value), nodep->width()}};
-                } else {
-                    constzerop = new AstConst{nodep->fileline(), AstConst::WidthedValue{},
-                                              nodep->width(), 0};
-                }
-                constzerop->dtypeFrom(nodep);  // unsigned
-
-                AstNodeExpr* const constwidthp
-                    = new AstConst(nodep->fileline(), AstConst::WidthedValue{},
-                                   nodep->rhsp()->widthMin(), m1value);
-                constwidthp->dtypeFrom(nodep->rhsp());  // unsigned
-                AstCond* const newp = new AstCond{nodep->fileline(),
-                                                  new AstGte{nodep->fileline(), constwidthp,
-                                                             nodep->rhsp()->cloneTreePure(false)},
-                                                  nodep, constzerop};
-                replaceHandle.relink(newp);
-            }
+            newp->dtypeFrom(nodep);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
         }
         iterateChildren(nodep);
         checkNode(nodep);
@@ -348,7 +324,7 @@ private:
             // We're going to need the expression several times in the expanded code,
             // so might as well make it a common expression
             createDeepTemp(nodep->condp(), false);
-            nodep->clearCachedPurity();
+            VIsCached::clearCacheTree();
         }
         checkNode(nodep);
     }
@@ -402,9 +378,6 @@ public:
                          m_extractedToConstPool);
     }
 };
-
-//----------------------------------------------------------------------
-// Top loop
 
 //######################################################################
 // Premit class functions

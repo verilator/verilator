@@ -37,17 +37,9 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Cast.h"
-
-#include "V3Ast.h"
-#include "V3Global.h"
-
-#include <algorithm>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -168,6 +160,11 @@ private:
     void visit(AstCCast* nodep) override {
         iterateChildren(nodep);
         ensureLower32Cast(nodep);
+        nodep->user1(1);
+    }
+    void visit(AstConsPackMember* nodep) override {
+        iterateChildren(nodep);
+        if (VN_IS(nodep->rhsp()->dtypep()->skipRefp(), BasicDType)) ensureCast(nodep->rhsp());
         nodep->user1(1);
     }
     void visit(AstExprStmt* nodep) override {

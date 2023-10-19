@@ -24,21 +24,14 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Inline.h"
 
-#include "V3Ast.h"
 #include "V3AstUserAllocator.h"
-#include "V3Global.h"
 #include "V3Inst.h"
 #include "V3Stats.h"
-#include "V3String.h"
 
-#include <algorithm>
 #include <unordered_set>
 #include <vector>
 
@@ -174,7 +167,7 @@ private:
         // MethodCalls not currently supported by inliner, so keep linked
         if (!nodep->classOrPackagep() && !VN_IS(nodep, MethodCall)) {
             nodep->taskp(nullptr);
-            nodep->clearCachedPurity();
+            VIsCached::clearCacheTree();
         }
         iterateChildren(nodep);
     }

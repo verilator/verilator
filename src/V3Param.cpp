@@ -44,17 +44,12 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Param.h"
 
-#include "V3Ast.h"
 #include "V3Case.h"
 #include "V3Const.h"
-#include "V3Global.h"
 #include "V3Hasher.h"
 #include "V3Os.h"
 #include "V3Parse.h"
@@ -63,7 +58,6 @@
 
 #include <cctype>
 #include <deque>
-#include <map>
 #include <memory>
 #include <vector>
 
@@ -223,7 +217,7 @@ public:
 //######################################################################
 // Remove parameters from cells and build new modules
 
-class ParamProcessor final : public VNDeleter {
+class ParamProcessor final {
     // NODE STATE - Local
     //   AstVar::user4()        // int    Global parameter number (for naming new module)
     //                          //        (0=not processed, 1=iterated, but no number,
@@ -277,6 +271,7 @@ class ParamProcessor final : public VNDeleter {
     using DefaultValueMap = std::map<std::string, AstConst*>;
     // Default parameter values of hierarchical blocks
     std::map<AstNodeModule*, DefaultValueMap> m_defaultParameterValues;
+    VNDeleter m_deleter;  // Used to delay deletion of nodes
 
     // METHODS
 
@@ -699,8 +694,8 @@ class ParamProcessor final : public VNDeleter {
         if (!pinp->exprp()) return;  // No-connect
         if (AstVar* const modvarp = pinp->modVarp()) {
             if (!modvarp->isGParam()) {
-                pinp->v3error("Attempted parameter setting of non-parameter: Param "
-                              << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
+                pinp->v3fatalSrc("Attempted parameter setting of non-parameter: Param "
+                                 << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
             } else if (VN_IS(pinp->exprp(), InitArray) && arraySubDTypep(modvarp->subDTypep())) {
                 // Array assigned to array
                 AstNode* const exprp = pinp->exprp();
@@ -761,8 +756,8 @@ class ParamProcessor final : public VNDeleter {
                 }
             }
         } else {
-            pinp->v3error("Parameter not found in sub-module: Param "
-                          << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
+            pinp->v3fatalSrc("Parameter not found in sub-module: Param "
+                             << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
         }
     }
 
@@ -868,7 +863,7 @@ class ParamProcessor final : public VNDeleter {
                 AstClass* classCopyp = VN_AS(srcModpr, Class)->cloneTree(false);
                 // It is a temporary copy of the original class node, stored in order to create
                 // another instances. It is needed only during class instantiation.
-                pushDeletep(classCopyp);
+                m_deleter.pushDeletep(classCopyp);
                 srcModpr->user4p(classCopyp);
                 storeOriginalParams(classCopyp);
             }

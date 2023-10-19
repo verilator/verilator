@@ -29,18 +29,12 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3LinkJump.h"
 
-#include "V3Ast.h"
 #include "V3AstUserAllocator.h"
-#include "V3Global.h"
 
-#include <algorithm>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -330,7 +324,7 @@ private:
             AstJumpLabel* const labelp = findAddLabel(beginp, false);
             nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disable fork");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork by name");
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

@@ -210,6 +210,7 @@ public:
         lineno(num);
         m_contentLineno = static_cast<unsigned>(num);
     }
+    void contentLinenoFrom(const FileLine* fromp) { m_contentLineno = fromp->m_contentLineno; }
     void lineno(int num) {
         m_firstLineno = num;
         m_lastLineno = num;

@@ -21,18 +21,11 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Inst.h"
 
-#include "V3Ast.h"
 #include "V3Const.h"
-#include "V3Global.h"
-
-#include <algorithm>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -326,10 +319,11 @@ private:
                 = nodep->exprp()->dtypep()->dimensions(false);
             UINFO(4, "   PINVAR  " << nodep->modVarp() << endl);
             UINFO(4, "   EXP     " << nodep->exprp() << endl);
-            UINFO(4, "   modwidth ew=" << expwidth << " pw=" << modwidth << "  ed=" << expDim.first
-                                       << "," << expDim.second << "  pd=" << pinDim.first << ","
-                                       << pinDim.second << endl);
-            if (expDim.first == pinDim.first && expDim.second == pinDim.second + 1) {
+            UINFO(4, "   expwidth=" << expwidth << " modwidth=" << modwidth
+                                    << "  expDim(p,u)=" << expDim.first << "," << expDim.second
+                                    << "  pinDim(p,u)=" << pinDim.first << "," << pinDim.second
+                                    << endl);
+            if (expDim.second == pinDim.second + 1) {
                 // Connection to array, where array dimensions match the instant dimension
                 const AstRange* const rangep
                     = VN_AS(nodep->exprp()->dtypep(), UnpackArrayDType)->rangep();

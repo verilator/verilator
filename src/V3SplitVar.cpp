@@ -110,20 +110,13 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3SplitVar.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
-#include <algorithm>  // sort
-#include <map>
 #include <set>
 #include <vector>
 

@@ -649,6 +649,7 @@
 -V{t#,#}         Process waiting for @([event] t::EventClass.e) at t/t_timing_class.v:37 awaiting the post update step
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([event] t.ec.e)
+-V{t#,#}         'act' region trigger index 2 is active: @([true] __VdynSched.evaluate())
 -V{t#,#}         Doing post updates for processes:
 -V{t#,#}           - Process waiting at t/t_timing_class.v:37
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:37
@@ -657,16 +658,6 @@
 -V{t#,#}+    Vt_timing_debug2___024root___timing_resume
 -V{t#,#}         No ready processes waiting for @([event] t.ec.e)
 -V{t#,#}         Resuming processes waiting for @([event] t.ec.e)
--V{t#,#}+    Vt_timing_debug2___024root___eval_act
--V{t#,#}+    Vt_timing_debug2___024root___eval_triggers__act
--V{t#,#}         Suspended processes waiting for dynamic trigger evaluation:
--V{t#,#}           - Process waiting at t/t_timing_class.v:101
--V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:101
--V{t#,#}         Suspending process waiting for @(posedge t::ClkClass.clk) at t/t_timing_class.v:101
--V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__act
--V{t#,#}         'act' region trigger index 2 is active: @([true] __VdynSched.evaluate())
--V{t#,#}+    Vt_timing_debug2___024root___timing_commit
--V{t#,#}+    Vt_timing_debug2___024root___timing_resume
 -V{t#,#}         Resuming processes:
 -V{t#,#}           - Process waiting at t/t_timing_class.v:37
 -V{t#,#}             Resuming: Process waiting at t/t_timing_class.v:37

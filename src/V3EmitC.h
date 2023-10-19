@@ -27,12 +27,13 @@
 class V3EmitC final {
 public:
     static void emitcConstPool() VL_MT_DISABLED;
+    static void emitcFiles() VL_MT_DISABLED;
     static void emitcHeaders() VL_MT_DISABLED;
     static void emitcImp();
     static void emitcInlines() VL_MT_DISABLED;
     static void emitcModel() VL_MT_DISABLED;
+    static void emitcPch() VL_MT_DISABLED;
     static void emitcSyms(bool dpiHdrOnly = false) VL_MT_DISABLED;
-    static void emitcFiles() VL_MT_DISABLED;
 };
 
 #endif  // Guard

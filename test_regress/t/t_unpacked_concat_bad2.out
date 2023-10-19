@@ -1,0 +1,13 @@
+%Error: t/t_unpacked_concat_bad2.v:25:15: Array initialization has too many elements. 2 elements are expected, but at least 5 elements exist.
+   25 |       s1 = {s0, s2};
+      |               ^
+%Error: t/t_unpacked_concat_bad2.v:26:23: Array initialization has too many elements. 4 elements are expected, but at least 5 elements exist.
+   26 |       s2 = {s1, s0, s0, s0};
+      |                       ^
+%Error: t/t_unpacked_concat_bad2.v:28:17: Item is incompatible with the array type.
+   28 |       s2 = {s0, s3};
+      |                 ^~
+%Error: t/t_unpacked_concat_bad2.v:30:19: Item is incompatible with the array type.
+   30 |       A9_logic = {A3, 4, 5, A3, 6};
+      |                   ^~
+%Error: Exiting due to

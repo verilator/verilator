@@ -55,12 +55,16 @@ public:
         return className + "* const __restrict vlSelf VL_ATTR_UNUSED = static_cast<" + className
                + "*>(voidSelf);\n";
     }
+    static string pchClassName() VL_MT_STABLE { return v3Global.opt.prefix() + "__pch"; }
     static string symClassName() VL_MT_STABLE {
         return v3Global.opt.prefix() + "_" + VIdProtect::protect("_Syms");
     }
     static string symClassVar() { return symClassName() + "* __restrict vlSymsp"; }
     static string symClassAssign() {
         return symClassName() + "* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;\n";
+    }
+    static string topClassName() VL_MT_SAFE {  // Return name of top wrapper module
+        return v3Global.opt.prefix();
     }
     static string prefixNameProtect(const AstNode* nodep) {  // C++ name with prefix
         return v3Global.opt.modPrefix() + "_" + VIdProtect::protect(nodep->name());
@@ -104,9 +108,6 @@ public:
         return v3Global.opt.protectIds() ? "" : in;
     }
     static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp = nullptr);
-    static string topClassName() VL_MT_SAFE {  // Return name of top wrapper module
-        return v3Global.opt.prefix();
-    }
     static AstCFile* newCFile(const string& filename, bool slow, bool source);
     static AstCFile* createCFile(const string& filename, bool slow, bool source) VL_MT_SAFE;
     string cFuncArgs(const AstCFunc* nodep);

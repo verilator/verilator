@@ -67,6 +67,11 @@ CFG_CXXFLAGS_PARSER = @CFG_CXXFLAGS_PARSER@
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
 CFG_LDFLAGS_SRC = @CFG_LDFLAGS_SRC@
 CFG_LIBS = @CFG_LIBS@
+CFG_CXXFLAGS_PCH = -x c++-header
+# Compiler option to put in front of filename to read precompiled header
+CFG_CXXFLAGS_PCH_I = @CFG_CXXFLAGS_PCH_I@
+# Compiler's filename prefix for precompiled headers, .gch if clang, empty if GCC
+CFG_GCH_IF_CLANG = @CFG_GCH_IF_CLANG@
 
 #### End of system configuration section. ####
 
@@ -130,6 +135,11 @@ FLEXFIX = $(srcdir)/flexfix
 VLCOVGEN = $(srcdir)/vlcovgen
 
 ######################################################################
+# CCACHE flags (via environment as no command line option available)
+CCACHE_SLOPPINESS ?= pch_defines,time_macros
+export CCACHE_SLOPPINESS
+
+######################################################################
 #### Top level
 
 all: make_info $(TGT)
@@ -151,16 +161,55 @@ maintainer-copy::
 #### Top executable
 
 RAW_OBJS = \
+	V3Const__gen.o \
+	V3Error.o \
+	V3FileLine.o \
+	V3Graph.o \
+	V3GraphAcyc.o \
+	V3GraphAlg.o \
+	V3GraphPathChecker.o \
+	V3GraphTest.o \
+	V3Hash.o \
+	V3OptionParser.o \
+	V3Os.o \
+	V3ParseGrammar.o \
+	V3ParseImp.o \
+	V3ParseLex.o \
+	V3PreProc.o \
+	V3PreShell.o \
+	V3String.o \
+	V3ThreadPool.o \
+	V3Waiver.o \
 	Verilator.o \
+
+RAW_OBJS_PCH_ASTMT = \
+	V3Ast.o \
+	V3AstNodes.o \
+	V3Broken.o \
+	V3Config.o \
+	V3EmitCBase.o \
+	V3EmitCConstPool.o \
+	V3EmitCFunc.o \
+	V3EmitCHeaders.o \
+	V3EmitCImp.o \
+	V3EmitCInlines.o \
+	V3EmitCPch.o \
+	V3EmitV.o \
+	V3File.o \
+	V3Global.o \
+	V3Hasher.o \
+	V3Number.o \
+	V3Options.o \
+	V3Stats.o \
+	V3StatsReport.o \
+
+RAW_OBJS_PCH_ASTNOMT = \
 	V3Active.o \
 	V3ActiveTop.o \
 	V3Assert.o \
 	V3AssertPre.o \
-	V3Ast.o \
-	V3AstNodes.o \
 	V3Begin.o \
 	V3Branch.o \
-	V3Broken.o \
 	V3CCtors.o \
 	V3CUse.o \
 	V3Case.o \
@@ -170,8 +219,6 @@ RAW_OBJS = \
 	V3Clock.o \
 	V3Combine.o \
 	V3Common.o \
-	V3Config.o \
-	V3Const__gen.o \
 	V3Coverage.o \
 	V3CoverageJoin.o \
 	V3Dead.o \
@@ -187,34 +234,16 @@ RAW_OBJS = \
 	V3DfgPasses.o \
 	V3DfgPeephole.o \
 	V3DupFinder.o \
-	V3EmitCBase.o \
-	V3EmitCConstPool.o \
-	V3EmitCFunc.o \
-	V3EmitCHeaders.o \
-	V3EmitCImp.o \
-	V3EmitCInlines.o \
 	V3EmitCMain.o \
 	V3EmitCMake.o \
 	V3EmitCModel.o \
 	V3EmitCSyms.o \
 	V3EmitMk.o \
-	V3EmitV.o \
 	V3EmitXml.o \
-	V3Error.o \
 	V3Expand.o \
-	V3File.o \
-	V3FileLine.o \
 	V3Force.o \
 	V3Fork.o \
 	V3Gate.o \
-	V3Global.o \
-	V3Graph.o \
-	V3GraphAcyc.o \
-	V3GraphAlg.o \
-	V3GraphPathChecker.o \
-	V3GraphTest.o \
-	V3Hash.o \
-	V3Hasher.o \
 	V3HierBlock.o \
 	V3Inline.o \
 	V3Inst.o \
@@ -233,18 +262,9 @@ RAW_OBJS = \
 	V3Localize.o \
 	V3MergeCond.o \
 	V3Name.o \
-	V3Number.o \
-	V3OptionParser.o \
-	V3Options.o \
 	V3Order.o \
-	V3Os.o \
 	V3Param.o \
-	V3ParseGrammar.o \
-	V3ParseImp.o \
-	V3ParseLex.o \
 	V3Partition.o \
-	V3PreProc.o \
-	V3PreShell.o \
 	V3Premit.o \
 	V3ProtectLib.o \
 	V3Randomize.o \
@@ -260,14 +280,10 @@ RAW_OBJS = \
 	V3Split.o \
 	V3SplitAs.o \
 	V3SplitVar.o \
-	V3Stats.o \
-	V3StatsReport.o \
-	V3String.o \
 	V3Subst.o \
 	V3TSP.o \
 	V3Table.o \
 	V3Task.o \
-	V3ThreadPool.o \
 	V3Timing.o \
 	V3Trace.o \
 	V3TraceDecl.o \
@@ -276,7 +292,6 @@ RAW_OBJS = \
 	V3Unknown.o \
 	V3Unroll.o \
 	V3VariableOrder.o \
-	V3Waiver.o \
 	V3Width.o \
 	V3WidthCommit.o \
 	V3WidthSel.o \
@@ -286,21 +301,21 @@ VLCOV_OBJS = \
 	VlcMain.o \
 
 NON_STANDALONE_HEADERS = \
-	V3AstInlines.h  \
-	V3AstNodeDType.h  \
-	V3AstNodeExpr.h  \
-	V3AstNodeOther.h  \
-	V3DfgVertices.h  \
+	V3AstInlines.h \
+	V3AstNodeDType.h \
+	V3AstNodeExpr.h \
+	V3AstNodeOther.h \
+	V3DfgVertices.h \
 	V3ThreadPool.h \
 	V3WidthRemove.h \
 
 AST_DEFS := \
-  V3AstNodeDType.h \
-  V3AstNodeExpr.h \
-  V3AstNodeOther.h \
+	V3AstNodeDType.h \
+	V3AstNodeExpr.h \
+	V3AstNodeOther.h \
 
 DFG_DEFS := \
-  V3DfgVertices.h
+	V3DfgVertices.h
 
 #### astgen common flags
 
@@ -312,7 +327,7 @@ ASTGENFLAGS += $(foreach f,$(DFG_DEFS),--dfgdef $f)
 
 ifeq ($(VL_VLCOV),)
 PREDEP_H = V3Ast__gen_forward_class_decls.h
-OBJS += $(RAW_OBJS)
+OBJS += $(RAW_OBJS) $(RAW_OBJS_PCH_ASTMT) $(RAW_OBJS_PCH_ASTNOMT)
 else
 PREDEP_H =
 OBJS += $(VLCOV_OBJS)
@@ -332,6 +347,8 @@ V3Number_test: V3Number_test.o
 
 .SECONDARY:
 
+%.gch: %
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH} $< -o $@
 %.o: %.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
 %.o: %.c
@@ -348,6 +365,22 @@ V3ParseImp.o: V3ParseImp.cpp V3ParseBison.c
 
 V3PreProc.o: V3PreProc.cpp V3PreLex.yy.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
+
+define CXX_ASTMT_template
+$(1): $(basename $(1)).cpp V3PchAstMT.h.gch
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH_I} V3PchAstMT.h${CFG_GCH_IF_CLANG} -c $(srcdir)/$(basename $(1)).cpp -o $(1)
+
+endef
+
+$(foreach obj,$(RAW_OBJS_PCH_ASTMT),$(eval $(call CXX_ASTMT_template,$(obj))))
+
+define CXX_ASTNOMT_template
+$(1): $(basename $(1)).cpp V3PchAstNoMT.h.gch
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH_I} V3PchAstNoMT.h${CFG_GCH_IF_CLANG} -c $(srcdir)/$(basename $(1)).cpp -o $(1)
+
+endef
+
+$(foreach obj,$(RAW_OBJS_PCH_ASTNOMT),$(eval $(call CXX_ASTNOMT_template,$(obj))))
 
 #### Generated files
 

@@ -29,18 +29,11 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Reloop.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
 #include "V3Stats.h"
-
-#include <algorithm>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -214,10 +207,10 @@ private:
         if (m_mgSelLp) {  // Old merge
             if (m_mgCfuncp == m_cfuncp  // In same function
                 && m_mgNextp == nodep  // Consecutive node
-                && m_mgVarrefLp->same(lvarrefp)  // Same array on left hand side
+                && m_mgVarrefLp->isSame(lvarrefp)  // Same array on left hand side
                 && (m_mgConstRp  // On the right hand side either ...
-                        ? (rconstp && m_mgConstRp->same(rconstp))  // ... same constant
-                        : (rselp && m_mgVarrefRp->same(rvarrefp)))  // ... or same array
+                        ? (rconstp && m_mgConstRp->isSame(rconstp))  // ... same constant
+                        : (rselp && m_mgVarrefRp->isSame(rvarrefp)))  // ... or same array
                 && (lindex == m_mgIndexLo - 1 || lindex == m_mgIndexHi + 1)  // Left index +/- 1
                 && (m_mgConstRp || lindex == rindex + m_mgOffset)  // Same right index offset
             ) {

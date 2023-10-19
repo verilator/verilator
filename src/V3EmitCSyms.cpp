@@ -14,14 +14,10 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
-#include "V3Global.h"
 #include "V3LanguageWords.h"
 #include "V3PartitionGraph.h"
 
@@ -628,7 +624,7 @@ void EmitCSyms::emitSymImpPreamble() {
     puts("\n");
 
     // Includes
-    puts("#include \"" + symClassName() + ".h\"\n");
+    puts("#include \"" + pchClassName() + ".h\"\n");
     puts("#include \"" + topClassName() + ".h\"\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_AS(nodep->nextp(), NodeModule)) {

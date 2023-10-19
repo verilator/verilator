@@ -36,15 +36,9 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3LinkInc.h"
-
-#include "V3Ast.h"
-#include "V3Global.h"
 
 #include <algorithm>
 
@@ -220,16 +214,6 @@ private:
     }
     void prepost_stmt_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
-
-        // Currently we can't reference the target, so we just copy the AST both for read and
-        // write, but doing so would double any side-effects, so as a safety measure all
-        // statements which could have side-effects are banned at the moment.
-        if (!nodep->rhsp()->isPure()) {
-            nodep->rhsp()->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: Inc/Dec of expression with side-effects");
-            return;
-        }
-
         AstConst* const constp = VN_AS(nodep->lhsp(), Const);
         UASSERT_OBJ(nodep, constp, "Expecting CONST");
         AstConst* const newconstp = constp->cloneTree(true);
@@ -250,16 +234,6 @@ private:
     }
     void prepost_expr_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);
-
-        // Currently we can't reference the target, so we just copy the AST both for read and
-        // write, but doing so would double any side-effects, so as a safety measure all
-        // statements which could have side-effects are banned at the moment.
-        if (!nodep->rhsp()->isPure()) {
-            nodep->rhsp()->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: Inc/Dec of expression with side-effects");
-            return;
-        }
-
         if (m_unsupportedHere) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Incrementation in this context.");
             return;

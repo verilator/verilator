@@ -1647,6 +1647,24 @@ static inline void _vl_shiftl_inplace_w(int obits, WDataOutP iowp,
 // EMIT_RULE: VL_SHIFTL:  oclean=lclean; rclean==clean;
 // Important: Unlike most other funcs, the shift might well be a computed
 // expression.  Thus consider this when optimizing.  (And perhaps have 2 funcs?)
+// If RHS (rd/rwp) is larger than the output, zeros (or all ones for >>>) must be returned
+// (This corresponds to AstShift*Ovr Ast nodes)
+static inline IData VL_SHIFTL_III(int obits, int, int, IData lhs, IData rhs) VL_MT_SAFE {
+    if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
+    return lhs << rhs;  // Small is common so not clean return
+}
+static inline IData VL_SHIFTL_IIQ(int obits, int, int, IData lhs, QData rhs) VL_MT_SAFE {
+    if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
+    return VL_CLEAN_II(obits, obits, lhs << rhs);
+}
+static inline QData VL_SHIFTL_QQI(int obits, int, int, QData lhs, IData rhs) VL_MT_SAFE {
+    if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
+    return lhs << rhs;  // Small is common so not clean return
+}
+static inline QData VL_SHIFTL_QQQ(int obits, int, int, QData lhs, QData rhs) VL_MT_SAFE {
+    if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
+    return VL_CLEAN_QQ(obits, obits, lhs << rhs);
+}
 static inline WDataOutP VL_SHIFTL_WWI(int obits, int, int, WDataOutP owp, WDataInP const lwp,
                                       IData rd) VL_MT_SAFE {
     const int word_shift = VL_BITWORD_E(rd);
@@ -1684,11 +1702,7 @@ static inline IData VL_SHIFTL_IIW(int obits, int, int rbits, IData lhs,
             return 0;
         }
     }
-    return VL_CLEAN_II(obits, obits, lhs << rwp[0]);
-}
-static inline IData VL_SHIFTL_IIQ(int obits, int, int, IData lhs, QData rhs) VL_MT_SAFE {
-    if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
-    return VL_CLEAN_II(obits, obits, lhs << rhs);
+    return VL_SHIFTL_III(obits, obits, 32, lhs, rwp[0]);
 }
 static inline QData VL_SHIFTL_QQW(int obits, int, int rbits, QData lhs,
                                   WDataInP const rwp) VL_MT_SAFE {
@@ -1698,16 +1712,28 @@ static inline QData VL_SHIFTL_QQW(int obits, int, int rbits, QData lhs,
         }
     }
     // Above checks rwp[1]==0 so not needed in below shift
-    return VL_CLEAN_QQ(obits, obits, lhs << (static_cast<QData>(rwp[0])));
-}
-static inline QData VL_SHIFTL_QQQ(int obits, int, int, QData lhs, QData rhs) VL_MT_SAFE {
-    if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
-    return VL_CLEAN_QQ(obits, obits, lhs << rhs);
+    return VL_SHIFTL_QQI(obits, obits, 32, lhs, rwp[0]);
 }
 
 // EMIT_RULE: VL_SHIFTR:  oclean=lclean; rclean==clean;
 // Important: Unlike most other funcs, the shift might well be a computed
 // expression.  Thus consider this when optimizing.  (And perhaps have 2 funcs?)
+static inline IData VL_SHIFTR_III(int obits, int, int, IData lhs, IData rhs) VL_PURE {
+    if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
+    return lhs >> rhs;  // Small is common so assumed not clean
+}
+static inline IData VL_SHIFTR_IIQ(int obits, int, int, IData lhs, QData rhs) VL_PURE {
+    if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
+    return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
+}
+static inline QData VL_SHIFTR_QQI(int obits, int, int, QData lhs, IData rhs) VL_PURE {
+    if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
+    return lhs >> rhs;  // Small is common so assumed not clean
+}
+static inline QData VL_SHIFTR_QQQ(int obits, int, int, QData lhs, QData rhs) VL_PURE {
+    if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
+    return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
+}
 static inline WDataOutP VL_SHIFTR_WWI(int obits, int, int, WDataOutP owp, WDataInP const lwp,
                                       IData rd) VL_MT_SAFE {
     const int word_shift = VL_BITWORD_E(rd);  // Maybe 0
@@ -1751,29 +1777,16 @@ static inline WDataOutP VL_SHIFTR_WWQ(int obits, int lbits, int rbits, WDataOutP
 static inline IData VL_SHIFTR_IIW(int obits, int, int rbits, IData lhs,
                                   WDataInP const rwp) VL_PURE {
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) {
-        if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
-            return 0;
-        }
+        if (VL_UNLIKELY(rwp[i])) return 0;  // Huge shift 1>>32 or more
     }
-    return VL_CLEAN_II(obits, obits, lhs >> rwp[0]);
+    return VL_SHIFTR_III(obits, obits, 32, lhs, rwp[0]);
 }
 static inline QData VL_SHIFTR_QQW(int obits, int, int rbits, QData lhs,
                                   WDataInP const rwp) VL_PURE {
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) {
-        if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
-            return 0;
-        }
+        if (VL_UNLIKELY(rwp[i])) return 0;  // Huge shift 1>>32 or more
     }
-    // Above checks rwp[1]==0 so not needed in below shift
-    return VL_CLEAN_QQ(obits, obits, lhs >> (static_cast<QData>(rwp[0])));
-}
-static inline IData VL_SHIFTR_IIQ(int obits, int, int, IData lhs, QData rhs) VL_PURE {
-    if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return 0;
-    return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
-}
-static inline QData VL_SHIFTR_QQQ(int obits, int, int, QData lhs, QData rhs) VL_PURE {
-    if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return 0;
-    return VL_CLEAN_QQ(obits, obits, lhs >> rhs);
+    return VL_SHIFTR_QQI(obits, obits, 32, lhs, rwp[0]);
 }
 
 // EMIT_RULE: VL_SHIFTRS:  oclean=false; lclean=clean, rclean==clean;
@@ -1783,11 +1796,13 @@ static inline IData VL_SHIFTRS_III(int obits, int lbits, int, IData lhs, IData r
     // must use lbits for sign; lbits might != obits,
     // an EXTEND(SHIFTRS(...)) can became a SHIFTRS(...) within same 32/64 bit word length
     const IData sign = -(lhs >> (lbits - 1));  // ffff_ffff if negative
+    if (VL_UNLIKELY(rhs >= VL_IDATASIZE)) return sign & VL_MASK_I(obits);
     const IData signext = ~(VL_MASK_I(lbits) >> rhs);  // One with bits where we've shifted "past"
     return (lhs >> rhs) | (sign & VL_CLEAN_II(obits, obits, signext));
 }
 static inline QData VL_SHIFTRS_QQI(int obits, int lbits, int, QData lhs, IData rhs) VL_PURE {
     const QData sign = -(lhs >> (lbits - 1));
+    if (VL_UNLIKELY(rhs >= VL_QUADSIZE)) return sign & VL_MASK_Q(obits);
     const QData signext = ~(VL_MASK_Q(lbits) >> rhs);
     return (lhs >> rhs) | (sign & VL_CLEAN_QQ(obits, obits, signext));
 }
@@ -2111,60 +2126,60 @@ static inline WDataOutP VL_CONST_W_8X(int obits, WDataOutP o,
     VL_C_END_(obits, 8);
 }
 //
-static inline WDataOutP VL_CONSTHI_W_1X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_1X(int obits, int lsb, WDataOutP o,
                                         EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 1);
 }
-static inline WDataOutP VL_CONSTHI_W_2X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_2X(int obits, int lsb, WDataOutP o,
                                         EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 2);
 }
-static inline WDataOutP VL_CONSTHI_W_3X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_3X(int obits, int lsb, WDataOutP o,
                                         EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;  o[2] = d2;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 3);
 }
-static inline WDataOutP VL_CONSTHI_W_4X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_4X(int obits, int lsb, WDataOutP o,
                                         EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 4);
 }
-static inline WDataOutP VL_CONSTHI_W_5X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_5X(int obits, int lsb, WDataOutP o,
                                         EData d4,
                                         EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
+    ohi[4] = d4;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 5);
 }
-static inline WDataOutP VL_CONSTHI_W_6X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_6X(int obits, int lsb, WDataOutP o,
                                         EData d5, EData d4,
                                         EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;  o[5] = d5;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
+    ohi[4] = d4;  ohi[5] = d5;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 6);
 }
-static inline WDataOutP VL_CONSTHI_W_7X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_7X(int obits, int lsb, WDataOutP o,
                                         EData d6, EData d5, EData d4,
                                         EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;  o[5] = d5;  o[6] = d6;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
+    ohi[4] = d4;  ohi[5] = d5;  ohi[6] = d6;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 7);
 }
-static inline WDataOutP VL_CONSTHI_W_8X(int obits, int lsb, WDataOutP obase,
+static inline WDataOutP VL_CONSTHI_W_8X(int obits, int lsb, WDataOutP o,
                                         EData d7, EData d6, EData d5, EData d4,
                                         EData d3, EData d2, EData d1, EData d0) VL_MT_SAFE {
-    WDataOutP o = obase + VL_WORDS_I(lsb);
-    o[0] = d0;  o[1] = d1;  o[2] = d2;  o[3] = d3;
-    o[4] = d4;  o[5] = d5;  o[6] = d6;  o[7] = d7;
+    WDataOutP ohi = o + VL_WORDS_I(lsb);
+    ohi[0] = d0;  ohi[1] = d1;  ohi[2] = d2;  ohi[3] = d3;
+    ohi[4] = d4;  ohi[5] = d5;  ohi[6] = d6;  ohi[7] = d7;
     VL_C_END_(obits, VL_WORDS_I(lsb) + 8);
 }
 

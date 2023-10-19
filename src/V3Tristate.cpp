@@ -115,21 +115,13 @@
 // unsupported.
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Tristate.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3Inst.h"
 #include "V3Stats.h"
-
-#include <algorithm>
-#include <map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -518,14 +510,14 @@ class TristateVisitor final : public TristateBaseVisitor {
 
             // Unlink lhsp before copying to save unnecessary copy of lhsp
             AstNodeExpr* const lhsp = extendp->lhsp()->unlinkFrBack();
-            AstExtend* const enExtendp = extendp->cloneTreePure(false);
+            AstExtend* const enExtendp = extendp->cloneTree(false);
             extendp->lhsp(lhsp);
             AstNodeExpr* const enLhsp = getEnExprBasedOnOriginalp(lhsp);
             enExtendp->lhsp(new AstNot{enLhsp->fileline(), enLhsp});
             return new AstNot{enExtendp->fileline(), enExtendp};
         } else if (AstSel* const selp = VN_CAST(nodep, Sel)) {
             AstNodeExpr* const fromp = selp->fromp()->unlinkFrBack();
-            AstSel* const enSelp = selp->cloneTreePure(false);
+            AstSel* const enSelp = selp->cloneTree(false);
             selp->fromp(fromp);
             AstNodeExpr* const enFromp = getEnExprBasedOnOriginalp(fromp);
             enSelp->fromp(enFromp);

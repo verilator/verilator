@@ -85,8 +85,11 @@ void V3ParseImp::lexPpline(const char* textp) {
         lexFileline(newFl);
         lexFileline()->parent(prevFl);
     } else if (enterExit == 2) {  // Exit
+        const FileLine* const prevFl = lexFileline();
         if (FileLine* upFl = lexFileline()->parent()) {
-            lexFileline(upFl);  // Restore warning state to upper file
+            // Must copy upFl as may be existing nodes that use the FileLine value
+            lexFileline(new FileLine{upFl});  // Restore warning state to upper file
+            lexFileline()->contentLinenoFrom(prevFl);
         }
     }
     if (enterExit != -1) {  // Line/fn change

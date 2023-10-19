@@ -14,13 +14,10 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstMT.h"
 
-#include "V3Ast.h"
 #include "V3EmitC.h"
 #include "V3EmitCConstInit.h"
-#include "V3Global.h"
 
 #include <algorithm>
 #include <cstdint>

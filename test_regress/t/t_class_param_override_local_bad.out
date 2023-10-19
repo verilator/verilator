@@ -1,14 +1,14 @@
-%Error-PINNOTFOUND: t/t_class_param_override_local_bad.v:23:30: Parameter pin not found: '__paramNumber1'
+%Error-PINNOTFOUND: t/t_class_param_override_local_bad.v:23:30: Parameter not found: '__paramNumber1'
    23 | class Cls3 implements Icls1#(2), Icls2#(0);
       |                              ^
                     ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
-%Error-PINNOTFOUND: t/t_class_param_override_local_bad.v:23:41: Parameter pin not found: '__paramNumber1'
+%Error-PINNOTFOUND: t/t_class_param_override_local_bad.v:23:41: Parameter not found: '__paramNumber1'
    23 | class Cls3 implements Icls1#(2), Icls2#(0);
       |                                         ^
-%Error-PINNOTFOUND: t/t_class_param_override_local_bad.v:29:23: Parameter pin not found: '__paramNumber1'
+%Error-PINNOTFOUND: t/t_class_param_override_local_bad.v:29:23: Parameter not found: '__paramNumber1'
    29 |       automatic Cls1#(bit) cls1 = new;
       |                       ^~~
-%Error-PINNOTFOUND: t/t_class_param_override_local_bad.v:30:23: Parameter pin not found: '__paramNumber1'
+%Error-PINNOTFOUND: t/t_class_param_override_local_bad.v:30:23: Parameter not found: '__paramNumber1'
    30 |       automatic Cls2#(1) cls2 = new;
       |                       ^
 %Error: Exiting due to

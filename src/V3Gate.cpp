@@ -21,22 +21,16 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Gate.h"
 
-#include "V3Ast.h"
 #include "V3AstUserAllocator.h"
 #include "V3Const.h"
 #include "V3DupFinder.h"
-#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
 
-#include <algorithm>
 #include <list>
 #include <unordered_map>
 #include <unordered_set>
@@ -1006,7 +1000,7 @@ static void eliminate(AstNode* logicp,
         // Substitute in the new tree
         UASSERT_OBJ(nodep->access().isReadOnly(), nodep,
                     "Can't replace lvalue assignments with const var");
-        UASSERT_OBJ(!(VN_IS(substp, NodeVarRef) && nodep->same(substp)),
+        UASSERT_OBJ(!(VN_IS(substp, NodeVarRef) && nodep->isSame(substp)),
                     // Prevent an infinite loop...
                     substp, "Replacing node with itself; perhaps circular logic?");
         // The replacement

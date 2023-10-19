@@ -37,16 +37,11 @@
 //
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Force.h"
 
 #include "V3AstUserAllocator.h"
-#include "V3Error.h"
-#include "V3Global.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
