@@ -1174,7 +1174,7 @@ List Of Warnings
 
    Warns that a feature requires a newer standard of Verilog or SystemVerilog
    than the one specified by the :vlopt:`--language` option. For example, unsized
-   unbased literals (`'0`, `'1`, `'z`, `'x`) require 1800-2005 or later.
+   unbased literals (`'0`, `'1`, `'z`, `'x`) require IEEE 1800-2005 or later.
 
    To avoid this warning, use a Verilog or SystemVerilog standard that
    supports the feature. Alternatively, modify your code to use a different

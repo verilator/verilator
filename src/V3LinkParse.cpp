@@ -573,8 +573,8 @@ private:
         } else if (VN_IS(bracketp, SelLoopVars)) {
             // Ok
         } else {
-            nodep->v3error("Syntax error; foreach missing bracketed loop variable (IEEE "
-                           "1800-2017 12.7.3)");
+            nodep->v3error("Syntax error; foreach missing bracketed loop variable"
+                           " (IEEE 1800-2017 12.7.3)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }

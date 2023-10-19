@@ -252,8 +252,8 @@ void V3Number::create(const char* sourcep) {
                                 << width() << " bit number: " << sourcep << '\n'
                                 << ((!sized() && !warned++) ? (
                                         V3Error::warnMore() + "... As that number was unsized"
-                                        + " ('d...) it is limited to 32 bits (IEEE 1800-2017 "
-                                          "5.7.1)\n"
+                                        + " ('d...) it is limited to 32 bits"
+                                          " (IEEE 1800-2017 5.7.1)\n"
                                         + V3Error::warnMore() + "... Suggest adding a size to it.")
                                                             : ""));
                         while (*(cp + 1)) cp++;  // Skip ahead so don't get multiple warnings

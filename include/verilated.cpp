@@ -2094,7 +2094,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
 
     if (VL_UNLIKELY(m_end != ~0ULL && m_addr <= m_end && !m_anyAddr)) {
         VL_WARN_MT(m_filename.c_str(), m_linenum, "",
-                   "$readmem file ended before specified final address (IEEE 2017 21.4)");
+                   "$readmem file ended before specified final address (IEEE 1800-2017 21.4)");
     }
 
     return false;  // EOF

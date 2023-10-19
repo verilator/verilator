@@ -2127,7 +2127,7 @@ private:
                          new AstNew{fl, nullptr}};
         AstNodeStmt* const superNewStmtp = superNewp->makeStmt();
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            // super.new shall be the first statement (section 8.15 of IEEE Std 1800-2017)
+            // super.new shall be the first statement (IEEE 1800-2017 8.15)
             // but some nodes (such as variable declarations and typedefs) should stay before
             if (VN_IS(stmtp, NodeStmt)) {
                 stmtp->addHereThisAsNext(superNewStmtp);

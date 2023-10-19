@@ -15,7 +15,7 @@
 //*************************************************************************
 //  Pre steps:
 //      Attach clocks to each assertion
-//      Substitute property references by property body (IEEE Std 1800-2012, section 16.12.1).
+//      Substitute property references by property body (IEEE 1800-2012 16.12.1).
 //      Transform clocking blocks into imperative logic
 //*************************************************************************
 
