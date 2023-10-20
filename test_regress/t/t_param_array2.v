@@ -5,8 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   localparam int c[4] = '{5, 6, 7, 8};
+   localparam logic [3:0] val_0 = 0;
+   localparam int val_1 = $bits(val_0);
+   localparam int c[4]  = '{ val_1 + 1, val_1 + 2, val_1 + 3, val_1 * 2};
    a #(.p(c)) i_a ();
+   a #(.p('{ val_1 + 1, val_1 + 2, val_1 + 3, val_1 * 2})) i_b ();
 endmodule
 
 module a

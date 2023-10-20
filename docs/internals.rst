@@ -1692,6 +1692,16 @@ AST Tree. The vertices correspond to ``AstNode`` instances, and the edges
 represent the pointers (``op1p``, ``op2p``, etc) between the nodes.
 
 
+Symbol Table Output
+----------------
+``*.*_linkdot.txt``
+
+
+Parameterization Report Output
+----------------
+``*.*_parameterization_report.txt``
+
+
 Debugging with GDB
 ------------------
 

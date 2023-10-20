@@ -9,6 +9,6 @@ endclass
 
 module t (/*AUTOARG*/);
 
-   Cls #(.PARAM($random)) c;  // Bad param name
+   Cls #(.PARAM($random)) c;  // Bad overridden value
 
 endmodule

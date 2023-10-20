@@ -4,6 +4,8 @@
 // without warranty, 2023 by Justin Thiel.
 // SPDX-License-Identifier: CC0-1.0
 
+/// Test for bug3858
+
 interface SimpleIntf
 #(
    parameter int symbolsPerBeat = 16

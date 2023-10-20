@@ -15,7 +15,6 @@ compile(
 
 execute(
     check_finished => 1,
-    fails => $Self->{vlt_all},
     expect_filename => $Self->{golden_filename},
 );
 

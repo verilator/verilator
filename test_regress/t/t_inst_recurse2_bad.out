@@ -1,5 +1,5 @@
 %Error-UNSUPPORTED: t/t_inst_recurse2_bad.v:18:8: Unsupported: Identically recursive module (module instantiates itself, without changing parameters): 'looped'
-                                                : ... note: In instance 't.looped.looped'
+                                                : ... note: In instance 't.looped.looped.looped'
    18 | module looped ( );
       |        ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
