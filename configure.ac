@@ -371,10 +371,9 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wthread-safety)
 AC_SUBST(CFG_CXXFLAGS_WEXTRA)
 
 # Flags for coroutine support for dynamic scheduling
-_MY_CXX_CHECK_IFELSE(
-  -fcoroutines-ts,
-  [CFG_CXXFLAGS_COROUTINES="-fcoroutines-ts"],
-  [CFG_CXXFLAGS_COROUTINES="-fcoroutines"])
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_COROUTINES,-fcoroutines-ts)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_COROUTINES,-fcoroutines)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_COROUTINES,-fcoroutines-ts -Wno-deprecated-experimental-coroutine)
 AC_SUBST(CFG_CXXFLAGS_COROUTINES)
 
 # HAVE_COROUTINES
@@ -442,12 +441,16 @@ m4_foreach([cflag],[
         [-mno-cet],
         [-Qunused-arguments],
         [-Wno-bool-operation],
+        [-Wno-c++11-narrowing],
         [-Wno-constant-logical-operand],
+        [-Wno-non-pod-varargs],
+        [-Wno-overloaded-virtual],
         [-Wno-parentheses-equality],
         [-Wno-shadow],
         [-Wno-sign-compare],
         [-Wno-tautological-bitwise-compare],
         [-Wno-uninitialized],
+        [-Wno-unused-but-set-parameter],
         [-Wno-unused-but-set-parameter],
         [-Wno-unused-but-set-variable],
         [-Wno-unused-parameter],
