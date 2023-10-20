@@ -123,6 +123,9 @@ string AstNode::encodeName(const string& namein) {
             out += "__0" + hex.str();
         }
     }
+    if (out.empty()) {
+        out = "__EMPTY__";
+    }
     // Shorten names
     // TODO long term use VName in place of "string name"
     // Then we also won't need to save the table of hashed values

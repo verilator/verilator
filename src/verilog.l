@@ -87,7 +87,7 @@ ws      [ \t\f\r]+
 wsnr    [ \t\f]+
 crnl    [\r]*[\n]
 id      [a-zA-Z_][a-zA-Z0-9_$]*
-escid   \\[^ \t\f\r\n]+
+escid   \\[^ \t\f\r\n]*
 word    [a-zA-Z0-9_]+
 vnum1   [0-9]*?[''][sS]?[bcodhBCODH][ \t\n]*[A-Fa-f0-9xXzZ_?]*
 vnum2   [0-9]*?[''][sS]?[01xXzZ]
