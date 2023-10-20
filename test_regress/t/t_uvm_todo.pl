@@ -17,6 +17,7 @@ compile(
                  "-Wno-REALCVT", # TODO note mostly related to $realtime - could suppress or fix upstream
                  "-Wno-ZERODLY", # TODO issue #4494, add support
                  ],
+    make_flags => '-k -j ' . ::max_procs(),
     verilator_make_gmake => 0,
     );
 
