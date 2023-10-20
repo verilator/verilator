@@ -250,20 +250,6 @@ template <class T_Value, uint64_t T_numValues>
 class VlRandC final {
     T_Value m_remaining = 0;  // Number of values to pull before re-randomize
     T_Value m_lfsr = 1;  // LFSR state
-    // Polynomials are first listed at https://users.ece.cmu.edu/~koopman/lfsr/
-    static constexpr uint64_t s_polynomials[] = {
-        0x0ULL,  // 0 never used (constant, no randomization)
-        0x0ULL,  // 1
-        0x3ULL,        0x5ULL,       0x9ULL,        0x12ULL,       0x21ULL,
-        0x41ULL,       0x8eULL,      0x108ULL,      0x204ULL,      0x402ULL,
-        0x829ULL,      0x100dULL,    0x2015ULL,     0x4001ULL,
-        0x8016ULL,  // 16
-        0x10004ULL,    0x20040ULL,   0x40013ULL,    0x80004ULL,    0x100002ULL,
-        0x200001ULL,   0x400010ULL,  0x80000dULL,   0x1000004ULL,  0x2000023ULL,
-        0x4000013ULL,  0x8000004ULL, 0x10000002ULL, 0x20000029ULL, 0x40000004ULL,
-        0x80000057ULL,  // 32
-        0x100000029ULL  // 33
-    };
 
 public:
     // CONSTRUCTORS
@@ -274,6 +260,20 @@ public:
     // METHODS
     T_Value randomize(VlRNG& rngr) {
         if (VL_UNLIKELY(!m_remaining)) reseed(rngr);
+        // Polynomials are first listed at https://users.ece.cmu.edu/~koopman/lfsr/
+        static constexpr uint64_t s_polynomials[] = {
+            0x0ULL,  // 0 never used (constant, no randomization)
+            0x0ULL,  // 1
+            0x3ULL,        0x5ULL,       0x9ULL,        0x12ULL,       0x21ULL,
+            0x41ULL,       0x8eULL,      0x108ULL,      0x204ULL,      0x402ULL,
+            0x829ULL,      0x100dULL,    0x2015ULL,     0x4001ULL,
+            0x8016ULL,  // 16
+            0x10004ULL,    0x20040ULL,   0x40013ULL,    0x80004ULL,    0x100002ULL,
+            0x200001ULL,   0x400010ULL,  0x80000dULL,   0x1000004ULL,  0x2000023ULL,
+            0x4000013ULL,  0x8000004ULL, 0x10000002ULL, 0x20000029ULL, 0x40000004ULL,
+            0x80000057ULL,  // 32
+            0x100000029ULL  // 33
+        };
         constexpr uint32_t clogWidth = VL_CLOG2_CE_Q(T_numValues) + 1;
         constexpr uint32_t lfsrWidth = (clogWidth < 2) ? 2 : clogWidth;
         constexpr T_Value polynomial = static_cast<T_Value>(s_polynomials[lfsrWidth]);
