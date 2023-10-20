@@ -451,7 +451,6 @@ m4_foreach([cflag],[
         [-Wno-tautological-bitwise-compare],
         [-Wno-uninitialized],
         [-Wno-unused-but-set-parameter],
-        [-Wno-unused-but-set-parameter],
         [-Wno-unused-but-set-variable],
         [-Wno-unused-parameter],
         [-Wno-unused-variable]],[
