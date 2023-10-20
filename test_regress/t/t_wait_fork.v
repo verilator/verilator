@@ -8,13 +8,16 @@ module t(/*AUTOARG*/);
 
    logic never;
 
+   integer n = 0;
+
    initial begin
-      fork
-         #10;
-         #10;
-      join_none
       disable fork;
+      fork
+         #10 if (n != 0) $stop; else n = 1;
+         #15 if (n != 1) $stop; else n = 2;
+      join_none
       wait fork;
+      if (n != 2) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

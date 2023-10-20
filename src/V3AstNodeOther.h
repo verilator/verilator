@@ -3325,6 +3325,7 @@ public:
     explicit AstWaitFork(FileLine* fl)
         : ASTGEN_SUPER_WaitFork(fl) {}
     ASTGEN_MEMBERS_AstWaitFork;
+    bool isTimingControl() const override { return true; }
 };
 class AstWhile final : public AstNodeStmt {
     // @astgen op1 := precondsp : List[AstNode]

@@ -120,14 +120,20 @@ public:
     void attach(VlProcess* childp) { m_children.insert(childp); }
     void detach(VlProcess* childp) { m_children.erase(childp); }
 
-    int state() { return m_state; }
+    int state() const { return m_state; }
     void state(int s) { m_state = s; }
     void disable() {
         state(KILLED);
-        disable_fork();
+        disableFork();
     }
-    void disable_fork() {
+    void disableFork() {
         for (VlProcess* childp : m_children) childp->disable();
+    }
+    bool completed() const { return state() == FINISHED || state() == KILLED; }
+    bool completedFork() const {
+        for (const VlProcess* const childp : m_children)
+            if (!childp->completed()) return false;
+        return true;
     }
 };
 

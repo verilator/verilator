@@ -275,6 +275,10 @@ private:
         visit(static_cast<AstNode*>(nodep));
         addFlags(m_procp, T_FORCES_PROC | T_NEEDS_PROC);
     }
+    void visit(AstWaitFork* nodep) override {
+        visit(static_cast<AstNode*>(nodep));
+        addFlags(m_procp, T_FORCES_PROC | T_NEEDS_PROC);
+    }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
@@ -573,8 +577,11 @@ private:
     // Returns true if we are under a class or the given tree has any references to locals. These
     // are cases where static, globally-evaluated triggers are not suitable.
     bool needDynamicTrigger(AstNode* const nodep) const {
-        return m_classp || nodep->exists([](const AstNodeVarRef* const refp) {
-            return refp->varp()->isFuncLocal();
+        return m_classp || nodep->exists([](AstNode* const nodep) {
+            if (AstNodeVarRef* varp = VN_CAST(nodep, NodeVarRef)) {
+                return varp->varp()->isFuncLocal();
+            }
+            return !nodep->isPure();
         });
     }
     // Returns true if the given trigger expression needs a destructive post update after trigger
@@ -1049,6 +1056,13 @@ private:
         // Put the AssignW right after the always. Different order can produce UNOPTFLAT on the LHS
         // var
         alwaysp->addNextHere(nodep);
+    }
+    void visit(AstWaitFork* nodep) override {
+        AstCExpr* const exprp = new AstCExpr{nodep->fileline(), "vlProcess->completedFork()", 1};
+        exprp->pure(false);
+        AstWait* const waitp = new AstWait{nodep->fileline(), exprp, nullptr};
+        nodep->replaceWith(waitp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstWait* nodep) override {
         // Wait on changed events related to the vars in the wait statement
