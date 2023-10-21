@@ -918,9 +918,7 @@ task uvm_wait_for_nba_region;
   int nba;
   int next_nba;
   next_nba++;
-//TODO issue #4496 - Delayed assignment inside public function/task
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:875:7: Unsupported: Delayed assignment inside public function/task
-//TODO  nba <= next_nba;
+  nba <= next_nba;
   @(nba);
 endtask
 function automatic void uvm_split_string (string str, byte sep, ref string values[$]);
