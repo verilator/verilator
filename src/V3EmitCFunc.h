@@ -603,7 +603,7 @@ public:
         puts(");\n");
     }
     void visit(AstCoverInc* nodep) override {
-        if (v3Global.opt.threads()) {
+        if (v3Global.opt.threads() > 1) {
             puts("vlSymsp->__Vcoverage[");
             puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
             puts("].fetch_add(1, std::memory_order_relaxed);\n");

@@ -420,7 +420,7 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.opt.threads() == 1) {
             puts("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);\n");
         }
-        if (v3Global.opt.threads()) puts("Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);\n");
+        puts("Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);\n");
 
         if (v3Global.opt.profExec()) puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).evalEnd();\n");
         puts("}\n");
@@ -482,7 +482,7 @@ class EmitCModel final : public EmitCFunc {
         puts("const char* " + topClassName() + "::modelName() const { return \"" + topClassName()
              + "\"; }\n");
         puts("unsigned " + topClassName() + "::threads() const { return "
-             + cvtToStr(std::max(1, v3Global.opt.threads())) + "; }\n");
+             + cvtToStr(v3Global.opt.threads()) + "; }\n");
         puts("void " + topClassName()
              + "::prepareClone() const { contextp()->prepareClone(); }\n");
         puts("void " + topClassName() + "::atClone() const {\n");
