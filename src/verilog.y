@@ -55,6 +55,7 @@
 #define DELAY_LIST(delayp, assignsp) \
     if (delayp) { \
         for (auto* nodep = assignsp; nodep; nodep = nodep->nextp()) { \
+            if (VN_IS(nodep, Implicit)) continue; \
             auto* const assignp = VN_AS(nodep, NodeAssign); \
             assignp->timingControlp(nodep == assignsp ? delayp : delayp->cloneTree(false)); \
         } \
@@ -373,6 +374,7 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
     { \
         if (AstStrengthSpec* const specp = VN_CAST(strengthSpecNodep, StrengthSpec)) { \
             for (auto* nodep = beginp; nodep; nodep = nodep->nextp()) { \
+                if (VN_IS(nodep, Implicit)) continue; \
                 auto* const assignp = VN_AS(nodep, typeToCast); \
                 assignp->strengthSpecp(nodep == beginp ? specp : specp->cloneTree(false)); \
             } \
@@ -5347,7 +5349,8 @@ gateBuf<nodep>:
                 gateFront variable_lvalue ',' exprList ')'
                         { AstNodeExpr* inp = $4;
                           while (inp->nextp()) inp = VN_AS(inp->nextp(), NodeExpr);
-                          $$ = new AstAssignW{$<fl>1, $2, GRAMMARP->createGatePin(inp->cloneTree(false))};
+                          $$ = new AstImplicit{$<fl>1, inp->cloneTree(false)};
+                          $$->addNext(new AstAssignW{$<fl>1, $2, GRAMMARP->createGatePin(inp->cloneTree(false))});
                           for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
                               $$->addNext(new AstAssignW{$<fl>1, outp->cloneTree(false),
                                                          GRAMMARP->createGatePin(inp->cloneTree(false))});
@@ -5358,8 +5361,9 @@ gateNot<nodep>:
                 gateFront variable_lvalue ',' exprList ')'
                         { AstNodeExpr* inp = $4;
                           while (inp->nextp()) inp = VN_AS(inp->nextp(), NodeExpr);
-                          $$ = new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1,
-                                                                 GRAMMARP->createGatePin(inp->cloneTree(false))}};
+                          $$ = new AstImplicit{$<fl>1, inp->cloneTree(false)};
+                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1,
+                                                                 GRAMMARP->createGatePin(inp->cloneTree(false))}});
                           for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
                               $$->addNext(new AstAssignW{$<fl>1, outp->cloneTree(false),
                                                          new AstNot{$<fl>1,
@@ -5369,44 +5373,58 @@ gateNot<nodep>:
         ;
 gateBufif0<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, new AstNot{$<fl>1, $6}, $4}}; DEL($1); }
+                        { $$ = new AstImplicit{$<fl>1, $6->cloneTree(false)};
+                          $<implicitp>$->addExprsp($4->cloneTree(false));
+                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, new AstNot{$<fl>1, $6}, $4}}); DEL($1); }
         ;
 gateBufif1<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, $6, $4}}; DEL($1); }
+                        { $$ = new AstImplicit{$<fl>1, $6->cloneTree(false)};
+                          $<implicitp>$->addExprsp($4->cloneTree(false));
+                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, $6, $4}}); DEL($1); }
         ;
 gateNotif0<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, new AstNot{$<fl>1, $6},
-                                                                        new AstNot{$<fl>1, $4}}}; DEL($1); }
+                        { $$ = new AstImplicit{$<fl>1, $6->cloneTree(false)};
+                          $<implicitp>$->addExprsp($4->cloneTree(false));
+                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, new AstNot{$<fl>1, $6},
+                                                                        new AstNot{$<fl>1, $4}}}); DEL($1); }
         ;
 gateNotif1<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, $6, new AstNot{$<fl>1, $4}}}; DEL($1); }
+                        { $$ = new AstImplicit{$<fl>1, $6->cloneTree(false)};
+                          $<implicitp>$->addExprsp($4->cloneTree(false));
+                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, $6, new AstNot{$<fl>1, $4}}}); DEL($1); }
         ;
 gateAnd<nodep>:
                 gateFront variable_lvalue ',' gateAndPinList ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, $4}; DEL($1); }
+                        { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
+                          $$->addNext(new AstAssignW{$<fl>1, $2, $4}); DEL($1); }
         ;
 gateNand<nodep>:
                 gateFront variable_lvalue ',' gateAndPinList ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1, $4}}; DEL($1); }
+                        { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
+                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1, $4}}); DEL($1); }
         ;
 gateOr<nodep>:
                 gateFront variable_lvalue ',' gateOrPinList ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, $4}; DEL($1); }
+                        { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
+                          $$->addNext(new AstAssignW{$<fl>1, $2, $4}); DEL($1); }
         ;
 gateNor<nodep>:
                 gateFront variable_lvalue ',' gateOrPinList ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1, $4}}; DEL($1); }
+                        { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
+                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1, $4}}); DEL($1); }
         ;
 gateXor<nodep>:
                 gateFront variable_lvalue ',' gateXorPinList ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, $4}; DEL($1); }
+                        { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
+                          $$->addNext(new AstAssignW{$<fl>1, $2, $4}); DEL($1); }
         ;
 gateXnor<nodep>:
                 gateFront variable_lvalue ',' gateXorPinList ')'
-                        { $$ = new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1, $4}}; DEL($1); }
+                        { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
+                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1, $4}}); DEL($1); }
         ;
 gatePullup<nodep>:
                 gateFront variable_lvalue ')'           { $$ = new AstPull{$<fl>1, $2, true}; DEL($1); }
