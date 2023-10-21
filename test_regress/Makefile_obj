@@ -39,6 +39,9 @@ CPPFLAGS += $(CPPFLAGS_DRIVER)
 CPPFLAGS += $(CPPFLAGS_DRIVER2)
 CPPFLAGS += $(CPPFLAGS_ADD)
 
+# Reduce spin count for faster testing
+CPPFLAGS += -DVL_LOCK_SPINS=10000
+
 ifeq ($(CFG_WITH_LONGTESTS),yes)
   ifeq ($(DRIVER_STD),newest)
     CPPFLAGS += $(CFG_CXXFLAGS_STD)
