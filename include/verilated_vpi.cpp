@@ -303,7 +303,13 @@ public:
     uint32_t entSize() const { return m_entSize; }
     uint32_t index() const { return m_index; }
     uint32_t type() const override {
-        return (varp()->dims() > 1) ? vpiMemory : vpiReg;  // but might be wire, logic
+        uint32_t type = vpiReg;
+        switch (varp()->vltype()) {
+        case VLVT_REAL: type = vpiRealVar; break;
+        case VLVT_STRING: type = vpiStringVar; break;
+        default: break;
+        }
+        return (varp()->dims() > 1) ? vpiMemory : type;  // but might be wire, logic
     }
     void* prevDatap() const { return m_prevDatap; }
     void* varDatap() const { return m_varDatap; }
@@ -985,9 +991,117 @@ const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_PURE {
         "vpiGenVar",
         "vpiAutomatics"
     };
+    static const char* const sv_names1[] = {
+        "vpiPackage",
+        "vpiInterface",
+        "vpiProgram",
+        "vpiInterfaceArray",
+        "vpiProgramArray",
+        "vpiTypespec",
+        "vpiModport",
+        "vpiInterfaceTfDecl",
+        "vpiRefObj",
+        "vpiTypeParameter",
+        "vpiLongIntVar",
+        "vpiShortIntVar",
+        "vpiIntVar",
+        "vpiShortRealVar",
+        "vpiByteVar",
+        "vpiClassVar",
+        "vpiStringVar",
+        "vpiEnumVar",
+        "vpiStructVar",
+        "vpiUnionVar",
+        "vpiBitVar",
+        "vpiClassObj",
+        "vpiChandleVar",
+        "vpiPackedArrayVar",
+        "*undefined*",  // 624 is not defined for object types
+        "vpiLongIntTypespec",
+        "vpiShortRealTypespec",
+        "vpiByteTypespec",
+        "vpiShortIntTypespec",
+        "vpiIntTypespec",
+        "vpiClassTypespec",
+        "vpiStringTypespec",
+        "vpiChandleTypespec",
+        "vpiEnumTypespec",
+        "vpiEnumConst",
+        "vpiIntegerTypespec",
+        "vpiTimeTypespec",
+        "vpiRealTypespec",
+        "vpiStructTypespec",
+        "vpiUnionTypespec",
+        "vpiBitTypespec",
+        "vpiLogicTypespec",
+        "vpiArrayTypespec",
+        "vpiVoidTypespec",
+        "vpiTypespecMember",
+        "vpiDistItem",
+        "vpiAliasStmt",
+        "vpiThread",
+        "vpiMethodFuncCall",
+        "vpiMethodTaskCall",
+        "vpiClockingBlock",
+        "vpiClockingIODecl",
+        "vpiClassDefn",
+        "vpiConstraint",
+        "vpiConstraintOrdering",
+        "vpiPropertyDecl",
+        "vpiPropertySpec",
+        "vpiPropertyExpr",
+        "vpiMulticlockSequenceExpr",
+        "vpiClockedSeq",
+        "vpiPropertyInst",
+        "vpiSequenceDecl",
+        "vpiCaseProperty",
+        "*undefined*", // 663 is not defined for object types
+        "vpiSequenceInst",
+        "vpiImmediateAssert",
+        "vpiReturn",
+        "vpiAnyPattern",
+        "vpiTaggedPattern",
+        "vpiStructPattern",
+        "vpiDoWhile",
+        "vpiOrderedWait",
+        "vpiWaitFork",
+        "vpiDisableFork",
+        "vpiExpectStmt",
+        "vpiForeachStmt",
+        "vpiFinal",
+        "vpiExtends",
+        "vpiDistribution",
+        "vpiSeqFormalDecl",
+        "vpiEnumNet",
+        "vpiIntegerNet",
+        "vpiTimeNet",
+        "vpiStructNet",
+        "vpiBreak",
+        "vpiContinue",
+        "vpiAssert",
+        "vpiAssume",
+        "vpiCover",
+        "vpiDisableCondition",
+        "vpiClockingEvent",
+        "vpiReturnStmt",
+        "vpiPackedArrayTypespec",
+        "vpiPackedArrayNet",
+        "vpiImmediateAssume",
+        "vpiImmediateCover",
+        "vpiSequenceTypespec",
+        "vpiPropertyTypespec",
+        "vpiEventTypespec",
+        "vpiPropFormalDecl",
+    };
     // clang-format on
-    if (VL_UNCOVERABLE(vpiVal < 0)) return names[0];
-    return names[(vpiVal <= vpiAutomatics) ? vpiVal : 0];
+    if (VL_UNCOVERABLE(vpiVal < 0))
+        return names[0];
+    else if (vpiVal <= vpiAutomatics)
+        return names[vpiVal];
+    else if (vpiVal >= vpiPackage && vpiVal <= vpiPropFormalDecl)
+        return sv_names1[(vpiVal - vpiPackage)];
+    else
+        return names[0];
 }
 const char* VerilatedVpiError::strFromVpiMethod(PLI_INT32 vpiVal) VL_PURE {
     // clang-format off
@@ -1313,6 +1427,104 @@ void VerilatedVpiError::selfTest() VL_MT_UNSAFE_ONE {
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiGenScope);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiGenVar);
     SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiAutomatics);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPackage);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiInterface);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiProgram);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiInterfaceArray);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiProgramArray);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiModport);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiInterfaceTfDecl);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiRefObj);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTypeParameter);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiLongIntVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiShortIntVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiIntVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiShortRealVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiByteVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiClassVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiStringVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiEnumVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiStructVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUnionVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiBitVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiClassObj);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiChandleVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPackedArrayVar);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiLongIntTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiShortRealTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiByteTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiShortIntTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiIntTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiClassTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiStringTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiChandleTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiEnumTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiEnumConst);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiIntegerTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTimeTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiRealTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiStructTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiUnionTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiBitTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiLogicTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiArrayTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiVoidTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTypespecMember);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiDistItem);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiAliasStmt);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiThread);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiMethodFuncCall);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiMethodTaskCall);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiClockingBlock);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiClockingIODecl);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiClassDefn);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiConstraint);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiConstraintOrdering);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPropertyDecl);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPropertySpec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPropertyExpr);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiMulticlockSequenceExpr);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiClockedSeq);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPropertyInst);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiSequenceDecl);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiCaseProperty);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiSequenceInst);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiImmediateAssert);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiReturn);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiAnyPattern);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTaggedPattern);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiStructPattern);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiDoWhile);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiOrderedWait);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiWaitFork);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiDisableFork);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiExpectStmt);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiForeachStmt);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiFinal);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiExtends);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiDistribution);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiSeqFormalDecl);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiEnumNet);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiIntegerNet);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiTimeNet);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiStructNet);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiBreak);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiContinue);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiAssert);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiAssume);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiCover);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiDisableCondition);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiClockingEvent);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiReturnStmt);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPackedArrayTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPackedArrayNet);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiImmediateAssume);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiImmediateCover);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiSequenceTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPropertyTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiEventTypespec);
+    SELF_CHECK_ENUM_STR(strFromVpiObjType, vpiPropFormalDecl);
 
     SELF_CHECK_ENUM_STR(strFromVpiMethod, vpiCondition);
     SELF_CHECK_ENUM_STR(strFromVpiMethod, vpiStmt);
@@ -1734,7 +1946,8 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
         case VLVT_UINT64:
         case VLVT_WDATA: return status;
         case VLVT_STRING:
-            if (isGetValue) {
+            // string parameter values can't be changed
+            if (isGetValue || !varp->isParam()) {
                 return status;
             } else {
                 status = false;
@@ -1747,6 +1960,11 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
         case VLVT_UINT8:
         case VLVT_UINT16:
         case VLVT_UINT32: return status;
+        default: status = false;
+        }
+    } else if (valuep->format == vpiRealVal) {
+        switch (varp->vltype()) {
+        case VLVT_REAL: return status;
         default: status = false;
         }
     } else if (valuep->format == vpiSuppressVal) {
@@ -1766,6 +1984,8 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
     static thread_local char t_outStr[VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE + 1];
     // cppcheck-suppress variableScope
     static const thread_local int t_outStrSz = sizeof(t_outStr) - 1;
+    // string data type is dynamic and may vary in size during simulation
+    static thread_local std::string t_outDynamicStr;
     // We used to presume vpiValue.format = vpiIntVal or if single bit vpiScalarVal
     // This may cause backward compatibility issues with older code.
     if (valuep->format == vpiVectorVal) {
@@ -1918,8 +2138,14 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
         return;
     } else if (valuep->format == vpiStringVal) {
         if (varp->vltype() == VLVT_STRING) {
-            valuep->value.str = reinterpret_cast<char*>(varDatap);
-            return;
+            if (varp->isParam()) {
+                valuep->value.str = reinterpret_cast<char*>(varDatap);
+                return;
+            } else {
+                t_outDynamicStr = *(reinterpret_cast<std::string*>(varDatap));
+                valuep->value.str = const_cast<char*>(t_outDynamicStr.c_str());
+                return;
+            }
         } else {
             valuep->value.str = t_outStr;
             int bytes = VL_BYTES_I(varp->packed().elements());
@@ -1954,6 +2180,9 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             valuep->value.integer = *(reinterpret_cast<IData*>(varDatap));
             return;
         }
+    } else if (valuep->format == vpiRealVal) {
+        valuep->value.real = *(reinterpret_cast<double*>(varDatap));
+        return;
     } else if (valuep->format == vpiSuppressVal) {
         return;
     }
@@ -2171,12 +2400,17 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             datap[(chars - 1) >> 1] &= vop->mask_byte((chars - 1) >> 1);
             return object;
         } else if (valuep->format == vpiStringVal) {
-            const int bytes = VL_BYTES_I(vop->varp()->packed().elements());
-            const int len = std::strlen(valuep->value.str);
-            CData* const datap = (reinterpret_cast<CData*>(vop->varDatap()));
-            for (int i = 0; i < bytes; ++i) {
-                // prepend with 0 values before placing string the least significant bytes
-                datap[i] = (i < len) ? valuep->value.str[len - i - 1] : 0;
+            if (vop->varp()->vltype() == VLVT_STRING) {
+                *(reinterpret_cast<std::string*>(vop->varDatap())) = valuep->value.str;
+                return object;
+            } else {
+                const int bytes = VL_BYTES_I(vop->varp()->packed().elements());
+                const int len = std::strlen(valuep->value.str);
+                CData* const datap = (reinterpret_cast<CData*>(vop->varDatap()));
+                for (int i = 0; i < bytes; ++i) {
+                    // prepend with 0 values before placing string the least significant bytes
+                    datap[i] = (i < len) ? valuep->value.str[len - i - 1] : 0;
+                }
             }
             return object;
         } else if (valuep->format == vpiIntVal) {
@@ -2188,6 +2422,11 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 return object;
             } else if (vop->varp()->vltype() == VLVT_UINT32) {
                 *(reinterpret_cast<IData*>(vop->varDatap())) = vop->mask() & valuep->value.integer;
+                return object;
+            }
+        } else if (valuep->format == vpiRealVal) {
+            if (vop->varp()->vltype() == VLVT_REAL) {
+                *(reinterpret_cast<double*>(vop->varDatap())) = valuep->value.real;
                 return object;
             }
         }
