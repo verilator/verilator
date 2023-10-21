@@ -60,8 +60,8 @@ class VlFileCopy:
             print("\t%s " % command)
         status = subprocess.call(command, shell=True)
         if status != 0:
-            raise Exception("Command failed running Verilator with '" +
-                            command + "', stopped")
+            raise RuntimeError("Command failed running Verilator with '" +
+                               command + "', stopped")
 
 
 #######################################################################
