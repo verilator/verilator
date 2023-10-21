@@ -733,6 +733,9 @@ void AstNode::relinkOneLink(AstNode*& pointpr,  // Ref to pointer that gets set 
 
 void AstNode::addHereThisAsNext(AstNode* newp) {
     // {back}->this->{next} becomes {back}->new->this->{next}
+    // Note: because we insert the new nodes *before* the current node, we do not
+    // update the iteration pointer (if any), this means the inserted new nodes
+    // will not be automatically iterated.
     UASSERT_OBJ(!newp->backp(), newp, "New node already linked?");
     UASSERT_OBJ(this->m_backp, this, "'this' node has no back, already unlinked?");
     UASSERT_OBJ(newp->m_headtailp, newp, "m_headtailp not set on new node");
@@ -773,12 +776,6 @@ void AstNode::addHereThisAsNext(AstNode* newp) {
         this->m_headtailp = nullptr;
         newp->m_headtailp = tailp;
         tailp->m_headtailp = newp;
-    }
-    // Iterator fixup
-    if (newLastp->m_iterpp) *(newLastp->m_iterpp) = this;
-    if (this->m_iterpp) {
-        *(this->m_iterpp) = newp;
-        this->m_iterpp = nullptr;
     }
     //
     debugTreeChange(this, "-addHereThisAsNext: ", __LINE__, true);
@@ -858,6 +855,7 @@ AstNode* AstNode::cloneTree(bool cloneNextLink, bool needPure) {
 void AstNode::deleteNode() {
     // private: Delete single node. Publicly call deleteTree() instead.
     UASSERT(!m_backp, "Delete called on node with backlink still set");
+    UASSERT(!m_iterpp, "Delete called on node with iterpp still set");
     editCountInc();
     // Change links of old node so we coredump if used
     this->m_nextp = reinterpret_cast<AstNode*>(0x1);
@@ -958,35 +956,39 @@ void AstNode::iterateAndNext(VNVisitor& v) {
     // This is a very hot function
     // IMPORTANT: If you replace a node that's the target of this iterator,
     // then the NEW node will be iterated on next, it isn't skipped!
-    // Future versions of this function may require the node to have a back to be iterated;
-    // there's no lower level reason yet though the back must exist.
-    AstNode* nodep = this;
-#ifdef VL_DEBUG  // Otherwise too hot of a function for debug
-    UASSERT_OBJ(!(nodep && !nodep->m_backp), nodep, "iterateAndNext node has no back");
+
+#ifdef VL_DEBUG
+    UASSERT_OBJ(m_backp, this, "iterateAndNext called on node which has no m_backp");
+    UASSERT_OBJ(!m_iterpp, this, "iterateAndNext called on node already under iteration");
 #endif
-    // cppcheck-suppress knownConditionTrueFalse
-    if (nodep) ASTNODE_PREFETCH(nodep->m_nextp);
-    while (nodep) {  // effectively: if (!this) return;  // Callers rely on this
+    ASTNODE_PREFETCH(m_nextp);
+
+    AstNode* nodep = this;
+    do {
+
         if (nodep->m_nextp) ASTNODE_PREFETCH(nodep->m_nextp->m_nextp);
-        AstNode* niterp = nodep;  // Pointer may get stomped via m_iterpp if the node is edited
-        // Desirable check, but many places where multiple iterations are OK
-        // UASSERT_OBJ(!niterp->m_iterpp, niterp, "IterateAndNext under iterateAndNext may miss
-        // edits"); Optimization note: Doing PREFETCH_RW on m_iterpp is a net even
-        // cppcheck-suppress nullPointer
-        niterp->m_iterpp = &niterp;
-        niterp->accept(v);
-        // accept may do a replaceNode and change niterp on us...
-        // niterp maybe nullptr, so need cast if printing
-        // if (niterp != nodep) UINFO(1,"iterateAndNext edited "<<cvtToHex(nodep)
-        //                             <<" now into "<<cvtToHex(niterp)<<endl);
-        if (!niterp) return;  // Perhaps node deleted inside accept
-        niterp->m_iterpp = nullptr;
-        if (VL_UNLIKELY(niterp != nodep)) {  // Edited node inside accept
+
+        // This pointer may get changed via m_iterpp if the current node is edited
+        AstNode* niterp = nodep;
+        nodep->m_iterpp = &niterp;
+        nodep->accept(v);
+
+        if (VL_UNLIKELY(niterp != nodep)) {
+            // Node edited inside 'accept' (may have been deleted entirely)
             nodep = niterp;
-        } else {  // Unchanged node (though maybe updated m_next), just continue loop
-            nodep = niterp->m_nextp;
+#ifdef VL_DEBUG
+            UASSERT_OBJ(!nodep || (nodep->m_iterpp == &niterp), nodep,
+                        "New node already being iterated elsewhere");
+#endif
+        } else {
+            // Unchanged node (though maybe updated m_next), just continue loop
+            nodep->m_iterpp = nullptr;
+            nodep = nodep->m_nextp;
+#ifdef VL_DEBUG
+            UASSERT_OBJ(!nodep || !nodep->m_iterpp, niterp, "Next node already being iterated");
+#endif
         }
-    }
+    } while (nodep);
 }
 
 void AstNode::iterateListBackwardsConst(VNVisitorConst& v) {

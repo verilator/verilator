@@ -235,15 +235,15 @@ private:
             iterateAndNextNull(nodep->stmtsp());
         }
         AstNodeExpr* const condp = nodep->condp() ? nodep->condp()->unlinkFrBack() : nullptr;
-        AstNode* const bodyp = nodep->stmtsp() ? nodep->stmtsp()->unlinkFrBack() : nullptr;
-        AstWhile* const whilep = new AstWhile{nodep->fileline(), condp, bodyp};
-        nodep->replaceWith(whilep);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        if (bodyp) {
+        if (AstNode* const bodyp = nodep->stmtsp() ? nodep->stmtsp()->unlinkFrBack() : nullptr) {
             AstNode* const copiedBodyp = bodyp->cloneTree(false);
             addPrefixToBlocksRecurse(copiedBodyp);
-            whilep->addHereThisAsNext(copiedBodyp);
+            copiedBodyp->addNext(new AstWhile{nodep->fileline(), condp, bodyp});
+            nodep->replaceWith(copiedBodyp);
+        } else {
+            nodep->replaceWith(new AstWhile{nodep->fileline(), condp, nullptr});
         }
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstForeach* nodep) override {
         VL_RESTORER(m_loopp);

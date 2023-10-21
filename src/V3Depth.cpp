@@ -66,6 +66,8 @@ private:
         AstAssign* const assp = new AstAssign{
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE}, nodep};
         m_stmtp->addHereThisAsNext(assp);
+        // Process the new assignment, in case it still contains deep expressions
+        visitStmt(assp);
     }
 
     // VISITORS
@@ -95,6 +97,8 @@ private:
     }
     void visitStmt(AstNodeStmt* nodep) {
         VL_RESTORER(m_stmtp);
+        VL_RESTORER(m_depth);
+        VL_RESTORER(m_maxdepth);
         {
             m_stmtp = nodep;
             m_depth = 0;

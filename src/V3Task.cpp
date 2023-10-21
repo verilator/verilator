@@ -1391,7 +1391,10 @@ private:
         if (debug() >= 9) nodep->dumpTree("-  newstmt: ");
         UASSERT_OBJ(m_insStmtp, nodep, "Function call not underneath a statement");
         if (debug() >= 9) newp->dumpTree("-  newfunc: ");
-        m_insStmtp->addHereThisAsNext(newp);
+        AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", newp};
+        iterateAndNextNull(newp);
+        m_insStmtp->addHereThisAsNext(tempp->stmtsp()->unlinkFrBackWithNext());
+        VL_DO_DANGLING(tempp->deleteTree(), tempp);
     }
 
     // VISITORS
@@ -1552,6 +1555,7 @@ private:
         }
     }
     void visit(AstWhile* nodep) override {
+        VL_RESTORER(m_insStmtp);
         // Special, as statements need to be put in different places
         // Preconditions insert first just before themselves (the normal
         // rule for other statement types)
@@ -1564,23 +1568,21 @@ private:
         m_insStmtp = nullptr;  // First thing should be new statement
         iterateAndNextNull(nodep->stmtsp());
         iterateAndNextNull(nodep->incsp());
-        // Done the loop
-        m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin.cpp");
     }
     void visit(AstNodeStmt* nodep) override {
+        VL_RESTORER(m_insStmtp);
         m_insStmtp = nodep;
         iterateChildren(nodep);
-        m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void visit(AstStmtExpr* nodep) override {
+        VL_RESTORER(m_insStmtp);
         m_insStmtp = nodep;
         iterateChildren(nodep);
         if (!nodep->exprp()) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void visit(AstSenItem* nodep) override {
         UASSERT_OBJ(!m_inSensesp, nodep, "Senitem under senitem?");

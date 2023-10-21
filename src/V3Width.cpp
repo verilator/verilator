@@ -2094,16 +2094,20 @@ private:
         // We can't skip this step when width()!=0, as creating a AstVar
         // with non-constant range gets size 1, not size 0.  So use didWidth().
         if (nodep->didWidth()) return;
-        if (nodep->doingWidth()) {  // Early exit if have circular parameter definition
-            UASSERT_OBJ(nodep->valuep(), nodep, "circular, but without value");
+        nodep->doingWidth(true);
+
+        // Check for recursive initialization
+        std::function<bool(AstNode*)> isRecursive = [&](AstNode* np) -> bool {
+            return np && np->exists([&](AstNodeVarRef* refp) {
+                return refp->varp() == nodep || isRecursive(refp->varp()->valuep());
+            });
+        };
+        if (isRecursive(nodep->valuep())) {
             nodep->v3error("Variable's initial value is circular: " << nodep->prettyNameQ());
             pushDeletep(nodep->valuep()->unlinkFrBack());
             nodep->valuep(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
-            nodep->dtypeFrom(nodep->valuep());
-            nodep->didWidth(true);
-            return;
         }
-        nodep->doingWidth(true);
+
         // Make sure dtype is sized
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype determined for var");

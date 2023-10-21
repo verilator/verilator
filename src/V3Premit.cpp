@@ -93,22 +93,6 @@ private:
         }
     }
 
-    void insertBeforeStmt(AstNode* newp) {
-        // Insert newp before m_stmtp
-        if (m_inWhilep) {
-            // Statements that are needed for the 'condition' in a while
-            // actually have to be put before & after the loop, since we
-            // can't do any statements in a while's (cond).
-            m_inWhilep->addPrecondsp(newp);
-        } else if (m_inTracep) {
-            m_inTracep->addPrecondsp(newp);
-        } else if (m_stmtp) {
-            m_stmtp->addHereThisAsNext(newp);
-        } else {
-            newp->v3fatalSrc("No statement insertion point.");
-        }
-    }
-
     void createDeepTemp(AstNodeExpr* nodep, bool noSubst) {
         if (nodep->user1SetOnce()) return;  // Only add another assignment for this node
 
@@ -117,6 +101,7 @@ private:
 
         FileLine* const fl = nodep->fileline();
         AstVar* varp = nullptr;
+        AstAssign* assignp = nullptr;
         AstConst* const constp = VN_CAST(nodep, Const);
         const bool useConstPool = constp  // Is a constant
                                   && (constp->width() >= STATIC_CONST_MIN_WIDTH)  // Large enough
@@ -134,7 +119,19 @@ private:
                               nodep->dtypep()};
             m_cfuncp->addInitsp(varp);
             // Put assignment before the referencing statement
-            insertBeforeStmt(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, nodep});
+            assignp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, nodep};
+            if (m_inWhilep) {
+                // Statements that are needed for the 'condition' in a while
+                // actually have to be put before & after the loop, since we
+                // can't do any statements in a while's (cond).
+                m_inWhilep->addPrecondsp(assignp);
+            } else if (m_inTracep) {
+                m_inTracep->addPrecondsp(assignp);
+            } else if (m_stmtp) {
+                m_stmtp->addHereThisAsNext(assignp);
+            } else {
+                assignp->v3fatalSrc("No statement insertion point.");
+            }
         }
 
         // Do not remove VarRefs to this in V3Const
@@ -142,6 +139,9 @@ private:
 
         // Replace node with VarRef to new Var
         relinker.relink(new AstVarRef{fl, varp, VAccess::READ});
+
+        // Recursive expressions
+        if (assignp) iterate(assignp);
     }
 
     // VISITORS
@@ -357,7 +357,8 @@ private:
         iterateChildren(nodep);
         // Any strings sent to a display must be var of string data type,
         // to avoid passing a pointer to a temporary.
-        for (AstNodeExpr* expp = nodep->exprsp(); expp; expp = VN_AS(expp->nextp(), NodeExpr)) {
+        for (AstNodeExpr *expp = nodep->exprsp(), *nextp; expp; expp = nextp) {
+            nextp = VN_AS(expp->nextp(), NodeExpr);
             if (expp->dtypep()->basicp() && expp->dtypep()->basicp()->isString()
                 && !VN_IS(expp, VarRef)) {
                 createDeepTemp(expp, true);
