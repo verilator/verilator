@@ -1679,7 +1679,7 @@ private:
     }
     void visit(AstImplicit* nodep) override {
         // Unsupported gates need implicit creation
-        pinImplicitExprRecurse(nodep);
+        pinImplicitExprRecurse(nodep->exprsp());
         // We're done with implicit gates
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
