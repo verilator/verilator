@@ -3024,6 +3024,7 @@ void Verilated::endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
     // It should be ok to call into endOfEvalGuts, it returns immediately
     // if there are no transactions.
     VL_DEBUG_IF(VL_DBG_MSGF("End-of-eval cleanup\n"););
+    VerilatedThreadMsgQueue::flush(evalMsgQp);
     evalMsgQp->process();
 }
 

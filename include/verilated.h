@@ -921,6 +921,7 @@ public:
 
     // Internal: Called at end of each thread mtask, before finishing eval
     static void endOfThreadMTask(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
+        mtaskId(0);
         if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) endOfThreadMTaskGuts(evalMsgQp);
     }
     // Internal: Called at end of eval loop
