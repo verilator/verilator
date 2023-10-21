@@ -18,9 +18,6 @@
 
 #include "V3Stats.h"
 
-// This visitor does not edit nodes, and is called at error-exit, so should use constant iterators
-#include "V3AstConstOnly.h"
-
 #include <iomanip>
 #include <map>
 

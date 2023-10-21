@@ -26,10 +26,6 @@
 
 #include "V3Broken.h"
 
-// This visitor does not edit nodes, and is called at error-exit, so should use constant iterators
-#include "V3AstConstOnly.h"
-
-#include <unordered_map>
 #include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
