@@ -170,7 +170,7 @@ class EmitCHeader final : public EmitCConstInit {
         if (v3Global.opt.coverage() && !VN_IS(modp, Class)) {
             decorateFirst(first, section);
             puts("void __vlCoverInsert(");
-            puts(v3Global.opt.threads() ? "std::atomic<uint32_t>" : "uint32_t");
+            puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
             puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp, const char* "
                  "linescovp);\n");

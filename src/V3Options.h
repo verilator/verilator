@@ -549,7 +549,7 @@ public:
     int traceThreads() const { return m_traceThreads; }
     bool useTraceOffload() const { return trace() && traceFormat().fst() && traceThreads() > 1; }
     bool useTraceParallel() const {
-        return trace() && traceFormat().vcd() && threads() && (threads() > 1 || hierChild() > 1);
+        return trace() && traceFormat().vcd() && (threads() > 1 || hierChild() > 1);
     }
     bool useFstWriterThread() const { return traceThreads() && traceFormat().fst(); }
     unsigned vmTraceThreads() const {

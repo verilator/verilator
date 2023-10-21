@@ -875,11 +875,8 @@ void V3Options::notify() VL_MT_DISABLED {
     }
 
     if (trace()) {
-        // With --trace-fst, --trace-threads implies --threads 1 unless explicitly specified
-        if (traceFormat().fst() && traceThreads() && !threads()) m_threads = 1;
-
         // With --trace, --trace-threads is ignored
-        if (traceFormat().vcd()) m_traceThreads = threads() ? 1 : 0;
+        if (traceFormat().vcd()) m_traceThreads = 1;
     }
 
     UASSERT(!(useTraceParallel() && useTraceOffload()),
@@ -905,6 +902,9 @@ void V3Options::notify() VL_MT_DISABLED {
     if (!m_dumpLevel.count("tree") && m_dumpLevel.count("tree-dot")) {
         m_dumpLevel["tree"] = m_dumpLevel["tree-dot"];
     }
+
+    // Sanity check of expected configuration
+    UASSERT(threads() >= 1, "'threads()' must return a value >= 1");
 
     // Preprocessor defines based on options used
     if (timing().isSetTrue()) V3PreShell::defineCmdLine("VERILATOR_TIMING", "1");

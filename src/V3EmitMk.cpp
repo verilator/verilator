@@ -106,7 +106,7 @@ public:
                     }
                     if (v3Global.usesProbDist()) putMakeClassEntry(of, "verilated_probdist.cpp");
                     if (v3Global.usesTiming()) putMakeClassEntry(of, "verilated_timing.cpp");
-                    if (v3Global.opt.threads()) putMakeClassEntry(of, "verilated_threads.cpp");
+                    putMakeClassEntry(of, "verilated_threads.cpp");
                     if (v3Global.opt.usesProfiler()) {
                         putMakeClassEntry(of, "verilated_profiler.cpp");
                     }

@@ -160,9 +160,7 @@ class CMakeEmitter final {
         if (v3Global.usesTiming()) {
             global.emplace_back("${VERILATOR_ROOT}/include/verilated_timing.cpp");
         }
-        if (v3Global.opt.threads()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_threads.cpp");
-        }
+        global.emplace_back("${VERILATOR_ROOT}/include/verilated_threads.cpp");
         if (v3Global.opt.usesProfiler()) {
             global.emplace_back("${VERILATOR_ROOT}/include/verilated_profiler.cpp");
         }
