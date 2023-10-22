@@ -51,6 +51,7 @@ CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
 
 VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
 VERILATOR_INCLUDER = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_includer
+VERILATOR_INCLUDER2 = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_includer2
 VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
 
 ######################################################################
@@ -202,20 +203,46 @@ VK_GLOBAL_OBJS = $(addsuffix .o, $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW))
 $(VK_GLOBAL_OBJS): $(VM_PREFIX).mk
 
 ifneq ($(VM_PARALLEL_BUILDS),1)
-  # Fast build for small designs: All .cpp files in one fell swoop. This
-  # saves total compute, but can be slower if only a little changes. It is
-  # also a lot slower for medium to large designs when the speed of the C
-  # compiler dominates, which in this mode is not parallelizable.
+# Fast build for small designs: All .cpp files in one fell swoop. This
+# saves total compute, but can be slower if only a little changes. It is
+# also a lot slower for medium to large designs when the speed of the C
+# compiler dominates, which in this mode is not parallelizable.
 
-  VK_OBJS += $(VM_PREFIX)__ALL.o
-  $(VM_PREFIX)__ALL.cpp: $(addsuffix .cpp, $(VM_FAST) $(VM_SLOW))
+VK_OBJS += $(VM_PREFIX)__ALL.o
+
+$(VM_PREFIX)__ALL.cpp: $(addsuffix .cpp, $(VM_FAST) $(VM_SLOW))
 	$(VERILATOR_INCLUDER) -DVL_INCLUDE_OPT=include $^ > $@
-  all_cpp: $(VM_PREFIX)__ALL.cpp
-else
-  # Parallel build: Each .cpp file by itself. This can be somewhat slower for
-  # very small designs and examples, but is a lot faster for large designs.
 
-  VK_OBJS += $(VK_OBJS_FAST) $(VK_OBJS_SLOW)
+.PHONY: all_cpp
+all_cpp: $(VM_PREFIX)__ALL.cpp
+else
+
+# TODO(mglb): rename to something related to .cpp files concatenation
+# VM_PARALLEL_JOBS ?= 20
+
+ifneq ($(filter-out 0 1,$(VM_PARALLEL_JOBS)),)
+
+_VK_JOB_IDS := $(shell seq 1 ${VM_PARALLEL_JOBS})
+
+.INTERMEDIATE: fast.list slow.list
+fast.list: $(VM_FAST:%=%.cpp)
+slow.list: $(VM_SLOW:%=%.cpp)
+
+fast.list slow.list:
+	$(file >$@,$(strip $^))
+
+$(foreach id,$(_VK_JOB_IDS),%_$(id)_$(VM_PARALLEL_JOBS).cpp): %.list
+	$(VERILATOR_INCLUDER2) $< ${VM_PARALLEL_JOBS} $(<:%.list=%)_%_${VM_PARALLEL_JOBS}.cpp
+
+VK_OBJS_FAST = $(foreach job_id,${_VK_JOB_IDS},fast_${job_id}_${VM_PARALLEL_JOBS}.o)
+VK_OBJS_SLOW = $(foreach job_id,${_VK_JOB_IDS},slow_${job_id}_${VM_PARALLEL_JOBS}.o)
+
+endif
+
+# Parallel build: Each .cpp file by itself. This can be somewhat slower for
+# very small designs and examples, but is a lot faster for large designs.
+
+VK_OBJS += $(VK_OBJS_FAST) $(VK_OBJS_SLOW)
 endif
 
 # When archiving just objects (.o), use single $(AR) run
@@ -344,6 +371,7 @@ debug-make::
 	@echo VM_GLOBAL_FAST: $(VM_GLOBAL_FAST)
 	@echo VM_GLOBAL_SLOW: $(VM_GLOBAL_SLOW)
 	@echo VM_PARALLEL_BUILDS:  $(VM_PARALLEL_BUILDS)
+	@echo VM_PARALLEL_JOBS:  $(VM_PARALLEL_JOBS)
 	@echo VM_PREFIX:  $(VM_PREFIX)
 	@echo VM_SUPPORT_FAST: $(VM_SUPPORT_FAST)
 	@echo VM_SUPPORT_SLOW: $(VM_SUPPORT_SLOW)
