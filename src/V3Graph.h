@@ -300,6 +300,7 @@ public:
 std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp) VL_MT_DISABLED;
 
 //============================================================================
+// TODO should we have a smaller edge structure when we don't need weight etc?
 
 class V3GraphEdge VL_NOT_FINAL {
     VL_RTTI_IMPL_BASE(V3GraphEdge)
@@ -313,8 +314,8 @@ protected:
     friend class GraphAcyc;
     friend class GraphAcycEdge;
 
-    V3ListEnt<V3GraphEdge*> m_outs;  // Next Outbound edge for same vertex (linked list)
-    V3ListEnt<V3GraphEdge*> m_ins;  // Next Inbound edge for same vertex (linked list)
+    V3ListEnt<V3GraphEdge*> m_outs;  // Next outbound edge for same vertex (linked list)
+    V3ListEnt<V3GraphEdge*> m_ins;  // Next inbound edge for same vertex (linked list)
     //
     V3GraphVertex* m_fromp;  // Vertices pointing to this edge
     V3GraphVertex* m_top;  // Vertices this edge points to

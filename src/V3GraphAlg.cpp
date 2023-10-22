@@ -33,7 +33,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 //######################################################################
-// Algorithms - weakly connected components
+// Algorithms - Remove redundancies
 
 class GraphRemoveRedundant final : GraphAlg<> {
     const bool m_sumWeights;  ///< Sum, rather then maximize weights
@@ -176,7 +176,7 @@ void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgWeakly{this, edge
 
 class GraphAlgStrongly final : GraphAlg<> {
 private:
-    uint32_t m_currentDfs;  // DFS count
+    uint32_t m_currentDfs = 0;  // DFS count
     std::vector<V3GraphVertex*> m_callTrace;  // List of everything we hit processing so far
 
     void main() {
@@ -253,7 +253,6 @@ private:
 public:
     GraphAlgStrongly(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
         : GraphAlg<>{graphp, edgeFuncp} {
-        m_currentDfs = 0;
         main();
     }
     ~GraphAlgStrongly() = default;
@@ -323,7 +322,7 @@ void V3Graph::rank(V3EdgeFuncP edgeFuncp) { GraphAlgRank{this, edgeFuncp}; }
 class GraphAlgRLoops final : GraphAlg<> {
 private:
     std::vector<V3GraphVertex*> m_callTrace;  // List of everything we hit processing so far
-    bool m_done;  // Exit algorithm
+    bool m_done = false;  // Exit algorithm
 
     void main(V3GraphVertex* vertexp) {
         // Vertex::m_user begin: 1 indicates processing, 2 indicates completed
@@ -360,7 +359,6 @@ private:
 public:
     GraphAlgRLoops(V3Graph* graphp, V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp)
         : GraphAlg<>{graphp, edgeFuncp} {
-        m_done = false;
         main(vertexp);
     }
     ~GraphAlgRLoops() = default;
