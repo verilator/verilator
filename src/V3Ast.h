@@ -675,6 +675,39 @@ public:
         default: return false;
         }
     }
+
+    const char* traceSigType() const {
+        // VerilatedTraceSigType to used in trace signal declaration
+        static const char* const lut[] = {
+            /* UNKNOWN:                   */ "",  // Should not be traced
+            /* BIT:                       */ "BIT",
+            /* BYTE:                      */ "BYTE",
+            /* CHANDLE:                   */ "",
+            /* EVENT:                     */ "EVENT",
+            /* INT:                       */ "INT",
+            /* INTEGER:                   */ "INTEGER",
+            /* LOGIC:                     */ "LOGIC",
+            /* LONGINT:                   */ "LONGINT",
+            /* DOUBLE:                    */ "DOUBLE",
+            /* SHORTINT:                  */ "SHORTINT",
+            /* TIME:                      */ "TIME",
+            /* STRING:                    */ "",
+            /* UNTYPED:                   */ "",  // Should not be traced
+            /* SCOPEPTR:                  */ "",  // Should not be traced
+            /* CHARPTR:                   */ "",  // Should not be traced
+            /* MTASKSTATE:                */ "",  // Should not be traced
+            /* TRIGGERVEC:                */ "",  // Should not be traced
+            /* DELAY_SCHEDULER:           */ "",  // Should not be traced
+            /* TRIGGER_SCHEDULER:         */ "",  // Should not be traced
+            /* DYNAMIC_TRIGGER_SCHEDULER: */ "",  // Should not be traced
+            /* FORK_SYNC:                 */ "",  // Should not be traced
+            /* PROCESS_REFERENCE:         */ "",  // Should not be traced
+            /* UINT32:                    */ "BIT",
+            /* UINT64:                    */ "BIT",
+            /* LOGIC_IMPLICIT:            */ "",  // Should not be traced
+        };
+        return lut[m_e];
+    }
 };
 constexpr bool operator==(const VBasicDTypeKwd& lhs, const VBasicDTypeKwd& rhs) VL_MT_SAFE {
     return lhs.m_e == rhs.m_e;
@@ -872,6 +905,32 @@ public:
     bool isVPIAccessible() const {
         return (m_e == VAR || m_e == GPARAM || m_e == LPARAM || m_e == PORT || m_e == WIRE
                 || m_e == TRI0 || m_e == TRI1);
+    }
+
+    const char* traceSigKind() const {
+        // VerilatedTraceSigKind to used in trace signal declaration
+        static const char* const lut[] = {
+            /* UNKNOWN:      */ "",  // Should not be traced
+            /* GPARAM:       */ "PARAMETER",
+            /* LPARAM:       */ "PARAMETER",
+            /* GENVAR:       */ "PARAMETER",
+            /* VAR:          */ "VAR",
+            /* SUPPLY0:      */ "SUPPLY0",
+            /* SUPPLY1:      */ "SUPPLY1",
+            /* WIRE:         */ "WIRE",
+            /* WREAL:        */ "WIRE",
+            /* TRIWIRE:      */ "TRI",
+            /* TRI0:         */ "TRI0",
+            /* TRI1:         */ "TRI1",
+            /* PORT:         */ "WIRE",
+            /* BLOCKTEMP:    */ "VAR",
+            /* MODULETEMP:   */ "VAR",
+            /* STMTTEMP:     */ "VAR",
+            /* XTEMP:        */ "VAR",
+            /* IFACEREF:     */ "",  // Should not be traced directly
+            /* MEMBER:       */ "VAR",
+        };
+        return lut[m_e];
     }
 };
 constexpr bool operator==(const VVarType& lhs, const VVarType& rhs) VL_MT_SAFE {
@@ -1274,6 +1333,45 @@ constexpr bool operator==(const VTraceType& lhs, const VTraceType& rhs) {
 constexpr bool operator==(const VTraceType& lhs, VTraceType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VTraceType::en lhs, const VTraceType& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VTraceType& rhs) {
+    return os << rhs.ascii();
+}
+
+//######################################################################
+
+class VTracePrefixType final {
+public:
+    enum en : uint8_t {
+        // Note: Entries must match VerilatedTracePrefixType
+        ARRAY_PACKED,
+        ARRAY_UNPACKED,
+        SCOPE_MODULE,
+        SCOPE_INTERFACE,
+        STRUCT_PACKED,
+        STRUCT_UNPACKED,
+        UNION_PACKED,
+    };
+    enum en m_e;
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VTracePrefixType(en _e)
+        : m_e{_e} {}
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[]
+            = {"ARRAY_PACKED",  "ARRAY_UNPACKED",  "SCOPE_MODULE", "SCOPE_INTERFACE",
+               "STRUCT_PACKED", "STRUCT_UNPACKED", "UNION_PACKED"};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VTracePrefixType& lhs, const VTracePrefixType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VTracePrefixType& lhs, VTracePrefixType::en rhs) {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VTracePrefixType::en lhs, const VTracePrefixType& rhs) {
+    return lhs == rhs.m_e;
+}
+inline std::ostream& operator<<(std::ostream& os, const VTracePrefixType& rhs) {
     return os << rhs.ascii();
 }
 

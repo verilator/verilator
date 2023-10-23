@@ -25,7 +25,6 @@
 // clang-format off
 
 #include "verilated.h"
-#include "verilated_trace_defs.h"
 
 #include <bitset>
 #include <condition_variable>
@@ -45,6 +44,54 @@ template <class T_Buffer>
 class VerilatedTraceBuffer;
 template <class T_Buffer>
 class VerilatedTraceOffloadBuffer;
+
+//=============================================================================
+// Common enumerations
+
+enum class VerilatedTracePrefixType : uint32_t {
+    // Note: Entries must match VTracePrefixType (by name, not necessarily by value)
+    ARRAY_PACKED,
+    ARRAY_UNPACKED,
+    SCOPE_MODULE,
+    SCOPE_INTERFACE,
+    STRUCT_PACKED,
+    STRUCT_UNPACKED,
+    UNION_PACKED
+};
+
+// Direction attribute for ports
+enum class VerilatedTraceSigDirection : uint32_t {
+    NONE,
+    INPUT,
+    OUTPUT,
+    INOUT,
+};
+
+// Kind of signal. Similar to nettype but with a few more alternatives
+enum class VerilatedTraceSigKind : uint32_t {
+    PARAMETER,
+    SUPPLY0,
+    SUPPLY1,
+    TRI,
+    TRI0,
+    TRI1,
+    WIRE,
+    VAR,
+};
+
+// Base data type of signal
+enum class VerilatedTraceSigType : uint32_t {
+    DOUBLE,
+    INTEGER,
+    BIT,
+    LOGIC,
+    INT,
+    SHORTINT,
+    LONGINT,
+    BYTE,
+    EVENT,
+    TIME,
+};
 
 //=============================================================================
 // Offloaded tracing
@@ -229,9 +276,8 @@ private:
     uint32_t m_nextCode = 0;  // Next code number to assign
     uint32_t m_numSignals = 0;  // Number of distinct signals
     uint32_t m_maxBits = 0;  // Number of bits in the widest signal
-    std::vector<std::string> m_namePrefixStack{""};  // Path prefixes to add to signal names
+    // TODO: Should keep this as a Trie, that is how it's accessed all the time.
     std::vector<std::pair<int, std::string>> m_dumpvars;  // dumpvar() entries
-    char m_scopeEscape = '.';
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
     double m_timeUnit = 1e-0;  // Time units (ns/ms etc)
     uint64_t m_timeLastDump = 0;  // Last time we did a dump
@@ -307,20 +353,20 @@ protected:
     void traceInit() VL_MT_UNSAFE;
 
     // Declare new signal and return true if enabled
-    bool declCode(uint32_t code, const char* namep, uint32_t bits, bool tri);
-
-    // Is this an escape?
-    bool isScopeEscape(char c) { return std::isspace(c) || c == m_scopeEscape; }
-    // Character that splits scopes.  Note whitespace are ALWAYS escapes.
-    char scopeEscape() { return m_scopeEscape; }
-    // Prefix to assume in signal declarations
-    const std::string& namePrefix() const { return m_namePrefixStack.back(); }
+    bool declCode(uint32_t code, const std::string& declName, uint32_t bits);
 
     void closeBase();
     void flushBase();
 
     bool offload() const { return m_offload; }
     bool parallel() const { return m_parallel; }
+
+    // Return last ' ' separated word. Assumes string does not end in ' '.
+    static std::string lastWord(const std::string& str) {
+        const size_t idx = str.rfind(' ');
+        if (idx == std::string::npos) return str;
+        return str.substr(idx + 1);
+    }
 
     //=========================================================================
     // Virtual functions to be provided by the format specific implementation
@@ -375,11 +421,6 @@ public:
     void addChgCb(dumpCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
     void addChgCb(dumpOffloadCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
     void addCleanupCb(cleanupCb_t cb, void* userp) VL_MT_SAFE;
-
-    void scopeEscape(char flag) { m_scopeEscape = flag; }
-
-    void pushNamePrefix(const std::string&);
-    void popNamePrefix(unsigned count = 1);
 };
 
 //=============================================================================

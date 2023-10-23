@@ -24,7 +24,6 @@
 #include "verilated.h"
 #include "verilated_trace.h"
 
-#include <map>
 #include <string>
 #include <vector>
 
@@ -51,7 +50,7 @@ private:
     bool m_isOpen = false;  // True indicates open file
     std::string m_filename;  // Filename we're writing to (if open)
     uint64_t m_rolloverSize = 0;  // File size to rollover at
-    int m_modDepth = 0;  // Depth of module hierarchy
+    unsigned m_indent = 0;  // Indentation depth
 
     char* m_wrBufp;  // Output buffer
     char* m_wrFlushp;  // Output buffer flush trigger location
@@ -62,8 +61,9 @@ private:
 
     std::vector<char> m_suffixes;  // VCD line end string codes + metadata
 
-    using NameMap = std::map<const std::string, const std::string>;
-    NameMap* m_namemapp = nullptr;  // List of names for the header
+    // Prefixes to add to signal names/scope types
+    std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
+        {"", VerilatedTracePrefixType::SCOPE_MODULE}};
 
     // Vector of free trace buffers as (pointer, size) pairs.
     std::vector<std::pair<char*, size_t>> m_freeBuffers;
@@ -79,18 +79,10 @@ private:
     void openNextImp(bool incFilename);
     void closePrev();
     void closeErr();
-    void makeNameMap();
-    void deleteNameMap();
     void printIndent(int level_change);
     void printStr(const char* str);
-    void printQuad(uint64_t n);
-    void printTime(uint64_t timeui);
     void declare(uint32_t code, const char* name, const char* wirep, bool array, int arraynum,
-                 bool tri, bool bussed, int msb, int lsb);
-
-    void dumpHeader();
-
-    static char* writeCode(char* writep, uint32_t code);
+                 bool bussed, int msb, int lsb);
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedVcd);
@@ -140,15 +132,27 @@ public:
     //=========================================================================
     // Internal interface to Verilator generated code
 
-    void declEvent(uint32_t code, uint32_t fidx, const char* name, bool array, int arraynum);
-    void declBit(uint32_t code, uint32_t fidx, const char* name, bool array, int arraynum);
-    void declBus(uint32_t code, uint32_t fidx, const char* name, bool array, int arraynum, int msb,
-                 int lsb);
-    void declQuad(uint32_t code, uint32_t fidx, const char* name, bool array, int arraynum,
-                  int msb, int lsb);
-    void declArray(uint32_t code, uint32_t fidx, const char* name, bool array, int arraynum,
-                   int msb, int lsb);
-    void declDouble(uint32_t code, uint32_t fidx, const char* name, bool array, int arraynum);
+    void pushPrefix(const std::string&, VerilatedTracePrefixType);
+    void popPrefix();
+
+    void declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+                   bool array, int arraynum);
+    void declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                 VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+                 bool array, int arraynum);
+    void declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                 VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+                 bool array, int arraynum, int msb, int lsb);
+    void declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                  VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+                  bool array, int arraynum, int msb, int lsb);
+    void declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+                   bool array, int arraynum, int msb, int lsb);
+    void declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                    VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+                    bool array, int arraynum);
 };
 
 #ifndef DOXYGEN

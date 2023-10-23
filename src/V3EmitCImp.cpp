@@ -633,97 +633,67 @@ class EmitCTrace final : EmitCFunc {
 
     void emitTraceInitOne(AstTraceDecl* nodep, int enumNum) {
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("tracep->declDouble");
+            puts("tracep->declDouble(");
         } else if (nodep->isWide()) {
-            puts("tracep->declArray");
+            puts("tracep->declArray(");
         } else if (nodep->isQuad()) {
-            puts("tracep->declQuad");
+            puts("tracep->declQuad(");
         } else if (nodep->bitRange().ranged()) {
-            puts("tracep->declBus");
+            puts("tracep->declBus(");
         } else if (nodep->dtypep()->basicp()->isEvent()) {
-            puts("tracep->declEvent");
+            puts("tracep->declEvent(");
         } else {
-            puts("tracep->declBit");
+            puts("tracep->declBit(");
         }
 
-        puts("(c+" + cvtToStr(nodep->code()));
+        // Code
+        puts("c+" + cvtToStr(nodep->code()));
         if (nodep->arrayRange().ranged()) puts("+i*" + cvtToStr(nodep->widthWords()));
+
+        // Function index
         puts(",");
         puts(cvtToStr(nodep->fidx()));
+
+        // Name
         puts(",");
         putsQuoted(VIdProtect::protectWordsIf(nodep->showname(), nodep->protect()));
+
+        // Enum number
+        puts("," + cvtToStr(enumNum));
+
         // Direction
-        if (v3Global.opt.traceFormat().fst()) {
-            puts("," + cvtToStr(enumNum));
-            // fstVarDir
-            if (nodep->declDirection().isInoutish()) {
-                puts(",FST_VD_INOUT");
-            } else if (nodep->declDirection().isWritable()) {
-                puts(",FST_VD_OUTPUT");
-            } else if (nodep->declDirection().isNonOutput()) {
-                puts(",FST_VD_INPUT");
-            } else {
-                puts(", FST_VD_IMPLICIT");
-            }
-            //
-            // fstVarType
-            const VVarType vartype = nodep->varType();
-            const VBasicDTypeKwd kwd = nodep->declKwd();
-            string fstvt;
-            // Doubles have special decoding properties, so must indicate if a double
-            if (nodep->dtypep()->basicp()->isDouble()) {
-                if (vartype.isParam()) {
-                    fstvt = "FST_VT_VCD_REAL_PARAMETER";
-                } else {
-                    fstvt = "FST_VT_VCD_REAL";
-                }
-            }
-            // clang-format off
-            else if (vartype == VVarType::GPARAM) {  fstvt = "FST_VT_VCD_PARAMETER"; }
-            else if (vartype == VVarType::LPARAM) {  fstvt = "FST_VT_VCD_PARAMETER"; }
-            else if (vartype == VVarType::SUPPLY0) { fstvt = "FST_VT_VCD_SUPPLY0"; }
-            else if (vartype == VVarType::SUPPLY1) { fstvt = "FST_VT_VCD_SUPPLY1"; }
-            else if (vartype == VVarType::TRI0) {    fstvt = "FST_VT_VCD_TRI0"; }
-            else if (vartype == VVarType::TRI1) {    fstvt = "FST_VT_VCD_TRI1"; }
-            else if (vartype == VVarType::TRIWIRE) { fstvt = "FST_VT_VCD_TRI"; }
-            else if (vartype == VVarType::WIRE) {    fstvt = "FST_VT_VCD_WIRE"; }
-            else if (vartype == VVarType::PORT) {    fstvt = "FST_VT_VCD_WIRE"; }
-            //
-            else if (kwd == VBasicDTypeKwd::INTEGER) {  fstvt = "FST_VT_VCD_INTEGER"; }
-            else if (kwd == VBasicDTypeKwd::BIT) {      fstvt = "FST_VT_SV_BIT"; }
-            else if (kwd == VBasicDTypeKwd::LOGIC) {    fstvt = "FST_VT_SV_LOGIC"; }
-            else if (kwd == VBasicDTypeKwd::INT) {      fstvt = "FST_VT_SV_INT"; }
-            else if (kwd == VBasicDTypeKwd::SHORTINT) { fstvt = "FST_VT_SV_SHORTINT"; }
-            else if (kwd == VBasicDTypeKwd::LONGINT) {  fstvt = "FST_VT_SV_LONGINT"; }
-            else if (kwd == VBasicDTypeKwd::BYTE) {     fstvt = "FST_VT_SV_BYTE"; }
-            else if (kwd == VBasicDTypeKwd::EVENT) {     fstvt = "FST_VT_VCD_EVENT"; }
-            else { fstvt = "FST_VT_SV_BIT"; }
-            // clang-format on
-            //
-            // Not currently supported
-            // FST_VT_VCD_PORT
-            // FST_VT_VCD_SHORTREAL
-            // FST_VT_VCD_REALTIME
-            // FST_VT_VCD_SPARRAY
-            // FST_VT_VCD_TRIAND
-            // FST_VT_VCD_TRIOR
-            // FST_VT_VCD_TRIREG
-            // FST_VT_VCD_WAND
-            // FST_VT_VCD_WOR
-            // FST_VT_SV_ENUM
-            // FST_VT_GEN_STRING
-            puts("," + fstvt);
+        if (nodep->declDirection().isInoutish()) {
+            puts(", VerilatedTraceSigDirection::INOUT");
+        } else if (nodep->declDirection().isWritable()) {
+            puts(", VerilatedTraceSigDirection::OUTPUT");
+        } else if (nodep->declDirection().isNonOutput()) {
+            puts(", VerilatedTraceSigDirection::INPUT");
+        } else {
+            puts(", VerilatedTraceSigDirection::NONE");
         }
-        // Range
+
+        // Kind
+        puts(", VerilatedTraceSigKind::");
+        puts(nodep->varType().traceSigKind());
+
+        // Type
+        puts(", VerilatedTraceSigType::");
+        puts(nodep->dtypep()->basicp()->keyword().traceSigType());
+
+        // Array range
         if (nodep->arrayRange().ranged()) {
             puts(", true,(i+" + cvtToStr(nodep->arrayRange().lo()) + ")");
         } else {
             puts(", false,-1");
         }
+
+        // Bit range
         if (!nodep->dtypep()->basicp()->isDouble() && nodep->bitRange().ranged()) {
             puts(", " + cvtToStr(nodep->bitRange().left()) + ","
                  + cvtToStr(nodep->bitRange().right()));
         }
+
+        //
         puts(");");
     }
 
@@ -861,15 +831,15 @@ class EmitCTrace final : EmitCFunc {
 
         EmitCFunc::visit(nodep);
     }
-    void visit(AstTracePushNamePrefix* nodep) override {
-        puts("tracep->pushNamePrefix(");
+    void visit(AstTracePushPrefix* nodep) override {
+        puts("tracep->pushPrefix(");
         putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
+        puts(", VerilatedTracePrefixType::");
+        puts(nodep->prefixType().ascii());
         puts(");\n");
     }
-    void visit(AstTracePopNamePrefix* nodep) override {  //
-        puts("tracep->popNamePrefix(");
-        puts(cvtToStr(nodep->count()));
-        puts(");\n");
+    void visit(AstTracePopPrefix* nodep) override {  //
+        puts("tracep->popPrefix();\n");
     }
     void visit(AstTraceDecl* nodep) override {
         const int enumNum = emitTraceDeclDType(nodep->dtypep());
