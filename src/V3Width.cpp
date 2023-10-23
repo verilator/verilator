@@ -4808,11 +4808,6 @@ private:
         if (nodep->hasDType() && nodep->dtypep()->isEvent()) {
             checkEventAssignement(nodep);
             v3Global.setAssignsEvents();
-            if (v3Global.opt.threads() > 1) {
-                nodep->v3warn(EVENTMT,
-                              "Event assignements might cause issues in multithreaded simulation. "
-                              "Use at your own risk.");
-            }
         }
     }
 

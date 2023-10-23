@@ -1,6 +1,0 @@
-%Warning-EVENTMT: t/t_event_control_assign_mt.v:12:10: Event assignements might cause issues in multithreaded simulation. Use at your own risk.
-   12 |     evt1 = evt2;
-      |          ^
-                  ... For warning description see https://verilator.org/warn/EVENTMT?v=latest
-                  ... Use "/* verilator lint_off EVENTMT */" and lint_on around source to disable this message.
-%Error: Exiting due to
