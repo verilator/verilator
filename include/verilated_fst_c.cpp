@@ -222,35 +222,38 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum, fstVar
     }
 }
 
-void VerilatedFst::declEvent(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                             fstVarType vartype, bool array, int arraynum) {
+void VerilatedFst::declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                             fstVarDir vardir, fstVarType vartype, bool array, int arraynum) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 0, 0);
 }
-void VerilatedFst::declBit(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                           fstVarType vartype, bool array, int arraynum) {
+void VerilatedFst::declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                           fstVarDir vardir, fstVarType vartype, bool array, int arraynum) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 0, 0);
 }
-void VerilatedFst::declBus(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                           fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
+void VerilatedFst::declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                           fstVarDir vardir, fstVarType vartype, bool array, int arraynum, int msb,
+                           int lsb) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
 }
-void VerilatedFst::declQuad(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                            fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
+void VerilatedFst::declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                            fstVarDir vardir, fstVarType vartype, bool array, int arraynum,
+                            int msb, int lsb) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
 }
-void VerilatedFst::declArray(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                             fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
+void VerilatedFst::declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                             fstVarDir vardir, fstVarType vartype, bool array, int arraynum,
+                             int msb, int lsb) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
 }
-void VerilatedFst::declDouble(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                              fstVarType vartype, bool array, int arraynum) {
+void VerilatedFst::declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                              fstVarDir vardir, fstVarType vartype, bool array, int arraynum) {
     declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 63, 0);
 }
 
 //=============================================================================
 // Get/commit trace buffer
 
-VerilatedFst::Buffer* VerilatedFst::getTraceBuffer() {
+VerilatedFst::Buffer* VerilatedFst::getTraceBuffer(uint32_t fidx) {
     if (offload()) return new OffloadBuffer{*this};
     return new Buffer{*this};
 }

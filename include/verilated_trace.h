@@ -162,24 +162,29 @@ private:
         // (the one in Ubuntu 14.04 with GCC 4.8.4 in particular) use the
         // assignment operator on inserting into collections, so they don't work
         // with const fields...
-        union {  // The callback
+        const union {  // The callback
             initCb_t m_initCb;
             dumpCb_t m_dumpCb;
             dumpOffloadCb_t m_dumpOffloadCb;
             cleanupCb_t m_cleanupCb;
         };
-        void* m_userp;  // The user pointer to pass to the callback (the symbol table)
+        const uint32_t m_fidx;  // The index of the tracing function
+        void* const m_userp;  // The user pointer to pass to the callback (the symbol table)
         CallbackRecord(initCb_t cb, void* userp)
             : m_initCb{cb}
+            , m_fidx{0}
             , m_userp{userp} {}
-        CallbackRecord(dumpCb_t cb, void* userp)
+        CallbackRecord(dumpCb_t cb, uint32_t fidx, void* userp)
             : m_dumpCb{cb}
+            , m_fidx{fidx}
             , m_userp{userp} {}
-        CallbackRecord(dumpOffloadCb_t cb, void* userp)
+        CallbackRecord(dumpOffloadCb_t cb, uint32_t fidx, void* userp)
             : m_dumpOffloadCb{cb}
+            , m_fidx{fidx}
             , m_userp{userp} {}
         CallbackRecord(cleanupCb_t cb, void* userp)
             : m_cleanupCb{cb}
+            , m_fidx{0}
             , m_userp{userp} {}
     };
 
@@ -329,7 +334,7 @@ protected:
     virtual bool preChangeDump() = 0;
 
     // Trace buffer management
-    virtual Buffer* getTraceBuffer() = 0;
+    virtual Buffer* getTraceBuffer(uint32_t fidx) = 0;
     virtual void commitTraceBuffer(Buffer*) = 0;
 
     // Configure sub-class
@@ -363,12 +368,12 @@ public:
 
     void addModel(VerilatedModel*) VL_MT_SAFE_EXCLUDES(m_mutex);
     void addInitCb(initCb_t cb, void* userp) VL_MT_SAFE;
-    void addConstCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
-    void addConstCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE;
-    void addFullCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
-    void addFullCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE;
-    void addChgCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
-    void addChgCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE;
+    void addConstCb(dumpCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
+    void addConstCb(dumpOffloadCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
+    void addFullCb(dumpCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
+    void addFullCb(dumpOffloadCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
+    void addChgCb(dumpCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
+    void addChgCb(dumpOffloadCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
     void addCleanupCb(cleanupCb_t cb, void* userp) VL_MT_SAFE;
 
     void scopeEscape(char flag) { m_scopeEscape = flag; }

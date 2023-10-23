@@ -477,22 +477,28 @@ private:
         }
     }
 
-    AstCFunc* newCFunc(VTraceType traceType, AstCFunc* topFuncp, unsigned funcNum,
+    AstCFunc* newCFunc(VTraceType traceType, AstCFunc* topFuncp, uint32_t funcNum,
                        uint32_t baseCode = 0) {
         // Create new function
         const bool isTopFunc = topFuncp == nullptr;
-        std::string baseName = "trace_";
-        if (traceType == VTraceType::CONSTANT) {
-            baseName += "const_";
-        } else if (traceType == VTraceType::FULL) {
-            baseName += "full_";
+        std::string funcName;
+        if (isTopFunc) {
+            if (traceType == VTraceType::CONSTANT) {
+                funcName = "trace_const";
+            } else if (traceType == VTraceType::FULL) {
+                funcName = "trace_full";
+            } else {
+                funcName = "trace_chg";
+            }
         } else {
-            baseName += "chg_";
+            funcName = topFuncp->name();
+            funcName += "_sub";
         }
-        baseName += isTopFunc ? "top_" : "sub_";
+        funcName += "_";
+        funcName += cvtToStr(funcNum);
 
         FileLine* const flp = m_topScopep->fileline();
-        AstCFunc* const funcp = new AstCFunc{flp, baseName + cvtToStr(funcNum), m_topScopep};
+        AstCFunc* const funcp = new AstCFunc{flp, funcName, m_topScopep};
         funcp->isTrace(true);
         funcp->dontCombine(true);
         funcp->isLoose(true);
@@ -526,6 +532,8 @@ private:
             }
             m_regFuncp->addStmtsp(new AstText{flp, str, true});
             m_regFuncp->addStmtsp(new AstAddrOfCFunc{flp, funcp});
+            m_regFuncp->addStmtsp(new AstText{flp, ", ", true});
+            m_regFuncp->addStmtsp(new AstConst{flp, funcNum});
             m_regFuncp->addStmtsp(new AstText{flp, ", vlSelf);\n", true});
         } else {
             // Sub functions
@@ -565,7 +573,7 @@ private:
                                                                 : std::numeric_limits<int>::max();
 
         AstCFunc* const topFuncp = newCFunc(VTraceType::CONSTANT, nullptr, 0);
-        unsigned subFuncNum = 0;
+        uint32_t subFuncNum = 0;
         AstCFunc* subFuncp = nullptr;
         int subStmts = 0;
         for (auto it = traces.cbegin(); it != traces.end(); ++it) {
@@ -612,14 +620,16 @@ private:
                                       uint32_t parallelism) {
         const int splitLimit = v3Global.opt.outputSplitCTrace() ? v3Global.opt.outputSplitCTrace()
                                                                 : std::numeric_limits<int>::max();
-        unsigned topFuncNum = 0;
-        unsigned subFuncNum = 0;
+
+        // pre-incremented, so starts at 0
+        uint32_t topFuncNum = std::numeric_limits<uint32_t>::max();
         TraceVec::const_iterator it = traces.begin();
         while (it != traces.end()) {
             AstCFunc* topFulFuncp = nullptr;
             AstCFunc* topChgFuncp = nullptr;
             AstCFunc* subFulFuncp = nullptr;
             AstCFunc* subChgFuncp = nullptr;
+            uint32_t subFuncNum = 0;
             int subStmts = 0;
             const uint32_t maxCodes = std::max((nAllCodes + parallelism - 1) / parallelism, 1U);
             uint32_t nCodes = 0;
@@ -627,20 +637,25 @@ private:
             AstIf* ifp = nullptr;
             uint32_t baseCode = 0;
             for (; nCodes < maxCodes && it != traces.end(); ++it) {
-                const TraceTraceVertex* const vtxp = it->second;
-                // This is a duplicate decl, no need to add it
-                if (vtxp->duplicatep()) continue;
                 const ActCodeSet& actSet = it->first;
                 // Traced value never changes, no need to add it
                 if (actSet.count(TraceActivityVertex::ACTIVITY_NEVER)) continue;
 
+                const TraceTraceVertex* const vtxp = it->second;
                 AstTraceDecl* const declp = vtxp->nodep();
+
+                // This is a duplicate decl, no need to add it, but must set the
+                // function index to the same as the canonical node.
+                if (const TraceTraceVertex* const canonVtxp = vtxp->duplicatep()) {
+                    declp->fidx(canonVtxp->nodep()->fidx());
+                    continue;
+                }
 
                 // Create top function if not yet created
                 if (!topFulFuncp) {
+                    ++topFuncNum;
                     topFulFuncp = newCFunc(VTraceType::FULL, nullptr, topFuncNum);
                     topChgFuncp = newCFunc(VTraceType::CHANGE, nullptr, topFuncNum);
-                    ++topFuncNum;
                 }
 
                 // Create new sub function if required
@@ -681,6 +696,9 @@ private:
                 AstTraceInc* const incChgp
                     = new AstTraceInc{flp, declp, VTraceType::CHANGE, baseCode};
                 ifp->addThensp(incChgp);
+
+                // Set the function index of the decl
+                declp->fidx(topFuncNum);
 
                 // Track splitting due to size
                 UASSERT_OBJ(incFulp->nodeCount() == incChgp->nodeCount(), declp,

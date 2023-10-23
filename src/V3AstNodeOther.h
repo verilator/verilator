@@ -3192,7 +3192,8 @@ class AstTraceDecl final : public AstNodeStmt {
     // Expression being traced - Moved to AstTraceInc by V3Trace
     // @astgen op1 := valuep : Optional[AstNodeExpr]
 private:
-    uint32_t m_code = 0;  // Trace identifier code; converted to ASCII by trace routines
+    uint32_t m_code{0};  // Trace identifier code
+    uint32_t m_fidx{0};  // Trace function index
     const string m_showname;  // Name of variable
     const VNumRange m_bitRange;  // Property of var the trace details
     const VNumRange m_arrayRange;  // Property of var the trace details
@@ -3228,6 +3229,8 @@ public:
     // Details on what we're tracing
     uint32_t code() const { return m_code; }
     void code(uint32_t code) { m_code = code; }
+    uint32_t fidx() const { return m_fidx; }
+    void fidx(uint32_t fidx) { m_fidx = fidx; }
     uint32_t codeInc() const { return m_codeInc; }
     const VNumRange& bitRange() const { return m_bitRange; }
     const VNumRange& arrayRange() const { return m_arrayRange; }

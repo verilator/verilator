@@ -649,6 +649,8 @@ class EmitCTrace final : EmitCFunc {
         puts("(c+" + cvtToStr(nodep->code()));
         if (nodep->arrayRange().ranged()) puts("+i*" + cvtToStr(nodep->widthWords()));
         puts(",");
+        puts(cvtToStr(nodep->fidx()));
+        puts(",");
         putsQuoted(VIdProtect::protectWordsIf(nodep->showname(), nodep->protect()));
         // Direction
         if (v3Global.opt.traceFormat().fst()) {
