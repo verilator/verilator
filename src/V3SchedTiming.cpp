@@ -395,7 +395,11 @@ void transformForks(AstNetlist* const netlistp) {
             } else {
                 // The begin has neither awaits nor a process::self call, just inline the
                 // statements
-                nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
+                if (nodep->stmtsp()) {
+                    nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
+                } else {
+                    nodep->unlinkFrBack();
+                }
             }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }

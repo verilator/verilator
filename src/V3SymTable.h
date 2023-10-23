@@ -103,6 +103,7 @@ public:
     }
 #if defined(VL_DEBUG) && !defined(VL_LEAK_CHECKS)
     // For testing, leak so above destructor 1 assignments work
+    void* operator new(size_t size) { return std::malloc(size); }
     void operator delete(void* objp, size_t size) {}
 #endif
     void fallbackp(VSymEnt* entp) { m_fallbackp = entp; }

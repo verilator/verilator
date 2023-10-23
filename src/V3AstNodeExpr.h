@@ -617,6 +617,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isPure() override { return pure(); }
     bool pure() const { return m_pure; }
     void pure(bool flag) { m_pure = flag; }
 };

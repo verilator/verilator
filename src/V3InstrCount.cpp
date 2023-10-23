@@ -146,11 +146,9 @@ private:
     }
     void visit(AstConcat* nodep) override {
         if (m_ignoreRemaining) return;
-        // Nop.
-        //
-        // Ignore concat. The problem with counting concat is that when we
-        // have many things concatted together, it's not a single
-        // operation, but this:
+        // Ignore the cost of the concat node itself. The problem with
+        // counting concat is that when we have many things concatted
+        // together, it's not a single operation, but this:
         //
         //  concat(a, concat(b, concat(c, concat(d, ... ))))
         //
@@ -162,7 +160,8 @@ private:
         // cost is linear with the size of the data. We don't need to count
         // the concat at all to reflect a linear cost; it's already there
         // in the width of the destination (which we count) and the sum of
-        // the widths of the operands (ignored here).
+        // the cost of the operands.
+        iterateChildrenConst(nodep);
         markCost(nodep);
     }
     void visit(AstNodeIf* nodep) override {

@@ -316,7 +316,7 @@ def run(command):
     print("\t%s" % command)
     status = subprocess.call(command, shell=True)
     if status < 0:
-        raise Exception("%Error: Command failed " + command + ", stopped")
+        raise RuntimeError("%Error: Command failed " + command + ", stopped")
 
 
 def unlink_ok(filename):

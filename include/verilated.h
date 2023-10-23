@@ -164,7 +164,9 @@ inline constexpr size_t roundUpToMultipleOf(size_t value) {
 // Return current thread ID (or 0), not super fast, cache if needed
 extern uint32_t VL_THREAD_ID() VL_MT_SAFE;
 
+#ifndef VL_LOCK_SPINS
 #define VL_LOCK_SPINS 50000  /// Number of times to spin for a mutex before yielding
+#endif
 
 /// Mutex, wrapped to allow -fthread_safety checks
 class VL_CAPABILITY("mutex") VerilatedMutex final {
@@ -919,6 +921,7 @@ public:
 
     // Internal: Called at end of each thread mtask, before finishing eval
     static void endOfThreadMTask(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
+        mtaskId(0);
         if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) endOfThreadMTaskGuts(evalMsgQp);
     }
     // Internal: Called at end of eval loop

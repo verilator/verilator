@@ -81,7 +81,7 @@ module t (/*AUTOARG*/);
       string_qv = string_q.unique(s) with (s.toupper);
       `checkh(string_qv.size(), 2);
       qi = q.unique_index; qv.sort;
-      // According to 7.12.1 of IEEE Std 1800-2017, it is not specified which index of duplicated value should be returned
+      // According to IEEE 1800-2017 7.12.1, it is not specified which index of duplicated value should be returned
       `checkh(qi.size(), 4);
       qi.delete(1);
       v = $sformatf("%p", qi); `checks(v, "'{'h0, 'h3, 'h4} ");

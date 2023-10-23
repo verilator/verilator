@@ -41,6 +41,10 @@ class V3Partition final {
     // MEMBERS
     const OrderGraph* const m_orderGraphp;  // The OrderGraph
     const V3Graph* const m_fineDepsGraphp;  // Fine-grained dependency graph
+
+    LogicMTask* m_entryMTaskp = nullptr;  // Singular source vertex of the dependency graph
+    LogicMTask* m_exitMTaskp = nullptr;  // Singular sink vertex of the dependency graph
+
 public:
     // CONSTRUCTORS
     explicit V3Partition(const OrderGraph* orderGraphp, const V3Graph* fineDepsGraphp)

@@ -401,28 +401,18 @@ class EmitCModel final : public EmitCFunc {
         puts(topModNameProtected + "__" + protect("_eval_settle") + "(&(vlSymsp->TOP));\n");
         puts("}\n");
 
-        if (v3Global.opt.threads() == 1) {
-            const uint32_t mtaskId = 0;
-            putsDecoration("// MTask " + cvtToStr(mtaskId) + " start\n");
-            puts("VL_DEBUG_IF(VL_DBG_MSGF(\"MTask" + cvtToStr(mtaskId) + " starting\\n\"););\n");
-            puts("Verilated::mtaskId(" + cvtToStr(mtaskId) + ");\n");
-        }
-
         if (v3Global.opt.profExec()) {
             puts("vlSymsp->__Vm_executionProfilerp->configure();\n");
-            puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).evalBegin();\n");
+            puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"eval\");\n");
         }
 
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Eval\\n\"););\n");
         puts(topModNameProtected + "__" + protect("_eval") + "(&(vlSymsp->TOP));\n");
 
         putsDecoration("// Evaluate cleanup\n");
-        if (v3Global.opt.threads() == 1) {
-            puts("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);\n");
-        }
-        if (v3Global.opt.threads()) puts("Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);\n");
+        puts("Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);\n");
 
-        if (v3Global.opt.profExec()) puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).evalEnd();\n");
+        if (v3Global.opt.profExec()) puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n");
         puts("}\n");
     }
 
@@ -482,7 +472,7 @@ class EmitCModel final : public EmitCFunc {
         puts("const char* " + topClassName() + "::modelName() const { return \"" + topClassName()
              + "\"; }\n");
         puts("unsigned " + topClassName() + "::threads() const { return "
-             + cvtToStr(std::max(1, v3Global.opt.threads())) + "; }\n");
+             + cvtToStr(v3Global.opt.threads()) + "; }\n");
         puts("void " + topClassName()
              + "::prepareClone() const { contextp()->prepareClone(); }\n");
         puts("void " + topClassName() + "::atClone() const {\n");

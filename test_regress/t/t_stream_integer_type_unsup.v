@@ -1,5 +1,5 @@
 // DESCRIPTION: Verilator: Verilog Test module
-// Ref. to  IEEE Std 1800-2017  11.4.14 & A.8.1
+// Ref. to IEEE 1800-2017 11.4.14 & A.8.1
 //
 // stream pack/unpack for integer_type only
 // slice_size ::= simple_type | constant_expression

@@ -35,39 +35,91 @@
 package uvm_pkg;
 parameter int UVM_HDL_MAX_WIDTH = 1024;
 typedef logic [UVM_HDL_MAX_WIDTH-1:0] uvm_hdl_data_t;
-  import "DPI-C" context function int uvm_hdl_check_path(string path);
-  import "DPI-C" context function int uvm_hdl_deposit(string path, uvm_hdl_data_t value);
-  import "DPI-C" context function int uvm_hdl_force(string path, uvm_hdl_data_t value);
-  task uvm_hdl_force_time(string path, uvm_hdl_data_t value, time force_time = 0);
-    if (force_time == 0) begin
-      void'(uvm_hdl_deposit(path, value));
-      return;
-    end
-    if (!uvm_hdl_force(path, value))
-      return;
-    #force_time;
-    void'(uvm_hdl_release_and_read(path, value));
+  function int uvm_hdl_check_path(string path);
+    uvm_report_fatal("UVM_HDL_CHECK_PATH",
+      $sformatf("uvm_hdl DPI routines are compiled off. Recompile without +define+UVM_HDL_NO_DPI"));
+    return 0;
+  endfunction
+  function int uvm_hdl_deposit(string path, uvm_hdl_data_t value);
+    uvm_report_fatal("UVM_HDL_DEPOSIT",
+      $sformatf("uvm_hdl DPI routines are compiled off. Recompile without +define+UVM_HDL_NO_DPI"));
+    return 0;
+  endfunction
+  function int uvm_hdl_force(string path, uvm_hdl_data_t value);
+    uvm_report_fatal("UVM_HDL_FORCE",
+      $sformatf("uvm_hdl DPI routines are compiled off. Recompile without +define+UVM_HDL_NO_DPI"));
+    return 0;
+  endfunction
+  task uvm_hdl_force_time(string path, uvm_hdl_data_t value, time force_time=0);
+    uvm_report_fatal("UVM_HDL_FORCE_TIME",
+      $sformatf("uvm_hdl DPI routines are compiled off. Recompile without +define+UVM_HDL_NO_DPI"));
   endtask
-  import "DPI-C" context function int uvm_hdl_release_and_read(string path, inout uvm_hdl_data_t value);
-  import "DPI-C" context function int uvm_hdl_release(string path);
-  import "DPI-C" context function int uvm_hdl_read(string path, output uvm_hdl_data_t value);
-import "DPI-C" function string uvm_dpi_get_next_arg_c (int init);
-import "DPI-C" function string uvm_dpi_get_tool_name_c ();
-import "DPI-C" function string uvm_dpi_get_tool_version_c ();
+  function int uvm_hdl_release(string path, output uvm_hdl_data_t value);
+    uvm_report_fatal("UVM_HDL_RELEASE",
+      $sformatf("uvm_hdl DPI routines are compiled off. Recompile without +define+UVM_HDL_NO_DPI"));
+    return 0;
+  endfunction
+  function int uvm_hdl_read(string path, output uvm_hdl_data_t value);
+    uvm_report_fatal("UVM_HDL_READ",
+      $sformatf("uvm_hdl DPI routines are compiled off. Recompile without +define+UVM_HDL_NO_DPI"));
+    return 0;
+  endfunction
 function string uvm_dpi_get_next_arg(int init=0);
-  return uvm_dpi_get_next_arg_c(init);
+  return "";
 endfunction
 function string uvm_dpi_get_tool_name();
-  return uvm_dpi_get_tool_name_c();
+  return "?";
 endfunction
 function string uvm_dpi_get_tool_version();
-  return uvm_dpi_get_tool_version_c();
+  return "?";
 endfunction
-import "DPI-C" function chandle uvm_dpi_regcomp(string regex);
-import "DPI-C" function int uvm_dpi_regexec(chandle preg, string str);
-import "DPI-C" function void uvm_dpi_regfree(chandle preg);
-import "DPI-C" context function int uvm_re_match(string re, string str);
-import "DPI-C" context function string uvm_glob_to_re(string glob);
+function chandle uvm_dpi_regcomp(string regex); return null; endfunction
+function int uvm_dpi_regexec(chandle preg, string str); return 0; endfunction
+function void uvm_dpi_regfree(chandle preg); endfunction
+function int uvm_re_match(string re, string str);
+  int e, es, s, ss;
+  string tmp;
+  e  = 0; s  = 0;
+  es = 0; ss = 0;
+  if(re.len() == 0)
+    return 0;
+  if(re[0] == "^")
+    re = re.substr(1, re.len()-1);
+  while (s != str.len() && re.getc(e) != "*") begin
+    if ((re.getc(e) != str.getc(s)) && (re.getc(e) != "?"))
+      return 1;
+    e++; s++;
+  end
+  while (s != str.len()) begin
+    if (re.getc(e) == "*") begin
+      e++;
+      if (e == re.len()) begin
+        return 0;
+      end
+      es = e;
+      ss = s+1;
+    end
+    else if (re.getc(e) == str.getc(s) || re.getc(e) == "?") begin
+      e++;
+      s++;
+    end
+    else begin
+      e = es;
+      s = ss++;
+    end
+  end
+  while (e < re.len() && re.getc(e) == "*")
+    e++;
+  if(e == re.len()) begin
+    return 0;
+  end
+  else begin
+    return 1;
+  end
+endfunction
+function string uvm_glob_to_re(string glob);
+  return glob;
+endfunction
   typedef class uvm_cmdline_processor;
 parameter string UVM_VERSION_STRING = "Accellera:1800.2-2017:UVM:1.0";
 function string uvm_revision_string();
@@ -12920,21 +12972,12 @@ task uvm_root::run_test(string test_name="");
         testname_plusarg = 0;
         uvm_objection::m_init_objections();
         m_do_dump_args();
-        test_name_count = clp.get_arg_values("+UVM_TESTNAME=", test_names);
-        if (test_name_count > 0) begin
-                test_name = test_names[0];
+        if ($value$plusargs("UVM_TESTNAME=%s", test_name)) begin
+   begin
+     if (uvm_report_enabled(UVM_NONE,UVM_INFO,"NO_DPI_TSTNAME"))
+       uvm_report_info ("NO_DPI_TSTNAME", "UVM_NO_DPI defined--getting UVM_TESTNAME directly, without DPI", UVM_NONE, "t/uvm/src/base/uvm_root.svh", 517, "", 1);
+   end
                 testname_plusarg = 1;
-        end
-        if (test_name_count > 1) begin
-                string test_list;
-                string sep;
-                for (int i = 0; i < test_names.size(); i++) begin
-                        if (i != 0)
-                                sep = ", ";
-                        test_list = {test_list, sep, test_names[i]};
-                end
-                uvm_report_warning("MULTTST",
-                        $sformatf("Multiple (%0d) +UVM_TESTNAME arguments provided on the command line.  '%s' will be used.  Provided list: %s.", test_name_count, test_name, test_list), UVM_NONE);
         end
         if (test_name != "") begin
                 if(m_children.exists("uvm_test_top")) begin
@@ -13308,7 +13351,9 @@ function void uvm_root::m_check_verbosity();
         int verb_count;
         int plusarg;
         int verbosity = UVM_MEDIUM;
-        verb_count = clp.get_arg_values("+UVM_VERBOSITY=", verb_settings);
+        verb_count = $value$plusargs("UVM_VERBOSITY=%s",verb_string);
+        if (verb_count)
+                verb_settings.push_back(verb_string);
         if (verb_count > 0) begin
                 verb_string = verb_settings[0];
                 plusarg = 1;
@@ -15425,6 +15470,10 @@ class uvm_component_name_check_visitor extends uvm_visitor#(uvm_component);
   virtual function void begin_v();
     uvm_coreservice_t cs = uvm_coreservice_t::get();
     _root =  cs.get_root();
+   begin
+     if (uvm_report_enabled(UVM_NONE,UVM_INFO,"UVM/COMP/NAMECHECK"))
+       uvm_report_info ("UVM/COMP/NAMECHECK", "This implementation of the component name checks requires DPI to be enabled", UVM_NONE, "t/uvm/src/base/uvm_traversal.svh", 289, "", 1);
+   end
   endfunction
 endclass
 virtual class uvm_set_get_dap_base#(type T=int) extends uvm_object;

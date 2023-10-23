@@ -1,31 +1,30 @@
 #!/usr/bin/env python3
-# pylint: disable=C0103,C0114,C0116,C0209,C0301,R0914,R0912,R0915,W0511,eval-used
+# pylint: disable=C0103,C0114,C0116,C0209,C0301,R0914,R0912,R0915,W0511,W0603,eval-used
 ######################################################################
 
 import argparse
+import bisect
 import collections
 import math
 import re
 import statistics
 # from pprint import pprint
 
-Threads = collections.defaultdict(lambda: collections.defaultdict(lambda: {}))
-Mtasks = collections.defaultdict(lambda: {})
-Evals = collections.defaultdict(lambda: {})
-EvalLoops = collections.defaultdict(lambda: {})
+Sections = []
+LongestVcdStrValueLength = 0
+Threads = collections.defaultdict(lambda: [])  # List of records per thread id
+Mtasks = collections.defaultdict(lambda: {'elapsed': 0, 'end': 0})
+Cpus = collections.defaultdict(lambda: {'mtask_time': 0})
 Global = {
     'args': {},
     'cpuinfo': collections.defaultdict(lambda: {}),
-    'rdtsc_cycle_time': 0,
     'stats': {}
 }
+ElapsedTime = None  # total elapsed time
+ExecGraphTime = 0  # total elapsed time excuting an exec graph
+ExecGraphIntervals = []  # list of (start, end) pairs
 
 ######################################################################
-
-
-def process(filename):
-    read_data(filename)
-    report()
 
 
 def read_data(filename):
@@ -39,14 +38,17 @@ def read_data(filename):
         re_arg1 = re.compile(r'VLPROF arg\s+(\S+)\+([0-9.]*)\s*')
         re_arg2 = re.compile(r'VLPROF arg\s+(\S+)\s+([0-9.]*)\s*$')
         re_stat = re.compile(r'VLPROF stat\s+(\S+)\s+([0-9.]+)')
-        re_time = re.compile(r'rdtsc time = (\d+) ticks')
         re_proc_cpu = re.compile(r'VLPROFPROC processor\s*:\s*(\d+)\s*$')
         re_proc_dat = re.compile(r'VLPROFPROC ([a-z_ ]+)\s*:\s*(.*)$')
         cpu = None
         thread = None
+        execGraphStart = None
 
-        lastEvalBeginTick = None
-        lastEvalLoopBeginTick = None
+        global LongestVcdStrValueLength
+        global ExecGraphTime
+
+        SectionStack = []
+        mTaskThread = {}
 
         for line in fh:
             recordMatch = re_record.match(line)
@@ -54,29 +56,31 @@ def read_data(filename):
                 kind, tick, payload = recordMatch.groups()
                 tick = int(tick)
                 payload = payload.strip()
-                if kind == "EVAL_BEGIN":
-                    Evals[tick]['start'] = tick
-                    lastEvalBeginTick = tick
-                elif kind == "EVAL_END":
-                    Evals[lastEvalBeginTick]['end'] = tick
-                    lastEvalBeginTick = None
-                elif kind == "EVAL_LOOP_BEGIN":
-                    EvalLoops[tick]['start'] = tick
-                    lastEvalLoopBeginTick = tick
-                elif kind == "EVAL_LOOP_END":
-                    EvalLoops[lastEvalLoopBeginTick]['end'] = tick
-                    lastEvalLoopBeginTick = None
+                if kind == "SECTION_PUSH":
+                    LongestVcdStrValueLength = max(LongestVcdStrValueLength,
+                                                   len(payload))
+                    SectionStack.append(payload)
+                    Sections.append((tick, tuple(SectionStack)))
+                elif kind == "SECTION_POP":
+                    assert SectionStack, "SECTION_POP without SECTION_PUSH"
+                    SectionStack.pop()
+                    Sections.append((tick, tuple(SectionStack)))
                 elif kind == "MTASK_BEGIN":
                     mtask, predict_start, ecpu = re_payload_mtaskBegin.match(
                         payload).groups()
                     mtask = int(mtask)
                     predict_start = int(predict_start)
                     ecpu = int(ecpu)
-                    Threads[thread][tick]['mtask'] = mtask
-                    Threads[thread][tick]['predict_start'] = predict_start
-                    Threads[thread][tick]['cpu'] = ecpu
-                    if 'elapsed' not in Mtasks[mtask]:
-                        Mtasks[mtask] = {'end': 0, 'elapsed': 0}
+                    mTaskThread[mtask] = thread
+                    records = Threads[thread]
+                    assert not records or records[-1]['start'] <= records[-1][
+                        'end'] <= tick
+                    records.append({
+                        'start': tick,
+                        'mtask': mtask,
+                        'predict_start': predict_start,
+                        'cpu': ecpu
+                    })
                     Mtasks[mtask]['begin'] = tick
                     Mtasks[mtask]['thread'] = thread
                     Mtasks[mtask]['predict_start'] = predict_start
@@ -86,11 +90,18 @@ def read_data(filename):
                     mtask = int(mtask)
                     predict_cost = int(predict_cost)
                     begin = Mtasks[mtask]['begin']
-                    Threads[thread][begin]['end'] = tick
-                    Threads[thread][begin]['predict_cost'] = predict_cost
+                    record = Threads[mTaskThread[mtask]][-1]
+                    record['end'] = tick
+                    record['predict_cost'] = predict_cost
                     Mtasks[mtask]['elapsed'] += tick - begin
                     Mtasks[mtask]['predict_cost'] = predict_cost
                     Mtasks[mtask]['end'] = max(Mtasks[mtask]['end'], tick)
+                elif kind == "EXEC_GRAPH_BEGIN":
+                    execGraphStart = tick
+                elif kind == "EXEC_GRAPH_END":
+                    ExecGraphTime += tick - execGraphStart
+                    ExecGraphIntervals.append((execGraphStart, tick))
+                    execGraphStart = None
                 elif Args.debug:
                     print("-Unknown execution trace record: %s" % line)
             elif re_thread.match(line):
@@ -109,7 +120,7 @@ def read_data(filename):
             elif re_proc_cpu.match(line):
                 match = re_proc_cpu.match(line)
                 cpu = int(match.group(1))
-            elif cpu and re_proc_dat.match(line):
+            elif cpu is not None and re_proc_dat.match(line):
                 match = re_proc_dat.match(line)
                 term = match.group(1)
                 value = match.group(2)
@@ -121,11 +132,6 @@ def read_data(filename):
                 pass
             elif Args.debug:
                 print("-Unk: %s" % line)
-            # TODO -- this is parsing text printed by a client.
-            # Really, verilator proper should generate this
-            # if it's useful...
-            if re_time.match(line):
-                Global['rdtsc_cycle_time'] = re_time.group(1)
 
 
 def re_match_result(regexp, line, result_to):
@@ -144,125 +150,33 @@ def report():
         plus = "+" if re.match(r'^\+', arg) else " "
         print("  %s%s%s" % (arg, plus, Global['args'][arg]))
 
+    for records in Threads.values():
+        for record in records:
+            cpu = record['cpu']
+            elapsed = record['end'] - record['start']
+            Cpus[cpu]['mtask_time'] += elapsed
+
+    global ElapsedTime
+    ElapsedTime = int(Global['stats']['ticks'])
     nthreads = int(Global['stats']['threads'])
-    Global['cpus'] = {}
-    for thread in Threads:
-        # Make potentially multiple characters per column
-        for start in Threads[thread]:
-            if not Threads[thread][start]:
-                continue
-            cpu = Threads[thread][start]['cpu']
-            elapsed = Threads[thread][start]['end'] - start
-            if cpu not in Global['cpus']:
-                Global['cpus'][cpu] = {'cpu_time': 0}
-            Global['cpus'][cpu]['cpu_time'] += elapsed
+    ncpus = max(len(Cpus), 1)
 
-    measured_mt_mtask_time = 0
-    predict_mt_mtask_time = 0
-    long_mtask_time = 0
-    measured_last_end = 0
-    predict_last_end = 0
-    for mtask in Mtasks:
-        measured_mt_mtask_time += Mtasks[mtask]['elapsed']
-        predict_mt_mtask_time += Mtasks[mtask]['predict_cost']
-        measured_last_end = max(measured_last_end, Mtasks[mtask]['end'])
-        predict_last_end = max(
-            predict_last_end,
-            Mtasks[mtask]['predict_start'] + Mtasks[mtask]['predict_cost'])
-        long_mtask_time = max(long_mtask_time, Mtasks[mtask]['elapsed'])
-    Global['measured_last_end'] = measured_last_end
-    Global['predict_last_end'] = predict_last_end
+    print("\nSummary:")
+    print("  Total elapsed time = {} rdtsc ticks".format(ElapsedTime))
+    print("  Parallelized code  = {:.2%} of elapsed time".format(
+        ExecGraphTime / ElapsedTime))
+    print("  Total threads      = %d" % nthreads)
+    print("  Total CPUs used    = %d" % ncpus)
+    print("  Total mtasks       = %d" % len(Mtasks))
+    print("  Total yields       = %d" % int(Global['stats'].get('yields', 0)))
 
-    # If we know cycle time in the same (rdtsc) units,
-    # this will give us an actual utilization number,
-    # (how effectively we keep the cores busy.)
-    #
-    # It also gives us a number we can compare against
-    # serial mode, to estimate the overhead of data sharing,
-    # which will show up in the total elapsed time. (Overhead
-    # of synchronization and scheduling should not.)
-    print("\nAnalysis:")
-    print("  Total threads             = %d" % nthreads)
-    print("  Total mtasks              = %d" % len(Mtasks))
-    ncpus = max(len(Global['cpus']), 1)
-    print("  Total cpus used           = %d" % ncpus)
-    print("  Total yields              = %d" %
-          int(Global['stats'].get('yields', 0)))
-    print("  Total evals               = %d" % len(Evals))
-    print("  Total eval loops          = %d" % len(EvalLoops))
-    if Mtasks:
-        print("  Total eval time           = %d rdtsc ticks" %
-              Global['measured_last_end'])
-        print("  Longest mtask time        = %d rdtsc ticks" % long_mtask_time)
-        print("  All-thread mtask time     = %d rdtsc ticks" %
-              measured_mt_mtask_time)
-        long_efficiency = long_mtask_time / (Global.get(
-            'measured_last_end', 1) or 1)
-        print("  Longest-thread efficiency = %0.1f%%" %
-              (long_efficiency * 100.0))
-        mt_efficiency = measured_mt_mtask_time / (
-            Global.get('measured_last_end', 1) * nthreads or 1)
-        print("  All-thread efficiency     = %0.1f%%" %
-              (mt_efficiency * 100.0))
-        print("  All-thread speedup        = %0.1f" %
-              (mt_efficiency * nthreads))
-        if Global['rdtsc_cycle_time'] > 0:
-            ut = measured_mt_mtask_time / Global['rdtsc_cycle_time']
-            print("tot_mtask_cpu=" + measured_mt_mtask_time + " cyc=" +
-                  Global['rdtsc_cycle_time'] + " ut=" + ut)
-
-        predict_mt_efficiency = predict_mt_mtask_time / (
-            Global.get('predict_last_end', 1) * nthreads or 1)
-        print("\nPrediction (what Verilator used for scheduling):")
-        print("  All-thread efficiency     = %0.1f%%" %
-              (predict_mt_efficiency * 100.0))
-        print("  All-thread speedup        = %0.1f" %
-              (predict_mt_efficiency * nthreads))
-
-        p2e_ratios = []
-        min_p2e = 1000000
-        min_mtask = None
-        max_p2e = -1000000
-        max_mtask = None
-
-        for mtask in sorted(Mtasks.keys()):
-            if Mtasks[mtask]['elapsed'] > 0:
-                if Mtasks[mtask]['predict_cost'] == 0:
-                    Mtasks[mtask]['predict_cost'] = 1  # don't log(0) below
-                p2e_ratio = math.log(Mtasks[mtask]['predict_cost'] /
-                                     Mtasks[mtask]['elapsed'])
-                p2e_ratios.append(p2e_ratio)
-
-                if p2e_ratio > max_p2e:
-                    max_p2e = p2e_ratio
-                    max_mtask = mtask
-                if p2e_ratio < min_p2e:
-                    min_p2e = p2e_ratio
-                    min_mtask = mtask
-
-        print("\nMTask statistics:")
-        print("  min log(p2e) = %0.3f" % min_p2e, end="")
-        print("  from mtask %d (predict %d," %
-              (min_mtask, Mtasks[min_mtask]['predict_cost']),
-              end="")
-        print(" elapsed %d)" % Mtasks[min_mtask]['elapsed'])
-        print("  max log(p2e) = %0.3f" % max_p2e, end="")
-        print("  from mtask %d (predict %d," %
-              (max_mtask, Mtasks[max_mtask]['predict_cost']),
-              end="")
-        print(" elapsed %d)" % Mtasks[max_mtask]['elapsed'])
-
-        stddev = statistics.pstdev(p2e_ratios)
-        mean = statistics.mean(p2e_ratios)
-        print("  mean = %0.3f" % mean)
-        print("  stddev = %0.3f" % stddev)
-        print("  e ^ stddev = %0.3f" % math.exp(stddev))
-
+    report_mtasks()
     report_cpus()
+    report_sections()
 
     if nthreads > ncpus:
         print()
-        print("%%Warning: There were fewer CPUs (%d) then threads (%d)." %
+        print("%%Warning: There were fewer CPUs (%d) than threads (%d)." %
               (ncpus, nthreads))
         print("        : See docs on use of numactl.")
     else:
@@ -279,32 +193,130 @@ def report():
     print()
 
 
+def report_mtasks():
+    if not Mtasks:
+        return
+
+    nthreads = int(Global['stats']['threads'])
+
+    # If we know cycle time in the same (rdtsc) units,
+    # this will give us an actual utilization number,
+    # (how effectively we keep the cores busy.)
+    #
+    # It also gives us a number we can compare against
+    # serial mode, to estimate the overhead of data sharing,
+    # which will show up in the total elapsed time. (Overhead
+    # of synchronization and scheduling should not.)
+    total_mtask_time = 0
+    thread_mtask_time = collections.defaultdict(lambda: 0)
+    long_mtask_time = 0
+    long_mtask = None
+    predict_mtask_time = 0
+    predict_elapsed = 0
+    for mtaskId in Mtasks:
+        record = Mtasks[mtaskId]
+        predict_mtask_time += record['predict_cost']
+        total_mtask_time += record['elapsed']
+        thread_mtask_time[record['thread']] += record['elapsed']
+        predict_end = record['predict_start'] + record['predict_cost']
+        predict_elapsed = max(predict_elapsed, predict_end)
+        if record['elapsed'] > long_mtask_time:
+            long_mtask_time = record['elapsed']
+            long_mtask = mtaskId
+    Global['predict_last_end'] = predict_elapsed
+
+    serialTime = ElapsedTime - ExecGraphTime
+
+    def subReport(elapsed, work):
+        print("  Thread utilization = {:7.2%}".format(work /
+                                                      (elapsed * nthreads)))
+        print("  Speedup            = {:6.3}x".format(work / elapsed))
+
+    print("\nParallelized code, measured:")
+    subReport(ExecGraphTime, total_mtask_time)
+
+    print("\nParallelized code, predicted during static scheduling:")
+    subReport(predict_elapsed, predict_mtask_time)
+
+    print("\nAll code, measured:")
+    subReport(ElapsedTime, serialTime + total_mtask_time)
+
+    print("\nAll code, measured, scaled by predicted speedup:")
+    expectedParallelSpeedup = predict_mtask_time / predict_elapsed
+    scaledElapsed = serialTime + total_mtask_time / expectedParallelSpeedup
+    subReport(scaledElapsed, serialTime + total_mtask_time)
+
+    p2e_ratios = []
+    min_p2e = 1000000
+    min_mtask = None
+    max_p2e = -1000000
+    max_mtask = None
+
+    for mtask in sorted(Mtasks.keys()):
+        if Mtasks[mtask]['elapsed'] > 0:
+            if Mtasks[mtask]['predict_cost'] == 0:
+                Mtasks[mtask]['predict_cost'] = 1  # don't log(0) below
+            p2e_ratio = math.log(Mtasks[mtask]['predict_cost'] /
+                                 Mtasks[mtask]['elapsed'])
+            p2e_ratios.append(p2e_ratio)
+
+            if p2e_ratio > max_p2e:
+                max_p2e = p2e_ratio
+                max_mtask = mtask
+            if p2e_ratio < min_p2e:
+                min_p2e = p2e_ratio
+                min_mtask = mtask
+
+    print("\nMTask statistics:")
+    print("  Longest mtask id = {}".format(long_mtask))
+    print("  Longest mtask time = {:.2%} of time elapsed in parallelized code".
+          format(long_mtask_time / ExecGraphTime))
+    print("  min log(p2e) = %0.3f" % min_p2e, end="")
+
+    print("  from mtask %d (predict %d," %
+          (min_mtask, Mtasks[min_mtask]['predict_cost']),
+          end="")
+    print(" elapsed %d)" % Mtasks[min_mtask]['elapsed'])
+    print("  max log(p2e) = %0.3f" % max_p2e, end="")
+    print("  from mtask %d (predict %d," %
+          (max_mtask, Mtasks[max_mtask]['predict_cost']),
+          end="")
+    print(" elapsed %d)" % Mtasks[max_mtask]['elapsed'])
+
+    stddev = statistics.pstdev(p2e_ratios)
+    mean = statistics.mean(p2e_ratios)
+    print("  mean = %0.3f" % mean)
+    print("  stddev = %0.3f" % stddev)
+    print("  e ^ stddev = %0.3f" % math.exp(stddev))
+
+
 def report_cpus():
-    print("\nCPUs:")
+    print("\nCPU info:")
 
     Global['cpu_sockets'] = collections.defaultdict(lambda: 0)
     Global['cpu_socket_cores'] = collections.defaultdict(lambda: 0)
 
-    for cpu in sorted(Global['cpus'].keys()):
-        print("  cpu %d: " % cpu, end='')
-        print("cpu_time=%d" % Global['cpus'][cpu]['cpu_time'], end='')
-
-        socket = None
+    print("   Id | Time spent executing MTask | Socket | Core | Model")
+    print("      | % of elapsed ticks / ticks |        |      |")
+    print("  ====|============================|========|======|======")
+    for cpu in sorted(Cpus):
+        socket = ""
+        core = ""
+        model = ""
         if cpu in Global['cpuinfo']:
             cpuinfo = Global['cpuinfo'][cpu]
             if 'physical_id' in cpuinfo and 'core_id' in cpuinfo:
-                socket = int(cpuinfo['physical_id'])
+                socket = cpuinfo['physical_id']
                 Global['cpu_sockets'][socket] += 1
-                print(" socket=%d" % socket, end='')
-
-                core = int(cpuinfo['core_id'])
-                Global['cpu_socket_cores'][str(socket) + "__" + str(core)] += 1
-                print(" core=%d" % core, end='')
+                core = cpuinfo['core_id']
+                Global['cpu_socket_cores'][socket + "__" + core] += 1
 
             if 'model_name' in cpuinfo:
                 model = cpuinfo['model_name']
-                print("  %s" % model, end='')
-        print()
+
+        print("  {:3d} | {:7.2%} / {:16d} | {:>6s} | {:>4s} | {}".format(
+            cpu, Cpus[cpu]['mtask_time'] / ElapsedTime,
+            Cpus[cpu]['mtask_time'], socket, core, model))
 
     if len(Global['cpu_sockets']) > 1:
         Global['cpu_sockets_warning'] = True
@@ -313,25 +325,68 @@ def report_cpus():
                 Global['cpu_socket_cores_warning'] = True
 
 
+def report_sections():
+    if not Sections:
+        return
+    print("\nSection profile:")
+
+    totalTime = collections.defaultdict(lambda: 0)
+    selfTime = collections.defaultdict(lambda: 0)
+
+    sectionTree = [0, {}, 1]  # [selfTime, childTrees, numberOfTimesEntered]
+    prevTime = 0
+    prevStack = ()
+    for time, stack in Sections:
+        if len(stack) > len(prevStack):
+            scope = sectionTree
+            for item in stack:
+                scope = scope[1].setdefault(item, [0, {}, 0])
+            scope[2] += 1
+        dt = time - prevTime
+        scope = sectionTree
+        for item in prevStack:
+            scope = scope[1].setdefault(item, [0, {}, 0])
+        scope[0] += dt
+
+        if prevStack:
+            for name in prevStack:
+                totalTime[name] += dt
+            selfTime[prevStack[-1]] += dt
+        prevTime = time
+        prevStack = stack
+
+    def treeSum(tree):
+        n = tree[0]
+        for subTree in tree[1].values():
+            n += treeSum(subTree)
+        return n
+
+    # Make sure the tree sums to the elapsed time
+    sectionTree[0] += ElapsedTime - treeSum(sectionTree)
+
+    def printTree(prefix, name, entries, tree):
+        print("  {:7.2%} | {:7.2%} | {:8} | {:10.2f} | {}".format(
+            treeSum(tree) / ElapsedTime, tree[0] / ElapsedTime, tree[2],
+            tree[2] / entries, prefix + name))
+        for k in sorted(tree[1], key=lambda _: -treeSum(tree[1][_])):
+            printTree(prefix + "  ", k, tree[2], tree[1][k])
+
+    print(" Total    | Self    | Total    | Relative   | Section")
+    print(" time     | time    | entries  | entries    |  name  ")
+    print("==========|=========|==========|============|========")
+    printTree("", "*TOTAL*", 1, sectionTree)
+
+
 ######################################################################
 
 
 def write_vcd(filename):
     print("Writing %s" % filename)
     with open(filename, "w", encoding="utf8") as fh:
-        vcd = {
-            'values':
-            collections.defaultdict(lambda: {}),  # {<time>}{<code>} = value
-            'sigs': {
-                'predicted_threads': {},
-                'measured_threads': {},
-                'cpus': {},
-                'evals': {},
-                'mtasks': {},
-                'Stats': {}
-            }  # {<module>}{<sig}} = code
-        }
-        code = 0
+        # dict of dicts of hierarchy elements/signal name  -> (code, width)
+        scopeSigs = {}
+        # map from time -> code -> value
+        values = collections.defaultdict(lambda: {})
 
         parallelism = {
             'measured': collections.defaultdict(lambda: 0),
@@ -340,132 +395,139 @@ def write_vcd(filename):
         parallelism['measured'][0] = 0
         parallelism['predicted'][0] = 0
 
-        # Measured graph
-        for thread in sorted(Threads.keys()):
-            sig = "thread%d_mtask" % thread
-            if sig not in vcd['sigs']['measured_threads']:
-                vcd['sigs']['measured_threads'][sig] = code
-                code += 1
-            mcode = vcd['sigs']['measured_threads'][sig]
+        nextFreeCode = 0
 
-            for start in sorted(Threads[thread]):
-                mtask = Threads[thread][start]['mtask']
-                end = Threads[thread][start]['end']
-                cpu = Threads[thread][start]['cpu']
-                vcd['values'][start][mcode] = mtask
-                vcd['values'][end][mcode] = None
+        def getCode(width, *names):
+            nonlocal nextFreeCode
+            scope = scopeSigs
+            *path, name = names
+            for item in path:
+                scope = scope.setdefault(item, {})
+            code, oldWidth = scope.setdefault(name, (nextFreeCode, width))
+            assert oldWidth == width
+            if code == nextFreeCode:
+                nextFreeCode += 1
+            return code
+
+        def addValue(code, time, val):
+            if isinstance(val, str):
+                buf = ""
+                for c in val:
+                    buf += bin(ord(c))[2:].rjust(8, "0")
+                val = buf.ljust(LongestVcdStrValueLength * 8, "0")
+            values[time][code] = val
+
+        # Measured graph
+        for thread in sorted(Threads):
+            mcode = getCode(32, 'measured', 't%d_mtask' % thread)
+            for record in Threads[thread]:
+                start = record['start']
+                mtask = record['mtask']
+                end = record['end']
+                cpu = record['cpu']
+                addValue(mcode, start, mtask)
+                addValue(mcode, end, None)
                 parallelism['measured'][start] += 1
                 parallelism['measured'][end] -= 1
 
-                sig = "cpu%d_thread" % cpu
-                if sig not in vcd['sigs']['cpus']:
-                    vcd['sigs']['cpus'][sig] = code
-                    code += 1
-                ccode = vcd['sigs']['cpus'][sig]
-                vcd['values'][start][ccode] = thread
-                vcd['values'][end][ccode] = None
+                code = getCode(32, 'measured', 'cpu%d_thread' % cpu)
+                addValue(code, start, thread)
+                addValue(code, end, None)
 
-                sig = "mtask%d_cpu" % mtask
-                if sig not in vcd['sigs']['mtasks']:
-                    vcd['sigs']['mtasks'][sig] = code
-                    code += 1
-                ccode = vcd['sigs']['mtasks'][sig]
-                vcd['values'][start][ccode] = cpu
-                vcd['values'][end][ccode] = None
+                code = getCode(32, 'measured', 'cpu%d_mtask' % cpu)
+                addValue(code, start, mtask)
+                addValue(code, end, None)
 
-        # Eval graph
-        vcd['sigs']['evals']["eval"] = code
-        elcode = code
-        code += 1
-        n = 0
-        for eval_start in Evals:
-            eval_end = Evals[eval_start]['end']
-            n += 1
-            vcd['values'][eval_start][elcode] = n
-            vcd['values'][eval_end][elcode] = None
+        tStart = sorted(_['start'] for records in Threads.values()
+                        for _ in records)
+        tEnd = sorted(_['end'] for records in Threads.values()
+                      for _ in records)
 
-        # Eval_loop graph
-        vcd['sigs']['evals']["eval_loop"] = code
-        elcode = code
-        code += 1
-        n = 0
-        for eval_start in EvalLoops:
-            eval_end = EvalLoops[eval_start]['end']
-            n += 1
-            vcd['values'][eval_start][elcode] = n
-            vcd['values'][eval_end][elcode] = None
+        # Predicted graph
+        for start, end in ExecGraphIntervals:
+            # Find the earliest MTask start after the start point, and the
+            # latest MTask end before the end point, so we can scale to the
+            # same range
+            start = tStart[bisect.bisect_left(tStart, start)]
+            end = tEnd[bisect.bisect_right(tEnd, end) - 1]
+            # Compute scale so predicted graph is of same width as interval
+            measured_scaling = (end - start) / Global['predict_last_end']
+            # Predict mtasks that fill the time the execution occupied
+            for mtask in Mtasks:
+                thread = Mtasks[mtask]['thread']
+                pred_scaled_start = start + int(
+                    Mtasks[mtask]['predict_start'] * measured_scaling)
+                pred_scaled_end = start + int(
+                    (Mtasks[mtask]['predict_start'] +
+                     Mtasks[mtask]['predict_cost']) * measured_scaling)
+                if pred_scaled_start == pred_scaled_end:
+                    continue
 
-        if Mtasks:
-            # Predicted graph
-            for eval_start in EvalLoops:
-                eval_end = EvalLoops[eval_start]['end']
-                # Compute scale so predicted graph is of same width as eval
-                measured_scaling = (eval_end -
-                                    eval_start) / Global['predict_last_end']
-                # Predict mtasks that fill the time the eval occupied
-                for mtask in Mtasks:
-                    thread = Mtasks[mtask]['thread']
-                    pred_scaled_start = eval_start + int(
-                        Mtasks[mtask]['predict_start'] * measured_scaling)
-                    pred_scaled_end = eval_start + int(
-                        (Mtasks[mtask]['predict_start'] +
-                         Mtasks[mtask]['predict_cost']) * measured_scaling)
-                    if pred_scaled_start == pred_scaled_end:
-                        continue
+                mcode = getCode(32, 'predicted', 't%d_mtask' % thread)
+                addValue(mcode, pred_scaled_start, mtask)
+                addValue(mcode, pred_scaled_end, None)
 
-                    sig = "predicted_thread%d_mtask" % thread
-                    if sig not in vcd['sigs']['predicted_threads']:
-                        vcd['sigs']['predicted_threads'][sig] = code
-                        code += 1
-                    mcode = vcd['sigs']['predicted_threads'][sig]
+                parallelism['predicted'][pred_scaled_start] += 1
+                parallelism['predicted'][pred_scaled_end] -= 1
 
-                    vcd['values'][pred_scaled_start][mcode] = mtask
-                    vcd['values'][pred_scaled_end][mcode] = None
+        # Parallelism graph
+        for measpred in ('measured', 'predicted'):
+            pcode = getCode(32, 'stats', '%s_parallelism' % measpred)
+            value = 0
+            for time in sorted(parallelism[measpred].keys()):
+                value += parallelism[measpred][time]
+                addValue(pcode, time, value)
 
-                    parallelism['predicted'][pred_scaled_start] += 1
-                    parallelism['predicted'][pred_scaled_end] -= 1
-
-            # Parallelism graph
-            for measpred in ('measured', 'predicted'):
-                vcd['sigs']['Stats']["%s_parallelism" % measpred] = code
-                pcode = code
-                code += 1
-                value = 0
-                for time in sorted(parallelism[measpred].keys()):
-                    value += parallelism[measpred][time]
-                    vcd['values'][time][pcode] = value
+        # Section graph
+        if Sections:
+            scode = getCode(LongestVcdStrValueLength * 8, "section", "trace")
+            dcode = getCode(32, "section", "depth")
+            for time, stack in Sections:
+                addValue(scode, time, stack[-1] if stack else None)
+                addValue(dcode, time, len(stack))
 
         # Create output file
         fh.write("$version Generated by verilator_gantt $end\n")
         fh.write("$timescale 1ns $end\n")
         fh.write("\n")
 
-        all_codes = {}
+        all_codes = set()
+
+        def writeScope(scope):
+            assert isinstance(scope, dict)
+            for key in sorted(scope):
+                val = scope[key]
+                if isinstance(val, dict):
+                    fh.write("  $scope module %s $end\n" % key)
+                    writeScope(val)
+                    fh.write("  $upscope $end\n")
+                else:
+                    (code, width) = val
+                    all_codes.add(code)
+                    fh.write("   $var wire %d v%x %s [%d:0] $end\n" %
+                             (width, code, key, width - 1))
+
         fh.write(" $scope module gantt $end\n")
-        for module in sorted(vcd['sigs'].keys()):
-            fh.write("  $scope module %s $end\n" % module)
-            for sig in sorted(vcd['sigs'][module].keys()):
-                code = vcd['sigs'][module][sig]
-                fh.write("   $var wire 32 v%x %s [31:0] $end\n" % (code, sig))
-                all_codes[code] = 1
-            fh.write("  $upscope $end\n")
+        writeScope(scopeSigs)
         fh.write(" $upscope $end\n")
         fh.write("$enddefinitions $end\n")
         fh.write("\n")
 
         first = True
-        for time in sorted(vcd['values']):
+        for time in sorted(values):
             if first:
                 first = False
                 # Start with Z for any signals without time zero data
-                for code in sorted(all_codes.keys()):
-                    if code not in vcd['values'][time]:
-                        vcd['values'][time][code] = None
+                for code in sorted(all_codes):
+                    if code not in values[time]:
+                        addValue(code, time, None)
             fh.write("#%d\n" % time)
-            for code in sorted(vcd['values'][time].keys()):
-                value = vcd['values'][time][code]
+            for code in sorted(values[time]):
+                value = values[time][code]
                 if value is None:
                     fh.write("bz v%x\n" % code)
+                elif isinstance(value, str):
+                    fh.write("b%s v%x\n" % (value, code))
                 else:
                     fh.write("b%s v%x\n" % (format(value, 'b'), code))
 
@@ -504,7 +566,8 @@ parser.add_argument('filename',
 
 Args = parser.parse_args()
 
-process(Args.filename)
+read_data(Args.filename)
+report()
 if not Args.no_vcd:
     write_vcd(Args.vcd)
 

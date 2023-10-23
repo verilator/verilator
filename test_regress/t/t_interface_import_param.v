@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // A test that a package import declaration can preceed a parameter port list
-// in an interface declaration. See 25.3 of the 1800-2017 LRM.
+// in an interface declaration. See IEEE 1800-2017 25.3.
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2013 by Jeremy Bennett.

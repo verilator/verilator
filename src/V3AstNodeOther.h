@@ -1195,6 +1195,8 @@ class AstNetlist final : public AstNode {
     AstCFunc* m_evalNbap = nullptr;  // The '_eval__nba' function
     AstVarScope* m_dpiExportTriggerp = nullptr;  // The DPI export trigger variable
     AstVar* m_delaySchedulerp = nullptr;  // The delay scheduler variable
+    AstVarScope* m_nbaEventp = nullptr;  // The NBA event variable
+    AstVarScope* m_nbaEventTriggerp = nullptr;  // If set to 1, the NBA event should get triggered
     AstTopScope* m_topScopep = nullptr;  // The singleton AstTopScope under the top module
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
@@ -1224,6 +1226,10 @@ public:
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstVar* delaySchedulerp() const { return m_delaySchedulerp; }
     void delaySchedulerp(AstVar* const varScopep) { m_delaySchedulerp = varScopep; }
+    AstVarScope* nbaEventp() const { return m_nbaEventp; }
+    void nbaEventp(AstVarScope* const varScopep) { m_nbaEventp = varScopep; }
+    AstVarScope* nbaEventTriggerp() const { return m_nbaEventTriggerp; }
+    void nbaEventTriggerp(AstVarScope* const varScopep) { m_nbaEventTriggerp = varScopep; }
     void stdPackagep(AstPackage* const packagep) { m_stdPackagep = packagep; }
     AstPackage* stdPackagep() const { return m_stdPackagep; }
     AstTopScope* topScopep() const { return m_topScopep; }
@@ -3237,14 +3243,14 @@ class AstTraceInc final : public AstNodeStmt {
 private:
     AstTraceDecl* m_declp;  // Pointer to declaration
     const uint32_t m_baseCode;  // Trace code base value in function containing this AstTraceInc
-    const bool m_full;  // Is this a full vs incremental dump
+    const VTraceType m_traceType;  // Is this a const/full/incremental dump
 
 public:
-    AstTraceInc(FileLine* fl, AstTraceDecl* declp, bool full, uint32_t baseCode = 0)
+    AstTraceInc(FileLine* fl, AstTraceDecl* declp, VTraceType traceType, uint32_t baseCode = 0)
         : ASTGEN_SUPER_TraceInc(fl)
         , m_declp{declp}
         , m_baseCode{baseCode}
-        , m_full{full} {
+        , m_traceType{traceType} {
         dtypeFrom(declp);
         this->valuep(
             declp->valuep()->cloneTree(true));  // TODO: maybe use reference to TraceDecl instead?
@@ -3268,7 +3274,7 @@ public:
     bool isOutputter() override { return true; }
     // but isPure()  true
     AstTraceDecl* declp() const { return m_declp; }
-    bool full() const { return m_full; }
+    VTraceType traceType() const { return m_traceType; }
     uint32_t baseCode() const { return m_baseCode; }
 };
 class AstTracePopNamePrefix final : public AstNodeStmt {
@@ -3325,6 +3331,7 @@ public:
     explicit AstWaitFork(FileLine* fl)
         : ASTGEN_SUPER_WaitFork(fl) {}
     ASTGEN_MEMBERS_AstWaitFork;
+    bool isTimingControl() const override { return true; }
 };
 class AstWhile final : public AstNodeStmt {
     // @astgen op1 := precondsp : List[AstNode]

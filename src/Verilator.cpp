@@ -588,12 +588,11 @@ static void process() {
             V3EmitC::emitcFiles();
         }
 
-        if (v3Global.opt.stats()) V3Stats::statsStage("emit");
-
-        // Statistics
-        reportStatsIfEnabled();
-
         if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
+            if (v3Global.opt.main()) V3EmitCMain::emit();
+
+            // V3EmitMk/V3EmitCMake must be after all other emitters,
+            // as they and below code visits AstCFiles added earlier
             size_t src_f_cnt = 0;
             for (AstNode* nodep = v3Global.rootp()->filesp(); nodep; nodep = nodep->nextp()) {
                 if (const AstCFile* cfilep = VN_CAST(nodep, CFile))
@@ -601,12 +600,13 @@ static void process() {
             }
             if (src_f_cnt >= V3EmitMk::PARALLEL_FILE_CNT_THRESHOLD)
                 v3Global.useParallelBuild(true);
-
-            // Makefile must be after all other emitters
-            if (v3Global.opt.main()) V3EmitCMain::emit();
             if (v3Global.opt.cmake()) V3EmitCMake::emit();
             if (v3Global.opt.gmake()) V3EmitMk::emitmk();
         }
+
+        // Final statistics
+        if (v3Global.opt.stats()) V3Stats::statsStage("emit");
+        reportStatsIfEnabled();
     }
 }
 

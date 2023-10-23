@@ -63,7 +63,7 @@ jobs:
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
       CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-m32=${{ matrix.m32 }}
-      CCACHE_MAXSIZE: 250M # Per build matrix entry (2000M in total)
+      CCACHE_MAXSIZE: 1000M # Per build matrix entry (* 5 = 5000M in total)
       VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}${{ matrix.m32 && '-m32' || '' }}.tar.gz
     steps:
 
@@ -136,7 +136,7 @@ jobs:
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
       CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-m32=${{ matrix.m32 }}-${{ matrix.suite }}
-      CCACHE_MAXSIZE: 64M # Per build matrix entry (2160M in total)
+      CCACHE_MAXSIZE: 100M # Per build per suite (* 5 * 5 = 2500M in total)
       VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}${{ matrix.m32 && '-m32' || '' }}.tar.gz
     steps:
 

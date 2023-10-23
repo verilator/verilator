@@ -47,7 +47,7 @@ package std;
       endtask
 
       function int try_put(T message);
-         if (num() < m_bound) begin
+         if (m_bound == 0 || num() < m_bound) begin
             m_queue.push_back(message);
             return 1;
          end

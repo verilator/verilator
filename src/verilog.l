@@ -630,7 +630,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /* Default PLI rule */
 <V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,SAX>{
-  "$"[a-zA-Z_$][a-zA-Z0-9_$]*   { const string str (yytext, yyleng);
+  "$"[a-zA-Z0-9_$]+     { const string str (yytext, yyleng);
                                   yylval.strp = PARSEP->newString(AstNode::encodeName(str));
                                   FL; return yaD_PLI;
                                 }

@@ -230,4 +230,4 @@ spelling_ignore_contributor_names = True
 
 breathe_projects = {"verilated": "_build/doxygen/verilated/xml/"}
 breathe_default_project = "verilated"
-breathe_default_members = ('members')
+breathe_default_members = 'members'

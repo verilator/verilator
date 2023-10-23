@@ -1658,10 +1658,14 @@ sub _run {
             $SIG{ALRM} = 'DEFAULT';
             $SIG{CHLD} = 'DEFAULT';
             # Logging
-            open(STDOUT, ">&CHILDWR") or croak "%Error: Can't redirect stdout, stopped";
-            open(STDERR, ">&STDOUT") or croak "%Error: Can't dup stdout, stopped";
-            autoflush STDOUT 1;
-            autoflush STDERR 1;
+            if (!$opt_gdb) {
+                # Redirecting the stdout of GDB prevents output syntax colors
+                # and the use of the TUI, so only redirect when not --gdb
+                open(STDOUT, ">&CHILDWR") or croak "%Error: Can't redirect stdout, stopped";
+                open(STDERR, ">&STDOUT") or croak "%Error: Can't dup stdout, stopped";
+                autoflush STDOUT 1;
+                autoflush STDERR 1;
+            }
             system "$command";
             my $status = $?;
             if (($status & 127) == 4  # SIGILL

@@ -159,7 +159,7 @@ V3StringList V3HierBlock::commandArgs(bool forCMake) const {
     opts.push_back(" --lib-create " + modp()->name());  // possibly mangled name
     if (v3Global.opt.protectKeyProvided())
         opts.push_back(" --protect-key " + v3Global.opt.protectKeyDefaulted());
-    opts.push_back(" --hierarchical-child " + cvtToStr(std::max(1, v3Global.opt.threads())));
+    opts.push_back(" --hierarchical-child " + cvtToStr(v3Global.opt.threads()));
 
     const StrGParams gparamsStr = stringifyParams(gparams(), true);
     for (StrGParams::const_iterator paramIt = gparamsStr.begin(); paramIt != gparamsStr.end();
@@ -227,9 +227,6 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     for (const string& opt : commandOpts) *of << opt << "\n";
     *of << hierBlockArgs().front() << "\n";
     for (const auto& hierblockp : m_children) *of << hierblockp->hierBlockArgs().front() << "\n";
-    // Hierarchical blocks should not use multi-threading,
-    // but needs to be thread safe when top is multi-threaded.
-    if (v3Global.opt.threads() > 0) *of << "--threads 1\n";
     *of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
 }
 
@@ -425,9 +422,7 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     if (v3Global.opt.protectKeyProvided()) {
         *of << "--protect-key " << v3Global.opt.protectKeyDefaulted() << "\n";
     }
-    if (v3Global.opt.threads() > 0) {
-        *of << "--threads " << cvtToStr(v3Global.opt.threads()) << "\n";
-    }
+    *of << "--threads " << cvtToStr(v3Global.opt.threads()) << "\n";
     *of << (v3Global.opt.systemC() ? "--sc" : "--cc") << "\n";
     *of << v3Global.opt.allArgsStringForHierBlock(true) << "\n";
 }

@@ -8,15 +8,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-scenarios(vlt => 1);
+scenarios(simulator => 1);
 
 compile(
-    verilator_flags2 => ['--stats', "-fno-merge-cond"],
+    verilator_flags2 => ["--no-timing"],
+    fails => 1,
+    expect_filename => $Self->{golden_filename},
     );
-
-if ($Self->{vlt_all}) {
-    file_grep($Self->{stats}, qr/Node count, IF  +\d+ +\d+ +\d+ +\d+ +(\d+)/, 28);
-}
 
 ok(1);
 1;

@@ -408,7 +408,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     void visit(AstCExpr* nodep) override {
         putfs(nodep, "$_CEXPR(");
         iterateAndNextConstNull(nodep->exprsp());
-        puts(");\n");
+        puts(")");
     }
     void visit(AstUCStmt* nodep) override {
         putfs(nodep, "$c(");

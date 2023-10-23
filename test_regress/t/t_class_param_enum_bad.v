@@ -15,7 +15,7 @@ endclass
 module t;
    initial begin
       Converter#(enum_t) conv1 = new;
-      // enum types does not match with other types (sections 6.22.1 and 6.22.4 of IEEE Std 1800-2017)
+      // enum types does not match with other types (IEEE 1800-2017 6.22.1 and 6.22.4)
       // The assignment and the function call should throw an error.
       Converter#(bit) conv2 = conv1;
       conv1.toInt(0);
