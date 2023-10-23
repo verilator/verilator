@@ -30,7 +30,7 @@
 //  Finally:
 //      Process graph to determine when traced variables can change, allocate
 //      activity flags, insert nodes to set activity flags, allocate signal
-//      numbers (codes), and construct the full and incremental trace
+//      numbers (codes), and construct the const, full and incremental trace
 //      functions, together with all other trace support functions.
 //
 //*************************************************************************
@@ -319,11 +319,10 @@ private:
         return activityNumber;
     }
 
-    void sortTraces(TraceVec& traces, uint32_t& nFullCodes, uint32_t& nChgCodes) {
+    void sortTraces(TraceVec& traces, uint32_t& nNonConstCodes) {
         // Populate sort structure
         traces.clear();
-        nFullCodes = 0;
-        nChgCodes = 0;
+        nNonConstCodes = 0;
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (TraceTraceVertex* const vtxp = itp->cast<TraceTraceVertex>()) {
                 ActCodeSet actSet;
@@ -347,11 +346,8 @@ private:
                                 || actSet.size() == 1,
                             vtxp->nodep(), "Always active trace has further triggers");
                 // Count nodes
-                if (!vtxp->duplicatep()) {
-                    const uint32_t inc = vtxp->nodep()->codeInc();
-                    nFullCodes += inc;
-                    if (!actSet.empty()) nChgCodes += inc;
-                }
+                if (!vtxp->duplicatep() && !actSet.empty())
+                    nNonConstCodes += vtxp->nodep()->codeInc();
                 if (actSet.empty()) {
                     // If a trace doesn't have activity, it's constant, and we
                     // don't need to track changes on it.
@@ -374,8 +370,7 @@ private:
         // Sort the traces by activity sets
         TraceVec traces;
         uint32_t unused1;
-        uint32_t unused2;
-        sortTraces(traces, unused1, unused2);
+        sortTraces(traces, unused1);
 
         // For each activity set with only a small number of signals, make those
         // signals always traced, as it's cheaper to check a few value changes
@@ -482,54 +477,62 @@ private:
         }
     }
 
-    AstCFunc* newCFunc(bool full, AstCFunc* topFuncp, int& funcNump, uint32_t baseCode = 0) {
+    AstCFunc* newCFunc(VTraceType traceType, AstCFunc* topFuncp, unsigned funcNum,
+                       uint32_t baseCode = 0) {
         // Create new function
         const bool isTopFunc = topFuncp == nullptr;
-        const string baseName = full && isTopFunc ? "trace_full_top_"
-                                : full            ? "trace_full_sub_"
-                                : isTopFunc       ? "trace_chg_top_"
-                                                  : "trace_chg_sub_";
+        std::string baseName = "trace_";
+        if (traceType == VTraceType::CONSTANT) {
+            baseName += "const_";
+        } else if (traceType == VTraceType::FULL) {
+            baseName += "full_";
+        } else {
+            baseName += "chg_";
+        }
+        baseName += isTopFunc ? "top_" : "sub_";
 
         FileLine* const flp = m_topScopep->fileline();
-        AstCFunc* const funcp = new AstCFunc{flp, baseName + cvtToStr(funcNump++), m_topScopep};
+        AstCFunc* const funcp = new AstCFunc{flp, baseName + cvtToStr(funcNum), m_topScopep};
         funcp->isTrace(true);
         funcp->dontCombine(true);
         funcp->isLoose(true);
-        funcp->slow(full);
+        funcp->slow(traceType != VTraceType::CHANGE);
         funcp->isStatic(isTopFunc);
         // Add it to top scope
         m_topScopep->addBlocksp(funcp);
         const auto addInitStr = [funcp, flp](const string& str) -> void {
             funcp->addInitsp(new AstCStmt{flp, str});
         };
+        const std::string bufArg
+            = v3Global.opt.traceClassBase()
+              + "::" + (v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer") + "* bufp";
         if (isTopFunc) {
             // Top functions
-            funcp->argTypes("void* voidSelf, " + v3Global.opt.traceClassBase()
-                            + "::" + (v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer")
-                            + "* bufp");
+            funcp->argTypes("void* voidSelf, " + bufArg);
             addInitStr(EmitCBase::voidSelfAssign(m_topModp));
             addInitStr(EmitCBase::symClassAssign());
             // Add global activity check to change dump functions
-            if (!full) {  //
+            if (traceType == VTraceType::CHANGE) {  //
                 addInitStr("if (VL_UNLIKELY(!vlSymsp->__Vm_activity)) return;\n");
             }
             // Register function
-            if (full) {
-                m_regFuncp->addStmtsp(new AstText{flp, "tracep->addFullCb(", true});
+            std::string str;
+            if (traceType == VTraceType::CONSTANT) {
+                str = "tracep->addConstCb(";
+            } else if (traceType == VTraceType::FULL) {
+                str = "tracep->addFullCb(";
             } else {
-                m_regFuncp->addStmtsp(new AstText{flp, "tracep->addChgCb(", true});
+                str = "tracep->addChgCb(";
             }
+            m_regFuncp->addStmtsp(new AstText{flp, str, true});
             m_regFuncp->addStmtsp(new AstAddrOfCFunc{flp, funcp});
-            m_regFuncp->addStmtsp(new AstText{flp, ", vlSelf", true});
-            m_regFuncp->addStmtsp(new AstText{flp, ");\n", true});
+            m_regFuncp->addStmtsp(new AstText{flp, ", vlSelf);\n", true});
         } else {
             // Sub functions
-            funcp->argTypes(v3Global.opt.traceClassBase()
-                            + "::" + +(v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer")
-                            + "* bufp");
+            funcp->argTypes(bufArg);
             // Setup base references. Note in rare occasions we can end up with an empty trace
             // sub function, hence the VL_ATTR_UNUSED attributes.
-            if (full) {
+            if (traceType != VTraceType::CHANGE) {
                 // Full dump sub function
                 addInitStr("uint32_t* const oldp VL_ATTR_UNUSED = "
                            "bufp->oldp(vlSymsp->__Vm_baseCode);\n");
@@ -557,104 +560,96 @@ private:
         return funcp;
     }
 
-    void createFullTraceFunction(const TraceVec& traces, uint32_t nAllCodes,
-                                 uint32_t parallelism) {
+    void createConstTraceFunctions(const TraceVec& traces) {
         const int splitLimit = v3Global.opt.outputSplitCTrace() ? v3Global.opt.outputSplitCTrace()
                                                                 : std::numeric_limits<int>::max();
 
-        int topFuncNum = 0;
-        int subFuncNum = 0;
-        auto it = traces.cbegin();
-        while (it != traces.cend()) {
-            AstCFunc* topFuncp = nullptr;
-            AstCFunc* subFuncp = nullptr;
-            int subStmts = 0;
-            const uint32_t maxCodes = (nAllCodes + parallelism - 1) / parallelism;
-            uint32_t nCodes = 0;
-            for (; nCodes < maxCodes && it != traces.end(); ++it) {
-                const TraceTraceVertex* const vtxp = it->second;
-                AstTraceDecl* const declp = vtxp->nodep();
-                if (const TraceTraceVertex* const canonVtxp = vtxp->duplicatep()) {
-                    // This is a duplicate trace node. We will assign the signal
-                    // number to the canonical node, and emit this as an alias, so
-                    // no need to create a TraceInc node.
-                    const AstTraceDecl* const canonDeclp = canonVtxp->nodep();
-                    UASSERT_OBJ(!canonVtxp->duplicatep(), canonDeclp,
-                                "Canonical node is a duplicate");
-                    UASSERT_OBJ(canonDeclp->code() != 0, canonDeclp,
-                                "Canonical node should have code assigned already");
-                    declp->code(canonDeclp->code());
-                } else {
-                    // This is a canonical trace node. Assign signal number and
-                    // add a TraceInc node to the full dump function.
-                    UASSERT_OBJ(declp->code() == 0, declp,
-                                "Canonical node should not have code assigned yet");
-                    declp->code(m_code);
-                    m_code += declp->codeInc();
-                    m_statUniqCodes += declp->codeInc();
-                    ++m_statUniqSigs;
-
-                    // Create top function if not yet created
-                    if (!topFuncp) { topFuncp = newCFunc(/* full: */ true, nullptr, topFuncNum); }
-
-                    // Crate new sub function if required
-                    if (!subFuncp || subStmts > splitLimit) {
-                        subStmts = 0;
-                        subFuncp = newCFunc(/* full: */ true, topFuncp, subFuncNum);
-                    }
-
-                    // Add TraceInc node
-                    AstTraceInc* const incp
-                        = new AstTraceInc{declp->fileline(), declp, /* full: */ true};
-                    subFuncp->addStmtsp(incp);
-                    subStmts += incp->nodeCount();
-
-                    // Track partitioning
-                    nCodes += declp->codeInc();
-                }
+        AstCFunc* const topFuncp = newCFunc(VTraceType::CONSTANT, nullptr, 0);
+        unsigned subFuncNum = 0;
+        AstCFunc* subFuncp = nullptr;
+        int subStmts = 0;
+        for (auto it = traces.cbegin(); it != traces.end(); ++it) {
+            const TraceTraceVertex* const vtxp = it->second;
+            AstTraceDecl* const declp = vtxp->nodep();
+            if (const TraceTraceVertex* const canonVtxp = vtxp->duplicatep()) {
+                // This is a duplicate trace node. We will assign the signal
+                // number to the canonical node, and emit this as an alias, so
+                // no need to create a TraceInc node.
+                const AstTraceDecl* const canonDeclp = canonVtxp->nodep();
+                UASSERT_OBJ(!canonVtxp->duplicatep(), canonDeclp, "Canonical node is a duplicate");
+                UASSERT_OBJ(canonDeclp->code() != 0, canonDeclp,
+                            "Canonical node should have code assigned already");
+                declp->code(canonDeclp->code());
+                continue;
             }
-            if (topFuncp) {  // might be nullptr if all trailing entries were duplicates
-                UINFO(5, "trace_full_top" << topFuncNum - 1 << " codes: " << nCodes << "/"
-                                          << maxCodes << endl);
+
+            // This is a canonical trace node. Assign trace code (signal number).
+            UASSERT_OBJ(declp->code() == 0, declp,
+                        "Canonical node should not have code assigned yet");
+            declp->code(m_code);
+            m_code += declp->codeInc();
+            m_statUniqCodes += declp->codeInc();
+            ++m_statUniqSigs;
+
+            // If this is a const signal, add the AstTraceInc
+            const ActCodeSet& actSet = it->first;
+            if (actSet.count(TraceActivityVertex::ACTIVITY_NEVER)) {
+                // Crate new sub function if required
+                if (!subFuncp || subStmts > splitLimit) {
+                    subStmts = 0;
+                    subFuncp = newCFunc(VTraceType::CONSTANT, topFuncp, subFuncNum);
+                    ++subFuncNum;
+                }
+                FileLine* const flp = declp->fileline();
+                AstTraceInc* const incp = new AstTraceInc{flp, declp, VTraceType::CONSTANT};
+                subFuncp->addStmtsp(incp);
+                subStmts += incp->nodeCount();
             }
         }
     }
 
-    void createChgTraceFunctions(const TraceVec& traces, uint32_t nAllCodes,
-                                 uint32_t parallelism) {
+    void createNonConstTraceFunctions(const TraceVec& traces, uint32_t nAllCodes,
+                                      uint32_t parallelism) {
         const int splitLimit = v3Global.opt.outputSplitCTrace() ? v3Global.opt.outputSplitCTrace()
                                                                 : std::numeric_limits<int>::max();
-        int topFuncNum = 0;
-        int subFuncNum = 0;
+        unsigned topFuncNum = 0;
+        unsigned subFuncNum = 0;
         TraceVec::const_iterator it = traces.begin();
         while (it != traces.end()) {
-            AstCFunc* topFuncp = nullptr;
-            AstCFunc* subFuncp = nullptr;
+            AstCFunc* topFulFuncp = nullptr;
+            AstCFunc* topChgFuncp = nullptr;
+            AstCFunc* subFulFuncp = nullptr;
+            AstCFunc* subChgFuncp = nullptr;
             int subStmts = 0;
-            uint32_t maxCodes = (nAllCodes + parallelism - 1) / parallelism;
-            if (maxCodes < 1) maxCodes = 1;
+            const uint32_t maxCodes = std::max((nAllCodes + parallelism - 1) / parallelism, 1U);
             uint32_t nCodes = 0;
             const ActCodeSet* prevActSet = nullptr;
             AstIf* ifp = nullptr;
             uint32_t baseCode = 0;
             for (; nCodes < maxCodes && it != traces.end(); ++it) {
                 const TraceTraceVertex* const vtxp = it->second;
-                // This is a duplicate decl, no need to add it to incremental dump
+                // This is a duplicate decl, no need to add it
                 if (vtxp->duplicatep()) continue;
                 const ActCodeSet& actSet = it->first;
-                // Traced value never changes, no need to add it to incremental dump
+                // Traced value never changes, no need to add it
                 if (actSet.count(TraceActivityVertex::ACTIVITY_NEVER)) continue;
 
                 AstTraceDecl* const declp = vtxp->nodep();
 
                 // Create top function if not yet created
-                if (!topFuncp) { topFuncp = newCFunc(/* full: */ false, nullptr, topFuncNum); }
+                if (!topFulFuncp) {
+                    topFulFuncp = newCFunc(VTraceType::FULL, nullptr, topFuncNum);
+                    topChgFuncp = newCFunc(VTraceType::CHANGE, nullptr, topFuncNum);
+                    ++topFuncNum;
+                }
 
                 // Create new sub function if required
-                if (!subFuncp || subStmts > splitLimit) {
+                if (!subFulFuncp || subStmts > splitLimit) {
                     baseCode = declp->code();
                     subStmts = 0;
-                    subFuncp = newCFunc(/* full: */ false, topFuncp, subFuncNum, baseCode);
+                    subFulFuncp = newCFunc(VTraceType::FULL, topFulFuncp, subFuncNum, baseCode);
+                    subChgFuncp = newCFunc(VTraceType::CHANGE, topChgFuncp, subFuncNum, baseCode);
+                    ++subFuncNum;
                     prevActSet = nullptr;
                     ifp = nullptr;
                 }
@@ -674,23 +669,26 @@ private:
                     }
                     ifp = new AstIf{flp, condp};
                     if (!always) ifp->branchPred(VBranchPred::BP_UNLIKELY);
-                    subFuncp->addStmtsp(ifp);
+                    subChgFuncp->addStmtsp(ifp);
                     subStmts += ifp->nodeCount();
                     prevActSet = &actSet;
                 }
 
-                // Add TraceInc node
-                AstTraceInc* const incp
-                    = new AstTraceInc{declp->fileline(), declp, /* full: */ false, baseCode};
-                ifp->addThensp(incp);
-                subStmts += incp->nodeCount();
+                // Add TraceInc nodes
+                FileLine* const flp = declp->fileline();
+                AstTraceInc* const incFulp = new AstTraceInc{flp, declp, VTraceType::FULL};
+                subFulFuncp->addStmtsp(incFulp);
+                AstTraceInc* const incChgp
+                    = new AstTraceInc{flp, declp, VTraceType::CHANGE, baseCode};
+                ifp->addThensp(incChgp);
+
+                // Track splitting due to size
+                UASSERT_OBJ(incFulp->nodeCount() == incChgp->nodeCount(), declp,
+                            "Should have equal cost");
+                subStmts += incChgp->nodeCount();
 
                 // Track partitioning
                 nCodes += declp->codeInc();
-            }
-            if (topFuncp) {  // might be nullptr if all trailing entries were duplicates/constants
-                UINFO(5, "trace_chg_top" << topFuncNum - 1 << " codes: " << nCodes << "/"
-                                         << maxCodes << endl);
             }
         }
     }
@@ -743,11 +741,8 @@ private:
         TraceVec traces;  // The sorted traces
         // We will split functions such that each have to dump roughly the same amount of data
         // for this we need to keep tack of the number of codes used by the trace functions.
-        uint32_t nFullCodes = 0;  // Number of non-duplicate codes (need to go into full* dump)
-        uint32_t nChgCodes = 0;  // Number of non-constant codes (need to go in to chg* dump)
-        sortTraces(traces, nFullCodes, nChgCodes);
-
-        UINFO(5, "nFullCodes: " << nFullCodes << " nChgCodes: " << nChgCodes << endl);
+        uint32_t nNonConstCodes = 0;
+        sortTraces(traces, nNonConstCodes);
 
         // Our keys are now sorted to have same activity number adjacent, then
         // by trace order. (Better would be execution order for cache
@@ -763,11 +758,11 @@ private:
         m_regFuncp->isLoose(true);
         m_topScopep->addBlocksp(m_regFuncp);
 
-        // Create the full dump functions, also allocates signal numbers
-        createFullTraceFunction(traces, nFullCodes, m_parallelism);
+        // Create the const dump functions. Also allocates trace codes.
+        createConstTraceFunctions(traces);
 
-        // Create the incremental dump functions
-        createChgTraceFunctions(traces, nChgCodes, m_parallelism);
+        // Create the full and incremental dump functions
+        createNonConstTraceFunctions(traces, nNonConstCodes, m_parallelism);
 
         // Remove refs to traced values from TraceDecl nodes, these have now moved under
         // TraceInc

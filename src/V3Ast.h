@@ -1247,6 +1247,38 @@ inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
     return os << rhs.ascii();
 }
 
+//######################################################################
+
+class VTraceType final {
+public:
+    enum en : uint8_t {
+        CONSTANT,  // Constant value dump (once at the beginning)
+        FULL,  // Full value dump (always emitted)
+        CHANGE  // Incremental value dump (emitted only if the value changed)
+    };
+    enum en m_e;
+    VTraceType()
+        : m_e{CONSTANT} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VTraceType(en _e)
+        : m_e{_e} {}
+    explicit VTraceType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[] = {"CONSTANT", "FULL", "CHANGE"};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VTraceType& lhs, const VTraceType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VTraceType& lhs, VTraceType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VTraceType::en lhs, const VTraceType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VTraceType& rhs) {
+    return os << rhs.ascii();
+}
+
 // ######################################################################
 
 class VCastable final {
@@ -2656,10 +2688,16 @@ public:
     template <typename U>
     // cppcheck-suppress noExplicitConstructor
     VNRef(U&& x)
-        : std::reference_wrapper<T_Node>{x} {}
+        : std::reference_wrapper<T_Node> {
+        x
+    }
+    {}
     // cppcheck-suppress noExplicitConstructor
     VNRef(const std::reference_wrapper<T_Node>& other)
-        : std::reference_wrapper<T_Node>{other} {}
+        : std::reference_wrapper<T_Node> {
+        other
+    }
+    {}
 };
 
 static_assert(sizeof(VNRef<AstNode>) == sizeof(std::reference_wrapper<AstNode>),

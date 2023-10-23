@@ -769,7 +769,8 @@ class EmitCTrace final : EmitCFunc {
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
         iterateAndNextConstNull(nodep->precondsp());
-        const string func = nodep->full() ? "full" : "chg";
+        // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
+        const std::string func = nodep->traceType() == VTraceType::CHANGE ? "chg" : "full";
         bool emitWidth = true;
         if (nodep->dtypep()->basicp()->isDouble()) {
             puts("bufp->" + func + "Double");
@@ -794,7 +795,10 @@ class EmitCTrace final : EmitCFunc {
 
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
         const uint32_t code = nodep->declp()->code() + offset;
-        puts(v3Global.opt.useTraceOffload() && !nodep->full() ? "(base+" : "(oldp+");
+        // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
+        puts(v3Global.opt.useTraceOffload() && nodep->traceType() == VTraceType::CHANGE
+                 ? "(base+"
+                 : "(oldp+");
         puts(cvtToStr(code - nodep->baseCode()));
         puts(",");
         emitTraceValue(nodep, arrayindex);

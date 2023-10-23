@@ -212,11 +212,14 @@ protected:
 private:
     std::vector<bool> m_sigs_enabledVec;  // Staging for m_sigs_enabledp
     std::vector<CallbackRecord> m_initCbs;  // Routines to initialize tracing
+    std::vector<CallbackRecord> m_constCbs;  // Routines to perform const dump
+    std::vector<CallbackRecord> m_constOffloadCbs;  // Routines to perform offloaded const dump
     std::vector<CallbackRecord> m_fullCbs;  // Routines to perform full dump
     std::vector<CallbackRecord> m_fullOffloadCbs;  // Routines to perform offloaded full dump
     std::vector<CallbackRecord> m_chgCbs;  // Routines to perform incremental dump
     std::vector<CallbackRecord> m_chgOffloadCbs;  // Routines to perform offloaded incremental dump
     std::vector<CallbackRecord> m_cleanupCbs;  // Routines to call at the end of dump
+    bool m_constDump = true;  // Whether a const dump is required on the next call to 'dump'
     bool m_fullDump = true;  // Whether a full dump is required on the next call to 'dump'
     uint32_t m_nextCode = 0;  // Next code number to assign
     uint32_t m_numSignals = 0;  // Number of distinct signals
@@ -289,6 +292,7 @@ protected:
     uint32_t nextCode() const { return m_nextCode; }
     uint32_t numSignals() const { return m_numSignals; }
     uint32_t maxBits() const { return m_maxBits; }
+    void constDump(bool value) { m_constDump = value; }
     void fullDump(bool value) { m_fullDump = value; }
 
     double timeRes() const { return m_timeRes; }
@@ -359,6 +363,8 @@ public:
 
     void addModel(VerilatedModel*) VL_MT_SAFE_EXCLUDES(m_mutex);
     void addInitCb(initCb_t cb, void* userp) VL_MT_SAFE;
+    void addConstCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
+    void addConstCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE;
     void addFullCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
     void addFullCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE;
     void addChgCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
