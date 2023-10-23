@@ -610,6 +610,15 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
         }
     }
 
+    if (VL_UNLIKELY(m_constDump)) {
+        m_constDump = false;
+        if (offload()) {
+            runOffloadedCallbacks(m_constOffloadCbs);
+        } else {
+            runCallbacks(m_constCbs);
+        }
+    }
+
     for (uint32_t i = 0; i < m_cleanupCbs.size(); ++i) {
         const CallbackRecord& cbr = m_cleanupCbs[i];
         cbr.m_cleanupCb(cbr.m_userp, self());
@@ -693,6 +702,14 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCallbackRecord(std::vector<CallbackR
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addInitCb(initCb_t cb, void* userp) VL_MT_SAFE {
     addCallbackRecord(m_initCbs, CallbackRecord{cb, userp});
+}
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addConstCb(dumpCb_t cb, void* userp) VL_MT_SAFE {
+    addCallbackRecord(m_constCbs, CallbackRecord{cb, userp});
+}
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addConstCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE {
+    addCallbackRecord(m_constOffloadCbs, CallbackRecord{cb, userp});
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addFullCb(dumpCb_t cb, void* userp) VL_MT_SAFE {

@@ -164,6 +164,7 @@ void VerilatedVcd::openNextImp(bool incFilename) {
         }
     }
     m_isOpen = true;
+    constDump(true);  // First dump must containt the const signals
     fullDump(true);  // First dump must be full
     m_wroteBytes = 0;
 }

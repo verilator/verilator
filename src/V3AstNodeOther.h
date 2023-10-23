@@ -3243,14 +3243,14 @@ class AstTraceInc final : public AstNodeStmt {
 private:
     AstTraceDecl* m_declp;  // Pointer to declaration
     const uint32_t m_baseCode;  // Trace code base value in function containing this AstTraceInc
-    const bool m_full;  // Is this a full vs incremental dump
+    const VTraceType m_traceType;  // Is this a const/full/incremental dump
 
 public:
-    AstTraceInc(FileLine* fl, AstTraceDecl* declp, bool full, uint32_t baseCode = 0)
+    AstTraceInc(FileLine* fl, AstTraceDecl* declp, VTraceType traceType, uint32_t baseCode = 0)
         : ASTGEN_SUPER_TraceInc(fl)
         , m_declp{declp}
         , m_baseCode{baseCode}
-        , m_full{full} {
+        , m_traceType{traceType} {
         dtypeFrom(declp);
         this->valuep(
             declp->valuep()->cloneTree(true));  // TODO: maybe use reference to TraceDecl instead?
@@ -3274,7 +3274,7 @@ public:
     bool isOutputter() override { return true; }
     // but isPure()  true
     AstTraceDecl* declp() const { return m_declp; }
-    bool full() const { return m_full; }
+    VTraceType traceType() const { return m_traceType; }
     uint32_t baseCode() const { return m_baseCode; }
 };
 class AstTracePopNamePrefix final : public AstNodeStmt {
