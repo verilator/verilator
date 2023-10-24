@@ -637,7 +637,12 @@ private:
             ccallp->dtypeSetVoid();
             beginp->addNext(ccallp->makeStmt());
         }
-        ccallp->superReference(refp->superReference());
+
+        if (const AstFuncRef* const funcRefp = VN_CAST(refp, FuncRef)) {
+            ccallp->superReference(funcRefp->superReference());
+        } else if (const AstTaskRef* const taskRefp = VN_CAST(refp, TaskRef)) {
+            ccallp->superReference(taskRefp->superReference());
+        }
 
         // Convert complicated outputs to temp signals
         {

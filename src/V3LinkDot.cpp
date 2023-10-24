@@ -3081,7 +3081,15 @@ private:
             m_ds.init(m_curSymp);
             iterateChildren(nodep);
         }
-        if (m_ds.m_super) nodep->superReference(true);
+
+        if (m_ds.m_super) {
+            if (AstFuncRef* const funcRefp = VN_CAST(nodep, FuncRef)) {
+                funcRefp->superReference(true);
+            } else if (AstTaskRef* const taskRefp = VN_CAST(nodep, TaskRef)) {
+                taskRefp->superReference(true);
+            }
+        }
+
         bool staticAccess = false;
         if (m_ds.m_unresolvedClass) {
             // Unable to link before V3Param

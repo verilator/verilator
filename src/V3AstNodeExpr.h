@@ -229,7 +229,6 @@ class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeExpr {
     string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
     bool m_pli = false;  // Pli system call ($name)
-    bool m_superReference = false;  // Called with super reference
     VIsCached m_purity;  // Pure state
 
 protected:
@@ -262,8 +261,6 @@ public:
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     bool pli() const { return m_pli; }
     void pli(bool flag) { m_pli = flag; }
-    bool superReference() const { return m_superReference; }
-    void superReference(bool flag) { m_superReference = flag; }
     bool isPure() override;
 
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
@@ -4204,12 +4201,15 @@ public:
 // === AstNodeFTaskRef ===
 class AstFuncRef final : public AstNodeFTaskRef {
     // A reference to a function
+    bool m_superReference = false;  // Called with super reference
 public:
     AstFuncRef(FileLine* fl, AstParseRef* namep, AstNodeExpr* pinsp)
         : ASTGEN_SUPER_FuncRef(fl, (AstNode*)namep, pinsp) {}
     AstFuncRef(FileLine* fl, const string& name, AstNodeExpr* pinsp)
         : ASTGEN_SUPER_FuncRef(fl, name, pinsp) {}
     ASTGEN_MEMBERS_AstFuncRef;
+    bool superReference() const { return m_superReference; }
+    void superReference(bool flag) { m_superReference = flag; }
 };
 class AstMethodCall final : public AstNodeFTaskRef {
     // A reference to a member task (or function)
@@ -4246,6 +4246,7 @@ public:
 };
 class AstTaskRef final : public AstNodeFTaskRef {
     // A reference to a task
+    bool m_superReference = false;  // Called with super reference
 public:
     AstTaskRef(FileLine* fl, AstParseRef* namep, AstNodeExpr* pinsp)
         : ASTGEN_SUPER_TaskRef(fl, (AstNode*)namep, pinsp) {
@@ -4256,6 +4257,8 @@ public:
         dtypeSetVoid();
     }
     ASTGEN_MEMBERS_AstTaskRef;
+    bool superReference() const { return m_superReference; }
+    void superReference(bool flag) { m_superReference = flag; }
 };
 
 // === AstNodePreSel ===
