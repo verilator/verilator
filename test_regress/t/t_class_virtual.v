@@ -22,22 +22,21 @@ class VB extends VBase;
    endfunction
 endclass
 
-bit passed = 1'b0;
-
 virtual class uvm_phase;
-   virtual function void exec_func;
+   virtual function int exec_func;
+      return 0;
    endfunction
 endclass
 
 class uvm_topdown_phase extends uvm_phase;
-   function void traverse;
-      exec_func();
+   function int get1;
+      return exec_func();
    endfunction
 endclass
 
 class uvm_build_phase extends uvm_topdown_phase;
-   virtual function void exec_func;
-      passed = 1'b1;
+   virtual function int exec_func;
+      return 1;
    endfunction
 endclass
 
@@ -58,8 +57,7 @@ module t;
       if (b.hello() != 3) $stop;
 
       ph = new;
-      ph.traverse();
-      if (!passed) $stop;
+      if (ph.get1() != 1) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
