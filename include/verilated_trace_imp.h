@@ -378,13 +378,12 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
 }
 
 template <>
-bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const char* namep, uint32_t bits,
-                                                  bool tri) {
+bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const std::string& declName,
+                                                  uint32_t bits) {
     if (VL_UNCOVERABLE(!code)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: internal trace problem, code 0 is illegal");
     }
     // To keep it simple, this is O(enables * signals), but we expect few enables
-    std::string declName = namePrefix() + namep;
     bool enabled = false;
     if (m_dumpvars.empty()) enabled = true;
     for (const auto& item : m_dumpvars) {
@@ -410,10 +409,7 @@ bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const char* nam
         break;
     }
 
-    // Note: The tri-state flag is not used by Verilator, but is here for
-    // compatibility with some foreign code.
     int codesNeeded = VL_WORDS_I(bits);
-    if (tri) codesNeeded *= 2;
     m_nextCode = std::max(m_nextCode, code + codesNeeded);
     ++m_numSignals;
     m_maxBits = std::max(m_maxBits, bits);
@@ -735,17 +731,6 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addChgCb(dumpOffloadCb_t cb, uint32_t f
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addCleanupCb(cleanupCb_t cb, void* userp) VL_MT_SAFE {
     addCallbackRecord(m_cleanupCbs, CallbackRecord{cb, userp});
-}
-
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::pushNamePrefix(const std::string& prefix) {
-    m_namePrefixStack.push_back(m_namePrefixStack.back() + prefix);
-}
-
-template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::popNamePrefix(unsigned count) {
-    while (count--) m_namePrefixStack.pop_back();
-    assert(!m_namePrefixStack.empty());
 }
 
 //=========================================================================

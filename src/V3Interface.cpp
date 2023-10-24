@@ -51,30 +51,25 @@ private:
             m_scope += "__DOT__" + nodep->name();
         }
 
-        if (VN_IS(nodep->modp(), Iface)) {
-            nodep->addIntfRefsp(new AstIntfRef{nodep->fileline(), m_scope});
-        }
-        {
-            AstNodeModule* const modp = nodep->modp();
-            // Pass Cell pointers down to the next module
-            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-                AstVar* const varp = pinp->modVarp();
-                const AstVarRef* const varrefp = VN_CAST(pinp->exprp(), VarRef);
-                if (!varrefp) continue;
-                const AstVar* const fromVarp = varrefp->varp();
-                const AstIfaceRefDType* const irdtp = VN_CAST(fromVarp->dtypep(), IfaceRefDType);
-                if (!irdtp) continue;
+        AstNodeModule* const modp = nodep->modp();
+        // Pass Cell pointers down to the next module
+        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            AstVar* const varp = pinp->modVarp();
+            const AstVarRef* const varrefp = VN_CAST(pinp->exprp(), VarRef);
+            if (!varrefp) continue;
+            const AstVar* const fromVarp = varrefp->varp();
+            const AstIfaceRefDType* const irdtp = VN_CAST(fromVarp->dtypep(), IfaceRefDType);
+            if (!irdtp) continue;
 
-                AstCell* cellp;
-                if ((cellp = VN_CAST(fromVarp->user1p(), Cell)) || (cellp = irdtp->cellp())) {
-                    varp->user1p(cellp);
-                    const string alias = m_scope + "__DOT__" + pinp->name();
-                    cellp->addIntfRefsp(new AstIntfRef{pinp->fileline(), alias});
-                }
+            AstCell* cellp;
+            if ((cellp = VN_CAST(fromVarp->user1p(), Cell)) || (cellp = irdtp->cellp())) {
+                varp->user1p(cellp);
+                const string alias = m_scope + "__DOT__" + pinp->name();
+                cellp->addIntfRefsp(new AstIntfRef{pinp->fileline(), alias});
             }
-
-            iterateChildren(modp);
         }
+
+        iterateChildren(modp);
     }
     void visit(AstAssignVarScope* nodep) override {
         // Reference
