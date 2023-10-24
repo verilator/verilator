@@ -107,7 +107,7 @@ protected:
     bool preChangeDump() override;
 
     // Trace buffer management
-    Buffer* getTraceBuffer() override;
+    Buffer* getTraceBuffer(uint32_t fidx) override;
     void commitTraceBuffer(Buffer*) override;
 
     // Configure sub-class
@@ -140,12 +140,15 @@ public:
     //=========================================================================
     // Internal interface to Verilator generated code
 
-    void declEvent(uint32_t code, const char* name, bool array, int arraynum);
-    void declBit(uint32_t code, const char* name, bool array, int arraynum);
-    void declBus(uint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
-    void declQuad(uint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
-    void declArray(uint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
-    void declDouble(uint32_t code, const char* name, bool array, int arraynum);
+    void declEvent(uint32_t code, uint32_t fidx, const char* name, bool array, int arraynum);
+    void declBit(uint32_t code, uint32_t fidx, const char* name, bool array, int arraynum);
+    void declBus(uint32_t code, uint32_t fidx, const char* name, bool array, int arraynum, int msb,
+                 int lsb);
+    void declQuad(uint32_t code, uint32_t fidx, const char* name, bool array, int arraynum,
+                  int msb, int lsb);
+    void declArray(uint32_t code, uint32_t fidx, const char* name, bool array, int arraynum,
+                   int msb, int lsb);
+    void declDouble(uint32_t code, uint32_t fidx, const char* name, bool array, int arraynum);
 };
 
 #ifndef DOXYGEN

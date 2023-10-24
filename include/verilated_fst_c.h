@@ -74,7 +74,7 @@ protected:
     bool preChangeDump() override { return isOpen(); }
 
     // Trace buffer management
-    Buffer* getTraceBuffer() override;
+    Buffer* getTraceBuffer(uint32_t fidx) override;
     void commitTraceBuffer(Buffer*) override;
 
     // Configure sub-class
@@ -101,17 +101,17 @@ public:
     //=========================================================================
     // Internal interface to Verilator generated code
 
-    void declEvent(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+    void declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum, fstVarDir vardir,
                    fstVarType vartype, bool array, int arraynum);
-    void declBit(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+    void declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum, fstVarDir vardir,
                  fstVarType vartype, bool array, int arraynum);
-    void declBus(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+    void declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum, fstVarDir vardir,
                  fstVarType vartype, bool array, int arraynum, int msb, int lsb);
-    void declQuad(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+    void declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum, fstVarDir vardir,
                   fstVarType vartype, bool array, int arraynum, int msb, int lsb);
-    void declArray(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+    void declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum, fstVarDir vardir,
                    fstVarType vartype, bool array, int arraynum, int msb, int lsb);
-    void declDouble(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+    void declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum, fstVarDir vardir,
                     fstVarType vartype, bool array, int arraynum);
 
     void declDTypeEnum(int dtypenum, const char* name, uint32_t elements, unsigned int minValbits,
