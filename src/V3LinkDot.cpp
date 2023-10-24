@@ -2538,7 +2538,6 @@ private:
         // Generally resolved during Primay, but might be at param time under AstUnlinkedRef
         UASSERT_OBJ(m_statep->forPrimary() || m_statep->forPrearray(), nodep,
                     "ParseRefs should no longer exist");
-        if (nodep->name() == "super") nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
         const DotStates lastStates = m_ds;
         const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         if (start) {
