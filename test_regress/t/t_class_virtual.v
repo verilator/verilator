@@ -22,11 +22,32 @@ class VB extends VBase;
    endfunction
 endclass
 
+bit passed = 1'b0;
+
+virtual class uvm_phase;
+   virtual function void exec_func;
+   endfunction
+endclass
+
+class uvm_topdown_phase extends uvm_phase;
+   function void traverse;
+      exec_func();
+   endfunction
+endclass
+
+class uvm_build_phase extends uvm_topdown_phase;
+   virtual function void exec_func;
+      passed = 1'b1;
+   endfunction
+endclass
+
 module t;
    initial begin
       VA va = new;
       VB vb = new;
       VBase b;
+
+      uvm_build_phase ph;
 
       if (va.hello() != 2) $stop;
       if (vb.hello() != 3) $stop;
@@ -35,6 +56,11 @@ module t;
       if (b.hello() != 2) $stop;
       b = vb;
       if (b.hello() != 3) $stop;
+
+      ph = new;
+      ph.traverse();
+      if (!passed) $stop;
+
       $write("*-* All Finished *-*\n");
       $finish;
    end
