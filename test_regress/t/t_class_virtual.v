@@ -40,6 +40,21 @@ class uvm_build_phase extends uvm_topdown_phase;
    endfunction
 endclass
 
+virtual class Cls;
+   uvm_phase ph;
+endclass
+
+class ExtendsCls extends Cls;
+   function new;
+      uvm_build_phase bp = new;
+      ph = bp;
+   endfunction
+
+   function int get1;
+      return super.ph.exec_func();
+   endfunction
+endclass
+
 module t;
    initial begin
       VA va = new;
@@ -47,6 +62,7 @@ module t;
       VBase b;
 
       uvm_build_phase ph;
+      ExtendsCls ec;
 
       if (va.hello() != 2) $stop;
       if (vb.hello() != 3) $stop;
@@ -58,6 +74,9 @@ module t;
 
       ph = new;
       if (ph.get1() != 1) $stop;
+
+      ec = new;
+      if (ec.get1() != 1) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
