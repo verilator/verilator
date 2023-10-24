@@ -310,6 +310,7 @@ private:
                 baseRandCallp->taskp(baseRandomizep);
                 baseRandCallp->dtypeFrom(baseRandomizep->dtypep());
                 baseRandCallp->classOrPackagep(nodep->extendsp()->classp());
+                baseRandCallp->superReference(true);
                 beginValp = baseRandCallp;
             }
         }

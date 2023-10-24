@@ -638,6 +638,12 @@ private:
             beginp->addNext(ccallp->makeStmt());
         }
 
+        if (const AstFuncRef* const funcRefp = VN_CAST(refp, FuncRef)) {
+            ccallp->superReference(funcRefp->superReference());
+        } else if (const AstTaskRef* const taskRefp = VN_CAST(refp, TaskRef)) {
+            ccallp->superReference(taskRefp->superReference());
+        }
+
         // Convert complicated outputs to temp signals
         {
             const V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
