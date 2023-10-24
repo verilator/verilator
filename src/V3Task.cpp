@@ -637,6 +637,7 @@ private:
             ccallp->dtypeSetVoid();
             beginp->addNext(ccallp->makeStmt());
         }
+        ccallp->superReference(refp->superReference());
 
         // Convert complicated outputs to temp signals
         {

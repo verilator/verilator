@@ -488,7 +488,7 @@ public:
             puts(funcp->nameProtect());
         } else if (VN_IS(funcModp, Class) && funcModp != m_modp) {
             // Calling superclass method
-            puts(prefixNameProtect(funcModp) + "::");
+            if (nodep->superReference()) puts(prefixNameProtect(funcModp) + "::");
             puts(funcp->nameProtect());
         } else if (funcp->isLoose()) {
             // Calling loose method
