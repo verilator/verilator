@@ -822,7 +822,6 @@ public:
         SUPPLY1,
         WIRE,
         WREAL,
-        IMPLICITWIRE,
         TRIWIRE,
         TRI0,
         TRI1,
@@ -842,26 +841,25 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {
-            "?",         "GPARAM",     "LPARAM",       "GENVAR",  "VAR",      "SUPPLY0", "SUPPLY1",
-            "WIRE",      "WREAL",      "IMPLICITWIRE", "TRIWIRE", "TRI0",     "TRI1",    "PORT",
-            "BLOCKTEMP", "MODULETEMP", "STMTTEMP",     "XTEMP",   "IFACEREF", "MEMBER"};
+        static const char* const names[]
+            = {"?",          "GPARAM",   "LPARAM",  "GENVAR",   "VAR",   "SUPPLY0", "SUPPLY1",
+               "WIRE",       "WREAL",    "TRIWIRE", "TRI0",     "TRI1",  "PORT",    "BLOCKTEMP",
+               "MODULETEMP", "STMTTEMP", "XTEMP",   "IFACEREF", "MEMBER"};
         return names[m_e];
     }
     bool isParam() const { return m_e == GPARAM || m_e == LPARAM; }
     bool isSignal() const {
-        return (m_e == WIRE || m_e == WREAL || m_e == IMPLICITWIRE || m_e == TRIWIRE || m_e == TRI0
-                || m_e == TRI1 || m_e == PORT || m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == VAR);
+        return (m_e == WIRE || m_e == WREAL || m_e == TRIWIRE || m_e == TRI0 || m_e == TRI1
+                || m_e == PORT || m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == VAR);
     }
     bool isNet() const {
-        return (m_e == WIRE || m_e == IMPLICITWIRE || m_e == TRIWIRE || m_e == TRI0 || m_e == TRI1
-                || m_e == SUPPLY0 || m_e == SUPPLY1);
+        return (m_e == WIRE || m_e == TRIWIRE || m_e == TRI0 || m_e == TRI1 || m_e == SUPPLY0
+                || m_e == SUPPLY1);
     }
     bool isContAssignable() const {  // In Verilog, always ok in SystemVerilog
-        return (m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == WIRE || m_e == WREAL
-                || m_e == IMPLICITWIRE || m_e == TRIWIRE || m_e == TRI0 || m_e == TRI1
-                || m_e == PORT || m_e == BLOCKTEMP || m_e == MODULETEMP || m_e == STMTTEMP
-                || m_e == XTEMP || m_e == IFACEREF);
+        return (m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == WIRE || m_e == WREAL || m_e == TRIWIRE
+                || m_e == TRI0 || m_e == TRI1 || m_e == PORT || m_e == BLOCKTEMP
+                || m_e == MODULETEMP || m_e == STMTTEMP || m_e == XTEMP || m_e == IFACEREF);
     }
     bool isProcAssignable() const {
         return (m_e == GPARAM || m_e == LPARAM || m_e == GENVAR || m_e == VAR || m_e == BLOCKTEMP
