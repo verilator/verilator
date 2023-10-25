@@ -56,7 +56,7 @@ struct VMemberQualifiers {
             uint32_t m_virtual : 1;  // Virtual property/method qualifier
             uint32_t m_automatic : 1;  // Automatic property/method qualifier
             uint32_t m_const : 1;  // Const property/method qualifier
-            uint32_t m_static : 1;  // Static class method
+            uint32_t m_static : 1;  // Static class member
         };
     };
     static VMemberQualifiers none() {
@@ -73,9 +73,9 @@ struct VMemberQualifiers {
         for (AstNodeFTask* nodep = nodesp; nodep; nodep = VN_AS(nodep->nextp(), NodeFTask)) {
             if (m_local) nodep->isHideLocal(true);
             if (m_protected) nodep->isHideProtected(true);
+            if (m_static) nodep->isStatic(true);
             if (m_virtual) nodep->isVirtual(true);
-            if (m_automatic) nodep->lifetime(VLifetime::AUTOMATIC);
-            if (m_static) nodep->lifetime(VLifetime::STATIC);
+            if (m_automatic) nodep->isStatic(false);
             if (m_const || m_rand || m_randc) {
                 nodep->v3error("Syntax error: 'const'/'rand'/'randc' not allowed before "
                                "function/task declaration");

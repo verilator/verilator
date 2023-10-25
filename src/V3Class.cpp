@@ -118,7 +118,7 @@ private:
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
         if (m_packageScopep) {
-            if (m_ftaskp && m_ftaskp->lifetime().isStatic()) {
+            if (m_ftaskp && m_ftaskp->isStatic()) {
                 // Move later, or we wouldn't keep iterating the class
                 // We're really moving the VarScope but we might not
                 // have a pointer to it yet
@@ -143,7 +143,7 @@ private:
         {
             m_ftaskp = nodep;
             iterateChildren(nodep);
-            if (m_packageScopep && nodep->lifetime().isStatic()) {
+            if (m_packageScopep && nodep->isStatic()) {
                 m_toScopeMoves.emplace_back(nodep, m_packageScopep);
             }
         }

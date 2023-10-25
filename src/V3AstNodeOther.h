@@ -84,10 +84,11 @@ private:
     bool m_dpiPure : 1;  // DPI import pure (vs. virtual pure)
     bool m_pureVirtual : 1;  // Pure virtual
     bool m_recursive : 1;  // Recursive or part of recursion
+    bool m_static : 1;  // Static method in class
     bool m_underGenerate : 1;  // Under generate (for warning)
     bool m_virtual : 1;  // Virtual method in class
     bool m_needProcess : 1;  // Needs access to VlProcess of the caller
-    VLifetime m_lifetime;  // Lifetime
+    VLifetime m_lifetime;  // Lifetime of local vars
     VIsCached m_purity;  // Pure state
 
 protected:
@@ -112,6 +113,7 @@ protected:
         , m_dpiPure{false}
         , m_pureVirtual{false}
         , m_recursive{false}
+        , m_static{false}
         , m_underGenerate{false}
         , m_virtual{false}
         , m_needProcess{false} {
@@ -173,6 +175,8 @@ public:
     bool pureVirtual() const { return m_pureVirtual; }
     void recursive(bool flag) { m_recursive = flag; }
     bool recursive() const { return m_recursive; }
+    void isStatic(bool flag) { m_static = flag; }
+    bool isStatic() const { return m_static; }
     void underGenerate(bool flag) { m_underGenerate = flag; }
     bool underGenerate() const { return m_underGenerate; }
     void isVirtual(bool flag) { m_virtual = flag; }
