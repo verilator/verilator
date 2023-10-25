@@ -466,6 +466,8 @@ string AstVar::vlEnumType() const {
         return "VLVT_PTR";
     } else if (strtype) {
         arg += "VLVT_STRING";
+    } else if (isDouble()) {
+        arg += "VLVT_REAL";
     } else if (widthMin() <= 8) {
         arg += "VLVT_UINT8";
     } else if (widthMin() <= 16) {
