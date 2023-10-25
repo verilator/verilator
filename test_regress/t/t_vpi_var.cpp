@@ -11,7 +11,7 @@
 
 #ifdef IS_VPI
 
-#include "vpi_user.h"
+#include "sv_vpi_user.h"
 
 #else
 
@@ -31,12 +31,14 @@
 
 #endif
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 
 // These require the above. Comment prevents clang-format moving them
+#include "TestCheck.h"
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
@@ -55,12 +57,6 @@ unsigned int callback_count_strs = 0;
 unsigned int callback_count_strs_max = 500;
 
 //======================================================================
-
-#ifdef TEST_VERBOSE
-bool verbose = true;
-#else
-bool verbose = false;
-#endif
 
 #define CHECK_RESULT_VH(got, exp) \
     if ((got) != (exp)) { \
@@ -379,7 +375,33 @@ int _mon_check_var() {
         CHECK_RESULT_CSTR(p, "vpiConstant");
     }
 
-    return 0;
+    // non-integer variables
+    tmpValue.format = vpiRealVal;
+    {
+        TestVpiHandle vh101 = VPI_HANDLE("real1");
+        CHECK_RESULT_NZ(vh101);
+        d = vpi_get(vpiType, vh101);
+        CHECK_RESULT(d, vpiRealVar);
+        vpi_get_value(vh101, &tmpValue);
+        TEST_CHECK_REAL_EQ(tmpValue.value.real, 1.0, 0.0005);
+        p = vpi_get_str(vpiType, vh101);
+        CHECK_RESULT_CSTR(p, "vpiRealVar");
+    }
+
+    // string variable
+    tmpValue.format = vpiStringVal;
+    {
+        TestVpiHandle vh101 = VPI_HANDLE("str1");
+        CHECK_RESULT_NZ(vh101);
+        d = vpi_get(vpiType, vh101);
+        CHECK_RESULT(d, vpiStringVar);
+        vpi_get_value(vh101, &tmpValue);
+        CHECK_RESULT_CSTR(tmpValue.value.str, "hello");
+        p = vpi_get_str(vpiType, vh101);
+        CHECK_RESULT_CSTR(p, "vpiStringVar");
+    }
+
+    return errors;
 }
 
 int _mon_check_varlist() {
@@ -443,7 +465,33 @@ int _mon_check_getput() {
     vpi_get_value(vh2, &v);
     CHECK_RESULT(v.value.integer, 1);
 
-    return 0;
+    // real
+    TestVpiHandle vh3 = VPI_HANDLE("real1");
+    CHECK_RESULT_NZ(vh3);
+    v.format = vpiRealVal;
+    vpi_get_value(vh3, &v);
+    TEST_CHECK_REAL_EQ(v.value.real, 1.0, 0.0005);
+
+    v.value.real = 123456.789;
+    vpi_put_value(vh3, &v, &t, vpiNoDelay);
+    v.value.real = 0.0f;
+    vpi_get_value(vh3, &v);
+    TEST_CHECK_REAL_EQ(v.value.real, 123456.789, 0.0005);
+
+    // string
+    TestVpiHandle vh4 = VPI_HANDLE("str1");
+    CHECK_RESULT_NZ(vh4);
+    v.format = vpiStringVal;
+    vpi_get_value(vh4, &v);
+    CHECK_RESULT_CSTR(v.value.str, "hello");
+
+    v.value.str = const_cast<char*>("something a lot longer than hello");
+    vpi_put_value(vh4, &v, &t, vpiNoDelay);
+    v.value.str = 0;
+    vpi_get_value(vh4, &v);
+    TEST_CHECK_CSTR(v.value.str, "something a lot longer than hello");
+
+    return errors;
 }
 
 int _mon_check_var_long_name() {

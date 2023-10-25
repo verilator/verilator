@@ -133,7 +133,8 @@ enum VerilatedVarType : uint8_t {
     VLVT_UINT32,  // AKA IData
     VLVT_UINT64,  // AKA QData
     VLVT_WDATA,  // AKA WData
-    VLVT_STRING  // C++ string
+    VLVT_STRING,  // C++ string
+    VLVT_REAL  // AKA double
 };
 
 enum VerilatedVarFlags {
