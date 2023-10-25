@@ -7100,8 +7100,6 @@ memberQualOne<qualifiers>:                      // IEEE: property_qualifier + me
         |       yVIRTUAL__ETC                           { $$ = VMemberQualifiers::none(); $$.m_virtual = true; }
         //                      // Part of property_qualifier only
         |       random_qualifier                        { $$ = $1; }
-        //                      // Part of lifetime, but here as ySTATIC can be in different positions
-        |       yAUTOMATIC                              { $$ = VMemberQualifiers::none(); $$.m_automatic = true; }
         //                      // Part of data_declaration, but not in data_declarationVarFrontClass
         |       yCONST__ETC                             { $$ = VMemberQualifiers::none(); $$.m_const = true; }
         ;
