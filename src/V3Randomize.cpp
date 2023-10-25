@@ -55,7 +55,7 @@ private:
             for (auto* memberp = classp->stmtsp(); memberp; memberp = memberp->nextp()) {
                 // If member is rand and of class type, mark its class
                 if (VN_IS(memberp, Var) && VN_AS(memberp, Var)->isRand()) {
-                    if (const auto* const classRefp = VN_CAST(memberp->dtypep(), ClassRefDType)) {
+                    if (const auto* const classRefp = VN_CAST(memberp->dtypep()->skipRefp(), ClassRefDType)) {
                         auto* const rclassp = classRefp->classp();
                         if (!rclassp->user1()) {
                             rclassp->user1(true);
@@ -100,7 +100,7 @@ private:
         iterateChildrenConst(nodep);
         if (nodep->name() != "randomize") return;
         if (const AstClassRefDType* const classRefp
-            = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
+            = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
             AstClass* const classp = classRefp->classp();
             classp->user1(true);
             markMembers(classp);
