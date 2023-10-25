@@ -223,7 +223,9 @@ public:
         for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
              senItemp = VN_AS(senItemp->nextp(), SenItem)) {
             const auto& pair = createTerm(senItemp);
-            if (AstNodeExpr* const termp = pair.first) {
+            if (AstNodeExpr* termp = pair.first) {
+                AstNodeExpr* const condp = senItemp->condp();
+                if (condp) termp = new AstAnd{flp, condp->cloneTree(false), termp};
                 resultp = resultp ? new AstOr{flp, resultp, termp} : termp;
                 firedAtInitialization |= pair.second;
             }
