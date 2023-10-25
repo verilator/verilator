@@ -1455,7 +1455,7 @@ const char* AstCell::broken() const {
 void AstCellInline::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " -> " << origModName();
-    str << " [scopep=" << reinterpret_cast<const void*>(scopep()) << "]";
+    str << " [scopep=" << nodeAddr(scopep()) << "]";
 }
 const char* AstCellInline::broken() const {
     BROKEN_RTN(m_scopep && !m_scopep->brokeExists());
@@ -1624,7 +1624,7 @@ void AstInitArray::dump(std::ostream& str) const {
             str << " ...";
             break;
         }
-        str << " [" << itr.first << "]=" << reinterpret_cast<const void*>(itr.second);
+        str << " [" << itr.first << "]=" << nodeAddr(itr.second);
     }
 }
 const char* AstInitArray::broken() const {
@@ -2038,7 +2038,7 @@ void AstTypeTable::dump(std::ostream& str) const {
 }
 void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
-    str << "[assoc-" << reinterpret_cast<const void*>(keyDTypep()) << "]";
+    str << "[assoc-" << nodeAddr(keyDTypep()) << "]";
 }
 string AstAssocArrayDType::prettyDTypeName() const {
     return subDTypep()->prettyDTypeName() + "[" + keyDTypep()->prettyDTypeName() + "]";
@@ -2106,7 +2106,7 @@ void AstStreamDType::dumpSmall(std::ostream& str) const {
 void AstVarScope::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isTrace()) str << " [T]";
-    if (scopep()) str << " [scopep=" << reinterpret_cast<const void*>(scopep()) << "]";
+    if (scopep()) str << " [scopep=" << nodeAddr(scopep()) << "]";
     if (varp()) {
         str << " -> ";
         varp()->dump(str);
@@ -2195,9 +2195,9 @@ bool AstVar::same(const AstNode* samep) const {
 }
 void AstScope::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    str << " [abovep=" << reinterpret_cast<const void*>(aboveScopep()) << "]";
-    str << " [cellp=" << reinterpret_cast<const void*>(aboveCellp()) << "]";
-    str << " [modp=" << reinterpret_cast<const void*>(modp()) << "]";
+    str << " [abovep=" << nodeAddr(aboveScopep()) << "]";
+    str << " [cellp=" << nodeAddr(aboveCellp()) << "]";
+    str << " [modp=" << nodeAddr(modp()) << "]";
 }
 bool AstScope::same(const AstNode* samep) const {
     const AstScope* const asamep = VN_DBG_AS(samep, Scope);
