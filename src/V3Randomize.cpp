@@ -55,7 +55,8 @@ private:
             for (auto* memberp = classp->stmtsp(); memberp; memberp = memberp->nextp()) {
                 // If member is rand and of class type, mark its class
                 if (VN_IS(memberp, Var) && VN_AS(memberp, Var)->isRand()) {
-                    if (const auto* const classRefp = VN_CAST(memberp->dtypep()->skipRefp(), ClassRefDType)) {
+                    if (const auto* const classRefp
+                        = VN_CAST(memberp->dtypep()->skipRefp(), ClassRefDType)) {
                         auto* const rclassp = classRefp->classp();
                         if (!rclassp->user1()) {
                             rclassp->user1(true);
