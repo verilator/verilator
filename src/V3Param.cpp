@@ -1195,10 +1195,19 @@ class ParamVisitor final : public VNVisitor {
             return;
         }
 
-        // Start traversal at root-like things
-        if (nodep->level() <= 2  // Haven't added top yet, so level 2 is the top
-            || VN_IS(nodep, Class)  // Nor moved classes
-            || VN_IS(nodep, Package)) {  // Likewise haven't done wrapTopPackages yet
+        bool doVisit = false;
+        if (nodep->level() <= 2) {  // Haven't added top yet, so level 2 is the top
+            doVisit = true;
+        } else if (VN_IS(nodep, Class)) {  // Nor moved classes
+            doVisit = true;
+        } else if (VN_IS(nodep, Package)) {  // Likewise haven't done wrapTopPackages yet
+            doVisit = true;
+        } else if (VN_IS(nodep, Iface) && v3Global.opt.lintOnly()) {
+            // In lint-only mode the interface can be referenced by top level ports without Cells
+            doVisit = true;
+        }
+        if (doVisit) {
+            // Start traversal at root-like things
             visitCells(nodep);
         }
     }
