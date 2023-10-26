@@ -275,7 +275,7 @@ public:
     void putsHeader() override { puts("// Verilated -*- SystemC -*-\n"); }
     void putsIntTopInclude() override {
         putsForceIncs();
-        puts("#include \"systemc.h\"\n");
+        puts("#include \"systemc\"\n");
         puts("#include \"verilated_sc.h\"\n");
     }
 };
