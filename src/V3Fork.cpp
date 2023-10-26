@@ -44,7 +44,7 @@
 
 #include "V3AstNodeExpr.h"
 #include "V3MemberMap.h"
-#include "V3UniqueNames.h"
+#include "V3String.h"
 
 #include <set>
 #include <vector>
@@ -68,13 +68,13 @@ private:
     AstNode* const m_procp;  // Procedure/block associated with that dynscope
     std::set<AstVar*> m_captures;  // Variables to be moved into the dynscope
     ForkDynScopeInstance m_instance;  // Nodes to be injected into the AST to create the dynscope
-    V3UniqueNames* m_names;  // Names generator
+    size_t m_id;  // Dynscope ID
 
 public:
-    ForkDynScopeFrame(AstNodeModule* modp, AstNode* procp, V3UniqueNames* names)
+    ForkDynScopeFrame(AstNodeModule* modp, AstNode* procp, size_t id)
         : m_modp{modp}
         , m_procp{procp}
-        , m_names{names} {}
+        , m_id{id} {}
 
     ForkDynScopeInstance& createInstancePrototype() {
         UASSERT_OBJ(!m_instance.initialized(), m_procp, "Dynamic scope already instantiated.");
@@ -204,11 +204,10 @@ private:
         VNRelinker forkHandle;
         forkp->unlinkFrBack(&forkHandle);
 
-        AstBegin* const beginp
-            = new AstBegin{forkp->fileline(),
-                           "_Vwrapped_" + (forkp->name().empty() ? "" : forkp->name() + "_")
-                               + m_names->get(forkp),
-                           m_instance.m_handlep, false, true};
+        AstBegin* const beginp = new AstBegin{
+            forkp->fileline(),
+            "_Vwrapped_" + (forkp->name().empty() ? "" : forkp->name() + "_") + cvtToStr(m_id),
+            m_instance.m_handlep, false, true};
         forkHandle.relink(beginp);
 
         AstNode* const instAsgnp = instantiateDynScope(memberMap);
@@ -228,12 +227,12 @@ private:
     }
 
     string generateDynScopeClassName(const AstNode* fromp) {
-        return "__VDynScope_" + m_names->get(fromp);
+        return "__VDynScope_" + cvtToStr(m_id);
     }
 
     string generateDynScopeHandleName(const AstNode* fromp) {
         return "__VDynScope_" + (!fromp->name().empty() ? (fromp->name() + "_") : "ANON_")
-               + m_names->get(fromp);
+               + cvtToStr(m_id);
     }
 
     AstNode* getProcStmts() {
@@ -273,7 +272,7 @@ private:
     int m_forkDepth = 0;  // Number of asynchronous forks we are currently under
     bool m_afterTimingControl = false;  // A timing control might've be executed in the current
                                         // process
-    V3UniqueNames m_dynscope_names;  // Unique names for dynscopes
+    size_t m_id;  // Unique ID for a frame
 
     // METHODS
 
@@ -290,7 +289,7 @@ private:
     }
 
     ForkDynScopeFrame* pushDynScopeFrame(AstNode* procp) {
-        ForkDynScopeFrame* const framep = new ForkDynScopeFrame{m_modp, procp, &m_dynscope_names};
+        ForkDynScopeFrame* const framep = new ForkDynScopeFrame{m_modp, procp, m_id++};
         auto r = m_frames.emplace(std::make_pair(procp, framep));
         UASSERT_OBJ(r.second, m_modp, "Procedure already contains a frame");
         return framep;
@@ -467,7 +466,7 @@ private:
     AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
     std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
     AstArg* m_capturedVarRefsp = nullptr;  // References to captured variables (as args)
-    V3UniqueNames m_names;  // Generate unique task names
+    size_t m_id = 0;  // Unique ID for a task
 
     // METHODS
 
@@ -498,7 +497,7 @@ private:
 
     string generateTaskName(AstNode* fromp, const string& kind) {
         return "__V" + kind + "_" + (!fromp->name().empty() ? (fromp->name() + "__") : "_")
-               + m_names.get(fromp);
+               + cvtToStr(m_id++);
     }
 
     void visitTaskifiable(AstNode* nodep) {
