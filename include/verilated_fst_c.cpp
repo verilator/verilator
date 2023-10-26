@@ -23,7 +23,6 @@
 
 // clang-format off
 
-#define __STDC_LIMIT_MACROS  // UINT64_MAX
 #include "verilated.h"
 #include "verilated_fst_c.h"
 
@@ -40,6 +39,7 @@
 #include <algorithm>
 #include <iterator>
 #include <sstream>
+#include <type_traits>
 
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>
@@ -50,33 +50,10 @@
 // clang-format on
 
 //=============================================================================
-// Check that vltscope_t matches fstScopeType
+// Check that forward declared types matches the FST API types
 
-static_assert(static_cast<int>(FST_ST_VCD_MODULE) == static_cast<int>(VLT_TRACE_SCOPE_MODULE),
-              "VLT_TRACE_SCOPE_MODULE mismatches");
-static_assert(static_cast<int>(FST_ST_VCD_TASK) == static_cast<int>(VLT_TRACE_SCOPE_TASK),
-              "VLT_TRACE_SCOPE_TASK mismatches");
-static_assert(static_cast<int>(FST_ST_VCD_FUNCTION) == static_cast<int>(VLT_TRACE_SCOPE_FUNCTION),
-              "VLT_TRACE_SCOPE_FUNCTION mismatches");
-static_assert(static_cast<int>(FST_ST_VCD_BEGIN) == static_cast<int>(VLT_TRACE_SCOPE_BEGIN),
-              "VLT_TRACE_SCOPE_BEGIN mismatches");
-static_assert(static_cast<int>(FST_ST_VCD_FORK) == static_cast<int>(VLT_TRACE_SCOPE_FORK),
-              "VLT_TRACE_SCOPE_FORK mismatches");
-static_assert(static_cast<int>(FST_ST_VCD_GENERATE) == static_cast<int>(VLT_TRACE_SCOPE_GENERATE),
-              "VLT_TRACE_SCOPE_GENERATE mismatches");
-static_assert(static_cast<int>(FST_ST_VCD_STRUCT) == static_cast<int>(VLT_TRACE_SCOPE_STRUCT),
-              "VLT_TRACE_SCOPE_STRUCT mismatches");
-static_assert(static_cast<int>(FST_ST_VCD_UNION) == static_cast<int>(VLT_TRACE_SCOPE_UNION),
-              "VLT_TRACE_SCOPE_UNION mismatches");
-static_assert(static_cast<int>(FST_ST_VCD_CLASS) == static_cast<int>(VLT_TRACE_SCOPE_CLASS),
-              "VLT_TRACE_SCOPE_CLASS mismatches");
-static_assert(static_cast<int>(FST_ST_VCD_INTERFACE)
-                  == static_cast<int>(VLT_TRACE_SCOPE_INTERFACE),
-              "VLT_TRACE_SCOPE_INTERFACE mismatches");
-static_assert(static_cast<int>(FST_ST_VCD_PACKAGE) == static_cast<int>(VLT_TRACE_SCOPE_PACKAGE),
-              "VLT_TRACE_SCOPE_PACKAGE mismatches");
-static_assert(static_cast<int>(FST_ST_VCD_PROGRAM) == static_cast<int>(VLT_TRACE_SCOPE_PROGRAM),
-              "VLT_TRACE_SCOPE_PROGRAM mismatches");
+static_assert(std::is_same<vlFstHandle, fstHandle>::value, "vlFstHandle mismatch");
+static_assert(std::is_same<vlFstEnumHandle, fstEnumHandle>::value, "vlFstHandle mismatch");
 
 //=============================================================================
 // Specialization of the generics for this trace format
@@ -107,16 +84,7 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     constDump(true);  // First dump must contain the const signals
     fullDump(true);  // First dump must be full for fst
 
-    m_curScope.clear();
-
     Super::traceInit();
-
-    // Clear the scope stack
-    auto it = m_curScope.begin();
-    while (it != m_curScope.end()) {
-        fstWriterSetUpscope(m_fst);
-        it = m_curScope.erase(it);
-    }
 
     // convert m_code2symbol into an array for fast lookup
     if (!m_symbolp) {
@@ -155,99 +123,136 @@ void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, uint32_t elemen
     m_local2fstdtype[dtypenum] = enumNum;
 }
 
-void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                           fstVarType vartype, bool array, int arraynum, bool bussed, int msb,
-                           int lsb) {
+// TODO: should return std::optional<fstScopeType>, but I can't have C++17
+static std::pair<bool, fstScopeType> toFstScopeType(VerilatedTracePrefixType type) {
+    switch (type) {
+    case VerilatedTracePrefixType::SCOPE_MODULE: return {true, FST_ST_VCD_MODULE};
+    case VerilatedTracePrefixType::SCOPE_INTERFACE: return {true, FST_ST_VCD_INTERFACE};
+    case VerilatedTracePrefixType::STRUCT_PACKED:
+    case VerilatedTracePrefixType::STRUCT_UNPACKED: return {true, FST_ST_VCD_STRUCT};
+    case VerilatedTracePrefixType::UNION_PACKED: return {true, FST_ST_VCD_UNION};
+    default: return {false, /* unused so whatever, just need a value */ FST_ST_VCD_SCOPE};
+    }
+}
+
+void VerilatedFst::pushPrefix(const std::string& name, VerilatedTracePrefixType type) {
+    const std::string newPrefix = m_prefixStack.back().first + name;
+    const auto pair = toFstScopeType(type);
+    const bool properScope = pair.first;
+    const fstScopeType scopeType = pair.second;
+    m_prefixStack.emplace_back(newPrefix + (properScope ? " " : ""), type);
+    if (properScope) {
+        const std::string scopeName = lastWord(newPrefix);
+        fstWriterSetScope(m_fst, scopeType, scopeName.c_str(), nullptr);
+    }
+}
+
+void VerilatedFst::popPrefix() {
+    const bool properScope = toFstScopeType(m_prefixStack.back().second).first;
+    if (properScope) fstWriterSetUpscope(m_fst);
+    m_prefixStack.pop_back();
+    assert(!m_prefixStack.empty());
+}
+
+void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum,
+                           VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                           VerilatedTraceSigType type, bool array, int arraynum, bool bussed,
+                           int msb, int lsb) {
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
-    const bool enabled = Super::declCode(code, name, bits, false);
+    const std::string hierarchicalName = m_prefixStack.back().first + name;
+
+    const bool enabled = Super::declCode(code, hierarchicalName, bits);
     if (!enabled) return;
 
-    std::string nameasstr = namePrefix() + name;
-    std::istringstream nameiss{nameasstr};
-    std::istream_iterator<std::string> beg(nameiss);
-    std::istream_iterator<std::string> end;
-    std::list<std::string> tokens(beg, end);  // Split name
-    std::string symbol_name{tokens.back()};
-    tokens.pop_back();  // Remove symbol name from hierarchy
-    std::string tmpModName;
-
-    // Find point where current and new scope diverge
-    auto cur_it = m_curScope.begin();
-    auto new_it = tokens.begin();
-    while (cur_it != m_curScope.end() && new_it != tokens.end()) {
-        if (*cur_it != *new_it) break;
-        ++cur_it;
-        ++new_it;
-    }
-
-    // Go back to the common point
-    while (cur_it != m_curScope.end()) {
-        fstWriterSetUpscope(m_fst);
-        cur_it = m_curScope.erase(cur_it);
-    }
-
-    // Follow the hierarchy of the new variable from the common scope point
-    while (new_it != tokens.end()) {
-        if ((new_it->back() & 0x80)) {
-            tmpModName = *new_it;
-            tmpModName.pop_back();
-            // If the scope ends with a non-ASCII character, it will be 0x80 + fstScopeType
-            fstWriterSetScope(m_fst, static_cast<fstScopeType>(new_it->back() & 0x7f),
-                              tmpModName.c_str(), nullptr);
-        } else {
-            fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), nullptr);
-        }
-        m_curScope.push_back(*new_it);
-        new_it = tokens.erase(new_it);
-    }
-
+    assert(hierarchicalName.rfind(' ') != std::string::npos);
     std::stringstream name_ss;
-    name_ss << symbol_name;
+    name_ss << lastWord(hierarchicalName);
     if (array) name_ss << "[" << arraynum << "]";
     if (bussed) name_ss << " [" << msb << ":" << lsb << "]";
-    std::string name_str = name_ss.str();
+    const std::string name_str = name_ss.str();
 
-    if (dtypenum > 0) {
-        const fstEnumHandle enumNum = m_local2fstdtype[dtypenum];
-        fstWriterEmitEnumTableRef(m_fst, enumNum);
+    if (dtypenum > 0) fstWriterEmitEnumTableRef(m_fst, m_local2fstdtype[dtypenum]);
+
+    fstVarDir varDir;
+    switch (direction) {
+    case VerilatedTraceSigDirection::INOUT: varDir = FST_VD_INOUT; break;
+    case VerilatedTraceSigDirection::OUTPUT: varDir = FST_VD_OUTPUT; break;
+    case VerilatedTraceSigDirection::INPUT: varDir = FST_VD_INPUT; break;
+    case VerilatedTraceSigDirection::NONE: varDir = FST_VD_IMPLICIT; break;
     }
+
+    fstVarType varType;
+    // Doubles have special decoding properties, so must indicate if a double
+    if (type == VerilatedTraceSigType::DOUBLE) {
+        if (kind == VerilatedTraceSigKind::PARAMETER) {
+            varType = FST_VT_VCD_REAL_PARAMETER;
+        } else {
+            varType = FST_VT_VCD_REAL;
+        }
+    }
+    // clang-format off
+    else if (kind == VerilatedTraceSigKind::PARAMETER) varType = FST_VT_VCD_PARAMETER;
+    else if (kind == VerilatedTraceSigKind::SUPPLY0) varType = FST_VT_VCD_SUPPLY0;
+    else if (kind == VerilatedTraceSigKind::SUPPLY1) varType = FST_VT_VCD_SUPPLY1;
+    else if (kind == VerilatedTraceSigKind::TRI) varType = FST_VT_VCD_TRI;
+    else if (kind == VerilatedTraceSigKind::TRI0) varType = FST_VT_VCD_TRI0;
+    else if (kind == VerilatedTraceSigKind::TRI1) varType = FST_VT_VCD_TRI1;
+    else if (kind == VerilatedTraceSigKind::WIRE) varType = FST_VT_VCD_WIRE;
+    //
+    else if (type == VerilatedTraceSigType::INTEGER) varType = FST_VT_VCD_INTEGER;
+    else if (type == VerilatedTraceSigType::BIT) varType = FST_VT_SV_BIT;
+    else if (type == VerilatedTraceSigType::LOGIC) varType = FST_VT_SV_LOGIC;
+    else if (type == VerilatedTraceSigType::INT) varType = FST_VT_SV_INT;
+    else if (type == VerilatedTraceSigType::SHORTINT) varType = FST_VT_SV_SHORTINT;
+    else if (type == VerilatedTraceSigType::LONGINT) varType = FST_VT_SV_LONGINT;
+    else if (type == VerilatedTraceSigType::BYTE) varType = FST_VT_SV_BYTE;
+    else if (type == VerilatedTraceSigType::EVENT) varType = FST_VT_VCD_EVENT;
+    else if (type == VerilatedTraceSigType::TIME) varType = FST_VT_VCD_TIME;
+    else { assert(0); /* Unreachable */ }
+    // clang-format on
 
     const auto it = vlstd::as_const(m_code2symbol).find(code);
     if (it == m_code2symbol.end()) {  // New
         m_code2symbol[code]
-            = fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), 0);
+            = fstWriterCreateVar(m_fst, varType, varDir, bits, name_str.c_str(), 0);
     } else {  // Alias
-        fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), it->second);
+        fstWriterCreateVar(m_fst, varType, varDir, bits, name_str.c_str(), it->second);
     }
 }
 
 void VerilatedFst::declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                             fstVarDir vardir, fstVarType vartype, bool array, int arraynum) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 0, 0);
+                             VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                             VerilatedTraceSigType type, bool array, int arraynum) {
+    declare(code, name, dtypenum, direction, kind, type, array, arraynum, false, 0, 0);
 }
 void VerilatedFst::declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                           fstVarDir vardir, fstVarType vartype, bool array, int arraynum) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 0, 0);
+                           VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                           VerilatedTraceSigType type, bool array, int arraynum) {
+    declare(code, name, dtypenum, direction, kind, type, array, arraynum, false, 0, 0);
 }
 void VerilatedFst::declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                           fstVarDir vardir, fstVarType vartype, bool array, int arraynum, int msb,
+                           VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                           VerilatedTraceSigType type, bool array, int arraynum, int msb,
                            int lsb) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
+    declare(code, name, dtypenum, direction, kind, type, array, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                            fstVarDir vardir, fstVarType vartype, bool array, int arraynum,
-                            int msb, int lsb) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
+                            VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                            VerilatedTraceSigType type, bool array, int arraynum, int msb,
+                            int lsb) {
+    declare(code, name, dtypenum, direction, kind, type, array, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                             fstVarDir vardir, fstVarType vartype, bool array, int arraynum,
-                             int msb, int lsb) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, true, msb, lsb);
+                             VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                             VerilatedTraceSigType type, bool array, int arraynum, int msb,
+                             int lsb) {
+    declare(code, name, dtypenum, direction, kind, type, array, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                              fstVarDir vardir, fstVarType vartype, bool array, int arraynum) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, false, 63, 0);
+                              VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                              VerilatedTraceSigType type, bool array, int arraynum) {
+    declare(code, name, dtypenum, direction, kind, type, array, arraynum, false, 63, 0);
 }
 
 //=============================================================================

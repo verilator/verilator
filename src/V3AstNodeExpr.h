@@ -183,6 +183,7 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op2 := argsp : List[AstNodeExpr] // Note: op1 used by some sub-types only
     AstCFunc* m_funcp;
     string m_argTypes;
+    bool m_superReference = false;  // Called with super reference
 
 protected:
     AstNodeCCall(VNType t, FileLine* fl, AstCFunc* funcp, AstNodeExpr* argsp = nullptr)
@@ -213,6 +214,8 @@ public:
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { return true; }
+    bool superReference() const { return m_superReference; }
+    void superReference(bool flag) { m_superReference = flag; }
 };
 class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeExpr {
     // A reference to a task (or function)
@@ -4198,12 +4201,15 @@ public:
 // === AstNodeFTaskRef ===
 class AstFuncRef final : public AstNodeFTaskRef {
     // A reference to a function
+    bool m_superReference = false;  // Called with super reference
 public:
     AstFuncRef(FileLine* fl, AstParseRef* namep, AstNodeExpr* pinsp)
         : ASTGEN_SUPER_FuncRef(fl, (AstNode*)namep, pinsp) {}
     AstFuncRef(FileLine* fl, const string& name, AstNodeExpr* pinsp)
         : ASTGEN_SUPER_FuncRef(fl, name, pinsp) {}
     ASTGEN_MEMBERS_AstFuncRef;
+    bool superReference() const { return m_superReference; }
+    void superReference(bool flag) { m_superReference = flag; }
 };
 class AstMethodCall final : public AstNodeFTaskRef {
     // A reference to a member task (or function)
@@ -4240,6 +4246,7 @@ public:
 };
 class AstTaskRef final : public AstNodeFTaskRef {
     // A reference to a task
+    bool m_superReference = false;  // Called with super reference
 public:
     AstTaskRef(FileLine* fl, AstParseRef* namep, AstNodeExpr* pinsp)
         : ASTGEN_SUPER_TaskRef(fl, (AstNode*)namep, pinsp) {
@@ -4250,6 +4257,8 @@ public:
         dtypeSetVoid();
     }
     ASTGEN_MEMBERS_AstTaskRef;
+    bool superReference() const { return m_superReference; }
+    void superReference(bool flag) { m_superReference = flag; }
 };
 
 // === AstNodePreSel ===

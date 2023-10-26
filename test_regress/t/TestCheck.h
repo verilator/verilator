@@ -72,6 +72,16 @@ static const bool verbose = false;
         } \
     } while (0)
 
+#define TEST_CHECK_REAL_EQ(got, exp, delta) \
+    do { \
+        if (std::fabs(got - exp) > delta) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::showpoint \
+                      << ": GOT=" << (got) << "   EXP=" << (exp) << " +/- " << (delta) \
+                      << std::endl; \
+            ++errors; \
+        } \
+    } while (0)
+
 //======================================================================
 
 #define TEST_VERBOSE_PRINTF(format, ...) \

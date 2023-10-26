@@ -773,7 +773,7 @@ class AstCell final : public AstNode {
     // @astgen op1 := pinsp : List[AstPin] // List of port assignments
     // @astgen op2 := paramsp : List[AstPin] // List of parameter assignments
     // @astgen op3 := rangep : Optional[AstRange] // Range for arrayed instances
-    // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references
+    // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references, for tracing
     FileLine* m_modNameFileline;  // Where module the cell instances token was
     string m_name;  // Cell name
     string m_origName;  // Original name before dot addition
@@ -1673,7 +1673,6 @@ class AstVar final : public AstNode {
     VVarType m_varType;  // Type of variable
     VDirection m_direction;  // Direction input/output etc
     VDirection m_declDirection;  // Declared direction input/output etc
-    VBasicDTypeKwd m_declKwd;  // Keyword at declaration time
     VLifetime m_lifetime;  // Lifetime
     VVarAttrClocker m_attrClocker;
     MTaskIdSet m_mtaskIds;  // MTaskID's that read or write this var
@@ -1780,11 +1779,6 @@ public:
         combineType(type);
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
-        if (dtp->basicp()) {
-            m_declKwd = dtp->basicp()->keyword();
-        } else {
-            m_declKwd = VBasicDTypeKwd::LOGIC;
-        }
     }
     AstVar(FileLine* fl, VVarType type, const string& name, AstNodeDType* dtp)
         : ASTGEN_SUPER_Var(fl)
@@ -1794,11 +1788,6 @@ public:
         combineType(type);
         UASSERT(dtp, "AstVar created with no dtype");
         dtypep(dtp);
-        if (dtp->basicp()) {
-            m_declKwd = dtp->basicp()->keyword();
-        } else {
-            m_declKwd = VBasicDTypeKwd::LOGIC;
-        }
     }
     AstVar(FileLine* fl, VVarType type, const string& name, VFlagLogicPacked, int wantwidth)
         : ASTGEN_SUPER_Var(fl)
@@ -1807,7 +1796,6 @@ public:
         init();
         combineType(type);
         dtypeSetLogicSized(wantwidth, VSigning::UNSIGNED);
-        m_declKwd = VBasicDTypeKwd::LOGIC;
     }
     AstVar(FileLine* fl, VVarType type, const string& name, VFlagBitPacked, int wantwidth)
         : ASTGEN_SUPER_Var(fl)
@@ -1816,7 +1804,6 @@ public:
         init();
         combineType(type);
         dtypeSetBitSized(wantwidth, VSigning::UNSIGNED);
-        m_declKwd = VBasicDTypeKwd::BIT;
     }
     AstVar(FileLine* fl, VVarType type, const string& name, AstVar* examplep)
         : ASTGEN_SUPER_Var(fl)
@@ -1826,7 +1813,6 @@ public:
         combineType(type);
         if (examplep->childDTypep()) childDTypep(examplep->childDTypep()->cloneTree(true));
         dtypeFrom(examplep);
-        m_declKwd = examplep->declKwd();
     }
     ASTGEN_MEMBERS_AstVar;
     void dump(std::ostream& str) const override;
@@ -1854,7 +1840,6 @@ public:
         m_tristate = false;
         m_direction = VDirection::INPUT;
     }
-    VBasicDTypeKwd declKwd() const { return m_declKwd; }
     string scType() const;  // Return SysC type: bool, uint32_t, uint64_t, sc_bv
     // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
     string cPubArgType(bool named, bool forReturn) const;
@@ -3199,7 +3184,6 @@ private:
     const VNumRange m_arrayRange;  // Property of var the trace details
     const uint32_t m_codeInc;  // Code increment
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
-    const VBasicDTypeKwd m_declKwd;  // Keyword at declaration time
     const VDirection m_declDirection;  // Declared direction input/output etc
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
@@ -3213,7 +3197,6 @@ public:
               ((arrayRange.ranged() ? arrayRange.elements() : 1) * valuep->dtypep()->widthWords()
                * (VL_EDATASIZE / 32)))  // A code is always 32-bits
         , m_varType{varp->varType()}
-        , m_declKwd{varp->declKwd()}
         , m_declDirection{varp->declDirection()} {
         dtypeFrom(valuep);
         this->valuep(valuep);
@@ -3235,7 +3218,6 @@ public:
     const VNumRange& bitRange() const { return m_bitRange; }
     const VNumRange& arrayRange() const { return m_arrayRange; }
     VVarType varType() const { return m_varType; }
-    VBasicDTypeKwd declKwd() const { return m_declKwd; }
     VDirection declDirection() const { return m_declDirection; }
 };
 class AstTraceInc final : public AstNodeStmt {
@@ -3280,25 +3262,25 @@ public:
     VTraceType traceType() const { return m_traceType; }
     uint32_t baseCode() const { return m_baseCode; }
 };
-class AstTracePopNamePrefix final : public AstNodeStmt {
-    const unsigned m_count;  // How many levels to pop
+class AstTracePopPrefix final : public AstNodeStmt {
 public:
-    AstTracePopNamePrefix(FileLine* fl, unsigned count)
-        : ASTGEN_SUPER_TracePopNamePrefix(fl)
-        , m_count{count} {}
-    ASTGEN_MEMBERS_AstTracePopNamePrefix;
+    AstTracePopPrefix(FileLine* fl)
+        : ASTGEN_SUPER_TracePopPrefix(fl) {}
+    ASTGEN_MEMBERS_AstTracePopPrefix;
     bool same(const AstNode* samep) const override { return false; }
-    unsigned count() const { return m_count; }
 };
-class AstTracePushNamePrefix final : public AstNodeStmt {
+class AstTracePushPrefix final : public AstNodeStmt {
     const string m_prefix;  // Prefix to add to signal names
+    const VTracePrefixType m_prefixType;  // Type of prefix being pushed
 public:
-    AstTracePushNamePrefix(FileLine* fl, const string& prefix)
-        : ASTGEN_SUPER_TracePushNamePrefix(fl)
-        , m_prefix{prefix} {}
-    ASTGEN_MEMBERS_AstTracePushNamePrefix;
+    AstTracePushPrefix(FileLine* fl, const string& prefix, VTracePrefixType prefixType)
+        : ASTGEN_SUPER_TracePushPrefix(fl)
+        , m_prefix{prefix}
+        , m_prefixType{prefixType} {}
+    ASTGEN_MEMBERS_AstTracePushPrefix;
     bool same(const AstNode* samep) const override { return false; }
     string prefix() const { return m_prefix; }
+    VTracePrefixType prefixType() const { return m_prefixType; }
 };
 class AstUCStmt final : public AstNodeStmt {
     // User $c statement

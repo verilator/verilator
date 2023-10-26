@@ -11,7 +11,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 top_filename("t/t_interface_ref_trace.v");
-golden_filename("t/t_interface_ref_trace.out");
+# Should be the same as the inlined version, but might have declarations
+# in a different order. Sadly vcddiff can't check equivalence
+# golden_filename("t/t_interface_ref_trace.out");
 
 compile(
     verilator_flags2 => ['-fno-inline --trace-structs --trace'],

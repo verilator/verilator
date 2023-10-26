@@ -2039,6 +2039,7 @@ private:
         DotPosition m_dotPos;  // Scope part of dotted resolution
         VSymEnt* m_dotSymp;  // SymEnt for dotted AstParse lookup
         const AstDot* m_dotp;  // Current dot
+        bool m_super;  // Starts with super reference
         bool m_unresolvedCell;  // Unresolved cell, needs help from V3Param
         bool m_unresolvedClass;  // Unresolved class reference, needs help from V3Param
         AstNode* m_unlinkedScopep;  // Unresolved scope, needs corresponding VarXRef
@@ -2050,6 +2051,7 @@ private:
             m_dotPos = DP_NONE;
             m_dotSymp = curSymp;
             m_dotp = nullptr;
+            m_super = false;
             m_dotErr = false;
             m_dotText = "";
             m_unresolvedCell = false;
@@ -2061,6 +2063,7 @@ private:
             std::ostringstream sstr;
             sstr << "ds=" << names[m_dotPos];
             sstr << "  dse" << cvtToHex(m_dotSymp);
+            sstr << "  sup=" << m_super;
             sstr << "  txt=" << m_dotText;
             sstr << "  unrCell=" << m_unresolvedCell;
             sstr << "  unrClass=" << m_unresolvedClass;
@@ -2462,6 +2465,7 @@ private:
                             const auto baseClassp = cextp->classp();
                             UASSERT_OBJ(baseClassp, nodep, "Bad superclass");
                             m_ds.m_dotSymp = m_statep->getNodeSym(baseClassp);
+                            m_ds.m_super = true;
                             UINFO(8, "     super. " << m_ds.ascii() << endl);
                         }
                     }
@@ -2538,7 +2542,6 @@ private:
         // Generally resolved during Primay, but might be at param time under AstUnlinkedRef
         UASSERT_OBJ(m_statep->forPrimary() || m_statep->forPrearray(), nodep,
                     "ParseRefs should no longer exist");
-        if (nodep->name() == "super") nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
         const DotStates lastStates = m_ds;
         const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         if (start) {
@@ -3077,6 +3080,14 @@ private:
             VL_RESTORER(m_ds);
             m_ds.init(m_curSymp);
             iterateChildren(nodep);
+        }
+
+        if (m_ds.m_super) {
+            if (AstFuncRef* const funcRefp = VN_CAST(nodep, FuncRef)) {
+                funcRefp->superReference(true);
+            } else if (AstTaskRef* const taskRefp = VN_CAST(nodep, TaskRef)) {
+                taskRefp->superReference(true);
+            }
         }
 
         bool staticAccess = false;

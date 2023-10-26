@@ -486,7 +486,7 @@ public:
             // Call static method via the containing class
             puts(prefixNameProtect(funcModp) + "::");
             puts(funcp->nameProtect());
-        } else if (VN_IS(funcModp, Class) && funcModp != m_modp) {
+        } else if (nodep->superReference()) {
             // Calling superclass method
             puts(prefixNameProtect(funcModp) + "::");
             puts(funcp->nameProtect());

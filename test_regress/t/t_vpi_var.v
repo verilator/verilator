@@ -45,6 +45,9 @@ extern "C" int mon_check();
 
    integer        status;
 
+   real           real1          /*verilator public_flat_rw */;
+   string         str1           /*verilator public_flat_rw */;
+
    sub sub();
 
    // Test loop
@@ -57,6 +60,10 @@ extern "C" int mon_check();
       text_word = "Word";
       text_long = "Long64b";
       text = "Verilog Test module";
+
+      real1 = 1.0;
+      str1 = "hello";
+
 `ifdef VERILATOR
       status = $c32("mon_check()");
 `endif
@@ -79,6 +86,8 @@ extern "C" int mon_check();
       if (text_word != "Tree") $stop;
       if (text_long != "44Four44") $stop;
       if (text != "lorem ipsum") $stop;
+      if (str1 != "something a lot longer than hello") $stop;
+      if (real1 > 123456.7895 || real1 < 123456.7885 ) $stop;
    end
 
    always @(posedge clk) begin
