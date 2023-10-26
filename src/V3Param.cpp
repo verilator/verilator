@@ -779,6 +779,7 @@ class ParamProcessor final {
                 }
             }
         }
+        (void)hasEmptyParam;
         collectedParams->rehash();
         foundp = modInfop->findNodeWithOverriddenParamSet(collectedParams.get());
         if (!foundp) foundp = modInfop->findNodeWithFullParamSet(collectedParams.get());
