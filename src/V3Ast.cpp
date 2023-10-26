@@ -1568,6 +1568,11 @@ void VNDeleter::doDeletes() {
     m_deleteps.clear();
 }
 
+void VNDeleter::doUnlinkAndDeletes() {
+    for (AstNode* const nodep : m_deleteps) nodep->unlinkFrBack()->deleteTree();
+    m_deleteps.clear();
+}
+
 //######################################################################
 // VNVisitor
 

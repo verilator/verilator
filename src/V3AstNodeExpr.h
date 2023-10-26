@@ -1427,11 +1427,7 @@ public:
     void dump(std::ostream& str) const override;
     const char* broken() const override;
     void cloneRelink() override;
-    bool same(const AstNode* samep) const override {
-        // Only works if exact same children, instead should override comparison
-        // of children list, and instead use map-vs-map key/value compare
-        return m_map == VN_DBG_AS(samep, InitArray)->m_map;
-    }
+    bool same(const AstNode* samep) const override;
     void addValuep(AstNodeExpr* newp) { addIndexValuep(m_map.size(), newp); }
     const KeyItemMap& map() const { return m_map; }
     void addIndexValuep(uint64_t index, AstNodeExpr* newp);

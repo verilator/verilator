@@ -43,6 +43,7 @@ foreach my $s (
     'Can\'t resolve module reference: \'',
     'Cannot write preprocessor output: ',
     'Circular logic when ordering code (non-cutable edge loop)',
+    'Circular reference on interface ports',
     'Define or directive not defined: `',
     'Exceeded limit of ',
     'Extern declaration\'s scope is not a defined class',

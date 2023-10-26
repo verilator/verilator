@@ -920,6 +920,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstClass* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Class not under module/package/$unit");
+        if (nodep->dead()) return;
         UINFO(8, "   " << nodep << endl);
         VL_RESTORER(m_scope);
         VL_RESTORER(m_classOrPackagep);
@@ -3496,6 +3497,7 @@ private:
     }
     void visit(AstClass* nodep) override {
         if (nodep->user3SetOnce()) return;
+        if (nodep->dead()) return;
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);

@@ -335,10 +335,9 @@ private:
         // after we've done all the generate blocks
         for (bool retry = true; retry;) {
             retry = false;
-            AstNodeModule* nextmodp;
-            for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp = nextmodp) {
-                nextmodp = VN_AS(modp->nextp(), NodeModule);
-                if (modp->dead()
+            VNDeleter deleter;
+            v3Global.rootp()->modulesp()->foreachAndNext([&](AstNodeModule* modp) {  //
+                if (modp->dead()  // classes inside module won't be removed
                     || (modp->level() > 2 && modp->user1() == 0 && !modp->internal())) {
                     // > 2 because L1 is the wrapper, L2 is the top user module
                     UINFO(4, "  Dead module " << modp << endl);
@@ -349,10 +348,11 @@ private:
                             cellp->modp()->user1Inc(-1);
                         });
                     }
-                    VL_DO_DANGLING(modp->unlinkFrBack()->deleteTree(), modp);
+                    VL_DO_DANGLING(deleter.pushDeletep(modp), modp);
                     retry = true;
                 }
-            }
+            });
+            deleter.doUnlinkAndDeletes();
         }
     }
     bool mightElimVar(AstVar* nodep) const {
@@ -538,6 +538,14 @@ void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         DeadVisitor{nodep, false, false, false, false, !v3Global.opt.topIfacesSupported()};
+    }  // Destruct before checking
+    V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTreeLevel() >= 6);
+}
+
+void V3Dead::deadifyModuleDTypes(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    {
+        DeadVisitor{nodep, false, true, false, false, !v3Global.opt.topIfacesSupported()};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTreeLevel() >= 6);
 }

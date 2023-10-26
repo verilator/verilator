@@ -1913,8 +1913,6 @@ public:
     bool noReset() const { return m_noReset; }
     void noSubst(bool flag) { m_noSubst = flag; }
     bool noSubst() const { return m_noSubst; }
-    void overriddenParam(bool flag) { m_overridenParam = flag; }
-    bool overriddenParam() const { return m_overridenParam; }
     void trace(bool flag) { m_trace = flag; }
     void isLatched(bool flag) { m_isLatched = flag; }
     bool isForceable() const { return m_isForceable; }

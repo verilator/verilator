@@ -237,6 +237,7 @@ private:
         processAndIterate(nodep);
     }
     void visit(AstNodeModule* nodep) override {
+        if (nodep->dead()) return;
         VL_RESTORER(m_cFuncNames);
         m_cFuncNames.clear();
         processAndIterate(nodep);

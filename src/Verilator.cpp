@@ -165,6 +165,7 @@ static void process() {
 
         // Remove any modules that were parameterized and are no longer referenced.
         V3Dead::deadifyModules(v3Global.rootp());
+        // V3Dead::deadifyModuleDTypes(v3Global.rootp());
         v3Global.checkTree();
 
         // Create a hierarchical Verilation plan

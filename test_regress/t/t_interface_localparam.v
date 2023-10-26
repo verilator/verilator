@@ -19,12 +19,10 @@ interface SimpleIntf
 
    localparam bit mismatch = (symbolsPerBeat != (2*symbolsPerBeatDivBy2) );
 
-   initial begin
-      $write("%m: symbolsPerBeat %0d, symbolsPerBeatDivBy2 %0d, mismatch %0d\n",
+   if (mismatch) begin
+      $error("%m: symbolsPerBeat %0d, symbolsPerBeatDivBy2 %0d, mismatch %0d\n",
              symbolsPerBeat, symbolsPerBeatDivBy2, mismatch);
-      if (mismatch) $stop;
    end
-
 endinterface
 
 module Core(
