@@ -335,9 +335,10 @@ private:
         // after we've done all the generate blocks
         for (bool retry = true; retry;) {
             retry = false;
-            VNDeleter deleter;
-            v3Global.rootp()->modulesp()->foreachAndNext([&](AstNodeModule* modp) {  //
-                if (modp->dead()  // classes inside module won't be removed
+            AstNodeModule* nextmodp;
+            for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp = nextmodp) {
+                nextmodp = VN_AS(modp->nextp(), NodeModule);
+                if (modp->dead()
                     || (modp->level() > 2 && modp->user1() == 0 && !modp->internal())) {
                     // > 2 because L1 is the wrapper, L2 is the top user module
                     UINFO(4, "  Dead module " << modp << endl);
@@ -348,11 +349,10 @@ private:
                             cellp->modp()->user1Inc(-1);
                         });
                     }
-                    VL_DO_DANGLING(deleter.pushDeletep(modp), modp);
+                    VL_DO_DANGLING(modp->unlinkFrBack()->deleteTree(), modp);
                     retry = true;
                 }
-            });
-            deleter.doUnlinkAndDeletes();
+            }
         }
     }
     bool mightElimVar(AstVar* nodep) const {

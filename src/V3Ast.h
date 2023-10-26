@@ -1646,9 +1646,6 @@ public:
     // Delete all previously pushed nodes (by calling deleteTree)
     void doDeletes();
 
-    // Unlink and delete all previously pushed nodes (by calling unlinkFrBack and deleteTree)
-    void doUnlinkAndDeletes();
-
     // Do the deletions on destruction
     ~VNDeleter() { doDeletes(); }
 };

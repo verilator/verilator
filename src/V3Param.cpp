@@ -15,8 +15,8 @@
 //*************************************************************************
 // PARAM TRANSFORMATIONS:
 //   Top down traversal:
-//      For each cell/classref:
-//          If linked module/class parameterized,
+//      For each cell:
+//          If parameterized,
 //              Determine all parameter widths, constant values.
 //              (Interfaces also matter, as if a module is parameterized
 //              this effectively changes the width behavior of all that
@@ -133,34 +133,7 @@ public:
         for (AstNodeModule* const iface : m_ifaces) { hash += reinterpret_cast<size_t>(iface); }
         m_hashValue = static_cast<size_t>(hash.value());
     }
-    ////////// debug only
-    void dump(std::ostream& os) const {
-        for (AstNode* nodep : m_params) {
-            string str;
-            // AstNode* const nodep = paramSet->m_params[item.second];
-            if (const AstConst* const constp = VN_CAST(nodep, Const)) {
-                str = cvtToStr(constp);
-                str += ", hash=";
-                str += constp->num().toHash().toString();
-            } else if (const AstInitArray* const initArrp = VN_CAST(nodep, InitArray)) {
-                str = "InitArray[" + std::to_string(initArrp->map().size()) + "]";
-            } else if (const AstNodeDType* const dtypep = VN_CAST(nodep, NodeDType)) {
-                str = dtypep->prettyDTypeName() + " (" + cvtToStr(dtypep) + ")";
-            }
-            // os << "    param " << item.second << ": " << item.first->name() << " -> "
-            //    << (str.empty() ? "(none)" : str) << "\n";
-            os << (str.empty() ? "(none)" : str) << ",";
-        }
-        os << "hash=" << m_hashValue;
-        // ((ModParamSet*)this)->rehash();
-        os << "->" << m_hashValue;
-    }
 };
-
-std::ostream& operator<<(std::ostream& os, const ModParamSet& rhs) {
-    rhs.dump(os);
-    return os;
-}
 
 class BaseModInfo VL_NOT_FINAL {
 public:
@@ -310,7 +283,6 @@ public:
                     os << "(none)";
                 os << "\n";
             }
-            // os << "\n    all: " << *paramSet << "\n";
             os << endl;
         }
     }

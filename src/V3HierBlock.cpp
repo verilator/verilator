@@ -292,9 +292,8 @@ class HierBlockUsageCollectVisitor final : public VNVisitor {
         }
         if (nodep->isGParam()) {
             const AstNode* const valuep = nodep->valuep();
-            // Currently only non-opa const is supported
+            // Currently only non-opaque const is supported
             if (const AstConst* const constp = VN_CAST(valuep, Const)) {
-                UINFO(0, "  value " << constp << endl);
                 if (!constp->isOpaque()) m_gparams.push_back(nodep);
             }
         }
