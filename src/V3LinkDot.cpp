@@ -2181,6 +2181,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             AstVar* const eventp = new AstVar{
                 clockingp->fileline(), VVarType::MODULETEMP, clockingp->name(), VFlagChildDType{},
                 new AstBasicDType{clockingp->fileline(), VBasicDTypeKwd::EVENT}};
+            eventp->lifetime(VLifetime::STATIC);
             clockingp->eventp(eventp);
             // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
             clockingp->addNextHere(new AstAlwaysObserved{
