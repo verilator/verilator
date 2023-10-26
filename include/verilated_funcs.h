@@ -449,7 +449,7 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
 #define VL_ASSIGN_WSB(obits, owp, svar) \
     { \
         const int words = VL_WORDS_I(obits); \
-        sc_biguint<(obits)> _butemp = (svar).read(); \
+        sc_dt::sc_biguint<(obits)> _butemp = (svar).read(); \
         uint32_t* chunkp = _butemp.get_raw(); \
         int32_t lsb = 0; \
         while (lsb < obits - BITS_PER_DIGIT) { \
@@ -475,20 +475,20 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
 
 #define VL_ASSIGN_SWI(obits, svar, rd) \
     { \
-        sc_bv<(obits)> _bvtemp; \
+        sc_dt::sc_bv<(obits)> _bvtemp; \
         _bvtemp.set_word(0, (rd)); \
         (svar).write(_bvtemp); \
     }
 #define VL_ASSIGN_SWQ(obits, svar, rd) \
     { \
-        sc_bv<(obits)> _bvtemp; \
+        sc_dt::sc_bv<(obits)> _bvtemp; \
         _bvtemp.set_word(0, static_cast<IData>(rd)); \
         _bvtemp.set_word(1, static_cast<IData>((rd) >> VL_IDATASIZE)); \
         (svar).write(_bvtemp); \
     }
 #define VL_ASSIGN_SWW(obits, svar, rwp) \
     { \
-        sc_bv<(obits)> _bvtemp; \
+        sc_dt::sc_bv<(obits)> _bvtemp; \
         for (int i = 0; i < VL_WORDS_I(obits); ++i) _bvtemp.set_word(i, (rwp)[i]); \
         (svar).write(_bvtemp); \
     }
@@ -504,7 +504,7 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
 #define VL_SC_BITS_PER_DIGIT 30  // This comes from sc_nbdefs.h BITS_PER_DIGIT
 #define VL_ASSIGN_SBW(obits, svar, rwp) \
     { \
-        sc_biguint<(obits)> _butemp; \
+        sc_dt::sc_biguint<(obits)> _butemp; \
         int32_t lsb = 0; \
         uint32_t* chunkp = _butemp.get_raw(); \
         while (lsb + VL_SC_BITS_PER_DIGIT < (obits)) { \

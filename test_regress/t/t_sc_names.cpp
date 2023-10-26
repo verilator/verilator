@@ -6,6 +6,8 @@
 #include VM_PREFIX_INCLUDE
 #include "Vt_sc_names.h"
 
+using namespace sc_core;
+
 VM_PREFIX* tb = nullptr;
 
 int sc_main(int argc, char* argv[]) {

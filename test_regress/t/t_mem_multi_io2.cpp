@@ -28,6 +28,7 @@ int main()
     tb = new VM_PREFIX{"tb"};
 
 #ifdef SYSTEMC_VERSION
+    using namespace sc_core;
     sc_signal<uint32_t> i3;
     sc_signal<uint32_t> o3;
     sc_signal<uint32_t> i34[4];
