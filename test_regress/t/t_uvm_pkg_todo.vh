@@ -7524,9 +7524,7 @@ virtual class uvm_event_base extends uvm_object;
                 event e;
                 if (wakeup)
                         ->m_event;
-//TODO issue #4468 - Fix UVM assignment of event data types
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:7477:25: Unsupported: assignment of event data type
-//TODO                m_event = e;
+                m_event = e;
                 num_waiters = 0;
                 on = 0;
                 trigger_time = 0;
@@ -7547,9 +7545,7 @@ virtual class uvm_event_base extends uvm_object;
                 uvm_event_base e;
                 super.do_copy(rhs);
                 if(!$cast(e, rhs) || (e==null)) return;
-//TODO issue #4468 - Fix UVM assignment of event data types
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:7498:25: Unsupported: assignment of event data type
-//TODO                m_event = e.m_event;
+                m_event = e.m_event;
                 num_waiters = e.num_waiters;
                 on = e.on;
                 trigger_time = e.trigger_time;

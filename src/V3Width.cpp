@@ -68,6 +68,8 @@
 #include "V3Width.h"
 
 #include "V3Const.h"
+#include "V3Error.h"
+#include "V3Global.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
 #include "V3Randomize.h"
@@ -4319,6 +4321,47 @@ private:
         return valuep;
     }
 
+    static void checkEventAssignement(const AstNodeAssign* const asgnp) {
+        string unsupEvtAsgn;
+        if (!usesDynamicScheduler(asgnp->lhsp())) unsupEvtAsgn = "to";
+        if (asgnp->rhsp()->dtypep()->isEvent() && !usesDynamicScheduler(asgnp->rhsp())) {
+            unsupEvtAsgn += (unsupEvtAsgn.empty() ? "from" : " and from");
+        }
+        if (!unsupEvtAsgn.empty()) {
+            asgnp->v3warn(E_UNSUPPORTED, "Assignement "
+                                             << unsupEvtAsgn
+                                             << " event in statically scheduled context.\n"
+                                             << asgnp->warnMore()
+                                             << "Static event "
+                                                "scheduling won't be able to handle this.\n"
+                                             << asgnp->warnMore()
+                                             << "... Suggest move the event into a "
+                                                "completely dynamic context, eg. a class,  and "
+                                                "reference it only from such context.");
+        }
+    }
+
+    static bool usesDynamicScheduler(AstNode* nodep) {
+        UASSERT_OBJ(nodep->dtypep()->isEvent(), nodep, "Node does not have an event dtype");
+
+        AstVarRef* vrefp;
+        while (true) {
+            vrefp = VN_CAST(nodep, VarRef);
+            if (vrefp) return usesDynamicScheduler(vrefp);
+            if (VN_IS(nodep, MemberSel)) {
+                return true;
+            } else if (AstNodeSel* selp = VN_CAST(nodep, NodeSel)) {
+                nodep = selp->fromp();
+            } else {
+                return false;
+            }
+        }
+    }
+
+    static bool usesDynamicScheduler(AstVarRef* vrefp) {
+        return VN_IS(vrefp->classOrPackagep(), Class) || vrefp->varp()->isFuncLocal();
+    }
+
     void visit(AstPatMember* nodep) override {
         AstNodeDType* const vdtypep = m_vup->dtypeNullp();
         UASSERT_OBJ(vdtypep, nodep, "Pattern member type not assigned by AstPattern visitor");
@@ -4713,12 +4756,6 @@ private:
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
             // if (debug()) nodep->dumpTree("-  AssignOut: ");
         }
-        if (const AstBasicDType* const basicp = nodep->rhsp()->dtypep()->basicp()) {
-            if (basicp->isEvent()) {
-                // see t_event_copy.v for commentary on the mess involved
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
-            }
-        }
         if (auto* const controlp = nodep->timingControlp()) {
             if (VN_IS(m_ftaskp, Func)) {
                 controlp->v3error("Timing controls are not legal in functions. Suggest use a task "
@@ -4773,7 +4810,12 @@ private:
             newp->dtypeSetVoid();
             nodep->replaceWith(newp->makeStmt());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            // return;
+            return;
+        }
+
+        if (nodep->hasDType() && nodep->dtypep()->isEvent()) {
+            checkEventAssignement(nodep);
+            v3Global.setAssignsEvents();
         }
     }
 

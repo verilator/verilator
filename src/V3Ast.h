@@ -324,7 +324,7 @@ public:
         ET_BOTHEDGE,  // POSEDGE | NEGEDGE (i.e.: 'edge' in Verilog)
         ET_POSEDGE,
         ET_NEGEDGE,
-        ET_EVENT,  // VlEvent::isFired
+        ET_EVENT,  // VlEventBase::isFired
         // Involving an expression
         ET_TRUE,
         //
@@ -2016,6 +2016,7 @@ public:
     inline bool isDouble() const VL_MT_STABLE;
     inline bool isSigned() const VL_MT_STABLE;
     inline bool isString() const VL_MT_STABLE;
+    inline bool isEvent() const VL_MT_STABLE;
 
     // clang-format off
     VNUser user1u() const VL_MT_STABLE {

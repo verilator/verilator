@@ -829,7 +829,7 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         } else if (bdtypep->isProcessRef()) {
             info.m_type = "VlProcessRef";
         } else if (bdtypep->isEvent()) {
-            info.m_type = "VlEvent";
+            info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
             info.m_type = "CData" + bitvec;
         } else if (dtypep->widthMin() <= 16) {

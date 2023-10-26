@@ -185,7 +185,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
                 continue;
             case VerilatedTraceOffloadCommand::CHG_EVENT:
                 VL_TRACE_OFFLOAD_DEBUG("Command CHG_EVENT " << top);
-                traceBufp->chgEvent(oldp, *reinterpret_cast<const VlEvent*>(readp));
+                traceBufp->chgEvent(oldp, reinterpret_cast<const VlEventBase*>(readp));
                 continue;
 
                 //===
@@ -846,7 +846,7 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullBit(uint32_t* oldp, CData newval) {
 }
 
 template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullEvent(uint32_t* oldp, VlEvent newval) {
+void VerilatedTraceBuffer<VL_BUF_T>::fullEvent(uint32_t* oldp, const VlEventBase* newval) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     *oldp = 1;  // Do we really store an "event" ?
     emitEvent(code, newval);
