@@ -6,6 +6,9 @@
 
 #include VM_PREFIX_INCLUDE
 
+using namespace sc_core;
+using namespace sc_dt;
+
 VM_PREFIX* tb = nullptr;
 bool pass = true;
 
