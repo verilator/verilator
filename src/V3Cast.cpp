@@ -190,7 +190,7 @@ private:
             && !VN_IS(backp, ArraySel) && !VN_IS(backp, StructSel) && !VN_IS(backp, RedXor)
             && (nodep->varp()->basicp() && !nodep->varp()->basicp()->isTriggerVec()
                 && !nodep->varp()->basicp()->isForkSync()
-                && !nodep->varp()->basicp()->isProcessRef())
+                && !nodep->varp()->basicp()->isProcessRef() && !nodep->varp()->basicp()->isEvent())
             && backp->width() && castSize(nodep) != castSize(nodep->varp())) {
             // Cast vars to IData first, else below has upper bits wrongly set
             //  CData x=3; out = (QData)(x<<30);
