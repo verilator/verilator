@@ -443,12 +443,8 @@ public:
     }
     ~DynScopeVisitor() override {
         std::set<ForkDynScopeFrame*> frames;
-        for (auto node_frame : m_frames) {
-            frames.insert(node_frame.second);
-        }
-        for (auto* frame : frames) {
-            delete frame;
-        }
+        for (auto node_frame : m_frames) { frames.insert(node_frame.second); }
+        for (auto* frame : frames) { delete frame; }
     }
 };
 
