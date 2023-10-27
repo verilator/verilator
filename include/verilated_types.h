@@ -1685,6 +1685,10 @@ public:
 
 template <typename T, typename U>
 static inline bool VL_CAST_DYNAMIC(VlClassRef<T> in, VlClassRef<U>& outr) {
+    if (!in) {
+        outr = VlNull{};
+        return true;
+    }
     VlClassRef<U> casted = in.template dynamicCast<U>();
     if (VL_LIKELY(casted)) {
         outr = casted;
