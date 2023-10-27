@@ -955,6 +955,7 @@ def run_analysis(ccl: Iterable[CompileCommand], pccl: Iterable[CompileCommand],
                                          compile_command.directory)
 
 
+@dataclass
 class ParallelAnalysisProcess:
     cav: Optional[CallAnnotationsValidator] = None
     diags: set[Diagnostic] = dataclasses.field(default_factory=set)
