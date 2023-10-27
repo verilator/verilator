@@ -33,6 +33,7 @@
 #include <atomic>
 #include <deque>
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <unordered_set>
@@ -191,7 +192,18 @@ public:
 //===================================================================
 // SystemVerilog event type
 
-class VlEvent final {
+class VlEventBase VL_NOT_FINAL {
+public:
+    virtual ~VlEventBase() = default;
+
+    virtual void fire() = 0;
+    virtual bool isFired() const = 0;
+    virtual bool isTriggered() const = 0;
+    virtual void clearFired() = 0;
+    virtual void clearTriggered() = 0;
+};
+
+class VlEvent final : public VlEventBase {
     // MEMBERS
     bool m_fired = false;  // Fired on this scheduling iteration
     bool m_triggered = false;  // Triggered state of event persisting until next time step
@@ -199,17 +211,47 @@ class VlEvent final {
 public:
     // CONSTRUCTOR
     VlEvent() = default;
-    ~VlEvent() = default;
+    ~VlEvent() override = default;
 
+    friend std::string VL_TO_STRING(const VlEvent& e);
+    friend class VlAssignableEvent;
     // METHODS
-    void fire() { m_fired = m_triggered = true; }
-    bool isFired() const { return m_fired; }
-    bool isTriggered() const { return m_triggered; }
-    void clearFired() { m_fired = false; }
-    void clearTriggered() { m_triggered = false; }
+    void fire() override { m_fired = m_triggered = true; }
+    bool isFired() const override { return m_fired; }
+    bool isTriggered() const override { return m_triggered; }
+    void clearFired() override { m_fired = false; }
+    void clearTriggered() override { m_triggered = false; }
 };
 
+class VlAssignableEvent final : public std::shared_ptr<VlEvent>, public VlEventBase {
+public:
+    // Constructor
+    VlAssignableEvent()
+        : std::shared_ptr<VlEvent>(new VlEvent) {}
+    ~VlAssignableEvent() override = default;
+
+    // METHODS
+    void fire() override { (*this)->m_fired = (*this)->m_triggered = true; }
+    bool isFired() const override { return (*this)->m_fired; }
+    bool isTriggered() const override { return (*this)->m_triggered; }
+    void clearFired() override { (*this)->m_fired = false; }
+    void clearTriggered() override { (*this)->m_triggered = false; }
+};
+
+inline std::string VL_TO_STRING(const VlEventBase& e);
+
 inline std::string VL_TO_STRING(const VlEvent& e) {
+    return std::string{"triggered="} + (e.isTriggered() ? "true" : "false");
+}
+
+inline std::string VL_TO_STRING(const VlAssignableEvent& e) {
+    return "&{ " + VL_TO_STRING(*e) + " }";
+}
+
+inline std::string VL_TO_STRING(const VlEventBase& e) {
+    if (const VlAssignableEvent& assignable = dynamic_cast<const VlAssignableEvent&>(e)) {
+        return VL_TO_STRING(assignable);
+    }
     return std::string{"triggered="} + (e.isTriggered() ? "true" : "false");
 }
 
