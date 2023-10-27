@@ -68,7 +68,7 @@ private:
     AstNode* const m_procp;  // Procedure/block associated with that dynscope
     std::set<AstVar*> m_captures;  // Variables to be moved into the dynscope
     ForkDynScopeInstance m_instance;  // Nodes to be injected into the AST to create the dynscope
-    size_t m_id;  // Dynscope ID
+    const size_t m_id;  // Dynscope ID
 
 public:
     ForkDynScopeFrame(AstNodeModule* modp, AstNode* procp, size_t id)
@@ -339,6 +339,7 @@ private:
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         if (!VN_IS(nodep, Class)) m_modp = nodep;
+        m_id = 0;
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
@@ -619,6 +620,7 @@ private:
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         m_modp = nodep;
+        m_id = 0;
         iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override {
