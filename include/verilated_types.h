@@ -1698,6 +1698,12 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T> in, VlClassRef<U>& outr) {
     }
 }
 
+template <typename T>
+static inline bool VL_CAST_DYNAMIC(VlNull in, VlClassRef<T>& outr) {
+    outr = VlNull{};
+    return true;
+}
+
 //=============================================================================
 // VlSampleQueue stores samples for input clockvars in clocking blocks. At a clocking event,
 // samples from this queue should be written to the correct input clockvar.

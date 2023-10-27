@@ -55,6 +55,12 @@ module t (/*AUTOARG*/);
       if (i != 1) $stop;
       if (b != bb) $stop;
 
+      bb = null;
+      b = bb;
+      i = $cast(bbo, b);
+      if (i != 1) $stop;
+      if (b != bb) $stop;
+
       bb = new;
       b = bb;
       bao = ba;
