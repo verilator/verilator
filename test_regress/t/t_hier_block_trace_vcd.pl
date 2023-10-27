@@ -12,7 +12,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 clean_objs();
 
 scenarios(vlt_all => 1);
-skip("temporarily skipped");
+skip("FIXME: temporarily skipped");
 
 top_filename("t/t_hier_block.v");
 

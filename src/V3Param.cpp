@@ -642,7 +642,7 @@ class ParamProcessor final {
         AstNodeModule* const modp = modInfop->originalModp();
         string suffix;
         if (!modInfop->hierBlock()) {
-            suffix = "__parameterized" + std::to_string(modInfop->nextParamModIndex());
+            suffix = "__p" + std::to_string(modInfop->nextParamModIndex());
         } else {
             // uint32_t hash = static_cast<uint32_t>(ModParamSet::Hash()(paramsp));
             suffix = "_hierblk" + std::to_string(modInfop->nextParamModIndex());
@@ -903,7 +903,7 @@ class ParamProcessor final {
     void loadParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep) {
         std::unordered_set<string> hierOrigModNames;  // set[origName]
         std::unordered_map<string, AstNodeModule*> hierModMap;  // modName -> node
-        std::multimap<string, string> hierModNameList;  // origName -> list[mangledName]
+        std::multimap<string, string> hierModNameList;  // origName -> set[mangledName]
         for (const auto& hierOpt : hierOpts) {
             const string& origName = hierOpt.second.origName();
             const string& mangledName = hierOpt.second.mangledName();
