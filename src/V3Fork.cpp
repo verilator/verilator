@@ -43,9 +43,7 @@
 #include "V3Fork.h"
 
 #include "V3AstNodeExpr.h"
-#include "V3Global.h"
 #include "V3MemberMap.h"
-#include "V3String.h"
 
 #include <set>
 #include <vector>
@@ -82,8 +80,7 @@ public:
     ForkDynScopeInstance& createInstancePrototype() {
         UASSERT_OBJ(!m_instance.initialized(), m_procp, "Dynamic scope already instantiated.");
 
-        m_instance.m_classp
-            = new AstClass{m_procp->fileline(), generateDynScopeClassName()};
+        m_instance.m_classp = new AstClass{m_procp->fileline(), generateDynScopeClassName()};
         m_instance.m_refDTypep
             = new AstClassRefDType{m_procp->fileline(), m_instance.m_classp, nullptr};
         v3Global.rootp()->typeTablep()->addTypesp(m_instance.m_refDTypep);
@@ -229,9 +226,7 @@ private:
         m_modp->addStmtsp(m_instance.m_classp);
     }
 
-    string generateDynScopeClassName() {
-        return "__VDynScope_" + cvtToStr(m_class_id);
-    }
+    string generateDynScopeClassName() { return "__VDynScope_" + cvtToStr(m_class_id); }
 
     string generateDynScopeHandleName(const AstNode* fromp) {
         return "__VDynScope_" + (!fromp->name().empty() ? (fromp->name() + "_") : "ANON_")
@@ -624,6 +619,7 @@ private:
     void visit(AstThisRef* nodep) override { return; }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_id);
         m_modp = nodep;
         m_id = 0;
         iterateChildren(nodep);
