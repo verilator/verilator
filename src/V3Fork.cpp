@@ -43,6 +43,7 @@
 #include "V3Fork.h"
 
 #include "V3AstNodeExpr.h"
+#include "V3Global.h"
 #include "V3MemberMap.h"
 #include "V3String.h"
 
@@ -68,19 +69,21 @@ private:
     AstNode* const m_procp;  // Procedure/block associated with that dynscope
     std::set<AstVar*> m_captures;  // Variables to be moved into the dynscope
     ForkDynScopeInstance m_instance;  // Nodes to be injected into the AST to create the dynscope
+    const size_t m_class_id;  // Dynscope class ID
     const size_t m_id;  // Dynscope ID
 
 public:
-    ForkDynScopeFrame(AstNodeModule* modp, AstNode* procp, size_t id)
+    ForkDynScopeFrame(AstNodeModule* modp, AstNode* procp, size_t class_id, size_t id)
         : m_modp{modp}
         , m_procp{procp}
+        , m_class_id{class_id}
         , m_id{id} {}
 
     ForkDynScopeInstance& createInstancePrototype() {
         UASSERT_OBJ(!m_instance.initialized(), m_procp, "Dynamic scope already instantiated.");
 
         m_instance.m_classp
-            = new AstClass{m_procp->fileline(), generateDynScopeClassName(m_procp)};
+            = new AstClass{m_procp->fileline(), generateDynScopeClassName()};
         m_instance.m_refDTypep
             = new AstClassRefDType{m_procp->fileline(), m_instance.m_classp, nullptr};
         v3Global.rootp()->typeTablep()->addTypesp(m_instance.m_refDTypep);
@@ -226,8 +229,8 @@ private:
         m_modp->addStmtsp(m_instance.m_classp);
     }
 
-    string generateDynScopeClassName(const AstNode* fromp) {
-        return "__VDynScope_" + cvtToStr(m_id);
+    string generateDynScopeClassName() {
+        return "__VDynScope_" + cvtToStr(m_class_id);
     }
 
     string generateDynScopeHandleName(const AstNode* fromp) {
@@ -273,6 +276,7 @@ private:
     bool m_afterTimingControl = false;  // A timing control might've be executed in the current
                                         // process
     size_t m_id;  // Unique ID for a frame
+    size_t m_class_id;  // Unique ID for a frame class
 
     // METHODS
 
@@ -289,7 +293,8 @@ private:
     }
 
     ForkDynScopeFrame* pushDynScopeFrame(AstNode* procp) {
-        ForkDynScopeFrame* const framep = new ForkDynScopeFrame{m_modp, procp, m_id++};
+        ForkDynScopeFrame* const framep
+            = new ForkDynScopeFrame{m_modp, procp, m_class_id++, m_id++};
         auto r = m_frames.emplace(std::make_pair(procp, framep));
         UASSERT_OBJ(r.second, m_modp, "Procedure already contains a frame");
         return framep;
