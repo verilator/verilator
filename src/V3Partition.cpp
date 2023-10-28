@@ -2662,9 +2662,9 @@ uint32_t V3Partition::setupMTaskDeps(V3Graph* mtasksp) {
     // coarsening algorithm assumes that the graph is connected.
     m_entryMTaskp = new LogicMTask{mtasksp, nullptr};
 
-    // The V3InstrCount within LogicMTask will set user5 on each AST
+    // The V3InstrCount within LogicMTask will set user1 on each AST
     // node, to assert that we never count any node twice.
-    const VNUser5InUse user5inUse;
+    const VNUser1InUse user1inUse;
 
     // Create the LogicMTasks for each MTaskMoveVertex
     for (V3GraphVertex *vtxp = m_fineDepsGraphp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {

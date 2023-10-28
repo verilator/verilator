@@ -52,6 +52,7 @@
 
 #include "V3Delayed.h"
 
+#include "V3AstUserAllocator.h"
 #include "V3Stats.h"
 
 #include <deque>
@@ -65,27 +66,33 @@ class DelayedVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared each module:
-    //  AstVarScope::user1p()   -> AstVarScope*.  Points to temp var created.
-    //  AstVarScope::user2p()   -> AstActive*.  Points to activity block of signal
-    //                                       (valid when AstVarScope::user1p is valid)
-    //  AstVarScope::user3p()   -> AstAlwaysPost*.  Post block for this variable used for
-    //                                              AssignDlys in suspendable processes
-    //  AstVarScope::user4p()   -> AstAlwaysPost*.  Post block for this variable
-    //  AstVarScope::user5p()   -> AstVarRef*. Last blocking or non-blocking reference
+    //  AstVarScope::user1p()   -> aux
     //  AstVar::user2()         -> bool.  Set true if already made warning
+    //  AstVarRef::user1()      -> bool.  Set true if was blocking reference
     //  AstVarRef::user2()      -> bool.  Set true if already processed
-    //  AstVarRef::user5()      -> bool.  Set true if was blocking reference
+    //  AstAlwaysPost::user1()  -> AstIf*.  Last IF (__Vdlyvset__) created under this AlwaysPost
     //  AstAlwaysPost::user2()  -> ActActive*.  Points to activity block of signal
     //                                      (valid when AstAlwaysPost::user4p is valid)
-    //  AstAlwaysPost::user4()  -> AstIf*.  Last IF (__Vdlyvset__) created under this AlwaysPost
     // Cleared each scope/active:
     //  AstAssignDly::user3()   -> AstVarScope*.  __Vdlyvset__ created for this assign
     //  AstAlwaysPost::user3()  -> AstVarScope*.  __Vdlyvset__ last referenced in IF
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
     const VNUser3InUse m_inuser3;
-    const VNUser4InUse m_inuser4;
-    const VNUser5InUse m_inuser5;
+
+    struct AuxAstVarScope final {
+        // Points to temp (shadow) variable created.
+        AstVarScope* delayVscp = nullptr;
+        // Points to activity block of signal (valid when AstVarScope::user1p is valid)
+        AstActive* activep = nullptr;
+        // Post block for this variable used for AssignDlys in suspendable processes
+        AstAlwaysPost* suspFinalp = nullptr;
+        // Post block for this variable
+        AstAlwaysPost* finalp = nullptr;
+        // Last blocking or non-blocking reference
+        AstNodeVarRef* lastRefp = nullptr;
+    };
+    AstUser1Allocator<AstVarScope, AuxAstVarScope> m_vscpAux;
 
     // STATE - across all visitors
     std::unordered_map<const AstVarScope*, int> m_scopeVecMap;  // Next var number for each scope
@@ -116,14 +123,14 @@ private:
         // Ignore if warning is disabled on this reference (used by V3Force).
         if (nodep->fileline()->warnIsOff(V3ErrorCode::BLKANDNBLK)) return;
         if (m_ignoreBlkAndNBlk) return;
-        if (blocking) nodep->user5(true);
+        if (blocking) nodep->user1(true);
         AstVarScope* const vscp = nodep->varScopep();
         // UINFO(4, " MVU " << blocking << " " << nodep << endl);
-        const AstNode* const lastrefp = vscp->user5p();
+        const AstNode* const lastrefp = m_vscpAux(vscp).lastRefp;
         if (!lastrefp) {
-            vscp->user5p(nodep);
+            m_vscpAux(vscp).lastRefp = nodep;
         } else {
-            const bool last_was_blocking = lastrefp->user5();
+            const bool last_was_blocking = lastrefp->user1();
             if (last_was_blocking != blocking) {
                 const AstNode* nonblockingp = blocking ? nodep : lastrefp;
                 if (const AstNode* np = containingAssignment(nonblockingp)) nonblockingp = np;
@@ -351,7 +358,7 @@ private:
         UINFO(9, "     & " << varrefp << endl);
         AstAlwaysPost* finalp = nullptr;
         if (m_inSuspendableOrFork) {
-            finalp = VN_AS(varrefp->varScopep()->user3p(), AlwaysPost);
+            finalp = m_vscpAux(varrefp->varScopep()).suspFinalp;
             if (!finalp) {
                 FileLine* const flp = nodep->fileline();
                 finalp = new AstAlwaysPost{flp, nullptr, nullptr};
@@ -359,13 +366,13 @@ private:
                 if (!m_procp->user3p()) {
                     AstActive* const newactp = createActive(varrefp);
                     m_procp->user3p(newactp);
-                    varrefp->varScopep()->user3p(finalp);
+                    m_vscpAux(varrefp->varScopep()).suspFinalp = finalp;
                 }
                 AstActive* const actp = VN_AS(m_procp->user3p(), Active);
                 actp->addStmtsp(finalp);
             }
         } else {
-            finalp = VN_AS(varrefp->varScopep()->user4p(), AlwaysPost);
+            finalp = m_vscpAux(varrefp->varScopep()).finalp;
             if (finalp) {
                 AstActive* const oldactivep = VN_AS(finalp->user2p(), Active);
                 checkActivePost(varrefp, oldactivep);
@@ -375,7 +382,7 @@ private:
                 UINFO(9, "     Created " << finalp << endl);
                 AstActive* const newactp = createActive(varrefp);
                 newactp->addStmtsp(finalp);
-                varrefp->varScopep()->user4p(finalp);
+                m_vscpAux(varrefp->varScopep()).finalp = finalp;
                 finalp->user2p(newactp);
                 if (setinitp) newactp->addStmtsp(setinitp);
             }
@@ -384,7 +391,7 @@ private:
         if (finalp->user3p() == setvscp) {
             // Optimize as above; if sharing Vdlyvset *ON SAME VARIABLE*,
             // we can share the IF statement too
-            postLogicp = VN_AS(finalp->user4p(), If);
+            postLogicp = VN_AS(finalp->user1p(), If);
             UASSERT_OBJ(postLogicp, nodep,
                         "Delayed assignment misoptimized; prev var found w/o associated IF");
         } else {
@@ -393,7 +400,7 @@ private:
             UINFO(9, "     Created " << postLogicp << endl);
             finalp->addStmtsp(postLogicp);
             finalp->user3p(setvscp);  // Remember IF's vset variable
-            finalp->user4p(postLogicp);  // and the associated IF, as we may be able to reuse it
+            finalp->user1p(postLogicp);  // and the associated IF, as we may be able to reuse it
         }
         postLogicp->addThensp(new AstAssign{nodep->fileline(), selectsp, valreadp});
         if (m_inSuspendableOrFork) {
@@ -565,12 +572,11 @@ private:
                 }
                 AstVarScope* const oldvscp = nodep->varScopep();
                 UASSERT_OBJ(oldvscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
-                AstVarScope* dlyvscp = VN_AS(oldvscp->user1p(), VarScope);
+                AstVarScope* dlyvscp = m_vscpAux(oldvscp).delayVscp;
                 if (dlyvscp) {  // Multiple use of delayed variable
-                    AstActive* const oldactivep = VN_AS(dlyvscp->user2p(), Active);
+                    AstActive* const oldactivep = m_vscpAux(dlyvscp).activep;
                     checkActivePost(nodep, oldactivep);
-                }
-                if (!dlyvscp) {  // First use of this delayed variable
+                } else {  // First use of this delayed variable
                     const string newvarname = string{"__Vdly__"} + nodep->varp()->shortName();
                     dlyvscp = createVarSc(oldvscp, newvarname, 0, nullptr);
                     AstNodeAssign* const prep = new AstAssignPre{
@@ -582,10 +588,10 @@ private:
                         new AstVarRef{nodep->fileline(), oldvscp, VAccess::WRITE},
                         new AstVarRef{nodep->fileline(), dlyvscp, VAccess::READ}};
                     postp->lhsp()->user2(true);  // Don't detect this assignment
-                    oldvscp->user1p(dlyvscp);  // So we can find it later
+                    m_vscpAux(oldvscp).delayVscp = dlyvscp;  // So we can find it later
                     // Make new ACTIVE with identical sensitivity tree
                     AstActive* const newactp = createActive(nodep);
-                    dlyvscp->user2p(newactp);
+                    m_vscpAux(dlyvscp).activep = newactp;
                     newactp->addStmtsp(prep);  // Add to FRONT of statements
                     newactp->addStmtsp(postp);
                 }
