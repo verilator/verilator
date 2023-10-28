@@ -14,6 +14,7 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk2) at t/t_timing_sched.v:50
 -V{t#,#}+    Vt_timing_debug1___024root___eval_initial__TOP__3
 -V{t#,#}+    Vt_timing_debug1___024root___eval_settle
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__stl
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__stl
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__stl
 -V{t#,#}         'stl' region trigger index 0 is active: Internal 'stl' trigger - first iteration
@@ -29,11 +30,13 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
 -V{t#,#}+    Vt_timing_debug1___024root___stl_comb__TOP__2
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1____Vfork_2__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__stl
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__stl
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__stl
 -V{t#,#}         No triggers active
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -52,20 +55,25 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1____Vfork_2__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -82,6 +90,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -90,6 +99,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 3 is active: @(posedge t.clk1)
@@ -107,24 +117,29 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___nba_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -140,6 +155,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -148,21 +164,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -179,23 +200,28 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk1) at t/t_timing_sched.v:17
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -210,6 +236,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -218,6 +245,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 3 is active: @(posedge t.clk1)
@@ -231,22 +259,27 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___nba_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -263,6 +296,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:13
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_t.clk2__0)
@@ -271,6 +305,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1____Vfork_2__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 5 is active: @(posedge t.clk2)
@@ -287,6 +322,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] t.c1)
@@ -296,21 +332,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -328,6 +369,7 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk2) at t/t_timing_sched.v:50
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -338,21 +380,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -368,23 +415,28 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk1) at t/t_timing_sched.v:17
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -398,6 +450,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -406,6 +459,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 3 is active: @(posedge t.clk1)
@@ -423,24 +477,29 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___nba_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -455,6 +514,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -463,21 +523,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -493,23 +558,28 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk1) at t/t_timing_sched.v:17
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -523,6 +593,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -531,6 +602,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 3 is active: @(posedge t.clk1)
@@ -544,22 +616,27 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___nba_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -574,6 +651,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:13
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_t.clk2__0)
@@ -582,21 +660,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1____Vfork_2__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -611,6 +694,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -619,21 +703,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -649,23 +738,28 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk1) at t/t_timing_sched.v:17
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -679,6 +773,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -687,6 +782,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 3 is active: @(posedge t.clk1)
@@ -700,22 +796,27 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___nba_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -730,6 +831,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -738,21 +840,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -768,23 +875,28 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk1) at t/t_timing_sched.v:17
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -799,6 +911,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -810,6 +923,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1____Vfork_2__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 3 is active: @(posedge t.clk1)
@@ -832,6 +946,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] t.c1)
@@ -841,22 +956,27 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___nba_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -873,23 +993,28 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk2) at t/t_timing_sched.v:50
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:50
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -904,6 +1029,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -912,21 +1038,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -942,23 +1073,28 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk1) at t/t_timing_sched.v:17
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -972,6 +1108,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -980,6 +1117,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 3 is active: @(posedge t.clk1)
@@ -997,24 +1135,29 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___nba_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1029,6 +1172,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -1037,21 +1181,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1067,23 +1216,28 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk1) at t/t_timing_sched.v:17
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1097,6 +1251,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:13
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_t.clk2__0)
@@ -1105,21 +1260,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1____Vfork_2__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1133,6 +1293,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -1141,6 +1302,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 3 is active: @(posedge t.clk1)
@@ -1154,22 +1316,27 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___nba_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1184,6 +1351,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -1192,21 +1360,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1222,23 +1395,28 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk1) at t/t_timing_sched.v:17
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1252,6 +1430,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -1260,6 +1439,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 3 is active: @(posedge t.clk1)
@@ -1273,22 +1453,27 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___nba_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1303,6 +1488,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -1311,21 +1497,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1342,6 +1533,7 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk1) at t/t_timing_sched.v:17
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_t.clk2__0)
@@ -1352,6 +1544,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1____Vfork_2__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 5 is active: @(posedge t.clk2)
@@ -1368,6 +1561,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] t.c1)
@@ -1377,21 +1571,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1407,23 +1606,28 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk2) at t/t_timing_sched.v:50
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:50
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1437,6 +1641,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -1445,6 +1650,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 3 is active: @(posedge t.clk1)
@@ -1462,24 +1668,29 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk2):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:18
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___nba_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1494,6 +1705,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -1502,21 +1714,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1532,23 +1749,28 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk1) at t/t_timing_sched.v:17
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1562,6 +1784,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -1570,6 +1793,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 3 is active: @(posedge t.clk1)
@@ -1583,22 +1807,27 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___nba_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1614,6 +1843,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -1625,21 +1855,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1____Vfork_2__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1655,23 +1890,28 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk1) at t/t_timing_sched.v:17
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1685,6 +1925,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -1693,6 +1934,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 3 is active: @(posedge t.clk1)
@@ -1706,22 +1948,27 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___nba_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1736,6 +1983,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -1744,21 +1992,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1774,23 +2027,28 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk1) at t/t_timing_sched.v:17
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
 -V{t#,#}         Committing processes waiting for @(posedge t.clk1):
 -V{t#,#}           - Process waiting at t/t_timing_sched.v:17
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1804,6 +2062,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:10
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -1812,6 +2071,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 3 is active: @(posedge t.clk1)
@@ -1825,22 +2085,27 @@
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___nba_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1855,6 +2120,7 @@
 -V{t#,#}             Resuming: Process waiting at t/t_timing_sched.v:13
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 1 is active: @([hybrid] __VassignWtmp_t.clk2__0)
@@ -1863,6 +2129,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__1____Vfork_2__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 5 is active: @(posedge t.clk2)
@@ -1879,6 +2146,7 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__1
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 2 is active: @([hybrid] t.c1)
@@ -1888,21 +2156,26 @@
 -V{t#,#}+    Vt_timing_debug1___024root___timing_resume
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__2
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug1::eval_step
 -V{t#,#}+    Vt_timing_debug1___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug1___024root___eval
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 4 is active: @([true] __VdlySched.awaitingCurrentTime())
@@ -1922,6 +2195,7 @@
 -V{t#,#}         Suspending process waiting for @(posedge t.clk2) at t/t_timing_sched.v:50
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @([hybrid] __VassignWtmp_t.clk1__0)
@@ -1932,15 +2206,19 @@
 -V{t#,#}+    Vt_timing_debug1___024root___eval_act
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0
 -V{t#,#}+    Vt_timing_debug1___024root___act_sequent__TOP__0____Vfork_1__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}+    Vt_timing_debug1___024root___eval_nba
 -V{t#,#}+    Vt_timing_debug1___024root___act_comb__TOP__0
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__act
 -V{t#,#}+    Vt_timing_debug1___024root___eval_triggers__act
 -V{t#,#}+    Vt_timing_debug1___024root___dump_triggers__act
 -V{t#,#}         No triggers active
 -V{t#,#}+    Vt_timing_debug1___024root___timing_commit
+-V{t#,#}+    Vt_timing_debug1___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+    Vt_timing_debug1___024root___eval_final

@@ -87,14 +87,6 @@ std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicBy
     return result;
 }
 
-AstAssign* setVar(AstVarScope* vscp, uint32_t val) {
-    FileLine* const flp = vscp->fileline();
-    AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::WRITE};
-    AstConst* const valp = new AstConst{flp, AstConst::DTyped{}, vscp->dtypep()};
-    valp->num().setLong(val);
-    return new AstAssign{flp, refp, valp};
-};
-
 void remapSensitivities(const LogicByScope& lbs,
                         std::unordered_map<const AstSenTree*, AstSenTree*> senTreeMap) {
     for (const auto& pair : lbs) {
@@ -112,6 +104,175 @@ void invertAndMergeSenTreeMap(
         UASSERT_OBJ(!pair.second->sensesp()->nextp(), pair.second, "Should be single AstSenIem");
         result.emplace(pair.second->sensesp(), pair.first);
     }
+}
+
+//============================================================================
+// Code generation utility functions
+
+AstAssign* setVar(AstVarScope* vscp, uint32_t val) {
+    FileLine* const flp = vscp->fileline();
+    AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::WRITE};
+    AstConst* const valp = new AstConst{flp, AstConst::DTyped{}, vscp->dtypep()};
+    valp->num().setLong(val);
+    return new AstAssign{flp, refp, valp};
+}
+
+AstNodeStmt* incrementVar(AstVarScope* vscp) {
+    FileLine* const flp = vscp->fileline();
+    AstVarRef* const wrefp = new AstVarRef{flp, vscp, VAccess::WRITE};
+    AstVarRef* const rrefp = new AstVarRef{flp, vscp, VAccess::READ};
+    AstConst* const onep = new AstConst{flp, AstConst::DTyped{}, vscp->dtypep()};
+    onep->num().setLong(1);
+    return new AstAssign{flp, wrefp, new AstAdd{flp, rrefp, onep}};
+}
+
+AstNodeStmt* callVoidFunc(AstCFunc* funcp) {
+    AstCCall* const callp = new AstCCall{funcp->fileline(), funcp};
+    callp->dtypeSetVoid();
+    return callp->makeStmt();
+}
+
+AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVarScope* counterp,
+                                 AstCFunc* trigDumpp) {
+    FileLine* const flp = netlistp->fileline();
+
+    // If we exceeded the iteration limit, die
+    const uint32_t limit = v3Global.opt.convergeLimit();
+    AstVarRef* const counterRefp = new AstVarRef{flp, counterp, VAccess::READ};
+    AstConst* const constp = new AstConst{flp, AstConst::DTyped{}, counterp->dtypep()};
+    constp->num().setLong(limit);
+    AstNodeExpr* const condp = new AstGt{flp, counterRefp, constp};
+    AstIf* const ifp = new AstIf{flp, condp};
+    ifp->branchPred(VBranchPred::BP_UNLIKELY);
+    AstTextBlock* const blockp = new AstTextBlock{flp};
+    ifp->addThensp(blockp);
+    FileLine* const locp = netlistp->topModulep()->fileline();
+    const string& file = VIdProtect::protect(locp->filename());
+    const string& line = cvtToStr(locp->lineno());
+    const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
+    add("#ifdef VL_DEBUG\n");
+    blockp->addNodesp(callVoidFunc(trigDumpp));
+    add("#endif\n");
+    add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line + ", \"\", ");
+    add("\"" + name + " region did not converge.\");\n");
+
+    return ifp;
+}
+
+AstNodeStmt* profExecSectionPush(FileLine* flp, const string& name) {
+    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"" + name + "\");\n"};
+}
+
+AstNodeStmt* profExecSectionPop(FileLine* flp) {
+    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n"};
+}
+
+struct EvalLoop {
+    // Flag set to true during the first iteration of the loop
+    AstVarScope* firstIterp;
+    // The loop continuation flag (set to true to loop again)
+    AstVarScope* continuep = nullptr;
+    // The loop itself and statements around it
+    AstNodeStmt* stmtsp = nullptr;
+};
+
+// Create an eval loop with all the trimmings.
+EvalLoop createEvalLoop(AstNetlist* netlistp,  //
+                        const std::string& tag,  // Tag for current phase
+                        const string& name,  // Name of current phase
+                        bool slow,  // Should create slow functions
+                        AstVarScope* trigp,  // The trigger vector
+                        AstCFunc* dumpFuncp,  // Trigger dump function for debugging only
+                        AstNodeStmt* innerp,  // The inner loop, if any
+                        AstNodeStmt* phasePrepp,  // Prep statements run before checking triggers
+                        AstNodeStmt* phaseWorkp  // The work to do if anything triggered
+) {
+    const std::string varPrefix = "__V" + tag;
+    AstScope* const scopeTopp = netlistp->topScopep()->scopep();
+    FileLine* const flp = netlistp->fileline();
+
+    // We wrap the prep/cond/work in a function for readability
+    AstCFunc* const phaseFuncp = makeTopFunction(netlistp, "_eval_phase__" + tag, slow);
+    {
+        // The execute flag
+        AstVarScope* const executeFlagp = scopeTopp->createTemp(varPrefix + "Execute", 1);
+        executeFlagp->varp()->noReset(true);
+
+        // Add the preparatory statements
+        phaseFuncp->addStmtsp(phasePrepp);
+
+        // Check if any triggers are fired, save the result
+        AstCMethodHard* const callp
+            = new AstCMethodHard{flp, new AstVarRef{flp, trigp, VAccess::READ}, "any"};
+        callp->dtypeSetBit();
+        phaseFuncp->addStmtsp(
+            new AstAssign{flp, new AstVarRef{flp, executeFlagp, VAccess::WRITE}, callp});
+
+        // Add the work
+        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, executeFlagp, VAccess::READ}};
+        ifp->addThensp(phaseWorkp);
+        phaseFuncp->addStmtsp(ifp);
+
+        // The function returns ture iff it did run the work
+        phaseFuncp->rtnType("bool");
+        phaseFuncp->addStmtsp(
+            new AstCReturn{flp, new AstVarRef{flp, executeFlagp, VAccess::READ}});
+    }
+
+    // The result statements
+    AstNodeStmt* stmtps = nullptr;
+
+    // Prof-exec section push
+    if (v3Global.opt.profExec()) stmtps = profExecSectionPush(flp, "loop " + tag);
+
+    const auto addVar = [&](const std::string& name, int width, uint32_t initVal) {
+        AstVarScope* const vscp = scopeTopp->createTemp("__V" + tag + name, width);
+        vscp->varp()->noReset(true);
+        stmtps = AstNode::addNext(stmtps, setVar(vscp, initVal));
+        return vscp;
+    };
+
+    // The iteration counter
+    AstVarScope* const counterp = addVar("IterCount", 32, 0);
+    // The first iteration flag
+    AstVarScope* const firstIterFlagp = addVar("FirstIteration", 1, 1);
+    // The continuation flag
+    AstVarScope* const continueFlagp = addVar("Continue", 1, 1);
+
+    // The loop
+    {
+        AstWhile* const loopp
+            = new AstWhile{flp, new AstVarRef{flp, continueFlagp, VAccess::READ}};
+
+        // Check the iteration limit (aborts if exceeded)
+        loopp->addStmtsp(checkIterationLimit(netlistp, name, counterp, dumpFuncp));
+        // Increment the iteration counter
+        loopp->addStmtsp(incrementVar(counterp));
+
+        // Reset continuation flag
+        loopp->addStmtsp(setVar(continueFlagp, 0));
+
+        // Execute the inner loop
+        loopp->addStmtsp(innerp);
+
+        // Call the phase function to execute the current work. If we did
+        // work, then need to loop again, so set the continuation flag
+        AstCCall* const callp = new AstCCall{flp, phaseFuncp};
+        callp->dtypeSetBit();
+        AstIf* const ifp = new AstIf{flp, callp};
+        ifp->addThensp(setVar(continueFlagp, 1));
+        loopp->addStmtsp(ifp);
+
+        // Clear the first iteration flag
+        loopp->addStmtsp(setVar(firstIterFlagp, 0));
+
+        stmtps->addNext(loopp);
+    }
+
+    // Prof-exec section pop
+    if (v3Global.opt.profExec()) stmtps->addNext(profExecSectionPop(flp));
+
+    return {firstIterFlagp, continueFlagp, stmtps};
 }
 
 //============================================================================
@@ -249,9 +410,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
         subFuncp->slow(funcp->slow());
         scopep->addBlocksp(subFuncp);
         // Call it from the top function
-        AstCCall* const callp = new AstCCall{scopep->fileline(), subFuncp};
-        callp->dtypeSetVoid();
-        funcp->addStmtsp(callp->makeStmt());
+        funcp->addStmtsp(callVoidFunc(subFuncp));
         return subFuncp;
     };
     const VNUser1InUse user1InUse;  // AstScope -> AstCFunc: the sub-function for the scope
@@ -340,13 +499,12 @@ struct TriggerKit {
     // No VL_UNCOPYABLE(TriggerKit) as causes C++20 errors on MSVC
 
     // Utility that assigns the given index trigger to fire when the given variable is zero
-    void addFirstIterationTriggerAssignment(AstVarScope* counterp, uint32_t index) const {
-        FileLine* const flp = counterp->fileline();
+    void addFirstIterationTriggerAssignment(AstVarScope* flagp, uint32_t index) const {
+        FileLine* const flp = flagp->fileline();
         AstVarRef* const vrefp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
         AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "set"};
         callp->addPinsp(new AstConst{flp, index});
-        callp->addPinsp(
-            new AstEq{flp, new AstVarRef{flp, counterp, VAccess::READ}, new AstConst{flp, 0}});
+        callp->addPinsp(new AstVarRef{flp, flagp, VAccess::READ});
         callp->dtypeSetVoid();
         m_funcp->stmtsp()->addHereThisAsNext(callp->makeStmt());
     }
@@ -378,6 +536,8 @@ struct EvalKit {
     AstCFunc* const m_dumpp = nullptr;
     // The AstCFunc that evaluates the region's logic
     AstCFunc* const m_funcp = nullptr;
+    // Is this kit used/required?
+    bool empty() const { return !m_funcp; }
 };
 
 // Create an AstSenTree that is sensitive to the given trigger index. Must not exist yet!
@@ -398,17 +558,6 @@ AstSenTree* createTriggerSenTree(AstNetlist* netlistp, AstVarScope* const vscp, 
     topScopep->addSenTreesp(resultp);
     return resultp;
 }
-
-//============================================================================
-// Utility for creating profiling statements
-
-AstNodeStmt* profExecSectionPush(FileLine* flp, const string& name) {
-    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"" + name + "\");\n"};
-};
-
-AstNodeStmt* profExecSectionPop(FileLine* flp) {
-    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n"};
-};
 
 //============================================================================
 // Utility for extra trigger allocation
@@ -586,9 +735,7 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
         const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
         add("#ifdef VL_DEBUG\n");
         add("if (VL_UNLIKELY(vlSymsp->_vm_contextp__->debug())) {\n");
-        AstCCall* const callp = new AstCCall{flp, dumpp};
-        callp->dtypeSetVoid();
-        blockp->addNodesp(callp->makeStmt());
+        blockp->addNodesp(callVoidFunc(dumpp));
         add("}\n");
         add("#endif\n");
     }
@@ -601,116 +748,6 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
     return {vscp, funcp, dumpp, map};
 }
 
-//============================================================================
-// EvalLoop contains elements of an evaluation loop created by makeEvalLoop()
-
-struct EvalLoop {
-    // Loop iteration counter for enforcing the converge limit
-    AstVarScope* counterp = nullptr;
-    // The loop condition
-    AstVarScope* continuep = nullptr;
-    // The loop itself and statements around it
-    AstNodeStmt* stmtsp = nullptr;
-};
-
-//============================================================================
-// Helpers to construct an evaluation loop.
-
-AstNodeStmt* buildLoop(AstNetlist* netlistp, AstVarScope* const condp,
-                       const std::function<void(AstWhile*)>& build)  //
-{
-    AstTopScope* const topScopep = netlistp->topScopep();
-    AstScope* const scopeTopp = topScopep->scopep();
-    FileLine* const flp = scopeTopp->fileline();
-    // Initialize the loop condition variable to true
-    AstNodeStmt* const resp = setVar(condp, 1);
-    // Add the loop
-    AstWhile* const loopp = new AstWhile{flp, new AstVarRef{flp, condp, VAccess::READ}};
-    resp->addNext(loopp);
-    // Clear the loop condition variable in the loop
-    loopp->addStmtsp(setVar(condp, 0));
-    // Build the body
-    build(loopp);
-    // Done
-    return resp;
-};
-
-EvalLoop makeEvalLoop(AstNetlist* netlistp, const string& tag, const string& name,
-                      AstVarScope* trigVscp, AstCFunc* trigDumpp,
-                      std::function<AstNodeStmt*()> computeTriggers,
-                      std::function<AstNodeStmt*()> makeBody) {
-    UASSERT_OBJ(trigVscp->dtypep()->basicp()->isTriggerVec(), trigVscp, "Not TRIGGERVEC");
-    AstTopScope* const topScopep = netlistp->topScopep();
-    AstScope* const scopeTopp = topScopep->scopep();
-    FileLine* const flp = scopeTopp->fileline();
-
-    AstVarScope* const counterp = scopeTopp->createTemp("__V" + tag + "IterCount", 32);
-    counterp->varp()->noReset(true);
-
-    AstVarScope* const continuep = scopeTopp->createTemp("__V" + tag + "Continue", 1);
-    continuep->varp()->noReset(true);
-
-    AstNodeStmt* nodep = nullptr;
-    if (v3Global.opt.profExec()) nodep = profExecSectionPush(flp, "loop " + tag);
-    nodep = AstNode::addNext(nodep, setVar(counterp, 0));
-    nodep->addNext(buildLoop(netlistp, continuep, [&](AstWhile* loopp) {
-        // Compute triggers
-        loopp->addStmtsp(computeTriggers());
-        // Invoke body if triggered
-        {
-            AstVarRef* const refp = new AstVarRef{flp, trigVscp, VAccess::READ};
-            AstCMethodHard* const callp = new AstCMethodHard{flp, refp, "any"};
-            callp->dtypeSetBit();
-            AstIf* const ifp = new AstIf{flp, callp};
-            loopp->addStmtsp(ifp);
-            ifp->addThensp(setVar(continuep, 1));
-
-            // If we exceeded the iteration limit, die
-            {
-                const uint32_t limit = v3Global.opt.convergeLimit();
-                AstVarRef* const counterRefp = new AstVarRef{flp, counterp, VAccess::READ};
-                AstConst* const constp = new AstConst{flp, AstConst::DTyped{}, counterp->dtypep()};
-                constp->num().setLong(limit);
-                AstNodeExpr* const condp = new AstGt{flp, counterRefp, constp};
-                AstIf* const failp = new AstIf{flp, condp};
-                failp->branchPred(VBranchPred::BP_UNLIKELY);
-                ifp->addThensp(failp);
-                AstTextBlock* const blockp = new AstTextBlock{flp};
-                failp->addThensp(blockp);
-                FileLine* const locp = netlistp->topModulep()->fileline();
-                const string& file = VIdProtect::protect(locp->filename());
-                const string& line = cvtToStr(locp->lineno());
-                const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
-                add("#ifdef VL_DEBUG\n");
-                AstCCall* const newcallp = new AstCCall{flp, trigDumpp};
-                newcallp->dtypeSetVoid();
-                blockp->addNodesp(newcallp->makeStmt());
-                add("#endif\n");
-                add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line
-                    + ", \"\", ");
-                add("\"" + name + " region did not converge.\");\n");
-            }
-
-            // Increment iteration count
-            {
-                AstVarRef* const wrefp = new AstVarRef{flp, counterp, VAccess::WRITE};
-                AstVarRef* const rrefp = new AstVarRef{flp, counterp, VAccess::READ};
-                AstConst* const onep = new AstConst{flp, AstConst::DTyped{}, counterp->dtypep()};
-                onep->num().setLong(1);
-                ifp->addThensp(new AstAssign{flp, wrefp, new AstAdd{flp, rrefp, onep}});
-            }
-
-            // Add body
-            ifp->addThensp(makeBody());
-        }
-    }));
-
-    if (v3Global.opt.profExec()) nodep->addNext(profExecSectionPop(flp));
-
-    return {counterp, continuep, nodep};
-}
-
-//============================================================================
 // Order the combinational logic to create the settle loop
 
 void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilder& senExprBulider,
@@ -752,24 +789,20 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
     splitCheck(stlFuncp);
 
     // Create the eval loop
-    const auto& loop = makeEvalLoop(
-        netlistp, "stl", "Settle", trig.m_vscp, trig.m_dumpp,
-        [&]() {  // Trigger
-            AstCCall* const callp = new AstCCall{stlFuncp->fileline(), trig.m_funcp};
-            callp->dtypeSetVoid();
-            return callp->makeStmt();
-        },
-        [&]() {  // Body
-            AstCCall* const callp = new AstCCall{stlFuncp->fileline(), stlFuncp};
-            callp->dtypeSetVoid();
-            return callp->makeStmt();
-        });
+    const EvalLoop stlLoop = createEvalLoop(  //
+        netlistp, "stl", "Settle", /* slow: */ true, trig.m_vscp, trig.m_dumpp,
+        // Inner loop statements
+        nullptr,
+        // Prep statements: Compute the current 'stl' triggers
+        callVoidFunc(trig.m_funcp),
+        // Work statements: Invoke the 'stl' function
+        callVoidFunc(stlFuncp));
 
     // Add the first iteration trigger to the trigger computation function
-    trig.addFirstIterationTriggerAssignment(loop.counterp, firstIterationTrigger);
+    trig.addFirstIterationTriggerAssignment(stlLoop.firstIterp, firstIterationTrigger);
 
     // Add the eval loop to the top function
-    funcp->addStmtsp(loop.stmtsp);
+    funcp->addStmtsp(stlLoop.stmtsp);
 }
 
 //============================================================================
@@ -841,24 +874,19 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     splitCheck(icoFuncp);
 
     // Create the eval loop
-    const auto& loop = makeEvalLoop(
-        netlistp, "ico", "Input combinational", trig.m_vscp, trig.m_dumpp,
-        [&]() {  // Trigger
-            AstCCall* const callp = new AstCCall{icoFuncp->fileline(), trig.m_funcp};
-            callp->dtypeSetVoid();
-            return callp->makeStmt();
-        },
-        [&]() {  // Body
-            AstCCall* const callp = new AstCCall{icoFuncp->fileline(), icoFuncp};
-            callp->dtypeSetVoid();
-            return callp->makeStmt();
-        });
+    const EvalLoop icoLoop = createEvalLoop(  //
+        netlistp, "ico", "Input combinational", /* slow: */ false, trig.m_vscp, trig.m_dumpp,
+        // Inner loop statements
+        nullptr,
+        // Prep statements: Compute the current 'ico' triggers
+        callVoidFunc(trig.m_funcp),
+        // Work statements: Invoke the 'ico' function
+        callVoidFunc(icoFuncp));
 
     // Add the first iteration trigger to the trigger computation function
-    trig.addFirstIterationTriggerAssignment(loop.counterp, firstIterationTrigger);
+    trig.addFirstIterationTriggerAssignment(icoLoop.firstIterp, firstIterationTrigger);
 
-    // Return the eval loop itself
-    return loop.stmtsp;
+    return icoLoop.stmtsp;
 }
 
 //============================================================================
@@ -906,146 +934,139 @@ void createEval(AstNetlist* netlistp,  //
 ) {
     FileLine* const flp = netlistp->fileline();
 
+    // Create the active eval loop
+    const EvalLoop actLoop = createEvalLoop(  //
+        netlistp, "act", "Active", /* slow: */ false, actKit.m_vscp, actKit.m_dumpp,
+        // Inner loop statements
+        nullptr,
+        // Prep statements
+        [&]() {
+            // Compute the current 'act' triggers
+            AstNodeStmt* const stmtsp = callVoidFunc(actKit.m_triggerComputep);
+            // Commit trigger awaits from the previous iteration
+            if (AstCCall* const commitp = timingKit.createCommit(netlistp)) {
+                stmtsp->addNext(commitp->makeStmt());
+            }
+            //
+            return stmtsp;
+        }(),
+        // Work statements
+        [&]() {
+            // Compute the 'pre' triggers
+            AstNodeStmt* const workp
+                = createTriggerAndNotCall(flp, preTrigsp, actKit.m_vscp, nbaKit.m_vscp);
+            // Latch the 'act' triggers under the 'nba' triggers
+            workp->addNext(createTriggerSetCall(flp, nbaKit.m_vscp, actKit.m_vscp));
+            // Resume triggered timing schedulers
+            if (AstCCall* const resumep = timingKit.createResume(netlistp)) {
+                workp->addNext(resumep->makeStmt());
+            }
+            // Invoke the 'act' function
+            workp->addNext(callVoidFunc(actKit.m_funcp));
+            //
+            return workp;
+        }());
+
+    // Create the NBA eval loop, which is the default top level loop.
+    EvalLoop topLoop = createEvalLoop(  //
+        netlistp, "nba", "NBA", /* slow: */ false, nbaKit.m_vscp, nbaKit.m_dumpp,
+        // Inner loop statements
+        actLoop.stmtsp,
+        // Prep statements
+        nullptr,
+        // Work statements
+        [&]() {
+            AstNodeStmt* workp = nullptr;
+            // Latch the 'nba' trigger flags under the following region's trigger flags
+            if (!obsKit.empty()) {
+                workp = createTriggerSetCall(flp, obsKit.m_vscp, nbaKit.m_vscp);
+            } else if (!reactKit.empty()) {
+                workp = createTriggerSetCall(flp, reactKit.m_vscp, nbaKit.m_vscp);
+            }
+            // Invoke the 'nba' function
+            workp = AstNode::addNext(workp, callVoidFunc(nbaKit.m_funcp));
+            // Clear the 'nba' triggers
+            workp->addNext(createTriggerClearCall(flp, nbaKit.m_vscp));
+            //
+            return workp;
+        }());
+
+    // If the NBA event exists, trigger it in 'nba'
+    if (AstVarScope* const nbaEventp = netlistp->nbaEventp()) {
+        AstVarScope* const nbaEventTriggerp = netlistp->nbaEventTriggerp();
+        UASSERT(nbaEventTriggerp, "NBA event trigger var should exist");
+        netlistp->nbaEventp(nullptr);
+        netlistp->nbaEventTriggerp(nullptr);
+
+        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, nbaEventTriggerp, VAccess::READ}};
+        ifp->addThensp(setVar(topLoop.continuep, 1));
+        ifp->addThensp(setVar(nbaEventTriggerp, 0));
+        AstCMethodHard* const firep
+            = new AstCMethodHard{flp, new AstVarRef{flp, nbaEventp, VAccess::WRITE}, "fire"};
+        firep->dtypeSetVoid();
+        ifp->addThensp(firep->makeStmt());
+        // actLoop.stmtsp happens to be the head of the loop body inside the NBA loop...
+        actLoop.stmtsp->addNext(ifp);
+    }
+
+    if (!obsKit.empty()) {
+        // Create the Observed eval loop, which becomes the top level loop.
+        topLoop = createEvalLoop(  //
+            netlistp, "obs", "Observed", /* slow: */ false, obsKit.m_vscp, obsKit.m_dumpp,
+            // Inner loop statements
+            topLoop.stmtsp,
+            // Prep statements
+            nullptr,
+            // Work statements
+            [&]() {
+                AstNodeStmt* workp = nullptr;
+                // Latch the Observed trigger flags under the Reactive trigger flags
+                if (!reactKit.empty()) {
+                    workp = createTriggerSetCall(flp, reactKit.m_vscp, obsKit.m_vscp);
+                }
+                // Invoke the 'obs' function
+                workp = AstNode::addNext(workp, callVoidFunc(obsKit.m_funcp));
+                // Clear the 'obs' triggers
+                workp->addNext(createTriggerClearCall(flp, obsKit.m_vscp));
+                //
+                return workp;
+            }());
+    }
+
+    if (!reactKit.empty()) {
+        // Create the Reactive eval loop, which becomes the top level loop.
+        topLoop = createEvalLoop(  //
+            netlistp, "react", "Reactive", /* slow: */ false, reactKit.m_vscp, reactKit.m_dumpp,
+            // Inner loop statements
+            topLoop.stmtsp,
+            // Prep statements
+            nullptr,
+            // Work statements
+            [&]() {
+                // Invoke the 'react' function
+                AstNodeStmt* const workp = callVoidFunc(reactKit.m_funcp);
+                // Clear the 'react' triggers
+                workp->addNext(createTriggerClearCall(flp, reactKit.m_vscp));
+                return workp;
+            }());
+    }
+
+    // Now that we have build the loops, create the main 'eval' function
     AstCFunc* const funcp = makeTopFunction(netlistp, "_eval", false);
     netlistp->evalp(funcp);
+
+    if (v3Global.opt.profExec()) funcp->addStmtsp(profExecSectionPush(flp, "eval"));
 
     // Start with the ico loop, if any
     if (icoLoop) funcp->addStmtsp(icoLoop);
 
-    // Create the active eval loop
-    const auto& activeEvalLoop = makeEvalLoop(
-        netlistp, "act", "Active", actKit.m_vscp, actKit.m_dumpp,
-        [&]() {  // Trigger
-            AstNodeStmt* resultp = nullptr;
-
-            // Compute the current triggers
-            {
-                AstCCall* const trigsp = new AstCCall{flp, actKit.m_triggerComputep};
-                trigsp->dtypeSetVoid();
-                resultp = AstNode::addNext(resultp, trigsp->makeStmt());
-            }
-
-            // Commit trigger awaits from the previous iteration
-            if (AstCCall* const commitp = timingKit.createCommit(netlistp)) {
-                resultp = AstNode::addNext(resultp, commitp->makeStmt());
-            }
-
-            return resultp;
-        },
-        [&]() {  // Body
-            // Compute the pre triggers
-            AstNodeStmt* resultp
-                = createTriggerAndNotCall(flp, preTrigsp, actKit.m_vscp, nbaKit.m_vscp);
-            // Latch the active trigger flags under the NBA trigger flags
-            resultp = AstNode::addNext(resultp,
-                                       createTriggerSetCall(flp, nbaKit.m_vscp, actKit.m_vscp));
-            // Resume triggered timing schedulers
-            if (AstCCall* const resumep = timingKit.createResume(netlistp)) {
-                resultp = AstNode::addNext(resultp, resumep->makeStmt());
-            }
-            // Invoke body function
-            {
-                AstCCall* const callp = new AstCCall{flp, actKit.m_funcp};
-                callp->dtypeSetVoid();
-                resultp = AstNode::addNext(resultp, callp->makeStmt());
-            }
-
-            return resultp;
-        });
-
-    // Create the NBA eval loop. This uses the Active eval loop in the trigger section.
-    const auto& nbaEvalLoop = makeEvalLoop(
-        netlistp, "nba", "NBA", nbaKit.m_vscp, nbaKit.m_dumpp,
-        [&]() {  // Trigger
-            // Reset NBA triggers
-            AstNodeStmt* resultp = createTriggerClearCall(flp, nbaKit.m_vscp);
-            // Run the Active eval loop
-            resultp = AstNode::addNext(resultp, activeEvalLoop.stmtsp);
-            return resultp;
-        },
-        [&]() {  // Body
-            AstCCall* const callp = new AstCCall{flp, nbaKit.m_funcp};
-            callp->dtypeSetVoid();
-            AstNodeStmt* resultp = callp->makeStmt();
-            // Latch the NBA trigger flags under the following region's trigger flags
-            AstVarScope* const nextVscp = obsKit.m_vscp ? obsKit.m_vscp : reactKit.m_vscp;
-            if (nextVscp) {
-                resultp = AstNode::addNext(resultp,
-                                           createTriggerSetCall(flp, nextVscp, nbaKit.m_vscp));
-            }
-            return resultp;
-        });
-
-    // If the NBA event exists, trigger it in 'nba'
-    if (netlistp->nbaEventp()) {
-        UASSERT(netlistp->nbaEventTriggerp(), "NBA event trigger var should exist");
-        AstIf* const ifp
-            = new AstIf{flp, new AstVarRef{flp, netlistp->nbaEventTriggerp(), VAccess::READ}};
-        ifp->addThensp(setVar(nbaEvalLoop.continuep, 1));
-        ifp->addThensp(setVar(netlistp->nbaEventTriggerp(), 0));
-        AstCMethodHard* const firep = new AstCMethodHard{
-            flp, new AstVarRef{flp, netlistp->nbaEventp(), VAccess::WRITE}, "fire"};
-        firep->dtypeSetVoid();
-        ifp->addThensp(firep->makeStmt());
-        activeEvalLoop.stmtsp->addNext(ifp);
-        netlistp->nbaEventp(nullptr);
-        netlistp->nbaEventTriggerp(nullptr);
-    }
-
-    AstNodeStmt* topEvalLoopp = nbaEvalLoop.stmtsp;
-
-    if (obsKit.m_funcp) {
-        // Create the Observed eval loop. This uses the NBA eval loop in the trigger section.
-        topEvalLoopp
-            = makeEvalLoop(
-                  netlistp, "obs", "Observed", obsKit.m_vscp, obsKit.m_dumpp,
-                  [&]() {  // Trigger
-                      // Reset Observed triggers
-                      AstNodeStmt* resultp = createTriggerClearCall(flp, obsKit.m_vscp);
-                      // Run the NBA eval loop
-                      resultp = AstNode::addNext(resultp, topEvalLoopp);
-                      return resultp;
-                  },
-                  [&]() {  // Body
-                      AstCCall* const callp = new AstCCall{flp, obsKit.m_funcp};
-                      callp->dtypeSetVoid();
-                      AstNodeStmt* resultp = callp->makeStmt();
-                      // Latch the Observed trigger flags under the Reactive trigger flags
-                      if (reactKit.m_vscp) {
-                          resultp = AstNode::addNext(
-                              resultp, createTriggerSetCall(flp, reactKit.m_vscp, obsKit.m_vscp));
-                      }
-                      return resultp;
-                  })
-                  .stmtsp;
-    }
-
-    if (reactKit.m_funcp) {
-        // Create the Reactive eval loop. This uses the previous eval loop in the trigger section.
-        topEvalLoopp = makeEvalLoop(
-                           netlistp, "react", "Reactive", reactKit.m_vscp, reactKit.m_dumpp,
-                           [&]() {  // Trigger
-                               // Reset Reactive triggers
-                               AstNodeStmt* resultp = createTriggerClearCall(flp, reactKit.m_vscp);
-                               // Run the previous eval loop
-                               resultp = AstNode::addNext(resultp, topEvalLoopp);
-                               return resultp;
-                           },
-                           [&]() {  // Body
-                               auto* const callp = new AstCCall{flp, reactKit.m_funcp};
-                               callp->dtypeSetVoid();
-                               return callp->makeStmt();
-                           })
-                           .stmtsp;
-    }
-    funcp->addStmtsp(topEvalLoopp);
+    // Execute the top level eval loop
+    funcp->addStmtsp(topLoop.stmtsp);
 
     // Add the Postponed eval call
-    if (postponedFuncp) {
-        AstCCall* const callp = new AstCCall{flp, postponedFuncp};
-        callp->dtypeSetVoid();
-        funcp->addStmtsp(callp->makeStmt());
-    }
+    if (postponedFuncp) funcp->addStmtsp(callVoidFunc(postponedFuncp));
+
+    if (v3Global.opt.profExec()) funcp->addStmtsp(profExecSectionPop(flp));
 }
 
 }  // namespace
@@ -1061,7 +1082,7 @@ void schedule(AstNetlist* netlistp) {
     };
 
     // Step 0. Prepare timing-related logic and external domains
-    auto timingKit = prepareTiming(netlistp);
+    TimingKit timingKit = prepareTiming(netlistp);
 
     // Step 1. Gather and classify all logic in the design
     LogicClasses logicClasses = gatherLogicClasses(netlistp);
