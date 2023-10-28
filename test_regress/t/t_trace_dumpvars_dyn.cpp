@@ -7,8 +7,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
+#if VM_TRACE_FST
 #include <verilated_fst_c.h>
+#define TRACE_FILE_NAME "simx.fst"
+#elif VM_TRACE_VCD
 #include <verilated_vcd_c.h>
+#define TRACE_FILE_NAME "simx.vcd"
+#endif
 
 #include <memory>
 
@@ -46,7 +51,7 @@ int main(int argc, char** argv) {
 #endif
 
     top->trace(tfp.get(), 99);
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
+    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/" TRACE_FILE_NAME);
     top->clk = 0;
 
     while (main_time <= 20) {
