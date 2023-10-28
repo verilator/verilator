@@ -178,12 +178,13 @@ private:
         const std::string type = AstCDType::typeToHold(items);
         const std::string name = "VlRandC<" + type + ", " + cvtToStr(items) + "ULL>";
         // Create or reuse (to avoid duplicates) randomization object dtype
-        auto it = m_randcDtypes.find(name);
-        if (it != m_randcDtypes.end()) return it->second;
-        AstCDType* newp = new AstCDType{fl, name};
-        v3Global.rootp()->typeTablep()->addTypesp(newp);
-        m_randcDtypes.emplace(name, newp);
-        return newp;
+        const auto pair = m_randcDtypes.emplace(name, nullptr);
+        if (pair.second) {
+            AstCDType* newp = new AstCDType{fl, name};
+            v3Global.rootp()->typeTablep()->addTypesp(newp);
+            pair.first->second = newp;
+        }
+        return pair.first->second;
     }
 
     AstVar* newRandcVarsp(AstVar* varp) {

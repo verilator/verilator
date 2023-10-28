@@ -187,12 +187,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const auto scpit = m_vpiScopeCandidates.find(scopeSymString(scp));
             if ((scpit != m_vpiScopeCandidates.end())
                 && (m_scopeNames.find(scp) == m_scopeNames.end())) {
-                const auto scopeNameit = m_scopeNames.find(scpit->second.m_symName);
-                if (scopeNameit == m_scopeNames.end()) {
-                    m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
-                } else {
-                    scopeNameit->second.m_type = scpit->second.m_type;
-                }
+                // If not in m_scopeNames, add it, otherwise just update m_type
+                const auto pair = m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
+                if (!pair.second) pair.first->second.m_type = scpit->second.m_type;
             }
             string::size_type pos = scp.rfind("__DOT__");
             if (pos == string::npos) {

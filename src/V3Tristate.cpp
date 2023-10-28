@@ -549,16 +549,11 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
 
     void mapInsertLhsVarRef(AstVarRef* nodep) {
-        AstVar* const key = nodep->varp();
-        const auto it = m_lhsmap.find(key);
         UINFO(9, "    mapInsertLhsVarRef " << nodep << endl);
-        if (it == m_lhsmap.end()) {  // Not found
-            RefStrengthVec* const refsp = new RefStrengthVec;
-            refsp->push_back(RefStrength{nodep, m_currentStrength});
-            m_lhsmap.emplace(key, refsp);
-        } else {
-            it->second->push_back(RefStrength{nodep, m_currentStrength});
-        }
+        AstVar* const key = nodep->varp();
+        const auto pair = m_lhsmap.emplace(key, nullptr);
+        if (pair.second) pair.first->second = new RefStrengthVec;
+        pair.first->second->push_back(RefStrength{nodep, m_currentStrength});
     }
 
     AstNodeExpr* newEnableDeposit(AstSel* selp, AstNodeExpr* enp) {

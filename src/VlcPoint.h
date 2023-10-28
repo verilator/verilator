@@ -139,18 +139,10 @@ public:
     }
     VlcPoint& pointNumber(uint64_t num) { return m_points[num]; }
     uint64_t findAddPoint(const string& name, uint64_t count) {
-        uint64_t pointnum;
-        const auto iter = m_nameMap.find(name);
-        if (iter != m_nameMap.end()) {
-            pointnum = iter->second;
-            m_points[pointnum].countInc(count);
-        } else {
-            pointnum = m_numPoints++;
-            VlcPoint point{name, pointnum};
-            point.countInc(count);
-            m_points.push_back(point);
-            m_nameMap.emplace(point.name(), point.pointNum());
-        }
+        const auto pair = m_nameMap.emplace(name, m_numPoints);
+        if (pair.second) m_points.emplace_back(name, m_numPoints++);
+        const uint64_t pointnum = pair.first->second;
+        m_points[pointnum].countInc(count);
         return pointnum;
     }
 };

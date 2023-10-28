@@ -1178,13 +1178,10 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
 AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
     const VBasicTypeKey key{nodep->width(), nodep->widthMin(), nodep->numeric(), nodep->keyword(),
                             nodep->nrange()};
-    DetailedMap& mapr = m_detailedMap;
-    const auto it = mapr.find(key);
-    if (it != mapr.end()) return it->second;
-    mapr.emplace(key, nodep);
-    nodep->generic(true);
+    auto pair = m_detailedMap.emplace(key, nodep);
+    if (pair.second) nodep->generic(true);
     // No addTypesp; the upper function that called new() is responsible for adding
-    return nodep;
+    return pair.first->second;
 }
 
 AstConstPool::AstConstPool(FileLine* fl)
@@ -1641,13 +1638,13 @@ void AstInitArray::cloneRelink() {
     }
 }
 void AstInitArray::addIndexValuep(uint64_t index, AstNodeExpr* newp) {
-    const auto it = m_map.find(index);
-    if (it != m_map.end()) {
-        it->second->valuep(newp);
-    } else {
+    const auto pair = m_map.emplace(index, nullptr);
+    if (pair.second) {
         AstInitItem* const itemp = new AstInitItem{fileline(), newp};
-        m_map.emplace(index, itemp);
+        pair.first->second = itemp;
         addInitsp(itemp);
+    } else {
+        pair.first->second->valuep(newp);
     }
 }
 AstNodeExpr* AstInitArray::getIndexValuep(uint64_t index) const {

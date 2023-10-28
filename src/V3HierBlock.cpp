@@ -306,12 +306,12 @@ public:
 //######################################################################
 
 void V3HierBlockPlan::add(const AstNodeModule* modp, const std::vector<AstVar*>& gparams) {
-    const iterator it = m_blocks.find(modp);
-    if (it == m_blocks.end()) {
+    const auto pair = m_blocks.emplace(modp, nullptr);
+    if (pair.second) {
         V3HierBlock* hblockp = new V3HierBlock{modp, gparams};
         UINFO(3, "Add " << modp->prettyNameQ() << " with " << gparams.size() << " parameters"
                         << std::endl);
-        m_blocks.emplace(modp, hblockp);
+        pair.first->second = hblockp;
     }
 }
 

@@ -356,27 +356,22 @@ class ParamProcessor final {
         // cppcheck-has-bug-suppress unreadVariable
         if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash{paramStr};
         int num;
-        const auto it = m_valueMap.find(hash);
-        if (it != m_valueMap.end()) {
-            num = it->second;
-        } else {
-            num = m_nextValue++;
-            m_valueMap[hash] = num;
-        }
+        const auto pair = m_valueMap.emplace(hash, 0);
+        if (pair.second) pair.first->second = m_nextValue++;
+        num = pair.first->second;
         return std::string{"z"} + cvtToStr(num);
     }
     string moduleCalcName(const AstNodeModule* srcModp, const string& longname) {
         string newname = longname;
         if (longname.length() > 30) {
-            const auto iter = m_longMap.find(longname);
-            if (iter != m_longMap.end()) {
-                newname = iter->second;
-            } else {
+            const auto pair = m_longMap.emplace(longname, "");
+            if (pair.second) {
                 newname = srcModp->name();
                 // We use all upper case above, so lower here can't conflict
                 newname += "__pi" + cvtToStr(++m_longId);
-                m_longMap.emplace(longname, newname);
+                pair.first->second = newname;
             }
+            newname = pair.first->second;
         }
         UINFO(4, "Name: " << srcModp->name() << "->" << longname << "->" << newname << endl);
         return newname;
@@ -496,8 +491,9 @@ class ParamProcessor final {
             }
         }
 
-        auto paramsIt = m_defaultParameterValues.find(modp);
-        if (paramsIt == m_defaultParameterValues.end()) {  // Not cached yet, so check parameters
+        const auto pair = m_defaultParameterValues.emplace(
+            std::piecewise_construct, std::forward_as_tuple(modp), std::forward_as_tuple());
+        if (pair.second) {  // Not cached yet, so check parameters
             // Using map with key=string so that we can scan it in deterministic order
             DefaultValueMap params;
             for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -511,8 +507,9 @@ class ParamProcessor final {
                     }
                 }
             }
-            paramsIt = m_defaultParameterValues.emplace(modp, std::move(params)).first;
+            pair.first->second = std::move(params);
         }
+        const auto paramsIt = pair.first;
         if (paramsIt->second.empty()) return modp->name();  // modp has no parameter
 
         string longname = modp->name();

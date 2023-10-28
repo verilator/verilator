@@ -63,13 +63,7 @@ void V3DupFinder::dumpFile(const string& filename, bool tree) {
     for (auto it = cbegin(); true; ++it) {
         if (it == cend() || lasthash != it->first) {
             if (it != cend()) lasthash = it->first;
-            if (num_in_bucket) {
-                if (dist.find(num_in_bucket) == dist.end()) {
-                    dist.emplace(num_in_bucket, 1);
-                } else {
-                    ++dist[num_in_bucket];
-                }
-            }
+            if (num_in_bucket) ++dist[num_in_bucket];
             num_in_bucket = 0;
         }
         if (it == cend()) break;

@@ -157,31 +157,27 @@ public:
         // Do we have a old assignment we can nuke?
         UINFO(4, "     ASSIGNof: " << nodep << endl);
         UINFO(7, "       new: " << assp << endl);
-        const auto it = m_map.find(nodep);
-        if (it != m_map.end()) {
-            checkRemoveAssign(it);
-            it->second.simpleAssign(assp);
-        } else {
-            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::SIMPLEASSIGN{}, assp});
+        const auto pair = m_map.emplace(std::piecewise_construct,  //
+                                        std::forward_as_tuple(nodep),
+                                        std::forward_as_tuple(LifeVarEntry::SIMPLEASSIGN{}, assp));
+        if (!pair.second) {
+            checkRemoveAssign(pair.first);
+            pair.first->second.simpleAssign(assp);
         }
         // lifeDump();
     }
     void complexAssign(AstVarScope* nodep) {
         UINFO(4, "     clearof: " << nodep << endl);
-        const auto it = m_map.find(nodep);
-        if (it != m_map.end()) {
-            it->second.complexAssign();
-        } else {
-            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::COMPLEXASSIGN{}});
-        }
+        const auto pair = m_map.emplace(nodep, LifeVarEntry::COMPLEXASSIGN{});
+        if (!pair.second) pair.first->second.complexAssign();
     }
     void clearReplaced() { m_replacedVref = false; }
     bool replaced() const { return m_replacedVref; }
     void varUsageReplace(AstVarScope* nodep, AstVarRef* varrefp) {
         // Variable rvalue.  If it references a constant, we can replace it
-        const auto it = m_map.find(nodep);
-        if (it != m_map.end()) {
-            if (AstConst* const constp = it->second.constNodep()) {
+        const auto pair = m_map.emplace(nodep, LifeVarEntry::CONSUMED{});
+        if (!pair.second) {
+            if (AstConst* const constp = pair.first->second.constNodep()) {
                 if (!varrefp->varp()->isSigPublic() && !varrefp->varp()->isUsedVirtIface()) {
                     // Aha, variable is constant; substitute in.
                     // We'll later constant propagate
@@ -194,27 +190,19 @@ public:
                 }
             }
             UINFO(4, "     usage: " << nodep << endl);
-            it->second.consumed();
-        } else {
-            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::CONSUMED{}});
+            pair.first->second.consumed();
         }
     }
     void complexAssignFind(AstVarScope* nodep) {
-        const auto it = m_map.find(nodep);
-        if (it != m_map.end()) {
-            UINFO(4, "     casfind: " << it->first << endl);
-            it->second.complexAssign();
-        } else {
-            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::COMPLEXASSIGN{}});
+        const auto pair = m_map.emplace(nodep, LifeVarEntry::COMPLEXASSIGN{});
+        if (!pair.second) {
+            UINFO(4, "     casfind: " << pair.first->first << endl);
+            pair.first->second.complexAssign();
         }
     }
     void consumedFind(AstVarScope* nodep) {
-        const auto it = m_map.find(nodep);
-        if (it != m_map.end()) {
-            it->second.consumed();
-        } else {
-            m_map.emplace(nodep, LifeVarEntry{LifeVarEntry::CONSUMED{}});
-        }
+        const auto pair = m_map.emplace(nodep, LifeVarEntry::CONSUMED{});
+        if (!pair.second) pair.first->second.consumed();
     }
     void lifeToAbove() {
         // Any varrefs under a if/else branch affect statements outside and after the if/else
