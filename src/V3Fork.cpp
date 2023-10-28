@@ -290,7 +290,7 @@ private:
     ForkDynScopeFrame* pushDynScopeFrame(AstNode* procp) {
         ForkDynScopeFrame* const framep
             = new ForkDynScopeFrame{m_modp, procp, m_class_id++, m_id++};
-        auto r = m_frames.emplace(std::make_pair(procp, framep));
+        auto r = m_frames.emplace(procp, framep);
         UASSERT_OBJ(r.second, m_modp, "Procedure already contains a frame");
         return framep;
     }
@@ -321,7 +321,7 @@ private:
     }
 
     void bindNodeToDynScope(AstNode* nodep, ForkDynScopeFrame* frame) {
-        m_frames.emplace(std::make_pair(nodep, frame));
+        m_frames.emplace(nodep, frame);
     }
 
     bool needsDynScope(const AstVarRef* refp) const {

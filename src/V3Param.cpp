@@ -90,8 +90,7 @@ class ParameterizedHierBlocks final {
 public:
     ParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep) {
         for (const auto& hierOpt : hierOpts) {
-            m_hierBlockOptsByOrigName.insert(
-                std::make_pair(hierOpt.second.origName(), &hierOpt.second));
+            m_hierBlockOptsByOrigName.emplace(hierOpt.second.origName(), &hierOpt.second);
             const V3HierarchicalBlockOption::ParamStrMap& params = hierOpt.second.params();
             ParamConstMap& consts = m_hierParams[&hierOpt.second];
             for (V3HierarchicalBlockOption::ParamStrMap::const_iterator pIt = params.begin();
@@ -807,7 +806,7 @@ class ParamProcessor final {
                         longnamer += ("_" + paramSmallName(srcModp, pinp->modVarp())
                                       + paramValueNumber(pinIrefp));
                         any_overridesr = true;
-                        ifaceRefRefs.push_back(std::make_pair(portIrefp, pinIrefp));
+                        ifaceRefRefs.emplace_back(portIrefp, pinIrefp);
                         if (portIrefp->ifacep() != pinIrefp->ifacep()
                             // Might be different only due to param cloning, so check names too
                             && portIrefp->ifaceName() != pinIrefp->ifaceName()) {

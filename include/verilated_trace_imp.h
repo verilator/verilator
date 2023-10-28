@@ -453,7 +453,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& 
         for (auto& i : hierSpaced) {
             if (i == '.') i = ' ';
         }
-        m_dumpvars.push_back(std::make_pair(level, hierSpaced));
+        m_dumpvars.emplace_back(level, hierSpaced);
     }
 }
 

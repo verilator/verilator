@@ -125,7 +125,7 @@ const std::string& V3Global::ptrToId(const void* p) {
         } else {
             os << "0";
         }
-        it = m_ptrToId.insert(std::make_pair(p, os.str())).first;
+        it = m_ptrToId.emplace(p, os.str()).first;
     }
     return it->second;
 }

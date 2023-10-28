@@ -95,8 +95,7 @@ public:
     // METHODS
     void lineIncCount(int lineno, uint64_t count, bool ok, const VlcPoint* pointp) {
         auto lit = m_lines.find(lineno);
-        if (lit == m_lines.end())
-            lit = m_lines.emplace(std::make_pair(lineno, VlcSourceCount{lineno})).first;
+        if (lit == m_lines.end()) lit = m_lines.emplace(lineno, VlcSourceCount{lineno}).first;
         VlcSourceCount& sc = lit->second;
         sc.incCount(count, ok);
         sc.insertPoint(pointp);
@@ -131,7 +130,7 @@ public:
         if (iter != m_sources.end()) {
             return iter->second;
         } else {
-            iter = m_sources.insert(std::make_pair(name, VlcSource{name})).first;
+            iter = m_sources.emplace(name, VlcSource{name}).first;
             return iter->second;
         }
     }

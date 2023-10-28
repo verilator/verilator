@@ -134,7 +134,7 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const GParams& gparams, boo
                 s = constp->num().ascii(true, true);
                 s = VString::quoteAny(s, '\'', '\\');
             }
-            strParams.push_back(std::make_pair(gparam->name(), s));
+            strParams.emplace_back(gparam->name(), s);
         }
     }
     return strParams;

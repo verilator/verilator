@@ -317,8 +317,7 @@ private:
 public:
     // Register a variable to split
     void registerVar(AstVar* varp) {
-        const bool inserted
-            = m_map.insert(std::make_pair(varp, MapType::value_type::second_type())).second;
+        const bool inserted = m_map.emplace(varp, MapType::value_type::second_type()).second;
         UASSERT_OBJ(inserted, varp, "already registered");
     }
     // Register the location where a variable is used.
@@ -907,8 +906,8 @@ public:
         std::vector<std::pair<int, bool>> points;  // <bit location, is end>
         points.reserve(m_lhs.size() * 2 + 2);  // 2 points will be added per one PackedVarRefEntry
         for (const PackedVarRefEntry& ref : m_lhs) {
-            points.emplace_back(std::make_pair(ref.lsb(), false));  // Start of a region
-            points.emplace_back(std::make_pair(ref.msb() + 1, true));  // End of a region
+            points.emplace_back(ref.lsb(), false);  // Start of a region
+            points.emplace_back(ref.msb() + 1, true);  // End of a region
         }
         if (skipUnused && !m_rhs.empty()) {  // Range to be read must be kept, so add points here
             int lsb = m_basicp->hi() + 1;
@@ -918,12 +917,12 @@ public:
                 msb = std::max(msb, ref.msb());
             }
             UASSERT_OBJ(lsb <= msb, m_basicp, "lsb:" << lsb << " msb:" << msb << " are wrong");
-            points.emplace_back(std::make_pair(lsb, false));
-            points.emplace_back(std::make_pair(msb + 1, true));
+            points.emplace_back(lsb, false);
+            points.emplace_back(msb + 1, true);
         }
         if (!skipUnused) {  // All bits are necessary
-            points.emplace_back(std::make_pair(m_basicp->lo(), false));
-            points.emplace_back(std::make_pair(m_basicp->hi() + 1, true));
+            points.emplace_back(m_basicp->lo(), false);
+            points.emplace_back(m_basicp->hi() + 1, true);
         }
         std::sort(points.begin(), points.end(), SortByFirst());
 
@@ -960,7 +959,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             warnNoSplit(nodep, nodep, reason);
             nodep->attrSplitVar(false);
         } else {  // Finally find a good candidate
-            const bool inserted = m_refs.insert(std::make_pair(nodep, PackedVarRef{nodep})).second;
+            const bool inserted = m_refs.emplace(nodep, PackedVarRef{nodep}).second;
             if (inserted) UINFO(3, nodep->prettyNameQ() << " is added to candidate list.\n");
         }
     }

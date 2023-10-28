@@ -856,7 +856,7 @@ class OrderProcess final {
         string name = "_" + m_tag;
         name += domainp->isMulti() ? "_comb" : "_sequent";
         name = name + "__" + scopep->nameDotless();
-        const unsigned funcnum = m_funcNums.emplace(std::make_pair(modp, name), 0).first->second++;
+        const unsigned funcnum = m_funcNums[{modp, name}]++;
         name = name + "__" + cvtToStr(funcnum);
         if (v3Global.opt.profCFuncs()) {
             name += "__PROF__" + forWhatp->fileline()->profileFuncname();

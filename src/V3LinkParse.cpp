@@ -534,8 +534,7 @@ private:
             } else {
                 defp = new AstTypedef{nodep->fileline(), nodep->name(), nullptr, VFlagChildDType{},
                                       dtypep};
-                m_implTypedef.insert(
-                    std::make_pair(std::make_pair(nodep->containerp(), defp->name()), defp));
+                m_implTypedef.emplace(std::make_pair(nodep->containerp(), defp->name()), defp);
                 backp->addNextHere(defp);
             }
         }

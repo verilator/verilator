@@ -182,7 +182,7 @@ private:
         if (it != m_randcDtypes.end()) return it->second;
         AstCDType* newp = new AstCDType{fl, name};
         v3Global.rootp()->typeTablep()->addTypesp(newp);
-        m_randcDtypes.emplace(std::make_pair(name, newp));
+        m_randcDtypes.emplace(name, newp);
         return newp;
     }
 
