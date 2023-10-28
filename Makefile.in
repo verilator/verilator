@@ -173,6 +173,10 @@ smoke-test: all_nomsg
 test_regress: all_nomsg
 	$(MAKE) -C test_regress
 
+.PHONY: test-snap test-diff
+test-snap test-diff:
+	$(MAKE) -C test_regress $@
+
 examples: all_nomsg
 	for p in $(EXAMPLES) ; do \
 	  $(MAKE) -C $$p VERILATOR_ROOT=`pwd` || exit 10; \
