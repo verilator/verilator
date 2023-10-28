@@ -33,7 +33,7 @@ class AstUserAllocatorBase VL_NOT_FINAL {
     static_assert(std::is_base_of<AstNode, T_Node>::value, "T_Node must be an AstNode type");
 
 private:
-    std::vector<T_Data*> m_allocated;
+    std::deque<T_Data> m_allocated;
 
     T_Data* getUserp(const T_Node* nodep) const {
         if VL_CONSTEXPR_CXX17 (T_UserN == 1) {
@@ -83,11 +83,6 @@ protected:
         }
     }
 
-    virtual ~AstUserAllocatorBase() {
-        // Delete all allocated data structures
-        for (T_Data* const p : m_allocated) { delete p; }
-    }
-
     VL_UNCOPYABLE(AstUserAllocatorBase);
 
 public:
@@ -96,8 +91,8 @@ public:
     T_Data& operator()(T_Node* nodep, Args&&... args) {
         T_Data* userp = getUserp(nodep);
         if (!userp) {
-            userp = new T_Data{std::forward<Args>(args)...};
-            m_allocated.push_back(userp);
+            m_allocated.emplace_back(std::forward<Args>(args)...);
+            userp = &m_allocated.back();
             setUserp(nodep, userp);
         }
         return *userp;
