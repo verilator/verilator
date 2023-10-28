@@ -1462,6 +1462,19 @@ There are some traps to avoid when running regression tests
   system-dependent, but on Fedora Linux it would require editing the
   ``/etc/security/limits.conf`` file as root.
 
+Diffing generated code after changes
+------------------------------------
+
+When making a change in the code generation area that should not change the
+actual emitted code, it is useful to perform a diff to make sure the emitted
+code really did not change. To do this, the top level Makefile provides the
+*test-snap* and *test-diff* targets:
+
+- Run the test suite with ``make test``
+- Take a snapshot with ``make test-snap``
+- Apply your changes
+- Run the test suite again with ``make test``
+- See the changes in the output with ``make test-diff``
 
 Continuous Integration
 ----------------------
