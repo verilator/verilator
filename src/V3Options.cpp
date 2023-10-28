@@ -221,7 +221,7 @@ V3HierarchicalBlockOption::V3HierarchicalBlockOption(const string& opts) {
         cmdfl.v3error(hierBlock + " requires at least two comma-separated values");
     }
     for (size_t i = 2; i + 1 < vals.size(); i += 2) {
-        const bool inserted = m_parameters.insert(std::make_pair(vals[i], vals[i + 1])).second;
+        const bool inserted = m_parameters.emplace(vals[i], vals[i + 1]).second;
         if (!inserted) {
             cmdfl.v3error("Module name '" + vals[i] + "' is duplicated in " + hierBlock);
         }

@@ -442,7 +442,7 @@ public:
 
     // Track and later recurse interface modules
     void insertIfaceModSym(AstIface* nodep, VSymEnt* symp) {
-        m_ifaceModSyms.push_back(std::make_pair(nodep, symp));
+        m_ifaceModSyms.emplace_back(nodep, symp);
     }
     void computeIfaceModSyms();
 

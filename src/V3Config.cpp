@@ -300,7 +300,7 @@ public:
         m_lastIgnore.it = m_ignLines.begin();
     }
     void addIgnoreMatch(V3ErrorCode code, const string& match) {
-        m_waivers.push_back(std::make_pair(code, match));
+        m_waivers.emplace_back(code, match);
     }
 
     void applyBlock(AstNodeBlock* nodep) {

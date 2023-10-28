@@ -542,8 +542,7 @@ public:
         VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d id=%" PRId64 " time=%" PRIu64
                                     " obj=%p\n",
                                     cb_data_p->reason, id, time, cb_data_p->obj););
-        s().m_futureCbs.emplace(std::piecewise_construct,
-                                std::forward_as_tuple(std::make_pair(time, id)),
+        s().m_futureCbs.emplace(std::piecewise_construct, std::forward_as_tuple(time, id),
                                 std::forward_as_tuple(id, cb_data_p, nullptr));
     }
     static void cbNextAdd(uint64_t id, const s_cb_data* cb_data_p, QData time) {
@@ -551,8 +550,7 @@ public:
         VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb reason=%d(NEXT) id=%" PRId64
                                     " time=%" PRIu64 " obj=%p\n",
                                     cb_data_p->reason, id, time, cb_data_p->obj););
-        s().m_nextCbs.emplace(std::piecewise_construct,
-                              std::forward_as_tuple(std::make_pair(time, id)),
+        s().m_nextCbs.emplace(std::piecewise_construct, std::forward_as_tuple(time, id),
                               std::forward_as_tuple(id, cb_data_p, nullptr));
     }
     static void cbReasonRemove(uint64_t id, uint32_t reason, QData time) {

@@ -278,13 +278,11 @@ EvalLoop createEvalLoop(AstNetlist* netlistp,  //
 //============================================================================
 // Split large function according to --output-split-cfuncs
 
-std::map<AstCFunc*, int> s_funcNums;  // What split number to attach to a function
-
 AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
-    auto funcNumItMatch = s_funcNums.emplace(std::make_pair(ofuncp, 0));
-    AstCFunc* const subFuncp = new AstCFunc{
-        ofuncp->fileline(), ofuncp->name() + "__" + cvtToStr(funcNumItMatch.first->second++),
-        ofuncp->scopep()};
+    static std::map<AstCFunc*, uint32_t> funcNums;  // What split number to attach to a function
+    const uint32_t funcNum = funcNums[ofuncp]++;
+    const std::string name = ofuncp->name() + "__" + cvtToStr(funcNum);
+    AstCFunc* const subFuncp = new AstCFunc{ofuncp->fileline(), name, ofuncp->scopep()};
     subFuncp->dontCombine(true);
     subFuncp->isStatic(false);
     subFuncp->isLoose(true);
