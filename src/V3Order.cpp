@@ -495,14 +495,9 @@ public:
     V3List<OrderMoveVertex*>& readyVertices() { return m_readyVertices; }
     static OrderMoveDomScope* findCreate(const AstSenTree* domainp, const AstScope* scopep) {
         const DomScopeKey key = std::make_pair(domainp, scopep);
-        const auto iter = s_dsMap.find(key);
-        if (iter != s_dsMap.end()) {
-            return iter->second;
-        } else {
-            OrderMoveDomScope* domScopep = new OrderMoveDomScope{domainp, scopep};
-            s_dsMap.emplace(key, domScopep);
-            return domScopep;
-        }
+        const auto pair = s_dsMap.emplace(key, nullptr);
+        if (pair.second) pair.first->second = new OrderMoveDomScope{domainp, scopep};
+        return pair.first->second;
     }
     string name() const {
         return string{"MDS:"} + " d=" + cvtToHex(domainp()) + " s=" + cvtToHex(scopep());

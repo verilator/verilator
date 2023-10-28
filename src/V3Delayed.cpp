@@ -145,30 +145,26 @@ private:
                              int width /*0==fromoldvar*/, AstNodeDType* newdtypep) {
         // Because we've already scoped it, we may need to add both the AstVar and the AstVarScope
         UASSERT_OBJ(oldvarscp->scopep(), oldvarscp, "Var unscoped");
-        AstVar* varp;
+        FileLine* const flp = oldvarscp->fileline();
         AstNodeModule* const addmodp = oldvarscp->scopep()->modp();
         // We need a new AstVar, but only one for all scopes, to match the new AstVarScope
-        const auto it = m_modVarMap.find(std::make_pair(addmodp, name));
-        if (it != m_modVarMap.end()) {
-            // Created module's AstVar earlier under some other scope
-            varp = it->second;
-        } else {
+        const auto pair = m_modVarMap.emplace(std::make_pair(addmodp, name), nullptr);
+        if (pair.second) {
+            AstVar* varp = nullptr;
             if (newdtypep) {
-                varp = new AstVar{oldvarscp->fileline(), VVarType::BLOCKTEMP, name, newdtypep};
+                varp = new AstVar{flp, VVarType::BLOCKTEMP, name, newdtypep};
             } else if (width == 0) {
-                varp = new AstVar{oldvarscp->fileline(), VVarType::BLOCKTEMP, name,
-                                  oldvarscp->varp()};
+                varp = new AstVar{flp, VVarType::BLOCKTEMP, name, oldvarscp->varp()};
                 varp->dtypeFrom(oldvarscp);
             } else {  // Used for vset and dimensions, so can zero init
-                varp = new AstVar{oldvarscp->fileline(), VVarType::BLOCKTEMP, name,
-                                  VFlagBitPacked{}, width};
+                varp = new AstVar{flp, VVarType::BLOCKTEMP, name, VFlagBitPacked{}, width};
             }
             addmodp->addStmtsp(varp);
-            m_modVarMap.emplace(std::make_pair(addmodp, name), varp);
+            pair.first->second = varp;
         }
+        AstVar* const varp = pair.first->second;
 
-        AstVarScope* const varscp
-            = new AstVarScope{oldvarscp->fileline(), oldvarscp->scopep(), varp};
+        AstVarScope* const varscp = new AstVarScope{flp, oldvarscp->scopep(), varp};
         oldvarscp->scopep()->addVarsp(varscp);
         return varscp;
     }

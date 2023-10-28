@@ -310,7 +310,7 @@ private:
         UASSERT_OBJ(varp->attrSplitVar(), varp, " no split_var metacomment");
         const MapIt it = m_map.find(varp);
         if (it == m_map.end()) return false;  // Not registered
-        const bool ok = m_map[varp].insert(ref).second;
+        const bool ok = it->second.insert(ref).second;
         return ok;
     }
 

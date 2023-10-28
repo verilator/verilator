@@ -71,12 +71,10 @@ public:
         if (m_symPrefix != "") os << "  symPrefix=" << m_symPrefix;
         os << "  n=" << nodep();
         os << '\n';
-        if (VL_UNCOVERABLE(doneSymsr.find(this) != doneSymsr.end())) {
+        if (VL_UNCOVERABLE(!doneSymsr.insert(this).second)) {
             os << indent << "| ^ duplicate, so no children printed\n";  // LCOV_EXCL_LINE
         } else {
-            doneSymsr.insert(this);
-            for (IdNameMap::const_iterator it = m_idNameMap.begin(); it != m_idNameMap.end();
-                 ++it) {
+            for (auto it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
                 if (numLevels >= 1) {
                     it->second->dumpIterate(os, doneSymsr, indent + "| ", numLevels - 1,
                                             it->first);

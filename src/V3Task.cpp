@@ -971,19 +971,21 @@ private:
         // Only create one DPI Import prototype or DPI Export entry point for each unique cname as
         // it is illegal for the user to attach multiple tasks with different signatures to one DPI
         // cname.
-        const auto it = m_dpiNames.find(nodep->cname());
-        if (it == m_dpiNames.end()) {
+        const auto pair = m_dpiNames.emplace(std::piecewise_construct,  //
+                                             std::forward_as_tuple(nodep->cname()),
+                                             std::forward_as_tuple(nodep, signature, nullptr));
+        if (pair.second) {
             // First time encountering this cname. Create Import prototype / Export entry point
             AstCFunc* const funcp = nodep->dpiExport() ? makeDpiExportDispatcher(nodep, rtnvarp)
                                                        : makeDpiImportPrototype(nodep, rtnvarp);
-            m_dpiNames.emplace(nodep->cname(), std::make_tuple(nodep, signature, funcp));
+            std::get<2>(pair.first->second) = funcp;
             return funcp;
         } else {
             // Seen this cname import before. Check if it's the same prototype.
             const AstNodeFTask* firstNodep;
             string firstSignature;
             AstCFunc* firstFuncp;
-            std::tie(firstNodep, firstSignature, firstFuncp) = it->second;
+            std::tie(firstNodep, firstSignature, firstFuncp) = pair.first->second;
             if (signature != firstSignature) {
                 // Different signature, so error.
                 nodep->v3error("Duplicate declaration of DPI function with different signature: '"
@@ -1779,16 +1781,13 @@ void V3Task::taskConnectWrap(AstNodeFTaskRef* nodep, const V3TaskConnects& tconn
     // Make wrapper name such that is same iff same args are defaulted
     std::string newname = nodep->name() + "__Vtcwrap";
     for (const AstVar* varp : argWrap) newname += "_" + cvtToStr(varp->pinNum());
-    const auto namekey = std::make_pair(nodep->taskp(), newname);
-    auto& wrapMapr = statep->wrapMap();
-    const auto it = wrapMapr.find(namekey);
-    AstNodeFTask* newTaskp;
-    if (it != wrapMapr.end()) {
-        newTaskp = it->second;
-    } else {
-        newTaskp = taskConnectWrapNew(nodep->taskp(), newname, tconnects, argWrap);
-        wrapMapr.emplace(namekey, newTaskp);
+    const auto pair = statep->wrapMap().emplace(std::piecewise_construct,
+                                                std::forward_as_tuple(nodep->taskp(), newname),
+                                                std::forward_as_tuple(nullptr));
+    if (pair.second) {
+        pair.first->second = taskConnectWrapNew(nodep->taskp(), newname, tconnects, argWrap);
     }
+    AstNodeFTask* const newTaskp = pair.first->second;
 
     // Remove the defaulted arguments from original outside call
     for (const auto& tconnect : tconnects) {
