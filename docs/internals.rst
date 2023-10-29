@@ -1222,9 +1222,9 @@ There are three ways data is passed between visitor functions.
 
 2. User attributes. Each ``AstNode`` (**Note.** The AST node, not the
    visitor) has five user attributes, which may be accessed as an
-   integer using the ``user1()`` through ``user5()`` methods, or as a
+   integer using the ``user1()`` through ``user4()`` methods, or as a
    pointer (of type ``AstNUser``) using the ``user1p()`` through
-   ``user5p()`` methods (a common technique lifted from graph traversal
+   ``user4p()`` methods (a common technique lifted from graph traversal
    packages).
 
    A visitor first clears the one it wants to use by calling
@@ -1653,7 +1653,7 @@ Source file and line
    file is ``a``, the 26th is ``z``, the 27th is ``aa``, and so on.
 
 User pointers
-   Shows the value of the node's user1p...user5p, if non-NULL.
+   Shows the value of the node's user1p...user4p, if non-NULL.
 
 Data type
    Many nodes have an explicit data type. "@dt=0x..." indicates the
