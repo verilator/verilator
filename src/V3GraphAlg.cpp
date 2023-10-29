@@ -34,6 +34,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 //######################################################################
 // Algorithms - Remove redundancies
+// Changes user() and weight()
 
 class GraphRemoveRedundant final : GraphAlg<> {
     const bool m_sumWeights;  ///< Sum, rather then maximize weights
@@ -92,11 +93,11 @@ public:
     ~GraphRemoveRedundant() = default;
 };
 
-void V3Graph::removeRedundantEdges(V3EdgeFuncP edgeFuncp) {
-    GraphRemoveRedundant(this, edgeFuncp, false);
+void V3Graph::removeRedundantEdgesMax(V3EdgeFuncP edgeFuncp) {
+    GraphRemoveRedundant{this, edgeFuncp, false};
 }
 void V3Graph::removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp) {
-    GraphRemoveRedundant(this, edgeFuncp, true);
+    GraphRemoveRedundant{this, edgeFuncp, true};
 }
 
 //######################################################################
@@ -132,6 +133,7 @@ void V3Graph::removeTransitiveEdges() { GraphAlgRemoveTransitiveEdges{this}.go()
 //######################################################################
 //######################################################################
 // Algorithms - weakly connected components
+// Changes color()
 
 class GraphAlgWeakly final : GraphAlg<> {
 private:
@@ -173,6 +175,7 @@ void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgWeakly{this, edge
 //######################################################################
 //######################################################################
 // Algorithms - strongly connected components
+// Changes user() and color()
 
 class GraphAlgStrongly final : GraphAlg<> {
 private:
@@ -263,6 +266,7 @@ void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgStrongly{this, 
 //######################################################################
 //######################################################################
 // Algorithms - ranking
+// Changes user() and rank()
 
 class GraphAlgRank final : GraphAlg<> {
 private:
@@ -317,7 +321,8 @@ void V3Graph::rank(V3EdgeFuncP edgeFuncp) { GraphAlgRank{this, edgeFuncp}; }
 
 //######################################################################
 //######################################################################
-// Algorithms - ranking
+// Algorithms - report loops
+// Changes user()
 
 class GraphAlgRLoops final : GraphAlg<> {
 private:
@@ -365,12 +370,13 @@ public:
 };
 
 void V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
-    GraphAlgRLoops(this, edgeFuncp, vertexp);
+    GraphAlgRLoops{this, edgeFuncp, vertexp};
 }
 
 //######################################################################
 //######################################################################
 // Algorithms - subtrees
+// Changes user()
 
 class GraphAlgSubtrees final : GraphAlg<> {
 private:
@@ -414,7 +420,7 @@ public:
 
 //! Report the entire connected graph with a loop or loops
 void V3Graph::subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp, V3Graph* loopGraphp) {
-    GraphAlgSubtrees(this, loopGraphp, edgeFuncp, vertexp);
+    GraphAlgSubtrees{this, loopGraphp, edgeFuncp, vertexp};
 }
 
 //######################################################################

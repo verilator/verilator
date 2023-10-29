@@ -456,7 +456,7 @@ protected:
     void cleanupBlockGraph(AstNode* nodep) {
         // Transform the graph into what we need
         UINFO(5, "ReorderBlock " << nodep << endl);
-        m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
+        m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
 
         if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("reorderg_nodup", false);
 
@@ -893,7 +893,7 @@ protected:
     void colorAlwaysGraph() {
         // Color the graph to indicate subsets, each of which
         // we can split into its own always block.
-        m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
+        m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
 
         // Some vars are primary inputs to the always block; prune
         // edges on those vars. Reasoning: if two statements both depend

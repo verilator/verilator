@@ -1291,12 +1291,12 @@ void OrderProcess::processMTasks() {
     mtask_pmbg.build();
 
     // Needed? We do this for m_pomGraph in serial mode, so do it here too:
-    logicGraph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
+    logicGraph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
 
     // Partition logicGraph into LogicMTask's. The partitioner will annotate
     // each vertex in logicGraph with a 'color' which is really an mtask ID
     // in this context.
-    V3Partition partitioner(&m_graph, &logicGraph);
+    V3Partition partitioner{&m_graph, &logicGraph};
     V3Graph mtasks;
     partitioner.go(&mtasks);
 
@@ -1307,7 +1307,7 @@ void OrderProcess::processMTasks() {
     // This is the order we'll execute logic nodes within the MTask.
     //
     // MTasks may span scopes and domains, so sort by both here:
-    GraphStream<OrderVerticesByDomainThenScope> emit_logic(&logicGraph);
+    GraphStream<OrderVerticesByDomainThenScope> emit_logic{&logicGraph};
     const V3GraphVertex* moveVxp;
     while ((moveVxp = emit_logic.nextp())) {
         const MTaskMoveVertex* const movep = static_cast<const MTaskMoveVertex*>(moveVxp);
@@ -1435,7 +1435,7 @@ void OrderProcess::process(bool multiThreaded) {
         processMoveBuildGraph();
         // Different prefix (ordermv) as it's not the same graph
         if (dumpGraphLevel() >= 4) m_pomGraph.dumpDotFilePrefixed(m_tag + "_ordermv_start");
-        m_pomGraph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
+        m_pomGraph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
         if (dumpGraphLevel() >= 4) m_pomGraph.dumpDotFilePrefixed(m_tag + "_ordermv_simpl");
 
         UINFO(2, "  Move...\n");
