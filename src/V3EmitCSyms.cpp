@@ -1119,5 +1119,5 @@ void EmitCSyms::emitDpiImp() {
 
 void V3EmitC::emitcSyms(bool dpiHdrOnly) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    EmitCSyms(v3Global.rootp(), dpiHdrOnly);
+    EmitCSyms{v3Global.rootp(), dpiHdrOnly};
 }

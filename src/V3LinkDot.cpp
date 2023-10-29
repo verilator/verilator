@@ -3749,7 +3749,7 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     if (debug() >= 5 || dumpTreeLevel() >= 9) {
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
     }
-    LinkDotState state(rootp, step);
+    LinkDotState state{rootp, step};
     const LinkDotFindVisitor visitor{rootp, &state};
     if (debug() >= 5 || dumpTreeLevel() >= 9) {
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-find.tree"));
