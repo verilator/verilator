@@ -41,13 +41,11 @@ uint32_t VNUser1InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 uint32_t VNUser2InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 uint32_t VNUser3InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 uint32_t VNUser4InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t VNUser5InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 
 bool VNUser1InUse::s_userBusy = false;
 bool VNUser2InUse::s_userBusy = false;
 bool VNUser3InUse::s_userBusy = false;
 bool VNUser4InUse::s_userBusy = false;
-bool VNUser5InUse::s_userBusy = false;
 
 int AstNodeDType::s_uniqueNum = 0;
 
@@ -1235,7 +1233,6 @@ void AstNode::dumpPtrs(std::ostream& os) const {
     if (user2p()) os << " user2p=" << cvtToHex(user2p());
     if (user3p()) os << " user3p=" << cvtToHex(user3p());
     if (user4p()) os << " user4p=" << cvtToHex(user4p());
-    if (user5p()) os << " user5p=" << cvtToHex(user5p());
     if (m_iterpp) {
         os << " iterpp=" << cvtToHex(m_iterpp);
         // This may cause address sanitizer failures as iterpp can be stale

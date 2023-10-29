@@ -36,7 +36,7 @@ public:
     // If nodep is an AstActive, returns 0.
     // If nodep contains nested AstActives, raises an error.
     //
-    // If assertNoDups is true, marks user5 on each AstNode scanned.  Then
+    // If assertNoDups is true, marks user1 on each AstNode scanned.  Then
     // if we see the same node twice (across more than one call to count,
     // potentially) raises an error.
     // Optional osp is stream to dump critical path to.

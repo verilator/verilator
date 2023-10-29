@@ -1379,7 +1379,6 @@ void AstNode::dump(std::ostream& str) const {
     if (user2p()) str << " u2=" << nodeAddr(user2p());
     if (user3p()) str << " u3=" << nodeAddr(user3p());
     if (user4p()) str << " u4=" << nodeAddr(user4p());
-    if (user5p()) str << " u5=" << nodeAddr(user5p());
     if (hasDType()) {
         // Final @ so less likely to by accident read it as a nodep
         if (dtypep() == this) {
