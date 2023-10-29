@@ -73,6 +73,18 @@ to migrate SystemVerilog to C++/SystemC, or want high-speed simulation of
 designs, Verilator is the tool for you.
 
 
+Verilog Playground
+==================
+
+Verilog Playground is a Verilog / SystemVerilog online simulator that has
+Verilator on its core. It converts the code to C++ using Verilator, and
+then converts the C++ code to JavaScript using Emscripten.
+
+Website: https://verilog-playground.github.io
+
+.. image:: https://github.com/verilog-playground/art/raw/ea775d95664f92fbba2eddffff865a58d73a8608/animation.gif
+    :target: https://verilog-playground.github.io
+
 Performance
 ===========
 
