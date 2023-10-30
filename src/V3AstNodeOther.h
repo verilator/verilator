@@ -88,7 +88,7 @@ private:
     bool m_underGenerate : 1;  // Under generate (for warning)
     bool m_virtual : 1;  // Virtual method in class
     bool m_needProcess : 1;  // Needs access to VlProcess of the caller
-    VLifetime m_lifetime;  // Lifetime of local vars
+    VLifetime m_lifetime;  // Default lifetime of local vars
     VIsCached m_purity;  // Pure state
 
 protected:
