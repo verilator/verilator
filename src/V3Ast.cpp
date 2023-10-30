@@ -99,25 +99,27 @@ AstNode* AstNode::abovep() const {
 string AstNode::encodeName(const string& namein) {
     // Encode signal name raw from parser, then not called again on same signal
     string out;
-    for (string::const_iterator pos = namein.begin(); pos != namein.end(); ++pos) {
-        if ((pos == namein.begin()) ? std::isalpha(pos[0])  // digits can't lead identifiers
-                                    : std::isalnum(pos[0])) {
-            out += pos[0];
-        } else if (pos[0] == '_') {
-            if (pos[1] == '_') {
-                out += "_";
+    const size_t len = namein.length();
+    const char* buf = namein.data();
+    out.reserve(len);
+    for (size_t i = 0; i < len; ++i) {
+        const char ch = buf[i];
+        if (i == 0 ? std::isalpha(ch) : std::isalnum(ch)) {  // digits can't lead identifiers
+            out += ch;
+        } else if (ch == '_') {
+            out += ch;
+            const char nextCh = buf[i + 1];
+            if (nextCh == '\0') break;
+            if (nextCh == '_') {
                 out += "__05F";  // hex(_) = 0x5F
-                ++pos;
-                if (pos == namein.end()) break;
-            } else {
-                out += pos[0];
+                ++i;
             }
         } else {
             // Need the leading 0 so this will never collide with
             // a user identifier nor a temp we create in Verilator.
             // We also do *NOT* use __DOT__ etc, as we search for those
             // in some replacements, and don't want to mangle the user's names.
-            const unsigned val = pos[0] & 0xff;  // Mask to avoid sign extension
+            const unsigned val = ch & 0xff;  // Mask to avoid sign extension
             std::stringstream hex;
             hex << std::setfill('0') << std::setw(2) << std::hex << val;
             out += "__0" + hex.str();
