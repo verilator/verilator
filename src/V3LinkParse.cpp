@@ -292,8 +292,10 @@ private:
             nodep->v3warn(STATICVAR, "Static variable with assignment declaration declared in a "
                                      "loop converted to automatic");
         }
-        if (nodep->lifetime().isNone() && nodep->varType() != VVarType::PORT) {
-            nodep->lifetime(m_lifetime);
+        if (nodep->varType() != VVarType::PORT) {
+            if (nodep->lifetime().isNone()) nodep->lifetime(m_lifetime);
+        } else {
+            nodep->lifetime(VLifetime::AUTOMATIC);
         }
 
         if (nodep->isGParam() && !nodep->isAnsi()) {  // shadow some parameters into localparams
