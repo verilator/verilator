@@ -294,7 +294,7 @@ private:
         }
         if (nodep->varType() != VVarType::PORT) {
             if (nodep->lifetime().isNone()) nodep->lifetime(m_lifetime);
-        } else {
+        } else if (m_ftaskp) {
             nodep->lifetime(VLifetime::AUTOMATIC);
         }
 
