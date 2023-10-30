@@ -225,7 +225,7 @@ public:
             const auto& pair = createTerm(senItemp);
             if (AstNodeExpr* termp = pair.first) {
                 AstNodeExpr* const condp = senItemp->condp();
-                if (condp) termp = new AstAnd{flp, condp->cloneTree(false), termp};
+                if (condp) termp = new AstAnd{flp, condp->cloneTreePure(false), termp};
                 resultp = resultp ? new AstOr{flp, resultp, termp} : termp;
                 firedAtInitialization |= pair.second;
             }
