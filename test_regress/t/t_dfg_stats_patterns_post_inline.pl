@@ -2,7 +2,7 @@
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2022 by Geza Lore. This program is free software; you
+# Copyright 2024 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -10,11 +10,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
+top_filename("t/t_dfg_stats_patterns.v");
+
 compile(
-    verilator_flags2 => ["--stats"],
+    verilator_flags2 => ["--stats --no-skip-identical -fno-dfg-pre-inline"],
     );
 
-file_grep($Self->{stats}, qr/Optimizations, DFG pre inline Ast2Dfg, non-representable \(impure\)\s+(\d+)/i, 1);
+my $f = glob_one("$Self->{obj_dir}/$Self->{vm_prefix}__stats_dfg_patterns*");
+files_identical($f, $Self->{golden_filename});
 
 ok(1);
 1;

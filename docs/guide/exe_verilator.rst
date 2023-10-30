@@ -1267,6 +1267,8 @@ Summary:
 
    Creates a dump file with statistics on the design in
    :file:`<prefix>__stats.txt`.
+   Also dumps DFG patterns to
+   :file:`<prefix>__stats_dfg_patterns__*.txt`.
 
 .. option:: --stats-vars
 
