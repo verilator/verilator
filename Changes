@@ -80,6 +80,7 @@ Verilator 5.017 devel
 * Fix rand fields of reference types (#4627). [Ryszard Rozak, Antmicro Ltd.]
 * Fix dynamic casts of null values (#4631). [Ryszard Rozak, Antmicro Ltd.]
 * Fix signals read via virtual interfaces being misoptimized (#4645). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix handling of static keyword in methods (#4649). [Ryszard Rozak, Antmicro Ltd.]
 * Fix preprocessor to show `line 2 on resumed file.
 
 
