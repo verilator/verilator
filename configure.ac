@@ -24,6 +24,10 @@ AC_SUBST(PACKAGE_VERSION_NUMBER)
 AC_DEFINE_UNQUOTED([PACKAGE_VERSION_NUMBER_STRING],["$PACKAGE_VERSION_NUMBER"],[Package version as a number])
 VERILATOR_VERSION_INTEGER=`AS_ECHO("$PACKAGE_VERSION") | [sed 's/\([0-9]\)\.\([0-9][0-9][0-9]\) .*/\1\2000/g']`
 AC_SUBST(VERILATOR_VERSION_INTEGER)
+AC_DEFINE_UNQUOTED([PACKAGE_VERSION_STRING_CHAR],
+        [static const char* const PACKAGE_STRING_UNUSED = "$PACKAGE_STRING";],
+        [Package version as a number])
+AC_SUBST(PACKAGE_VERSION_STRING_CHAR)
 
 # Ignore automake flags passed by Ubuntu builds
 AC_ARG_ENABLE([dependency-tracking],

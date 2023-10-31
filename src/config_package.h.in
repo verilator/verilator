@@ -19,6 +19,14 @@
 #define PACKAGE_VERSION_NUMBER_STRING "0.000"
 // Otherwise Autoheader generates it (with all the same macros and more)
 
+// Force ccache recompilation on PACKAGE_STRING change
+#ifndef VL_CPPCHECK
+#ifndef PACKAGE_VERSION_STRING_CHAR
+#define PACKAGE_VERSION_STRING_CHAR
+PACKAGE_VERSION_STRING_CHAR
+#endif
+#endif
+
 //**********************************************************************
 //**** Configure-discovered library options
 
