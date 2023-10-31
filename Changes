@@ -8,6 +8,19 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
+Verilator 5.019 devel
+==========================
+
+**Major:**
+
+* Support compilation with precompiled headers with Make and GCC or CLang.
+* Change include of systemc instead of systemc.h (#4622) (#4623). [Chih-Mao Chen]
+  This may require that SystemC programs add 'using namespace sc_core', 'using namespace sc_dt'.
+
+**Minor:**
+
+
+
 Verilator 5.018 2023-10-30
 ==========================
 
