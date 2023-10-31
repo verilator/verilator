@@ -11,17 +11,35 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 5.017 devel
 ==========================
 
+**Major:**
+
+* Support compilation with precompiled headers with Make and GCC or CLang.
+* Change include of systemc instead of systemc.h (#4622) (#4623). [Chih-Mao Chen]
+  This may require that SystemC programs add 'using namespace sc_core', 'using namespace sc_dt'.
+
 **Minor:**
 
 * Add SIDEEFFECT warning on mishandled side effect cases.
 * Add trace() API even when Verilated without --trace (#4462). [phelter]
 * Add warning on interface instantiation without parens (#4094). [Gökçe Aydos]
-* Support randc (#4349).
+* Add sv_vpi_user.h from IEEE 1800-2017 Annex M (#4606). [Marlon James]
+* Support 'disable fork' (#4125) (#4569). [Aleksander Kiryk, Antmicro Ltd.]
+* Support 'wait fork' (#4586). [Aleksander Kiryk, Antmicro Ltd.]
+* Support 'randc' (#4349).
+* Support assigning events (#4403). [Krzysztof Boroński]
 * Support resizing function call inout arguments (#4467).
+* Support NBAs in non-inlined functions/tasks (#4496) (#4572). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support converting parameters inside modules to localparams (#4511). [Anthony Donlon]
-* Support compilation with precompiled headers with Make and GCC or CLang.
+* Support concatenation of unpacked arrays (#4558). [Yutetsu TAKATSUKASA]
+* Support Clang 16 (#4592). [Mariusz Glebocki]
+* Support VPI variables of real and string data types (#4594). [Marlon James]
+* Support making VL_LOCK_SPINS configurable (#4599). [Geza Lore]
+* Change code --stats output (#4597). [Geza Lore]
+* Change --prof-exec infrastructure and report (#4602). [Geza Lore]
 * Change lint_off to not propagate upwards to files including where the lint_off is.
 * Optimize empty expression statements (#4544).
+* Optimize trace internals (#4610) (#4612). [Geza Lore]
+* Optimize internal performance issues (#4638). [Geza Lore]
 * Fix conversion of impure logical expressions to bit expressions (#487 partial) (#4437). [Ryszard Rozak, Antmicro Ltd.]
 * Fix enum functions in localparams (#3999). [Andrew Nolte]
 * Fix passing arguments by reference (#3385 partial) (#4489). [Ryszard Rozak, Antmicro Ltd.]
@@ -39,12 +57,29 @@ Verilator 5.017 devel
 * Fix object destruction after a copy constructor (#4540) (#4541). [Ryszard Rozak, Antmicro Ltd.]
 * Fix inlining of real functions miscasting (#4543). [Andrew Nolte]
 * Fix broken link error for enum references (#4551). [Anthony Donlon]
+* Fix logical expressions with class objects - caching in v3Const (#4552). [Ryszard Rozak, Antmicro Ltd.]
+* Fix using functions/tasks following class definition inside module (#4553). [Anthony Donlon]
+* Fix large constant buffer overflow (#4556). [Varun Koyyalagunta]
 * Fix instance arrays connecting to array of structs (#4557). [raphmaster]
+* Fix error message for invalid parameter overrides (#4559). [Anthony Donlon]
 * Fix shift to remove operation side effects (#4563).
 * Fix compile warning on unused member function variable (#4567).
 * Fix method narrowing conversion compiler error (#4568).
+* Fix interface comparison (#4570). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix dynamic triggers for named events (#4571). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix dictionaries with keys of class types (#4576). [Ryszard Rozak, Antmicro Ltd.]
+* Fix to not remap local assign intervals in forks (#4583). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix display optimization ignoring side effects (#4585).
+* Fix PLI/DPI user defined system task/function grammar (#4587) (#4588). [Quentin Corradi]
 * Fix fault on empty clocking block (#4593). [Alex Mykyta]
+* Fix creating implicit nets for inputs of gate primitives (#4603). [Geza Lore]
+* Fix try_put method of unbounded mailbox (#4608). [Ryszard Rozak, Antmicro Ltd.]
+* Fix stable name generation in V3Fork (#4615) (#4624). [Krzysztof Boroński]
+* Fix virtual methods (#4616). [Ryszard Rozak, Antmicro Ltd.]
+* Fix insertion at queue end (#4619). [Krzysztof Boroński]
+* Fix rand fields of reference types (#4627). [Ryszard Rozak, Antmicro Ltd.]
+* Fix dynamic casts of null values (#4631). [Ryszard Rozak, Antmicro Ltd.]
+* Fix signals read via virtual interfaces being misoptimized (#4645). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix preprocessor to show `line 2 on resumed file.
 
 
