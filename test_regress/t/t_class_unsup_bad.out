@@ -1,4 +1,4 @@
-%Error: t/t_class_unsup_bad.v:29:24: Syntax error: 'const'/'rand'/'randc' not allowed before function/task declaration
-   29 |    const function void func_const; endfunction
+%Error: t/t_class_unsup_bad.v:28:24: Syntax error: 'const'/'rand'/'randc' not allowed before function/task declaration
+   28 |    const function void func_const; endfunction
       |                        ^~~~~~~~~~
 %Error: Exiting due to

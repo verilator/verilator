@@ -3185,7 +3185,7 @@ private:
             AstNodeFTask* const taskp
                 = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;  // Maybe nullptr
             if (taskp) {
-                if (staticAccess && !taskp->lifetime().isStatic()) {
+                if (staticAccess && !taskp->isStatic()) {
                     // TODO bug4077
                     // nodep->v3error("Static access to non-static task/function "
                     //                << taskp->prettyNameQ() << endl);
@@ -3358,6 +3358,7 @@ private:
                 // External definition cannot have any specifiers, so no value will be overwritten.
                 nodep->isHideLocal(funcProtop->isHideLocal());
                 nodep->isHideProtected(funcProtop->isHideProtected());
+                nodep->isStatic(funcProtop->isStatic());
                 nodep->isVirtual(funcProtop->isVirtual());
                 nodep->lifetime(funcProtop->lifetime());
             } else {
