@@ -16,6 +16,17 @@ package my_pkg;
    endfunction
 endpackage
 
+class my_cls;
+   static function int get_cnt1;
+      static int cnt = 0;
+      return ++cnt;
+   endfunction
+   static function static int get_cnt2;
+      int cnt = 0;
+      return ++cnt;
+   endfunction
+endclass
+
 module t (/*AUTOARG*/
    // Inputs
    clk
@@ -88,6 +99,11 @@ module t (/*AUTOARG*/
       v = f_au_st_global(); `checkh(v,   2);
       v = my_pkg::f_no_st_pkg(); `checkh(v, 1);
       v = my_pkg::f_no_st_pkg(); `checkh(v,   2);
+      //
+      v = my_cls::get_cnt1(); `checkh(v,   1);
+      v = my_cls::get_cnt1(); `checkh(v,   2);
+      v = my_cls::get_cnt2(); `checkh(v,   1);
+      v = my_cls::get_cnt2(); `checkh(v,   2);
       //
    end
 

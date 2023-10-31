@@ -25,7 +25,6 @@ class C #(parameter P=1);
    function int classfunc; endfunction
    virtual function void func_virtual; endfunction
    pure virtual function void func_pure_virtual;
-   automatic function void func_automatic; endfunction
    const function void func_const; endfunction
    extern task exttask;
 endclass

@@ -4,6 +4,21 @@
 // any use, without warranty, 2003 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+class cls;
+  static task automatic tsk1;
+     integer task_assign = 1;
+     if (task_assign != 1) $stop;
+     task_assign = 2;
+     if (task_assign != 2) $stop;
+  endtask
+  static task tsk2;
+     integer task_assign = 1;
+     if (task_assign != 1) $stop;
+     task_assign = 2;
+     if (task_assign != 2) $stop;
+  endtask
+endclass
+
 module t;
 
    integer top;
@@ -43,8 +58,13 @@ module t;
             end
          end
       end
+      // Repeat task calls to ensure we reinit the initial value
       tsk;
-      tsk; // Second time to ensure we reinit the initial value
+      tsk;
+      cls::tsk1();
+      cls::tsk1();
+      cls::tsk2();
+      cls::tsk2();
       $write("*-* All Finished *-*\n");
       $finish;
    end
