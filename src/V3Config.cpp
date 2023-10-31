@@ -612,7 +612,7 @@ void V3Config::applyIgnores(FileLine* filelinep) {
 }
 
 void V3Config::applyModule(AstNodeModule* modulep) {
-    const string& modname = modulep->name();
+    const string& modname = modulep->origName();
     V3ConfigModule* modp = V3ConfigResolver::s().modules().resolve(modname);
     if (modp) modp->apply(modulep);
 }
