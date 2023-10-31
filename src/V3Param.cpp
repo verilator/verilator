@@ -110,7 +110,11 @@ public:
             if (hierOpts.find(modp->prettyName()) != hierOpts.end()) {
                 m_hierBlockMod.emplace(modp->name(), modp);
             }
-            const auto defParamIt = m_modParams.find(modp->name());
+            // Recursive hierarchical module may change its name, so we have to match its origName.
+            // Collect values from recursive cloned module as parameters in the top module could be
+            // overridden.
+            const string actualModName = modp->recursiveClone() ? modp->origName() : modp->name();
+            const auto defParamIt = m_modParams.find(actualModName);
             if (defParamIt != m_modParams.end()) {
                 // modp is the original of parameterized hierarchical block
                 for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -121,11 +125,12 @@ public:
             }
         }
     }
+    bool isHierBlock(const string& origName) {
+        return m_hierBlockOptsByOrigName.find(origName) != m_hierBlockOptsByOrigName.end();
+    }
     AstNodeModule* findByParams(const string& origName, AstPin* firstPinp,
                                 const AstNodeModule* modp) {
-        if (m_hierBlockOptsByOrigName.find(origName) == m_hierBlockOptsByOrigName.end()) {
-            return nullptr;
-        }
+        UASSERT(isHierBlock(origName), origName << " is not hierarchical block\n");
         // This module is a hierarchical block. Need to replace it by the --lib-create wrapper.
         const std::pair<HierMapIt, HierMapIt> candidates
             = m_hierBlockOptsByOrigName.equal_range(origName);
@@ -240,6 +245,7 @@ class ParamProcessor final {
     using IfaceRefRefs = std::deque<std::pair<AstIfaceRefDType*, AstIfaceRefDType*>>;
 
     // STATE
+    const bool m_isHierSubRun;  // Is in sub-run for hierarchical verilation
     using CloneMap = std::unordered_map<const AstNode*, AstNode*>;
     struct ModInfo {
         AstNodeModule* const m_modp;  // Module with specified name
@@ -514,9 +520,9 @@ class ParamProcessor final {
             }
             paramsIt = m_defaultParameterValues.emplace(modp, std::move(params)).first;
         }
-        if (paramsIt->second.empty()) return modp->name();  // modp has no parameter
+        if (paramsIt->second.empty()) return modp->origName();  // modp has no parameter
 
-        string longname = modp->name();
+        string longname = modp->origName();
         for (auto&& defaultValue : paramsIt->second) {
             const auto pinIt = pins.find(defaultValue.first);
             const AstConst* const constp
@@ -540,7 +546,7 @@ class ParamProcessor final {
             // Hex string must be a safe suffix for any symbol
             const string hashStr = hashStrGen.digestHex();
             for (string::size_type i = 1; i < hashStr.size(); ++i) {
-                string newName = modp->name();
+                string newName = modp->origName();
                 // Don't use '__' not to be encoded when this module is loaded later by Verilator
                 if (newName.at(newName.size() - 1) != '_') newName += '_';
                 newName += hashStr.substr(0, i);
@@ -590,8 +596,6 @@ class ParamProcessor final {
         newmodp->user5(false);  // We need to re-recurse this module once changed
         newmodp->recursive(false);
         newmodp->recursiveClone(false);
-        // Only the first generation of clone holds this property
-        newmodp->hierBlock(srcModp->hierBlock() && !srcModp->recursiveClone());
         // Recursion may need level cleanups
         if (newmodp->level() <= m_modp->level()) newmodp->level(m_modp->level() + 1);
         if ((newmodp->level() - srcModp->level()) >= (v3Global.opt.moduleRecursionDepth() - 2)) {
@@ -855,7 +859,16 @@ class ParamProcessor final {
         cellInterfaceCleanup(pinsp, srcModpr, longname /*ref*/, any_overrides /*ref*/,
                              ifaceRefRefs /*ref*/);
 
-        if (!any_overrides) {
+        if (m_isHierSubRun && m_hierBlocks.isHierBlock(srcModpr->origName())) {
+            AstNodeModule* const paramedModp
+                = m_hierBlocks.findByParams(srcModpr->origName(), paramsp, m_modp);
+            UASSERT_OBJ(paramedModp, nodep, "Failed to find sub-module for hierarchical block");
+            paramedModp->dead(false);
+            // We need to relink the pins to the new module
+            relinkPinsByName(pinsp, paramedModp);
+            srcModpr = paramedModp;
+            any_overrides = true;
+        } else if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
             // If it's the first use of the default instance, create a copy and store it in user4p.
             // user4p will also be used to check if the default instance is used.
@@ -867,12 +880,6 @@ class ParamProcessor final {
                 srcModpr->user4p(classCopyp);
                 storeOriginalParams(classCopyp);
             }
-        } else if (AstNodeModule* const paramedModp
-                   = m_hierBlocks.findByParams(srcModpr->name(), paramsp, m_modp)) {
-            paramedModp->dead(false);
-            // We need to relink the pins to the new module
-            relinkPinsByName(pinsp, paramedModp);
-            srcModpr = paramedModp;
         } else {
             const string newname
                 = srcModpr->hierBlock() ? longname : moduleCalcName(srcModpr, longname);
@@ -958,7 +965,8 @@ public:
 
     // CONSTRUCTORS
     explicit ParamProcessor(AstNetlist* nodep)
-        : m_hierBlocks{v3Global.opt.hierBlocks(), nodep} {
+        : m_isHierSubRun(!v3Global.opt.hierBlocks().empty() || v3Global.opt.hierChild())
+        , m_hierBlocks{v3Global.opt.hierBlocks(), nodep} {
         for (AstNodeModule* modp = nodep->modulesp(); modp;
              modp = VN_AS(modp->nextp(), NodeModule)) {
             m_allModuleNames.insert(modp->name());
