@@ -102,6 +102,9 @@ public:
     // Surround a raw string by double quote and escape if necessary
     // e.g. input abc's  becomes "\"abc\'s\""
     static string escapeStringForPath(const string& str);
+    // Convert SV quoted string input from source code to normal form.
+    // Reverse is V3OutFormatter::quoteNameControls(...)
+    static string unquoteSVString(const string& text, string& errOut);
     // Escape path in Windows
     // e.g. input `C:\Program Files\My Program\My Program.exe` becomes
     // `C:\\Program\ Files\\My\ Program\\My\ Program.exe`
@@ -127,6 +130,9 @@ public:
     static bool endsWith(const string& str, const string& suffix);
     // Return true if char is valid character in word
     static bool isWordChar(char c) { return isalnum(c) || c == '_'; }
+    // Return proper article (a/an) for a word. May be inaccurate for some special words
+    static string aOrAn(const char* word);
+    static string aOrAn(const string& word) { return aOrAn(word.c_str()); }
 };
 
 //######################################################################

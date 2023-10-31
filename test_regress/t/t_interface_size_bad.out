@@ -1,9 +1,9 @@
 %Error: t/t_interface_size_bad.v:16:20: Illegal port connection 'foo', mismatch between port which is an interface array of size 5, and expression which is an interface array of size 4.
-                                      : ... In instance t
+                                      : ... note: In instance 't'
    16 |    baz baz4_inst (.foo(foo4));
       |                    ^~~
 %Error: t/t_interface_size_bad.v:17:20: Illegal port connection 'foo', mismatch between port which is an interface array of size 5, and expression which is an interface array of size 6.
-                                      : ... In instance t
+                                      : ... note: In instance 't'
    17 |    baz baz6_inst (.foo(foo6));
       |                    ^~~
 %Error: Exiting due to

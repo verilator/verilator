@@ -1,13 +1,13 @@
 %Error: t/t_array_pattern_bad3.v:20:15: Assignment pattern key used multiple times: 1
-                                      : ... In instance t
+                                      : ... note: In instance 't'
    20 |               1: '1};   
       |               ^
 %Error: t/t_array_pattern_bad3.v:21:13: Assignment pattern with too many elements
-                                      : ... In instance t
+                                      : ... note: In instance 't'
    21 |       arr = '{'0, '1, '0, '1};   
       |             ^~
 %Error: t/t_array_pattern_bad3.v:22:13: Assignment pattern missed initializing elements: 2
-                                      : ... In instance t
+                                      : ... note: In instance 't'
    22 |       arr = '{'0, '1};   
       |             ^~
 %Error: Exiting due to

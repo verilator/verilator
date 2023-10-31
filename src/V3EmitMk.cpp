@@ -14,13 +14,11 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3EmitMk.h"
 
 #include "V3EmitCBase.h"
-#include "V3Global.h"
 #include "V3HierBlock.h"
 #include "V3Os.h"
 
@@ -108,7 +106,7 @@ public:
                     }
                     if (v3Global.usesProbDist()) putMakeClassEntry(of, "verilated_probdist.cpp");
                     if (v3Global.usesTiming()) putMakeClassEntry(of, "verilated_timing.cpp");
-                    if (v3Global.opt.threads()) putMakeClassEntry(of, "verilated_threads.cpp");
+                    putMakeClassEntry(of, "verilated_threads.cpp");
                     if (v3Global.opt.usesProfiler()) {
                         putMakeClassEntry(of, "verilated_profiler.cpp");
                     }
@@ -152,9 +150,10 @@ public:
         }
         of.puts("\n### Constants...\n");
         of.puts("# Perl executable (from $PERL)\n");
-        of.puts("PERL = " + V3Options::getenvPERL() + "\n");
+        of.puts("PERL = " + V3OutFormatter::quoteNameControls(V3Options::getenvPERL()) + "\n");
         of.puts("# Path to Verilator kit (from $VERILATOR_ROOT)\n");
-        of.puts("VERILATOR_ROOT = " + V3Options::getenvVERILATOR_ROOT() + "\n");
+        of.puts("VERILATOR_ROOT = "
+                + V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_ROOT()) + "\n");
         of.puts("# SystemC include directory with systemc.h (from $SYSTEMC_INCLUDE)\n");
         of.puts(string{"SYSTEMC_INCLUDE ?= "} + V3Options::getenvSYSTEMC_INCLUDE() + "\n");
         of.puts("# SystemC library directory with libsystemc.a (from $SYSTEMC_LIBDIR)\n");

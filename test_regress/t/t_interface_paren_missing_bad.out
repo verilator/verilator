@@ -1,0 +1,5 @@
+%Error: t/t_interface_paren_missing_bad.v:13:9: Interface instantiation 'intf_i' requires parenthesis
+                                              : ... Suggest use 'intf_i()'
+   13 |    intf intf_i;
+      |         ^~~~~~
+%Error: Exiting due to

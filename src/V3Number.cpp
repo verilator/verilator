@@ -14,13 +14,9 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstMT.h"
 
 #include "V3Number.h"
-
-#include "V3Ast.h"
-#include "V3Global.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -256,8 +252,8 @@ void V3Number::create(const char* sourcep) {
                                 << width() << " bit number: " << sourcep << '\n'
                                 << ((!sized() && !warned++) ? (
                                         V3Error::warnMore() + "... As that number was unsized"
-                                        + " ('d...) it is limited to 32 bits (IEEE 1800-2017 "
-                                          "5.7.1)\n"
+                                        + " ('d...) it is limited to 32 bits"
+                                          " (IEEE 1800-2017 5.7.1)\n"
                                         + V3Error::warnMore() + "... Suggest adding a size to it.")
                                                             : ""));
                         while (*(cp + 1)) cp++;  // Skip ahead so don't get multiple warnings
@@ -314,8 +310,7 @@ void V3Number::create(const char* sourcep) {
 
             case 'o':
             case 'c': {
-                switch (std::tolower(*cp)) {
-                // clang-format off
+                switch (std::tolower(*cp)) {  // clang-format off
                 case '0': setBit(obit++, 0); setBit(obit++, 0);  setBit(obit++, 0);  break;
                 case '1': setBit(obit++, 1); setBit(obit++, 0);  setBit(obit++, 0);  break;
                 case '2': setBit(obit++, 0); setBit(obit++, 1);  setBit(obit++, 0);  break;
@@ -335,8 +330,7 @@ void V3Number::create(const char* sourcep) {
             }
 
             case 'h': {
-                switch (std::tolower(*cp)) {
-                    // clang-format off
+                switch (std::tolower(*cp)) {  // clang-format off
                 case '0': setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); break;
                 case '1': setBit(obit++,1); setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); break;
                 case '2': setBit(obit++,0); setBit(obit++,1); setBit(obit++,0); setBit(obit++,0); break;
@@ -2390,19 +2384,23 @@ V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
 V3Number& V3Number::opRealToBits(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_DOUBLE_ARGS1(lhs);
-    // Conveniently our internal format is identical so we can copy bits...
     if (lhs.width() != 64 || width() != 64) v3fatalSrc("Real operation on wrong sized number");
-    m_data.setLogic();
-    opAssign(lhs);
-    return *this;
+    union {
+        double m_d;
+        uint64_t m_v;
+    } u;
+    u.m_d = lhs.toDouble();
+    return setQuad(u.m_v);
 }
 V3Number& V3Number::opBitsToRealD(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
-    // Conveniently our internal format is identical so we can copy bits...
     if (lhs.width() != 64 || width() != 64) v3fatalSrc("Real operation on wrong sized number");
-    m_data.setDouble();
-    opAssign(lhs);
-    return *this;
+    union {
+        double m_d;
+        uint64_t m_v;
+    } u;
+    u.m_v = lhs.toUQuad();
+    return setDouble(u.m_d);
 }
 V3Number& V3Number::opNegateD(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);

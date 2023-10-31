@@ -1,0 +1,24 @@
+%Warning-SIDEEFFECT: t/t_lint_sideeffect_bad.v:19:31: Expression side effect may be mishandled
+                                                    : ... note: In instance 't'
+                                                    : ... Suggest use a temporary variable in place of this expression
+   19 |       $display("0x%8x", array[$c(0) +: 32]);
+      |                               ^~
+                     ... For warning description see https://verilator.org/warn/SIDEEFFECT?v=latest
+                     ... Use "/* verilator lint_off SIDEEFFECT */" and lint_on around source to disable this message.
+%Warning-SIDEEFFECT: t/t_lint_sideeffect_bad.v:12:13: Expression side effect may be mishandled
+                                                    : ... Suggest use a temporary variable in place of this expression
+   12 |       case ($c("1"))
+      |             ^~
+%Warning-SIDEEFFECT: t/t_lint_sideeffect_bad.v:13:10: Expression side effect may be mishandled
+                                                    : ... Suggest use a temporary variable in place of this expression
+   13 |         1: $stop;
+      |          ^
+%Warning-SIDEEFFECT: t/t_lint_sideeffect_bad.v:14:10: Expression side effect may be mishandled
+                                                    : ... Suggest use a temporary variable in place of this expression
+   14 |         2: $stop;
+      |          ^
+%Warning-SIDEEFFECT: t/t_lint_sideeffect_bad.v:15:10: Expression side effect may be mishandled
+                                                    : ... Suggest use a temporary variable in place of this expression
+   15 |         3: $stop;
+      |          ^
+%Error: Exiting due to

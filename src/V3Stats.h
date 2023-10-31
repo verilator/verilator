@@ -117,7 +117,7 @@ public:
     /// Called each stage
     static void statsStage(const string& name);
     /// Called by the top level to collect statistics
-    static void statsStageAll(AstNetlist* nodep, const string& stage, bool fast = false);
+    static void statsStageAll(AstNetlist* nodep, const string& stage, bool fastOnly = false);
     static void statsFinalAll(AstNetlist* nodep);
     /// Called by the top level to dump the statistics
     static void statsReport();

@@ -6,7 +6,7 @@
    16 | `pragma protect encrypt_agent_info
       |                 ^~~~~~~~~~~~~~~~~~
 %Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:29:1: BASE64 encoding length mismatch in `pragma protect key_bloock/data_block
-%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:33:17: multiple `pragma protected encoding sections
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:33:17: Multiple `pragma protected encoding sections
    33 | `pragma protect encoding = (enctype = "BASE64", line_length = 76, bytes = 128)
       |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 %Warning-PROTECTED: t/t_lint_pragma_protected_bad.v:50:17: A '`pragma protected data_block' encrypted section was detected and will be skipped.
@@ -38,7 +38,7 @@
 %Warning-PROTECTED: t/t_lint_pragma_protected_bad.v:69:17: A '`pragma protected data_block' encrypted section was detected and will be skipped.
 %Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:70:1: BASE64 line too long in `pragma protect key_bloock/data_block
 %Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:70:1: BASE64 encoding length mismatch in `pragma protect key_bloock/data_block
-%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:72:17: multiple `pragma protected encoding sections
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:72:17: Multiple `pragma protected encoding sections
    72 | `pragma protect encoding = (enctype = "BASE64", line_length = 1, bytes = 4)
       |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 %Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:72:17: line_length must be multiple of 4 for BASE64

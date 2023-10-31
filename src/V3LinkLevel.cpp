@@ -19,16 +19,10 @@
 //          Create new MODULE TOP with connections to below signals
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3LinkLevel.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
-
-#include <algorithm>
-#include <map>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -201,22 +195,18 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
         for (AstNode* subnodep = oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
             if (AstVar* const oldvarp = VN_CAST(subnodep, Var)) {
                 if (oldvarp->isIO()) {
-                    if (ioNames.find(oldvarp->name()) != ioNames.end()) {
+                    if (!ioNames.insert(oldvarp->name()).second) {
                         // UINFO(8, "Multitop dup I/O found: " << oldvarp << endl);
                         dupNames.insert(oldvarp->name());
-                    } else {
-                        ioNames.insert(oldvarp->name());
                     }
                 } else if (v3Global.opt.topIfacesSupported() && oldvarp->isIfaceRef()) {
                     const AstNodeDType* const subtypep = oldvarp->subDTypep();
                     if (VN_IS(subtypep, IfaceRefDType)) {
                         const AstIfaceRefDType* const ifacerefp = VN_AS(subtypep, IfaceRefDType);
                         if (!ifacerefp->cellp()) {
-                            if (ioNames.find(oldvarp->name()) != ioNames.end()) {
+                            if (!ioNames.insert(oldvarp->name()).second) {
                                 // UINFO(8, "Multitop dup interface found: " << oldvarp << endl);
                                 dupNames.insert(oldvarp->name());
-                            } else {
-                                ioNames.insert(oldvarp->name());
                             }
                         }
                     }
@@ -227,12 +217,10 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                             const AstIfaceRefDType* const ifacerefp
                                 = VN_AS(arrsubtypep, IfaceRefDType);
                             if (!ifacerefp->cellp()) {
-                                if (ioNames.find(oldvarp->name()) != ioNames.end()) {
+                                if (!ioNames.insert(oldvarp->name()).second) {
                                     // UINFO(8, "Multitop dup interface array found: " << oldvarp
                                     // << endl);
                                     dupNames.insert(oldvarp->name());
-                                } else {
-                                    ioNames.insert(oldvarp->name());
                                 }
                             }
                         }
@@ -277,7 +265,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                     varp->sigPublic(true);  // User needs to be able to get to it...
                     oldvarp->primaryIO(false);
                     varp->primaryIO(true);
-                    if (varp->direction().isRefOrConstRef()) {
+                    if (varp->isRef() || varp->isConstRef()) {
                         varp->v3warn(E_UNSUPPORTED,
                                      "Unsupported: ref/const ref as primary input/output: "
                                          << varp->prettyNameQ());

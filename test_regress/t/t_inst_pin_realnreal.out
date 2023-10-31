@@ -1,5 +1,5 @@
 %Error-UNSUPPORTED: t/t_inst_pin_realnreal.v:51:32: Unsupported: Output port connection 'out' connects real to non-real
-                                                  : ... In instance t.netlist
+                                                  : ... note: In instance 't.netlist'
    51 |    pga_model pga0(.in, .gain, .out(pga_out));
       |                                ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest

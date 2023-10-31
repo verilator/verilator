@@ -17,13 +17,11 @@
 //      If two COVERTOGGLEs have same VARSCOPE, combine them
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3CoverageJoin.h"
 
 #include "V3DupFinder.h"
-#include "V3Global.h"
 #include "V3Stats.h"
 
 #include <vector>

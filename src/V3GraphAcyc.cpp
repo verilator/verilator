@@ -14,6 +14,8 @@
 //
 //*************************************************************************
 
+#define VL_MT_DISABLED_CODE_UNIT 1
+
 #include "config_build.h"
 #include "verilatedos.h"
 
@@ -572,7 +574,7 @@ void GraphAcyc::main() {
 
 void V3Graph::acyclic(V3EdgeFuncP edgeFuncp) {
     UINFO(4, "Acyclic\n");
-    GraphAcyc acyc(this, edgeFuncp);
+    GraphAcyc acyc{this, edgeFuncp};
     acyc.main();
     UINFO(4, "Acyclic done\n");
 }

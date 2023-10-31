@@ -1,15 +1,15 @@
 %Warning-WIDTHCONCAT: t/t_param_concat.v:19:15: Unsized numbers/parameters not allowed in concatenations.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    19 |          if ({UNSIZED,UNSIZED+1} != {32'd10, 32'd11}) $stop;
       |               ^~~~~~~
                       ... For warning description see https://verilator.org/warn/WIDTHCONCAT?v=latest
                       ... Use "/* verilator lint_off WIDTHCONCAT */" and lint_on around source to disable this message.
 %Warning-WIDTHCONCAT: t/t_param_concat.v:19:22: Unsized numbers/parameters not allowed in replications.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    19 |          if ({UNSIZED,UNSIZED+1} != {32'd10, 32'd11}) $stop;
       |                      ^
 %Warning-WIDTHCONCAT: t/t_param_concat.v:20:17: Unsized numbers/parameters not allowed in replications.
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    20 |          if ({2{UNSIZED}} != {32'd10, 32'd10}) $stop;
       |                 ^~~~~~~
 %Error: Exiting due to

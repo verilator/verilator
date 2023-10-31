@@ -12,16 +12,30 @@ Disabling Warnings
 
 Warnings may be disabled in multiple ways:
 
-#. Disable the warning in the source code.  When the warning is printed, it
-   will include a warning code.  Surround the offending line with a
-   :code:`/*verilator&32;lint_off*/` and :code:`/*verilator&32;lint_on*/`
-   metacomment pair:
+#. Disable the warning globally by invoking Verilator with the
+   :code:`-Wno-{warning-code}` option.
+
+   Global disables should be avoided, as they removes all checking across
+   the source files, and prevents other users from compiling the sources
+   without knowing the magic set of disables needed to compile those
+   sources successfully.
+
+#. Disable the warning in the design source code.  When the warning is
+   printed, it will include a warning code.  Surround the offending line
+   with a :code:`/*verilator&32;lint_off*/` and
+   :code:`/*verilator&32;lint_on*/` metacomment pair:
 
    .. code-block:: sv
 
          // verilator lint_off UNSIGNED
          if (`DEF_THAT_IS_EQ_ZERO <= 3) $stop;
          // verilator lint_on UNSIGNED
+
+
+   A lint_off in the design source code will propagate down to any child
+   files (files later included by the file with the lint_off), but will not
+   propagate upwards to any parent file (file that included the file with
+   the lint_off).
 
 #. Disable the warning using :ref:`Configuration Files` with a
    :option:`lint_off` command.  This is useful when a script suppresses
@@ -31,12 +45,6 @@ Warnings may be disabled in multiple ways:
    .. code-block:: sv
 
          lint_off -rule UNSIGNED -file "*/example.v" -line 1
-
-#. Disable the warning globally invoking Verilator with the
-   :code:`-Wno-{warning-code}` option.  This should be avoided, as it
-   removes all checking across the designs, and prevents other users from
-   compiling your code without knowing the magic set of disables needed to
-   compile your design successfully.
 
 
 Error And Warning Format
@@ -1166,7 +1174,7 @@ List Of Warnings
 
    Warns that a feature requires a newer standard of Verilog or SystemVerilog
    than the one specified by the :vlopt:`--language` option. For example, unsized
-   unbased literals (`'0`, `'1`, `'z`, `'x`) require 1800-2005 or later.
+   unbased literals (`'0`, `'1`, `'z`, `'x`) require IEEE 1800-2005 or later.
 
    To avoid this warning, use a Verilog or SystemVerilog standard that
    supports the feature. Alternatively, modify your code to use a different
@@ -1360,7 +1368,10 @@ List Of Warnings
 
 .. option:: RANDC
 
-   Warns that the :code:`randc` keyword is unsupported and being converted
+   Historical, never issued since version 5.018, when :code:`randc` became
+   fully supported.
+
+   Warned that the :code:`randc` keyword was unsupported and was converted
    to :code:`rand`.
 
 
@@ -1501,6 +1512,39 @@ List Of Warnings
    Ignoring this warning may make Verilator simulations differ from other
    simulators if the increased precision of :code:`real` affects the
    modeled values, or DPI calls.
+
+
+.. option:: SIDEEFFECT
+
+   Warns that an expression has a side effect that might not properly be
+   executed by Verilator.
+
+   This often represents a bug in Verilator, as opposed to a bad code
+   construct, however the Verilog code can typically be changed to avoid
+   the warning.
+
+   Faulty example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 1
+
+         x = y[a++];
+
+   This example warns because Verilator does not currently handle side
+   effects inside array subscripts; the a++ may be executed multiple times.
+
+   Rewrite the code to avoid expression side effects, typically by using a
+   temporary:
+
+   .. code-block:: sv
+      :linenos:
+
+         temp = a++;
+         x = y[temp];
+
+   Ignoring this warning may make Verilator simulations differ from other
+   simulators.
 
 
 .. option:: SPLITVAR
@@ -2043,17 +2087,18 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_WIDTHEXPAND_1_fixed.rst
 
+
 .. option:: WIDTHTRUNC
 
-   A more granular WIDTH warning, for when a value is truncated
+   A more granular WIDTH warning, for when a value is truncated.
 
 .. option:: WIDTHEXPAND
 
-   A more granular WIDTH warning, for when a value is zero expanded
+   A more granular WIDTH warning, for when a value is zero expanded.
 
 .. option:: WIDTHXZEXPAND
 
-   A more granular WIDTH warning, for when a value is X/Z expanded
+   A more granular WIDTH warning, for when a value is X/Z expanded.
 
 .. option:: WIDTHCONCAT
 

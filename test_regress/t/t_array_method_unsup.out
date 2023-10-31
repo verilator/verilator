@@ -1,21 +1,21 @@
 %Error: t/t_array_method_unsup.v:24:17: 'with' not legal on this method
-                                      : ... In instance t
+                                      : ... note: In instance 't'
    24 |       i = q.sum with (item + 1); do if ((i) !== (32'h11)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_array_method_unsup.v",24, (i), (32'h11)); $stop; end while(0);;
       |                 ^~~~
 %Error: t/t_array_method_unsup.v:25:21: 'with' not legal on this method
-                                      : ... In instance t
+                                      : ... note: In instance 't'
    25 |       i = q.product with (item + 1); do if ((i) !== (32'h168)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_array_method_unsup.v",25, (i), (32'h168)); $stop; end while(0);;
       |                     ^~~~
 %Error: t/t_array_method_unsup.v:28:17: 'with' not legal on this method
-                                      : ... In instance t
+                                      : ... note: In instance 't'
    28 |       i = q.and with (item + 1); do if ((i) !== (32'b1001)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_array_method_unsup.v",28, (i), (32'b1001)); $stop; end while(0);;
       |                 ^~~~
 %Error: t/t_array_method_unsup.v:29:16: 'with' not legal on this method
-                                      : ... In instance t
+                                      : ... note: In instance 't'
    29 |       i = q.or with (item + 1); do if ((i) !== (32'b1111)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_array_method_unsup.v",29, (i), (32'b1111)); $stop; end while(0);;
       |                ^~~~
 %Error: t/t_array_method_unsup.v:30:17: 'with' not legal on this method
-                                      : ... In instance t
+                                      : ... note: In instance 't'
    30 |       i = q.xor with (item + 1); do if ((i) !== (32'hb)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_array_method_unsup.v",30, (i), (32'hb)); $stop; end while(0);;
       |                 ^~~~
 %Error: Exiting due to

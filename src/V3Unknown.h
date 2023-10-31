@@ -20,13 +20,15 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 class AstNetlist;
 
 //============================================================================
 
 class V3Unknown final {
 public:
-    static void unknownAll(AstNetlist* nodep);
+    static void unknownAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

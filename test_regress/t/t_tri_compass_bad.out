@@ -1,5 +1,5 @@
 %Error-UNSUPPORTED: t/t_tri_compass_bad.v:16:12: Unsupported: tristate in top-level IO: '__pinNumber1'
-                                               : ... In instance t
+                                               : ... note: In instance 't'
    16 |    sub sub(i, o);
       |            ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest

@@ -237,11 +237,9 @@ optimizations will be disabled around the latch.
 Structures and Unions
 ---------------------
 
-Presently Verilator only supports packed structs and packed unions.  Rand
-and randc tags on members are ignored.  All structures and unions are
-represented as a single vector, which means that generating one member of a
-structure from blocking, and another from non-blocking assignments is
-unsupported.
+All structures and unions are scheduled together, which means that
+generating one member of a structure from blocking, and another from
+non-blocking assignments is unsupported.
 
 
 .. _Unknown States:
@@ -320,20 +318,6 @@ there will be considered a two-state variable that is read and written
 instead of a four-state variable.
 
 
-Functions & Tasks
------------------
-
-All functions and tasks will be inlined (will not become functions in C.)
-The only support provided is simple statements in tasks (which may
-affect global variables).
-
-Recursive functions and tasks are not supported.  All inputs and outputs
-are automatic as if they had the Verilog 2001 "automatic" keyword
-prepended.  (If you don't know what this means, Verilator will do what you
-probably expect, what C does. The default behavior of Verilog is
-different.)
-
-
 Gate Primitives
 ---------------
 
@@ -381,24 +365,6 @@ coverage section.
 
 Verilator does not support SEREs yet.  All assertion and coverage
 statements must be simple expressions that complete in one cycle.
-
-
-Force statement
----------------
-
-Verilator supports the procedural `force` (and corresponding `release`)
-statement. However, the behavior of the `force` statement does not entirely
-comply with IEEE 1800. According to the standard,
-when a procedural statement of the form `force a = b;` is executed, the
-simulation should behave as if, from that point forwards, a continuous
-assignment `assign a = b;` has been added to override the drivers of `a`.
-More specifically: the value of `a` should be updated whenever the value of
-`b` changes, until a `release a;` statement is executed.
-Verilator instead evaluates the current value of `b` when the `force`
-statement is executed, and forces `a` to that value, without updating it
-until a new `force` or `release` statement is encountered that applies to
-`a`. This non-standard behavior is nevertheless consistent with some other
-simulators.
 
 
 Encrypted Verilog
@@ -470,6 +436,21 @@ disable
   block the disable statement itself is inside.  This was commonly used to
   provide loop break and continue functionality before SystemVerilog added
   the break and continue keywords.
+
+force, release
+  Verilator supports the procedural `force` (and corresponding `release`)
+  statement. However, the behavior of the `force` statement does not
+  entirely comply with IEEE 1800. According to the standard, when a
+  procedural statement of the form `force a = b;` is executed, the
+  simulation should behave as if, from that point forwards, a continuous
+  assignment `assign a = b;` has been added to override the drivers of `a`.
+  More specifically: the value of `a` should be updated whenever the value
+  of `b` changes, until a `release a;` statement is executed.  Verilator
+  instead evaluates the current value of `b` when the `force` statement is
+  executed, and forces `a` to that value, without updating it until a new
+  `force` or `release` statement is encountered that applies to `a`. This
+  non-standard behavior is nevertheless consistent with some other
+  simulators.
 
 inside
   Inside expressions may not include unpacked array traversal or $ as an

@@ -23,6 +23,6 @@ module t (/*AUTOARG*/
    endproperty
 
    // Test should fail due to duplicated disable iff statements
-   // (IEEE Std 1800-2012, section 16.12.1).
+   // (IEEE 1800-2012 16.12.1).
    assert property (disable iff (val == 0) check(1, 1));
 endmodule

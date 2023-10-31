@@ -20,6 +20,8 @@
 //          If operands are constant, replace this node with constant.
 //*************************************************************************
 
+#define VL_MT_DISABLED_CODE_UNIT 1
+
 #include "config_build.h"
 #include "verilatedos.h"
 
@@ -671,7 +673,7 @@ public:
     // Reduction ops are transformed in the same way.
     // &{v[0], v[1]} => 2'b11 == (2'b11 & v)
     static AstNodeExpr* simplify(AstNodeExpr* nodep, int resultWidth, unsigned externalOps,
-                                 VDouble0& reduction) {
+                                 VDouble0& reduction, VNDeleter& deleterr) {
         UASSERT_OBJ(1 <= resultWidth && resultWidth <= 64, nodep, "resultWidth out of range");
 
         // Walk tree, gathering all terms referenced in expression
@@ -714,7 +716,7 @@ public:
                 }
                 // Set width and widthMin precisely
                 resultp->dtypeChgWidth(resultWidth, 1);
-                for (AstNode* const termp : termps) termp->deleteTree();
+                for (AstNode* const termp : termps) deleterr.pushDeletep(termp);
                 return resultp;
             }
             const ResultTerm result = v->getResultTerm();
@@ -790,7 +792,7 @@ public:
 
         // Only substitute the result if beneficial as determined by operation count
         if (visitor.m_ops <= resultOps) {
-            for (AstNode* const termp : termps) termp->deleteTree();
+            for (AstNode* const termp : termps) deleterr.pushDeletep(termp);
             return nullptr;
         }
 
@@ -898,6 +900,7 @@ private:
     bool m_doNConst = false;  // Enable non-constant-child simplifications
     bool m_doV = false;  // Verilog, not C++ conversion
     bool m_doGenerate = false;  // Postpone width checking inside generate
+    bool m_convertLogicToBit = false;  // Convert logical operators to bitwise
     bool m_hasJumpDelay = false;  // JumpGo or Delay under this while
     bool m_underRecFunc = false;  // Under a recursive function
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -908,6 +911,7 @@ private:
     const bool m_globalPass;  // ConstVisitor invoked as a global pass
     static uint32_t s_globalPassNum;  // Counts number of times ConstVisitor invoked as global pass
     V3UniqueNames m_concswapNames;  // For generating unique temporary variable names
+    std::map<const AstNode*, bool> m_containsMemberAccess;  // Caches results of matchBiopToBitwise
 
     // METHODS
 
@@ -995,7 +999,7 @@ private:
         }
         if (ccastp) {
             andp->replaceWith(ccastp);
-            VL_DO_DANGLING(andp->deleteTree(), andp);
+            VL_DO_DANGLING(pushDeletep(andp), andp);
             return true;
         }
         return false;
@@ -1010,7 +1014,7 @@ private:
         return (lp && rp && lp->width() == rp->width() && lp->type() == rp->type()
                 && (operandsSame(lp->lhsp(), rp->lhsp()) || operandsSame(lp->rhsp(), rp->rhsp())));
     }
-    static bool matchOrAndNot(AstNodeBiop* nodep) {
+    bool matchOrAndNot(AstNodeBiop* nodep) {
         // AstOr{$a, AstAnd{AstNot{$b}, $c}} if $a.width1, $a==$b => AstOr{$a,$c}
         // Someday we'll sort the biops completely and this can be simplified
         // This often results from our simplified clock generation:
@@ -1041,7 +1045,7 @@ private:
         if (!operandsSame(ap, bp)) return false;
         // Do it
         cp->unlinkFrBack();
-        VL_DO_DANGLING(andp->unlinkFrBack()->deleteTree(), andp);
+        VL_DO_DANGLING(pushDeletep(andp->unlinkFrBack()), andp);
         VL_DANGLING(notp);
         // Replace whichever branch is now dangling
         if (nodep->rhsp()) {
@@ -1072,7 +1076,7 @@ private:
         newp->thenp()->dtypeFrom(nodep);  // As And might have been to change widths
         newp->elsep()->dtypeFrom(nodep);
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
     }
     bool matchMaskedOr(AstAnd* nodep) {
@@ -1103,15 +1107,15 @@ private:
         if (orLIsRedundant && orRIsRedundant) {
             nodep->replaceWith(
                 new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()});
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return true;
         } else if (orLIsRedundant) {
             orp->replaceWith(orp->rhsp()->unlinkFrBack());
-            VL_DO_DANGLING(orp->deleteTree(), orp);
+            VL_DO_DANGLING(pushDeletep(orp), orp);
             return false;  // input node is still valid, keep going
         } else if (orRIsRedundant) {
             orp->replaceWith(orp->lhsp()->unlinkFrBack());
-            VL_DO_DANGLING(orp->deleteTree(), orp);
+            VL_DO_DANGLING(pushDeletep(orp), orp);
             return false;  // input node is still valid, keep going
         } else {
             return false;
@@ -1129,7 +1133,7 @@ private:
                 rhsp->unlinkFrBack();
                 nodep->replaceWith(rhsp);
                 rhsp->dtypeFrom(nodep);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return true;
             }
             return false;
@@ -1173,15 +1177,17 @@ private:
         const AstAnd* const andp = VN_CAST(nodep, And);
         const int width = nodep->width();
         if (andp && isConst(andp->lhsp(), 1)) {  // 1 & BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), width, 1, m_statBitOpReduction);
+            newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), width, 1, m_statBitOpReduction,
+                                                   deleter());
         } else {  // BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(nodep, width, 0, m_statBitOpReduction);
+            newp = ConstBitOpTreeVisitor::simplify(nodep, width, 0, m_statBitOpReduction,
+                                                   deleter());
         }
 
         if (newp) {
             UINFO(4, "Transformed leaf of bit tree to " << newp << std::endl);
             nodep->replaceWith(newp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
 
         if (debug() >= 9) {  // LCOV_EXCL_START
@@ -1217,13 +1223,13 @@ private:
     bool operandHugeShiftL(const AstNodeBiop* nodep) {
         return (VN_IS(nodep->rhsp(), Const) && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
                 && (VN_AS(nodep->rhsp(), Const)->toUInt() >= static_cast<uint32_t>(nodep->width()))
-                && isTPure(nodep->lhsp()));
+                && nodep->lhsp()->isPure());
     }
     bool operandHugeShiftR(const AstNodeBiop* nodep) {
         return (VN_IS(nodep->rhsp(), Const) && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
                 && (VN_AS(nodep->rhsp(), Const)->toUInt()
                     >= static_cast<uint32_t>(nodep->lhsp()->width()))
-                && isTPure(nodep->lhsp()));
+                && nodep->lhsp()->isPure());
     }
     bool operandIsTwo(const AstNode* nodep) {
         return (VN_IS(nodep, Const) && !VN_AS(nodep, Const)->num().isFourState()
@@ -1345,14 +1351,14 @@ private:
         //
         if (debug() >= 9) nodep->dumpTree("-  BI(EXTEND)-in: ");
         smallerp->unlinkFrBack();
-        VL_DO_DANGLING(extendp->unlinkFrBack()->deleteTree(), extendp);  // aka nodep->lhsp.
+        VL_DO_DANGLING(pushDeletep(extendp->unlinkFrBack()), extendp);  // aka nodep->lhsp.
         nodep->rhsp(smallerp);
 
         constp->unlinkFrBack();
         V3Number num{constp, subsize};
         num.opAssign(constp->num());
         nodep->lhsp(new AstConst{constp->fileline(), num});
-        VL_DO_DANGLING(constp->deleteTree(), constp);
+        VL_DO_DANGLING(pushDeletep(constp), constp);
         if (debug() >= 9) nodep->dumpTree("-  BI(EXTEND)-ou: ");
         return true;
     }
@@ -1368,21 +1374,6 @@ private:
         if (!constp) return false;
         if (constp->num().isBitsZero(constp->width() - 1, subsize)) return false;
         return true;
-    }
-
-    AstNode* afterComment(AstNode* nodep) {
-        // Ignore comments, such as to determine if a AstIf is empty.
-        // nodep may be null, if so return null.
-        while (nodep && VN_IS(nodep, Comment)) { nodep = nodep->nextp(); }
-        return nodep;
-    }
-
-    bool isTPure(AstNode* nodep) {
-        // Pure checks - if this node and all nodes under it are free of
-        // side effects can do this optimization
-        // Eventually we'll recurse through tree when unknown, memoizing results so far,
-        // but for now can disable en masse until V3Purify takes effect.
-        return m_doShort || VN_IS(nodep, VarRef) || VN_IS(nodep, Const);
     }
 
     // Extraction checks
@@ -1443,7 +1434,7 @@ private:
             // Avoid comparing widthMin's, which results in lost optimization attempts
             // If cleanup sameGateTree to be smarter, this can be restored.
             // return node1p->sameGateTree(node2p);
-            return node1p->same(node2p);
+            return node1p->isSame(node2p);
         } else {
             return false;
         }
@@ -1465,7 +1456,7 @@ private:
         const AstNodeIf* const lowerIfp = VN_CAST(nodep->thensp(), NodeIf);
         if (!lowerIfp || lowerIfp->nextp()) return false;
         if (nodep->type() != lowerIfp->type()) return false;
-        if (afterComment(lowerIfp->elsesp())) return false;
+        if (AstNode::afterCommentp(lowerIfp->elsesp())) return false;
         return true;
     }
     bool ifConcatMergeableBiop(const AstNode* nodep) {
@@ -1494,13 +1485,13 @@ private:
         const AstSel* rselp = VN_CAST(rhsp, Sel);
         // a[i:0] a
         if (lselp && !rselp && rhsp->sameGateTree(lselp->fromp()))
-            rselp = new AstSel{rhsp->fileline(), rhsp->cloneTree(false), 0, rhsp->width()};
+            rselp = new AstSel{rhsp->fileline(), rhsp->cloneTreePure(false), 0, rhsp->width()};
         // a[i:j] {a[j-1:k], b}
         if (lselp && !rselp && VN_IS(rhsp, Concat))
             return ifMergeAdjacent(lhsp, VN_CAST(rhsp, Concat)->lhsp());
         // a a[msb:j]
         if (rselp && !lselp && lhsp->sameGateTree(rselp->fromp()))
-            lselp = new AstSel{lhsp->fileline(), lhsp->cloneTree(false), 0, lhsp->width()};
+            lselp = new AstSel{lhsp->fileline(), lhsp->cloneTreePure(false), 0, lhsp->width()};
         // {b, a[j:k]} a[k-1:i]
         if (rselp && !lselp && VN_IS(lhsp, Concat))
             return ifMergeAdjacent(VN_CAST(lhsp, Concat)->rhsp(), rhsp);
@@ -1563,7 +1554,7 @@ private:
         if (debug() > 5) oldp->dumpTree("-  const_old: ");
         if (debug() > 5) newp->dumpTree("-       _new: ");
         oldp->replaceWith(newp);
-        VL_DO_DANGLING(oldp->deleteTree(), oldp);
+        VL_DO_DANGLING(pushDeletep(oldp), oldp);
     }
     void replaceNum(AstNode* nodep, uint32_t val) {
         V3Number num{nodep, nodep->width(), val};
@@ -1587,14 +1578,14 @@ private:
         // For example, "0 * n" -> 0 if n has no side effects
         // Else strength reduce it to 0 & n.
         // If ever change the operation note AstAnd rule specially ignores this created pattern
-        if (isTPure(checkp)) {
+        if (checkp->isPure()) {
             VL_DO_DANGLING(replaceNum(nodep, 0), nodep);
         } else {
             AstNode* const newp = new AstAnd{nodep->fileline(), new AstConst{nodep->fileline(), 0},
                                              checkp->unlinkFrBack()};
             newp->dtypeFrom(nodep);
             nodep->replaceWith(newp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void replaceAllOnes(AstNode* nodep) {
@@ -1639,7 +1630,7 @@ private:
         if (debug() > 5) oldp->dumpTree("-  const_old: ");
         if (debug() > 5) newp->dumpTree("-       _new: ");
         oldp->replaceWith(newp);
-        VL_DO_DANGLING(oldp->deleteTree(), oldp);
+        VL_DO_DANGLING(pushDeletep(oldp), oldp);
     }
     //----------------------------------------
     // Replacement functions.
@@ -1652,7 +1643,7 @@ private:
         // This may adversely affect the operation of the node being replaced.
         childp->dtypeFrom(nodep);
         nodep->replaceWith(childp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replaceWChildBool(AstNode* nodep, AstNodeExpr* childp) {
         // NODE(..., CHILD(...)) -> REDOR(CHILD(...))
@@ -1662,7 +1653,7 @@ private:
         } else {
             nodep->replaceWith(new AstRedOr{childp->fileline(), childp});
         }
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     //! Replace a ternary node with its RHS after iterating
@@ -1753,16 +1744,16 @@ private:
             lp->dtypeFrom(nodep);
             nodep->lhsp(lrp);
             nodep->rhsp(rrp);
-            VL_DO_DANGLING(rp->deleteTree(), rp);
-            VL_DO_DANGLING(rlp->deleteTree(), rlp);
+            VL_DO_DANGLING(pushDeletep(rp), rp);
+            VL_DO_DANGLING(pushDeletep(rlp), rlp);
         } else if (operandsSame(lrp, rrp)) {
             lp->lhsp(nodep);
             lp->rhsp(rrp);
             lp->dtypeFrom(nodep);
             nodep->lhsp(llp);
             nodep->rhsp(rlp);
-            VL_DO_DANGLING(rp->deleteTree(), rp);
-            VL_DO_DANGLING(lrp->deleteTree(), lrp);
+            VL_DO_DANGLING(pushDeletep(rp), rp);
+            VL_DO_DANGLING(pushDeletep(lrp), lrp);
         } else {
             nodep->v3fatalSrc("replaceAndOr on something operandAndOrSame shouldn't have matched");
         }
@@ -1783,8 +1774,8 @@ private:
         nodep->lhsp(llp);
         nodep->rhsp(rlp);
         nodep->dtypep(llp->dtypep());  // dtype of Biop is before shift.
-        VL_DO_DANGLING(rp->deleteTree(), rp);
-        VL_DO_DANGLING(rrp->deleteTree(), rrp);
+        VL_DO_DANGLING(pushDeletep(rp), rp);
+        VL_DO_DANGLING(pushDeletep(rrp), rrp);
         // nodep->dumpTree("-  repShiftSame_new: ");
     }
     void replaceConcatSel(AstConcat* nodep) {
@@ -1804,18 +1795,18 @@ private:
                                             << endl);
 
         nodep->replaceWith(newselp);
-        VL_DO_DANGLING(lselp->deleteTree(), lselp);
-        VL_DO_DANGLING(rselp->deleteTree(), rselp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(lselp), lselp);
+        VL_DO_DANGLING(pushDeletep(rselp), rselp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replaceConcatMerge(AstConcat* nodep) {
         // {llp OP lrp, rlp OP rrp} => {llp, rlp} OP {lrp, rrp}, where OP = AND/OR/XOR
         AstNodeBiop* const lp = VN_AS(nodep->lhsp(), NodeBiop);
         AstNodeBiop* const rp = VN_AS(nodep->rhsp(), NodeBiop);
-        AstNodeExpr* const llp = lp->lhsp()->cloneTree(false);
-        AstNodeExpr* const lrp = lp->rhsp()->cloneTree(false);
-        AstNodeExpr* const rlp = rp->lhsp()->cloneTree(false);
-        AstNodeExpr* const rrp = rp->rhsp()->cloneTree(false);
+        AstNodeExpr* const llp = lp->lhsp()->cloneTreePure(false);
+        AstNodeExpr* const lrp = lp->rhsp()->cloneTreePure(false);
+        AstNodeExpr* const rlp = rp->lhsp()->cloneTreePure(false);
+        AstNodeExpr* const rrp = rp->rhsp()->cloneTreePure(false);
         if (concatMergeable(lp, rp, 0)) {
             AstConcat* const newlp = new AstConcat{rlp->fileline(), llp, rlp};
             AstConcat* const newrp = new AstConcat{rrp->fileline(), lrp, rrp};
@@ -1824,9 +1815,9 @@ private:
             lp->rhsp()->replaceWith(newrp);
             lp->dtypeChgWidthSigned(newlp->width(), newlp->width(), VSigning::UNSIGNED);
             UINFO(5, "merged " << nodep << endl);
-            VL_DO_DANGLING(rp->unlinkFrBack()->deleteTree(), rp);
+            VL_DO_DANGLING(pushDeletep(rp->unlinkFrBack()), rp);
             nodep->replaceWith(lp->unlinkFrBack());
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             iterate(lp->lhsp());
             iterate(lp->rhsp());
         } else {
@@ -1843,7 +1834,7 @@ private:
                    : static_cast<AstNodeExpr*>(new AstExtend{nodep->fileline(), arg0p}));
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replacePowShift(AstNodeBiop* nodep) {  // Pow or PowS
         UINFO(5, "POW(2,b)->SHIFTL(1,b) " << nodep << endl);
@@ -1853,7 +1844,7 @@ private:
         newp->dtypeFrom(nodep);
         newp->lhsp()->dtypeFrom(nodep);
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replaceMulShift(AstMul* nodep) {  // Mul, but not MulS as not simple shift
         UINFO(5, "MUL(2^n,b)->SHIFTL(b,n) " << nodep << endl);
@@ -1863,7 +1854,7 @@ private:
             = new AstShiftL{nodep->fileline(), opp, new AstConst(nodep->fileline(), amount)};
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replaceDivShift(AstDiv* nodep) {  // Mul, but not MulS as not simple shift
         UINFO(5, "DIV(b,2^n)->SHIFTR(b,n) " << nodep << endl);
@@ -1873,7 +1864,7 @@ private:
             = new AstShiftR{nodep->fileline(), opp, new AstConst(nodep->fileline(), amount)};
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replaceModAnd(AstModDiv* nodep) {  // Mod, but not ModS as not simple shift
         UINFO(5, "MOD(b,2^n)->AND(b,2^n-1) " << nodep << endl);
@@ -1885,7 +1876,7 @@ private:
             = new AstAnd{nodep->fileline(), opp, new AstConst{nodep->fileline(), mask}};
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replaceShiftOp(AstNodeBiop* nodep) {
         UINFO(5, "SHIFT(AND(a,b),CONST)->AND(SHIFT(a,CONST),SHIFT(b,CONST)) " << nodep << endl);
@@ -1899,7 +1890,7 @@ private:
         AstNodeBiop* const shift1p = nodep;
         AstNodeBiop* const shift2p = nodep->cloneTree(true);
         shift1p->lhsp(ap);
-        shift1p->rhsp(shiftp->cloneTree(true));
+        shift1p->rhsp(shiftp->cloneTreePure(true));
         shift2p->lhsp(bp);
         shift2p->rhsp(shiftp);
         AstNodeBiop* const newp = lhsp;
@@ -1922,8 +1913,8 @@ private:
             const int shift1 = VN_AS(shift1p, Const)->toUInt();
             const int shift2 = VN_AS(shift2p, Const)->toUInt();
             const int newshift = shift1 + shift2;
-            VL_DO_DANGLING(shift1p->deleteTree(), shift1p);
-            VL_DO_DANGLING(shift2p->deleteTree(), shift2p);
+            VL_DO_DANGLING(pushDeletep(shift1p), shift1p);
+            VL_DO_DANGLING(pushDeletep(shift2p), shift2p);
             nodep->lhsp(ap);
             nodep->rhsp(new AstConst(nodep->fileline(), newshift));
             iterate(nodep);  // Further reduce, either node may have more reductions.
@@ -1934,8 +1925,8 @@ private:
             int shift2 = VN_AS(shift2p, Const)->toUInt();
             if (VN_IS(nodep, ShiftR)) shift2 = -shift2;
             const int newshift = shift1 + shift2;
-            VL_DO_DANGLING(shift1p->deleteTree(), shift1p);
-            VL_DO_DANGLING(shift2p->deleteTree(), shift2p);
+            VL_DO_DANGLING(pushDeletep(shift1p), shift1p);
+            VL_DO_DANGLING(pushDeletep(shift2p), shift2p);
             AstNodeExpr* newp;
             V3Number mask1{nodep, nodep->width()};
             V3Number ones{nodep, nodep->width()};
@@ -1962,11 +1953,11 @@ private:
             newp = new AstAnd{nodep->fileline(), newp, new AstConst{nodep->fileline(), mask}};
             newp->dtypeFrom(nodep);
             nodep->replaceWith(newp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             // newp->dumpTree("-  repShiftShift_new: ");
             iterate(newp);  // Further reduce, either node may have more reductions.
         }
-        VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+        VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
     }
 
     bool replaceAssignMultiSel(AstNodeAssign* nodep) {
@@ -2022,8 +2013,8 @@ private:
         }
         // pnewp->dumpTree("-  conew: ");
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        VL_DO_DANGLING(nextp->unlinkFrBack()->deleteTree(), nextp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        VL_DO_DANGLING(pushDeletep(nextp->unlinkFrBack()), nextp);
         return true;
     }
 
@@ -2050,10 +2041,10 @@ private:
                 nodep->v3error("Wire inputs its own output, creating circular logic (wire x=x)");
                 return false;  // Don't delete the assign, or V3Gate will freak out
             } else {
-                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return true;
             }
-        } else if (m_doV && VN_IS(nodep->lhsp(), Concat) && nodep->isTreePureRecurse()) {
+        } else if (m_doV && VN_IS(nodep->lhsp(), Concat) && nodep->isPure()) {
             bool need_temp = false;
             if (m_warn && !VN_IS(nodep, AssignDly)) {  // Is same var on LHS and RHS?
                 // Note only do this (need user4) when m_warn, which is
@@ -2085,7 +2076,7 @@ private:
             AstNodeExpr* const lc2p = VN_AS(nodep->lhsp(), Concat)->rhsp()->unlinkFrBack();
             AstNodeExpr* const conp = VN_AS(nodep->lhsp(), Concat)->unlinkFrBack();
             AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-            AstNodeExpr* const rhs2p = rhsp->cloneTree(false);
+            AstNodeExpr* const rhs2p = rhsp->cloneTreePure(false);
             // Calc widths
             const int lsb2 = 0;
             const int msb2 = lsb2 + lc2p->width() - 1;
@@ -2140,8 +2131,8 @@ private:
             if (debug() >= 9 && newp) newp->dumpTreeAndNext(cout, "-     _new: ");
             nodep->addNextHere(newp);
             // Cleanup
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-            VL_DO_DANGLING(conp->deleteTree(), conp);
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            VL_DO_DANGLING(pushDeletep(conp), conp);
             // Further reduce, either node may have more reductions.
             return true;
         } else if (m_doV && VN_IS(nodep->rhsp(), StreamR)) {
@@ -2159,7 +2150,7 @@ private:
                 srcp = new AstCvtDynArrayToPacked{srcp->fileline(), srcp, srcDTypep};
             }
             nodep->rhsp(srcp);
-            VL_DO_DANGLING(streamp->deleteTree(), streamp);
+            VL_DO_DANGLING(pushDeletep(streamp), streamp);
             // Further reduce, any of the nodes may have more reductions.
             return true;
         } else if (m_doV && VN_IS(nodep->lhsp(), StreamL)) {
@@ -2201,7 +2192,7 @@ private:
             }
             nodep->lhsp(dstp);
             nodep->rhsp(srcp);
-            VL_DO_DANGLING(streamp->deleteTree(), streamp);
+            VL_DO_DANGLING(pushDeletep(streamp), streamp);
             // Further reduce, any of the nodes may have more reductions.
             return true;
         } else if (m_doV && VN_IS(nodep->rhsp(), StreamL)) {
@@ -2251,7 +2242,7 @@ private:
         // widthMin no longer applicable if different C-expanded width
         newp->dtypeSetLogicSized(nodep->width(), VSigning::UNSIGNED);
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
         if (debug() >= 9) newp->dumpTree("-       _new: ");
     }
 
@@ -2277,7 +2268,7 @@ private:
             newp->fileline(nodep->fileline());
             UINFO(4, "Simulate->" << newp << endl);
             nodep->replaceWith(newp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
 
@@ -2309,7 +2300,7 @@ private:
         iterateChildren(nodep);
         if (!nodep->stmtsp()) {
             nodep->unlinkFrBack();
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstScope* nodep) override {
@@ -2333,6 +2324,46 @@ private:
         iterate(nodep);  // Again?
     }
 
+    bool containsMemberAccessRecurse(const AstNode* const nodep) {
+        if (!nodep) return false;
+        const auto it = m_containsMemberAccess.lower_bound(nodep);
+        if (it != m_containsMemberAccess.end() && it->first == nodep) return it->second;
+        bool result = false;
+        if (VN_IS(nodep, MemberSel) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall)) {
+            result = true;
+        } else if (const AstNodeFTaskRef* const funcRefp = VN_CAST(nodep, NodeFTaskRef)) {
+            if (containsMemberAccessRecurse(funcRefp->taskp())) result = true;
+        } else if (const AstNodeCCall* const funcRefp = VN_CAST(nodep, NodeCCall)) {
+            if (containsMemberAccessRecurse(funcRefp->funcp())) result = true;
+        } else if (const AstNodeFTask* const funcp = VN_CAST(nodep, NodeFTask)) {
+            // Assume that it has a member access
+            if (funcp->recursive()) result = true;
+        } else if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
+            if (funcp->recursive()) result = true;
+        }
+        if (!result) {
+            result = containsMemberAccessRecurse(nodep->op1p())
+                     || containsMemberAccessRecurse(nodep->op2p())
+                     || containsMemberAccessRecurse(nodep->op3p())
+                     || containsMemberAccessRecurse(nodep->op4p());
+        }
+        if (!result && !VN_IS(nodep, NodeFTask)
+            && !VN_IS(nodep, CFunc)  // don't enter into next function
+            && containsMemberAccessRecurse(nodep->nextp())) {
+            result = true;
+        }
+        m_containsMemberAccess.insert(it, std::make_pair(nodep, result));
+        return result;
+    }
+
+    bool matchBiopToBitwise(AstNodeBiop* const nodep) {
+        if (!m_convertLogicToBit) return false;
+        if (!nodep->lhsp()->width1()) return false;
+        if (!nodep->rhsp()->width1()) return false;
+        if (!nodep->isPure()) return false;
+        if (containsMemberAccessRecurse(nodep)) return false;
+        return true;
+    }
     bool matchConcatRand(AstConcat* nodep) {
         //    CONCAT(RAND, RAND) - created by Chisel code
         AstRand* const aRandp = VN_CAST(nodep->lhsp(), Rand);
@@ -2342,7 +2373,7 @@ private:
         UINFO(4, "Concat(Rand,Rand) => Rand: " << nodep << endl);
         aRandp->dtypeFrom(nodep);  // I.e. the total width
         nodep->replaceWith(aRandp->unlinkFrBack());
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
     }
     bool matchSelRand(AstSel* nodep) {
@@ -2353,7 +2384,7 @@ private:
         UINFO(4, "Sel(Rand) => Rand: " << nodep << endl);
         aRandp->dtypeFrom(nodep);  // I.e. the total width
         nodep->replaceWith(aRandp->unlinkFrBack());
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
     }
     int operandConcatMove(AstConcat* nodep) {
@@ -2393,7 +2424,7 @@ private:
             // If bp was a concat, then we have this exact same form again!
             // Recurse rather then calling node->iterate to prevent 2^n recursion!
             if (operandConcatMove(abConcp)) moveConcat(abConcp);
-            VL_DO_DANGLING(bcConcp->deleteTree(), bcConcp);
+            VL_DO_DANGLING(pushDeletep(bcConcp), bcConcp);
         } else {
             AstConcat* const abConcp = VN_AS(nodep->lhsp(), Concat);
             abConcp->unlinkFrBack();
@@ -2404,7 +2435,7 @@ private:
             nodep->lhsp(ap);
             nodep->rhsp(bcConcp);
             if (operandConcatMove(bcConcp)) moveConcat(bcConcp);
-            VL_DO_DANGLING(abConcp->deleteTree(), abConcp);
+            VL_DO_DANGLING(pushDeletep(abConcp), abConcp);
         }
     }
 
@@ -2430,11 +2461,11 @@ private:
             nodep->fileline(),
             new AstLogOr{nodep->fileline(), new AstLogNot{nodep->fileline(), lhsp}, rhsp},
             new AstLogOr{nodep->fileline(),
-                         new AstLogNot{nodep->fileline(), rhsp->cloneTree(false)},
-                         lhsp->cloneTree(false)}};
+                         new AstLogNot{nodep->fileline(), rhsp->cloneTreePure(false)},
+                         lhsp->cloneTreePure(false)}};
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     void replaceSelSel(AstSel* nodep) {
@@ -2450,8 +2481,8 @@ private:
         if (VN_IS(lsb1p, Const) && VN_IS(lsb2p, Const)) {
             newlsbp = new AstConst{lsb1p->fileline(),
                                    VN_AS(lsb1p, Const)->toUInt() + VN_AS(lsb2p, Const)->toUInt()};
-            VL_DO_DANGLING(lsb1p->deleteTree(), lsb1p);
-            VL_DO_DANGLING(lsb2p->deleteTree(), lsb2p);
+            VL_DO_DANGLING(pushDeletep(lsb1p), lsb1p);
+            VL_DO_DANGLING(pushDeletep(lsb2p), lsb2p);
         } else {
             // Width is important, we need the width of the fromp's expression, not the
             // potentially smaller lsb1p's width, but don't insert a redundant AstExtend.
@@ -2471,7 +2502,7 @@ private:
         }
         AstSel* const newp = new AstSel{nodep->fileline(), fromp, newlsbp, widthp};
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     void replaceSelConcat(AstSel* nodep) {
@@ -2502,7 +2533,7 @@ private:
                                            conRhsp->width() - nodep->lsbConst()}};
             nodep->replaceWith(newp);
         }
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     bool operandSelReplicate(AstSel* nodep) {
         // SEL(REPLICATE(from,rep),lsb,width) => SEL(from,0,width) as long
@@ -2526,7 +2557,7 @@ private:
                          new AstConst{lsbp->fileline(), lsbp->toUInt() % fromp->width()}, widthp};
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
     }
     bool operandRepRep(AstReplicate* nodep) {
@@ -2545,7 +2576,7 @@ private:
             = new AstReplicate{nodep->fileline(), from2p, cnt1p->toUInt() * cnt2p->toUInt()};
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
     }
     bool operandConcatSame(AstConcat* nodep) {
@@ -2575,7 +2606,7 @@ private:
         AstReplicate* const newp = new AstReplicate{nodep->fileline(), from1p, cnt1 + cnt2};
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
     }
     void replaceSelIntoBiop(AstSel* nodep) {
@@ -2588,12 +2619,12 @@ private:
         AstNodeExpr* const bilhsp = fromp->lhsp()->unlinkFrBack();
         AstNodeExpr* const birhsp = fromp->rhsp()->unlinkFrBack();
         //
-        fromp->lhsp(
-            new AstSel{nodep->fileline(), bilhsp, lsbp->cloneTree(true), widthp->cloneTree(true)});
+        fromp->lhsp(new AstSel{nodep->fileline(), bilhsp, lsbp->cloneTreePure(true),
+                               widthp->cloneTreePure(true)});
         fromp->rhsp(new AstSel{nodep->fileline(), birhsp, lsbp, widthp});
         fromp->dtypeFrom(nodep);
         nodep->replaceWith(fromp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replaceSelIntoUniop(AstSel* nodep) {
         // SEL(NOT(a),1,bit) => NOT(SEL(a,bit))
@@ -2607,7 +2638,7 @@ private:
         fromp->lhsp(new AstSel{nodep->fileline(), bilhsp, lsbp, widthp});
         fromp->dtypeFrom(nodep);
         nodep->replaceWith(fromp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     void visit(AstAttrOf* nodep) override {
@@ -2639,7 +2670,7 @@ private:
                     fromp->dtypeFrom(
                         VN_AS(fromp->dtypep()->skipRefp(), NodeArrayDType)->subDTypep());
                 }
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
         m_selp = nullptr;
@@ -2687,12 +2718,12 @@ private:
                     // support arrays of arrays or other stuff
                     AstNode* const newp = valuep->cloneTree(false);
                     nodep->replaceWith(newp);
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     did = true;
                 } else if (nodep->varp()->isParam() && VN_IS(valuep, Unbounded)) {
                     AstNode* const newp = valuep->cloneTree(false);
                     nodep->replaceWith(newp);
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     did = true;
                 }
             }
@@ -2700,6 +2731,15 @@ private:
         if (!did && m_required) {
             nodep->v3error("Expecting expression to be constant, but variable isn't const: "
                            << nodep->varp()->prettyNameQ());
+        }
+    }
+    void visit(AstExprStmt* nodep) override {
+        iterateChildren(nodep);
+        if (!AstNode::afterCommentp(nodep->stmtsp())) {
+            UINFO(8, "ExprStmt(...) " << nodep << " " << nodep->resultp() << endl);
+            nodep->replaceWith(nodep->resultp()->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            // Removing the ExprStmt might have made something impure above now pure
         }
     }
     void visit(AstEnumItemRef* nodep) override {
@@ -2751,13 +2791,13 @@ private:
                     } else {
                         nodep->replaceWith(new AstSenItem{nodep->fileline(), AstSenItem::Never{}});
                     }
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 } else {
-                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 }
             } else {  // Otherwise it may compute a result that needs to settle out
                 nodep->replaceWith(new AstSenItem{nodep->fileline(), AstSenItem::Combo{}});
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         } else if (m_doNConst && VN_IS(nodep->sensp(), Not)) {
             // V3Gate may propagate NOTs into clocks... Just deal with it
@@ -2771,7 +2811,7 @@ private:
             UINFO(8, "senItem(NOT...) " << nodep << " " << invert << endl);
             if (invert) nodep->edgeType(nodep->edgeType().invert());
             sensp->replaceWith(lastSensp->unlinkFrBack());
-            VL_DO_DANGLING(sensp->deleteTree(), sensp);
+            VL_DO_DANGLING(pushDeletep(sensp), sensp);
         }
     }
 
@@ -2910,7 +2950,7 @@ private:
 
                     // Remove identical expressions
                     if (lItemp->edgeType() == rItemp->edgeType()) {
-                        VL_DO_DANGLING(rItemp->unlinkFrBack()->deleteTree(), rItemp);
+                        VL_DO_DANGLING(pushDeletep(rItemp->unlinkFrBack()), rItemp);
                         nextp = lItemp;
                     }
 
@@ -2927,7 +2967,7 @@ private:
                                     const V3Number lNum{lConstp->num()};
                                     lConstp->num().opOr(lNum, rConstp->num());
                                     // Remove redundant term
-                                    VL_DO_DANGLING(rItemp->unlinkFrBack()->deleteTree(), rItemp);
+                                    VL_DO_DANGLING(pushDeletep(rItemp->unlinkFrBack()), rItemp);
                                     nextp = lItemp;
                                 }
                             }
@@ -2972,7 +3012,7 @@ private:
             AstInitial* const newinitp = new AstInitial{
                 nodep->fileline(), new AstAssign{nodep->fileline(), varrefp, exprp}};
             m_modp->addStmtsp(newinitp);
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             // Set the initial value right in the variable so we can constant propagate
             AstNode* const initvaluep = exprp->cloneTree(false);
             varrefp->varp()->valuep(initvaluep);
@@ -2985,7 +3025,7 @@ private:
             AstRelease* const newRp = new AstRelease{flp, concatp->rhsp()->unlinkFrBack()};
             nodep->replaceWith(newLp);
             newLp->addNextHere(newRp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             visit(newLp);
             visit(newRp);
         }
@@ -3012,23 +3052,24 @@ private:
                 } else {
                     nodep->unlinkFrBack();
                 }
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            } else if (!afterComment(nodep->thensp()) && !afterComment(nodep->elsesp())) {
-                if (!nodep->condp()->isTreePureRecurse()) {
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            } else if (!AstNode::afterCommentp(nodep->thensp())
+                       && !AstNode::afterCommentp(nodep->elsesp())) {
+                if (!nodep->condp()->isPure()) {
                     // Condition has side effect - leave - perhaps in
                     // future simplify to remove all but side effect terms
                 } else {
                     // Empty block, remove it
-                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 }
-            } else if (!afterComment(nodep->thensp())) {
+            } else if (!AstNode::afterCommentp(nodep->thensp())) {
                 UINFO(4, "IF({x}) nullptr {...} => IF(NOT{x}}: " << nodep << endl);
                 AstNodeExpr* const condp = nodep->condp();
                 AstNode* const elsesp = nodep->elsesp();
                 condp->unlinkFrBackWithNext();
                 elsesp->unlinkFrBackWithNext();
                 if (nodep->thensp()) {  // Must have been comment
-                    nodep->thensp()->unlinkFrBackWithNext()->deleteTree();
+                    pushDeletep(nodep->thensp()->unlinkFrBackWithNext());
                 }
                 nodep->condp(new AstLogNot{condp->fileline(),
                                            condp});  // LogNot, as C++ optimization also possible
@@ -3045,7 +3086,7 @@ private:
                 ifp->isBoundsCheck(nodep->isBoundsCheck());  // Copy bounds check info
                 ifp->branchPred(nodep->branchPred().invert());
                 nodep->replaceWith(ifp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (ifSameAssign(nodep)) {
                 UINFO(
                     4,
@@ -3058,7 +3099,7 @@ private:
                 AstNodeExpr* const falsep = elsesp->rhsp()->unlinkFrBack();
                 thensp->rhsp(new AstCond{truep->fileline(), condp, truep, falsep});
                 nodep->replaceWith(thensp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (false  // Disabled, as vpm assertions are faster
                               // without due to short-circuiting
                        && operandIfIf(nodep)) {
@@ -3069,7 +3110,7 @@ private:
                 AstNodeExpr* const lowerCondp = lowerIfp->condp()->unlinkFrBackWithNext();
                 nodep->condp(new AstLogAnd{lowerIfp->fileline(), condp, lowerCondp});
                 lowerIfp->replaceWith(lowerThensp);
-                VL_DO_DANGLING(lowerIfp->deleteTree(), lowerIfp);
+                VL_DO_DANGLING(pushDeletep(lowerIfp), lowerIfp);
             } else if (operandBoolShift(nodep->condp())) {
                 replaceBoolShift(nodep->condp());
             }
@@ -3108,6 +3149,8 @@ private:
         // right line numbers, nor scopeNames as might be different scopes (late in process)
         if (!m_doCpp && pformatp->exprsp()) return false;
         if (!m_doCpp && nformatp->exprsp()) return false;
+        if (pformatp->exprsp() && !pformatp->exprsp()->isPureAndNext()) return false;
+        if (nformatp->exprsp() && !nformatp->exprsp()->isPureAndNext()) return false;
         // Avoid huge merges
         static constexpr int DISPLAY_MAX_MERGE_LENGTH = 500;
         if (pformatp->text().length() + nformatp->text().length() > DISPLAY_MAX_MERGE_LENGTH)
@@ -3129,7 +3172,7 @@ private:
             scopeNamep->unlinkFrBackWithNext();
             pformatp->scopeNamep(scopeNamep);
         }
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         return true;
     }
     void visit(AstSFormatF* nodep) override {
@@ -3177,7 +3220,7 @@ private:
                                                             << argp << endl);
                                 // fmt = out w/ replace % with %% as it must be literal.
                                 fmt = VString::quotePercent(out);
-                                VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
+                                VL_DO_DANGLING(pushDeletep(argp->unlinkFrBack()), argp);
                             }
                             argp = nextp;
                         }
@@ -3237,7 +3280,7 @@ private:
                 } else {
                     nodep->unlinkFrBack();
                 }
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (nodep->condp()->isNeqZero()) {
                 if (!thisWhileHasJumpDelay) {
                     nodep->v3warn(INFINITELOOP, "Infinite loop (condition always true)");
@@ -3260,13 +3303,13 @@ private:
     // Ignored, can eliminate early
     void visit(AstSysIgnore* nodep) override {
         iterateChildren(nodep);
-        if (m_doNConst) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        if (m_doNConst) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
     void visit(AstStmtExpr* nodep) override {
         iterateChildren(nodep);
         if (!nodep->exprp() || VN_IS(nodep->exprp(), Const)) {
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
         // TODO if there's an ExprStmt underneath just keep lower statements
@@ -3286,14 +3329,14 @@ private:
         iterateChildren(nodep);
         // Jump to label where label immediately follows this go is not useful
         if (nodep->labelp() == VN_CAST(nodep->nextp(), JumpLabel)) {
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             // Keep the label, might be other jumps pointing to it, gets cleaned later
             return;
         }
         if (m_doExpensive) {
             // Any non-label statements (at this statement level) can never execute
             while (nodep->nextp() && !VN_IS(nodep->nextp(), JumpLabel)) {
-                nodep->nextp()->unlinkFrBack()->deleteTree();
+                pushDeletep(nodep->nextp()->unlinkFrBack());
             }
             // If last statement in a jump label we have JumpLabel(...., JumpGo)
             // Often caused by "return" in a Verilog function.  The Go is pointless, remove.
@@ -3302,7 +3345,7 @@ private:
                     if (aboveBlockp == nodep->labelp()->blockp()) {
                         if (aboveBlockp->endStmtsp() == nodep->labelp()) {
                             UINFO(4, "JUMPGO => last remove " << nodep << endl);
-                            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                             return;
                         }
                     }
@@ -3328,8 +3371,8 @@ private:
             } else {
                 nodep->unlinkFrBack();
             }
-            nodep->labelp()->unlinkFrBack()->deleteTree();
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            pushDeletep(nodep->labelp()->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
 
@@ -3374,7 +3417,7 @@ private:
     TREEOPA("AstNodeQuadop{$lhsp.castConst, $rhsp.castConst, $thsp.castConst, $fhsp.castConst}",  "replaceConst(nodep)");
     // Zero on one side or the other
     TREEOP ("AstAdd   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
-    TREEOP ("AstAnd   {$lhsp.isZero, $rhsp, isTPure($rhsp)}",   "replaceZero(nodep)");  // Can't use replaceZeroChkPure as we make this pattern in ChkPure
+    TREEOP ("AstAnd   {$lhsp.isZero, $rhsp, $rhsp.isPure}",   "replaceZero(nodep)");  // Can't use replaceZeroChkPure as we make this pattern in ChkPure
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstLogAnd   {$lhsp.isZero}",       "replaceZero(nodep)");
     TREEOP ("AstLogAnd{$lhsp.isZero, $rhsp}",   "replaceZero(nodep)");
@@ -3394,9 +3437,12 @@ private:
     TREEOP ("AstPowUS {$lhsp.isZero, !$rhsp.isZero}",   "replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstPowSU {$lhsp.isZero, !$rhsp.isZero}",   "replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstOr    {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
-    TREEOP ("AstShiftL{$lhsp.isZero, $rhsp}",   "replaceZeroChkPure(nodep,$rhsp)");
-    TREEOP ("AstShiftR{$lhsp.isZero, $rhsp}",   "replaceZeroChkPure(nodep,$rhsp)");
-    TREEOP ("AstShiftRS{$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstShiftL    {$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstShiftLOvr {$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstShiftR    {$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstShiftROvr {$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstShiftRS   {$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstShiftRSOvr{$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
     TREEOP ("AstXor   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
     TREEOP ("AstSub   {$lhsp.isZero, $rhsp}",   "AstNegate{$rhsp}");
     TREEOP ("AstAdd   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
@@ -3406,20 +3452,23 @@ private:
     TREEOP ("AstMul   {$lhsp, $rhsp.isZero}",   "replaceZeroChkPure(nodep,$lhsp)");
     TREEOP ("AstMulS  {$lhsp, $rhsp.isZero}",   "replaceZeroChkPure(nodep,$lhsp)");
     TREEOP ("AstOr    {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
-    TREEOP ("AstShiftL{$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
-    TREEOP ("AstShiftR{$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
-    TREEOP ("AstShiftRS{$lhsp, $rhsp.isZero}",  "replaceWLhs(nodep)");
+    TREEOP ("AstShiftL    {$lhsp, $rhsp.isZero}",  "replaceWLhs(nodep)");
+    TREEOP ("AstShiftLOvr {$lhsp, $rhsp.isZero}",  "replaceWLhs(nodep)");
+    TREEOP ("AstShiftR    {$lhsp, $rhsp.isZero}",  "replaceWLhs(nodep)");
+    TREEOP ("AstShiftROvr {$lhsp, $rhsp.isZero}",  "replaceWLhs(nodep)");
+    TREEOP ("AstShiftRS   {$lhsp, $rhsp.isZero}",  "replaceWLhs(nodep)");
+    TREEOP ("AstShiftRSOvr{$lhsp, $rhsp.isZero}",  "replaceWLhs(nodep)");
     TREEOP ("AstSub   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
     TREEOP ("AstXor   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
     // Non-zero on one side or the other
     TREEOP ("AstAnd   {$lhsp.isAllOnes, $rhsp}",        "replaceWRhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp.isNeqZero, $rhsp}",        "replaceWRhsBool(nodep)");
-    TREEOP ("AstOr    {$lhsp.isAllOnes, $rhsp, isTPure($rhsp)}",        "replaceWLhs(nodep)");  // ->allOnes
+    TREEOP ("AstOr    {$lhsp.isAllOnes, $rhsp, $rhsp.isPure}",        "replaceWLhs(nodep)");  // ->allOnes
     TREEOP ("AstLogOr {$lhsp.isNeqZero, $rhsp}",        "replaceNum(nodep,1)");
     TREEOP ("AstAnd   {$lhsp, $rhsp.isAllOnes}",        "replaceWLhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp, $rhsp.isNeqZero}",        "replaceWLhsBool(nodep)");
-    TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, isTPure($lhsp)}",        "replaceWRhs(nodep)");  // ->allOnes
-    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, isTPure($lhsp), nodep->isPure()}",        "replaceNum(nodep,1)");
+    TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, $lhsp.isPure}",        "replaceWRhs(nodep)");  // ->allOnes
+    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, $lhsp.isPure, nodep->isPure()}",        "replaceNum(nodep,1)");
     TREEOP ("AstXor   {$lhsp.isAllOnes, $rhsp}",        "AstNot{$rhsp}");
     TREEOP ("AstMul   {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
@@ -3503,8 +3552,10 @@ private:
     TREEOPV("AstNot   {$lhsp.castGteS, $lhsp.width1}",  "AstLtS {$lhsp->castGteS()->lhsp(),$lhsp->castGteS()->rhsp()}");
     TREEOP ("AstLogNot{$lhsp.castGteS}",                "AstLtS {$lhsp->castGteS()->lhsp(),$lhsp->castGteS()->rhsp()}");
     // Not common, but avoids compiler warnings about over shifting
-    TREEOP ("AstShiftL{operandHugeShiftL(nodep)}",      "replaceZero(nodep)");
-    TREEOP ("AstShiftR{operandHugeShiftR(nodep)}",      "replaceZero(nodep)");
+    TREEOP ("AstShiftL   {operandHugeShiftL(nodep)}",   "replaceZero(nodep)");
+    TREEOP ("AstShiftLOvr{operandHugeShiftL(nodep)}",   "replaceZero(nodep)");
+    TREEOP ("AstShiftR   {operandHugeShiftR(nodep)}",   "replaceZero(nodep)");
+    TREEOP ("AstShiftROvr{operandHugeShiftR(nodep)}",   "replaceZero(nodep)");
     TREEOP ("AstShiftL{operandShiftOp(nodep)}",         "replaceShiftOp(nodep)");
     TREEOP ("AstShiftR{operandShiftOp(nodep)}",         "replaceShiftOp(nodep)");
     TREEOP ("AstShiftL{operandShiftShift(nodep)}",      "replaceShiftShift(nodep)");
@@ -3591,9 +3642,9 @@ private:
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
-    TREEOPV("AstLogAnd{$lhsp.width1, $rhsp.width1, isTPure($lhsp), isTPure($rhsp)}", "AstAnd{$lhsp,$rhsp}");
-    TREEOPV("AstLogOr {$lhsp.width1, $rhsp.width1, nodep->isPure(), isTPure($lhsp), isTPure($rhsp)}", "AstOr{$lhsp,$rhsp}");
-    TREEOPV("AstLogNot{$lhsp.width1, isTPure($lhsp)}",  "AstNot{$lhsp}");
+    TREEOPV("AstLogAnd{matchBiopToBitwise(nodep)}", "AstAnd{$lhsp,$rhsp}");
+    TREEOPV("AstLogOr {matchBiopToBitwise(nodep)}", "AstOr{$lhsp,$rhsp}");
+    TREEOPV("AstLogNot{$lhsp.width1}",  "AstNot{$lhsp}");
     // CONCAT(CONCAT({a},{b}),{c}) -> CONCAT({a},CONCAT({b},{c}))
     // CONCAT({const},CONCAT({const},{c})) -> CONCAT((constifiedCONC{const|const},{c}))
     TREEOPV("AstConcat{matchConcatRand(nodep)}",      "DONE");
@@ -3711,7 +3762,7 @@ public:
         case PROC_GENERATE:       m_doV = true;  m_doNConst = true; m_params = true;
                                   m_required = true; m_doGenerate = true; break;
         case PROC_LIVE:           break;
-        case PROC_V_WARN:         m_doV = true;  m_doNConst = true; m_warn = true; break;
+        case PROC_V_WARN:         m_doV = true;  m_doNConst = true; m_warn = true; m_convertLogicToBit = true; break;
         case PROC_V_NOWARN:       m_doV = true;  m_doNConst = true; break;
         case PROC_V_EXPENSIVE:    m_doV = true;  m_doNConst = true; m_doExpensive = true; break;
         case PROC_CPP:            m_doV = false; m_doNConst = true; m_doCpp = true; break;
@@ -3730,6 +3781,7 @@ public:
     }
 
     AstNode* mainAcceptEdit(AstNode* nodep) {
+        VIsCached::clearCacheTree();  // Avoid using any stale isPure
         // Operate starting at a random place
         return iterateSubtreeReturnEdits(nodep);
     }

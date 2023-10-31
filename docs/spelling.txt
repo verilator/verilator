@@ -35,11 +35,13 @@ Briquet
 Brownlee
 Buckenmaier
 Bybell
+CLang
 CMake
 Cai
 Cavium
 Cfuncs
 Chandan
+Chih
 Chitlesh
 Christophe
 Cochrane
@@ -89,6 +91,7 @@ Engstrom
 Enzo
 Eugen
 Fabrizio
+Faucher
 Fekete
 Ferrandi
 Flachs
@@ -230,6 +233,7 @@ Mong
 Muhlestein
 Multithreaded
 Multithreading
+Mykyta
 NOUNOPTFLAT
 NaN
 Nalbantis
@@ -486,6 +490,7 @@ countbits
 countones
 cout
 cpp
+cppstyle
 cpu
 ctor
 ctrace
@@ -520,6 +525,7 @@ doxygen
 dpiGetContext
 dpic
 dsvf
+dt
 dtor
 dumpall
 dumpfile
@@ -721,6 +727,7 @@ multithreading
 musl
 mutexes
 mux
+muzafferkal
 myftptoyman
 mysignal
 namespace
@@ -759,6 +766,7 @@ pdf
 perf
 perftools
 pgo
+phelter
 picoChip
 pinIndex
 pinout
@@ -776,6 +784,7 @@ pragma
 pragmas
 pre
 precisions
+precompiled
 predefines
 prepareClone
 prepend
@@ -805,6 +814,7 @@ radix
 randc
 randcase
 randstate
+raphmaster
 rarr
 rdtsc
 reStructuredText
@@ -814,6 +824,7 @@ readmemb
 readmemh
 realpath
 realtime
+realtobits
 recoding
 recrem
 redeclaring

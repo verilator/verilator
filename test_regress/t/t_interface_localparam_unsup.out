@@ -1,0 +1,5 @@
+*-* All Finished *-*
+top.t.intf: symbolsPerBeat 16, symbolsPerBeatDivBy2 8, mismatch 0
+top.t.theCore.core_intf: symbolsPerBeat 64, symbolsPerBeatDivBy2 8, mismatch 1
+%Error: t/t_interface_localparam_unsup.v:23: Verilog $stop
+Aborting...

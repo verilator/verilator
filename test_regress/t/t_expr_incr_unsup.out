@@ -1,5 +1,11 @@
-%Error-UNSUPPORTED: t/t_expr_incr_unsup.v:17:34: Unsupported: Inc/Dec of expression with side-effects
+%Warning-SIDEEFFECT: t/t_expr_incr_unsup.v:17:34: Expression side effect may be mishandled
+                                                : ... Suggest use a temporary variable in place of this expression
    17 |         $display("Value: %d", arr[postincrement_i()]++);
       |                                  ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+                     ... For warning description see https://verilator.org/warn/SIDEEFFECT?v=latest
+                     ... Use "/* verilator lint_off SIDEEFFECT */" and lint_on around source to disable this message.
+%Warning-SIDEEFFECT: t/t_expr_incr_unsup.v:17:35: Expression side effect may be mishandled
+                                                : ... Suggest use a temporary variable in place of this expression
+   17 |         $display("Value: %d", arr[postincrement_i()]++);
+      |                                   ^~~~~~~~~~~~~~~
 %Error: Exiting due to

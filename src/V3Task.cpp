@@ -23,19 +23,15 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Task.h"
 
-#include "V3Ast.h"
 #include "V3Const.h"
 #include "V3EmitCBase.h"
-#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3LinkLValue.h"
 
-#include <map>
 #include <tuple>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -178,8 +174,7 @@ private:
             if (AstVarScope* const vscp = VN_CAST(stmtp, VarScope)) {
                 if (vscp->varp()->isFuncLocal() || vscp->varp()->isUsedLoopIdx()) {
                     UINFO(9, "   funcvsc " << vscp << endl);
-                    m_varToScopeMap.insert(
-                        std::make_pair(std::make_pair(nodep, vscp->varp()), vscp));
+                    m_varToScopeMap.emplace(std::make_pair(nodep, vscp->varp()), vscp);
                 }
             }
         }
@@ -412,6 +407,53 @@ private:
         });
     }
 
+    AstAssign* connectPortMakeInAssign(AstNodeExpr* pinp, AstVarScope* newvscp, bool pureCheck) {
+        // Create input assignment to go in FRONT of function call
+        AstNodeExpr* inPinp = pinp;
+        if (AstResizeLValue* sinPinp = VN_CAST(inPinp, ResizeLValue)) inPinp = sinPinp->lhsp();
+        AstNodeExpr* const inPinClonep
+            = pureCheck ? inPinp->cloneTreePure(true) : inPinp->cloneTree(true);
+        AstAssign* const assp = new AstAssign{
+            pinp->fileline(), new AstVarRef{newvscp->fileline(), newvscp, VAccess::WRITE},
+            inPinClonep};
+        assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
+        return assp;
+    }
+    AstAssign* connectPortMakeOutAssign(AstVar* portp, AstNodeExpr* pinp, AstVarScope* newvscp,
+                                        bool pureCheck) {
+        // If needed, remap size of function to caller's output size
+        AstNodeExpr* outPinp = pinp;
+        AstNodeExpr* postRhsp = new AstVarRef{newvscp->fileline(), newvscp, VAccess::READ};
+        if (AstResizeLValue* soutPinp = VN_CAST(outPinp, ResizeLValue)) {
+            outPinp = soutPinp->lhsp();
+            if (AstNodeUniop* soutPinp = VN_CAST(outPinp, Extend)) {
+                outPinp = soutPinp->lhsp();
+            } else if (AstNodeUniop* soutPinp = VN_CAST(outPinp, ExtendS)) {
+                outPinp = soutPinp->lhsp();
+            } else if (AstSel* soutPinp = VN_CAST(outPinp, Sel)) {
+                outPinp = soutPinp->fromp();
+            } else {
+                outPinp->v3fatalSrc("Inout pin resizing should have had extend or select");
+            }
+            if (outPinp->width() < portp->width()) {
+                postRhsp = new AstSel{pinp->fileline(), postRhsp, 0, pinp->width()};
+            } else {  // pin width > port width
+                if (pinp->isSigned() && postRhsp->isSigned()) {
+                    postRhsp = new AstExtendS{pinp->fileline(), postRhsp};
+                } else {
+                    postRhsp = new AstExtend{pinp->fileline(), postRhsp};
+                }
+            }
+            postRhsp->dtypeFrom(outPinp);
+        }
+        // Put output assignment AFTER function call
+        AstNodeExpr* const outPinClonep
+            = pureCheck ? outPinp->cloneTreePure(true) : outPinp->cloneTree(true);
+        AstAssign* const assp = new AstAssign{pinp->fileline(), outPinClonep, postRhsp};
+        assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
+        return assp;
+    }
+
     void connectPort(AstVar* portp, AstArg* argp, const string& namePrefix, AstNode* beginp,
                      bool inlineTask) {
         AstNodeExpr* const pinp = argp->exprp();
@@ -432,23 +474,59 @@ private:
                 pinp->v3error("Function/task " + portp->direction().prettyName()  // e.g. "output"
                               + " connected to constant instead of variable: "
                               + portp->prettyNameQ());
-            } else if (portp->isInoutish()) {
-                // Correct lvalue; see comments below
-                V3LinkLValue::linkLValueSet(pinp);
-
-                if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
-                    // Connect to this exact variable
-                    if (inlineTask) {
+            } else if (portp->isRef() || portp->isConstRef()) {
+                bool refArgOk = false;
+                if (VN_IS(pinp, VarRef) || VN_IS(pinp, MemberSel) || VN_IS(pinp, StructSel)
+                    || VN_IS(pinp, ArraySel)) {
+                    refArgOk = true;
+                } else if (const AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
+                    refArgOk = cMethodp->name() == "at";
+                }
+                if (refArgOk) {
+                    if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
+                        varrefp->access(VAccess::READWRITE);
+                    }
+                } else {
+                    pinp->v3error("Function/task ref argument is not of allowed type");
+                }
+                if (inlineTask) {
+                    if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
+                        // Connect to this exact variable
                         AstVarScope* const localVscp = varrefp->varScopep();
                         UASSERT_OBJ(localVscp, varrefp, "Null var scope");
                         portp->user2p(localVscp);
                         pushDeletep(pinp);
+                    } else {
+                        pinp->v3warn(E_TASKNSVAR, "Unsupported: ref argument of inlined "
+                                                  "function/task is not a simple variable");
+                        // Providing a var to avoid an internal error.
+                        AstVarScope* const newvscp
+                            = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                        portp->user2p(newvscp);
                     }
-                } else {
-                    pinp->v3warn(
-                        E_TASKNSVAR,
-                        "Unsupported: Function/task input argument is not simple variable");
                 }
+            } else if (portp->isInoutish()) {
+                // if (debug() >= 9) pinp->dumpTree("-pinrsize- ");
+                V3LinkLValue::linkLValueSet(pinp);
+
+                AstVarScope* const newvscp
+                    = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                portp->user2p(newvscp);
+                if (!inlineTask)
+                    pinp->replaceWith(
+                        new AstVarRef{newvscp->fileline(), newvscp, VAccess::READWRITE});
+
+                // Put input assignment in FRONT of all other statements
+                AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, true);
+                if (AstNode* const afterp = beginp->nextp()) {
+                    afterp->unlinkFrBackWithNext();
+                    AstNode::addNext<AstNode, AstNode>(preassp, afterp);
+                }
+                beginp->addNext(preassp);
+
+                AstAssign* const postassp = connectPortMakeOutAssign(portp, pinp, newvscp, true);
+                beginp->addNext(postassp);
+                // if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-pinrsize-out- ");
             } else if (portp->isWritable()) {
                 // Make output variables
                 // Correct lvalue; we didn't know when we linked
@@ -463,29 +541,21 @@ private:
                 portp->user2p(newvscp);
                 if (!inlineTask)
                     pinp->replaceWith(new AstVarRef{newvscp->fileline(), newvscp, VAccess::WRITE});
-                AstAssign* const assp
-                    = new AstAssign{pinp->fileline(), pinp,
-                                    new AstVarRef{newvscp->fileline(), newvscp, VAccess::READ}};
-                assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
-                                                true);  // Ok if in <= block
+                AstAssign* const postassp = connectPortMakeOutAssign(portp, pinp, newvscp, false);
                 // Put assignment BEHIND of all other statements
-                beginp->addNext(assp);
+                beginp->addNext(postassp);
             } else if (inlineTask && portp->isNonOutput()) {
                 // Make input variable
-                AstVarScope* const inVscp
+                AstVarScope* const newvscp
                     = createVarScope(portp, namePrefix + "__" + portp->shortName());
-                portp->user2p(inVscp);
-                AstAssign* const assp = new AstAssign{
-                    pinp->fileline(), new AstVarRef{inVscp->fileline(), inVscp, VAccess::WRITE},
-                    pinp};
-                assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
-                                                true);  // Ok if in <= block
+                portp->user2p(newvscp);
+                AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, false);
                 // Put assignment in FRONT of all other statements
                 if (AstNode* const afterp = beginp->nextp()) {
                     afterp->unlinkFrBackWithNext();
-                    AstNode::addNext<AstNode, AstNode>(assp, afterp);
+                    AstNode::addNext<AstNode, AstNode>(preassp, afterp);
                 }
-                beginp->addNext(assp);
+                beginp->addNext(preassp);
             }
         }
     }
@@ -565,6 +635,12 @@ private:
             ccallp = new AstCCall{refp->fileline(), cfuncp};
             ccallp->dtypeSetVoid();
             beginp->addNext(ccallp->makeStmt());
+        }
+
+        if (const AstFuncRef* const funcRefp = VN_CAST(refp, FuncRef)) {
+            ccallp->superReference(funcRefp->superReference());
+        } else if (const AstTaskRef* const taskRefp = VN_CAST(refp, TaskRef)) {
+            ccallp->superReference(taskRefp->superReference());
         }
 
         // Convert complicated outputs to temp signals
@@ -895,19 +971,21 @@ private:
         // Only create one DPI Import prototype or DPI Export entry point for each unique cname as
         // it is illegal for the user to attach multiple tasks with different signatures to one DPI
         // cname.
-        const auto it = m_dpiNames.find(nodep->cname());
-        if (it == m_dpiNames.end()) {
+        const auto pair = m_dpiNames.emplace(std::piecewise_construct,  //
+                                             std::forward_as_tuple(nodep->cname()),
+                                             std::forward_as_tuple(nodep, signature, nullptr));
+        if (pair.second) {
             // First time encountering this cname. Create Import prototype / Export entry point
             AstCFunc* const funcp = nodep->dpiExport() ? makeDpiExportDispatcher(nodep, rtnvarp)
                                                        : makeDpiImportPrototype(nodep, rtnvarp);
-            m_dpiNames.emplace(nodep->cname(), std::make_tuple(nodep, signature, funcp));
+            std::get<2>(pair.first->second) = funcp;
             return funcp;
         } else {
             // Seen this cname import before. Check if it's the same prototype.
             const AstNodeFTask* firstNodep;
             string firstSignature;
             AstCFunc* firstFuncp;
-            std::tie(firstNodep, firstSignature, firstFuncp) = it->second;
+            std::tie(firstNodep, firstSignature, firstFuncp) = pair.first->second;
             if (signature != firstSignature) {
                 // Different signature, so error.
                 nodep->v3error("Duplicate declaration of DPI function with different signature: '"
@@ -1149,6 +1227,7 @@ private:
         cfuncp->dpiExportImpl(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
         cfuncp->dpiTraceInit(nodep->dpiTraceInit());
+        cfuncp->recursive(nodep->recursive());
         if (nodep->dpiImport() || nodep->dpiExport()) {
             cfuncp->isStatic(true);
             cfuncp->isLoose(true);
@@ -1390,8 +1469,11 @@ private:
                         "funcref-like expression to non-function");
             AstVarRef* const outrefp = new AstVarRef{nodep->fileline(), outvscp, VAccess::READ};
             beginp = new AstExprStmt{nodep->fileline(), beginp, outrefp};
+            // AstExprStmt is currently treated as impure, so clear the cached purity of its
+            // parents
             nodep->replaceWith(beginp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VIsCached::clearCacheTree();
         } else {
             insertBeforeStmt(nodep, beginp);
             if (nodep->taskp()->isFunction()) {
@@ -1542,9 +1624,8 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
     for (AstNode* stmtp = taskStmtsp; stmtp; stmtp = stmtp->nextp()) {
         if (AstVar* const portp = VN_CAST(stmtp, Var)) {
             if (portp->isIO()) {
-                tconnects.push_back(std::make_pair(portp, static_cast<AstArg*>(nullptr)));
-                nameToIndex.insert(
-                    std::make_pair(portp->name(), tpinnum));  // For name based connections
+                tconnects.emplace_back(portp, static_cast<AstArg*>(nullptr));
+                nameToIndex.emplace(portp->name(), tpinnum);  // For name based connections
                 tpinnum++;
                 if (portp->attrSFormat()) {
                     sformatp = portp;
@@ -1584,7 +1665,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
         } else {  // By pin number
             if (ppinnum >= tpinnum) {
                 if (sformatp) {
-                    tconnects.push_back(std::make_pair(sformatp, static_cast<AstArg*>(nullptr)));
+                    tconnects.emplace_back(sformatp, static_cast<AstArg*>(nullptr));
                     tconnects[ppinnum].second = argp;
                     tpinnum++;
                 } else {
@@ -1612,7 +1693,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                 newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
             } else if (AstFuncRef* const funcRefp = VN_CAST(portp->valuep(), FuncRef)) {
                 const AstNodeFTask* const funcp = funcRefp->taskp();
-                if (funcp->classMethod() && funcp->lifetime().isStatic()) newvaluep = funcRefp;
+                if (funcp->classMethod() && funcp->isStatic()) newvaluep = funcRefp;
             } else if (AstConst* const constp = VN_CAST(portp->valuep(), Const)) {
                 newvaluep = constp;
             }
@@ -1700,16 +1781,13 @@ void V3Task::taskConnectWrap(AstNodeFTaskRef* nodep, const V3TaskConnects& tconn
     // Make wrapper name such that is same iff same args are defaulted
     std::string newname = nodep->name() + "__Vtcwrap";
     for (const AstVar* varp : argWrap) newname += "_" + cvtToStr(varp->pinNum());
-    const auto namekey = std::make_pair(nodep->taskp(), newname);
-    auto& wrapMapr = statep->wrapMap();
-    const auto it = wrapMapr.find(namekey);
-    AstNodeFTask* newTaskp;
-    if (it != wrapMapr.end()) {
-        newTaskp = it->second;
-    } else {
-        newTaskp = taskConnectWrapNew(nodep->taskp(), newname, tconnects, argWrap);
-        wrapMapr.emplace(namekey, newTaskp);
+    const auto pair = statep->wrapMap().emplace(std::piecewise_construct,
+                                                std::forward_as_tuple(nodep->taskp(), newname),
+                                                std::forward_as_tuple(nullptr));
+    if (pair.second) {
+        pair.first->second = taskConnectWrapNew(nodep->taskp(), newname, tconnects, argWrap);
     }
+    AstNodeFTask* const newTaskp = pair.first->second;
 
     // Remove the defaulted arguments from original outside call
     for (const auto& tconnect : tconnects) {

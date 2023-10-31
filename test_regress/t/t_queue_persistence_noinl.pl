@@ -22,8 +22,7 @@ else {
         );
 
     execute(
-        fails => $Self->{vlt_all},  # bug3385 need to fix "ref"
-        check_finished => !$Self->{vlt_all},
+        check_finished => 1,
         );
 }
 

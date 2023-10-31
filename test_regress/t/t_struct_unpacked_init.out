@@ -1,5 +1,5 @@
 %Error-UNSUPPORTED: t/t_struct_unpacked_init.v:12:24: Unsupported: Initial values in struct/union members
-                                                    : ... In instance t
+                                                    : ... note: In instance 't'
    12 |       bit [3:0] m_lo = P;
       |                        ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest

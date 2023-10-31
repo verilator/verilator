@@ -26,4 +26,5 @@ if git log --format=%B -n 1 "$COMMIT" | grep -q -i '\[CI\s\+ccache\s\+clear\]'; 
 fi
 
 # Dump stats, then zero stats
+# 22.04: ccache -s -v -z
 ccache -s -z

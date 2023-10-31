@@ -1,17 +1,17 @@
 %Warning-CASTCONST: t/t_castdyn_castconst_bad.v:20:11: $cast will always return one as 'int' is always castable from 'logic[31:0]'
-                                                     : ... In instance t
+                                                     : ... note: In instance 't'
                                                      : ... Suggest static cast
    20 |       i = $cast(v, 1);   
       |           ^~~~~
                     ... For warning description see https://verilator.org/warn/CASTCONST?v=latest
                     ... Use "/* verilator lint_off CASTCONST */" and lint_on around source to disable this message.
 %Warning-CASTCONST: t/t_castdyn_castconst_bad.v:21:11: $cast will always return one as 'CLASSREFDTYPE 'Base'' is always castable from 'CLASSREFDTYPE 'Base''
-                                                     : ... In instance t
+                                                     : ... note: In instance 't'
                                                      : ... Suggest static cast
    21 |       i = $cast(b, b);   
       |           ^~~~~
 %Warning-CASTCONST: t/t_castdyn_castconst_bad.v:22:11: $cast will always return zero as 'CLASSREFDTYPE 'Base'' is not castable from 'CLASSREFDTYPE 'Other''
-                                                     : ... In instance t
+                                                     : ... note: In instance 't'
    22 |       i = $cast(b, o);   
       |           ^~~~~
 %Error: Exiting due to

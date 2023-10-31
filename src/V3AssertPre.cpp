@@ -15,18 +15,15 @@
 //*************************************************************************
 //  Pre steps:
 //      Attach clocks to each assertion
-//      Substitute property references by property body (IEEE Std 1800-2012, section 16.12.1).
+//      Substitute property references by property body (IEEE 1800-2012 16.12.1).
 //      Transform clocking blocks into imperative logic
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3AssertPre.h"
 
-#include "V3Ast.h"
 #include "V3Const.h"
-#include "V3Global.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
 
@@ -177,7 +174,7 @@ private:
         if (nodep->direction() == VDirection::OUTPUT) {
             AstVarRef* const skewedRefp = new AstVarRef{flp, varp, VAccess::READ};
             skewedRefp->user1(true);
-            AstAssign* const assignp = new AstAssign{flp, exprp->cloneTree(false), skewedRefp};
+            AstAssign* const assignp = new AstAssign{flp, exprp->cloneTreePure(false), skewedRefp};
             if (skewp->isZero()) {
                 // Drive the var in Re-NBA (IEEE 1800-2017 14.16)
                 m_clockingp->addNextHere(new AstAlwaysReactive{
@@ -208,12 +205,12 @@ private:
             refp->user1(true);
             if (skewp->num().is1Step()) {
                 // Assign the sampled expression to the clockvar (IEEE 1800-2017 14.13)
-                AstSampled* const sampledp = new AstSampled{flp, exprp->cloneTree(false)};
+                AstSampled* const sampledp = new AstSampled{flp, exprp->cloneTreePure(false)};
                 sampledp->dtypeFrom(exprp);
                 m_clockingp->addNextHere(new AstAssignW{flp, refp, sampledp});
             } else if (skewp->isZero()) {
                 // #0 means the var has to be sampled in Observed (IEEE 1800-2017 14.13)
-                AstAssign* const assignp = new AstAssign{flp, refp, exprp->cloneTree(false)};
+                AstAssign* const assignp = new AstAssign{flp, refp, exprp->cloneTreePure(false)};
                 m_clockingp->addNextHere(new AstAlwaysObserved{
                     flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, assignp});
             } else {
@@ -230,7 +227,7 @@ private:
                 AstCMethodHard* const pushp = new AstCMethodHard{
                     flp, new AstVarRef{flp, queueVarp, VAccess::WRITE}, "push",
                     new AstTime{nodep->fileline(), m_modp->timeunit()}};
-                pushp->addPinsp(exprp->cloneTree(false));
+                pushp->addPinsp(exprp->cloneTreePure(false));
                 pushp->dtypeSetVoid();
                 m_clockingp->addNextHere(
                     new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, pushp->makeStmt()});
@@ -372,7 +369,7 @@ private:
         if (sentreep) sentreep->unlinkFrBack();
         AstNodeExpr* const past = new AstPast{fl, exprp, nullptr};
         past->dtypeFrom(exprp);
-        exprp = new AstAnd{fl, past, new AstNot{fl, exprp->cloneTree(false)}};
+        exprp = new AstAnd{fl, past, new AstNot{fl, exprp->cloneTreePure(false)}};
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep, sentreep));
@@ -393,7 +390,7 @@ private:
         if (sentreep) sentreep->unlinkFrBack();
         AstNodeExpr* const past = new AstPast{fl, exprp, nullptr};
         past->dtypeFrom(exprp);
-        exprp = new AstAnd{fl, new AstNot{fl, past}, exprp->cloneTree(false)};
+        exprp = new AstAnd{fl, new AstNot{fl, past}, exprp->cloneTreePure(false)};
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep, sentreep));
@@ -408,7 +405,7 @@ private:
         if (sentreep) sentreep->unlinkFrBack();
         AstNodeExpr* const past = new AstPast{fl, exprp, nullptr};
         past->dtypeFrom(exprp);
-        exprp = new AstEq{fl, past, exprp->cloneTree(false)};
+        exprp = new AstEq{fl, past, exprp->cloneTreePure(false)};
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep, sentreep));
@@ -442,7 +439,7 @@ private:
         // Block is the new expression to evaluate
         AstNodeExpr* blockp = VN_AS(nodep->propp()->unlinkFrBack(), NodeExpr);
         if (AstNodeExpr* const disablep = nodep->disablep()) {
-            m_disablep = disablep->cloneTree(false);
+            m_disablep = disablep->cloneTreePure(false);
             if (VN_IS(nodep->backp(), Cover)) {
                 blockp = new AstAnd{disablep->fileline(),
                                     new AstNot{disablep->fileline(), disablep->unlinkFrBack()},

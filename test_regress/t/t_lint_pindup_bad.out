@@ -13,20 +13,20 @@
                                                : ... Suggested alternative: 'exists'
    22 |         .nexist(i2)   
       |          ^~~~~~
-%Error-PINNOTFOUND: t/t_lint_pindup_bad.v:16:9: Parameter pin not found: 'NEXIST'
+%Error-PINNOTFOUND: t/t_lint_pindup_bad.v:16:9: Parameter not found: 'NEXIST'
                                               : ... Suggested alternative: 'EXIST'
    16 |        .NEXIST(1),   
       |         ^~~~~~
-%Error: t/t_lint_pindup_bad.v:17:9: Duplicate parameter pin connection: 'P'
+%Error: t/t_lint_pindup_bad.v:17:9: Duplicate parameter connection: 'P'
    17 |        .P(2),
       |         ^
-        t/t_lint_pindup_bad.v:15:8: ... Location of original parameter pin connection
+        t/t_lint_pindup_bad.v:15:8: ... Location of original parameter connection
    15 |      #(,   
       |        ^
-%Error: t/t_lint_pindup_bad.v:18:9: Duplicate parameter pin connection: 'P'
+%Error: t/t_lint_pindup_bad.v:18:9: Duplicate parameter connection: 'P'
    18 |        .P(3))   
       |         ^
-        t/t_lint_pindup_bad.v:15:8: ... Location of original parameter pin connection
+        t/t_lint_pindup_bad.v:15:8: ... Location of original parameter connection
    15 |      #(,   
       |        ^
 %Error: Exiting due to

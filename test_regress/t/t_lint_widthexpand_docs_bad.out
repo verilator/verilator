@@ -1,5 +1,5 @@
 %Warning-WIDTHEXPAND: t/t_lint_widthexpand_docs_bad.v:10:29: Bit extraction of array[4:0] requires 3 bit index, not 2 bits.
-                                                           : ... In instance t
+                                                           : ... note: In instance 't'
    10 |    wire int rd_value = array[rd_addr];   
       |                             ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest

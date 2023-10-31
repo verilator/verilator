@@ -1,29 +1,29 @@
 %Error: t/t_array_backw_index_bad.v:17:19: Slice selection '[1:3]' has reversed range order versus data type's '[3:0]'
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    17 |       array_assign[1:3] = '{32'd4, 32'd3, 32'd2};
       |                   ^
 %Error: t/t_array_backw_index_bad.v:18:20: Slice selection '[3:1]' has reversed range order versus data type's '[0:3]'
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    18 |       larray_assign[3:1] = '{32'd4, 32'd3, 32'd2};
       |                    ^
 %Error: t/t_array_backw_index_bad.v:19:20: Slice selection '[4:6]' has reversed range order versus data type's '[6:3]'
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    19 |       array_assign2[4:6] = '{32'd4, 32'd3, 32'd2};
       |                    ^
 %Error: t/t_array_backw_index_bad.v:20:21: Slice selection '[6:4]' has reversed range order versus data type's '[3:6]'
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    20 |       larray_assign2[6:4] = '{32'd4, 32'd3, 32'd2};
       |                     ^
 %Error: t/t_array_backw_index_bad.v:22:19: Slice selection index '[4:3]' outside data type's '[3:0]'
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    22 |       array_assign[4:3] = '{32'd4, 32'd3};
       |                   ^
 %Error: t/t_array_backw_index_bad.v:23:19: Slice selection index '[1:-1]' outside data type's '[3:0]'
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    23 |       array_assign[1:-1] = '{32'd4, 32'd3};
       |                   ^
 %Error: t/t_array_backw_index_bad.v:23:28: Assignment pattern missed initializing elements: -1
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    23 |       array_assign[1:-1] = '{32'd4, 32'd3};
       |                            ^~
 %Error: Exiting due to

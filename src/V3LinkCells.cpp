@@ -23,19 +23,14 @@
 //              Link to module that instantiates it
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3LinkCells.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3Parse.h"
 #include "V3SymTable.h"
 
-#include <algorithm>
-#include <map>
 #include <unordered_set>
 #include <vector>
 
@@ -169,7 +164,7 @@ private:
         readModNames();
         iterateChildren(nodep);
         // Find levels in graph
-        m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
+        m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
         if (dumpGraphLevel()) m_graph.dumpDotFilePrefixed("linkcells");
         m_graph.rank();
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
@@ -452,6 +447,12 @@ private:
                 varp->isIfaceParent(true);
                 nodep->addNextHere(varp);
                 nodep->hasIfaceVar(true);
+            }
+            if (nodep->hasNoParens()) {
+                nodep->v3error("Interface instantiation "
+                               << nodep->prettyNameQ() << " requires parenthesis\n"
+                               << nodep->warnMore() << "... Suggest use '" << nodep->prettyName()
+                               << "()'");
             }
         }
         if (nodep->modp()) {  //

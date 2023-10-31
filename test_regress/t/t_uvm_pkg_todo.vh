@@ -35,39 +35,91 @@
 package uvm_pkg;
 parameter int UVM_HDL_MAX_WIDTH = 1024;
 typedef logic [UVM_HDL_MAX_WIDTH-1:0] uvm_hdl_data_t;
-  import "DPI-C" context function int uvm_hdl_check_path(string path);
-  import "DPI-C" context function int uvm_hdl_deposit(string path, uvm_hdl_data_t value);
-  import "DPI-C" context function int uvm_hdl_force(string path, uvm_hdl_data_t value);
-  task uvm_hdl_force_time(string path, uvm_hdl_data_t value, time force_time = 0);
-    if (force_time == 0) begin
-      void'(uvm_hdl_deposit(path, value));
-      return;
-    end
-    if (!uvm_hdl_force(path, value))
-      return;
-    #force_time;
-    void'(uvm_hdl_release_and_read(path, value));
+  function int uvm_hdl_check_path(string path);
+    uvm_report_fatal("UVM_HDL_CHECK_PATH",
+      $sformatf("uvm_hdl DPI routines are compiled off. Recompile without +define+UVM_HDL_NO_DPI"));
+    return 0;
+  endfunction
+  function int uvm_hdl_deposit(string path, uvm_hdl_data_t value);
+    uvm_report_fatal("UVM_HDL_DEPOSIT",
+      $sformatf("uvm_hdl DPI routines are compiled off. Recompile without +define+UVM_HDL_NO_DPI"));
+    return 0;
+  endfunction
+  function int uvm_hdl_force(string path, uvm_hdl_data_t value);
+    uvm_report_fatal("UVM_HDL_FORCE",
+      $sformatf("uvm_hdl DPI routines are compiled off. Recompile without +define+UVM_HDL_NO_DPI"));
+    return 0;
+  endfunction
+  task uvm_hdl_force_time(string path, uvm_hdl_data_t value, time force_time=0);
+    uvm_report_fatal("UVM_HDL_FORCE_TIME",
+      $sformatf("uvm_hdl DPI routines are compiled off. Recompile without +define+UVM_HDL_NO_DPI"));
   endtask
-  import "DPI-C" context function int uvm_hdl_release_and_read(string path, inout uvm_hdl_data_t value);
-  import "DPI-C" context function int uvm_hdl_release(string path);
-  import "DPI-C" context function int uvm_hdl_read(string path, output uvm_hdl_data_t value);
-import "DPI-C" function string uvm_dpi_get_next_arg_c (int init);
-import "DPI-C" function string uvm_dpi_get_tool_name_c ();
-import "DPI-C" function string uvm_dpi_get_tool_version_c ();
+  function int uvm_hdl_release(string path, output uvm_hdl_data_t value);
+    uvm_report_fatal("UVM_HDL_RELEASE",
+      $sformatf("uvm_hdl DPI routines are compiled off. Recompile without +define+UVM_HDL_NO_DPI"));
+    return 0;
+  endfunction
+  function int uvm_hdl_read(string path, output uvm_hdl_data_t value);
+    uvm_report_fatal("UVM_HDL_READ",
+      $sformatf("uvm_hdl DPI routines are compiled off. Recompile without +define+UVM_HDL_NO_DPI"));
+    return 0;
+  endfunction
 function string uvm_dpi_get_next_arg(int init=0);
-  return uvm_dpi_get_next_arg_c(init);
+  return "";
 endfunction
 function string uvm_dpi_get_tool_name();
-  return uvm_dpi_get_tool_name_c();
+  return "?";
 endfunction
 function string uvm_dpi_get_tool_version();
-  return uvm_dpi_get_tool_version_c();
+  return "?";
 endfunction
-import "DPI-C" function chandle uvm_dpi_regcomp(string regex);
-import "DPI-C" function int uvm_dpi_regexec(chandle preg, string str);
-import "DPI-C" function void uvm_dpi_regfree(chandle preg);
-import "DPI-C" context function int uvm_re_match(string re, string str);
-import "DPI-C" context function string uvm_glob_to_re(string glob);
+function chandle uvm_dpi_regcomp(string regex); return null; endfunction
+function int uvm_dpi_regexec(chandle preg, string str); return 0; endfunction
+function void uvm_dpi_regfree(chandle preg); endfunction
+function int uvm_re_match(string re, string str);
+  int e, es, s, ss;
+  string tmp;
+  e  = 0; s  = 0;
+  es = 0; ss = 0;
+  if(re.len() == 0)
+    return 0;
+  if(re[0] == "^")
+    re = re.substr(1, re.len()-1);
+  while (s != str.len() && re.getc(e) != "*") begin
+    if ((re.getc(e) != str.getc(s)) && (re.getc(e) != "?"))
+      return 1;
+    e++; s++;
+  end
+  while (s != str.len()) begin
+    if (re.getc(e) == "*") begin
+      e++;
+      if (e == re.len()) begin
+        return 0;
+      end
+      es = e;
+      ss = s+1;
+    end
+    else if (re.getc(e) == str.getc(s) || re.getc(e) == "?") begin
+      e++;
+      s++;
+    end
+    else begin
+      e = es;
+      s = ss++;
+    end
+  end
+  while (e < re.len() && re.getc(e) == "*")
+    e++;
+  if(e == re.len()) begin
+    return 0;
+  end
+  else begin
+    return 1;
+  end
+endfunction
+function string uvm_glob_to_re(string glob);
+  return glob;
+endfunction
   typedef class uvm_cmdline_processor;
 parameter string UVM_VERSION_STRING = "Accellera:1800.2-2017:UVM:1.0";
 function string uvm_revision_string();
@@ -517,7 +569,7 @@ virtual class uvm_coreservice_t;
         pure virtual function uvm_resource_pool get_resource_pool();
         pure virtual function void set_resource_pool_default_precedence(int unsigned precedence);
         pure virtual function int unsigned get_resource_pool_default_precedence();
-        static uvm_coreservice_t inst;
+        local static uvm_coreservice_t inst;
         static function uvm_coreservice_t get();
                 if(inst==null)
                         uvm_init(null);
@@ -830,11 +882,11 @@ function void uvm_init(uvm_coreservice_t cs=null);
     end
     else begin
       uvm_coreservice_t actual;
-      actual = uvm_coreservice_t::inst;
+      actual = uvm_coreservice_t::get();
       if ((cs != actual) && (cs != null))
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"UVM/INIT/MULTI"))
-       uvm_report_warning ("UVM/INIT/MULTI", "uvm_init() called after library has already completed initialization, subsequent calls are ignored!", UVM_NONE, "t/uvm/src/base/uvm_globals.svh", 349, "", 1);
+       uvm_report_warning ("UVM/INIT/MULTI", "uvm_init() called after library has already completed initialization, subsequent calls are ignored!", UVM_NONE, "t/uvm/src/base/uvm_globals.svh", 344, "", 1);
    end
     end
     return;
@@ -866,9 +918,7 @@ task uvm_wait_for_nba_region;
   int nba;
   int next_nba;
   next_nba++;
-//TODO issue #4496 - Delayed assignment inside public function/task
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:875:7: Unsupported: Delayed assignment inside public function/task
-//TODO  nba <= next_nba;
+  nba <= next_nba;
   @(nba);
 endtask
 function automatic void uvm_split_string (string str, byte sep, ref string values[$]);
@@ -7474,9 +7524,7 @@ virtual class uvm_event_base extends uvm_object;
                 event e;
                 if (wakeup)
                         ->m_event;
-//TODO issue #4468 - Fix UVM assignment of event data types
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:7477:25: Unsupported: assignment of event data type
-//TODO                m_event = e;
+                m_event = e;
                 num_waiters = 0;
                 on = 0;
                 trigger_time = 0;
@@ -7497,9 +7545,7 @@ virtual class uvm_event_base extends uvm_object;
                 uvm_event_base e;
                 super.do_copy(rhs);
                 if(!$cast(e, rhs) || (e==null)) return;
-//TODO issue #4468 - Fix UVM assignment of event data types
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:7498:25: Unsupported: assignment of event data type
-//TODO                m_event = e.m_event;
+                m_event = e.m_event;
                 num_waiters = e.num_waiters;
                 on = e.on;
                 trigger_time = e.trigger_time;
@@ -11190,9 +11236,7 @@ task uvm_phase::execute_phase();
                end
              end
            join_any
-//TODO issue #4125 - Support disable fork
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:11187:12: Unsupported: disable fork statements
-//TODO           disable fork;
+           disable fork;
           end
         join
     end
@@ -12928,21 +12972,12 @@ task uvm_root::run_test(string test_name="");
         testname_plusarg = 0;
         uvm_objection::m_init_objections();
         m_do_dump_args();
-        test_name_count = clp.get_arg_values("+UVM_TESTNAME=", test_names);
-        if (test_name_count > 0) begin
-                test_name = test_names[0];
+        if ($value$plusargs("UVM_TESTNAME=%s", test_name)) begin
+   begin
+     if (uvm_report_enabled(UVM_NONE,UVM_INFO,"NO_DPI_TSTNAME"))
+       uvm_report_info ("NO_DPI_TSTNAME", "UVM_NO_DPI defined--getting UVM_TESTNAME directly, without DPI", UVM_NONE, "t/uvm/src/base/uvm_root.svh", 517, "", 1);
+   end
                 testname_plusarg = 1;
-        end
-        if (test_name_count > 1) begin
-                string test_list;
-                string sep;
-                for (int i = 0; i < test_names.size(); i++) begin
-                        if (i != 0)
-                                sep = ", ";
-                        test_list = {test_list, sep, test_names[i]};
-                end
-                uvm_report_warning("MULTTST",
-                        $sformatf("Multiple (%0d) +UVM_TESTNAME arguments provided on the command line.  '%s' will be used.  Provided list: %s.", test_name_count, test_name, test_list), UVM_NONE);
         end
         if (test_name != "") begin
                 if(m_children.exists("uvm_test_top")) begin
@@ -13316,7 +13351,9 @@ function void uvm_root::m_check_verbosity();
         int verb_count;
         int plusarg;
         int verbosity = UVM_MEDIUM;
-        verb_count = clp.get_arg_values("+UVM_VERBOSITY=", verb_settings);
+        verb_count = $value$plusargs("UVM_VERBOSITY=%s",verb_string);
+        if (verb_count)
+                verb_settings.push_back(verb_string);
         if (verb_count > 0) begin
                 verb_string = verb_settings[0];
                 plusarg = 1;
@@ -13464,10 +13501,8 @@ function uvm_component::new (string name, uvm_component parent);
   event_pool = new("event_pool");
   m_domain = parent.m_domain;
   reseed();
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:13463:76: Unsupported: Function output argument 'value' requires 4096 bits, but connection's VARREF 'recording_detail' generates 32 bits.
-//TODO  if (!uvm_config_db #(uvm_bitstream_t)::get(this, "", "recording_detail", recording_detail))
-//TODO        void'(uvm_config_db #(int)::get(this, "", "recording_detail", recording_detail));
+  if (!uvm_config_db #(uvm_bitstream_t)::get(this, "", "recording_detail", recording_detail))
+        void'(uvm_config_db #(int)::get(this, "", "recording_detail", recording_detail));
   m_rh.set_name(get_full_name());
   set_report_verbosity_level(parent.get_report_verbosity_level());
   m_set_cl_msg_args();
@@ -14768,9 +14803,7 @@ class uvm_objection extends uvm_report_object;
       if (m_trace_mode)
         m_report(obj,source_obj,description,count,"all_dropped");
       all_dropped(obj,source_obj,description, count);
-//TODO issue #4465 - Support wait fork
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:14761:7: Unsupported: wait fork statements
-//TODO      wait fork;
+      wait fork;
       if (m_source_count.exists(obj) && m_source_count[obj] == 0)
         m_source_count.delete(obj);
       if (m_total_count.exists(obj) && m_total_count[obj] == 0)
@@ -15174,9 +15207,7 @@ class uvm_heartbeat extends uvm_object;
       end
       @(m_stop_event);
     join_any
-//TODO issue #4125 - Support disable fork
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:15167:12: Unsupported: disable fork statements
-//TODO    disable fork;
+    disable fork;
   endtask
 endclass
 class uvm_heartbeat_callback extends uvm_objection_callback;
@@ -15439,6 +15470,10 @@ class uvm_component_name_check_visitor extends uvm_visitor#(uvm_component);
   virtual function void begin_v();
     uvm_coreservice_t cs = uvm_coreservice_t::get();
     _root =  cs.get_root();
+   begin
+     if (uvm_report_enabled(UVM_NONE,UVM_INFO,"UVM/COMP/NAMECHECK"))
+       uvm_report_info ("UVM/COMP/NAMECHECK", "This implementation of the component name checks requires DPI to be enabled", UVM_NONE, "t/uvm/src/base/uvm_traversal.svh", 289, "", 1);
+   end
   endfunction
 endclass
 virtual class uvm_set_get_dap_base#(type T=int) extends uvm_object;
@@ -15876,10 +15911,8 @@ virtual class uvm_port_base #(type IF=uvm_void) extends IF;
     m_min_size  = min_size;
     m_max_size  = max_size;
     m_comp = new(name, parent, this);
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:15875:75: Unsupported: Function output argument 'value' requires 4096 bits, but connection's VARREF 'tmp' generates 32 bits.
-//TODO    if (!uvm_config_int::get(m_comp, "", "check_connection_relationships",tmp))
-//TODO      m_comp.set_report_id_action(s_connection_warning_id, UVM_NO_ACTION);
+    if (!uvm_config_int::get(m_comp, "", "check_connection_relationships",tmp))
+      m_comp.set_report_id_action(s_connection_warning_id, UVM_NO_ACTION);
   endfunction
   function string get_name();
     return m_comp.get_name();
@@ -19196,9 +19229,7 @@ task uvm_sequencer_base::m_wait_for_available_sequence();
                 fork
                     automatic int k = i;
                   begin
-//TODO issue #4493 - Fix UVM fork..join_none local variable can't locate varref scope
-//TODO %Error: Internal Error: t/t_uvm_pkg_todo.vh:19203:56: ../V3Scope.cpp:80: Can't locate varref scope
-//TODO                    arb_sequence_q[is_relevant_entries[k]].sequence_ptr.wait_for_relevant();
+                    arb_sequence_q[is_relevant_entries[k]].sequence_ptr.wait_for_relevant();
                     if ($realtime != m_last_wait_relevant_time) begin
                        m_last_wait_relevant_time = $realtime ;
                        m_wait_relevant_count = 0 ;
@@ -19224,9 +19255,7 @@ task uvm_sequencer_base::m_wait_for_available_sequence();
           join_any
         end
       join_any
-//TODO issue #4125 - Support disable fork
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:19213:12: Unsupported: disable fork statements
-//TODO      disable fork;
+      disable fork;
     end
   join
 endtask
@@ -21045,15 +21074,21 @@ typedef class uvm_tlm_extension_base;
 class uvm_tlm_generic_payload extends uvm_sequence_item;
    rand bit [63:0]             m_address;
    rand uvm_tlm_command_e          m_command;
-   rand byte unsigned             m_data[];
+   //TODO issue-4625 - Rand fields of dynamic array types
+   //TODO %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:21081:35: Unsupported: random member variable with type 'byte[]'
+   /*TODO rand*/ byte unsigned             m_data[];
    rand int unsigned           m_length;
    rand uvm_tlm_response_status_e  m_response_status;
    bit m_dmi;
-   rand byte unsigned          m_byte_enable[];
+   //TODO issue-4625 - Rand fields of dynamic array types
+   //TODO %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:21081:35: Unsupported: random member variable with type 'byte[]'
+   /*TODO rand*/ byte unsigned          m_byte_enable[];
    rand int unsigned m_byte_enable_length;
    rand int unsigned m_streaming_width;
    protected uvm_tlm_extension_base m_extensions [uvm_tlm_extension_base];
-   local rand uvm_tlm_extension_base m_rand_exts[];
+   //TODO issue-4625 - Rand fields of dynamic array types
+   //TODO %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:21081:35: Unsupported: random member variable with type 'CLASSREFDTYPE 'uvm_tlm_extension_base'[]'
+   local /*rand*/ uvm_tlm_extension_base m_rand_exts[];
    typedef uvm_object_registry#(uvm_tlm_generic_payload,"uvm_tlm_generic_payload") type_id;
    static function uvm_tlm_generic_payload type_id_create (string name="",
                                      uvm_component parent=null,
@@ -22417,7 +22452,9 @@ class uvm_reg_item extends uvm_sequence_item;
   uvm_elem_kind_e element_kind;
   uvm_object element;
   rand uvm_access_e kind;
-  rand uvm_reg_data_t value[];
+  //TODO issue-4625 - Rand fields of dynamic array types
+  //TODO %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:21081:35: Unsupported: random member variable with type 'bit[]'
+  /*rand*/ uvm_reg_data_t value[];
   constraint max_values { value.size() > 0 && value.size() < 1000; }
   rand uvm_reg_addr_t offset;
   uvm_status_e status;
@@ -26304,17 +26341,13 @@ function uvm_status_e uvm_reg::backdoor_read_func(uvm_reg_item rw);
        uvm_report_info ("RegMem", $sformatf("backdoor_read from %s ", hdl_concat.slices[j].path), UVM_DEBUG, "t/uvm/src/reg/uvm_reg.svh", 2192, "", 1);
    end
         if (hdl_concat.slices[j].offset < 0) begin
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:26297:57: Unsupported: Function output argument 'value' requires 1024 bits, but connection's VARREF 'val' generates 64 bits.
-//TODO           ok &= uvm_hdl_read(hdl_concat.slices[j].path,val);
+           ok &= uvm_hdl_read(hdl_concat.slices[j].path,val);
            continue;
         end
         begin
            uvm_reg_data_t slice;
            int k = hdl_concat.slices[j].offset;
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:26303:58: Unsupported: Function output argument 'value' requires 1024 bits, but connection's VARREF 'slice' generates 64 bits.
-//TODO           ok &= uvm_hdl_read(hdl_concat.slices[j].path, slice);
+           ok &= uvm_hdl_read(hdl_concat.slices[j].path, slice);
            repeat (hdl_concat.slices[j].size) begin
               val[k++] = slice[0];
               slice >>= 1;
@@ -26841,7 +26874,9 @@ class uvm_reg_fifo extends uvm_reg;
     local uvm_reg_field value;
     local int m_set_cnt;
     local int unsigned m_size;
-    rand uvm_reg_data_t fifo[$];
+    //TODO issue-4625 - Rand fields of dynamic array types
+    //TODO %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:21081:35: Unsupported: random member variable with type 'bit[$]'
+    /*rand*/ uvm_reg_data_t fifo[$];
     constraint valid_fifo_size {
       fifo.size() <= m_size;
     }
@@ -29572,17 +29607,13 @@ function uvm_status_e uvm_mem::backdoor_read_func(uvm_reg_item rw);
        uvm_report_info ("RegModel", {"backdoor_read from ",hdl_path}, UVM_DEBUG, "t/uvm/src/reg/uvm_mem.svh", 1691, "", 1);
    end
            if (hdl_concat.slices[j].offset < 0) begin
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:29567:44: Unsupported: Function output argument 'value' requires 1024 bits, but connection's VARREF 'slice' generates 64 bits.
-//TODO              ok &= uvm_hdl_read(hdl_path, val);
+              ok &= uvm_hdl_read(hdl_path, val);
               continue;
            end
            begin
               uvm_reg_data_t slice;
               int k = hdl_concat.slices[j].offset;
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:34181:38: Unsupported: Function output argument 'value' requires 1024 bits, but connection's VARREF 'd' generates 64 bits.
-//TODO              ok &= uvm_hdl_read(hdl_path, slice);
+              ok &= uvm_hdl_read(hdl_path, slice);
               repeat (hdl_concat.slices[j].size) begin
                  val[k++] = slice[0];
                  slice >>= 1;
@@ -34196,13 +34227,11 @@ endfunction : __m_uvm_execute_field_op
             foreach (path.slices[j]) begin
                 string p_ = path.slices[j].path;
                 uvm_reg_data_t d;
-//TODO issue #4467 - Fix UVM function output width reassignment
-//TODO  %Error: t/t_uvm_pkg_todo.vh:19861:21: Function Argument expects a CLASSREFDTYPE 'uvm_sequencer__Tz97_TBz97', got CLASSREFDTYPE 'uvm_sequencer__Tz97'
-//TODO                if (!uvm_hdl_read(p_,d))
-//TODO   begin
-//TODO     if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"uvm_reg_mem_hdl_paths_seq"))
-//TODO       uvm_report_error ("uvm_reg_mem_hdl_paths_seq", $sformatf("HDL path \"%s\" for register \"%s\" is not readable", p_, r.get_full_name()), UVM_NONE, "t/uvm/src/reg/sequences/uvm_reg_mem_hdl_paths_seq.svh", 145, "", 1);
-//TODO   end
+                if (!uvm_hdl_read(p_,d))
+   begin
+     if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"uvm_reg_mem_hdl_paths_seq"))
+       uvm_report_error ("uvm_reg_mem_hdl_paths_seq", $sformatf("HDL path \"%s\" for register \"%s\" is not readable", p_, r.get_full_name()), UVM_NONE, "t/uvm/src/reg/sequences/uvm_reg_mem_hdl_paths_seq.svh", 145, "", 1);
+   end
                 if (!uvm_hdl_check_path(p_))
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"uvm_reg_mem_hdl_paths_seq"))

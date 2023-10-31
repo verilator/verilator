@@ -1,5 +1,5 @@
 %Warning-WIDTHTRUNC: t/t_flag_werror.v:10:19: Operator ASSIGNW expects 4 bits on the Assign RHS, but Assign RHS's CONST '6'h2e' generates 6 bits.
-                                            : ... In instance t
+                                            : ... note: In instance 't'
    10 |    wire [3:0] foo = 6'h2e;
       |                   ^
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest

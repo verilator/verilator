@@ -1,5 +1,5 @@
 %Error: t/t_case_genx_bad.v:14:9: Use of x/? constant in generate case statement, (no such thing as 'generate casez')
-                                : ... In instance t
+                                : ... note: In instance 't'
    14 |         32'b1xxx: initial begin end
       |         ^~~~~~~~
 %Error: Exiting due to

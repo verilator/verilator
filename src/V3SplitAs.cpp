@@ -21,16 +21,11 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3SplitAs.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
 #include "V3Stats.h"
-
-#include <map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -142,6 +137,9 @@ private:
     void splitAlways(AstAlways* nodep, AstVarScope* splitVscp) {
         if (debug() >= 9) nodep->dumpTree("-  in: ");
         // Duplicate it and link in
+        // Below cloneTree should perhaps be cloneTreePure, but given
+        // isolate_assignments is required to hit this code, we presume the user
+        // knows what they are asking for
         AstAlways* const newp = nodep->cloneTree(false);
         newp->user1(true);  // So we don't clone it again
         nodep->addNextHere(newp);

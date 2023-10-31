@@ -25,7 +25,6 @@
 // clang-format off
 
 #include "verilated.h"
-#include "verilated_trace_defs.h"
 
 #include <bitset>
 #include <condition_variable>
@@ -45,6 +44,54 @@ template <class T_Buffer>
 class VerilatedTraceBuffer;
 template <class T_Buffer>
 class VerilatedTraceOffloadBuffer;
+
+//=============================================================================
+// Common enumerations
+
+enum class VerilatedTracePrefixType : uint32_t {
+    // Note: Entries must match VTracePrefixType (by name, not necessarily by value)
+    ARRAY_PACKED,
+    ARRAY_UNPACKED,
+    SCOPE_MODULE,
+    SCOPE_INTERFACE,
+    STRUCT_PACKED,
+    STRUCT_UNPACKED,
+    UNION_PACKED
+};
+
+// Direction attribute for ports
+enum class VerilatedTraceSigDirection : uint32_t {
+    NONE,
+    INPUT,
+    OUTPUT,
+    INOUT,
+};
+
+// Kind of signal. Similar to nettype but with a few more alternatives
+enum class VerilatedTraceSigKind : uint32_t {
+    PARAMETER,
+    SUPPLY0,
+    SUPPLY1,
+    TRI,
+    TRI0,
+    TRI1,
+    WIRE,
+    VAR,
+};
+
+// Base data type of signal
+enum class VerilatedTraceSigType : uint32_t {
+    DOUBLE,
+    INTEGER,
+    BIT,
+    LOGIC,
+    INT,
+    SHORTINT,
+    LONGINT,
+    BYTE,
+    EVENT,
+    TIME,
+};
 
 //=============================================================================
 // Offloaded tracing
@@ -162,24 +209,29 @@ private:
         // (the one in Ubuntu 14.04 with GCC 4.8.4 in particular) use the
         // assignment operator on inserting into collections, so they don't work
         // with const fields...
-        union {  // The callback
+        const union {  // The callback
             initCb_t m_initCb;
             dumpCb_t m_dumpCb;
             dumpOffloadCb_t m_dumpOffloadCb;
             cleanupCb_t m_cleanupCb;
         };
-        void* m_userp;  // The user pointer to pass to the callback (the symbol table)
+        const uint32_t m_fidx;  // The index of the tracing function
+        void* const m_userp;  // The user pointer to pass to the callback (the symbol table)
         CallbackRecord(initCb_t cb, void* userp)
             : m_initCb{cb}
+            , m_fidx{0}
             , m_userp{userp} {}
-        CallbackRecord(dumpCb_t cb, void* userp)
+        CallbackRecord(dumpCb_t cb, uint32_t fidx, void* userp)
             : m_dumpCb{cb}
+            , m_fidx{fidx}
             , m_userp{userp} {}
-        CallbackRecord(dumpOffloadCb_t cb, void* userp)
+        CallbackRecord(dumpOffloadCb_t cb, uint32_t fidx, void* userp)
             : m_dumpOffloadCb{cb}
+            , m_fidx{fidx}
             , m_userp{userp} {}
         CallbackRecord(cleanupCb_t cb, void* userp)
             : m_cleanupCb{cb}
+            , m_fidx{0}
             , m_userp{userp} {}
     };
 
@@ -212,18 +264,20 @@ protected:
 private:
     std::vector<bool> m_sigs_enabledVec;  // Staging for m_sigs_enabledp
     std::vector<CallbackRecord> m_initCbs;  // Routines to initialize tracing
+    std::vector<CallbackRecord> m_constCbs;  // Routines to perform const dump
+    std::vector<CallbackRecord> m_constOffloadCbs;  // Routines to perform offloaded const dump
     std::vector<CallbackRecord> m_fullCbs;  // Routines to perform full dump
     std::vector<CallbackRecord> m_fullOffloadCbs;  // Routines to perform offloaded full dump
     std::vector<CallbackRecord> m_chgCbs;  // Routines to perform incremental dump
     std::vector<CallbackRecord> m_chgOffloadCbs;  // Routines to perform offloaded incremental dump
     std::vector<CallbackRecord> m_cleanupCbs;  // Routines to call at the end of dump
+    bool m_constDump = true;  // Whether a const dump is required on the next call to 'dump'
     bool m_fullDump = true;  // Whether a full dump is required on the next call to 'dump'
     uint32_t m_nextCode = 0;  // Next code number to assign
     uint32_t m_numSignals = 0;  // Number of distinct signals
     uint32_t m_maxBits = 0;  // Number of bits in the widest signal
-    std::vector<std::string> m_namePrefixStack{""};  // Path prefixes to add to signal names
+    // TODO: Should keep this as a Trie, that is how it's accessed all the time.
     std::vector<std::pair<int, std::string>> m_dumpvars;  // dumpvar() entries
-    char m_scopeEscape = '.';
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
     double m_timeUnit = 1e-0;  // Time units (ns/ms etc)
     uint64_t m_timeLastDump = 0;  // Last time we did a dump
@@ -289,6 +343,7 @@ protected:
     uint32_t nextCode() const { return m_nextCode; }
     uint32_t numSignals() const { return m_numSignals; }
     uint32_t maxBits() const { return m_maxBits; }
+    void constDump(bool value) { m_constDump = value; }
     void fullDump(bool value) { m_fullDump = value; }
 
     double timeRes() const { return m_timeRes; }
@@ -298,20 +353,20 @@ protected:
     void traceInit() VL_MT_UNSAFE;
 
     // Declare new signal and return true if enabled
-    bool declCode(uint32_t code, const char* namep, uint32_t bits, bool tri);
-
-    // Is this an escape?
-    bool isScopeEscape(char c) { return std::isspace(c) || c == m_scopeEscape; }
-    // Character that splits scopes.  Note whitespace are ALWAYS escapes.
-    char scopeEscape() { return m_scopeEscape; }
-    // Prefix to assume in signal declarations
-    const std::string& namePrefix() const { return m_namePrefixStack.back(); }
+    bool declCode(uint32_t code, const std::string& declName, uint32_t bits);
 
     void closeBase();
     void flushBase();
 
     bool offload() const { return m_offload; }
     bool parallel() const { return m_parallel; }
+
+    // Return last ' ' separated word. Assumes string does not end in ' '.
+    static std::string lastWord(const std::string& str) {
+        const size_t idx = str.rfind(' ');
+        if (idx == std::string::npos) return str;
+        return str.substr(idx + 1);
+    }
 
     //=========================================================================
     // Virtual functions to be provided by the format specific implementation
@@ -325,7 +380,7 @@ protected:
     virtual bool preChangeDump() = 0;
 
     // Trace buffer management
-    virtual Buffer* getTraceBuffer() = 0;
+    virtual Buffer* getTraceBuffer(uint32_t fidx) = 0;
     virtual void commitTraceBuffer(Buffer*) = 0;
 
     // Configure sub-class
@@ -359,16 +414,13 @@ public:
 
     void addModel(VerilatedModel*) VL_MT_SAFE_EXCLUDES(m_mutex);
     void addInitCb(initCb_t cb, void* userp) VL_MT_SAFE;
-    void addFullCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
-    void addFullCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE;
-    void addChgCb(dumpCb_t cb, void* userp) VL_MT_SAFE;
-    void addChgCb(dumpOffloadCb_t cb, void* userp) VL_MT_SAFE;
+    void addConstCb(dumpCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
+    void addConstCb(dumpOffloadCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
+    void addFullCb(dumpCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
+    void addFullCb(dumpOffloadCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
+    void addChgCb(dumpCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
+    void addChgCb(dumpOffloadCb_t cb, uint32_t fidx, void* userp) VL_MT_SAFE;
     void addCleanupCb(cleanupCb_t cb, void* userp) VL_MT_SAFE;
-
-    void scopeEscape(char flag) { m_scopeEscape = flag; }
-
-    void pushNamePrefix(const std::string&);
-    void popNamePrefix(unsigned count = 1);
 };
 
 //=============================================================================
@@ -423,7 +475,7 @@ public:
     void fullQData(uint32_t* oldp, QData newval, int bits);
     void fullWData(uint32_t* oldp, const WData* newvalp, int bits);
     void fullDouble(uint32_t* oldp, double newval);
-    void fullEvent(uint32_t* oldp, VlEvent newval);
+    void fullEvent(uint32_t* oldp, const VlEventBase* newval);
 
     // In non-offload mode, these are called directly by the trace callbacks,
     // and are called chg*. In offload mode, they are called by the worker
@@ -460,7 +512,9 @@ public:
             }
         }
     }
-    VL_ATTR_ALWINLINE void chgEvent(uint32_t* oldp, VlEvent newval) { fullEvent(oldp, newval); }
+    VL_ATTR_ALWINLINE void chgEvent(uint32_t* oldp, const VlEventBase* newval) {
+        fullEvent(oldp, newval);
+    }
     VL_ATTR_ALWINLINE void chgDouble(uint32_t* oldp, double newval) {
         double old;
         std::memcpy(&old, oldp, sizeof(old));
@@ -539,7 +593,7 @@ public:
         m_offloadBufferWritep += 4;
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
-    void chgEvent(uint32_t code, VlEvent newval) {
+    void chgEvent(uint32_t code, const VlEventBase* newval) {
         m_offloadBufferWritep[0] = VerilatedTraceOffloadCommand::CHG_EVENT;
         m_offloadBufferWritep[1] = code;
         m_offloadBufferWritep += 2;

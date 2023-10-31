@@ -350,7 +350,7 @@ class Cpt:
 
     def _exec_syms_recurse(self, aref):
         for sym in aref:
-            if type(sym) is list:
+            if isinstance(sym, list):
                 self._exec_syms_recurse(sym)
             elif re.search(r'^\$.*', sym):
                 if sym not in self._exec_syms:
@@ -365,7 +365,7 @@ class Cpt:
                 first = False
                 continue
             out += ", "
-            if type(sym) is list:
+            if isinstance(sym, list):
                 out += self._exec_new_recurse(sym)
             elif re.match(r'^\$.*', sym):
                 out += self._exec_syms[sym]
@@ -960,6 +960,9 @@ def write_ast_macros(filename):
             }}
             Ast{t}* cloneTree(bool cloneNext) {{
                 return static_cast<Ast{t}*>(AstNode::cloneTree(cloneNext));
+            }}
+            Ast{t}* cloneTreePure(bool cloneNext) {{
+                return static_cast<Ast{t}*>(AstNode::cloneTreePure(cloneNext));
             }}
             Ast{t}* clonep() const {{ return static_cast<Ast{t}*>(AstNode::clonep()); }}
             Ast{t}* addNext(Ast{t}* nodep) {{ return static_cast<Ast{t}*>(AstNode::addNext(this, nodep)); }}

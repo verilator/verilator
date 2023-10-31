@@ -14,16 +14,12 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstMT.h"
 
 #include "V3EmitV.h"
 
 #include "V3EmitCBase.h"
-#include "V3Global.h"
 
-#include <algorithm>
-#include <map>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -412,7 +408,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     void visit(AstCExpr* nodep) override {
         putfs(nodep, "$_CEXPR(");
         iterateAndNextConstNull(nodep->exprsp());
-        puts(");\n");
+        puts(")");
     }
     void visit(AstUCStmt* nodep) override {
         putfs(nodep, "$c(");

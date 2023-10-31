@@ -1,5 +1,5 @@
 %Warning-WIDTHCONCAT: t/t_concat_large_bad.v:9:29: More than a 8k bit replication is probably wrong: 32768
-                                                 : ... In instance t
+                                                 : ... note: In instance 't'
     9 |    wire [32767:0] a = {32768{1'b1}};
       |                             ^
                       ... For warning description see https://verilator.org/warn/WIDTHCONCAT?v=latest

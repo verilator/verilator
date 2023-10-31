@@ -24,12 +24,10 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Randomize.h"
 
-#include "V3Ast.h"
 #include "V3MemberMap.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -57,7 +55,8 @@ private:
             for (auto* memberp = classp->stmtsp(); memberp; memberp = memberp->nextp()) {
                 // If member is rand and of class type, mark its class
                 if (VN_IS(memberp, Var) && VN_AS(memberp, Var)->isRand()) {
-                    if (const auto* const classRefp = VN_CAST(memberp->dtypep(), ClassRefDType)) {
+                    if (const auto* const classRefp
+                        = VN_CAST(memberp->dtypep()->skipRefp(), ClassRefDType)) {
                         auto* const rclassp = classRefp->classp();
                         if (!rclassp->user1()) {
                             rclassp->user1(true);
@@ -102,7 +101,7 @@ private:
         iterateChildrenConst(nodep);
         if (nodep->name() != "randomize") return;
         if (const AstClassRefDType* const classRefp
-            = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
+            = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
             AstClass* const classp = classRefp->classp();
             classp->user1(true);
             markMembers(classp);
@@ -144,6 +143,7 @@ private:
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
     int m_randCaseNum = 0;  // Randcase number within a module for var naming
+    std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
 
     // METHODS
     AstVar* enumValueTabp(AstEnumDType* nodep) {
@@ -172,8 +172,50 @@ private:
         nodep->user2p(varp);
         return varp;
     }
-    AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeVarRef* varrefp, int offset = 0,
-                               AstMemberDType* memberp = nullptr) {
+
+    AstCDType* findVlRandCDType(FileLine* fl, uint64_t items) {
+        // For 8 items we need to have a 9 item LFSR so items is max count
+        const std::string type = AstCDType::typeToHold(items);
+        const std::string name = "VlRandC<" + type + ", " + cvtToStr(items) + "ULL>";
+        // Create or reuse (to avoid duplicates) randomization object dtype
+        const auto pair = m_randcDtypes.emplace(name, nullptr);
+        if (pair.second) {
+            AstCDType* newp = new AstCDType{fl, name};
+            v3Global.rootp()->typeTablep()->addTypesp(newp);
+            pair.first->second = newp;
+        }
+        return pair.first->second;
+    }
+
+    AstVar* newRandcVarsp(AstVar* varp) {
+        // If a randc, make a VlRandC object to hold the state
+        if (!varp->isRandC()) return nullptr;
+        uint64_t items = 0;
+
+        if (AstEnumDType* const enumDtp = VN_CAST(varp->dtypep()->skipRefToEnump(), EnumDType)) {
+            items = static_cast<uint64_t>(enumDtp->itemCount());
+        } else {
+            AstBasicDType* const basicp = varp->dtypep()->skipRefp()->basicp();
+            UASSERT_OBJ(basicp, varp, "Unexpected randc variable dtype");
+            if (basicp->width() > 32) {
+                varp->v3error("Maxiumum implemented width for randc is 32 bits, "
+                              << varp->prettyNameQ() << " is " << basicp->width() << " bits");
+                varp->isRandC(false);
+                varp->isRand(true);
+                return nullptr;
+            }
+            items = 1ULL << basicp->width();
+        }
+        AstCDType* newdtp = findVlRandCDType(varp->fileline(), items);
+        AstVar* newp
+            = new AstVar{varp->fileline(), VVarType::MEMBER, varp->name() + "__Vrandc", newdtp};
+        newp->isInternal(true);
+        varp->addNextHere(newp);
+        UINFO(9, "created " << varp << endl);
+        return newp;
+    }
+    AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeVarRef* varrefp, AstVar* randcVarp,
+                               int offset = 0, AstMemberDType* memberp = nullptr) {
         if (const auto* const structDtp
             = VN_CAST(memberp ? memberp->subDTypep()->skipRefp() : varrefp->dtypep()->skipRefp(),
                       StructDType)) {
@@ -182,7 +224,7 @@ private:
             for (AstMemberDType* smemberp = structDtp->membersp(); smemberp;
                  smemberp = VN_AS(smemberp->nextp(), MemberDType)) {
                 AstNodeStmt* const randp = newRandStmtsp(
-                    fl, stmtsp ? varrefp->cloneTree(false) : varrefp, offset, smemberp);
+                    fl, stmtsp ? varrefp->cloneTree(false) : varrefp, nullptr, offset, smemberp);
                 if (stmtsp) {
                     stmtsp->addNext(randp);
                 } else {
@@ -198,20 +240,31 @@ private:
                 AstVarRef* const tabRefp
                     = new AstVarRef{fl, enumValueTabp(enumDtp), VAccess::READ};
                 tabRefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
-                AstRandRNG* const randp
-                    = new AstRandRNG{fl, varrefp->findBasicDType(VBasicDTypeKwd::UINT32)};
+                AstNodeExpr* const randp
+                    = newRandValue(fl, randcVarp, varrefp->findBasicDType(VBasicDTypeKwd::UINT32));
                 AstNodeExpr* const moddivp = new AstModDiv{
                     fl, randp, new AstConst{fl, static_cast<uint32_t>(enumDtp->itemCount())}};
                 moddivp->dtypep(enumDtp);
                 valp = new AstArraySel{fl, tabRefp, moddivp};
             } else {
-                valp = new AstRandRNG{fl,
-                                      (memberp ? memberp->dtypep() : varrefp->varp()->dtypep())};
+                valp = newRandValue(fl, randcVarp,
+                                    (memberp ? memberp->dtypep() : varrefp->varp()->dtypep()));
             }
             return new AstAssign{fl,
                                  new AstSel{fl, varrefp, offset + (memberp ? memberp->lsb() : 0),
                                             memberp ? memberp->width() : varrefp->width()},
                                  valp};
+        }
+    }
+    AstNodeExpr* newRandValue(FileLine* fl, AstVar* randcVarp, AstNodeDType* dtypep) {
+        if (randcVarp) {
+            AstNode* argsp = new AstVarRef{fl, randcVarp, VAccess::READWRITE};
+            argsp->addNext(new AstText{fl, ".randomize(__Vm_rng)"});
+            AstCExpr* newp = new AstCExpr{fl, argsp};
+            newp->dtypep(dtypep);
+            return newp;
+        } else {
+            return new AstRandRNG{fl, dtypep};
         }
     }
     void addPrePostCall(AstClass* classp, AstFunc* funcp, const string& name) {
@@ -259,6 +312,7 @@ private:
                 baseRandCallp->taskp(baseRandomizep);
                 baseRandCallp->dtypeFrom(baseRandomizep->dtypep());
                 baseRandCallp->classOrPackagep(nodep->extendsp()->classp());
+                baseRandCallp->superReference(true);
                 beginValp = baseRandCallp;
             }
         }
@@ -271,8 +325,9 @@ private:
             if (!memberVarp || !memberVarp->isRand()) continue;
             const AstNodeDType* const dtypep = memberp->dtypep()->skipRefp();
             if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType)) {
+                AstVar* const randcVarp = newRandcVarsp(memberVarp);
                 AstVarRef* const refp = new AstVarRef{fl, memberVarp, VAccess::WRITE};
-                AstNodeStmt* const stmtp = newRandStmtsp(fl, refp);
+                AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp);
                 funcp->addStmtsp(stmtp);
             } else if (const auto* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
                 if (classRefp->classp() == nodep) {
@@ -338,7 +393,7 @@ private:
                 = new AstIf{itemp->fileline(),
                             new AstLte{condp->fileline(),
                                        new AstVarRef{condp->fileline(), randVarp, VAccess::READ},
-                                       sump->cloneTree(true)},
+                                       sump->cloneTreePure(true)},
                             stmtsp, nullptr};
             ifsp->addElsesp(newifp);
             ifsp = newifp;

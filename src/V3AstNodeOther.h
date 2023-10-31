@@ -84,10 +84,13 @@ private:
     bool m_dpiPure : 1;  // DPI import pure (vs. virtual pure)
     bool m_pureVirtual : 1;  // Pure virtual
     bool m_recursive : 1;  // Recursive or part of recursion
+    bool m_static : 1;  // Static method in class
     bool m_underGenerate : 1;  // Under generate (for warning)
     bool m_virtual : 1;  // Virtual method in class
-    bool m_needProcess : 1;  // Implements part of a process that allocates std::process
-    VLifetime m_lifetime;  // Lifetime
+    bool m_needProcess : 1;  // Needs access to VlProcess of the caller
+    VLifetime m_lifetime;  // Default lifetime of local vars
+    VIsCached m_purity;  // Pure state
+
 protected:
     AstNodeFTask(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)
         : AstNode{t, fl}
@@ -110,6 +113,7 @@ protected:
         , m_dpiPure{false}
         , m_pureVirtual{false}
         , m_recursive{false}
+        , m_static{false}
         , m_underGenerate{false}
         , m_virtual{false}
         , m_needProcess{false} {
@@ -171,6 +175,8 @@ public:
     bool pureVirtual() const { return m_pureVirtual; }
     void recursive(bool flag) { m_recursive = flag; }
     bool recursive() const { return m_recursive; }
+    void isStatic(bool flag) { m_static = flag; }
+    bool isStatic() const { return m_static; }
     void underGenerate(bool flag) { m_underGenerate = flag; }
     bool underGenerate() const { return m_underGenerate; }
     void isVirtual(bool flag) { m_virtual = flag; }
@@ -180,6 +186,8 @@ public:
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
+    bool isPure() override;
+    const char* broken() const override;
     void propagateAttrFrom(const AstNodeFTask* fromp) {
         // Creating a wrapper with e.g. cloneType(); preserve some attributes
         classMethod(fromp->classMethod());
@@ -189,6 +197,9 @@ public:
         lifetime(fromp->lifetime());
         underGenerate(fromp->underGenerate());
     }
+
+private:
+    bool getPurityRecurse() const;
 };
 class AstNodeFile VL_NOT_FINAL : public AstNode {
     // Emitted Output file
@@ -227,6 +238,7 @@ private:
     bool m_inLibrary : 1;  // From a library, no error if not used, never top level
     bool m_dead : 1;  // LinkDot believes is dead; will remove in Dead visitors
     bool m_hasGParam : 1;  // Has global parameter (for link)
+    bool m_hasParameterList : 1;  // Has #() for parameter declaration
     bool m_hierBlock : 1;  // Hierarchical Block marked by HIER_BLOCK pragma
     bool m_internal : 1;  // Internally created
     bool m_recursive : 1;  // Recursive module
@@ -241,6 +253,7 @@ protected:
         , m_inLibrary{false}
         , m_dead{false}
         , m_hasGParam{false}
+        , m_hasParameterList{false}
         , m_hierBlock{false}
         , m_internal{false}
         , m_recursive{false}
@@ -270,6 +283,8 @@ public:
     bool dead() const { return m_dead; }
     void hasGParam(bool flag) { m_hasGParam = flag; }
     bool hasGParam() const { return m_hasGParam; }
+    void hasParameterList(bool flag) { m_hasParameterList = flag; }
+    bool hasParameterList() const { return m_hasParameterList; }
     void hierBlock(bool flag) { m_hierBlock = flag; }
     bool hierBlock() const { return m_hierBlock; }
     void internal(bool flag) { m_internal = flag; }
@@ -289,7 +304,7 @@ class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
     // @astgen op2 := stmtsp : List[AstNode] // Note: op1 is used in some sub-types only
     bool m_suspendable : 1;  // Is suspendable by a Delay, EventControl, etc.
-    bool m_needProcess : 1;  // Implements part of a process that allocates std::process
+    bool m_needProcess : 1;  // Uses VlProcess
 protected:
     AstNodeProcedure(VNType t, FileLine* fl, AstNode* stmtsp)
         : AstNode{t, fl} {
@@ -469,11 +484,11 @@ public:
     ASTGEN_MEMBERS_AstNodeReadWriteMem;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* samep) const override {
-        return isHex() == static_cast<const AstNodeReadWriteMem*>(samep)->isHex();
+        return isHex() == VN_DBG_AS(samep, NodeReadWriteMem)->isHex();
     }
     bool isHex() const { return m_isHex; }
     virtual const char* cFuncPrefixp() const = 0;
@@ -492,7 +507,7 @@ public:
     ASTGEN_MEMBERS_AstNodeText;
     void dump(std::ostream& str = std::cout) const override;
     bool same(const AstNode* samep) const override {
-        const AstNodeText* asamep = static_cast<const AstNodeText*>(samep);
+        const AstNodeText* asamep = VN_DBG_AS(samep, NodeText);
         return text() == asamep->text();
     }
     const string& text() const VL_MT_SAFE { return m_text; }
@@ -597,7 +612,8 @@ private:
     bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
     bool m_dpiTraceInit : 1;  // DPI trace_init
-    bool m_needProcess : 1;  // Implements part of a process that allocates std::process
+    bool m_needProcess : 1;  // Needs access to VlProcess of the caller
+    bool m_recursive : 1;  // Recursive or part of recursion
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
@@ -626,6 +642,7 @@ public:
         m_dpiImportPrototype = false;
         m_dpiImportWrapper = false;
         m_dpiTraceInit = false;
+        m_recursive = false;
     }
     ASTGEN_MEMBERS_AstCFunc;
     string name() const override VL_MT_STABLE { return m_name; }
@@ -634,7 +651,7 @@ public:
     bool maybePointedTo() const override { return true; }
     void dump(std::ostream& str = std::cout) const override;
     bool same(const AstNode* samep) const override {
-        const AstCFunc* const asamep = static_cast<const AstCFunc*>(samep);
+        const AstCFunc* const asamep = VN_DBG_AS(samep, CFunc);
         return ((isTrace() == asamep->isTrace()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
                 && (argTypes() == asamep->argTypes()) && (baseCtors() == asamep->baseCtors())
                 && isLoose() == asamep->isLoose()
@@ -705,6 +722,8 @@ public:
     void dpiTraceInit(bool flag) { m_dpiTraceInit = flag; }
     bool dpiTraceInit() const { return m_dpiTraceInit; }
     bool isCoroutine() const { return m_rtnType == "VlCoroutine"; }
+    void recursive(bool flag) { m_recursive = flag; }
+    bool recursive() const { return m_recursive; }
     // Special methods
     bool emptyBody() const {
         return argsp() == nullptr && initsp() == nullptr && stmtsp() == nullptr
@@ -758,13 +777,14 @@ class AstCell final : public AstNode {
     // @astgen op1 := pinsp : List[AstPin] // List of port assignments
     // @astgen op2 := paramsp : List[AstPin] // List of parameter assignments
     // @astgen op3 := rangep : Optional[AstRange] // Range for arrayed instances
-    // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references
+    // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references, for tracing
     FileLine* m_modNameFileline;  // Where module the cell instances token was
     string m_name;  // Cell name
     string m_origName;  // Original name before dot addition
     string m_modName;  // Module the cell instances
     AstNodeModule* m_modp = nullptr;  // [AfterLink] Pointer to module instanced
     bool m_hasIfaceVar : 1;  // True if a Var has been created for this cell
+    bool m_hasNoParens : 1;  // Instantiation has no parenthesis
     bool m_recursive : 1;  // Self-recursive module
     bool m_trace : 1;  // Trace this cell
 public:
@@ -776,6 +796,7 @@ public:
         , m_origName{instName}
         , m_modName{modName}
         , m_hasIfaceVar{false}
+        , m_hasNoParens{false}
         , m_recursive{false}
         , m_trace{true} {
         this->addPinsp(pinsp);
@@ -799,6 +820,8 @@ public:
     void modp(AstNodeModule* nodep) { m_modp = nodep; }
     bool hasIfaceVar() const { return m_hasIfaceVar; }
     void hasIfaceVar(bool flag) { m_hasIfaceVar = flag; }
+    bool hasNoParens() const { return m_hasNoParens; }
+    void hasNoParens(bool flag) { m_hasNoParens = flag; }
     void trace(bool flag) { m_trace = flag; }
     bool isTrace() const { return m_trace; }
     void recursive(bool flag) { m_recursive = flag; }
@@ -994,11 +1017,11 @@ public:
     string verilogKwd() const override { return string{"$"} + string{displayType().ascii()}; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
-    bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
+    bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isOutputter() override { return true; }  // SPECIAL: $display makes output
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* samep) const override {
-        return displayType() == static_cast<const AstElabDisplay*>(samep)->displayType();
+        return displayType() == VN_DBG_AS(samep, ElabDisplay)->displayType();
     }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     VDisplayType displayType() const { return m_displayType; }
@@ -1027,7 +1050,7 @@ class AstExecGraph final : public AstNode {
     const string m_name;  // Name of this AstExecGraph (for uniqueness at code generation)
 
 public:
-    explicit AstExecGraph(FileLine* fl, const string& name);
+    explicit AstExecGraph(FileLine* fl, const string& name) VL_MT_DISABLED;
     ASTGEN_MEMBERS_AstExecGraph;
     ~AstExecGraph() override;
     const char* broken() const override {
@@ -1176,6 +1199,8 @@ class AstNetlist final : public AstNode {
     AstCFunc* m_evalNbap = nullptr;  // The '_eval__nba' function
     AstVarScope* m_dpiExportTriggerp = nullptr;  // The DPI export trigger variable
     AstVar* m_delaySchedulerp = nullptr;  // The delay scheduler variable
+    AstVarScope* m_nbaEventp = nullptr;  // The NBA event variable
+    AstVarScope* m_nbaEventTriggerp = nullptr;  // If set to 1, the NBA event should get triggered
     AstTopScope* m_topScopep = nullptr;  // The singleton AstTopScope under the top module
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
@@ -1205,6 +1230,10 @@ public:
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstVar* delaySchedulerp() const { return m_delaySchedulerp; }
     void delaySchedulerp(AstVar* const varScopep) { m_delaySchedulerp = varScopep; }
+    AstVarScope* nbaEventp() const { return m_nbaEventp; }
+    void nbaEventp(AstVarScope* const varScopep) { m_nbaEventp = varScopep; }
+    AstVarScope* nbaEventTriggerp() const { return m_nbaEventTriggerp; }
+    void nbaEventTriggerp(AstVarScope* const varScopep) { m_nbaEventTriggerp = varScopep; }
     void stdPackagep(AstPackage* const packagep) { m_stdPackagep = packagep; }
     AstPackage* stdPackagep() const { return m_stdPackagep; }
     AstTopScope* topScopep() const { return m_topScopep; }
@@ -1332,7 +1361,7 @@ public:
     VPragmaType pragType() const { return m_pragType; }  // *=type of the pragma
     bool isPredictOptimizable() const override { return false; }
     bool same(const AstNode* samep) const override {
-        return pragType() == static_cast<const AstPragma*>(samep)->pragType();
+        return pragType() == VN_DBG_AS(samep, Pragma)->pragType();
     }
 };
 class AstPropSpec final : public AstNode {
@@ -1367,7 +1396,7 @@ public:
     }
     ASTGEN_MEMBERS_AstPull;
     bool same(const AstNode* samep) const override {
-        return direction() == static_cast<const AstPull*>(samep)->direction();
+        return direction() == VN_DBG_AS(samep, Pull)->direction();
     }
     uint32_t direction() const { return (uint32_t)m_direction; }
 };
@@ -1447,7 +1476,7 @@ public:
     ASTGEN_MEMBERS_AstSenItem;
     void dump(std::ostream& str) const override;
     bool same(const AstNode* samep) const override {
-        return edgeType() == static_cast<const AstSenItem*>(samep)->edgeType();
+        return edgeType() == VN_DBG_AS(samep, SenItem)->edgeType();
     }
     VEdgeType edgeType() const { return m_edgeType; }
     void edgeType(VEdgeType type) {
@@ -1648,12 +1677,11 @@ class AstVar final : public AstNode {
     VVarType m_varType;  // Type of variable
     VDirection m_direction;  // Direction input/output etc
     VDirection m_declDirection;  // Declared direction input/output etc
-    VBasicDTypeKwd m_declKwd;  // Keyword at declaration time
     VLifetime m_lifetime;  // Lifetime
     VVarAttrClocker m_attrClocker;
     MTaskIdSet m_mtaskIds;  // MTaskID's that read or write this var
     int m_pinNum = 0;  // For XML, if non-zero the connection pin number
-    bool m_ansi : 1;  // ANSI port list variable (for dedup check)
+    bool m_ansi : 1;  // Params or pins declared in the module header, rather than the body
     bool m_declTyped : 1;  // Declared as type (for dedup check)
     bool m_tristate : 1;  // Inout or triwire or trireg
     bool m_primaryIO : 1;  // In/out to top level (or directly assigned from same)
@@ -1677,6 +1705,7 @@ class AstVar final : public AstNode {
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
     bool m_fileDescr : 1;  // File descriptor
     bool m_isRand : 1;  // Random variable
+    bool m_isRandC : 1;  // Random cyclic variable (isRand also set)
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
@@ -1684,6 +1713,7 @@ class AstVar final : public AstNode {
     bool m_isPulldown : 1;  // Tri0
     bool m_isPullup : 1;  // Tri1
     bool m_isIfaceParent : 1;  // dtype is reference to interface present in this module
+    bool m_isInternal : 1;  // Internal state, don't add to method pinter
     bool m_isDpiOpenArray : 1;  // DPI import open array
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
@@ -1721,6 +1751,7 @@ class AstVar final : public AstNode {
         m_attrSplitVar = false;
         m_fileDescr = false;
         m_isRand = false;
+        m_isRandC = false;
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
@@ -1728,6 +1759,7 @@ class AstVar final : public AstNode {
         m_isPulldown = false;
         m_isPullup = false;
         m_isIfaceParent = false;
+        m_isInternal = false;
         m_isDpiOpenArray = false;
         m_isHideLocal = false;
         m_isHideProtected = false;
@@ -1751,11 +1783,6 @@ public:
         combineType(type);
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
-        if (dtp->basicp()) {
-            m_declKwd = dtp->basicp()->keyword();
-        } else {
-            m_declKwd = VBasicDTypeKwd::LOGIC;
-        }
     }
     AstVar(FileLine* fl, VVarType type, const string& name, AstNodeDType* dtp)
         : ASTGEN_SUPER_Var(fl)
@@ -1765,11 +1792,6 @@ public:
         combineType(type);
         UASSERT(dtp, "AstVar created with no dtype");
         dtypep(dtp);
-        if (dtp->basicp()) {
-            m_declKwd = dtp->basicp()->keyword();
-        } else {
-            m_declKwd = VBasicDTypeKwd::LOGIC;
-        }
     }
     AstVar(FileLine* fl, VVarType type, const string& name, VFlagLogicPacked, int wantwidth)
         : ASTGEN_SUPER_Var(fl)
@@ -1778,7 +1800,6 @@ public:
         init();
         combineType(type);
         dtypeSetLogicSized(wantwidth, VSigning::UNSIGNED);
-        m_declKwd = VBasicDTypeKwd::LOGIC;
     }
     AstVar(FileLine* fl, VVarType type, const string& name, VFlagBitPacked, int wantwidth)
         : ASTGEN_SUPER_Var(fl)
@@ -1787,7 +1808,6 @@ public:
         init();
         combineType(type);
         dtypeSetBitSized(wantwidth, VSigning::UNSIGNED);
-        m_declKwd = VBasicDTypeKwd::BIT;
     }
     AstVar(FileLine* fl, VVarType type, const string& name, AstVar* examplep)
         : ASTGEN_SUPER_Var(fl)
@@ -1797,7 +1817,6 @@ public:
         combineType(type);
         if (examplep->childDTypep()) childDTypep(examplep->childDTypep()->cloneTree(true));
         dtypeFrom(examplep);
-        m_declKwd = examplep->declKwd();
     }
     ASTGEN_MEMBERS_AstVar;
     void dump(std::ostream& str) const override;
@@ -1825,7 +1844,6 @@ public:
         m_tristate = false;
         m_direction = VDirection::INPUT;
     }
-    VBasicDTypeKwd declKwd() const { return m_declKwd; }
     string scType() const;  // Return SysC type: bool, uint32_t, uint64_t, sc_bv
     // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
     string cPubArgType(bool named, bool forReturn) const;
@@ -1873,10 +1891,15 @@ public:
     void scSensitive(bool flag) { m_scSensitive = flag; }
     void primaryIO(bool flag) { m_primaryIO = flag; }
     void isRand(bool flag) { m_isRand = flag; }
+    void isRandC(bool flag) {
+        m_isRandC = flag;
+        if (flag) isRand(true);
+    }
     void isConst(bool flag) { m_isConst = flag; }
     void isContinuously(bool flag) { m_isContinuously = flag; }
     void isStatic(bool flag) { m_isStatic = flag; }
     void isIfaceParent(bool flag) { m_isIfaceParent = flag; }
+    void isInternal(bool flag) { m_isInternal = flag; }
     void funcLocal(bool flag) {
         m_funcLocal = flag;
         if (flag) m_funcLocalSticky = true;
@@ -1915,12 +1938,15 @@ public:
     bool isInoutish() const { return m_direction.isInoutish(); }
     bool isNonOutput() const { return m_direction.isNonOutput(); }
     bool isReadOnly() const VL_MT_SAFE { return m_direction.isReadOnly(); }
+    bool isConstRef() const VL_MT_SAFE { return m_direction.isConstRef(); }
+    bool isRef() const VL_MT_SAFE { return m_direction.isRef(); }
     bool isWritable() const VL_MT_SAFE { return m_direction.isWritable(); }
     bool isTristate() const { return m_tristate; }
     bool isPrimaryIO() const { return m_primaryIO; }
     bool isPrimaryInish() const { return isPrimaryIO() && isNonOutput(); }
     bool isIfaceRef() const { return (varType() == VVarType::IFACEREF); }
     bool isIfaceParent() const { return m_isIfaceParent; }
+    bool isInternal() const { return m_isInternal; }
     bool isSignal() const { return varType().isSignal(); }
     bool isNet() const { return varType().isNet(); }
     bool isTemp() const { return varType().isTemp(); }
@@ -1956,6 +1982,7 @@ public:
     bool isSigUserRWPublic() const { return m_sigUserRWPublic; }
     bool isTrace() const { return m_trace; }
     bool isRand() const { return m_isRand; }
+    bool isRandC() const { return m_isRandC; }
     bool isConst() const VL_MT_SAFE { return m_isConst; }
     bool isStatic() const VL_MT_SAFE { return m_isStatic; }
     bool isLatched() const { return m_isLatched; }
@@ -2068,19 +2095,23 @@ class AstBegin final : public AstNodeBlock {
     // Parents: statement
     // @astgen op1 := genforp : Optional[AstNode]
 
-    bool m_generate;  // Underneath a generate
-    const bool m_implied;  // Not inserted by user
+    bool m_generate : 1;  // Underneath a generate
+    bool m_needProcess : 1;  // Uses VlProcess
+    const bool m_implied : 1;  // Not inserted by user
 public:
     // Node that puts name into the output stream
     AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool generate = false,
              bool implied = false)
         : ASTGEN_SUPER_Begin(fl, name, stmtsp)
         , m_generate{generate}
+        , m_needProcess{false}
         , m_implied{implied} {}
     ASTGEN_MEMBERS_AstBegin;
     void dump(std::ostream& str) const override;
     void generate(bool flag) { m_generate = flag; }
     bool generate() const { return m_generate; }
+    void setNeedProcess() { m_needProcess = true; }
+    bool needProcess() const { return m_needProcess; }
     bool implied() const { return m_implied; }
 };
 class AstFork final : public AstNodeBlock {
@@ -2583,7 +2614,7 @@ public:
     void hier(const string& flag) { m_hier = flag; }
     void comment(const string& flag) { m_text = flag; }
     bool same(const AstNode* samep) const override {
-        const AstCoverDecl* const asamep = static_cast<const AstCoverDecl*>(samep);
+        const AstCoverDecl* const asamep = VN_DBG_AS(samep, CoverDecl);
         return (fileline() == asamep->fileline() && linescov() == asamep->linescov()
                 && hier() == asamep->hier() && comment() == asamep->comment());
     }
@@ -2612,11 +2643,11 @@ public:
     void dump(std::ostream& str) const override;
     int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
     bool same(const AstNode* samep) const override {
-        return declp() == static_cast<const AstCoverInc*>(samep)->declp();
+        return declp() == VN_DBG_AS(samep, CoverInc)->declp();
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isOutputter() override { return true; }
     // but isPure()  true
     AstCoverDecl* declp() const { return m_declp; }  // Where defined
 };
@@ -2638,7 +2669,7 @@ public:
     bool same(const AstNode* /*samep*/) const override { return true; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return true; }
-    bool isOutputter() const override {
+    bool isOutputter() override {
         return false;  // Though the AstCoverInc under this is an outputter
     }
     // but isPure()  true
@@ -2715,11 +2746,11 @@ public:
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
-    bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
+    bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isOutputter() override { return true; }  // SPECIAL: $display makes output
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* samep) const override {
-        return displayType() == static_cast<const AstDisplay*>(samep)->displayType();
+        return displayType() == VN_DBG_AS(samep, Display)->displayType();
     }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     VDisplayType displayType() const { return m_displayType; }
@@ -2758,7 +2789,7 @@ public:
     string verilogKwd() const override { return ctlType().ascii(); }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isOutputter() override { return true; }
     virtual bool cleanOut() const { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
     VDumpCtlType ctlType() const { return m_ctlType; }
@@ -2790,8 +2821,8 @@ public:
     string verilogKwd() const override { return "$fclose"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
@@ -2807,8 +2838,8 @@ public:
     string verilogKwd() const override { return "$fflush"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
@@ -2819,8 +2850,8 @@ public:
     ASTGEN_MEMBERS_AstFinish;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
-    bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
+    bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isOutputter() override { return true; }  // SPECIAL: $display makes output
     bool isUnlikely() const override { return true; }
     int instrCount() const override { return 0; }  // Rarely executes
     bool same(const AstNode* samep) const override { return fileline() == samep->fileline(); }
@@ -2896,7 +2927,7 @@ public:
     void dump(std::ostream& str) const override;
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     bool same(const AstNode* samep) const override {
-        return labelp() == static_cast<const AstJumpGo*>(samep)->labelp();
+        return labelp() == VN_DBG_AS(samep, JumpGo)->labelp();
     }
     bool isGateOptimizable() const override { return false; }
     bool isBrancher() const override {
@@ -2927,7 +2958,7 @@ public:
     void dump(std::ostream& str) const override;
     int instrCount() const override { return 0; }
     bool same(const AstNode* samep) const override {
-        return blockp() == static_cast<const AstJumpLabel*>(samep)->blockp();
+        return blockp() == VN_DBG_AS(samep, JumpLabel)->blockp();
     }
     AstJumpBlock* blockp() const { return m_blockp; }
 };
@@ -2942,11 +2973,11 @@ public:
     string verilogKwd() const override { return m_off ? "$monitoroff" : "$monitoron"; }
     bool isGateOptimizable() const override { return false; }  // Though deleted before opt
     bool isPredictOptimizable() const override { return false; }  // Though deleted before opt
-    bool isPure() const override { return false; }  // Though deleted before opt
-    bool isOutputter() const override { return true; }  // Though deleted before opt
+    bool isPure() override { return false; }  // Though deleted before opt
+    bool isOutputter() override { return true; }  // Though deleted before opt
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool same(const AstNode* samep) const override {
-        return m_off == static_cast<const AstMonitorOff*>(samep)->m_off;
+        return m_off == VN_DBG_AS(samep, MonitorOff)->m_off;
     }
     bool off() const { return m_off; }
 };
@@ -2964,8 +2995,8 @@ public:
     string verilogKwd() const override { return "$printtimescale"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
@@ -3042,8 +3073,8 @@ public:
     string verilogKwd() const override { return "$sformat"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return true; }
-    bool isPure() const override { return true; }
-    bool isOutputter() const override { return false; }
+    bool isPure() override { return true; }
+    bool isOutputter() override { return false; }
     virtual bool cleanOut() const { return false; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool same(const AstNode* /*samep*/) const override { return true; }
@@ -3057,8 +3088,8 @@ public:
     string verilogKwd() const override { return "$stacktrace"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
@@ -3079,8 +3110,8 @@ public:
     ASTGEN_MEMBERS_AstStop;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }  // SPECIAL: $display has 'visual' ordering
-    bool isOutputter() const override { return true; }  // SPECIAL: $display makes output
+    bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isOutputter() override { return true; }  // SPECIAL: $display makes output
     bool isUnlikely() const override { return true; }
     int instrCount() const override { return 0; }  // Rarely executes
     bool same(const AstNode* samep) const override { return fileline() == samep->fileline(); }
@@ -3098,8 +3129,8 @@ public:
     string verilogKwd() const override { return ""; }
     bool isGateOptimizable() const override { return true; }
     bool isPredictOptimizable() const override { return true; }
-    bool isPure() const override { return true; }
-    bool isOutputter() const override { return false; }
+    bool isPure() override { return true; }
+    bool isOutputter() override { return false; }
     int instrCount() const override { return 0; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
@@ -3115,8 +3146,8 @@ public:
     string verilogKwd() const override { return "$system"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
@@ -3139,8 +3170,8 @@ public:
     string verilogKwd() const override { return "$timeformat"; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
 };
 class AstTraceDecl final : public AstNodeStmt {
@@ -3150,13 +3181,13 @@ class AstTraceDecl final : public AstNodeStmt {
     // Expression being traced - Moved to AstTraceInc by V3Trace
     // @astgen op1 := valuep : Optional[AstNodeExpr]
 private:
-    uint32_t m_code = 0;  // Trace identifier code; converted to ASCII by trace routines
+    uint32_t m_code{0};  // Trace identifier code
+    uint32_t m_fidx{0};  // Trace function index
     const string m_showname;  // Name of variable
     const VNumRange m_bitRange;  // Property of var the trace details
     const VNumRange m_arrayRange;  // Property of var the trace details
     const uint32_t m_codeInc;  // Code increment
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
-    const VBasicDTypeKwd m_declKwd;  // Keyword at declaration time
     const VDirection m_declDirection;  // Declared direction input/output etc
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
@@ -3170,7 +3201,6 @@ public:
               ((arrayRange.ranged() ? arrayRange.elements() : 1) * valuep->dtypep()->widthWords()
                * (VL_EDATASIZE / 32)))  // A code is always 32-bits
         , m_varType{varp->varType()}
-        , m_declKwd{varp->declKwd()}
         , m_declDirection{varp->declDirection()} {
         dtypeFrom(valuep);
         this->valuep(valuep);
@@ -3186,11 +3216,12 @@ public:
     // Details on what we're tracing
     uint32_t code() const { return m_code; }
     void code(uint32_t code) { m_code = code; }
+    uint32_t fidx() const { return m_fidx; }
+    void fidx(uint32_t fidx) { m_fidx = fidx; }
     uint32_t codeInc() const { return m_codeInc; }
     const VNumRange& bitRange() const { return m_bitRange; }
     const VNumRange& arrayRange() const { return m_arrayRange; }
     VVarType varType() const { return m_varType; }
-    VBasicDTypeKwd declKwd() const { return m_declKwd; }
     VDirection declDirection() const { return m_declDirection; }
 };
 class AstTraceInc final : public AstNodeStmt {
@@ -3201,14 +3232,14 @@ class AstTraceInc final : public AstNodeStmt {
 private:
     AstTraceDecl* m_declp;  // Pointer to declaration
     const uint32_t m_baseCode;  // Trace code base value in function containing this AstTraceInc
-    const bool m_full;  // Is this a full vs incremental dump
+    const VTraceType m_traceType;  // Is this a const/full/incremental dump
 
 public:
-    AstTraceInc(FileLine* fl, AstTraceDecl* declp, bool full, uint32_t baseCode = 0)
+    AstTraceInc(FileLine* fl, AstTraceDecl* declp, VTraceType traceType, uint32_t baseCode = 0)
         : ASTGEN_SUPER_TraceInc(fl)
         , m_declp{declp}
         , m_baseCode{baseCode}
-        , m_full{full} {
+        , m_traceType{traceType} {
         dtypeFrom(declp);
         this->valuep(
             declp->valuep()->cloneTree(true));  // TODO: maybe use reference to TraceDecl instead?
@@ -3225,35 +3256,35 @@ public:
     int instrCount() const override { return 10 + 2 * INSTR_COUNT_LD; }
     bool hasDType() const override { return true; }
     bool same(const AstNode* samep) const override {
-        return declp() == static_cast<const AstTraceInc*>(samep)->declp();
+        return declp() == VN_DBG_AS(samep, TraceInc)->declp();
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isOutputter() override { return true; }
     // but isPure()  true
     AstTraceDecl* declp() const { return m_declp; }
-    bool full() const { return m_full; }
+    VTraceType traceType() const { return m_traceType; }
     uint32_t baseCode() const { return m_baseCode; }
 };
-class AstTracePopNamePrefix final : public AstNodeStmt {
-    const unsigned m_count;  // How many levels to pop
+class AstTracePopPrefix final : public AstNodeStmt {
 public:
-    AstTracePopNamePrefix(FileLine* fl, unsigned count)
-        : ASTGEN_SUPER_TracePopNamePrefix(fl)
-        , m_count{count} {}
-    ASTGEN_MEMBERS_AstTracePopNamePrefix;
+    AstTracePopPrefix(FileLine* fl)
+        : ASTGEN_SUPER_TracePopPrefix(fl) {}
+    ASTGEN_MEMBERS_AstTracePopPrefix;
     bool same(const AstNode* samep) const override { return false; }
-    unsigned count() const { return m_count; }
 };
-class AstTracePushNamePrefix final : public AstNodeStmt {
+class AstTracePushPrefix final : public AstNodeStmt {
     const string m_prefix;  // Prefix to add to signal names
+    const VTracePrefixType m_prefixType;  // Type of prefix being pushed
 public:
-    AstTracePushNamePrefix(FileLine* fl, const string& prefix)
-        : ASTGEN_SUPER_TracePushNamePrefix(fl)
-        , m_prefix{prefix} {}
-    ASTGEN_MEMBERS_AstTracePushNamePrefix;
+    AstTracePushPrefix(FileLine* fl, const string& prefix, VTracePrefixType prefixType)
+        : ASTGEN_SUPER_TracePushPrefix(fl)
+        , m_prefix{prefix}
+        , m_prefixType{prefixType} {}
+    ASTGEN_MEMBERS_AstTracePushPrefix;
     bool same(const AstNode* samep) const override { return false; }
     string prefix() const { return m_prefix; }
+    VTracePrefixType prefixType() const { return m_prefixType; }
 };
 class AstUCStmt final : public AstNodeStmt {
     // User $c statement
@@ -3266,8 +3297,8 @@ public:
     ASTGEN_MEMBERS_AstUCStmt;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() const override { return false; }
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
 class AstWait final : public AstNodeStmt {
@@ -3289,6 +3320,7 @@ public:
     explicit AstWaitFork(FileLine* fl)
         : ASTGEN_SUPER_WaitFork(fl) {}
     ASTGEN_MEMBERS_AstWaitFork;
+    bool isTimingControl() const override { return true; }
 };
 class AstWhile final : public AstNodeStmt {
     // @astgen op1 := precondsp : List[AstNode]
@@ -3435,7 +3467,7 @@ public:
     ASTGEN_MEMBERS_AstCase;
     string verilogKwd() const override { return casez() ? "casez" : casex() ? "casex" : "case"; }
     bool same(const AstNode* samep) const override {
-        return m_casex == static_cast<const AstCase*>(samep)->m_casex;
+        return m_casex == VN_DBG_AS(samep, Case)->m_casex;
     }
     bool casex() const { return m_casex == VCaseType::CT_CASEX; }
     bool casez() const { return m_casex == VCaseType::CT_CASEZ; }
@@ -3557,48 +3589,48 @@ public:
     AstScCtor(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScCtor(fl, textp) {}
     ASTGEN_MEMBERS_AstScCtor;
-    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
 };
 class AstScDtor final : public AstNodeText {
 public:
     AstScDtor(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScDtor(fl, textp) {}
     ASTGEN_MEMBERS_AstScDtor;
-    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
 };
 class AstScHdr final : public AstNodeText {
 public:
     AstScHdr(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScHdr(fl, textp) {}
     ASTGEN_MEMBERS_AstScHdr;
-    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
 };
 class AstScImp final : public AstNodeText {
 public:
     AstScImp(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScImp(fl, textp) {}
     ASTGEN_MEMBERS_AstScImp;
-    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
 };
 class AstScImpHdr final : public AstNodeText {
 public:
     AstScImpHdr(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScImpHdr(fl, textp) {}
     ASTGEN_MEMBERS_AstScImpHdr;
-    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
 };
 class AstScInt final : public AstNodeText {
 public:
     AstScInt(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScInt(fl, textp) {}
     ASTGEN_MEMBERS_AstScInt;
-    bool isPure() const override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() const override { return true; }
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
 };
 
 // === AstNodeSimpleText ===

@@ -49,6 +49,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     ./configure --enable-longtests --enable-ccwarn ${CI_M32:+--enable-m32}
     ccache -z
     "$MAKE" -j "$NPROC" -k
+    # 22.04: ccache -s -v
     ccache -s
     if [ "$CI_OS_NAME" = "osx" ]; then
       file bin/verilator_bin
@@ -180,6 +181,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       fatal "Unknown test: $TESTS"
       ;;
   esac
+  # 22.04: ccache -s -v
   ccache -s
 
   # Upload coverage data

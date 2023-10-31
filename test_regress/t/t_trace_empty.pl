@@ -18,8 +18,6 @@ execute(
     check_finished => 1,
     );
 
-file_grep_not("$Self->{obj_dir}/simx.vcd", qr/scope/);
-file_grep_not("$Self->{obj_dir}/simx.vcd", qr/upscope/);
 file_grep_not("$Self->{obj_dir}/simx.vcd", qr/var/);
 
 ok(1);

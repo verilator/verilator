@@ -1,5 +1,5 @@
 %Error: t/t_enum_type_nomethod_bad.v:15:9: Unknown built-in enum method 'bad_no_such_method'
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    15 |       e.bad_no_such_method();
       |         ^~~~~~~~~~~~~~~~~~
 %Error: Exiting due to

@@ -14,17 +14,13 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstMT.h"
 
 #include "V3Config.h"
 
-#include "V3Global.h"
 #include "V3String.h"
 
-#include <map>
 #include <set>
-#include <string>
 #include <unordered_map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -303,8 +299,8 @@ public:
         m_ignLines.insert(V3ConfigIgnoresLine{code, lineno, on});
         m_lastIgnore.it = m_ignLines.begin();
     }
-    void addWaiver(V3ErrorCode code, const string& match) {
-        m_waivers.push_back(std::make_pair(code, match));
+    void addIgnoreMatch(V3ErrorCode code, const string& match) {
+        m_waivers.emplace_back(code, match);
     }
 
     void applyBlock(AstNodeBlock* nodep) {
@@ -404,12 +400,10 @@ public:
 
     bool getEntryMatch(const V3ConfigScopeTraceEntry* entp, const string& scopepart) {
         // Return if a entry matches the scopepart, with memoization
-        const auto& key = V3ConfigScopeTraceEntryMatch{entp, scopepart};
-        const auto& it = m_matchCache.find(key);
-        if (it != m_matchCache.end()) return it->second;  // Cached
-        const bool matched = VString::wildmatch(scopepart, entp->m_scope);
-        m_matchCache.emplace(key, matched);
-        return matched;
+        const V3ConfigScopeTraceEntryMatch key{entp, scopepart};
+        const auto pair = m_matchCache.emplace(key, false);
+        if (pair.second) pair.first->second = VString::wildmatch(scopepart, entp->m_scope);
+        return pair.first->second;
     }
 
     bool getScopeTraceOn(const string& scope) {
@@ -518,6 +512,10 @@ void V3Config::addIgnore(V3ErrorCode code, bool on, const string& filename, int 
     }
 }
 
+void V3Config::addIgnoreMatch(V3ErrorCode code, const string& filename, const string& match) {
+    V3ConfigResolver::s().files().at(filename).addIgnoreMatch(code, match);
+}
+
 void V3Config::addInline(FileLine* fl, const string& module, const string& ftask, bool on) {
     if (ftask.empty()) {
         V3ConfigResolver::s().modules().at(module).setInline(on);
@@ -588,10 +586,6 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
             }
         }
     }
-}
-
-void V3Config::addWaiver(V3ErrorCode code, const string& filename, const string& message) {
-    V3ConfigResolver::s().files().at(filename).addWaiver(code, message);
 }
 
 void V3Config::applyCase(AstCase* nodep) {

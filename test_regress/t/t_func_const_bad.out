@@ -1,33 +1,33 @@
 %Error: t/t_func_const_bad.v:12:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_output'
-                                  : ... In instance t
+                                  : ... note: In instance 't'
         t/t_func_const_bad.v:13:64: ... Location of non-constant VAR 'o': Language violation: Outputs/refs not allowed in constant functions
    12 |    localparam B1 = f_bad_output(1,2);
       |                    ^~~~~~~~~~~~
 %Error: t/t_func_const_bad.v:21:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_dotted'
-                                  : ... In instance t
+                                  : ... note: In instance 't'
         t/t_func_const_bad.v:23:24: ... Location of non-constant VARXREF 'EIGHT': Language violation: Dotted hierarchical references not allowed in constant functions
-        t/t_func_const_bad.v:21:20: ... Called from f_bad_dotted() with parameters:
+        t/t_func_const_bad.v:21:20: ... Called from 'f_bad_dotted()' with parameters:
            a = ?32?h2
    21 |    localparam B2 = f_bad_dotted(2);
       |                    ^~~~~~~~~~~~
 %Error: t/t_func_const_bad.v:28:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_nonparam'
-                                  : ... In instance t
+                                  : ... note: In instance 't'
         t/t_func_const_bad.v:30:24: ... Location of non-constant VARREF 'modvar': Language violation: reference to non-function-local variable
-        t/t_func_const_bad.v:28:20: ... Called from f_bad_nonparam() with parameters:
+        t/t_func_const_bad.v:28:20: ... Called from 'f_bad_nonparam()' with parameters:
            a = ?32?h3
    28 |    localparam B3 = f_bad_nonparam(3);
       |                    ^~~~~~~~~~~~~~
 %Error: t/t_func_const_bad.v:36:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_infinite'
-                                  : ... In instance t
+                                  : ... note: In instance 't'
         t/t_func_const_bad.v:38:7: ... Location of non-constant WHILE: Loop unrolling took too long; probably this is an infinite loop, or set --unroll-count above 1024
-        t/t_func_const_bad.v:36:20: ... Called from f_bad_infinite() with parameters:
+        t/t_func_const_bad.v:36:20: ... Called from 'f_bad_infinite()' with parameters:
            a = ?32?h3
    36 |    localparam B4 = f_bad_infinite(3);
       |                    ^~~~~~~~~~~~~~
 %Error: t/t_func_const_bad.v:44:23: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_stop'
-                                  : ... In instance t
+                                  : ... note: In instance 't'
         t/t_func_const_bad.v:46:7: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_func_const_bad.v:44:23: ... Called from f_bad_stop() with parameters:
+        t/t_func_const_bad.v:44:23: ... Called from 'f_bad_stop()' with parameters:
            a = ?32?h3
    44 |    localparam BSTOP = f_bad_stop(3);
       |                       ^~~~~~~~~~
@@ -38,9 +38,9 @@
                     ... For warning description see https://verilator.org/warn/USERFATAL?v=latest
                     ... Use "/* verilator lint_off USERFATAL */" and lint_on around source to disable this message.
 %Error: t/t_func_const_bad.v:50:24: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_fatal'
-                                  : ... In instance t
+                                  : ... note: In instance 't'
         t/t_func_const_bad.v:55:7: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_func_const_bad.v:50:24: ... Called from f_bad_fatal() with parameters:
+        t/t_func_const_bad.v:50:24: ... Called from 'f_bad_fatal()' with parameters:
            a = ?32?h3
    50 |    localparam BFATAL = f_bad_fatal(3);
       |                        ^~~~~~~~~~~

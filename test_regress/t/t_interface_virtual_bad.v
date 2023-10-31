@@ -19,8 +19,8 @@ typedef virtual PBus vpbus_t;
 
 module t (/*AUTOARG*/);
 
-   PBus p8;
-   QBus q8;
+   PBus p8();
+   QBus q8();
    vpbus_t v8;
    virtual PBus.phy v8_phy;
    logic data;

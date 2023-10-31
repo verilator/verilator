@@ -18,17 +18,12 @@
 //          Move some attributes around
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3LinkParse.h"
 
-#include "V3Ast.h"
 #include "V3Config.h"
-#include "V3Global.h"
 
-#include <algorithm>
-#include <map>
 #include <set>
 #include <vector>
 
@@ -64,6 +59,7 @@ private:
     AstNodeExpr* m_defaultOutSkewp = nullptr;  // Current default output skew
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
     int m_genblkNum = 0;  // Begin block number, 0=none seen
+    int m_beginDepth = 0;  // How many begin blocks above current node within current AstNodeModule
     VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
     bool m_insideLoop = false;  // True if the node is inside a loop
 
@@ -296,21 +292,22 @@ private:
             nodep->v3warn(STATICVAR, "Static variable with assignment declaration declared in a "
                                      "loop converted to automatic");
         }
-        if (m_ftaskp) {
-            bool classMethod = m_ftaskp->classMethod();
-            if (!classMethod) {
-                AstClassOrPackageRef* const pkgrefp
-                    = VN_CAST(m_ftaskp->classOrPackagep(), ClassOrPackageRef);
-                if (pkgrefp && VN_IS(pkgrefp->classOrPackagep(), Class)) classMethod = true;
-            }
-            if (classMethod && nodep->lifetime().isNone()) {
-                nodep->lifetime(VLifetime::AUTOMATIC);
-            }
+        if (nodep->varType() != VVarType::PORT) {
+            if (nodep->lifetime().isNone()) nodep->lifetime(m_lifetime);
+        } else if (m_ftaskp) {
+            nodep->lifetime(VLifetime::AUTOMATIC);
         }
-        if (nodep->lifetime().isNone() && nodep->varType() != VVarType::PORT) {
-            nodep->lifetime(m_lifetime);
+
+        if (nodep->isGParam() && !nodep->isAnsi()) {  // shadow some parameters into localparams
+            if (m_beginDepth > 0
+                || (m_beginDepth == 0
+                    && (m_modp->hasParameterList() || VN_IS(m_modp, Class)
+                        || VN_IS(m_modp, Package)))) {
+                nodep->varType(VVarType::LPARAM);
+            }
         }
         if (nodep->isGParam() && m_modp) m_modp->hasGParam(true);
+
         if (nodep->isParam() && !nodep->valuep()
             && nodep->fileline()->language() < V3LangCode::L1800_2009) {
             nodep->v3warn(NEWERSTD,
@@ -528,8 +525,7 @@ private:
             } else {
                 defp = new AstTypedef{nodep->fileline(), nodep->name(), nullptr, VFlagChildDType{},
                                       dtypep};
-                m_implTypedef.insert(
-                    std::make_pair(std::make_pair(nodep->containerp(), defp->name()), defp));
+                m_implTypedef.emplace(std::make_pair(nodep->containerp(), defp->name()), defp);
                 backp->addNextHere(defp);
             }
         }
@@ -567,8 +563,8 @@ private:
         } else if (VN_IS(bracketp, SelLoopVars)) {
             // Ok
         } else {
-            nodep->v3error("Syntax error; foreach missing bracketed loop variable (IEEE "
-                           "1800-2017 12.7.3)");
+            nodep->v3error("Syntax error; foreach missing bracketed loop variable"
+                           " (IEEE 1800-2017 12.7.3)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
@@ -617,6 +613,7 @@ private:
         VL_RESTORER(m_modp);
         VL_RESTORER(m_genblkAbove);
         VL_RESTORER(m_genblkNum);
+        VL_RESTORER(m_beginDepth);
         VL_RESTORER(m_lifetime);
         {
             // Module: Create sim table for entire module and iterate
@@ -626,6 +623,7 @@ private:
             m_modp = nodep;
             m_genblkAbove = 0;
             m_genblkNum = 0;
+            m_beginDepth = 0;
             m_valueModp = nodep;
             m_lifetime = nodep->lifetime();
             if (m_lifetime.isNone()) {
@@ -656,6 +654,8 @@ private:
     void visit(AstBegin* nodep) override {
         V3Config::applyCoverageBlock(m_modp, nodep);
         cleanFileline(nodep);
+        VL_RESTORER(m_beginDepth);
+        m_beginDepth++;
         const AstNode* const backp = nodep->backp();
         // IEEE says directly nested item is not a new block
         // The genblk name will get attached to the if true/false LOWER begin block(s)
@@ -674,7 +674,7 @@ private:
             if (nodep->stmtsp()) {
                 nodep->v3warn(GENUNNAMED,
                               "Unnamed generate block "
-                                  << nodep->prettyNameQ() << " (IEEE 1800-2017 27.6)"
+                                  << nodep->prettyNameQ() << " (IEEE 1800-2017 27.6)\n"
                                   << nodep->warnMore()
                                   << "... Suggest assign a label with 'begin : gen_<label_name>'");
             }

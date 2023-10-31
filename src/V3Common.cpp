@@ -20,14 +20,11 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Common.h"
 
-#include "V3Ast.h"
 #include "V3EmitCBase.h"
-#include "V3Global.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -116,7 +113,7 @@ static void makeToStringMiddle(AstClass* nodep) {
     std::string comma;
     for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
         if (const auto* const varp = VN_CAST(itemp, Var)) {
-            if (!varp->isParam()) {
+            if (!varp->isParam() && !varp->isInternal()) {
                 string stmt = "out += \"";
                 stmt += comma;
                 comma = ", ";

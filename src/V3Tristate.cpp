@@ -115,19 +115,14 @@
 // unsupported.
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Tristate.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
+#include "V3AstUserAllocator.h"
 #include "V3Graph.h"
 #include "V3Inst.h"
 #include "V3Stats.h"
-
-#include <algorithm>
-#include <map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -182,8 +177,8 @@ public:
 
 class TristateGraph final {
     // NODE STATE
-    //   AstVar::user5p         -> TristateVertex* for variable being built
-    // VNUser5InUse     m_inuser5;   // In visitor below
+    //   AstVar::user4p         -> TristateVertex* for variable being built
+    // VNUser4InUse     m_inuser4;   // In visitor below
 
     // TYPES
 public:
@@ -203,11 +198,11 @@ private:
     // METHODS
 
     TristateVertex* makeVertex(AstNode* nodep) {
-        TristateVertex* vertexp = reinterpret_cast<TristateVertex*>(nodep->user5p());
+        TristateVertex* vertexp = reinterpret_cast<TristateVertex*>(nodep->user4p());
         if (!vertexp) {
             UINFO(6, "         New vertex " << nodep << endl);
             vertexp = new TristateVertex{&m_graph, nodep};
-            nodep->user5p(vertexp);
+            nodep->user4p(vertexp);
         }
         return vertexp;
     }
@@ -285,7 +280,7 @@ public:
             }
         }
         m_graph.clear();
-        AstNode::user5ClearTree();  // Wipe all node user5p's that point to vertexes
+        AstNode::user4ClearTree();  // Wipe all node user4p's that point to vertexes
     }
     void graphWalk(AstNodeModule* nodep) {
         UINFO(9, " Walking " << nodep << endl);
@@ -304,7 +299,7 @@ public:
         if (!nodep) return;
         // Skip vars, because they may be connected to more than one varref
         if (!VN_IS(nodep, Var)) {
-            TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user5p());
+            TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user4p());
             if (vertexp) vertexp->unlinkDelete(&m_graph);
         }
         deleteVerticesFromSubtreeRecurse(nodep->op1p());
@@ -314,15 +309,15 @@ public:
     }
     void setTristate(AstNode* nodep) { makeVertex(nodep)->isTristate(true); }
     bool isTristate(AstNode* nodep) {
-        const TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user5p());
+        const TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user4p());
         return vertexp && vertexp->isTristate();
     }
     bool feedsTri(AstNode* nodep) {
-        const TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user5p());
+        const TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user4p());
         return vertexp && vertexp->feedsTri();
     }
     void didProcess(AstNode* nodep) {
-        TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user5p());
+        TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user4p());
         if (!vertexp) {
             // Not v3errorSrc as no reason to stop the world
             nodep->v3error("Unsupported tristate construct (not in propagation graph): "
@@ -396,16 +391,21 @@ class TristateVisitor final : public TristateBaseVisitor {
     // NODE STATE
     //   *::user1p              -> pointer to output enable __en expressions
     //   *::user2               -> int - already visited, see U2_ enum
-    //   AstVar::user3p         -> AstPull* pullup/pulldown direction (input Var's user3p)
-    //   AstVar::user4p         -> AstVar* pointer to output __out var (input Var's user2p)
+    //   AstVar::user3p         -> See AuxAstVar via m_varAux
     // See TristateGraph:
-    //   AstVar::user5p         -> TristateVertex* for variable being built
-    //   AstStmt*::user5p       -> TristateVertex* for this statement
+    //   AstVar::user4p         -> TristateVertex* for variable being built
+    //   AstStmt::user4p        -> TristateVertex* for this statement
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
     const VNUser3InUse m_inuser3;
     const VNUser4InUse m_inuser4;
-    const VNUser5InUse m_inuser5;
+
+    struct AuxAstVar final {
+        AstPull* pullp = nullptr;  // pullup/pulldown direction
+        AstVar* outVarp = nullptr;  // output __out var
+    };
+
+    AstUser3Allocator<AstVar, AuxAstVar> m_varAux;
 
     // TYPES
     struct RefStrength {
@@ -537,14 +537,14 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
     AstVar* getCreateOutVarp(AstVar* invarp) {
         // Return the master __out for the specified input variable
-        if (!invarp->user4p()) {
+        if (!m_varAux(invarp).outVarp) {
             AstVar* const newp = new AstVar{invarp->fileline(), VVarType::MODULETEMP,
                                             invarp->name() + "__out", invarp};
             UINFO(9, "       newout " << newp << endl);
             modAddStmtp(invarp, newp);
-            invarp->user4p(newp);  // find outvar given invarp
+            m_varAux(invarp).outVarp = newp;  // find outvar given invarp
         }
-        return VN_AS(invarp->user4p(), Var);
+        return m_varAux(invarp).outVarp;
     }
     AstVar* getCreateUnconnVarp(AstNode* fromp, AstNodeDType* dtypep) {
         AstVar* const newp = new AstVar{fromp->fileline(), VVarType::MODULETEMP,
@@ -555,16 +555,11 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
 
     void mapInsertLhsVarRef(AstVarRef* nodep) {
-        AstVar* const key = nodep->varp();
-        const auto it = m_lhsmap.find(key);
         UINFO(9, "    mapInsertLhsVarRef " << nodep << endl);
-        if (it == m_lhsmap.end()) {  // Not found
-            RefStrengthVec* const refsp = new RefStrengthVec;
-            refsp->push_back(RefStrength{nodep, m_currentStrength});
-            m_lhsmap.emplace(key, refsp);
-        } else {
-            it->second->push_back(RefStrength{nodep, m_currentStrength});
-        }
+        AstVar* const key = nodep->varp();
+        const auto pair = m_lhsmap.emplace(key, nullptr);
+        if (pair.second) pair.first->second = new RefStrengthVec;
+        pair.first->second->push_back(RefStrength{nodep, m_currentStrength});
     }
 
     AstNodeExpr* newEnableDeposit(AstSel* selp, AstNodeExpr* enp) {
@@ -572,14 +567,14 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Would be nicer if we made this a new AST type
         AstNodeExpr* const newp = new AstShiftL{
             selp->fileline(), new AstExtend{selp->fileline(), enp, selp->fromp()->width()},
-            selp->lsbp()->cloneTree(false), selp->fromp()->width()};
+            selp->lsbp()->cloneTreePure(false), selp->fromp()->width()};
         return newp;
     }
 
     void setPullDirection(AstVar* varp, AstPull* pullp) {
-        const AstPull* const oldpullp = static_cast<AstPull*>(varp->user3p());
+        const AstPull* const oldpullp = m_varAux(varp).pullp;
         if (!oldpullp) {
-            varp->user3p(pullp);  // save off to indicate the pull direction
+            m_varAux(varp).pullp = pullp;  // save off to indicate the pull direction
         } else {
             if (oldpullp->direction() != pullp->direction()) {
                 pullp->v3warn(E_UNSUPPORTED, "Unsupported: Conflicting pull directions.\n"
@@ -736,8 +731,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             envarp = getCreateEnVarp(invarp);  // direction will be sen in visit(AstPin*)
             //
             outvarp->user1p(envarp);
-            outvarp->user3p(invarp->user3p());  // AstPull* propagation
-            if (invarp->user3p()) UINFO(9, "propagate pull to " << outvarp << endl);
+            m_varAux(outvarp).pullp = m_varAux(invarp).pullp;  // AstPull* propagation
+            if (m_varAux(invarp).pullp) UINFO(9, "propagate pull to " << outvarp << endl);
         } else if (invarp->user1p()) {
             envarp = VN_AS(invarp->user1p(), Var);  // From CASEEQ, foo === 1'bz
         }
@@ -779,7 +774,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 // If weaker driver should be overwritten by a stronger, replace its value with z
                 exprCurrentStrengthp
                     = new AstAnd{fl, new AstVarRef{fl, varStrengthp, VAccess::READ},
-                                 new AstNot{fl, enp->cloneTree(false)}};
+                                 new AstNot{fl, enp->cloneTreePure(false)}};
             } else {
                 exprCurrentStrengthp = new AstVarRef{fl, varStrengthp, VAccess::READ};
             }
@@ -795,7 +790,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (!outvarp) {
             // This is the final pre-forced resolution of the tristate, so we apply
             // the pull direction to any undriven pins.
-            const AstPull* const pullp = static_cast<AstPull*>(lhsp->user3p());
+            const AstPull* const pullp = m_varAux(lhsp).pullp;
             bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
 
             AstNodeExpr* undrivenp;
@@ -1086,7 +1081,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 if (nodep->fromp()->user1p()) {  // SEL(VARREF, lsb)
                     AstNodeExpr* const en1p = getEnp(nodep->fromp());
                     AstNodeExpr* const enp
-                        = new AstSel{nodep->fileline(), en1p, nodep->lsbp()->cloneTree(true),
+                        = new AstSel{nodep->fileline(), en1p, nodep->lsbp()->cloneTreePure(true),
                                      nodep->widthp()->cloneTree(true)};
                     UINFO(9, "       newsel " << enp << endl);
                     nodep->user1p(enp);  // propagate up SEL(fromp->enable, value)
@@ -1113,7 +1108,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     // Each half of the concat gets a select of the enable expression
                     AstNodeExpr* const enp = VN_AS(nodep->user1p(), NodeExpr);
                     nodep->user1p(nullptr);
-                    nodep->lhsp()->user1p(new AstSel{nodep->fileline(), enp->cloneTree(true),
+                    nodep->lhsp()->user1p(new AstSel{nodep->fileline(), enp->cloneTreePure(true),
                                                      nodep->rhsp()->width(),
                                                      nodep->lhsp()->width()});
                     nodep->rhsp()->user1p(
@@ -1208,8 +1203,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             m_tgraph.didProcess(nodep);
             AstNodeExpr* const en1p = getEnp(expr1p);
             AstNodeExpr* const en2p = getEnp(expr2p);
-            AstNodeExpr* subexpr1p = expr1p->cloneTree(false);
-            AstNodeExpr* subexpr2p = expr2p->cloneTree(false);
+            AstNodeExpr* subexpr1p = expr1p->cloneTreePure(false);
+            AstNodeExpr* subexpr2p = expr2p->cloneTreePure(false);
             if (isAnd) {
                 subexpr1p = new AstNot{nodep->fileline(), subexpr1p};
                 subexpr2p = new AstNot{nodep->fileline(), subexpr2p};
@@ -1407,15 +1402,15 @@ class TristateVisitor final : public TristateBaseVisitor {
                 if (nonXp) {  // Need to still count '0 or '1 or 'x's
                     if (dropop[0]) {
                         nodep->rhsp()->unlinkFrBack()->deleteTree();
-                        nodep->rhsp(nonXp->cloneTree(true));
+                        nodep->rhsp(nonXp->cloneTreePure(true));
                     }
                     if (dropop[1]) {
                         nodep->thsp()->unlinkFrBack()->deleteTree();
-                        nodep->thsp(nonXp->cloneTree(true));
+                        nodep->thsp(nonXp->cloneTreePure(true));
                     }
                     if (dropop[2]) {
                         nodep->fhsp()->unlinkFrBack()->deleteTree();
-                        nodep->fhsp(nonXp->cloneTree(true));
+                        nodep->fhsp(nonXp->cloneTreePure(true));
                     }
                     newp = new AstAdd{nodep->fileline(), nodep, newp};
                 }
@@ -1446,7 +1441,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 associateLogic(nodep, varrefp->varp());
             } else {
                 // Replace any pullup/pulldowns with assignw logic and set the
-                // direction of the pull in the user3() data on the var.  Given
+                // direction of the pull in the var aux data.  Given
                 // the complexity of merging tristate drivers at any level, the
                 // current limitation of this implementation is that a pullup/down
                 // gets applied to all bits of a bus and a bus cannot have drivers
@@ -1459,7 +1454,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
         if (!m_graphing) {
             nodep->unlinkFrBack();
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Node must persist as user3p points to it
+            // Node must persist as var aux data points to it
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
 
@@ -1574,7 +1570,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             // Create new output pin
             const AstAssignW* outAssignp = nullptr;  // If reconnected, the related assignment
             AstPin* outpinp = nullptr;
-            AstVar* const outModVarp = static_cast<AstVar*>(nodep->modVarp()->user4p());
+            AstVar* const outModVarp = m_varAux(nodep->modVarp()).outVarp;
             if (!outModVarp) {
                 // At top, no need for __out as might be input only. Otherwise resolvable.
                 if (!m_modp->isTop()) {
@@ -1582,8 +1578,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                      << nodep->prettyNameQ());
                 }
             } else {
-                AstNodeExpr* const outexprp
-                    = VN_AS(nodep->exprp(), NodeExpr)->cloneTree(false);  // Note has lvalue() set
+                AstNodeExpr* const outexprp = VN_AS(nodep->exprp(), NodeExpr)
+                                                  ->cloneTreePure(false);  // Note has lvalue() set
                 outpinp = new AstPin{nodep->fileline(), nodep->pinNum(),
                                      outModVarp->name(),  // should be {var}"__out"
                                      outexprp};
@@ -1649,7 +1645,7 @@ class TristateVisitor final : public TristateBaseVisitor {
 
             // Propagate any pullups/pulldowns upwards if necessary
             if (exprrefp) {
-                if (AstPull* const pullp = static_cast<AstPull*>(nodep->modVarp()->user3p())) {
+                if (AstPull* const pullp = m_varAux(nodep->modVarp()).pullp) {
                     UINFO(9, "propagate pull on " << exprrefp << endl);
                     setPullDirection(exprrefp->varp(), pullp);
                 }

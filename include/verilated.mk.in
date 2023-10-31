@@ -9,6 +9,9 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 ######################################################################
 
+# Tool names.
+# These are computed at configuration time, and most are not ?=
+# to avoid picking up potentilly incorrect Make implicit variables
 AR = @AR@
 CXX = @CXX@
 LINK = @CXX@
@@ -16,6 +19,7 @@ OBJCACHE ?= @OBJCACHE@
 PERL = @PERL@
 PYTHON3 = @PYTHON3@
 
+# Configuration time options
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
 
@@ -31,6 +35,12 @@ CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
 # Compiler flags that enable coroutine support
 CFG_CXXFLAGS_COROUTINES = @CFG_CXXFLAGS_COROUTINES@
+# Compiler flags when creating a precompiled header
+CFG_CXXFLAGS_PCH = -x c++-header
+# Compiler option to put in front of filename to read precompiled header
+CFG_CXXFLAGS_PCH_I = @CFG_CXXFLAGS_PCH_I@
+# Compiler's filename prefix for precompiled headers, .gch if clang, empty if GCC
+CFG_GCH_IF_CLANG = @CFG_GCH_IF_CLANG@
 # Linker flags
 CFG_LDFLAGS_VERILATED = @CFG_LDFLAGS_VERILATED@
 # Linker libraries for multithreading
@@ -42,6 +52,12 @@ CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
 VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
 VERILATOR_INCLUDER = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_includer
 VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
+
+######################################################################
+# CCACHE flags (via environment as no command line option available)
+
+CCACHE_SLOPPINESS ?= pch_defines,time_macros
+export CCACHE_SLOPPINESS
 
 ######################################################################
 # Make checks
@@ -162,11 +178,17 @@ endif
 VM_FAST += $(VM_CLASSES_FAST) $(VM_SUPPORT_FAST)
 VM_SLOW += $(VM_CLASSES_SLOW) $(VM_SUPPORT_SLOW)
 
+# Precompiled header filename
+VK_PCH_H = $(VM_PREFIX)__pch.h
+# Compiler read-a-precompiled-header option for precompiled header filename
+VK_PCH_I_FAST = $(CFG_CXXFLAGS_PCH_I) $(VM_PREFIX)__pch.h.fast$(CFG_GCH_IF_CLANG)
+VK_PCH_I_SLOW = $(CFG_CXXFLAGS_PCH_I) $(VM_PREFIX)__pch.h.slow$(CFG_GCH_IF_CLANG)
+
 #######################################################################
 ### Overall Objects Linking
 
-VK_FAST_OBJS = $(addsuffix .o, $(VM_FAST))
-VK_SLOW_OBJS = $(addsuffix .o, $(VM_SLOW))
+VK_OBJS_FAST = $(addsuffix .o, $(VM_FAST))
+VK_OBJS_SLOW = $(addsuffix .o, $(VM_SLOW))
 
 VK_USER_OBJS = $(addsuffix .o, $(VM_USER_CLASSES))
 
@@ -193,7 +215,7 @@ else
   # Parallel build: Each .cpp file by itself. This can be somewhat slower for
   # very small designs and examples, but is a lot faster for large designs.
 
-  VK_OBJS += $(VK_FAST_OBJS) $(VK_SLOW_OBJS)
+  VK_OBJS += $(VK_OBJS_FAST) $(VK_OBJS_SLOW)
 endif
 
 # When archiving just objects (.o), use single $(AR) run
@@ -237,18 +259,32 @@ $(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
 ### Compile rules
 
 ifneq ($(VM_DEFAULT_RULES),0)
-# Anything not in $(VK_SLOW_OBJS) or $(VK_GLOBAL_OBJS), including verilated.o
-# and user files passed on the Verilator command line use this rule.
-# We put OPT_FAST/OPT_SLOW/OPT_GLOBAL before the other flags to
+# Compilation rule for anything not in $(VK_OBJS_FAST), $(VK_OBJS_SLOW), or
+# $(VK_GLOBAL_OBJS) including verilated.o.  This typically means user files
+# passed on the Verilator command line.
+#
+# These rules put OPT_FAST/OPT_SLOW/OPT_GLOBAL before the other flags to
 # allow USER_CPPFLAGS to override them
 %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
-$(VK_SLOW_OBJS): %.o: %.cpp
-	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+$(VK_OBJS_FAST): %.o: %.cpp $(VK_PCH_H).fast.gch
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_FAST) -c -o $@ $<
+
+$(VK_OBJS_SLOW): %.o: %.cpp $(VK_PCH_H).slow.gch
+	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_SLOW) -c -o $@ $<
 
 $(VK_GLOBAL_OBJS): %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(OPT_GLOBAL) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+# Precompile a header file
+# PCH's compiler flags must match exactly the rules' above FAST/SLOW
+# arguments used for the .cpp files, or the PCH file won't be used.
+%.fast.gch: %
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
+%.slow.gch: %
+	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
+
 endif
 
 #Default rule embedded in make:
@@ -296,19 +332,21 @@ endif
 
 debug-make::
 	@echo
-	@echo CXXFLAGS: $(CXXFLAGS)
 	@echo CPPFLAGS: $(CPPFLAGS)
+	@echo CXXFLAGS: $(CXXFLAGS)
 	@echo OPT_FAST: $(OPT_FAST)
 	@echo OPT_SLOW: $(OPT_SLOW)
-	@echo VM_PREFIX:  $(VM_PREFIX)
-	@echo VM_PARALLEL_BUILDS:  $(VM_PARALLEL_BUILDS)
+	@echo VK_OBJS: $(VK_OBJS)
+	@echo VK_OBJS_FAST: $(VK_OBJS_FAST)
+	@echo VK_OBJS_SLOW: $(VK_OBJS_SLOW)
 	@echo VM_CLASSES_FAST: $(VM_CLASSES_FAST)
 	@echo VM_CLASSES_SLOW: $(VM_CLASSES_SLOW)
-	@echo VM_SUPPORT_FAST: $(VM_SUPPORT_FAST)
-	@echo VM_SUPPORT_SLOW: $(VM_SUPPORT_SLOW)
 	@echo VM_GLOBAL_FAST: $(VM_GLOBAL_FAST)
 	@echo VM_GLOBAL_SLOW: $(VM_GLOBAL_SLOW)
-	@echo VK_OBJS: $(VK_OBJS)
+	@echo VM_PARALLEL_BUILDS:  $(VM_PARALLEL_BUILDS)
+	@echo VM_PREFIX:  $(VM_PREFIX)
+	@echo VM_SUPPORT_FAST: $(VM_SUPPORT_FAST)
+	@echo VM_SUPPORT_SLOW: $(VM_SUPPORT_SLOW)
 	@echo
 
 ######################################################################

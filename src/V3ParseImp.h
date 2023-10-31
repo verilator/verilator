@@ -25,6 +25,7 @@
 #include "V3Global.h"
 #include "V3Parse.h"
 #include "V3ParseSym.h"
+#include "V3ThreadSafety.h"
 
 #include <algorithm>
 #include <deque>
@@ -53,9 +54,8 @@ struct VMemberQualifiers {
             uint32_t m_rand : 1;  // Rand property/member qualifier
             uint32_t m_randc : 1;  // Randc property/member qualifier (ignored until supported)
             uint32_t m_virtual : 1;  // Virtual property/method qualifier
-            uint32_t m_automatic : 1;  // Automatic property/method qualifier
             uint32_t m_const : 1;  // Const property/method qualifier
-            uint32_t m_static : 1;  // Static class method
+            uint32_t m_static : 1;  // Static class member
         };
     };
     static VMemberQualifiers none() {
@@ -72,9 +72,8 @@ struct VMemberQualifiers {
         for (AstNodeFTask* nodep = nodesp; nodep; nodep = VN_AS(nodep->nextp(), NodeFTask)) {
             if (m_local) nodep->isHideLocal(true);
             if (m_protected) nodep->isHideProtected(true);
+            if (m_static) nodep->isStatic(true);
             if (m_virtual) nodep->isVirtual(true);
-            if (m_automatic) nodep->lifetime(VLifetime::AUTOMATIC);
-            if (m_static) nodep->lifetime(VLifetime::STATIC);
             if (m_const || m_rand || m_randc) {
                 nodep->v3error("Syntax error: 'const'/'rand'/'randc' not allowed before "
                                "function/task declaration");
@@ -83,14 +82,10 @@ struct VMemberQualifiers {
     }
     void applyToNodes(AstVar* nodesp) const {
         for (AstVar* nodep = nodesp; nodep; nodep = VN_AS(nodep->nextp(), Var)) {
-            if (m_randc) {
-                nodep->v3warn(RANDC, "Unsupported: Converting 'randc' to 'rand'");
-                nodep->isRand(true);
-            }
             if (m_rand) nodep->isRand(true);
+            if (m_randc) nodep->isRandC(true);
             if (m_local) nodep->isHideLocal(true);
             if (m_protected) nodep->isHideProtected(true);
-            if (m_automatic) nodep->lifetime(VLifetime::AUTOMATIC);
             if (m_static) nodep->lifetime(VLifetime::STATIC);
             if (m_const) nodep->isConst(true);
             if (m_virtual) {
@@ -126,7 +121,7 @@ struct V3ParseBisonYYSType {
 #include "V3Ast__gen_yystype.h"
     };
 };
-std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs);
+std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs) VL_MT_DISABLED;
 
 #define YYSTYPE V3ParseBisonYYSType
 
@@ -173,21 +168,21 @@ public:
 
     void tagNodep(AstNode* nodep) { m_tagNodep = nodep; }
     AstNode* tagNodep() const { return m_tagNodep; }
-    void lexTimescaleParse(FileLine* fl, const char* textp);
+    void lexTimescaleParse(FileLine* fl, const char* textp) VL_MT_DISABLED;
     void timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, double unitVal,
-                      bool precSet, double precVal);
+                      bool precSet, double precVal) VL_MT_DISABLED;
     VTimescale timeLastUnit() const { return m_timeLastUnit; }
 
+    void lexFileline(FileLine* fl) { m_lexFileline = fl; }
     FileLine* lexFileline() const { return m_lexFileline; }
-    FileLine* lexCopyOrSameFileLine() { return lexFileline()->copyOrSameFileLine(); }
-    static void lexErrorPreprocDirective(FileLine* fl, const char* textp);
-    static string lexParseTag(const char* textp);
-    static double lexParseTimenum(const char* text);
-    void lexPpline(const char* textp);
-    void lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnOff);
-    void lexVerilatorCmtLintSave(const FileLine* fl);
-    void lexVerilatorCmtLintRestore(FileLine* fl);
-    static void lexVerilatorCmtBad(FileLine* fl, const char* textp);
+    static void lexErrorPreprocDirective(FileLine* fl, const char* textp) VL_MT_DISABLED;
+    static string lexParseTag(const char* textp) VL_MT_DISABLED;
+    static double lexParseTimenum(const char* text) VL_MT_DISABLED;
+    void lexPpline(const char* textp) VL_MT_DISABLED;
+    void lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnOff) VL_MT_DISABLED;
+    void lexVerilatorCmtLintSave(const FileLine* fl) VL_MT_DISABLED;
+    void lexVerilatorCmtLintRestore(FileLine* fl) VL_MT_DISABLED;
+    static void lexVerilatorCmtBad(FileLine* fl, const char* textp) VL_MT_DISABLED;
 
     void lexPushKeywords(int state) {
         ++m_lexKwdDepth;
@@ -202,14 +197,14 @@ public:
         }
     }
     int lexKwdLastState() const { return m_lexKwdLast; }
-    static const char* tokenName(int tok);
-    static bool isStrengthToken(int tok);
+    static const char* tokenName(int tok) VL_MT_DISABLED;
+    static bool isStrengthToken(int tok) VL_MT_DISABLED;
 
     void ppPushText(const string& text) {
         m_ppBuffers.push_back(text);
         if (lexFileline()->contentp()) lexFileline()->contentp()->pushText(text);
     }
-    size_t ppInputToLex(char* buf, size_t max_size);
+    size_t ppInputToLex(char* buf, size_t max_size) VL_MT_DISABLED;
 
     static V3ParseImp* parsep() { return s_parsep; }
 
@@ -245,18 +240,17 @@ public:
 
     // Return next token, for bison, since bison isn't class based, use a global THIS
     AstNetlist* rootp() const { return m_rootp; }
-    FileLine* copyOrSameFileLine() { return bisonLastFileline()->copyOrSameFileLine(); }
     bool inLibrary() const { return m_inLibrary; }
     VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
     void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }
 
     // Interactions with parser
-    int bisonParse();
+    int bisonParse() VL_MT_DISABLED;
 
     // Interactions with lexer
-    void lexNew();
-    void lexDestroy();
-    static int stateVerilogRecent();  // Parser -> lexer communication
+    void lexNew() VL_MT_DISABLED;
+    void lexDestroy() VL_MT_DISABLED;
+    static int stateVerilogRecent() VL_MT_DISABLED;  // Parser -> lexer communication
     int lexPrevToken() const { return m_lexPrevToken; }  // Parser -> lexer communication
     size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf, max_size); }
 
@@ -285,28 +279,29 @@ public:
         m_lexKwdLast = stateVerilogRecent();
         m_timeLastUnit = v3Global.opt.timeDefaultUnit();
     }
-    ~V3ParseImp();
-    void parserClear();
-    void lexUnputString(const char* textp, size_t length);
+    ~V3ParseImp() VL_MT_DISABLED;
+    void parserClear() VL_MT_DISABLED;
+    void lexUnputString(const char* textp, size_t length) VL_MT_DISABLED;
 
     // METHODS
     // Preprocess and read the Verilog file specified into the netlist database
-    int tokenToBison();  // Pass token to bison
+    int tokenToBison() VL_MT_DISABLED;  // Pass token to bison
 
     void parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
-                   const string& errmsg);
-    void dumpInputsFile();
+                   const string& errmsg) VL_MT_DISABLED;
+    void dumpInputsFile() VL_MT_DISABLED;
 
 private:
-    void lexFile(const string& modname);
-    void yylexReadTok();
-    void tokenPull();
-    void tokenPipeline();  // Internal; called from tokenToBison
-    void tokenPipelineSym();
-    size_t tokenPipeScanParam(size_t depth);
-    size_t tokenPipeScanType(size_t depth);
-    const V3ParseBisonYYSType* tokenPeekp(size_t depth);
-    void preprocDumps(std::ostream& os, bool forInputs);
+    void preprocDumps(std::ostream& os);
+    void lexFile(const string& modname) VL_MT_DISABLED;
+    void yylexReadTok() VL_MT_DISABLED;
+    void tokenPull() VL_MT_DISABLED;
+    void tokenPipeline() VL_MT_DISABLED;  // Internal; called from tokenToBison
+    void tokenPipelineSym() VL_MT_DISABLED;
+    size_t tokenPipeScanParam(size_t depth) VL_MT_DISABLED;
+    size_t tokenPipeScanType(size_t depth) VL_MT_DISABLED;
+    const V3ParseBisonYYSType* tokenPeekp(size_t depth) VL_MT_DISABLED;
+    void preprocDumps(std::ostream& os, bool forInputs) VL_MT_DISABLED;
 };
 
 #endif  // Guard

@@ -20,6 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 class AstNetlist;
 
 //============================================================================
@@ -27,7 +29,7 @@ class AstNetlist;
 class V3CoverageJoin final {
 public:
     // CONSTRUCTORS
-    static void coverageJoin(AstNetlist* rootp);
+    static void coverageJoin(AstNetlist* rootp) VL_MT_DISABLED;
 };
 
 #endif  // Guard

@@ -1,11 +1,11 @@
 %Warning-INFINITELOOP: t/t_lint_infinite_bad.v:10:7: Infinite loop (condition always true)
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    10 |       forever begin end
       |       ^~~~~~~
                        ... For warning description see https://verilator.org/warn/INFINITELOOP?v=latest
                        ... Use "/* verilator lint_off INFINITELOOP */" and lint_on around source to disable this message.
 %Warning-INFINITELOOP: t/t_lint_infinite_bad.v:12:7: Infinite loop (condition always true)
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    12 |       for (reg [31:0] i=0; i>=0; i=i+1) begin end
       |       ^~~
 %Error: Exiting due to

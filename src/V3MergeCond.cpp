@@ -72,15 +72,12 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3MergeCond.h"
 
-#include "V3Ast.h"
 #include "V3AstUserAllocator.h"
 #include "V3DupFinder.h"
-#include "V3Global.h"
 #include "V3Hasher.h"
 #include "V3Stats.h"
 
@@ -162,11 +159,10 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
     // NODE STATE
     // AstNodeStmt::user3   -> StmtProperties (accessed via m_stmtProperties, managed externally,
     //                         see MergeCondVisitor::process)
+    // AstNodeExpr::user3   -> AstNodeStmt*: Set on a condition node, points to the last
+    //                         conditional with that condition so far encountered in the same
+    //                         AstNode list
     // AstNode::user4       -> Used by V3Hasher
-    // AstNode::user5       -> AstNode*: Set on a condition node, points to the last conditional
-    //                         with that condition so far encountered in the same AstNode list
-
-    VNUser5InUse m_user5InUse;
 
     StmtPropertiesAllocator& m_stmtProperties;
 
@@ -215,14 +211,14 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
                     // First time seeing this condition in the current list
                     dupFinder.insert(condp);
                     // Remember last statement with this condition (which is this statement)
-                    condp->user5p(nodep);
+                    condp->user3p(nodep);
                 } else {
                     // Seen a conditional with the same condition earlier in the current list
-                    AstNode* const firstp = dit->second;
+                    AstNodeExpr* const firstp = VN_AS(dit->second, NodeExpr);
                     // Add to properties for easy retrieval during optimization
-                    m_propsp->m_prevWithSameCondp = static_cast<AstNodeStmt*>(firstp->user5p());
+                    m_propsp->m_prevWithSameCondp = static_cast<AstNodeStmt*>(firstp->user3p());
                     // Remember last statement with this condition (which is this statement)
-                    firstp->user5p(nodep);
+                    firstp->user3p(nodep);
                 }
             }
         }
@@ -433,13 +429,13 @@ private:
     // NODE STATE
     // AstVar::user1        -> bool: Set for variables referenced by m_mgCondp
     //                         (Only below MergeCondVisitor::process).
-    // AstNode::user2       -> bool: Marking node as included in merge because cheap to
-    //                         duplicate
+    // AstNode::user2       -> bool: Marking node as included in merge because cheap to duplicate
     //                         (Only below MergeCondVisitor::process).
     // AstNodeStmt::user3   -> StmtProperties
     //                         (Only below MergeCondVisitor::process).
+    // AstNodeExpr::user3   -> See CodeMotionAnalysisVisitor
+    //                         (Only below MergeCondVisitor::process).
     // AstNode::user4       -> See CodeMotionAnalysisVisitor/CodeMotionOptimizeVisitor
-    // AstNode::user5       -> See CodeMotionAnalysisVisitor
 
     // STATE
     VDouble0 m_statMerges;  // Statistic tracking
@@ -601,7 +597,7 @@ private:
             if (condp == rhsp) return resp;
             if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
                 UASSERT_OBJ(andp->rhsp() == condp, rhsp, "Should not try to fold this");
-                return new AstAnd{andp->fileline(), andp->lhsp()->cloneTree(false), resp};
+                return new AstAnd{andp->fileline(), andp->lhsp()->cloneTreePure(false), resp};
             }
         } else if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
             if (andp->lhsp()->sameTree(m_mgCondp)) {
@@ -655,7 +651,7 @@ private:
 
             // We need a copy of the condition in the new equivalent 'if' statement,
             // and we also need to keep track of it for comparisons later.
-            m_mgCondp = m_mgCondp->cloneTree(false);
+            m_mgCondp = m_mgCondp->cloneTreePure(false);
             // Create equivalent 'if' statement and insert it before the first node
             AstIf* const resultp = new AstIf{m_mgCondp->fileline(), m_mgCondp};
             m_mgFirstp->addHereThisAsNext(resultp);

@@ -23,6 +23,10 @@ defaults:
     shell: bash
     working-directory: repo
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
 
   build:
@@ -33,7 +37,8 @@ jobs:
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
-        m32: [0, 1]
+        # m32 1 is deprecated, not here to speed up regressions
+        m32: [0]
         exclude:
           # Build pull requests only with ubuntu-22.04 and without m32
           # - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-18.04' || 'do-not-exclude' }}
@@ -58,7 +63,7 @@ jobs:
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
       CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-m32=${{ matrix.m32 }}
-      CCACHE_MAXSIZE: 250M # Per build matrix entry (2000M in total)
+      CCACHE_MAXSIZE: 1000M # Per build matrix entry (* 5 = 5000M in total)
       VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}${{ matrix.m32 && '-m32' || '' }}.tar.gz
     steps:
 
@@ -103,7 +108,7 @@ jobs:
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
-        m32: [0, 1]
+        m32: [0]
         suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, vltmt-0, vltmt-1]
         exclude:
           # Build pull requests only with ubuntu-22.04 and without m32
@@ -131,7 +136,7 @@ jobs:
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
       CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-m32=${{ matrix.m32 }}-${{ matrix.suite }}
-      CCACHE_MAXSIZE: 64M # Per build matrix entry (2160M in total)
+      CCACHE_MAXSIZE: 100M # Per build per suite (* 5 * 5 = 2500M in total)
       VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}${{ matrix.m32 && '-m32' || '' }}.tar.gz
     steps:
 

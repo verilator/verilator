@@ -1,10 +1,10 @@
 %Error: t/t_func_recurse_param.v:15:26: Expecting expression to be constant, but can't determine constant for FUNCREF 'recurse_self'
-                                      : ... In instance t
+                                      : ... note: In instance 't'
         t/t_func_recurse_param.v:9:27: ... Location of non-constant FUNC 'recurse_self': Unsupported: Recursive constant functions
    15 |    localparam int ZERO = recurse_self(0);
       |                          ^~~~~~~~~~~~
 %Error: t/t_func_recurse_param.v:16:28: Expecting expression to be constant, but can't determine constant for FUNCREF 'recurse_self'
-                                      : ... In instance t
+                                      : ... note: In instance 't'
         t/t_func_recurse_param.v:9:27: ... Location of non-constant FUNC 'recurse_self': Unsupported: Recursive constant functions
    16 |    localparam int ELEVEN = recurse_self(3);
       |                            ^~~~~~~~~~~~

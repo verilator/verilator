@@ -4,33 +4,44 @@ Argument settings:
   +verilator+prof+exec+start+1
   +verilator+prof+exec+window+2
 
-Analysis:
-  Total threads             = 2
-  Total mtasks              = 5
-  Total cpus used           = 2
-  Total yields              = 51
-  Total evals               = 1
-  Total eval loops          = 1
-  Total eval time           = 294309 rdtsc ticks
-  Longest mtask time        = 137754 rdtsc ticks
-  All-thread mtask time     = 205237 rdtsc ticks
-  Longest-thread efficiency = 46.8%
-  All-thread efficiency     = 34.9%
-  All-thread speedup        = 0.7
+Summary:
+  Total elapsed time = 300000 rdtsc ticks
+  Parallelized code  = 80.49% of elapsed time
+  Total threads      = 2
+  Total CPUs used    = 2
+  Total mtasks       = 5
+  Total yields       = 51
 
-Prediction (what Verilator used for scheduling):
-  All-thread efficiency     = 82.4%
-  All-thread speedup        = 1.6
+Parallelized code, measured:
+  Thread utilization =  42.50%
+  Speedup            =   0.85x
+
+Parallelized code, predicted during static scheduling:
+  Thread utilization =  82.44%
+  Speedup            =   1.65x
+
+All code, measured:
+  Thread utilization =  43.96%
+  Speedup            =  0.879x
+
+All code, measured, scaled by predicted speedup:
+  Thread utilization =  72.06%
+  Speedup            =   1.44x
 
 MTask statistics:
+  Longest mtask id = 79
+  Longest mtask time = 57.05% of time elapsed in parallelized code
   min log(p2e) = -1.054  from mtask 79 (predict 48001, elapsed 137754)
   max log(p2e) = 3.641  from mtask 87 (predict 33809, elapsed 887)
   mean = 1.656
   stddev = 2.104
   e ^ stddev = 8.200
 
-CPUs:
-  cpu 2: cpu_time=202323  Phytium,FT-2500/128
-  cpu 3: cpu_time=2914  Phytium,FT-2500/128
+CPU info:
+   Id | Time spent executing MTask | Socket | Core | Model
+      | % of elapsed ticks / ticks |        |      |
+  ====|============================|========|======|======
+    2 |  67.44% /           202323 |        |      | Phytium,FT-2500/128
+    3 |   0.97% /             2914 |        |      | Phytium,FT-2500/128
 
 Writing profile_exec.vcd

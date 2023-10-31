@@ -1,5 +1,5 @@
 %Error: t/t_enum_bad_wrap.v:11:19: Enum value illegally wrapped around (IEEE 1800-2017 6.19)
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    11 |                   WRAPPED
       |                   ^~~~~~~
 %Error: Exiting due to

@@ -38,19 +38,13 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Fork.h"
 
-#include "V3Ast.h"
 #include "V3AstNodeExpr.h"
-#include "V3Error.h"
-#include "V3Global.h"
 #include "V3MemberMap.h"
 
-#include <algorithm>
-#include <map>
 #include <set>
 #include <vector>
 
@@ -73,17 +67,20 @@ private:
     AstNode* const m_procp;  // Procedure/block associated with that dynscope
     std::set<AstVar*> m_captures;  // Variables to be moved into the dynscope
     ForkDynScopeInstance m_instance;  // Nodes to be injected into the AST to create the dynscope
+    const size_t m_class_id;  // Dynscope class ID
+    const size_t m_id;  // Dynscope ID
 
 public:
-    ForkDynScopeFrame(AstNodeModule* modp, AstNode* procp)
+    ForkDynScopeFrame(AstNodeModule* modp, AstNode* procp, size_t class_id, size_t id)
         : m_modp{modp}
-        , m_procp{procp} {}
+        , m_procp{procp}
+        , m_class_id{class_id}
+        , m_id{id} {}
 
     ForkDynScopeInstance& createInstancePrototype() {
         UASSERT_OBJ(!m_instance.initialized(), m_procp, "Dynamic scope already instantiated.");
 
-        m_instance.m_classp
-            = new AstClass{m_procp->fileline(), generateDynScopeClassName(m_procp)};
+        m_instance.m_classp = new AstClass{m_procp->fileline(), generateDynScopeClassName()};
         m_instance.m_refDTypep
             = new AstClassRefDType{m_procp->fileline(), m_instance.m_classp, nullptr};
         v3Global.rootp()->typeTablep()->addTypesp(m_instance.m_refDTypep);
@@ -209,7 +206,7 @@ private:
 
         AstBegin* const beginp = new AstBegin{
             forkp->fileline(),
-            "_Vwrapped_" + (forkp->name().empty() ? cvtToHex(forkp) : forkp->name()),
+            "_Vwrapped_" + (forkp->name().empty() ? "" : forkp->name() + "_") + cvtToStr(m_id),
             m_instance.m_handlep, false, true};
         forkHandle.relink(beginp);
 
@@ -229,14 +226,11 @@ private:
         m_modp->addStmtsp(m_instance.m_classp);
     }
 
-    static string generateDynScopeClassName(const AstNode* fromp) {
-        string n = "__VDynScope__" + (!fromp->name().empty() ? (fromp->name() + "__") : "ANON__")
-                   + cvtToHex(fromp);
-        return n;
-    }
+    string generateDynScopeClassName() { return "__VDynScope_" + cvtToStr(m_class_id); }
 
-    static string generateDynScopeHandleName(const AstNode* fromp) {
-        return "__VDynScope_" + (fromp->name().empty() ? cvtToHex(fromp) : fromp->name());
+    string generateDynScopeHandleName(const AstNode* fromp) {
+        return "__VDynScope_" + (!fromp->name().empty() ? (fromp->name() + "_") : "ANON_")
+               + cvtToStr(m_id);
     }
 
     AstNode* getProcStmts() {
@@ -276,6 +270,8 @@ private:
     int m_forkDepth = 0;  // Number of asynchronous forks we are currently under
     bool m_afterTimingControl = false;  // A timing control might've be executed in the current
                                         // process
+    size_t m_id;  // Unique ID for a frame
+    size_t m_class_id;  // Unique ID for a frame class
 
     // METHODS
 
@@ -292,8 +288,9 @@ private:
     }
 
     ForkDynScopeFrame* pushDynScopeFrame(AstNode* procp) {
-        ForkDynScopeFrame* const framep = new ForkDynScopeFrame{m_modp, procp};
-        auto r = m_frames.emplace(std::make_pair(procp, framep));
+        ForkDynScopeFrame* const framep
+            = new ForkDynScopeFrame{m_modp, procp, m_class_id++, m_id++};
+        auto r = m_frames.emplace(procp, framep);
         UASSERT_OBJ(r.second, m_modp, "Procedure already contains a frame");
         return framep;
     }
@@ -324,7 +321,7 @@ private:
     }
 
     void bindNodeToDynScope(AstNode* nodep, ForkDynScopeFrame* frame) {
-        m_frames.emplace(std::make_pair(nodep, frame));
+        m_frames.emplace(nodep, frame);
     }
 
     bool needsDynScope(const AstVarRef* refp) const {
@@ -342,6 +339,7 @@ private:
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         if (!VN_IS(nodep, Class)) m_modp = nodep;
+        m_id = 0;
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
@@ -469,6 +467,7 @@ private:
     AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
     std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
     AstArg* m_capturedVarRefsp = nullptr;  // References to captured variables (as args)
+    size_t m_id = 0;  // Unique ID for a task
 
     // METHODS
 
@@ -498,8 +497,8 @@ private:
     }
 
     string generateTaskName(AstNode* fromp, const string& kind) {
-        return "__V" + kind + (!fromp->name().empty() ? (fromp->name() + "__") : "UNNAMED__")
-               + cvtToHex(fromp);
+        return "__V" + kind + "_" + (!fromp->name().empty() ? (fromp->name() + "__") : "_")
+               + cvtToStr(m_id++);
     }
 
     void visitTaskifiable(AstNode* nodep) {
@@ -516,9 +515,11 @@ private:
         VL_RESTORER(m_capturedVarsp);
         VL_RESTORER(m_capturedVarRefsp);
         VL_RESTORER(m_newProcess);
+        VL_RESTORER(m_forkLocalsp);
         m_capturedVarsp = nullptr;
         m_capturedVarRefsp = nullptr;
         m_newProcess = false;
+        m_forkLocalsp.clear();
 
         iterateChildren(nodep);
 
@@ -531,16 +532,16 @@ private:
 
         if (AstBegin* beginp = VN_CAST(nodep, Begin)) {
             UASSERT(beginp->stmtsp(), "No stmtsp\n");
-            const string taskName = generateTaskName(beginp, "__FORK_BEGIN_");
+            const string taskName = generateTaskName(beginp, "fork_begin");
             taskp
                 = makeTask(beginp->fileline(), beginp->stmtsp()->unlinkFrBackWithNext(), taskName);
             beginp->unlinkFrBack(&handle);
             VL_DO_DANGLING(beginp->deleteTree(), beginp);
         } else if (AstNodeStmt* stmtp = VN_CAST(nodep, NodeStmt)) {
-            const string taskName = generateTaskName(stmtp, "__FORK_STMT_");
+            const string taskName = generateTaskName(stmtp, "fork_stmt");
             taskp = makeTask(stmtp->fileline(), stmtp->unlinkFrBack(&handle), taskName);
         } else if (AstFork* forkp = VN_CAST(nodep, Fork)) {
-            const string taskName = generateTaskName(forkp, "__FORK_NESTED_");
+            const string taskName = generateTaskName(forkp, "fork_nested");
             taskp = makeTask(forkp->fileline(), forkp->unlinkFrBack(&handle), taskName);
         }
 
@@ -566,7 +567,6 @@ private:
         if (!nodep->joinType().join()) {
             ++m_forkDepth;
             m_newProcess = true;
-            m_forkLocalsp.clear();
             // Nested forks get moved into separate tasks
             if (nested) {
                 visitTaskifiable(nodep);
@@ -604,9 +604,10 @@ private:
             UASSERT_OBJ(
                 !nodep->varp()->lifetime().isNone(), nodep,
                 "Variable's lifetime is unknown. Can't determine if a capture is necessary.");
-
-            AstVar* const varp = captureRef(nodep);
-            nodep->varp(varp);
+            if (m_forkLocalsp.count(nodep->varp()) == 0) {
+                AstVar* const varp = captureRef(nodep);
+                nodep->varp(varp);
+            }
         }
     }
     void visit(AstAssign* nodep) override {
@@ -618,7 +619,9 @@ private:
     void visit(AstThisRef* nodep) override { return; }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_id);
         m_modp = nodep;
+        m_id = 0;
         iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override {

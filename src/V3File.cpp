@@ -14,13 +14,10 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstMT.h"
 
 #include "V3File.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
 #include "V3Os.h"
 #include "V3String.h"
 
@@ -859,7 +856,7 @@ void V3OutFormatter::putcNoTracking(char chr) {
 string V3OutFormatter::quoteNameControls(const string& namein,
                                          V3OutFormatter::Language lang) VL_PURE {
     // Encode control chars into output-appropriate escapes
-    // Reverse is V3Parse::deQuote
+    // Reverse is VString::unquoteSVString
     string out;
     if (lang == LA_XML) {
         // Encode chars into XML string
@@ -994,10 +991,8 @@ public:
     string protectIf(const string& old, bool doIt) VL_MT_SAFE_EXCLUDES(m_mutex) {
         if (!v3Global.opt.protectIds() || old.empty() || !doIt) return old;
         const V3LockGuard lock{m_mutex};
-        const auto it = m_nameMap.find(old);
-        if (it != m_nameMap.end()) {
-            return it->second;
-        } else {
+        const auto pair = m_nameMap.emplace(old, "");
+        if (pair.second) {
             string out;
             if (v3Global.opt.debugProtect()) {
                 // This lets us see the symbol being protected to debug cases
@@ -1012,16 +1007,15 @@ public:
                 // See if we can shrink the digest symbol to something smaller
                 for (size_t len = 6; len < out.size() - 3; len += 3) {
                     const string tryout = out.substr(0, len);
-                    if (m_newIdSet.find(tryout) == m_newIdSet.end()) {
+                    if (m_newIdSet.insert(tryout).second) {
                         out = tryout;
                         break;
                     }
                 }
             }
-            m_nameMap.emplace(old, out);
-            m_newIdSet.insert(out);
-            return out;
+            pair.first->second = out;
         }
+        return pair.first->second;
     }
     string protectWordsIf(const string& old, bool doIt) VL_MT_SAFE {
         // Split at " " (for traces), "." (for scopes), "->", "(", "&", ")" (for self pointers)

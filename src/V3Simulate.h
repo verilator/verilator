@@ -36,6 +36,7 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
+#include "V3AstUserAllocator.h"
 #include "V3Error.h"
 #include "V3Task.h"
 #include "V3Width.h"
@@ -76,18 +77,24 @@ private:
     // NODE STATE
     // Cleared on each always/assignw
     const VNUser1InUse m_inuser1;
-    const VNUser2InUse m_inuser2;
-    const VNUser3InUse m_inuser3;
 
-    // Checking:
-    //  AstVar(Scope)::user1()  -> VarUsage.  Set true to indicate tracking as lvalue/rvalue
-    // Simulating:
-    //  AstConst::user2()       -> bool. This AstConst (allocated by this class) is in use
-    //  AstVar(Scope)::user3()  -> AstConst*. Input value of variable or node
-    //    (and output for non-delayed assignments)
-    //  AstVar(Scope)::user2()  -> AstCont*. Output value of variable (delayed assignments)
+    // AstVar/AstVarScope::user1p()     -> See AuxAstVar via m_varAux
+    // AstConst::user1()    -> bool. This AstConst (allocated by this class) is in use
 
     enum VarUsage : uint8_t { VU_NONE = 0, VU_LV = 1, VU_RV = 2, VU_LVDLY = 4 };
+
+    struct AuxVariable final {
+        // Checking:
+        //  Set true to indicate tracking as lvalue/rvalue
+        uint8_t usage = VU_NONE;
+        // Simulating:
+        //  Output value of variable (delayed assignments)
+        AstNodeExpr* outValuep = nullptr;
+        //  Input value of variable or node (and output for non-delayed assignments)
+        AstNodeExpr* valuep = nullptr;
+    };
+
+    AstUser1Allocator<AstNode, AuxVariable> m_varAux;
 
     // STATE
     // Major mode
@@ -185,8 +192,8 @@ public:
             std::ostringstream stack;
             for (const auto& callstack : vlstd::reverse_view(m_callStack)) {
                 AstFuncRef* const funcp = callstack->m_funcp;
-                stack << "\n        " << funcp->fileline() << "... Called from "
-                      << funcp->prettyName() << "() with parameters:";
+                stack << "\n        " << funcp->fileline() << "... Called from '"
+                      << funcp->prettyName() << "()' with parameters:";
                 V3TaskConnects* tconnects = callstack->m_tconnects;
                 for (V3TaskConnects::iterator conIt = tconnects->begin();
                      conIt != tconnects->end(); ++conIt) {
@@ -223,14 +230,14 @@ private:
         bool allocNewConst = true;
         if (!freeList.empty()) {
             constp = freeList.front();
-            if (!constp->user2()) {
+            if (!constp->user1()) {
                 // Front of free list is free, reuse it (otherwise allocate new node)
                 allocNewConst = false;  // No need to allocate
                 // Mark the AstConst node as used, and move it to the back of the free list. This
                 // ensures that when all AstConst instances within the list are used, then the
                 // front of the list will be marked as used, in which case the enclosing 'if' will
                 // fail and we fall back to allocation.
-                constp->user2(1);
+                constp->user1(1);
                 freeList.pop_front();
                 freeList.push_back(constp);
                 // configure const
@@ -241,7 +248,7 @@ private:
             // Need to allocate new constant
             constp = new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()};
             // Mark as in use, add to free list for later reuse
-            constp->user2(1);
+            constp->user1(1);
             freeList.push_back(constp);
         }
         return constp;
@@ -273,7 +280,7 @@ private:
     }
     AstConst* newConst(AstNode* nodep) {
         // Set a constant value for this node
-        if (!VN_IS(nodep->user3p(), Const)) {
+        if (!VN_IS(m_varAux(nodep).valuep, Const)) {
             AstConst* const constp = allocConst(nodep);
             setValue(nodep, constp);
             return constp;
@@ -283,7 +290,7 @@ private:
     }
     AstConst* newOutConst(AstNode* nodep) {
         // Set a var-output constant value for this node
-        if (!VN_IS(nodep->user2p(), Const)) {
+        if (!VN_IS(m_varAux(nodep).outValuep, Const)) {
             AstConst* const constp = allocConst(nodep);
             setOutValue(nodep, constp);
             return constp;
@@ -293,10 +300,10 @@ private:
     }
 
 public:
-    AstNodeExpr* fetchValueNull(AstNode* nodep) { return VN_AS(nodep->user3p(), NodeExpr); }
+    AstNodeExpr* fetchValueNull(AstNode* nodep) { return m_varAux(nodep).valuep; }
 
 private:
-    AstNodeExpr* fetchOutValueNull(AstNode* nodep) { return VN_AS(nodep->user2p(), NodeExpr); }
+    AstNodeExpr* fetchOutValueNull(AstNode* nodep) { return m_varAux(nodep).outValuep; }
     AstConst* fetchConstNull(AstNode* nodep) { return VN_CAST(fetchValueNull(nodep), Const); }
     AstConst* fetchOutConstNull(AstNode* nodep) {
         return VN_CAST(fetchOutValueNull(nodep), Const);
@@ -332,15 +339,15 @@ public:
     }
 
 private:
-    void setValue(AstNode* nodep, const AstNodeExpr* valuep) {
+    void setValue(AstNode* nodep, AstNodeExpr* valuep) {
         UASSERT_OBJ(valuep, nodep, "Simulate setting null value");
         UINFO(9, "     set val " << valuep->name() << " on " << nodep << endl);
-        nodep->user3p((void*)valuep);
+        m_varAux(nodep).valuep = valuep;
     }
-    void setOutValue(AstNode* nodep, const AstNodeExpr* valuep) {
+    void setOutValue(AstNode* nodep, AstNodeExpr* valuep) {
         UASSERT_OBJ(valuep, nodep, "Simulate setting null value");
         UINFO(9, "     set oval " << valuep->name() << " on " << nodep << endl);
-        nodep->user2p((void*)valuep);
+        m_varAux(nodep).outValuep = valuep;
     }
 
     void checkNodeInfo(AstNode* nodep, bool ignorePredict = false) {
@@ -429,26 +436,26 @@ private:
             clearOptimizable(nodep, "Array references/not basic");
         if (nodep->access().isWriteOrRW()) {
             if (m_inDlyAssign) {
-                if (!(vscp->user1() & VU_LVDLY)) {
-                    vscp->user1(vscp->user1() | VU_LVDLY);
+                if (!(m_varAux(vscp).usage & VU_LVDLY)) {
+                    m_varAux(vscp).usage |= VU_LVDLY;
                     if (m_checkOnly) varRefCb(nodep);
                 }
             } else {  // nondly asn
-                if (!(vscp->user1() & VU_LV)) {
-                    if (!m_params && (vscp->user1() & VU_RV)) {
+                if (!(m_varAux(vscp).usage & VU_LV)) {
+                    if (!m_params && (m_varAux(vscp).usage & VU_RV)) {
                         clearOptimizable(nodep, "Var read & write");
                     }
-                    vscp->user1(vscp->user1() | VU_LV);
+                    m_varAux(vscp).usage |= VarUsage::VU_LV;
                     if (m_checkOnly) varRefCb(nodep);
                 }
             }
         }
         if (nodep->access().isReadOrRW()) {
-            if (!(vscp->user1() & VU_RV)) {
-                if (!m_params && (vscp->user1() & VU_LV)) {
+            if (!(m_varAux(vscp).usage & VU_RV)) {
+                if (!m_params && (m_varAux(vscp).usage & VU_LV)) {
                     clearOptimizable(nodep, "Var write & read");
                 }
-                vscp->user1(vscp->user1() | VU_RV);
+                m_varAux(vscp).usage |= VU_RV;
                 const bool isConst = (nodep->varp()->isConst() || nodep->varp()->isParam())
                                      && nodep->varp()->valuep();
                 AstNodeExpr* const valuep
@@ -717,7 +724,7 @@ private:
             AstNodeExpr* const valuep = newTrackedClone(fetchValue(nodep->rhsp()));
             UINFO(9, "     set val[" << index << "] = " << valuep << endl);
             // Values are in the "real" tree under the InitArray so can eventually extract it,
-            // Not in the usual setValue (pointed to by user2/3p)
+            // Not in the usual setValue (via m_varAux)
             initp->addIndexValuep(index, valuep);
             if (debug() >= 9) initp->dumpTree("-  array: ");
             assignOutValue(nodep, vscp, initp);
@@ -1224,8 +1231,7 @@ public:
         m_jumpp = nullptr;
 
         AstNode::user1ClearTree();
-        AstNode::user2ClearTree();  // Also marks all elements in m_constps as free
-        AstNode::user3ClearTree();
+        m_varAux.clear();
     }
     void mainTableCheck(AstNode* nodep) {
         setMode(true /*scoped*/, true /*checking*/, false /*params*/);

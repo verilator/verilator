@@ -26,14 +26,12 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
 #include "V3UniqueNames.h"
 
-#include <algorithm>
 #include <unordered_map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -282,8 +280,8 @@ class DfgToAstVisitor final : DfgVisitor {
                 FileLine* const flp = dfgVarp->driverFileLine(idx);
                 AstConst* const lsbp = new AstConst{flp, dfgVarp->driverLsb(idx)};
                 AstConst* const widthp = new AstConst{flp, edge.sourcep()->width()};
-                AstSel* const rhsp = new AstSel{flp, rRef(), lsbp, widthp->cloneTree(false)};
-                AstSel* const lhsp = new AstSel{flp, wRef(), lsbp->cloneTree(false), widthp};
+                AstSel* const rhsp = new AstSel{flp, rRef(), lsbp, widthp->cloneTreePure(false)};
+                AstSel* const lhsp = new AstSel{flp, wRef(), lsbp->cloneTreePure(false), widthp};
                 // Add assignment of the value to the selected bits
                 addResultEquation(flp, lhsp, rhsp);
             });

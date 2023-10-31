@@ -24,13 +24,10 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3LifePost.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
 #include "V3GraphPathChecker.h"
 #include "V3PartitionGraph.h"
 #include "V3Stats.h"

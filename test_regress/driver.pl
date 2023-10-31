@@ -1658,10 +1658,14 @@ sub _run {
             $SIG{ALRM} = 'DEFAULT';
             $SIG{CHLD} = 'DEFAULT';
             # Logging
-            open(STDOUT, ">&CHILDWR") or croak "%Error: Can't redirect stdout, stopped";
-            open(STDERR, ">&STDOUT") or croak "%Error: Can't dup stdout, stopped";
-            autoflush STDOUT 1;
-            autoflush STDERR 1;
+            if (!$opt_gdb) {
+                # Redirecting the stdout of GDB prevents output syntax colors
+                # and the use of the TUI, so only redirect when not --gdb
+                open(STDOUT, ">&CHILDWR") or croak "%Error: Can't redirect stdout, stopped";
+                open(STDERR, ">&STDOUT") or croak "%Error: Can't dup stdout, stopped";
+                autoflush STDOUT 1;
+                autoflush STDERR 1;
+            }
             system "$command";
             my $status = $?;
             if (($status & 127) == 4  # SIGILL
@@ -2245,6 +2249,7 @@ sub files_identical {
                 $l1[$l] =~ s/CPU Time: +[0-9.]+ seconds[^\n]+/CPU Time: ###/mig;
                 $l1[$l] =~ s/\?v=[0-9.]+/?v=latest/mig;  # warning URL
                 $l1[$l] =~ s/_h[0-9a-f]{8}_/_h########_/mg;
+                $l1[$l] =~ s!%Error: \./!%Error: !mg; # clang gives ./ while GCC does not
                 $l1[$l] =~ s/ \/[^ ]+\/verilated_std.sv/ verilated_std.sv/mg;
                 if ($l1[$l] =~ s/Exiting due to.*/Exiting due to/mig) {
                     splice @l1, $l+1;  # Trunc rest

@@ -1,2 +1,2 @@
-%Warning: t/t_sys_readmem_bad_end.mem:12: $readmem file ended before specified final address (IEEE 2017 21.4)
+%Warning: t/t_sys_readmem_bad_end.mem:12: $readmem file ended before specified final address (IEEE 1800-2017 21.4)
 *-* All Finished *-*

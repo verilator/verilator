@@ -14,14 +14,12 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3EmitCMain.h"
 
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
-#include "V3Global.h"
 
 #include <map>
 

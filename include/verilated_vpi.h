@@ -30,9 +30,9 @@
 #include "verilated_syms.h"
 
 //======================================================================
-// From IEEE 1800-2009 annex K
+// From IEEE 1800-2017 annex M
 
-#include "vltstd/vpi_user.h"
+#include "vltstd/sv_vpi_user.h"
 
 //======================================================================
 

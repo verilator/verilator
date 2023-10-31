@@ -14,14 +14,10 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Assert.h"
 
-#include "V3Ast.h"
-#include "V3Error.h"
-#include "V3Global.h"
 #include "V3Stats.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -158,7 +154,7 @@ private:
             if (m_procedurep) {
                 // To support this need queue of asserts to activate
                 nodep->v3error("Unsupported: Procedural concurrent assertion with"
-                               " clocking event inside always (IEEE 1800-2917 16.14.6)");
+                               " clocking event inside always (IEEE 1800-2017 16.14.6)");
             }
         }
         //
@@ -243,7 +239,7 @@ private:
                 }
 
                 // Build a bitmask of the true predicates
-                AstNodeExpr* const predp = ifp->condp()->cloneTree(false);
+                AstNodeExpr* const predp = ifp->condp()->cloneTreePure(false);
                 if (propp) {
                     propp = new AstConcat{nodep->fileline(), predp, propp};
                 } else {
@@ -312,17 +308,17 @@ private:
                              icondp = VN_AS(icondp->nextp(), NodeExpr)) {
                             AstNodeExpr* onep;
                             if (AstInsideRange* const rcondp = VN_CAST(icondp, InsideRange)) {
-                                onep = rcondp->newAndFromInside(nodep->exprp(),
-                                                                rcondp->lhsp()->cloneTree(true),
-                                                                rcondp->rhsp()->cloneTree(true));
+                                onep = rcondp->newAndFromInside(
+                                    nodep->exprp(), rcondp->lhsp()->cloneTreePure(true),
+                                    rcondp->rhsp()->cloneTreePure(true));
                             } else if (nodep->casex() || nodep->casez() || nodep->caseInside()) {
                                 onep = AstEqWild::newTyped(itemp->fileline(),
-                                                           nodep->exprp()->cloneTree(false),
-                                                           icondp->cloneTree(false));
+                                                           nodep->exprp()->cloneTreePure(false),
+                                                           icondp->cloneTreePure(false));
                             } else {
                                 onep = AstEq::newTyped(icondp->fileline(),
-                                                       nodep->exprp()->cloneTree(false),
-                                                       icondp->cloneTree(false));
+                                                       nodep->exprp()->cloneTreePure(false),
+                                                       icondp->cloneTreePure(false));
                             }
                             if (propp) {
                                 propp = new AstConcat{icondp->fileline(), onep, propp};

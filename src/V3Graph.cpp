@@ -14,6 +14,8 @@
 //
 //*************************************************************************
 
+#define VL_MT_DISABLED_CODE_UNIT 1
+
 #include "config_build.h"
 #include "verilatedos.h"
 
@@ -264,7 +266,7 @@ void V3Graph::loopsVertexCb(V3GraphVertex* vertexp) {
     if (debug()) std::cerr << "-Info-Loop: " << cvtToHex(vertexp) << " " << vertexp << endl;
 }
 
-void V3Graph::dump(std::ostream& os) {
+void V3Graph::dump(std::ostream& os) const {
     // This generates a file used by graphviz, https://www.graphviz.org
     os << " Graph:\n";
     // Print vertices
@@ -282,7 +284,8 @@ void V3Graph::dump(std::ostream& os) {
     }
 }
 
-void V3Graph::dumpEdge(std::ostream& os, const V3GraphVertex* vertexp, const V3GraphEdge* edgep) {
+void V3Graph::dumpEdge(std::ostream& os, const V3GraphVertex* vertexp,
+                       const V3GraphEdge* edgep) const {
     if (edgep->weight() && (edgep->fromp() == vertexp || edgep->top() == vertexp)) {
         os << "\t\t";
         if (edgep->fromp() == vertexp) os << "-> " << edgep->top()->name();

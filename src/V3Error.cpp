@@ -16,6 +16,7 @@
 
 // clang-format off
 #include "V3Error.h"
+#include "V3Os.h"
 #ifndef V3ERROR_NO_GLOBAL_
 # include "V3Ast.h"
 # include "V3Global.h"
@@ -262,13 +263,8 @@ void V3Error::init() {
 
 string V3Error::lineStr(const char* filename, int lineno) VL_PURE {
     std::ostringstream out;
-    const char* const fnslashp = std::strrchr(filename, '/');
-    if (fnslashp) filename = fnslashp + 1;
-    out << filename << ":" << std::dec << lineno << ":";
-    const char* const spaces = "                    ";
-    size_t numsp = out.str().length();
-    if (numsp > 20) numsp = 20;
-    out << (spaces + numsp);
+    out << V3Os::filenameNonDir(filename) << ":" << std::dec << lineno << ":";
+    out << std::string(std::max<int>(0, 20 - static_cast<int>(out.str().length())), ' ');
     return out.str();
 }
 
@@ -291,22 +287,27 @@ void V3Error::vlAbort() {
     VL_GCOV_DUMP();
     std::abort();
 }
-void V3Error::v3errorAcquireLock() VL_ACQUIRE(s().m_mutex) {
-#ifndef V3ERROR_NO_GLOBAL_
-    V3Error::s().m_mutex.lockCheckStopRequest(
-        []() -> void { V3ThreadPool::s().waitIfStopRequested(); });
+void V3Error::v3errorAcquireLock(bool mtDisabledCodeUnit) VL_ACQUIRE(s().m_mutex) {
+#if !defined(V3ERROR_NO_GLOBAL_)
+    if (!mtDisabledCodeUnit) {
+        V3Error::s().m_mutex.lockCheckStopRequest(
+            []() -> void { V3ThreadPool::s().waitIfStopRequested(); });
+    } else {
+        V3Error::s().m_mutex.lock();
+    }
 #else
     V3Error::s().m_mutex.lock();
 #endif
 }
-std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mutex) {
-    v3errorAcquireLock();
+std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code, bool mtDisabledCodeUnit)
+    VL_ACQUIRE(s().m_mutex) {
+    v3errorAcquireLock(mtDisabledCodeUnit);
     s().v3errorPrep(code);
     return v3errorStr();
 }
-std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* file, int line)
-    VL_ACQUIRE(s().m_mutex) {
-    v3errorPrep(code) << file << ":" << std::dec << line << ": ";
+std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* file, int line,
+                                                 bool mtDisabledCodeUnit) VL_ACQUIRE(s().m_mutex) {
+    v3errorPrep(code, mtDisabledCodeUnit) << file << ":" << std::dec << line << ": ";
     return v3errorStr();
 }
 std::ostringstream& V3Error::v3errorStr() VL_REQUIRES(s().m_mutex) { return s().v3errorStr(); }

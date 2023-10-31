@@ -1,5 +1,5 @@
 %Warning-CMPCONST: t/t_lint_cmpconst_bad.v:13:15: Comparison is constant due to limited range
-                                                : ... In instance t
+                                                : ... note: In instance 't'
    13 |       if (uns > 3'b111) $stop;
       |               ^
                    ... For warning description see https://verilator.org/warn/CMPCONST?v=latest

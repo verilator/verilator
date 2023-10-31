@@ -14,12 +14,10 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
-#include "V3Global.h"
 #include "V3LanguageWords.h"
 #include "V3PartitionGraph.h"
 
@@ -189,12 +187,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const auto scpit = m_vpiScopeCandidates.find(scopeSymString(scp));
             if ((scpit != m_vpiScopeCandidates.end())
                 && (m_scopeNames.find(scp) == m_scopeNames.end())) {
-                const auto scopeNameit = m_scopeNames.find(scpit->second.m_symName);
-                if (scopeNameit == m_scopeNames.end()) {
-                    m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
-                } else {
-                    scopeNameit->second.m_type = scpit->second.m_type;
-                }
+                // If not in m_scopeNames, add it, otherwise just update m_type
+                const auto pair = m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
+                if (!pair.second) pair.first->second.m_type = scpit->second.m_type;
             }
             string::size_type pos = scp.rfind("__DOT__");
             if (pos == string::npos) {
@@ -242,12 +237,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                     // << scpSym << endl);
                     if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
                     if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
-                        m_scopeNames.insert(std::make_pair(
-                            scpSym, ScopeData{scpSym, scpPretty, 0, "SCOPE_OTHER"}));
+                        m_scopeNames.emplace(scpSym,
+                                             ScopeData{scpSym, scpPretty, 0, "SCOPE_OTHER"});
                     }
-                    m_scopeVars.insert(
-                        std::make_pair(scpSym + " " + varp->name(),
-                                       ScopeVarData{scpSym, varBasePretty, varp, modp, scopep}));
+                    m_scopeVars.emplace(scpSym + " " + varp->name(),
+                                        ScopeVarData{scpSym, varBasePretty, varp, modp, scopep});
                 }
             }
         }
@@ -314,24 +308,24 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const string name = nodep->scopep()->shortName() + "__DOT__" + nodep->name();
             const string name_pretty = AstNode::vpiName(name);
             const int timeunit = m_modp->timeunit().powerOfTen();
-            m_vpiScopeCandidates.insert(
-                std::make_pair(scopeSymString(name),
-                               ScopeData{scopeSymString(name), name_pretty, timeunit, type}));
+            m_vpiScopeCandidates.emplace(
+                scopeSymString(name),
+                ScopeData{scopeSymString(name), name_pretty, timeunit, type});
         }
     }
     void visit(AstScope* nodep) override {
         if (VN_IS(m_modp, Class)) return;  // The ClassPackage is what is visible
         nameCheck(nodep);
 
-        m_scopes.emplace_back(std::make_pair(nodep, m_modp));
+        m_scopes.emplace_back(nodep, m_modp);
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
             const string type = VN_IS(nodep->modp(), Package) ? "SCOPE_OTHER" : "SCOPE_MODULE";
             const string name_pretty = AstNode::vpiName(nodep->shortName());
             const int timeunit = m_modp->timeunit().powerOfTen();
-            m_vpiScopeCandidates.insert(std::make_pair(
+            m_vpiScopeCandidates.emplace(
                 scopeSymString(nodep->name()),
-                ScopeData{scopeSymString(nodep->name()), name_pretty, timeunit, type}));
+                ScopeData{scopeSymString(nodep->name()), name_pretty, timeunit, type});
         }
     }
     void visit(AstScopeName* nodep) override {
@@ -343,22 +337,20 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             name, ScopeData{name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER"});
         if (nodep->dpiExport()) {
             UASSERT_OBJ(m_cfuncp, nodep, "ScopeName not under DPI function");
-            m_scopeFuncs.insert(std::make_pair(name + " " + m_cfuncp->name(),
-                                               ScopeFuncData(nodep, m_cfuncp, m_modp)));
+            m_scopeFuncs.emplace(name + " " + m_cfuncp->name(),
+                                 ScopeFuncData(nodep, m_cfuncp, m_modp));
         } else {
             if (m_scopeNames.find(nodep->scopeDpiName()) == m_scopeNames.end()) {
-                m_scopeNames.insert(
-                    std::make_pair(nodep->scopeDpiName(),
-                                   ScopeData{nodep->scopeDpiName(), nodep->scopePrettyDpiName(),
-                                             timeunit, "SCOPE_OTHER"}));
+                m_scopeNames.emplace(nodep->scopeDpiName(),
+                                     ScopeData{nodep->scopeDpiName(), nodep->scopePrettyDpiName(),
+                                               timeunit, "SCOPE_OTHER"});
             }
         }
     }
     void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildrenConst(nodep);
-        if (nodep->isSigUserRdPublic() && !m_cfuncp)
-            m_modVars.emplace_back(std::make_pair(m_modp, nodep));
+        if (nodep->isSigUserRdPublic() && !m_cfuncp) m_modVars.emplace_back(m_modp, nodep);
     }
     void visit(AstCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
@@ -462,7 +454,13 @@ void EmitCSyms::emitSymHdr() {
         puts("uint32_t __Vm_baseCode = 0;"
              "  ///< Used by trace routines when tracing multiple models\n");
     }
-    if (v3Global.hasEvents()) puts("std::vector<VlEvent*> __Vm_triggeredEvents;\n");
+    if (v3Global.hasEvents()) {
+        if (v3Global.assignsEvents()) {
+            puts("std::vector<VlAssignableEvent> __Vm_triggeredEvents;\n");
+        } else {
+            puts("std::vector<VlEvent*> __Vm_triggeredEvents;\n");
+        }
+    }
     if (v3Global.hasClasses()) puts("VlDeleter __Vm_deleter;\n");
     puts("bool __Vm_didInit = false;\n");
 
@@ -491,7 +489,7 @@ void EmitCSyms::emitSymHdr() {
 
     if (m_coverBins) {
         puts("\n// COVERAGE\n");
-        puts(v3Global.opt.threads() ? "std::atomic<uint32_t>" : "uint32_t");
+        puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
         puts(" __Vcoverage[");
         puts(cvtToStr(m_coverBins));
         puts("];\n");
@@ -530,17 +528,29 @@ void EmitCSyms::emitSymHdr() {
     puts("const char* name() { return TOP.name(); }\n");
 
     if (v3Global.hasEvents()) {
-        puts("void enqueueTriggeredEventForClearing(VlEvent& event) {\n");
+        if (v3Global.assignsEvents()) {
+            puts("void enqueueTriggeredEventForClearing(VlAssignableEvent& event) {\n");
+        } else {
+            puts("void enqueueTriggeredEventForClearing(VlEvent& event) {\n");
+        }
         puts("#ifdef VL_DEBUG\n");
         puts("if (VL_UNLIKELY(!event.isTriggered())) {\n");
         puts("VL_FATAL_MT(__FILE__, __LINE__, __FILE__, \"event passed to "
              "'enqueueTriggeredEventForClearing' was not triggered\");\n");
         puts("}\n");
         puts("#endif\n");
-        puts("__Vm_triggeredEvents.push_back(&event);\n");
+        if (v3Global.assignsEvents()) {
+            puts("__Vm_triggeredEvents.push_back(event);\n");
+        } else {
+            puts("__Vm_triggeredEvents.push_back(&event);\n");
+        }
         puts("}\n");
         puts("void clearTriggeredEvents() {\n");
-        puts("for (const auto eventp : __Vm_triggeredEvents) eventp->clearTriggered();\n");
+        if (v3Global.assignsEvents()) {
+            puts("for (auto& event : __Vm_triggeredEvents) event.clearTriggered();\n");
+        } else {
+            puts("for (const auto eventp : __Vm_triggeredEvents) eventp->clearTriggered();\n");
+        }
         puts("__Vm_triggeredEvents.clear();\n");
         puts("}\n");
     }
@@ -608,7 +618,7 @@ void EmitCSyms::emitSymImpPreamble() {
     puts("\n");
 
     // Includes
-    puts("#include \"" + symClassName() + ".h\"\n");
+    puts("#include \"" + pchClassName() + ".h\"\n");
     puts("#include \"" + topClassName() + ".h\"\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_AS(nodep->nextp(), NodeModule)) {
@@ -1109,5 +1119,5 @@ void EmitCSyms::emitDpiImp() {
 
 void V3EmitC::emitcSyms(bool dpiHdrOnly) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    EmitCSyms(v3Global.rootp(), dpiHdrOnly);
+    EmitCSyms{v3Global.rootp(), dpiHdrOnly};
 }

@@ -22,13 +22,10 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Subst.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
 #include "V3Stats.h"
 
 #include <algorithm>
@@ -292,7 +289,7 @@ private:
     }
     void replaceSubstEtc(AstNode* nodep, AstNodeExpr* substp) {
         if (debug() > 5) nodep->dumpTree("-  substw_old: ");
-        AstNodeExpr* newp = substp->cloneTree(true);
+        AstNodeExpr* newp = substp->cloneTreePure(true);
         if (!nodep->isQuad() && newp->isQuad()) {
             newp = new AstCCast{newp->fileline(), newp, nodep};
         }

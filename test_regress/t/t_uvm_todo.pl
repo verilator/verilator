@@ -15,9 +15,9 @@ compile(
                  "-Wno-PKGNODECL -Wno-IMPLICITSTATIC -Wno-CONSTRAINTIGN -Wno-MISINDENT",
                  "-Wno-CASEINCOMPLETE -Wno-CASTCONST -Wno-SYMRSVDWORD -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC",
                  "-Wno-REALCVT", # TODO note mostly related to $realtime - could suppress or fix upstream
-                 "-Wno-RANDC", # TODO issue #4349, add support
                  "-Wno-ZERODLY", # TODO issue #4494, add support
                  ],
+    make_flags => '-k -j ' . ::max_procs(),
     verilator_make_gmake => 0,
     );
 

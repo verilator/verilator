@@ -33,6 +33,7 @@
 #include <atomic>
 #include <deque>
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <unordered_set>
@@ -69,16 +70,28 @@ extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
 #define VL_INOUTW(name, msb, lsb, words) VlWide<words> name  ///< Declare bidir signal, 65+ bits
 #define VL_OUT8(name, msb, lsb) CData name  ///< Declare output signal, 1-8 bits
 #define VL_OUT16(name, msb, lsb) SData name  ///< Declare output signal, 9-16 bits
-#define VL_OUT64(name, msb, lsb) QData name  ///< Declare output signal, 33-64bits
+#define VL_OUT64(name, msb, lsb) QData name  ///< Declare output signal, 33-64 bits
 #define VL_OUT(name, msb, lsb) IData name  ///< Declare output signal, 17-32 bits
 #define VL_OUTW(name, msb, lsb, words) VlWide<words> name  ///< Declare output signal, 65+ bits
 
 //===================================================================
-// VlProcess stores metadata of running processes
+// Functions needed here
+
+constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
+    // constexpr usage only! Recuses to meet C++11 constexpr func limitations
+    return lhs <= 1 ? 0 : VL_CLOG2_CE_Q((lhs + 1) >> 1ULL) + 1;
+}
+
+// Metadata of processes
+class VlProcess;
+
+using VlProcessRef = std::shared_ptr<VlProcess>;
 
 class VlProcess final {
     // MEMBERS
     int m_state;  // Current state of the process
+    VlProcessRef m_parentp = nullptr;  // Parent process, if exists
+    std::set<VlProcess*> m_children;  // Active child processes
 
 public:
     // TYPES
@@ -91,15 +104,39 @@ public:
     };
 
     // CONSTRUCTORS
+    // Construct independent process
     VlProcess()
         : m_state{RUNNING} {}
+    // Construct child process of parent
+    VlProcess(VlProcessRef parentp)
+        : m_state{RUNNING}
+        , m_parentp{parentp} {
+        m_parentp->attach(this);
+    }
 
-    // METHODS
-    int state() { return m_state; }
+    ~VlProcess() {
+        if (m_parentp) m_parentp->detach(this);
+    }
+
+    void attach(VlProcess* childp) { m_children.insert(childp); }
+    void detach(VlProcess* childp) { m_children.erase(childp); }
+
+    int state() const { return m_state; }
     void state(int s) { m_state = s; }
+    void disable() {
+        state(KILLED);
+        disableFork();
+    }
+    void disableFork() {
+        for (VlProcess* childp : m_children) childp->disable();
+    }
+    bool completed() const { return state() == FINISHED || state() == KILLED; }
+    bool completedFork() const {
+        for (const VlProcess* const childp : m_children)
+            if (!childp->completed()) return false;
+        return true;
+    }
 };
-
-using VlProcessRef = std::shared_ptr<VlProcess>;
 
 inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
 
@@ -155,7 +192,18 @@ public:
 //===================================================================
 // SystemVerilog event type
 
-class VlEvent final {
+class VlEventBase VL_NOT_FINAL {
+public:
+    virtual ~VlEventBase() = default;
+
+    virtual void fire() = 0;
+    virtual bool isFired() const = 0;
+    virtual bool isTriggered() const = 0;
+    virtual void clearFired() = 0;
+    virtual void clearTriggered() = 0;
+};
+
+class VlEvent final : public VlEventBase {
     // MEMBERS
     bool m_fired = false;  // Fired on this scheduling iteration
     bool m_triggered = false;  // Triggered state of event persisting until next time step
@@ -163,17 +211,47 @@ class VlEvent final {
 public:
     // CONSTRUCTOR
     VlEvent() = default;
-    ~VlEvent() = default;
+    ~VlEvent() override = default;
 
+    friend std::string VL_TO_STRING(const VlEvent& e);
+    friend class VlAssignableEvent;
     // METHODS
-    void fire() { m_fired = m_triggered = true; }
-    bool isFired() const { return m_fired; }
-    bool isTriggered() const { return m_triggered; }
-    void clearFired() { m_fired = false; }
-    void clearTriggered() { m_triggered = false; }
+    void fire() override { m_fired = m_triggered = true; }
+    bool isFired() const override { return m_fired; }
+    bool isTriggered() const override { return m_triggered; }
+    void clearFired() override { m_fired = false; }
+    void clearTriggered() override { m_triggered = false; }
 };
 
+class VlAssignableEvent final : public std::shared_ptr<VlEvent>, public VlEventBase {
+public:
+    // Constructor
+    VlAssignableEvent()
+        : std::shared_ptr<VlEvent>(new VlEvent) {}
+    ~VlAssignableEvent() override = default;
+
+    // METHODS
+    void fire() override { (*this)->m_fired = (*this)->m_triggered = true; }
+    bool isFired() const override { return (*this)->m_fired; }
+    bool isTriggered() const override { return (*this)->m_triggered; }
+    void clearFired() override { (*this)->m_fired = false; }
+    void clearTriggered() override { (*this)->m_triggered = false; }
+};
+
+inline std::string VL_TO_STRING(const VlEventBase& e);
+
 inline std::string VL_TO_STRING(const VlEvent& e) {
+    return std::string{"triggered="} + (e.isTriggered() ? "true" : "false");
+}
+
+inline std::string VL_TO_STRING(const VlAssignableEvent& e) {
+    return "&{ " + VL_TO_STRING(*e) + " }";
+}
+
+inline std::string VL_TO_STRING(const VlEventBase& e) {
+    if (const VlAssignableEvent& assignable = dynamic_cast<const VlAssignableEvent&>(e)) {
+        return VL_TO_STRING(assignable);
+    }
     return std::string{"triggered="} + (e.isTriggered() ? "true" : "false");
 }
 
@@ -208,6 +286,58 @@ public:
     static constexpr size_t min() { return 0; }
     static constexpr size_t max() { return 1ULL << 31; }
     size_t operator()() { return VL_MASK_I(31) & vl_rand64(); }
+};
+
+template <class T_Value, uint64_t T_numValues>
+class VlRandC final {
+    T_Value m_remaining = 0;  // Number of values to pull before re-randomize
+    T_Value m_lfsr = 1;  // LFSR state
+
+public:
+    // CONSTRUCTORS
+    VlRandC() {
+        static_assert(T_numValues >= 1, "");
+        static_assert(sizeof(T_Value) == 8 || (T_numValues < (1ULL << (8 * sizeof(T_Value)))), "");
+    }
+    // METHODS
+    T_Value randomize(VlRNG& rngr) {
+        if (VL_UNLIKELY(!m_remaining)) reseed(rngr);
+        // Polynomials are first listed at https://users.ece.cmu.edu/~koopman/lfsr/
+        static constexpr uint64_t s_polynomials[] = {
+            0x0ULL,  // 0 never used (constant, no randomization)
+            0x0ULL,  // 1
+            0x3ULL,        0x5ULL,       0x9ULL,        0x12ULL,       0x21ULL,
+            0x41ULL,       0x8eULL,      0x108ULL,      0x204ULL,      0x402ULL,
+            0x829ULL,      0x100dULL,    0x2015ULL,     0x4001ULL,
+            0x8016ULL,  // 16
+            0x10004ULL,    0x20040ULL,   0x40013ULL,    0x80004ULL,    0x100002ULL,
+            0x200001ULL,   0x400010ULL,  0x80000dULL,   0x1000004ULL,  0x2000023ULL,
+            0x4000013ULL,  0x8000004ULL, 0x10000002ULL, 0x20000029ULL, 0x40000004ULL,
+            0x80000057ULL,  // 32
+            0x100000029ULL  // 33
+        };
+        constexpr uint32_t clogWidth = VL_CLOG2_CE_Q(T_numValues) + 1;
+        constexpr uint32_t lfsrWidth = (clogWidth < 2) ? 2 : clogWidth;
+        constexpr T_Value polynomial = static_cast<T_Value>(s_polynomials[lfsrWidth]);
+        // printf("  numV=%ld w=%d poly=%x\n", T_numValues, lfsrWidth, polynomial);
+        //  Loop until get reasonable value. Because we picked a LFSR of at most one
+        //  extra bit in width, this will only require at most on average 1.5 loops
+        do {
+            m_lfsr = (m_lfsr & 1ULL) ? ((m_lfsr >> 1ULL) ^ polynomial) : (m_lfsr >> 1ULL);
+        } while (m_lfsr > T_numValues);  // Note if == then output value 0
+        --m_remaining;
+        T_Value result = (m_lfsr == T_numValues) ? 0 : m_lfsr;
+        // printf("    result=%x  (numv=%ld, rem=%d)\n", result, T_numValues, m_remaining);
+        return result;
+    }
+    void reseed(VlRNG& rngr) {
+        constexpr uint32_t lfsrWidth = VL_CLOG2_CE_Q(T_numValues) + 1;
+        m_remaining = T_numValues;
+        do {
+            m_lfsr = rngr.rand64() & VL_MASK_Q(lfsrWidth);
+            // printf("    lfsr.reseed=%x\n", m_lfsr);
+        } while (!m_lfsr);  // 0 not a legal seed
+    }
 };
 
 // These require the class object to have the thread safety lock
@@ -457,7 +587,7 @@ public:
 
     // function void q.insert(index, value);
     void insert(int32_t index, const T_Value& value) {
-        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) return;
+        if (VL_UNLIKELY(index < 0 || index > m_deque.size())) return;
         m_deque.insert(m_deque.begin() + index, value);
     }
 
@@ -1418,8 +1548,8 @@ class VlClass VL_NOT_FINAL : public VlDeletable {
 
 public:
     // CONSTRUCTORS
-    VlClass() = default;
-    VlClass(const VlClass& copied) {}
+    VlClass() { refCountInc(); }
+    VlClass(const VlClass& copied) { refCountInc(); }
     ~VlClass() override = default;
 };
 
@@ -1467,8 +1597,9 @@ public:
         // () required here to avoid narrowing conversion warnings,
         // when a new() has an e.g. CData type and passed a 1U.
         : m_objp{new T_Class(std::forward<T_Args>(args)...)} {
+        // refCountInc was moved to the constructor of T_Class
+        // to fix self references in constructor.
         m_objp->m_deleterp = &deleter;
-        refCountInc();
     }
     // Explicit to avoid implicit conversion from 0
     explicit VlClassRef(T_Class* objp)
@@ -1546,10 +1677,18 @@ public:
     bool operator!=(const VlClassRef<T_OtherClass>& rhs) const {
         return m_objp != rhs.m_objp;
     };
+    template <typename T_OtherClass>
+    bool operator<(const VlClassRef<T_OtherClass>& rhs) const {
+        return m_objp < rhs.m_objp;
+    };
 };
 
 template <typename T, typename U>
 static inline bool VL_CAST_DYNAMIC(VlClassRef<T> in, VlClassRef<U>& outr) {
+    if (!in) {
+        outr = VlNull{};
+        return true;
+    }
     VlClassRef<U> casted = in.template dynamicCast<U>();
     if (VL_LIKELY(casted)) {
         outr = casted;
@@ -1557,6 +1696,12 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T> in, VlClassRef<U>& outr) {
     } else {
         return false;
     }
+}
+
+template <typename T>
+static inline bool VL_CAST_DYNAMIC(VlNull in, VlClassRef<T>& outr) {
+    outr = VlNull{};
+    return true;
 }
 
 //=============================================================================

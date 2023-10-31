@@ -1,11 +1,11 @@
 %Warning-WIDTHEXPAND: t/t_dpi_2exparg_bad.v:19:56: Operator NOT expects 64 bits on the LHS, but LHS's VARREF 'i' generates 32 bits.
-                                                 : ... In instance t.b
+                                                 : ... note: In instance 't.b'
    19 |    task dpix_twice(input int i, output [63:0] o);  o = ~i; endtask
       |                                                        ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Warning-WIDTHTRUNC: t/t_dpi_2exparg_bad.v:12:53: Operator ASSIGN expects 3 bits on the Assign RHS, but Assign RHS's NOT generates 32 bits.
-                                                : ... In instance t.a
+                                                : ... note: In instance 't.a'
    12 |    task dpix_twice(input int i, output [2:0] o);  o = ~i; endtask
       |                                                     ^
 %Error: t/t_dpi_2exparg_bad.v:19:9: Duplicate declaration of DPI function with different signature: 'dpix_twice'

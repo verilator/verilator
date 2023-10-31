@@ -10,7 +10,7 @@
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.016 2023-09-16],
+AC_INIT([Verilator],[5.018 2023-10-30],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
@@ -24,6 +24,10 @@ AC_SUBST(PACKAGE_VERSION_NUMBER)
 AC_DEFINE_UNQUOTED([PACKAGE_VERSION_NUMBER_STRING],["$PACKAGE_VERSION_NUMBER"],[Package version as a number])
 VERILATOR_VERSION_INTEGER=`AS_ECHO("$PACKAGE_VERSION") | [sed 's/\([0-9]\)\.\([0-9][0-9][0-9]\) .*/\1\2000/g']`
 AC_SUBST(VERILATOR_VERSION_INTEGER)
+AC_DEFINE_UNQUOTED([PACKAGE_VERSION_STRING_CHAR],
+        [static const char* const PACKAGE_STRING_UNUSED = "$PACKAGE_STRING";],
+        [Package version as a number])
+AC_SUBST(PACKAGE_VERSION_STRING_CHAR)
 
 # Ignore automake flags passed by Ubuntu builds
 AC_ARG_ENABLE([dependency-tracking],
@@ -371,10 +375,9 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wthread-safety)
 AC_SUBST(CFG_CXXFLAGS_WEXTRA)
 
 # Flags for coroutine support for dynamic scheduling
-_MY_CXX_CHECK_IFELSE(
-  -fcoroutines-ts,
-  [CFG_CXXFLAGS_COROUTINES="-fcoroutines-ts"],
-  [CFG_CXXFLAGS_COROUTINES="-fcoroutines"])
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_COROUTINES,-fcoroutines-ts)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_COROUTINES,-fcoroutines)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_COROUTINES,-fcoroutines-ts -Wno-deprecated-experimental-coroutine)
 AC_SUBST(CFG_CXXFLAGS_COROUTINES)
 
 # HAVE_COROUTINES
@@ -442,14 +445,19 @@ m4_foreach([cflag],[
         [-mno-cet],
         [-Qunused-arguments],
         [-Wno-bool-operation],
-        [-Wno-tautological-bitwise-compare],
+        [-Wno-c++11-narrowing],
+        [-Wno-constant-logical-operand],
+        [-Wno-non-pod-varargs],
+        [-Wno-overloaded-virtual],
         [-Wno-parentheses-equality],
+        [-Wno-shadow],
         [-Wno-sign-compare],
+        [-Wno-tautological-bitwise-compare],
         [-Wno-uninitialized],
+        [-Wno-unused-but-set-parameter],
         [-Wno-unused-but-set-variable],
         [-Wno-unused-parameter],
-        [-Wno-unused-variable],
-        [-Wno-shadow]],[
+        [-Wno-unused-variable]],[
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,cflag)
     # CMake will test what flags work itself, so pass all flags through to it
     CFG_CXX_FLAGS_CMAKE="$CFG_CXX_FLAGS_CMAKE cflag"
@@ -559,6 +567,21 @@ Verilator requires a C++11 or newer compiler.]])
 fi
 AC_SUBST(CFG_CXXFLAGS_STD)
 
+# Compiler precompiled header options (assumes either gcc or clang++)
+AC_MSG_CHECKING([for $CXX precompile header include option])
+if $CXX --help | grep include-pch >/dev/null 2>/dev/null ; then
+   # clang
+   CFG_CXXFLAGS_PCH_I=-include-pch
+   CFG_GCH_IF_CLANG=.gch
+else
+   # GCC
+   CFG_CXXFLAGS_PCH_I=-include
+   CFG_GCH_IF_CLANG=
+fi
+AC_MSG_RESULT($CFG_CXXFLAGS_PCH_I)
+AC_SUBST(CFG_CXXFLAGS_PCH_I)
+AC_SUBST(CFG_GCH_IF_CLANG)
+
 # Checks for library functions.
 AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],
     [AC_DEFINE([HAVE_STAT_NSEC],[1],[Defined if struct stat has st_mtim.tv_nsec])],
@@ -573,7 +596,7 @@ ACO_SAVE_LIBS="$LIBS"
 LIBS="$LIBS -lsystemc"
 AC_LINK_IFELSE(
     [AC_LANG_PROGRAM([[#include <systemc.h>
-                     extern "C" int sc_main(int argc, char* argv[]) {}
+                     extern "C" int sc_main(int argc, char* argv[]) { return 0; }
                      ]],[[sc_version()]])],
     [_my_result=yes
      AC_DEFINE([HAVE_SYSTEMC],[1],[Defined if have SystemC library])],

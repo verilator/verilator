@@ -24,12 +24,13 @@
 #include "verilated.h"
 #include "verilated_trace.h"
 
-#include "gtkwave/fstapi.h"
-
 #include <list>
 #include <map>
 #include <string>
 #include <vector>
+
+typedef uint32_t vlFstHandle;
+typedef uint32_t vlFstEnumHandle;
 
 class VerilatedFstBuffer;
 
@@ -49,18 +50,22 @@ private:
     // FST specific internals
 
     void* m_fst = nullptr;
-    std::map<uint32_t, fstHandle> m_code2symbol;
-    std::map<int, fstEnumHandle> m_local2fstdtype;
-    std::list<std::string> m_curScope;
-    fstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
+    std::map<uint32_t, vlFstHandle> m_code2symbol;
+    std::map<int, vlFstEnumHandle> m_local2fstdtype;
+    vlFstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
     char* m_strbufp = nullptr;  // String buffer long enough to hold maxBits() chars
 
     bool m_useFstWriterThread = false;  // Whether to use the separate FST writer thread
 
+    // Prefixes to add to signal names/scope types
+    std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
+        {"", VerilatedTracePrefixType::SCOPE_MODULE}};
+
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
-    void declare(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                 fstVarType vartype, bool array, int arraynum, bool bussed, int msb, int lsb);
+    void declare(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
+                 VerilatedTraceSigKind, VerilatedTraceSigType, bool array, int arraynum,
+                 bool bussed, int msb, int lsb);
 
 protected:
     //=========================================================================
@@ -74,7 +79,7 @@ protected:
     bool preChangeDump() override { return isOpen(); }
 
     // Trace buffer management
-    Buffer* getTraceBuffer() override;
+    Buffer* getTraceBuffer(uint32_t fidx) override;
     void commitTraceBuffer(Buffer*) override;
 
     // Configure sub-class
@@ -101,18 +106,27 @@ public:
     //=========================================================================
     // Internal interface to Verilator generated code
 
-    void declEvent(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                   fstVarType vartype, bool array, int arraynum);
-    void declBit(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                 fstVarType vartype, bool array, int arraynum);
-    void declBus(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                 fstVarType vartype, bool array, int arraynum, int msb, int lsb);
-    void declQuad(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                  fstVarType vartype, bool array, int arraynum, int msb, int lsb);
-    void declArray(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                   fstVarType vartype, bool array, int arraynum, int msb, int lsb);
-    void declDouble(uint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                    fstVarType vartype, bool array, int arraynum);
+    void pushPrefix(const std::string&, VerilatedTracePrefixType);
+    void popPrefix();
+
+    void declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+                   bool array, int arraynum);
+    void declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                 VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+                 bool array, int arraynum);
+    void declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                 VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+                 bool array, int arraynum, int msb, int lsb);
+    void declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                  VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+                  bool array, int arraynum, int msb, int lsb);
+    void declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                   VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+                   bool array, int arraynum, int msb, int lsb);
+    void declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                    VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+                    bool array, int arraynum);
 
     void declDTypeEnum(int dtypenum, const char* name, uint32_t elements, unsigned int minValbits,
                        const char** itemNamesp, const char** itemValuesp);
@@ -149,7 +163,7 @@ class VerilatedFstBuffer VL_NOT_FINAL {
     // The FST file handle
     void* const m_fst = m_owner.m_fst;
     // code to fstHande map, as an array
-    const fstHandle* const m_symbolp = m_owner.m_symbolp;
+    const vlFstHandle* const m_symbolp = m_owner.m_symbolp;
     // String buffer long enough to hold maxBits() chars
     char* const m_strbufp = m_owner.m_strbufp;
 
@@ -163,7 +177,7 @@ class VerilatedFstBuffer VL_NOT_FINAL {
 
     // Implementations of duck-typed methods for VerilatedTraceBuffer. These are
     // called from only one place (the full* methods), so always inline them.
-    VL_ATTR_ALWINLINE void emitEvent(uint32_t code, VlEvent newval);
+    VL_ATTR_ALWINLINE void emitEvent(uint32_t code, const VlEventBase* newval);
     VL_ATTR_ALWINLINE void emitBit(uint32_t code, CData newval);
     VL_ATTR_ALWINLINE void emitCData(uint32_t code, CData newval, int bits);
     VL_ATTR_ALWINLINE void emitSData(uint32_t code, SData newval, int bits);

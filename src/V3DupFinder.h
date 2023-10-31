@@ -26,6 +26,7 @@
 #include "V3Ast.h"
 #include "V3Error.h"
 #include "V3Hasher.h"
+#include "V3ThreadSafety.h"
 
 #include <map>
 #include <memory>
@@ -76,14 +77,14 @@ public:
     iterator insert(AstNode* nodep) { return emplace(m_hasher(nodep), nodep); }
 
     // Erase node from data structure
-    size_type erase(AstNode* nodep);
+    size_type erase(AstNode* nodep) VL_MT_DISABLED;
 
     // Return duplicate, if one was inserted, with optional user check for sameness
-    iterator findDuplicate(AstNode* nodep, V3DupFinderUserSame* checkp = nullptr);
+    iterator findDuplicate(AstNode* nodep, V3DupFinderUserSame* checkp = nullptr) VL_MT_DISABLED;
 
     // Dump for debug
-    void dumpFile(const string& filename, bool tree);
-    void dumpFilePrefixed(const string& nameComment, bool tree = false);
+    void dumpFile(const string& filename, bool tree) VL_MT_DISABLED;
+    void dumpFilePrefixed(const string& nameComment, bool tree = false) VL_MT_DISABLED;
 };
 
 #endif  // Guard

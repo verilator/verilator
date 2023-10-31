@@ -1,10 +1,10 @@
 %Error-UNSUPPORTED: t/t_randstate_obj.v:20:13: Unsupported: 'get_randstate'/'set_randstate' called on object. Suggest call from inside class.
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    20 |       s = c.get_randstate();
       |             ^~~~~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_randstate_obj.v:26:9: Unsupported: 'get_randstate'/'set_randstate' called on object. Suggest call from inside class.
-                                            : ... In instance t
+                                            : ... note: In instance 't'
    26 |       c.set_randstate(s);
       |         ^~~~~~~~~~~~~
 %Error: Exiting due to

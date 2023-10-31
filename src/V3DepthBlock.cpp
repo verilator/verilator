@@ -20,16 +20,11 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3DepthBlock.h"
 
-#include "V3Ast.h"
 #include "V3EmitCBase.h"
-#include "V3Global.h"
-
-#include <algorithm>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 

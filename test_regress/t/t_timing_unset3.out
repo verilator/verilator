@@ -1,5 +1,5 @@
 %Error-NEEDTIMINGOPT: t/t_clocking_notiming.v:11:8: Use --timing or --no-timing to specify how clocking output skew greater than #0 should be handled
-                                                  : ... In instance t
+                                                  : ... note: In instance 't'
    11 |        output #1 out;
       |        ^~~~~~
                       ... For error description see https://verilator.org/warn/NEEDTIMINGOPT?v=latest

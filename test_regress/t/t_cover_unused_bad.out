@@ -1,5 +1,5 @@
 %Warning-UNUSEDSIGNAL: t/t_cover_unused_bad.v:14:10: Signal is not used: 'unu3'
-                                                   : ... In instance t
+                                                   : ... note: In instance 't'
    14 |    logic unu3 = 0;
       |          ^~~~
                        ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=latest

@@ -24,15 +24,10 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Coverage.h"
 
-#include "V3Ast.h"
-#include "V3Global.h"
-
-#include <map>
 #include <unordered_map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -82,7 +77,8 @@ private:
     CheckState m_state;  // State save-restored on each new coverage scope/block
     AstNodeModule* m_modp = nullptr;  // Current module to add statement to
     bool m_inToggleOff = false;  // In function/task etc
-    std::unordered_map<std::string, int> m_varnames;  // Uniquification of inserted variable names
+    // Uniquification of inserted variable names
+    std::unordered_map<std::string, uint32_t> m_varnames;
     string m_beginHier;  // AstBegin hier name for user coverage points
     std::unordered_map<int, LinenoSet>
         m_handleLines;  // All line numbers for a given m_stateHandle
@@ -146,13 +142,7 @@ private:
     string traceNameForLine(AstNode* nodep, const string& type) {
         string name = "vlCoverageLineTrace_" + nodep->fileline()->filebasenameNoExt() + "__"
                       + cvtToStr(nodep->fileline()->lineno()) + "_" + type;
-        const auto it = m_varnames.find(name);
-        if (it == m_varnames.end()) {
-            m_varnames.emplace(name, 1);
-        } else {
-            const int suffix = (it->second)++;
-            name += "_" + cvtToStr(suffix);
-        }
+        if (const uint32_t suffix = m_varnames[name]++) name += "_" + cvtToStr(suffix);
         return name;
     }
 

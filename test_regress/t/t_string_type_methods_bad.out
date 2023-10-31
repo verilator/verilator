@@ -1,17 +1,17 @@
 %Error: t/t_string_type_methods_bad.v:15:13: The 1 arguments passed to .len method does not match its requiring 0 arguments
-                                           : ... In instance t
+                                           : ... note: In instance 't'
    15 |       i = s.len(0);  
       |             ^~~
 %Error: t/t_string_type_methods_bad.v:16:9: The 0 arguments passed to .itoa method does not match its requiring 1 arguments
-                                          : ... In instance t
+                                          : ... note: In instance 't'
    16 |       s.itoa;   
       |         ^~~~
 %Error: t/t_string_type_methods_bad.v:17:9: The 3 arguments passed to .itoa method does not match its requiring 1 arguments
-                                          : ... In instance t
+                                          : ... note: In instance 't'
    17 |       s.itoa(1,2,3);   
       |         ^~~~
 %Error: t/t_string_type_methods_bad.v:18:9: Unknown built-in string method 'bad_no_such_method'
-                                          : ... In instance t
+                                          : ... note: In instance 't'
    18 |       s.bad_no_such_method();   
       |         ^~~~~~~~~~~~~~~~~~
 %Error: Exiting due to

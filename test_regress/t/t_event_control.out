@@ -1,11 +1,11 @@
 %Error-NOTIMING: t/t_event_control.v:14:7: Event control statement in this location requires --timing
-                                         : ... In instance t
+                                         : ... note: In instance 't'
                                          : ... With --no-timing, suggest have one event control statement per procedure, at the top of the procedure
    14 |       @(clk);
       |       ^
                  ... For error description see https://verilator.org/warn/NOTIMING?v=latest
 %Error-NOTIMING: t/t_event_control.v:16:7: Event control statement in this location requires --timing
-                                         : ... In instance t
+                                         : ... note: In instance 't'
                                          : ... With --no-timing, suggest have one event control statement per procedure, at the top of the procedure
    16 |       @(clk);
       |       ^

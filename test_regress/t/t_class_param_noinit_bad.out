@@ -1,5 +1,5 @@
 %Error: t/t_class_param_noinit_bad.v:13:7: Class parameter without initial value is never given value (IEEE 1800-2017 6.20.1): 'B'
-                                         : ... In instance t
+                                         : ... note: In instance 't'
    13 |       Cls #(1) c;   
       |       ^~~
 %Error: Exiting due to

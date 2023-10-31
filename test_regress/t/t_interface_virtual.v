@@ -25,7 +25,7 @@ endclass
 
 module t (/*AUTOARG*/);
 
-   PBus ia, ib;
+   PBus ia(), ib();
    virtual PBus va, vb;
    virtual PBus.phy pa, pb;
    Cls ca, cb;
@@ -33,7 +33,12 @@ module t (/*AUTOARG*/);
 
    initial begin
       va = ia;
+      vb = ia;
+      $display("va==vb? %b", va==vb);
+      $display("va!=vb? %b", va!=vb);
       vb = ib;
+      $display("va==vb? %b", va==vb);
+      $display("va!=vb? %b", va!=vb);
 
       ca = new;
       cb = new;

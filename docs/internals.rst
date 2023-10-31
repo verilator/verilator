@@ -1222,9 +1222,9 @@ There are three ways data is passed between visitor functions.
 
 2. User attributes. Each ``AstNode`` (**Note.** The AST node, not the
    visitor) has five user attributes, which may be accessed as an
-   integer using the ``user1()`` through ``user5()`` methods, or as a
+   integer using the ``user1()`` through ``user4()`` methods, or as a
    pointer (of type ``AstNUser``) using the ``user1p()`` through
-   ``user5p()`` methods (a common technique lifted from graph traversal
+   ``user4p()`` methods (a common technique lifted from graph traversal
    packages).
 
    A visitor first clears the one it wants to use by calling
@@ -1400,7 +1400,7 @@ Controlling the Test Driver
 ---------------------------
 
 The test driver script `driver.pl` runs tests; see the `Test Driver`
-section.  The individual test drivers are written in PERL; see `Test
+section.  The individual test drivers are written in Perl; see `Test
 Language`.
 
 
@@ -1432,7 +1432,7 @@ Developers will also want to call ./configure with two extra flags:
    disabled by default, as SystemC installation problems would otherwise
    falsely indicate a Verilator problem.
 
-When enabling the long tests, some additional PERL modules are needed,
+When enabling the long tests, some additional Perl modules are needed,
 which you can install using cpan.
 
 ::
@@ -1462,6 +1462,19 @@ There are some traps to avoid when running regression tests
   system-dependent, but on Fedora Linux it would require editing the
   ``/etc/security/limits.conf`` file as root.
 
+Diffing generated code after changes
+------------------------------------
+
+When making a change in the code generation area that should not change the
+actual emitted code, it is useful to perform a diff to make sure the emitted
+code really did not change. To do this, the top level Makefile provides the
+*test-snap* and *test-diff* targets:
+
+- Run the test suite with ``make test``
+- Take a snapshot with ``make test-snap``
+- Apply your changes
+- Run the test suite again with ``make test``
+- See the changes in the output with ``make test-diff``
 
 Continuous Integration
 ----------------------
@@ -1640,7 +1653,7 @@ Source file and line
    file is ``a``, the 26th is ``z``, the 27th is ``aa``, and so on.
 
 User pointers
-   Shows the value of the node's user1p...user5p, if non-NULL.
+   Shows the value of the node's user1p...user4p, if non-NULL.
 
 Data type
    Many nodes have an explicit data type. "@dt=0x..." indicates the

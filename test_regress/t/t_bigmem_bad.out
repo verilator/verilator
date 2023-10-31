@@ -1,5 +1,5 @@
 %Warning-SELRANGE: t/t_bigmem_bad.v:14:19: Selection index out of range: (nodep->declElWidth() == 0) -1:0 outside 268435455:0
-                                         : ... In instance t_bigmem
+                                         : ... note: In instance 't_bigmem'
    14 |       if (wen) mem[addr] <= data;
       |                   ^
                    ... For warning description see https://verilator.org/warn/SELRANGE?v=latest

@@ -14,16 +14,11 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
-
-#include "V3Ast.h"
+#include "V3PchAstMT.h"
 
 #include "V3Broken.h"
 #include "V3EmitV.h"
 #include "V3File.h"
-#include "V3Global.h"
-#include "V3String.h"
 
 #include <iomanip>
 #include <memory>
@@ -32,6 +27,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 //======================================================================
 // Statics
+
+uint64_t VIsCached::s_cachedCntGbl = 1;
 
 uint64_t AstNode::s_editCntLast = 0;
 uint64_t AstNode::s_editCntGbl = 0;  // Hot cache line
@@ -44,13 +41,11 @@ uint32_t VNUser1InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 uint32_t VNUser2InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 uint32_t VNUser3InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 uint32_t VNUser4InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t VNUser5InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 
 bool VNUser1InUse::s_userBusy = false;
 bool VNUser2InUse::s_userBusy = false;
 bool VNUser3InUse::s_userBusy = false;
 bool VNUser4InUse::s_userBusy = false;
-bool VNUser5InUse::s_userBusy = false;
 
 int AstNodeDType::s_uniqueNum = 0;
 
@@ -372,8 +367,8 @@ AstNode* AstNode::addNext<AstNode, AstNode>(AstNode* nodep, AstNode* newp) {
 
 void AstNode::addNextHere(AstNode* newp) {
     // Add to m_nextp on exact node passed, not at the end.
-    //  This could be at head, tail, or both (single)
-    //  New  could be head of single node, or list
+    //  'this' could be at head, tail, or both (single)
+    //  'newp' could be head of single node, or list
     UASSERT(newp, "Null item passed to addNext");
     UASSERT_OBJ(!newp->backp(), newp, "New node (back) already assigned?");
     debugTreeChange(this, "-addHereThs: ", __LINE__, false);
@@ -799,26 +794,34 @@ void AstNode::swapWith(AstNode* bp) {
 //======================================================================
 // Clone
 
-AstNode* AstNode::cloneTreeIter() {
+AstNode* AstNode::cloneTreeIter(bool needPure) {
     // private: Clone single node and children
+    if (VL_UNLIKELY(needPure && !isPure())) {
+        this->v3warn(SIDEEFFECT,
+                     "Expression side effect may be mishandled\n"
+                         << this->warnMore()
+                         << "... Suggest use a temporary variable in place of this expression");
+        // this->v3fatalSrc("cloneTreePure debug backtrace");  // Comment in to debug where caused
+        // it
+    }
     AstNode* const newp = this->clone();
-    if (this->m_op1p) newp->op1p(this->m_op1p->cloneTreeIterList());
-    if (this->m_op2p) newp->op2p(this->m_op2p->cloneTreeIterList());
-    if (this->m_op3p) newp->op3p(this->m_op3p->cloneTreeIterList());
-    if (this->m_op4p) newp->op4p(this->m_op4p->cloneTreeIterList());
+    if (this->m_op1p) newp->op1p(this->m_op1p->cloneTreeIterList(needPure));
+    if (this->m_op2p) newp->op2p(this->m_op2p->cloneTreeIterList(needPure));
+    if (this->m_op3p) newp->op3p(this->m_op3p->cloneTreeIterList(needPure));
+    if (this->m_op4p) newp->op4p(this->m_op4p->cloneTreeIterList(needPure));
     newp->m_iterpp = nullptr;
     newp->clonep(this);  // Save pointers to/from both to simplify relinking.
     this->clonep(newp);  // Save pointers to/from both to simplify relinking.
     return newp;
 }
 
-AstNode* AstNode::cloneTreeIterList() {
+AstNode* AstNode::cloneTreeIterList(bool needPure) {
     // private: Clone list of nodes, set m_headtailp
     AstNode* newheadp = nullptr;
     AstNode* newtailp = nullptr;
     // Audited to make sure this is never nullptr
     for (AstNode* oldp = this; oldp; oldp = oldp->m_nextp) {
-        AstNode* const newp = oldp->cloneTreeIter();
+        AstNode* const newp = oldp->cloneTreeIter(needPure);
         newp->m_headtailp = nullptr;
         newp->m_backp = newtailp;
         if (newtailp) newtailp->m_nextp = newp;
@@ -830,14 +833,14 @@ AstNode* AstNode::cloneTreeIterList() {
     return newheadp;
 }
 
-AstNode* AstNode::cloneTree(bool cloneNextLink) {
+AstNode* AstNode::cloneTree(bool cloneNextLink, bool needPure) {
     debugTreeChange(this, "-cloneThs: ", __LINE__, cloneNextLink);
     cloneClearTree();
     AstNode* newp;
     if (cloneNextLink && this->m_nextp) {
-        newp = cloneTreeIterList();
+        newp = cloneTreeIterList(needPure);
     } else {
-        newp = cloneTreeIter();
+        newp = cloneTreeIter(needPure);
         newp->m_nextp = nullptr;
         newp->m_headtailp = newp;
     }
@@ -1230,7 +1233,6 @@ void AstNode::dumpPtrs(std::ostream& os) const {
     if (user2p()) os << " user2p=" << cvtToHex(user2p());
     if (user3p()) os << " user3p=" << cvtToHex(user3p());
     if (user4p()) os << " user4p=" << cvtToHex(user4p());
-    if (user5p()) os << " user5p=" << cvtToHex(user5p());
     if (m_iterpp) {
         os << " iterpp=" << cvtToHex(m_iterpp);
         // This may cause address sanitizer failures as iterpp can be stale
@@ -1343,38 +1345,24 @@ void AstNode::dumpTreeDotFile(const string& filename, bool append, bool doDump) 
     }
 }
 
-bool AstNode::isTreePureRecurse() const {
-    // Should memoize this if call commonly
-    if (!this->isPure()) return false;
-    if (this->op1p() && !this->op1p()->isTreePureRecurse()) return false;
-    if (this->op2p() && !this->op2p()->isTreePureRecurse()) return false;
-    if (this->op3p() && !this->op3p()->isTreePureRecurse()) return false;
-    if (this->op4p() && !this->op4p()->isTreePureRecurse()) return false;
-    return true;
-}
-
 string AstNode::instanceStr() const {
     // Max iterations before giving up on location search,
     // in case we have some circular reference bug.
     constexpr unsigned maxIterations = 10000;
     unsigned iterCount = 0;
-
     for (const AstNode* backp = this; backp; backp = backp->backp(), ++iterCount) {
         if (VL_UNCOVERABLE(iterCount >= maxIterations)) return "";  // LCOV_EXCL_LINE
-
         // Prefer the enclosing scope, if there is one. This is always under the enclosing module,
         // so just pick it up when encountered
         if (const AstScope* const scopep = VN_CAST(backp, Scope)) {
-            return scopep->isTop() ? "" : "... In instance " + scopep->prettyName();
+            return scopep->isTop() ? "" : "... note: In instance " + scopep->prettyNameQ();
         }
-
         // If scopes don't exist, report an example instance of the enclosing module
         if (const AstModule* const modp = VN_CAST(backp, Module)) {
             const string instanceName = modp->someInstanceName();
-            return instanceName.empty() ? "" : "... In instance " + instanceName;
+            return instanceName.empty() ? "" : "... note: In instance '" + instanceName + "'";
         }
     }
-
     return "";
 }
 void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
@@ -1471,6 +1459,102 @@ AstNodeDType* AstNode::findVoidDType() const {
 }
 AstNodeDType* AstNode::findStreamDType() const {
     return v3Global.rootp()->typeTablep()->findStreamDType(fileline());
+}
+
+static const AstNodeDType* computeCastableBase(const AstNodeDType* nodep) {
+    while (true) {
+        if (const AstPackArrayDType* const packp = VN_CAST(nodep, PackArrayDType)) {
+            nodep = packp->subDTypep();
+            continue;
+        } else if (const AstNodeDType* const refp = nodep->skipRefToEnump()) {
+            if (refp != nodep) {
+                nodep = refp;
+                continue;
+            }
+        }
+        return nodep;
+    }
+}
+
+static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
+                                    const AstNode* fromConstp) {
+    const VCastable castable = VCastable::UNSUPPORTED;
+    toDtp = toDtp->skipRefToEnump();
+    fromDtp = fromDtp->skipRefToEnump();
+    if (toDtp == fromDtp) return VCastable::SAMEISH;
+    if (toDtp->similarDType(fromDtp)) return VCastable::SAMEISH;
+    // UNSUP unpacked struct/unions (treated like BasicDType)
+    const AstNodeDType* fromBaseDtp = computeCastableBase(fromDtp);
+
+    const bool fromNumericable = VN_IS(fromBaseDtp, BasicDType) || VN_IS(fromBaseDtp, EnumDType)
+                                 || VN_IS(fromBaseDtp, StreamDType)
+                                 || VN_IS(fromBaseDtp, NodeUOrStructDType);
+
+    const AstNodeDType* toBaseDtp = computeCastableBase(toDtp);
+    const bool toNumericable
+        = VN_IS(toBaseDtp, BasicDType) || VN_IS(toBaseDtp, NodeUOrStructDType);
+
+    if (toBaseDtp == fromBaseDtp) {
+        return VCastable::COMPATIBLE;
+    } else if (toNumericable) {
+        if (fromNumericable) return VCastable::COMPATIBLE;
+    } else if (VN_IS(toDtp, EnumDType)) {
+        if (VN_IS(fromBaseDtp, EnumDType) && toDtp->sameTree(fromDtp))
+            return VCastable::ENUM_IMPLICIT;
+        if (fromNumericable) return VCastable::ENUM_EXPLICIT;
+    } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromConstp, Const)) {
+        if (VN_IS(fromConstp, Const) && VN_AS(fromConstp, Const)->num().isNull())
+            return VCastable::COMPATIBLE;
+    } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromDtp, ClassRefDType)) {
+        const auto toClassp = VN_AS(toDtp, ClassRefDType)->classp();
+        const auto fromClassp = VN_AS(fromDtp, ClassRefDType)->classp();
+        const bool downcast = AstClass::isClassExtendedFrom(toClassp, fromClassp);
+        const bool upcast = AstClass::isClassExtendedFrom(fromClassp, toClassp);
+        if (upcast) {
+            return VCastable::COMPATIBLE;
+        } else if (downcast) {
+            return VCastable::DYNAMIC_CLASS;
+        } else {
+            return VCastable::INCOMPATIBLE;
+        }
+    }
+    return castable;
+}
+
+VCastable AstNode::computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
+                                   const AstNode* fromConstp) {
+    const auto castable = computeCastableImp(toDtp, fromDtp, fromConstp);
+    UINFO(9, "  castable=" << castable << "  for " << toDtp << endl);
+    UINFO(9, "     =?= " << fromDtp << endl);
+    UINFO(9, "     const= " << fromConstp << endl);
+    return castable;
+}
+
+AstNodeDType* AstNode::getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) {
+    // Return the class type that both nodep1 and nodep2 are castable to.
+    // If both are null, return the type of null constant.
+    // If one is a class and one is null, return AstClassRefDType that points to that class.
+    // If no common class type exists, return nullptr.
+
+    // First handle cases with null values and when one class is a super class of the other.
+    if (VN_IS(nodep1, Const)) std::swap(nodep1, nodep2);
+    {
+        const VCastable castable = computeCastable(nodep1->dtypep(), nodep2->dtypep(), nodep2);
+        if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE) {
+            return nodep1->dtypep();
+        } else if (castable == VCastable::DYNAMIC_CLASS) {
+            return nodep2->dtypep();
+        }
+    }
+
+    AstClassRefDType* classDtypep1 = VN_CAST(nodep1->dtypep(), ClassRefDType);
+    while (classDtypep1) {
+        const VCastable castable = computeCastable(classDtypep1, nodep2->dtypep(), nodep2);
+        if (castable == VCastable::COMPATIBLE) return classDtypep1;
+        AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
+        classDtypep1 = extendsp ? VN_AS(extendsp->dtypep(), ClassRefDType) : nullptr;
+    }
+    return nullptr;
 }
 
 //######################################################################

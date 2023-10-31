@@ -17,13 +17,20 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: `__LINE__
 
-   The :option:`\`__LINE__` define expands to the current filename as a
-   string, like C++'s __LINE__.  This Verilator feature added in 2006 was
-   incorporated into IEEE 1800-2009.
+   The :option:`\`__LINE__` define expands to the current line number like
+   C++'s __LINE__.  This Verilator feature added in 2006 was incorporated
+   into IEEE 1800-2009.
 
 .. option:: `error [string]
 
    This will report an error when encountered, like C++'s #error.
+
+.. option:: `line
+
+   As a special case `\`line \`__LINE__ "filename"` allows setting the
+   filename, without changing the line number. This is used for some
+   internal tests, so that debugging can leave the line numbers correctly
+   referring to the test file's line numbers.
 
 .. option:: """ [string] """
 

@@ -1,35 +1,35 @@
 -Info: t/t_assert_comp_bad.v:10:7: Elaboration system task message (IEEE 1800-2017 20.11)
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    10 |       $info;
       |       ^~~~~
 -Info: t/t_assert_comp_bad.v:11:7: User elaboration-time info
-                                 : ... In instance t
+                                 : ... note: In instance 't'
    11 |       $info("User elaboration-time info");
       |       ^~~~~
 %Warning-USERWARN: t/t_assert_comp_bad.v:12:7: Elaboration system task message (IEEE 1800-2017 20.11)
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    12 |       $warning;
       |       ^~~~~~~~
                    ... For warning description see https://verilator.org/warn/USERWARN?v=latest
                    ... Use "/* verilator lint_off USERWARN */" and lint_on around source to disable this message.
 %Warning-USERWARN: t/t_assert_comp_bad.v:13:7: User elaboration-time warning
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    13 |       $warning("User elaboration-time warning");
       |       ^~~~~~~~
 %Warning-USERWARN: t/t_assert_comp_bad.v:14:7:           1
-                                             : ... In instance t
+                                             : ... note: In instance 't'
    14 |       $warning(1);   
       |       ^~~~~~~~
 %Warning-USERERROR: t/t_assert_comp_bad.v:15:7: Elaboration system task message (IEEE 1800-2017 20.11)
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    15 |       $error;
       |       ^~~~~~
 %Warning-USERERROR: t/t_assert_comp_bad.v:16:7: User elaboration-time error
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    16 |       $error("User elaboration-time error");
       |       ^~~~~~
 %Warning-USERFATAL: t/t_assert_comp_bad.v:17:7: User elaboration-time fatal
-                                              : ... In instance t
+                                              : ... note: In instance 't'
    17 |       $fatal(0, "User elaboration-time fatal");
       |       ^~~~~~
 %Error: Exiting due to

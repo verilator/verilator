@@ -23,6 +23,7 @@
 #include "V3Graph.h"
 #include "V3OrderGraph.h"
 #include "V3OrderMoveGraph.h"
+#include "V3ThreadSafety.h"
 
 #include <list>
 #include <unordered_map>
@@ -40,6 +41,10 @@ class V3Partition final {
     // MEMBERS
     const OrderGraph* const m_orderGraphp;  // The OrderGraph
     const V3Graph* const m_fineDepsGraphp;  // Fine-grained dependency graph
+
+    LogicMTask* m_entryMTaskp = nullptr;  // Singular source vertex of the dependency graph
+    LogicMTask* m_exitMTaskp = nullptr;  // Singular sink vertex of the dependency graph
+
 public:
     // CONSTRUCTORS
     explicit V3Partition(const OrderGraph* orderGraphp, const V3Graph* fineDepsGraphp)
@@ -51,24 +56,24 @@ public:
 
     // Fill in the provided empty graph with AbstractLogicMTask's and their
     // interdependencies.
-    void go(V3Graph* mtasksp);
+    void go(V3Graph* mtasksp) VL_MT_DISABLED;
 
-    static void selfTest();
-    static void selfTestNormalizeCosts();
+    static void selfTest() VL_MT_DISABLED;
+    static void selfTestNormalizeCosts() VL_MT_DISABLED;
 
     // Print out a hash of the shape of graphp.  Only needed to debug the
     // origin of some nondeterminism; otherwise this is pretty useless.
-    static void hashGraphDebug(const V3Graph* graphp, const char* debugName);
+    static void hashGraphDebug(const V3Graph* graphp, const char* debugName) VL_MT_DISABLED;
 
     // Print debug stats about graphp whose nodes must be AbstractMTask's.
-    static void debugMTaskGraphStats(const V3Graph* graphp, const string& stage);
+    static void debugMTaskGraphStats(const V3Graph* graphp, const string& stage) VL_MT_DISABLED;
 
     // Operate on the final ExecMTask graph, immediately prior to code
     // generation time.
-    static void finalize(AstNetlist* netlistp);
+    static void finalize(AstNetlist* netlistp) VL_MT_DISABLED;
 
 private:
-    uint32_t setupMTaskDeps(V3Graph* mtasksp);
+    uint32_t setupMTaskDeps(V3Graph* mtasksp) VL_MT_DISABLED;
 
     VL_UNCOPYABLE(V3Partition);
 };
@@ -88,10 +93,9 @@ public:
     PartPtrIdMap() = default;
     // METHODS
     uint64_t findId(const void* ptrp) const {
-        const auto it = m_id.find(ptrp);
-        if (it != m_id.end()) return it->second;
-        m_id[ptrp] = m_nextId;
-        return m_nextId++;
+        const auto pair = m_id.emplace(ptrp, m_nextId);
+        if (pair.second) ++m_nextId;
+        return pair.first->second;
     }
 };
 

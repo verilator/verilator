@@ -28,6 +28,7 @@ int main()
     tb = new VM_PREFIX{"tb"};
 
 #ifdef SYSTEMC_VERSION
+    using namespace sc_core;
     sc_signal<uint32_t> i3;
     sc_signal<uint32_t> o3;
     sc_signal<uint32_t> i34[4];
@@ -48,7 +49,7 @@ int main()
 #endif
 
     // loop through every possibility and check the result
-// clang-format off
+    // clang-format off
 #ifdef SYSTEMC_VERSION
     sc_start(1, SC_NS);
 # define ASSIGN(s, v) s.write(v)

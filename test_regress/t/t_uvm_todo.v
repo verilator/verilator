@@ -4,6 +4,8 @@
 // any use, without warranty, 2023 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+`define UVM_NO_DPI
+
 `include "t_uvm_pkg_todo.vh"
 
 module t(/*AUTOARG*/);

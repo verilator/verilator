@@ -36,11 +36,20 @@ module t ();
 
    localparam string e0_name = get_name(E0);
 
+   function automatic enm_t get_2();
+      enm_t enm;
+      enm = E0;
+      return enm.next.next;
+   endfunction
+
+   localparam enm_t enum_2 = get_2();
+
    initial begin
       if (enum_first != E0) $stop;
       if (enum_last != E2) $stop;
       if (enum_second != E1) $stop;
       if (e0_name != "E0") $stop;
+      if (enum_2 != E2) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

@@ -19,17 +19,13 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3TSP.h"
 
-#include "V3Error.h"
 #include "V3File.h"
-#include "V3Global.h"
 #include "V3Graph.h"
 
-#include <algorithm>
 #include <cmath>
 #include <list>
 #include <memory>
@@ -89,10 +85,8 @@ public:
 
     // METHODS
     void addVertex(const T_Key& key) {
-        const auto itr = m_vertices.find(key);
-        UASSERT(itr == m_vertices.end(), "Vertex already exists with same key");
-        Vertex* v = new Vertex{this, key};
-        m_vertices[key] = v;
+        const bool newEntry = m_vertices.emplace(key, new Vertex{this, key}).second;
+        UASSERT(newEntry, "Vertex already exists with same key");
     }
 
     // For purposes of TSP, we are using non-directional graphs.

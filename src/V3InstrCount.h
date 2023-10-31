@@ -21,6 +21,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 class AstNode;
 
 class V3InstrCount final {
@@ -34,11 +36,12 @@ public:
     // If nodep is an AstActive, returns 0.
     // If nodep contains nested AstActives, raises an error.
     //
-    // If assertNoDups is true, marks user5 on each AstNode scanned.  Then
+    // If assertNoDups is true, marks user1 on each AstNode scanned.  Then
     // if we see the same node twice (across more than one call to count,
     // potentially) raises an error.
     // Optional osp is stream to dump critical path to.
-    static uint32_t count(AstNode* nodep, bool assertNoDups, std::ostream* osp = nullptr);
+    static uint32_t count(AstNode* nodep, bool assertNoDups,
+                          std::ostream* osp = nullptr) VL_MT_DISABLED;
 };
 
 #endif  // guard

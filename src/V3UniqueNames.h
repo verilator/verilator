@@ -45,7 +45,7 @@ public:
     // Return argument, prepended with the prefix if any, then appended with a unique suffix each
     // time we are called with the same argument.
     std::string get(const std::string& name) {
-        const unsigned num = m_multiplicity.emplace(name, 0).first->second++;
+        const unsigned num = m_multiplicity[name]++;
         std::string result;
         if (!m_prefix.empty()) {
             result += m_prefix;

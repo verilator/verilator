@@ -20,6 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3ThreadSafety.h"
+
 class AstNetlist;
 class AstNodeCase;
 
@@ -27,8 +29,8 @@ class AstNodeCase;
 
 class V3Case final {
 public:
-    static void caseAll(AstNetlist* nodep);
-    static void caseLint(AstNodeCase* nodep);
+    static void caseAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void caseLint(AstNodeCase* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

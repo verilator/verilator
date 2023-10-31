@@ -203,59 +203,72 @@ string FileLine::xmlDetailedLocation() const {
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
-    return std::string{"`line "} + cvtToStr(lastLineno()) + " \"" + filename() + "\" "
-           + cvtToStr(enterExit) + "\n";
+    return std::string{"`line "} + cvtToStr(lastLineno()) + " \""
+           + V3OutFormatter::quoteNameControls(filename()) + "\" " + cvtToStr(enterExit) + "\n";
 }
 
 void FileLine::lineDirective(const char* textp, int& enterExitRef) {
+    string newFilename;
+    int newLineno = -1;
+    lineDirectiveParse(textp, newFilename /*ref*/, newLineno /*ref*/, enterExitRef);
+    if (enterExitRef != -1) {
+        filename(newFilename);
+        lineno(newLineno);
+    } else {  // Advance line number to account for bogus `line
+        linenoInc();
+    }
+}
+
+void FileLine::lineDirectiveParse(const char* textp, string& filenameRef, int& linenoRef,
+                                  int& enterExitRef) {
     // Handle `line directive
     // Does not parse streamNumber/streamLineno as the next input token
     // will come from the same stream as the previous line.
+    do {
+        // Skip `line
+        while (*textp && std::isspace(*textp)) ++textp;
+        while (*textp && !std::isspace(*textp)) ++textp;
+        while (*textp && std::isspace(*textp)) ++textp;
 
-    // Skip `line
-    while (*textp && std::isspace(*textp)) ++textp;
-    while (*textp && !std::isspace(*textp)) ++textp;
-    while (*textp && (std::isspace(*textp) || *textp == '"')) ++textp;
+        // Grab linenumber
+        int lineNo;
+        const char* const ln = textp;
+        while (*textp && !std::isspace(*textp)) ++textp;
+        if (0 == strncmp(ln, "`__LINE__", textp - ln)) {
+            // Special case - see docs - don't change other than accounting for `line itself
+            lineNo = lineno() + 1;
+        } else if (std::isdigit(*ln)) {
+            lineNo = std::atoi(ln);
+        } else {
+            break;  // Fail
+        }
+        while (*textp && (std::isspace(*textp))) ++textp;
 
-    // Grab linenumber
-    bool fail = false;
-    const char* const ln = textp;
-    while (*textp && !std::isspace(*textp)) ++textp;
-    if (std::isdigit(*ln)) {
-        lineno(std::atoi(ln));
-    } else {
-        fail = true;
-    }
-    while (*textp && (std::isspace(*textp))) ++textp;
-    if (*textp != '"') fail = true;
-    while (*textp && (std::isspace(*textp) || *textp == '"')) ++textp;
+        // Grab filename
+        if (*textp != '"') break;  // Fail
+        const char* const fn = ++textp;
+        while (*textp && *textp != '"') ++textp;
+        if (*textp != '"') break;  // Fail
+        string errMsg;
+        const string& parsedFilename = VString::unquoteSVString(string{fn, textp}, errMsg);
+        if (!errMsg.empty()) this->v3error(errMsg.c_str());
+        ++textp;
+        while (*textp && std::isspace(*textp)) ++textp;
 
-    // Grab filename
-    const char* const fn = textp;
-    while (*textp && !(std::isspace(*textp) || *textp == '"')) ++textp;
-    if (textp != fn) {
-        string strfn = fn;
-        strfn = strfn.substr(0, textp - fn);
-        filename(strfn);
-    } else {
-        fail = true;
-    }
+        // Grab level
+        if (!std::isdigit(*textp)) break;  // Fail
+        const int level = std::atoi(textp);
+        if (level < 0 || level >= 3) break;  // Fail
 
-    // Grab level
-    while (*textp && (std::isspace(*textp) || *textp == '"')) ++textp;
-    if (std::isdigit(*textp)) {
-        enterExitRef = std::atoi(textp);
-        if (enterExitRef >= 3) fail = true;
-    } else {
-        enterExitRef = 0;
-        fail = true;
-    }
+        linenoRef = lineNo;
+        filenameRef = parsedFilename;
+        enterExitRef = level;
+        return;
+    } while (false);
 
-    if (fail && v3Global.opt.pedantic()) {
-        v3error("`line was not properly formed with '`line number \"filename\" level'\n");
-    }
-
-    // printf ("PPLINE %d '%s'\n", s_lineno, s_filename.c_str());
+    // Fail
+    v3error("`line was not properly formed with '`line number \"filename\" level'\n");
+    enterExitRef = -1;
 }
 
 void FileLine::forwardToken(const char* textp, size_t size, bool trackLines) {
@@ -270,14 +283,22 @@ void FileLine::forwardToken(const char* textp, size_t size, bool trackLines) {
     }
 }
 
+void FileLine::applyIgnores() {
+#ifndef V3ERROR_NO_GLOBAL_
+    V3Config::applyIgnores(this);  // Toggle warnings based on global config file
+#endif
+}
+
+FileLine* FileLine::copyOrSameFileLineApplied() {
+    applyIgnores();
+    return copyOrSameFileLine();
+}
+
 FileLine* FileLine::copyOrSameFileLine() {
     // When a fileline is "used" to produce a node, calls this function.
     // Return this, or a copy of this
     // There are often more than one token per line, thus we use the
     // same pointer as long as we're on the same line, file & warn state.
-#ifndef V3ERROR_NO_GLOBAL_
-    V3Config::applyIgnores(this);  // Toggle warnings based on global config file
-#endif
     static FileLine* lastNewp = nullptr;
     if (lastNewp && *lastNewp == *this) {  // Compares lineno, filename, etc
         return lastNewp;
@@ -289,12 +310,7 @@ FileLine* FileLine::copyOrSameFileLine() {
 
 string FileLine::filebasename() const VL_MT_SAFE { return V3Os::filenameNonDir(filename()); }
 
-string FileLine::filebasenameNoExt() const {
-    string name = filebasename();
-    string::size_type pos;
-    if ((pos = name.find('.')) != string::npos) name = name.substr(0, pos);
-    return name;
-}
+string FileLine::filebasenameNoExt() const { return V3Os::filenameNonDirExt(filename()); }
 
 string FileLine::firstColumnLetters() const VL_MT_SAFE {
     const char a = ((firstColumn() / 26) % 26) + 'a';
@@ -472,8 +488,8 @@ string FileLine::warnContextParent() const VL_REQUIRES(V3Error::s().m_mutex) {
     string result;
     for (FileLine* parentFl = parent(); parentFl; parentFl = parentFl->parent()) {
         if (parentFl->filenameIsGlobal()) break;
-        result += parentFl->warnOther() + "... note: In file included from "
-                  + parentFl->filebasename() + "\n";
+        result += parentFl->warnOther() + "... note: In file included from '"
+                  + parentFl->filebasename() + "'\n";
     }
     return result;
 }
