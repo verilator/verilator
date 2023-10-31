@@ -35,11 +35,13 @@ Briquet
 Brownlee
 Buckenmaier
 Bybell
+CLang
 CMake
 Cai
 Cavium
 Cfuncs
 Chandan
+Chih
 Chitlesh
 Christophe
 Cochrane
@@ -231,6 +233,7 @@ Mong
 Muhlestein
 Multithreaded
 Multithreading
+Mykyta
 NOUNOPTFLAT
 NaN
 Nalbantis
@@ -522,6 +525,7 @@ doxygen
 dpiGetContext
 dpic
 dsvf
+dt
 dtor
 dumpall
 dumpfile
@@ -780,6 +784,7 @@ pragma
 pragmas
 pre
 precisions
+precompiled
 predefines
 prepareClone
 prepend
@@ -809,6 +814,7 @@ radix
 randc
 randcase
 randstate
+raphmaster
 rarr
 rdtsc
 reStructuredText
