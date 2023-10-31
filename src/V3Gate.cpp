@@ -372,6 +372,11 @@ private:
             UINFO(6, "New vertex " << varscp << endl);
             vertexp = new GateVarVertex{&m_graph, m_scopep, varscp};
             varscp->user1p(vertexp);
+            if (varscp->varp()->isUsedVirtIface()) {
+                // Can be used in a class method, which cannot be tracked statically
+                vertexp->clearReducibleAndDedupable("VirtIface");
+                vertexp->setConsumed("VirtIface");
+            }
             if (varscp->varp()->isSigPublic()) {
                 // Public signals shouldn't be changed, pli code might be messing with them
                 vertexp->clearReducibleAndDedupable("SigPublic");
