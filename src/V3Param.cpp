@@ -336,6 +336,8 @@ class ParamProcessor final {
     std::map<const AstNode*, AstNode*> m_clonedModPinMap;
     std::vector<BaseModInfo*> m_allocatedModInfo;
     VNDeleter m_deleter;  // Used to delay deletion of nodes
+    std::unordered_set<string> m_allModuleNames;  // Module name list to avoid name collision. Only
+                                                  // for --hierarchical runs
 
     // STATIC METHODS
     static AstNodeDType* arraySubDTypep(AstNodeDType* nodep) {
@@ -638,15 +640,26 @@ class ParamProcessor final {
     }
     bool updateClonedModInfo(ModInfo* modInfop, AstNodeModule* clonedModp, ModParamSet* paramsp) {
         AstNodeModule* const modp = modInfop->originalModp();
-        string suffix;
+        string newModName;
         if (!modInfop->hierBlock()) {
-            suffix = "__p" + std::to_string(modInfop->nextParamModIndex());
+            newModName = modp->name() + "__p" + std::to_string(modInfop->nextParamModIndex());
         } else {
-            // Don't use '__' not to be encoded when this module is loaded later by Verilator
-            // uint32_t hash = static_cast<uint32_t>(ModParamSet::Hash()(paramsp));
-            suffix = "_hierblk" + std::to_string(modInfop->nextParamModIndex());
+            const uint32_t hash = static_cast<uint32_t>(ModParamSet::Hash()(paramsp));
+            const string hashStr = cvtToHex(hash);
+            // Don't use '__' since this module will be loaded by Verilator later
+            const string hierPrefix = modp->name() + "_hierblk";
+            for (int len = 4; len <= 8; len += 2) {
+                const string trailName = hierPrefix + '_' + hashStr.substr(0, len);
+                if (m_allModuleNames.find(trailName) != m_allModuleNames.end()) {
+                    newModName = std::move(trailName);
+                    break;
+                }
+            }
+            if (newModName.empty()) {  // Use unique sequence name in case of hash collision
+                newModName = hierPrefix + std::to_string(modInfop->nextParamModIndex());
+            }
+            m_allModuleNames.insert(newModName);
         }
-        string newModName = modp->name() + suffix;
         clonedModp->name(std::move(newModName));
         clonedModp->hasGParam(false);
         clonedModp->recursive(false);
@@ -1029,10 +1042,12 @@ public:
         if (!v3Global.opt.hierBlocks().empty()) {
             loadParameterizedHierBlocks(v3Global.opt.hierBlocks(), nodep);
         }
-        // for (AstNodeModule* modp = nodep->modulesp(); modp;
-        //      modp = VN_AS(modp->nextp(), NodeModule)) {
-        //     m_allModuleNames.insert(modp->name());
-        // }
+        if (v3Global.opt.hierarchical()) {
+            for (AstNodeModule* modp = nodep->modulesp(); modp;
+                 modp = VN_AS(modp->nextp(), NodeModule)) {
+                m_allModuleNames.insert(modp->name());
+            }
+        }
     }
     ~ParamProcessor() {
         for (BaseModInfo* const modInfo : m_allocatedModInfo) modInfo->destroy();
