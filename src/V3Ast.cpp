@@ -100,7 +100,7 @@ string AstNode::encodeName(const string& namein) {
     // Encode signal name raw from parser, then not called again on same signal
     string out;
     const size_t len = namein.length();
-    const char* buf = namein.data();
+    const char* const buf = namein.data();
     out.reserve(len);
     for (size_t i = 0; i < len; ++i) {
         const char ch = buf[i];
