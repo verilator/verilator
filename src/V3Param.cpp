@@ -213,7 +213,7 @@ class ModInfo final : public BaseModInfo {
     /// Map full param sets to specialized instances, keeps unique reference to parameterizations
     ParamMap m_paramsMap;
     /// Map overridden param sets to specialized instances, used to cache lookups
-    ParamMap m_overriddenMap;  // TODO: merge into m_paramsMap
+    ParamMap m_overriddenMap;  // FIXME: merge into m_paramsMap
 
 public:
     ModInfo(AstNodeModule* origModp, std::vector<const AstNode*>&& paramList,
@@ -234,7 +234,7 @@ public:
     const AstNode* paramListAt(size_t index) const { return m_paramList[index]; }
     const auto& paramIndexMap() const { return m_paramIndexMap; }
     const auto& ifaceIndexMap() const { return m_ifaceIndexMap; }
-    // TODO: findNodeWithParamSet, insertNodeMapping
+    // FIXME: findNodeWithParamSet, insertNodeMapping
     AstNodeModule* findNodeWithFullParamSet(const ModParamSet* paramSet) {
         return m_paramsMap.findNode(paramSet);
     }
@@ -540,7 +540,8 @@ class ParamProcessor final {
 
         // Deep clone the module
         AstNodeModule* const newModp = srcModp->cloneTree(false);
-        newModp->name(newModp->name() + "__tmpcloned");
+        static size_t s_cloneSeqNum = 0;
+        newModp->name(newModp->name() + "__tmpcloned" + std::to_string(s_cloneSeqNum++));
         UINFO(6, "  clone module: " << srcModp << endl);
         UINFO(6, "        result: " << newModp << endl);
 
@@ -644,6 +645,7 @@ class ParamProcessor final {
         if (!modInfop->hierBlock()) {
             suffix = "__p" + std::to_string(modInfop->nextParamModIndex());
         } else {
+            // Don't use '__' not to be encoded when this module is loaded later by Verilator
             // uint32_t hash = static_cast<uint32_t>(ModParamSet::Hash()(paramsp));
             suffix = "_hierblk" + std::to_string(modInfop->nextParamModIndex());
         }
@@ -802,7 +804,7 @@ class ParamProcessor final {
 
             // A specialized module with the same param set is already exist. The cloned one is not
             // necessary anymore
-#ifdef DEBUG_DONT_REMOVE_MODS  // TODO: fix it
+#ifdef DEBUG_DONT_REMOVE_MODS  // FIXME: todo
             // Directly remove the module seems to make some nodes in type table link broken
             if (clonedModp) {
                 clonedModp->dead(true);
@@ -1185,7 +1187,7 @@ class ParamVisitor final : public VNVisitor {
             if (classp->hasGParam()) {
                 // Don't enter into a definition.
                 // If a class is used, it will be visited through a reference
-                m_paramClasses.push_back(classp);  // TODO: remove it in V3Dead?
+                m_paramClasses.push_back(classp);  // FIXME: remove it in V3Dead?
                 return;
             }
         }
