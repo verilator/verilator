@@ -91,7 +91,7 @@ protected:
     // METHODS
     double orderDFSIterate(V3GraphVertex* vertexp) VL_MT_DISABLED;
     void dumpEdge(std::ostream& os, const V3GraphVertex* vertexp,
-                  const V3GraphEdge* edgep) VL_MT_DISABLED;
+                  const V3GraphEdge* edgep) const VL_MT_DISABLED;
     void verticesUnlink() { m_vertices.reset(); }
     // ACCESSORS
 
@@ -102,12 +102,13 @@ public:
 
     // METHODS
     void clear() VL_MT_DISABLED;  // Empty it of all vertices/edges, as if making a new object
-    void clearColors() VL_MT_DISABLED;
     bool empty() const { return m_vertices.empty(); }
-
     V3GraphVertex* verticesBeginp() const { return m_vertices.begin(); }
 
     // METHODS - ALGORITHMS
+
+    /// Clears color
+    void clearColors() VL_MT_DISABLED;
 
     /// Assign same color to all vertices in the same weakly connected component
     /// Thus different color if there's no edges between the two subgraphs
@@ -116,10 +117,12 @@ public:
     /// Assign same color to all vertices that are strongly connected
     /// Thus different color if there's no directional circuit within the subgraphs.
     /// (I.E. all loops will occur within each color, not between them.)
+    /// Side-effect: changes user()
     void stronglyConnected(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
 
     /// Assign an ordering number to all vertexes in a tree.
     /// All nodes with no inputs will get rank 1
+    /// Side-effect: changes user()
     void rank(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
     void rank() VL_MT_DISABLED;
 
@@ -131,20 +134,24 @@ public:
     /// Order all vertices by rank and fanout, lowest first
     /// Sort all vertices by rank and fanout, lowest first
     /// Sort all edges by weight, lowest first
-    /// Side-effect: assigns ranks to every node.
+    /// Side-effect: assigns ranks to every node, and changes user()
     void order() VL_MT_DISABLED;
 
-    // Similar to order() but does not assign ranks. Caller must
-    // ensure that the graph has been ranked ahead of the call.
+    /// Similar to order() but does not assign ranks. Caller must
+    /// ensure that the graph has been ranked ahead of the call.
+    /// Side-effect: assigns ranks to every node, and changes user()
     void orderPreRanked() VL_MT_DISABLED;
 
     /// Make acyclical (into a tree) by breaking a minimal subset of cutable edges.
+    /// Side-effect: changes rank(), changes user()
     void acyclic(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
 
     /// Remove any redundant edges, weights become MAX of any other weight
-    void removeRedundantEdges(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
+    /// Side-effect: changes user()
+    void removeRedundantEdgesMax(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
 
     /// Remove any redundant edges, weights become SUM of any other weight
+    /// Side-effect: changes user()
     void removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
 
     /// Remove any transitive edges.  E.g. if have edges A->B, B->C, and A->C
@@ -154,21 +161,25 @@ public:
     void removeTransitiveEdges() VL_MT_DISABLED;
 
     /// Call loopsVertexCb on any one loop starting where specified
+    /// Side-effect: changes user()
     void reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) VL_MT_DISABLED;
 
     /// Build a subgraph of all loops starting where specified
+    /// Side-effect: changes user()
     void subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp,
                       V3Graph* loopGraphp) VL_MT_DISABLED;
 
+    /// Clear user()
+    void userClearVertices() VL_MT_DISABLED;
+    void userClearEdges() VL_MT_DISABLED;
+
     /// Debugging
-    void dump(std::ostream& os = std::cout) VL_MT_DISABLED;
+    void dump(std::ostream& os = std::cout) const VL_MT_DISABLED;
     void dumpDotFile(const string& filename, bool colorAsSubgraph) const VL_MT_DISABLED;
     void dumpDotFilePrefixed(const string& nameComment,
                              bool colorAsSubgraph = false) const VL_MT_DISABLED;
     void dumpDotFilePrefixedAlways(const string& nameComment,
                                    bool colorAsSubgraph = false) const VL_MT_DISABLED;
-    void userClearVertices() VL_MT_DISABLED;
-    void userClearEdges() VL_MT_DISABLED;
     static void selfTest() VL_MT_DISABLED;
 
     // CALLBACKS

@@ -300,7 +300,7 @@ public:
         m_lastIgnore.it = m_ignLines.begin();
     }
     void addIgnoreMatch(V3ErrorCode code, const string& match) {
-        m_waivers.push_back(std::make_pair(code, match));
+        m_waivers.emplace_back(code, match);
     }
 
     void applyBlock(AstNodeBlock* nodep) {
@@ -400,12 +400,10 @@ public:
 
     bool getEntryMatch(const V3ConfigScopeTraceEntry* entp, const string& scopepart) {
         // Return if a entry matches the scopepart, with memoization
-        const auto& key = V3ConfigScopeTraceEntryMatch{entp, scopepart};
-        const auto& it = m_matchCache.find(key);
-        if (it != m_matchCache.end()) return it->second;  // Cached
-        const bool matched = VString::wildmatch(scopepart, entp->m_scope);
-        m_matchCache.emplace(key, matched);
-        return matched;
+        const V3ConfigScopeTraceEntryMatch key{entp, scopepart};
+        const auto pair = m_matchCache.emplace(key, false);
+        if (pair.second) pair.first->second = VString::wildmatch(scopepart, entp->m_scope);
+        return pair.first->second;
     }
 
     bool getScopeTraceOn(const string& scope) {

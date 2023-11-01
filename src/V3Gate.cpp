@@ -372,6 +372,11 @@ private:
             UINFO(6, "New vertex " << varscp << endl);
             vertexp = new GateVarVertex{&m_graph, m_scopep, varscp};
             varscp->user1p(vertexp);
+            if (varscp->varp()->isUsedVirtIface()) {
+                // Can be used in a class method, which cannot be tracked statically
+                vertexp->clearReducibleAndDedupable("VirtIface");
+                vertexp->setConsumed("VirtIface");
+            }
             if (varscp->varp()->isSigPublic()) {
                 // Public signals shouldn't be changed, pli code might be messing with them
                 vertexp->clearReducibleAndDedupable("SigPublic");
@@ -766,15 +771,22 @@ class GateDedupeHash final : public V3DupFinderUserSame {
 private:
     // NODE STATE
     // Ast*::user2p     -> parent AstNodeAssign* for this rhsp
-    // Ast*::user3p     -> AstActive* of assign, for isSame() in test for duplicate
-    //                     Set to nullptr if this assign's tree was later replaced
-    // Ast*::user5p     -> AstNode* of assign if condition, for isSame() in test for duplicate
-    //                     Set to nullptr if this assign's tree was later replaced
+    // AstNodeExpr::user3p -> see AuxAstNodeExpr via m_aux
     // VNUser1InUse    m_inuser1;      (Allocated for use in GateVisitor)
     // VNUser2InUse    m_inuser2;      (Allocated for use in GateVisitor)
     const VNUser3InUse m_inuser3;
     // VNUser4InUse    m_inuser4;      (Allocated for use in V3Hasher via V3DupFinder)
-    const VNUser5InUse m_inuser5;
+
+    struct AuxAstNodeExpr final {
+        // AstActive* of assign, for isSame() in test for duplicate. Set to nullptr if this
+        // assign's tree was later replaced
+        AstActive* activep = nullptr;
+        // AstNodeExpr* of assign if condition, for isSame() in test for duplicate. Set to nullptr
+        // if this assign's tree was later replaced
+        AstNodeExpr* condp = nullptr;
+    };
+
+    AstUser3Allocator<AstNodeExpr, AuxAstNodeExpr> m_auxNodeExpr;
 
     V3DupFinder m_dupFinder;  // Duplicate finder for rhs of assigns
     std::unordered_set<AstNode*> m_nodeDeleteds;  // Any node in this hash was deleted
@@ -814,41 +826,49 @@ public:
     // or could be a rhs variable in a tree we're not replacing (or not yet anyways)
     void hashReplace(AstNode* oldp, AstNode* newp) {
         UINFO(9, "replacing " << (void*)oldp << " with " << (void*)newp << endl);
-        // We could update the user3p and user5p but the resulting node
+        // We could update the activep and condp but the resulting node
         // still has incorrect hash.  We really need to remove all hash on
         // the whole hash entry tree involving the replaced node and
         // rehash.  That's complicated and this is rare, so just remove it
         // from consideration.
         m_nodeDeleteds.insert(oldp);
     }
-    bool isReplaced(AstNode* nodep) {
+    bool isReplaced(AstNodeExpr* nodep) {
         // Assignment may have been hashReplaced, if so consider non-match (effectively removed)
-        UASSERT_OBJ(!VN_IS(nodep, NodeAssign), nodep, "Dedup attempt on non-assign");
-        AstNode* const extra1p = nodep->user3p();
-        AstNode* const extra2p = nodep->user5p();
-        return ((extra1p && m_nodeDeleteds.find(extra1p) != m_nodeDeleteds.end())
-                || (extra2p && m_nodeDeleteds.find(extra2p) != m_nodeDeleteds.end()));
+        const auto& aux = m_auxNodeExpr(nodep);
+        AstActive* const activep = aux.activep;
+        AstNodeExpr* const condp = aux.condp;
+        return (activep && m_nodeDeleteds.count(activep))
+               || (condp && m_nodeDeleteds.count(condp));
     }
 
     // Callback from V3DupFinder::findDuplicate
     bool isSame(AstNode* node1p, AstNode* node2p) override {
+        AstNodeExpr* const expr1p = VN_AS(node1p, NodeExpr);
+        AstNodeExpr* const expr2p = VN_AS(node2p, NodeExpr);
+
         // Assignment may have been hashReplaced, if so consider non-match (effectively removed)
-        if (isReplaced(node1p) || isReplaced(node2p)) {
+        if (isReplaced(expr1p) || isReplaced(expr2p)) {
             // UINFO(9, "isSame hit on replaced "<<(void*)node1p<<" "<<(void*)node2p<<endl);
             return false;
         }
-        return same(node1p->user3p(), node2p->user3p()) && same(node1p->user5p(), node2p->user5p())
+
+        const auto& aux1 = m_auxNodeExpr(expr1p);
+        const auto& aux2 = m_auxNodeExpr(expr2p);
+
+        return same(aux1.activep, aux2.activep) && same(aux1.condp, aux2.condp)
                && node1p->user2p()->type() == node2p->user2p()->type();
     }
 
-    const AstNodeAssign* hashAndFindDupe(AstNodeAssign* assignp, AstNode* extra1p,
-                                         AstNode* extra2p) {
+    const AstNodeAssign* hashAndFindDupe(AstNodeAssign* assignp, AstActive* extra1p,
+                                         AstNodeExpr* extra2p) {
         // Legal for extra1p/2p to be nullptr, we'll compare with other assigns with extras also
         // nullptr
-        AstNode* const rhsp = assignp->rhsp();
+        AstNodeExpr* const rhsp = assignp->rhsp();
         rhsp->user2p(assignp);
-        rhsp->user3p(extra1p);
-        rhsp->user5p(extra2p);
+        auto& aux = m_auxNodeExpr(rhsp);
+        aux.activep = extra1p;
+        aux.condp = extra2p;
 
         const auto inserted = m_dupFinder.insert(rhsp);
         const auto dupit = m_dupFinder.findDuplicate(rhsp, this);
@@ -865,13 +885,14 @@ public:
 
     void check() {
         for (const auto& itr : m_dupFinder) {
-            AstNode* const nodep = itr.second;
-            const AstNode* const activep = nodep->user3p();
-            const AstNode* const condVarp = nodep->user5p();
+            AstNodeExpr* const nodep = VN_AS(itr.second, NodeExpr);
+            const auto& aux = m_auxNodeExpr(nodep);
+            const AstActive* const activep = aux.activep;
+            const AstNodeExpr* const condVarp = aux.condp;
             if (!isReplaced(nodep)) {
                 // This class won't break if activep isn't an active, or
                 // ifVar isn't a var, but this is checking the caller's construction.
-                UASSERT_OBJ(!activep || (!VN_DELETED(activep) && VN_IS(activep, Active)), nodep,
+                UASSERT_OBJ(!activep || (!VN_DELETED(activep)), nodep,
                             "V3DupFinder check failed, lost active pointer");
                 UASSERT_OBJ(!condVarp || !VN_DELETED(condVarp), nodep,
                             "V3DupFinder check failed, lost if pointer");
@@ -899,7 +920,7 @@ private:
     // STATE
     GateDedupeHash m_ghash;  // Hash used to find dupes of rhs of assign
     AstNodeAssign* m_assignp = nullptr;  // Assign found for dedupe
-    AstNode* m_ifCondp = nullptr;  // IF condition that assign is under
+    AstNodeExpr* m_ifCondp = nullptr;  // IF condition that assign is under
     bool m_always = false;  // Assign is under an always
     bool m_dedupable = true;  // Determined the assign to be dedupable
 

@@ -114,8 +114,8 @@ void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool 
 }
 
 const std::string& V3Global::ptrToId(const void* p) {
-    auto it = m_ptrToId.find(p);
-    if (it == m_ptrToId.end()) {
+    const auto pair = m_ptrToId.emplace(p, "");
+    if (pair.second) {
         std::ostringstream os;
         if (p) {
             os << "(";
@@ -125,7 +125,7 @@ const std::string& V3Global::ptrToId(const void* p) {
         } else {
             os << "0";
         }
-        it = m_ptrToId.insert(std::make_pair(p, os.str())).first;
+        pair.first->second = os.str();
     }
-    return it->second;
+    return pair.first->second;
 }

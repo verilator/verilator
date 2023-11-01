@@ -155,10 +155,9 @@ class SchedGraphBuilder final : public VNVisitor {
             // rst), so we use a hash map to get the unique SchedSenVertex. (Note: This creates
             // separate vertices for ET_CHANGED and ET_HYBRID over the same expression, but that is
             // OK for now).
-            auto it = m_senVertices.find(*senItemp);
-
+            const auto pair = m_senVertices.emplace(*senItemp, nullptr);
             // If it does not exist, create it
-            if (it == m_senVertices.end()) {
+            if (pair.second) {
                 // Create the vertex
                 SchedSenVertex* const vtxp = new SchedSenVertex{m_graphp, senItemp};
 
@@ -168,11 +167,11 @@ class SchedGraphBuilder final : public VNVisitor {
                 });
 
                 // Store back to hash map so we can find it next time
-                it = m_senVertices.emplace(*senItemp, vtxp).first;
+                pair.first->second = vtxp;
             }
 
             // Cache sensitivity vertex
-            senItemp->user1p(it->second);
+            senItemp->user1p(pair.first->second);
         }
         return senItemp->user1u().to<SchedSenVertex*>();
     }

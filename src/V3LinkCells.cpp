@@ -164,7 +164,7 @@ private:
         readModNames();
         iterateChildren(nodep);
         // Find levels in graph
-        m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
+        m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
         if (dumpGraphLevel()) m_graph.dumpDotFilePrefixed("linkcells");
         m_graph.rank();
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {

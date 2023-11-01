@@ -254,7 +254,7 @@ private:
             // Remove multiple variables connecting funcs to traces
             // We do this twice, as then we have fewer edges to multiply out in the below
             // expansion.
-            m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
+            m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
             // Remove all Cfunc nodes
             for (V3GraphVertex *nextp, *itp = m_graph.verticesBeginp(); itp; itp = nextp) {
                 nextp = itp->verticesNextp();
@@ -266,7 +266,7 @@ private:
         }
 
         // Remove multiple variables connecting funcs to traces
-        m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
+        m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
 
         // If there are any edges from a always, keep only the always
         for (const V3GraphVertex* itp = m_graph.verticesBeginp(); itp;

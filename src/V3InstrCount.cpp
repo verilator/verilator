@@ -32,9 +32,9 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class InstrCountVisitor final : public VNVisitorConst {
 private:
     // NODE STATE
-    //  AstNode::user4()        -> int.  Path cost + 1, 0 means don't dump
-    //  AstNode::user5()        -> bool. Processed if assertNoDups
-    const VNUser4InUse m_inuser4;
+    //  AstNode::user1()        -> bool. Processed if assertNoDups
+    //  AstNode::user2()        -> int.  Path cost + 1, 0 means don't dump
+    const VNUser2InUse m_inuser2;
 
     // MEMBERS
     uint32_t m_instrCount = 0;  // Running count of instructions
@@ -99,10 +99,10 @@ private:
             // (which at the V3Order stage represent verilog tasks, not to
             // the CFuncs that V3Order will generate.) So don't check for
             // collisions in CFuncs.
-            UASSERT_OBJ(!nodep->user5p(), nodep,
+            UASSERT_OBJ(!nodep->user1p(), nodep,
                         "Node originally inserted below logic vertex "
-                            << static_cast<AstNode*>(nodep->user5p()));
-            nodep->user5p(const_cast<void*>(reinterpret_cast<const void*>(m_startNodep)));
+                            << static_cast<AstNode*>(nodep->user1p()));
+            nodep->user1p(const_cast<void*>(reinterpret_cast<const void*>(m_startNodep)));
         }
 
         // Save the count, and add it back in during ~VisitBase This allows
@@ -118,7 +118,7 @@ private:
         if (!m_ignoreRemaining) m_instrCount += savedCount;
     }
     void markCost(AstNode* nodep) {
-        if (m_osp) nodep->user4(m_instrCount + 1);  // Else don't mark to avoid writeback
+        if (m_osp) nodep->user2(m_instrCount + 1);  // Else don't mark to avoid writeback
     }
 
     // VISITORS
@@ -185,10 +185,10 @@ private:
         reset();
         if (ifCount >= elseCount) {
             m_instrCount = savedCount + ifCount;
-            if (nodep->elsesp()) nodep->elsesp()->user4(0);  // Don't dump it
+            if (nodep->elsesp()) nodep->elsesp()->user2(0);  // Don't dump it
         } else {
             m_instrCount = savedCount + elseCount;
-            if (nodep->thensp()) nodep->thensp()->user4(0);  // Don't dump it
+            if (nodep->thensp()) nodep->thensp()->user2(0);  // Don't dump it
         }
     }
     void visit(AstNodeCond* nodep) override {
@@ -212,10 +212,10 @@ private:
         reset();
         if (ifCount < elseCount) {
             m_instrCount = savedCount + elseCount;
-            if (nodep->thenp()) nodep->thenp()->user4(0);  // Don't dump it
+            if (nodep->thenp()) nodep->thenp()->user2(0);  // Don't dump it
         } else {
             m_instrCount = savedCount + ifCount;
-            if (nodep->elsep()) nodep->elsep()->user4(0);  // Don't dump it
+            if (nodep->elsep()) nodep->elsep()->user2(0);  // Don't dump it
         }
     }
     void visit(AstCAwait* nodep) override {
@@ -289,7 +289,7 @@ private:
 class InstrCountDumpVisitor final : public VNVisitorConst {
 private:
     // NODE STATE
-    //  AstNode::user4()        -> int.  Path cost, 0 means don't dump
+    //  AstNode::user2()        -> int.  Path cost, 0 means don't dump
 
     // MEMBERS
     std::ostream* const m_osp;  // Dump file
@@ -310,7 +310,7 @@ private:
     string indent() const { return string(m_depth, ':') + " "; }
     void visit(AstNode* nodep) override {
         ++m_depth;
-        if (unsigned costPlus1 = nodep->user4()) {
+        if (unsigned costPlus1 = nodep->user2()) {
             *m_osp << "  " << indent() << "cost " << std::setw(6) << std::left << (costPlus1 - 1)
                    << "  " << nodep << '\n';
             iterateChildrenConst(nodep);

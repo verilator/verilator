@@ -292,19 +292,10 @@ private:
             nodep->v3warn(STATICVAR, "Static variable with assignment declaration declared in a "
                                      "loop converted to automatic");
         }
-        if (m_ftaskp) {
-            bool classMethod = m_ftaskp->classMethod();
-            if (!classMethod) {
-                AstClassOrPackageRef* const pkgrefp
-                    = VN_CAST(m_ftaskp->classOrPackagep(), ClassOrPackageRef);
-                if (pkgrefp && VN_IS(pkgrefp->classOrPackagep(), Class)) classMethod = true;
-            }
-            if (classMethod && nodep->lifetime().isNone()) {
-                nodep->lifetime(VLifetime::AUTOMATIC);
-            }
-        }
-        if (nodep->lifetime().isNone() && nodep->varType() != VVarType::PORT) {
-            nodep->lifetime(m_lifetime);
+        if (nodep->varType() != VVarType::PORT) {
+            if (nodep->lifetime().isNone()) nodep->lifetime(m_lifetime);
+        } else if (m_ftaskp) {
+            nodep->lifetime(VLifetime::AUTOMATIC);
         }
 
         if (nodep->isGParam() && !nodep->isAnsi()) {  // shadow some parameters into localparams
@@ -534,8 +525,7 @@ private:
             } else {
                 defp = new AstTypedef{nodep->fileline(), nodep->name(), nullptr, VFlagChildDType{},
                                       dtypep};
-                m_implTypedef.insert(
-                    std::make_pair(std::make_pair(nodep->containerp(), defp->name()), defp));
+                m_implTypedef.emplace(std::make_pair(nodep->containerp(), defp->name()), defp);
                 backp->addNextHere(defp);
             }
         }

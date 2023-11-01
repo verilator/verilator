@@ -96,8 +96,8 @@ class SenExprBuilder final {
         AstNode* scopeExprp = exprp;
         if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) scopeExprp = refp->varScopep();
         // Create the 'previous value' variable
-        auto it = m_prev.find(*scopeExprp);
-        if (it == m_prev.end()) {
+        const auto pair = m_prev.emplace(*scopeExprp, nullptr);
+        if (pair.second) {
             AstVarScope* prevp;
             if (m_scopep->isTop()) {
                 // For readability, use the scoped signal name if the trigger is a simple AstVarRef
@@ -118,7 +118,7 @@ class SenExprBuilder final {
                 prevp = new AstVarScope{flp, m_scopep, varp};
                 m_scopep->addVarsp(prevp);
             }
-            it = m_prev.emplace(*scopeExprp, prevp).first;
+            pair.first->second = prevp;
 
             // Add the initializer init
             AstAssign* const initp = new AstAssign{flp, new AstVarRef{flp, prevp, VAccess::WRITE},
@@ -126,7 +126,7 @@ class SenExprBuilder final {
             m_inits.push_back(initp);
         }
 
-        AstVarScope* const prevp = it->second;
+        AstVarScope* const prevp = pair.first->second;
 
         const auto wrPrev = [=]() { return new AstVarRef{flp, prevp, VAccess::WRITE}; };
 

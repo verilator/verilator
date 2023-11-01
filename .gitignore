@@ -43,3 +43,4 @@ verilator-config-version.cmake
 /.vscode/
 /.idea/
 /cmake-build-*/
+/test_regress/snapshot/

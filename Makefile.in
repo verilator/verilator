@@ -173,6 +173,10 @@ smoke-test: all_nomsg
 test_regress: all_nomsg
 	$(MAKE) -C test_regress
 
+.PHONY: test-snap test-diff
+test-snap test-diff:
+	$(MAKE) -C test_regress $@
+
 examples: all_nomsg
 	for p in $(EXAMPLES) ; do \
 	  $(MAKE) -C $$p VERILATOR_ROOT=`pwd` || exit 10; \
@@ -430,9 +434,15 @@ PYLINT_FLAGS = --score=n --disable=R0801
 RUFF = ruff
 RUFF_FLAGS = check --ignore=E402,E501,E701
 
+# "make -k" so can see all tool result errors
 lint-py:
-	-$(PYLINT) $(PYLINT_FLAGS) $(PY_PROGRAMS)
-	-$(RUFF) $(RUFF_FLAGS) $(PY_PROGRAMS)
+	$(MAKE) -k lint-py-pylint lint-py-ruff
+
+lint-py-pylint:
+	$(PYLINT) $(PYLINT_FLAGS) $(PY_PROGRAMS)
+
+lint-py-ruff:
+	$(RUFF) $(RUFF_FLAGS) $(PY_PROGRAMS)
 
 format-pl-exec:
 	-chmod a+x test_regress/t/*.pl

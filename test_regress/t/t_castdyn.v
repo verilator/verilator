@@ -9,6 +9,10 @@ endclass
 class BasedA extends Base;
 endclass
 class BasedB extends Base;
+   static function BasedB getBasedB(bit getNull);
+      BasedB b = new;
+      return getNull ? null : b;
+   endfunction
 endclass
 
 module t (/*AUTOARG*/);
@@ -50,6 +54,18 @@ module t (/*AUTOARG*/);
       if (b != ba) $stop;
 
       bb = new;
+      b = bb;
+      i = $cast(bbo, b);
+      if (i != 1) $stop;
+      if (b != bb) $stop;
+
+      bb = null;
+      b = bb;
+      i = $cast(bbo, b);
+      if (i != 1) $stop;
+      if (b != bb) $stop;
+
+      bb = BasedB::getBasedB(1);
       b = bb;
       i = $cast(bbo, b);
       if (i != 1) $stop;

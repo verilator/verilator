@@ -21,7 +21,7 @@ endfunction
 
 class Foo;
    static int x;
-   function static int get_x;
+   static function int get_x;
       return x;
    endfunction
 endclass

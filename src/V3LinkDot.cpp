@@ -442,7 +442,7 @@ public:
 
     // Track and later recurse interface modules
     void insertIfaceModSym(AstIface* nodep, VSymEnt* symp) {
-        m_ifaceModSyms.push_back(std::make_pair(nodep, symp));
+        m_ifaceModSyms.emplace_back(nodep, symp);
     }
     void computeIfaceModSyms();
 
@@ -2004,10 +2004,7 @@ private:
     //  *::user2p()             -> See LinkDotState
     //  *::user3()              // bool. Processed
     //  *::user4()              -> See LinkDotState
-    // Cleared on Cell
-    //  AstVar::user5()         // bool. True if pin used in this cell
     const VNUser3InUse m_inuser3;
-    const VNUser5InUse m_inuser5;
 
     // TYPES
     enum DotPosition : uint8_t {
@@ -2034,6 +2031,7 @@ private:
                                          // They are added to the set only in linkDotPrimary.
     bool m_insideClassExtParam = false;  // Inside a class from m_extendsParam
     bool m_explicitSuperNew = false;  // Hit a "super.new" call inside a "new" function
+    std::map<AstNode*, AstPin*> m_usedPins;  // Pin used in this cell, map to duplicate
 
     struct DotStates {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -2162,15 +2160,15 @@ private:
         UASSERT_OBJ(ifaceTopVarp, nodep, "Can't find interface var ref: " << findName);
         return ifaceTopVarp;
     }
-    void markAndCheckPinDup(AstNode* nodep, AstNode* refp, const char* whatp) {
-        if (refp->user5p() && refp->user5p() != nodep) {
+    void markAndCheckPinDup(AstPin* nodep, AstNode* refp, const char* whatp) {
+        const auto pair = m_usedPins.emplace(refp, nodep);
+        if (!pair.second) {
+            AstNode* const origp = pair.first->second;
             nodep->v3error("Duplicate " << whatp << " connection: " << nodep->prettyNameQ() << '\n'
                                         << nodep->warnContextPrimary() << '\n'
-                                        << refp->user5p()->warnOther()
-                                        << "... Location of original " << whatp << " connection\n"
-                                        << refp->user5p()->warnContextSecondary());
-        } else {
-            refp->user5p(nodep);
+                                        << origp->warnOther() << "... Location of original "
+                                        << whatp << " connection\n"
+                                        << origp->warnContextSecondary());
         }
     }
     VSymEnt* getCreateClockingEventSymEnt(AstClocking* clockingp) {
@@ -2314,7 +2312,7 @@ private:
     void visit(AstCell* nodep) override {
         // Cell: Recurse inside or cleanup not founds
         checkNoDot(nodep);
-        AstNode::user5ClearTree();
+        m_usedPins.clear();
         UASSERT_OBJ(nodep->modp(), nodep,
                     "Cell has unlinked module");  // V3LinkCell should have errored out
         VL_RESTORER(m_cellp);
@@ -2343,7 +2341,7 @@ private:
     void visit(AstClassRefDType* nodep) override {
         // Cell: Recurse inside or cleanup not founds
         checkNoDot(nodep);
-        AstNode::user5ClearTree();
+        m_usedPins.clear();
         UASSERT_OBJ(nodep->classp(), nodep, "ClassRef has unlinked class");
         UASSERT_OBJ(m_statep->forPrimary() || !nodep->paramsp(), nodep,
                     "class reference parameter not removed by V3Param");
@@ -2905,7 +2903,7 @@ private:
     void visit(AstClassOrPackageRef* nodep) override {
         // Class: Recurse inside or cleanup not founds
         // checkNoDot not appropriate, can be under a dot
-        AstNode::user5ClearTree();
+        m_usedPins.clear();
         UASSERT_OBJ(m_statep->forPrimary() || VN_IS(nodep->classOrPackageNodep(), ParamTypeDType)
                         || nodep->classOrPackagep(),
                     nodep, "ClassRef has unlinked class");
@@ -3187,7 +3185,7 @@ private:
             AstNodeFTask* const taskp
                 = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;  // Maybe nullptr
             if (taskp) {
-                if (staticAccess && !taskp->lifetime().isStatic()) {
+                if (staticAccess && !taskp->isStatic()) {
                     // TODO bug4077
                     // nodep->v3error("Static access to non-static task/function "
                     //                << taskp->prettyNameQ() << endl);
@@ -3360,6 +3358,7 @@ private:
                 // External definition cannot have any specifiers, so no value will be overwritten.
                 nodep->isHideLocal(funcProtop->isHideLocal());
                 nodep->isHideProtected(funcProtop->isHideProtected());
+                nodep->isStatic(funcProtop->isStatic());
                 nodep->isVirtual(funcProtop->isVirtual());
                 nodep->lifetime(funcProtop->lifetime());
             } else {
@@ -3749,7 +3748,7 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     if (debug() >= 5 || dumpTreeLevel() >= 9) {
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
     }
-    LinkDotState state(rootp, step);
+    LinkDotState state{rootp, step};
     const LinkDotFindVisitor visitor{rootp, &state};
     if (debug() >= 5 || dumpTreeLevel() >= 9) {
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-find.tree"));
