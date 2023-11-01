@@ -57,7 +57,7 @@ $timescale 1ps $end
   $var wire 1 - clk $end
   $var wire 8 . in [7:0] $end
   $var wire 8 / out [7:0] $end
-  $scope module delay_2 $end
+  $scope module delay_hierblk1 $end
    $var wire 32 1 N [31:0] $end
    $var wire 32 2 WIDTH [31:0] $end
    $var wire 1 - clk $end
@@ -73,11 +73,11 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_delay0.delay_2.genblk1.i_delay $end
+ $scope module top.t.i_delay0.delay_hierblk1.genblk1.i_delay $end
   $var wire 1 4 clk $end
   $var wire 8 5 in [7:0] $end
   $var wire 8 6 out [7:0] $end
-  $scope module delay_4 $end
+  $scope module delay_hierblk3 $end
    $var wire 32 8 N [31:0] $end
    $var wire 32 9 WIDTH [31:0] $end
    $var wire 1 4 clk $end
@@ -90,7 +90,7 @@ $timescale 1ps $end
   $var wire 1 ; clk $end
   $var wire 8 < in [7:0] $end
   $var wire 8 = out [7:0] $end
-  $scope module delay_9 $end
+  $scope module delay_hierblk2 $end
    $var wire 32 ? N [31:0] $end
    $var wire 32 @ WIDTH [31:0] $end
    $var wire 1 ; clk $end
@@ -106,11 +106,11 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_delay1.delay_9.genblk1.i_delay $end
+ $scope module top.t.i_delay1.delay_hierblk2.genblk1.i_delay $end
   $var wire 1 B clk $end
   $var wire 8 C in [7:0] $end
   $var wire 8 D out [7:0] $end
-  $scope module delay_2 $end
+  $scope module delay_hierblk1 $end
    $var wire 32 F N [31:0] $end
    $var wire 32 G WIDTH [31:0] $end
    $var wire 1 B clk $end
@@ -126,11 +126,11 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_delay1.delay_9.genblk1.i_delay.delay_2.genblk1.i_delay $end
+ $scope module top.t.i_delay1.delay_hierblk2.genblk1.i_delay.delay_hierblk1.genblk1.i_delay $end
   $var wire 1 I clk $end
   $var wire 8 J in [7:0] $end
   $var wire 8 K out [7:0] $end
-  $scope module delay_4 $end
+  $scope module delay_hierblk3 $end
    $var wire 32 M N [31:0] $end
    $var wire 32 N WIDTH [31:0] $end
    $var wire 1 I clk $end
@@ -207,7 +207,7 @@ $timescale 1ps $end
   $var wire 1 a clk $end
   $var wire 8 b in [7:0] $end
   $var wire 8 c out [7:0] $end
-  $scope module sub3_c $end
+  $scope module sub3_hierblk3 $end
    $var wire 8 f P0 [7:0] $end
    $var wire 32 g UNPACKED_ARRAY[0] [31:0] $end
    $var wire 32 h UNPACKED_ARRAY[1] [31:0] $end
@@ -230,11 +230,11 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_0 $end
+ $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_0 $end
   $var wire 1 N! clk $end
   $var wire 8 O! in [7:0] $end
   $var wire 8 P! out [7:0] $end
-  $scope module sub4_2 $end
+  $scope module sub4_hierblk1 $end
    $var wire 32 Q! P0 [31:0] $end
    $var real 64 R! P1 $end
    $var real 64 T! P3 $end
@@ -281,7 +281,7 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_0.sub4_2.i_sub5 $end
+ $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_0.sub4_hierblk1.i_sub5 $end
   $var wire 1 n! clk $end
   $var wire 128 o! in[0][0] [127:0] $end
   $var wire 128 s! in[0][1] [127:0] $end
@@ -345,31 +345,31 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_0.sub4_2.i_sub5.sub5.i_sub0 $end
+ $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_0.sub4_hierblk1.i_sub5.sub5.i_sub0 $end
   $var wire 8 0" out[0] [7:0] $end
   $var wire 8 1" out[1] [7:0] $end
-  $scope module sub6_f $end
+  $scope module sub6_hierblk1 $end
    $var wire 32 2" P0 [31:0] $end
    $var wire 32 3" P1 [31:0] $end
    $var wire 8 0" out[0] [7:0] $end
    $var wire 8 1" out[1] [7:0] $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_0.sub4_2.i_sub5.sub5.i_sub3 $end
+ $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_0.sub4_hierblk1.i_sub5.sub5.i_sub3 $end
   $var wire 8 5" out[0] [7:0] $end
   $var wire 8 6" out[1] [7:0] $end
-  $scope module sub6_9 $end
+  $scope module sub6_hierblk2 $end
    $var wire 32 7" P0 [31:0] $end
    $var wire 32 8" P1 [31:0] $end
    $var wire 8 5" out[0] [7:0] $end
    $var wire 8 6" out[1] [7:0] $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_1 $end
+ $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_1 $end
   $var wire 1 {" clk $end
   $var wire 8 |" in [7:0] $end
   $var wire 8 }" out [7:0] $end
-  $scope module sub4_b $end
+  $scope module sub4_hierblk2 $end
    $var wire 32 ~" P0 [31:0] $end
    $var real 64 !# P1 $end
    $var real 64 ## P3 $end
@@ -416,7 +416,7 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_1.sub4_b.i_sub5 $end
+ $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_1.sub4_hierblk2.i_sub5 $end
   $var wire 1 =# clk $end
   $var wire 128 ># in[0][0] [127:0] $end
   $var wire 128 B# in[0][1] [127:0] $end
@@ -480,20 +480,20 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_1.sub4_b.i_sub5.sub5.i_sub0 $end
+ $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_1.sub4_hierblk2.i_sub5.sub5.i_sub0 $end
   $var wire 8 ]# out[0] [7:0] $end
   $var wire 8 ^# out[1] [7:0] $end
-  $scope module sub6_f $end
+  $scope module sub6_hierblk1 $end
    $var wire 32 _# P0 [31:0] $end
    $var wire 32 `# P1 [31:0] $end
    $var wire 8 ]# out[0] [7:0] $end
    $var wire 8 ^# out[1] [7:0] $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_1.sub4_b.i_sub5.sub5.i_sub3 $end
+ $scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_1.sub4_hierblk2.i_sub5.sub5.i_sub3 $end
   $var wire 8 b# out[0] [7:0] $end
   $var wire 8 c# out[1] [7:0] $end
-  $scope module sub6_9 $end
+  $scope module sub6_hierblk2 $end
    $var wire 32 d# P0 [31:0] $end
    $var wire 32 e# P1 [31:0] $end
    $var wire 8 b# out[0] [7:0] $end
@@ -504,7 +504,7 @@ $timescale 1ps $end
   $var wire 1 g# clk $end
   $var wire 8 h# in [7:0] $end
   $var wire 8 i# out [7:0] $end
-  $scope module sub3_2 $end
+  $scope module sub3_hierblk2 $end
    $var wire 8 l# P0 [7:0] $end
    $var wire 32 m# UNPACKED_ARRAY[0] [31:0] $end
    $var wire 32 n# UNPACKED_ARRAY[1] [31:0] $end
@@ -527,11 +527,11 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3_2.sub3_2.i_sub4_0 $end
+ $scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_0 $end
   $var wire 1 T$ clk $end
   $var wire 8 U$ in [7:0] $end
   $var wire 8 V$ out [7:0] $end
-  $scope module sub4_2 $end
+  $scope module sub4_hierblk1 $end
    $var wire 32 W$ P0 [31:0] $end
    $var real 64 X$ P1 $end
    $var real 64 Z$ P3 $end
@@ -578,7 +578,7 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3_2.sub3_2.i_sub4_0.sub4_2.i_sub5 $end
+ $scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_0.sub4_hierblk1.i_sub5 $end
   $var wire 1 t$ clk $end
   $var wire 128 u$ in[0][0] [127:0] $end
   $var wire 128 y$ in[0][1] [127:0] $end
@@ -642,31 +642,31 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3_2.sub3_2.i_sub4_0.sub4_2.i_sub5.sub5.i_sub0 $end
+ $scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_0.sub4_hierblk1.i_sub5.sub5.i_sub0 $end
   $var wire 8 6% out[0] [7:0] $end
   $var wire 8 7% out[1] [7:0] $end
-  $scope module sub6_f $end
+  $scope module sub6_hierblk1 $end
    $var wire 32 8% P0 [31:0] $end
    $var wire 32 9% P1 [31:0] $end
    $var wire 8 6% out[0] [7:0] $end
    $var wire 8 7% out[1] [7:0] $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3_2.sub3_2.i_sub4_0.sub4_2.i_sub5.sub5.i_sub3 $end
+ $scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_0.sub4_hierblk1.i_sub5.sub5.i_sub3 $end
   $var wire 8 ;% out[0] [7:0] $end
   $var wire 8 <% out[1] [7:0] $end
-  $scope module sub6_9 $end
+  $scope module sub6_hierblk2 $end
    $var wire 32 =% P0 [31:0] $end
    $var wire 32 >% P1 [31:0] $end
    $var wire 8 ;% out[0] [7:0] $end
    $var wire 8 <% out[1] [7:0] $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3_2.sub3_2.i_sub4_1 $end
+ $scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_1 $end
   $var wire 1 #& clk $end
   $var wire 8 $& in [7:0] $end
   $var wire 8 %& out [7:0] $end
-  $scope module sub4_b $end
+  $scope module sub4_hierblk2 $end
    $var wire 32 && P0 [31:0] $end
    $var real 64 '& P1 $end
    $var real 64 )& P3 $end
@@ -713,7 +713,7 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3_2.sub3_2.i_sub4_1.sub4_b.i_sub5 $end
+ $scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_1.sub4_hierblk2.i_sub5 $end
   $var wire 1 C& clk $end
   $var wire 128 D& in[0][0] [127:0] $end
   $var wire 128 H& in[0][1] [127:0] $end
@@ -777,20 +777,20 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3_2.sub3_2.i_sub4_1.sub4_b.i_sub5.sub5.i_sub0 $end
+ $scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_1.sub4_hierblk2.i_sub5.sub5.i_sub0 $end
   $var wire 8 c& out[0] [7:0] $end
   $var wire 8 d& out[1] [7:0] $end
-  $scope module sub6_f $end
+  $scope module sub6_hierblk1 $end
    $var wire 32 e& P0 [31:0] $end
    $var wire 32 f& P1 [31:0] $end
    $var wire 8 c& out[0] [7:0] $end
    $var wire 8 d& out[1] [7:0] $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3_2.sub3_2.i_sub4_1.sub4_b.i_sub5.sub5.i_sub3 $end
+ $scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_1.sub4_hierblk2.i_sub5.sub5.i_sub3 $end
   $var wire 8 h& out[0] [7:0] $end
   $var wire 8 i& out[1] [7:0] $end
-  $scope module sub6_9 $end
+  $scope module sub6_hierblk2 $end
    $var wire 32 j& P0 [31:0] $end
    $var wire 32 k& P1 [31:0] $end
    $var wire 8 h& out[0] [7:0] $end
@@ -801,7 +801,7 @@ $timescale 1ps $end
   $var wire 1 m& clk $end
   $var wire 8 n& in [7:0] $end
   $var wire 8 o& out [7:0] $end
-  $scope module sub3_d $end
+  $scope module sub3_hierblk1 $end
    $var wire 8 r& P0 [7:0] $end
    $var wire 32 s& UNPACKED_ARRAY[0] [31:0] $end
    $var wire 32 t& UNPACKED_ARRAY[1] [31:0] $end
@@ -824,11 +824,11 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3.sub3_d.i_sub4_0 $end
+ $scope module top.t.i_sub3.sub3_hierblk1.i_sub4_0 $end
   $var wire 1 Z' clk $end
   $var wire 8 [' in [7:0] $end
   $var wire 8 \' out [7:0] $end
-  $scope module sub4_2 $end
+  $scope module sub4_hierblk1 $end
    $var wire 32 ]' P0 [31:0] $end
    $var real 64 ^' P1 $end
    $var real 64 `' P3 $end
@@ -875,7 +875,7 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3.sub3_d.i_sub4_0.sub4_2.i_sub5 $end
+ $scope module top.t.i_sub3.sub3_hierblk1.i_sub4_0.sub4_hierblk1.i_sub5 $end
   $var wire 1 z' clk $end
   $var wire 128 {' in[0][0] [127:0] $end
   $var wire 128 !( in[0][1] [127:0] $end
@@ -939,31 +939,31 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3.sub3_d.i_sub4_0.sub4_2.i_sub5.sub5.i_sub0 $end
+ $scope module top.t.i_sub3.sub3_hierblk1.i_sub4_0.sub4_hierblk1.i_sub5.sub5.i_sub0 $end
   $var wire 8 <( out[0] [7:0] $end
   $var wire 8 =( out[1] [7:0] $end
-  $scope module sub6_f $end
+  $scope module sub6_hierblk1 $end
    $var wire 32 >( P0 [31:0] $end
    $var wire 32 ?( P1 [31:0] $end
    $var wire 8 <( out[0] [7:0] $end
    $var wire 8 =( out[1] [7:0] $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3.sub3_d.i_sub4_0.sub4_2.i_sub5.sub5.i_sub3 $end
+ $scope module top.t.i_sub3.sub3_hierblk1.i_sub4_0.sub4_hierblk1.i_sub5.sub5.i_sub3 $end
   $var wire 8 A( out[0] [7:0] $end
   $var wire 8 B( out[1] [7:0] $end
-  $scope module sub6_9 $end
+  $scope module sub6_hierblk2 $end
    $var wire 32 C( P0 [31:0] $end
    $var wire 32 D( P1 [31:0] $end
    $var wire 8 A( out[0] [7:0] $end
    $var wire 8 B( out[1] [7:0] $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3.sub3_d.i_sub4_1 $end
+ $scope module top.t.i_sub3.sub3_hierblk1.i_sub4_1 $end
   $var wire 1 )) clk $end
   $var wire 8 *) in [7:0] $end
   $var wire 8 +) out [7:0] $end
-  $scope module sub4_b $end
+  $scope module sub4_hierblk2 $end
    $var wire 32 ,) P0 [31:0] $end
    $var real 64 -) P1 $end
    $var real 64 /) P3 $end
@@ -1010,7 +1010,7 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3.sub3_d.i_sub4_1.sub4_b.i_sub5 $end
+ $scope module top.t.i_sub3.sub3_hierblk1.i_sub4_1.sub4_hierblk2.i_sub5 $end
   $var wire 1 I) clk $end
   $var wire 128 J) in[0][0] [127:0] $end
   $var wire 128 N) in[0][1] [127:0] $end
@@ -1074,20 +1074,20 @@ $timescale 1ps $end
    $upscope $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3.sub3_d.i_sub4_1.sub4_b.i_sub5.sub5.i_sub0 $end
+ $scope module top.t.i_sub3.sub3_hierblk1.i_sub4_1.sub4_hierblk2.i_sub5.sub5.i_sub0 $end
   $var wire 8 i) out[0] [7:0] $end
   $var wire 8 j) out[1] [7:0] $end
-  $scope module sub6_f $end
+  $scope module sub6_hierblk1 $end
    $var wire 32 k) P0 [31:0] $end
    $var wire 32 l) P1 [31:0] $end
    $var wire 8 i) out[0] [7:0] $end
    $var wire 8 j) out[1] [7:0] $end
   $upscope $end
  $upscope $end
- $scope module top.t.i_sub3.sub3_d.i_sub4_1.sub4_b.i_sub5.sub5.i_sub3 $end
+ $scope module top.t.i_sub3.sub3_hierblk1.i_sub4_1.sub4_hierblk2.i_sub5.sub5.i_sub3 $end
   $var wire 8 n) out[0] [7:0] $end
   $var wire 8 o) out[1] [7:0] $end
-  $scope module sub6_9 $end
+  $scope module sub6_hierblk2 $end
    $var wire 32 p) P0 [31:0] $end
    $var wire 32 q) P1 [31:0] $end
    $var wire 8 n) out[0] [7:0] $end

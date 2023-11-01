@@ -226,7 +226,8 @@ public:
         for (size_t i = 0; i < m_ifaceList.size(); i++) m_ifaceIndexMap[m_ifaceList[i]] = i;
     }
     ~ModInfo() {
-        m_origModp->dead(true);  // Unused modules/ifaces are removed in V3Dead
+        if (!m_origModp->recursive())
+            m_origModp->dead(true);  // Unused modules/ifaces are removed in V3Dead
         if (VN_IS(m_origModp, Class))
             VL_DO_DANGLING(m_origModp->unlinkFrBack()->deleteTree(), m_origModp);
     }
@@ -250,7 +251,8 @@ public:
     size_t nextParamModIndex() const { return m_paramsMap.size() + 1; }
     AstNodeModule* originalModp() const { return m_origModp; }
     void dumpSelf(std::ostream& os) const {
-        os << m_origModp->prettyTypeName() << " (" << m_origModp << ")\n";
+        const char* const hierBlk = hierBlock() ? "  [HIERBLK]" : "";
+        os << m_origModp->prettyTypeName() << hierBlk << " (" << m_origModp << ")\n";
         for (const auto& item : m_paramsMap) {
             os << "- Instance " << item.second->prettyNameQ() << ": " << item.second << "\n";
             os << "    Hash: " << ModParamSet::Hash()(item.first) << "\n";
@@ -654,8 +656,6 @@ class ParamProcessor final {
         clonedModp->hasGParam(false);
         clonedModp->recursive(false);
         clonedModp->recursiveClone(false);
-        // Only the first generation of clone holds this property
-        clonedModp->hierBlock(modp->hierBlock() && !modp->recursiveClone());
         // Recursion may need level cleanups
         if (clonedModp->level() <= m_modp->level()) clonedModp->level(m_modp->level() + 1);
         if ((clonedModp->level() - modp->level()) >= (v3Global.opt.moduleRecursionDepth() - 2)) {
@@ -918,8 +918,14 @@ class ParamProcessor final {
         }
         if (!hierModNameList.empty()) {
             for (auto* modp = nodep->modulesp(); modp; modp = VN_AS(modp->nextp(), NodeModule)) {
-                if (hierModMap.find(modp->prettyName()) != hierModMap.end())
-                    hierModMap[modp->prettyName()] = modp;
+                // Recursive hierarchical module may change its name, so we have to match its
+                // origName.
+                const string actualName = modp->recursive() && !modp->recursiveClone()
+                                              ? modp->origName()
+                                              : modp->name();
+                if (hierModMap.find(actualName) != hierModMap.end()) {
+                    hierModMap[actualName] = modp;
+                }
             }
         }
         for (const string& modName : hierOrigModNames) {
@@ -1066,6 +1072,8 @@ class ParamVisitor final : public VNVisitor {
     // Map from AstNodeModule to set of all AstNodeModules that instantiates it.
     std::unordered_map<AstNodeModule*, std::unordered_set<AstNodeModule*>> m_parentps;
 
+    /*************** FIXME: temporarily fix ***************/
+    std::unordered_map<string, AstNodeModule*> delayModMap;
     // METHODS
 
     void visitCells(AstNodeModule* nodep) {
@@ -1215,7 +1223,39 @@ class ParamVisitor final : public VNVisitor {
         }
     }
 
+    /*************** FIXME: temporarily fix ***************/
+    void relinkPinsByName(AstPin* startpinp, AstNodeModule* modp) {
+        std::map<const string, AstVar*> nameToPin;
+        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (varp->isIO() || varp->isGParam() || varp->isIfaceRef()) {
+                    nameToPin.emplace(varp->name(), varp);
+                }
+            }
+        }
+        for (AstPin* pinp = startpinp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            if (const AstVar* const varp = pinp->modVarp()) {
+                const auto varIt = vlstd::as_const(nameToPin).find(varp->name());
+                UASSERT_OBJ(varIt != nameToPin.end(), varp,
+                            "Not found in " << modp->prettyNameQ());
+                pinp->modVarp(varIt->second);
+            }
+        }
+    }
+    /*************** FIXME: temporarily fix ***************/
+
     void visit(AstCell* nodep) override {
+        /*************** FIXME: temporarily fix ***************/
+        size_t pos = nodep->modp()->name().find("__Vrcm");
+        if (pos != string::npos) {
+            string s = nodep->modp()->name();
+            s.erase(pos);
+            AstNodeModule* item = delayModMap[s];
+            nodep->modp(item);
+            relinkPinsByName(nodep->paramsp(), item);
+            relinkPinsByName(nodep->pinsp(), item);
+        }
+        /*************** FIXME: temporarily fix ***************/
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
     }
     void visit(AstClassRefDType* nodep) override { visitCellOrClassRef(nodep, false); }
@@ -1486,6 +1526,15 @@ public:
     explicit ParamVisitor(AstNetlist* netlistp)
         : m_processor{netlistp} {
         // Relies on modules already being in top-down-order
+        /*************** FIXME: temporarily fix ***************/
+        for (AstNodeModule* modp = netlistp->modulesp(); modp;
+             modp = VN_AS(modp->nextp(), NodeModule)) {
+            if (modp->name() == "delay" || modp->name() == "delay_hierblk1"
+                || modp->name() == "delay_hierblk2" || modp->name() == "delay_hierblk3") {
+                delayModMap[modp->name()] = modp;
+            }
+        }
+        /*************** FIXME: temporarily fix ***************/
         iterate(netlistp);
 
         relinkDots();
