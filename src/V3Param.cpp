@@ -74,6 +74,7 @@ class ParameterizedHierBlocks final {
     using GParamsMap = std::map<const std::string, AstVar*>;  // key:parameter name value:parameter
 
     // MEMBERS
+    const bool m_hierSubRun;  // Is in sub-run for hierarchical verilation
     // key:Original module name, value:HiearchyBlockOption*
     // If a module is parameterized, the module is uniquified to overridden parameters.
     // This is why HierBlockOptsByOrigName is multimap.
@@ -88,7 +89,8 @@ class ParameterizedHierBlocks final {
     // METHODS
 
 public:
-    ParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep) {
+    ParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep)
+        : m_hierSubRun(!v3Global.opt.hierBlocks().empty() || v3Global.opt.hierChild()) {
         for (const auto& hierOpt : hierOpts) {
             m_hierBlockOptsByOrigName.emplace(hierOpt.second.origName(), &hierOpt.second);
             const V3HierarchicalBlockOption::ParamStrMap& params = hierOpt.second.params();
@@ -124,7 +126,8 @@ public:
             }
         }
     }
-    bool isHierBlock(const string& origName) {
+    bool hierSubRun() const { return m_hierSubRun; }
+    bool isHierBlock(const string& origName) const {
         return m_hierBlockOptsByOrigName.find(origName) != m_hierBlockOptsByOrigName.end();
     }
     AstNodeModule* findByParams(const string& origName, AstPin* firstPinp,
@@ -244,7 +247,6 @@ class ParamProcessor final {
     using IfaceRefRefs = std::deque<std::pair<AstIfaceRefDType*, AstIfaceRefDType*>>;
 
     // STATE
-    const bool m_isHierSubRun;  // Is in sub-run for hierarchical verilation
     using CloneMap = std::unordered_map<const AstNode*, AstNode*>;
     struct ModInfo {
         AstNodeModule* const m_modp;  // Module with specified name
@@ -855,7 +857,7 @@ class ParamProcessor final {
         cellInterfaceCleanup(pinsp, srcModpr, longname /*ref*/, any_overrides /*ref*/,
                              ifaceRefRefs /*ref*/);
 
-        if (m_isHierSubRun && m_hierBlocks.isHierBlock(srcModpr->origName())) {
+        if (m_hierBlocks.hierSubRun() && m_hierBlocks.isHierBlock(srcModpr->origName())) {
             AstNodeModule* const paramedModp
                 = m_hierBlocks.findByParams(srcModpr->origName(), paramsp, m_modp);
             UASSERT_OBJ(paramedModp, nodep, "Failed to find sub-module for hierarchical block");
@@ -961,8 +963,7 @@ public:
 
     // CONSTRUCTORS
     explicit ParamProcessor(AstNetlist* nodep)
-        : m_isHierSubRun(!v3Global.opt.hierBlocks().empty() || v3Global.opt.hierChild())
-        , m_hierBlocks{v3Global.opt.hierBlocks(), nodep} {
+        : m_hierBlocks{v3Global.opt.hierBlocks(), nodep} {
         for (AstNodeModule* modp = nodep->modulesp(); modp;
              modp = VN_AS(modp->nextp(), NodeModule)) {
             m_allModuleNames.insert(modp->name());
