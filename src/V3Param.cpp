@@ -210,10 +210,9 @@ class ModInfo final : public BaseModInfo {
     const std::vector<const AstVar*> m_ifaceList;
     std::map<const AstNode*, int> m_paramIndexMap;
     std::map<const AstVar*, int> m_ifaceIndexMap;
-    /// Map full param sets to specialized instances, keeps unique reference to parameterizations
+    /// Map param sets to specialized instances
     ParamMap m_paramsMap;
-    /// Map overridden param sets to specialized instances, used to cache lookups
-    ParamMap m_overriddenMap;  // FIXME: merge into m_paramsMap
+    std::vector<std::pair<const ModParamSet*, AstNodeModule*>> m_paramModList;
 
 public:
     ModInfo(AstNodeModule* origModp, std::vector<const AstNode*>&& paramList,
@@ -235,20 +234,16 @@ public:
     const AstNode* paramListAt(size_t index) const { return m_paramList[index]; }
     const auto& paramIndexMap() const { return m_paramIndexMap; }
     const auto& ifaceIndexMap() const { return m_ifaceIndexMap; }
-    // FIXME: findNodeWithParamSet, insertNodeMapping
-    AstNodeModule* findNodeWithFullParamSet(const ModParamSet* paramSet) {
-        return m_paramsMap.findNode(paramSet);
+    void addParamedMod(const ModParamSet* paramSet, AstNodeModule* nodep) {
+        m_paramModList.push_back({paramSet, nodep});
     }
-    AstNodeModule* findNodeWithOverriddenParamSet(const ModParamSet* paramSet) {
-        return m_overriddenMap.findNode(paramSet);
-    }
-    void insertFullParamSet(const ModParamSet* paramSet, AstNodeModule* nodep) {
+    void insertParamedModMap(const ModParamSet* paramSet, AstNodeModule* nodep) {
         m_paramsMap.insert(paramSet, nodep);
     }
-    void insertOverriddenParamSet(const ModParamSet* paramSet, AstNodeModule* nodep) {
-        m_overriddenMap.insert(paramSet, nodep);
+    AstNodeModule* findParamedNode(const ModParamSet* paramSet) {
+        return m_paramsMap.findNode(paramSet);
     }
-    size_t nextParamModIndex() const { return m_paramsMap.size() + 1; }
+    size_t nextParamModIndex() const { return m_paramModList.size() + 1; }
     AstNodeModule* originalModp() const { return m_origModp; }
     void dumpSelf(std::ostream& os) const {
         const char* const hierBlk = hierBlock() ? "  [HIERBLK]" : "";
@@ -743,7 +738,7 @@ class ParamProcessor final {
 
         std::unique_ptr<ModParamSet> overriddenParams;
         overriddenParams.reset(collectOverriddenParamSet(modInfop, paramsp, pinsp));
-        AstNodeModule* foundp = modInfop->findNodeWithOverriddenParamSet(overriddenParams.get());
+        AstNodeModule* foundp = modInfop->findParamedNode(overriddenParams.get());
         if (foundp) {
             UINFO(7, "  module found with overridden param set\n");
             return foundp;
@@ -783,12 +778,11 @@ class ParamProcessor final {
         }
         (void)hasEmptyParam;
         collectedParams->rehash();
-        foundp = modInfop->findNodeWithOverriddenParamSet(collectedParams.get());
-        if (!foundp) foundp = modInfop->findNodeWithFullParamSet(collectedParams.get());
+        foundp = modInfop->findParamedNode(collectedParams.get());
         if (foundp) {
             UINFO(7, "  module found with collected param set\n");
-            modInfop->insertOverriddenParamSet(overriddenParams.release(), foundp);
-            modInfop->insertOverriddenParamSet(collectedParams.release(), foundp);
+            modInfop->insertParamedModMap(overriddenParams.release(), foundp);
+            modInfop->insertParamedModMap(collectedParams.release(), foundp);
             return foundp;
         }
         AstNodeModule* clonedModp = nullptr;
@@ -797,8 +791,7 @@ class ParamProcessor final {
         auto evaluatedParams = std::make_unique<ModParamSet>(*overriddenParams);
         clonedModp = evaluateModParams(modp, modInfop, evaluatedParams.get());
 
-        foundp = modInfop->findNodeWithOverriddenParamSet(evaluatedParams.get());
-        if (!foundp) foundp = modInfop->findNodeWithFullParamSet(evaluatedParams.get());
+        foundp = modInfop->findParamedNode(evaluatedParams.get());
         if (foundp) {
             UINFO(7, "  module found with evaluated param set\n");
 
@@ -814,9 +807,9 @@ class ParamProcessor final {
             if (clonedModp) VL_DO_DANGLING(m_deleter.pushDeletep(clonedModp), clonedModp);
 #endif
 
-            modInfop->insertOverriddenParamSet(overriddenParams.release(), foundp);
-            modInfop->insertOverriddenParamSet(collectedParams.release(), foundp);
-            modInfop->insertOverriddenParamSet(evaluatedParams.release(), foundp);
+            modInfop->insertParamedModMap(overriddenParams.release(), foundp);
+            modInfop->insertParamedModMap(collectedParams.release(), foundp);
+            modInfop->insertParamedModMap(evaluatedParams.release(), foundp);
             return foundp;
         }
 
@@ -824,8 +817,6 @@ class ParamProcessor final {
             UASSERT_OBJ(!modInfop->hierBlock(), m_cellNodep,
                         "Failed to find module for hierarchical block\n");
         }
-        // Clone a new one if we didn't do it
-        // if (!clonedModp) clonedModp = deepCloneModule(modp, modInfop, collectedParams.get());
         DeparamedModInfo* deparamedModInfo = new DeparamedModInfo;
         deparamedModInfo->hierBlock(modInfop->hierBlock());
         m_allocatedModInfo.push_back(deparamedModInfo);
@@ -834,9 +825,9 @@ class ParamProcessor final {
         if (!updateClonedModInfo(modInfop, clonedModp, collectedParams.get())) return nullptr;
         collectedParams->skipTypesRef();
         UINFO(6, "  insert new deparamed module: " << clonedModp << endl);
-        modInfop->insertOverriddenParamSet(overriddenParams.release(), clonedModp);
-        modInfop->insertOverriddenParamSet(collectedParams.release(), clonedModp);
-        modInfop->insertFullParamSet(evaluatedParams.release(), clonedModp);
+        modInfop->addParamedMod(evaluatedParams.release(), clonedModp);
+        modInfop->insertParamedModMap(overriddenParams.release(), clonedModp);
+        modInfop->insertParamedModMap(collectedParams.release(), clonedModp);
         // Keep tree sorted by level. Note: Different parameterizations of the same recursive
         // module end up with the same level, which we will need to fix up at the end, as we do not
         // know up front how recursive modules are expanded, and a later expansion might re-use an
@@ -990,7 +981,8 @@ class ParamProcessor final {
                 auto* paramSetp = new ModParamSet;
                 paramSetp->m_params = std::move(paramsList);
                 paramSetp->rehash();
-                modInfo->insertFullParamSet(paramSetp, paramModp);
+                modInfo->addParamedMod(paramSetp, paramModp);
+                modInfo->insertParamedModMap(paramSetp, paramModp);
             }
         }
     }
