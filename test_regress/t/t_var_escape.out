@@ -11,9 +11,11 @@ $timescale 1ps $end
    $var wire 1 # clk $end
    $var wire 32 ( cyc [31:0] $end
    $var wire 1 $ escaped_normal $end
-   $var wire 1 $ double__underscore $end
-   $var wire 1 $ 9num $end
-   $var wire 1 $ bra[ket]slash/dash-colon:9backslash\done $end
+   $var wire 1 % double__underscore $end
+   $var wire 1 $ underscore_at_the_end_ $end
+   $var wire 1 $ double__underscore_at_the_end__ $end
+   $var wire 1 & 9num $end
+   $var wire 1 ' bra[ket]slash/dash-colon:9backslash\done $end
    $var wire 1 $ wire $end
    $var wire 1 $ check_alias $end
    $var wire 1 $ check:alias $end

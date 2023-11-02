@@ -21,6 +21,15 @@ module t (/*AUTOARG*/
    output  double__underscore ;
    wire  double__underscore = cyc[0];
 
+   wire  underscore_at_the_end_          = cyc[0];
+   wire  double__underscore_at_the_end__ = cyc[0];
+
+   // Only underscores, ignored in trace
+   wire  _    = cyc[0];
+   wire  __   = cyc[0];
+   wire  ___  = cyc[0];
+   wire  ____ = cyc[0];
+
    // C doesn't allow leading non-alpha, so must escape
    output \9num ;
    wire \9num = cyc[0];
@@ -45,7 +54,12 @@ module t (/*AUTOARG*/
       cyc <= cyc + 1;
       if (escaped_normal != cyc[0]) $stop;
       if (\escaped_normal != cyc[0]) $stop;
-      if (double__underscore != cyc[0]) $stop;
+      if (underscore_at_the_end_ != cyc[0]) $stop;
+      if (double__underscore_at_the_end__ != cyc[0]) $stop;
+      if (_ != cyc[0]) $stop;
+      if (__ != cyc[0]) $stop;
+      if (___ != cyc[0]) $stop;
+      if (____ != cyc[0]) $stop;
       if (\9num != cyc[0]) $stop;
       if (\bra[ket]slash/dash-colon:9backslash\done != cyc[0]) $stop;
       if (\wire != cyc[0]) $stop;

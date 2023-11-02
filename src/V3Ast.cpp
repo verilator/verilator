@@ -97,18 +97,17 @@ AstNode* AstNode::abovep() const {
 string AstNode::encodeName(const string& namein) {
     // Encode signal name raw from parser, then not called again on same signal
     string out;
-    for (string::const_iterator pos = namein.begin(); pos != namein.end(); ++pos) {
+    out.reserve(namein.size());
+    for (auto pos = namein.begin(); pos != namein.end(); ++pos) {
         if ((pos == namein.begin()) ? std::isalpha(pos[0])  // digits can't lead identifiers
                                     : std::isalnum(pos[0])) {
             out += pos[0];
         } else if (pos[0] == '_') {
+            out += pos[0];
+            if (pos + 1 == namein.end()) break;
             if (pos[1] == '_') {
-                out += "_";
-                out += "__05F";  // hex(_) = 0x5F
                 ++pos;
-                if (pos == namein.end()) break;
-            } else {
-                out += pos[0];
+                out += "__05F";  // hex(_) = 0x5F
             }
         } else {
             // Need the leading 0 so this will never collide with
