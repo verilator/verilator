@@ -808,95 +808,10 @@ public:
 };
 
 //######################################################################
-// Emit to a stream (perhaps stringstream)
-
-class EmitVPrefixedFormatter final : public V3OutFormatter {
-    std::ostream& m_os;
-    const string m_prefix;  // What to print at beginning of each line
-    const int m_flWidth;  // Padding of fileline
-    int m_column = 0;  // Rough location; need just zero or non-zero
-    FileLine* m_prefixFl;
-    // METHODS
-    void putcOutput(char chr) override {
-        if (chr == '\n') {
-            m_column = 0;
-            m_os << chr;
-        } else {
-            if (m_column == 0) {
-                m_column = 10;
-                m_os << m_prefixFl->ascii() + ":";
-                m_os << V3OutFile::indentSpaces(m_flWidth - (m_prefixFl->ascii().length() + 1));
-                m_os << " ";
-                m_os << m_prefix;
-            }
-            ++m_column;
-            m_os << chr;
-        }
-    }
-
-    void putsOutput(const char* strg) override {
-        for (const char* cp = strg; *cp; cp++) putcOutput(*cp);
-    }
-
-public:
-    void prefixFl(FileLine* fl) { m_prefixFl = fl; }
-    FileLine* prefixFl() const { return m_prefixFl; }
-    int column() const { return m_column; }
-    EmitVPrefixedFormatter(std::ostream& os, const string& prefix, int flWidth)
-        : V3OutFormatter{"__STREAM", V3OutFormatter::LA_VERILOG}
-        , m_os(os)  // Need () or GCC 4.8 false warning
-        , m_prefix{prefix}
-        , m_flWidth{flWidth} {
-        m_prefixFl = v3Global.rootp()->fileline();  // NETLIST's fileline instead of nullptr to
-                                                    // avoid nullptr checks
-    }
-    ~EmitVPrefixedFormatter() override {
-        if (m_column) puts("\n");
-    }
-};
-
-class EmitVPrefixedVisitor final : public EmitVBaseVisitorConst {
-    // MEMBERS
-    EmitVPrefixedFormatter m_formatter;  // Special verilog formatter (Way down the
-                                         // inheritance is another unused V3OutFormatter)
-    // METHODS
-    void putsNoTracking(const string& str) override { m_formatter.putsNoTracking(str); }
-    void puts(const string& str) override { m_formatter.puts(str); }
-    // We don't use m_formatter's putbs because the tokens will change filelines
-    // and insert returns at the proper locations
-    void putbs(const string& str) override { m_formatter.puts(str); }
-    void putfs(AstNode* nodep, const string& str) override { putfsqs(nodep, str, false); }
-    void putqs(AstNode* nodep, const string& str) override { putfsqs(nodep, str, true); }
-    void putfsqs(AstNode* nodep, const string& str, bool quiet) {
-        if (m_formatter.prefixFl() != nodep->fileline()) {
-            m_formatter.prefixFl(nodep->fileline());
-            if (m_formatter.column()) puts("\n");  // This in turn will print the m_prefixFl
-        }
-        if (!quiet && nodep->user3()) puts("%%");
-        putbs(str);
-    }
-
-public:
-    EmitVPrefixedVisitor(const AstNode* nodep, std::ostream& os, const string& prefix, int flWidth,
-                         AstSenTree* domainp, bool user3mark)
-        : EmitVBaseVisitorConst{false, domainp}
-        , m_formatter{os, prefix, flWidth} {
-        if (user3mark) VNUser3InUse::check();
-        iterateConst(const_cast<AstNode*>(nodep));
-    }
-    ~EmitVPrefixedVisitor() override = default;
-};
-
-//######################################################################
 // EmitV class functions
 
 void V3EmitV::verilogForTree(const AstNode* nodep, std::ostream& os) {
     { EmitVStreamVisitor{nodep, os}; }
-}
-
-void V3EmitV::verilogPrefixedTree(const AstNode* nodep, std::ostream& os, const string& prefix,
-                                  int flWidth, AstSenTree* domainp, bool user3mark) {
-    { EmitVPrefixedVisitor{nodep, os, prefix, flWidth, domainp, user3mark}; }
 }
 
 void V3EmitV::emitvFiles() {
