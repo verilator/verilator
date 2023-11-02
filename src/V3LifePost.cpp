@@ -252,8 +252,6 @@ private:
 
     // VISITORS
     void visit(AstTopScope* nodep) override {
-        AstNode::user4ClearTree();  // user4p() used on entire tree
-
         // First, build maps of every location (mtask and sequence
         // within the mtask) where each varscope is read, and written.
         iterateChildren(nodep);

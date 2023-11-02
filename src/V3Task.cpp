@@ -273,8 +273,6 @@ public:
     // CONSTRUCTORS
     explicit TaskStateVisitor(AstNetlist* nodep) {
         m_curVxp = new TaskCodeVertex{&m_callGraph};
-        AstNode::user3ClearTree();
-        AstNode::user4ClearTree();
         //
         iterate(nodep);
         //

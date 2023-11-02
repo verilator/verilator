@@ -160,7 +160,6 @@ private:
 
     // VISITs
     void visit(AstNetlist* nodep) override {
-        AstNode::user1ClearTree();
         readModNames();
         iterateChildren(nodep);
         // Find levels in graph
