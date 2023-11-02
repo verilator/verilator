@@ -107,7 +107,10 @@ string AstNode::encodeName(const string& namein) {
         } else if (pos[0] == '_') {
             out += pos[0];
             if (pos + 1 == namein.end()) break;
-            if (pos[1] == '_') out += "__05F";  // hex(_) = 0x5F
+            if (pos[1] == '_') {
+                ++pos;
+                out += "__05F";  // hex(_) = 0x5F
+            }
         } else {
             // Need the leading 0 so this will never collide with
             // a user identifier nor a temp we create in Verilator.
