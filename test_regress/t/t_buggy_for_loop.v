@@ -6,10 +6,10 @@
 
 module t;
 `define BIT_PERIOD_CC 32
-`define SYS_CLK_PERIOD 8000 
-parameter shortint unsigned              W_DATA             = 32; 
-parameter int unsigned                   X_WORD_ADDR        = 4; 
-parameter                  [5:0]         C_RX_DATA_LEN      = 44; 
+`define SYS_CLK_PERIOD 8000
+parameter shortint unsigned              W_DATA             = 32;
+parameter int unsigned                   X_WORD_ADDR        = 4;
+parameter                  [5:0]         C_RX_DATA_LEN      = 44;
 logic i2tag;
 logic sys_clk;
 task sendZero;
@@ -20,20 +20,20 @@ task sendZero;
        repeat (`BIT_PERIOD_CC/2) @(posedge sys_clk); //
        i2tag =0;
     end
-endtask:sendZero 
+endtask:sendZero
 
 
 task sendOne;
     begin
-       repeat (`BIT_PERIOD_CC) @(posedge sys_clk); 
+       repeat (`BIT_PERIOD_CC) @(posedge sys_clk);
     end
-endtask:sendOne 
+endtask:sendOne
 //------------------------------------------
 // Calc Parity
 //------------------------------------------
 function logic [44:0] calc_parity ( input [W_DATA-1:0] i_data );
     logic [44:0] o_data;
-    int one_cnt; 
+    int one_cnt;
     int offset;
         one_cnt =0;
         offset=0;
@@ -68,9 +68,9 @@ function logic [44:0] calc_parity ( input [W_DATA-1:0] i_data );
         o_data[44] =1'b0;
         $write("<<<<<<<----- computed parity word data %0h completed ----->>>>>\n", o_data);
         return o_data;
-endfunction :calc_parity 
+endfunction :calc_parity
 //------------------------------------------
-// Calc sendData 
+// Calc sendData
 //------------------------------------------
 
 task sendData( input [W_DATA-1:0] i_data );
@@ -87,7 +87,7 @@ task sendData( input [W_DATA-1:0] i_data );
        end
         $write("<<<<<<<----- sending data %0h completed ----->>>>>\n", i_data);
     end
-endtask :sendData 
+endtask :sendData
 
 //------------------------------------------
 // Calc sendAddr
@@ -96,7 +96,7 @@ task sendAddr( input [X_WORD_ADDR-1:0] i_addr );
     begin
        logic  parity;
        $write("<<<<<<<----- sending addr %0h transaction ----->>>>>\n", i_addr);
-       parity =^i_addr; 
+       parity =^i_addr;
        for (int i =0 ; i < X_WORD_ADDR  ; i++) begin // Send MSB first
            if (i_addr[i] == 1'b1 ) begin
                sendOne();
@@ -113,7 +113,7 @@ task sendAddr( input [X_WORD_ADDR-1:0] i_addr );
        end
        $write("<<<<<<<----- sending addr %0h transaction completed ----->>>>>\n", i_addr);
     end
-endtask :sendAddr 
+endtask :sendAddr
 always begin
  #((`SYS_CLK_PERIOD * 1ns)/2) sys_clk = !sys_clk;
 end
