@@ -18,7 +18,7 @@ compile(
     threads => 2
     );
 
-foreach my $dotname ("linkcells", "task_call", "gate_simp", "gate_opt",
+foreach my $dotname ("linkcells", "task_call", "gate_graph", "gate_final",
         "acyc_simp", "orderg_pre", "orderg_acyc", "orderg_order", "orderg_domain",
         "ordermv_initial", "ordermv_hazards", "ordermv_contraction",
         "ordermv_transitive1", "orderg_done", "ordermv_transitive2", "schedule") {
