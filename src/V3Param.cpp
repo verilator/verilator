@@ -1313,6 +1313,10 @@ class ParamVisitor final : public VNVisitor {
             // so process here rather than at the generate to avoid iteration problems
             UINFO(9, "  BEGIN " << nodep << endl);
             UINFO(9, "  GENFOR " << forp << endl);
+            // Visit child nodes before unrolling
+            iterateAndNextNull(forp->initsp());
+            iterateAndNextNull(forp->condp());
+            iterateAndNextNull(forp->incsp());
             V3Width::widthParamsEdit(forp);  // Param typed widthing will NOT recurse the body
             // Outer wrapper around generate used to hold genvar, and to ensure genvar
             // doesn't conflict in V3LinkDot resolution with other genvars
