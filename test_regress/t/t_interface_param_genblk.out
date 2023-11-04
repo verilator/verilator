@@ -1,0 +1,24 @@
+-Info: t/t_interface_param_genblk.v:35:9: correct
+                                        : ... note: In instance 't.i_sub'
+   35 |         $info("correct");
+      |         ^~~~~
+-Info: t/t_interface_param_genblk.v:44:13: i = 98, j = 2
+                                         : ... note: In instance 't.i_sub'
+   44 |             $info("i = %0d, j = %0d", i, j);
+      |             ^~~~~
+-Info: t/t_interface_param_genblk.v:44:13: i = 98, j = 1
+                                         : ... note: In instance 't.i_sub'
+   44 |             $info("i = %0d, j = %0d", i, j);
+      |             ^~~~~
+-Info: t/t_interface_param_genblk.v:44:13: i = 100, j = 2
+                                         : ... note: In instance 't.i_sub'
+   44 |             $info("i = %0d, j = %0d", i, j);
+      |             ^~~~~
+-Info: t/t_interface_param_genblk.v:44:13: i = 100, j = 1
+                                         : ... note: In instance 't.i_sub'
+   44 |             $info("i = %0d, j = %0d", i, j);
+      |             ^~~~~
+-Info: t/t_interface_param_genblk.v:50:26: correct
+                                         : ... note: In instance 't.i_sub'
+   50 |         intf.B * 50:     $info("correct");
+      |                          ^~~~~
