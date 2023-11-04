@@ -967,7 +967,7 @@ string V3Options::argString(int argc, char** argv) {
     string opts;
     for (int i = 0; i < argc; ++i) {
         if (i != 0) opts += " ";
-        opts += string(argv[i]);
+        opts += string{argv[i]};
     }
     return opts;
 }
@@ -1687,7 +1687,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
 
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
-        addIncDirUser(parseFileArg(optdir, string(valp)));
+        addIncDirUser(parseFileArg(optdir, string{valp}));
     });
     parser.finalize();
 
