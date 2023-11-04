@@ -32,13 +32,13 @@ execute(
     );
 
 execute(
-    all_run_flags => ["+verilator+prof+threads+window+0"],
+    all_run_flags => ["+verilator+prof+exec+window+0"],
     fails => 1,
     expect_filename => "t/" . $Self->{name} . "_d.out",
     );
 
 execute(
-    all_run_flags => ["+verilator+prof+threads+window+1000000000000000000000000"],
+    all_run_flags => ["+verilator+prof+exec+window+1000000000000000000000000"],
     fails => 1,
     expect_filename => "t/" . $Self->{name} . "_e.out",
     );

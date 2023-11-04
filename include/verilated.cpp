@@ -2710,14 +2710,11 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
                         "Exiting due to command line argument (not an error)");
         } else if (arg == "+verilator+noassert") {
             assertOn(false);
-        } else if (commandArgVlUint64(arg, "+verilator+prof+exec+start+", u64)
-                   || commandArgVlUint64(arg, "+verilator+prof+threads+start+", u64)) {
+        } else if (commandArgVlUint64(arg, "+verilator+prof+exec+start+", u64)) {
             profExecStart(u64);
-        } else if (commandArgVlUint64(arg, "+verilator+prof+exec+window+", u64, 1)
-                   || commandArgVlUint64(arg, "+verilator+prof+threads+window+", u64, 1)) {
+        } else if (commandArgVlUint64(arg, "+verilator+prof+exec+window+", u64, 1)) {
             profExecWindow(u64);
-        } else if (commandArgVlString(arg, "+verilator+prof+exec+file+", str)
-                   || commandArgVlString(arg, "+verilator+prof+threads+file+", str)) {
+        } else if (commandArgVlString(arg, "+verilator+prof+exec+file+", str)) {
             profExecFilename(str);
         } else if (commandArgVlString(arg, "+verilator+prof+vlt+file+", str)) {
             profVltFilename(str);
