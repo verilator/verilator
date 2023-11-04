@@ -1,7 +1,5 @@
-%Warning-DEPRECATED: Option -O<letter> is deprecated. Use -f<optimization> or -fno-<optimization> instead.
+%Warning-DEPRECATED: Option --trace-fst-thread is deprecated. Use --trace-fst with --trace-threads > 0.
                      ... For warning description see https://verilator.org/warn/DEPRECATED?v=latest
                      ... Use "/* verilator lint_off DEPRECATED */" and lint_on around source to disable this message.
-%Warning-DEPRECATED: Option --prof-threads is deprecated. Use --prof-exec and --prof-pgo instead.
-%Warning-DEPRECATED: Option --trace-fst-thread is deprecated. Use --trace-fst with --trace-threads > 0.
 %Warning-DEPRECATED: Option order-clock-delay is deprecated and has no effect.
 %Error: Exiting due to

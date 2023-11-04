@@ -1330,47 +1330,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-O2", CbCall, [this]() { optimize(2); });
     DECL_OPTION("-O3", CbCall, [this]() { optimize(3); });
 
-    DECL_OPTION("-O", CbPartialMatch, [this, fl](const char* optp) {
-        // Optimization, e.g. -O1rX
-        // LCOV_EXCL_START
-        fl->v3warn(DEPRECATED, "Option -O<letter> is deprecated. "
-                               "Use -f<optimization> or -fno-<optimization> instead.");
-        for (const char* cp = optp; *cp; ++cp) {
-            const bool flag = std::isupper(*cp);
-            switch (std::tolower(*cp)) {
-            case '0': optimize(0); break;
-            case '1': optimize(1); break;
-            case '2': optimize(2); break;
-            case '3': optimize(3); break;
-            case 'a': m_fTable = flag; break;  // == -fno-table
-            case 'b': m_fCombine = flag; break;  // == -fno-combine
-            case 'c': m_fConst = flag; break;  // == -fno-const
-            case 'd': m_fDedupe = flag; break;  // == -fno-dedup
-            case 'e': m_fCase = flag; break;  // == -fno-case
-            case 'g': m_fGate = flag; break;  // == -fno-gate
-            case 'i': m_fInline = flag; break;  // == -fno-inline
-            case 'k': m_fSubstConst = flag; break;  // == -fno-subst-const
-            case 'l': m_fLife = flag; break;  // == -fno-life
-            case 'm': m_fAssemble = flag; break;  // == -fno-assemble
-            case 'o': m_fConstBitOpTree = flag; break;  // == -fno-const-bit-op-tree
-            case 'p':
-                m_public = !flag;
-                break;  // With -Op so flag=0, we want public on so few optimizations done
-            case 'r': m_fReorder = flag; break;  // == -fno-reorder
-            case 's': m_fSplit = flag; break;  // == -fno-split
-            case 't': m_fLifePost = flag; break;  // == -fno-life-post
-            case 'u': m_fSubst = flag; break;  // == -fno-subst
-            case 'v': m_fReloop = flag; break;  // == -fno-reloop
-            case 'w': m_fMergeCond = flag; break;  // == -fno-merge-cond
-            case 'x': m_fExpand = flag; break;  // == -fno-expand
-            case 'y': m_fAcycSimp = flag; break;  // == -fno-acyc-simp
-            case 'z': m_fLocalize = flag; break;  // == -fno-localize
-            default:
-                break;  // No error, just ignore
-                // LCOV_EXCL_STOP
-            }
-        }
-    });
     DECL_OPTION("-o", Set, &m_exeName);
     DECL_OPTION("-order-clock-delay", CbOnOff, [fl](bool /*flag*/) {
         fl->v3warn(DEPRECATED, "Option order-clock-delay is deprecated and has no effect.");
@@ -1417,11 +1376,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                 [this]() { m_profC = m_profCFuncs = true; });  // Renamed
     DECL_OPTION("-prof-exec", OnOff, &m_profExec);
     DECL_OPTION("-prof-pgo", OnOff, &m_profPgo);
-    DECL_OPTION("-prof-threads", CbOnOff, [this, fl](bool flag) {
-        fl->v3warn(DEPRECATED, "Option --prof-threads is deprecated. "
-                               "Use --prof-exec and --prof-pgo instead.");
-        m_profExec = m_profPgo = flag;
-    });
     DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
     DECL_OPTION("-protect-key", Set, &m_protectKey);
     DECL_OPTION("-protect-lib", CbVal, [this](const char* valp) {
