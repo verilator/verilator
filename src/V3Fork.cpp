@@ -445,7 +445,11 @@ public:
 
         if (typesAdded) v3Global.rootp()->typeTablep()->repairCache();
     }
-    ~DynScopeVisitor() override = default;
+    ~DynScopeVisitor() override {
+        std::set<ForkDynScopeFrame*> frames;
+        for (auto node_frame : m_frames) { frames.insert(node_frame.second); }
+        for (auto* frame : frames) { delete frame; }
+    }
 };
 
 //######################################################################
