@@ -125,8 +125,6 @@ public:
     // METHODS
     void begin() {
         // Start a new if/else tracking graph
-        // See NODE STATE comment in ActiveLatchCheckVisitor
-        AstNode::user1ClearTree();
         m_curVertexp = new LatchDetectGraphVertex{this, "ROOT"};
     }
     // Clear out userp field of referenced outputs on destruction

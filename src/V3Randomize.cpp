@@ -55,7 +55,8 @@ private:
             for (auto* memberp = classp->stmtsp(); memberp; memberp = memberp->nextp()) {
                 // If member is rand and of class type, mark its class
                 if (VN_IS(memberp, Var) && VN_AS(memberp, Var)->isRand()) {
-                    if (const auto* const classRefp = VN_CAST(memberp->dtypep(), ClassRefDType)) {
+                    if (const auto* const classRefp
+                        = VN_CAST(memberp->dtypep()->skipRefp(), ClassRefDType)) {
                         auto* const rclassp = classRefp->classp();
                         if (!rclassp->user1()) {
                             rclassp->user1(true);
@@ -100,7 +101,7 @@ private:
         iterateChildrenConst(nodep);
         if (nodep->name() != "randomize") return;
         if (const AstClassRefDType* const classRefp
-            = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
+            = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
             AstClass* const classp = classRefp->classp();
             classp->user1(true);
             markMembers(classp);
@@ -177,12 +178,13 @@ private:
         const std::string type = AstCDType::typeToHold(items);
         const std::string name = "VlRandC<" + type + ", " + cvtToStr(items) + "ULL>";
         // Create or reuse (to avoid duplicates) randomization object dtype
-        auto it = m_randcDtypes.find(name);
-        if (it != m_randcDtypes.end()) return it->second;
-        AstCDType* newp = new AstCDType{fl, name};
-        v3Global.rootp()->typeTablep()->addTypesp(newp);
-        m_randcDtypes.emplace(std::make_pair(name, newp));
-        return newp;
+        const auto pair = m_randcDtypes.emplace(name, nullptr);
+        if (pair.second) {
+            AstCDType* newp = new AstCDType{fl, name};
+            v3Global.rootp()->typeTablep()->addTypesp(newp);
+            pair.first->second = newp;
+        }
+        return pair.first->second;
     }
 
     AstVar* newRandcVarsp(AstVar* varp) {

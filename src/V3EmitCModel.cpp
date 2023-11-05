@@ -112,7 +112,7 @@ class EmitCModel final : public EmitCFunc {
                 }
             }
         }
-        if (optSystemC() && v3Global.usesTiming()) puts("sc_event trigger_eval;\n");
+        if (optSystemC() && v3Global.usesTiming()) puts("sc_core::sc_event trigger_eval;\n");
 
         // Cells instantiated by the top level (for access to /* verilator public */)
         puts("\n// CELLS\n"
@@ -200,7 +200,7 @@ class EmitCModel final : public EmitCFunc {
         }
         if (v3Global.opt.trace() && optSystemC()) {
             puts("/// SC tracing; avoid overloaded virtual function lint warning\n");
-            puts("void trace(sc_trace_file* tfp) const override { "
+            puts("void trace(sc_core::sc_trace_file* tfp) const override { "
                  "::sc_core::sc_module::trace(tfp); }\n");
         }
 
@@ -255,7 +255,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\n");
         puts(topClassName() + "::" + topClassName());
         if (optSystemC()) {
-            puts("(sc_module_name /* unused */)\n");
+            puts("(sc_core::sc_module_name /* unused */)\n");
             puts("    : VerilatedModel{*Verilated::threadContextp()}\n");
             puts("    , vlSymsp{new " + symClassName() + "(contextp(), name(), this)}\n");
         } else {
@@ -364,7 +364,8 @@ class EmitCModel final : public EmitCFunc {
             puts("\nvoid " + topClassName() + "::eval() {\n");
             puts("eval_step();\n");
             puts("if (eventsPending()) {\n");
-            puts("sc_time dt = sc_time::from_value(nextTimeSlot() - contextp()->time());\n");
+            puts("sc_core::sc_time dt = sc_core::sc_time::from_value(nextTimeSlot() - "
+                 "contextp()->time());\n");
             puts("next_trigger(dt, trigger_eval);\n");
             puts("} else {\n");
             puts("next_trigger(trigger_eval);\n");
@@ -401,10 +402,7 @@ class EmitCModel final : public EmitCFunc {
         puts(topModNameProtected + "__" + protect("_eval_settle") + "(&(vlSymsp->TOP));\n");
         puts("}\n");
 
-        if (v3Global.opt.profExec()) {
-            puts("vlSymsp->__Vm_executionProfilerp->configure();\n");
-            puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"eval\");\n");
-        }
+        if (v3Global.opt.profExec()) puts("vlSymsp->__Vm_executionProfilerp->configure();\n");
 
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Eval\\n\"););\n");
         puts(topModNameProtected + "__" + protect("_eval") + "(&(vlSymsp->TOP));\n");
@@ -412,7 +410,6 @@ class EmitCModel final : public EmitCFunc {
         putsDecoration("// Evaluate cleanup\n");
         puts("Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);\n");
 
-        if (v3Global.opt.profExec()) puts("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n");
         puts("}\n");
     }
 

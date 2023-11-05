@@ -68,6 +68,8 @@
 #include "V3Width.h"
 
 #include "V3Const.h"
+#include "V3Error.h"
+#include "V3Global.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
 #include "V3Randomize.h"
@@ -2294,15 +2296,14 @@ private:
             }
             num.opAssign(constp->num());
             // Look for duplicates
-            if (inits.find(num) != inits.end()) {  // IEEE says illegal
-                const AstNode* const otherp = inits.find(num)->second;
+            const auto pair = inits.emplace(num, itemp);
+            if (!pair.second) {  // IEEE says illegal
+                const AstNode* const otherp = pair.first->second;
                 itemp->v3error("Overlapping enumeration value: "
                                << itemp->prettyNameQ() << '\n'
                                << itemp->warnContextPrimary() << '\n'
                                << otherp->warnOther() << "... Location of original declaration\n"
                                << otherp->warnContextSecondary());
-            } else {
-                inits.emplace(num, itemp);
             }
             num.opAdd(one, constp->num());
         }
@@ -3529,7 +3530,7 @@ private:
             if (AstNodeFTask* const ftaskp
                 = VN_CAST(m_memberMap.findMember(classp, nodep->name()), NodeFTask)) {
                 userIterate(ftaskp, nullptr);
-                if (ftaskp->lifetime().isStatic()) {
+                if (ftaskp->isStatic()) {
                     AstNodeExpr* argsp = nullptr;
                     if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
                     AstNodeFTaskRef* newp = nullptr;
@@ -3984,12 +3985,10 @@ private:
                                    = VN_CAST(patp->keyp(), NodeDType)) {
                             // data_type: default_value
                             const string dtype = nodedtypep->dtypep()->prettyDTypeName();
-                            auto it = dtypemap.find(dtype);
-                            if (it == dtypemap.end()) {
-                                dtypemap.emplace(dtype, patp);
-                            } else {
+                            const auto pair = dtypemap.emplace(dtype, patp);
+                            if (!pair.second) {
                                 // Override stored default_value
-                                it->second = patp->cloneTree(false);
+                                pair.first->second = patp->cloneTree(false);
                             }
                         } else {
                             // Undefined pattern
@@ -4318,6 +4317,47 @@ private:
             }
         }
         return valuep;
+    }
+
+    static void checkEventAssignement(const AstNodeAssign* const asgnp) {
+        string unsupEvtAsgn;
+        if (!usesDynamicScheduler(asgnp->lhsp())) unsupEvtAsgn = "to";
+        if (asgnp->rhsp()->dtypep()->isEvent() && !usesDynamicScheduler(asgnp->rhsp())) {
+            unsupEvtAsgn += (unsupEvtAsgn.empty() ? "from" : " and from");
+        }
+        if (!unsupEvtAsgn.empty()) {
+            asgnp->v3warn(E_UNSUPPORTED, "Assignement "
+                                             << unsupEvtAsgn
+                                             << " event in statically scheduled context.\n"
+                                             << asgnp->warnMore()
+                                             << "Static event "
+                                                "scheduling won't be able to handle this.\n"
+                                             << asgnp->warnMore()
+                                             << "... Suggest move the event into a "
+                                                "completely dynamic context, eg. a class,  and "
+                                                "reference it only from such context.");
+        }
+    }
+
+    static bool usesDynamicScheduler(AstNode* nodep) {
+        UASSERT_OBJ(nodep->dtypep()->isEvent(), nodep, "Node does not have an event dtype");
+
+        AstVarRef* vrefp;
+        while (true) {
+            vrefp = VN_CAST(nodep, VarRef);
+            if (vrefp) return usesDynamicScheduler(vrefp);
+            if (VN_IS(nodep, MemberSel)) {
+                return true;
+            } else if (AstNodeSel* selp = VN_CAST(nodep, NodeSel)) {
+                nodep = selp->fromp();
+            } else {
+                return false;
+            }
+        }
+    }
+
+    static bool usesDynamicScheduler(AstVarRef* vrefp) {
+        return VN_IS(vrefp->classOrPackagep(), Class) || vrefp->varp()->isFuncLocal();
     }
 
     void visit(AstPatMember* nodep) override {
@@ -4714,12 +4754,6 @@ private:
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
             // if (debug()) nodep->dumpTree("-  AssignOut: ");
         }
-        if (const AstBasicDType* const basicp = nodep->rhsp()->dtypep()->basicp()) {
-            if (basicp->isEvent()) {
-                // see t_event_copy.v for commentary on the mess involved
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: assignment of event data type");
-            }
-        }
         if (auto* const controlp = nodep->timingControlp()) {
             if (VN_IS(m_ftaskp, Func)) {
                 controlp->v3error("Timing controls are not legal in functions. Suggest use a task "
@@ -4774,7 +4808,12 @@ private:
             newp->dtypeSetVoid();
             nodep->replaceWith(newp->makeStmt());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            // return;
+            return;
+        }
+
+        if (nodep->hasDType() && nodep->dtypep()->isEvent()) {
+            checkEventAssignement(nodep);
+            v3Global.setAssignsEvents();
         }
     }
 
@@ -7151,30 +7190,33 @@ private:
     }
     AstVar* dimensionVarp(AstNodeDType* nodep, VAttrType attrType, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
-        const auto pos = m_tableMap.find(std::make_pair(nodep, attrType));
-        if (pos != m_tableMap.end()) return pos->second;
-        AstNodeArrayDType* const vardtypep
-            = new AstUnpackArrayDType{nodep->fileline(), nodep->findSigned32DType(),
-                                      new AstRange(nodep->fileline(), msbdim, 0)};
-        AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
-        v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
-        AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
-                                        "__Vdimtab_" + VString::downcase(attrType.ascii())
-                                            + cvtToStr(m_dtTables++),
-                                        vardtypep};
-        varp->isConst(true);
-        varp->isStatic(true);
-        varp->valuep(initp);
-        // Add to root, as don't know module we are in, and aids later structure sharing
-        v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(varp);
-        // Element 0 is a non-index and has speced values
-        initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, 0));
-        for (unsigned i = 1; i < msbdim + 1; ++i) {
-            initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, i));
+        const auto pair = m_tableMap.emplace(std::piecewise_construct,  //
+                                             std::forward_as_tuple(nodep, attrType),
+                                             std::forward_as_tuple(nullptr));
+        if (pair.second) {
+            AstNodeArrayDType* const vardtypep
+                = new AstUnpackArrayDType{nodep->fileline(), nodep->findSigned32DType(),
+                                          new AstRange(nodep->fileline(), msbdim, 0)};
+            AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
+            v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
+            AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
+                                            "__Vdimtab_" + VString::downcase(attrType.ascii())
+                                                + cvtToStr(m_dtTables++),
+                                            vardtypep};
+            varp->isConst(true);
+            varp->isStatic(true);
+            varp->valuep(initp);
+            // Add to root, as don't know module we are in, and aids later structure sharing
+            v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(varp);
+            // Element 0 is a non-index and has speced values
+            initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, 0));
+            for (unsigned i = 1; i < msbdim + 1; ++i) {
+                initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, i));
+            }
+            userIterate(varp, nullptr);  // May have already done $unit so must do this var
+            pair.first->second = varp;
         }
-        userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        m_tableMap.emplace(std::make_pair(nodep, attrType), varp);
-        return varp;
+        return pair.first->second;
     }
     uint64_t enumMaxValue(const AstNode* errNodep, const AstEnumDType* adtypep) {
         // Most enums unless overridden are 32 bits, so we size array
@@ -7196,94 +7238,97 @@ private:
         }
         return maxval;
     }
-    AstVar* enumVarp(AstEnumDType* nodep, VAttrType attrType, bool assoc, uint32_t msbdim) {
+    AstVar* enumVarp(AstEnumDType* const nodep, VAttrType attrType, bool assoc, uint32_t msbdim) {
         // Return a variable table which has specified dimension properties for this variable
-        const auto& tableMapr = nodep->tableMap();
-        const auto pos = tableMapr.find(attrType);
-        if (pos != tableMapr.end()) return pos->second;
-        UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " assoc=" << assoc
-                                            << " max=" << msbdim << " for " << nodep << endl);
-        AstNodeDType* basep;
-        if (attrType == VAttrType::ENUM_NAME) {
-            basep = nodep->findStringDType();
-        } else if (attrType == VAttrType::ENUM_VALID) {
-            // TODO in theory we could bit-pack the bits in the table, but
-            // would require additional operations to extract, so only
-            // would be worth it for larger tables which perhaps could be
-            // better handled with equation generation?
-            basep = nodep->findBitDType();
-        } else {
-            basep = nodep->dtypep();
-        }
-        AstNodeDType* vardtypep;
-        if (assoc) {
-            vardtypep = new AstAssocArrayDType{nodep->fileline(), basep, nodep};
-        } else {
-            vardtypep = new AstUnpackArrayDType{nodep->fileline(), basep,
-                                                new AstRange(nodep->fileline(), msbdim, 0)};
-        }
-        AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
-        v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
-        AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
-                                        "__Venumtab_" + VString::downcase(attrType.ascii())
-                                            + cvtToStr(m_dtTables++),
-                                        vardtypep};
-        varp->lifetime(VLifetime::STATIC);
-        varp->isConst(true);
-        varp->isStatic(true);
-        varp->valuep(initp);
-        // Add to root, as don't know module we are in, and aids later structure sharing
-        v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(varp);
+        const auto pair = nodep->tableMap().emplace(attrType, nullptr);
+        if (pair.second) {
+            UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " assoc=" << assoc
+                                                << " max=" << msbdim << " for " << nodep << endl);
+            AstNodeDType* basep;
+            if (attrType == VAttrType::ENUM_NAME) {
+                basep = nodep->findStringDType();
+            } else if (attrType == VAttrType::ENUM_VALID) {
+                // TODO in theory we could bit-pack the bits in the table, but
+                // would require additional operations to extract, so only
+                // would be worth it for larger tables which perhaps could be
+                // better handled with equation generation?
+                basep = nodep->findBitDType();
+            } else {
+                basep = nodep->dtypep();
+            }
+            AstNodeDType* vardtypep;
+            if (assoc) {
+                vardtypep = new AstAssocArrayDType{nodep->fileline(), basep, nodep};
+            } else {
+                vardtypep = new AstUnpackArrayDType{nodep->fileline(), basep,
+                                                    new AstRange(nodep->fileline(), msbdim, 0)};
+            }
+            AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
+            v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
+            AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
+                                            "__Venumtab_" + VString::downcase(attrType.ascii())
+                                                + cvtToStr(m_dtTables++),
+                                            vardtypep};
+            varp->lifetime(VLifetime::STATIC);
+            varp->isConst(true);
+            varp->isStatic(true);
+            varp->valuep(initp);
+            // Add to root, as don't know module we are in, and aids later structure sharing
+            v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(varp);
 
-        // Default for all unspecified values
-        if (attrType == VAttrType::ENUM_NAME) {
-            initp->defaultp(new AstConst{nodep->fileline(), AstConst::String{}, ""});
-        } else if (attrType == VAttrType::ENUM_NEXT || attrType == VAttrType::ENUM_PREV) {
-            initp->defaultp(new AstConst{nodep->fileline(), V3Number{nodep, nodep->width(), 0}});
-        } else if (attrType == VAttrType::ENUM_VALID) {
-            initp->defaultp(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
-        } else {
-            nodep->v3fatalSrc("Bad case");
-        }
+            // Default for all unspecified values
+            if (attrType == VAttrType::ENUM_NAME) {
+                initp->defaultp(new AstConst{nodep->fileline(), AstConst::String{}, ""});
+            } else if (attrType == VAttrType::ENUM_NEXT || attrType == VAttrType::ENUM_PREV) {
+                initp->defaultp(
+                    new AstConst{nodep->fileline(), V3Number{nodep, nodep->width(), 0}});
+            } else if (attrType == VAttrType::ENUM_VALID) {
+                initp->defaultp(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            } else {
+                nodep->v3fatalSrc("Bad case");
+            }
 
-        // Find valid values and populate
-        UASSERT_OBJ(nodep->itemsp(), nodep, "enum without items");
-        std::map<uint64_t, AstNodeExpr*> values;
-        {
-            AstEnumItem* const firstp = nodep->itemsp();
-            const AstEnumItem* prevp = firstp;  // Prev must start with last item
-            while (prevp->nextp()) prevp = VN_AS(prevp->nextp(), EnumItem);
-            for (AstEnumItem* itemp = firstp; itemp;) {
-                AstEnumItem* const nextp = VN_AS(itemp->nextp(), EnumItem);
-                const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
-                UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
-                const uint64_t i = vconstp->toUQuad();
-                if (attrType == VAttrType::ENUM_NAME) {
-                    values[i] = new AstConst{nodep->fileline(), AstConst::String{}, itemp->name()};
-                } else if (attrType == VAttrType::ENUM_NEXT) {
-                    values[i] = (nextp ? nextp : firstp)->valuep()->cloneTree(false);  // A const
-                } else if (attrType == VAttrType::ENUM_PREV) {
-                    values[i] = prevp->valuep()->cloneTree(false);  // A const
-                } else if (attrType == VAttrType::ENUM_VALID) {
-                    values[i] = new AstConst{nodep->fileline(), AstConst::BitTrue{}};
-                } else {
-                    nodep->v3fatalSrc("Bad case");
+            // Find valid values and populate
+            UASSERT_OBJ(nodep->itemsp(), nodep, "enum without items");
+            std::map<uint64_t, AstNodeExpr*> values;
+            {
+                AstEnumItem* const firstp = nodep->itemsp();
+                const AstEnumItem* prevp = firstp;  // Prev must start with last item
+                while (prevp->nextp()) prevp = VN_AS(prevp->nextp(), EnumItem);
+                for (AstEnumItem* itemp = firstp; itemp;) {
+                    AstEnumItem* const nextp = VN_AS(itemp->nextp(), EnumItem);
+                    const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
+                    UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
+                    const uint64_t i = vconstp->toUQuad();
+                    if (attrType == VAttrType::ENUM_NAME) {
+                        values[i]
+                            = new AstConst{nodep->fileline(), AstConst::String{}, itemp->name()};
+                    } else if (attrType == VAttrType::ENUM_NEXT) {
+                        values[i]
+                            = (nextp ? nextp : firstp)->valuep()->cloneTree(false);  // A const
+                    } else if (attrType == VAttrType::ENUM_PREV) {
+                        values[i] = prevp->valuep()->cloneTree(false);  // A const
+                    } else if (attrType == VAttrType::ENUM_VALID) {
+                        values[i] = new AstConst{nodep->fileline(), AstConst::BitTrue{}};
+                    } else {
+                        nodep->v3fatalSrc("Bad case");
+                    }
+                    prevp = itemp;
+                    itemp = nextp;
                 }
-                prevp = itemp;
-                itemp = nextp;
             }
-        }
-        // Add all specified values to table
-        if (assoc) {
-            for (const auto& itr : values) initp->addIndexValuep(itr.first, itr.second);
-        } else {
-            for (uint64_t i = 0; i < (msbdim + 1); ++i) {
-                if (values[i]) initp->addIndexValuep(i, values[i]);
+            // Add all specified values to table
+            if (assoc) {
+                for (const auto& itr : values) initp->addIndexValuep(itr.first, itr.second);
+            } else {
+                for (uint64_t i = 0; i < (msbdim + 1); ++i) {
+                    if (values[i]) initp->addIndexValuep(i, values[i]);
+                }
             }
+            userIterate(varp, nullptr);  // May have already done $unit so must do this var
+            pair.first->second = varp;
         }
-        userIterate(varp, nullptr);  // May have already done $unit so must do this var
-        nodep->tableMap().emplace(attrType, varp);
-        return varp;
+        return pair.first->second;
     }
 
     PatVecMap patVectorMap(AstPattern* nodep, const VNumRange& range) {
@@ -7299,10 +7344,9 @@ private:
                                           << patp->keyp()->prettyTypeName());
                 }
             }
-            if (patmap.find(element) != patmap.end()) {
+            const bool newEntry = patmap.emplace(element, patp).second;
+            if (!newEntry) {
                 patp->v3error("Assignment pattern key used multiple times: " << element);
-            } else {
-                patmap.emplace(element, patp);
             }
             element += range.leftToRightInc();
         }

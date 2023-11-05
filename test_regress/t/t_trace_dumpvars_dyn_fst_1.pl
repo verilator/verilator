@@ -21,7 +21,7 @@ execute(
     check_finished => 1,
     );
 
-fst_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
+fst_identical("$Self->{obj_dir}/simx.fst", $Self->{golden_filename});
 
 ok(1);
 1;

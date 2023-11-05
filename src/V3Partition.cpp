@@ -2586,7 +2586,7 @@ void V3Partition::debugMTaskGraphStats(const V3Graph* graphp, const string& stag
     // Look only at the cost of each mtask, neglect communication cost.
     // This will show us how much parallelism we expect, assuming cache-miss
     // costs are minor and the cost of running logic is the dominant cost.
-    PartParallelismEst vertexParEst(graphp);
+    PartParallelismEst vertexParEst{graphp};
     vertexParEst.traverse();
     vertexParEst.statsReport(stage);
     if (debug() >= 4) {
@@ -2662,9 +2662,9 @@ uint32_t V3Partition::setupMTaskDeps(V3Graph* mtasksp) {
     // coarsening algorithm assumes that the graph is connected.
     m_entryMTaskp = new LogicMTask{mtasksp, nullptr};
 
-    // The V3InstrCount within LogicMTask will set user5 on each AST
+    // The V3InstrCount within LogicMTask will set user1 on each AST
     // node, to assert that we never count any node twice.
-    const VNUser5InUse user5inUse;
+    const VNUser1InUse user1inUse;
 
     // Create the LogicMTasks for each MTaskMoveVertex
     for (V3GraphVertex *vtxp = m_fineDepsGraphp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
@@ -3047,7 +3047,7 @@ static void finalizeCosts(V3Graph* execMTaskGraphp) {
 
     // Record summary stats for final m_tasks graph.
     // (More verbose stats are available with --debugi-V3Partition >= 3.)
-    PartParallelismEst parEst(execMTaskGraphp);
+    PartParallelismEst parEst{execMTaskGraphp};
     parEst.traverse();
     parEst.statsReport("final");
     if (debug() >= 3) {

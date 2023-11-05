@@ -39,6 +39,10 @@ bool AstNode::isDouble() const VL_MT_STABLE {
 bool AstNode::isString() const VL_MT_STABLE {
     return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isString();
 }
+bool AstNode::isEvent() const VL_MT_STABLE {
+    return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isEvent();
+}
+
 bool AstNode::isSigned() const VL_MT_STABLE { return dtypep() && dtypep()->isSigned(); }
 
 bool AstNode::isClassHandleValue() const {

@@ -174,8 +174,7 @@ private:
             if (AstVarScope* const vscp = VN_CAST(stmtp, VarScope)) {
                 if (vscp->varp()->isFuncLocal() || vscp->varp()->isUsedLoopIdx()) {
                     UINFO(9, "   funcvsc " << vscp << endl);
-                    m_varToScopeMap.insert(
-                        std::make_pair(std::make_pair(nodep, vscp->varp()), vscp));
+                    m_varToScopeMap.emplace(std::make_pair(nodep, vscp->varp()), vscp);
                 }
             }
         }
@@ -274,8 +273,6 @@ public:
     // CONSTRUCTORS
     explicit TaskStateVisitor(AstNetlist* nodep) {
         m_curVxp = new TaskCodeVertex{&m_callGraph};
-        AstNode::user3ClearTree();
-        AstNode::user4ClearTree();
         //
         iterate(nodep);
         //
@@ -972,19 +969,21 @@ private:
         // Only create one DPI Import prototype or DPI Export entry point for each unique cname as
         // it is illegal for the user to attach multiple tasks with different signatures to one DPI
         // cname.
-        const auto it = m_dpiNames.find(nodep->cname());
-        if (it == m_dpiNames.end()) {
+        const auto pair = m_dpiNames.emplace(std::piecewise_construct,  //
+                                             std::forward_as_tuple(nodep->cname()),
+                                             std::forward_as_tuple(nodep, signature, nullptr));
+        if (pair.second) {
             // First time encountering this cname. Create Import prototype / Export entry point
             AstCFunc* const funcp = nodep->dpiExport() ? makeDpiExportDispatcher(nodep, rtnvarp)
                                                        : makeDpiImportPrototype(nodep, rtnvarp);
-            m_dpiNames.emplace(nodep->cname(), std::make_tuple(nodep, signature, funcp));
+            std::get<2>(pair.first->second) = funcp;
             return funcp;
         } else {
             // Seen this cname import before. Check if it's the same prototype.
             const AstNodeFTask* firstNodep;
             string firstSignature;
             AstCFunc* firstFuncp;
-            std::tie(firstNodep, firstSignature, firstFuncp) = it->second;
+            std::tie(firstNodep, firstSignature, firstFuncp) = pair.first->second;
             if (signature != firstSignature) {
                 // Different signature, so error.
                 nodep->v3error("Duplicate declaration of DPI function with different signature: '"
@@ -1623,9 +1622,8 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
     for (AstNode* stmtp = taskStmtsp; stmtp; stmtp = stmtp->nextp()) {
         if (AstVar* const portp = VN_CAST(stmtp, Var)) {
             if (portp->isIO()) {
-                tconnects.push_back(std::make_pair(portp, static_cast<AstArg*>(nullptr)));
-                nameToIndex.insert(
-                    std::make_pair(portp->name(), tpinnum));  // For name based connections
+                tconnects.emplace_back(portp, static_cast<AstArg*>(nullptr));
+                nameToIndex.emplace(portp->name(), tpinnum);  // For name based connections
                 tpinnum++;
                 if (portp->attrSFormat()) {
                     sformatp = portp;
@@ -1665,7 +1663,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
         } else {  // By pin number
             if (ppinnum >= tpinnum) {
                 if (sformatp) {
-                    tconnects.push_back(std::make_pair(sformatp, static_cast<AstArg*>(nullptr)));
+                    tconnects.emplace_back(sformatp, static_cast<AstArg*>(nullptr));
                     tconnects[ppinnum].second = argp;
                     tpinnum++;
                 } else {
@@ -1693,7 +1691,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                 newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
             } else if (AstFuncRef* const funcRefp = VN_CAST(portp->valuep(), FuncRef)) {
                 const AstNodeFTask* const funcp = funcRefp->taskp();
-                if (funcp->classMethod() && funcp->lifetime().isStatic()) newvaluep = funcRefp;
+                if (funcp->classMethod() && funcp->isStatic()) newvaluep = funcRefp;
             } else if (AstConst* const constp = VN_CAST(portp->valuep(), Const)) {
                 newvaluep = constp;
             }
@@ -1781,16 +1779,13 @@ void V3Task::taskConnectWrap(AstNodeFTaskRef* nodep, const V3TaskConnects& tconn
     // Make wrapper name such that is same iff same args are defaulted
     std::string newname = nodep->name() + "__Vtcwrap";
     for (const AstVar* varp : argWrap) newname += "_" + cvtToStr(varp->pinNum());
-    const auto namekey = std::make_pair(nodep->taskp(), newname);
-    auto& wrapMapr = statep->wrapMap();
-    const auto it = wrapMapr.find(namekey);
-    AstNodeFTask* newTaskp;
-    if (it != wrapMapr.end()) {
-        newTaskp = it->second;
-    } else {
-        newTaskp = taskConnectWrapNew(nodep->taskp(), newname, tconnects, argWrap);
-        wrapMapr.emplace(namekey, newTaskp);
+    const auto pair = statep->wrapMap().emplace(std::piecewise_construct,
+                                                std::forward_as_tuple(nodep->taskp(), newname),
+                                                std::forward_as_tuple(nullptr));
+    if (pair.second) {
+        pair.first->second = taskConnectWrapNew(nodep->taskp(), newname, tconnects, argWrap);
     }
+    AstNodeFTask* const newTaskp = pair.first->second;
 
     // Remove the defaulted arguments from original outside call
     for (const auto& tconnect : tconnects) {

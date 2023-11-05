@@ -113,6 +113,19 @@ class DeriveAndContainClsWithInt extends ClsWithInt;
    endfunction
 endclass
 
+class ClsUsedOnlyHere;
+   rand int a;
+endclass
+
+typedef ClsUsedOnlyHere cls_used_only_here_t;
+
+class ClsContainUsedOnlyHere;
+   rand cls_used_only_here_t c;
+   function new;
+      c = new;
+   endfunction
+endclass
+
 module t (/*AUTOARG*/);
 
    DerivedCls derived;
@@ -121,6 +134,7 @@ module t (/*AUTOARG*/);
    ContainsNull cont;
    DeriveClsWithInt der_int;
    DeriveAndContainClsWithInt der_contain;
+   ClsContainUsedOnlyHere cls_cont_used;
 
    initial begin
       int rand_result;
@@ -130,6 +144,7 @@ module t (/*AUTOARG*/);
       der_int = new;
       der_contain = new;
       base = derived;
+      cls_cont_used = new;
       for (int i = 0; i < 10; i++) begin
          rand_result = base.randomize();
          rand_result = other.randomize();
@@ -166,6 +181,7 @@ module t (/*AUTOARG*/);
       `check_rand(der_int, der_int.a);
       `check_rand(der_contain, der_contain.cls1.a);
       `check_rand(der_contain, der_contain.a);
+      `check_rand(cls_cont_used, cls_cont_used.c.a);
 
       $write("*-* All Finished *-*\n");
       $finish;

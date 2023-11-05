@@ -183,7 +183,7 @@ private:
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
-    const VNUser5InUse m_user5InUse;
+    const VNUser4InUse m_user4InUse;
 
     // STATE
     VMemberMap m_memberMap;  // Member names cached for fast lookup
@@ -214,8 +214,8 @@ private:
                 classp = VN_CAST(funcp->scopep()->modp(), Class);
             }
         }
-        if (!nodep->user5p()) nodep->user5p(new NeedsProcDepVtx{&m_procGraph, nodep, classp});
-        return nodep->user5u().to<NeedsProcDepVtx*>();
+        if (!nodep->user4p()) nodep->user4p(new NeedsProcDepVtx{&m_procGraph, nodep, classp});
+        return nodep->user4u().to<NeedsProcDepVtx*>();
     }
     // Pass timing flag between nodes
     bool passFlag(const AstNode* from, AstNode* to, NodeFlag flag) {

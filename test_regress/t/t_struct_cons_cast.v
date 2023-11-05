@@ -27,15 +27,15 @@ class Cls;
 
    state_info_t m_recur_states/*[uvm_object][uvm_object]*/[uvm_recursion_policy_enum];
 
-   automatic function uvm_recursion_policy_enum get_recursion_policy();
+   function uvm_recursion_policy_enum get_recursion_policy();
       return UVM_DEEP;
    endfunction
 
-   automatic function bit get_ret_val();
+   function bit get_ret_val();
       return $c(1);
    endfunction
 
-   automatic function void test();
+   function void test();
       bit ret_val;
       ret_val = $c1(1);
       // See issue #4568

@@ -3586,9 +3586,9 @@ statement_item<nodep>:          // IEEE: statement_item
         |       yDISABLE idAny '.' idDotted ';'
                         { $$ = nullptr; BBUNSUP($4, "Unsupported: disable with '.'"); }
         //                      // IEEE: event_trigger
-        |       yP_MINUSGT idDotted/*hierarchical_identifier-event*/ ';'
+        |       yP_MINUSGT expr ';'
                         { $$ = new AstFireEvent{$1, $2, false}; }
-        |       yP_MINUSGTGT delay_or_event_controlE idDotted/*hierarchical_identifier-event*/ ';'
+        |       yP_MINUSGTGT delay_or_event_controlE expr ';'
                         { $$ = new AstFireEvent{$1, $3, true}; }
         //
         //                      // IEEE: loop_statement
@@ -7099,8 +7099,6 @@ memberQualOne<qualifiers>:                      // IEEE: property_qualifier + me
         |       yVIRTUAL__ETC                           { $$ = VMemberQualifiers::none(); $$.m_virtual = true; }
         //                      // Part of property_qualifier only
         |       random_qualifier                        { $$ = $1; }
-        //                      // Part of lifetime, but here as ySTATIC can be in different positions
-        |       yAUTOMATIC                              { $$ = VMemberQualifiers::none(); $$.m_automatic = true; }
         //                      // Part of data_declaration, but not in data_declarationVarFrontClass
         |       yCONST__ETC                             { $$ = VMemberQualifiers::none(); $$.m_const = true; }
         ;

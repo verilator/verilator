@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 lint(
-    verilator_flags2 => ["-Ox --prof-threads --trace-fst-thread --order-clock-delay"],
+    verilator_flags2 => ["--trace-fst-thread --order-clock-delay"],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

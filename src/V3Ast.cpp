@@ -41,13 +41,11 @@ uint32_t VNUser1InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 uint32_t VNUser2InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 uint32_t VNUser3InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 uint32_t VNUser4InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t VNUser5InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
 
 bool VNUser1InUse::s_userBusy = false;
 bool VNUser2InUse::s_userBusy = false;
 bool VNUser3InUse::s_userBusy = false;
 bool VNUser4InUse::s_userBusy = false;
-bool VNUser5InUse::s_userBusy = false;
 
 int AstNodeDType::s_uniqueNum = 0;
 
@@ -99,18 +97,17 @@ AstNode* AstNode::abovep() const {
 string AstNode::encodeName(const string& namein) {
     // Encode signal name raw from parser, then not called again on same signal
     string out;
-    for (string::const_iterator pos = namein.begin(); pos != namein.end(); ++pos) {
+    out.reserve(namein.size());
+    for (auto pos = namein.begin(); pos != namein.end(); ++pos) {
         if ((pos == namein.begin()) ? std::isalpha(pos[0])  // digits can't lead identifiers
                                     : std::isalnum(pos[0])) {
             out += pos[0];
         } else if (pos[0] == '_') {
+            out += pos[0];
+            if (pos + 1 == namein.end()) break;
             if (pos[1] == '_') {
-                out += "_";
-                out += "__05F";  // hex(_) = 0x5F
                 ++pos;
-                if (pos == namein.end()) break;
-            } else {
-                out += pos[0];
+                out += "__05F";  // hex(_) = 0x5F
             }
         } else {
             // Need the leading 0 so this will never collide with
@@ -1235,7 +1232,6 @@ void AstNode::dumpPtrs(std::ostream& os) const {
     if (user2p()) os << " user2p=" << cvtToHex(user2p());
     if (user3p()) os << " user3p=" << cvtToHex(user3p());
     if (user4p()) os << " user4p=" << cvtToHex(user4p());
-    if (user5p()) os << " user5p=" << cvtToHex(user5p());
     if (m_iterpp) {
         os << " iterpp=" << cvtToHex(m_iterpp);
         // This may cause address sanitizer failures as iterpp can be stale

@@ -12,6 +12,7 @@
   <map from="PStVCQ" to="__PVT__secret_r"/>
   <map from="PSfqS0" to="__PVT__t__DOT__secret_inst"/>
   <map from="PSS0mv" to="__VactContinue"/>
+  <map from="PSb9ZF" to="__VactExecute"/>
   <map from="PSF5NB" to="__VactIterCount"/>
   <map from="PSScAO" to="__VactTriggered"/>
   <map from="PSx9Nt" to="__Vconfigure"/>
@@ -23,6 +24,7 @@
   <map from="PSIv2l" to="__Vdpiimwrap_dpii_a_task_TOP__t__DOT__secret_inst"/>
   <map from="PS76My" to="__Vfunc_dpii_a_func__0__Vfuncout"/>
   <map from="PSPVnC" to="__VnbaContinue"/>
+  <map from="PSo9XV" to="__VnbaExecute"/>
   <map from="PSEtOH" to="__VnbaIterCount"/>
   <map from="PSmzsT" to="__VnbaTriggered"/>
   <map from="PSHzgK" to="__VpreTriggered"/>
@@ -38,6 +40,8 @@
   <map from="PSEZzj" to="_eval_final"/>
   <map from="PSABAY" to="_eval_initial"/>
   <map from="PSjoVa" to="_eval_nba"/>
+  <map from="PS0BBP" to="_eval_phase__act"/>
+  <map from="PSfNDT" to="_eval_phase__nba"/>
   <map from="PSBUJ6" to="_eval_settle"/>
   <map from="PS0mmd" to="_eval_static"/>
   <map from="PS9gCw" to="_eval_triggers__act"/>

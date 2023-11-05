@@ -343,8 +343,8 @@ private:
                     newdp->cellName(newcellp->name());
                     // Tag the old ifacerefp to ensure it leaves no stale
                     // reference to the inlined cell.
-                    newdp->user5(false);
-                    ifacerefp->user5(true);
+                    newdp->user1(false);
+                    ifacerefp->user1(true);
                 }
             }
         }
@@ -454,8 +454,8 @@ class InlineVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Cleared entire netlist
-    //  AstIfaceRefDType::user5p()  // Whether the cell pointed to by this
-    //                              // AstIfaceRefDType has been inlined
+    //  AstIfaceRefDType::user1()  // Whether the cell pointed to by this
+    //                             // AstIfaceRefDType has been inlined
     //  Input:
     //   AstNodeModule::user1p()    // ModuleState instance (via m_moduleState)
     // Cleared each cell
@@ -464,7 +464,6 @@ private:
     //   AstVar::user3()        // bool    Don't alias the user2, keep it as signal
     //   AstCell::user4         // AstCell* of the created clone
     const VNUser4InUse m_inuser4;
-    const VNUser5InUse m_inuser5;
 
     ModuleStateUser1Allocator& m_moduleState;
 
@@ -586,7 +585,7 @@ private:
         m_modp = nullptr;
     }
     void visit(AstIfaceRefDType* nodep) override {
-        if (nodep->user5()) {
+        if (nodep->user1()) {
             // The cell has been removed so let's make sure we don't leave a reference to it
             // This dtype may still be in use by the AstAssignVarScope created earlier
             // but that'll get cleared up later

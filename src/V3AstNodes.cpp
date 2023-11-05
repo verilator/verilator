@@ -688,13 +688,14 @@ string AstVar::dpiTmpVarType(const string& varName) const {
 
 string AstVar::scType() const {
     if (isScBigUint()) {
-        return (string{"sc_biguint<"} + cvtToStr(widthMin())
+        return (string{"sc_dt::sc_biguint<"} + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
     } else if (isScUint()) {
-        return (string{"sc_uint<"} + cvtToStr(widthMin())
+        return (string{"sc_dt::sc_uint<"} + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
     } else if (isScBv()) {
-        return (string{"sc_bv<"} + cvtToStr(widthMin()) + "> ");  // Keep the space so don't get >>
+        return (string{"sc_dt::sc_bv<"} + cvtToStr(widthMin())
+                + "> ");  // Keep the space so don't get >>
     } else if (widthMin() == 1) {
         return "bool";
     } else if (widthMin() <= VL_IDATASIZE) {
@@ -829,7 +830,7 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         } else if (bdtypep->isProcessRef()) {
             info.m_type = "VlProcessRef";
         } else if (bdtypep->isEvent()) {
-            info.m_type = "VlEvent";
+            info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
             info.m_type = "CData" + bitvec;
         } else if (dtypep->widthMin() <= 16) {
@@ -1177,13 +1178,10 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
 AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
     const VBasicTypeKey key{nodep->width(), nodep->widthMin(), nodep->numeric(), nodep->keyword(),
                             nodep->nrange()};
-    DetailedMap& mapr = m_detailedMap;
-    const auto it = mapr.find(key);
-    if (it != mapr.end()) return it->second;
-    mapr.emplace(key, nodep);
-    nodep->generic(true);
+    auto pair = m_detailedMap.emplace(key, nodep);
+    if (pair.second) nodep->generic(true);
     // No addTypesp; the upper function that called new() is responsible for adding
-    return nodep;
+    return pair.first->second;
 }
 
 AstConstPool::AstConstPool(FileLine* fl)
@@ -1381,7 +1379,6 @@ void AstNode::dump(std::ostream& str) const {
     if (user2p()) str << " u2=" << nodeAddr(user2p());
     if (user3p()) str << " u3=" << nodeAddr(user3p());
     if (user4p()) str << " u4=" << nodeAddr(user4p());
-    if (user5p()) str << " u5=" << nodeAddr(user5p());
     if (hasDType()) {
         // Final @ so less likely to by accident read it as a nodep
         if (dtypep() == this) {
@@ -1652,13 +1649,13 @@ bool AstInitArray::same(const AstNode* samep) const {
     return true;
 }
 void AstInitArray::addIndexValuep(uint64_t index, AstNodeExpr* newp) {
-    const auto it = m_map.find(index);
-    if (it != m_map.end()) {
-        it->second->valuep(newp);
-    } else {
+    const auto pair = m_map.emplace(index, nullptr);
+    if (pair.second) {
         AstInitItem* const itemp = new AstInitItem{fileline(), newp};
-        m_map.emplace(index, itemp);
+        pair.first->second = itemp;
         addInitsp(itemp);
+    } else {
+        pair.first->second->valuep(newp);
     }
 }
 AstNodeExpr* AstInitArray::getIndexValuep(uint64_t index) const {

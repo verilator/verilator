@@ -495,14 +495,9 @@ public:
     V3List<OrderMoveVertex*>& readyVertices() { return m_readyVertices; }
     static OrderMoveDomScope* findCreate(const AstSenTree* domainp, const AstScope* scopep) {
         const DomScopeKey key = std::make_pair(domainp, scopep);
-        const auto iter = s_dsMap.find(key);
-        if (iter != s_dsMap.end()) {
-            return iter->second;
-        } else {
-            OrderMoveDomScope* domScopep = new OrderMoveDomScope{domainp, scopep};
-            s_dsMap.emplace(key, domScopep);
-            return domScopep;
-        }
+        const auto pair = s_dsMap.emplace(key, nullptr);
+        if (pair.second) pair.first->second = new OrderMoveDomScope{domainp, scopep};
+        return pair.first->second;
     }
     string name() const {
         return string{"MDS:"} + " d=" + cvtToHex(domainp()) + " s=" + cvtToHex(scopep());
@@ -856,7 +851,7 @@ class OrderProcess final {
         string name = "_" + m_tag;
         name += domainp->isMulti() ? "_comb" : "_sequent";
         name = name + "__" + scopep->nameDotless();
-        const unsigned funcnum = m_funcNums.emplace(std::make_pair(modp, name), 0).first->second++;
+        const unsigned funcnum = m_funcNums[{modp, name}]++;
         name = name + "__" + cvtToStr(funcnum);
         if (v3Global.opt.profCFuncs()) {
             name += "__PROF__" + forWhatp->fileline()->profileFuncname();
@@ -1296,12 +1291,12 @@ void OrderProcess::processMTasks() {
     mtask_pmbg.build();
 
     // Needed? We do this for m_pomGraph in serial mode, so do it here too:
-    logicGraph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
+    logicGraph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
 
     // Partition logicGraph into LogicMTask's. The partitioner will annotate
     // each vertex in logicGraph with a 'color' which is really an mtask ID
     // in this context.
-    V3Partition partitioner(&m_graph, &logicGraph);
+    V3Partition partitioner{&m_graph, &logicGraph};
     V3Graph mtasks;
     partitioner.go(&mtasks);
 
@@ -1312,7 +1307,7 @@ void OrderProcess::processMTasks() {
     // This is the order we'll execute logic nodes within the MTask.
     //
     // MTasks may span scopes and domains, so sort by both here:
-    GraphStream<OrderVerticesByDomainThenScope> emit_logic(&logicGraph);
+    GraphStream<OrderVerticesByDomainThenScope> emit_logic{&logicGraph};
     const V3GraphVertex* moveVxp;
     while ((moveVxp = emit_logic.nextp())) {
         const MTaskMoveVertex* const movep = static_cast<const MTaskMoveVertex*>(moveVxp);
@@ -1440,7 +1435,7 @@ void OrderProcess::process(bool multiThreaded) {
         processMoveBuildGraph();
         // Different prefix (ordermv) as it's not the same graph
         if (dumpGraphLevel() >= 4) m_pomGraph.dumpDotFilePrefixed(m_tag + "_ordermv_start");
-        m_pomGraph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
+        m_pomGraph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
         if (dumpGraphLevel() >= 4) m_pomGraph.dumpDotFilePrefixed(m_tag + "_ordermv_simpl");
 
         UINFO(2, "  Move...\n");

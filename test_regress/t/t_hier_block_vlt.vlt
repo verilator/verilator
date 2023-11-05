@@ -6,4 +6,4 @@
 
 `verilator_config
 hier_block -module "sub?"
-hier_block -module "delay"
+hier_block -module "delay"  // matches recursive modules

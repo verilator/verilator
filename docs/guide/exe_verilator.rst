@@ -1036,7 +1036,7 @@ Summary:
 
 .. option:: --prof-threads
 
-   Deprecated. Same as --prof-exec and --prof-pgo together.
+   Removed in 5.020. Was an alias for --prof-exec and --prof-pgo together.
 
 .. option:: --protect-ids
 

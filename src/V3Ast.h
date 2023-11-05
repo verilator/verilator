@@ -324,7 +324,7 @@ public:
         ET_BOTHEDGE,  // POSEDGE | NEGEDGE (i.e.: 'edge' in Verilog)
         ET_POSEDGE,
         ET_NEGEDGE,
-        ET_EVENT,  // VlEvent::isFired
+        ET_EVENT,  // VlEventBase::isFired
         // Involving an expression
         ET_TRUE,
         //
@@ -1611,17 +1611,6 @@ public:
     static void clear() { clearcnt(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
     static void check() { checkcnt(4, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
 };
-class VNUser5InUse final : VNUserInUseBase {
-protected:
-    friend class AstNode;
-    static uint32_t s_userCntGbl;  // Count of which usage of userp() this is
-    static bool s_userBusy;  // Count is in use
-public:
-    VNUser5InUse()      { allocate(5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    ~VNUser5InUse()     { free    (5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    static void clear() { clearcnt(5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-    static void check() { checkcnt(5, s_userCntGbl/*ref*/, s_userBusy/*ref*/); }
-};
 // clang-format on
 
 //######################################################################
@@ -1825,8 +1814,6 @@ class AstNode VL_NOT_FINAL {
     uint32_t m_user3Cnt = 0;  // Mark of when userp was set
     uint32_t m_user4Cnt = 0;  // Mark of when userp was set
     VNUser m_user4u{0};  // Contains any information the user iteration routine wants
-    VNUser m_user5u{0};  // Contains any information the user iteration routine wants
-    uint32_t m_user5Cnt = 0;  // Mark of when userp was set
 
     // METHODS
     void op1p(AstNode* nodep) {
@@ -2016,6 +2003,7 @@ public:
     inline bool isDouble() const VL_MT_STABLE;
     inline bool isSigned() const VL_MT_STABLE;
     inline bool isString() const VL_MT_STABLE;
+    inline bool isEvent() const VL_MT_STABLE;
 
     // clang-format off
     VNUser user1u() const VL_MT_STABLE {
@@ -2073,20 +2061,6 @@ public:
     int user4Inc(int val = 1) { int v = user4(); user4(v + val); return v; }
     int user4SetOnce() { int v = user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
     static void user4ClearTree() { VNUser4InUse::clear(); }  // Clear userp()'s across the entire tree
-
-    VNUser user5u() const VL_MT_STABLE {
-        // Slows things down measurably, so disabled by default
-        //UASSERT_STATIC(VNUser5InUse::s_userBusy, "user5p used without AstUserInUse");
-        return ((m_user5Cnt == VNUser5InUse::s_userCntGbl) ? m_user5u : VNUser{0});
-    }
-    AstNode* user5p() const VL_MT_STABLE { return user5u().toNodep(); }
-    void user5u(const VNUser& user) { m_user5u = user; m_user5Cnt = VNUser5InUse::s_userCntGbl; }
-    void user5p(void* userp) { user5u(VNUser{userp}); }
-    void user5(int val) { user5u(VNUser{val}); }
-    int user5() const { return user5u().toInt(); }
-    int user5Inc(int val = 1) { int v = user5(); user5(v + val); return v; }
-    int user5SetOnce() { int v = user5(); if (!v) user5(1); return v; }  // Better for cache than user5Inc()
-    static void user5ClearTree() { VNUser5InUse::clear(); }  // Clear userp()'s across the entire tree
     // clang-format on
 
 #ifdef VL_DEBUG

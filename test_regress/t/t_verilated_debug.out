@@ -15,26 +15,33 @@ internalsDump:
 -V{t#,#}+    Vt_verilated_debug___024root___eval_settle
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_verilated_debug___024root___eval
+-V{t#,#}+    Vt_verilated_debug___024root___eval_phase__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_triggers__act
 -V{t#,#}+    Vt_verilated_debug___024root___dump_triggers__act
 -V{t#,#}         No triggers active
+-V{t#,#}+    Vt_verilated_debug___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_verilated_debug::eval_step
 -V{t#,#}+    Vt_verilated_debug___024root___eval_debug_assertions
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_verilated_debug___024root___eval
+-V{t#,#}+    Vt_verilated_debug___024root___eval_phase__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_triggers__act
 -V{t#,#}+    Vt_verilated_debug___024root___dump_triggers__act
 -V{t#,#}         'act' region trigger index 0 is active: @(posedge clk)
 -V{t#,#}+    Vt_verilated_debug___024root___eval_act
+-V{t#,#}+    Vt_verilated_debug___024root___eval_phase__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_triggers__act
 -V{t#,#}+    Vt_verilated_debug___024root___dump_triggers__act
 -V{t#,#}         No triggers active
+-V{t#,#}+    Vt_verilated_debug___024root___eval_phase__nba
 -V{t#,#}+    Vt_verilated_debug___024root___eval_nba
 -V{t#,#}+    Vt_verilated_debug___024root___nba_sequent__TOP__0
 *-* All Finished *-*
+-V{t#,#}+    Vt_verilated_debug___024root___eval_phase__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_triggers__act
 -V{t#,#}+    Vt_verilated_debug___024root___dump_triggers__act
 -V{t#,#}         No triggers active
+-V{t#,#}+    Vt_verilated_debug___024root___eval_phase__nba
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+    Vt_verilated_debug___024root___eval_final
