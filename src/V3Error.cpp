@@ -103,7 +103,13 @@ void V3ErrorGuarded::vlAbortOrExit() VL_REQUIRES(m_mutex) {
         std::cerr << msgPrefix() << "Aborting since under --debug" << endl;
         V3Error::vlAbort();
     } else {
-        std::exit(1);
+        // Normal exit can't be invoked here because the program state is unknown. The stack won't
+        // unwind, no matter what exit function is used (except throwing an exception, whose can be
+        // disabled). Due to this destructors of local objects will never be executed. However,
+        // destructors of global objects (singletons) WILL be executed on std::exit(). This can
+        // lead to hangs, e.g. in V3ThreadPool. Letting the program deadlock in an error handler is
+        // quite a bad idea, so let's just exit without running any destructors.
+        std::quick_exit(1);
     }
 }
 
