@@ -91,7 +91,7 @@ class SenExprBuilder final {
     }
     AstVarScope* getPrev(AstNodeExpr* exprp) {
         FileLine* const flp = exprp->fileline();
-        const auto rdCurr = [=]() { return getCurr(exprp); };
+        const auto rdCurr = [this, exprp]() { return getCurr(exprp); };
 
         AstNode* scopeExprp = exprp;
         if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) scopeExprp = refp->varScopep();
@@ -155,8 +155,10 @@ class SenExprBuilder final {
         FileLine* const flp = senItemp->fileline();
         AstNodeExpr* const senp = senItemp->sensp();
 
-        const auto currp = [=]() { return getCurr(senp); };
-        const auto prevp = [=]() { return new AstVarRef{flp, getPrev(senp), VAccess::READ}; };
+        const auto currp = [this, senp]() { return getCurr(senp); };
+        const auto prevp = [this, flp, senp]() {
+            return new AstVarRef{flp, getPrev(senp), VAccess::READ};
+        };
         const auto lsb = [=](AstNodeExpr* opp) { return new AstSel{flp, opp, 0, 1}; };
 
         // All event signals should be 1-bit at this point

@@ -1577,6 +1577,14 @@ void AstEnumItemRef::dump(std::ostream& str) const {
         str << "UNLINKED";
     }
 }
+const char* AstEnumDType::broken() const {
+    BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
+                 || (!m_refDTypep && childDTypep())));
+    BROKEN_RTN(std::any_of(m_tableMap.begin(), m_tableMap.end(),
+                           [](const auto& p) { return !p.second->brokeExists(); }));
+    return nullptr;
+}
+
 const char* AstEnumItemRef::broken() const {
     BROKEN_RTN(m_itemp && !m_itemp->brokeExists());
     BROKEN_RTN(m_classOrPackagep && !m_classOrPackagep->brokeExists());

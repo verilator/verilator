@@ -777,13 +777,7 @@ public:
     }
     ASTGEN_MEMBERS_AstEnumDType;
 
-    const char* broken() const override {
-        BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
-                     || (!m_refDTypep && childDTypep())));
-        BROKEN_RTN(std::any_of(m_tableMap.begin(), m_tableMap.end(),
-                               [](const auto& p) { return !p.second->brokeExists(); }));
-        return nullptr;
-    }
+    const char* broken() const override;
     void cloneRelink() override {
         if (m_refDTypep && m_refDTypep->clonep()) m_refDTypep = m_refDTypep->clonep();
     }

@@ -39,7 +39,7 @@
       using namespace experimental; // Bring std::experimental into the std namespace
   }
 #else
-# if defined __clang__ && defined __GLIBCXX__
+# if defined __clang__ && defined __GLIBCXX__ && !defined __cpp_impl_coroutine
 #  define __cpp_impl_coroutine 1  // Clang doesn't define this, but it's needed for libstdc++
 # endif
 # include <coroutine>
