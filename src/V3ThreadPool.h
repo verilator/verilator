@@ -109,22 +109,44 @@ class V3ThreadPool final {
     // Indicates whether multithreading has been suspended.
     // Used for error detection in resumeMultithreading only. You probably should use
     // m_exclusiveAccess for information whether something should be run in current thread.
-    bool m_multithreadingSuspended VL_GUARDED_BY(m_mutex) = false;
+    std::atomic_bool m_multithreadingSuspended{false};
 
     // CONSTRUCTORS
     V3ThreadPool() = default;
     ~V3ThreadPool() {
+        if (m_multithreadingSuspended) {
+            // Ideally we shouldn't deal with this and just call the std::abort. However,
+            // std::exit(0) (which invokes this destructor) is called in multiple places with
+            // multithreading being suspended. Aborting would change the exit code, what would not
+            // be acceptable.
+            resumeMultithreading();
+        }
+        // Unexpected states. Aborting to subtly signal to the outside world that something is
+        // wrong. This won't make things worse to an user - the program is already terminating at
+        // this point anyway, most likely as a result of an error. Using if/abort instead of assert
+        // because assert can be disabled.
+        if (m_exclusiveAccess) std::abort();
+        if (m_stopRequested) std::abort();
+
         if (!m_mutex.try_lock()) {
             if (m_jobsInProgress != 0) {
                 // ThreadPool shouldn't be destroyed when jobs are running and mutex is locked,
                 // something is wrong. Most likely Verilator is exiting as a result of failed
-                // assert in critical section. Do nothing, let it exit.
-                return;
+                // assert in critical section. Just returning is dangerous, as threads and this
+                // class' members might keep the program hanging endlessly.
+                std::abort();
             }
+            // Probably an error happened in a call to some V3ThreadPool's method. We can't just
+            // unlock m_mutex and be sure that resize(0) handle this well.
+            std::abort();
         } else {
             V3LockGuard lock{m_mutex, std::adopt_lock_t{}};
             m_queue = {};  // make sure queue is empty
         }
+
+        // This locks mutexes and wakes up threads, so it would be nice to move this to a separate
+        // method that would be called just before controlled exit. Such method would need to be
+        // called in quite a few places that call std::exit(0), so leaving it here for now.
         resize(0);
     }
 
