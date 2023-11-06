@@ -752,13 +752,13 @@ class DfgVertexWithArity VL_NOT_FINAL : public DfgVertex {
     std::array<DfgEdge, Arity> m_srcs;  // Source edges
 
 protected:
-    DfgVertexWithArity<Arity>(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep)
+    DfgVertexWithArity(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep)
         : DfgVertex{dfg, type, flp, dtypep} {
         // Initialize source edges
         for (size_t i = 0; i < Arity; ++i) m_srcs[i].init(this);
     }
 
-    ~DfgVertexWithArity<Arity>() override = default;
+    ~DfgVertexWithArity() override = default;
 
 public:
     std::pair<DfgEdge*, size_t> sourceEdges() final override {  //
