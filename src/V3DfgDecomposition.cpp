@@ -292,11 +292,11 @@ class ExtractCyclicComponents final {
 
         // Visit all neighbors. We stop at variable boundaries,
         // which is where we will split the graphs
-        vtx.forEachSource([=](DfgVertex& other) {
+        vtx.forEachSource([this, targetComponent](DfgVertex& other) {
             if (other.is<DfgVertexVar>()) return;
             visitMergeSCCs(other, targetComponent);
         });
-        vtx.forEachSink([=](DfgVertex& other) {
+        vtx.forEachSink([this, targetComponent](DfgVertex& other) {
             if (other.is<DfgVertexVar>()) return;
             visitMergeSCCs(other, targetComponent);
         });

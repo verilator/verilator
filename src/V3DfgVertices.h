@@ -224,7 +224,7 @@ public:
     uint32_t driverIndex(size_t idx) const { return m_driverData[idx].second; }
 
     DfgVertex* driverAt(size_t idx) const {
-        const DfgEdge* const edgep = findSourceEdge([=](const DfgEdge&, size_t i) {  //
+        const DfgEdge* const edgep = findSourceEdge([this, idx](const DfgEdge&, size_t i) {  //
             return driverIndex(i) == idx;
         });
         return edgep ? edgep->sourcep() : nullptr;
