@@ -232,6 +232,7 @@ private:
 
     // True when any thread requested exclusive access
     bool stopRequested() const VL_MT_SAFE {
+        if (m_exclusiveAccess) return false;
         // don't wait if shutdown already requested
         if (m_shutdown) return false;
         return m_stopRequested;
