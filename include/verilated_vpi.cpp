@@ -248,10 +248,26 @@ public:
 class VerilatedVpioScope VL_NOT_FINAL : public VerilatedVpio {
 protected:
     const VerilatedScope* const m_scopep;
+    bool m_toplevel = false;
 
 public:
     explicit VerilatedVpioScope(const VerilatedScope* scopep)
-        : m_scopep{scopep} {}
+        : m_scopep{scopep} {
+        std::string scopename = m_scopep->name();
+        std::string::size_type pos = std::string::npos;
+        // Look for '.' not inside escaped identifier
+        size_t i = 0;
+        while (i < scopename.length()) {
+            if (scopename[i] == '\\') {
+                while (i < scopename.length() && scopename[i] != ' ') ++i;
+                ++i;  // Proc ' ', it should always be there. Then grab '.' on next cycle
+            } else {
+                while (i < scopename.length() && scopename[i] != '.') ++i;
+                if (i < scopename.length()) pos = i++;
+            }
+        }
+        if (VL_UNLIKELY(pos == std::string::npos)) m_toplevel = true;
+    }
     ~VerilatedVpioScope() override = default;
     static VerilatedVpioScope* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioScope*>(reinterpret_cast<VerilatedVpio*>(h));
@@ -260,6 +276,7 @@ public:
     const VerilatedScope* scopep() const { return m_scopep; }
     const char* name() const override { return m_scopep->name(); }
     const char* fullname() const override { return m_scopep->name(); }
+    bool toplevel() const { return m_toplevel; }
 };
 
 class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
@@ -350,10 +367,15 @@ class VerilatedVpioVarIter final : public VerilatedVpio {
     const VerilatedScope* const m_scopep;
     VerilatedVarNameMap::const_iterator m_it;
     bool m_started = false;
+    const VerilatedScope* m_topscopep = nullptr;
 
 public:
-    explicit VerilatedVpioVarIter(const VerilatedScope* scopep)
-        : m_scopep{scopep} {}
+    explicit VerilatedVpioVarIter(const VerilatedVpioScope* vop)
+        : m_scopep{vop->scopep()} {
+        if (VL_UNLIKELY(vop->toplevel()))
+            // This is a toplevel, so get TOP scope to search for ports during vpi_scan.
+            m_topscopep = Verilated::threadContextp()->scopeFind("TOP");
+    }
     ~VerilatedVpioVarIter() override = default;
     static VerilatedVpioVarIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioVarIter*>(reinterpret_cast<VerilatedVpio*>(h));
@@ -374,6 +396,10 @@ public:
             if (VL_UNLIKELY(m_it == varsp->end())) {
                 delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
                 return nullptr;
+            }
+            if (VL_UNLIKELY(m_topscopep)) {
+                if (const VerilatedVar* topvarp = m_topscopep->varFind(m_it->second.name()))
+                    return ((new VerilatedVpioVar{topvarp, m_topscopep})->castVpiHandle());
             }
             return ((new VerilatedVpioVar{&(m_it->second), m_scopep})->castVpiHandle());
         }
@@ -1653,24 +1679,38 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
                 return (new VerilatedVpioScope{scopep})->castVpiHandle();
             }
         }
-        const char* baseNamep = scopeAndName.c_str();
+        std::string basename = scopeAndName;
         std::string scopename;
-        const char* const dotp = std::strrchr(namep, '.');
-        if (VL_LIKELY(dotp)) {
-            baseNamep = dotp + 1;
-            const size_t len = dotp - namep;
-            scopename = std::string{namep, len};
+        std::string::size_type prevpos = std::string::npos;
+        std::string::size_type pos = std::string::npos;
+        // Split hierarchical names at last '.' not inside escaped identifier
+        size_t i = 0;
+        while (i < scopeAndName.length()) {
+            if (scopeAndName[i] == '\\') {
+                while (i < scopeAndName.length() && scopeAndName[i] != ' ') ++i;
+                ++i;  // Proc ' ', it should always be there. Then grab '.' on next cycle
+            } else {
+                while (i < scopeAndName.length() && scopeAndName[i] != '.') ++i;
+                if (i < scopeAndName.length()) {
+                    prevpos = pos;
+                    pos = i++;
+                }
+            }
         }
-
-        if (scopename.find('.') == std::string::npos) {
-            // This is a toplevel, hence search in our TOP ports first.
+        // Do the split
+        if (VL_LIKELY(pos != std::string::npos)) {
+            basename.erase(0, pos + 1);
+            scopename = scopeAndName.substr(0, pos);
+        }
+        if (prevpos == std::string::npos) {
+            // scopename is a toplevel (no '.' separator), so search in our TOP ports first.
             scopep = Verilated::threadContextp()->scopeFind("TOP");
-            if (scopep) varp = scopep->varFind(baseNamep);
+            if (scopep) varp = scopep->varFind(basename.c_str());
         }
         if (!varp) {
             scopep = Verilated::threadContextp()->scopeFind(scopename.c_str());
             if (!scopep) return nullptr;
-            varp = scopep->varFind(baseNamep);
+            varp = scopep->varFind(basename.c_str());
         }
     }
     if (!varp) return nullptr;
@@ -1807,7 +1847,7 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
     case vpiReg: {
         const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
-        return ((new VerilatedVpioVarIter{vop->scopep()})->castVpiHandle());
+        return ((new VerilatedVpioVarIter{vop})->castVpiHandle());
     }
     case vpiModule: {
         const VerilatedVpioModule* const vop = VerilatedVpioModule::castp(object);

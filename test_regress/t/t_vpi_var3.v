@@ -1,6 +1,6 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// Copyright 2023 by Wilson Snyder. This program is free software; you can
+// Copyright 2010 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -12,17 +12,7 @@
 import "DPI-C" context function int mon_check();
 `endif
 
-module t
-/* verilator public_flat_on */
-#(
-   parameter int visibleParam1 = 0,
-/* verilator public_off */
-   parameter int invisibleParam1 = 1,
-/* verilator public_on */
-   parameter int visibleParam2 = 2
-/* verilator public_off */
-)
-(/*AUTOARG*/
+module t (/*AUTOARG*/
    // Outputs
    x,
    // Inputs
@@ -37,39 +27,31 @@ extern "C" int mon_check();
 
    input clk;
 
-   input [7:0] a /* verilator public_flat_rw */;
-   output reg [7:0] x /* verilator public_flat_rw */;
+   input [7:0] a;
+   output reg [7:0] x;
 
-/*verilator public_flat_rw_on @(posedge clk)*/
    reg          onebit;
    reg [2:1]    twoone;
    reg [2:1]    fourthreetwoone[4:3];
    reg LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND;
+
    // verilator lint_off ASCRANGE
-   reg [0:61]   quads[2:3]      /*verilator public_flat_rw @(posedge clk)*/;
-/*verilator public_off*/
-   reg             invisible1;
+   reg [0:61]   quads[2:3];
    // verilator lint_on ASCRANGE
 
-/*verilator public_flat_rd_on*/
    reg [31:0]      count;
    reg [31:0]      half_count;
-/*verilator public_off*/
-   reg             invisible2;
 
-/*verilator public_flat_rw_on @(posedge clk)*/
    reg [7:0]       text_byte;
    reg [15:0]      text_half;
    reg [31:0]      text_word;
    reg [63:0]      text_long;
    reg [511:0]     text;
-/*verilator public_off*/
+
    integer        status;
 
-/*verilator public_flat_rw_on*/
    real           real1;
    string         str1;
-/*verilator public_off*/
 
    sub sub();
 
@@ -141,8 +123,8 @@ extern "C" int mon_check();
 endmodule : t
 
 module sub;
-   reg subsig1 /*verilator public_flat_rw*/;
-   reg subsig2 /*verilator public_flat_rd*/;
+   reg subsig1;
+   reg subsig2;
 `ifdef IVERILOG
    // stop icarus optimizing signals away
    wire redundant = subsig1 | subsig2;
@@ -153,13 +135,11 @@ module arr;
 
    parameter LENGTH = 1;
 
-/*verilator public_flat_rw_on*/
    reg [LENGTH-1:0] sig;
    reg [LENGTH-1:0] rfr;
 
    reg            check;
    reg          verbose;
-/*verilator public_off*/
 
    initial begin
       sig = {LENGTH{1'b0}};
