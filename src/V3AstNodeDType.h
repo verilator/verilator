@@ -818,6 +818,7 @@ class AstIfaceRefDType final : public AstNodeDType {
     // @astgen ptr := m_ifacep : Optional[AstIface]  // Interface; cellp() should override
     // @astgen ptr := m_cellp : Optional[AstCell]  // When exact parent cell known; not a guess
     // @astgen ptr := m_modportp : Optional[AstModport]  // nullptr = unlinked or no modport
+    bool m_virtual = false;  // True if virtual interface
     FileLine* m_modportFileline;  // Where modport token was
     string m_cellName;  // "" = no cell, such as when connects to 'input' iface
     string m_ifaceName;  // Interface name
@@ -855,6 +856,11 @@ public:
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
     int widthAlignBytes() const override { return 1; }
     int widthTotalBytes() const override { return 1; }
+    void isVirtual(bool flag) {
+        m_virtual = flag;
+        if (flag) v3Global.setHasVirtIfaces();
+    }
+    bool isVirtual() const { return m_virtual; }
     FileLine* modportFileline() const { return m_modportFileline; }
     string cellName() const { return m_cellName; }
     void cellName(const string& name) { m_cellName = name; }

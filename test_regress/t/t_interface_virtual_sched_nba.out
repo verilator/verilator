@@ -1,0 +1,21 @@
+[0] intf1.data==0000
+[0] intf2.data==0000
+[0] vif3.data==0000
+[0] intf2.data==0000
+[10] intf2.data==0000
+[10] vif3.data==0000
+[20] intf1.data==dead
+[20] intf2.data==0000
+[20] vif3.data==0000
+[30] intf2.data==dead
+[30] vif3.data==0000
+[40] intf1.data==beef
+[40] intf2.data==dead
+[40] vif3.data==0000
+[50] intf2.data==beef
+[50] vif3.data==0000
+[60] intf2.data==beef
+[60] vif3.data==face
+[70] intf2.data==beef
+[70] vif3.data==cafe
+*-* All Finished *-*

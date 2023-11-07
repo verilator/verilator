@@ -2134,12 +2134,22 @@ data_typeNoRef<nodeDTypep>:             // ==IEEE: data_type, excluding class_ty
 
 data_typeVirtual<nodeDTypep>:           // ==IEEE: data_type after yVIRTUAL [ yINTERFACE ]
         //                      // Parameters here are SV2009
-                id/*interface*/                         { $$ = new AstIfaceRefDType{$<fl>1, "", *$1}; }
-        |       id/*interface*/ '.' id/*modport*/       { $$ = new AstIfaceRefDType{$<fl>1, $<fl>3, "", *$1, *$3}; }
+                id/*interface*/
+                        { AstIfaceRefDType* const ifrefp = new AstIfaceRefDType{$<fl>1, "", *$1};
+                          ifrefp->isVirtual(true);
+                          $$ = ifrefp; }
+        |       id/*interface*/ '.' id/*modport*/
+                        { AstIfaceRefDType* const ifrefp = new AstIfaceRefDType{$<fl>1, $<fl>3, "", *$1, *$3};
+                          ifrefp->isVirtual(true);
+                          $$ = ifrefp; }
         |       id/*interface*/ parameter_value_assignmentClass
-                        { $$ = new AstIfaceRefDType{$<fl>1, nullptr, "", *$1, "", $2}; }
+                        { AstIfaceRefDType* const ifrefp = new AstIfaceRefDType{$<fl>1, nullptr, "", *$1, "", $2};
+                          ifrefp->isVirtual(true);
+                          $$ = ifrefp; }
         |       id/*interface*/ parameter_value_assignmentClass '.' id/*modport*/
-                        { $$ = new AstIfaceRefDType{$<fl>1, $<fl>4, "", *$1, *$4, $2}; }
+                        { AstIfaceRefDType* const ifrefp = new AstIfaceRefDType{$<fl>1, $<fl>4, "", *$1, *$4, $2};
+                          ifrefp->isVirtual(true);
+                          $$ = ifrefp; }
         ;
 
 data_type_or_void<nodeDTypep>:  // ==IEEE: data_type_or_void
