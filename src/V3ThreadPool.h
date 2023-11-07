@@ -125,11 +125,11 @@ class V3ThreadPool final {
         // wrong. This won't make things worse to an user - the program is already terminating at
         // this point anyway, most likely as a result of an error. Using if/abort instead of assert
         // because assert can be disabled.
-        if (m_exclusiveAccess) std::abort();
-        if (m_stopRequested) std::abort();
+        if (VL_UNCOVERABLE(m_exclusiveAccess)) std::abort();
+        if (VL_UNCOVERABLE(m_stopRequested)) std::abort();
 
-        if (!m_mutex.try_lock()) {
-            if (m_jobsInProgress != 0) {
+        if (VL_UNCOVERABLE(!m_mutex.try_lock())) {
+            if (VL_UNCOVERABLE(m_jobsInProgress != 0)) {
                 // ThreadPool shouldn't be destroyed when jobs are running and mutex is locked,
                 // something is wrong. Most likely Verilator is exiting as a result of failed
                 // assert in critical section. Just returning is dangerous, as threads and this
