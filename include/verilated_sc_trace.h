@@ -119,7 +119,9 @@ protected:
         const sc_core::sc_time tunits{1.0 / t1sec.to_default_time_units(), sc_core::SC_SEC};
         return tunits.to_string();
     }
-    static std::string getScTimeResolution() { return sc_core::sc_get_time_resolution().to_string(); }
+    static std::string getScTimeResolution() {
+        return sc_core::sc_get_time_resolution().to_string();
+    }
     static void checkScElaborationDone() {
         if (!sc_core::sc_get_curr_simcontext()->elaboration_done()) {
             Verilated::scTraceBeforeElaborationError();
