@@ -504,7 +504,7 @@ if (WIN32)
     if(MINGW)
         target_compile_options(${verilator} PRIVATE -Wa,-mbig-obj)
         target_link_options(${verilator} PRIVATE -Wl,--stack,10000000)
-    else
+    else()
         target_compile_options(${verilator} PRIVATE /bigobj)
         target_link_options(${verilator} PRIVATE /STACK:10000000)
     endif()
