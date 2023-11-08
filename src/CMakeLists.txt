@@ -466,7 +466,7 @@ set_target_properties(${verilator} PROPERTIES
     #UNITY_BUILD $<IF:$<CONFIG:DEBUG>,FALSE,${CMAKE_UNITY_BUILD}>
     MSVC_RUNTIME_LIBRARY  MultiThreaded$<IF:$<CONFIG:Release>,,DebugDLL>
     #JOB_POOL_LINK         one_job      # Linking takes lots of resources
-    INTERPROCEDURAL_OPTIMIZATION_RELEASE  TRUE
+    INTERPROCEDURAL_OPTIMIZATION_RELEASE  $<IF:MINGW,FALSE,TRUE>
 )
 
 add_dependencies(${verilator}
@@ -501,13 +501,19 @@ target_include_directories(${verilator}
 )
 
 if (WIN32)
-    target_compile_options(${verilator} PRIVATE /bigobj)
+    if(MINGW)
+        target_compile_options(${verilator} PRIVATE -Wa,-mbig-obj)
+        target_link_options(${verilator} PRIVATE -Wl,--stack,10000000 -mconsole -lcomctl32 -DWIN_32_LEAN_AND_MEAN)
+    else()
+        target_compile_options(${verilator} PRIVATE /bigobj)
+        target_link_options(${verilator} PRIVATE /STACK:10000000)
+    endif()
+
     target_compile_definitions(${verilator} PRIVATE
         YY_NO_UNISTD_H
     )
     target_include_directories(${verilator} PRIVATE ../platform/win32)
     target_link_libraries(${verilator} PRIVATE bcrypt psapi)
-    target_link_options(${verilator} PRIVATE /STACK:10000000)
 endif()
 
 install(TARGETS ${verilator})
