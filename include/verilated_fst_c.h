@@ -210,7 +210,7 @@ public:
     /// Return if file is open
     bool isOpen() const VL_MT_SAFE { return m_sptrace.isOpen(); }
     /// Open a new FST file
-    void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
+    virtual void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
     /// Close dump
     void close() VL_MT_SAFE { m_sptrace.close(); }
     /// Flush dump
