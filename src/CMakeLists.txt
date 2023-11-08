@@ -501,13 +501,16 @@ target_include_directories(${verilator}
 )
 
 if (WIN32)
-    target_compile_options(${verilator} PRIVATE /bigobj)
+    if (MSVC)
+        target_compile_options(${verilator} PRIVATE /bigobj)
+        target_link_options(${verilator} PRIVATE /STACK:10000000)
+    endif()
+
     target_compile_definitions(${verilator} PRIVATE
         YY_NO_UNISTD_H
     )
     target_include_directories(${verilator} PRIVATE ../platform/win32)
     target_link_libraries(${verilator} PRIVATE bcrypt psapi)
-    target_link_options(${verilator} PRIVATE /STACK:10000000)
 endif()
 
 install(TARGETS ${verilator})
