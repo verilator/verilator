@@ -220,12 +220,6 @@ This is done for you if you are using the Verilator :vlopt:`--binary` or
 You can call :code:`->trace()` on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
 
-When using SystemC 2.3, the SystemC library must have been built with the
-experimental simulation phase callback-based tracing disabled. This is
-disabled by default when building SystemC with its configure based build
-system, but when building SystemC with CMake, you must pass
-``-DENABLE_PHASE_CALLBACKS_TRACING=OFF`` to disable this feature.
-
 
 How do I generate FST waveforms (traces) in C++ or SystemC?
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
