@@ -367,8 +367,8 @@ inline IData VL_RANDOM_RNG_I(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
 inline QData VL_RANDOM_RNG_Q(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
 extern WDataOutP VL_RANDOM_RNG_W(VlRNG& rngr, int obits, WDataOutP outwp) VL_MT_UNSAFE;
 
-inline bool VL_RANDOMIZE(VlRNG& rngr, IData& value) { value = VL_RANDOM_RNG_I(rngr); return true; }
-inline bool VL_RANDOMIZE(VlRNG& rngr, QData& value) { value = VL_RANDOM_RNG_Q(rngr); return true; }
+inline bool VL_RANDOMIZE(VlRNG& rngr, IData& valuer) { valuer = VL_RANDOM_RNG_I(rngr); return true; }
+inline bool VL_RANDOMIZE(VlRNG& rngr, QData& valuer) { valuer = VL_RANDOM_RNG_Q(rngr); return true; }
 
 //===================================================================
 // Readmem/Writemem operation classes
@@ -544,7 +544,6 @@ public:
         if (VL_LIKELY(index >= 0 && index < m_deque.size()))
             m_deque.erase(m_deque.begin() + index);
     }
-
     // Dynamic array new[] becomes a renew()
     void renew(size_t size) {
         clear();

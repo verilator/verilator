@@ -145,6 +145,21 @@ static void makeToStringMiddle(AstClass* nodep) {
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "return out;\n"});
     nodep->addStmtsp(funcp);
 }
+static void makeVlRandomize(AstClass* nodep) {
+    AstCFunc* const funcp
+        = new AstCFunc{nodep->fileline(), "VL_RANDOMIZE", nullptr, "IData"};
+    funcp->argTypes("const VlClassRef<" + EmitCBase::prefixNameProtect(nodep) + ">& obj");
+    funcp->isMethod(false);
+    funcp->isConst(false);
+    funcp->isStatic(false);
+    funcp->protect(false);
+    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "IData out;\n"});
+    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "if (obj) obj->__VnoInFunc_randomize(nullptr, out);\n"});
+    AstCExpr* const exprp = new AstCExpr{nodep->fileline(), "out", 0};
+    exprp->dtypeSetUInt32();
+    funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
+    nodep->addStmtsp(funcp);
+}
 
 //######################################################################
 // V3Common class functions
@@ -162,6 +177,7 @@ void V3Common::commonAll() {
             makeVlToString(classp);
             makeToString(classp);
             makeToStringMiddle(classp);
+            if (classp->needRNG()) makeVlRandomize(classp);
         } else if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {
             makeVlToString(ifacep);
         }
