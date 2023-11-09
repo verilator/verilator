@@ -48,6 +48,13 @@ if (WIN32)
     set(CMAKE_CXX_STANDARD 20)
 endif()
 
+option(DISABLE_CCACHE "Do not compile Verilator with ccache" OFF)
+
+find_program(CCACHE_PROGRAM ccache)
+if (CCACHE_PROGRAM AND NOT DISABLE_CCACHE)
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
+
 find_package(BISON)
 find_package(FLEX)
 
