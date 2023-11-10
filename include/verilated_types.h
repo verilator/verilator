@@ -544,6 +544,12 @@ public:
         if (VL_LIKELY(index >= 0 && index < m_deque.size()))
             m_deque.erase(m_deque.begin() + index);
     }
+    IData randomize() {
+        for (const auto& i : m_deque) {
+            if (VL_RANDOMIZE(i) == 0) return 0;
+        }
+        return 1;
+    }
     // Dynamic array new[] becomes a renew()
     void renew(size_t size) {
         clear();
@@ -896,6 +902,11 @@ public:
 template <class T_Value>
 std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
     return obj.to_string();
+}
+
+template <class T_Value>
+int VL_RANDOMIZE(const VlQueue<T_Value>& obj) {
+    return obj.randomize();
 }
 
 //===================================================================
