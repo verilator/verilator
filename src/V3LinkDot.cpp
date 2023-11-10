@@ -3326,7 +3326,19 @@ private:
             m_ds.init(m_curSymp);
             iterateAndNextNull(nodep->rhsp());
             iterateAndNextNull(nodep->thsp());
-            iterateAndNextNull(nodep->attrp());
+        }
+
+        if (nodep->attrp() != nullptr) {
+            AstNode* attrp = nodep->attrp()->unlinkFrBack();
+            VL_DO_DANGLING(attrp->deleteTree(), attrp);
+        }
+        AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
+        if (VN_IS(basefromp, Replicate)) {
+            // From {...}[...] syntax in IEEE 2017
+            if (basefromp) UINFO(1, "    Related node: " << basefromp << endl);
+        } else {
+            nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
+                                       basefromp->cloneTree(false)});
         }
     }
     void visit(AstMemberSel* nodep) override {
@@ -3724,6 +3736,8 @@ private:
         }
         iterateChildren(nodep);
     }
+
+    void visit(AstAttrOf* nodep) override { iterateChildren(nodep); }
 
     void visit(AstNode* nodep) override {
         checkNoDot(nodep);
