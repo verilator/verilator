@@ -242,6 +242,10 @@ private:
         }
     }
     void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
+    void visit(AstConstraint* nodep) override {
+        v3Global.useRandomizeMethods(true);
+        iterateChildren(nodep);
+    }
     void visit(AstEnumDType* nodep) override {
         if (nodep->name() == "") {
             nodep->name(nameFromTypedef(nodep));  // Might still remain ""
@@ -533,7 +537,7 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    void visit(AstForeach* nodep) override {
+    void visit(AstNodeForeach* nodep) override {
         // FOREACH(array, loopvars, body)
         UINFO(9, "FOREACH " << nodep << endl);
         cleanFileline(nodep);

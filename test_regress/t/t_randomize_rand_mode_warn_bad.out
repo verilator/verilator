@@ -1,0 +1,35 @@
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:15:13: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   15 |       m_one.rand_mode(0);
+      |             ^~~~~~~~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:16:13: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   16 |       m_one.rand_mode(1);
+      |             ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:17:17: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   17 |       if (m_one.rand_mode() != 1) $stop;
+      |                 ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:41:9: rand_mode ignored (unsupported)
+                                                      : ... note: In instance 't'
+   41 |       p.rand_mode(0);
+      |         ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:42:9: rand_mode ignored (unsupported)
+                                                      : ... note: In instance 't'
+   42 |       p.rand_mode(1);
+      |         ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:47:15: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   47 |       p.m_one.rand_mode(0);
+      |               ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:48:15: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   48 |       p.m_one.rand_mode(1);
+      |               ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:49:19: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   49 |       if (p.m_one.rand_mode() != 1) $stop;
+      |                   ^~~~~~~~~
+%Error: Exiting due to

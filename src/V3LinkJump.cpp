@@ -245,7 +245,7 @@ private:
             whilep->addHereThisAsNext(copiedBodyp);
         }
     }
-    void visit(AstForeach* nodep) override {
+    void visit(AstNodeForeach* nodep) override {
         VL_RESTORER(m_loopp);
         {
             m_loopp = nodep;

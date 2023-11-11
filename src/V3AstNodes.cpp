@@ -1096,6 +1096,14 @@ void AstTypeTable::repairCache() {
     }
 }
 
+AstConstraintRefDType* AstTypeTable::findConstraintRefDType(FileLine* fl) {
+    if (VL_UNLIKELY(!m_constraintRefp)) {
+        AstConstraintRefDType* const newp = new AstConstraintRefDType{fl};
+        addTypesp(newp);
+        m_constraintRefp = newp;
+    }
+    return m_constraintRefp;
+}
 AstEmptyQueueDType* AstTypeTable::findEmptyQueueDType(FileLine* fl) {
     if (VL_UNLIKELY(!m_emptyQueuep)) {
         AstEmptyQueueDType* const newp = new AstEmptyQueueDType{fl};
@@ -1104,16 +1112,6 @@ AstEmptyQueueDType* AstTypeTable::findEmptyQueueDType(FileLine* fl) {
     }
     return m_emptyQueuep;
 }
-
-AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
-    if (VL_UNLIKELY(!m_voidp)) {
-        AstVoidDType* const newp = new AstVoidDType{fl};
-        addTypesp(newp);
-        m_voidp = newp;
-    }
-    return m_voidp;
-}
-
 AstStreamDType* AstTypeTable::findStreamDType(FileLine* fl) {
     if (VL_UNLIKELY(!m_streamp)) {
         AstStreamDType* const newp = new AstStreamDType{fl};
@@ -1122,7 +1120,6 @@ AstStreamDType* AstTypeTable::findStreamDType(FileLine* fl) {
     }
     return m_streamp;
 }
-
 AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
     if (VL_UNLIKELY(!m_queueIndexp)) {
         AstQueueDType* const newp = new AstQueueDType{fl, AstNode::findUInt32DType(), nullptr};
@@ -1130,6 +1127,14 @@ AstQueueDType* AstTypeTable::findQueueIndexDType(FileLine* fl) {
         m_queueIndexp = newp;
     }
     return m_queueIndexp;
+}
+AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
+    if (VL_UNLIKELY(!m_voidp)) {
+        AstVoidDType* const newp = new AstVoidDType{fl};
+        addTypesp(newp);
+        m_voidp = newp;
+    }
+    return m_voidp;
 }
 
 AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd) {
@@ -1467,7 +1472,7 @@ void AstClassPackage::cloneRelink() {
     if (m_classp && m_classp->clonep()) m_classp = m_classp->clonep();
 }
 bool AstClass::isCacheableChild(const AstNode* nodep) {
-    return (VN_IS(nodep, Var) || VN_IS(nodep, EnumItemRef)
+    return (VN_IS(nodep, Var) || VN_IS(nodep, Constraint) || VN_IS(nodep, EnumItemRef)
             || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto())
             || VN_IS(nodep, CFunc));
 }

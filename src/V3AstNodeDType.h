@@ -622,6 +622,32 @@ public:
         return false;
     }
 };
+class AstConstraintRefDType final : public AstNodeDType {
+    // For e.g. a reference to constraint for constraint_mode
+public:
+    explicit AstConstraintRefDType(FileLine* fl)
+        : ASTGEN_SUPER_ConstraintRefDType(fl) {
+        dtypep(this);
+    }
+    ASTGEN_MEMBERS_AstConstraintRefDType;
+    bool hasDType() const override { return true; }
+    bool maybePointedTo() const override { return true; }
+    bool undead() const override { return true; }
+    AstNodeDType* subDTypep() const override VL_MT_SAFE { return nullptr; }
+    AstNodeDType* virtRefDTypep() const override { return nullptr; }
+    void virtRefDTypep(AstNodeDType* nodep) override {}
+    bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
+    AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
+    // cppcheck-suppress csyleCast
+    AstNodeDType* skipRefp() const override VL_MT_STABLE { return (AstNodeDType*)this; }
+    // cppcheck-suppress csyleCast
+    AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
+    // cppcheck-suppress csyleCast
+    AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
+    int widthAlignBytes() const override { return 1; }
+    int widthTotalBytes() const override { return 1; }
+    bool isCompound() const override { return false; }
+};
 class AstDefImplicitDType final : public AstNodeDType {
     // For parsing enum/struct/unions that are declared with a variable rather than typedef
     // This allows "var enum {...} a,b" to share the enum definition for both variables
